@@ -22,7 +22,7 @@ APODICTIC isn't just for finished drafts.
 
 - **Pre-writing pathway** for writers who have an idea but no manuscript — takes you from seed to draftable structure
 - **Plot coach** with 48 structural spines across 12 families (not just three-act)
-- **18 specialized audits:** scene function, shelf positioning, emotional craft, AI-prose detection, worldbuilding integration, series architecture, and more
+- **28 specialized audits** including 3 universal (stakes system, decision pressure, scene turn), plus scene function, shelf positioning, emotional craft, AI-prose detection, worldbuilding integration, force architecture, and more
 - **4 internet-enabled research modes** for comp validation, fact-checking, genre currency, and representation context
 - **Genre calibration** across literary fiction, horror, mystery, thriller, SF/F, romance, and hybrids
 
@@ -50,6 +50,13 @@ Requires Claude Code 1.0.33+ or Cowork mode.
 | `/plot-coach` | Plot structure selection and coaching |
 | `/audit [name]` | Run a specialized audit (no argument lists all available) |
 | `/research [mode]` | Run a research mode (no argument lists all available) |
+
+## Project Docs
+
+- [ROADMAP.md](ROADMAP.md) — what's planned after publication
+- [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) — sources and influences (~155 works cited)
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how to contribute, changelog policy
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
 ## License
 
