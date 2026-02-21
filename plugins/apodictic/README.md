@@ -47,7 +47,7 @@ The plugin assumes its user is an adult working on a creative project. Its outpu
 - **core-editor** — The main workflow: intake protocol, 11 analysis passes, synthesis, revision rounds, genre calibration
 - **pre-writing-pathway** — Guides writers from idea to draftable structure (no manuscript required). Writer mode calibration, seed inventory, readiness gates, option architecture, complexity budget, prospective contract, re-entry diff protocol.
 - **plot-architecture** — Plot structure diagnosis (48 spines across 12 families), selection coaching, fantasy & series architecture
-- **specialized-audits** — 18 deep-dive audits (character, scene, emotional craft, AI-prose calibration, shelf positioning, etc.), 2 tag audits (cozy, philosophical), and 4 internet-enabled research modes
+- **specialized-audits** — 23 deep-dive audits (including 3 universal: stakes system, decision pressure, scene turn), 5 tag audits (cozy, philosophical, erotic content, consent complexity, queer romance/erotica), and 4 internet-enabled research modes
 
 ### Commands (9)
 
@@ -105,7 +105,7 @@ Helps choose or fix a plot structure. Works for pre-drafting planning, stuck dra
 /audit shelf
 /audit
 ```
-Run a named audit or list all 17 available audits.
+Run a named audit or list all 28 available audits.
 
 ### Research Mode
 ```
@@ -116,7 +116,7 @@ Internet-enabled research to validate comps, check facts, verify genre currency,
 
 ## Framework Version
 
-v0.4.14.3 — 48 plot spines across 12 families, 18 specialized audits, 3 tag audits, 4 research modes, 11 core passes, the evaluative Pass 11 gate, the pre-writing pathway, and the intake router.
+v0.4.17 — 48 plot spines across 12 families, 23 specialized audits, 5 tag audits, 4 research modes, 11 core passes, the evaluative Pass 11 gate, the pre-writing pathway, and the intake router. Includes contract-driven and finding-driven audit integration pipeline with 3 universal audits (Stakes System, Decision Pressure, Scene Turn).
 
 ## License
 

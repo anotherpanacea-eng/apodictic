@@ -236,7 +236,7 @@ During intake, identify the manuscript's genre and load the corresponding module
 |------|---------|
 | `references/changelog.md` | Version history |
 | `references/core-framework.md` | Reference mirror (defers to SKILL.md and reference files) |
-| `references/module-index.md` | Complete module catalog |
+| `references/module-index.md` | **Legacy** module catalog (pre-plugin paths; do not use for routing or file lookups — see `AUDIT_SELECTION_MATRIX.md` and `specialized-audits/SKILL.md` instead) |
 
 ---
 

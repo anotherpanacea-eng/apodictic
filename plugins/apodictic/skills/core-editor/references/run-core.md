@@ -298,7 +298,25 @@ After all core passes are complete and before writing the synthesis:
 1. **Review accumulated audit triggers.** Compile all finding-driven recommendations from Passes 1, 2, 5, and 8.
 2. **Compare against contract-activated audits.** If a finding-driven trigger recommends an audit already activated at contract, confirm it should run. If it recommends an audit not activated at contract, present the recommendation to the author with evidence.
 3. **Run activated audits.** Load the full specialized audit module from `specialized-audits/references/` and apply to the manuscript. Each audit produces its own findings document.
-4. **Feed audit findings into synthesis.** Specialized audit findings integrate into the editorial letter's "What Needs Work" sections — organized by problem, not by audit name. The author reads about the book's needs, not about which framework found the issue.
+4. **Write the Audit Invocation Log.** Before synthesis, produce a log artifact tracking every audit considered during this run. Format:
+
+```
+## Audit Invocation Log
+
+| Audit | Source | Status | Reason |
+|-------|--------|--------|--------|
+| Stakes System | universal | run | Recommended at intake |
+| Decision Pressure | universal | run | Recommended at intake |
+| Scene Turn | universal | run | Recommended at intake |
+| [audit name] | contract | run/skipped | [why] |
+| [audit name] | finding-driven | run/skipped | [trigger evidence or skip reason] |
+```
+
+**Source** = `universal` (always recommended), `contract` (genre/mode-driven at intake), or `finding-driven` (triggered by pass findings).
+**Status** = `run`, `skipped` (author declined), or `deferred` (postponed to Full DE).
+Save as `[Project]_Audit_Invocation_Log_[runlabel].md`.
+
+5. **Feed audit findings into synthesis.** Specialized audit findings integrate into the editorial letter's "What Needs Work" sections — organized by problem, not by audit name. The author reads about the book's needs, not about which framework found the issue.
 
 **Minimum audit recommendations for every manuscript:**
 - **Stakes System** — universal pressure architecture diagnostic

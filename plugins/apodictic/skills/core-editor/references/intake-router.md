@@ -100,6 +100,7 @@ The options change based on the Artifact answer. This prevents offering goals th
 | B | Check if it's ready to submit (query, submission, self-pub) | Core DE → Pass 11 (Submission Readiness) |
 | C | Clean up AI-generated or AI-assisted prose | Core DE + AI-Prose Calibration |
 | D | I have beta reader feedback — help me sort through it | Feedback Triage → Core DE |
+| E | Run a focused audit on a specific concern | Specialized Audit (list audits, user selects) |
 
 ### If Artifact = `series`
 
@@ -168,6 +169,7 @@ These three map cleanly to the Goal axis:
 | full_draft | repair | — | Core DE | **Built (v0.4.5.0)** |
 | full_draft | repair | time | Fast Triage | Gap |
 | full_draft | repair | ai | Core DE + AI-Prose Calibration | **Built (v0.4.5.0)** |
+| full_draft | audit | — | Specialized Audit (user selects) | **Built (v0.4.17)** |
 | full_draft | repair | risk | Core DE + Risk Register | Gap |
 | full_draft | submit | — | Core DE → Pass 11 | Gap: unified submission workflow |
 | full_draft | submit | time | Fast Triage (submission focus) | Gap |
