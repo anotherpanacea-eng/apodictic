@@ -7,7 +7,7 @@ AI-powered developmental editing framework for fiction and narrative nonfiction.
 ## Install
 
 ```
-/plugin marketplace add anotherpanacea/apodictic
+/plugin marketplace add anotherpanacea-eng/apodictic
 /plugin install apodictic@apodictic
 ```
 
