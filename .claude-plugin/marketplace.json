@@ -1,0 +1,34 @@
+{
+  "name": "apodictic",
+  "owner": {
+    "name": "Joshua A. Miller, PhD",
+    "email": "anotherpanacea@gmail.com"
+  },
+  "metadata": {
+    "description": "APODICTIC: anotherpanacea's Development Editor. Developmental editing that listens before diagnosing.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "apodictic",
+      "source": "./plugins/apodictic",
+      "description": "APODICTIC: anotherpanacea's Development Editor. Developmental editing that listens before diagnosing. Provides structural diagnosis, genre calibration, tag audits, plot architecture analysis, revision coaching, pre-writing pathway, and intake routing across 11 core passes, 18 specialized audits, 3 tag audits, 4 research modes, 1 pre-writing pathway, and 1 intake router.",
+      "version": "0.4.15",
+      "author": {
+        "name": "Joshua A. Miller, PhD"
+      },
+      "homepage": "https://anotherpanacea.com",
+      "license": "CC-BY-NC-SA-4.0",
+      "keywords": [
+        "writing",
+        "editing",
+        "fiction",
+        "developmental-editing",
+        "manuscript-analysis",
+        "plot-structure",
+        "genre-calibration"
+      ],
+      "category": "writing"
+    }
+  ]
+}

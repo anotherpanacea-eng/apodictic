@@ -1,0 +1,390 @@
+# Core DE Passes & Synthesis
+
+*Reference file for the APODICTIC Development Editor. Loaded for every Core DE and Full DE run.*
+
+---
+
+## Intake Protocol (Always Run)
+
+### Router Integration
+
+If the user arrived via the `/start` intake router, the router has already classified: artifact (what they have), goal (what they need), and any constraint/operator modifiers. Use the router output to skip redundant questions and calibrate the intake below. See `references/intake-router.md` for the full routing spec.
+
+If the user arrived via `/develop-edit` or direct request, run intake from scratch as described below.
+
+### Draft-Then-Validate Workflow
+
+**Step 1:** Read manuscript and generate DRAFT Contract Schema from text analysis alone.
+
+**Step 2:** Present draft to author: *"This is what I infer from the text. Please correct any misalignments."* Author corrections reveal where text may not communicate intent.
+
+**Step 3:** Ask hypothesis-driven questions. Format: *"My hypothesis is [X]. Is this accurate?"* More efficient than open-ended questions; surfaces interpretive gaps.
+
+### Contract Schema (Draft from Text)
+
+Generate preliminary schema before asking questions:
+
+```
+GENRE/SUBGENRE: [inferred from conventions, tropes, structure]
+READER PROMISE: [what experience the text appears to offer]
+HEAT LEVEL: [if applicable: inferred from content]
+DARKNESS LEVEL: [if applicable: inferred from content]
+PRIMARY TENSION TYPE: [external / relational / epistemic / moral]
+ENDING TYPE: [closed / open / ambiguous / denial-of-catharsis]
+TONE COMPS: [works that feel similar]
+STRUCTURE COMPS: [works with similar architecture]
+NON-NEGOTIABLES: [inferred essential elements]
+FORMAT: [novel / novella / collection / composite novel]
+```
+
+**For composite works:** Note whether text has unified arc or functions as discrete pieces.
+
+### Controlling Idea
+
+Format: [Value] + [Cause]
+
+**Examples:**
+- "Justice prevails when individuals sacrifice personal safety for collective truth."
+- "Identity dissolves when the body's responses can no longer be trusted as evidence of self."
+
+**For open endings:** State the pressure applied to a question, not an answer.
+
+### Anti-Idea
+
+State what the book is explicitly NOT arguing. This prevents the system from "correcting" toward unwanted moral clarity.
+
+**Example:**
+- Controlling idea: "Identity dissolves when the body's responses can't be trusted."
+- Anti-idea: "The body never lies" / "Desire is always authentic"
+
+### Hypothesis-Driven Intake Questions
+
+Ask with explicit hypotheses. Format: *"My hypothesis is [X]. Is this accurate?"*
+
+**Intent and Audience:**
+1. **Controlling Idea Hypothesis:** Based on ending and thematic patterns, my hypothesis is: "[inference]." Is this accurate?
+2. **Anti-Idea:** What is this book explicitly NOT arguing?
+3. **Emotional Landing:** At the end, should reader feel [hypothesis]? (Not understand—*feel*.)
+4. **Comps:** I detect similarities to [inferred]. Accurate? What are your tone vs. structure comps?
+
+**Protagonist and Engine:**
+5. **POV vs. Protagonist:** [A] is POV holder, but [B] appears to architect change. Whose transformation is the spine?
+6. **Narrative Engine:** What drives the story forward? My hypothesis: [inference]. Accurate?
+7. **Wants:** On page one, protagonist wants [surface]. Underneath: [deep]. Correct?
+8. **Central Obstacle:** What cannot be solved without internal change?
+9. **The Lie:** What false belief must protagonist confront?
+
+**Relationship Dynamics:**
+10. Why these specific people? Why now?
+11. What are the steps of trust, rupture, repair (or corruption)?
+12. Where does desire lead before understanding catches up?
+13. What is the emotional price of connection in this world?
+
+**Structure:**
+14. **Format:** Is this [novel / collection / composite novel with unified arc]?
+15. **Inciting Incident Hypothesis:** My scan suggests [moment] functions as inciting incident. Accurate?
+16. **Midpoint Hypothesis:** I identify [scene/chapter] as midpoint pivot. Accurate?
+17. **Climax:** What is the real moment of no return?
+18. **Pacing Instinct:** Where do you feel the draft drags?
+
+**Reader Experience:**
+19. What are you deliberately keeping unresolved vs. crystal clear?
+20. What should reader suspect early? Realize when?
+21. What intended misreading? Is it fair (seeded, playable)?
+
+**Constraints:**
+22. Non-negotiables?
+23. Draft stage?
+24. Known problems?
+25. Willing to cut 10-20%? Change POV, tense, order?
+
+### Output: Contract Document
+
+Generate `Contract_and_Controlling_Idea.md` containing:
+- Completed schema fields
+- Contract paragraph (generated from fields)
+- Controlling idea and anti-idea
+- Selected genre modules and specialized audits
+- Confirmed non-negotiables
+
+---
+
+## Core DE Passes
+
+### Pass 0: Reverse Outline
+
+Generate an objective summary of what exists on the page—not what the author intends.
+
+**For each scene, document:**
+- Scene number and location in manuscript
+- What literally happens (action, not interpretation)
+- Word count (measured, not estimated)
+- Ratio: dialogue / action / interiority
+- What information the reader gains
+- **Mechanism of transition:** Does scene end because conflict resolved, decision made, or arbitrarily? (Flag arbitrary breaks.)
+
+**Word Count Verification:**
+At the end of Pass 0, measure and report:
+1. Total manuscript word count (`wc -w`)
+2. Word count per major part/act (extract and measure each)
+3. Use these measured values for all subsequent proportional analysis
+
+**Output:** `Reverse_Outline.md` with verified word counts
+
+### Pass 1: Reader Experience
+
+Read as a naive reader. Track emotional and cognitive response only.
+
+**Track:**
+- Boredom, confusion, delight, emotional spikes
+- "I would stop reading here" points
+- Immersion breaks
+
+**Tag specifically:**
+
+**Orientation Failures:** "Where am I? When? Who's speaking? What changed?"
+→ Maps to craft/anchoring fixes
+
+**Belief Failures:** "I don't believe this decision / reaction / coincidence."
+→ Maps to motivation/pressure/cost fixes
+
+**Promise Tracking (from page 1):**
+- What questions does the reader believe the book will answer?
+- What kind of ride do they think they're on by page 5? Page 20?
+- Where do felt promises drift from the contract?
+
+**Output:** Reader experience log with tagged failures and promise drift warnings.
+
+### Pass 2: Structural Mapping
+
+Map the narrative architecture.
+
+**Build:**
+- Scene outline: location, time, POV, goal, conflict, outcome, new information
+- Plot beats: inciting incident, first threshold, midpoint, crisis, climax, resolution
+- Causal chain: "because X, therefore Y" connections
+- Word count distribution by chapter, scene, **and part**
+- **Proportional analysis:** % of total per act/part
+
+**Verification Checkpoint (Required):**
+Before calculating any proportions, measure word counts programmatically:
+1. Total manuscript: `wc -w [file]`
+2. Each part/act: extract lines and count separately
+3. Report measured values, not estimates from line ranges
+
+**Detect:**
+- Orphan scenes (removable without breaking causality)
+- Repeated beats
+- Missing causal links ("and then" instead of "therefore")
+- Causal gaps (unclear transition mechanisms)
+- Structural anomalies
+- **Proportional imbalance:** Parts >40% of total (potential "stuck" signal) or <10% (potential underdevelopment)
+
+**For Composite Novels:**
+- Unity assessment: single arc or discrete pieces?
+- Part-level beat mapping: internal arc per part
+- Seam analysis: what changes at each transition?
+- Generate proportional distribution table
+
+**Output:** Beat map, causal chain, structural flags, **proportional distribution table**.
+
+### Pass 5: Character Audit
+
+Model character psychology and track through manuscript.
+
+**For each major character:**
+- Explicit want / hidden want
+- Fear/avoidance patterns
+- Tactics
+- Arc: what they learn / refuse / become
+- Their "lie"
+
+**Track:**
+- Agency per act: who causes movement vs. who reacts?
+- Decision points: where do they choose?
+- Voice consistency
+- Motivation consistency
+
+**Reference project character portraits for consistency checking.**
+
+**Detect:**
+- Puppet moments
+- Agency collapse
+- Voice drift
+- Motivation discontinuity
+
+**For detailed character architecture (psychology engine, arc types, agency quotient, genre tuning packs):** See `references/character-architecture.md`.
+
+**Output:** Character cards, agency timeline.
+
+### Pass 8: Reveal Economy
+
+Track information flow.
+
+**Build:**
+- "Who knows what when" matrix (characters + reader)
+- Reveal timeline
+- Suspense architecture: open questions at each point
+- Dramatic irony map
+
+**Detect:**
+- Premature reveals
+- Delayed clarifications (confusion as attrition)
+- Missing signposts
+- Dropped threads
+- Unfair misdirection (apply fairness tests)
+
+**Fairness Tests:**
+1. Are diegetic cues available on first read that justify the twist?
+2. Does narration withhold what POV character would notice?
+3. Does the story change what was "true" vs. recontextualize?
+
+**Output:** Reveal ledger, fairness flags.
+
+---
+
+## Core DE Synthesis
+
+The synthesis is the author-facing editorial letter. It must read as one informed voice talking about a book — not as a framework generating output.
+
+### Processing Protocol
+
+**Processing order (what the LLM does internally):**
+
+1. **Intent Check Loop.** Before finalizing any flag, verify against stated intent: "I detect [observation] in [location]. Is this the [stated intentional element], or unintentional?" Do not flag elements that align with contract, controlling idea, or stated non-negotiables.
+
+2. **Root Cause Analysis.** Identify 3-5 root causes (maximum 5). If more than 5 seem present, flag that manuscript may need reconception.
+
+3. **Triage.** Assign severity to each finding:
+   - **Must-Fix:** Book-breaking (max 10)
+   - **Should-Fix:** Significant diminishment (max 15)
+   - **Could-Fix:** Polish (no cap, deprioritized)
+
+4. **Adversarial Self-Check (required before writing the letter).** Re-evaluate findings in both directions — test whether each severity is too soft (under-diagnosed) or too harsh (over-escalated). Adjust if the adversarial case is stronger than the original assignment. Record the results.
+
+   **Upward pressure (testing for softening):** For each Should-Fix flag, state in one sentence why it should be Must-Fix. If the Must-Fix case is stronger, upgrade. For each Mixed axis, state in one sentence why it should be Weak. If the Weak case is stronger, downgrade.
+
+   **Downward pressure (testing for over-escalation):** For each Must-Fix flag, state in one sentence the best case for Should-Fix. If the Should-Fix case is stronger, downgrade. For each Weak axis, state in one sentence the best case for Mixed. If the Mixed case is stronger, upgrade.
+
+   **Evidence check (both directions):** For each Must-Fix flag, confirm you have 2+ specific scene/line references. If not, either find them or downgrade your confidence (not the severity).
+
+5. **Write the editorial letter** using the presentation format below. The self-check informs the letter's severities; it does not appear in the letter's body.
+
+**Key principle:** Processing order ≠ presentation order. The self-check must happen before writing, but in the output document it belongs in an appendix. The author reads findings; the framework owner reads methodology.
+
+### Presentation Format (Editorial Letter)
+
+The synthesis is structured as a letter with scannable reference material. Prose carries the argument; headings, bold thesis statements, and a revision table provide scannability. Framework shorthand (severity labels, pass numbers, protocol stamps) stays out of the main text — it belongs in the appendices only.
+
+**Required sections, in order:**
+
+**1. Title Block**
+```
+# Development Edit: [Title]
+### [Author] | [Word count] words | [Draft stage]
+*APODICTIC Development Editor v[X] — [Date]*
+```
+
+**2. The Short Version.** One paragraph. Names both the primary asset and the primary liability. States the verdict class (reconception vs. targeted revision vs. polish). Names the revision's core ask. The author should be able to read this paragraph alone and know where they stand.
+
+**3. What the Book Does Best.** Prose. Specific scenes and line references embedded naturally. Explain *why* each strength matters — not just that it exists, but what it does for the reader. If one scene exemplifies the book's highest capacity, name it and explain why. This section establishes what the revision must protect.
+
+Discipline: Maximum 3 major strengths for manuscripts needing significant revision. Maximum max(leaks, 3) for manuscripts needing only polish. Every strength must cite specific evidence.
+
+**4. What Needs Work.** Headed subsections. Each heading is a **bolded thesis statement** that names the problem in plain language (e.g., "**Pacing: Part I has room Part III needs.**" — not "Priority Leak #1: Dramatic Density Imbalance"). Prose argument underneath with line references embedded naturally. The argument should make the reader understand *why* the issue matters for their book specifically, not just that a structural rule has been violated.
+
+Group related issues under a single heading when they share a root cause (e.g., four underdeveloped secondary characters become one section about the pattern, not four separate flags).
+
+**5. Revision Checklist.** A table the author can tape to the wall. Priority ordered. Columns:
+
+| # | What | Why it matters | Effort |
+|---|------|---------------|--------|
+
+"Effort" replaces severity labels — Low / Medium / High communicates what the author needs to know (how much work) without framework jargon. Map roughly: continuity fixes → Low; single-scene additions → Low–Medium; multi-scene redistribution → Medium; structural reconception → High.
+
+Maximum 10 items in the table. If more than 10 issues exist, the prose sections carry the rest; the table holds only the actionable priorities.
+
+Follow the table with:
+- **What to protect:** One sentence listing the scenes, elements, and qualities that must survive revision.
+- **What to be cautious about:** One sentence identifying the risk that revision introduces.
+
+**6. The Strongest Case Against.** The rejection memo, reframed for the author. Write it as: "If I were arguing for passing on this manuscript..." State the case in 1-2 paragraphs. Reference findings from the letter — no new uncited claims. End by assessing whether the case wins or loses, and why.
+
+**7. Appendices.**
+- **Appendix A: Diagnostic Detail.** Pointers to companion pass files with brief descriptions of what each contains.
+- **Appendix B: Severity Calibration.** Compressed summary of the adversarial self-check — which findings were tested, in which direction, whether any severities were adjusted.
+- **Appendix C: Framework Notes.** Analysis version, model, run date, passes completed, protocol flags, prior analyses on file, cross-version stability notes (if applicable).
+
+---
+
+## Core DE Deliverables
+
+**Reminder:** All outputs must follow the Author-Facing Language requirement (see `references/output-policy.md`). Translate all framework shorthand on first use.
+
+### Editorial Letter (Core Synthesis)
+
+The primary deliverable. Format specified in §Core DE Synthesis above.
+
+### Diagnostic State
+
+After writing the editorial letter, update `Diagnostic_State.md` with:
+- Findings from this session
+- Keep / Cut / Unsure decisions
+- Change log
+
+If `Diagnostic_State.md` does not exist in the project output context, create it from `references/diagnostic-state-template.md` first.
+
+---
+
+## Revision Round Protocol
+
+When re-analyzing a manuscript after author revision, use this protocol instead of starting fresh.
+
+### Revision Round Intake
+
+Before running passes, gather:
+
+1. **What changed?** — List major revisions since last analysis (structural changes, added/cut scenes, character modifications)
+2. **Which flags were addressed?** — Mark which previous flags the author attempted to fix
+3. **Which flags were declined?** — Note which previous flags the author intentionally chose not to address (and why, if provided)
+4. **New concerns?** — What does the author now suspect isn't working?
+
+### Revision Round Constraints
+
+**DO NOT:**
+- Re-flag issues the author explicitly declined to address (respect their choices)
+- Run full fresh analysis unless structural changes exceed 40% of manuscript
+- Apply stricter standards to revised sections than to original analysis
+
+**DO:**
+- Focus analysis on changed material + ripple effects
+- Check whether addressed flags are now resolved
+- Track whether fixes created new problems
+- Compare current state to previous Diagnostic State
+
+### Revision Round Passes
+
+**Targeted Pass Sequence:**
+1. **Delta Scan:** Identify all changed sections (author-reported + text comparison if available)
+2. **Ripple Check:** For each major change, trace downstream effects (Does cutting Chapter 3 break setup for Chapter 12?)
+3. **Resolution Verification:** For each "addressed" flag, confirm fix landed (Did the added motivation scene actually establish motivation?)
+4. **New Issue Detection:** Run standard passes ONLY on changed sections
+5. **Integration Check:** Verify changed sections integrate with unchanged material
+
+### Revision Round Output
+
+**Revision Report** (not full diagnostic):
+- Flags resolved: [list with verification notes]
+- Flags still present: [list with updated evidence]
+- New issues introduced: [list with locations]
+- Ripple effects detected: [list with severity]
+- Next priority: [single most important remaining issue]
+
+### When to Reset to Full Analysis
+
+Abandon Revision Round Protocol and run fresh full analysis when:
+- Structural changes exceed 40% of manuscript
+- POV, tense, or timeline has changed
+- Core contract has shifted
+- Author reports "I basically rewrote it"
+- Previous diagnostic is >6 months old
