@@ -63,6 +63,10 @@ The plugin assumes its user is an adult working on a creative project. Its outpu
 | `/audit [name]` | Run a specialized audit (no argument lists all available) |
 | `/research [mode]` | Run a research mode (no argument lists all available) |
 
+### Selection Guide
+
+- See `AUDIT_SELECTION_MATRIX.md` for a practical routing chart of core passes, full passes, Pass 11 sub-passes, specialized audits, tag audits, and research modes.
+
 ## Usage
 
 ### Getting Started

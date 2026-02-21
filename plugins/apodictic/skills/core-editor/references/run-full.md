@@ -27,6 +27,10 @@ Quantitative analysis to investigate Pass 1 flags only.
 
 **Output:** `[Project]_Pass3_Rhythm_Modulation_[runlabel].md` — Intensity map (visual scene-by-scene trajectory using ASCII or table format), peak-valley pattern analysis, relief ratio assessment, sentence-level rhythm sampling at 3+ distributed points, pacing diagnosis with specific scenes flagged. Genre modules may add genre-specific checks (e.g., dread fatigue threshold for horror, clock-pressure rhythm for thriller).
 
+**Finding-driven audit triggers:**
+- Intensity plateau at 3+ consecutive high-intensity scenes → recommend **Stakes System** audit (pressure may be signaling without escalating)
+- Pacing stalls specifically at scene boundaries → recommend **Scene Turn** audit (Bickham scene-sequel mechanics)
+
 ### Pass 4: Emotional Value Tracking
 
 Track shifts on three axes:
@@ -52,6 +56,11 @@ Track shifts on three axes:
 
 **Output:** `[Project]_Pass4_Emotional_Value_Tracking_[runlabel].md` — Three-axis tracking table (certainty, intensity, valence per scene), certainty trajectory visualization for each POV character and reader, threshold checks (certainty stasis, premature collapse, intensity plateau, missing valleys), genre-specific axis emphasis where applicable (e.g., certainty axis as primary for horror, valence axis for romance). Note any emergent axes the manuscript introduces beyond the standard three.
 
+**Finding-driven audit triggers:**
+- Triple stasis (no movement on any axis) at 2+ scenes → recommend **Emotional Craft** audit (transmission may be failing even when events occur)
+- Intensity plateau without certainty movement → recommend **Stakes System** audit (stakes may be signaling without converting)
+- Certainty axis static in horror/thriller → recommend **Horror Craft** or **Mystery/Thriller Architecture** (dread/information architecture may be inert)
+
 ### Pass 6: Scene Function Audit
 
 **Functions:**
@@ -67,6 +76,10 @@ Track shifts on three axes:
 **Detect:** Single-function, zero-function, redundant scenes, setup debt, orphan payoffs.
 
 **Output:** `[Project]_Pass6_Scene_Function_[runlabel].md` — Scene function map (primary and secondary functions per scene, with "earns its space?" verdict for each), function distribution table, multi-function density analysis, reality test tracking where applicable. Genre modules may add genre-specific function tags (e.g., horror scene function tags, romance relationship-beat tags). Identify zero dead scenes or flag those that don't earn their place.
+
+**Finding-driven audit triggers:**
+- Single-function or zero-function scenes at >30% → recommend **Scene Turn** audit (Bickham scene mechanics may explain why scenes aren't earning their space)
+- Setup debt or orphan payoffs concentrated in specific acts → recommend **Stakes System** audit (setup without payoff may indicate stakes signaling without conversion)
 
 ### Pass 7: POV and Voice
 
@@ -115,24 +128,118 @@ Detect: state errors, timeline impossibilities, spatial violations, world rule v
 
 ## Supplementary Audits
 
-### Stakes System Audit
+Supplementary audits are specialized diagnostic modules that go deeper than any single pass. They are activated at contract (genre/mode-driven) or by finding-driven triggers during passes. See `run-core.md` §Audit Activation at Contract for the full activation table.
 
-**Track per scene/act:**
-- Risk type: external / relational / identity / bodily autonomy / moral self-concept
-- Immediacy: immediate vs. abstract
-- Trajectory: escalating / cycling / static
+Each audit has its own reference file in `specialized-audits/references/`. Load the full module when running the audit. The summaries below describe what each audit does and how it connects to the pass sequence — they are not substitutes for the full audit modules.
 
-**Detect:** Stakes plateau, regression, abstraction without manifestation.
+### Universal Audits (recommend for every manuscript)
 
-### Decision Pressure Audit
+#### Stakes System Audit
+**Module:** `specialized-audits/references/craft/stakes-system.md`
+**Level-setting:** `specialized-audits/references/craft/stakes-system-level-setting.md`
 
-**For each major decision:**
-- Alternatives plausibly considered
-- Why each fails (pressure, fear, limited info, cost)
-- Cognitive distortion or value tradeoff in play
-- Whether reader has access to reasoning
+Evaluates whether the manuscript's stakes system functions as a coherent escalation and consequence engine. Six channels: Stakes Texture (STX), Pressure Conversion (PC), Immediacy Management (IM), Escalation Geometry (EG), Multi-Axis Pressure (MP), Climax Load (CL). 22 named diagnostic flags.
 
-**Detect:** Unmotivated decisions, invisible alternatives, convenient stupidity, missing interiority.
+**Pass connections:**
+- Feeds from Pass 1 (reader disengagement), Pass 2 (structural mapping), Pass 5 (character wants/costs).
+- Feeds into Dashboard Component 8 (Stakes Ladder).
+- Pair with Decision Pressure: Stakes evaluates the pressure field; Decision Pressure evaluates choices made inside that field.
+
+**Triggered by:** "Stakes feel low," "I don't care what happens," intensity plateau without escalation, stakes language high but consequence low.
+
+#### Decision Pressure Audit
+**Module:** `specialized-audits/references/craft/decision-pressure.md`
+**Level-setting:** `specialized-audits/references/craft/decision-pressure-level-setting.md`
+
+Evaluates whether major character decisions are believable under the manuscript's pressure environment. Seven channels: Alternative Visibility (AV), Constraint Specificity (CS), Information-State Integrity (IS), Emotion-Cognition Coherence (EC), Reasoning Fidelity (RF), Tradeoff Reality (TR), Pivot Integrity (PV). 23 named diagnostic flags.
+
+**Pass connections:**
+- Feeds from Pass 1 (belief failures), Pass 5 (motivation, agency), Pass 8 (knowledge state, reveal timing).
+- Pair with Stakes System: strong stakes + weak decisions is a Decision Pressure problem; weak stakes + weak decisions is a Stakes problem first.
+- Pair with Reveal Economy: apparent motivation failures may be information-timing failures.
+
+**Triggered by:** "I don't buy why they did that," convenient pivots, character competence dropping at plot-critical moments, obvious alternatives unaddressed.
+
+#### Scene Turn Diagnostics (Bickham)
+**Module:** `specialized-audits/references/craft/scene-turn.md`
+
+Evaluates scene-level mechanics: goal → conflict → outcome, sequel mechanics (reaction → dilemma → decision), scene-sequel chain causality. Named for Jack M. Bickham's *Scene & Structure*. G-, C-, O-, Sq-, H-, U-, P-code flag system.
+
+**Pass connections:**
+- Feeds from Pass 2 (scene-level causal gaps), Pass 6 (scene function — Scene Turn explains *why* a scene isn't earning its space).
+- Pair with Emotional Craft: Scene Turn identifies missing mechanical turns; Emotional Craft tests whether turns transmit feeling.
+- Pair with Decision Pressure: Scene Turn identifies missing decision beats within scenes; Decision Pressure evaluates whether those decisions are credible.
+
+**Triggered by:** "Nothing happens" concerns, scenes that don't earn their space, pacing stalls at scene boundaries, missing transitional decision mechanics.
+
+#### Emotional Craft Diagnostics
+**Module:** `specialized-audits/references/craft/emotional-craft.md`
+
+Evaluates emotional precision, earned moments, sentiment tracking, and felt transmission. Diagnoses whether emotional events on the page actually produce felt response in the reader.
+
+**Pass connections:**
+- Feeds from Pass 1 (emotional flatness, melodrama), Pass 4 (emotional value tracking — EV tracks axes; Emotional Craft diagnoses transmission failures).
+- Pair with Decision Pressure: sound decision logic + weak emotional persuasiveness means architecture is right but transmission is failing.
+- Pair with Stakes System: strong stakes + emotional flatness means consequences are present but unfelt.
+
+**Triggered by:** Emotional flatness, melodrama, unearned catharsis, triple stasis in Pass 4, intensity plateau without felt movement.
+
+### Genre and Mode Audits (contract-driven)
+
+#### Force Architecture
+**Module:** `specialized-audits/references/craft/force-architecture.md`
+**Level-setting:** `specialized-audits/references/craft/force-architecture-level-setting.md`
+
+Evaluates whether physical conflict events produce legible, causal, persistent, meaningful change — or are spectacle loops. 25 flags across 6 dimensions. 8 mode calibrations.
+
+**Pass connections:**
+- Feeds from Pass 1 (action scenes that break immersion), Pass 10 (state errors in physical scenes).
+- Pair with Decision Pressure: Force Architecture evaluates choreography; Decision Pressure evaluates the decisions within it.
+
+**Activated when:** Contract identifies significant physical conflict (military, progression fantasy, thriller, horror, crime, domestic violence, superhero).
+
+#### Literary Craft Deep Dive
+**Module:** `specialized-audits/references/craft/literary-craft.md`
+**Level-setting:** `specialized-audits/references/craft/literary-craft-level-setting.md`
+
+Evaluates whether literary-mode techniques (defamiliarization, image systems, subtext, recognition architecture) do narrative work or are cosmetic. 22 flags across 5+1 dimensions. 9 genre-hybrid calibrations.
+
+**Activated when:** Contract identifies literary or upmarket mode.
+
+#### Additional Genre/Mode Audits
+
+These audits activate based on contract signals. Load the full module from `specialized-audits/references/` when activated.
+
+| Audit | Module Location | Activates When |
+|---|---|---|
+| Mystery/Thriller Architecture | `references/genre/mystery-thriller-architecture.md` | Mystery or thriller in contract |
+| Horror Craft Integration | `references/genre/horror-craft.md` | Horror or horror-hybrid in contract |
+| SFF Worldbuilding Integration | `references/genre/sff-worldbuilding.md` | SF/F in contract |
+| Memoir/Creative Nonfiction | `references/genre/memoir-creative-nonfiction.md` | Memoir or personal narrative in contract |
+| Narrative Nonfiction Craft | `references/genre/narrative-nonfiction.md` | Nonfiction with narrative ambitions |
+| Historical Fiction | `references/genre/historical-fiction.md` | Historical setting (>50 years before composition) |
+| Comedy & Satire | `references/genre/comedy-satire.md` | Comedic voice or satirical intent |
+| Character Architecture (full) | `references/craft/character-architecture.md` | Truby Part 9 (moral argument) activated by Pass 5 findings or author request |
+
+### Tag Audits (cross-genre modifiers)
+
+Tag audits evaluate experience-layer promises that sit on top of any genre's structural contract. Activate when contract or marketing signals the tag.
+
+| Audit | Module Location | Activates When |
+|---|---|---|
+| Erotic Content | `references/tag/erotic-content.md` | Heat level > 0 or intimate scenes present |
+| Consent Complexity | `references/tag/consent-complexity.md` | Consent narratively interrogated, power dynamics central |
+| Cozy Tag | `references/tag/cozy-tag.md` | Cozy signaling in marketing or tone |
+| Philosophical Tag | `references/tag/philosophical-tag.md` | Philosophical themes, novel of ideas |
+| Queer Romance/Erotica | `references/tag/queer-romance-erotica.md` | Queer identity central to romance/erotica |
+
+### Supplementary Audit Integration Protocol
+
+1. **Timing:** Supplementary audits run after all activated passes are complete. They consume pass findings as input. They produce companion findings documents.
+2. **Synthesis integration:** Audit findings fold into the editorial letter's "What Needs Work" sections — organized by problem, not by audit name. The reader shouldn't need to know which framework found the issue.
+3. **Dashboard integration:** Stakes System feeds Component 8 (Stakes Ladder). Decision Pressure feeds a decision module (option-visibility trend, tradeoff payment trend, climax integrity status). Force Architecture feeds action-sequence tracking if physical conflict is present.
+4. **Cross-audit coordination:** When multiple audits flag the same scene or decision, coordinate findings. The synthesis should present the unified diagnosis, not three separate audit outputs pointing at the same problem.
+5. **Firewall compliance:** All supplementary audits maintain the firewall. They diagnose; they do not prescribe specific content, scenes, or dialogue.
 
 ---
 
@@ -151,6 +258,10 @@ The Core DE editorial letter format (§Core DE Synthesis in `references/run-core
 5. **Contract confirmation** can appear as a brief paragraph in "The Short Version" or as a short section between "The Short Version" and "What the Book Does Best."
 
 **Pass 11 integration:** Hard Truths fold into "The Strongest Case Against." Revision Economics fold into the Revision Checklist. Three-Lens Verdict and Market Reality Check may appear as a brief section between "Revision Checklist" and "The Strongest Case Against," or in an appendix, depending on manuscript context.
+
+**Supplementary audit integration:** Audit findings fold into "What Needs Work" alongside pass findings — organized by problem, not by audit name. The reader never encounters a section titled "Stakes System Findings" or "Decision Pressure Results." Instead, audit evidence strengthens existing sections or creates new headed subsections when it surfaces problems no pass detected. Audit-specific artifacts (Decision Event Map, Stakes Ladder Map, Force Architecture tracking) are referenced in the letter body as needed and listed in Appendix A. The dashboard (see below) visualizes audit-sourced data in Components 8-9+; the letter *argues from* that data.
+
+**Cross-audit overlap rule:** When multiple audits diagnose the same scene or decision point, the letter presents the unified diagnosis once and cites whichever audit's vocabulary is most clarifying. It does not repeat the same problem from three audit perspectives.
 
 ### Diagnostic Dashboard
 
@@ -339,11 +450,54 @@ Act III | All axes       | Immediate  | ↑ Peak
 
 ---
 
+#### Component 9: Decision Pressure Map
+
+**Source:** Decision Pressure Audit (Supplementary)
+
+**Format:** One row per major decision point. Columns: scene, decision, option visibility (how many alternatives the character/reader can see), tradeoff cost (what the character pays), pivot integrity (does the decision change the trajectory?), and channel flags.
+
+```
+Decision Point          | Opt-Vis | Tradeoff  | Pivot? | Flags
+------------------------+---------+-----------+--------+------
+Ch 3: Accepts the deal  | 3 opts  | Career    | ✓ Yes  | —
+Ch 7: Betrays ally      | 1 opt   | None seen | ✓ Yes  | AV-1, TR-1  [FLAG]
+Ch 10: Final confession | 2 opts  | Identity  | ✓ Yes  | —
+Ch 14: Climax choice    | 1 opt   | Unclear   | ✓ Yes  | AV-2, CS-2, TR-3  [FLAG]
+...
+```
+
+**Below:** Option visibility trend (should widen then narrow toward climax — premature narrowing flags AV-2). Tradeoff payment trend (should escalate — cost-free decisions flag TR-1). Climax integrity verdict: does the final decision meet all seven channel thresholds?
+
+**Diagnostic value:** Shows whether major decisions are plausible under pressure. Flags: option suppression (character has no visible alternatives), cost-free pivots (decisions without tradeoffs), information-state violations (character acts on knowledge they shouldn't have), deferred consequence erasure (decisions stop mattering).
+
+**Pairing:** Read alongside Component 8 (Stakes Ladder). Strong stakes + weak decisions = Decision Pressure problem. Weak stakes + weak decisions = Stakes problem first.
+
+---
+
+#### Component 10: Force/Action Tracking (conditional)
+
+**Source:** Force Architecture Audit (Supplementary) — include only when audit was activated.
+
+**Format:** One row per physical conflict event. Columns: scene, combatants, force type (interpersonal / structural / environmental), consequence (what changed), persistence (does the change carry forward?), and flags.
+
+```
+Scene  | Combatants      | Force Type     | Consequence        | Persists? | Flags
+-------+-----------------+----------------+--------------------+-----------+------
+Ch 5   | Protag vs Guard | Interpersonal  | Injury (arm)       | ✓ 3 ch    | —
+Ch 8   | Protag vs Storm | Environmental  | Route changed      | ✓ rest    | —
+Ch 12  | Protag vs Antag | Interpersonal  | Protag wins        | ✗ reset   | FA-8  [FLAG]
+...
+```
+
+**Diagnostic value:** Shows whether force events produce lasting change or are spectacle loops. Flags: consequence reset (injury/damage disappears), choreography fog (action becomes illegible), force without conversion (violence that changes nothing).
+
+---
+
 #### Dashboard Assembly Rules
 
-1. **Order:** Components appear in the order listed above (pacing → emotional → structural → agency → scene function → promise/payoff → reveal → stakes). This follows the logic of the Full DE pass sequence.
+1. **Order:** Components 1-8 appear in pass sequence order (pacing → emotional → structural → agency → scene function → promise/payoff → reveal → stakes). Components 9-10 appear after the core sequence; conditional components (Force/Action Tracking) appear only when their source audit was activated.
 
-2. **Length target:** 3-6 pages total. Each component should fit in roughly half a page. The dashboard is a reference artifact, not a second editorial letter — keep it tight.
+2. **Length target:** 3-7 pages total. Core components (1-8) should fit in roughly half a page each. Audit-sourced components (9-10) can be briefer if findings are sparse. The dashboard is a reference artifact, not a second editorial letter — keep it tight.
 
 3. **Cross-referencing:** Where a dashboard component reveals a finding that appears in the editorial letter, add a brief pointer: "(See editorial letter: [section heading])." Don't duplicate the argument.
 
@@ -351,7 +505,9 @@ Act III | All axes       | Immediate  | ↑ Peak
 
 5. **Genre module additions.** Genre modules may specify additional columns, rows, or components (e.g., Horror adds a "dread trajectory" row to the Pacing Heat Map; Mystery adds a "clue economy" component). These insert into the relevant component, not as separate sections.
 
-6. **Confidence markers.** Dashboard findings don't carry individual confidence tags (the visualizations speak for themselves), but the top of the file should note: "This dashboard reflects findings from Passes 1-10. Confidence levels for individual diagnoses appear in the editorial letter."
+6. **Conditional components.** Components sourced from supplementary audits only appear when those audits ran. Component 8 (Stakes Ladder) and Component 9 (Decision Pressure Map) appear for every Full DE (since those audits are universally recommended). Component 10 (Force/Action Tracking) appears only when Force Architecture audit was activated. Genre audits that produce dashboard-compatible data (Mystery/Thriller clue economy, Horror dread trajectory) integrate into existing components per Rule 5 rather than creating new components.
+
+7. **Confidence markers.** Dashboard findings don't carry individual confidence tags (the visualizations speak for themselves), but the top of the file should note: "This dashboard reflects findings from Passes 1-10 and supplementary audits. Confidence levels for individual diagnoses appear in the editorial letter."
 
 ---
 
