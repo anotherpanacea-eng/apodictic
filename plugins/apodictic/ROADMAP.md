@@ -1,6 +1,6 @@
 # APODICTIC Post-Publication Roadmap
 
-**Version:** v0.4.15 (first alpha)
+**Version:** v0.4.17
 **Date:** 2026-02-21
 
 What to build after publication, organized by priority.
@@ -10,14 +10,6 @@ What to build after publication, organized by priority.
 ## v1.1 — Immediate Post-Launch
 
 High-value additions that extend what's already built. No new architectural decisions required.
-
-### Supplementary Audit Completion
-
-**Stakes System Audit** and **Decision Pressure Audit** are currently stubs in `run-full.md` — brief tracking specs with no named diagnostic flags, severity levels, or reference files. Every other audit has either full inline detail or a dedicated reference file. These have neither.
-
-Build each to match the standard audit template: named flags (5-8 per audit), severity levels (STRUCTURAL BREAK / FLAG FOR REVIEW / SOFT FLAG), genre calibrations, false positive warnings, and a reference file in `specialized-audits/references/craft/`.
-
-The Stakes Ladder component of the Diagnostic Dashboard depends on the Stakes System Audit being fully specified, so this is also a dashboard dependency.
 
 ### Submission Readiness Workflow (P1)
 
@@ -126,6 +118,18 @@ The current plugin has one large `core-editor` skill containing all passes. Quer
 - Macro block definitions for user-facing output organization (pass results grouped by block, not by number)
 
 **Sequencing note:** This item depends on the Intake Router. The router determines the user's concern; the dependency map determines which passes to run. Build the router first, then layer query-driven execution on top. The two can share a release if the dependency map ships as a reference file and the router adds a concern-classification step to Q2.
+
+### Router Runtime / Design Split (P2)
+
+`intake-router.md` currently serves as both runtime decision table and design document. The full file (~13K bytes) loads on every `/start` invocation, but only the question flow, option sets, and route map are needed at runtime. The design notes, rationale, and gap flags are valuable documentation but consume context window space unnecessarily in early turns — space that could hold more manuscript text.
+
+**What to build:**
+- Split `intake-router.md` into two files: `intake-router-runtime.md` (question flow, option tables, route map — the minimum the LLM needs to execute routing) and `intake-router-design.md` (axis model rationale, design notes, gap flags, relationship to commands — reference documentation)
+- Update `/start` command to load only the runtime file
+- Update all references across the plugin (SKILL.md, changelog, etc.)
+- Evaluate other large reference files for similar splits (`run-core.md` at ~26K, `run-full.md` at ~34K, `specialized-audits/SKILL.md` at ~15K)
+
+**Context:** Identified in Codex review (P2 #5, v0.4.17). Deferred because the split touches every file that references `intake-router.md` and benefits most from being done alongside the broader context-window optimization in Query-Driven Pass Architecture below.
 
 ### Intake Router Implementation
 
