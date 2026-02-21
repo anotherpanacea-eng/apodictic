@@ -107,6 +107,35 @@ Generate `Contract_and_Controlling_Idea.md` containing:
 - Selected genre modules and specialized audits
 - Confirmed non-negotiables
 
+### Audit Activation at Contract
+
+After generating the contract, recommend specialized audits based on genre, mode, and content signals. These audits run after core passes (or after full passes if Full DE is triggered) and produce companion findings that feed the synthesis.
+
+**Contract-driven activation rules:**
+
+| Signal in Contract | Recommended Audits | Rationale |
+|---|---|---|
+| Thriller or Suspense | Stakes System, Decision Pressure, Mystery/Thriller Architecture | Thriller contract demands escalating pressure field, credible urgent choices, and information-pressure delivery |
+| Mystery or Investigation | Decision Pressure, Mystery/Thriller Architecture, Stakes System | Mystery contract demands evidence-governed choices, clue economy, and consequence architecture |
+| Romance | Emotional Craft, Decision Pressure | Romance contract demands felt emotional transmission and credible commitment/withdrawal choices |
+| Horror | Stakes System, Emotional Craft, Horror Craft | Horror contract demands consequence delivery, dread transmission, and sustained pressure |
+| Literary or Upmarket | Scene Turn, Emotional Craft, Literary Craft, Decision Pressure | Literary mode demands scene-level precision, emotional specificity, prose-as-structure integration, and psychologically precise choices |
+| SFF (Science Fiction / Fantasy) | SFF Worldbuilding, Stakes System | SFF contract demands world-rule integrity and system-scale consequence |
+| Significant physical conflict present | Force Architecture | Any manuscript where physical confrontation carries narrative weight |
+| Memoir, personal essay, creative nonfiction | Memoir/CNF (Gornick Layer), Franklin Pathway | Memoir requires situation/story distinction and narrating intelligence; Franklin tests pre-spine viability |
+| Narrative nonfiction, reported feature, profile | Narrative Nonfiction Craft (Hart), Franklin Pathway | Nonfiction with narrative ambitions requires scene construction and source integration diagnostics |
+| Composite novel or series | Series/Composite Novel | Multi-part works require standalone function and distance management |
+| Heat level > 0 or erotic content present | Erotic Content Tag | Intimate scenes require load-bearing vs. decorative analysis |
+| Consent complexity, power dynamics central | Consent Complexity | Works where consent is narratively interrogated, not just present |
+| Cozy signaling in marketing or tone | Cozy Tag | Cozy promise requires safety envelope and recovery rhythm diagnostics |
+| Philosophical themes, novel of ideas | Philosophical Tag, Dialectical Clarity | Idea-driven work requires question architecture and rhetorical fairness |
+| Historical setting (>50 years before composition) | Historical Fiction | Period settings require authenticity and attitude diagnostics |
+| Significant female characters in any genre | Female Interiority | Tracks persistent inner life across all scene types; catches interiority thinning |
+
+**Activation is recommendation, not mandate.** Present the recommended audit list to the author at intake. Author can accept, decline, or add audits. Record selections in the contract document.
+
+**Minimum recommendation:** Every manuscript should receive at least Stakes System and Decision Pressure recommendations, since both address universal craft concerns (pressure architecture and choice plausibility).
+
 ---
 
 ## Core DE Passes
@@ -155,6 +184,12 @@ Read as a naive reader. Track emotional and cognitive response only.
 
 **Output:** Reader experience log with tagged failures and promise drift warnings.
 
+**Finding-driven audit triggers:**
+- 3+ belief failures ("I don't buy this decision/reaction") → recommend **Decision Pressure** audit if not already activated
+- Emotional flatness or melodrama logged at 3+ scenes → recommend **Emotional Craft** audit
+- "Stakes feel low" or "I don't care what happens" at 2+ points → recommend **Stakes System** audit
+- Action/fight scenes that break immersion → recommend **Force Architecture** audit
+
 ### Pass 2: Structural Mapping
 
 Map the narrative architecture.
@@ -188,6 +223,10 @@ Before calculating any proportions, measure word counts programmatically:
 
 **Output:** Beat map, causal chain, structural flags, **proportional distribution table**.
 
+**Finding-driven audit triggers:**
+- Scene-level causal gaps or arbitrary breaks at 3+ scenes → recommend **Scene Turn** audit (Bickham) if not already activated
+- Nonfiction manuscript with situation overwhelming story → recommend **Franklin Pathway** if not already activated
+
 ### Pass 5: Character Audit
 
 Model character psychology and track through manuscript.
@@ -217,6 +256,11 @@ Model character psychology and track through manuscript.
 
 **Output:** Character cards, agency timeline.
 
+**Finding-driven audit triggers:**
+- Motivation discontinuity or puppet moments at 2+ major decisions → recommend **Decision Pressure** audit if not already activated
+- Agency collapse in Act III → recommend **Stakes System** audit (pressure field may not be converting)
+- Character wants/fears under-specified → recommend full **Character Architecture** specialized audit (Truby Part 9: moral argument coupling)
+
 ### Pass 8: Reveal Economy
 
 Track information flow.
@@ -241,6 +285,28 @@ Track information flow.
 
 **Output:** Reveal ledger, fairness flags.
 
+**Finding-driven audit triggers:**
+- Knowledge errors (character acts on information they shouldn't have) → recommend **Decision Pressure** audit (IS channel)
+- Information timing issues affecting character decision credibility → coordinate Decision Pressure IS flags with Reveal Economy findings
+
+---
+
+### Audit Integration Point
+
+After all core passes are complete and before writing the synthesis:
+
+1. **Review accumulated audit triggers.** Compile all finding-driven recommendations from Passes 1, 2, 5, and 8.
+2. **Compare against contract-activated audits.** If a finding-driven trigger recommends an audit already activated at contract, confirm it should run. If it recommends an audit not activated at contract, present the recommendation to the author with evidence.
+3. **Run activated audits.** Load the full specialized audit module from `specialized-audits/references/` and apply to the manuscript. Each audit produces its own findings document.
+4. **Feed audit findings into synthesis.** Specialized audit findings integrate into the editorial letter's "What Needs Work" sections — organized by problem, not by audit name. The author reads about the book's needs, not about which framework found the issue.
+
+**Minimum audit recommendations for every manuscript:**
+- **Stakes System** — universal pressure architecture diagnostic
+- **Decision Pressure** — universal choice plausibility diagnostic
+- **Scene Turn** (Bickham) — universal scene-level mechanics diagnostic
+
+These three audits address craft concerns that apply regardless of genre. They should be recommended at intake and confirmed by the author.
+
 ---
 
 ## Core DE Synthesis
@@ -253,14 +319,21 @@ The synthesis is the author-facing editorial letter. It must read as one informe
 
 1. **Intent Check Loop.** Before finalizing any flag, verify against stated intent: "I detect [observation] in [location]. Is this the [stated intentional element], or unintentional?" Do not flag elements that align with contract, controlling idea, or stated non-negotiables.
 
-2. **Root Cause Analysis.** Identify 3-5 root causes (maximum 5). If more than 5 seem present, flag that manuscript may need reconception.
+2. **Audit Finding Consolidation.** Before root cause analysis, integrate supplementary audit findings with pass findings. Consolidation rules:
+   - **Map audit flags to pass findings.** Each audit flag should connect to the pass finding(s) that triggered or support it. Audit flags that duplicate a pass finding are evidence for that finding, not separate items.
+   - **Cluster by problem, not by audit.** If Stakes System flags STX-2 (Abstract Risk Persistence) and Decision Pressure flags AV-1 (Option Suppression) at the same decision point, they describe one problem (the decision fails because stakes are too abstract to generate real options), not two.
+   - **Preserve audit-specific diagnosis when distinct.** If an audit surfaces a problem that no pass detected (e.g., Decision Pressure identifies a pattern of deferred consequence erasure that passes didn't flag), it enters root cause analysis as a distinct finding.
+   - **Count consolidated problems, not individual flags.** A single root cause may have 8 audit flags supporting it. The flags are evidence; the root cause is what enters triage.
+   - **Carry audit artifacts forward.** Audit-specific tracking artifacts (Decision Event Map, Stakes Ladder Map, Scene Turn code inventory, etc.) become appendix material. They support the editorial letter's arguments but don't appear in the letter body.
 
-3. **Triage.** Assign severity to each finding:
+3. **Root Cause Analysis.** Identify 3-5 root causes (maximum 5) from consolidated pass + audit findings. If more than 5 seem present, flag that manuscript may need reconception. Audit findings that cluster under the same root cause strengthen the diagnosis; they don't multiply the root cause count.
+
+4. **Triage.** Assign severity to each finding:
    - **Must-Fix:** Book-breaking (max 10)
    - **Should-Fix:** Significant diminishment (max 15)
    - **Could-Fix:** Polish (no cap, deprioritized)
 
-4. **Adversarial Self-Check (required before writing the letter).** Re-evaluate findings in both directions — test whether each severity is too soft (under-diagnosed) or too harsh (over-escalated). Adjust if the adversarial case is stronger than the original assignment. Record the results.
+5. **Adversarial Self-Check (required before writing the letter).** Re-evaluate findings in both directions — test whether each severity is too soft (under-diagnosed) or too harsh (over-escalated). Adjust if the adversarial case is stronger than the original assignment. Record the results.
 
    **Upward pressure (testing for softening):** For each Should-Fix flag, state in one sentence why it should be Must-Fix. If the Must-Fix case is stronger, upgrade. For each Mixed axis, state in one sentence why it should be Weak. If the Weak case is stronger, downgrade.
 
@@ -268,7 +341,7 @@ The synthesis is the author-facing editorial letter. It must read as one informe
 
    **Evidence check (both directions):** For each Must-Fix flag, confirm you have 2+ specific scene/line references. If not, either find them or downgrade your confidence (not the severity).
 
-5. **Write the editorial letter** using the presentation format below. The self-check informs the letter's severities; it does not appear in the letter's body.
+6. **Write the editorial letter** using the presentation format below. The self-check informs the letter's severities; it does not appear in the letter's body.
 
 **Key principle:** Processing order ≠ presentation order. The self-check must happen before writing, but in the output document it belongs in an appendix. The author reads findings; the framework owner reads methodology.
 
@@ -311,7 +384,7 @@ Follow the table with:
 **6. The Strongest Case Against.** The rejection memo, reframed for the author. Write it as: "If I were arguing for passing on this manuscript..." State the case in 1-2 paragraphs. Reference findings from the letter — no new uncited claims. End by assessing whether the case wins or loses, and why.
 
 **7. Appendices.**
-- **Appendix A: Diagnostic Detail.** Pointers to companion pass files with brief descriptions of what each contains.
+- **Appendix A: Diagnostic Detail.** Pointers to companion pass files and supplementary audit findings with brief descriptions of what each contains. For each supplementary audit that ran, list its companion findings file and any tracking artifacts produced (e.g., Decision Event Map, Stakes Ladder Map, Scene Turn code inventory). Group pass files first, then audit findings.
 - **Appendix B: Severity Calibration.** Compressed summary of the adversarial self-check — which findings were tested, in which direction, whether any severities were adjusted.
 - **Appendix C: Framework Notes.** Analysis version, model, run date, passes completed, protocol flags, prior analyses on file, cross-version stability notes (if applicable).
 

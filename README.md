@@ -2,7 +2,29 @@
 
 Developmental editing that listens before diagnosing.
 
-AI-powered developmental editing framework for fiction and narrative nonfiction. Diagnoses structural issues in manuscripts through systematic passes, genre-calibrated analysis, and specialized audits.
+## Why This Exists
+
+Every AI writing tool I tried wanted to rewrite my prose. I didn't need a co-writer. I needed what a good developmental editor does — read my manuscript, figure out what it's trying to be, and tell me where it's working and where it isn't. Structurally. Without touching my sentences.
+
+So I built one.
+
+## How It Works
+
+APODICTIC reads a manuscript, predicts its "contract" (genre, reader promise, controlling idea) from the text alone, then measures the work against that contract. When the inferred contract doesn't match what you intended, that's the diagnostic signal — it means the text isn't communicating what you think it is.
+
+It runs 11 analytical passes: reverse outline, reader experience mapping, structural diagnosis, character architecture, reveal economy, pacing analysis, and more — all calibrated to your genre. Genre modules adjust what counts as a problem. A slow opening is a feature in literary fiction, a defect in a thriller.
+
+**The Firewall:** APODICTIC diagnoses problems and identifies classes of solution. It never invents content — no new plot events, characters, dialogue, or imagery. You're the writer. It's the analyst.
+
+## Beyond Full Edits
+
+APODICTIC isn't just for finished drafts.
+
+- **Pre-writing pathway** for writers who have an idea but no manuscript — takes you from seed to draftable structure
+- **Plot coach** with 48 structural spines across 12 families (not just three-act)
+- **18 specialized audits:** scene function, shelf positioning, emotional craft, AI-prose detection, worldbuilding integration, series architecture, and more
+- **4 internet-enabled research modes** for comp validation, fact-checking, genre currency, and representation context
+- **Genre calibration** across literary fiction, horror, mystery, thriller, SF/F, romance, and hybrids
 
 ## Install
 
@@ -11,22 +33,9 @@ AI-powered developmental editing framework for fiction and narrative nonfiction.
 /plugin install apodictic@apodictic
 ```
 
-Then run `/start` to begin.
+Then type `/start` — it asks you three questions to figure out what you need.
 
-## What It Does
-
-The Development Editor works like a human developmental editor: it reads a manuscript, infers what it's trying to do, and diagnoses where it succeeds or struggles. The system listens first — inferring authorial intent from the text — before measuring the work against that intent.
-
-**Key design principle:** The editor predicts the manuscript's contract (genre, reader promise, controlling idea) from the text alone. Misalignments between the inferred contract and the author's stated intent are diagnostically valuable — they reveal where the text doesn't communicate what the author intended.
-
-**The Firewall:** The system diagnoses problems and identifies classes of solution. It never invents content (new plot events, characters, dialogue, imagery). The author creates; the system analyzes.
-
-## Components
-
-- **core-editor** — The main workflow: intake protocol, 11 analysis passes, synthesis, revision rounds, genre calibration
-- **pre-writing-pathway** — Guides writers from idea to draftable structure (no manuscript required)
-- **plot-architecture** — Plot structure diagnosis (48 spines across 12 families), selection coaching, fantasy and series architecture
-- **specialized-audits** — 18 deep-dive audits, 3 tag audits, and 4 internet-enabled research modes
+Requires Claude Code 1.0.33+ or Cowork mode.
 
 ## Commands
 
@@ -41,10 +50,6 @@ The Development Editor works like a human developmental editor: it reads a manus
 | `/plot-coach` | Plot structure selection and coaching |
 | `/audit [name]` | Run a specialized audit (no argument lists all available) |
 | `/research [mode]` | Run a research mode (no argument lists all available) |
-
-## Requirements
-
-Claude Code 1.0.33+ or Cowork mode.
 
 ## License
 
