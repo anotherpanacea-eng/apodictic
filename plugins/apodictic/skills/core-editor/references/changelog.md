@@ -5,6 +5,28 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v0.4.16 - 2026-02-21
+
+### Added — Synthesized Audits and Integration Pipeline
+- **Stakes System audit** (craft/stakes-system.md + craft/stakes-system-level-setting.md). Three-model synthesis (Opus46, Codex53, Gemini). 22 named diagnostic flags across 6 channels (STX, PC, IM, EG, MP, CL). 4 tracking artifacts. Four-tier distinguish framework. Production audit + level-setting companion.
+- **Decision Pressure audit** (craft/decision-pressure.md + craft/decision-pressure-level-setting.md). Three-model synthesis (Opus46, Codex53, Gemini). 23 named diagnostic flags across 7 channels (AV, CS, IS, EC, RF, TR, PV). 6 tracking artifacts. Four-tier distinguish framework. Production audit + level-setting companion.
+- **AUDIT_SELECTION_MATRIX.md** — comprehensive routing guide covering all 11 sections: fast entry router, core/full DE passes, Pass 11, craft audits, structural modules, genre audits, tag audits, research modes, recommended bundles, and minimal rule of thumb.
+
+### Added — Audit Integration into Pass Sequence
+- **Contract-driven audit activation** at intake (run-core.md): 17-row table mapping genre/mode signals to recommended audits.
+- **Finding-driven audit triggers** across 7 passes: Pass 1 (belief failures → DP, emotional flatness → EC, low stakes → SS, action immersion → FA), Pass 2 (causal gaps → Scene Turn, nonfiction situation overwhelming → Franklin), Pass 3 (intensity plateau → SS, pacing stalls → Scene Turn), Pass 4 (triple stasis → EC, intensity plateau → SS, certainty static → Horror/Mystery-Thriller), Pass 5 (motivation discontinuity → DP, agency collapse → SS, under-specified wants → Character Architecture), Pass 6 (single/zero-function → Scene Turn, setup debt → SS), Pass 8 (knowledge errors → DP IS channel, information timing → DP + Reveal Economy).
+- **Audit Integration Point** in run-core.md: 4-step protocol for compiling triggers, comparing against contract, running audits, feeding into synthesis.
+- **Supplementary Audit Integration Protocol** in run-full.md: 5 rules covering timing, synthesis integration, dashboard feeds, cross-audit coordination, firewall compliance.
+
+### Changed — Synthesis and Output Capacity
+- **Processing Protocol** expanded from 5 to 6 steps. New Step 2: Audit Finding Consolidation with 5 rules (map to pass findings, cluster by problem not audit, preserve audit-unique findings, count consolidated problems not flags, carry artifacts to appendices).
+- **Appendix A** spec expanded to include audit companion files and tracking artifacts.
+- **Full DE letter spec** updated with supplementary audit integration guidance and cross-audit overlap rule.
+- **Dashboard** expanded from 8 to 10 components: Component 9 (Decision Pressure Map — option visibility, tradeoff cost, pivot integrity), Component 10 (Force/Action Tracking — conditional on Force Architecture audit). Assembly rules updated for conditional components and expanded length target.
+
+### Changed — Supplementary Audits Section
+- **run-full.md** Supplementary Audits section replaced (~20-line stub → ~120-line comprehensive section): Universal Audits (Stakes System, Decision Pressure, Scene Turn, Emotional Craft) with pass connections and pairing logic; Genre/Mode Audits with activation table; Tag Audits table; Integration Protocol.
+
 ## v0.4.15 - 2026-02-21 (First Alpha Release)
 
 ### Changed — Full Rebrand
