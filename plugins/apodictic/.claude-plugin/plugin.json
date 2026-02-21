@@ -1,0 +1,17 @@
+{
+  "name": "apodictic",
+  "version": "0.4.15",
+  "description": "APODICTIC: anotherpanacea's Development Editor. Developmental editing that listens before diagnosing. Provides structural diagnosis, genre calibration, tag audits, plot architecture analysis, revision coaching, pre-writing pathway, and intake routing across 11 core passes, 18 specialized audits, 3 tag audits, 4 research modes, 1 pre-writing pathway, and 1 intake router.",
+  "author": {
+    "name": "Joshua A. Miller, PhD"
+  },
+  "keywords": [
+    "writing",
+    "editing",
+    "fiction",
+    "developmental-editing",
+    "manuscript-analysis",
+    "plot-structure",
+    "genre-calibration"
+  ]
+}
