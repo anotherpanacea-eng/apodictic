@@ -21,13 +21,15 @@ description: >
   "force architecture," "force delivery," "inert force," "inert action,"
   "action choreography," "fight scenes," "combat architecture,"
   "do the fights work," "is the action landing,"
+  "stakes system," "stakes audit," "stakes feel low," "pressure architecture,"
+  "decision pressure," "choice plausibility," "I don't buy why they did that,"
   "erotic content," "erotic tag," "heat level," "consent calculus,"
   "intimate scenes," "sex scenes work," "escalation audit,"
   "decorative kink," "static heat," "erotic craft,"
   or any request for a focused manuscript audit beyond the core development
   edit passes. Also triggers on "list audits," "what audits are available,"
   or "help audits."
-version: 0.4.14
+version: 0.4.17
 ---
 
 # Specialized Audits & Research Modes
@@ -36,10 +38,19 @@ Deep-dive analytical tools that supplement the core development edit. Each audit
 
 ## Available Audits
 
+### Universal Audits (recommend for every manuscript)
+
+| Audit | Purpose | When to Activate |
+|-------|---------|-----------------|
+| **Stakes System** | Pressure architecture: escalation geometry, consequence engine, multi-axis pressure, climax load. 22 diagnostic flags across 6 channels (STX, PC, IM, EG, MP, CL) | Universal — recommended at intake for every manuscript. "Stakes feel low," intensity plateau, consequence deficit |
+| **Decision Pressure** | Choice plausibility: option visibility, constraint specificity, information-state integrity, tradeoff reality, pivot integrity. 23 diagnostic flags across 7 channels (AV, CS, IS, EC, RF, TR, PV) | Universal — recommended at intake for every manuscript. "I don't buy why they did that," convenient pivots, obvious alternatives unaddressed |
+| **Scene Turn** | Scene-level mechanics, entry/exit charge, turn identification (Bickham). G-, C-, O-, Sq-, H-, U-, P-code flag system | Universal — recommended at intake for every manuscript. Scene-level pacing, "nothing happens" concerns |
+
+### Craft Audits
+
 | Audit | Purpose | When to Activate |
 |-------|---------|-----------------|
 | **Character Architecture** | Psychology engine, arc types, agency quotient, voice distinctiveness | Character concerns, puppet moments, voice drift |
-| **Scene Turn** | Scene-level mechanics, entry/exit charge, turn identification | Scene-level pacing, "nothing happens" concerns |
 | **Emotional Craft** | Emotional precision, earned moments, sentiment tracking | Emotional flatness, melodrama, unearned catharsis |
 | **Dialectical Clarity** | Argument structure, thesis-antithesis balance, rhetorical fairness | Theme-heavy work, philosophical fiction, didacticism concerns |
 | **Shelf Positioning** | Target reader, genre contract, comp validation, signal audit | Pre-submission, market positioning, genre straddling |
@@ -136,9 +147,15 @@ See `references/craft/shelf-positioning.md` for the full audit.
 
 ## Reference Files
 
-### Craft Audits (universal)
+### Universal Audits (recommend for every manuscript)
+- `references/craft/stakes-system.md` — Stakes System audit (22 flags, 6 channels)
+- `references/craft/stakes-system-level-setting.md` — Stakes System level-setting brief
+- `references/craft/decision-pressure.md` — Decision Pressure audit (23 flags, 7 channels)
+- `references/craft/decision-pressure-level-setting.md` — Decision Pressure level-setting brief
+- `references/craft/scene-turn.md` — Scene Turn audit (Bickham)
+
+### Craft Audits
 - `references/craft/character-architecture.md` — Full Character Architecture audit
-- `references/craft/scene-turn.md` — Scene Turn audit
 - `references/craft/emotional-craft.md` — Emotional Craft audit
 - `references/craft/dialectical-clarity.md` — Dialectical Clarity audit
 - `references/craft/shelf-positioning.md` — Shelf & Positioning audit

@@ -5,6 +5,25 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v0.4.17 - 2026-02-21
+
+### Fixed — Audit Discovery and Invocation (Codex review)
+- **`/audit` command** expanded from 17 to 28 entries. Now lists all current audits organized by category: Universal (3), Craft (15), Genre (4), Tag (3), Plot (1 cross-reference). Previously missing: Stakes System, Decision Pressure, Force Architecture, Literary Craft, Horror Craft, Mystery/Thriller Architecture, SFF Worldbuilding, Cozy Tag, Philosophical Tag, Erotic Content.
+- **`/develop-edit` workflow order** corrected: audit integration now happens after core passes and before synthesis (step 4), matching `run-core.md` §Audit Integration Point. Previously synthesis preceded audit evaluation.
+- **`specialized-audits/SKILL.md` catalog** updated: Stakes System, Decision Pressure, and Scene Turn now listed as Universal Audits in both the Available Audits table and Reference Files section. Previously missing from both.
+- **Intake router** (`intake-router.md`): added "Run a focused audit on a specific concern" option (E) for full_draft artifact, with corresponding route map entry. Previously no audit route was reachable for complete drafts via `/start`.
+- **README.md** counts updated: "23 specialized audits, 5 tag audits" (was "18 deep-dive audits, 2 tag audits"); "28 available audits" (was "17"); version line updated.
+
+### Added — Audit Invocation Log
+- New artifact in `run-core.md` §Audit Integration Point: `[Project]_Audit_Invocation_Log_[runlabel].md`. Tracks every audit considered during a run with source (universal/contract/finding-driven), status (run/skipped/deferred), and reason. Referenced in `/develop-edit` step 4.
+
+### Changed — Legacy Module Index
+- **`module-index.md`** marked as legacy reference with deprecation header. File paths reference pre-plugin directory structure and do not match current package. Users directed to `AUDIT_SELECTION_MATRIX.md` and `specialized-audits/SKILL.md` for current routing and file paths.
+- **`core-editor/SKILL.md`** reference to `module-index.md` annotated as legacy with redirect to current sources.
+
+### Deferred
+- **P2 #5 (Token overhead / router split):** Splitting `intake-router.md` into a short runtime decision table and a separate design document would reduce early-turn context consumption. Deferred to future version — requires updating all references and the `/start` command.
+
 ## v0.4.16 - 2026-02-21
 
 ### Added — Synthesized Audits and Integration Pipeline

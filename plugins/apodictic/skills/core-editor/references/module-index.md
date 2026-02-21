@@ -1,20 +1,23 @@
 # APODICTIC Development Editor: Module Index
 
+> **LEGACY REFERENCE — DO NOT USE FOR ROUTING OR FILE LOOKUPS.**
+> This file preserves the pre-plugin directory structure and module catalog from v0.4.4–v0.4.14. File paths in this document reference the old standalone directory layout and do not match the current plugin package structure. For current audit routing, use `AUDIT_SELECTION_MATRIX.md`. For current file paths, use `specialized-audits/SKILL.md` (§Reference Files) and `core-editor/SKILL.md` (§Reference Files). Audit counts and module lists here are stale.
+
 ## Core Framework
 
 | File | Description |
 |------|-------------|
-| `AI_Development_Editor_Framework_v0.4.md` | Core framework (genre-agnostic) |
+| `AI_Development_Editor_Framework_v0.4.md` | Core framework (genre-agnostic) — **legacy path; see `core-editor/SKILL.md`** |
 
 The core framework handles passes, synthesis, deliverables, and philosophy. Genre modules and specialized audits bolt on without modifying the core.
 
-**Source-of-truth note:** `SKILL.md` is the canonical operational spec.  
-`Module_Index.md` and `AI_Development_Editor_Complete_v0.4.4.md` are reference mirrors and may lag.
+**Source-of-truth note:** `SKILL.md` is the canonical operational spec.
+`Module_Index.md` is a legacy reference mirror and lags behind current plugin contents.
 
 If instructions conflict:
 1. `SKILL.md` wins for workflow behavior.
 2. Dedicated module files win for module-specific rules.
-3. Consolidated/reference docs defer.
+3. This file and other consolidated/reference docs defer.
 
 **Branding note:** Public-facing name is `APODICTIC Development Editor (APDE)`.  
 Legacy filenames containing `AI_Development_Editor_*` remain for backward compatibility.
