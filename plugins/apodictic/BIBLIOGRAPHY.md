@@ -5,7 +5,7 @@
 
 This bibliography collects theoretical sources, craft references, and fiction exemplars cited across the APODICTIC Development Editor framework. Sources were identified during three-model synthesis research (Claude/Opus, Codex, Gemini) and verified against audit and level-setting files.
 
-**A note on citation accuracy:** Many of these references were surfaced by AI models during level-setting research. Publication details have been verified where possible, but some entries (particularly page numbers and exact publication years for reprinted editions) may require confirmation. Where a source is paraphrased rather than directly quoted in the audit files, the citation reflects the concept attributed, not a direct quotation.
+**A note on citation accuracy:** Many of these references were surfaced by AI models during level-setting research. Publication details have been verified where possible, but some entries (particularly exact publication years for reprinted editions) may require confirmation. Where a source is paraphrased rather than directly quoted in the audit files, the citation reflects the concept attributed, not a direct quotation.
 
 **Built with assistance from Claude (Anthropic), Codex (OpenAI), and Gemini (Google).**
 
@@ -21,7 +21,7 @@ These six books directly shaped specific APODICTIC modules. Each is named as the
 | Franklin, Jon | *Writing for Story* (1986) | Franklin Pathway (franklin-pathway.md) |
 | Gornick, Vivian | *The Situation and the Story* (2001) | Gornick Layer in Memoir/CNF audit |
 | Hart, Jack | *Storycraft: The Complete Guide to Writing Narrative Nonfiction* (2011) | Narrative Nonfiction Craft audit; Franklin Pathway diagnostics |
-| Maass, Donald | *The Emotional Craft of Fiction* (2016) | Influenced Emotional Craft audit design (not yet explicitly integrated) |
+| Maass, Donald | *The Emotional Craft of Fiction* (2016) | Influenced Emotional Craft audit design |
 | Truby, John | *The Anatomy of Story* (2007) | Character Architecture Part 9 (moral argument coupling) |
 
 ---
