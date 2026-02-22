@@ -5,7 +5,8 @@
 # Usage: ./scripts/bump-version.sh 1.0.0
 #
 # Canonical source: plugins/apodictic/.claude-plugin/plugin.json
-# Also updates:     4 SKILL.md frontmatter version: fields
+# Also updates:     .claude-plugin/marketplace.json (both version fields)
+#                   4 SKILL.md frontmatter version: fields
 #
 # Does NOT touch: changelog entries, deprecated file banners,
 # individual audit/genre provenance versions, output template footers.
@@ -34,7 +35,16 @@ else
   echo "  MISSING  $PLUGIN_JSON"
 fi
 
-# 2. SKILL.md frontmatter (4 files)
+# 2. marketplace.json (both metadata.version and plugin entry version)
+MARKETPLACE_JSON="$REPO_ROOT/.claude-plugin/marketplace.json"
+if [ -f "$MARKETPLACE_JSON" ]; then
+  sed -i '' "s/\"version\": \"[^\"]*\"/\"version\": \"${NEW_VERSION}\"/g" "$MARKETPLACE_JSON"
+  echo "  updated  $MARKETPLACE_JSON"
+else
+  echo "  MISSING  $MARKETPLACE_JSON"
+fi
+
+# 3. SKILL.md frontmatter (4 files)
 SKILL_FILES=(
   "$PLUGIN_DIR/skills/core-editor/SKILL.md"
   "$PLUGIN_DIR/skills/pre-writing-pathway/SKILL.md"
@@ -52,7 +62,7 @@ for f in "${SKILL_FILES[@]}"; do
 done
 
 echo "────────────────────────────────────"
-echo "Done. 5 files updated to v${NEW_VERSION}."
+echo "Done. 6 files updated to v${NEW_VERSION}."
 echo ""
 echo "Next steps:"
 echo "  1. Add a changelog entry in references/changelog.md"
