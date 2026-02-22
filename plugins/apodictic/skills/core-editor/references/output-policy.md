@@ -28,6 +28,7 @@ All DE outputs are author-facing documents. Framework shorthand — pass numbers
 - Every flag requires 2-4 specific scene/page references
 - Quote budget: ≤25 words per excerpt, or paraphrase + pointer
 - Every proposed fix must list what it risks harming
+- **Fix-Diagnosis Coherence Test (required):** Before finalizing any proposed intervention, verify that the fix addresses the *mechanism* of the diagnosed problem, not just its surface symptom. If the diagnosis is "Character X lacks narrative agency," a fix that adds more male-gaze contemplation of Character X deepens the problem. Ask: "Does this intervention change the mechanism, or does it add surface content that leaves the mechanism intact?" If the latter, revise the intervention class or flag it as insufficient.
 
 ---
 
