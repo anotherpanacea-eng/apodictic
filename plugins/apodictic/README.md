@@ -117,7 +117,7 @@ Internet-enabled research to validate comps, check facts, verify genre currency,
 
 ## Framework Version
 
-v0.4.19 — 48 plot spines across 12 families, 23 specialized audits, 5 tag audits, 4 research modes, 11 core passes, the evaluative Pass 11 gate, the pre-writing pathway, and the intake router. Includes contract-driven and finding-driven audit integration pipeline with 3 universal audits (Stakes System, Decision Pressure, Scene Turn).
+Current version is in `.claude-plugin/plugin.json`. Capabilities: 48 plot spines across 12 families, 23 specialized audits, 5 tag audits, 4 research modes, 11 core passes, the evaluative Pass 11 gate, the pre-writing pathway, and the intake router. Includes contract-driven and finding-driven audit integration pipeline with 3 universal audits (Stakes System, Decision Pressure, Scene Turn).
 
 ## License
 

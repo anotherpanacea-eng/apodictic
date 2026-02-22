@@ -5,6 +5,21 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.0.0 - 2026-02-22
+
+### 1.0 Release
+
+v0.5 UX overhaul is complete: query-driven pass architecture, intake router, scene-level handoff, command alias model, overview dashboard, route explorer. The plugin is navigable by newcomers. Tagging 1.0.
+
+### Changed — Version Hygiene
+- Stripped decorative version numbers from ROADMAP.md, README.md, core-editor SKILL.md body header, AUDIT_SELECTION_MATRIX.md, route explorer HTML.
+- Removed hardcoded version strings from output template footers (diagnostic-state-template.md, contract-template.md, reverse-outline-template.md, pass-11.md, pre-writing-pathway SKILL.md).
+- Canonical version now lives exclusively in `plugin.json` + 4 SKILL.md frontmatter fields.
+- Added `scripts/bump-version.sh` to update all 5 locations from a single command.
+
+### Fixed — Audit Resolver Names
+- Reconciled 3 string mismatches: "Erotic Content tag" → "Erotic Content", "Character Architecture (deep)" → "Character Architecture", "Banister" → "Banister (Epistemic Humility)".
+
 ## v0.4.19 - 2026-02-22
 
 ### Added — v0.5 Integration Files (Runtime)

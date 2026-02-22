@@ -1,7 +1,7 @@
 # APODICTIC Post-Publication Roadmap
 
-**Version:** v0.4.19
 **Date:** 2026-02-22
+**Current version:** See `plugins/apodictic/.claude-plugin/plugin.json`
 
 What to build next, organized by priority. UX work gates 1.0; feature additions follow.
 
@@ -146,9 +146,9 @@ A static, single-file HTML overview of the plugin's capabilities — the map at 
 
 ---
 
-## v1.0 — Public Release Gate
+## v1.0 — Public Release Gate ✓
 
-When the v0.5 UX overhaul ships, the plugin is navigable by newcomers. Tag 1.0.
+Shipped 2026-02-22. v0.5 UX overhaul complete: query-driven passes, intake router, scene-level handoff, command alias model, overview dashboard. Plugin is navigable by newcomers.
 
 ---
 
