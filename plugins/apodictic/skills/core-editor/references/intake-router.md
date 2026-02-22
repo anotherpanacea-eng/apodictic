@@ -1,5 +1,12 @@
 # Intake Router v1
 
+> DEPRECATED (v0.4.19)
+>
+> This file is retained for archival reference only.
+> Runtime routing now lives in `references/intake-router-runtime.md`.
+> Design rationale now lives in `references/intake-router-design.md`.
+> Do not load this file for `/start`.
+
 **Status:** Draft
 **For:** APODICTIC Development Editor v0.4.14.3
 **Last updated:** February 2026

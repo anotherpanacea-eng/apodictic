@@ -7,7 +7,7 @@ description: >
   draft," "plot coaching," "hybrid structure," "fantasy spine," "series
   architecture," or any request involving narrative spine identification,
   plot selection guidance, or structural coaching.
-version: 0.4.14.3
+version: 0.4.19
 ---
 
 # Plot Architecture, Selection & Coaching

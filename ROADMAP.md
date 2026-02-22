@@ -1,41 +1,15 @@
 # APODICTIC Post-Publication Roadmap
 
-**Version:** v0.4.17
-**Date:** 2026-02-21
+**Version:** v0.4.19
+**Date:** 2026-02-22
 
-What to build after publication, organized by priority.
-
----
-
-## v1.1 — Immediate Post-Launch
-
-High-value additions that extend what's already built. No new architectural decisions required.
-
-### Submission Readiness Workflow (P1)
-
-The most-requested missing workflow. A writer with a finished draft asks "is this ready to submit?" Currently they'd need to know to run Core DE and then separately request Pass 11. The workflow should be a single entry point that runs Core DE → Synthesis → Pass 11, and produces a unified readiness assessment covering structural health, market positioning, and query/synopsis diagnostics.
-
-**What to build:**
-- A `/submit` command (or integrate into `/start` routing for `full_draft + submit`)
-- Unified output artifact: `[Project]_Submission_Readiness_[runlabel].md`
-- Query letter/synopsis diagnostic (currently not built — new capability)
-- Readiness verdict: structured recommendation with caveats
-
-### Fast Triage Mode (P2)
-
-A 30-60 minute go/no-go assessment for deadline-constrained writers. Runs Pass 1 (Reader Experience) only, produces a triage memo with maximum 3 interventions. Defers the full diagnostic machine.
-
-**What to build:**
-- A `constraint:time` modifier in the intake router (spec exists in `intake-router.md`)
-- Truncated Core DE: Pass 1 → triage memo → exit
-- Triage memo output template with strict caps (3 interventions, 1-2 pages)
-- Clear language: "This is a quick read, not a full edit. Come back when the deadline passes."
+What to build next, organized by priority. UX work gates 1.0; feature additions follow.
 
 ---
 
-## v1.2 — UX Overhaul
+## v0.5 — UX Overhaul (Pre-1.0)
 
-The command structure reflects framework internals. This release makes the plugin feel like a product.
+The command structure reflects framework internals. This release makes the plugin feel like a product. These items gate the 1.0 label — the framework is built, but a newcomer can't navigate it yet.
 
 ### Query-Driven Pass Architecture (P1)
 
@@ -172,7 +146,39 @@ A static, single-file HTML overview of the plugin's capabilities — the map at 
 
 ---
 
-## v1.3 — Artifact Coverage
+## v1.0 — Public Release Gate
+
+When the v0.5 UX overhaul ships, the plugin is navigable by newcomers. Tag 1.0.
+
+---
+
+## v1.1 — Immediate Post-1.0
+
+High-value additions that extend what's already built. No new architectural decisions required.
+
+### Submission Readiness Workflow (P1)
+
+The most-requested missing workflow. A writer with a finished draft asks "is this ready to submit?" Currently they'd need to know to run Core DE and then separately request Pass 11. The workflow should be a single entry point that runs Core DE → Synthesis → Pass 11, and produces a unified readiness assessment covering structural health, market positioning, and query/synopsis diagnostics.
+
+**What to build:**
+- A `/submit` command (or integrate into `/start` routing for `full_draft + submit`)
+- Unified output artifact: `[Project]_Submission_Readiness_[runlabel].md`
+- Query letter/synopsis diagnostic (currently not built — new capability)
+- Readiness verdict: structured recommendation with caveats
+
+### Fast Triage Mode (P2)
+
+A 30-60 minute go/no-go assessment for deadline-constrained writers. Runs Pass 1 (Reader Experience) only, produces a triage memo with maximum 3 interventions. Defers the full diagnostic machine.
+
+**What to build:**
+- A `constraint:time` modifier in the intake router (spec exists in `intake-router.md`)
+- Truncated Core DE: Pass 1 → triage memo → exit
+- Triage memo output template with strict caps (3 interventions, 1-2 pages)
+- Clear language: "This is a quick read, not a full edit. Come back when the deadline passes."
+
+---
+
+## v1.2 — Artifact Coverage
 
 Extend the plugin to handle manuscript states beyond "complete draft" and "idea."
 
@@ -206,7 +212,7 @@ Series writers working across multiple books. Diagnostic state persists across v
 
 ---
 
-## v1.4 — Goal & Constraint Expansion
+## v1.3 — Goal & Constraint Expansion
 
 ### Feedback Triage Workflow (P3)
 
@@ -236,7 +242,7 @@ Legal/sensitivity risk register for manuscripts with potentially actionable cont
 
 ---
 
-## v1.5 — Operator Expansion
+## v1.4 — Operator Expansion
 
 ### Editor Scaffolding Mode (P4)
 
@@ -264,7 +270,7 @@ For co-authoring teams. Priority conflict resolution, sign-off workflow, change 
 
 ---
 
-## v2.0 — Format & Cadence
+## v1.5 — Format & Cadence
 
 ### Episode Cadence Workflow (P4)
 
@@ -286,10 +292,32 @@ New specialized audits should be built from real editorial engagements, not hypo
 2. Structural spec phase (named flags, dimensions, hard gates, subgenre calibrations, distinguish framework)
 3. Three-model synthesis for quality assurance
 
-**Candidate genres for future audits** (no commitment — build when manuscripts demand them):
+**Seeded candidates** — reference texts identified, ready for level-setting when manuscripts demand them:
+
+**YA / Kidlit (genre module).** No age-targeted module exists. Needs: protagonist age-authority dynamics, voice register calibration (too-adult vs. condescending), first-experience plot drivers, pacing expectations distinct from adult fiction. One module with MG/YA subgenre variation (like Literary handles realist vs. experimental), since pass modifications overlap and differences are mostly severity thresholds and voice calibration.
+- Mary Kole — *Writing Irresistible Kidlit*
+- Deborah Halverson — *Writing Young Adult Fiction For Dummies*
+
+**Supernatural Horror (genre module).** Explicitly flagged in `genre-horror.md` as distinct from Psychological Horror and not yet built. Needs different machinery from psych horror: rule consistency for supernatural systems (borrows SFF Rule Ledger logic), escalation through revelation rather than destabilization, uncanny-to-confirmed spectrum. Shares the Horror Craft audit but loads different pass modifications.
+- Tim Waggoner — *Writing in the Dark*
+- Mort Castle (ed.) — *On Writing Horror*
+- Dan Coxon (ed.) — *Writing the Uncanny* (strongest for uncanny/supernatural logic flags)
+
+**Grimdark / Dark Fantasy (tag audit, not genre module).** Tonal modifier that layers onto Fantasy, Historical Fiction, or Literary — same architecture as Cozy Tag and Philosophical Tag. Core diagnostic: is grimness load-bearing or decorative? Is consequence functioning as world-logic or aesthetic wallpaper?
+- Rayne Hall — *Writing Dark Stories* (darkness dial / consequence calibration)
+- Jeff VanderMeer — *Wonderbook* (world texture / strangeness-as-craft — also has SFF worldbuilding value)
+
+**Military / War Fiction Plausibility (audit or research mode — scope TBD).** Narrower than the others. Needs: tactical plausibility, violence-meaning relationship (Force Architecture covers some), institutional voice, deployment-narrative pacing. May be better as a subgenre variation within Historical Fiction or as a specialized research mode rather than a full standalone audit. Build only if demand materializes.
+- Benjamin Sobieck — *The Writer's Guide to Weapons* (plausibility/risk-flag reference)
+
+**Dialectical Clarity enrichment (audit deepening, not new build).** Dialectical Clarity and Banister audits already exist. Graff & Birkenstein and Heinrichs would enrich the existing audit rather than create something new. The larger gap is the Franklin Class 3 path ("Argument With Embedded Narrative"), which is stubbed but not built — that's a v1.3 item (Nonfiction Pre-Draft Pathway). Deepen the existing audit first; let Class 3 come with v1.3.
+- Graff & Birkenstein — *They Say / I Say*
+- Jay Heinrichs — *Thank You for Arguing*
+
+**Unseeded candidates** (no reference texts yet — build when manuscripts demand them):
 - Western
 - Thriller subtypes (medical, techno, eco)
-- Children's/Middle Grade (structural differences from YA/adult)
+- Children's/Middle Grade (structural differences from YA — may fold into YA/Kidlit module)
 - Poetry (entirely different analytical framework)
 - Graphic novel/comics (visual storytelling integration)
 - Interactive fiction / game narrative

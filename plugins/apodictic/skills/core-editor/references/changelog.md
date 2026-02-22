@@ -5,6 +5,36 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v0.4.19 - 2026-02-22
+
+### Added — v0.5 Integration Files (Runtime)
+- Added `references/pass-dependencies.md` to core-editor references and wired it into pass resolution flow.
+- Added split router files: `references/intake-router-runtime.md` (runtime) and `references/intake-router-design.md` (design notes).
+- Added `references/handoff-protocol.md` and integrated scene-level handoff mode transitions.
+- Added `overview-dashboard.html` to plugin root.
+
+### Changed — Core Runtime Wiring
+- `/start` now runs a mode-aware resume gate before router Q1. If `Diagnostic_State.md` indicates execution mode, it presents: Check the fix / Keep working / Start fresh.
+- `core-editor/SKILL.md` now uses concern-driven pass resolution (`pass-dependencies.md`) instead of fixed tier framing.
+- `run-core.md` now explicitly resolves concern -> minimum pass set -> dependencies, with baseline floor fallback and optional scene-level handoff behavior.
+- `run-full.md` reframed from trigger-gated language to expansion-policy language aligned with resolver auto-escalation.
+- `diagnostic-state-template.md` now includes `Mode` and append-only `Handoff History` schema.
+
+### Changed — Command Alias Model
+- `/develop-edit` is now defined as a `/start` shortcut with prefilled `artifact=full_draft`, `goal=repair`.
+- `/pre-writing` is now defined as a `/start` shortcut with prefilled `artifact=idea`, `goal=draft`.
+- `/diagnose` is now defined as targeted resolver routing (`goal=repair`, concern-required).
+- `pre-writing-pathway/SKILL.md` now accepts router output as prefilled intake context and skips redundant prompts.
+
+### Changed — Handoff Semantics
+- `handoff-protocol.md` language updated from "unload skill" to "suspend/re-enable core-editor constraints" to match actual behavior-contract capabilities.
+
+### Version Reconciliation
+- Updated plugin manifest version to `0.4.19` (`.claude-plugin/plugin.json`).
+- Updated `core-editor/SKILL.md` version markers to `0.4.19`.
+- Updated `README.md` framework version to `v0.4.19`.
+- Updated roadmap header version to `v0.4.19`.
+
 ## v0.4.17 - 2026-02-21
 
 ### Fixed — Audit Discovery and Invocation (Codex review)

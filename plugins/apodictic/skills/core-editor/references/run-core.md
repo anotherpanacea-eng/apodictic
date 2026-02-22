@@ -8,7 +8,7 @@
 
 ### Router Integration
 
-If the user arrived via the `/start` intake router, the router has already classified: artifact (what they have), goal (what they need), and any constraint/operator modifiers. Use the router output to skip redundant questions and calibrate the intake below. See `references/intake-router.md` for the full routing spec.
+If the user arrived via the `/start` intake router, the router has already classified: `artifact`, `goal`, `concern`, `constraints`, and `operator`. Treat these as pre-filled intake values, skip redundant questions, and calibrate the intake below. See `references/intake-router-runtime.md` for runtime routing behavior.
 
 If the user arrived via `/develop-edit` or direct request, run intake from scratch as described below.
 
@@ -98,6 +98,8 @@ Ask with explicit hypotheses. Format: *"My hypothesis is [X]. Is this accurate?"
 24. Known problems?
 25. Willing to cut 10-20%? Change POV, tense, order?
 
+If router output already answered any of these, do not ask again unless clarification is required.
+
 ### Output: Contract Document
 
 Generate `Contract_and_Controlling_Idea.md` containing:
@@ -109,7 +111,7 @@ Generate `Contract_and_Controlling_Idea.md` containing:
 
 ### Audit Activation at Contract
 
-After generating the contract, recommend specialized audits based on genre, mode, and content signals. These audits run after core passes (or after full passes if Full DE is triggered) and produce companion findings that feed the synthesis.
+After generating the contract, recommend specialized audits based on genre, mode, and content signals. These audits run after core passes (or after expanded pass sets when advanced passes are selected) and produce companion findings that feed the synthesis.
 
 **Contract-driven activation rules:**
 
@@ -138,7 +140,22 @@ After generating the contract, recommend specialized audits based on genre, mode
 
 ---
 
-## Core DE Passes
+## Pass Resolution (Query-Driven)
+
+Resolve pass scope before running diagnostics:
+
+1. Load `references/pass-dependencies.md`.
+2. Resolve user concern to minimum pass set via the concern table.
+3. Add upstream dependencies automatically.
+4. Order execution by dependency tier.
+5. Run synthesis after selected passes complete.
+6. If selected set includes Pass 3, 4, 6, 7, 9, or 10, load `references/run-full.md` for those pass specifications.
+
+If concern is absent or ambiguous, default to **General diagnostic** baseline (Passes 0, 1, 2, 5, 8).
+
+Pass specifications below define how each pass runs once selected.
+
+## Core DE Pass Specifications
 
 ### Pass 0: Reverse Outline
 
@@ -424,6 +441,19 @@ After writing the editorial letter, update `Diagnostic_State.md` with:
 - Change log
 
 If `Diagnostic_State.md` does not exist in the project output context, create it from `references/diagnostic-state-template.md` first.
+
+---
+
+## Scene-Level Handoff (Optional)
+
+When a diagnosis is complete for a clearly scoped scene and the writer wants help executing the fix, run `references/handoff-protocol.md`.
+
+- Require explicit confirmation before mode switch.
+- Append a new entry to `Handoff History` (never overwrite prior entries).
+- Set `Mode.Current` to `execution` and set `Active scene scope`.
+- In execution mode, diagnostic constraints are suspended; prose-level collaboration is allowed.
+- Return to diagnostic mode via phrase trigger ("back to editor", "resume editor", "check this fix") or the `/start` resume gate.
+- On re-entry, run a targeted delta check for the active scope, close the handoff entry, and reset mode to `diagnostic`.
 
 ---
 

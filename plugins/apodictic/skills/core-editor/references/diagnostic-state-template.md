@@ -1,5 +1,13 @@
 # Diagnostic State
 
+## Mode
+
+**Current:** diagnostic
+**Last transition:** [date], [diagnostic -> execution | execution -> diagnostic], [trigger]
+**Active scene scope:** [scene reference, or "none"]
+
+---
+
 ## Current Session
 
 **Date:**
@@ -118,5 +126,33 @@
 
 ---
 
-*Framework: APODICTIC Development Editor (APDE) v0.4.14.3*
+## Handoff History
+
+### Handoff 1
+**Scene:** [scene reference - chapter, page range, or scene number from reverse outline]
+**Entered execution:** [date]
+**Diagnosis:** [specific findings for this scene from relevant pass(es)]
+**Intervention class:** [structural requirement only]
+**Contract excerpt:** [relevant contract fields]
+**Severity:** [Must-Fix / Should-Fix / Could-Fix]
+**Relevant pass findings:** [brief pass excerpts informing the diagnosis]
+**Returned to diagnostic:** [date, or "still in execution"]
+**Outcome:** [resolved / partially resolved / unresolved / new issues found]
+**Delta notes:** [what changed, what persists]
+
+### Handoff 2
+**Scene:**
+**Entered execution:**
+**Diagnosis:**
+**Intervention class:**
+**Contract excerpt:**
+**Severity:**
+**Relevant pass findings:**
+**Returned to diagnostic:**
+**Outcome:**
+**Delta notes:**
+
+---
+
+*Framework: APODICTIC Development Editor (APDE) v0.4.19*
 *Last updated: February 2026*

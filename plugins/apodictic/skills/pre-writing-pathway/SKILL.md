@@ -5,7 +5,7 @@ description: >
   draft-ready structure. Use when the user asks to "plan a story," "outline
   a novel," "develop a premise," "figure out my book," "structure my idea,"
   or any request for help moving from concept to ready-to-draft planning.
-version: 0.4.14
+version: 0.4.19
 ---
 
 # Pre-Writing Pathway
@@ -26,6 +26,28 @@ The Firewall still applies: the pathway helps the writer discover what they want
 - Writer has finished one project and wants to start the next
 
 **Does NOT activate for:** Writers with a complete draft (route to Core DE), writers stuck mid-draft (route to Core DE with partial-manuscript intake flag — see §9 capability gap: "Partial Manuscript Diagnostic"), writers with a draft needing revision (route to Core DE revision round).
+
+---
+
+## Router Integration
+
+When entered via `/start`, accept router output as pre-filled context:
+
+```
+artifact: [idea | fragments | partial | full_draft | series]
+goal: [draft | repair | submit]
+concern: [specific concern or general]
+constraints: [list]
+operator: [author | editor | facilitator | team]
+```
+
+Use prefilled values to skip redundant intake prompts:
+
+- `artifact=idea` + `goal=draft`: run standard Phase 0 -> Phase 6 flow.
+- `artifact=fragments`: start at Phase 1 Seed Inventory with fragment consolidation emphasis.
+- `artifact=partial` + rethink route: run pre-writing re-entry mode; import known structural decisions before Phase 2+.
+
+Do not re-ask "what do you have?" when router already answered it unless the user indicates the classification is wrong.
 
 ---
 
@@ -372,7 +394,7 @@ This section is required even when the plan feels solid. If the pathway cannot i
 
 ---
 
-*Framework: APODICTIC Development Editor (APDE) v0.4.14.3*
+*Framework: APODICTIC Development Editor (APDE) v0.4.19*
 *Pathway: Pre-Writing*
 *Writer mode: [Architecture-first / Discovery-first]*
 *Status: Prospective contract — not yet validated against manuscript text*
