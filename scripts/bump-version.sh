@@ -9,7 +9,8 @@
 #                   4 SKILL.md frontmatter version: fields
 #
 # Does NOT touch: changelog entries, deprecated file banners,
-# individual audit/genre provenance versions, output template footers.
+# individual audit/genre provenance versions, output template footers,
+# sample-editorial-letter.html (historical run label, not current version).
 
 set -euo pipefail
 
@@ -23,13 +24,24 @@ NEW_VERSION="$1"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLUGIN_DIR="$REPO_ROOT/plugins/apodictic"
 
+# Portable in-place sed: macOS needs -i '', GNU/Linux needs -i
+sedi() {
+  if sed --version >/dev/null 2>&1; then
+    # GNU sed
+    sed -i "$@"
+  else
+    # BSD/macOS sed
+    sed -i '' "$@"
+  fi
+}
+
 echo "Bumping APODICTIC to v${NEW_VERSION}"
 echo "────────────────────────────────────"
 
 # 1. plugin.json (canonical)
 PLUGIN_JSON="$PLUGIN_DIR/.claude-plugin/plugin.json"
 if [ -f "$PLUGIN_JSON" ]; then
-  sed -i '' "s/\"version\": \"[^\"]*\"/\"version\": \"${NEW_VERSION}\"/" "$PLUGIN_JSON"
+  sedi "s/\"version\": \"[^\"]*\"/\"version\": \"${NEW_VERSION}\"/" "$PLUGIN_JSON"
   echo "  updated  $PLUGIN_JSON"
 else
   echo "  MISSING  $PLUGIN_JSON"
@@ -38,7 +50,7 @@ fi
 # 2. marketplace.json (both metadata.version and plugin entry version)
 MARKETPLACE_JSON="$REPO_ROOT/.claude-plugin/marketplace.json"
 if [ -f "$MARKETPLACE_JSON" ]; then
-  sed -i '' "s/\"version\": \"[^\"]*\"/\"version\": \"${NEW_VERSION}\"/g" "$MARKETPLACE_JSON"
+  sedi "s/\"version\": \"[^\"]*\"/\"version\": \"${NEW_VERSION}\"/g" "$MARKETPLACE_JSON"
   echo "  updated  $MARKETPLACE_JSON"
 else
   echo "  MISSING  $MARKETPLACE_JSON"
@@ -54,7 +66,7 @@ SKILL_FILES=(
 
 for f in "${SKILL_FILES[@]}"; do
   if [ -f "$f" ]; then
-    sed -i '' "s/^version: .*/version: ${NEW_VERSION}/" "$f"
+    sedi "s/^version: .*/version: ${NEW_VERSION}/" "$f"
     echo "  updated  $f"
   else
     echo "  MISSING  $f"
