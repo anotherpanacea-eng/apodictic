@@ -244,8 +244,16 @@ During intake, identify the manuscript's genre and load the corresponding module
 | File | Purpose |
 |------|---------|
 | `references/changelog.md` | Version history |
-| `references/core-framework.md` | Reference mirror (defers to SKILL.md and reference files) |
-| `references/module-index.md` | **Legacy** module catalog (pre-plugin paths; do not use for routing or file lookups — see `AUDIT_SELECTION_MATRIX.md` and `specialized-audits/SKILL.md` instead) |
+
+### Deprecated (do not load)
+| File | Superseded by |
+|------|--------------|
+| `references/core-framework.md` | SKILL.md + run-core.md + run-full.md + all reference files |
+| `references/module-index.md` | `AUDIT_SELECTION_MATRIX.md` + `specialized-audits/SKILL.md` |
+| `references/intake-router.md` | `references/intake-router-runtime.md` + `references/intake-router-design.md` |
+| `references/intake-questions.md` | `references/run-core.md` §Hypothesis-Driven Intake Questions |
+| `references/certainty-axis.md` | `references/run-full.md` §Certainty Axis Cues |
+| `references/structural-frameworks.md` | `references/run-full.md` §Structural Frameworks |
 
 ---
 
