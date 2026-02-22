@@ -182,6 +182,94 @@
     margin: 1rem 0;
   }
 
+  /* Stress Test */
+  .stress-test-intro {
+    font-size: 0.92rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+
+  .stress-test-note {
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent);
+    padding: 0.7rem 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    border-radius: 0 4px 4px 0;
+    line-height: 1.6;
+  }
+
+  .stress-finding {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.15rem 1.35rem;
+    margin: 1.25rem 0;
+  }
+
+  .stress-finding h3 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .stress-finding .claim {
+    font-style: italic;
+    margin-bottom: 0.75rem;
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--border);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .stress-finding .field-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .stress-finding .field-row {
+    margin-bottom: 0.5rem;
+    font-size: 0.92rem;
+  }
+
+  .severity-badge {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .severity-damaging { background: #fef3c7; color: #92400e; }
+  .severity-fatal { background: #fee2e2; color: #991b1b; }
+  .severity-irritating { background: #e0f2fe; color: #0c4a6e; }
+
+  .verdict-badge {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .verdict-lands { background: #fee2e2; color: #991b1b; }
+  .verdict-partial { background: #fef3c7; color: #92400e; }
+  .verdict-no { background: #d1fae5; color: #065f46; }
+
+  .stress-summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.15rem 1.35rem;
+    margin-top: 1.5rem;
+  }
+
+  .stress-summary h3 {
+    margin-top: 0;
+  }
+
   /* Appendices */
   .appendices {
     margin-top: 3rem;
@@ -279,12 +367,12 @@
 </head>
 <body>
 
-<div class="sample-banner">Sample Output — APODICTIC Development Editor v1.0</div>
+<div class="sample-banner">Sample Output — APODICTIC Development Editor v1.0.1</div>
 
 <header>
   <h1>Development Edit: Dungeon Crawler Carl</h1>
   <div class="byline">Matt Dinniman · ~130,000 words · Published (Book 1 of 8, Ace Books / Penguin Random House)</div>
-  <div class="framework-stamp">APODICTIC Development Editor v1.0 — February 22, 2026</div>
+  <div class="framework-stamp">APODICTIC Development Editor v1.0.1 — February 22, 2026</div>
 </header>
 
 <div class="disclosure">
@@ -399,6 +487,56 @@
   <p>I don't think the case wins. Carl's refusal to be broken — "You will not break me. Fuck you all. You will not break me" — is the thesis. In a world designed to degrade, exploit, and destroy, his decency is not a starting position but an ongoing act of resistance. The emotional ceiling isn't a limitation; it's a wall he maintains, and the reader's investment is in whether the wall holds. The absence of grief isn't the absence of depth — it's a character who has decided, consciously or not, that grief is a luxury he cannot afford. The six million copies suggest the audience agrees: the stability is the product.</p>
 </div>
 
+<h2>Adversarial Reader Stress Test</h2>
+
+<p class="stress-test-intro">What would an uncharitable reader find wrong with this manuscript?</p>
+
+<div class="stress-test-note">
+  <strong>Contamination note:</strong> As with the rest of this analysis, the stress test cannot claim independent discovery. I know this book works because the market said so. The claims below are constructed from textual evidence, but a truly naive hostile reader might weight them differently than I can.
+</div>
+
+<div class="stress-finding">
+  <h3>Carl Is Good at Everything and It Never Costs Him</h3>
+  <div class="claim">"Carl is a competence-fantasy protagonist with no meaningful failure arc. He rigs a booby trap with dynamite on his first day. He figures out the bopper. He reads Frank's game-mechanic tells. He out-manipulates the Syndicate's entertainment economy at the Death Watch. When does he ever get something seriously wrong in a way that changes the story's direction? The cat is more interesting because she actually has to learn things."</div>
+  <p class="field-row"><span class="field-label">Where:</span> Murder dozer sequence (lines ~980–1110), Frank/Maggie encounter, Death Watch (line ~14000), and generally across all tactical sequences</p>
+  <p class="field-row"><span class="field-label">How serious:</span> <span class="severity-badge severity-damaging">Damaging</span> — would bother many readers outside LitRPG</p>
+  <p class="field-row"><span class="field-label">Best defense:</span> Carl's competence is the point. He's a construction manager and former military — his practical intelligence is established, not arbitrary. And the book's real stakes aren't tactical (will Carl survive this fight?) but moral and psychological (will Carl remain Carl?). The competence is the floor, not the ceiling.</p>
+  <p class="field-row"><span class="field-label">Does it land?</span> <span class="verdict-badge verdict-partial">Partially</span> The defense is strong for genre readers. For crossover readers, the absence of a significant tactical failure — a moment where Carl's plan backfires badly enough to force genuine adaptation rather than improvisation — flattens the survival tension. The reader learns early that Carl will figure it out. The question becomes how, not whether.</p>
+</div>
+
+<div class="stress-finding">
+  <h3>The Death Toll Is a Number, Not a Feeling</h3>
+  <div class="claim">"Billions of people die in this book. The text gives me three lines about Billy Maloney and a running death counter. I'm told the apocalypse happened but I'm never made to feel it. Carl processes the end of civilization the way he'd process a bad traffic jam — acknowledge it, move on, solve the next problem. If the book doesn't care about the dead, why should I?"</div>
+  <p class="field-row"><span class="field-label">Where:</span> Death counter references throughout, Billy Maloney (lines ~1411–1413), post-collapse narration</p>
+  <p class="field-row"><span class="field-label">How serious:</span> <span class="severity-badge severity-damaging">Damaging</span> — would bother some readers, particularly literary-crossover audience</p>
+  <p class="field-row"><span class="field-label">Best defense:</span> The emotional ceiling is Carl's coping mechanism, not the book's indifference. Carl can't afford grief — it would kill him. The humor-as-armor is the character's survival strategy, and the reader who recognizes it is experiencing something more complex than a book that doesn't care. Later books in the series reportedly crack this register.</p>
+  <p class="field-row"><span class="field-label">Does it land?</span> <span class="verdict-badge verdict-lands">Yes</span> The defense explains why Carl doesn't grieve, but explanation doesn't substitute for felt experience. The reader who needs to feel the weight of the dead — not just understand why Carl can't — will find the book emotionally thin where it should be devastating. The book chose speed over depth at these moments, and that's a trade-off some readers won't accept.</p>
+</div>
+
+<div class="stress-finding">
+  <h3>The Tutorial Is a Textbook You Have to Read Before the Novel Starts</h3>
+  <div class="claim">"I was fifty pages in and still being taught game mechanics. The Mordecai sequences read like a manual with dialogue tags. I came for a story about a man and his cat in a death dungeon and instead got sequential loot-box openings and system explanations. The voice kept me reading, but barely."</div>
+  <p class="field-row"><span class="field-label">Where:</span> Mordecai tutorial sequence (lines ~700–2200), loot-box exposition stretches, early mechanics onboarding</p>
+  <p class="field-row"><span class="field-label">How serious:</span> <span class="severity-badge severity-fatal">Fatal</span> — would cause abandonment in some readers (specifically: non-LitRPG readers sampling based on word-of-mouth)</p>
+  <p class="field-row"><span class="field-label">Best defense:</span> LitRPG readers expect and want this. The mechanics aren't padding — they're the foundation the reader needs to evaluate every subsequent tactical decision. The tutorial is infrastructure, and the payoff is that later combat sequences land with mechanical credibility instead of authorial fiat.</p>
+  <p class="field-row"><span class="field-label">Does it land?</span> <span class="verdict-badge verdict-partial">Partially</span> The defense is genre-accurate. But the claim isn't that the tutorial is unnecessary — it's that it's dramatically inert. The information could be delivered through higher-stakes scenes where learning the rules is urgent rather than instructional. The voice carries the stretch; the structure doesn't.</p>
+</div>
+
+<div class="stress-finding">
+  <h3>The Satirical Layer Is Clever but Never Cuts Deep</h3>
+  <div class="claim">"The book gestures at commentary — entertainment-as-exploitation, surveillance capitalism, the audience's complicity — but it never follows through. The Syndicate is evil in a comfortable way. The reality-TV framing is funny but it doesn't actually disturb. The patch notes treating death as a bug are great jokes, but they're jokes. A book this smart about systems should be angrier."</div>
+  <p class="field-row"><span class="field-label">Where:</span> Syndicate worldbuilding throughout, patch notes, Death Watch audience manipulation, Maestro's audience</p>
+  <p class="field-row"><span class="field-label">How serious:</span> <span class="severity-badge severity-irritating">Irritating</span> — would bother rare readers (primarily literary critics evaluating the book against its satirical potential)</p>
+  <p class="field-row"><span class="field-label">Best defense:</span> The book is a dungeon crawler, not a political novel. The satire works as atmospheric texture and tonal flavoring — it enriches without overwhelming. Asking it to be angrier is asking it to be a different book. And the Death Watch does follow through: Carl's "Fuck this" is a genuine political act within the entertainment economy.</p>
+  <p class="field-row"><span class="field-label">Does it land?</span> <span class="verdict-badge verdict-no">No</span> The defense wins. The satire operates at exactly the depth the book's contract promises. The Disappointed critic here is disappointed in a book that doesn't exist, not in the one that does. The Death Watch proves the satirical layer can bear weight when the book chooses to load it.</p>
+</div>
+
+<div class="stress-summary">
+  <h3>Stress Test Summary</h3>
+  <p><strong>Would this manuscript survive hostile scrutiny?</strong> Yes. The core strengths — voice, combat architecture, buddy dynamic, the Death Watch — absorb the hits. The two claims that land (competence-fantasy flatness and emotional thinness around the death toll) are real vulnerabilities, but they're the known costs of the book's tonal and structural choices, not failures of execution. A hostile reader would score points but wouldn't define the reading experience for the target audience.</p>
+  <p><strong>Which claims to address vs. accept as trade-offs:</strong> The death toll finding is the one worth addressing — not because the hostile reader is right that the book doesn't care, but because a single beat of genuine emotional weight would strengthen the book's best argument (that Carl's decency is an act of resistance) by showing what the resistance costs. The competence-fantasy concern is a trade-off to accept: undermining Carl's tactical reliability would damage the survival spine that everything else hangs on. The tutorial pacing is genre infrastructure. The satire depth is a mismatched expectation.</p>
+</div>
+
 <div class="appendices">
 
   <h3>Appendix A: Severity Calibration</h3>
@@ -424,7 +562,7 @@
 
   <dl class="framework-meta">
     <dt>Analysis version</dt>
-    <dd>APODICTIC Development Editor v1.0</dd>
+    <dd>APODICTIC Development Editor v1.0.1</dd>
     <dt>Model</dt>
     <dd>Claude Opus 4.6</dd>
     <dt>Run date</dt>
