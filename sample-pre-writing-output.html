@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APODICTIC Sample — Pre-Writing Pathway Output</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --text-secondary: #78716c;
+    --accent: #b45309;
+    --accent-light: #fef3c7;
+    --accent-hover: #92400e;
+    --engine-arendt: #dbeafe;
+    --engine-arendt-border: #1e40af;
+    --engine-varnhagen: #fce7f3;
+    --engine-varnhagen-border: #9d174d;
+    --open-q: #d1fae5;
+    --open-q-border: #059669;
+    --guardrail: #ede9fe;
+    --guardrail-border: #7c3aed;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+
+  header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+  }
+
+  header .subtitle {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+  }
+
+  header .meta {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  header .meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .meta-label {
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.7rem;
+  }
+
+  section {
+    margin-bottom: 2.5rem;
+  }
+
+  h2 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent-hover);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+  }
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    margin-bottom: 0.75rem;
+    font-size: 0.92rem;
+  }
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Controlling Idea Block */
+  .idea-block {
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.25rem;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 1.25rem;
+  }
+
+  .idea-block .idea-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent-hover);
+    margin-bottom: 0.35rem;
+  }
+
+  .idea-block .idea-text {
+    font-size: 0.95rem;
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  .idea-block .anti-idea {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+    font-style: normal;
+  }
+
+  /* Engine Cards */
+  .engine-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 640px) {
+    .engine-grid { grid-template-columns: 1fr; }
+  }
+
+  .engine-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    border-top: 3px solid var(--border);
+  }
+
+  .engine-card.arendt { border-top-color: var(--engine-arendt-border); }
+  .engine-card.varnhagen { border-top-color: var(--engine-varnhagen-border); }
+
+  .engine-card .engine-name {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .engine-card .engine-name .tag {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.1rem 0.45rem;
+    border-radius: 8px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  .engine-card.arendt .tag {
+    background: var(--engine-arendt);
+    color: var(--engine-arendt-border);
+  }
+
+  .engine-card.varnhagen .tag {
+    background: var(--engine-varnhagen);
+    color: var(--engine-varnhagen-border);
+  }
+
+  .engine-field {
+    margin-bottom: 0.6rem;
+    font-size: 0.85rem;
+  }
+
+  .engine-field:last-child { margin-bottom: 0; }
+
+  .engine-field .field-label {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.1rem;
+  }
+
+  /* Spine Block */
+  .spine-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .spine-block h3 {
+    margin-bottom: 0.75rem;
+  }
+
+  .spine-channels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  @media (max-width: 640px) {
+    .spine-channels { grid-template-columns: 1fr; }
+  }
+
+  .channel {
+    font-size: 0.82rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .channel.arendt { background: #f0f5ff; border-color: #bfdbfe; }
+  .channel.varnhagen { background: #fdf2f8; border-color: #fbcfe8; }
+
+  .channel .channel-label {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.2rem;
+  }
+
+  .channel.arendt .channel-label { color: var(--engine-arendt-border); }
+  .channel.varnhagen .channel-label { color: var(--engine-varnhagen-border); }
+
+  /* Decision Card */
+  .decision-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .decision-card h3 {
+    font-size: 0.95rem;
+  }
+
+  .decision-card p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  /* Open Questions */
+  .question-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .question-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--open-q-border);
+    border-radius: 0 6px 6px 0;
+    padding: 0.75rem 1rem;
+  }
+
+  .question-item .q-title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .question-item .q-note {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+  }
+
+  /* Guardrails */
+  .guardrail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  @media (max-width: 640px) {
+    .guardrail-grid { grid-template-columns: 1fr; }
+  }
+
+  .guardrail-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--guardrail-border);
+    border-radius: 0 6px 6px 0;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.82rem;
+  }
+
+  .guardrail-item .g-label {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--guardrail-border);
+    margin-bottom: 0.15rem;
+  }
+
+  /* Return Triggers */
+  .trigger-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .trigger-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .trigger-num {
+    background: var(--accent-light);
+    color: var(--accent-hover);
+    font-weight: 700;
+    font-size: 0.8rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .trigger-content .t-when {
+    font-weight: 600;
+    font-size: 0.88rem;
+  }
+
+  .trigger-content .t-what {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+  }
+
+  /* First Chapter */
+  .first-chapter {
+    background: var(--accent-light);
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 1.25rem;
+  }
+
+  .first-chapter h3 {
+    color: var(--accent-hover);
+    margin-bottom: 0.5rem;
+  }
+
+  .first-chapter p {
+    font-size: 0.9rem;
+  }
+
+  .first-chapter .kicker {
+    font-style: italic;
+    color: var(--accent-hover);
+    margin-top: 0.5rem;
+    font-size: 0.88rem;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    line-height: 1.6;
+  }
+
+  footer .scaffold-note {
+    font-style: italic;
+    margin-bottom: 0.5rem;
+    font-size: 0.82rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sample Pre-Writing Pathway Output</h1>
+  <div class="subtitle"><em>Pariah and Parvenu</em> &mdash; a historical novel about Hannah Arendt and Rahel Varnhagen</div>
+  <div class="meta">
+    <span><span class="meta-label">Document Type</span> Minimal Viable Plan (MVP)</span>
+    <span><span class="meta-label">Writer Mode</span> Discovery-first</span>
+    <span><span class="meta-label">Pathway</span> Pre-Writing</span>
+    <span><span class="meta-label">Status</span> Prospective scaffold</span>
+  </div>
+  <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:1rem; max-width:600px; margin-left:auto; margin-right:auto;">This is a sample output from APODICTIC's Pre-Writing Pathway. The writer arrived with an idea and no manuscript. The pathway identified the controlling idea, built protagonist engines, selected a structural spine, and produced this scaffold to draft against.</p>
+</header>
+
+<!-- PREMISE -->
+<section>
+  <h2>Premise</h2>
+  <p>A dual-timeline novel interleaving the life of Hannah Arendt with the life of Rahel Varnhagen, connected by Arendt's decades-long biographical project on Varnhagen. Not hagiography&mdash;a story about a woman who diagnosed another woman's failure and may have been blind to her own version of it.</p>
+</section>
+
+<!-- CONTROLLING IDEA -->
+<section>
+  <h2>Controlling Idea</h2>
+  <div class="idea-block">
+    <div class="idea-label">Provisional</div>
+    <div class="idea-text">Understanding someone else's self-deception does not immunize you against your own. The diagnosis becomes its own form of blindness&mdash;you think you've escaped the trap by naming it, but naming it is its own trap.</div>
+    <div class="anti-idea"><strong>Anti-idea:</strong> Knowledge protects. If you can see clearly what went wrong for someone before you, you can avoid their mistakes.</div>
+  </div>
+</section>
+
+<!-- PROTAGONIST ENGINES -->
+<section>
+  <h2>Protagonist Engines</h2>
+
+  <div class="engine-grid">
+    <div class="engine-card arendt">
+      <div class="engine-name">Hannah Arendt <span class="tag">Protagonist</span></div>
+      <div class="engine-field">
+        <span class="field-label">Surface Want</span>
+        To understand Varnhagen. To get the diagnosis right. To write the biography.
+      </div>
+      <div class="engine-field">
+        <span class="field-label">Deep Need</span>
+        To reckon with her own vulnerability to the patterns she diagnoses in Rahel&mdash;particularly around love, particularly around Heidegger.
+      </div>
+      <div class="engine-field">
+        <span class="field-label">The Lie</span>
+        "I am not Rahel. Because I can see what she couldn't, I am protected from it." The philosopher's immunity&mdash;analysis as antidote. Thought protects.
+      </div>
+      <div class="engine-field">
+        <span class="field-label">The Fear</span>
+        That she is Rahel. That the differences between them are cosmetic. That at the deepest level she made the same bargain and told herself a better story about it.
+      </div>
+      <div class="engine-field">
+        <span class="field-label">Want-Need Tension</span>
+        The harder Arendt works to diagnose Rahel's failure, the more she reinforces the lie that diagnosis equals immunity. Writing the book <em>well</em> is what prevents her from seeing what the book is actually about.
+      </div>
+    </div>
+
+    <div class="engine-card varnhagen">
+      <div class="engine-name">Rahel Varnhagen <span class="tag">Co-protagonist</span></div>
+      <div class="engine-field">
+        <span class="field-label">Surface Want</span>
+        Acceptance&mdash;through love, through brilliance, through the salon, through conversion. A private solution to a public problem.
+      </div>
+      <div class="engine-field">
+        <span class="field-label">Deep Need</span>
+        To accept the political reality of her position rather than trying to escape it through personal transformation.
+      </div>
+      <div class="engine-field">
+        <span class="field-label">The Lie</span>
+        "If I am brilliant enough, charming enough, loved enough, I can transcend what I was born into."
+      </div>
+      <div class="engine-field">
+        <span class="field-label">The Fear</span>
+        That there is no escape. That she will die as she was born&mdash;a Jew in a world that will never let her forget it.
+      </div>
+      <div class="engine-field">
+        <span class="field-label">Arc</span>
+        Pursuit-and-failure. She gets close to acceptance, it collapses, she tries again at a different register, it collapses differently. On her deathbed she reclaims what she spent her life fleeing&mdash;but only when it's too late to act on the knowledge.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STRUCTURAL SPINE -->
+<section>
+  <h2>Structural Spine</h2>
+
+  <div class="spine-block">
+    <h3>Fugue</h3>
+    <p style="font-size:0.88rem;">Two melodic lines running in parallel, sometimes in harmony, sometimes in dissonance. The meaning lives in the juxtaposition. Neither timeline is accompaniment to the other.</p>
+    <p style="font-size:0.88rem;">The asymmetry between the timelines IS the argument: Rahel is all exposure. Arendt is all armor. The reader wonders whether Arendt's armor is wisdom or a more sophisticated form of Rahel's flight.</p>
+
+    <div class="spine-channels">
+      <div class="channel arendt">
+        <div class="channel-label">Arendt Chapters</div>
+        Thought, armor, analysis. The biography as both achievement and avoidance. Historical pressure: the Nazis, exile, the war, the Eichmann trial.
+      </div>
+      <div class="channel varnhagen">
+        <div class="channel-label">Varnhagen Chapters</div>
+        Love, exposure, the body, the salon, pursuit, failure, reclamation. Historical pressure: Napoleonic wars, Hep-Hep riots, post-Congress of Vienna reaction.
+      </div>
+    </div>
+  </div>
+
+  <div class="decision-card">
+    <h3>Key Decision: Heidegger Stays Off-Page</h3>
+    <p>Arendt's intimacy with Heidegger is the absence at the center of her chapters&mdash;the thing she has sealed over with decades of intellectual work. The novel doesn't reopen it directly; it shows the sealant failing. This is not a limitation; it's the novel enacting its own argument about thought as armor.</p>
+  </div>
+
+  <div class="decision-card">
+    <h3>Both Timelines Carry Real Stakes</h3>
+    <p>Both private stories collide with political realities that don't care about private solutions. The collision is the novel's argument made dramatic: you cannot think or love your way out of a political condition.</p>
+  </div>
+</section>
+
+<!-- OPEN QUESTIONS -->
+<section>
+  <h2>Open Questions (for Drafting to Answer)</h2>
+
+  <div class="question-list">
+    <div class="question-item">
+      <div class="q-title">Timeline interleaving</div>
+      <div class="q-note">Scene-for-scene mirroring (spiral) or looser thematic counterpoint (fugue)? Start loose; tighten in revision if the material demands it.</div>
+    </div>
+    <div class="question-item">
+      <div class="q-title">Varnhagen's world</div>
+      <div class="q-note">Start with what Arendt knew&mdash;her book, the letters she cites&mdash;and build outward scene-by-scene as needed. You do not need to become a Varnhagen biographer before starting.</div>
+    </div>
+    <div class="question-item">
+      <div class="q-title">Where does the novel end?</div>
+      <div class="q-note">Arendt's death? The Varnhagen biography's 1957 publication? The Eichmann controversy? Rahel's deathbed reclamation? The ending will declare itself.</div>
+    </div>
+    <div class="question-item">
+      <div class="q-title">Arendt's later career</div>
+      <div class="q-note">The Eichmann trial is the moment where the world reads Arendt the way she read Rahel&mdash;too detached, too analytical, not Jewish enough. It may be the novel's climax, or beyond its scope.</div>
+    </div>
+    <div class="question-item">
+      <div class="q-title">Tonal contrast</div>
+      <div class="q-note">Varnhagen chapters: warmer, more embodied, more emotionally exposed. Arendt chapters: cooler, more analytical, more armored. Deliberate but not schematic.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SCOPE GUARDRAILS -->
+<section>
+  <h2>Scope Guardrails</h2>
+
+  <div class="guardrail-grid">
+    <div class="guardrail-item">
+      <div class="g-label">POV</div>
+      Two: Arendt and Varnhagen. No third modern character. Arendt IS the Julie figure.
+    </div>
+    <div class="guardrail-item">
+      <div class="g-label">Subplots</div>
+      Satellites of the two engines only: Heidegger, Bl&uuml;cher, Karl Varnhagen, Finckenstein, Jaspers.
+    </div>
+    <div class="guardrail-item">
+      <div class="g-label">Timeline</div>
+      Broadly chronological within each strand. Arendt: 1920s&ndash;1950s+. Varnhagen: 1790s&ndash;1833.
+    </div>
+    <div class="guardrail-item">
+      <div class="g-label">Research</div>
+      Scene-by-scene, not comprehensive. For each Varnhagen chapter: the episode, what Arendt wrote about it, one or two biographical sources.
+    </div>
+  </div>
+</section>
+
+<!-- RETURN TRIGGERS -->
+<section>
+  <h2>When to Come Back</h2>
+
+  <div class="trigger-list">
+    <div class="trigger-item">
+      <div class="trigger-num">1</div>
+      <div class="trigger-content">
+        <div class="t-when">After 10,000 words</div>
+        <div class="t-what">Revisit controlling idea and spine selection. Does the fugue structure work, or do the timelines want tighter pairing? Is the Arendt engine generating scenes, or is she too interior?</div>
+      </div>
+    </div>
+    <div class="trigger-item">
+      <div class="trigger-num">2</div>
+      <div class="trigger-content">
+        <div class="t-when">When you're stuck</div>
+        <div class="t-what">Bring the stuck chapter. Diagnose whether it's a research problem, a structural problem, or a voice problem.</div>
+      </div>
+    </div>
+    <div class="trigger-item">
+      <div class="trigger-num">3</div>
+      <div class="trigger-content">
+        <div class="t-when">When you have a complete draft</div>
+        <div class="t-what">Run the full development edit with this MVP as baseline context. The controlling idea and engines become the diagnostic contract to measure the manuscript against.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FIRST CHAPTER -->
+<section>
+  <h2>The First Chapter</h2>
+
+  <div class="first-chapter">
+    <h3>Young Arendt Discovers Varnhagen</h3>
+    <p>The German academy. In love&mdash;Heidegger present as atmosphere, not scene. Finding her intellectual voice. She encounters Varnhagen's letters: a woman who was also young, also brilliant, also trying to find her way inside institutions not built for her.</p>
+    <p>The chapter's action is Arendt <em>reading</em> Rahel and converting recognition into analysis. The reader catches both movements.</p>
+    <p class="kicker">You and your protagonist are in the same position: both just beginning to discover Rahel. Use that.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="scaffold-note">Discovery scaffold&mdash;not a prospective contract.</div>
+  <p>APODICTIC Development Editor (APDE) &middot; Pre-Writing Pathway &middot; Discovery-first</p>
+</footer>
+
+</body>
+</html>
