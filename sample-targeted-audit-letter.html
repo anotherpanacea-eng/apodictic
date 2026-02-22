@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APODICTIC — Sample Targeted Audit Letter</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --text-secondary: #78716c;
+    --accent: #b45309;
+    --accent-light: #fef3c7;
+    --accent-hover: #92400e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+  }
+
+  /* Title Block */
+  header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+  }
+
+  header .byline {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.15rem;
+  }
+
+  header .framework-stamp {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+
+  /* Scope Disclosure */
+  .disclosure {
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent);
+    padding: 0.85rem 1.15rem;
+    margin-bottom: 2.5rem;
+    font-size: 0.88rem;
+    border-radius: 0 4px 4px 0;
+    line-height: 1.6;
+  }
+
+  .disclosure strong {
+    color: var(--accent-hover);
+  }
+
+  /* Section Headers */
+  h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--text);
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Subsection Thesis Headings */
+  h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-top: 1.75rem;
+    margin-bottom: 0.6rem;
+    color: var(--text);
+  }
+
+  p {
+    margin-bottom: 1rem;
+  }
+
+  /* Audit Scope Tags */
+  .audit-tags {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .audit-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .audit-tag-force {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .audit-tag-erotic {
+    background: #ede9fe;
+    color: #5b21b6;
+  }
+
+  .audit-tag-verdict {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  /* Key Scene Callout */
+  .callout {
+    margin: 1.25rem 0;
+    padding: 0 0 0 1rem;
+    border-left: 3px solid var(--accent);
+  }
+
+  .callout p {
+    margin-bottom: 0.5rem;
+  }
+
+  .callout strong {
+    color: var(--accent-hover);
+  }
+
+  /* Channel Ratings Mini-Table */
+  .channel-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.25rem 0;
+    font-size: 0.88rem;
+  }
+
+  .channel-table th {
+    background: var(--bg);
+    text-align: left;
+    padding: 0.5rem 0.65rem;
+    border-bottom: 2px solid var(--border);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .channel-table td {
+    padding: 0.5rem 0.65rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .channel-table td:first-child {
+    font-weight: 600;
+    white-space: nowrap;
+    width: 10rem;
+  }
+
+  .rating-badge {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .rating-integrated { background: #d1fae5; color: #065f46; }
+  .rating-partial { background: #fef3c7; color: #92400e; }
+  .rating-detached { background: #fee2e2; color: #991b1b; }
+
+  /* Revision Checklist Table */
+  .checklist-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.25rem 0;
+    font-size: 0.9rem;
+  }
+
+  .checklist-table th {
+    background: var(--bg);
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 2px solid var(--border);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .checklist-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .checklist-table td:first-child {
+    width: 2rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .checklist-table td:last-child {
+    width: 5.5rem;
+    text-align: center;
+    font-size: 0.85rem;
+  }
+
+  .effort-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .effort-low { background: #d1fae5; color: #065f46; }
+  .effort-med { background: #fef3c7; color: #92400e; }
+  .effort-low-med { background: #e0f2fe; color: #0c4a6e; }
+
+  /* Protect / Caution */
+  .protect-caution {
+    margin: 1.25rem 0 0 0;
+    font-size: 0.92rem;
+  }
+
+  .protect-caution p {
+    margin-bottom: 0.6rem;
+  }
+
+  .protect-caution strong {
+    color: var(--accent-hover);
+  }
+
+  /* Strongest Case Against */
+  .case-against {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem;
+    margin: 1rem 0;
+  }
+
+  /* Consent Calculus Summary Card */
+  .consent-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.15rem 1.35rem;
+    margin: 1.25rem 0;
+  }
+
+  .consent-card h4 {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--accent-hover);
+    margin-bottom: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .consent-card p {
+    margin-bottom: 0.6rem;
+    font-size: 0.92rem;
+  }
+
+  /* Scene Assessment Mini-Cards */
+  .scene-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.85rem 1.1rem;
+    margin: 0.75rem 0;
+  }
+
+  .scene-card .scene-label {
+    font-weight: 600;
+    font-size: 0.88rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .scene-card .scene-detail {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+  }
+
+  .load-badge {
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-left: 0.3rem;
+  }
+
+  .load-yes { background: #d1fae5; color: #065f46; }
+  .load-violation { background: #fee2e2; color: #991b1b; }
+
+  /* Cross-Audit Synthesis */
+  .synthesis-box {
+    background: var(--accent-light);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 1.15rem 1.35rem;
+    margin: 1.25rem 0;
+  }
+
+  .synthesis-box p {
+    margin-bottom: 0.6rem;
+  }
+
+  .synthesis-box p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Appendices */
+  .appendices {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--border);
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+  }
+
+  .appendices h3 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 1.75rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+
+  .appendices h3:first-child {
+    margin-top: 0;
+  }
+
+  .appendices p, .appendices li {
+    line-height: 1.6;
+  }
+
+  .appendices ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .appendices li {
+    padding: 0.3rem 0;
+    padding-left: 1rem;
+    position: relative;
+  }
+
+  .appendices li::before {
+    content: "–";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+  }
+
+  .appendices em {
+    font-style: italic;
+  }
+
+  .framework-meta {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.2rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .framework-meta dt {
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .framework-meta dd {
+    color: var(--text-secondary);
+  }
+
+  /* Separator */
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2rem 0;
+  }
+
+  /* Sample Banner */
+  .sample-banner {
+    text-align: center;
+    background: var(--accent-hover);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    border-radius: 4px;
+  }
+
+  /* Print */
+  @media print {
+    body { max-width: none; padding: 1cm; }
+    .sample-banner { display: none; }
+    .case-against, .consent-card, .synthesis-box { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sample-banner">Sample Output — APODICTIC Development Editor v1.0.1 · Targeted Audit Letter</div>
+
+<header>
+  <h1>Targeted Audit Letter: A Court of Thorns and Roses</h1>
+  <div class="byline">Sarah J. Maas · ~130,000 words · Published (Book 1 of 5, Bloomsbury)</div>
+  <div class="framework-stamp">APODICTIC Development Editor v1.0.1 — February 22, 2026</div>
+</header>
+
+<div class="disclosure">
+  <strong>Scope:</strong> This is a targeted audit letter covering two specialized audits — Force Architecture and Erotic Content — not a full or core development edit. No core passes (reader experience, structural mapping, character architecture, etc.) were run. Findings are scoped to force architecture and erotic content only. A full DE would contextualize these findings within the manuscript's broader structural health.
+</div>
+
+<div class="audit-tags">
+  <span class="audit-tag audit-tag-force">Force Architecture</span>
+  <span class="audit-tag audit-tag-erotic">Erotic Content</span>
+  <span class="audit-tag audit-tag-verdict">Verdict: Polish</span>
+</div>
+
+<h2>The Short Version</h2>
+
+<p>This book understands that its violence and its intimacy are the same project. Every fight scene in ACOTAR is really a moral test, and every intimate moment tracks a change in Feyre's willingness to be vulnerable — and the architecture succeeds on both counts. The force events escalate not by getting bigger but by getting harder to live with, culminating in a climax that converts physical confrontation into a love declaration. The intimate scenes are load-bearing without exception: nine for nine pass the removal test. There is one structural soft spot (the second Under the Mountain trial is underwritten) and one forward-looking complexity (Rhysand's consent architecture creates a debt the sequels must service). Revision scope: polish, not reconstruction.</p>
+
+<h2>What the Book Does Best</h2>
+
+<h3>The wolf kill never stops mattering.</h3>
+
+<p>Feyre kills Andras in Chapter 1, and the moral stain of that act is still producing behavioral consequences in the final chapter. She dreams of the wolf's fae form in Chapter 11. Amarantha weaponizes the kill in the final trial — "it wasn't a concern the day you killed Tamlin's poor sentinel." The last pages are explicitly about Feyre carrying what she's done: "those faces would never fade." This is cost persistence at the manuscript level — not a scene-by-scene trick but a structural commitment that shapes the entire novel. It is the book's most disciplined achievement.</p>
+
+<h3>Force events change kind, not just scale.</h3>
+
+<p>The escalation ladder moves from survival hunting to creature defense to rigged survival trials to moral trial to self-sacrifice. By the time Feyre faces the final trial, the ash dagger in her hand is no longer a weapon — it's a moral instrument. The problem has shifted from "can she survive?" to "can she kill innocents and keep her soul?" to "can she solve a riddle while dying?" Each shift forces a different kind of courage.</p>
+
+<div class="callout">
+  <p><strong>The final trial's conversion — from kill-command to love-declaration — is the structural thesis of the novel.</strong> Amarantha designs a perfect trap: murder three innocents to win freedom, or die. The trap weaponizes Feyre's original sin. But the solution isn't violence — it's the riddle answer, spoken while Feyre's spine is being broken: "The answer to the riddle is love." Force architecture converts to its opposite. The entire novel's escalation was building the machinery for this single pivot.</p>
+</div>
+
+<h3>Intimate scenes track a character arc, not a heat curve.</h3>
+
+<p>The progression from Isaac Hale (sex as transaction, no vulnerability) through the rose garden kiss (Feyre initiates, chooses desire over armor) to the willow glen bargain (playful negotiation) to the Chapter 27 consummation (full emotional openness) is a legible arc of increasing vulnerability. Then the architecture does something more interesting: it inverts. Rhysand's forced encounters weaponize intimacy. The stolen moment with Tamlin Under the Mountain becomes tenderness under surveillance. The post-resurrection sex scene uses the same physical gestures as the Chapter 27 scene but the meaning has changed entirely — Feyre is no longer opening herself; she's holding herself together. The shape of the intimacy arc mirrors the shape of the novel.</p>
+
+<h2>Force Architecture: Channel Ratings</h2>
+
+<table class="channel-table">
+  <thead>
+    <tr>
+      <th>Channel</th>
+      <th>Rating</th>
+      <th>Summary</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Legibility</td>
+      <td><span class="rating-badge rating-partial">Partial</span></td>
+      <td>Spring Court fights have solid spatial logic. Under the Mountain compresses — the Wyrm works spatially, Trial 2 barely renders, Amarantha's torture is non-spatial by design.</td>
+    </tr>
+    <tr>
+      <td>Tactical Causality</td>
+      <td><span class="rating-badge rating-partial">Partial</span></td>
+      <td>Naga fight is the best tactical sequence. Under the Mountain trials are moral causality, not tactical — intentional, but the channel narrows.</td>
+    </tr>
+    <tr>
+      <td>Competence-Risk</td>
+      <td><span class="rating-badge rating-integrated">Integrated</span></td>
+      <td>Feyre is consistently underpowered. Three Spring Court rescues establish dependency; Under the Mountain dismantles it. The "rescued → must rescue herself → must rescue him" progression is the CR architecture.</td>
+    </tr>
+    <tr>
+      <td>Cost Persistence</td>
+      <td><span class="rating-badge rating-integrated">Integrated</span></td>
+      <td>Strongest channel. Wolf-kill guilt persists whole novel. Final-trial devastation refuses to dissolve. The last chapter is explicitly about cost.</td>
+    </tr>
+    <tr>
+      <td>Escalation Kind-Shift</td>
+      <td><span class="rating-badge rating-integrated">Integrated</span></td>
+      <td>Survival hunting → creature defense → rigged trials → moral trial → sacrifice. Each shift changes problem type. Final trial isn't a fight — it's a moral trap.</td>
+    </tr>
+    <tr>
+      <td>Meaning Conversion</td>
+      <td><span class="rating-badge rating-integrated">Integrated</span></td>
+      <td>Every force event converts to character and theme movement. The kill-to-love-declaration pivot is the novel's structural center. Removal test: every major event changes downstream decisions.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Erotic Content: Scene Assessment</h2>
+
+<div class="scene-card">
+  <div class="scene-label">Isaac Hale (reference, Ch 1–2) <span class="load-badge load-yes">Load-Bearing</span></div>
+  <div class="scene-detail">Establishes Feyre as sexually experienced; frames sex as transaction and escape, not intimacy. Baseline for the vulnerability arc that follows.</div>
+</div>
+
+<div class="scene-card">
+  <div class="scene-label">Rose Garden Kiss (Ch 19) <span class="load-badge load-yes">Load-Bearing</span></div>
+  <div class="scene-detail">First physical contact. Feyre initiates. Interiority strong — she catalogs sensation, processes surprise, tracks her own desire. First crack in the armor.</div>
+</div>
+
+<div class="scene-card">
+  <div class="scene-label">Fire Night / Calanmai (Ch 21–22) <span class="load-badge load-yes">Load-Bearing</span></div>
+  <div class="scene-detail">Ritual sex magic. Feyre nearly swept into collective erotic frenzy; Rhysand intercepts. Kind-shift: desire as something that can overwhelm will. World-building through erotic threat.</div>
+</div>
+
+<div class="scene-card">
+  <div class="scene-label">Willow Glen Kisses (Ch 23) <span class="load-badge load-yes">Load-Bearing</span></div>
+  <div class="scene-detail">Kiss-for-each-word bargain. Playfulness and negotiation enter the physical dynamic. Feyre as agent, not just responder.</div>
+</div>
+
+<div class="scene-card">
+  <div class="scene-label">Consummation (Ch 27) <span class="load-badge load-yes">Load-Bearing</span></div>
+  <div class="scene-detail">Full sex scene. Relationship apex before crisis. Feyre's interiority dominates — sensory detail filtered through wonder, desire, and the knowledge this may be temporary. Apex of the vulnerability arc.</div>
+</div>
+
+<div class="scene-card">
+  <div class="scene-label">Rhysand's Forced Encounters (Ch 39–41) <span class="load-badge load-violation">Violation</span></div>
+  <div class="scene-detail">Drugging, body painting, forced dancing, public display. Interiority maintained as horror, disgust, dissociation, rage. Correctly framed as violation, not romance. Anti-escalation: intimacy inverted to horror.</div>
+</div>
+
+<div class="scene-card">
+  <div class="scene-label">Stolen Moment with Tamlin (Ch 42) <span class="load-badge load-yes">Load-Bearing</span></div>
+  <div class="scene-detail">Desperate reconnection under surveillance. Brief. Tenderness as defiance — contrast escalation against preceding horror.</div>
+</div>
+
+<div class="scene-card">
+  <div class="scene-label">Post-Resurrection Intimacy (Ch 46) <span class="load-badge load-yes">Load-Bearing</span></div>
+  <div class="scene-detail">"I let it burn through that hole in my chest, my soul. Let it raze through the wave of black." Same physical gestures as Ch 27, transformed meaning — Feyre using intimacy to hold herself together, not to open up. De-escalation: same intensity, lower emotional safety.</div>
+</div>
+
+<div class="consent-card">
+  <h4>Consent Calculus</h4>
+  <p>The manuscript operates a <strong>bifurcated consent architecture</strong>. Feyre-Tamlin scenes are fully consensual throughout; Feyre initiates or co-initiates every encounter. Tamlin's "predator's stillness" is explicitly about waiting for her cue, not overriding it.</p>
+  <p>Rhysand's forced encounters are depicted as violation. Feyre's interiority is horror, disgust, and dissociation. The text does not romanticize them. Rhysand's protective motivation — shielding Feyre from worse fates — is revealed later but does not retroactively convert the consent violation into consent.</p>
+  <p><strong>Architecture status:</strong> Clear and genre-appropriate within this volume. The Rhysand-as-love-interest development in later books creates a consent-architecture debt the series must service — but that is a series-level question, not a single-book flaw.</p>
+</div>
+
+<h2>What Needs Work</h2>
+
+<h3>The second trial is a structural gap.</h3>
+
+<p>Trial 1 (the Middengard Wyrm in the labyrinth) gets granular, kinetic narration — spatial logic, environmental constraint, physical cost. Trial 3 (the three hooded figures with ash daggers) gets the manuscript's most psychologically devastating scene. Trial 2 gets almost nothing. It is the most compressed major force event in the book, and it sits between the two most structurally important ones. The naga fight in Chapter 15 — a mid-novel creature encounter — receives more choreographic weight than this trial does.</p>
+
+<p>This matters because the three trials are a set. The first trial showed what Feyre can endure physically, the third trial shows what she can endure morally. The second trial should be the bridge — either escalating the physical stakes or introducing the moral dimension that the third trial will complete. As written, it reads as a placeholder. The fix doesn't require enormous new material — it requires intentional positioning. What does Trial 2 test that Trials 1 and 3 don't?</p>
+
+<h3>The rescue pattern in the Spring Court is a reader-patience gamble.</h3>
+
+<p>Between Chapters 10 and 16, Tamlin rescues Feyre three times in quick succession: the Bogge, the naga, and the Suriel pursuit. The pattern is deliberate — Under the Mountain dismantles it by removing the rescuer, forcing Feyre into solo agency, and ultimately requiring her to save Tamlin. The payoff justifies the setup. But the setup itself risks testing the reader's patience with Feyre's competence. Three rescues in six chapters means the middle of the Spring Court section can feel like it's establishing Feyre as someone who needs saving, which makes the Under the Mountain inversion feel like a character change rather than a character reveal.</p>
+
+<p>One structural option: let Feyre resolve one of those three encounters without Tamlin, even partially. It would make the later inversion feel less like a reversal and more like an arrival.</p>
+
+<h3>The Rhysand consent architecture is clean here but creates a series-level debt.</h3>
+
+<p>Within ACOTAR, the Rhysand forced encounters are correctly framed as violation. Feyre's interiority is maintained — horror, disgust, dissociation, rage. The text does not romanticize what Rhysand does. His protective motivation is revealed but does not retroactively convert the violations into consent. This is sound craft.</p>
+
+<p>The complexity is forward-looking: if later books develop Rhysand as a romantic partner, the series must reckon with what happened Under the Mountain. Feyre experienced those scenes as violation regardless of Rhysand's reasons. A series that asks readers to reinterpret coercion as protection without Feyre processing the violation on her own terms risks undermining the consent clarity this volume establishes. This isn't a flaw in ACOTAR. It's an obligation ACOTAR hands to its sequels.</p>
+
+<h2>Revision Checklist</h2>
+
+<table class="checklist-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>What</th>
+      <th>Why It Matters</th>
+      <th>Effort</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>Give Trial 2 structural identity — a clear test-type that bridges the Wyrm's physical trial and the final trial's moral one</td>
+      <td>The three-trial structure has a hole in the middle; the bridge determines whether escalation reads as deliberate or accidental</td>
+      <td><span class="effort-badge effort-med">Medium</span></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Differentiate the rescue pattern — let Feyre resolve one Spring Court encounter without Tamlin, even partially</td>
+      <td>Three rescues in six chapters risks flattening Feyre's agency arc; the UtM inversion should read as reveal, not reversal</td>
+      <td><span class="effort-badge effort-low-med">Low–Med</span></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Vary the sensory register during Amarantha's torture — add fragments beyond pain-only (sound cutting out, vision tunneling, temporal distortion)</td>
+      <td>Extended pain-only narration risks monotony; matching the interiority standard the rest of the manuscript maintains during force events</td>
+      <td><span class="effort-badge effort-low">Low</span></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>Seed the Wyrm-escape mechanic — a brief earlier observation (wall brittleness, tremor when Wyrm moves)</td>
+      <td>The bone-wall-breaking resolution arrives at the moment of need without prior seeding; a small plant makes the payoff feel earned</td>
+      <td><span class="effort-badge effort-low">Low</span></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>Sharpen the physical vocabulary between the Ch 27 and Ch 46 sex scenes</td>
+      <td>Both use Feyre seeking Tamlin's presence to anchor herself; the echo is productive but distinct physical detail would underscore how much has changed</td>
+      <td><span class="effort-badge effort-low">Low</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="protect-caution">
+  <p><strong>What to protect:</strong> The wolf-kill's whole-novel persistence. The force-to-moral escalation ladder. The intimate-scene load-bearing ratio (100%). Feyre's interiority during both consensual and non-consensual scenes. The final trial's conversion from force-problem to love-declaration.</p>
+  <p><strong>What to be cautious about:</strong> Expanding Trial 2 in a way that competes with the final trial's emotional weight rather than preparing for it. Differentiating the rescue pattern in a way that makes Tamlin seem passive rather than removing his opportunity.</p>
+</div>
+
+<h2>The Strongest Case Against</h2>
+
+<div class="case-against">
+  <p>If I were arguing for passing on this manuscript's force and intimate architectures, the case would be: the Spring Court section relies too heavily on a rescue pattern that risks making its protagonist feel passive, the second trial's compression undermines the three-trial structure that the climax depends on, and the book's moderate heat level means the intimate content — while load-bearing — may not satisfy readers who come to fantasy romance expecting more explicit delivery.</p>
+
+  <p>The case loses. The rescue pattern is a setup that pays off. The Trial 2 gap is a local compression problem, not a structural collapse. And the heat level is a contract choice, not a craft failure — the intimate scenes do more narrative work at warm-to-steamy than many books manage at explicit. The force architecture's real achievement is the meaning-conversion channel: every act of violence in this book changes something. The erotic content's real achievement is the 100% load-bearing ratio. These are architectures that know what they're doing.</p>
+</div>
+
+<h2>Cross-Audit Synthesis</h2>
+
+<div class="synthesis-box">
+  <p>The two audits reveal complementary strengths. ACOTAR's force architecture and erotic content architecture share a structural principle: <strong>both use physical experience as a vehicle for moral and psychological transformation, not as spectacle.</strong></p>
+
+  <p>The wolf kill's moral cost connects to the final trial's moral devastation. The kisses' escalating vulnerability connects to the post-resurrection scene's desperate need for physical anchoring. The Rhysand forced-encounter scenes sit at the intersection of both audits — they are both force events (violation, coercion, bodily harm through drugging) and erotic-content events (body painting, display, forced intimacy) — and they succeed in both dimensions by maintaining Feyre's interiority and refusing to aestheticize the violation.</p>
+
+  <p><strong>Combined readiness:</strong> Both architectures are solid. The force architecture needs minor attention on Trial 2 compression. The erotic content architecture is clean. Neither audit identifies structural reconception needs.</p>
+</div>
+
+<div class="appendices">
+
+  <h3>Appendix A: Companion Files</h3>
+  <ul>
+    <li><em>Force Event Ledger</em> — 10 events cataloged with tactical objective, constraint, outcome, immediate cost, and abstraction level</li>
+    <li><em>Consequence Continuity Ledger</em> — 5 major consequence threads tracked across physical, psychological, relational, resource, and moral dimensions with specific behavioral evidence</li>
+    <li><em>Escalation Ladder Map</em> — 5 units from survival hunting through moral trial/sacrifice, with kind-shift tracking</li>
+    <li><em>Intimate Scene Assessment</em> — 9 scenes logged with load-bearing status, new element, interiority rating, and consent classification</li>
+    <li><em>Escalation vs. Repetition Map</em> — 8 intimate/erotic scenes mapped for mechanic, new element, character growth, and escalation from previous</li>
+    <li><em>Consent Calculus</em> — Bifurcated architecture documented: consensual (Tamlin) and violation (Rhysand), with scene-by-scene classification</li>
+  </ul>
+
+  <h3>Appendix B: Scope and Calibration</h3>
+
+  <p>These audits were run as targeted specialized audits. Mode calibration: Fantasy Romance. Force events evaluated for moral-crucible function rather than tactical precision. Intimate content evaluated for narrative integration rather than heat-level delivery. Fae-healing-as-injury-reset treated as genre-normative. No hard gates triggered in either audit.</p>
+
+  <h3>Appendix C: Framework Notes</h3>
+
+  <dl class="framework-meta">
+    <dt>Analysis version</dt>
+    <dd>APODICTIC Development Editor v1.0.1</dd>
+    <dt>Model</dt>
+    <dd>Claude Opus 4.6</dd>
+    <dt>Run date</dt>
+    <dd>February 22, 2026</dd>
+    <dt>Scope</dt>
+    <dd>Targeted Audit Letter (2 specialized audits, no core passes)</dd>
+    <dt>Audits completed</dt>
+    <dd>Force Architecture (cross-genre craft) + Erotic Content Tag (cross-genre tag)</dd>
+    <dt>Contamination</dt>
+    <dd>Published work. Independent editorial discovery cannot be claimed. Analysis demonstrates framework behavior on known material.</dd>
+  </dl>
+
+</div>
+
+</body>
+</html>
