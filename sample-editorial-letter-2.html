@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APODICTIC — Sample Editorial Letter: Theo of Golden</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --text-secondary: #78716c;
+    --accent: #b45309;
+    --accent-light: #fef3c7;
+    --accent-hover: #92400e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+  }
+
+  /* Title Block */
+  header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+  }
+
+  header .byline {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.15rem;
+  }
+
+  header .framework-stamp {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+
+  /* Contamination Disclosure */
+  .disclosure {
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent);
+    padding: 0.85rem 1.15rem;
+    margin-bottom: 2.5rem;
+    font-size: 0.88rem;
+    border-radius: 0 4px 4px 0;
+    line-height: 1.6;
+  }
+
+  .disclosure strong {
+    color: var(--accent-hover);
+  }
+
+  /* Section Headers */
+  h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--text);
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Subsection Thesis Headings */
+  h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-top: 1.75rem;
+    margin-bottom: 0.6rem;
+    color: var(--text);
+  }
+
+  p {
+    margin-bottom: 1rem;
+  }
+
+  /* Key Scene Callout */
+  .callout {
+    margin: 1.25rem 0;
+    padding: 0 0 0 1rem;
+    border-left: 3px solid var(--accent);
+  }
+
+  .callout p {
+    margin-bottom: 0.5rem;
+  }
+
+  .callout strong {
+    color: var(--accent-hover);
+  }
+
+  /* Revision Checklist Table */
+  .checklist-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.25rem 0;
+    font-size: 0.9rem;
+  }
+
+  .checklist-table th {
+    background: var(--bg);
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 2px solid var(--border);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .checklist-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .checklist-table td:first-child {
+    width: 2rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .checklist-table td:last-child {
+    width: 5.5rem;
+    text-align: center;
+    font-size: 0.85rem;
+  }
+
+  .effort-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .effort-low { background: #d1fae5; color: #065f46; }
+  .effort-med { background: #fef3c7; color: #92400e; }
+  .effort-low-med { background: #e0f2fe; color: #0c4a6e; }
+
+  /* Protect / Caution */
+  .protect-caution {
+    margin: 1.25rem 0 0 0;
+    font-size: 0.92rem;
+  }
+
+  .protect-caution p {
+    margin-bottom: 0.6rem;
+  }
+
+  .protect-caution strong {
+    color: var(--accent-hover);
+  }
+
+  /* Strongest Case Against */
+  .case-against {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem;
+    margin: 1rem 0;
+  }
+
+  /* Appendices */
+  .appendices {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--border);
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+  }
+
+  .appendices h3 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 1.75rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+
+  .appendices h3:first-child {
+    margin-top: 0;
+  }
+
+  .appendices p, .appendices li {
+    line-height: 1.6;
+  }
+
+  .appendices ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .appendices li {
+    padding: 0.3rem 0;
+    padding-left: 1rem;
+    position: relative;
+  }
+
+  .appendices li::before {
+    content: "–";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+  }
+
+  .appendices em {
+    font-style: italic;
+  }
+
+  .framework-meta {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.2rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .framework-meta dt {
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .framework-meta dd {
+    color: var(--text-secondary);
+  }
+
+  /* Separator */
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2rem 0;
+  }
+
+  /* Sample Banner */
+  .sample-banner {
+    text-align: center;
+    background: var(--accent-hover);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    border-radius: 4px;
+  }
+
+  /* Print */
+  @media print {
+    body { max-width: none; padding: 1cm; }
+    .sample-banner { display: none; }
+    .case-against { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sample-banner">Sample Output — APODICTIC Development Editor v1.0</div>
+
+<header>
+  <h1>Development Edit: Theo of Golden</h1>
+  <div class="byline">Allen Levi · 108,075 words · Published (standalone, self-published)</div>
+  <div class="framework-stamp">APODICTIC Development Editor v1.0 — February 22, 2026</div>
+</header>
+
+<div class="disclosure">
+  <strong>Contamination disclosure:</strong> This analysis cannot function as independent editorial discovery. <em>Theo of Golden</em> is available in my training data. The framework mechanics run anyway because the goal is to demonstrate what the v1.0 audit suite produces on a published manuscript with significant structural challenges — contrasting with the DCC sample (a structurally sound genre novel) by showing what the framework finds when the heart is real but the architecture isn't built yet. Findings that align with common reader responses carry no independent evidentiary weight.
+</div>
+
+<h2>The Short Version</h2>
+
+<p><em>Theo of Golden</em> has a genuinely moving premise and a warmth that most published novels never achieve. An elderly Portuguese man arrives in a small Southern city and, through anonymous bestowals of pencil portraits, touches the lives of strangers. Several scenes — Tony's Vietnam confession at the Verbivore, the port wine monologue, Kendrick's courtroom plea for Mateo Mendez, Simone's recital of "Fado for Theo" — reach an emotional register that earns real reader investment. The bestowal concept itself is original, specific, and structurally elegant: not generic kindness, but the act of seeing someone's face and returning it to them as a gift.</p>
+
+<p>The structural problems are serious enough to warrant a <strong>targeted revision</strong> verdict. The manuscript operates as a sequence of character vignettes connected by Theo's presence rather than as a novel driven by conflict, causation, or change. Approximately 60% of chapter-to-chapter transitions are temporal ("and then") rather than causal ("therefore"). Theo arrives in Golden as a generous, wise, saintly man and dies as the same man — no arc, no crisis of identity, no cost to his generosity that the narrative forces him to reckon with. The book's most important revelation — that Theo is Asher's biological father — arrives in posthumous letters without adequate foreshadowing, failing basic fairness tests. And the prose defaults to telling over showing with enough consistency to suppress the reader's own emotional participation in the book's best moments.</p>
+
+<p>The revision's core ask: preserve the warmth, the bestowal concept, and the strongest character work while building a narrative spine that earns the reader's investment across 108,000 words.</p>
+
+<hr>
+
+<h2>What the Book Does Best</h2>
+
+<p>The emotional sincerity is real, and it earns reader trust early. The Minnette bestowal (Chapters 4–7) is the manuscript's proof of concept: Theo's listening, the fountain setting, Minnette's revelation about her abortion, and Theo's unspoken response work because the scene gives Minnette room to arrive at her own pain rather than having the narrator explain it. When Minnette whispers to Derrick afterward that she's glad he didn't buy the portrait himself, the moment carries weight precisely because the text doesn't explain why. This is the book operating at its highest capacity — specific, patient, trusting the reader.</p>
+
+<p>Tony's Vietnam stories are the best-written prose in the manuscript. The Ben Suc confession (Chapter 31, the boy running toward Tony, the split-second decision, the decades of guilt) achieves the emotional compression the rest of the book aspires to. Theo's response — silent weeping, then the brandy — earns its power by doing less, not more. The second story, Bobbo's foxhole communion ("the blood of Christ, shed for you"), succeeds because it resists the impulse to interpret. These passages demonstrate that the author can write scenes where the language carries the full emotional weight without narrator intervention. They set a standard the rest of the manuscript should aim for.</p>
+
+<p>The Kendrick/Lamisha subplot is the novel's most fully realized secondary arc. The reader cares about Kendrick's custody struggle, Lamisha's physical recovery, and the courtroom scene where Kendrick pleads for Mateo Mendez's freedom. This subplot works because it has what the main narrative lacks: genuine stakes, a character who changes, and outcomes the reader cannot predict. Kendrick moves from passive grief to moral authority across the novel's span, and that movement is dramatized in scenes rather than reported in the epilogue.</p>
+
+<hr>
+
+<h2>What Needs Work</h2>
+
+<h3>The novel runs on "and then" instead of "therefore," and a reader notices by Chapter 15.</h3>
+
+<p>Pass 2 (Structural Mapping) confirms what Pass 1 (Reader Experience) surfaces as boredom: roughly 60% of chapter-to-chapter transitions are temporal rather than causal. Chapters 9 through 43 follow a repeating architecture — Theo encounters a character, the narrator provides that character's backstory through exposition, Theo does something kind, the chapter ends — with minimal scene-to-scene causation. The reader who asks "what would change if I removed Chapter 26?" will find the answer is almost nothing. The bestowal chapters are individually competent, but they function as a story collection bound by a shared character rather than as chapters in a novel where what happens in Chapter 12 makes Chapter 20 inevitable.</p>
+
+<p>Three sustained through-lines carry most of the causal weight: Theo's identity mystery (who is this man and why is he here?), the Kendrick/Lamisha subplot, and the Asher parentage reveal. These threads work. The problem is that they're submerged beneath approximately 30,000 words of episodic bestowals (29.6% of the manuscript) that don't advance them. The proportional imbalance is visible: the novel spends its largest single block of word count on material with the weakest causal linkage.</p>
+
+<p>The fix is not to eliminate the bestowals — they are the book's signature. It's to reduce the on-page count (from ~60 to ~25–30), integrate the rest as referenced past events, and ensure that each dramatized bestowal advances a through-line: the identity mystery tightens, a relationship deepens, a complication emerges. The strongest bestowals (Minnette, Tony, Ellen, Kendrick, Simone) should remain and expand. The weaker ones should become texture, not architecture.</p>
+
+<h3>Theo has no arc, and the catalyst defense requires community transformation the book reports but doesn't dramatize.</h3>
+
+<p>Theo arrives in Golden as a wealthy, wise, generous, cultured, devout, multilingual man of impeccable character. He departs — via accidental death — as the same man. Pass 5 (Character Audit) tracks zero internal change across the full manuscript. His generosity is never seriously tested. His wisdom is never wrong. His faith is never shaken. His anonymity is never threatened in a way that forces a genuine choice with real cost.</p>
+
+<p>The Cleave Torber confrontation (Chapter 34) is the one moment where the world pushes back against Theo's project, and it resolves within pages: Theo is shaken but unharmed, the jealous boyfriend vanishes from the narrative. The incident produces no lasting consequence — no change in Theo's behavior, no reassessment of the bestowals, no reckoning with the possibility that his anonymous interventions might cause harm.</p>
+
+<p>The holy-fool defense is available: in novels like Dostoevsky's <em>The Idiot</em> or Robinson's <em>Gilead</em>, the protagonist's unchanging goodness is the catalyst, and the transformation belongs to the community. Pass 5 finds evidence that this could work here — Kendrick's moral growth is real, Tony softens, Ellen stabilizes. But the defense requires the community transformation to be dramatized with the same depth as Theo's goodness, and it isn't. Minnette's arc is gestured at (unhappy CPA who eventually has a child named Theo) but never dramatized in scenes. Tony's softening is reported in the epilogue rather than shown in action. Ellen gets external change (business, housing) but her internal transformation is narrator-asserted, not scene-enacted.</p>
+
+<p>The fix isn't to make Theo less good. It's either to make his goodness cost him something the reader watches him pay — a bestowal that goes wrong, a relationship that his anonymity damages, a moment where the project fails — or to shift the novel's structural center from Theo to the community and dramatize their transformation in real scenes with real stakes.</p>
+
+<h3>The Asher parentage reveal fails the fairness test.</h3>
+
+<p>Pass 8 (Reveal Economy) identifies this as the manuscript's most serious information-flow problem. The final chapters reveal that Theo is Asher's biological father — the product of a relationship with Asher's mother during her time at the Prado. This is the novel's highest-stakes revelation, and it is delivered almost entirely through letters read after Theo's death (Chapter 62).</p>
+
+<p>The fairness tests: Are diegetic cues available on first read that justify the reveal? Barely. Theo mentions a girl from Spain (Chapter 7). Asher's father is never named or discussed. Theo shows interest in Asher's studio and work. But the reader receives no textual basis for suspecting the biological relationship across the preceding 90,000 words. Pass 8 finds that the manuscript withholds information through narrative silencing — denying Asher interiority in scenes where he could naturally wonder about his absent father — rather than through legitimate dramatic withholding.</p>
+
+<p>The reveal needs three to four planted seeds across the manuscript's first half: Theo noticing a resemblance to someone he once knew, an unexplained emotional response when visiting Asher's studio, a moment where Mr. Ponder's knowledge of the connection almost surfaces. The reader who finishes the letters should be able to look back and see what they missed — to feel that the clues were present but not visible. As written, the reveal reads as a plot twist appended to the final act rather than as the culmination of a thread woven through the whole novel.</p>
+
+<h3>The prose tells the reader what to feel, and the strongest scenes are the ones where it doesn't.</h3>
+
+<p>The narrator regularly interprets emotions, states themes, and explains significance rather than allowing scenes to carry their own meaning. A representative pattern: after a bestowal, the text explains that the portrait "awakened in her a feeling she had not had in a long time" and then names the feeling. The book's thesis — that everyone is capable of saintliness — appears as direct statement multiple times across the manuscript. Variations of "the sorts of people we walk past every day" and "what a unique man Theo was" accumulate as narrator editorializing.</p>
+
+<p>The diagnostic evidence for this finding comes from contrasting the book's best and weakest passages. Tony's Vietnam confessions work because the narrator steps back: shorter sentences, concrete detail, the story carrying its own weight. The port wine monologue (Chapter 45) works because Theo's knowledge becomes characterization — the taproots through slate, the barefoot treading, the accordion music — without the narrator explaining what it means. The Thanksgiving dinner works because the characters interact and the reader draws conclusions. Every scene where the narrator retreats is stronger than every scene where the narrator interprets.</p>
+
+<p>A 50% reduction in narrator editorializing — cutting stated emotions, explained significance, and direct thesis statements — would transform the reader's experience from being told about warmth to feeling it.</p>
+
+<h3>Characters speak in a uniform voice regardless of background.</h3>
+
+<p>Pass 5 notes that Tony the Vietnam veteran bookseller, Kendrick the night-shift custodian, Ellen the homeless woman, Simone the music student, and Mr. Ponder the consultant all speak with the same educated, articulate, lightly literary diction. Ellen, described as mentally ill and homeless, delivers reflections on grammar and subject-verb agreement. Tony, whose backstory establishes him as a working-class Southerner, speaks in composed paragraphs of careful prose.</p>
+
+<p>The diagnostic test: remove dialogue tags from any extended conversation and attempt to identify the speaker by voice alone. In most of this manuscript, you can't. The exception is Tony's Vietnam stories, where his diction shifts — shorter sentences, rougher syntax, more concrete imagery — and those passages are the novel's strongest writing. They demonstrate exactly what differentiated voice produces: a character who sounds like himself rather than like the narrator.</p>
+
+<hr>
+
+<h2>Revision Checklist</h2>
+
+<table class="checklist-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>What</th>
+      <th>Why It Matters</th>
+      <th>Effort</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>Reduce on-page bestowals from ~60 to 25–30; convert the rest to referenced past events; ensure each dramatized bestowal advances a through-line</td>
+      <td>The episodic middle is the primary source of reader attrition; trimming it from ~30,000 to ~18,000 words tightens the novel to ~95,000 and converts "and then" to "therefore"</td>
+      <td><span class="effort-badge effort-med">High</span></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Plant 3–4 foreshadowing seeds for the Asher parentage reveal across the first half of the manuscript</td>
+      <td>The book's most powerful revelation currently fails the fairness test; planted seeds make it inevitable in retrospect rather than arbitrary</td>
+      <td><span class="effort-badge effort-med">Medium</span></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Give Theo one genuine crisis: a bestowal that harms someone, a cost to his anonymity, a moment where the project fails</td>
+      <td>Without a cost, the reader admires Theo without worrying about him; one well-placed failure makes his constancy feel earned rather than given</td>
+      <td><span class="effort-badge effort-med">Medium</span></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>Cut narrator editorializing by 50%: remove stated emotions, explained significance, direct thesis statements</td>
+      <td>Every time the narrator tells the reader what to feel, it reduces emotional participation; the book's best scenes are already the ones where the narrator steps back</td>
+      <td><span class="effort-badge effort-med">Medium</span></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>Differentiate character voices: give Tony, Kendrick, Ellen, Simone, and Ponder distinct speech patterns and rhythms</td>
+      <td>Uniform dialogue flattens a cast the novel has invested heavily in developing; Tony's Vietnam stories prove the author can do this</td>
+      <td><span class="effort-badge effort-med">Medium</span></td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>Dramatize Theo's death: rewrite the attack scene (Ch. 57) with clear spatial staging and causal connection to Theo's choices</td>
+      <td>The protagonist's death should feel like consequence, not accident; as written, the violence is reported rather than lived</td>
+      <td><span class="effort-badge effort-med">Medium</span></td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>Dramatize at least two community transformations in scenes rather than reporting them in the epilogue</td>
+      <td>The holy-fool defense requires the reader to watch the community change; currently the epilogue tells us people changed, which the reader can't feel</td>
+      <td><span class="effort-badge effort-med">Medium</span></td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>Address the anonymity implausibility: have one character almost recognize Theo mid-novel</td>
+      <td>A world-famous artist living anonymously in a small city for a year strains credibility; one near-recognition scene converts a plot hole into dramatic tension</td>
+      <td><span class="effort-badge effort-low">Low</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="protect-caution">
+  <p><strong>What to protect:</strong> The bestowal concept. The Minnette opening. Tony's Vietnam confessions. The port wine monologue. The Kendrick/Lamisha arc. Simone's recital. The emotional sincerity throughout — this book's warmth is genuine and should not be made ironic, detached, or defensive.</p>
+  <p><strong>What to be cautious about:</strong> Any revision that makes Theo cynical, morally ambiguous, or emotionally broken would betray the contract with the reader. The goal isn't to darken the novel — it's to make the light harder-won. Theo can remain fundamentally good; the revision should make the reader witness what that goodness costs.</p>
+</div>
+
+<h2>The Strongest Case Against</h2>
+
+<div class="case-against">
+  <p>If I were arguing for passing on this manuscript, I'd say: this is not yet a novel. It is a series of warm anecdotes connected by the presence of a man who functions as a narrative device rather than a character. Theo has no flaw, no desire that is thwarted, no moment of genuine moral difficulty. He is wealthy enough to solve every problem with money (hiring a lawyer for Mendez, buying a Hemingway first edition for Tony). He is wise enough that every conversation becomes a monologue in which he dispenses insight. He is good enough that the only people who dislike him are cartoonishly unpleasant. The novel's thesis is that everyone is capable of saintliness, but the thesis is asserted rather than tested: we never see Theo struggle toward saintliness, and we never see anyone refuse his gifts in a way that matters. The book asks the reader to admire Theo for 108,000 words, and admiration is not the same as engagement.</p>
+
+  <p>The reveal economy compounds the problem. The book's two most important information threads — Theo's celebrity and Theo's biological fatherhood — are both withheld until after his death and delivered through external narration (a newspaper article, private letters). Neither reveal is earned through dramatic action. The reader who has invested 100,000 words in this man's year receives the payoff as a reading exercise rather than as a felt experience.</p>
+
+  <p>I don't think the case wins outright — the emotional sincerity is too real, and several scenes (Tony's confessions, the Kendrick courtroom scene, the Simone recital) achieve genuine dramatic power that most published fiction doesn't reach. But the case is strong enough that most agents and acquisitions editors would pass. The warmth is genuine; the architecture to deliver it across a novel's length is not yet built.</p>
+</div>
+
+<hr>
+
+<div class="appendices">
+
+  <h3>Appendix A: Diagnostic Detail</h3>
+
+  <p><strong>Core pass artifacts:</strong></p>
+
+  <table class="checklist-table">
+    <thead>
+      <tr>
+        <th>Pass</th>
+        <th>File</th>
+        <th>Key Finding</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>0 (Reverse Outline)</td>
+        <td><code>TheoOfGolden_Pass0_Reverse_Outline_opus46_2026-02-22.md</code></td>
+        <td>62 chapters + epilogue mapped; word distribution 6.9% / 29.6% / 27.7% / 21.8% / 13.9% across five phases; 10 orphan scenes identified</td>
+      </tr>
+      <tr>
+        <td>1 (Reader Experience)</td>
+        <td><code>TheoOfGolden_Pass1_Reader_Experience_opus46_2026-02-22.md</code></td>
+        <td>Promise drift confirmed: reader contract frays by Chapter 15; boredom onset in episodic middle; attack scene (Ch. 57) breaks immersion through spatial confusion</td>
+      </tr>
+      <tr>
+        <td>2 (Structural Mapping)</td>
+        <td><code>TheoOfGolden_Pass2_Structural_Mapping_opus46_2026-02-22.md</code></td>
+        <td>40% causal / 60% temporal transitions; bestowals consume 29.6% of word count for weakest causal linkage; three sustained through-lines carry disproportionate weight</td>
+      </tr>
+      <tr>
+        <td>5 (Character Audit)</td>
+        <td><code>TheoOfGolden_Pass5_Character_Audit_opus46_2026-02-22.md</code></td>
+        <td>Theo: zero-arc catalyst; community transformation partially dramatized (Kendrick) but mostly reported (Minnette, Tony, Ellen); dialogue voice uniformity confirmed</td>
+      </tr>
+      <tr>
+        <td>8 (Reveal Economy)</td>
+        <td><code>TheoOfGolden_Pass8_Reveal_Economy_opus46_2026-02-22.md</code></td>
+        <td>Asher parentage reveal fails fairness test (narrative silencing, not legitimate withholding); Zila identity reveal is fair; Ellen's daughter thread resolves organically</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Audit triggers fired (not run in this scope):</strong></p>
+
+  <table class="checklist-table">
+    <thead>
+      <tr>
+        <th>Audit</th>
+        <th>Source</th>
+        <th>Status</th>
+        <th>Evidence</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Stakes System</td>
+        <td>Universal + Pass 1</td>
+        <td>Recommended</td>
+        <td>"Stakes feel low" at 3+ reader-experience points</td>
+      </tr>
+      <tr>
+        <td>Decision Pressure</td>
+        <td>Universal + Pass 5</td>
+        <td>Recommended</td>
+        <td>Theo faces no decisions with genuine cost</td>
+      </tr>
+      <tr>
+        <td>Scene Turn (Bickham)</td>
+        <td>Universal + Pass 2</td>
+        <td>Recommended</td>
+        <td>60% of chapter transitions are arbitrary or temporal</td>
+      </tr>
+      <tr>
+        <td>Emotional Craft</td>
+        <td>Pass 1 finding-driven</td>
+        <td>Recommended</td>
+        <td>Emotional flatness logged at 5+ scenes due to narrator editorializing</td>
+      </tr>
+      <tr>
+        <td>Force Architecture</td>
+        <td>Pass 1 finding-driven</td>
+        <td>Recommended</td>
+        <td>Attack scene (Ch. 57) breaks immersion through spatial confusion</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Appendix B: Severity Calibration</h3>
+
+  <p><strong>Adversarial self-check performed before writing the letter.</strong></p>
+
+  <p><strong>Softening tests (should any severity be higher?):</strong></p>
+  <ul>
+    <li><em>Episodic structure / causal linkage:</em> Passes 1 and 2 converge on this finding independently. Pass 1 logs reader boredom onset; Pass 2 measures 60% temporal transitions. Severity held at Must-Fix. No softening case survives.</li>
+    <li><em>Theo's zero arc:</em> Pass 5 confirms zero internal change. The holy-fool defense is available but requires dramatized community transformation that the manuscript doesn't fully deliver. Severity held at Must-Fix for the diagnostic; the revision can address it through either protagonist-arc or community-arc strategies.</li>
+    <li><em>Asher parentage fairness:</em> Pass 8 applies three fairness tests; the reveal fails all three. Severity held at Must-Fix.</li>
+  </ul>
+
+  <p><strong>Over-escalation tests (should any severity be lower?):</strong></p>
+  <ul>
+    <li><em>Telling over showing:</em> The book's best scenes (Tony's confessions, Thanksgiving dinner, port wine monologue) demonstrate the author's capacity for scene-level work. The telling tendency is correctable without structural reconception. Severity held at Should-Fix, not Must-Fix — it's a prose-level issue that compounds the structural problems but doesn't independently break the book.</li>
+    <li><em>Dialogue uniformity:</em> Tony's Vietnam stories prove the author can write differentiated voice. The uniformity elsewhere is a habit, not an incapacity. Severity held at Should-Fix.</li>
+    <li><em>Anonymity implausibility:</em> This is a belief failure for attentive readers but doesn't independently damage the reading experience. Severity reduced to Could-Fix.</li>
+  </ul>
+
+  <p>No severity adjustments were needed for the top three findings. All convergent evidence supports Must-Fix assignments.</p>
+
+  <h3>Appendix C: Framework Notes</h3>
+
+  <dl class="framework-meta">
+    <dt>Analysis version</dt>
+    <dd>APODICTIC Development Editor v1.0</dd>
+    <dt>Model</dt>
+    <dd>Claude Opus 4.6</dd>
+    <dt>Run date</dt>
+    <dd>February 22, 2026</dd>
+    <dt>Route</dt>
+    <dd>Full Draft → Repair → General (Baseline pass set via query-driven resolver)</dd>
+    <dt>Passes completed</dt>
+    <dd>Pass 0 (Reverse Outline), Pass 1 (Reader Experience), Pass 2 (Structural Mapping), Pass 5 (Character Audit), Pass 8 (Reveal Economy)</dd>
+    <dt>Specialized audits</dt>
+    <dd>Recommended but not run in this scope: Stakes System, Decision Pressure, Scene Turn, Emotional Craft, Force Architecture</dd>
+    <dt>Anti-sycophancy protocol</dt>
+    <dd>Active (rejection memos per pass, severity floors, bidirectional self-check, strengths cap, negative-first ordering)</dd>
+    <dt>Contamination from training data</dt>
+    <dd>Disclosed throughout. Independent editorial discovery cannot be claimed. The analysis demonstrates framework behavior on known material.</dd>
+    <dt>Genre module loaded</dt>
+    <dd>Literary Fiction (Pass 9 priority noted but not run in baseline scope)</dd>
+    <dt>Audit invocation log</dt>
+    <dd>See Appendix A audit triggers table above</dd>
+  </dl>
+
+</div>
+
+</body>
+</html>
