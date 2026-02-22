@@ -132,8 +132,8 @@ Activated by intake answers before passes run.
 | Genre = SF/Fantasy | SFF Worldbuilding Integration | Auto-recommend after Pass 10 | `genre/sff-worldbuilding.md` |
 | Genre = Literary | Literary Craft Deep Dive | Auto-recommend after Pass 9 | `craft/literary-craft.md` |
 | Constraint = ai | AI-Prose Calibration | Auto-run (bundled with workflow) | `craft/ai-prose-calibration.md` |
-| Erotic content flagged at intake | Erotic Content tag | Auto-run (bundled with workflow) | `tag/erotic-content.md` |
-| Genre = Romance + erotic content | Erotic Content tag + Consent Complexity | Auto-run / Auto-recommend | `tag/erotic-content.md`, `tag/consent-complexity.md` |
+| Erotic content flagged at intake | Erotic Content | Auto-run (bundled with workflow) | `tag/erotic-content.md` |
+| Genre = Romance + erotic content | Erotic Content + Consent Complexity | Auto-run / Auto-recommend | `tag/erotic-content.md`, `tag/consent-complexity.md` |
 | Historical setting (>50 years) | Historical Fiction | Auto-recommend | `genre/historical-fiction.md` |
 | Memoir or creative nonfiction | Memoir & Creative Nonfiction | Auto-run (bundled) | `genre/memoir-creative-nonfiction.md` |
 | Narrative nonfiction | Narrative Nonfiction Craft | Auto-run (bundled) | `genre/narrative-nonfiction.md` |
@@ -153,13 +153,13 @@ Activated by pass results during a diagnostic run. The system checks these after
 | 1 (Reader Experience) | Emotional flatness, forced affect, unearned catharsis | Emotional Craft | Recommend |
 | 1 (Reader Experience) | Dread/tension calibration problems | Horror Craft Integration | Recommend (if not already loaded) |
 | 1 (Reader Experience) | Comedy landing rate low, tonal inconsistency | Comedy & Satire | Recommend |
-| 5 (Character Audit) | Character agency issues, puppet moments | Character Architecture (deep) | Recommend |
+| 5 (Character Audit) | Character agency issues, puppet moments | Character Architecture | Recommend |
 | 5 (Character Audit) | Female POV interiority thinning patterns | Female Interiority | Recommend |
 | 5 (Character Audit) | Voice drift, dialogue undifferentiated | Scene Turn | Recommend |
 | 7 (POV & Voice) | Interiority loss during peak-intensity scenes | Interiority Preservation | Recommend |
 | 8 (Reveal Economy) | Information pressure problems in mystery/thriller | Mystery/Thriller Architecture | Recommend (if not already loaded) |
 | 9 (Thematic Coherence) | Thematic argument under-structured, didacticism | Dialectical Clarity | Recommend |
-| 9 (Thematic Coherence) | Straw opposition, authorial thumb on scale | Banister | Recommend |
+| 9 (Thematic Coherence) | Straw opposition, authorial thumb on scale | Banister (Epistemic Humility) | Recommend |
 | 6 (Scene Function) | Force delivery issues, inert action sequences | Force Architecture | Recommend |
 | 1 (Reader Experience) | Uniform fluency, voice genericism (AI indicators) | AI-Prose Calibration | Recommend (if not already loaded) |
 | Any pass | Fan fiction origin markers (IP scaffolding, assumed worldbuilding) | Fan Fiction Conversion | Recommend |
