@@ -87,6 +87,6 @@ NON-NEGOTIABLES:
 
 ---
 
-*Framework: APODICTIC Development Editor (APDE) v0.4.14.3*
+*Framework: APODICTIC Development Editor (APDE)*
 *Last updated: February 2026*
 *Draft stage: [exploratory / structural revision / near-final]*

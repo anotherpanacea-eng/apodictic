@@ -1,6 +1,5 @@
 # APODICTIC Audit Selection Matrix
-## Version 0.4.16
-*Last Updated: February 21, 2026*
+*Last Updated: February 2026*
 
 This guide helps route a manuscript to the right APODICTIC passes and specialized audits.
 

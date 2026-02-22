@@ -154,5 +154,5 @@
 
 ---
 
-*Framework: APODICTIC Development Editor (APDE) v0.4.19*
+*Framework: APODICTIC Development Editor (APDE)*
 *Last updated: February 2026*

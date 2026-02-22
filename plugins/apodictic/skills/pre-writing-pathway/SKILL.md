@@ -5,7 +5,7 @@ description: >
   draft-ready structure. Use when the user asks to "plan a story," "outline
   a novel," "develop a premise," "figure out my book," "structure my idea,"
   or any request for help moving from concept to ready-to-draft planning.
-version: 0.4.19
+version: 1.0.0
 ---
 
 # Pre-Writing Pathway
@@ -284,7 +284,7 @@ When the draftable gate fails for a discovery-first writer who has enough to sta
 3. Scope guardrails — any complexity caps from Phase 4B, stated as practical advice ("Start with one POV; add a second only if the first 10K words demand it").
 4. When to come back — the three return triggers (10K-word checkpoint, stuck, complete draft).
 
-**File format:** Save as `[Project]_MVP_[runlabel].md` in `Outputs/[Project]/`, following Core DE naming conventions. Header line: `APDE v0.4.14.3 | Pre-Writing MVP | [Date]`. Footer line: `Discovery scaffold — not a prospective contract.`
+**File format:** Save as `[Project]_MVP_[runlabel].md` in `Outputs/[Project]/`, following Core DE naming conventions. Header line: `APDE | Pre-Writing MVP | [Date]`. Footer line: `Discovery scaffold — not a prospective contract.`
 
 The MVP is *not* a prospective contract. It doesn't feed the Re-Entry Diff Protocol directly — when the writer returns, standard intake runs from scratch, but the MVP file provides context for what the writer was trying to find.
 
@@ -394,7 +394,7 @@ This section is required even when the plan feels solid. If the pathway cannot i
 
 ---
 
-*Framework: APODICTIC Development Editor (APDE) v0.4.19*
+*Framework: APODICTIC Development Editor (APDE)*
 *Pathway: Pre-Writing*
 *Writer mode: [Architecture-first / Discovery-first]*
 *Status: Prospective contract — not yet validated against manuscript text*

@@ -1,6 +1,6 @@
 # Pass 11: Critical Quality & Market Viability
 ## Version 2.3 (Merged: Opus46 + Codex53 + Calibration Patch + 11F Stress Test)
-### APODICTIC Development Editor (APDE) Framework v0.4.14.3
+### APODICTIC Development Editor (APDE)
 
 *Calibration additions: Adversarial-Critic Mode, Pre-READY Verification Checklist, Sub-Pass 11F (Adversarial Reader Stress Test)*
 
@@ -804,7 +804,7 @@ Rationale: [2-3 sentences]
 
 [One paragraph: honest assessment of where this manuscript stands, what it needs, and realistic path forward]
 
-*Framework: APODICTIC Development Editor (APDE) v0.4.14.3*
+*Framework: APODICTIC Development Editor (APDE)*
 ```
 
 ---
