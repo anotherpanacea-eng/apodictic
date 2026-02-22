@@ -7,7 +7,7 @@ description: >
   "run the passes," "do a revision round," or any request involving manuscript
   analysis, structural diagnosis, or editorial feedback. Also triggers on
   "APODICTIC," "APDE," or "development editor."
-version: 1.0.0
+version: 1.0.1
 ---
 
 # APODICTIC: anotherpanacea's Development Editor — Core Orchestrator
@@ -84,7 +84,7 @@ If router output is available (`artifact`, `goal`, `concern`, `constraints`, `op
 Load `references/pass-dependencies.md`, resolve concern to minimum pass set, add dependencies, then run selected passes in dependency order.
 
 ### 3. Synthesis
-Root cause analysis (max 5), triage (Must-Fix / Should-Fix / Could-Fix), adversarial self-check, editorial letter.
+Root cause analysis (max 5), triage (Must-Fix / Should-Fix / Could-Fix), adversarial self-check, adversarial reader stress test, editorial letter.
 
 ### 4. Expansion Recommendation
 Apply auto-escalation rules from `references/pass-dependencies.md` §2b. Recommend expansion to full pass set when issue density/complexity exceeds the scoped run.
@@ -218,6 +218,7 @@ During intake, identify the manuscript's genre and load the corresponding module
 | `references/pass-dependencies.md` | When resolving concern to scoped pass set and dependency order |
 | `references/run-full.md` | When selected pass set includes advanced passes (3, 4, 6, 7, 9, 10) |
 | `references/output-policy.md` | Before writing any output (editorial letter, pass reports) |
+| `references/adversarial-stress-test.md` | During every editorial letter synthesis (§7 of letter) |
 | `references/handoff-protocol.md` | When offering/entering/exiting scene-level execution mode |
 | `references/character-architecture.md` | When detailed character analysis needed beyond Pass 5 basics |
 | `references/pass-11.md` | When market viability / publication readiness is requested |

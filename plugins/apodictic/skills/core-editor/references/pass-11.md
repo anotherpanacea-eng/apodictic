@@ -57,7 +57,7 @@ Pass 11 comprises five sub-passes. Sub-passes 11A and 11B always run when Pass 1
 | **11C** | Market Reality Check | Marketability requested |
 | **11D** | First-50 Conversion Gate | Submission readiness requested |
 | **11E** | Revision Economics | Revision planning requested |
-| **11F** | Adversarial Reader Stress Test | Optional: author requests OR verdict = CONDITIONALLY VIABLE |
+| **11F** | ~~Adversarial Reader Stress Test~~ | **Migrated to core synthesis §7 (v1.0.1)** — now runs for every editorial letter |
 
 ---
 
@@ -428,129 +428,13 @@ Note which fixes must happen before others:
 
 ---
 
-## Sub-Pass 11F: Adversarial Reader Stress Test (Optional)
-
-⚠️ **AUTHOR WARNING:** This sub-pass applies low-charity reading to surface vulnerabilities before hostile readers find them. The output will be direct. Manuscripts that survive stress testing are stronger than those evaluated only by sympathetic readers. **Do not activate unless you are prepared for ungentle feedback.**
-
-**Purpose:** Identify what a skeptical, uncharitable reader would criticize—not to wound, but to stress-test the manuscript before release.
-
-### Fairness Guardrail
-
-11F operates under strict constraints:
-- **Low-charity:** Assumes the least favorable interpretation a reasonable reader could hold
-- **Evidence-bound:** Every claim must point to specific textual evidence
-- **No invented problems:** Cannot fabricate issues not present in the manuscript
-- **No ad hominem tone:** Critiques the work, not the author; professional register throughout
-
-### Trigger Conditions
-
-11F activates when:
-- Author explicitly requests adversarial/stress-test critique
-- Verdict = CONDITIONALLY VIABLE (offered as optional follow-up)
-- Author asks "what would make someone put this down?" or similar
-
-11F does NOT auto-run. It requires explicit author consent.
-
-### The Low-Charity Reader Frame
-
-This is not Lens C (Skeptical Critic). Lens C is evaluative—it asks "is this good?" 11F is adversarial—it asks "what would a hostile reader attack?"
-
-**Frame the reading as:**
-
-> "Read this manuscript as someone who isn't predisposed to like it. You're looking for reasons to stop reading, reasons a review might cite, reasons an agent might pass. You're not unfair—you're not inventing problems—but you're not charitable either. Every weakness is noted. Every stumble logged. What claims would a hostile reader make?"
-
-### Assessment Structure
-
-**For each finding (3-5 required):**
-
-| Field | Description |
-|-------|-------------|
-| **Adversarial Claim** | State the criticism as a low-charity reader would phrase it |
-| **Evidence** | Specific textual locations supporting the claim |
-| **Confidence** | `[HIGH]` / `[MEDIUM]` / `[LOW]` — per v0.4.4 standards |
-| **Severity** | `Fatal` (rejection/abandonment) / `Damaging` (significant weakness) / `Irritating` (noticeable but survivable) |
-| **Prevalence** | `Rare` / `Some` / `Many` — what portion of target readers would this bother? |
-| **Fixability** | `Quick fix` / `Structural fix` / `Accept trade-off` |
-| **Steelman Defense** | Best counter-argument available |
-| **Net Risk** | After considering defense, does the claim still land? |
-
-### Reader Profiles
-
-The stress test considers multiple low-charity reader types:
-
-| Reader Type | What They'd Attack | Example Claim |
-|-------------|-------------------|---------------|
-| **The Impatient** | Pacing, slow openings, delayed payoff | "Nothing had happened by page 30." |
-| **The Skeptic** | Plot logic, character motivation, coincidences | "Why didn't she just call the police?" |
-| **The Disappointed** | Promise vs. delivery, contract violations | "The cover promised romance. She dies." |
-| **The Unforgiving** | Prose tics, repetition, craft failures | "The phrase 'let out a breath' appears twelve times." |
-| **The Bored** | Lack of tension, predictability, low stakes | "I knew exactly how this would end by chapter 3." |
-
-### Output Format
-
-```markdown
 ## Sub-Pass 11F: Adversarial Reader Stress Test
 
-⚠️ **Low-charity critique follows. Evidence-bound, no invented problems.**
+**⚠️ MIGRATED (v1.0.1):** The Adversarial Reader Stress Test has been extracted from Pass 11 and moved to the core editorial letter synthesis. It now runs as §7 of every editorial letter, regardless of whether Pass 11 is triggered. See `references/adversarial-stress-test.md` for the full specification.
 
-### Finding 1: [Claim Title]
+**Rationale:** The stress test answers a craft question ("what would a hostile reader attack?"), not a market question. Gating it behind publication intent meant most manuscripts never received adversarial scrutiny. It is now a required element of every editorial letter.
 
-**Adversarial Claim:** "[Low-charity reader phrasing]"
-
-**Evidence:** [Specific lines/chapters]
-
-**Confidence:** [HIGH / MEDIUM / LOW]
-
-**Severity:** [Fatal / Damaging / Irritating]
-
-**Prevalence:** [Rare / Some / Many]
-
-**Fixability:** [Quick fix / Structural fix / Accept trade-off]
-
-**Steelman Defense:** [Best counter-argument]
-
-**Net Risk:** [After defense, does claim still land?]
-
----
-
-[Repeat for findings 2-5]
-
----
-
-### Stress Test Summary
-
-**Would this manuscript survive hostile scrutiny?**
-
-- [ ] Yes: Core is strong enough to withstand claims
-- [ ] Partially: Some claims land, but compensating strengths exist
-- [ ] No: Claims would define reader response
-
-**Recommended Response:**
-[Which claims to address vs. accept as trade-offs]
-```
-
-### Integration with 11E (Revision Economics)
-
-**Hard Rule:** Only findings meeting ALL of the following criteria can reprioritize items to Must-Fix:
-- Severity = `Fatal` OR `Damaging`
-- Prevalence = `Some` OR `Many`
-- Net Risk = claim still lands after defense
-
-Findings that don't meet these thresholds inform revision but don't escalate priority.
-
-### Integration with Other Sub-Passes
-
-- 11F findings do NOT automatically become Non-Negotiables
-- 11F surfaces vulnerabilities; author decides which matter
-- 11F is separate from the Pre-READY Verification Checklist (which catches oversights, not weaknesses)
-
-### Firewall Compliance
-
-11F maintains the Firewall:
-- **ALLOWED:** Identifying what low-charity readers would claim, phrasing critiques as they would
-- **FORBIDDEN:** Rewriting passages, generating "better" versions, inventing fixes
-
-11F says "this is what they'd claim and why"—not "here's how to fix it."
+When Pass 11 is active, the stress test still runs — but as part of the editorial letter synthesis, not as a Pass 11 sub-pass. Pass 11's other sub-passes (11A-11E) continue to function as before. If 11E (Revision Economics) is active, Fatal/Damaging + Some/Many findings from the stress test can reprioritize items per the existing escalation rules in `references/adversarial-stress-test.md`.
 
 ---
 
@@ -737,30 +621,7 @@ Rationale: [2-3 sentences]
 
 ---
 
-## Sub-Pass 11F: Adversarial Reader Stress Test [If activated]
-
-⚠️ **Low-charity critique follows. Evidence-bound, no invented problems.**
-
-### Finding 1: [Claim Title]
-**Adversarial Claim:** "[Low-charity reader phrasing]"
-**Evidence:** [Lines/chapters]
-**Confidence:** [HIGH / MEDIUM / LOW]
-**Severity:** [Fatal / Damaging / Irritating]
-**Prevalence:** [Rare / Some / Many]
-**Fixability:** [Quick fix / Structural fix / Accept trade-off]
-**Steelman Defense:** [Best counter-argument]
-**Net Risk:** [After defense, does claim still land?]
-
-[Repeat for findings 2-5]
-
-### Stress Test Summary
-- [ ] Would survive hostile scrutiny
-- [ ] Partially survives (compensating strengths)
-- [ ] Vulnerable to hostile response
-
-**11E Escalation:** [List any Fatal/Damaging + Some/Many findings that reprioritize Must-Fix]
-
-**Recommended Response:** [Which claims to address vs. accept as trade-offs]
+## [11F: Migrated to editorial letter §7 — see references/adversarial-stress-test.md]
 
 ---
 
