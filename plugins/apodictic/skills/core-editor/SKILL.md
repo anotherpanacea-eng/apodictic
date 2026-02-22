@@ -23,6 +23,8 @@ Dedicated reference files (genre modules, specialized audits, `references/pass-1
 
 **Branding note:** Public-facing name is `APODICTIC: anotherpanacea's Development Editor`. Tagline: *Developmental editing that listens before diagnosing.*
 
+**Model note:** This framework is designed for Claude Opus. Its anti-sycophancy protocols, severity floor rules, and adversarial self-checks require strong instruction-following. On smaller models, expect degraded severity honesty, weaker thematic interpretation, and lower fix quality.
+
 ---
 
 ## Plugin Structure

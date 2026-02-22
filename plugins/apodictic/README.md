@@ -115,6 +115,10 @@ Run a named audit or list all 28 available audits.
 ```
 Internet-enabled research to validate comps, check facts, verify genre currency, or surface representation context.
 
+## Model Requirements
+
+APODICTIC is designed for and tested on **Claude Opus**. It will run on smaller models (Sonnet, Haiku), but with meaningfully degraded results — particularly in severity honesty, thematic interpretation, deliberate ambiguity handling, and fix quality. The framework includes anti-sycophancy protocols, adversarial self-checks, and severity floor rules that require strong instruction-following to work as intended. If you're evaluating the framework, use the best model available.
+
 ## Framework Version
 
 Current version is in `.claude-plugin/plugin.json`. Capabilities: 48 plot spines across 12 families, 23 specialized audits, 5 tag audits, 4 research modes, 11 core passes, the evaluative Pass 11 gate, the pre-writing pathway, and the intake router. Includes contract-driven and finding-driven audit integration pipeline with 3 universal audits (Stakes System, Decision Pressure, Scene Turn).
