@@ -376,7 +376,9 @@ The synthesis is the author-facing editorial letter. It must read as one informe
 
    **Evidence check (both directions):** For each Must-Fix flag, confirm you have 2+ specific scene/line references. If not, either find them or downgrade your confidence (not the severity).
 
-6. **Write the editorial letter** using the presentation format below. The self-check informs the letter's severities; it does not appear in the letter's body.
+6. **Adversarial Reader Stress Test (required).** Before writing the letter, run the stress test per `references/adversarial-stress-test.md`. Inhabit the low-charity reader profiles and generate 3-5 adversarial claims with evidence, severity, steelman defense, and net risk assessment. This is a separate exercise from the adversarial self-check (step 5) — the self-check tests severity calibration of existing findings; the stress test surfaces what hostile readers would attack, which may include issues not flagged by the passes.
+
+7. **Write the editorial letter** using the presentation format below. The self-check informs the letter's severities; the stress test becomes §7 of the letter.
 
 **Key principle:** Processing order ≠ presentation order. The self-check must happen before writing, but in the output document it belongs in an appendix. The author reads findings; the framework owner reads methodology.
 
@@ -422,7 +424,9 @@ Follow the table with:
 
 **Do not render a verdict on whether the case wins or loses.** The author assesses that. The framework's job is to make the strongest honest case for rejection and let it stand on its own evidence. If the case is weak, its weakness will be self-evident; if the case is strong, dismissing it is a disservice. End with the case, not with reassurance.
 
-**7. Appendices.**
+**7. Adversarial Reader Stress Test.** Required for every editorial letter. Format and methodology per `references/adversarial-stress-test.md`. This section presents 3-5 adversarial claims from low-charity reader perspectives, each with evidence, severity, steelman defense, and net risk assessment. The stress test complements §6 — where §6 states the structural case against the manuscript in 1-2 paragraphs, §7 inhabits specific hostile reader types and surfaces what each would attack.
+
+**8. Appendices.**
 - **Appendix A: Diagnostic Detail.** Pointers to companion pass files and supplementary audit findings with brief descriptions of what each contains. For each supplementary audit that ran, list its companion findings file and any tracking artifacts produced (e.g., Decision Event Map, Stakes Ladder Map, Scene Turn code inventory). Group pass files first, then audit findings.
 - **Appendix B: Severity Calibration.** Compressed summary of the adversarial self-check — which findings were tested, in which direction, whether any severities were adjusted.
 - **Appendix C: Framework Notes.** Analysis version, model, run date, passes completed, protocol flags, prior analyses on file, cross-version stability notes (if applicable).
