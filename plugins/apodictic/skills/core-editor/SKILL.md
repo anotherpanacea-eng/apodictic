@@ -7,11 +7,11 @@ description: >
   "run the passes," "do a revision round," or any request involving manuscript
   analysis, structural diagnosis, or editorial feedback. Also triggers on
   "APODICTIC," "APDE," or "development editor."
-version: 0.4.14
+version: 0.4.19
 ---
 
 # APODICTIC: anotherpanacea's Development Editor — Core Orchestrator
-## Version 0.4.14
+## Version 0.4.19
 *Last Updated: February 2026*
 
 ---
@@ -61,16 +61,15 @@ The author invents content. The system identifies structural problems and classe
 
 ---
 
-## Operating Tiers
+## Pass Resolution
 
-**Core DE (Default):** Contract, reverse outline, reader experience, structural mapping, character audit, reveal economy, synthesis. Sufficient for most manuscripts.
+Pass execution is concern-driven, not hardwired to a single fixed sequence.
 
-**Full DE (Triggered):** All passes, supplementary audits, full dashboard. Triggered by:
-- Core DE identifies >5 root causes
-- Reader experience pass logs >10 major issues
-- Author reports persistent unidentifiable problems
-- Structural complexity (multiple timelines, unreliable narrators, non-linear)
-- Author revision loops ("I've rewritten this section multiple times and it still doesn't work")
+- Resolve the user's concern to a minimum pass set using `references/pass-dependencies.md`.
+- Pull required upstream dependencies automatically from the same file.
+- Execute by dependency tier (parallel where permitted), then synthesize.
+- If concern is unspecified or ambiguous, default to **General diagnostic floor**: Passes 0, 1, 2, 5, 8.
+- If findings indicate interconnected systemic issues, recommend expansion to the full pass set per auto-escalation rules.
 
 ---
 
@@ -78,40 +77,37 @@ The author invents content. The system identifies structural problems and classe
 
 ### 1. Intake (always runs)
 Draft-then-validate contract from text analysis. Hypothesis-driven questions. Output: `Contract_and_Controlling_Idea.md`.
+If router output is available (`artifact`, `goal`, `concern`, `constraints`, `operator`), treat those fields as pre-filled and skip redundant intake questions.
 
-### 2. Core Passes
-- **Pass 0:** Reverse Outline — objective scene-by-scene summary with measured word counts
-- **Pass 1:** Reader Experience — naive-reader emotional/cognitive tracking
-- **Pass 2:** Structural Mapping — beat map, causal chain, proportional analysis
-- **Pass 5:** Character Audit — psychology, agency, voice, arc tracking
-- **Pass 8:** Reveal Economy — information flow, fairness tests, dramatic irony
+### 2. Pass Resolution
+Load `references/pass-dependencies.md`, resolve concern to minimum pass set, add dependencies, then run selected passes in dependency order.
 
 ### 3. Synthesis
 Root cause analysis (max 5), triage (Must-Fix / Should-Fix / Could-Fix), adversarial self-check, editorial letter.
 
-### 4. Full DE Trigger Check
-If trigger conditions met, offer Full DE passes (3, 4, 6, 7, 9, 10) and supplementary audits.
+### 4. Expansion Recommendation
+Apply auto-escalation rules from `references/pass-dependencies.md` §2b. Recommend expansion to full pass set when issue density/complexity exceeds the scoped run.
 
 ### 5. Revision Round (when re-analyzing)
 Delta scan, ripple check, resolution verification, new issue detection.
 
-**Execution details for all of the above:** Load `references/run-core.md`. For Full DE: also load `references/run-full.md`.
+### 6. Scene-Level Handoff (when requested)
+When diagnosis is complete for a scoped scene and the writer wants execution help, follow `references/handoff-protocol.md` for mode switch, state persistence, and re-entry.
+
+**Execution details for all of the above:** Load `references/run-core.md`. Use `references/pass-dependencies.md` for pass resolution. For full expansion: load `references/run-full.md`.
 
 ---
 
 ## Pass Architecture
 
-**Sequential Dependencies:**
-- Pass 0 (Reverse Outline) must complete before Pass 2 (Structural Mapping)
-- Pass 1 (Reader Experience) must complete before Pass 3 (Rhythm)
-- Intake must complete before any passes
+Pass dependency and parallelization rules are canonical in `references/pass-dependencies.md`:
 
-**Parallel-Capable Passes:**
-- Pass 0 + Pass 1 (independent first-read operations)
-- Pass 5 + Pass 8 (independent tracking systems)
-- Pass 9 + Pass 10 (independent analysis layers)
+- Tier 1 (read passes) can run in parallel.
+- Tier 2 (analysis passes) require resolved Tier 1 dependencies.
+- Tier 3 synthesis runs after selected Tier 2 passes complete.
+- Pass 11 runs only when submission readiness is in scope.
 
-**Synthesis requires all passes complete.** Never synthesize partial findings.
+Never synthesize before all selected passes and their dependencies are complete.
 
 ---
 
@@ -138,7 +134,9 @@ When operating within a project:
 3. **REFERENCE** story guides during Pass 9 for controlling idea alignment
 4. **OUTPUT** all diagnostic artifacts to the `Outputs/` subfolder
 5. **INITIALIZE** `Diagnostic_State.md` from `references/diagnostic-state-template.md` if it does not exist
-6. **UPDATE** `Diagnostic_State.md` with cumulative findings across sessions
+6. **SET** `Mode.Current` to `diagnostic` unless an active handoff is explicitly in effect
+7. **APPEND** handoff entries to `Handoff History` (never overwrite prior cycles)
+8. **UPDATE** `Diagnostic_State.md` with cumulative findings across sessions
 
 When no project context exists, proceed with intake from scratch.
 
@@ -175,6 +173,14 @@ Spine diagnosis, selection coaching, structural triage → Delegate to **plot-ar
 ### Specialized Audits
 Any deep-dive audit, tag audit, or research mode → Delegate to **specialized-audits** skill. That skill maintains its own routing table and trigger logic.
 
+### Scene-Level Handoff
+When the writer requests prose-level execution help for a diagnosed scene:
+- Load `references/handoff-protocol.md`
+- Offer handoff using the required confirmation template
+- Write context into `Diagnostic_State.md` and set mode to `execution`
+- Suspend core-editor constraints for execution mode
+- Re-enter diagnostic mode only via explicit phrase trigger or `/start` resume check
+
 ### Pass 11: Critical Quality & Market Viability
 Author states publication/submission goal, requests honest assessment, or mentions query materials → Load `references/pass-11.md`.
 
@@ -208,8 +214,10 @@ During intake, identify the manuscript's genre and load the corresponding module
 | File | When to Load |
 |------|-------------|
 | `references/run-core.md` | Every Core DE and Full DE run (intake, passes, synthesis, revision rounds) |
-| `references/run-full.md` | Only when Full DE tier is triggered |
+| `references/pass-dependencies.md` | When resolving concern to scoped pass set and dependency order |
+| `references/run-full.md` | When selected pass set includes advanced passes (3, 4, 6, 7, 9, 10) |
 | `references/output-policy.md` | Before writing any output (editorial letter, pass reports) |
+| `references/handoff-protocol.md` | When offering/entering/exiting scene-level execution mode |
 | `references/character-architecture.md` | When detailed character analysis needed beyond Pass 5 basics |
 | `references/pass-11.md` | When market viability / publication readiness is requested |
 
@@ -229,7 +237,8 @@ During intake, identify the manuscript's genre and load the corresponding module
 | `references/contract-template.md` | Contract schema template |
 | `references/diagnostic-state-template.md` | Diagnostic state initialization |
 | `references/reverse-outline-template.md` | Reverse outline format |
-| `references/intake-router.md` | Full routing spec for `/start` command |
+| `references/intake-router-runtime.md` | Runtime routing spec for `/start` command |
+| `references/intake-router-design.md` | Router rationale and implementation notes (non-runtime) |
 
 ### Other References
 | File | Purpose |

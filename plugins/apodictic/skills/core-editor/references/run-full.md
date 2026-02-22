@@ -1,13 +1,9 @@
 # Full DE Passes & Supplementary Audits
 
-*Reference file for the APODICTIC Development Editor. Loaded only when Full DE tier is triggered.*
+*Reference file for the APODICTIC Development Editor. Loaded when selected pass set includes advanced passes (3, 4, 6, 7, 9, 10), including full-pass expansion.*
 
-**Full DE Trigger Conditions:**
-- Core DE identifies >5 root causes
-- Reader experience pass logs >10 major issues
-- Author reports persistent unidentifiable problems
-- Structural complexity (multiple timelines, unreliable narrators, non-linear)
-- Author revision loops ("I've rewritten this section multiple times and it still doesn't work")
+**Expansion policy:**
+Use this file when the user requests "full diagnostic" explicitly, or when auto-escalation recommendation criteria in `references/pass-dependencies.md` §2b are met and the user accepts expansion.
 
 ---
 
