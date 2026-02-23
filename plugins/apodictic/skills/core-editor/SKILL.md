@@ -135,7 +135,7 @@ When operating within a project:
 3. **REFERENCE** story guides during Pass 9 for controlling idea alignment
 4. **OUTPUT** all diagnostic artifacts to the `Outputs/` subfolder
 5. **INITIALIZE** `Diagnostic_State.md` from `references/diagnostic-state-template.md` if it does not exist
-6. **SET** `Mode.Current` to `diagnostic` unless an active handoff is explicitly in effect
+6. **SET** the Mode section's `**Current:**` field to `diagnostic` unless an active handoff is explicitly in effect
 7. **APPEND** handoff entries to `Handoff History` (never overwrite prior cycles)
 8. **UPDATE** `Diagnostic_State.md` with cumulative findings across sessions
 

@@ -20,7 +20,7 @@ Load the `core-editor` skill first (thin orchestrator). Do NOT preload companion
 
 1. **Resume gate (runs before Q1):**
    - Check for an existing `Diagnostic_State.md` in active project context.
-   - If state exists and `Mode.Current` is `execution`, do NOT run router questions yet. Present:
+   - If state exists and the Mode section shows `**Current:** execution`, do NOT run router questions yet. Present:
      - **Check the fix** — reload editor mode and run re-entry delta check on active scene
      - **Keep working** — stay in execution mode on current scene
      - **Start fresh** — continue to full intake router
