@@ -112,7 +112,7 @@ Any of these re-enter diagnostic mode:
 
 ### §5a. `/start` resume check
 
-When `/start` fires and `Diagnostic_State.md` exists with `mode: execution`:
+When `/start` fires and `Diagnostic_State.md` exists with the Mode section showing `**Current:** execution`:
 
 1. **Do not run the router question flow.** Instead, present:
 

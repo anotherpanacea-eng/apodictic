@@ -1,4 +1,4 @@
-# APODICTIC: anotherpanacea's Development Editor
+# APODICTIC Development Editor
 
 Developmental editing that listens before diagnosing.
 
@@ -47,7 +47,7 @@ The plugin assumes its user is an adult working on a creative project. Its outpu
 - **core-editor** — The main workflow: intake protocol, 11 analysis passes, synthesis, revision rounds, genre calibration
 - **pre-writing-pathway** — Guides writers from idea to draftable structure (no manuscript required). Writer mode calibration, seed inventory, readiness gates, option architecture, complexity budget, prospective contract, re-entry diff protocol.
 - **plot-architecture** — Plot structure diagnosis (48 spines across 12 families), selection coaching, fantasy & series architecture
-- **specialized-audits** — 23 deep-dive audits (including 3 universal: stakes system, decision pressure, scene turn), 5 tag audits (cozy, philosophical, erotic content, consent complexity, queer romance/erotica), and 4 internet-enabled research modes
+- **specialized-audits** — 25 deep-dive audits (including 3 universal: stakes system, decision pressure, scene turn), 3 tag audits (cozy, philosophical, erotic content), and 4 internet-enabled research modes
 
 ### Commands (9)
 
@@ -131,4 +131,4 @@ You can use, adapt, and share this framework for non-commercial purposes, with a
 
 ## Author
 
-Joshua A. Miller, PhD
+anotherpanacea

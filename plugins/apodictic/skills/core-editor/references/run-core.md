@@ -102,7 +102,7 @@ If router output already answered any of these, do not ask again unless clarific
 
 ### Output: Contract Document
 
-Generate `Contract_and_Controlling_Idea.md` containing:
+Generate `[Project]_Contract_[runlabel].md` (also accepted: `Contract_and_Controlling_Idea.md`) containing:
 - Completed schema fields
 - Contract paragraph (generated from fields)
 - Controlling idea and anti-idea
