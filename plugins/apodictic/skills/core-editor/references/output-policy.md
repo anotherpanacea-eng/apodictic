@@ -43,6 +43,7 @@ Write project artifacts to the project's `Outputs/` folder using:
 - `[Project]_Pass2_Structural_Mapping_[runlabel].md`
 - `[Project]_Pass5_Character_Audit_[runlabel].md`
 - `[Project]_Pass8_Reveal_Economy_[runlabel].md`
+- `[Project]_Findings_Ledger_[runlabel].md`
 - `[Project]_Core_DE_Synthesis_[runlabel].md`
 
 **Full DE (additional):**
@@ -155,6 +156,26 @@ Use:
 - Direct, declarative assessment ("The problem is that the book only does this once, and late.")
 - The book's own language and imagery when it clarifies the point
 - Bolded thesis statements as section headings for scannability
+
+---
+
+## Cross-Reference Convention
+
+When the editorial letter references evidence from a pass data artifact — a table, inventory, matrix, timeline, or other structured data — include a parenthetical cross-reference directing the author to the artifact:
+
+> *(see [Pass Name], §[Section or Table Name])*
+
+**Examples:**
+- *(see Character Audit, Agency Assessment table)*
+- *(see Reveal Economy, Fairness Test #1)*
+- *(see Structural Mapping, §Causal Gaps)*
+- *(see Reverse Outline, SFF Rule Ledger, entries #10-14)*
+
+Cross-references appear inline within the prose argument. They do not replace the argument — the letter must still make its case in plain language. The cross-reference tells the author where to find the supporting evidence if they want to verify, push back, or use the data during revision.
+
+**When to cross-reference:** Use cross-references when the pass artifact contains structured data (tables, inventories, matrices) that the author can use as a revision tool. Do not cross-reference for every claim — only when pointing the author to a specific artifact adds value beyond the prose argument itself.
+
+**Tone:** Cross-references should feel like a knowledgeable editor saying "I've documented this in detail — here's where to find it." They should not feel like a framework generating citations.
 
 ---
 

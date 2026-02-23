@@ -1,8 +1,8 @@
 # Pass Dependencies, Query Resolution & Audit Resolution
 
 **Status:** Implementation-ready
-**For:** APODICTIC Development Editor v0.5
-**Last updated:** 2026-02-22
+**For:** APODICTIC Development Editor v0.6
+**Last updated:** 2026-02-23
 
 This file is loaded at runtime when the query-driven pass architecture is active. It replaces the fixed Core DE / Full DE tier model with concern-driven resolution.
 
@@ -25,13 +25,13 @@ Tier 1 passes read the manuscript directly. They have no upstream dependencies a
 | Pass | Name | Depends on | Output artifact |
 |------|------|-----------|-----------------|
 | 2 | Structural Mapping | 0 | `[Project]_Pass2_Structural_Mapping_[runlabel].md` |
-| 3 | Rhythm & Modulation | 0, 1 | `[Project]_Pass3_Rhythm_Modulation_[runlabel].md` |
-| 4 | Emotional Value Tracking | 0, 1 | `[Project]_Pass4_Emotional_Value_Tracking_[runlabel].md` |
+| 3 | Rhythm & Modulation | 0, 1 | `[Project]_Pass3_Rhythm_[runlabel].md` |
+| 4 | Emotional Value Tracking | 0, 1 | `[Project]_Pass4_Emotional_[runlabel].md` |
 | 5 | Character Audit | 0 | `[Project]_Pass5_Character_Audit_[runlabel].md` |
 | 6 | Scene Function Audit | 0, 2 | `[Project]_Pass6_Scene_Function_[runlabel].md` |
 | 7 | POV & Voice | 0, 5 | `[Project]_Pass7_POV_Voice_[runlabel].md` |
 | 8 | Reveal Economy | 0 | `[Project]_Pass8_Reveal_Economy_[runlabel].md` |
-| 9 | Thematic Coherence | 0, 5 | `[Project]_Pass9_Thematic_Coherence_[runlabel].md` |
+| 9 | Thematic Coherence | 0, 5 | `[Project]_Pass9_Thematic_[runlabel].md` |
 
 Tier 2 passes run only when selected by the query resolver. Each depends on one or more Tier 1 passes, which are automatically included when a Tier 2 pass is selected.
 
@@ -39,10 +39,18 @@ Tier 2 passes run only when selected by the query resolver. Each depends on one 
 
 | Pass | Name | Depends on | Output artifact |
 |------|------|-----------|-----------------|
-| Synthesis | Root cause analysis + editorial letter | All selected Tier 2 passes | `[Project]_Core_DE_Synthesis_[runlabel].md` (or `_Full_DE_Synthesis_` for full runs) |
+| Synthesis | Root cause analysis + editorial letter | All selected Tier 2 passes | `[Project]_Synthesis_[runlabel].md` |
 | 11 | Critical Quality & Market Viability | 0, 1, 2, 5, Synthesis | `[Project]_Pass11_Critical_Quality_[runlabel].md` |
 
 Synthesis always runs after all selected passes complete. Pass 11 runs only when submission readiness is in scope.
+
+### Running Artifacts (not passes)
+
+| Artifact | Type | Built by | Output |
+|----------|------|----------|--------|
+| Findings Ledger | Running document | Appended by each evaluative pass (1, 2, 5, 8, and Full DE passes) after completion | `[Project]_Findings_Ledger_[runlabel].md` |
+
+The Findings Ledger is not a pass. It has no tier. It is appended to by every pass that produces evaluative findings. Pass 0 and Pass 10 are data-building passes and do not append to the ledger unless they surface an observation that warrants it (e.g., a Rule Ledger inconsistency in an SFF run). The Synthesis step reads the Findings Ledger as its primary input for root cause analysis.
 
 ---
 

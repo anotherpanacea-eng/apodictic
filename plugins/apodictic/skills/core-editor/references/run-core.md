@@ -102,7 +102,7 @@ If router output already answered any of these, do not ask again unless clarific
 
 ### Output: Contract Document
 
-Generate `[Project]_Contract_[runlabel].md` (also accepted: `Contract_and_Controlling_Idea.md`) containing:
+Generate `Contract_and_Controlling_Idea.md` containing:
 - Completed schema fields
 - Contract paragraph (generated from fields)
 - Controlling idea and anti-idea
@@ -308,6 +308,88 @@ Track information flow.
 
 ---
 
+### Findings Ledger Protocol
+
+After completing each pass artifact, immediately append a ledger entry to `[Project]_Findings_Ledger_[runlabel].md`. The ledger is a running document that accumulates pass findings for the synthesis step.
+
+**Purpose:** Solve context window decay. By the time the synthesis runs, earlier pass details have faded from active context. The ledger preserves notable findings, data artifact pointers, and cross-pass connections while they're fresh — each entry is written immediately after its pass, not reconstructed later.
+
+**When to write:** Immediately after the pass artifact is saved — while the pass content is still in active context. Do not defer ledger entries to the synthesis step.
+
+**What to include:** See §Ledger Entry Format below.
+
+**What NOT to include:** The full pass analysis. The ledger is an extraction, not a copy. If a finding is in the ledger, the evidence is in the pass artifact; the ledger points to it.
+
+**Pass 0 and Pass 10 exception:** These are data-building passes. They do not require ledger entries unless they surface an observation that warrants it (e.g., a Rule Ledger inconsistency detected during outline construction, or an entity continuity error noticed during tracking). When a genre module adds analytical tracking to Pass 0 (such as the SFF Rule Ledger), notable patterns in that tracking should generate a ledger entry.
+
+#### Ledger Entry Format
+
+Each pass appends a section using this structure:
+
+```markdown
+---
+
+## Pass [N]: [Name] — Ledger Entry
+
+### Notable Findings
+
+[Numbered list. Each entry: one sentence stating the finding, one sentence
+stating why it matters for the editorial letter, and a pointer to the
+specific location in the pass artifact.]
+
+1. **[Finding name].** [What it is.] [Why it matters.]
+   *(See Pass N, §[Section], [table/paragraph name].)*
+
+### Data Artifacts for Letter Reference
+
+[List of tables, inventories, matrices, or other structured data in the
+pass artifact that the editorial letter should direct the author to.
+One sentence per artifact describing what it shows and why it's useful
+for revision.]
+
+- **[Artifact name]** — [What it shows, in one sentence.]
+  *(Pass N, §[Section].)*
+
+### Cross-Pass Connections
+
+[Findings from this pass that connect to earlier ledger entries. These
+are pre-built hypotheses about shared root causes — the synthesis step
+evaluates them. Format: what this pass found, what it connects to,
+and why the connection matters.]
+
+- [Connection description.]
+  *(Connects to: Pass M, Finding N.)*
+
+### Unresolved Questions
+
+[Observations this pass surfaced but couldn't fully analyze within its
+scope. These may become stress test material, deferred audit triggers,
+or items for the "Additional Observations" section of the editorial
+letter.]
+
+- [Question.]
+
+### Audit Triggers
+
+[Migrated here from pass artifact. The pass artifact retains its own
+audit triggers section for standalone readability, but the ledger
+consolidates them for the synthesis step.]
+
+| Trigger | Evidence | Recommendation |
+|---------|----------|----------------|
+```
+
+#### Ledger Discipline
+
+- **Notable findings are not all findings.** Include only findings that should appear in or inform the editorial letter. A belief failure rated "minor" that doesn't connect to a pattern is pass-level data, not a ledger entry. A belief failure rated "moderate" that connects to a root cause is a ledger entry.
+- **When in doubt, include.** A finding whose notability is uncertain should go in the ledger rather than be left out. The synthesis step can ignore a noisy ledger entry; it cannot recover a finding that was never recorded. Err on the side of inclusion for any finding that *might* connect to a pattern — the next pass may confirm or disconfirm its importance.
+- **Cross-pass connections are the ledger's highest-value output.** These are the observations that fall between passes — the synthesis step can't make them if it can't see the earlier pass data. Write them explicitly: "Pass 8 found X, which connects to Pass 5 Finding Y because Z."
+- **Retroactive promotion.** A later pass may reveal that an earlier pass's finding is more important than it originally appeared. When this happens, the later pass should: (1) note the connection in its own Cross-Pass Connections section, and (2) append a brief **Retroactive Addition** to the earlier pass's ledger section, promoting the finding and explaining why it now matters. Format: `**[Retroactive — added by Pass N]:** Pass M's finding on [X] is more significant than initially assessed because [reason]. Promotes to notable.` This ensures the synthesis step sees the upgraded finding in the context of the pass that generated it, not only in the pass that recognized its importance.
+- **Unresolved questions feed the stress test.** If a pass surfaces something that feels like a vulnerability but doesn't fit the pass's diagnostic categories, log it here. The stress test step will draw from these.
+- **Data artifacts are revision tools.** The editorial letter is an argument; the pass artifacts contain tools the author can use during revision (agency timelines, competence inventories, reveal timelines). The ledger tells the synthesis step which tools exist so the letter can point to them.
+
+---
+
 ### Audit Integration Point
 
 After all core passes are complete and before writing the synthesis:
@@ -361,7 +443,7 @@ The synthesis is the author-facing editorial letter. It must read as one informe
    - **Count consolidated problems, not individual flags.** A single root cause may have 8 audit flags supporting it. The flags are evidence; the root cause is what enters triage.
    - **Carry audit artifacts forward.** Audit-specific tracking artifacts (Decision Event Map, Stakes Ladder Map, Scene Turn code inventory, etc.) become appendix material. They support the editorial letter's arguments but don't appear in the letter body.
 
-3. **Root Cause Analysis.** Identify 3-5 root causes (maximum 5) from consolidated pass + audit findings. If more than 5 seem present, flag that manuscript may need reconception. Audit findings that cluster under the same root cause strengthen the diagnosis; they don't multiply the root cause count.
+3. **Root Cause Analysis.** Read the Findings Ledger as the primary input for root cause analysis. The ledger's cross-pass connections are pre-built hypotheses about shared root causes — evaluate each. Identify 3-5 root causes (maximum 5) from the ledger's notable findings, cross-pass connections, and consolidated audit findings. If more than 5 seem present, flag that manuscript may need reconception. Audit findings that cluster under the same root cause strengthen the diagnosis; they don't multiply the root cause count. For any ledger finding that doesn't cluster under a root cause, carry it forward to the "Additional Observations" section (§4b) of the editorial letter.
 
 4. **Triage.** Assign severity to each finding:
    - **Must-Fix:** Book-breaking (max 10)
@@ -376,7 +458,7 @@ The synthesis is the author-facing editorial letter. It must read as one informe
 
    **Evidence check (both directions):** For each Must-Fix flag, confirm you have 2+ specific scene/line references. If not, either find them or downgrade your confidence (not the severity).
 
-6. **Adversarial Reader Stress Test (required).** Before writing the letter, run the stress test per `references/adversarial-stress-test.md`. Inhabit the low-charity reader profiles and generate 3-5 adversarial claims with evidence, severity, steelman defense, and net risk assessment. This is a separate exercise from the adversarial self-check (step 5) — the self-check tests severity calibration of existing findings; the stress test surfaces what hostile readers would attack, which may include issues not flagged by the passes.
+6. **Adversarial Reader Stress Test (required).** Before writing the letter, run the stress test per `references/adversarial-stress-test.md`. **Begin the stress test by setting aside the pass findings and the Findings Ledger.** Inhabit the low-charity reader profiles and generate 3-5 adversarial claims from a holistic reading of the manuscript — what would a hostile reader attack regardless of what the passes found? Draw also from the Findings Ledger's "Unresolved Questions" entries, which may contain vulnerabilities the passes noticed but couldn't fully analyze. After generating the independent claims, reconcile them with the pass findings: which attacks are already covered by editorial letter findings? Which are new? New attacks enter the stress test section of the letter. Attacks already covered by the editorial argument are noted as convergent evidence but not duplicated. This is a separate exercise from the adversarial self-check (step 5) — the self-check tests severity calibration of existing findings; the stress test surfaces what hostile readers would attack, which may include issues not flagged by the passes.
 
 7. **Write the editorial letter** using the presentation format below. The self-check informs the letter's severities; the stress test becomes §7 of the letter.
 
@@ -404,6 +486,21 @@ Discipline: Maximum 3 major strengths for manuscripts needing significant revisi
 **4. What Needs Work.** Headed subsections. Each heading is a **bolded thesis statement** that names the problem in plain language (e.g., "**Pacing: Part I has room Part III needs.**" — not "Priority Leak #1: Dramatic Density Imbalance"). Prose argument underneath with line references embedded naturally. The argument should make the reader understand *why* the issue matters for their book specifically, not just that a structural rule has been violated.
 
 Group related issues under a single heading when they share a root cause (e.g., four underdeveloped secondary characters become one section about the pattern, not four separate flags).
+
+**4b. Additional Observations from the Diagnostic Passes.** This section draws from the Findings Ledger — specifically from notable findings and cross-pass connections that didn't make it into §3 or §4 but that the author should know about. Brief prose paragraphs with cross-references to the pass artifacts.
+
+**Inclusion criteria:**
+- Any ledger finding rated "notable" that isn't already discussed in §3 or §4
+- Any cross-pass connection that reveals a pattern not covered by the root causes
+- Any data artifact that would be useful for revision even though it doesn't correspond to a "problem" (e.g., a competence-cost inventory that confirms the author's consistency, a suspense architecture table that shows strong question density)
+- Structural characteristics of the manuscript worth noting even when they aren't flaws (e.g., "the novel runs on almost zero dramatic irony — this is a structural characteristic, not necessarily a problem, but it has these specific implications for revision")
+
+**Exclusion criteria:**
+- Findings already covered in §3 or §4 (no duplication)
+- Raw data without interpretive value
+- Audit triggers (these stay in Appendix A)
+
+This section serves two purposes: it prevents the synthesis from compressing away pass findings that the author needs, and it teaches the author how to use the pass artifacts as revision tools. Every item should include a cross-reference pointing the author to the relevant pass artifact.
 
 **5. Revision Checklist.** A table the author can tape to the wall. Priority ordered. Columns:
 
@@ -458,10 +555,10 @@ When a diagnosis is complete for a clearly scoped scene and the writer wants hel
 
 - Require explicit confirmation before mode switch.
 - Append a new entry to `Handoff History` (never overwrite prior entries).
-- Set the Mode section's `**Current:**` field to `execution` and set `**Active scene scope:**`.
+- Set `Mode.Current` to `execution` and set `Active scene scope`.
 - In execution mode, diagnostic constraints are suspended; prose-level collaboration is allowed.
 - Return to diagnostic mode via phrase trigger ("back to editor", "resume editor", "check this fix") or the `/start` resume gate.
-- On re-entry, run a targeted delta check for the active scope, close the handoff entry, and reset `**Current:**` to `diagnostic`.
+- On re-entry, run a targeted delta check for the active scope, close the handoff entry, and reset mode to `diagnostic`.
 
 ---
 
