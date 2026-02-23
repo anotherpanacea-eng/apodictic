@@ -50,19 +50,21 @@ Not every reader type will produce findings for every manuscript. Use the profil
 
 ## Assessment Structure
 
+**Lock-then-test protocol:** For each finding, commit to severity and prevalence *before* generating the steelman defense. The defense cannot retroactively downgrade a severity rating — it can only note that the author has a counter-argument available. This ordering exists because LLMs reliably talk themselves out of hard findings when asked to generate both sides simultaneously.
+
 **For each finding:**
 
-| Field | Description |
-|-------|-------------|
-| **Adversarial Claim** | State the criticism as a low-charity reader would phrase it |
-| **Evidence** | Specific textual locations supporting the claim |
-| **Confidence** | `[HIGH]` / `[MEDIUM]` / `[LOW]` — per standard confidence calibration |
-| **Severity** | `Fatal` (rejection/abandonment) / `Damaging` (significant weakness) / `Irritating` (noticeable but survivable) |
-| **Prevalence** | `Rare` / `Some` / `Many` — what portion of target readers would this bother? |
-| **Steelman Defense** | Best counter-argument available — what the author or a sympathetic reader would say |
-| **Net Risk** | After considering defense, does the claim still land? |
+| Field | Order | Description |
+|-------|-------|-------------|
+| **Adversarial Claim** | 1st | State the criticism as a low-charity reader would phrase it |
+| **Evidence** | 2nd | Specific textual locations supporting the claim |
+| **Confidence** | 3rd | `[HIGH]` / `[MEDIUM]` / `[LOW]` — per standard confidence calibration |
+| **Severity** | 4th (LOCKED) | `Fatal` (rejection/abandonment) / `Damaging` (significant weakness) / `Irritating` (noticeable but survivable) |
+| **Prevalence** | 5th (LOCKED) | `Rare` / `Some` / `Many` — what portion of target readers would this bother? |
+| **Steelman Defense** | 6th | Best counter-argument the author or a sympathetic reader could make |
+| **Does the claim survive?** | 7th | Restate the original severity. The defense may contextualize but cannot reduce it. If real readers have already reacted this way, the claim survives regardless of how good the defense sounds. |
 
-**Note on Steelman Defense:** The defense exists to test the claim's strength, not to dismiss it. If the defense is stronger than the claim, the claim's severity should be downgraded or the finding dropped. If the claim survives the defense, it stands. Do not use the defense as an escape hatch to soften every finding.
+**Anti-softening rule:** If a finding reaches this section, it has already passed the evidence and confidence thresholds. The steelman defense is informational — it tells the author what argument is available to them. It does not give the system permission to walk back the diagnosis. A finding with a strong defense is still a finding; it's just a finding the author can choose to accept as a trade-off. At least one finding in every stress test must survive with its full severity intact. If the system cannot produce a stress test where any claim lands, the stress test has failed — return to the low-charity frame and try again.
 
 ---
 
@@ -83,9 +85,9 @@ The stress test appears in the editorial letter as §7 (after the rejection memo
 
 **How serious:** [Fatal / Damaging / Irritating] — would bother [Rare / Some / Many] readers
 
-**Best defense:** [Steelman counter-argument]
+**Best defense available:** [Steelman counter-argument the author could make]
 
-**Does it land?** [Yes / Partially / No — with reasoning]
+**Verdict:** [Claim stands / Claim stands with caveat] — [reasoning]. Severity: [restate locked severity].
 
 ---
 
@@ -95,14 +97,14 @@ The stress test appears in the editorial letter as §7 (after the rejection memo
 
 ### Stress Test Summary
 
-**Would this manuscript survive hostile scrutiny?**
+**How much damage would hostile scrutiny do?**
 
-- Yes: Core strengths absorb the hits
-- Partially: Some claims land, but compensating strengths exist
-- No: Claims would define reader response
+- Minor: Claims are real but unlikely to define reader response for most of the target audience
+- Moderate: At least one claim would significantly affect reader experience for a meaningful portion of the audience
+- Severe: Multiple claims would define reader response; manuscript is vulnerable to the readings described above
 
-**Which claims to address vs. accept as trade-offs:**
-[Brief guidance — which findings are worth revising for, which are acceptable costs of the manuscript's choices]
+**Trade-off map:**
+[For each finding: state whether it's worth revising for or is an acceptable cost of the manuscript's choices — but do not use "acceptable cost" to dismiss Fatal or Damaging findings with Many prevalence]
 ```
 
 ---
