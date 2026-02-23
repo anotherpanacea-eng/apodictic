@@ -1,12 +1,10 @@
 {
   "name": "apodictic",
+  "version": "1.0.1",
+  "description": "APODICTIC: anotherpanacea's Development Editor. Developmental editing that listens before diagnosing.",
   "owner": {
     "name": "Joshua A. Miller, PhD",
     "email": "anotherpanacea@gmail.com"
-  },
-  "metadata": {
-    "description": "APODICTIC: anotherpanacea's Development Editor. Developmental editing that listens before diagnosing.",
-    "version": "1.0.1"
   },
   "plugins": [
     {

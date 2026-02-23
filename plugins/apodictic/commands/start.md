@@ -1,3 +1,8 @@
+---
+description: Recommended entry point — routes to the right workflow in 2-3 questions
+allowed-tools: Read, Write, Edit, Bash, Grep, Glob, WebSearch, WebFetch
+---
+
 # /start — Intake Router + Resume Gate
 
 The recommended entry point for APODICTIC. Routes users in 2-3 questions using the four-axis model (Artifact x Goal x Operator x Constraint), with a mode-aware resume check before routing.
