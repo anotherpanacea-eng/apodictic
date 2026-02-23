@@ -28,10 +28,18 @@ APODICTIC isn't just for finished drafts.
 
 ## Install
 
+### Claude Code (CLI)
+
 ```
 /plugin marketplace add anotherpanacea-eng/apodictic
 /plugin install apodictic@apodictic
 ```
+
+### Cowork (Desktop App)
+
+Download `apodictic.plugin` from the [latest release](https://github.com/anotherpanacea-eng/apodictic/releases/latest) and upload it through the Cowork app.
+
+---
 
 Then type `/start` — it asks you three questions to figure out what you need.
 
