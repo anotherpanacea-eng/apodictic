@@ -155,6 +155,23 @@ If concern is absent or ambiguous, default to **General diagnostic** baseline (P
 
 Pass specifications below define how each pass runs once selected.
 
+### Pre-Pass Re-Grounding (Required)
+
+Before beginning each evaluative pass (Passes 1, 2, 5, 8, and any Full DE passes), re-read the contract and the Findings Ledger. This counteracts context salience drift — as conversation context grows, the most important analytical anchors (what the book promises, what earlier passes found) lose salience relative to more recent content. Re-grounding refreshes these anchors.
+
+**For Pass 0:** No re-grounding needed (first pass; no ledger yet).
+**For all subsequent passes:** Re-read (1) the contract's controlling idea, anti-idea, and non-negotiables, and (2) the accumulated Findings Ledger. Do not re-read full prior pass artifacts — the ledger is the compressed representation; the pass artifacts are reference material for specific claims, not re-reading material.
+
+### Staged Visibility (Recommended)
+
+To reduce cross-pass anchoring while preserving cross-pass learning, each evaluative pass should analyze independently before consulting prior findings:
+
+1. **Draft findings** from the pass's own analytical lens, without reference to the Findings Ledger's Notable Findings or Cross-Pass Connections.
+2. **Then read** the relevant Findings Ledger entries and reconcile: confirm, contradict, refine, or integrate.
+3. **Record reconciliation** in the pass's Cross-Pass Connections section of its ledger entry.
+
+This is a procedural discipline, not a strict isolation requirement. In single-context execution, prior pass artifacts remain in context — the instruction to analyze first and reconcile second reduces anchoring without eliminating it. The pass still re-grounds on the contract and ledger's existence before starting (see §Pre-Pass Re-Grounding), but defers reading the ledger's substantive findings until after drafting its own.
+
 ## Core DE Pass Specifications
 
 ### Pass 0: Reverse Outline
@@ -312,7 +329,7 @@ Track information flow.
 
 After completing each pass artifact, immediately append a ledger entry to `[Project]_Findings_Ledger_[runlabel].md`. The ledger is a running document that accumulates pass findings for the synthesis step.
 
-**Purpose:** Solve context window decay. By the time the synthesis runs, earlier pass details have faded from active context. The ledger preserves notable findings, data artifact pointers, and cross-pass connections while they're fresh — each entry is written immediately after its pass, not reconstructed later.
+**Purpose:** Solve context salience decay. By the time the synthesis runs, earlier pass details have faded from active context. The ledger preserves notable findings, data artifact pointers, and cross-pass connections while they're fresh — each entry is written immediately after its pass, not reconstructed later.
 
 **When to write:** Immediately after the pass artifact is saved — while the pass content is still in active context. Do not defer ledger entries to the synthesis step.
 
@@ -334,11 +351,16 @@ Each pass appends a section using this structure:
 ### Notable Findings
 
 [Numbered list. Each entry: one sentence stating the finding, one sentence
-stating why it matters for the editorial letter, and a pointer to the
-specific location in the pass artifact.]
+stating why it matters for the editorial letter, a pointer to the
+specific location in the pass artifact, and optionally, the best case
+against the finding.]
 
 1. **[Finding name].** [What it is.] [Why it matters.]
    *(See Pass N, §[Section], [table/paragraph name].)*
+   *Counterevidence:* [Optional. The strongest case that this finding is
+   wrong, overstated, or explained by authorial intent. Omit if no
+   plausible countercase exists. When present, helps synthesis calibrate
+   severity and prevents the ledger from reading as a list of assertions.]
 
 ### Data Artifacts for Letter Reference
 
