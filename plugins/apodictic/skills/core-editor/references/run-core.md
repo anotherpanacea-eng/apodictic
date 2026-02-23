@@ -458,10 +458,10 @@ When a diagnosis is complete for a clearly scoped scene and the writer wants hel
 
 - Require explicit confirmation before mode switch.
 - Append a new entry to `Handoff History` (never overwrite prior entries).
-- Set `Mode.Current` to `execution` and set `Active scene scope`.
+- Set the Mode section's `**Current:**` field to `execution` and set `**Active scene scope:**`.
 - In execution mode, diagnostic constraints are suspended; prose-level collaboration is allowed.
 - Return to diagnostic mode via phrase trigger ("back to editor", "resume editor", "check this fix") or the `/start` resume gate.
-- On re-entry, run a targeted delta check for the active scope, close the handoff entry, and reset mode to `diagnostic`.
+- On re-entry, run a targeted delta check for the active scope, close the handoff entry, and reset `**Current:**` to `diagnostic`.
 
 ---
 

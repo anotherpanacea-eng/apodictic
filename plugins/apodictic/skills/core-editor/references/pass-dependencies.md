@@ -25,13 +25,13 @@ Tier 1 passes read the manuscript directly. They have no upstream dependencies a
 | Pass | Name | Depends on | Output artifact |
 |------|------|-----------|-----------------|
 | 2 | Structural Mapping | 0 | `[Project]_Pass2_Structural_Mapping_[runlabel].md` |
-| 3 | Rhythm & Modulation | 0, 1 | `[Project]_Pass3_Rhythm_[runlabel].md` |
-| 4 | Emotional Value Tracking | 0, 1 | `[Project]_Pass4_Emotional_[runlabel].md` |
+| 3 | Rhythm & Modulation | 0, 1 | `[Project]_Pass3_Rhythm_Modulation_[runlabel].md` |
+| 4 | Emotional Value Tracking | 0, 1 | `[Project]_Pass4_Emotional_Value_Tracking_[runlabel].md` |
 | 5 | Character Audit | 0 | `[Project]_Pass5_Character_Audit_[runlabel].md` |
 | 6 | Scene Function Audit | 0, 2 | `[Project]_Pass6_Scene_Function_[runlabel].md` |
 | 7 | POV & Voice | 0, 5 | `[Project]_Pass7_POV_Voice_[runlabel].md` |
 | 8 | Reveal Economy | 0 | `[Project]_Pass8_Reveal_Economy_[runlabel].md` |
-| 9 | Thematic Coherence | 0, 5 | `[Project]_Pass9_Thematic_[runlabel].md` |
+| 9 | Thematic Coherence | 0, 5 | `[Project]_Pass9_Thematic_Coherence_[runlabel].md` |
 
 Tier 2 passes run only when selected by the query resolver. Each depends on one or more Tier 1 passes, which are automatically included when a Tier 2 pass is selected.
 
@@ -39,7 +39,7 @@ Tier 2 passes run only when selected by the query resolver. Each depends on one 
 
 | Pass | Name | Depends on | Output artifact |
 |------|------|-----------|-----------------|
-| Synthesis | Root cause analysis + editorial letter | All selected Tier 2 passes | `[Project]_Synthesis_[runlabel].md` |
+| Synthesis | Root cause analysis + editorial letter | All selected Tier 2 passes | `[Project]_Core_DE_Synthesis_[runlabel].md` (or `_Full_DE_Synthesis_` for full runs) |
 | 11 | Critical Quality & Market Viability | 0, 1, 2, 5, Synthesis | `[Project]_Pass11_Critical_Quality_[runlabel].md` |
 
 Synthesis always runs after all selected passes complete. Pass 11 runs only when submission readiness is in scope.

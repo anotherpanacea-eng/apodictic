@@ -47,8 +47,8 @@ Display the complete list of available audits with brief descriptions:
 - **philosophical** — Philosophical Tag: question architecture, dramatic embodiment, conceptual progression
 - **erotic** — Erotic Content: intimate scene integration, load-bearing analysis, consent calculus
 
-### Plot Audits (use `/plot-coach` for selection and coaching)
-- **plot** — Plot Architecture: spine diagnosis (48 spines across 12 families)
+### Plot Architecture
+Plot structure analysis uses a separate skill. Run `/plot-coach` for spine diagnosis (48 spines across 12 families), selection coaching, and structural triage.
 
 **If an argument is provided:**
 Load the named audit's reference file and run the full audit on the manuscript. Apply all logic gates, produce flagged findings with specific scene/page evidence, and output a focused audit report.
