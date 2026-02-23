@@ -13,7 +13,7 @@ Load the `core-editor` skill. Create the project scaffolding:
 
 3. **Run Intake Protocol:** If a manuscript is provided, read it and generate a DRAFT Contract Schema by inferring genre, reader promise, controlling idea, and structural features from the text. Present the draft to the author — misalignments between inferred contract and author intent are diagnostically valuable.
 
-4. **Generate Contract Document** (`Contract_and_Controlling_Idea.md`) from the contract template, populated with intake findings and author corrections.
+4. **Generate Contract Document** (`[Project]_Contract_[runlabel].md`) from the contract template, populated with intake findings and author corrections.
 
 5. **Select genre modules and specialized audits** appropriate for the project. Record selections in the Contract.
 

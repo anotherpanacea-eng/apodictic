@@ -7,10 +7,10 @@ description: >
   "run the passes," "do a revision round," or any request involving manuscript
   analysis, structural diagnosis, or editorial feedback. Also triggers on
   "APODICTIC," "APDE," or "development editor."
-version: 1.0.1
+version: 1.0.2
 ---
 
-# APODICTIC: anotherpanacea's Development Editor — Core Orchestrator
+# APODICTIC Development Editor — Core Orchestrator
 *Last Updated: February 2026*
 
 ---
@@ -21,7 +21,7 @@ version: 1.0.1
 Execution details live in reference files loaded on demand.
 Dedicated reference files (genre modules, specialized audits, `references/pass-11.md`) win for module-specific rules.
 
-**Branding note:** Public-facing name is `APODICTIC: anotherpanacea's Development Editor`. Tagline: *Developmental editing that listens before diagnosing.*
+**Branding note:** Public-facing name is `APODICTIC Development Editor`. Tagline: *Developmental editing that listens before diagnosing.* The plugin author's identity must never be confused with the manuscript author's identity.
 
 **Model note:** This framework is designed for Claude Opus. Its anti-sycophancy protocols, severity floor rules, and adversarial self-checks require strong instruction-following. On smaller models, expect degraded severity honesty, weaker thematic interpretation, and lower fix quality.
 
@@ -77,7 +77,7 @@ Pass execution is concern-driven, not hardwired to a single fixed sequence.
 ## Workflow Contract
 
 ### 1. Intake (always runs)
-Draft-then-validate contract from text analysis. Hypothesis-driven questions. Output: `Contract_and_Controlling_Idea.md`.
+Draft-then-validate contract from text analysis. Hypothesis-driven questions. Output: `[Project]_Contract_[runlabel].md`.
 If router output is available (`artifact`, `goal`, `concern`, `constraints`, `operator`), treat those fields as pre-filled and skip redundant intake questions.
 
 ### 2. Pass Resolution
