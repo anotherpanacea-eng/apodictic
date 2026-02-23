@@ -5,6 +5,47 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.0.3 - 2026-02-23
+
+### Added — Findings Ledger & Editorial Letter Integration
+
+Comparative testing (plugin vs. blind editorial letter on *A Game of Universe*) revealed that pass artifacts contain rich analytical data that the synthesis step compresses away. Context window decay compounds the problem — by synthesis time, earlier pass details have faded. This release adds a running ledger and companion editorial letter changes to preserve pass findings through to the author.
+
+#### New: Findings Ledger Protocol (`run-core.md`)
+- **Findings Ledger** — a running document (`[Project]_Findings_Ledger_[runlabel].md`) appended to by each evaluative pass immediately after completion, while pass content is still in active context.
+- Each ledger entry contains: Notable Findings, Data Artifacts for Letter Reference, Cross-Pass Connections, Unresolved Questions, and Audit Triggers.
+- **"When in doubt, include" rule** — lowers the bar for initial ledger entries since synthesis can ignore noise but can't recover omissions.
+- **Retroactive promotion** — later passes can append `[Retroactive — added by Pass N]` notes to earlier ledger sections when a finding proves more important than initially assessed.
+- Pass 0 and Pass 10 exempt unless they surface observations warranting a ledger entry (e.g., SFF Rule Ledger inconsistencies).
+
+#### Changed: Synthesis Processing Protocol (`run-core.md`)
+- **Step 3 (Root Cause Analysis):** Synthesis now reads the Findings Ledger as primary input. Ledger cross-pass connections are treated as pre-built root cause hypotheses. Unclustered findings carry forward to §4b.
+- **Step 6 (Adversarial Stress Test):** Added independence instruction — stress test begins by setting aside pass findings and generating attacks from holistic manuscript reading. Draws also from ledger's Unresolved Questions. Reconciles with pass findings afterward; new attacks enter §7, convergent attacks noted but not duplicated.
+
+#### Added: §4b "Additional Observations from the Diagnostic Passes" (`run-core.md`)
+- New editorial letter section between §4 (What Needs Work) and §5 (Revision Checklist).
+- Draws from the Findings Ledger — notable findings and cross-pass connections not covered in the main editorial argument.
+- Serves two purposes: prevents synthesis compression of useful pass findings, and teaches the author how to use pass artifacts as revision tools.
+- Every item includes a cross-reference to the relevant pass artifact.
+
+#### Added: Cross-Reference Convention (`output-policy.md`)
+- New section specifying inline cross-reference format: `*(see [Pass Name], §[Section or Table Name])*`.
+- Transforms the editorial letter from a standalone argument into a navigation layer over the pass artifacts.
+- Findings Ledger added to Output Naming Convention.
+
+#### Changed: Pass Dependencies (`pass-dependencies.md`)
+- Added "Running Artifacts" table documenting the Findings Ledger as a non-pass artifact.
+- Version bumped to v0.6 (internal architecture version for the pass dependency map).
+
+#### Added: SFF Rule Ledger Cross-Check (`genre-sff.md`)
+- **Pass 1 addition:** When Pass 10 is not in the run, Pass 1 cross-references belief failures against Pass 0's Rule Ledger for scaling inconsistencies, cost amnesia, and unexplored implications.
+- **Pass 8 addition:** Same condition; Pass 8 checks construct scaling consistency, cost payment consistency across uses, and introduced-but-unexplored rules.
+- Both log matches to the Findings Ledger as cross-pass connections between their pass and Pass 0.
+
+### Provenance
+- Root cause: Comparative A/B testing (APODICTIC vs. blind editorial letter on *A Game of Universe* by Eric Nylund, 118K words) revealed the plugin's pass artifacts contained richer analysis than the blind letter in several categories, but the synthesis compressed away the advantage. The blind letter independently caught findings (Manifoldification scaling, Erybus backstory-collapse risk, Campbell scaffolding, child abuse access barrier) that the plugin's passes had data for but never surfaced.
+- Design document: `Outputs/APODICTIC_Findings_Ledger_Proposal.md`
+
 ## v1.0.0 - 2026-02-22
 
 ### 1.0 Release

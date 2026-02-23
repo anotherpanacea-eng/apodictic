@@ -315,6 +315,13 @@ Track specifically:
 - "Why is this a big deal?" — power/event has no established context for its significance
 - "Wait, they could do that the whole time?" — ability introduced mid-crisis without setup
 
+**Rule Ledger Cross-Check (when Pass 10 is not in the run):** When the SFF module is active and Pass 10 is not selected, Pass 1 inherits a lightweight cross-check responsibility. After logging belief failures, cross-reference each against Pass 0's `[NEW RULE]` tags and the SFF Rule Ledger (if built). Specifically check:
+- Whether any belief failure corresponds to a rule introduced at one scale and used at a different scale without explanation (scaling inconsistency)
+- Whether any belief failure corresponds to a cost established for one use of a construct but absent for another use (cost amnesia)
+- Whether any "Wait, they could do that the whole time?" flag maps to a Rule Ledger entry that was established but whose full implications were never acknowledged
+
+Log any matches in the Findings Ledger as cross-pass connections between Pass 1 and Pass 0.
+
 ### Pass 4: Emotional Value Tracking (Additions)
 
 **SF/F-specific emotional tracking:**
@@ -374,6 +381,13 @@ Worldbuilding reveals follow their own economy. Track:
 - Cost reveals are most powerful in Act III (when the bill comes due).
 
 **Threshold:** If >2 fundamental rules (not minor details) are first introduced after the 60% mark, flag "Late-Stage Worldbuilding — the physics engine is being patched during the final boss fight."
+
+**Rule Ledger Cross-Check (when Pass 10 is not in the run):** When the SFF module is active and Pass 10 is not selected, Pass 8 inherits a lightweight cross-check responsibility against the Rule Ledger. After building the reveal timeline and running fairness tests, cross-reference against Pass 0's SFF Rule Ledger:
+- For each construct that appears multiple times in the Rule Ledger, check whether its capabilities scale consistently across uses. If a construct operates at personal scale in one scene and cosmic scale in another without explanation, flag as a scaling inconsistency in the Findings Ledger.
+- For each construct with an established cost, check whether the cost is paid consistently across all uses. Cost amnesia in reveals is especially damaging because it undermines the fairness of the reveal economy — if the reader believed ability X had cost Y, and then the climax uses X without Y, the resolution feels unearned.
+- Check whether any Rule Ledger entry represents a rule that is *introduced* but whose *implications* are never explored. A rule introduced in Chapter 3 that should affect events in Chapter 15 but doesn't is a form of dropped thread specific to SFF.
+
+Log any matches in the Findings Ledger as cross-pass connections between Pass 8 and Pass 0.
 
 ### Pass 9: Thematic Coherence (Additions)
 
