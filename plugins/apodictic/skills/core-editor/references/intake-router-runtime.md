@@ -95,7 +95,7 @@ Options change based on the Artifact answer.
 | C | Clean up AI-generated or AI-assisted prose | Core DE + AI-Prose Calibration |
 | D | I have beta reader feedback — help me sort through it | Feedback Triage → Core DE |
 
-**Swarm mode recommendation:** When the user selects option B (submission readiness), suggest swarm mode in §3 if they haven't already selected it: "Since this is a final-round assessment before submission, you may want to consider swarm mode — it produces deeper analysis at higher token cost. Want to add that?" This is a suggestion, not a default.
+**Execution mode:** For `full_draft` manuscripts over 40k words, §2b will fire after this question to surface the execution mode choice. No need to mention execution mode here.
 
 ### If Artifact = `series`
 
@@ -106,6 +106,38 @@ Options change based on the Artifact answer.
 | A | Work on one book (the current volume) | Re-ask Q1 for the specific volume, with series context noted |
 | B | Check continuity across volumes | Series Continuity Audit |
 | C | Plan the series arc or the next volume | Pre-Writing Pathway (series-aware mode) |
+
+---
+
+## §2b. Execution Mode (conditional — manuscripts over 40k words)
+
+*Fires when: Artifact is `full_draft`, `partial`, or `series` (single volume selected) AND estimated word count exceeds 40,000. Skip for shorter manuscripts (single-context is fine) and for `idea` or `fragments` (no manuscript to analyze).*
+
+*When to ask: After Q2 resolves the goal, before Q3 constraints. If the user has already selected an execution mode via §3 options H/I or by stating "run this in swarm mode" at any point, skip this question.*
+
+"Your manuscript is long enough that how I read it matters. Three options:"
+
+| Option | Label | Plain-language description | Internal value |
+|--------|-------|---------------------------|----------------|
+| A | Standard read (fastest) | I read the whole manuscript once, then run all my analysis in sequence. Good for most drafts. Some findings may be thinner on very long novels because earlier analysis fades as I work. | `execution:single` |
+| B | Targeted deep read (recommended for novels) | I read the whole manuscript once to map it, then send each analytical lens to the specific scenes that need it most. Each lens works independently, so they can't parrot each other. Costs roughly 2–3x as much as a standard read. | `execution:hybrid` |
+| C | Full independent read (most thorough) | Every analytical lens reads the entire manuscript independently. The most findings, the deepest analysis, but roughly 5x the cost of a standard read. Best for final submission prep. | `execution:swarm` |
+
+**Default recommendation by context:**
+
+| Condition | Recommendation |
+|-----------|---------------|
+| 40k–80k words, goal = `repair` | Mention option B exists; don't push it. Single-context handles this range adequately. |
+| 80k+ words, goal = `repair` | Recommend B. "For a manuscript this length, the targeted read catches things the standard read misses." |
+| Any length, goal = `submit` | Recommend B or C. "Since you're checking submission readiness, the deeper read is worth the cost." |
+| User selects B or C | Confirm: "That adds to the token cost — just making sure you're good with that." |
+| User selects A or skips | Proceed with single-context. No friction. |
+
+**What this question does NOT do:**
+
+- It does not explain architectural details (subagents, focus maps, context windows). The user doesn't need to understand the mechanism — just the tradeoff between depth and cost.
+- It does not ask about token budgets. The user rarely knows their budget in tokens. "Roughly 2–3x" and "roughly 5x" are sufficient framing.
+- It does not override the user's choice. If they pick standard read on a 120k novel, that's their call.
 
 ---
 
@@ -130,7 +162,7 @@ Always asked after routing, before work begins. Multiple selections allowed.
 | I | Use swarm mode (deepest analysis, highest token cost) | `execution:swarm` | Each pass runs as an independent subagent with full manuscript. ~2x findings, ~5x token cost. See `run-core.md` §Execution Mode. |
 | J | No constraints — let's go | (none) | Proceed with standard workflow. |
 
-**Execution mode recommendation:** When the user selects option B (submission readiness) under `full_draft`, suggest hybrid mode in §3 if they haven't already selected an execution mode: "Since this is a final-round assessment before submission, you may want to consider hybrid mode (2–3x token cost, stronger analysis) or swarm mode (5x token cost, deepest analysis). Want to add either?" For manuscripts over ~80,000 words with goal `repair`, nudge toward hybrid: "For a manuscript this length, hybrid mode catches more than single-context. Want to add that?"
+**Execution mode note:** For manuscripts over 40k words, §2b handles the execution mode question before §3. Options H and I below remain as a safety net — if the user didn't get §2b (shorter manuscript, direct command entry) but knows to ask for hybrid or swarm, these options catch it.
 
 ---
 
@@ -189,7 +221,7 @@ Existing commands bypass the router with pre-filled values. The router is the re
 | full_draft | repair | time | Fast Triage | Gap |
 | full_draft | repair | ai | Core DE + AI-Prose Calibration | **Built** |
 | full_draft | repair | risk | Core DE + Risk Register | Gap |
-| full_draft | submit | — | Core DE → Pass 11 (hybrid suggested) | Gap: unified submission workflow |
+| full_draft | submit | — | Core DE → Pass 11 (§2b suggests hybrid/swarm) | Gap: unified submission workflow |
 | full_draft | submit | hybrid | Core DE → Pass 11 (hybrid mode) | **Built** |
 | full_draft | submit | swarm | Core DE → Pass 11 (swarm mode) | **Built** |
 | full_draft | submit | time | Fast Triage (submission focus) | Gap |
