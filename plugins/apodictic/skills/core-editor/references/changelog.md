@@ -5,6 +5,30 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.0.4 - 2026-02-24
+
+### Added — Swarm Mode (Optional Execution Mode)
+
+A/B testing on "Coda: The Headboard" (~4k words) demonstrated that dispatching each pass as an independent subagent produces roughly twice as many findings with more specific cross-pass connections and more consistent counterevidence, at approximately 5x the token cost. The quality improvement comes from architectural isolation: each pass genuinely cannot see prior analysis until reconciliation, which eliminates anchoring bias and produces multi-perspectival convergence rather than echo.
+
+#### New: Execution Mode section (`run-core.md`)
+- **Single-context mode** (default): all passes run sequentially in the current conversation context. No change from prior behavior.
+- **Swarm mode** (optional, user-invoked): each evaluative pass runs as an independent subagent with its own context window. Parent orchestrator manages the sequence and accumulates the Findings Ledger between dispatches.
+- Swarm Execution Protocol: specifies parent orchestrator responsibilities, what each subagent receives and returns, pass grouping (Pass 0+1 combined), and token cost estimates.
+- User invokes swarm mode at intake (e.g., "run this in swarm mode").
+
+#### Changed: Staged Visibility (`run-core.md`)
+- Added note clarifying that staged visibility is architecturally enforced in swarm mode (subagent has no prior pass artifacts in context) vs. procedurally enforced in single-context mode (reduces but does not eliminate anchoring).
+
+#### Changed: Design document (`docs/subagent-architecture-design.md`)
+- Status updated from "Future (v2.0+)" to "Available as optional execution mode (v1.0.4+)."
+- Decision record updated with A/B test results and rationale for shipping as optional mode.
+
+#### Changed: Roadmap (`ROADMAP.md`)
+- Subagent Pass Orchestration marked as shipped (optional mode, v1.0.4).
+
+---
+
 ## v1.0.3 - 2026-02-23
 
 ### Added — Findings Ledger & Editorial Letter Integration

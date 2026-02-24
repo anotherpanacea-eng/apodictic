@@ -115,6 +115,14 @@ Run a named audit or list all 28 available audits.
 ```
 Internet-enabled research to validate comps, check facts, verify genre currency, or surface representation context.
 
+## Execution Modes
+
+APODICTIC runs in **single-context mode** by default: all passes execute sequentially in one conversation. This is fast and token-efficient.
+
+For maximum analytical depth, request **swarm mode**: each pass runs as an independent subagent with its own clean context window. In controlled testing, swarm mode produced roughly **twice as many findings** with more specific cross-pass connections and more consistent counterevidence — at approximately **5x the token cost**. The quality improvement comes from architectural isolation: each pass genuinely cannot see prior analysis until a reconciliation step, which eliminates anchoring bias.
+
+**When to consider swarm mode:** Long manuscripts (>60,000 words), final-round diagnostics before submission, or any run where you want the deepest possible analysis and are willing to spend the tokens. To invoke: tell the editor "run this in swarm mode" at intake.
+
 ## Model Requirements
 
 APODICTIC is designed for and tested on **Claude Opus**. It will run on smaller models (Sonnet, Haiku), but with meaningfully degraded results — particularly in severity honesty, thematic interpretation, deliberate ambiguity handling, and fix quality. The framework includes anti-sycophancy protocols, adversarial self-checks, and severity floor rules that require strong instruction-following to work as intended. If you're evaluating the framework, use the best model available.

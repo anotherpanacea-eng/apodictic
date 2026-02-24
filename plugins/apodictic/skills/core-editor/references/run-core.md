@@ -155,6 +155,70 @@ If concern is absent or ambiguous, default to **General diagnostic** baseline (P
 
 Pass specifications below define how each pass runs once selected.
 
+---
+
+## Execution Mode
+
+APODICTIC supports two execution modes. The mode choice affects how passes run, not what they diagnose — the same pass specifications, Findings Ledger protocol, and synthesis format apply in both modes.
+
+### Single-Context Mode (Default)
+
+All passes run sequentially in the current conversation context. The manuscript, framework, and pass artifacts accumulate in one window. The Findings Ledger, staged visibility, and re-grounding protocols mitigate context salience decay.
+
+**When to use:** Most runs. Especially effective for manuscripts under ~60,000 words, where context pressure is manageable.
+
+### Swarm Mode (Optional)
+
+Each evaluative pass runs as an independent subagent with its own context window. A parent orchestrator manages the sequence, accumulates the Findings Ledger, and dispatches each pass with its required inputs.
+
+**What the user should know:** Swarm mode produces roughly **twice as many findings** with **more specific cross-pass connections** and **more consistent counterevidence**, at approximately **5x the token cost**. The quality improvement comes from architectural isolation: each pass genuinely cannot see prior analysis until the reconciliation step, which eliminates anchoring bias and produces multi-perspectival convergence rather than echo.
+
+**When to use:** When maximum analytical quality matters more than token economy. Particularly valuable for:
+- Manuscripts long enough to create real context pressure (>60,000 words)
+- Final-round diagnostics before submission
+- Cases where prior single-context runs produced a synthesis that felt thinner than the pass analysis warranted
+
+**When NOT to use:** Quick diagnostics, partial manuscripts, budget-constrained runs, or manuscripts short enough that single-context handles them comfortably.
+
+**How to invoke:** The user requests swarm mode at intake or before pass execution begins. Example: "Run this in swarm mode" or "Use subagent passes." The system confirms mode selection and token cost implications before proceeding.
+
+#### Swarm Execution Protocol
+
+**Parent orchestrator responsibilities:**
+1. Run intake in the parent context (load SKILL.md, run-core.md, generate contract, resolve pass set)
+2. Initialize the Findings Ledger
+3. Dispatch each pass as a subagent (Task tool, `model: opus`, `subagent_type: general-purpose`)
+4. Accumulate returned ledger entries between dispatches
+5. Pass the growing Findings Ledger to each subsequent subagent
+6. Dispatch the synthesis subagent with the complete ledger
+
+**What each pass subagent receives:**
+- The manuscript (file path for the subagent to read)
+- The contract (controlling idea, anti-idea, non-negotiables)
+- The pass specification (from run-core.md or run-full.md, as applicable)
+- The accumulated Findings Ledger (for staged visibility reconciliation — see §Staged Visibility)
+- Instructions to follow the Findings Ledger protocol (§Findings Ledger Protocol) and output a ledger entry
+
+**What each pass subagent returns:**
+- Its pass artifact (analysis output)
+- Its Findings Ledger entry (formatted per §Ledger Entry Format)
+
+**Pass grouping:** Pass 0 and Pass 1 run in a single combined subagent (both are full-read passes with no dependencies). All subsequent passes run as individual subagents.
+
+**Staged visibility in swarm mode:** The subagent receives the Findings Ledger but is instructed to complete its own analysis before reading the ledger's Notable Findings. In swarm mode, this isolation is architecturally stronger than in single-context mode — the subagent literally has no prior pass artifacts in its context, only the ledger entries provided for reconciliation.
+
+**Token cost estimate (118k-word manuscript):**
+
+| Mode | Estimated total tokens | Quality |
+|------|----------------------|---------|
+| Single-context | ~240,000 | Good; context decay in late passes |
+| Swarm (full read per pass) | ~1,000,000 | Best; no cross-pass decay |
+| Swarm (hybrid selective) | ~500,000 | Strong; later passes use excerpts |
+
+For full architecture details, cost analysis, and risk discussion: see `docs/subagent-architecture-design.md`.
+
+---
+
 ### Pre-Pass Re-Grounding (Required)
 
 Before beginning each evaluative pass (Passes 1, 2, 5, 8, and any Full DE passes), re-read the contract and the Findings Ledger. This counteracts context salience drift — as conversation context grows, the most important analytical anchors (what the book promises, what earlier passes found) lose salience relative to more recent content. Re-grounding refreshes these anchors.
@@ -170,7 +234,7 @@ To reduce cross-pass anchoring while preserving cross-pass learning, each evalua
 2. **Then read** the relevant Findings Ledger entries and reconcile: confirm, contradict, refine, or integrate.
 3. **Record reconciliation** in the pass's Cross-Pass Connections section of its ledger entry.
 
-This is a procedural discipline, not a strict isolation requirement. In single-context execution, prior pass artifacts remain in context — the instruction to analyze first and reconcile second reduces anchoring without eliminating it. The pass still re-grounds on the contract and ledger's existence before starting (see §Pre-Pass Re-Grounding), but defers reading the ledger's substantive findings until after drafting its own.
+This is a procedural discipline, not a strict isolation requirement. In single-context execution, prior pass artifacts remain in context — the instruction to analyze first and reconcile second reduces anchoring without eliminating it. In swarm mode (see §Execution Mode), isolation is architectural: the subagent literally has no prior pass artifacts in its context, only the ledger entries provided at reconciliation time. A/B testing confirmed that architecturally enforced isolation produces more independent findings and genuine cross-pass complication, while single-context staged visibility reduces but does not eliminate anchoring. The pass still re-grounds on the contract and ledger's existence before starting (see §Pre-Pass Re-Grounding), but defers reading the ledger's substantive findings until after drafting its own.
 
 ## Core DE Pass Specifications
 

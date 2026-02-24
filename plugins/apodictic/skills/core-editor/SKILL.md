@@ -97,6 +97,8 @@ When diagnosis is complete for a scoped scene and the writer wants execution hel
 
 **Execution details for all of the above:** Load `references/run-core.md`. Use `references/pass-dependencies.md` for pass resolution. For full expansion: load `references/run-full.md`.
 
+**Execution mode:** The system supports **single-context** (default) and **swarm** modes. In swarm mode, each pass runs as an independent subagent with its own context window, producing roughly twice as many findings at approximately 5x the token cost. The user invokes swarm mode at intake or before pass execution. See `references/run-core.md` §Execution Mode for protocol details and `docs/subagent-architecture-design.md` for architecture rationale.
+
 ---
 
 ## Pass Architecture
