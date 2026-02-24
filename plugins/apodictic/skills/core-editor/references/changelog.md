@@ -32,10 +32,10 @@ Hybrid mode is a middle ground between single-context and full swarm. Pass 0+1 r
 - Added hybrid mode additional output note to Pass 0 specification (focus map production).
 
 #### Changed: Intake router (`references/intake-router-runtime.md`)
-- Added option H (hybrid mode) to §3 constraints. Swarm mode moved to option I.
-- Updated execution mode recommendation: hybrid suggested for manuscripts >80k words; both hybrid and swarm offered when goal is submission readiness.
+- New §2b: Execution Mode question fires for manuscripts over 40k words. Three plain-language options (standard read / targeted deep read / full independent read) with context-sensitive recommendations. Surfaces the execution mode choice as a first-class intake question rather than burying it in the constraint list.
+- §3 options H and I retained as safety net for users who arrive via direct commands or shorter manuscripts.
+- §2 `full_draft` submission recommendation now defers to §2b instead of handling execution mode inline.
 - Added route map entries for `full_draft + repair + hybrid` and `full_draft + submit + hybrid` (both **Built**).
-- Submit without execution mode now suggests hybrid (previously suggested swarm).
 
 #### Changed: SKILL.md
 - Execution mode description updated to cover all three modes.
