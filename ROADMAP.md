@@ -327,37 +327,15 @@ New specialized audits should be built from real editorial engagements, not hypo
 
 ## v2.0+ — Execution Architecture
 
-Architectural changes to how the plugin executes, not what it diagnoses. These require platform capabilities (subagent orchestration, context management) that may not be stable enough to build on yet. Revisit when the underlying model and platform infrastructure matures.
+Architectural changes to how the plugin executes, not what it diagnoses.
 
-### Subagent Pass Orchestration (P2)
+### Subagent Pass Orchestration — ✅ Shipped as Optional Mode (v1.0.4)
 
-Replace the single-context execution model with orchestrated subagents: each pass runs in its own context window, receives the full manuscript (or targeted excerpts), and returns structured output to a parent orchestrator. The Findings Ledger (v1.0.3) serves as the inter-pass communication channel.
+Each pass runs as an independent subagent with its own context window. The Findings Ledger serves as the inter-agent communication protocol. User-invoked at intake with "run in swarm mode."
 
-**The problem:** In single-context execution, earlier pass details degrade as context fills. By synthesis time, the model is working from compressed memory of its own earlier analysis. The Findings Ledger mitigates this, but the root cause — all passes sharing one context window — remains.
+**A/B test results (2026-02-24, "Coda: The Headboard" ~4k words):** Swarm produced 20 findings vs. 9 single-context; 10 cross-pass connections vs. 4; counterevidence on every finding vs. 1; synthesis preserved finding-level detail. Passes *complicated* each other's findings rather than merely confirming them. Token cost: ~5x.
 
-**The opportunity:** Subagents can specify model quality (haiku/sonnet/opus). Each pass gets a clean 200k context window. No cross-pass context decay. The Findings Ledger, originally designed to solve context decay within a single window, becomes the natural inter-agent communication protocol.
-
-**Architecture variants (ordered by cost):**
-
-| Variant | Full reads | Estimated tokens (118k ms) | Quality tradeoff |
-|---------|-----------|---------------------------|-----------------|
-| Current (single context) | 1 | ~240k | Context decay in late passes |
-| Hybrid (Pass 0+1 full, rest selective) | 1 | ~500k | Later passes may miss unflagged sections |
-| Naive subagent (every pass full read) | 6 | ~1.2M | No degradation, but 5x cost |
-
-**Recommended variant:** Hybrid. Combine Pass 0 + Pass 1 into one full-read subagent that produces the reverse outline, reader experience log, and a new output type — the **Focus Map**. Later passes load the outline + targeted excerpts identified by the Focus Map. Synthesis loads the Findings Ledger + outline + selected verification excerpts.
-
-**New artifact: Focus Map.** Produced by the Pass 0+1 subagent. For each subsequent pass, identifies manuscript sections requiring attention with line ranges and rationale. Example: "Pass 5: scenes 31–35 (character makes unexplained decision), scenes 72–78 (agency collapse pattern). Pass 8: chapters 3, 9, 18, 24 (major information reveals)." Must err on inclusion — a missed section can't be recovered by a later pass that never sees it.
-
-**Key risk:** Selective reading means later passes trust Pass 0+1's triage. If Pass 0 doesn't flag a quiet scene where motivation subtly breaks, Pass 5 never examines it. Mitigation: Focus Map errs on inclusion; each later pass can request additional excerpts if the outline suggests something worth investigating.
-
-**Depends on:**
-- Findings Ledger (v1.0.3) ✓
-- Platform support for subagent model specification (confirmed: available in Claude Code Task tool)
-- Platform support for subagent file system access (confirmed: tested in Cowork sandbox)
-- Stable token budgeting that makes multi-read architectures practical
-
-**Design document:** `docs/subagent-architecture-design.md`
+**Status:** Available as optional execution mode. Default remains single-context. Protocol in `references/run-core.md` §Execution Mode. Design rationale and cost analysis in `docs/subagent-architecture-design.md`. Test results in `Outputs/Swarm_Test/TEST_RESULTS.md`.
 
 ### Pre-Skill Context Compaction (P3)
 

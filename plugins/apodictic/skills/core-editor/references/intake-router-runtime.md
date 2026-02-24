@@ -95,6 +95,8 @@ Options change based on the Artifact answer.
 | C | Clean up AI-generated or AI-assisted prose | Core DE + AI-Prose Calibration |
 | D | I have beta reader feedback — help me sort through it | Feedback Triage → Core DE |
 
+**Swarm mode recommendation:** When the user selects option B (submission readiness), suggest swarm mode in §3 if they haven't already selected it: "Since this is a final-round assessment before submission, you may want to consider swarm mode — it produces deeper analysis at higher token cost. Want to add that?" This is a suggestion, not a default.
+
 ### If Artifact = `series`
 
 "What kind of series help?"
@@ -124,7 +126,8 @@ Always asked after routing, before work begins. Multiple selections allowed.
 | E | I'm editing someone else's work | `operator:editor` | Shift output to editor scaffolding. **Gap: editor mode not yet built.** |
 | F | I'm facilitating a writing group | `operator:facilitator` | Shift to diagnostic vocabulary mode. **Gap: facilitator mode not yet built.** |
 | G | We're co-authoring (multiple writers) | `operator:team` | Note conflicting-vision risk. **Gap: multi-party intake not yet built.** |
-| H | No constraints — let's go | (none) | Proceed with standard workflow. |
+| H | Use swarm mode (deeper analysis, higher token cost) | `execution:swarm` | Each pass runs as an independent subagent. ~2x findings, ~5x token cost. See `run-core.md` §Execution Mode. |
+| I | No constraints — let's go | (none) | Proceed with standard workflow. |
 
 ---
 
@@ -178,10 +181,12 @@ Existing commands bypass the router with pre-filled values. The router is the re
 | partial | draft (rethink) | — | Pre-Writing Pathway (re-entry) | **Built** |
 | partial | repair | time | Fast Triage | Gap |
 | full_draft | repair | — | Core DE | **Built** |
+| full_draft | repair | swarm | Core DE (swarm mode) | **Built** |
 | full_draft | repair | time | Fast Triage | Gap |
 | full_draft | repair | ai | Core DE + AI-Prose Calibration | **Built** |
 | full_draft | repair | risk | Core DE + Risk Register | Gap |
-| full_draft | submit | — | Core DE → Pass 11 | Gap: unified submission workflow |
+| full_draft | submit | — | Core DE → Pass 11 (swarm suggested) | Gap: unified submission workflow |
+| full_draft | submit | swarm | Core DE → Pass 11 (swarm mode) | **Built** |
 | full_draft | submit | time | Fast Triage (submission focus) | Gap |
 | full_draft | repair | editor | Core DE (editor scaffolding) | Gap |
 | full_draft | repair | facilitator | Core DE (diagnostic vocabulary) | Gap |

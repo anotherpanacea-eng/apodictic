@@ -1,6 +1,6 @@
 # Subagent Pass Orchestration — Design Document
 
-**Status:** Future (v2.0+)
+**Status:** Available as optional execution mode (v1.0.4+). Default remains single-context.
 **Date:** 2026-02-23
 **Provenance:** Emerged from A/B comparison of APODICTIC v1.0.3 plugin output vs. blind editorial letter on *A Game of Universe* (Nylund, ~118k words). The comparison revealed that pass artifacts contained stronger analysis than the synthesis captured — root cause: context salience decay across a multi-pass run in a single context.
 
@@ -266,5 +266,7 @@ These should be evaluated empirically before committing to the subagent architec
 ## Decision Record
 
 **2026-02-23:** Researched and prototyped. Confirmed subagent file system access and model inheritance work in Cowork sandbox. Decided NOT to build yet — token cost (2–5x current) is prohibitive given weekly Cowork budgets. Filed as v2.0+ roadmap item. The Findings Ledger (v1.0.3) addresses the quality problem at near-zero token cost and should be evaluated first.
+
+**2026-02-24:** Ran controlled A/B test on "Coda: The Headboard" (~4,000 words). Results: Run B (swarm) produced 20 findings vs. Run A (single-context) 9; 10 cross-pass connections vs. 4; counterevidence on every finding vs. 1; synthesis preserved finding-level detail vs. aggressive compression. Swarm mode passes *complicated* each other's findings (analytically valuable) rather than merely *confirming* them (potential anchoring). Token cost: ~160k (swarm) vs. ~30k (single-context) — approximately 5x. Quality delta is real and attributable to architectural isolation, not just context capacity relief (manuscript was too short to stress context limits). Decision: ship as optional execution mode in v1.0.4, not a future item. Default remains single-context. Swarm mode is user-invoked for runs where maximum analytical quality justifies the token cost. See `Outputs/Swarm_Test/TEST_RESULTS.md` for full comparison.
 
 **Open question:** The user observes behavior suggesting the platform may already dispatch subagents internally. If so, the framework's context decay may be partly caused by invisible orchestration handoffs — and the Findings Ledger may be solving a problem created by infrastructure, not just by context limits. This is unobservable from within the model but worth tracking as platform documentation improves.
