@@ -2,8 +2,8 @@
 
 *Reference file for the APODICTIC Development Editor. Loaded when hybrid execution mode is selected.*
 
-**Status:** Specification (untested)
-**Version:** Draft 1
+**Status:** Specification (tested on 83k manuscript)
+**Version:** Draft 2
 **Date:** 2026-02-24
 
 ---
@@ -29,6 +29,12 @@ Hybrid mode is an execution mode between single-context and full swarm. Pass 0+1
 | **Pass 5 subagent** | Pass 5: Character Audit | Reverse outline, focus map excerpts (character), contract, accumulated ledger | Character cards, agency timeline, ledger entry |
 | **Pass 8 subagent** | Pass 8: Reveal Economy | Reverse outline, focus map excerpts (information), contract, accumulated ledger | Reveal ledger, fairness flags, ledger entry |
 | **Synthesis subagent** | Synthesis | Reverse outline, complete Findings Ledger, focus map excerpts (verification) | Editorial letter |
+
+### Ledger Persistence Requirement
+
+**Each subagent's Findings Ledger entry must be written to the `[Project]_Findings_Ledger_[runlabel].md` file immediately upon return, before dispatching the next subagent.** This makes the parent orchestrator stateless between dispatches — it needs to know which passes have run and where the files are, not what they found. If the parent's context compacts mid-run, no analytical content is lost because all findings persist on disk.
+
+This requirement was identified during testing: a context compaction during parallel dispatch of Pass 5 and Pass 8 required manual recovery of subagent results from the session transcript. With immediate file persistence, the compaction would have been seamless.
 
 ### Why Pass 0+1 Is the Triage Subagent
 
@@ -148,6 +154,10 @@ The focus map is saved as `[Project]_Focus_Map_[runlabel].md` alongside the reve
 | Pass 8 | [N] | [N] | [N] | [~Nk] |
 | Synthesis | [N] | — | [N] | [~Nk] |
 | **Total unique** | | | [N] ([%] of manuscript) | [~Nk] |
+
+### Coverage Interpretation
+
+[Brief note explaining what the coverage numbers mean for this specific manuscript. What kind of scenes were targeted, what kind were left out, and why. If coverage is notably high or low, explain what that says about the manuscript's density and interconnection. End with: "If you want broader coverage, request swarm mode."]
 ```
 
 ### Targeting Grammar
@@ -222,7 +232,9 @@ Scenes where the triage subagent detected a signal but can't articulate a precis
 
 **When in doubt, include the scene as a broad-net target.** The cost of including an unnecessary scene is marginal (a few hundred extra tokens per scene). The cost of missing a scene that a later pass needed is an analytical blind spot that can't be recovered.
 
-The focus map should target roughly **30–50% of the manuscript's scenes** across all passes combined. If targeting falls below 25%, the triage subagent is being too conservative. If it exceeds 60%, the hybrid mode's token savings are diminishing and the user should consider full swarm instead.
+There is no enforced targeting range. The triage subagent targets what it finds — a well-constructed novel with densely interconnected scenes may produce 20% targeting; a sprawling manuscript with many structurally inert scenes may produce 50%. The focus map reports coverage statistics so the user can see what happened.
+
+**Advisory ceiling only:** If total unique coverage across all passes exceeds 60%, the hybrid mode's token savings are diminishing and the user should consider full swarm instead. There is no floor — if the triage subagent genuinely finds only 15% of scenes worth targeting, forcing it to pad adds noise without signal. The inclusion bias instruction above ("when in doubt, include as broad-net") provides sufficient upward pressure.
 
 ---
 
@@ -318,9 +330,11 @@ Estimates for a 118,000-word manuscript (~180k tokens of raw text).
 
 These estimates assume:
 - Reverse outline compresses the manuscript to ~20–25% of original token count (~40k tokens)
-- Focus map targets 30–50% of scenes per pass (with overlap across passes)
+- Focus map targets vary by manuscript (tested range: 22–33% per pass on an 83k manuscript)
 - Each targeted scene averages ~1,500 tokens of prose
 - Output tokens (analysis, ledger entries, focus map) add ~15–20% overhead per subagent
+
+**Tested cost (83k-word manuscript, 2 analytical passes):** ~337k total (~1.4x single-context). Projected for 3 analytical passes on the same manuscript: ~407–450k (~1.7–1.9x). The 2–3x range holds for manuscripts in the 100k+ range where excerpt packages are larger.
 
 ---
 
@@ -339,14 +353,14 @@ The intake router presents hybrid as a third execution mode option. The recommen
 
 ---
 
-## Open Questions for Testing
+## Open Questions (Partially Resolved by Testing)
 
-1. **Optimal scene targeting percentage.** The spec says 30–50%. Does this hold across manuscript lengths and genres? A 40k-word novella may need 60% targeting to be useful; a 150k-word novel may work fine at 25%.
+1. ~~**Optimal scene targeting percentage.**~~ **Resolved: no enforced range.** Tested at 22–33% per pass on an 83k manuscript. The triage subagent's natural targeting was appropriate without a mandated range. Spec now uses inclusion bias + advisory ceiling (60%) instead of a target range. Remains untested on manuscripts above 120k words or below 40k words.
 
-2. **Focus map quality across genres.** The targeting rationale categories are genre-agnostic. Do genre-specific signals (e.g., horror dread architecture, mystery clue placement) require genre-tuned focus map categories, or does the broad vocabulary capture them adequately?
+2. **Focus map quality across genres.** Untested. The targeting rationale categories are genre-agnostic. Do genre-specific signals (e.g., horror dread architecture, mystery clue placement) require genre-tuned focus map categories, or does the broad vocabulary capture them adequately?
 
-3. **Outline compression ratio.** The spec assumes the reverse outline compresses to ~20–25% of manuscript tokens. Does this hold? If it's closer to 30–35%, the token savings are smaller.
+3. **Outline compression ratio.** Partially tested. The 83k manuscript's triage subagent used ~126k tokens (input + output), consistent with full read + outline + focus map generation. Compression ratio not directly measured. Needs explicit measurement on next run.
 
-4. **Broad-net signal value.** How often do broad-net targets (low-confidence signals) produce findings that high-confidence targets miss? If the answer is "rarely," the broad-net tier is insurance with minimal analytical payoff. If "often," the inclusion bias is essential.
+4. **Broad-net signal value.** Untested directly. Would require comparing findings from targeted vs. untargeted scenes. No gaps were identified in the 83k test where a finding seemed to be missing a scene it should have accessed, but this is negative evidence.
 
-5. **Synthesis verification adequacy.** Does the synthesis subagent have enough access to prose to write a credible editorial letter, or does it need more excerpts than the focus map anticipates?
+5. **Synthesis verification adequacy.** Partially tested. The synthesis subagent correctly identified that it could verify structural claims from the outline but not prose-level claims (voice analysis, sensory detail, specific dialogue). For a full editorial letter, the verification excerpt mechanism needs more scenes than the 83k test provided. The synthesis should receive 5–10 key evidence scenes for spot-checking.

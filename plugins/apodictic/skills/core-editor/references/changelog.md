@@ -11,16 +11,20 @@ Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day fr
 
 Hybrid mode is a middle ground between single-context and full swarm. Pass 0+1 reads the entire manuscript and produces a **focus map** — a targeting document that directs each subsequent pass to specific scenes for deep reading. Later passes run as independent subagents with the reverse outline (compressed manuscript) plus only the focus map's targeted excerpts, not the full text.
 
-**Cost profile:** ~2–3x single-context tokens (~500–690k for a 118k-word manuscript), versus swarm's ~5x (~1.2M).
+**Tested** on an 83k-word novel where per-pass targeting was 22–33%, producing categorically richer findings than single-context at ~2.8x the token cost. Single-context vs. hybrid comparison showed: 12 findings (mostly approving) vs. 25 findings (genuinely diagnostic, 92% with counterevidence); opposite diagnoses on the ending; zero cross-pass complication in single-context vs. four genuine complications in hybrid.
 
-**Quality profile:** Architectural isolation for later passes (same as swarm), but with targeted rather than full manuscript access. The focus map errs on inclusion (30–50% of scenes targeted), and every pass still receives the complete reverse outline.
+**Cost profile:** ~1.5–2x for 60–100k manuscripts; ~2–3x for 100k+ manuscripts. Tested at ~1.4x on 83k (2 analytical passes) and projected ~1.7–1.9x (3 analytical passes).
+
+**Quality profile:** Architectural isolation for later passes (same as swarm), but with targeted rather than full manuscript access. The focus map errs on inclusion (no enforced targeting range; advisory ceiling at 60%), and every pass still receives the complete reverse outline.
 
 #### New: Focus Map specification (`references/hybrid-mode.md`)
 - Complete specification for the focus map output type: format, targeting grammar, confidence tiers (high-confidence and broad-net), excerpt extraction protocol, risk analysis, and token cost model.
 - Targeting rationale categories drawn from both Pass 0 (outliner lens: arbitrary breaks, unusual ratios, word count anomalies, information density, POV shifts) and Pass 1 (reader lens: belief failures, orientation failures, boredom signals, emotional spikes, promise drift, immersion breaks).
 - Cross-pass targets section for scenes flagged by multiple passes.
-- Coverage statistics as self-check (targeting below 25% triggers conservatism warning; above 60% suggests swarm instead).
-- Open questions for testing documented (optimal targeting percentage, genre-specific signals, outline compression ratio, broad-net value, synthesis verification adequacy).
+- Coverage interpretation note in focus map output — explains what the numbers mean for this specific manuscript and offers swarm as alternative if coverage is high.
+- No enforced targeting range; inclusion bias + advisory ceiling (60%) only. Triage subagent targets what it finds.
+- Ledger persistence requirement: each subagent's findings must be written to file immediately upon return, making the parent orchestrator stateless between dispatches and resilient to context compaction.
+- Open questions partially resolved by testing; remaining open questions documented.
 
 #### Changed: Execution Mode section (`run-core.md`)
 - Added hybrid mode between single-context and swarm.
