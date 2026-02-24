@@ -7,7 +7,7 @@ description: >
   "run the passes," "do a revision round," or any request involving manuscript
   analysis, structural diagnosis, or editorial feedback. Also triggers on
   "APODICTIC," "APDE," or "development editor."
-version: 1.0.3
+version: 1.0.5
 ---
 
 # APODICTIC Development Editor — Core Orchestrator
@@ -97,7 +97,7 @@ When diagnosis is complete for a scoped scene and the writer wants execution hel
 
 **Execution details for all of the above:** Load `references/run-core.md`. Use `references/pass-dependencies.md` for pass resolution. For full expansion: load `references/run-full.md`.
 
-**Execution mode:** The system supports **single-context** (default) and **swarm** modes. In swarm mode, each pass runs as an independent subagent with its own context window, producing roughly twice as many findings at approximately 5x the token cost. The user invokes swarm mode at intake or before pass execution. See `references/run-core.md` §Execution Mode for protocol details and `docs/subagent-architecture-design.md` for architecture rationale.
+**Execution mode:** The system supports three execution modes. **Single-context** (default): all passes in one conversation. **Hybrid** (optional): Pass 0+1 reads the full manuscript and produces a focus map; later passes run as independent subagents with the reverse outline plus targeted excerpts (~2–3x token cost). **Swarm** (optional): every pass runs as an independent subagent loading the full manuscript (~5x token cost, ~2x findings). The user invokes hybrid or swarm mode at intake or before pass execution. See `references/run-core.md` §Execution Mode for protocol details; `references/hybrid-mode.md` for the focus map specification.
 
 ---
 

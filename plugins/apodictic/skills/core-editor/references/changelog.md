@@ -5,6 +5,42 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.0.5 - 2026-02-24
+
+### Added — Hybrid Mode (Optional Execution Mode)
+
+Hybrid mode is a middle ground between single-context and full swarm. Pass 0+1 reads the entire manuscript and produces a **focus map** — a targeting document that directs each subsequent pass to specific scenes for deep reading. Later passes run as independent subagents with the reverse outline (compressed manuscript) plus only the focus map's targeted excerpts, not the full text.
+
+**Cost profile:** ~2–3x single-context tokens (~500–690k for a 118k-word manuscript), versus swarm's ~5x (~1.2M).
+
+**Quality profile:** Architectural isolation for later passes (same as swarm), but with targeted rather than full manuscript access. The focus map errs on inclusion (30–50% of scenes targeted), and every pass still receives the complete reverse outline.
+
+#### New: Focus Map specification (`references/hybrid-mode.md`)
+- Complete specification for the focus map output type: format, targeting grammar, confidence tiers (high-confidence and broad-net), excerpt extraction protocol, risk analysis, and token cost model.
+- Targeting rationale categories drawn from both Pass 0 (outliner lens: arbitrary breaks, unusual ratios, word count anomalies, information density, POV shifts) and Pass 1 (reader lens: belief failures, orientation failures, boredom signals, emotional spikes, promise drift, immersion breaks).
+- Cross-pass targets section for scenes flagged by multiple passes.
+- Coverage statistics as self-check (targeting below 25% triggers conservatism warning; above 60% suggests swarm instead).
+- Open questions for testing documented (optimal targeting percentage, genre-specific signals, outline compression ratio, broad-net value, synthesis verification adequacy).
+
+#### Changed: Execution Mode section (`run-core.md`)
+- Added hybrid mode between single-context and swarm.
+- Updated token cost table to three modes.
+- Added hybrid mode additional output note to Pass 0 specification (focus map production).
+
+#### Changed: Intake router (`references/intake-router-runtime.md`)
+- Added option H (hybrid mode) to §3 constraints. Swarm mode moved to option I.
+- Updated execution mode recommendation: hybrid suggested for manuscripts >80k words; both hybrid and swarm offered when goal is submission readiness.
+- Added route map entries for `full_draft + repair + hybrid` and `full_draft + submit + hybrid` (both **Built**).
+- Submit without execution mode now suggests hybrid (previously suggested swarm).
+
+#### Changed: SKILL.md
+- Execution mode description updated to cover all three modes.
+
+#### Changed: README.md
+- Execution Modes section expanded to describe single-context, hybrid, and swarm with guidance on when to use each.
+
+---
+
 ## v1.0.4 - 2026-02-24
 
 ### Added — Swarm Mode (Optional Execution Mode)
