@@ -80,7 +80,7 @@ fi
 
 # Execution mode recommendation
 if [ "$TOTAL_WORDS" -lt 60000 ]; then
-  RECOMMENDED_MODE="single-context"
+  RECOMMENDED_MODE="sequential"
 elif [ "$TOTAL_WORDS" -lt 100000 ]; then
   RECOMMENDED_MODE="hybrid"
 else
@@ -123,7 +123,7 @@ $(sample_pov "End (lines ${END_START}-$((END_START+200)))" "$END_START" 200)
 ## Dispatch Recommendations
 - **Recommended execution mode:** ${RECOMMENDED_MODE}
 - **Triage subagent max_turns:** ${TRIAGE_MAX_TURNS}
-- **Mode thresholds:** <60K words → single-context; 60-100K → hybrid; >100K → swarm
+- **Mode thresholds:** <60K words → sequential; 60-100K → hybrid; >100K → swarm
 - **max_turns formula:** ceil(total_lines / 500) + 20
 
 ## Notes
