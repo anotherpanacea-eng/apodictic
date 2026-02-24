@@ -3,7 +3,7 @@
 *Reference file for the APODICTIC Development Editor. Loaded when hybrid execution mode is selected.*
 
 **Status:** Specification (tested on 83k manuscript)
-**Version:** Draft 2
+**Version:** Draft 3
 **Date:** 2026-02-24
 
 ---
@@ -11,6 +11,8 @@
 ## Overview
 
 Hybrid mode is an execution mode between single-context and full swarm. Pass 0+1 reads the entire manuscript and produces a **focus map** alongside the standard reverse outline and reader experience log. Subsequent passes load the reverse outline (the compressed manuscript) plus only the excerpts the focus map targets — not the full text.
+
+**Pre-flight dependency:** Hybrid mode requires pre-flight metadata (see `run-core.md` §Pre-flight Diagnostics). Pre-flight provides the triage subagent's `max_turns` budget — computed as `ceil(total_lines / 500) + 20` — which ensures enough turns for full-manuscript I/O plus a buffer for complex targeting decisions. Pre-flight also detects missing chapter structure (e.g., from epub conversion) and passes section boundary data to the triage subagent so it doesn't waste turns searching for headers that don't exist.
 
 **Cost profile:** Approximately 2–3x the tokens of single-context (~500–690k for a 118k-word manuscript), versus swarm's ~5x (~1.2M).
 
@@ -24,7 +26,7 @@ Hybrid mode is an execution mode between single-context and full swarm. Pass 0+1
 
 | Subagent | Passes | Input | Output |
 |----------|--------|-------|--------|
-| **Triage subagent** | Pass 0 + Pass 1 (combined) | Full manuscript, contract | Reverse outline, reader experience log, **focus map**, initial ledger entries |
+| **Triage subagent** | Pass 0 + Pass 1 (combined) | Full manuscript, contract, pre-flight metadata | Reverse outline, reader experience log, **focus map**, initial ledger entries. Dispatched with `max_turns` from pre-flight. |
 | **Pass 2 subagent** | Pass 2: Structural Mapping | Reverse outline, focus map excerpts (structural), contract, accumulated ledger | Beat map, causal chain, structural flags, ledger entry |
 | **Pass 5 subagent** | Pass 5: Character Audit | Reverse outline, focus map excerpts (character), contract, accumulated ledger | Character cards, agency timeline, ledger entry |
 | **Pass 8 subagent** | Pass 8: Reveal Economy | Reverse outline, focus map excerpts (information), contract, accumulated ledger | Reveal ledger, fairness flags, ledger entry |
