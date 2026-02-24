@@ -159,7 +159,26 @@ Pass specifications below define how each pass runs once selected.
 
 ## Execution Mode
 
-APODICTIC supports two execution modes. The mode choice affects how passes run, not what they diagnose — the same pass specifications, Findings Ledger protocol, and synthesis format apply in both modes.
+APODICTIC supports three execution modes. The mode choice affects how passes run, not what they diagnose — the same pass specifications, Findings Ledger protocol, and synthesis format apply in all modes.
+
+### Pre-flight Diagnostics (Required)
+
+Before selecting an execution mode, the parent orchestrator runs a pre-flight metadata scan. Pre-flight is a bash script — not a model call — that gathers manuscript measurements needed for informed dispatch decisions.
+
+**What it does:** Runs `scripts/preflight.sh` on the manuscript file. Produces a metadata packet containing: total lines, estimated word count, section/chapter boundaries, POV and tense detection (pronoun-frequency heuristic on three 200-line samples), dialogue ratio, mean paragraph length, and dispatch recommendations.
+
+**What it computes:**
+- **Execution mode recommendation:** <60K words → single-context; 60–100K words → hybrid; >100K words → swarm. These replace the approximate guidance in the mode descriptions below; the parent orchestrator uses the measured word count, not a guess.
+- **Triage subagent `max_turns`:** `ceil(total_lines / 500) + 20`. This ensures enough turns for full-manuscript I/O (at 500 lines per read chunk) plus output file generation, with a 20-turn buffer for reasoning, complex structural decisions, and focus map targeting.
+- **Conversion artifacts flag:** If the section boundary count is low relative to word count (e.g., 4 breaks in 84K words), the metadata packet notes that chapter structure may have been lost in file conversion. The triage subagent should identify scene boundaries from narrative content rather than relying on headers.
+
+**What it does NOT do:** No scene identification, no structural function tagging, no reader experience tracking, no focus map targeting, no diagnostic flags of any kind, no genre identification. Pre-flight is a tape measure, not a stethoscope.
+
+**Cost:** Zero model tokens. Sub-second execution time. The bash script runs locally.
+
+**How it integrates:** The parent orchestrator runs pre-flight immediately after loading the manuscript path. It reads the metadata packet, selects the execution mode, sets `max_turns` for the triage subagent, and passes relevant metadata (total lines, section boundaries, POV pattern) to subagents so they don't have to rediscover it.
+
+**Script location:** `scripts/preflight.sh`. Usage: `./scripts/preflight.sh <manuscript_path> [output_path]`. If output path is omitted, writes to stdout.
 
 ### Single-Context Mode (Default)
 
@@ -173,12 +192,11 @@ Pass 0+1 reads the full manuscript and produces a **focus map** — a targeting 
 
 **What the user should know:** Hybrid mode provides most of swarm's quality gains — architectural isolation, independent analysis, reduced anchoring — at roughly **2–3x the token cost** instead of swarm's 5x. The tradeoff: later passes see targeted excerpts rather than the full manuscript, so they depend on the focus map's accuracy. The focus map errs on inclusion (targeting 30–50% of scenes), and every pass still receives the complete reverse outline for structural context.
 
-**When to use:** The sweet spot for most serious editorial runs. Especially valuable for:
-- Manuscripts over ~60,000 words where single-context quality degrades
+**When to use:** The sweet spot for most serious editorial runs. Pre-flight recommends hybrid for manuscripts in the 60–100K word range. Also valuable for:
 - Runs where the user wants better-than-default quality without full swarm cost
 - Standard editorial workflow (not final-round submission diagnostics)
 
-**When NOT to use:** Manuscripts under ~40,000 words (single-context handles these comfortably), or final-round diagnostics where maximum depth justifies swarm's cost.
+**When NOT to use:** Manuscripts under ~40,000 words (single-context handles these comfortably), or final-round diagnostics where maximum depth justifies swarm's cost. Pre-flight's mode recommendation can be overridden by the user at intake.
 
 **How to invoke:** The user requests hybrid mode at intake or before pass execution begins. Example: "Run this in hybrid mode" or "Use selective reading." The system confirms mode selection and token cost implications before proceeding.
 
@@ -202,12 +220,18 @@ Each evaluative pass runs as an independent subagent with its own context window
 #### Swarm Execution Protocol
 
 **Parent orchestrator responsibilities:**
-1. Run intake in the parent context (load SKILL.md, run-core.md, generate contract, resolve pass set)
-2. Initialize the Findings Ledger
-3. Dispatch each pass as a subagent (Task tool, `model: opus`, `subagent_type: general-purpose`)
-4. Accumulate returned ledger entries between dispatches
-5. Pass the growing Findings Ledger to each subsequent subagent
-6. Dispatch the synthesis subagent with the complete ledger
+1. Run pre-flight (`scripts/preflight.sh`) to get manuscript metadata
+2. Run intake in the parent context (load SKILL.md, run-core.md, generate contract, resolve pass set)
+3. Initialize the Findings Ledger
+4. Dispatch each pass as a subagent (Task tool, `model: opus`, `subagent_type: general-purpose`, `max_turns` per pre-flight)
+5. Accumulate returned ledger entries between dispatches
+6. Pass the growing Findings Ledger to each subsequent subagent
+7. Dispatch the synthesis subagent with the complete ledger
+
+**Turn budgets (from pre-flight):**
+- **Triage subagent (Pass 0+1):** `max_turns` = `ceil(total_lines / 500) + 20` (pre-flight computes this). For an 84K-word / 5,759-line manuscript, this yields `max_turns: 32`.
+- **Analytical passes (Pass 2, 5, 8):** Default turn budget (no override). These passes read the reverse outline + targeted excerpts, not the full manuscript, so they don't need elevated budgets.
+- **Synthesis:** Default turn budget.
 
 **What each pass subagent receives:**
 - The manuscript (file path for the subagent to read)
