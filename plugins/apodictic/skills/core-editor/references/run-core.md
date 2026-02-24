@@ -168,7 +168,7 @@ Before selecting an execution mode, the parent orchestrator runs a pre-flight me
 **What it does:** Runs `scripts/preflight.sh` on the manuscript file. Produces a metadata packet containing: total lines, estimated word count, section/chapter boundaries, POV and tense detection (pronoun-frequency heuristic on three 200-line samples), dialogue ratio, mean paragraph length, and dispatch recommendations.
 
 **What it computes:**
-- **Execution mode recommendation:** <60K words → single-context; 60–100K words → hybrid; >100K words → swarm. These replace the approximate guidance in the mode descriptions below; the parent orchestrator uses the measured word count, not a guess.
+- **Execution mode recommendation:** <60K words → sequential; 60–100K words → hybrid; >100K words → swarm. These replace the approximate guidance in the mode descriptions below; the parent orchestrator uses the measured word count, not a guess.
 - **Triage subagent `max_turns`:** `ceil(total_lines / 500) + 20`. This ensures enough turns for full-manuscript I/O (at 500 lines per read chunk) plus output file generation, with a 20-turn buffer for reasoning, complex structural decisions, and focus map targeting.
 - **Conversion artifacts flag:** If the section boundary count is low relative to word count (e.g., 4 breaks in 84K words), the metadata packet notes that chapter structure may have been lost in file conversion. The triage subagent should identify scene boundaries from narrative content rather than relying on headers.
 
@@ -180,15 +180,23 @@ Before selecting an execution mode, the parent orchestrator runs a pre-flight me
 
 **Script location:** `scripts/preflight.sh`. Usage: `./scripts/preflight.sh <manuscript_path> [output_path]`. If output path is omitted, writes to stdout.
 
-### Single-Context Mode (Default)
+### Subagent Dispatch (All Modes)
 
-All passes run sequentially in the current conversation context. The manuscript, framework, and pass artifacts accumulate in one window. The Findings Ledger, staged visibility, and re-grounding protocols mitigate context salience decay.
+**Every pass runs as a subagent.** This is not optional and applies to all three execution modes. The parent orchestrator dispatches each pass via the Task tool and never runs analytical passes in its own context. This protects against unexpected context compaction — if the platform compacts the parent's context mid-run, no analytical work is lost because every pass artifact has already been written to disk by its subagent before returning.
 
-**When to use:** Most runs. Especially effective for manuscripts under ~60,000 words, where context pressure is manageable.
+The three modes differ in **what each subagent receives**, not in whether subagents are used.
 
-### Hybrid Mode (Optional)
+### Sequential Mode (Default)
 
-Pass 0+1 reads the full manuscript and produces a **focus map** — a targeting document that tells each subsequent pass which scenes to deep-read. Later passes load the reverse outline (the compressed manuscript) plus only the focus map's targeted excerpts, not the full text. Each later pass still runs as an independent subagent with architectural isolation.
+Each pass runs as an independent subagent that receives the full manuscript, contract, and accumulated Findings Ledger. Passes run in order — each subagent is dispatched after the previous one returns and its ledger entry is persisted to disk. This is the simplest mode: every pass sees the full manuscript and the full analytical history.
+
+**When to use:** Most runs. Pre-flight recommends sequential for manuscripts under ~60,000 words.
+
+**Tradeoff vs. former single-context:** Slightly higher token cost (each subagent loads the manuscript independently rather than sharing a context window). In exchange: compaction resilience, architectural isolation between passes, and no context salience decay in late passes.
+
+### Hybrid Mode
+
+Pass 0+1 reads the full manuscript as a triage subagent and produces a **focus map** — a targeting document that tells each subsequent pass which scenes to deep-read. Later passes receive the reverse outline (the compressed manuscript) plus only the focus map's targeted excerpts, not the full text.
 
 **What the user should know:** Hybrid mode provides most of swarm's quality gains — architectural isolation, independent analysis, reduced anchoring — at roughly **2–3x the token cost** instead of swarm's 5x. The tradeoff: later passes see targeted excerpts rather than the full manuscript, so they depend on the focus map's accuracy. The focus map errs on inclusion (targeting 30–50% of scenes), and every pass still receives the complete reverse outline for structural context.
 
@@ -196,65 +204,70 @@ Pass 0+1 reads the full manuscript and produces a **focus map** — a targeting 
 - Runs where the user wants better-than-default quality without full swarm cost
 - Standard editorial workflow (not final-round submission diagnostics)
 
-**When NOT to use:** Manuscripts under ~40,000 words (single-context handles these comfortably), or final-round diagnostics where maximum depth justifies swarm's cost. Pre-flight's mode recommendation can be overridden by the user at intake.
+**When NOT to use:** Manuscripts under ~40,000 words (sequential handles these comfortably), or final-round diagnostics where maximum depth justifies swarm's cost. Pre-flight's mode recommendation can be overridden by the user at intake.
 
 **How to invoke:** The user requests hybrid mode at intake or before pass execution begins. Example: "Run this in hybrid mode" or "Use selective reading." The system confirms mode selection and token cost implications before proceeding.
 
 **Full specification:** See `references/hybrid-mode.md` for the focus map format, targeting grammar, confidence tiers, excerpt extraction protocol, and risk analysis.
 
-### Swarm Mode (Optional)
+### Swarm Mode
 
-Each evaluative pass runs as an independent subagent with its own context window. A parent orchestrator manages the sequence, accumulates the Findings Ledger, and dispatches each pass with its required inputs. Every subagent loads the full manuscript.
+Each evaluative pass runs as an independent subagent that receives the full manuscript. Unlike sequential mode, passes 2, 5, and 8 can run **in parallel** since they don't depend on each other's ledger entries — they each receive the same accumulated ledger (from the triage pass only) and produce independent findings.
 
 **What the user should know:** Swarm mode produces roughly **twice as many findings** with **more specific cross-pass connections** and **more consistent counterevidence**, at approximately **5x the token cost**. The quality improvement comes from architectural isolation: each pass genuinely cannot see prior analysis until the reconciliation step, which eliminates anchoring bias and produces multi-perspectival convergence rather than echo.
 
 **When to use:** When maximum analytical quality matters more than token economy. Particularly valuable for:
 - Final-round diagnostics before submission
-- Cases where prior runs (single-context or hybrid) produced a synthesis that felt thinner than the pass analysis warranted
+- Cases where prior runs (sequential or hybrid) produced a synthesis that felt thinner than the pass analysis warranted
 - Manuscripts where the focus map approach feels insufficient (very dense literary fiction, heavily interwoven plot structures)
 
-**When NOT to use:** Quick diagnostics, partial manuscripts, budget-constrained runs, or manuscripts short enough that single-context handles them comfortably.
+**When NOT to use:** Quick diagnostics, partial manuscripts, budget-constrained runs, or manuscripts short enough that sequential handles them comfortably.
 
 **How to invoke:** The user requests swarm mode at intake or before pass execution begins. Example: "Run this in swarm mode" or "Use subagent passes." The system confirms mode selection and token cost implications before proceeding.
 
-#### Swarm Execution Protocol
+#### Execution Protocol (All Modes)
 
 **Parent orchestrator responsibilities:**
 1. Run pre-flight (`scripts/preflight.sh`) to get manuscript metadata
 2. Run intake in the parent context (load SKILL.md, run-core.md, generate contract, resolve pass set)
 3. Initialize the Findings Ledger
 4. Dispatch each pass as a subagent (Task tool, `model: opus`, `subagent_type: general-purpose`, `max_turns` per pre-flight)
-5. Accumulate returned ledger entries between dispatches
+5. **Persist each subagent's ledger entry to disk immediately upon return** — before dispatching the next subagent
 6. Pass the growing Findings Ledger to each subsequent subagent
 7. Dispatch the synthesis subagent with the complete ledger
 
 **Turn budgets (from pre-flight):**
 - **Triage subagent (Pass 0+1):** `max_turns` = `ceil(total_lines / 500) + 20` (pre-flight computes this). For an 84K-word / 5,759-line manuscript, this yields `max_turns: 32`.
-- **Analytical passes (Pass 2, 5, 8):** Default turn budget (no override). These passes read the reverse outline + targeted excerpts, not the full manuscript, so they don't need elevated budgets.
+- **Analytical passes (Pass 2, 5, 8):** Default turn budget. In hybrid mode these passes read the reverse outline + targeted excerpts; in sequential/swarm they read the full manuscript. Neither requires elevated budgets because the manuscript is provided as a file path, not pre-loaded into the prompt.
 - **Synthesis:** Default turn budget.
 
 **What each pass subagent receives:**
-- The manuscript (file path for the subagent to read)
-- The contract (controlling idea, anti-idea, non-negotiables)
-- The pass specification (from run-core.md or run-full.md, as applicable)
-- The accumulated Findings Ledger (for staged visibility reconciliation — see §Staged Visibility)
-- Instructions to follow the Findings Ledger protocol (§Findings Ledger Protocol) and output a ledger entry
+
+| Input | Sequential | Hybrid | Swarm |
+|-------|-----------|--------|-------|
+| Manuscript | Full (file path) | Triage: full; later passes: outline + excerpts | Full (file path) |
+| Contract | Yes | Yes | Yes |
+| Pass specification | Yes | Yes | Yes |
+| Accumulated Findings Ledger | All prior passes | All prior passes | Triage only (passes 2/5/8 get same ledger) |
+| Focus map | No | Yes (for later passes) | No |
 
 **What each pass subagent returns:**
-- Its pass artifact (analysis output)
-- Its Findings Ledger entry (formatted per §Ledger Entry Format)
+- Its pass artifact (analysis output), written to disk
+- Its Findings Ledger entry (formatted per §Ledger Entry Format), written to disk
 
-**Pass grouping:** Pass 0 and Pass 1 run in a single combined subagent (both are full-read passes with no dependencies). All subsequent passes run as individual subagents.
+**Pass grouping:** Pass 0 and Pass 1 run in a single combined subagent (both are full-read passes with no dependencies). All subsequent passes run as individual subagents. In swarm mode, passes 2, 5, and 8 may run in parallel.
 
-**Staged visibility in swarm mode:** The subagent receives the Findings Ledger but is instructed to complete its own analysis before reading the ledger's Notable Findings. In swarm mode, this isolation is architecturally stronger than in single-context mode — the subagent literally has no prior pass artifacts in its context, only the ledger entries provided for reconciliation.
+**Staged visibility:** The subagent receives the Findings Ledger but is instructed to complete its own analysis before reading the ledger's Notable Findings. Because every mode now uses subagent dispatch, isolation is architecturally enforced in all modes — no subagent has prior pass artifacts in its context, only the ledger entries provided for reconciliation.
 
 **Token cost estimate (118k-word manuscript):**
 
 | Mode | Estimated total tokens | Quality |
 |------|----------------------|---------|
-| Single-context | ~240,000 | Good; context decay in late passes |
+| Sequential (full manuscript per pass) | ~400,000–500,000 | Strong; no context decay, compaction-safe |
 | Hybrid (selective reading) | ~500,000–690,000 | Strong; architectural isolation + targeted excerpts |
-| Swarm (full read per pass) | ~1,000,000–1,200,000 | Best; no cross-pass decay, full manuscript per pass |
+| Swarm (full manuscript, parallel) | ~1,000,000–1,200,000 | Best; no cross-pass influence, parallel execution |
+
+Note: Sequential mode's cost estimate is higher than the former single-context mode (~240,000) because each subagent loads the manuscript independently. The increase buys compaction resilience and eliminates context salience decay in late passes.
 
 For full architecture details, cost analysis, and risk discussion: see `docs/subagent-architecture-design.md`.
 
@@ -275,7 +288,7 @@ To reduce cross-pass anchoring while preserving cross-pass learning, each evalua
 2. **Then read** the relevant Findings Ledger entries and reconcile: confirm, contradict, refine, or integrate.
 3. **Record reconciliation** in the pass's Cross-Pass Connections section of its ledger entry.
 
-This is a procedural discipline, not a strict isolation requirement. In single-context execution, prior pass artifacts remain in context — the instruction to analyze first and reconcile second reduces anchoring without eliminating it. In swarm mode (see §Execution Mode), isolation is architectural: the subagent literally has no prior pass artifacts in its context, only the ledger entries provided at reconciliation time. A/B testing confirmed that architecturally enforced isolation produces more independent findings and genuine cross-pass complication, while single-context staged visibility reduces but does not eliminate anchoring. The pass still re-grounds on the contract and ledger's existence before starting (see §Pre-Pass Re-Grounding), but defers reading the ledger's substantive findings until after drafting its own.
+Because all modes now use subagent dispatch, isolation is architecturally enforced in every run — no subagent has prior pass artifacts in its context, only the ledger entries provided at reconciliation time. A/B testing confirmed that architecturally enforced isolation produces more independent findings and genuine cross-pass complication. The pass still re-grounds on the contract and ledger's existence before starting (see §Pre-Pass Re-Grounding), but defers reading the ledger's substantive findings until after drafting its own.
 
 ## Core DE Pass Specifications
 

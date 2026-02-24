@@ -10,11 +10,11 @@
 
 ## Overview
 
-Hybrid mode is an execution mode between single-context and full swarm. Pass 0+1 reads the entire manuscript and produces a **focus map** alongside the standard reverse outline and reader experience log. Subsequent passes load the reverse outline (the compressed manuscript) plus only the excerpts the focus map targets — not the full text.
+Hybrid mode is an execution mode between sequential and full swarm. Pass 0+1 reads the entire manuscript and produces a **focus map** alongside the standard reverse outline and reader experience log. Subsequent passes load the reverse outline (the compressed manuscript) plus only the excerpts the focus map targets — not the full text.
 
 **Pre-flight dependency:** Hybrid mode requires pre-flight metadata (see `run-core.md` §Pre-flight Diagnostics). Pre-flight provides the triage subagent's `max_turns` budget — computed as `ceil(total_lines / 500) + 20` — which ensures enough turns for full-manuscript I/O plus a buffer for complex targeting decisions. Pre-flight also detects missing chapter structure (e.g., from epub conversion) and passes section boundary data to the triage subagent so it doesn't waste turns searching for headers that don't exist.
 
-**Cost profile:** Approximately 2–3x the tokens of single-context (~500–690k for a 118k-word manuscript), versus swarm's ~5x (~1.2M).
+**Cost profile:** Approximately 1–1.5x the tokens of sequential mode (~500–690k for a 118k-word manuscript), versus swarm's ~2.5x (~1.2M).
 
 **Quality profile:** Architectural isolation for later passes (each runs in its own context), with the outline serving as compressed manuscript representation. Later passes see the full structure but deep-read only where the focus map directs them. Risk: the focus map misses something Pass 0+1 didn't recognize as significant from an outliner/reader lens.
 
@@ -306,7 +306,7 @@ The quality of the focus map depends on the triage subagent's analytical sensiti
 
 2. **Coverage statistics as self-check.** The focus map includes a coverage table. If targeting falls below 25% of scenes, the triage subagent is prompted to reconsider whether it's being too conservative. This is a soft guardrail, not a hard constraint.
 
-3. **Single-context fallback.** If the focus map produces fewer than 10 targets across all passes, the parent orchestrator should flag this to the user and suggest single-context mode may be more appropriate for this manuscript (the manuscript may not have enough complexity to benefit from hybrid mode's analytical separation).
+3. **Sequential fallback.** If the focus map produces fewer than 10 targets across all passes, the parent orchestrator should flag this to the user and suggest sequential mode may be more appropriate for this manuscript (the manuscript may not have enough complexity to benefit from hybrid mode's targeted excerpt approach).
 
 ### Tertiary Risk: Excerpt Boundary Errors
 
@@ -320,15 +320,15 @@ Scene extraction depends on the reverse outline's location markers being accurat
 
 Estimates for a 118,000-word manuscript (~180k tokens of raw text).
 
-| Component | Single-Context | Hybrid | Full Swarm |
-|-----------|---------------|--------|------------|
-| Triage (Pass 0+1) | — | ~250k (full read + focus map generation) | ~250k |
-| Pass 2 input | (shared context) | ~80k (outline 40k + excerpts ~40k) | ~220k (full manuscript) |
-| Pass 5 input | (shared context) | ~95k (outline 40k + excerpts ~55k) | ~220k (full manuscript) |
-| Pass 8 input | (shared context) | ~90k (outline 40k + excerpts ~50k) | ~220k (full manuscript) |
-| Synthesis input | (shared context) | ~70k (outline 40k + ledger + verification excerpts) | ~80k (ledger + excerpts) |
-| **Estimated total** | **~240k** | **~500–690k** | **~1,000–1,200k** |
-| **Cost multiplier** | **1x** | **~2–3x** | **~5x** |
+| Component | Sequential | Hybrid | Full Swarm |
+|-----------|-----------|--------|------------|
+| Triage (Pass 0+1) | ~250k (full read) | ~250k (full read + focus map generation) | ~250k |
+| Pass 2 input | ~220k (full manuscript) | ~80k (outline 40k + excerpts ~40k) | ~220k (full manuscript) |
+| Pass 5 input | ~220k (full manuscript) | ~95k (outline 40k + excerpts ~55k) | ~220k (full manuscript) |
+| Pass 8 input | ~220k (full manuscript) | ~90k (outline 40k + excerpts ~50k) | ~220k (full manuscript) |
+| Synthesis input | ~80k (ledger + excerpts) | ~70k (outline 40k + ledger + verification excerpts) | ~80k (ledger + excerpts) |
+| **Estimated total** | **~400–500k** | **~500–690k** | **~1,000–1,200k** |
+| **Cost multiplier** | **1x** | **~1–1.5x** | **~2.5x** |
 
 These estimates assume:
 - Reverse outline compresses the manuscript to ~20–25% of original token count (~40k tokens)
@@ -336,22 +336,22 @@ These estimates assume:
 - Each targeted scene averages ~1,500 tokens of prose
 - Output tokens (analysis, ledger entries, focus map) add ~15–20% overhead per subagent
 
-**Tested cost (83k-word manuscript, 2 analytical passes):** ~337k total (~1.4x single-context). Projected for 3 analytical passes on the same manuscript: ~407–450k (~1.7–1.9x). The 2–3x range holds for manuscripts in the 100k+ range where excerpt packages are larger.
+**Tested cost (83k-word manuscript, 2 analytical passes):** ~337k total (~0.8x sequential). Projected for 3 analytical passes on the same manuscript: ~407–450k (~0.9–1.0x sequential). Hybrid is now cheaper than sequential for most manuscripts because later passes receive excerpts instead of the full manuscript. The cost advantage grows with manuscript length.
 
 ---
 
 ## Integration with Existing Modes
 
-Hybrid mode uses the same pass specifications, Findings Ledger protocol, staged visibility rules, and synthesis format as single-context and swarm modes. The only differences are:
+Hybrid mode uses the same pass specifications, Findings Ledger protocol, staged visibility rules, and synthesis format as sequential and swarm modes. All three modes use subagent dispatch (see `run-core.md` §Subagent Dispatch). The only differences are:
 
 1. **The focus map is a new output** from Pass 0+1, produced only in hybrid mode.
 2. **Later passes receive excerpts instead of the full manuscript.** Their analytical instructions are identical; their input is narrower.
-3. **The parent orchestrator performs excerpt extraction** — a step that doesn't exist in swarm mode (where each subagent loads the full manuscript) or single-context mode (where the manuscript is already in context).
+3. **The parent orchestrator performs excerpt extraction** — a step that doesn't exist in sequential or swarm mode (where each subagent loads the full manuscript).
 
-The intake router presents hybrid as a third execution mode option. The recommendation logic:
-- **Single-context:** Default. Manuscripts under ~60k words, budget-constrained runs, quick diagnostics.
-- **Hybrid:** Manuscripts over ~60k words where the user wants better-than-single-context quality without full swarm cost. The sweet spot for most serious editorial runs.
-- **Swarm:** Maximum depth. Final-round diagnostics before submission, or when prior runs felt thin.
+The intake router presents hybrid as a third execution mode option. Pre-flight recommends the mode based on measured word count:
+- **Sequential:** Default. Manuscripts under ~60k words, budget-constrained runs, quick diagnostics.
+- **Hybrid:** Manuscripts 60–100k words. Actually cheaper than sequential for longer manuscripts because later passes receive excerpts instead of the full text. The sweet spot for most serious editorial runs.
+- **Swarm:** Maximum depth. Final-round diagnostics before submission, or when prior runs felt thin. Parallel execution of analytical passes.
 
 ---
 
