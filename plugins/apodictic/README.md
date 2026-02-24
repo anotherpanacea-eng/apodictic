@@ -119,9 +119,17 @@ Internet-enabled research to validate comps, check facts, verify genre currency,
 
 APODICTIC runs in **single-context mode** by default: all passes execute sequentially in one conversation. This is fast and token-efficient.
 
-For maximum analytical depth, request **swarm mode**: each pass runs as an independent subagent with its own clean context window. In controlled testing, swarm mode produced roughly **twice as many findings** with more specific cross-pass connections and more consistent counterevidence — at approximately **5x the token cost**. The quality improvement comes from architectural isolation: each pass genuinely cannot see prior analysis until a reconciliation step, which eliminates anchoring bias.
+For stronger analysis on longer manuscripts, request **hybrid mode**: Pass 0+1 reads the full manuscript and produces a focus map targeting specific scenes for each subsequent pass. Later passes run as independent subagents with the reverse outline plus targeted excerpts — not the full text. Hybrid mode provides architectural isolation at roughly **2–3x the token cost**. The tradeoff: later passes depend on the focus map's accuracy rather than reading everything themselves.
 
-**When to consider swarm mode:** Long manuscripts (>60,000 words), final-round diagnostics before submission, or any run where you want the deepest possible analysis and are willing to spend the tokens. To invoke: tell the editor "run this in swarm mode" at intake.
+For maximum analytical depth, request **swarm mode**: each pass runs as an independent subagent loading the full manuscript. Swarm produces roughly **twice as many findings** with more specific cross-pass connections and more consistent counterevidence — at approximately **5x the token cost**.
+
+**When to consider each mode:**
+
+- **Single-context** (default): Manuscripts under ~60,000 words, quick diagnostics, budget-constrained runs.
+- **Hybrid**: Manuscripts over ~60,000 words, standard editorial workflow, runs where you want better-than-default quality without full swarm cost. The sweet spot for most serious edits.
+- **Swarm**: Final-round diagnostics before submission, or when prior runs felt thinner than the manuscript warranted.
+
+To invoke: tell the editor "run this in hybrid mode" or "run this in swarm mode" at intake.
 
 ## Model Requirements
 

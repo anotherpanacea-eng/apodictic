@@ -126,8 +126,11 @@ Always asked after routing, before work begins. Multiple selections allowed.
 | E | I'm editing someone else's work | `operator:editor` | Shift output to editor scaffolding. **Gap: editor mode not yet built.** |
 | F | I'm facilitating a writing group | `operator:facilitator` | Shift to diagnostic vocabulary mode. **Gap: facilitator mode not yet built.** |
 | G | We're co-authoring (multiple writers) | `operator:team` | Note conflicting-vision risk. **Gap: multi-party intake not yet built.** |
-| H | Use swarm mode (deeper analysis, higher token cost) | `execution:swarm` | Each pass runs as an independent subagent. ~2x findings, ~5x token cost. See `run-core.md` §Execution Mode. |
-| I | No constraints — let's go | (none) | Proceed with standard workflow. |
+| H | Use hybrid mode (better analysis, moderate token cost) | `execution:hybrid` | Pass 0+1 reads full manuscript and builds a focus map; later passes read the outline + targeted excerpts as independent subagents. ~2–3x token cost. See `run-core.md` §Execution Mode. |
+| I | Use swarm mode (deepest analysis, highest token cost) | `execution:swarm` | Each pass runs as an independent subagent with full manuscript. ~2x findings, ~5x token cost. See `run-core.md` §Execution Mode. |
+| J | No constraints — let's go | (none) | Proceed with standard workflow. |
+
+**Execution mode recommendation:** When the user selects option B (submission readiness) under `full_draft`, suggest hybrid mode in §3 if they haven't already selected an execution mode: "Since this is a final-round assessment before submission, you may want to consider hybrid mode (2–3x token cost, stronger analysis) or swarm mode (5x token cost, deepest analysis). Want to add either?" For manuscripts over ~80,000 words with goal `repair`, nudge toward hybrid: "For a manuscript this length, hybrid mode catches more than single-context. Want to add that?"
 
 ---
 
@@ -181,11 +184,13 @@ Existing commands bypass the router with pre-filled values. The router is the re
 | partial | draft (rethink) | — | Pre-Writing Pathway (re-entry) | **Built** |
 | partial | repair | time | Fast Triage | Gap |
 | full_draft | repair | — | Core DE | **Built** |
+| full_draft | repair | hybrid | Core DE (hybrid mode) | **Built** |
 | full_draft | repair | swarm | Core DE (swarm mode) | **Built** |
 | full_draft | repair | time | Fast Triage | Gap |
 | full_draft | repair | ai | Core DE + AI-Prose Calibration | **Built** |
 | full_draft | repair | risk | Core DE + Risk Register | Gap |
-| full_draft | submit | — | Core DE → Pass 11 (swarm suggested) | Gap: unified submission workflow |
+| full_draft | submit | — | Core DE → Pass 11 (hybrid suggested) | Gap: unified submission workflow |
+| full_draft | submit | hybrid | Core DE → Pass 11 (hybrid mode) | **Built** |
 | full_draft | submit | swarm | Core DE → Pass 11 (swarm mode) | **Built** |
 | full_draft | submit | time | Fast Triage (submission focus) | Gap |
 | full_draft | repair | editor | Core DE (editor scaffolding) | Gap |

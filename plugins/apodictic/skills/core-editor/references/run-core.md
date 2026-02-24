@@ -167,16 +167,33 @@ All passes run sequentially in the current conversation context. The manuscript,
 
 **When to use:** Most runs. Especially effective for manuscripts under ~60,000 words, where context pressure is manageable.
 
+### Hybrid Mode (Optional)
+
+Pass 0+1 reads the full manuscript and produces a **focus map** — a targeting document that tells each subsequent pass which scenes to deep-read. Later passes load the reverse outline (the compressed manuscript) plus only the focus map's targeted excerpts, not the full text. Each later pass still runs as an independent subagent with architectural isolation.
+
+**What the user should know:** Hybrid mode provides most of swarm's quality gains — architectural isolation, independent analysis, reduced anchoring — at roughly **2–3x the token cost** instead of swarm's 5x. The tradeoff: later passes see targeted excerpts rather than the full manuscript, so they depend on the focus map's accuracy. The focus map errs on inclusion (targeting 30–50% of scenes), and every pass still receives the complete reverse outline for structural context.
+
+**When to use:** The sweet spot for most serious editorial runs. Especially valuable for:
+- Manuscripts over ~60,000 words where single-context quality degrades
+- Runs where the user wants better-than-default quality without full swarm cost
+- Standard editorial workflow (not final-round submission diagnostics)
+
+**When NOT to use:** Manuscripts under ~40,000 words (single-context handles these comfortably), or final-round diagnostics where maximum depth justifies swarm's cost.
+
+**How to invoke:** The user requests hybrid mode at intake or before pass execution begins. Example: "Run this in hybrid mode" or "Use selective reading." The system confirms mode selection and token cost implications before proceeding.
+
+**Full specification:** See `references/hybrid-mode.md` for the focus map format, targeting grammar, confidence tiers, excerpt extraction protocol, and risk analysis.
+
 ### Swarm Mode (Optional)
 
-Each evaluative pass runs as an independent subagent with its own context window. A parent orchestrator manages the sequence, accumulates the Findings Ledger, and dispatches each pass with its required inputs.
+Each evaluative pass runs as an independent subagent with its own context window. A parent orchestrator manages the sequence, accumulates the Findings Ledger, and dispatches each pass with its required inputs. Every subagent loads the full manuscript.
 
 **What the user should know:** Swarm mode produces roughly **twice as many findings** with **more specific cross-pass connections** and **more consistent counterevidence**, at approximately **5x the token cost**. The quality improvement comes from architectural isolation: each pass genuinely cannot see prior analysis until the reconciliation step, which eliminates anchoring bias and produces multi-perspectival convergence rather than echo.
 
 **When to use:** When maximum analytical quality matters more than token economy. Particularly valuable for:
-- Manuscripts long enough to create real context pressure (>60,000 words)
 - Final-round diagnostics before submission
-- Cases where prior single-context runs produced a synthesis that felt thinner than the pass analysis warranted
+- Cases where prior runs (single-context or hybrid) produced a synthesis that felt thinner than the pass analysis warranted
+- Manuscripts where the focus map approach feels insufficient (very dense literary fiction, heavily interwoven plot structures)
 
 **When NOT to use:** Quick diagnostics, partial manuscripts, budget-constrained runs, or manuscripts short enough that single-context handles them comfortably.
 
@@ -212,8 +229,8 @@ Each evaluative pass runs as an independent subagent with its own context window
 | Mode | Estimated total tokens | Quality |
 |------|----------------------|---------|
 | Single-context | ~240,000 | Good; context decay in late passes |
-| Swarm (full read per pass) | ~1,000,000 | Best; no cross-pass decay |
-| Swarm (hybrid selective) | ~500,000 | Strong; later passes use excerpts |
+| Hybrid (selective reading) | ~500,000–690,000 | Strong; architectural isolation + targeted excerpts |
+| Swarm (full read per pass) | ~1,000,000–1,200,000 | Best; no cross-pass decay, full manuscript per pass |
 
 For full architecture details, cost analysis, and risk discussion: see `docs/subagent-architecture-design.md`.
 
@@ -257,6 +274,8 @@ At the end of Pass 0, measure and report:
 3. Use these measured values for all subsequent proportional analysis
 
 **Output:** `Reverse_Outline.md` with verified word counts
+
+**Hybrid mode additional output:** When running in hybrid mode, Pass 0+1 (combined triage subagent) also produces `[Project]_Focus_Map_[runlabel].md` — a targeting document that directs later passes to specific scenes for deep reading. See `references/hybrid-mode.md` for the focus map specification, targeting grammar, and confidence tiers.
 
 ### Pass 1: Reader Experience
 
