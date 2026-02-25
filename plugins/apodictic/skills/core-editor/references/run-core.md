@@ -521,6 +521,35 @@ consolidates them for the synthesis step.]
 |---------|----------|----------------|
 ```
 
+#### Structured Findings Block (Optional — Recommended for Hybrid/Swarm)
+
+When running in hybrid or swarm mode, each Notable Finding in the ledger entry may include an optional structured metadata block after the prose description. This block provides machine-parseable fields that help the synthesis subagent integrate findings across independently-run passes without relying solely on prose interpretation.
+
+The structured block is *supplementary*, not a replacement for the prose finding. The prose is the primary record; the structured block is an index.
+
+```markdown
+1. **[Finding name].** [What it is.] [Why it matters.]
+   *(See Pass N, §[Section], [table/paragraph name].)*
+   *Counterevidence:* [If applicable.]
+
+   <!-- structured-finding
+   mechanism: [One sentence: the craft mechanism that produces the problem]
+   severity: [Must-Fix | Should-Fix | Could-Fix]
+   confidence: [HIGH | MEDIUM | LOW | UNCERTAIN]
+   evidence-refs: [Scene X (ch Y), Scene Z (ch W)]
+   fix-class: [Class of intervention — e.g., "redistribute dramatic weight," "add interiority at decision point"]
+   risk-if-fixed: [What the fix might harm]
+   -->
+```
+
+**Usage rules:**
+- In sequential mode, the structured block is optional — the synthesis step has the full ledger in context and prose is sufficient.
+- In hybrid and swarm modes, the structured block is strongly recommended because the synthesis subagent may receive ledger entries from passes it didn't witness. The structured fields make cross-pass clustering faster and more reliable.
+- The `mechanism` field is the most important. If two findings from different passes name the same mechanism, the synthesis step should investigate whether they share a root cause.
+- Never let the structured block contradict the prose. If they diverge, the prose governs.
+
+---
+
 #### Ledger Discipline
 
 - **Notable findings are not all findings.** Include only findings that should appear in or inform the editorial letter. A belief failure rated "minor" that doesn't connect to a pattern is pass-level data, not a ledger entry. A belief failure rated "moderate" that connects to a root cause is a ledger entry.
@@ -602,7 +631,18 @@ The synthesis is the author-facing editorial letter. It must read as one informe
 
 6. **Adversarial Reader Stress Test (required).** Before writing the letter, run the stress test per `references/adversarial-stress-test.md`. **Begin the stress test by setting aside the pass findings and the Findings Ledger.** Inhabit the low-charity reader profiles and generate 3-5 adversarial claims from a holistic reading of the manuscript — what would a hostile reader attack regardless of what the passes found? Draw also from the Findings Ledger's "Unresolved Questions" entries, which may contain vulnerabilities the passes noticed but couldn't fully analyze. After generating the independent claims, reconcile them with the pass findings: which attacks are already covered by editorial letter findings? Which are new? New attacks enter the stress test section of the letter. Attacks already covered by the editorial argument are noted as convergent evidence but not duplicated. This is a separate exercise from the adversarial self-check (step 5) — the self-check tests severity calibration of existing findings; the stress test surfaces what hostile readers would attack, which may include issues not flagged by the passes.
 
-7. **Write the editorial letter** using the presentation format below. The self-check informs the letter's severities; the stress test becomes §7 of the letter.
+7. **Pre-Output Synthesis Verification (required gate).** Before writing the letter, verify the synthesis is actually drawing from pass findings — not generating an editorial letter from general impressions of the manuscript. Run these checks:
+
+   - **Findings integration check:** For each root cause identified in step 3, confirm it cites at least one specific ledger finding by pass and finding name. If a root cause exists only as a general impression without ledger grounding, either locate the supporting ledger entry or demote it to §4b (Additional Observations) with a note that it awaits pass-level confirmation.
+   - **Section ordering check:** Confirm the letter will follow the required §1-§8 order. §6 (Strongest Case Against) and §7 (Stress Test) are separate sections with distinct methodologies — they must not be merged or omitted.
+   - **Cap compliance check:** Root causes ≤ 5. Revision checklist items ≤ 10 (Core DE) or ≤ 15 (Full DE). Must-Fix flags ≤ 10.
+   - **Severity floor check:** If any core-promise axis is rated Weak at High or Medium intensity, at least one flag is Must-Fix. If any Must-Fix flag has Systemic blast radius, verdict does not exceed Partial Fit ceiling.
+   - **Appendix completeness check:** The letter will include Appendix A (diagnostic detail), Appendix B (severity calibration), and Appendix C (framework notes). No appendix is optional.
+   - **Evidence density spot-check:** For the two highest-severity flags, confirm each has ≥ 2 specific scene/page references.
+
+   If any check fails, fix it before proceeding. This gate exists because the most common synthesis failure mode is generating an editorially plausible letter that doesn't actually integrate the analytical work — the letter sounds right but isn't grounded in what the passes found.
+
+8. **Write the editorial letter** using the presentation format below. The self-check informs the letter's severities; the stress test becomes §7 of the letter.
 
 **Key principle:** Processing order ≠ presentation order. The self-check must happen before writing, but in the output document it belongs in an appendix. The author reads findings; the framework owner reads methodology.
 
