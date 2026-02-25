@@ -29,6 +29,7 @@ All DE outputs are author-facing documents. Framework shorthand — pass numbers
 - Quote budget: ≤25 words per excerpt, or paraphrase + pointer
 - Every proposed fix must list what it risks harming
 - **Fix-Diagnosis Coherence Test (required):** Before finalizing any proposed intervention, verify that the fix addresses the *mechanism* of the diagnosed problem, not just its surface symptom. If the diagnosis is "Character X lacks narrative agency," a fix that adds more male-gaze contemplation of Character X deepens the problem. Ask: "Does this intervention change the mechanism, or does it add surface content that leaves the mechanism intact?" If the latter, revise the intervention class or flag it as insufficient.
+- **Evidence Density Self-Check (required):** Before finalizing each flag, count its specific scene/page references. If a flag cites fewer than 2 references, either locate additional textual evidence to support it or downgrade confidence (not severity — a real problem with thin evidence is still a real problem, but the author needs to know the evidence base is narrow). This check runs at the flag level during triage, not as a separate pass.
 
 ---
 
@@ -189,3 +190,17 @@ Each individual pass that produces findings (Pass 1, Pass 2, Pass 5, Pass 8, and
 4. **Strengths** — specific, evidence-based strengths with citations. Cap: if the pass surfaces more leaks than strengths, strengths ≤ leaks count; otherwise max(leaks, 3).
 
 Pass 0 (Reverse Outline) and Pass 10 (Entity Tracking) are data-building passes and produce reference artifacts rather than evaluative findings. They do not require rejection memos or strengths sections.
+
+---
+
+## Mandatory Appendices (v0.4.15)
+
+Every editorial letter must include the following appendices. These are not optional even when the letter is otherwise strong — they provide the author with diagnostic transparency and the framework owner with reproducibility data.
+
+1. **Appendix A: Diagnostic Detail.** Pointers to companion pass files and supplementary audit findings, with brief descriptions of what each contains. This tells the author where to find the evidence and revision tools behind the letter's arguments.
+
+2. **Appendix B: Severity Calibration.** Compressed summary of the adversarial self-check — which findings were tested for softening or over-escalation, in which direction, and whether any severities were adjusted. This is the author's assurance that severity assignments were stress-tested, not just assigned.
+
+3. **Appendix C: Framework Notes.** Analysis version, model, run date, passes completed, protocol flags, prior analyses on file, cross-version stability notes (if applicable). This is the run's metadata — it makes results reproducible and lets the framework owner track behavior across versions.
+
+If a letter omits any of these appendices, the omission is a framework compliance failure regardless of the letter's analytical quality.
