@@ -32,7 +32,7 @@ APODICTIC isn't just for finished drafts.
 
 ```
 /plugin marketplace add anotherpanacea-eng/apodictic
-/plugin install apodictic@apodictic
+/plugin install apodictic@apodictic-marketplace
 ```
 
 ### Cowork (Desktop App)
