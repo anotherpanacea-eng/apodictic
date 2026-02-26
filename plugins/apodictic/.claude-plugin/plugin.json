@@ -5,6 +5,9 @@
   "author": {
     "name": "anotherpanacea"
   },
+  "homepage": "https://anotherpanacea.com",
+  "repository": "https://github.com/anotherpanacea-eng/apodictic",
+  "license": "CC-BY-NC-SA-4.0",
   "keywords": [
     "writing",
     "editing",

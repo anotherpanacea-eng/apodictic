@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "apodictic-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "anotherpanacea-eng/apodictic"
+      }
+    }
+  }
+}

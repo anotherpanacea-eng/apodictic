@@ -5,7 +5,7 @@
 # Usage: ./scripts/bump-version.sh 1.0.0
 #
 # Canonical source: plugins/apodictic/.claude-plugin/plugin.json
-# Also updates:     .claude-plugin/marketplace.json (both version fields)
+# Also updates:     .claude-plugin/marketplace.json (top-level and plugin entry version)
 #                   4 SKILL.md frontmatter version: fields
 #
 # Does NOT touch: changelog entries, deprecated file banners,
