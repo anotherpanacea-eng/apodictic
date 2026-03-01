@@ -28,11 +28,13 @@ APODICTIC isn't just for finished drafts.
 
 ## Install
 
+Requires **Claude Opus** for intended results. Runs on smaller models with degraded severity honesty and thematic interpretation.
+
 ### Claude Code (CLI)
 
 ```
 /plugin marketplace add anotherpanacea-eng/apodictic
-/plugin install apodictic@apodictic
+/plugin install apodictic@anotherpanacea-eng-apodictic
 ```
 
 ### Cowork (Desktop App)
@@ -42,8 +44,6 @@ Download `apodictic.plugin` from the [latest release](https://github.com/another
 ---
 
 Then type `/start` — it asks you three questions to figure out what you need.
-
-Requires Claude Code 1.0.33+ or Cowork mode.
 
 ## Commands
 
