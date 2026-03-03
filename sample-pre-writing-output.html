@@ -4,32 +4,93 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>APODICTIC Sample — Pre-Writing Pathway Output</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vollkorn:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Alegreya+Sans:wght@300;400;500;700&family=Fira+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #fafaf9;
-    --surface: #ffffff;
-    --border: #e7e5e4;
-    --text: #1c1917;
-    --text-secondary: #78716c;
-    --accent: #b45309;
-    --accent-light: #fef3c7;
-    --accent-hover: #92400e;
-    --engine-arendt: #dbeafe;
-    --engine-arendt-border: #1e40af;
-    --engine-varnhagen: #fce7f3;
-    --engine-varnhagen-border: #9d174d;
-    --open-q: #d1fae5;
-    --open-q-border: #059669;
-    --guardrail: #ede9fe;
-    --guardrail-border: #7c3aed;
+    --ink: #1F2118;
+    --ink-light: #2B2D22;
+    --ink-border: #3D4032;
+    --parchment: #EDE5D0;
+    --paper: #E2D8BF;
+    --card: #F4EDDA;
+    --pencil: #8B5E3C;
+    --pencil-hover: #724C30;
+    --pencil-muted: rgba(139, 94, 60, 0.09);
+    --pencil-ring: rgba(139, 94, 60, 0.20);
+    --burnish: #5E8C6A;
+    --burnish-light: rgba(94, 140, 106, 0.10);
+    --charcoal: #33311E;
+    --graphite: #7A7560;
+    --whisper: #D1C8AC;
+    --fog: #9E9680;
+    --sage: #5E8C6A;
+    --navy: #3B4A3E;
+    --sidebar-text: #EDE5D0;
+    --font-serif: 'Vollkorn', Georgia, serif;
+    --font-sans: 'Source Sans 3', 'Source Sans Pro', system-ui, sans-serif;
+    --font-mono: 'Source Code Pro', monospace;
+    --engine-arendt: rgba(94, 140, 106, 0.12);
+    --engine-arendt-border: #3B4A3E;
+    --engine-varnhagen: rgba(139, 94, 60, 0.10);
+    --engine-varnhagen-border: #724C30;
+    --open-q: rgba(94, 140, 106, 0.10);
+    --open-q-border: #5E8C6A;
+    --guardrail: rgba(139, 94, 60, 0.06);
+    --guardrail-border: #8B5E3C;
+    --channel-arendt-bg: rgba(94, 140, 106, 0.08);
+    --channel-arendt-border: rgba(94, 140, 106, 0.25);
+    --channel-varnhagen-bg: rgba(139, 94, 60, 0.06);
+    --channel-varnhagen-border: rgba(139, 94, 60, 0.20);
+    --first-chapter-border: #D1C8AC;
+  }
+
+  [data-theme="scriptorium-noir"] {
+    --ink: #0D0B09;
+    --ink-light: #1A1714;
+    --ink-border: #2E2923;
+    --parchment: #161310;
+    --paper: #1E1B17;
+    --card: #1C1915;
+    --pencil: #A8344A;
+    --pencil-hover: #8C2A3D;
+    --pencil-muted: rgba(168, 52, 74, 0.10);
+    --pencil-ring: rgba(168, 52, 74, 0.22);
+    --burnish: #C9A84C;
+    --burnish-light: rgba(201, 168, 76, 0.10);
+    --charcoal: #D4CFC7;
+    --graphite: #8A8279;
+    --whisper: #2E2923;
+    --fog: #6B6359;
+    --sage: #6B9A67;
+    --navy: #C9A84C;
+    --sidebar-text: #D4CFC7;
+    --font-serif: 'EB Garamond', Georgia, serif;
+    --font-sans: 'Alegreya Sans', system-ui, sans-serif;
+    --font-mono: 'Fira Mono', monospace;
+    --engine-arendt: rgba(107, 154, 103, 0.12);
+    --engine-arendt-border: #6B9A67;
+    --engine-varnhagen: rgba(168, 52, 74, 0.10);
+    --engine-varnhagen-border: #A8344A;
+    --open-q: rgba(107, 154, 103, 0.10);
+    --open-q-border: #6B9A67;
+    --guardrail: rgba(201, 168, 76, 0.08);
+    --guardrail-border: #C9A84C;
+    --channel-arendt-bg: rgba(107, 154, 103, 0.08);
+    --channel-arendt-border: rgba(107, 154, 103, 0.25);
+    --channel-varnhagen-bg: rgba(168, 52, 74, 0.06);
+    --channel-varnhagen-border: rgba(168, 52, 74, 0.20);
+    --first-chapter-border: #2E2923;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
+    font-family: var(--font-serif);
+    background: var(--parchment);
+    color: var(--charcoal);
     line-height: 1.6;
     max-width: 800px;
     margin: 0 auto;
@@ -39,7 +100,7 @@
   header {
     margin-bottom: 2.5rem;
     padding-bottom: 1.5rem;
-    border-bottom: 2px solid var(--border);
+    border-bottom: 2px solid var(--whisper);
   }
 
   header h1 {
@@ -51,13 +112,13 @@
 
   header .subtitle {
     font-size: 1rem;
-    color: var(--text-secondary);
+    color: var(--graphite);
     margin-bottom: 0.75rem;
   }
 
   header .meta {
     font-size: 0.8rem;
-    color: var(--text-secondary);
+    color: var(--graphite);
     display: flex;
     gap: 1.5rem;
     flex-wrap: wrap;
@@ -71,7 +132,7 @@
 
   .meta-label {
     font-weight: 600;
-    color: var(--accent);
+    color: var(--pencil);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     font-size: 0.7rem;
@@ -84,7 +145,7 @@
   h2 {
     font-size: 0.8rem;
     font-weight: 600;
-    color: var(--accent-hover);
+    color: var(--pencil-hover);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 1rem;
@@ -107,8 +168,8 @@
 
   /* Controlling Idea Block */
   .idea-block {
-    background: var(--accent-light);
-    border-left: 3px solid var(--accent);
+    background: var(--pencil-muted);
+    border-left: 3px solid var(--pencil);
     padding: 1rem 1.25rem;
     border-radius: 0 6px 6px 0;
     margin-bottom: 1.25rem;
@@ -119,7 +180,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--accent-hover);
+    color: var(--pencil-hover);
     margin-bottom: 0.35rem;
   }
 
@@ -131,7 +192,7 @@
 
   .idea-block .anti-idea {
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--graphite);
     margin-top: 0.5rem;
     font-style: normal;
   }
@@ -149,11 +210,11 @@
   }
 
   .engine-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--card);
+    border: 1px solid var(--whisper);
     border-radius: 8px;
     padding: 1.25rem;
-    border-top: 3px solid var(--border);
+    border-top: 3px solid var(--whisper);
   }
 
   .engine-card.arendt { border-top-color: var(--engine-arendt-border); }
@@ -198,15 +259,15 @@
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    color: var(--text-secondary);
+    color: var(--graphite);
     display: block;
     margin-bottom: 0.1rem;
   }
 
   /* Spine Block */
   .spine-block {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--card);
+    border: 1px solid var(--whisper);
     border-radius: 8px;
     padding: 1.25rem;
     margin-bottom: 1rem;
@@ -231,11 +292,11 @@
     font-size: 0.82rem;
     padding: 0.6rem 0.85rem;
     border-radius: 6px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--whisper);
   }
 
-  .channel.arendt { background: #f0f5ff; border-color: #bfdbfe; }
-  .channel.varnhagen { background: #fdf2f8; border-color: #fbcfe8; }
+  .channel.arendt { background: var(--channel-arendt-bg); border-color: var(--channel-arendt-border); }
+  .channel.varnhagen { background: var(--channel-varnhagen-bg); border-color: var(--channel-varnhagen-border); }
 
   .channel .channel-label {
     font-weight: 600;
@@ -250,9 +311,9 @@
 
   /* Decision Card */
   .decision-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
+    background: var(--card);
+    border: 1px solid var(--whisper);
+    border-left: 3px solid var(--pencil);
     border-radius: 0 8px 8px 0;
     padding: 1rem 1.25rem;
     margin-bottom: 1rem;
@@ -264,7 +325,7 @@
 
   .decision-card p {
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--graphite);
   }
 
   /* Open Questions */
@@ -275,8 +336,8 @@
   }
 
   .question-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--card);
+    border: 1px solid var(--whisper);
     border-left: 3px solid var(--open-q-border);
     border-radius: 0 6px 6px 0;
     padding: 0.75rem 1rem;
@@ -290,7 +351,7 @@
 
   .question-item .q-note {
     font-size: 0.82rem;
-    color: var(--text-secondary);
+    color: var(--graphite);
   }
 
   /* Guardrails */
@@ -305,8 +366,8 @@
   }
 
   .guardrail-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--card);
+    border: 1px solid var(--whisper);
     border-left: 3px solid var(--guardrail-border);
     border-radius: 0 6px 6px 0;
     padding: 0.6rem 0.85rem;
@@ -330,8 +391,8 @@
   }
 
   .trigger-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--card);
+    border: 1px solid var(--whisper);
     border-radius: 8px;
     padding: 0.85rem 1rem;
     display: flex;
@@ -340,8 +401,8 @@
   }
 
   .trigger-num {
-    background: var(--accent-light);
-    color: var(--accent-hover);
+    background: var(--pencil-muted);
+    color: var(--pencil-hover);
     font-weight: 700;
     font-size: 0.8rem;
     width: 1.75rem;
@@ -360,19 +421,19 @@
 
   .trigger-content .t-what {
     font-size: 0.82rem;
-    color: var(--text-secondary);
+    color: var(--graphite);
   }
 
   /* First Chapter */
   .first-chapter {
-    background: var(--accent-light);
-    border: 1px solid #fde68a;
+    background: var(--pencil-muted);
+    border: 1px solid var(--first-chapter-border);
     border-radius: 8px;
     padding: 1.25rem;
   }
 
   .first-chapter h3 {
-    color: var(--accent-hover);
+    color: var(--pencil-hover);
     margin-bottom: 0.5rem;
   }
 
@@ -382,7 +443,7 @@
 
   .first-chapter .kicker {
     font-style: italic;
-    color: var(--accent-hover);
+    color: var(--pencil-hover);
     margin-top: 0.5rem;
     font-size: 0.88rem;
   }
@@ -391,8 +452,8 @@
   footer {
     text-align: center;
     padding-top: 2rem;
-    border-top: 1px solid var(--border);
-    color: var(--text-secondary);
+    border-top: 1px solid var(--whisper);
+    color: var(--graphite);
     font-size: 0.78rem;
     line-height: 1.6;
   }
@@ -402,9 +463,62 @@
     margin-bottom: 0.5rem;
     font-size: 0.82rem;
   }
+
+  /* Heading & UI Fonts */
+  h1, h2, h3 { font-family: var(--font-serif); }
+  .meta, .meta-label, .engine-field, .field-label, .channel, .channel-label,
+  .decision-card, .question-item, .guardrail-item, .g-label,
+  .trigger-content, .first-chapter, footer { font-family: var(--font-sans); }
+  code { font-family: var(--font-mono); }
+
+  /* Theme Toggle */
+  .theme-toggle {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+    background: var(--card);
+    color: var(--charcoal);
+    border: 1px solid var(--whisper);
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .theme-toggle:hover {
+    background: var(--pencil-muted);
+    border-color: var(--pencil);
+  }
+
+  /* Print */
+  @media print {
+    body { max-width: none; padding: 1cm; }
+    .theme-toggle { display: none; }
+  }
 </style>
 </head>
 <body>
+
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">Scriptorium Noir</button>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.querySelector('.theme-toggle');
+    if (html.getAttribute('data-theme') === 'scriptorium-noir') {
+      html.removeAttribute('data-theme');
+      btn.textContent = 'Scriptorium Noir';
+    } else {
+      html.setAttribute('data-theme', 'scriptorium-noir');
+      btn.textContent = 'Dead Sea Scroll';
+    }
+  }
+</script>
 
 <header>
   <h1>Sample Pre-Writing Pathway Output</h1>
@@ -415,7 +529,7 @@
     <span><span class="meta-label">Pathway</span> Pre-Writing</span>
     <span><span class="meta-label">Status</span> Prospective scaffold</span>
   </div>
-  <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:1rem; max-width:600px; margin-left:auto; margin-right:auto;">This is a sample output from APODICTIC's Pre-Writing Pathway. The writer arrived with an idea and no manuscript. The pathway identified the controlling idea, built protagonist engines, selected a structural spine, and produced this scaffold to draft against.</p>
+  <p style="font-size:0.85rem; color:var(--graphite); margin-top:1rem; max-width:600px; margin-left:auto; margin-right:auto;">This is a sample output from APODICTIC's Pre-Writing Pathway. The writer arrived with an idea and no manuscript. The pathway identified the controlling idea, built protagonist engines, selected a structural spine, and produced this scaffold to draft against.</p>
 </header>
 
 <!-- PREMISE -->
