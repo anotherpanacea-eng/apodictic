@@ -4,24 +4,67 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>APODICTIC — Sample Targeted Audit Letter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vollkorn:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Alegreya+Sans:wght@300;400;500;700&family=Fira+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #fafaf9;
-    --surface: #ffffff;
-    --border: #e7e5e4;
-    --text: #1c1917;
-    --text-secondary: #78716c;
-    --accent: #b45309;
-    --accent-light: #fef3c7;
-    --accent-hover: #92400e;
+    --ink: #1F2118;
+    --ink-light: #2B2D22;
+    --ink-border: #3D4032;
+    --parchment: #EDE5D0;
+    --paper: #E2D8BF;
+    --card: #F4EDDA;
+    --pencil: #8B5E3C;
+    --pencil-hover: #724C30;
+    --pencil-muted: rgba(139, 94, 60, 0.09);
+    --pencil-ring: rgba(139, 94, 60, 0.20);
+    --burnish: #5E8C6A;
+    --burnish-light: rgba(94, 140, 106, 0.10);
+    --charcoal: #33311E;
+    --graphite: #7A7560;
+    --whisper: #D1C8AC;
+    --fog: #9E9680;
+    --sage: #5E8C6A;
+    --navy: #3B4A3E;
+    --sidebar-text: #EDE5D0;
+    --font-serif: 'Vollkorn', Georgia, serif;
+    --font-sans: 'Source Sans 3', 'Source Sans Pro', system-ui, sans-serif;
+    --font-mono: 'Source Code Pro', monospace;
+  }
+
+  [data-theme="scriptorium-noir"] {
+    --ink: #0D0B09;
+    --ink-light: #1A1714;
+    --ink-border: #2E2923;
+    --parchment: #161310;
+    --paper: #1E1B17;
+    --card: #1C1915;
+    --pencil: #A8344A;
+    --pencil-hover: #8C2A3D;
+    --pencil-muted: rgba(168, 52, 74, 0.10);
+    --pencil-ring: rgba(168, 52, 74, 0.22);
+    --burnish: #C9A84C;
+    --burnish-light: rgba(201, 168, 76, 0.10);
+    --charcoal: #D4CFC7;
+    --graphite: #8A8279;
+    --whisper: #2E2923;
+    --fog: #6B6359;
+    --sage: #6B9A67;
+    --navy: #C9A84C;
+    --sidebar-text: #D4CFC7;
+    --font-serif: 'EB Garamond', Georgia, serif;
+    --font-sans: 'Alegreya Sans', system-ui, sans-serif;
+    --font-mono: 'Fira Mono', monospace;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
+    font-family: var(--font-serif);
+    background: var(--parchment);
+    color: var(--charcoal);
     line-height: 1.7;
     max-width: 780px;
     margin: 0 auto;
@@ -32,7 +75,7 @@
   header {
     margin-bottom: 2.5rem;
     padding-bottom: 2rem;
-    border-bottom: 2px solid var(--border);
+    border-bottom: 2px solid var(--whisper);
   }
 
   header h1 {
@@ -44,20 +87,20 @@
 
   header .byline {
     font-size: 0.95rem;
-    color: var(--text-secondary);
+    color: var(--graphite);
     margin-bottom: 0.15rem;
   }
 
   header .framework-stamp {
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--graphite);
     font-style: italic;
   }
 
   /* Scope Disclosure */
   .disclosure {
-    background: var(--accent-light);
-    border-left: 3px solid var(--accent);
+    background: var(--pencil-muted);
+    border-left: 3px solid var(--pencil);
     padding: 0.85rem 1.15rem;
     margin-bottom: 2.5rem;
     font-size: 0.88rem;
@@ -66,7 +109,7 @@
   }
 
   .disclosure strong {
-    color: var(--accent-hover);
+    color: var(--pencil-hover);
   }
 
   /* Section Headers */
@@ -75,9 +118,9 @@
     font-weight: 700;
     margin-top: 2.5rem;
     margin-bottom: 1rem;
-    color: var(--text);
+    color: var(--charcoal);
     padding-bottom: 0.4rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--whisper);
   }
 
   /* Subsection Thesis Headings */
@@ -86,7 +129,7 @@
     font-weight: 700;
     margin-top: 1.75rem;
     margin-bottom: 0.6rem;
-    color: var(--text);
+    color: var(--charcoal);
   }
 
   p {
@@ -113,25 +156,25 @@
   }
 
   .audit-tag-force {
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--pencil-ring);
+    color: var(--pencil-hover);
   }
 
   .audit-tag-erotic {
-    background: #ede9fe;
-    color: #5b21b6;
+    background: var(--burnish-light);
+    color: var(--navy);
   }
 
   .audit-tag-verdict {
-    background: #d1fae5;
-    color: #065f46;
+    background: var(--burnish-light);
+    color: var(--burnish);
   }
 
   /* Key Scene Callout */
   .callout {
     margin: 1.25rem 0;
     padding: 0 0 0 1rem;
-    border-left: 3px solid var(--accent);
+    border-left: 3px solid var(--pencil);
   }
 
   .callout p {
@@ -139,7 +182,7 @@
   }
 
   .callout strong {
-    color: var(--accent-hover);
+    color: var(--pencil-hover);
   }
 
   /* Channel Ratings Mini-Table */
@@ -151,20 +194,20 @@
   }
 
   .channel-table th {
-    background: var(--bg);
+    background: var(--parchment);
     text-align: left;
     padding: 0.5rem 0.65rem;
-    border-bottom: 2px solid var(--border);
+    border-bottom: 2px solid var(--whisper);
     font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--text-secondary);
+    color: var(--graphite);
     font-weight: 600;
   }
 
   .channel-table td {
     padding: 0.5rem 0.65rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--whisper);
     vertical-align: top;
   }
 
@@ -182,9 +225,9 @@
     font-weight: 600;
   }
 
-  .rating-integrated { background: #d1fae5; color: #065f46; }
-  .rating-partial { background: #fef3c7; color: #92400e; }
-  .rating-detached { background: #fee2e2; color: #991b1b; }
+  .rating-integrated { background: var(--burnish-light); color: var(--burnish); }
+  .rating-partial { background: var(--pencil-muted); color: var(--pencil); }
+  .rating-detached { background: var(--pencil-ring); color: var(--pencil-hover); }
 
   /* Revision Checklist Table */
   .checklist-table {
@@ -195,27 +238,27 @@
   }
 
   .checklist-table th {
-    background: var(--bg);
+    background: var(--parchment);
     text-align: left;
     padding: 0.6rem 0.75rem;
-    border-bottom: 2px solid var(--border);
+    border-bottom: 2px solid var(--whisper);
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--text-secondary);
+    color: var(--graphite);
     font-weight: 600;
   }
 
   .checklist-table td {
     padding: 0.6rem 0.75rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--whisper);
     vertical-align: top;
   }
 
   .checklist-table td:first-child {
     width: 2rem;
     text-align: center;
-    color: var(--text-secondary);
+    color: var(--graphite);
     font-weight: 600;
   }
 
@@ -233,9 +276,9 @@
     font-weight: 600;
   }
 
-  .effort-low { background: #d1fae5; color: #065f46; }
-  .effort-med { background: #fef3c7; color: #92400e; }
-  .effort-low-med { background: #e0f2fe; color: #0c4a6e; }
+  .effort-low { background: var(--burnish-light); color: var(--burnish); }
+  .effort-med { background: var(--pencil-muted); color: var(--pencil); }
+  .effort-low-med { background: var(--burnish-light); color: var(--sage); }
 
   /* Protect / Caution */
   .protect-caution {
@@ -248,13 +291,13 @@
   }
 
   .protect-caution strong {
-    color: var(--accent-hover);
+    color: var(--pencil-hover);
   }
 
   /* Strongest Case Against */
   .case-against {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--card);
+    border: 1px solid var(--whisper);
     border-radius: 6px;
     padding: 1.25rem 1.5rem;
     margin: 1rem 0;
@@ -262,8 +305,8 @@
 
   /* Consent Calculus Summary Card */
   .consent-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--card);
+    border: 1px solid var(--whisper);
     border-radius: 6px;
     padding: 1.15rem 1.35rem;
     margin: 1.25rem 0;
@@ -272,7 +315,7 @@
   .consent-card h4 {
     font-size: 0.88rem;
     font-weight: 600;
-    color: var(--accent-hover);
+    color: var(--pencil-hover);
     margin-bottom: 0.6rem;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -285,8 +328,8 @@
 
   /* Scene Assessment Mini-Cards */
   .scene-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--card);
+    border: 1px solid var(--whisper);
     border-radius: 6px;
     padding: 0.85rem 1.1rem;
     margin: 0.75rem 0;
@@ -300,7 +343,7 @@
 
   .scene-card .scene-detail {
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--graphite);
     line-height: 1.55;
   }
 
@@ -313,13 +356,13 @@
     margin-left: 0.3rem;
   }
 
-  .load-yes { background: #d1fae5; color: #065f46; }
-  .load-violation { background: #fee2e2; color: #991b1b; }
+  .load-yes { background: var(--burnish-light); color: var(--burnish); }
+  .load-violation { background: var(--pencil-ring); color: var(--pencil-hover); }
 
   /* Cross-Audit Synthesis */
   .synthesis-box {
-    background: var(--accent-light);
-    border: 1px solid var(--accent);
+    background: var(--pencil-muted);
+    border: 1px solid var(--pencil);
     border-radius: 6px;
     padding: 1.15rem 1.35rem;
     margin: 1.25rem 0;
@@ -337,14 +380,14 @@
   .appendices {
     margin-top: 3rem;
     padding-top: 2rem;
-    border-top: 2px solid var(--border);
+    border-top: 2px solid var(--whisper);
     font-size: 0.88rem;
-    color: var(--text-secondary);
+    color: var(--graphite);
   }
 
   .appendices h3 {
     font-size: 0.9rem;
-    color: var(--text-secondary);
+    color: var(--graphite);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     margin-top: 1.75rem;
@@ -375,7 +418,7 @@
     content: "–";
     position: absolute;
     left: 0;
-    color: var(--accent);
+    color: var(--pencil);
   }
 
   .appendices em {
@@ -391,27 +434,28 @@
 
   .framework-meta dt {
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--graphite);
     white-space: nowrap;
   }
 
   .framework-meta dd {
-    color: var(--text-secondary);
+    color: var(--graphite);
   }
 
   /* Separator */
   hr {
     border: none;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--whisper);
     margin: 2rem 0;
   }
 
   /* Sample Banner */
   .sample-banner {
     text-align: center;
-    background: var(--accent-hover);
-    color: #fff;
+    background: var(--pencil-hover);
+    color: var(--sidebar-text);
     padding: 0.5rem 1rem;
+    font-family: var(--font-sans);
     font-size: 0.78rem;
     font-weight: 600;
     letter-spacing: 0.06em;
@@ -420,15 +464,63 @@
     border-radius: 4px;
   }
 
+  /* Heading & UI Fonts */
+  h1, h2, h3 { font-family: var(--font-serif); }
+  .checklist-table, .channel-table, .framework-meta, .effort-badge, .rating-badge,
+  .load-badge, .audit-tag, .byline, .framework-stamp, .disclosure, .field-label,
+  .scene-card, .consent-card h4, .synthesis-box { font-family: var(--font-sans); }
+  code { font-family: var(--font-mono); }
+
+  /* Theme Toggle */
+  .theme-toggle {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+    background: var(--card);
+    color: var(--charcoal);
+    border: 1px solid var(--whisper);
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .theme-toggle:hover {
+    background: var(--pencil-muted);
+    border-color: var(--pencil);
+  }
+
   /* Print */
   @media print {
     body { max-width: none; padding: 1cm; }
     .sample-banner { display: none; }
+    .theme-toggle { display: none; }
     .case-against, .consent-card, .synthesis-box { break-inside: avoid; }
   }
 </style>
 </head>
 <body>
+
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">Scriptorium Noir</button>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.querySelector('.theme-toggle');
+    if (html.getAttribute('data-theme') === 'scriptorium-noir') {
+      html.removeAttribute('data-theme');
+      btn.textContent = 'Scriptorium Noir';
+    } else {
+      html.setAttribute('data-theme', 'scriptorium-noir');
+      btn.textContent = 'Dead Sea Scroll';
+    }
+  }
+</script>
 
 <div class="sample-banner">Sample Output — <a href="https://github.com/anotherpanacea-eng/apodictic" style="color:inherit;">APODICTIC</a> Development Editor v1.0.1 · Targeted Audit Letter</div>
 
