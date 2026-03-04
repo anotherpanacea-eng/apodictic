@@ -57,7 +57,7 @@ Pass 11 comprises five sub-passes. Sub-passes 11A and 11B always run when Pass 1
 | **11C** | Market Reality Check | Marketability requested |
 | **11D** | First-50 Conversion Gate | Submission readiness requested |
 | **11E** | Revision Economics | Revision planning requested |
-| **11F** | ~~Adversarial Reader Stress Test~~ | **Migrated to core synthesis §7 (v1.0.1)** — now runs for every editorial letter |
+| **11F** | ~~Adversarial Reader Stress Test~~ | **Migrated to core synthesis §8 (v1.0.1)** — now runs for every editorial letter |
 
 ---
 
@@ -430,7 +430,7 @@ Note which fixes must happen before others:
 
 ## Sub-Pass 11F: Adversarial Reader Stress Test
 
-**⚠️ MIGRATED (v1.0.1):** The Adversarial Reader Stress Test has been extracted from Pass 11 and moved to the core editorial letter synthesis. It now runs as §7 of every editorial letter, regardless of whether Pass 11 is triggered. See `references/adversarial-stress-test.md` for the full specification.
+**⚠️ MIGRATED (v1.0.1):** The Adversarial Reader Stress Test has been extracted from Pass 11 and moved to the core editorial letter synthesis. It now runs as §8 of every editorial letter, regardless of whether Pass 11 is triggered. See `references/adversarial-stress-test.md` for the full specification.
 
 **Rationale:** The stress test answers a craft question ("what would a hostile reader attack?"), not a market question. Gating it behind publication intent meant most manuscripts never received adversarial scrutiny. It is now a required element of every editorial letter.
 
@@ -621,7 +621,7 @@ Rationale: [2-3 sentences]
 
 ---
 
-## [11F: Migrated to editorial letter §7 — see references/adversarial-stress-test.md]
+## [11F: Migrated to editorial letter §8 — see references/adversarial-stress-test.md]
 
 ---
 

@@ -5,7 +5,8 @@
 # Usage: ./scripts/bump-version.sh 1.0.0
 #
 # Canonical source: plugins/apodictic/.claude-plugin/plugin.json
-# Also updates:     .claude-plugin/marketplace.json (both version fields)
+# Also updates:     marketplace.json (root, both version fields)
+#                   .claude-plugin/marketplace.json (both version fields)
 #                   4 SKILL.md frontmatter version: fields
 #
 # Does NOT touch: changelog entries, deprecated file banners,
@@ -47,16 +48,25 @@ else
   echo "  MISSING  $PLUGIN_JSON"
 fi
 
-# 2. marketplace.json (both metadata.version and plugin entry version)
-MARKETPLACE_JSON="$REPO_ROOT/.claude-plugin/marketplace.json"
-if [ -f "$MARKETPLACE_JSON" ]; then
-  sedi "s/\"version\": \"[^\"]*\"/\"version\": \"${NEW_VERSION}\"/g" "$MARKETPLACE_JSON"
-  echo "  updated  $MARKETPLACE_JSON"
+# 2. marketplace.json — root copy (primary)
+ROOT_MARKETPLACE="$REPO_ROOT/marketplace.json"
+if [ -f "$ROOT_MARKETPLACE" ]; then
+  sedi "s/\"version\": \"[^\"]*\"/\"version\": \"${NEW_VERSION}\"/g" "$ROOT_MARKETPLACE"
+  echo "  updated  $ROOT_MARKETPLACE"
 else
-  echo "  MISSING  $MARKETPLACE_JSON"
+  echo "  MISSING  $ROOT_MARKETPLACE"
 fi
 
-# 3. SKILL.md frontmatter (4 files)
+# 3. marketplace.json — .claude-plugin/ copy
+CLAUDE_MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
+if [ -f "$CLAUDE_MARKETPLACE" ]; then
+  sedi "s/\"version\": \"[^\"]*\"/\"version\": \"${NEW_VERSION}\"/g" "$CLAUDE_MARKETPLACE"
+  echo "  updated  $CLAUDE_MARKETPLACE"
+else
+  echo "  MISSING  $CLAUDE_MARKETPLACE"
+fi
+
+# 4. SKILL.md frontmatter (4 files)
 SKILL_FILES=(
   "$PLUGIN_DIR/skills/core-editor/SKILL.md"
   "$PLUGIN_DIR/skills/pre-writing-pathway/SKILL.md"
@@ -74,7 +84,7 @@ for f in "${SKILL_FILES[@]}"; do
 done
 
 echo "────────────────────────────────────"
-echo "Done. 6 files updated to v${NEW_VERSION}."
+echo "Done. 7 files updated to v${NEW_VERSION}."
 echo ""
 echo "Next steps:"
 echo "  1. Add a changelog entry in references/changelog.md"

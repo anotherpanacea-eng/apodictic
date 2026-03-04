@@ -26,10 +26,13 @@ description: >
   "erotic content," "erotic tag," "heat level," "consent calculus,"
   "intimate scenes," "sex scenes work," "escalation audit,"
   "decorative kink," "static heat," "erotic craft,"
+  "compression audit," "what to cut," "cut list," "too long,"
+  "needs tightening," "word count target," "expendable material,"
+  "what can I remove," "what can I cut," "retained scaffolding,"
   or any request for a focused manuscript audit beyond the core development
   edit passes. Also triggers on "list audits," "what audits are available,"
   or "help audits."
-version: 1.0.3
+version: 1.0.8
 ---
 
 # Specialized Audits & Research Modes
@@ -72,6 +75,7 @@ Deep-dive analytical tools that supplement the core development edit. Each audit
 | **Horror Craft Integration** | Horror-pressure delivery (23 flags across 6 dimensions), producing vs. inert analysis, 9 subgenre calibrations with named failure modes, dread architecture tracking, consequence embodiment | Any horror or horror-hybrid manuscript — tests whether the horror apparatus produces sustained dread, destabilization, and felt consequence or merely delivers horror-coded content; stacks with Genre Module: Horror (contract) |
 | **Mystery/Thriller Architecture** | Information-pressure delivery (28 flags across 6 dimensions), integrated vs. detached analysis, 9 subgenre calibrations with named failure modes, clue/herring/clock/fairness tracking, informational drift diagnosis | Any mystery or thriller manuscript — tests whether the information architecture generates inference, urgency, and surprise-with-inevitability or merely assembles genre components; stacks with Genre Modules: Mystery and Thriller (contract) |
 | **Force Architecture** | Force-delivery integration (25 flags across 6 dimensions), integrated vs. detached analysis, 8 mode calibrations with named failure modes, consequence/escalation/conversion tracking, inert force diagnosis | Any manuscript with significant physical conflict — tests whether force events produce legible, causal, persistent, meaningful change or are spectacle loops; cross-genre (military, progression, thriller, horror, crime, domestic, literary, superhero/speculative) |
+| **Compression** | Expendable material diagnosis (16 flags across 5 channels: SE, IR, ScE, ER, SS), Cut List artifact with word savings, Compression Map, two-pass procedure (discovery sample → enumeration), Distinguish framework (Cut/Compress/Keep), 7 mode calibrations with named failure modes, 4 hard gates | "Too long," "what can I cut," word-count target, Pass 2 orphan scenes ≥3, proportional imbalance >40%, revision-round re-entry with cut goal; cross-genre (literary fiction, thriller, romance, SFF, horror, mystery, memoir/nonfiction) |
 
 ### Tag Audits
 
@@ -169,6 +173,9 @@ See `references/craft/shelf-positioning.md` for the full audit.
 - `references/craft/ai-prose-calibration.md` — AI-Prose Calibration audit (AIC-1 through AIC-7)
 - `references/craft/force-architecture.md` — Force Architecture audit (25 flags, 6 dimensions, 9 hard gates, 8 mode calibrations)
 - `references/craft/force-architecture-level-setting.md` — Force Architecture level-setting brief (SPECT, Clausewitz, Arendt, Scarry, Hayakawa, O'Brien, McCarthy, Morrison, physiological realism, positive cases)
+- `references/craft/compression-audit.md` — Compression audit (16 flags, 5 channels, 4 hard gates, 7 mode calibrations, Cut List + Compression Map artifacts)
+- `references/craft/compression-audit-level-setting.md` — Compression audit level-setting brief (scaffolding theory, over-establishment, diminishing-returns, genre-specific compression norms, distinguish problem)
+- `references/craft/compression-audit-expansion-stub.md` — Compression audit expansion stub (design document)
 - `references/craft/short-fiction.md` — Short Fiction audit
 - `references/craft/research-comp-validation.md` — Comp Validation research mode
 - `references/craft/research-factual-verification.md` — Factual Verification research mode

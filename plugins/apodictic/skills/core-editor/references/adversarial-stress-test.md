@@ -24,7 +24,7 @@ The stress test operates under strict constraints:
 
 ## The Low-Charity Reader Frame
 
-This is not the same as the §6 rejection memo. The rejection memo states the strongest *structural* case against the manuscript in 1-2 paragraphs. The stress test inhabits specific hostile reader types and surfaces what each would attack.
+This is not the same as the §7 rejection memo. The rejection memo states the strongest *structural* case against the manuscript in 1-2 paragraphs. The stress test inhabits specific hostile reader types and surfaces what each would attack.
 
 **Frame the reading as:**
 
@@ -70,7 +70,7 @@ Not every reader type will produce findings for every manuscript. Use the profil
 
 ## Output Format
 
-The stress test appears in the editorial letter as §7 (after the rejection memo). Author-facing language throughout — no framework codes in the body.
+The stress test appears in the editorial letter as §8 (after the rejection memo). Author-facing language throughout — no framework codes in the body.
 
 ```markdown
 ## Adversarial Reader Stress Test

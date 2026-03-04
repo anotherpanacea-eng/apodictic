@@ -380,6 +380,7 @@ Before calculating any proportions, measure word counts programmatically:
 **Finding-driven audit triggers:**
 - Scene-level causal gaps or arbitrary breaks at 3+ scenes → recommend **Scene Turn** audit (Bickham) if not already activated
 - Nonfiction manuscript with situation overwhelming story → recommend **Franklin Pathway** if not already activated
+- Orphan scenes ≥3, or proportional imbalance >40% in any part → recommend **Compression** audit if not already activated
 
 ### Pass 5: Character Audit
 
@@ -634,7 +635,7 @@ The synthesis is the author-facing editorial letter. It must read as one informe
 7. **Pre-Output Synthesis Verification (required gate).** Before writing the letter, verify the synthesis is actually drawing from pass findings — not generating an editorial letter from general impressions of the manuscript. Run these checks:
 
    - **Findings integration check:** For each root cause identified in step 3, confirm it cites at least one specific ledger finding by pass and finding name. If a root cause exists only as a general impression without ledger grounding, either locate the supporting ledger entry or demote it to §4b (Additional Observations) with a note that it awaits pass-level confirmation.
-   - **Section ordering check:** Confirm the letter will follow the required §1-§8 order. §6 (Strongest Case Against) and §7 (Stress Test) are separate sections with distinct methodologies — they must not be merged or omitted.
+   - **Section ordering check:** Confirm the letter will follow the required §1-§9 order. §7 (Strongest Case Against) and §8 (Stress Test) are separate sections with distinct methodologies — they must not be merged or omitted.
    - **Cap compliance check:** Root causes ≤ 5. Revision checklist items ≤ 10 (Core DE) or ≤ 15 (Full DE). Must-Fix flags ≤ 10.
    - **Severity floor check:** If any core-promise axis is rated Weak at High or Medium intensity, at least one flag is Must-Fix. If any Must-Fix flag has Systemic blast radius, verdict does not exceed Partial Fit ceiling.
    - **Appendix completeness check:** The letter will include Appendix A (diagnostic detail), Appendix B (severity calibration), and Appendix C (framework notes). No appendix is optional.
@@ -642,7 +643,7 @@ The synthesis is the author-facing editorial letter. It must read as one informe
 
    If any check fails, fix it before proceeding. This gate exists because the most common synthesis failure mode is generating an editorially plausible letter that doesn't actually integrate the analytical work — the letter sounds right but isn't grounded in what the passes found.
 
-8. **Write the editorial letter** using the presentation format below. The self-check informs the letter's severities; the stress test becomes §7 of the letter.
+8. **Write the editorial letter** using the presentation format below. The self-check informs the letter's severities; the stress test becomes §8 of the letter.
 
 **Key principle:** Processing order ≠ presentation order. The self-check must happen before writing, but in the output document it belongs in an appendix. The author reads findings; the framework owner reads methodology.
 
@@ -695,17 +696,26 @@ Maximum 10 items in the table. If more than 10 issues exist, the prose sections 
 
 **Traceability rule:** Every item in the revision checklist must correspond to a finding already discussed with rationale in the prose sections above (§3 or §4). The checklist is a summary tool, not a place to introduce new findings. If an issue isn't important enough to discuss in the letter body, it isn't important enough for the checklist.
 
-Follow the table with:
-- **What to protect:** One sentence listing the scenes, elements, and qualities that must survive revision.
-- **What to be cautious about:** One sentence identifying the risk that revision introduces.
+**6. Protected Elements — What Not to Touch.** Name 3–6 specific elements the revision must not damage, with reasons. These are the manuscript's load-bearing strengths — scenes, techniques, voice qualities, structural choices, or relationships that are working and that revision could accidentally break.
 
-**6. The Strongest Case Against.** The rejection memo, reframed for the author. Write it as: "If I were arguing for passing on this manuscript..." State the case in 1-2 paragraphs. Reference findings from the letter — no new uncited claims.
+Each element should be:
+- **Named specifically** (a scene, a character dynamic, a structural choice, a voice quality — not "the good parts")
+- **Grounded in pass evidence** (drawn from §3 findings and pass artifacts)
+- **Given a reason** (why this element matters, and what would be lost if revision eroded it)
+
+Format: Brief prose list (not a table). Each element gets 1–3 sentences: what it is, why it works, and what revision pressure it's most vulnerable to.
+
+**Why this section exists:** Revision fixes problems but can also destroy what works. §3 identifies strengths; §5 identifies what to change; §6 explicitly marks the no-go zones. Authors revising under pressure tend to over-correct — this section gives them specific guardrails.
+
+**Relationship to §3:** §3 argues *why* the strengths matter. §6 translates that into *operational protection* — it tells the author which strengths are at risk from the specific revisions recommended in §4 and §5. An element in §3 that isn't threatened by the revision plan doesn't need to appear here. An element that isn't in §3 shouldn't appear here either — if it's worth protecting, it should have been identified as a strength first.
+
+**7. The Strongest Case Against.** The rejection memo, reframed for the author. Write it as: "If I were arguing for passing on this manuscript..." State the case in 1-2 paragraphs. Reference findings from the letter — no new uncited claims.
 
 **Do not render a verdict on whether the case wins or loses.** The author assesses that. The framework's job is to make the strongest honest case for rejection and let it stand on its own evidence. If the case is weak, its weakness will be self-evident; if the case is strong, dismissing it is a disservice. End with the case, not with reassurance.
 
-**7. Adversarial Reader Stress Test.** Required for every editorial letter. Format and methodology per `references/adversarial-stress-test.md`. This section presents 3-5 adversarial claims from low-charity reader perspectives, each with evidence, severity, steelman defense, and net risk assessment. The stress test complements §6 — where §6 states the structural case against the manuscript in 1-2 paragraphs, §7 inhabits specific hostile reader types and surfaces what each would attack.
+**8. Adversarial Reader Stress Test.** Required for every editorial letter. Format and methodology per `references/adversarial-stress-test.md`. This section presents 3-5 adversarial claims from low-charity reader perspectives, each with evidence, severity, steelman defense, and net risk assessment. The stress test complements §7 — where §7 states the structural case against the manuscript in 1-2 paragraphs, §8 inhabits specific hostile reader types and surfaces what each would attack.
 
-**8. Appendices.**
+**9. Appendices.**
 - **Appendix A: Diagnostic Detail.** Pointers to companion pass files and supplementary audit findings with brief descriptions of what each contains. For each supplementary audit that ran, list its companion findings file and any tracking artifacts produced (e.g., Decision Event Map, Stakes Ladder Map, Scene Turn code inventory). Group pass files first, then audit findings.
 - **Appendix B: Severity Calibration.** Compressed summary of the adversarial self-check — which findings were tested, in which direction, whether any severities were adjusted.
 - **Appendix C: Framework Notes.** Analysis version, model, run date, passes completed, protocol flags, prior analyses on file, cross-version stability notes (if applicable).
