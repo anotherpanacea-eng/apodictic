@@ -83,7 +83,7 @@ Tag audits evaluate experience-layer promises — reader expectations that sit o
 | **Philosophical Tag** | Question architecture, dramatic embodiment, counterposition strength, conceptual progression, philosophical feel | Author/marketing uses "philosophical" or "novel of ideas"; beta readers report didacticism or vagueness; ideas prominent but delivery uncertain |
 | **Erotic Content** | Intimate scene integration (8 flags across 5 dimensions), load-bearing vs. decorative analysis, consent calculus, escalation vs. repetition audit, 7 mode calibrations | Any manuscript with significant intimate/erotic content — tests whether intimate scenes do narrative work or are inert; cross-genre (romance, literary, thriller, horror, erotica); pairs with Romance genre module, Consent Complexity, Queer Romance/Erotica |
 
-| **Plot Architecture** | Spine diagnosis, logic gates (48 spines) | *Use the plot-architecture skill instead* |
+| **Plot Architecture** | Spine diagnosis, logic gates (50 spines) | *Use the plot-architecture skill instead* |
 | **Plot Selection & Coaching** | Structure selection, hybrid design, stuck-draft triage | *Use the plot-architecture skill instead* |
 | **Fantasy & Series Architecture** | Fantasy spines, series-level patterns | *Use the plot-architecture skill instead* |
 

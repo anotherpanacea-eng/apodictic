@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Handle inputs where the material **is not a story yet**—topic, situation, argument, reporting pile—and therefore cannot be meaningfully audited by Plot Architecture (48 spines) or Character Architecture (AQ/CQ).
+Handle inputs where the material **is not a story yet**—topic, situation, argument, reporting pile—and therefore cannot be meaningfully audited by Plot Architecture (50 spines) or Character Architecture (AQ/CQ).
 
 This is not coaching scenes. It is structural triage + structural requirements, producing either:
 - a viable candidate spine the Editor can then audit, or
@@ -53,7 +53,7 @@ Activate the Franklin Pathway when **≥2** of the following are true:
 
 ### Signal 1: Plot Architecture Fit Failure
 
-Cannot map material to any of the 48 spine types without distortion. No spine type produces a PASS on its primary logic gate, or the best-fit spine produces FLAGS on more than 50% of its gates.
+Cannot map material to any of the 50 spine types without distortion. No spine type produces a PASS on its primary logic gate, or the best-fit spine produces FLAGS on more than 50% of its gates.
 
 ### Signal 2: Reverse Outline Causality Failure (Pass 0 / Pass 2)
 
@@ -692,7 +692,7 @@ Franklin is not an escalation from Core DE. It's a **redirect**: when the Editor
 
 **With Memoir/Creative Nonfiction Audit (including Gornick Layer):** Franklin handles structural story-finding; Memoir handles truth/memory/ethics; the Gornick Layer (GS/NI/SC/TD/BR/SEL/EP codes) handles the meaning engine. For personal narrative, all three may be active. Franklin's Narrative Stance Diagnostic provides the informal logic gates; the Gornick Layer provides the formal code taxonomies. When Franklin returns Classification 4 for personal narrative, run the Gornick Layer before issuing redirect — the piece may have a story at the stance level even without an event-spine. Franklin's Classification 4 output can also hand off to Memoir's structure section.
 
-**With Plot Architecture Audit:** Plot Architecture diagnoses existing spines; Franklin builds absent ones. A manuscript that starts in Franklin and emerges with a spine can then be analyzed by Plot Architecture for spine-specific logic gates. The 48 spine types provide vocabulary for classifying the spine Franklin produces.
+**With Plot Architecture Audit:** Plot Architecture diagnoses existing spines; Franklin builds absent ones. A manuscript that starts in Franklin and emerges with a spine can then be analyzed by Plot Architecture for spine-specific logic gates. The 50 spine types provide vocabulary for classifying the spine Franklin produces.
 
 **With Short Fiction Audit:** Short nonfiction (personal essay, flash) may trigger both. Franklin's function chain may compress to 2–3 turns for very short work. Short Fiction's "single-effect" principle applies.
 

@@ -1,6 +1,6 @@
 # Specialized Audit: Plot Architecture & Spines
-## Version 0.4.4
-*Last Updated: February 2026*
+## Version 0.5.0
+*Last Updated: March 2026*
 
 ---
 
@@ -102,6 +102,8 @@ IF protagonist could walk away but chooses not to → SOFT FLAG (may be intentio
 IF no lock-in identifiable → FLAG FOR REVIEW: "Missing Commitment"
 ```
 
+> **Cross-reference:** For a non-conflict-driven alternative to three-act structure, see **Kishōtenketsu** (Spine 6, below). If the manuscript resists conflict-based diagnostics but clearly "works," check for Kishōtenketsu before flagging structural failures.
+
 ---
 
 ### 3. Fichtean Curve (Crisis Staircase)
@@ -190,11 +192,81 @@ IF protagonist cannot return (permanent exile) → Check if intentional
 
 ---
 
+### 6. Kishōtenketsu (Four-Part Without Conflict)
+
+**Origin:** Japanese (起承転結), with structural cognates in Chinese (Qǐ Chéng Zhuǎn Hé / 起承转合) and Korean (Gi Seung Jeon Gyeol / 기승전결). One template; three cultural lineages. The Japanese term is standard in English-language craft discourse; there is no established anglicization.
+
+**Best for:** Juxtaposition as argument, slice-of-life, lyric fiction, stories where meaning emerges from contrast rather than collision.
+**Breaks when:** The ten doesn't actually recontextualize; when it collapses into Western conflict by accident.
+**On the page:** Introduction (Ki/起: bringing into being) → Development (Shō/承: continuing, receiving) → Turn (Ten/転: turning, changing) → Reconciliation (Ketsu/結: gathering, drawing together). No antagonist required. No crisis required. The third movement places two things side by side and the fourth movement lets the reader sit with what that juxtaposition means.
+
+> ⚠ **TRANSLATION NOTE ON TEN:** The third movement is variously translated as "twist," "turn," or "change." These are not synonyms, and the translation chosen will affect how the logic gates below are applied. "Twist" suggests a Shyamalan-style plot reversal, which is misleading. "Turn" is more accurate: a shift in direction, perspective, or context that does not require surprise or deception. "Change" captures the broadest range but risks being too vague. For diagnostic purposes, APODICTIC treats *ten* as **juxtaposition**: the introduction of an element that does not follow causally from what precedes it and whose placement beside the earlier material generates new meaning. If the manuscript's third movement operates through surprise, check whether the spine has drifted toward Revelatory Plot. If it operates through conflict escalation, check whether the spine has drifted toward Three-Act Structure.
+
+> ⚠ **CRITICAL CALIBRATION NOTE:** APODICTIC's conflict-driven diagnostics (particularly Save the Cat, Fichtean Curve, and Three-Act lock-in gates) will produce false positives on well-executed Kishōtenketsu manuscripts. If this spine is identified, **suppress the following default flags:**
+> * "Passive Midpoint" (there is no reactive-to-proactive shift; that's not the engine)
+> * "Missing Commitment" (there is no lock-in; the structure doesn't require one)
+> * "Crisis Fatigue" or "Unmetabolized Crisis" (there may be no crisis to metabolize)
+>
+> Run Kishōtenketsu-specific gates instead.
+
+**Logic Gate: The Juxtaposition Test**
+```
+CHECK: Does the third movement (Ten) introduce an element that is
+       GENUINELY UNEXPECTED relative to movements one and two?
+
+IF Ten introduces a new perspective, image, or situation that
+   doesn't follow causally from Ki/Shō → PASS
+IF Ten escalates the existing situation (conflict in disguise) →
+   FLAG: "Kishōtenketsu Collapse — this is three-act structure
+   with different labels"
+IF Ten is merely a continuation of Shō → STRUCTURAL BREAK:
+   "Missing Turn — no juxtaposition present"
+IF Ten operates through surprise/deception rather than
+   juxtaposition → FLAG FOR REVIEW: "Revelatory Ten — verify
+   intended spine (may be Revelatory Plot)"
+```
+
+**Logic Gate: The Reconciliation Weight**
+```
+CHECK: Does the fourth movement (Ketsu) produce meaning FROM the
+       juxtaposition, rather than resolving a problem?
+
+IF Ketsu reframes Ki/Shō in light of Ten → PASS
+IF Ketsu resolves a conflict introduced in Ten → FLAG:
+   "Conflict Resolution Ending — structure has drifted to
+   Western three-act"
+IF Ketsu simply restates Ki → FLAG: "Empty Return — no
+   semantic gain from the turn"
+```
+
+**Logic Gate: The Development Integrity**
+```
+CHECK: Does the second movement (Shō) deepen without disrupting?
+
+IF Shō elaborates, enriches, or extends Ki without introducing
+   antagonism → PASS
+IF Shō introduces an obstacle or antagonist → SOFT FLAG:
+   "Conflict Creep — verify intended spine"
+   (If flagged, run Three-Act lock-in test. If lock-in present,
+   reclassify. If absent, recommend revision to remove
+   antagonism from Shō.)
+IF Shō is static (pure repetition of Ki) → FLAG:
+   "Stalled Development"
+```
+
+**Genre Cross-Reference:**
+- Literary Fiction: Native habitat; juxtaposition can be subtle
+- Manga/Comics: Often used at chapter level even within larger conflict arcs
+- Slice-of-Life: Primary structural engine; troughs of "nothing happens" are features
+- Horror: Ten as wrongness rather than conflict can produce distinctive unease (see Junji Ito). Distinct from Lullaby: Lullaby establishes comfort then ruptures it; Kishōtenketsu places wrongness *beside* normalcy without rupturing anything. Route accordingly.
+
+---
+
 ## Family 2: Circular & Recursive Engines
 
 Structures that repeat to deepen meaning or trap the character.
 
-### 6. Spiral Plot (The Addiction)
+### 7. Spiral Plot (The Addiction)
 
 **Best for:** Compulsion, coercive control, relapse, "tightening circle."
 **Breaks when:** Readers feel stalled rather than trapped.
@@ -225,7 +297,7 @@ IF different trigger + escalated stakes → PASS
 
 ---
 
-### 7. Fugue / Refrain Structure
+### 8. Fugue / Refrain Structure
 
 **Best for:** Conditioning, ritual, obsession, "the body repeats a sentence."
 **Breaks when:** Repetition doesn't accumulate meaning.
@@ -252,7 +324,7 @@ IF interiority static across repetitions → FLAG: "Frozen Interiority"
 
 ---
 
-### 8. Loop / Groundhog Structure
+### 9. Loop / Groundhog Structure
 
 **Best for:** Inevitability, learning protocols, time loops, behavioral repetition.
 **Breaks when:** Loops don't produce learning or variation.
@@ -278,7 +350,7 @@ IF knowledge accumulates but isn't applied → FLAG: "Unused Learning"
 
 ---
 
-### 9. Braided Narrative
+### 10. Braided Narrative
 
 **Best for:** Past/present, dual POV, victim/perpetrator, double life.
 **Breaks when:** One braid is obviously "less good" or strands never connect.
@@ -316,7 +388,7 @@ IF strands could be separate novels → FLAG: "Unintegrated Braids"
 
 Structures based on who knows what, and when.
 
-### 10. Mystery / Investigation Spine
+### 11. Mystery / Investigation Spine
 
 **Best for:** Whodunits, audits, institutional secrecy, clinical trials.
 **Breaks when:** Explanation relieves dread instead of deepening it.
@@ -342,7 +414,7 @@ IF solution requires information withheld from POV character → Check narration
 
 ---
 
-### 11. "Howcatchem" (Columbo Structure)
+### 12. "Howcatchem" (Columbo Structure)
 
 **Best for:** Moral disgust, watching denial operate, procedural.
 **Breaks when:** No escalating leverage or pressure.
@@ -359,7 +431,7 @@ IF perpetrator's position strengthens → Check if intentional (institutional pr
 
 ---
 
-### 12. Revelatory Plot (Recontextualization)
+### 13. Revelatory Plot (Recontextualization)
 
 **Best for:** "I thought it was care; it was capture." Every scene becomes evidence.
 **Breaks when:** Twist is merely clever, not ethically reorienting.
@@ -384,7 +456,7 @@ IF only "what happened" shifts → SOFT FLAG: "Factual vs Ethical Twist"
 
 ---
 
-### 13. Conspiracy Plot
+### 14. Conspiracy Plot
 
 **Best for:** Institutions, medicine, academia, compliance culture.
 **Breaks when:** It becomes vague handwaving ("they" did it).
@@ -411,7 +483,7 @@ IF scope contracts (was bigger than thought) → Check if intentional (paranoia 
 
 ---
 
-### 14. Puzzle Box
+### 15. Puzzle Box
 
 **Best for:** Mechanism horror, metaphysical systems, constraints as antagonist.
 **Breaks when:** Rules inconsistent or introduced too late.
@@ -441,7 +513,7 @@ IF new rule introduced in final 15% that CREATES problem → PASS (acceptable es
 
 Structures driven by interpersonal dynamics.
 
-### 15. Courtship Plot
+### 16. Courtship Plot
 
 **Best for:** Romance, dark romance, "consent as evolving contract."
 **Breaks when:** Chemistry replaces agency.
@@ -460,7 +532,7 @@ IF intimacy ↑ AND risk ↓ → FLAG: "Tension Collapse"
 
 ---
 
-### 16. Seduction Plot
+### 17. Seduction Plot
 
 **Best for:** Erotic horror, manipulation, power exchange.
 **Breaks when:** "Seduction" reads as endorsement rather than examination.
@@ -485,7 +557,7 @@ IF seduction is purely external force → SOFT FLAG: "Passive Target"
 
 ---
 
-### 17. Captivity Plot
+### 18. Captivity Plot
 
 **Best for:** Bodily autonomy horror, institutional containment.
 **Breaks when:** Confinement removes all interesting choice.
@@ -502,7 +574,7 @@ IF protagonist retains external options → Not a captivity plot
 
 ---
 
-### 18. Taming/Training Plot
+### 19. Taming/Training Plot
 
 **Best for:** Conditioning themes, protocol, ritualized control.
 **Breaks when:** It's only kink choreography without ethical inquiry.
@@ -527,7 +599,7 @@ IF mind and body align immediately → SOFT FLAG: "Missing Conditioning Dread"
 
 ---
 
-### 19. Betrayal of Self Plot
+### 20. Betrayal of Self Plot
 
 **Best for:** Arousal as alienation, desire as evidence against you.
 **Breaks when:** Character reasoning and shame loops aren't anchored.
@@ -548,7 +620,7 @@ IF protagonist has no reaction to self-betrayal → STRUCTURAL BREAK: "Absent Dr
 
 Structures driven by ethical stakes.
 
-### 20. Corruption Arc
+### 21. Corruption Arc
 
 **Best for:** Villain origins, "I'm not harming anyone," self-justification.
 **Breaks when:** Fall is too fast or too vague.
@@ -574,7 +646,7 @@ IF 1 step (good → evil) → STRUCTURAL BREAK: "Missing Gradation"
 
 ---
 
-### 21. Redemption Arc
+### 22. Redemption Arc
 
 **Best for:** Chosen endings, repair that costs something.
 **Breaks when:** Redemption is unearned or consequence-free.
@@ -600,7 +672,7 @@ IF harm is to someone dead/gone (repair impossible) → Check for symbolic resti
 
 ---
 
-### 22. Justice/Revenge Plot
+### 23. Justice/Revenge Plot
 
 **Best for:** Catharsis, reader satisfaction, rage transmutation.
 **Breaks when:** Revenge eclipses earlier ethical complexity.
@@ -617,7 +689,7 @@ IF revenge makes avenger worse than target → Check if intentional
 
 ---
 
-### 23. Scapegoat Plot
+### 24. Scapegoat Plot
 
 **Best for:** Social horror, witch trials, cancel culture, "The Lottery."
 **Breaks when:** Mob portrayed as "evil" rather than fearful/rational-within-their-logic.
@@ -645,7 +717,7 @@ IF mob is simply "evil" → FLAG: "Cartoon Antagonist"
 
 Structures defined by space, time, or rules.
 
-### 24. Siege Plot
+### 25. Siege Plot
 
 **Best for:** Party scenes, office, clinic, retreat, enclosed space.
 **Breaks when:** Enclosure feels contrived; exits should have closed naturally.
@@ -661,7 +733,7 @@ IF exits close arbitrarily → FLAG: "Contrived Containment"
 
 ---
 
-### 25. Countdown Plot
+### 26. Countdown Plot
 
 **Best for:** Medical trials, expiring consent, tenure clocks, pregnancy.
 **Breaks when:** Deadline is arbitrary or stakes unclear.
@@ -685,7 +757,7 @@ IF pacing stays constant → FLAG: "Deadline Without Tension"
 
 ---
 
-### 26. Procedural Plot
+### 27. Procedural Plot
 
 **Best for:** Institutional horror, clinical settings, audits, compliance.
 **Breaks when:** Procedure becomes exposition rather than trap.
@@ -702,7 +774,7 @@ IF breaking procedure offers escape → Check if intentional
 
 ---
 
-### 27. Quest Plot
+### 28. Quest Plot
 
 **Best for:** "Get the data," "find the source," "secure the antidote."
 **Breaks when:** Stations don't change the protagonist internally.
@@ -722,7 +794,7 @@ IF stations are just geography → FLAG: "Decorative Journey"
 
 Structures that manipulate temporal or causal sequence.
 
-### 28. Nonlinear Reveal
+### 29. Nonlinear Reveal
 
 **Best for:** Trauma, memory, gaslighting structures.
 **Breaks when:** It's just gimmickry without payoff.
@@ -738,7 +810,7 @@ IF story would work equally well told linearly → FLAG: "Decorative Nonlinearit
 
 ---
 
-### 29. Reverse Chronology
+### 30. Reverse Chronology
 
 **Best for:** Tragedy where "how" matters more than "what," debunking fate.
 **Breaks when:** Reveal doesn't recontextualize opening.
@@ -754,7 +826,7 @@ IF scenes are just "earlier versions" → FLAG: "Chronology Without Revelation"
 
 ---
 
-### 30. Two-Handed Causality
+### 31. Two-Handed Causality
 
 **Best for:** Romantic collision, predator/prey ambiguity, mutual conditioning.
 **Breaks when:** One hand is clearly the "real" story.
@@ -772,7 +844,7 @@ IF one character is primarily acted-upon → FLAG: "Unbalanced Hands"
 
 ## Family 8: Existential & Identity Engines
 
-### 31. Bildungsroman (Coming-of-Age)
+### 32. Bildungsroman (Coming-of-Age)
 
 **Best for:** Identity formation, awakening, threshold crossing.
 **Breaks when:** External events substitute for internal development.
@@ -789,7 +861,7 @@ IF beliefs unchanged despite events → STRUCTURAL BREAK: "Static Identity"
 
 ---
 
-### 32. Doppelgänger / Replacement Plot
+### 33. Doppelgänger / Replacement Plot
 
 **Best for:** Imposter syndrome, Stepford themes, obsolescence fear.
 **Breaks when:** Double is just a "monster" rather than dark mirror.
@@ -805,7 +877,7 @@ IF double is purely threatening → SOFT FLAG: "External Monster Only"
 
 ---
 
-### 33. Transformation / Metamorphosis
+### 34. Transformation / Metamorphosis
 
 **Best for:** Body horror, identity dissolution, becoming-other.
 **Breaks when:** Transformation is just special effect, not psychological.
@@ -821,7 +893,7 @@ IF transformation is purely physical → FLAG: "Metamorphosis Without Philosophy
 
 ---
 
-### 34. Aftermath / Postmortem Plot
+### 35. Aftermath / Postmortem Plot
 
 **Best for:** Trauma processing, investigation of self, "the horror already happened."
 **Breaks when:** Present tense has no stakes of its own.
@@ -837,7 +909,7 @@ IF present is just framing device → FLAG: "Stakes-Free Frame"
 
 ---
 
-### 35. Prophecy / Inevitability Engine
+### 36. Prophecy / Inevitability Engine
 
 **Best for:** Greek tragedy, "I tried to prevent it and caused it."
 **Breaks when:** Foreknowledge doesn't create irony.
@@ -856,7 +928,7 @@ IF foreknowledge has no effect on action → FLAG: "Decorative Prophecy"
 
 ## Family 9: Tonal & Hybrid Spines
 
-### 36. Thriller Spine
+### 37. Thriller Spine
 
 **Best for:** Momentum, danger, narrow escapes.
 **Breaks when:** Interiority is replaced by plot jogging.
@@ -872,7 +944,7 @@ IF protagonist is carried by events → FLAG: "Passive Thriller Protagonist"
 
 ---
 
-### 37. Psychological Horror Spine
+### 38. Psychological Horror Spine
 
 **Best for:** Gaslighting, self-betrayal, desire-as-alien.
 **Breaks when:** Ambiguity becomes confusion.
@@ -889,7 +961,7 @@ IF no interpretation coherent → STRUCTURAL BREAK: "Confusion, Not Ambiguity"
 
 ---
 
-### 38. Faustian Spine
+### 39. Faustian Spine
 
 **Best for:** "Be careful what you wish for," erotic horror.
 **Breaks when:** Price is arbitrary rather than ironic.
@@ -905,7 +977,7 @@ IF wish-fulfillment and problem are unrelated → FLAG: "Arbitrary Price"
 
 ---
 
-### 39. Rashomon Spine
+### 40. Rashomon Spine
 
 **Best for:** Gaslighting, memory ambiguity, perspective as theme.
 **Breaks when:** Contradictions are merely factual, not meaningful.
@@ -925,7 +997,7 @@ IF contradictions are just inconsistencies → FLAG: "Accidental Rashomon"
 
 Structures governed by pacing pattern rather than plot logic.
 
-### 40. Wave / Pulse Structure
+### 41. Wave / Pulse Structure
 
 **Best for:** Lyric fiction, psychological intensity, stories driven by emotional rhythm rather than plot.
 **Breaks when:** Waves feel repetitive rather than escalating; reader can't distinguish one crest from the next.
@@ -956,7 +1028,7 @@ IF troughs are absent (nonstop intensity) → FLAG: "No Oscillation — this is 
 
 ---
 
-### 41. Lullaby Structure
+### 42. Lullaby Structure
 
 **Best for:** Horror, kink, vulnerability narratives; stories where trust is weaponized.
 **Breaks when:** Rhythm isn't established firmly enough for the rupture to land.
@@ -982,7 +1054,7 @@ IF micro-dissonances are too obvious → FLAG: "Telegraphed Rupture"
 
 ---
 
-### 42. Pressure Cooker
+### 43. Pressure Cooker
 
 **Best for:** Erotic horror, institutional containment, conditioning narratives, any story where constraint IS the engine.
 **Breaks when:** Escalation plateaus; reader becomes numb to tightening.
@@ -1013,11 +1085,83 @@ IF protagonist is unaffected → STRUCTURAL BREAK: "Constraint Without Consequen
 
 ---
 
+### 44. Jo-ha-kyū (Rhythmic Acceleration)
+
+**Origin:** Japanese aesthetic principle (序破急), originating in gagaku court music and codified for dramatic structure by the Noh playwright Zeami Motokiyo in the 14th/15th century. The Japanese term is standard in English-language discourse; there is no established anglicization. Literal character translations: Jo (序: preface, opening, opportunity), Ha (破: break, rip, tear), Kyū (急: urgent, sudden, rapid). The common gloss "beginning, middle, end" is actively misleading and should not be used. Applies at every scale: individual gesture, scene, act, whole work, and even the arrangement of works across a program.
+
+**Best for:** Any manuscript where pacing feels flat or metronomic; works that need rhythmic shape independent of plot structure. Functions as a diagnostic overlay rather than a primary spine. Can be applied on top of any spine in this document.
+**Breaks when:** Applied so rigidly that every scene follows the same acceleration pattern (monotony through predictability).
+**On the page:** Deliberate, measured opening → increasing complexity and speed → rapid culmination that doesn't overstay.
+
+> ⚠ **USAGE NOTE:** Jo-ha-kyū is not a plot structure. It does not replace spine identification. It is a pacing lens that can diagnose rhythmic problems within any identified spine. Apply it **after** primary spine identification, not instead of it.
+
+> ⚠ **PROPORTION NOTE:** Traditional Jo-ha-kyū proportions are not equal thirds. In Noh, Jo is roughly one-fifth, Ha is three-fifths, and Kyū is one-fifth. The gates below use "phases" rather than "thirds" to avoid implying equal division. When diagnosing, identify where the rhythmic transitions occur rather than imposing a mechanical split.
+
+**Logic Gate: The Macro Rhythm**
+```
+CHECK: Does the whole manuscript follow Jo-ha-kyū pacing?
+
+IDENTIFY the three phases by rhythmic transition, not equal division.
+
+Jo phase: Measured pacing? Scenes establish rhythm?
+  IF deliberate, unhurried opening → PASS
+  IF opening rushes → FLAG: "Missing Jo — no rhythmic grounding"
+
+Ha phase: Does pace increase? Do complications multiply?
+  IF pacing accelerates and texture thickens → PASS
+  IF pacing stays constant from Jo phase → FLAG:
+     "Missing Ha — no rhythmic breaking"
+  IF pacing SLOWS from Jo phase → FLAG:
+     "Inverted Rhythm — drag where acceleration expected"
+
+Kyū phase: Does the work accelerate to conclusion
+           without lingering?
+  IF final movement is fastest → PASS
+  IF final movement decelerates → FLAG FOR REVIEW:
+     "Extended Kyū — check if intentional
+     (denouement vs. drag)"
+  IF final movement matches Ha pacing → SOFT FLAG:
+     "Flat Finish — no final acceleration"
+```
+
+**Logic Gate: The Scene-Level Rhythm**
+```
+CHECK: Do individual scenes follow internal Jo-ha-kyū?
+
+SAMPLE 5 scenes: 1 from Jo phase, 2 from Ha phase, 1 from
+Kyū phase, 1 from a phase transition point.
+
+IF 3+ scenes show internal acceleration pattern → PASS
+IF scenes are uniformly paced internally → SOFT FLAG:
+   "Flat Scene Rhythm — scenes lack internal shape"
+IF every scene follows identical rhythm → FLAG:
+   "Rhythmic Monotony — predictable acceleration"
+```
+
+**Logic Gate: The Scale Nesting**
+```
+CHECK: Does Jo-ha-kyū operate at multiple scales simultaneously?
+
+IF whole-work rhythm AND act-level rhythm both present → PASS
+IF only whole-work rhythm → SOFT FLAG:
+   "Macro-Only — scenes lack shape"
+IF rhythm present at scene level but not macro level → FLAG:
+   "Micro-Only — individual scenes shaped but overall arc flat"
+```
+
+**Genre Cross-Reference:**
+- Literary Fiction: Jo phase can be extended; Kyū may be a single devastating paragraph
+- Thriller: Ha phase dominates; Jo is compressed; Kyū is the chase/confrontation
+- Horror: Jo establishes normalcy (the lullaby); Ha introduces wrongness; Kyū is the break
+- Erotica: Maps to arousal pacing; Jo is approach, Ha is escalation, Kyū is climax (note overlap with Wave/Pulse)
+
+---
+
 ## Family 11: Format & Frame Engines
 
 Structures defined by their formal presentation or framing device.
 
-### 43. Episodic / Modular Structure
+### 45. Episodic / Modular Structure
 
 **Best for:** Story collections with arc, character studies, picaresque, "life in fragments."
 **Breaks when:** Episodes don't accumulate; the whole isn't more than the sum.
@@ -1044,7 +1188,7 @@ IF some episodes exist only for series plot → FLAG: "Bridge Episode — servin
 
 ---
 
-### 44. Clinical Case File
+### 46. Clinical Case File
 
 **Best for:** Psychological domination, institutional horror, unreliable interpretation, stories about diagnosis.
 **Breaks when:** The "analyst" voice becomes authoritative rather than suspect.
@@ -1070,7 +1214,7 @@ IF interpreter's motives are revealed as corrupt → Check for Revelatory Plot o
 
 ---
 
-### 45. Nested Dolls (Frame-within-Frame)
+### 47. Nested Dolls (Frame-within-Frame)
 
 **Best for:** Hypnosis narratives, memory distortion, gaslighting, stories about layers of reality.
 **Breaks when:** Layers don't interact; frame is ornamental.
@@ -1095,7 +1239,7 @@ IF descent is structural but unmotivated → FLAG: "Arbitrary Nesting"
 
 ---
 
-### 46. Talisman Structure
+### 48. Talisman Structure
 
 **Best for:** Object-focused narratives, symbolic horror, stories where meaning accrues to a physical thing.
 **Breaks when:** Object doesn't transform in meaning; it's just a recurring prop.
@@ -1123,7 +1267,7 @@ IF talisman is absent from climax → FLAG FOR REVIEW: "Missing Payoff Object"
 
 ## Family 12: Transformation & Identity Journeys (Extended)
 
-### 47. Heroine's Journey (Murdock)
+### 49. Heroine's Journey (Murdock)
 
 **Best for:** Interior reconciliation arcs, recovery from over-identification, reclamation of suppressed self.
 **Breaks when:** "Feminine/masculine" literalized as gender essentialism; descent has no psychological specificity.
@@ -1154,7 +1298,7 @@ IF protagonist replaces one over-identification with another → FLAG: "Swapped 
 
 ---
 
-### 48. Seven-Point Structure (Dan Wells)
+### 50. Seven-Point Structure (Dan Wells)
 
 **Best for:** Tight novellas, mystery/thriller arcs, psychological reveals where pressure points matter more than acts.
 **Breaks when:** Midpoint lacks genuine internal shift; pinch points feel arbitrary.
@@ -1202,6 +1346,9 @@ IF no identifiable midpoint → N/A (different spine)
 | Character "empowered" but story feels hollow | False victory without descent | Add Heroine's Journey (Murdock) descent-and-integration |
 | Symbolic object falls flat | Static symbol | Apply Talisman rules (meaning must shift per appearance) |
 | Unreliable narrator without payoff | Missing discrepancy | Apply Clinical Case File (triangulate observation, experience, interpretation) |
+| Conflict-driven diagnostics flagging a manuscript that clearly "works" | Wrong structural paradigm assumed | Check for Kishōtenketsu; suppress conflict-based gates |
+| Pacing feels metronomic or flat despite good structure | Missing rhythmic shape | Apply Jo-ha-kyū overlay at macro and scene level |
+| Juxtaposition present but ending falls flat | Weak reconciliation | Apply Kishōtenketsu Ketsu gate (meaning from contrast, not resolution) |
 
 ### Spine Compatibility Matrix
 
@@ -1212,7 +1359,6 @@ Some spines combine naturally; others fight.
 | Fichtean + Countdown | High | Natural thriller pairing |
 | Spiral + Fugue | High | Recursion engines stack well |
 | Mystery + Revelatory | High | Investigation leads to recontextualization |
-| Save the Cat + Kishōtenketsu | Low | Different theories of conflict |
 | Braided + Two-Handed | High | Multiple perspectives enhance both |
 | Corruption + Redemption | Sequential | One follows the other |
 | Captivity + Training | High | Often co-occur |
@@ -1228,6 +1374,14 @@ Some spines combine naturally; others fight.
 | Heroine's Journey + Betrayal of Self | High | Integration arc powered by self-alienation |
 | Seven-Point + Countdown | High | Pinch points align with deadline pressure |
 | Lullaby + Pressure Cooker | Low | Lullaby needs comfort phases; Pressure Cooker eliminates them |
+| Kishōtenketsu + Save the Cat | Low | Different theories of what drives narrative |
+| Kishōtenketsu + Wave/Pulse | Medium-High | Wave provides intensity shape without requiring conflict |
+| Kishōtenketsu + Talisman | High | Object meaning shifts via juxtaposition |
+| Kishōtenketsu + Fugue | Medium | Repetition-with-variation works, but Fugue's dread accumulation may smuggle conflict back in |
+| Kishōtenketsu + Lullaby | Medium | Lullaby's comfort-then-rupture can coexist with juxtaposition, but rupture risks smuggling conflict back in |
+| Kishōtenketsu + Heroine's Journey | Low | Heroine's Journey requires descent/integration arc, which implies conflict with self |
+| Jo-ha-kyū + any spine | High (overlay) | Pacing layer; compatible with all structural spines |
+| Jo-ha-kyū + Pressure Cooker | Medium | Pressure Cooker resists Jo's measured opening |
 
 ---
 

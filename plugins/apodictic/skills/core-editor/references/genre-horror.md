@@ -134,12 +134,15 @@ Add these to standard intake:
 
 **Check:** Does structure support escalation or does it plateau?
 
+**Non-conflict horror note:** **Kishōtenketsu** can produce distinctive horror through *ten*-as-wrongness: placing something wrong *beside* normalcy without rupturing it. This is distinct from Lullaby structure (which establishes comfort then ruptures it). In Kishōtenketsu horror, the wrongness coexists with the normal; the fourth movement (Ketsu) lets the reader sit with that coexistence. See Junji Ito's work for examples. If the manuscript uses juxtaposition-as-wrongness rather than escalation-as-dread, check for Kishōtenketsu before applying conflict-driven diagnostics.
+
 ### Pass 3: Rhythm and Modulation Audit
 
 **Horror-specific rhythm concerns:**
 - Tension must oscillate, not maintain constant high intensity (that produces fatigue, not fear)
 - Quiet moments make loud moments louder
 - Pacing affects whether reader has time to dread or is just startled
+- **Jo-ha-kyū pacing** maps naturally to horror: Jo establishes normalcy (the setup the reader trusts), Ha introduces and escalates wrongness, Kyū is the break. Apply as a diagnostic overlay if horror pacing feels flat. See Plot Architecture audit, Spine 44.
 
 **Thresholds:**
 - **Dread fatigue threshold:** 3+ consecutive chapters at high intensity without a valley scene → flag "Relentless Intensity — reader will habituate, not escalate"

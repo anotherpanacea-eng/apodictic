@@ -114,12 +114,14 @@ In literary fiction, thematic coherence is the critical path. Plot structure is 
 
 ### Pass 2: Structural Mapping
 
-**Recalibration required:** Traditional three-act structure, rising action, and climax are optional in literary fiction. Other organizational principles may apply.
+**Recalibration required:** Traditional three-act structure, rising action, and climax are optional in literary fiction. Other organizational principles may apply. **Kishōtenketsu** (four-part structure without conflict) is a native structural option for literary fiction — if the manuscript generates meaning through juxtaposition rather than collision, check for Kishōtenketsu before applying conflict-driven diagnostics. See Plot Architecture audit, Spine 6.
 
 **Ask instead:**
-- What organizes this narrative? (If not causal plot: time, consciousness, theme, image pattern, accumulation)
-- What creates movement? (Not necessarily "conflict" but tension, pressure, question, observation)
+- What organizes this narrative? (If not causal plot: time, consciousness, theme, image pattern, accumulation, juxtaposition)
+- What creates movement? (Not necessarily "conflict" but tension, pressure, question, observation, contrast)
 - What does the ending DO? (Even without plot resolution, endings have effects)
+
+**Pacing note:** If pacing feels flat or metronomic despite sound structure, apply **Jo-ha-kyū** as a diagnostic overlay (measured opening → accelerating complexity → rapid culmination). See Plot Architecture audit, Spine 44.
 
 **Literary-specific beats to track:**
 - Thematic introduction: When does the central question emerge?

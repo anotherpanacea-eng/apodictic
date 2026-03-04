@@ -5,6 +5,66 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.0.6 - 2026-03-04
+
+### Added — Kishōtenketsu & Jo-ha-kyū Plot Spines
+
+Two new spines added to the Plot Architecture system, bringing the total from 48 to 50. Contributed by **Appropriate-Record68**.
+
+#### New: Kishōtenketsu (Four-Part Without Conflict) — Spine 6, Family 1
+
+Japanese four-part structure (起承転結) with Chinese and Korean cognates. The major non-conflict-driven structural paradigm in English-language craft discourse. Generates meaning through juxtaposition rather than collision: Introduction (Ki) → Development (Shō) → Turn (Ten) → Reconciliation (Ketsu). No antagonist or crisis required.
+
+- Three logic gates: Juxtaposition Test (does Ten introduce a genuinely non-causal element?), Reconciliation Weight (does Ketsu produce meaning from the juxtaposition?), Development Integrity (does Shō deepen without smuggling in conflict?).
+- Critical calibration note: suppresses conflict-driven false positives (Passive Midpoint, Missing Commitment, Crisis Fatigue) when Kishōtenketsu is the identified spine.
+- Translation note on *ten*: APODICTIC treats it as juxtaposition, not twist or surprise.
+- Cross-reference note added at Three-Act Structure entry for discoverability.
+- Genre cross-references: literary fiction (native habitat), manga/comics, slice-of-life, horror (ten-as-wrongness, distinct from Lullaby).
+
+#### New: Jo-ha-kyū (Rhythmic Acceleration) — Spine 44, Family 10
+
+Japanese aesthetic principle (序破急) from Noh drama. A pacing overlay, not a primary spine — diagnoses rhythmic problems within any identified spine. Jo (measured opening) → Ha (accelerating complexity) → Kyū (rapid culmination).
+
+- Three logic gates: Macro Rhythm (whole-work pacing acceleration), Scene-Level Rhythm (internal scene pacing with specified sampling protocol), Scale Nesting (rhythm at multiple scales simultaneously).
+- Proportion note: traditional Jo-ha-kyū is not equal thirds (~1/5, 3/5, 1/5); gates use "phases" rather than "thirds."
+- Usage note: apply after primary spine identification, not instead of it.
+- Genre cross-references: literary fiction, thriller, horror, erotica.
+
+#### Changed: Plot Architecture Audit (`references/plot-architecture-audit.md`)
+- Version bumped to 0.5.0.
+- All spines renumbered: Family 1 now 1-6 (was 1-5), Family 10 now 41-44 (was 40-42), Families 11-12 now 45-50 (was 43-48).
+- Three new rows in Diagnostic Quick Reference ("When the Draft Feels..." table).
+- Eight new entries in Spine Compatibility Matrix.
+- Removed duplicate Save the Cat + Kishōtenketsu entry (consolidated into new Kishōtenketsu entries).
+
+#### Changed: Plot Selection & Coaching (`references/plot-selection-coaching.md`)
+- Version bumped to 1.1.
+- Phase 1: Added "contemplative recognition" to reader-feeling map; added "juxtaposition" as engine type.
+- Phase 2: Added juxtaposition branch to single-spine decision tree.
+- Phase 3: Added Jo-ha-kyū as a structural technique overlay alongside TV/Serial and Game-Inspired formats.
+- Phase 5: Added "every diagnostic flags problems but draft works" to stuck-draft symptom table.
+
+#### Changed: SKILL.md (plot-architecture)
+- Version bumped to 1.0.4.
+- Spine count updated from 48 to 50 across all references.
+- Family table updated: Family 1 includes Kishōtenketsu, Family 10 includes Jo-ha-kyū.
+- Quick reference logic gates and diagnostic table updated.
+
+#### Changed: Genre Module — Literary Fiction (`genre-literary.md`)
+- Pass 2 (Structural Mapping): Added Kishōtenketsu as native structural option; added juxtaposition to organizational principles; added Jo-ha-kyū pacing note.
+
+#### Changed: Genre Module — Horror (`genre-horror.md`)
+- Pass 2 (Structural Mapping): Added non-conflict horror note (Kishōtenketsu ten-as-wrongness, distinct from Lullaby rupture).
+- Pass 3 (Rhythm): Added Jo-ha-kyū horror pacing mapping.
+
+#### Changed: README.md
+- Spine count updated from 48 to 50.
+
+#### Changed: plugin.json
+- Version bumped to 1.0.6.
+
+---
+
 ## v1.0.5 - 2026-02-24
 
 ### Added — Hybrid Mode (Optional Execution Mode)

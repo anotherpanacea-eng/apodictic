@@ -30,7 +30,7 @@ Dedicated reference files (genre modules, specialized audits, `references/pass-1
 ## Plugin Structure
 
 This skill is the core of the APODICTIC plugin. Two companion skills handle specialized functions:
-- **plot-architecture** — Spine diagnosis (48 spines), selection coaching, fantasy & series architecture
+- **plot-architecture** — Spine diagnosis (50 spines), selection coaching, fantasy & series architecture
 - **specialized-audits** — Deep-dive audits, tag audits, and research modes (loaded on demand)
 
 **Delegation principle:** Core runs the development edit workflow. Everything else delegates to companion skills or reference files. Core does not carry audit catalogs, tag-audit internals, or genre deep-dives.
