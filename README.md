@@ -1,6 +1,6 @@
 # APODICTIC: anotherpanacea's Development Editor
 
-Developmental editing that listens before diagnosing.
+AI Developmental Editing. *Necessarily, Everything Follows.*
 
 ## Why This Exists
 
@@ -60,6 +60,26 @@ Then type `/start` — it asks you three questions to figure out what you need.
 | `/plot-coach` | Plot structure selection and coaching |
 | `/audit [name]` | Run a specialized audit (no argument lists all available) |
 | `/research [mode]` | Run a research mode (no argument lists all available) |
+
+## Troubleshooting
+
+### Windows / Cowork Desktop: Plugin Installs Then Reverts
+
+Some users on Windows PCs have reported issues installing the plugin through Cowork's desktop app. The symptoms include:
+
+- The plugin appears to install but then reverts to "not installed"
+- Pointing Cowork to a local folder produces sandbox/virtiofs errors like:
+  ```
+  sandbox-helper: failed to unmount host share (virtiofs at /mnt/.virtiofs-root: invalid argument)
+  ```
+
+These are **Cowork platform issues**, not plugin bugs. Cowork's desktop app runs a sandboxed Linux VM, and on some Windows machines the virtualization layer (virtiofs/Hyper-V) doesn't initialize correctly. The plugin has no control over this layer.
+
+**Workarounds:**
+
+1. **Use Claude Code (CLI) instead** — it doesn't rely on sandboxing or virtualization. See the install instructions above, then run `/start`.
+2. **Report the sandbox error to Cowork** — the virtiofs mount failure is a platform bug that their team would need to address.
+3. **Check your Windows virtualization settings** — ensure Hyper-V and/or WSL2 are enabled and up to date (`wsl --update` from PowerShell).
 
 ## Project Docs
 
