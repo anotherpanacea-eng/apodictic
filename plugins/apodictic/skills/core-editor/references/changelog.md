@@ -5,6 +5,62 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.0.8 - 2026-03-04
+
+### Added — Compression Audit
+
+New specialized craft audit: **Compression** — "What should be cut?" Identifies expendable material in long-form manuscripts and produces a prioritized cut list with estimated word savings. Subtraction-first diagnostic: finds material to remove, not material to add.
+
+#### Design rationale
+The framework's existing passes diagnose structural problems that *imply* cutting but frame their findings as "what's wrong." This audit reframes existing and new findings as "what should go" and quantifies the cost of keeping it. Addresses the framework's structural bias toward addition.
+
+Core failure claim: **retained scaffolding** — the draft carries its construction equipment into the finished building.
+
+#### Audit specifications
+- 16 diagnostic flags across 5 channels: Structural Expendability (SE), Informational Redundancy (IR), Scene Efficiency (ScE), Emotional Redundancy (ER), Structural Scaffolding (SS)
+- Two primary artifacts: Cut List (3 tiers, sorted by word savings, with confidence ratings) and Compression Map (density per part, mode-aware thresholds)
+- Two-pass procedure: discovery sample (~15% of scenes) → enumeration pass before hard-gate escalation
+- Distinguish framework with 5 decision tests, explicit conflict resolution rules, and 3-way classification (Cut / Compress / Keep — Load-Bearing)
+- Confidence Rubric (High / Medium / Low) gating hard-gate escalation
+- 7-mode calibration matrix with named failure modes (Decorative Density, Setup Bloat, Processing Spiral, Guided Tour, Inert Dwell, Informational Detour, Recursive Reflection)
+- 4 hard gates with evidence requirements
+- Cross-genre scope: literary fiction, thriller, romance, SFF, horror, mystery, memoir/nonfiction
+
+#### Files added
+- `specialized-audits/references/craft/compression-audit.md` — The audit (16 flags, 5 channels, 4 hard gates, 7 mode calibrations, §1–§13)
+- `specialized-audits/references/craft/compression-audit-level-setting.md` — Level-setting brief (scaffolding theory, over-establishment, diminishing-returns, genre norms, distinguish problem)
+- `specialized-audits/references/craft/compression-audit-expansion-stub.md` — Design document (expansion stub)
+
+#### Changed: Plugin integration
+- `specialized-audits/SKILL.md` — Added Compression row to Craft Audits table, reference file entries, trigger phrases in description
+- `core-editor/references/run-core.md` — Added finding-driven audit trigger at Pass 2 (orphan scenes ≥3 or proportional imbalance >40%)
+- Audit count updated from 25 → 26 across `plugin.json`, `marketplace.json`, `.claude-plugin/plugin.json`, `README.md`
+
+---
+
+## v1.0.7 - 2026-03-04
+
+### Added — Protected Elements Section
+
+New required section in the editorial letter synthesis: **§6 Protected Elements — What Not to Touch.** Names 3–6 specific elements the revision must not damage, with reasons. These are the manuscript's load-bearing strengths — scenes, techniques, voice qualities, structural choices, or relationships that are working and that revision could accidentally break.
+
+#### Design rationale
+Revision fixes problems but can also destroy what works. §3 identifies strengths; §5 identifies what to change; §6 explicitly marks the no-go zones. Authors revising under pressure tend to over-correct — this section gives them specific guardrails. Zero-cost addition: no new pass, just a new output requirement drawn from existing pass findings.
+
+#### Relationship to §3 (What the Book Does Best)
+§3 argues *why* the strengths matter. §6 translates that into *operational protection* — it tells the author which strengths are at risk from the specific revisions recommended in §4 and §5. An element in §3 that isn't threatened by the revision plan doesn't need to appear here.
+
+#### Changed: Editorial Letter Format
+- Sections renumbered: old §6 (Strongest Case Against) → §7, old §7 (Stress Test) → §8, old §8 (Appendices) → §9.
+- Verification gate updated to check §1–§9.
+- All §-cross-references updated across `run-core.md`, `pass-11.md`, `adversarial-stress-test.md`, and `run-full.md`.
+
+#### Changed: Full DE Differences (`run-full.md`)
+- Protected Elements at Full DE scale may run up to 8 elements (vs. Core DE's 3–6).
+- Pass 11 integration note updated for new section numbering.
+
+---
+
 ## v1.0.6 - 2026-03-04
 
 ### Added — Kishōtenketsu & Jo-ha-kyū Plot Spines
