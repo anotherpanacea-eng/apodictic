@@ -109,6 +109,7 @@ Use these when one craft system needs deeper diagnosis than core passes provide.
 | Shelf Positioning | Tests market shelf fit and signal clarity | Positioning, pitching, or comp selection stage |
 | Series & Composite Novel | Tests multi-part coherence and standalone function | Series entries or linked-story books |
 | Short Fiction | Tests compression, effect unity, ending force | Short stories, flash, novella-length compression |
+| Compression | Diagnoses expendable material across 5 channels (16 flags, 4 hard gates) | Manuscript runs long, scenes feel padded, or proportional imbalance detected |
 
 ---
 
