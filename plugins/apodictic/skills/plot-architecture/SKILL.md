@@ -7,7 +7,7 @@ description: >
   draft," "plot coaching," "hybrid structure," "fantasy spine," "series
   architecture," or any request involving narrative spine identification,
   plot selection guidance, or structural coaching.
-version: 1.0.3
+version: 1.0.4
 ---
 
 # Plot Architecture, Selection & Coaching
@@ -24,11 +24,11 @@ This skill covers three interconnected functions:
 
 **Identify the manuscript's PRIMARY SPINE and apply spine-specific logic gates.**
 
-### Spine Families (48 Spines, 12 Families)
+### Spine Families (50 Spines, 12 Families)
 
 | Family | Spines |
 |--------|--------|
-| **1. Linear/Teleological** | Save the Cat, Three-Act, Fichtean Curve, Freytag, Hero's Journey |
+| **1. Linear/Teleological** | Save the Cat, Three-Act, Fichtean Curve, Freytag, Hero's Journey, Kishōtenketsu |
 | **2. Circular/Recursive** | Spiral, Fugue/Refrain, Loop, Braided |
 | **3. Information/Knowledge** | Mystery, Howcatchem, Revelatory, Conspiracy, Puzzle Box |
 | **4. Relationship/Erotic** | Courtship, Seduction, Captivity, Training, Betrayal-of-Self |
@@ -37,14 +37,14 @@ This skill covers three interconnected functions:
 | **7. Time/Causality** | Nonlinear, Reverse Chronology, Two-Handed |
 | **8. Existential/Identity** | Bildungsroman, Doppelgänger, Transformation, Aftermath, Prophecy |
 | **9. Tonal/Hybrid** | Thriller, Psych Horror, Faustian, Rashomon |
-| **10. Rhythm/Intensity** | Wave/Pulse, Lullaby, Pressure Cooker |
+| **10. Rhythm/Intensity** | Wave/Pulse, Lullaby, Pressure Cooker, Jo-ha-kyū |
 | **11. Format/Frame** | Episodic/Modular, Clinical Case File, Nested Dolls, Talisman |
 | **12. Transformation Extended** | Heroine's Journey (Murdock), Seven-Point (Dan Wells) |
 
 ### Diagnostic Process
 
 1. Identify primary spine from manuscript evidence
-2. Apply spine-specific logic gates (each spine has 2 gates; see `references/plot-architecture-audit.md`)
+2. Apply spine-specific logic gates (each spine has 2-3 gates; see `references/plot-architecture-audit.md`)
 3. Classify results: PASS / FLAG FOR REVIEW / STRUCTURAL BREAK
 4. Check for secondary spines operating at different scales
 5. Report findings with specific scene/page evidence
@@ -58,6 +58,8 @@ This skill covers three interconnected functions:
 - **Intimacy/Risk Correlation (Courtship):** Risk rises with intimacy?
 - **Rationalization Index (Corruption):** Excuses weaken as crimes enlarge?
 - **Consistency Check (Puzzle Box):** Act I rules obeyed in Act III?
+- **Juxtaposition Test (Kishōtenketsu):** Does Ten introduce a non-causal element that generates new meaning?
+- **Macro Rhythm (Jo-ha-kyū):** Does pacing accelerate across phases? (Overlay, not a spine)
 
 ### Diagnostic Quick Reference
 
@@ -76,6 +78,9 @@ This skill covers three interconnected functions:
 | "Empowered" feels hollow | False victory without descent | Add Heroine's Journey |
 | Symbolic object flat | Static symbol | Apply Talisman rules |
 | Unreliable narrator no payoff | Missing discrepancy | Apply Clinical Case File |
+| Conflict diagnostics flag a manuscript that works | Wrong paradigm assumed | Check for Kishōtenketsu; suppress conflict gates |
+| Pacing metronomic despite good structure | Missing rhythmic shape | Apply Jo-ha-kyū overlay |
+| Juxtaposition present but ending flat | Weak reconciliation | Apply Kishōtenketsu Ketsu gate |
 
 ### Severity Levels
 
@@ -83,7 +88,7 @@ This skill covers three interconnected functions:
 - **FLAG FOR REVIEW:** Potential issue or intentional subversion; verify with author
 - **SOFT FLAG:** Minor deviation; low priority
 
-For the complete audit with all 48 spine definitions, logic gates, and the compatibility matrix, see `references/plot-architecture-audit.md`.
+For the complete audit with all 50 spine definitions, logic gates, and the compatibility matrix, see `references/plot-architecture-audit.md`.
 
 ---
 
@@ -169,6 +174,6 @@ See `references/fantasy-series-architecture.md` for the full module with logic g
 
 ## Reference Files
 
-- `references/plot-architecture-audit.md` — Complete audit: 48 spines, all logic gates, compatibility matrix
+- `references/plot-architecture-audit.md` — Complete audit: 50 spines, all logic gates, compatibility matrix
 - `references/plot-selection-coaching.md` — Full selection & coaching module (6 phases)
 - `references/fantasy-series-architecture.md` — Fantasy spines, series architectures, rhythm patterns

@@ -118,7 +118,7 @@ Use when the manuscript needs spine-level diagnosis or lacks narrative shape.
 
 | Module | What it does | Use it when |
 |---|---|---|
-| Plot Architecture | Diagnoses structural spine across 48 spines in 12 families | Structural diagnosis, spine identification, pacing problems |
+| Plot Architecture | Diagnoses structural spine across 50 spines in 12 families | Structural diagnosis, spine identification, pacing problems |
 | Plot Selection & Coaching | Upstream structure selection, hybrid design, stuck-draft triage | Pre-drafting structure choice, stuck draft, combining structures |
 | Fantasy & Series Architecture | Fantasy-specific spines (5) and series-level architectural patterns (6 + 3 rhythm patterns) | Fantasy series, multi-part fantasy, series-level coherence |
 | Franklin Pathway | Pre-spine viability gate; classifies material as story-shaped, storyable, argument-with-narrative, or not storyable | Passes detect no functional story spine; nonfiction reporting pile; notes without narrative shape |

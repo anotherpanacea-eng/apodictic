@@ -1,6 +1,6 @@
 # Specialized Audit: Plot Structure Selection & Coaching
-## Version 1.0
-*Last Updated: February 2026*
+## Version 1.1
+*Last Updated: March 2026*
 
 ---
 
@@ -38,6 +38,7 @@ Ask the author (or derive from manuscript/notes):
 | Transformed alongside character | Existential & Identity (Hero's Journey, Heroine's Journey, Bildungsroman) |
 | Uncertain what's real | Information & Knowledge (Rashomon) + Tonal (Psychological Horror) |
 | Catharsis | Moral & Social (Justice/Revenge, Redemption) |
+| Contemplative recognition | Linear & Teleological (Kishōtenketsu) — meaning from juxtaposition, not collision |
 
 **2. What is the story's ENGINE — the thing that generates forward motion?**
 
@@ -51,6 +52,7 @@ Ask the author (or derive from manuscript/notes):
 | A transformation (who am I becoming?) | Corruption, Bildungsroman, Heroine's Journey, Metamorphosis |
 | A moral reckoning (what have I done / what was done to me?) | Aftermath, Redemption, Scapegoat, Justice/Revenge |
 | A clock (time is running out) | Countdown, Fichtean, Seven-Point |
+| A juxtaposition (placing things side by side) | Kishōtenketsu — meaning from contrast, not collision |
 
 **3. What is the story's RELATIONSHIP TO TRUTH?**
 
@@ -102,12 +104,17 @@ START: What generates forward motion?
 │  ├─ Mutual escalation → Two-Handed Causality
 │  └─ Self-betrayal through desire → Betrayal of Self
 │
-└─ A TRANSFORMATION → What kind?
-   ├─ Moral fall → Corruption
-   ├─ Identity formation → Bildungsroman
-   ├─ Integration of split self → Heroine's Journey
-   ├─ Physical/ontological → Metamorphosis
-   └─ Becoming-other → Doppelgänger
+├─ A TRANSFORMATION → What kind?
+│  ├─ Moral fall → Corruption
+│  ├─ Identity formation → Bildungsroman
+│  ├─ Integration of split self → Heroine's Journey
+│  ├─ Physical/ontological → Metamorphosis
+│  └─ Becoming-other → Doppelgänger
+│
+└─ A JUXTAPOSITION → Does meaning come from placing things side by side?
+   ├─ Yes, and no conflict needed → Kishōtenketsu
+   └─ Yes, but conflict also present → Check if Kishōtenketsu or
+      Three-Act with thematic contrast
 ```
 
 ### For Multi-Spine Stories
@@ -180,6 +187,32 @@ IF final "boss" doesn't require synthesis of earlier learning → FLAG: "Disconn
 
 **Compatible with:** Training, Pressure Cooker, Fichtean Curve
 **Fights with:** Wave/Pulse (game structure is linear; wave is oscillating)
+
+---
+
+### Jo-ha-kyū (Pacing Overlay)
+
+**What it does:** Imposes a three-phase rhythmic shape — measured opening (Jo), accelerating complexity (Ha), rapid culmination (Kyū) — at any scale: scene, act, or whole work. Not a spine; a pacing lens that diagnoses rhythmic flatness within any identified spine.
+
+**When to apply:**
+- Manuscript feels metronomic despite sound structure
+- Pacing feels "same speed throughout"
+- Individual scenes lack internal rhythmic shape
+- Work needs rhythmic contour independent of plot logic
+
+**Note:** Traditional proportions are not equal thirds. Jo is roughly one-fifth, Ha three-fifths, Kyū one-fifth. The rhythm is fractal — it should operate at multiple scales simultaneously.
+
+**Logic Gate: The Rhythm Check**
+```
+CHECK: Does the manuscript accelerate across its phases?
+
+IF Jo (measured) → Ha (faster, denser) → Kyū (fastest) → PASS
+IF pacing is constant throughout → FLAG: "Metronomic — no rhythmic shape"
+IF every scene follows identical acceleration → FLAG: "Rhythmic Monotony"
+```
+
+**Compatible with:** All spines (it's an overlay, not a spine)
+**Fights with:** Pressure Cooker (resists Jo's measured opening); rigid application fights itself (predictable acceleration becomes its own flatness)
 
 ---
 
@@ -258,6 +291,7 @@ When a draft isn't working and the author can't identify why, use this diagnosti
 | "It meanders" | Missing teleology — needs linear beats (Save the Cat, Seven-Point) |
 | "It's all middle" | Proportional failure — Act II bloat; check Three-Act percentages |
 | "Something's off but I can't name it" | Spine mismatch — the structure isn't serving the story's core concern |
+| "Every diagnostic flags problems but the draft works" | Wrong structural paradigm — check for Kishōtenketsu before assuming conflict-driven spine |
 | "It's intense but flat" | Missing oscillation — needs Wave/Pulse or Lullaby rhythm |
 | "Characters are interesting but plot is dead" | Character engine, no plot spine — needs external structure (Countdown, Mystery, Quest) |
 | "Plot works but characters are thin" | Plot spine without identity engine — needs Heroine's Journey, Bildungsroman, or Betrayal of Self |
