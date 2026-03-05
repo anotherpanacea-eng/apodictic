@@ -148,7 +148,7 @@ Shipped 2026-02-22. v0.5 UX overhaul complete: query-driven passes, intake route
 
 Patch-level additions shipped between 1.0 and the next planned release. These are not roadmap items — they emerged from editorial engagements and framework refinement.
 
-- **v1.0.4 — Subagent Pass Orchestration** (optional swarm mode). See v2.0+ section for details and A/B test results.
+- **v1.0.4 — Subagent Pass Orchestration** (optional swarm mode). See v2.0+ section for details.
 - **v1.0.8 — Compression Audit.** Expendable material identification, cut list generation, word-savings map, retained scaffolding diagnosis. Craft audit with level-setting brief.
 - **v1.0.9 — Reception Risk Audit.** Cultural-context reception risk (17 flags across 5 channels: RR, EX, PF, CR, HW). Risk Map, Pattern Summary, Sensitivity Reader Handoff Memo artifacts. Two-pass procedure, 8 mode calibrations, 5 hard gates, Directional Check. Level-setting brief (Jauss, Iser, Fish, Hall, Booth, Genette, Phelan). Built via three-model synthesis (Opus 4.6, Codex 5.3, Gemini 2.5 Pro) — first validated use of the expansion protocol's multi-model workflow.
 - **v1.0.9 — Voice Distinctiveness Comparison** (Pass 7). Six comparison dimensions for multi-POV manuscripts, two new flags (under-individuation, selective individuation).
@@ -342,8 +342,6 @@ Architectural changes to how the plugin executes, not what it diagnoses.
 ### Subagent Pass Orchestration — ✅ Shipped as Optional Mode (v1.0.4)
 
 Each pass runs as an independent subagent with its own context window. The Findings Ledger serves as the inter-agent communication protocol. User-invoked at intake with "run in swarm mode."
-
-**A/B test results (2026-02-24, "Coda: The Headboard" ~4k words):** Swarm produced 20 findings vs. 9 single-context; 10 cross-pass connections vs. 4; counterevidence on every finding vs. 1; synthesis preserved finding-level detail. Passes *complicated* each other's findings rather than merely confirming them. Token cost: ~5x.
 
 **Status:** Available as optional execution mode. Default remains single-context. Protocol in `references/run-core.md` §Execution Mode. Design rationale and cost analysis in `docs/subagent-architecture-design.md`. Test results in `Outputs/Swarm_Test/TEST_RESULTS.md`.
 
