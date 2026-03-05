@@ -1,159 +1,38 @@
-# APODICTIC Post-Publication Roadmap
+# APODICTIC Roadmap
 
-**Date:** 2026-03-05
 **Current version:** See `plugins/apodictic/.claude-plugin/plugin.json`
-
-What to build next, organized by priority. UX work gates 1.0; feature additions follow.
 
 ---
 
-## v0.5 — UX Overhaul (Pre-1.0)
+## v0.5 — UX Overhaul
 
-The command structure reflects framework internals. This release makes the plugin feel like a product. These items gate the 1.0 label — the framework is built, but a newcomer can't navigate it yet.
+The command structure reflects framework internals. This release makes the plugin feel like a product to newcomers.
 
-### Query-Driven Pass Architecture (P1)
+### Query-Driven Pass Architecture
 
 Replace the fixed Core DE / Full DE tiering with automatic dependency resolution. Instead of running a predetermined pass sequence, the system resolves "what do I need to run to answer this user's question?" and executes the minimum pass set.
 
-**The problem:** Core DE runs 5 passes. Full DE runs 12. A writer who only has a character question still loads the entire diagnostic machine. Meanwhile, the Core/Full split is an engine-designer distinction — users don't think in terms of "I need the Full DE," they think "my characters feel flat."
+**The problem:** Core DE runs 5 passes. Full DE runs 12. A writer who only has a character question still loads the entire diagnostic machine. The Core/Full split is an engine-designer distinction — users think "my characters feel flat," not "I need the Full DE."
 
-**Three layers:**
+**The approach:** Group the 12 passes into question-shaped macro blocks (Structure Map, Reader Dynamics, Character Architecture, Scene Delivery, Reveal Economy, Theme & Continuity, Submission Readiness). Build a dependency tree so the engine resolves pass sets from user concerns — a character question runs {0, 1, 5, 7}, not all 12. Start with a dependency map inside the existing skill; migrate to per-block skills only if context window pressure demands it.
 
-**1. User-facing macro blocks.** Group the 12 passes into question-shaped clusters that match how writers actually talk about their manuscripts:
-
-| Macro Block | Internal Passes | User Question |
-|-------------|----------------|---------------|
-| Structure Map | 0 + 2 | "Is the structure working?" |
-| Reader Dynamics | 1 + 3 | "Does the pacing hold?" |
-| Character Architecture | 5 (+ 4 when emotionally driven) | "Are my characters landing?" |
-| Scene Delivery | 6 + 7 | "Are the scenes doing their jobs?" |
-| Reveal Economy | 8 | "Is the information flow right?" |
-| Theme & Continuity | 9 + 10 | "Does it cohere?" |
-| Submission Readiness | 11 | "Is this ready?" |
-
-Writers see 7 blocks, not 12 passes. Each block has a plain-language name and a question it answers.
-
-**2. Dependency tree.** The execution engine that determines what actually runs. Pass 0 (Reverse Outline) is the keystone — almost every other pass depends on it. Two passes have no upstream dependencies and can run in parallel:
-
-| Pass | Depends on |
-|------|-----------|
-| 0 (Reverse Outline) | nothing — reads the manuscript |
-| 1 (Reader Experience) | nothing — reads the manuscript |
-| 10 (Entity Tracking) | nothing — reads the manuscript |
-| 2 (Structural Mapping) | 0 |
-| 3 (Rhythm & Modulation) | 0, 1 |
-| 4 (Emotional Dynamics) | 0, 1 |
-| 5 (Character Audit) | 0 |
-| 6 (Scene Function) | 0, 2 |
-| 7 (Dialogue & Voice) | 0, 5 |
-| 8 (Reveal Economy) | 0 |
-| 9 (Thematic Coherence) | 0, 5 |
-| 11 (Market Positioning) | 0, 1, 2, 5 (runs after synthesis) |
-
-When a user asks a character question, the engine resolves: Pass 5 needs Pass 0. Pass 7 (Dialogue) needs Pass 0 and Pass 5. Pass 1 adds reader-experience grounding. Result: run {0, 1, 5, 7}, skip the other eight.
-
-**3. Execution tiers.** Passes group into three tiers by dependency depth:
-
-- **Tier 1 — Read:** Passes 0, 1, 10. No dependencies on each other. Can run in parallel. Every diagnostic starts here (or a subset).
-- **Tier 2 — Analyze:** Passes 2, 3, 4, 5, 6, 7, 8, 9. Each depends on one or more Tier 1 passes. Run only what the query requires.
-- **Tier 3 — Synthesize:** Synthesis + Pass 11. Runs after all selected Tier 2 passes complete.
-
-**Query-to-pass routing table:**
-
-| User concern | Minimum pass set |
-|-------------|-----------------|
-| Structure / architecture | 0, 2 |
-| Pacing / momentum | 0, 1, 3 |
-| Characters / agency / arc | 0, 1, 5, 7 |
-| Information flow / reveals | 0, 1, 8 |
-| Scene craft / function | 0, 2, 6, 7 |
-| Theme / coherence / meaning | 0, 5, 9, 10 |
-| Emotional dynamics / interiority | 0, 1, 4 |
-| "Everything" / full diagnostic | all passes |
-| "Is this ready to submit?" | all passes + 11 |
-
-**What this replaces:** The Core DE / Full DE split disappears. "Core" was just "the passes we run first." "Full" was "Core plus everything else." With query-driven routing, scope is determined by the question, not by a tier label. A character-focused run touches 4 passes; a full diagnostic touches 12. Both are valid scopes — neither is a "lite" or "full" version.
-
-**Skill organization implications:**
-
-The current plugin has one large `core-editor` skill containing all passes. Query-driven execution suggests restructuring:
-
-- **Option A — Dependency map within a single skill.** Keep one `core-editor` skill but add an explicit dependency map (machine-readable YAML or structured markdown) that the execution engine consults. Passes remain defined inline. Simplest to implement; skill file gets longer but stays unified.
-- **Option B — Tier-based skill decomposition.** Split into `tier-1-read`, `tier-2-analyze`, `tier-3-synthesize` skills. Each tier loads only when needed. Reduces context window pressure for partial runs but creates coordination overhead.
-- **Option C — Pass-cluster skills.** Each macro block becomes its own skill file, with the dependency map in a shared reference. `structure-map` skill loads Passes 0 + 2; `reader-dynamics` loads 1 + 3; etc. Most modular, but risks fragmentation.
-
-**Recommended:** Start with Option A (dependency map within the existing skill). Migrate to Option C only if context window pressure makes single-skill loading impractical. The dependency map is the critical deliverable regardless of which option ships — it's the engine that makes query-driven routing possible.
-
-**What to build:**
-- Dependency map (structured reference file: `references/pass-dependencies.md` or `.yaml`)
-- Query resolver: given a user concern, output the minimum pass set plus execution order
-- Update the intake router to accept concern-based routing (extends Q2 in `intake-router.md`)
-- Update `run-core.md` and `run-full.md` to become execution profiles generated from the dependency map rather than fixed pass lists
-- Macro block definitions for user-facing output organization (pass results grouped by block, not by number)
-
-**Sequencing note:** This item depends on the Intake Router. The router determines the user's concern; the dependency map determines which passes to run. Build the router first, then layer query-driven execution on top. The two can share a release if the dependency map ships as a reference file and the router adds a concern-classification step to Q2.
-
-### Router Runtime / Design Split (P2) — ✅ Shipped (v1.0)
-
-Split completed. `intake-router-runtime.md` handles execution; `intake-router-design.md` holds rationale and design notes. `/start` loads only the runtime file. The remaining context-window optimization candidates (`run-core.md`, `run-full.md`, `specialized-audits/SKILL.md`) have not been split — deferring until context pressure demands it.
+**What to build:** Dependency map (structured reference file), query resolver, intake router integration, updated `run-core.md` and `run-full.md` as execution profiles generated from the dependency map, macro block definitions for user-facing output organization.
 
 ### Intake Router Implementation
 
-The router is fully specified in `intake-router.md` — four-axis classification (Artifact × Goal × Operator × Constraint), conditional question flow, deterministic routing, gap-handling protocol. What remains is implementation:
-
-- Wire `/start` to execute the router question sequence
-- Update each workflow's intake protocol to accept router output (artifact, goal, constraint flags)
-- Build graceful degradation for gap routes (acknowledge honestly, offer closest built workflow, name what won't be covered)
-- Decide whether old commands remain as power-user shortcuts or get retired
+The router is fully specified in `intake-router.md` — four-axis classification, conditional question flow, deterministic routing, gap-handling protocol. What remains: wire `/start` to execute the question sequence, update each workflow's intake protocol to accept router output, build graceful degradation for gap routes, decide whether old commands remain as shortcuts or get retired.
 
 ### Command Restructuring
 
-Current 9 commands expose framework internals. After the router ships, evaluate whether the command set should shrink. Options:
-
-- **Keep all as shortcuts:** `/start` is primary; `/develop-edit`, `/audit`, etc. remain for users who know what they want
-- **Retire most:** Only `/start` and `/audit [name]` survive; everything else routes through intake
-- **Alias model:** Old commands become aliases that pass arguments to the router
+Current 9 commands expose framework internals. After the router ships, evaluate whether to keep all as shortcuts, retire most (only `/start` and `/audit [name]` survive), or use an alias model.
 
 ### Scene-Level Handoff Protocol
 
-When the DE diagnoses a scene-level problem, the writer needs a clean exit from framework mode to work with Claude directly on execution. The Firewall stays during diagnosis; after diagnosis, the DE explicitly unloads.
-
-- Define handoff language ("Diagnosis complete. I'm stepping out of editor mode — you can now work with Claude directly on this scene.")
-- Ensure the DE skill doesn't accidentally stay loaded during the execution phase
-- Consider a `/handoff` command or automatic deactivation trigger
+When the DE diagnoses a scene-level problem, the writer needs a clean exit from framework mode to work with Claude directly on execution. Define handoff language, ensure the DE skill doesn't accidentally stay loaded during the execution phase, consider a `/handoff` command or automatic deactivation trigger.
 
 ### Framework Overview Dashboard (HTML)
 
-A static, single-file HTML overview of the plugin's capabilities — the map at the trailhead. Not interactive beyond hover/click for descriptions. Not an intake form.
-
-**Build after** the router and command restructuring are settled, so it reflects the final UX.
-
-**Spec (from Publication_Requirements §9):**
-- System-at-a-glance: visual layout (flowchart or nested diagram) showing passes, audits, modules, and their relationships
-- Routes through the system: highlighted paths for common workflows
-- One-sentence descriptions on hover/click
-- The Firewall in user-facing language
-- The axis model as orientation (not intake)
-- Self-contained HTML, no build step, works from filesystem
-
----
-
-## v1.0 — Public Release Gate ✓
-
-Shipped 2026-02-22. v0.5 UX overhaul complete: query-driven passes, intake router, scene-level handoff, command alias model, overview dashboard. Plugin is navigable by newcomers.
-
----
-
-## Completed Since v1.0 (1.0.1–1.0.9)
-
-Patch-level additions shipped between 1.0 and the next planned release. These are not roadmap items — they emerged from editorial engagements and framework refinement.
-
-- **v1.0.4 — Subagent Pass Orchestration** (optional swarm mode). See v2.0+ section for details.
-- **v1.0.8 — Compression Audit.** Expendable material identification, cut list generation, word-savings map, retained scaffolding diagnosis. Craft audit with level-setting brief.
-- **v1.0.9 — Reception Risk Audit.** Cultural-context reception risk (17 flags across 5 channels: RR, EX, PF, CR, HW). Risk Map, Pattern Summary, Sensitivity Reader Handoff Memo artifacts. Two-pass procedure, 8 mode calibrations, 5 hard gates, Directional Check. Level-setting brief (Jauss, Iser, Fish, Hall, Booth, Genette, Phelan). Built via three-model synthesis (Opus 4.6, Codex 5.3, Gemini 2.5 Pro) — first validated use of the expansion protocol's multi-model workflow.
-- **v1.0.9 — Voice Distinctiveness Comparison** (Pass 7). Six comparison dimensions for multi-POV manuscripts, two new flags (under-individuation, selective individuation).
-- **v1.0.9 — Title/Framing Architecture** (Pass 3). Conditional evaluation for manuscripts with deliberate titling conceits, epigraph sequences, or section-header systems. Four tests (deepening, counterpoint, coherence, ornamental). Finding-driven trigger to Literary Craft audit.
-- **v1.0.9 — Release tooling.** `bump-version.sh` updated to include root `plugin.json`; downstream sync checklist expanded to cover `commands/audit.md` and `plugin.json` description.
+A static, single-file HTML overview of the plugin's capabilities — the map at the trailhead. System-at-a-glance visual layout, highlighted workflow paths, one-sentence descriptions on hover/click, the Firewall in user-facing language. Build after the router and command restructuring are settled.
 
 ---
 
@@ -161,25 +40,13 @@ Patch-level additions shipped between 1.0 and the next planned release. These ar
 
 High-value additions that extend what's already built. No new architectural decisions required.
 
-### Submission Readiness Workflow (P1)
+### Submission Readiness Workflow
 
-The most-requested missing workflow. A writer with a finished draft asks "is this ready to submit?" Currently they'd need to know to run Core DE and then separately request Pass 11. The workflow should be a single entry point that runs Core DE → Synthesis → Pass 11, and produces a unified readiness assessment covering structural health, market positioning, and query/synopsis diagnostics.
+The most-requested missing workflow. A writer with a finished draft asks "is this ready to submit?" Currently they'd need to know to run Core DE and then separately request Pass 11. Build a single entry point (`/submit` or integrated into `/start` routing) that runs Core DE → Synthesis → Pass 11, and produces a unified readiness assessment with query letter/synopsis diagnostic and structured readiness verdict.
 
-**What to build:**
-- A `/submit` command (or integrate into `/start` routing for `full_draft + submit`)
-- Unified output artifact: `[Project]_Submission_Readiness_[runlabel].md`
-- Query letter/synopsis diagnostic (currently not built — new capability)
-- Readiness verdict: structured recommendation with caveats
+### Fast Triage Mode
 
-### Fast Triage Mode (P2)
-
-A 30-60 minute go/no-go assessment for deadline-constrained writers. Runs Pass 1 (Reader Experience) only, produces a triage memo with maximum 3 interventions. Defers the full diagnostic machine.
-
-**What to build:**
-- A `constraint:time` modifier in the intake router (spec exists in `intake-router.md`)
-- Truncated Core DE: Pass 1 → triage memo → exit
-- Triage memo output template with strict caps (3 interventions, 1-2 pages)
-- Clear language: "This is a quick read, not a full edit. Come back when the deadline passes."
+A 30-60 minute go/no-go assessment for deadline-constrained writers. Runs Pass 1 (Reader Experience) only, produces a triage memo with maximum 3 interventions. Clear language: "This is a quick read, not a full edit."
 
 ---
 
@@ -187,109 +54,71 @@ A 30-60 minute go/no-go assessment for deadline-constrained writers. Runs Pass 1
 
 Extend the plugin to handle manuscript states beyond "complete draft" and "idea."
 
-### Partial Manuscript Diagnostic (P3)
+### Partial Manuscript Diagnostic
 
-Writers who are stuck mid-draft. Run passes on available material without penalizing missing structure. Block diagnosis, structural forecasting, "here's what you have and where it's heading."
+Writers stuck mid-draft. Run passes on available material without penalizing missing structure. Pass 0 runs on what exists, Pass 1 notes where momentum stops, synthesis focuses on "what's working, what's stalling, where to go next."
 
-- Modify Core DE intake to accept partial manuscripts (flag for truncated analysis)
-- Pass 0 (Reverse Outline) runs on what exists
-- Pass 1 (Reader Experience) notes where momentum stops
-- Synthesis focuses on "what's working, what's stalling, where to go next" rather than full triage
+### Fragment Synthesis Mode
 
-### Fragment Synthesis Mode (P3)
+Writers with scattered scenes, notes, and fragments but no continuous narrative. Pre-processing step that clusters fragments into candidate contract/spine before Core DE runs. Output: candidate contract (provisional), recommended spine, fragment map showing what connects and what doesn't.
 
-Writers with scattered scenes, notes, and fragments but no continuous narrative. Pre-processing step that clusters fragments into candidate contract/spine before Core DE runs.
+### Cross-Volume Series Continuity
 
-- Intake: accept multiple files or a single file with marked fragments
-- Analysis: identify recurring characters, settings, tensions, tonal patterns
-- Output: candidate contract (provisional), recommended spine, fragment map showing what connects and what doesn't
-- Route to Pre-Writing Pathway or Core DE depending on what emerges
-
-### Cross-Volume Series Continuity (P3)
-
-Series writers working across multiple books. Diagnostic state persists across volumes. Continuity tracking for character state, world rules, unresolved threads.
-
-- Series-aware intake (load previous volume's diagnostic state)
-- Character state tracking across volumes (where did we leave them?)
-- World rule ledger that spans books
-- Unresolved thread inventory (promises made in book 1 that book 3 still hasn't paid)
-- Hope calibration per volume (series-specific)
+Series writers working across multiple books. Diagnostic state persists across volumes. Character state tracking, world rule ledger, unresolved thread inventory, hope calibration per volume.
 
 ---
 
 ## v1.3 — Goal & Constraint Expansion
 
-### Feedback Triage Workflow (P3)
+### Feedback Triage Workflow
 
-Writers returning with beta reader or critique group feedback. The DE should help sort, validate, and prioritize external feedback — not rubber-stamp it.
+Writers returning with beta reader or critique group feedback. The DE helps sort, validate, and prioritize external feedback. Targeted pass execution to test specific claims, prioritized response plan, conflict resolution when feedback contradicts itself.
 
-- Intake format for external feedback (paste or file upload)
-- Targeted pass execution to test specific claims ("my beta reader says the pacing is off in Act II")
-- Prioritized response plan: which feedback to act on, which to question, which to ignore
-- Conflict resolution when feedback contradicts itself
-
-### Nonfiction Pre-Draft Pathway (P3)
+### Nonfiction Pre-Draft Pathway
 
 Argument spine + source/evidence map + scene ethics plan. Separate from fiction pre-writing because nonfiction structure differs fundamentally (thesis-driven, not character-driven).
 
-- Argument spine builder (thesis → evidence → counterargument → synthesis)
-- Source/evidence inventory
-- Scene ethics plan (for memoir and narrative nonfiction: what to include, what to protect, who gets hurt)
-- Routes to Memoir/CNF audit or Narrative Nonfiction audit after drafting
+### Legal Risk Register
 
-### Formal Risk Register (P4) — Partially Addressed by Reception Risk (v1.0.9)
-
-Legal risk register for manuscripts with potentially actionable content — defamation concerns, privacy issues, rights clearance.
-
-**What Reception Risk already covers (v1.0.9):** Cultural reception exposure, extractability analysis, hostile-reader modeling, sensitivity reader handoff memo, representation risk across 17 flags and 5 channels. The cultural/reception side of this roadmap item is now built.
-
-**What remains:** The *legal* side — defamation risk in memoir/autofiction, privacy concerns for identifiable individuals, rights clearance flags for quoted material. Narrower scope than originally conceived.
-
-- Extends Factual Verification research mode (not Representation Context, which now feeds Reception Risk)
-- Produces a legal risk register output with severity levels and escalation triggers
-- Clear language: "I'm flagging areas that may need legal review. I am not a lawyer."
-- Pairs with Reception Risk (cultural) to give complete risk coverage
+Legal risk register for manuscripts with potentially actionable content — defamation concerns in memoir/autofiction, privacy issues for identifiable individuals, rights clearance flags for quoted material. Reception Risk (v1.0.9) already covers the cultural/reception side; this addresses the legal side. Produces a legal risk register with severity levels and escalation triggers. Clear language: "I'm flagging areas that may need legal review. I am not a lawyer."
 
 ---
 
 ## v1.4 — Operator Expansion
 
-### Editor Scaffolding Mode (P4)
+### Editor Scaffolding Mode
 
-For human developmental editors using the framework as an analytical assist. Output framing shifts: "here's what I found that you might have missed" rather than "here's what the author should fix."
+For human developmental editors using the framework as analytical assist. Output framing shifts to "here's what I found that you might have missed." Suppress prescriptive language, add blind-spot emphasis.
 
-- Modify output templates: findings framed as "for your editorial letter" not direct-to-author advice
-- Suppress prescriptive language (the editor decides what to prescribe)
-- Add blind-spot emphasis: highlight things the framework catches that human editors commonly miss (continuity, proportion, promise/payoff economy)
+### Diagnostic Vocabulary Mode
 
-### Diagnostic Vocabulary Mode (P4)
+For writing group facilitators who want to teach structural feedback vocabulary. Glossary/cheat sheet output, discussion prompts tied to structural concepts.
 
-For writing group facilitators who want to teach structural feedback vocabulary. Lightweight framework mode that explains concepts rather than diagnosing manuscripts.
+### Multi-Party Intake
 
-- Glossary/cheat sheet output
-- Discussion prompts tied to structural concepts
-- "How to talk about pacing without saying 'it feels slow'" — translates framework concepts into workshop vocabulary
-
-### Multi-Party Intake (P4)
-
-For co-authoring teams. Priority conflict resolution, sign-off workflow, change ledger.
-
-- When authors disagree on the contract, surface the disagreement rather than averaging
-- Change ledger: track who approved what
-- Not expected to be high-demand. Build only if user feedback indicates need.
+For co-authoring teams. Priority conflict resolution, sign-off workflow, change ledger. Build only if user feedback indicates need.
 
 ---
 
 ## v1.5 — Format & Cadence
 
-### Episode Cadence Workflow (P4)
+### Episode Cadence Workflow
 
-For web serial and newsletter fiction writers. Hook debt tracking, recap burden analysis, season pivots, retention checkpoints.
+For web serial and newsletter fiction writers. Hook debt tracking, recap burden analysis, season pivots, retention checkpoints. Each installment must work standalone AND advance the series.
 
-- Serialization-specific diagnostics (does each installment work standalone AND advance the series?)
-- Hook debt inventory (promises made across episodes)
-- Recap burden analysis (how much re-establishing does each episode need?)
-- Season arc structure (if applicable)
+---
+
+## v2.0+ — Execution Architecture
+
+Architectural changes to how the plugin executes, not what it diagnoses.
+
+### Pre-Skill Context Compaction
+
+Before loading the skill and manuscript, compact prior conversation history to reclaim context space. Currently requires the user to manually run `/compact`. Ideally would be a pre-skill hook in the plugin manifest — request this as a platform feature.
+
+### Token-Adaptive Run Profiles
+
+The execution engine detects available context budget and adjusts the run profile accordingly. Short manuscripts get full subagent treatment; long manuscripts get selective reading; very long manuscripts get a warning and a recommendation to use Fast Triage Mode instead.
 
 ---
 
@@ -335,29 +164,7 @@ New specialized audits should be built from real editorial engagements, not hypo
 
 ---
 
-## v2.0+ — Execution Architecture
-
-Architectural changes to how the plugin executes, not what it diagnoses.
-
-### Subagent Pass Orchestration — ✅ Shipped as Optional Mode (v1.0.4)
-
-Each pass runs as an independent subagent with its own context window. The Findings Ledger serves as the inter-agent communication protocol. User-invoked at intake with "run in swarm mode."
-
-**Status:** Available as optional execution mode. Default remains single-context. Protocol in `references/run-core.md` §Execution Mode. Design rationale and cost analysis in `docs/subagent-architecture-design.md`. Test results in `Outputs/Swarm_Test/TEST_RESULTS.md`.
-
-### Pre-Skill Context Compaction (P3)
-
-Before loading the skill and manuscript, compact prior conversation history to reclaim context space. Currently requires the user to manually run `/compact` before invoking `/develop-edit`. Ideally would be a pre-skill hook in the plugin manifest — request this as a platform feature.
-
-**Workaround (available now):** SKILL.md could include a note: "If you have significant conversation history, run `/compact` before starting." Low-tech but effective.
-
-### Token-Adaptive Run Profiles (P3)
-
-The execution engine detects available context budget and adjusts the run profile accordingly. Short manuscripts get full subagent treatment; long manuscripts get selective reading; very long manuscripts get a warning and a recommendation to use Fast Triage Mode (v1.1) instead.
-
----
-
-## Not Planned (Tracked for Reference)
+## Not Planned
 
 These have been discussed but are not on the roadmap:
 
@@ -365,3 +172,28 @@ These have been discussed but are not on the roadmap:
 - **Prose execution mode** (the DE rewrites scenes) — violates the Firewall; explicitly out of scope
 - **Line editing / copyediting** — different discipline, different tooling
 - **Commercial viability guarantees** — the plugin diagnoses structure, not market outcomes
+
+---
+
+## Completed
+
+### v1.0 — Public Release (2026-02-22)
+
+v0.5 UX overhaul complete: query-driven passes, intake router, scene-level handoff, command alias model, overview dashboard. Plugin is navigable by newcomers.
+
+- **Router Runtime / Design Split.** Split completed. `intake-router-runtime.md` handles execution; `intake-router-design.md` holds rationale. `/start` loads only the runtime file.
+
+### v1.0.4
+
+- **Subagent Pass Orchestration** (optional swarm mode). Each pass runs as an independent subagent with its own context window. The Findings Ledger serves as the inter-agent communication protocol. User-invoked at intake with "run in swarm mode." Default remains single-context. Protocol in `references/run-core.md` §Execution Mode. Design rationale in `docs/subagent-architecture-design.md`.
+
+### v1.0.8
+
+- **Compression Audit.** Expendable material identification, cut list generation, word-savings map, retained scaffolding diagnosis. Craft audit with level-setting brief.
+
+### v1.0.9
+
+- **Reception Risk Audit.** Cultural-context reception risk (17 flags across 5 channels: RR, EX, PF, CR, HW). Risk Map, Pattern Summary, Sensitivity Reader Handoff Memo artifacts. Two-pass procedure, 8 mode calibrations, 5 hard gates, Directional Check. Level-setting brief (Jauss, Iser, Fish, Hall, Booth, Genette, Phelan). Built via three-model synthesis (Opus 4.6, Codex 5.3, Gemini 2.5 Pro).
+- **Voice Distinctiveness Comparison** (Pass 7). Six comparison dimensions for multi-POV manuscripts, two new flags (under-individuation, selective individuation).
+- **Title/Framing Architecture** (Pass 3). Conditional evaluation for manuscripts with deliberate titling conceits, epigraph sequences, or section-header systems. Four tests (deepening, counterpoint, coherence, ornamental). Finding-driven trigger to Literary Craft audit.
+- **Release tooling.** `release-registry.json` as single source of truth, `release-generate.mjs` for cross-repo propagation, `release-verify.mjs` for drift detection, `release.sh` orchestrating the full pipeline.
