@@ -1,0 +1,316 @@
+{
+  "paths": {
+    "rootReadme": "README.md",
+    "pluginJson": "plugins/apodictic/.claude-plugin/plugin.json",
+    "rootPluginJson": "plugin.json",
+    "rootMarketplaceJson": "marketplace.json",
+    "claudeMarketplaceJson": ".claude-plugin/marketplace.json",
+    "skillFiles": [
+      "plugins/apodictic/skills/core-editor/SKILL.md",
+      "plugins/apodictic/skills/pre-writing-pathway/SKILL.md",
+      "plugins/apodictic/skills/plot-architecture/SKILL.md",
+      "plugins/apodictic/skills/specialized-audits/SKILL.md"
+    ],
+    "pluginReadme": "plugins/apodictic/README.md",
+    "auditCommand": "plugins/apodictic/commands/audit.md",
+    "appTsx": "../APODICTIC-Gemini/src/App.tsx",
+    "landingPageTsx": "../APODICTIC-Gemini/src/LandingPage.tsx",
+    "geminiPublicPlugin": "../APODICTIC-Gemini/public/apodictic-plugin"
+  },
+  "counts": {
+    "availableAudits": 30,
+    "specializedAudits": 27,
+    "universalAudits": 3,
+    "tagAudits": 5,
+    "primaryTagAudits": 3,
+    "tagCompanionAudits": 2,
+    "researchModes": 4,
+    "plotSpines": 50,
+    "plotFamilies": 12,
+    "corePasses": 11,
+    "preWritingPathways": 1,
+    "intakeRouters": 1
+  },
+  "tagSummaryNames": [
+    "cozy",
+    "philosophical",
+    "erotic content"
+  ],
+  "categories": [
+    {
+      "name": "Universal",
+      "commandHeading": "Universal Audits (recommended for every manuscript)",
+      "items": [
+        {
+          "slug": "stakes",
+          "name": "Stakes System",
+          "summary": "pressure architecture, escalation geometry, consequence engine",
+          "files": [
+            "craft/stakes-system.md",
+            "craft/stakes-system-level-setting.md"
+          ]
+        },
+        {
+          "slug": "decision-pressure",
+          "name": "Decision Pressure",
+          "summary": "choice plausibility, option visibility, tradeoff reality",
+          "files": [
+            "craft/decision-pressure.md",
+            "craft/decision-pressure-level-setting.md"
+          ]
+        },
+        {
+          "slug": "scene-turn",
+          "name": "Scene Turn",
+          "summary": "scene-level mechanics, entry/exit charge, turns (Bickham)",
+          "files": [
+            "craft/scene-turn.md"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Craft",
+      "commandHeading": "Craft Audits",
+      "items": [
+        {
+          "slug": "character",
+          "name": "Character Architecture",
+          "summary": "psychology engine, arc types, agency, voice",
+          "files": [
+            "craft/character-architecture.md"
+          ]
+        },
+        {
+          "slug": "emotional-craft",
+          "name": "Emotional Craft",
+          "summary": "emotional precision, earned moments",
+          "files": [
+            "craft/emotional-craft.md"
+          ]
+        },
+        {
+          "slug": "dialectical",
+          "name": "Dialectical Clarity",
+          "summary": "argument structure, rhetorical fairness",
+          "files": [
+            "craft/dialectical-clarity.md"
+          ]
+        },
+        {
+          "slug": "shelf",
+          "name": "Shelf Positioning",
+          "summary": "target reader, genre contract, comps, signals",
+          "files": [
+            "craft/shelf-positioning.md"
+          ]
+        },
+        {
+          "slug": "series",
+          "name": "Series & Composite Novel",
+          "summary": "standalone function, hope calibration",
+          "files": [
+            "craft/series-composite-novel.md"
+          ]
+        },
+        {
+          "slug": "interiority",
+          "name": "Interiority Preservation",
+          "summary": "POV interiority in high-intensity scenes",
+          "files": [
+            "craft/interiority-preservation.md"
+          ]
+        },
+        {
+          "slug": "female-interiority",
+          "name": "Female Interiority",
+          "summary": "agency, desire, independence",
+          "files": [
+            "craft/female-interiority.md",
+            "craft/female-interiority-level-setting.md"
+          ]
+        },
+        {
+          "slug": "literary-craft",
+          "name": "Literary Craft",
+          "summary": "load-bearing vs. ornamental prose, defamiliarization, hybrid calibrations",
+          "files": [
+            "craft/literary-craft.md",
+            "craft/literary-craft-level-setting.md"
+          ]
+        },
+        {
+          "slug": "banister",
+          "name": "Banister (Epistemic Humility)",
+          "summary": "rhetorical fairness, straw opposition",
+          "files": [
+            "craft/banister.md"
+          ]
+        },
+        {
+          "slug": "ai-prose",
+          "name": "AI-Prose Calibration",
+          "summary": "voice singularity, lexical genericism, echo stacks, register seams",
+          "files": [
+            "craft/ai-prose-calibration.md"
+          ]
+        },
+        {
+          "slug": "force",
+          "name": "Force Architecture",
+          "summary": "force delivery, consequence/escalation tracking, inert force diagnosis",
+          "files": [
+            "craft/force-architecture.md",
+            "craft/force-architecture-level-setting.md"
+          ]
+        },
+        {
+          "slug": "short",
+          "name": "Short Fiction",
+          "summary": "compression, single-effect, ending resonance",
+          "files": [
+            "craft/short-fiction.md"
+          ]
+        },
+        {
+          "slug": "compression",
+          "name": "Compression",
+          "summary": "expendable material, cut list, word-savings map",
+          "files": [
+            "craft/compression-audit.md",
+            "craft/compression-audit-level-setting.md"
+          ]
+        },
+        {
+          "slug": "reception-risk",
+          "name": "Reception Risk",
+          "summary": "reception exposure, extractability, sensitivity-review handoff",
+          "files": [
+            "craft/reception-risk.md",
+            "craft/reception-risk-level-setting.md"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Genre",
+      "commandHeading": "Genre Audits",
+      "items": [
+        {
+          "slug": "comedy",
+          "name": "Comedy & Satire",
+          "summary": "timing, landing rate, tonal integration",
+          "files": [
+            "genre/comedy-satire.md"
+          ]
+        },
+        {
+          "slug": "historical",
+          "name": "Historical Fiction",
+          "summary": "period authenticity, research integration",
+          "files": [
+            "genre/historical-fiction.md"
+          ]
+        },
+        {
+          "slug": "memoir",
+          "name": "Memoir & Creative Nonfiction",
+          "summary": "truth-craft balance, narrator reliability",
+          "files": [
+            "genre/memoir-creative-nonfiction.md"
+          ]
+        },
+        {
+          "slug": "narrative-nonfiction",
+          "name": "Narrative Nonfiction Craft",
+          "summary": "scene construction in fact-based work",
+          "files": [
+            "genre/narrative-nonfiction.md"
+          ]
+        },
+        {
+          "slug": "fanfic",
+          "name": "Fan Fiction Conversion",
+          "summary": "IP scaffolding, worldbuilding gaps",
+          "files": [
+            "genre/fan-fiction-conversion.md"
+          ]
+        },
+        {
+          "slug": "sff-worldbuilding",
+          "name": "SFF Worldbuilding Integration",
+          "summary": "five-dimension framework, load-bearing analysis",
+          "files": [
+            "genre/sff-worldbuilding.md",
+            "genre/sff-worldbuilding-level-setting.md"
+          ]
+        },
+        {
+          "slug": "horror-craft",
+          "name": "Horror Craft Integration",
+          "summary": "dread architecture, consequence embodiment, subgenre calibrations",
+          "files": [
+            "genre/horror-craft.md",
+            "genre/horror-craft-level-setting.md"
+          ]
+        },
+        {
+          "slug": "mystery-thriller",
+          "name": "Mystery/Thriller Architecture",
+          "summary": "information pressure, clue economy, fair play",
+          "files": [
+            "genre/mystery-thriller-architecture.md",
+            "genre/mystery-thriller-architecture-level-setting.md"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tag",
+      "commandHeading": "Tag Audits",
+      "items": [
+        {
+          "slug": "cozy",
+          "name": "Cozy Tag",
+          "summary": "safety envelope, belonging engine, recovery rhythm",
+          "files": [
+            "tag/cozy-tag.md",
+            "tag/cozy-tag-level-setting.md"
+          ]
+        },
+        {
+          "slug": "philosophical",
+          "name": "Philosophical Tag",
+          "summary": "question architecture, dramatic embodiment, conceptual progression",
+          "files": [
+            "tag/philosophical-tag.md"
+          ]
+        },
+        {
+          "slug": "erotic",
+          "name": "Erotic Content",
+          "summary": "intimate scene integration, load-bearing analysis, consent calculus",
+          "files": [
+            "tag/erotic-content.md"
+          ]
+        },
+        {
+          "slug": "consent",
+          "name": "Consent Complexity",
+          "summary": "consent timeline, boundary tracking",
+          "files": [
+            "tag/consent-complexity.md"
+          ]
+        },
+        {
+          "slug": "queer",
+          "name": "Queer Romance/Erotica",
+          "summary": "pronoun clarity, tropes, joy/struggle",
+          "files": [
+            "tag/queer-romance-erotica.md"
+          ]
+        }
+      ]
+    }
+  ]
+}
