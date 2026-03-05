@@ -1,6 +1,6 @@
 # APODICTIC Post-Publication Roadmap
 
-**Date:** 2026-02-22
+**Date:** 2026-03-05
 **Current version:** See `plugins/apodictic/.claude-plugin/plugin.json`
 
 What to build next, organized by priority. UX work gates 1.0; feature additions follow.
@@ -93,17 +93,9 @@ The current plugin has one large `core-editor` skill containing all passes. Quer
 
 **Sequencing note:** This item depends on the Intake Router. The router determines the user's concern; the dependency map determines which passes to run. Build the router first, then layer query-driven execution on top. The two can share a release if the dependency map ships as a reference file and the router adds a concern-classification step to Q2.
 
-### Router Runtime / Design Split (P2)
+### Router Runtime / Design Split (P2) — ✅ Shipped (v1.0)
 
-`intake-router.md` currently serves as both runtime decision table and design document. The full file (~13K bytes) loads on every `/start` invocation, but only the question flow, option sets, and route map are needed at runtime. The design notes, rationale, and gap flags are valuable documentation but consume context window space unnecessarily in early turns — space that could hold more manuscript text.
-
-**What to build:**
-- Split `intake-router.md` into two files: `intake-router-runtime.md` (question flow, option tables, route map — the minimum the LLM needs to execute routing) and `intake-router-design.md` (axis model rationale, design notes, gap flags, relationship to commands — reference documentation)
-- Update `/start` command to load only the runtime file
-- Update all references across the plugin (SKILL.md, changelog, etc.)
-- Evaluate other large reference files for similar splits (`run-core.md` at ~26K, `run-full.md` at ~34K, `specialized-audits/SKILL.md` at ~15K)
-
-**Context:** Identified in Codex review (P2 #5, v0.4.17). Deferred because the split touches every file that references `intake-router.md` and benefits most from being done alongside the broader context-window optimization in Query-Driven Pass Architecture below.
+Split completed. `intake-router-runtime.md` handles execution; `intake-router-design.md` holds rationale and design notes. `/start` loads only the runtime file. The remaining context-window optimization candidates (`run-core.md`, `run-full.md`, `specialized-audits/SKILL.md`) have not been split — deferring until context pressure demands it.
 
 ### Intake Router Implementation
 
@@ -149,6 +141,19 @@ A static, single-file HTML overview of the plugin's capabilities — the map at 
 ## v1.0 — Public Release Gate ✓
 
 Shipped 2026-02-22. v0.5 UX overhaul complete: query-driven passes, intake router, scene-level handoff, command alias model, overview dashboard. Plugin is navigable by newcomers.
+
+---
+
+## Completed Since v1.0 (1.0.1–1.0.9)
+
+Patch-level additions shipped between 1.0 and the next planned release. These are not roadmap items — they emerged from editorial engagements and framework refinement.
+
+- **v1.0.4 — Subagent Pass Orchestration** (optional swarm mode). See v2.0+ section for details and A/B test results.
+- **v1.0.8 — Compression Audit.** Expendable material identification, cut list generation, word-savings map, retained scaffolding diagnosis. Craft audit with level-setting brief.
+- **v1.0.9 — Reception Risk Audit.** Cultural-context reception risk (17 flags across 5 channels: RR, EX, PF, CR, HW). Risk Map, Pattern Summary, Sensitivity Reader Handoff Memo artifacts. Two-pass procedure, 8 mode calibrations, 5 hard gates, Directional Check. Level-setting brief (Jauss, Iser, Fish, Hall, Booth, Genette, Phelan). Built via three-model synthesis (Opus 4.6, Codex 5.3, Gemini 2.5 Pro) — first validated use of the expansion protocol's multi-model workflow.
+- **v1.0.9 — Voice Distinctiveness Comparison** (Pass 7). Six comparison dimensions for multi-POV manuscripts, two new flags (under-individuation, selective individuation).
+- **v1.0.9 — Title/Framing Architecture** (Pass 3). Conditional evaluation for manuscripts with deliberate titling conceits, epigraph sequences, or section-header systems. Four tests (deepening, counterpoint, coherence, ornamental). Finding-driven trigger to Literary Craft audit.
+- **v1.0.9 — Release tooling.** `bump-version.sh` updated to include root `plugin.json`; downstream sync checklist expanded to cover `commands/audit.md` and `plugin.json` description.
 
 ---
 
@@ -232,13 +237,18 @@ Argument spine + source/evidence map + scene ethics plan. Separate from fiction 
 - Scene ethics plan (for memoir and narrative nonfiction: what to include, what to protect, who gets hurt)
 - Routes to Memoir/CNF audit or Narrative Nonfiction audit after drafting
 
-### Formal Risk Register (P4)
+### Formal Risk Register (P4) — Partially Addressed by Reception Risk (v1.0.9)
 
-Legal/sensitivity risk register for manuscripts with potentially actionable content — defamation concerns, privacy issues, representation risks.
+Legal risk register for manuscripts with potentially actionable content — defamation concerns, privacy issues, rights clearance.
 
-- Extends existing Research Modes (Representation Context, Factual Verification)
-- Produces a risk register output with severity levels and escalation triggers
-- Clear language: "I'm flagging areas that may need expert review. I am not a lawyer."
+**What Reception Risk already covers (v1.0.9):** Cultural reception exposure, extractability analysis, hostile-reader modeling, sensitivity reader handoff memo, representation risk across 17 flags and 5 channels. The cultural/reception side of this roadmap item is now built.
+
+**What remains:** The *legal* side — defamation risk in memoir/autofiction, privacy concerns for identifiable individuals, rights clearance flags for quoted material. Narrower scope than originally conceived.
+
+- Extends Factual Verification research mode (not Representation Context, which now feeds Reception Risk)
+- Produces a legal risk register output with severity levels and escalation triggers
+- Clear language: "I'm flagging areas that may need legal review. I am not a lawyer."
+- Pairs with Reception Risk (cultural) to give complete risk coverage
 
 ---
 
@@ -290,7 +300,7 @@ New specialized audits should be built from real editorial engagements, not hypo
 **Expansion protocol** (codified in `Specialized_Audit_Expansion_Stub_TEMPLATE.md`):
 1. Level-setting research phase (cognitive narratology, genre theory, reader-experience evidence, positive cases)
 2. Structural spec phase (named flags, dimensions, hard gates, subgenre calibrations, distinguish framework)
-3. Three-model synthesis for quality assurance
+3. Three-model synthesis for quality assurance — validated with Reception Risk (v1.0.9): Opus 4.6 and Codex 5.3 independently produced research from identical expansion stubs, outputs compared and synthesized, Gemini 2.5 Pro contributed Stuart Hall's encoding/decoding model as a third-source addition
 
 **Seeded candidates** — reference texts identified, ready for level-setting when manuscripts demand them:
 

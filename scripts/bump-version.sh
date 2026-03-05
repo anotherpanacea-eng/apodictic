@@ -48,7 +48,16 @@ else
   echo "  MISSING  $PLUGIN_JSON"
 fi
 
-# 2. marketplace.json — root copy (primary)
+# 2. plugin.json — root copy (marketplace pulls from here)
+ROOT_PLUGIN_JSON="$REPO_ROOT/plugin.json"
+if [ -f "$ROOT_PLUGIN_JSON" ]; then
+  sedi "s/\"version\": \"[^\"]*\"/\"version\": \"${NEW_VERSION}\"/" "$ROOT_PLUGIN_JSON"
+  echo "  updated  $ROOT_PLUGIN_JSON"
+else
+  echo "  MISSING  $ROOT_PLUGIN_JSON"
+fi
+
+# 3. marketplace.json — root copy (primary)
 ROOT_MARKETPLACE="$REPO_ROOT/marketplace.json"
 if [ -f "$ROOT_MARKETPLACE" ]; then
   sedi "s/\"version\": \"[^\"]*\"/\"version\": \"${NEW_VERSION}\"/g" "$ROOT_MARKETPLACE"
@@ -57,7 +66,7 @@ else
   echo "  MISSING  $ROOT_MARKETPLACE"
 fi
 
-# 3. marketplace.json — .claude-plugin/ copy
+# 4. marketplace.json — .claude-plugin/ copy
 CLAUDE_MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
 if [ -f "$CLAUDE_MARKETPLACE" ]; then
   sedi "s/\"version\": \"[^\"]*\"/\"version\": \"${NEW_VERSION}\"/g" "$CLAUDE_MARKETPLACE"
@@ -66,7 +75,7 @@ else
   echo "  MISSING  $CLAUDE_MARKETPLACE"
 fi
 
-# 4. SKILL.md frontmatter (4 files)
+# 5. SKILL.md frontmatter (4 files)
 SKILL_FILES=(
   "$PLUGIN_DIR/skills/core-editor/SKILL.md"
   "$PLUGIN_DIR/skills/pre-writing-pathway/SKILL.md"
@@ -84,25 +93,12 @@ for f in "${SKILL_FILES[@]}"; do
 done
 
 echo "────────────────────────────────────"
-echo "Done. 7 files updated to v${NEW_VERSION}."
+echo "Done. 8 files updated to v${NEW_VERSION}."
 echo ""
-echo "Next steps:"
-echo "  1. Add a changelog entry in references/changelog.md"
-echo "  2. git add -A && git commit"
-echo "  3. git tag v${NEW_VERSION}"
-echo "  4. Repackage: cd plugins/apodictic && zip -r ../../apodictic.plugin . -x '.git/*'"
+echo "Next step:"
+echo "  Run the full release pipeline:"
+echo "    ./scripts/release.sh ${NEW_VERSION}"
 echo ""
-echo "Downstream sync checklist:"
-echo "  □ Plugin repo (this repo):"
-echo "    - Verify counts in README.md (audit count, spine count, tag count)"
-echo "    - Verify AUDIT_SELECTION_MATRIX.md lists all audits"
-echo "  □ APODICTIC-Gemini React app:"
-echo "    - Copy changed files to public/apodictic-plugin/"
-echo "    - Update SPECIALIZED_AUDITS in src/App.tsx (if audits added/removed)"
-echo "    - Update section order in src/App.tsx + server/core/prompts.ts (if editorial letter structure changed)"
-echo "    - Update 'Based on APODICTIC plugin v...' in App.tsx About section"
-echo "    - Update audit count in src/LandingPage.tsx (if audits added/removed)"
-echo "    - Verify counts in public/apodictic-plugin/README.md and AUDIT_SELECTION_MATRIX.md"
-echo "    - Rebuild & deploy via Google Cloud Run"
-echo "  □ Custom GPT: update instructions/knowledge if pass logic or audit list changed"
-echo "  □ Website (apodictic.anotherpanacea.com): update feature descriptions if counts or capabilities changed"
+echo "Or run manually:"
+echo "  1. node ./scripts/release-generate.mjs"
+echo "  2. node ./scripts/release-verify.mjs"

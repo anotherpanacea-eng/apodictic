@@ -20,32 +20,34 @@ Display the complete list of available audits with brief descriptions:
 - **character** — Character Architecture: psychology engine, arc types, agency, voice
 - **emotional-craft** — Emotional Craft: emotional precision, earned moments
 - **dialectical** — Dialectical Clarity: argument structure, rhetorical fairness
-- **shelf** — Shelf & Positioning: target reader, genre contract, comps, signals
+- **shelf** — Shelf Positioning: target reader, genre contract, comps, signals
 - **series** — Series & Composite Novel: standalone function, hope calibration
-- **memoir** — Memoir & Creative Nonfiction: truth-craft balance, narrator reliability
-- **narrative-nonfiction** — Narrative Nonfiction Craft: scene construction in fact-based work
-- **consent** — Consent Complexity: consent timeline, boundary tracking
 - **interiority** — Interiority Preservation: POV interiority in high-intensity scenes
 - **female-interiority** — Female Interiority: agency, desire, independence
+- **literary-craft** — Literary Craft: load-bearing vs. ornamental prose, defamiliarization, hybrid calibrations
 - **banister** — Banister (Epistemic Humility): rhetorical fairness, straw opposition
-- **comedy** — Comedy & Satire: timing, landing rate, tonal integration
-- **historical** — Historical Fiction: period authenticity, research integration
-- **queer** — Queer Romance/Erotica: pronoun clarity, tropes, joy/struggle
-- **fanfic** — Fan Fiction Conversion: IP scaffolding, worldbuilding gaps
-- **short** — Short Fiction: compression, single-effect, ending resonance
-- **literary-craft** — Literary Craft Deep Dive: load-bearing vs. ornamental prose, defamiliarization, 9 hybrid calibrations
 - **ai-prose** — AI-Prose Calibration: voice singularity, lexical genericism, echo stacks, register seams
+- **force** — Force Architecture: force delivery, consequence/escalation tracking, inert force diagnosis
+- **short** — Short Fiction: compression, single-effect, ending resonance
+- **compression** — Compression: expendable material, cut list, word-savings map
+- **reception-risk** — Reception Risk: reception exposure, extractability, sensitivity-review handoff
 
 ### Genre Audits
+- **comedy** — Comedy & Satire: timing, landing rate, tonal integration
+- **historical** — Historical Fiction: period authenticity, research integration
+- **memoir** — Memoir & Creative Nonfiction: truth-craft balance, narrator reliability
+- **narrative-nonfiction** — Narrative Nonfiction Craft: scene construction in fact-based work
+- **fanfic** — Fan Fiction Conversion: IP scaffolding, worldbuilding gaps
 - **sff-worldbuilding** — SFF Worldbuilding Integration: five-dimension framework, load-bearing analysis
-- **horror-craft** — Horror Craft Integration: dread architecture, consequence embodiment, 9 subgenre calibrations
+- **horror-craft** — Horror Craft Integration: dread architecture, consequence embodiment, subgenre calibrations
 - **mystery-thriller** — Mystery/Thriller Architecture: information pressure, clue economy, fair play
-- **force** — Force Architecture: force delivery, consequence/escalation tracking, inert force diagnosis
 
 ### Tag Audits
 - **cozy** — Cozy Tag: safety envelope, belonging engine, recovery rhythm
 - **philosophical** — Philosophical Tag: question architecture, dramatic embodiment, conceptual progression
 - **erotic** — Erotic Content: intimate scene integration, load-bearing analysis, consent calculus
+- **consent** — Consent Complexity: consent timeline, boundary tracking
+- **queer** — Queer Romance/Erotica: pronoun clarity, tropes, joy/struggle
 
 ### Plot Architecture
 Plot structure analysis uses a separate skill. Run `/plot-coach` for spine diagnosis (50 spines across 12 families), selection coaching, and structural triage.
