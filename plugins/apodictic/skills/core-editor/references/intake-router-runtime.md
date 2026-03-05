@@ -151,7 +151,7 @@ Always asked after routing, before work begins. Multiple selections allowed.
 
 | Option | Label | Internal flag | Effect on workflow |
 |--------|-------|--------------|-------------------|
-| A | I'm on a deadline | `constraint:time` | Truncate to fast triage: Pass 1 only → triage memo with max 3 interventions. |
+| A | I'm on a deadline | `constraint:time` | Route to Submission Triage: Pass 1 → SR codes (detectable subset) → go/no-go memo with blind spots. See `references/submission-triage.md`. |
 | B | Parts of this were written with AI | `constraint:ai` | Add AI-Prose Calibration overlay. |
 | C | This is nonfiction | `constraint:nonfiction` | Swap fiction-specific passes for nonfiction equivalents. **Gap: nonfiction pathway not yet built.** |
 | D | There's sensitive or legally risky content | `constraint:risk` | Add risk register output. **Gap: risk register not yet built.** |
@@ -214,17 +214,17 @@ Existing commands bypass the router with pre-filled values. The router is the re
 | partial | repair (diagnostic) | — | Core DE (partial flag) | Gap: partial manuscript diagnostic |
 | partial | repair (targeted) | — | Core DE (partial flag, targeted) | Gap: partial manuscript diagnostic |
 | partial | draft (rethink) | — | Pre-Writing Pathway (re-entry) | **Built** |
-| partial | repair | time | Fast Triage | Gap |
+| partial | repair | time | Submission Triage | Gap: triage requires complete manuscript. Offer targeted `/diagnose`. |
 | full_draft | repair | — | Core DE | **Built** |
 | full_draft | repair | hybrid | Core DE (hybrid mode) | **Built** |
 | full_draft | repair | swarm | Core DE (swarm mode) | **Built** |
-| full_draft | repair | time | Fast Triage | Gap |
+| full_draft | repair | time | Submission Triage | **Built** (v1.1) |
 | full_draft | repair | ai | Core DE + AI-Prose Calibration | **Built** |
 | full_draft | repair | risk | Core DE + Risk Register | Gap |
 | full_draft | submit | — | Core DE → Pass 11 (§2b suggests hybrid/swarm) | Gap: unified submission workflow |
 | full_draft | submit | hybrid | Core DE → Pass 11 (hybrid mode) | **Built** |
 | full_draft | submit | swarm | Core DE → Pass 11 (swarm mode) | **Built** |
-| full_draft | submit | time | Fast Triage (submission focus) | Gap |
+| full_draft | submit | time | Submission Triage | **Built** (v1.1) |
 | full_draft | repair | editor | Core DE (editor scaffolding) | Gap |
 | full_draft | repair | facilitator | Core DE (diagnostic vocabulary) | Gap |
 | full_draft | repair (feedback) | — | Feedback Triage → Core DE | Gap |
