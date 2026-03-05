@@ -237,7 +237,7 @@ Hybrid mode is a middle ground between single-context and full swarm. Pass 0+1 r
 
 ### Added — Swarm Mode (Optional Execution Mode)
 
-A/B testing on "Coda: The Headboard" (~4k words) demonstrated that dispatching each pass as an independent subagent produces roughly twice as many findings with more specific cross-pass connections and more consistent counterevidence, at approximately 5x the token cost. The quality improvement comes from architectural isolation: each pass genuinely cannot see prior analysis until reconciliation, which eliminates anchoring bias and produces multi-perspectival convergence rather than echo.
+A/B testing demonstrated that dispatching each pass as an independent subagent produces roughly twice as many findings with more specific cross-pass connections and more consistent counterevidence, at approximately 5x the token cost. The quality improvement comes from architectural isolation: each pass genuinely cannot see prior analysis until reconciliation, which eliminates anchoring bias and produces multi-perspectival convergence rather than echo.
 
 #### New: Execution Mode section (`run-core.md`)
 - **Single-context mode** (default): all passes run sequentially in the current conversation context. No change from prior behavior.
