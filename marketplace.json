@@ -1,7 +1,9 @@
 {
   "name": "apodictic",
-  "version": "1.0.9",
-  "description": "APODICTIC Development Editor. Developmental editing that listens before diagnosing.",
+  "metadata": {
+    "version": "1.0.9",
+    "description": "APODICTIC Development Editor. Developmental editing that listens before diagnosing."
+  },
   "owner": {
     "name": "anotherpanacea",
     "email": "anotherpanacea@gmail.com"
