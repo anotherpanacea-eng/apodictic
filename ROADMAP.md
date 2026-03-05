@@ -16,7 +16,7 @@ Replace the fixed Core DE / Full DE tiering with automatic dependency resolution
 
 **The approach:** Group the 12 passes into question-shaped macro blocks (Structure Map, Reader Dynamics, Character Architecture, Scene Delivery, Reveal Economy, Theme & Continuity, Submission Readiness). Build a dependency tree so the engine resolves pass sets from user concerns — a character question runs {0, 1, 5, 7}, not all 12. Start with a dependency map inside the existing skill; migrate to per-block skills only if context window pressure demands it.
 
-**What to build:** Dependency map (structured reference file), query resolver, intake router integration, updated `run-core.md` and `run-full.md` as execution profiles generated from the dependency map, macro block definitions for user-facing output organization.
+**What to build:** Dependency map (structured reference file), query resolver, intake router integration, updated `run-core.md` and `run-full.md` as execution profiles generated from the dependency map, macro block definitions for user-facing output organization. Full design spec with dependency tree, routing table, and skill organization options in [`docs/query-driven-pass-architecture.md`](docs/query-driven-pass-architecture.md).
 
 ### Intake Router Implementation
 
