@@ -137,7 +137,7 @@ APODICTIC is designed for and tested on **Claude Opus**. It will run on smaller 
 
 ## Framework Version
 
-Current version is in `.claude-plugin/plugin.json`. Capabilities: 50 plot spines across 12 families, 26 specialized audits (including 3 universal), 3 tag audits, 4 research modes, 11 core passes, the evaluative Pass 11 gate, the pre-writing pathway, and the intake router. Includes contract-driven and finding-driven audit integration pipeline.
+Current version is in `.claude-plugin/plugin.json`. Capabilities: 50 plot spines across 12 families, 27 specialized audits (including 3 universal), 3 tag audits, 4 research modes, 11 core passes, the evaluative Pass 11 gate, the pre-writing pathway, and the intake router. Includes contract-driven and finding-driven audit integration pipeline.
 
 ## License
 

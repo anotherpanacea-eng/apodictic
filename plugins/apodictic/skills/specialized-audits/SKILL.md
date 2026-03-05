@@ -29,10 +29,15 @@ description: >
   "compression audit," "what to cut," "cut list," "too long,"
   "needs tightening," "word count target," "expendable material,"
   "what can I remove," "what can I cut," "retained scaffolding,"
+  "reception risk," "sensitivity read," "sensitivity pre-read,"
+  "how will this land," "will this be a problem," "hostile readers,"
+  "weaponize," "bad faith reading," "screenshot risk," "cultural sensitivity,"
+  "political reception," "representation concerns," "identity concerns,"
+  "is this going to be a problem," "will this get me cancelled,"
   or any request for a focused manuscript audit beyond the core development
   edit passes. Also triggers on "list audits," "what audits are available,"
   or "help audits."
-version: 1.0.8
+version: 1.0.9
 ---
 
 # Specialized Audits & Research Modes
@@ -76,6 +81,7 @@ Deep-dive analytical tools that supplement the core development edit. Each audit
 | **Mystery/Thriller Architecture** | Information-pressure delivery (28 flags across 6 dimensions), integrated vs. detached analysis, 9 subgenre calibrations with named failure modes, clue/herring/clock/fairness tracking, informational drift diagnosis | Any mystery or thriller manuscript — tests whether the information architecture generates inference, urgency, and surprise-with-inevitability or merely assembles genre components; stacks with Genre Modules: Mystery and Thriller (contract) |
 | **Force Architecture** | Force-delivery integration (25 flags across 6 dimensions), integrated vs. detached analysis, 8 mode calibrations with named failure modes, consequence/escalation/conversion tracking, inert force diagnosis | Any manuscript with significant physical conflict — tests whether force events produce legible, causal, persistent, meaningful change or are spectacle loops; cross-genre (military, progression, thriller, horror, crime, domestic, literary, superhero/speculative) |
 | **Compression** | Expendable material diagnosis (16 flags across 5 channels: SE, IR, ScE, ER, SS), Cut List artifact with word savings, Compression Map, two-pass procedure (discovery sample → enumeration), Distinguish framework (Cut/Compress/Keep), 7 mode calibrations with named failure modes, 4 hard gates | "Too long," "what can I cut," word-count target, Pass 2 orphan scenes ≥3, proportional imbalance >40%, revision-round re-entry with cut goal; cross-genre (literary fiction, thriller, romance, SFF, horror, mystery, memoir/nonfiction) |
+| **Reception Risk** | Cultural-context reception risk (17 flags across 5 channels: RR, EX, PF, CR, HW), Risk Map artifact with context portability and reviewer questions, Pattern Summary with P-## IDs, Sensitivity Reader Handoff Memo, two-pass procedure (over-inclusive marking → coding/calibration), Distinguish framework (Unexamined/Examined/False Positive), 8 mode calibrations with named failure modes, 5 hard gates, Directional Check | "How will this land," sensitivity pre-read, reception risk, hostile readers, cultural sensitivity, representation concerns, Representation Context surfaces active contestation; cross-genre (literary fiction, commercial, historical, dark romance, YA/NA, humor/satire, memoir, SFF) |
 
 ### Tag Audits
 
@@ -176,6 +182,8 @@ See `references/craft/shelf-positioning.md` for the full audit.
 - `references/craft/compression-audit.md` — Compression audit (16 flags, 5 channels, 4 hard gates, 7 mode calibrations, Cut List + Compression Map artifacts)
 - `references/craft/compression-audit-level-setting.md` — Compression audit level-setting brief (scaffolding theory, over-establishment, diminishing-returns, genre-specific compression norms, distinguish problem)
 - `references/craft/compression-audit-expansion-stub.md` — Compression audit expansion stub (design document)
+- `references/craft/reception-risk.md` — Reception Risk audit (17 flags, 5 channels, 5 hard gates, 8 mode calibrations, Risk Map + Pattern Summary + Handoff Memo artifacts)
+- `references/craft/reception-risk-level-setting.md` — Reception Risk level-setting brief (Jauss, Iser, Fish, Hall, Booth, Genette, Phelan, failure taxonomy, positive cases, distinguish problem, three-model workflow)
 - `references/craft/short-fiction.md` — Short Fiction audit
 - `references/craft/research-comp-validation.md` — Comp Validation research mode
 - `references/craft/research-factual-verification.md` — Factual Verification research mode
