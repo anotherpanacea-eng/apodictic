@@ -5,6 +5,78 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.0.9 - 2026-03-04
+
+### Added — Reception Risk Audit
+
+New specialized craft audit: **Reception Risk** — "How will this land?" Identifies passages, patterns, and structural choices that create cultural, political, or ideological reception risk. Over-inclusive flagging diagnostic for human sensitivity review. Does not tell the author what to write or what to believe; surfaces risk so the author can make informed decisions.
+
+#### Design rationale
+Core passes and the Adversarial Stress Test evaluate craft; they do not evaluate how the text will function as a cultural object. A manuscript can be beautifully written and structurally sound while containing unexamined reception risk — content that hostile readers will weaponize or that well-meaning readers will find hurtful. This audit fills the gap between "does the text work?" and "how will the text land?"
+
+Core failure claim: **unexamined exposure** — culturally charged content present on the page, narrative apparatus not accounting for how it will land.
+
+#### Audit specifications
+- 17 diagnostic flags across 5 channels: Representational Risk (RR×4), Extractability (EX×3), Power Framing (PF×4), Cultural Register (CR×3), Harm Weight (HW×3)
+- 3-tier severity: Note / Flag / Alert (review urgency, not rewrite urgency)
+- 3-way classification: Unexamined / Examined / False Positive
+- Three primary artifacts: Risk Map (passage-level with context portability and reviewer questions), Pattern Summary (with P-## IDs), Sensitivity Reader Handoff Memo (conditional)
+- Two-pass procedure: over-inclusive marking → coding, Distinguish tests, mode calibration, hard-gate check
+- Distinguish framework with 5 decision tests (apparatus, load-bearing, extraction, subject-position, genre-contract), tie-breaking rules, lock-then-classify anti-sycophancy control
+- 8-mode calibration matrix with named failure modes (Aestheticized Harm, Collateral Caricature, Archive Shield, Transgression Without Containment, Normalization Drift, Target Blur Satire, Self-Exonerating Frame, Allegory Evasion)
+- 5 hard gates including alert concentration rule (≥2 Alerts → automatic handoff) and PF+EX-1 escalation pathway
+- 6 interaction patterns with prescribed review orders
+- Directional Check: net word-count implication of findings, flag if >10% addition skew
+- Cross-genre scope: literary fiction, commercial, historical, dark romance, YA/NA, humor/satire, memoir/autofiction, SFF
+- Firewall: diagnostic only — identifies risk, assigns severity, recommends review scope. Forbidden: rewriting, adjudicating, gatekeeping, reducing severity after lock.
+
+#### Level-setting brief
+- Theoretical grounding: Jauss (horizon of expectations), Iser (implied reader), Fish (interpretive communities), Hall (encoding/decoding), Booth (rhetorical distance), Genette (focalization), Phelan (ethical positioning)
+- 14-pattern failure taxonomy with mechanisms, surface signals, structural isomorphisms
+- 6 exemplar techniques for well-managed reception risk with 6 cross-case success signals
+- 8-mode calibration evidence (promise, blind spot, false-positive risk per mode)
+- Distinguish problem with conflict resolution protocol
+- Three-model workflow guidance (discovery, apparatus challenge, extraction stress test)
+- Source bibliography: 12 references (7 primary theory, 5 contemporary process)
+
+#### Authoring process
+Multi-model synthesis: independent research outputs from Opus 4.6 and Codex 5.3, systematically compared and synthesized across all sections. Stuart Hall reference added from Gemini 2.5 Pro research output.
+
+#### Files added
+- `specialized-audits/references/craft/reception-risk.md` — The audit (17 flags, 5 channels, 5 hard gates, 8 mode calibrations, §1–§13)
+- `specialized-audits/references/craft/reception-risk-level-setting.md` — Level-setting brief (reception theory, failure taxonomy, positive cases, mode calibration, distinguish problem, three-model workflow, bibliography)
+
+#### Changed: Plugin integration
+- `specialized-audits/SKILL.md` — Added Reception Risk row to Craft Audits table, reference file entries, trigger phrases in description
+- `core-editor/references/run-core.md` — Added finding-driven audit trigger at Pass 1 (cultural register mismatch on identity/power content at 2+ scenes) and cross-audit trigger (Representation Context surfaces active contestation)
+- Audit count updated from 26 → 27 across `plugin.json`, `marketplace.json`, `README.md`
+
+### Added — Title/Framing Architecture (Pass 3)
+
+New conditional diagnostic section in **Pass 3: Rhythm & Modulation** for manuscripts with deliberate titling conceits, epigraph sequences, or section-header systems. Evaluates whether framing devices function as structural argument or decoration.
+
+- Detection criteria for governing conceits in chapter titles, part titles, epigraphs, or section headers
+- Deepening test (does conceit develop or repeat at fixed register?)
+- Counterpoint test (does framing layer create meaning prose alone doesn't?)
+- Coherence test (does conceit hold through full manuscript or lose discipline?)
+- New finding-driven trigger: ornamental or incoherent framing conceit → **Literary Craft** audit
+
+#### Changed
+- `core-editor/references/run-full.md` — Added Title/Framing Architecture conditional section to Pass 3, updated output specification, added finding-driven audit trigger
+
+### Added — Voice Distinctiveness Comparison (Pass 7)
+
+New diagnostic section in **Pass 7: POV and Voice** for multi-POV manuscripts. Compares cognitive texture of each POV character's interiority across 6 dimensions: sentence architecture, attention pattern, metaphor source domain, temporal orientation, epistemic style, emotional register. Produces a comparison table.
+
+Two new flags:
+- **Under-individuation** — 2+ POV characters share cognitive texture across 4+ dimensions (authorial voice absorbing character voice)
+- **Selective individuation** — POV characters distinct in surface markers but convergent in deep texture (different topics, same thinking)
+
+#### Changed
+- `core-editor/references/run-full.md` — Added Voice Distinctiveness Comparison section to Pass 7, comparison table template, two new flags, updated output specification
+
+---
+
 ## v1.0.8 - 2026-03-04
 
 ### Added — Compression Audit

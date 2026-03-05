@@ -343,6 +343,7 @@ Read as a naive reader. Track emotional and cognitive response only.
 - Emotional flatness or melodrama logged at 3+ scenes → recommend **Emotional Craft** audit
 - "Stakes feel low" or "I don't care what happens" at 2+ points → recommend **Stakes System** audit
 - Action/fight scenes that break immersion → recommend **Force Architecture** audit
+- Cultural register mismatch or tone-deaf moments on identity/power content at 2+ scenes → recommend **Reception Risk** audit if not already activated
 
 ### Pass 2: Structural Mapping
 
@@ -588,6 +589,9 @@ After all core passes are complete and before writing the synthesis:
 Save as `[Project]_Audit_Invocation_Log_[runlabel].md`.
 
 5. **Feed audit findings into synthesis.** Specialized audit findings integrate into the editorial letter's "What Needs Work" sections — organized by problem, not by audit name. The author reads about the book's needs, not about which framework found the issue.
+
+**Cross-audit finding-driven triggers:**
+- **Representation Context** research mode surfaces active community contestation relevant to the manuscript's content → recommend **Reception Risk** audit if not already activated
 
 **Minimum audit recommendations for every manuscript:**
 - **Stakes System** — universal pressure architecture diagnostic

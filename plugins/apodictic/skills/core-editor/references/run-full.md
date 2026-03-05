@@ -21,11 +21,22 @@ Quantitative analysis to investigate Pass 1 flags only.
 
 **Constraint:** Metrics cannot flag scenes unless Pass 1 also logged an issue.
 
-**Output:** `[Project]_Pass3_Rhythm_Modulation_[runlabel].md` — Intensity map (visual scene-by-scene trajectory using ASCII or table format), peak-valley pattern analysis, relief ratio assessment, sentence-level rhythm sampling at 3+ distributed points, pacing diagnosis with specific scenes flagged. Genre modules may add genre-specific checks (e.g., dread fatigue threshold for horror, clock-pressure rhythm for thriller).
+**Output:** `[Project]_Pass3_Rhythm_Modulation_[runlabel].md` — Intensity map (visual scene-by-scene trajectory using ASCII or table format), peak-valley pattern analysis, relief ratio assessment, sentence-level rhythm sampling at 3+ distributed points, pacing diagnosis with specific scenes flagged, title/framing architecture evaluation (when conceit detected). Genre modules may add genre-specific checks (e.g., dread fatigue threshold for horror, clock-pressure rhythm for thriller).
+
+**Title/Framing Architecture (conditional — evaluate only when present):**
+
+If the manuscript uses a deliberate titling conceit, epigraph sequence, section-header system, or other paratextual framing device, evaluate whether it functions as structural argument or decoration.
+
+- **Detection:** Identify any consistent pattern in chapter titles, part titles, epigraphs, or section headers that suggests a governing conceit (e.g., a taxonomic system, a recurring source text, a progression that mirrors or counterpoints the narrative arc).
+- **Deepening test:** Does the conceit develop across chapters — gaining complexity, irony, or weight — or does it repeat at a fixed register? A title sequence that deepens is load-bearing architecture; one that holds steady is wallpaper.
+- **Counterpoint test:** Does the framing layer create meaning the prose alone doesn't deliver? If you stripped the titles/epigraphs, would the manuscript lose structural argument or only lose flavor?
+- **Coherence test:** Does the conceit hold through the full manuscript, or does it lose discipline in later chapters (abandoned pattern, forced fit, tonal drift between framing and content)?
+- **Flag if:** Framing conceit is present but ornamental (titles could be swapped without loss), OR conceit is load-bearing but loses coherence after midpoint, OR conceit creates ironic counterpoint the prose never earns or acknowledges.
 
 **Finding-driven audit triggers:**
 - Intensity plateau at 3+ consecutive high-intensity scenes → recommend **Stakes System** audit (pressure may be signaling without escalating)
 - Pacing stalls specifically at scene boundaries → recommend **Scene Turn** audit (Bickham scene-sequel mechanics)
+- Title/framing conceit detected but flagged as ornamental or losing coherence → recommend **Literary Craft** audit (the ornamental/load-bearing question at prose level may extend to other structural layers)
 
 ### Pass 4: Emotional Value Tracking
 
@@ -95,7 +106,27 @@ Track POV holder, narrative distance, information access, **tense**.
 
 **Detect:** Perspective slips, head-hopping, voice intrusion, distance inconsistency, **POV-power mismatch**.
 
-**Output:** `[Project]_Pass7_POV_Voice_[runlabel].md` — POV distribution table (character, word count, % of total, sections), narrative distance tracking, tense consistency log, perspective slip inventory with specific line references, voice distinctiveness assessment per POV character.
+**Voice Distinctiveness Comparison (multi-POV manuscripts):**
+
+For manuscripts with 2+ POV characters, compare the cognitive texture of each POV character's interiority. The goal is to test whether each POV genuinely thinks differently — not just about different topics, but with different cognitive machinery.
+
+Compare across these dimensions:
+- **Sentence architecture:** Length distribution, syntactic complexity, clause nesting. Does one POV think in fragments and another in subordinate clauses?
+- **Attention pattern:** What does this character notice first in a scene? Sensory hierarchy, social vs. environmental focus, threat vs. beauty orientation.
+- **Metaphor source domain:** Where does this character draw comparisons from? Professional vocabulary, body experience, childhood, nature, mechanical systems?
+- **Temporal orientation:** Does this character dwell on the past, anticipate the future, or inhabit the present? How does memory intrude on narration?
+- **Epistemic style:** How does this character process uncertainty? Anxious cataloguing, confident assertion, deliberate avoidance, pattern-seeking?
+- **Emotional register:** How does this character experience and name (or fail to name) emotion? Somatic, analytical, deflective, performative?
+
+```
+| POV Character | Sentence Style | Attention Bias | Metaphor Domain | Temporal Lean | Epistemic Mode | Emotional Register |
+```
+
+**Flag: Under-individuation** — two or more POV characters share cognitive texture across 4+ dimensions. This typically indicates the author's own cognitive patterns overriding character differentiation. Most visible in high-stakes or emotionally charged scenes, where authorial voice tends to absorb character voice.
+
+**Flag: Selective individuation** — POV characters are distinct in surface markers (vocabulary, topic) but converge in deep texture (sentence architecture, attention pattern, epistemic style). Surface-level differentiation without cognitive differentiation creates characters who *discuss* different things but *think* the same way.
+
+**Output:** `[Project]_Pass7_POV_Voice_[runlabel].md` — POV distribution table (character, word count, % of total, sections), narrative distance tracking, tense consistency log, perspective slip inventory with specific line references, voice distinctiveness assessment per POV character, voice distinctiveness comparison table (multi-POV only).
 
 ### Pass 9: Thematic Coherence
 
