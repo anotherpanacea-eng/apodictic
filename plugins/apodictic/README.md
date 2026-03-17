@@ -117,19 +117,19 @@ Internet-enabled research to validate comps, check facts, verify genre currency,
 
 ## Execution Modes
 
-APODICTIC runs in **single-context mode** by default: all passes execute sequentially in one conversation. This is fast and token-efficient.
+APODICTIC selects its execution mode based on the available context window. On models with ≥1M token context (e.g., Claude Opus 4.6), the default is **single-agent mode**: one subagent runs all passes sequentially in a single context, with the full manuscript in view throughout. This is the fastest and most token-efficient option, viable for manuscripts up to roughly 200,000 words.
 
-For stronger analysis on longer manuscripts, request **hybrid mode**: Pass 0+1 reads the full manuscript and produces a focus map targeting specific scenes for each subsequent pass. Later passes run as independent subagents with the reverse outline plus targeted excerpts — not the full text. Hybrid mode provides architectural isolation at roughly **2–3x the token cost**. The tradeoff: later passes depend on the focus map's accuracy rather than reading everything themselves.
+For maximum analytical depth, request **swarm mode**: each pass runs as an independent subagent loading the full manuscript. Swarm produces roughly **twice as many findings** with more specific cross-pass connections and more consistent counterevidence — at approximately **5x the token cost**. The quality gain comes from architectural isolation: each pass genuinely cannot see prior analysis until reconciliation, which eliminates anchoring bias.
 
-For maximum analytical depth, request **swarm mode**: each pass runs as an independent subagent loading the full manuscript. Swarm produces roughly **twice as many findings** with more specific cross-pass connections and more consistent counterevidence — at approximately **5x the token cost**.
+On standard-context models (<1M tokens), APODICTIC falls back to per-pass subagent dispatch with three tiers: **sequential** (each pass gets the full manuscript), **hybrid** (later passes get targeted excerpts via a focus map, ~2–3x cost), and **swarm** (parallel independent subagents, ~5x cost).
 
 **When to consider each mode:**
 
-- **Single-context** (default): Manuscripts under ~60,000 words, quick diagnostics, budget-constrained runs.
-- **Hybrid**: Manuscripts over ~60,000 words, standard editorial workflow, runs where you want better-than-default quality without full swarm cost. The sweet spot for most serious edits.
-- **Swarm**: Final-round diagnostics before submission, or when prior runs felt thinner than the manuscript warranted.
+- **Single-agent** (default on large-context models): Most manuscripts, quick diagnostics, budget-constrained runs.
+- **Swarm**: Final-round diagnostics before submission, or when prior runs produced findings that echo rather than complicate each other.
+- **Sequential / Hybrid**: Automatic on standard-context models; not typically needed on large-context models unless you prefer per-pass isolation.
 
-To invoke: tell the editor "run this in hybrid mode" or "run this in swarm mode" at intake.
+To invoke swarm: tell the editor "run this in swarm mode" at intake.
 
 ## Model Requirements
 

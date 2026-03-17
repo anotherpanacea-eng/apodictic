@@ -78,13 +78,35 @@ fi
 
 # ── Derived values ────────────────────────────────────────
 
+# Estimated token load (rough: 1 token ≈ 0.75 words for English prose)
+# Includes manuscript tokens + overhead for pass specs, ledger, synthesis
+ESTIMATED_MANUSCRIPT_TOKENS=$(( (TOTAL_WORDS * 4 + 2) / 3 ))
+# Single-agent overhead: pass specs (~20k) + contract (~5k) + ledger growth (~30k) + synthesis (~20k)
+ESTIMATED_SINGLE_AGENT_LOAD=$(( ESTIMATED_MANUSCRIPT_TOKENS + 75000 ))
+
 # Execution mode recommendation
-if [ "$TOTAL_WORDS" -lt 60000 ]; then
-  RECOMMENDED_MODE="sequential"
-elif [ "$TOTAL_WORDS" -lt 100000 ]; then
-  RECOMMENDED_MODE="hybrid"
+# Two tiers: large-context (>=1M tokens) and standard-context (<1M)
+# The parent orchestrator determines which tier applies based on its own context window.
+#
+# Large-context tier: single-agent mode is viable when the full manuscript plus
+# analytical overhead fits comfortably in a 1M window. We use a 600K ceiling
+# to leave ample headroom for pass output, ledger growth, and synthesis.
+# Above that, per-pass subagents avoid salience decay in late passes.
+#
+# Standard-context tier: original thresholds (pre-1M behavior).
+if [ "$ESTIMATED_SINGLE_AGENT_LOAD" -lt 600000 ]; then
+  RECOMMENDED_MODE_LARGE_CONTEXT="single-agent"
 else
-  RECOMMENDED_MODE="swarm"
+  RECOMMENDED_MODE_LARGE_CONTEXT="sequential"
+fi
+
+# Standard-context recommendations (unchanged)
+if [ "$TOTAL_WORDS" -lt 60000 ]; then
+  RECOMMENDED_MODE_STANDARD="sequential"
+elif [ "$TOTAL_WORDS" -lt 100000 ]; then
+  RECOMMENDED_MODE_STANDARD="hybrid"
+else
+  RECOMMENDED_MODE_STANDARD="swarm"
 fi
 
 # Triage max_turns: ceil(total_lines / 500) + 20
@@ -120,10 +142,16 @@ $(sample_pov "End (lines ${END_START}-$((END_START+200)))" "$END_START" 200)
 - Non-empty lines: ${NON_EMPTY_LINES}
 - **Mean words per non-empty line:** ${MEAN_WORDS_PER_LINE}
 
+## Token Load Estimate
+- **Estimated manuscript tokens:** ${ESTIMATED_MANUSCRIPT_TOKENS}
+- **Estimated single-agent load:** ${ESTIMATED_SINGLE_AGENT_LOAD} (manuscript + ~75K overhead)
+
 ## Dispatch Recommendations
-- **Recommended execution mode:** ${RECOMMENDED_MODE}
+- **Large-context mode (>=1M tokens):** ${RECOMMENDED_MODE_LARGE_CONTEXT}
+- **Standard-context mode (<1M tokens):** ${RECOMMENDED_MODE_STANDARD}
 - **Triage subagent max_turns:** ${TRIAGE_MAX_TURNS}
-- **Mode thresholds:** <60K words → sequential; 60-100K → hybrid; >100K → swarm
+- **Large-context threshold:** single-agent if estimated load < 600K tokens; sequential otherwise
+- **Standard-context thresholds:** <60K words → sequential; 60-100K → hybrid; >100K → swarm
 - **max_turns formula:** ceil(total_lines / 500) + 20
 
 ## Notes
