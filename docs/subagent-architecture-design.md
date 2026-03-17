@@ -1,6 +1,6 @@
 # Subagent Pass Orchestration — Design Document
 
-**Status:** Available as optional execution mode (v1.0.4+). Default remains single-context.
+**Status:** Available as optional execution mode (v1.0.4+). With ≥1M context models, default is now single-agent (all passes in one subagent context); multi-agent modes (sequential, hybrid, swarm) remain available as user-invoked upgrades or as the default for standard-context models. See `run-core.md` §Execution Mode for current routing logic.
 **Date:** 2026-02-23
 **Provenance:** Emerged from A/B comparison of APODICTIC v1.0.3 plugin output vs. blind editorial letter on *A Game of Universe* (Nylund, ~118k words). The comparison revealed that pass artifacts contained stronger analysis than the synthesis captured — root cause: context salience decay across a multi-pass run in a single context.
 

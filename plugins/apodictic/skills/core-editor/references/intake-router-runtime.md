@@ -111,27 +111,49 @@ Options change based on the Artifact answer.
 
 ## §2b. Execution Mode (conditional — manuscripts over 40k words)
 
-*Fires when: Artifact is `full_draft`, `partial`, or `series` (single volume selected) AND estimated word count exceeds 40,000. Skip for shorter manuscripts (single-context is fine) and for `idea` or `fragments` (no manuscript to analyze).*
+*Fires when: Artifact is `full_draft`, `partial`, or `series` (single volume selected) AND estimated word count exceeds 40,000. Skip for shorter manuscripts and for `idea` or `fragments` (no manuscript to analyze).*
+
+*Context-aware behavior: If the parent orchestrator has ≥1M context tokens and the pre-flight estimated single-agent load is under 600K tokens, single-agent mode is the automatic default. In this case, §2b still fires for manuscripts over 40K words, but the options shift — single-agent replaces sequential as option A, and the question focuses on whether the user wants to upgrade to swarm for deeper analysis.*
 
 *When to ask: After Q2 resolves the goal, before Q3 constraints. If the user has already selected an execution mode via §3 options H/I or by stating "run this in swarm mode" at any point, skip this question.*
+
+**Large-context version (≥1M tokens, manuscript fits in single-agent):**
+
+"Your manuscript is long enough that you might want a more thorough read. Two options:"
+
+| Option | Label | Plain-language description | Internal value |
+|--------|-------|---------------------------|----------------|
+| A | Standard read (recommended) | I run all my analysis in one continuous session, keeping the full manuscript in view the whole time. Fast and thorough for most drafts. | `execution:single-agent` |
+| B | Full independent read (most thorough) | Every analytical lens reads the entire manuscript independently, so they can't influence each other. Roughly 5x the cost, but produces the deepest, least biased analysis. Best for final submission prep. | `execution:swarm` |
+
+**Large-context recommendation by context:**
+
+| Condition | Recommendation |
+|-----------|---------------|
+| Any length, goal = `repair` | Default to A. Mention B exists for final polish. |
+| Any length, goal = `submit` | Recommend B. "Since you're checking submission readiness, the independent-lens read is worth the cost." |
+| User selects B | Confirm: "That's roughly 5x the token cost — just making sure you're good with that." |
+| User selects A or skips | Proceed with single-agent. No friction. |
+
+**Standard-context version (<1M tokens):**
 
 "Your manuscript is long enough that how I read it matters. Three options:"
 
 | Option | Label | Plain-language description | Internal value |
 |--------|-------|---------------------------|----------------|
-| A | Standard read (fastest) | I read the whole manuscript once, then run all my analysis in sequence. Good for most drafts. Some findings may be thinner on very long novels because earlier analysis fades as I work. | `execution:single` |
+| A | Standard read (fastest) | I read the whole manuscript once, then run all my analysis in sequence. Good for most drafts. Some findings may be thinner on very long novels because earlier analysis fades as I work. | `execution:sequential` |
 | B | Targeted deep read (recommended for novels) | I read the whole manuscript once to map it, then send each analytical lens to the specific scenes that need it most. Each lens works independently, so they can't parrot each other. Costs roughly 2–3x as much as a standard read. | `execution:hybrid` |
 | C | Full independent read (most thorough) | Every analytical lens reads the entire manuscript independently. The most findings, the deepest analysis, but roughly 5x the cost of a standard read. Best for final submission prep. | `execution:swarm` |
 
-**Default recommendation by context:**
+**Standard-context recommendation by context:**
 
 | Condition | Recommendation |
 |-----------|---------------|
-| 40k–80k words, goal = `repair` | Mention option B exists; don't push it. Single-context handles this range adequately. |
+| 40k–80k words, goal = `repair` | Mention option B exists; don't push it. Sequential handles this range adequately. |
 | 80k+ words, goal = `repair` | Recommend B. "For a manuscript this length, the targeted read catches things the standard read misses." |
 | Any length, goal = `submit` | Recommend B or C. "Since you're checking submission readiness, the deeper read is worth the cost." |
 | User selects B or C | Confirm: "That adds to the token cost — just making sure you're good with that." |
-| User selects A or skips | Proceed with single-context. No friction. |
+| User selects A or skips | Proceed with sequential. No friction. |
 
 **What this question does NOT do:**
 
