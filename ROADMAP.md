@@ -36,19 +36,11 @@ A static, single-file HTML overview of the plugin's capabilities — the map at 
 
 ---
 
-## v1.1 — Immediate Post-1.0
+## v1.1 — Immediate Post-1.0 ✓
 
-High-value additions that extend what's already built. No new architectural decisions required.
+High-value additions that extend what's already built. No new architectural decisions required. **Shipped in v1.1.0.**
 
-### Submission Readiness Workflow
-
-The most-requested missing workflow. A writer with a finished draft asks "is this ready to submit?" Currently they'd need to know to run Core DE and then separately request Pass 11. Build a single entry point (`/submit` or integrated into `/start` routing) that runs Core DE → Synthesis → Pass 11, and produces a unified readiness assessment with query letter/synopsis diagnostic and structured readiness verdict.
-
-### Submission Triage
-
-A fast go/no-go assessment for deadline-constrained writers. Runs Pass 1 (Reader Experience) only, applies SR codes to what surfaces, and produces a triage memo. No artificial intervention cap — if Pass 1 surfaces more than 3 P1-severity issues, the answer is "no go" with reasons. Three or fewer means "go, fix these."
-
-Includes a mandatory **blind spots** section naming what a single-pass read cannot assess (spine integrity, subplot load-bearing, act-ratio calibration, entity continuity). Not a disclaimer footer — a specific inventory of what's dark.
+Moved to [Completed](#completed) section.
 
 ---
 
@@ -219,3 +211,9 @@ v0.5 UX overhaul complete: query-driven passes, intake router, scene-level hando
 - **Voice Distinctiveness Comparison** (Pass 7). Six comparison dimensions for multi-POV manuscripts, two new flags (under-individuation, selective individuation).
 - **Title/Framing Architecture** (Pass 3). Conditional evaluation for manuscripts with deliberate titling conceits, epigraph sequences, or section-header systems. Four tests (deepening, counterpoint, coherence, ornamental). Finding-driven trigger to Literary Craft audit.
 - **Release tooling.** `release-registry.json` as single source of truth, `release-generate.mjs` for cross-repo propagation, `release-verify.mjs` for drift detection, `release.sh` orchestrating the full pipeline.
+
+### v1.1.0 — Token-Aware Agent Usage
+
+- **Submission Readiness Workflow** (`/ready`). Single entry point for "is this ready to submit?" — runs Core DE → Synthesis → Pass 11, produces unified readiness assessment with query letter/synopsis diagnostic and structured readiness verdict.
+- **Submission Triage.** Fast go/no-go assessment for deadline-constrained writers. Runs Pass 1 only, applies SR codes, produces triage memo with mandatory blind-spots inventory.
+- **Context-aware single-agent execution mode** for 1M token windows. Token-adaptive run profiles detect available context budget and adjust execution accordingly.
