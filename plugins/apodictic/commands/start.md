@@ -39,6 +39,8 @@ Load the `core-editor` skill first (thin orchestrator). Do NOT preload companion
 9. Load the routed target only now:
    - Pre-writing route -> load `pre-writing-pathway`
    - Development edit route -> load `references/run-core.md`
+   - Submission readiness route -> load `references/submission-readiness.md`
+   - Submission triage route -> load `references/submission-triage.md`
    - Audit route -> load `specialized-audits`
    - Plot coaching route -> load `plot-architecture`
 10. If route target is a gap, execute the runtime gap-handling protocol (acknowledge, offer closest, name missing coverage).
