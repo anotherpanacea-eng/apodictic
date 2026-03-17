@@ -5,6 +5,51 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.1.0 - 2026-03-17
+
+### Added — Submission Readiness Workflow
+
+New unified workflow for "is this ready to submit?" Runs Core DE → Synthesis → Pass 11 → Compression Test and produces a single readiness assessment document.
+
+#### What it adds over standalone Core DE + Pass 11
+- **Compression Test** — tests whether the manuscript's identity survives query/synopsis compression. Populates SR-8 (Better Than It Sounds), SR-10 (Spine Amnesia), SR-13 (Arc Substitution), SR-14 (Comp Fragility), SR-15 (Evidence Thinness) from compression evidence.
+- **Unified Readiness Assessment** — single document synthesizing diagnostic findings, verdict (READY / CONDITIONALLY VIABLE / NOT READY), market reality, opening conversion gate, and prioritized next steps. Writers no longer need to cross-reference the editorial letter and Pass 11 output.
+- **Full SR code vocabulary** — all 15 submission readiness codes populated across Core DE passes and compression test (vs. 7 in Submission Triage).
+- **`/ready` command** — direct entry point bypassing the `/start` router's Q1-Q3 sequence.
+- **Abbreviated intake** — pre-fills artifact and goal, asks only publication path, query materials, and execution mode.
+
+#### Router integration
+- `full_draft + submit + —` route now resolves to Submission Readiness Workflow (was previously a gap).
+- `/start` routes here when artifact = `full_draft` and goal = `submit` without time constraint.
+- Submission Triage remains the fast path for `constraint:time`.
+
+#### Files
+- `commands/ready.md` — new command
+- `references/submission-readiness.md` — workflow specification
+- `references/intake-router-runtime.md` — gap closed in route map §6
+
+### Added — Context-Aware Execution Mode Selection
+
+APODICTIC now detects the available context window and selects execution mode accordingly.
+
+#### Large-context models (≥1M tokens)
+- **Single-agent mode** is the new default: one subagent runs all passes sequentially in a single context. Manuscript loads once; Findings Ledger still written to disk after each pass.
+- Viable for manuscripts up to ~200,000 words (estimated load < 600K tokens).
+- Token cost: ~240-300K for a 118K-word novel (roughly half of sequential mode).
+- Swarm mode remains available for architectural isolation when the user wants maximum analytical depth.
+
+#### Standard-context models (<1M tokens)
+- Existing three-mode behavior preserved: sequential / hybrid / swarm.
+- No changes to thresholds or routing.
+
+#### Files
+- `scripts/preflight.sh` — computes estimated token load, outputs two recommendation tiers
+- `references/run-core.md` — new §Context Window Detection, §Single-Agent Mode, updated execution protocol and token cost table
+- `references/intake-router-runtime.md` — §2b now has large-context and standard-context versions
+- `docs/subagent-architecture-design.md` — status line updated
+
+---
+
 ## v1.0.9 - 2026-03-04
 
 ### Added — Reception Risk Audit

@@ -92,7 +92,10 @@ Apply auto-escalation rules from `references/pass-dependencies.md` §2b. Recomme
 ### 5. Revision Round (when re-analyzing)
 Delta scan, ripple check, resolution verification, new issue detection.
 
-### 6. Scene-Level Handoff (when requested)
+### 6. Submission Readiness (when submitting)
+When the writer asks "is this ready to submit?", run the Submission Readiness Workflow: Core DE → Synthesis → Pass 11 → Compression Test → Unified Readiness Assessment. Entry point: `/ready` command or `full_draft + submit` route. Load `references/submission-readiness.md` for full specification. For deadline-constrained writers, route to Submission Triage instead (`references/submission-triage.md`).
+
+### 7. Scene-Level Handoff (when requested)
 When diagnosis is complete for a scoped scene and the writer wants execution help, follow `references/handoff-protocol.md` for mode switch, state persistence, and re-entry.
 
 **Execution details for all of the above:** Load `references/run-core.md`. Use `references/pass-dependencies.md` for pass resolution. For full expansion: load `references/run-full.md`.

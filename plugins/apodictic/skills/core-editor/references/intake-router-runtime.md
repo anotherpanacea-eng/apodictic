@@ -243,7 +243,7 @@ Existing commands bypass the router with pre-filled values. The router is the re
 | full_draft | repair | time | Submission Triage | **Built** (v1.1) |
 | full_draft | repair | ai | Core DE + AI-Prose Calibration | **Built** |
 | full_draft | repair | risk | Core DE + Risk Register | Gap |
-| full_draft | submit | — | Core DE → Pass 11 (§2b suggests hybrid/swarm) | Gap: unified submission workflow |
+| full_draft | submit | — | Submission Readiness Workflow (`references/submission-readiness.md`) | **Built** (v1.1) |
 | full_draft | submit | hybrid | Core DE → Pass 11 (hybrid mode) | **Built** |
 | full_draft | submit | swarm | Core DE → Pass 11 (swarm mode) | **Built** |
 | full_draft | submit | time | Submission Triage | **Built** (v1.1) |

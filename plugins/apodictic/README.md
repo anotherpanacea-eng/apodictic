@@ -82,6 +82,12 @@ The intake router asks what you have (idea, fragments, partial draft, complete d
 ```
 Runs intake, core passes (reverse outline, reader experience, structural mapping, character audit, reveal economy), and synthesis. Outputs an editorial letter, revision checklist, and diagnostic state.
 
+### Submission Readiness
+```
+/ready
+```
+The full "is this ready?" workflow. Runs Core DE → Synthesis → Pass 11 → Compression Test and produces a unified readiness assessment with verdict, market reality check, opening conversion gate, SR code inventory, and query/synopsis diagnostic. For deadline-constrained writers, say "I'm on a deadline" during intake to get Submission Triage (single-pass go/no-go) instead.
+
 ### Quick Diagnosis
 ```
 /diagnose pacing in Act II
