@@ -102,23 +102,13 @@ For web serial and newsletter fiction writers. Hook debt tracking, recap burden 
 
 ---
 
-## v2.0 — Revision Coach
+## v2.0 — Coaching Expansion
 
-The diagnostic editor tells you what's wrong. The coaching editor helps you figure out what to do about it — without doing it for you. v2.0 adds a coaching layer that draws on existing diagnostic state to help writers move from diagnosis to the next productive draft session.
+Future deepening of the coaching layer, if user feedback indicates demand. The core Revision Coach ships in v1.1.2; v2.0 would add:
 
-The core design constraint: coaching stays on the writer's side of the line. "Here's a way to think about solving this" rather than "here's the solution." A coach that writes your revision is a ghostwriter with extra steps. A coach that helps you see your own path through a diagnosed problem is something writers come back to.
+### Advanced Coaching Modes
 
-### Revision Coach
-
-Time-boxed revision planning built on diagnostic state. "You have an hour — here's where to spend it." Not a diagnostic; a prioritization layer that assumes you've already run some or all of the edit. Time-budget input, priority engine ranking issues by leverage, session plan output, re-assessment trigger.
-
-### Writer's Block & Rut-Breaking
-
-Structurally informed prompts for writers who are stuck. Unlike generic writing prompts, these are tied to specific diagnosed problems — "you're stuck because the protagonist's choice in chapter 12 isn't a real choice; here are three ways to think about making it one." Stuck-point diagnosis, prompt generation tied to SR codes and pass findings, escalation path.
-
-### Deadline Management
-
-For writers with a hard deadline and a diagnosed manuscript. Produces a revision calendar that sequences interventions by priority and available time. Honest about what's achievable and what isn't.
+Capabilities that go beyond the initial four coaching modes (Session Planning, Stuck-Point Coaching, Momentum Tracking, Deadline Coaching). Candidates include: multi-session revision arc planning, genre-specific coaching calibration, collaborative revision coaching (for co-authors or author-editor pairs), and integration with external project management tools.
 
 ---
 

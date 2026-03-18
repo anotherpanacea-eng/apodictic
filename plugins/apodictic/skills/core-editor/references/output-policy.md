@@ -63,6 +63,10 @@ Write project artifacts to the project's `Outputs/` folder using:
 **Series Continuity (when active):**
 - `[Project]_Series_Continuity_Audit_[runlabel].md`
 
+**Revision Coach (when active):**
+- `[Project]_Session_Plan_[runlabel].md`
+- `[Project]_Revision_Calendar_[runlabel].md` (deadline mode only)
+
 **Rolling state files** (not run-specific):
 - `Diagnostic_State.md` — per-volume diagnostic state. If missing, initialize from `references/diagnostic-state-template.md`.
 - `Series_State.md` — cross-volume series state. If missing, initialize from `references/series-state-template.md`. Persists across volumes; updated after each volume is analyzed.

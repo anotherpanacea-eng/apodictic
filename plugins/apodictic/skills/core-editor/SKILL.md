@@ -7,7 +7,7 @@ description: >
   "run the passes," "do a revision round," or any request involving manuscript
   analysis, structural diagnosis, or editorial feedback. Also triggers on
   "APODICTIC," "APDE," or "development editor."
-version: 1.1.1
+version: 1.1.2
 ---
 
 # APODICTIC Development Editor — Core Orchestrator
@@ -29,9 +29,10 @@ Dedicated reference files (genre modules, specialized audits, `references/pass-1
 
 ## Plugin Structure
 
-This skill is the core of the APODICTIC plugin. Two companion skills handle specialized functions:
+This skill is the core of the APODICTIC plugin. Three companion skills handle specialized functions:
 - **plot-architecture** — Spine diagnosis (50 spines), selection coaching, fantasy & series architecture
 - **specialized-audits** — Deep-dive audits, tag audits, and research modes (loaded on demand)
+- **revision-coach** — Post-diagnostic revision coaching: session planning, stuck-point coaching, momentum tracking, deadline management (loaded via `/coach`)
 
 **Delegation principle:** Core runs the development edit workflow. Everything else delegates to companion skills or reference files. Core does not carry audit catalogs, tag-audit internals, or genre deep-dives.
 
