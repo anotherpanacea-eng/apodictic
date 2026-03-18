@@ -8,7 +8,7 @@ description: >
   stalled draft. Triggers on "coach," "revision plan," "session plan,"
   "I have a diagnosis," "help me revise," "where should I start," "I'm stuck,"
   "I have [time] to work," "I can't write," or "deadline."
-version: 1.2.0
+version: 1.2.1
 ---
 
 # APODICTIC Revision Coach

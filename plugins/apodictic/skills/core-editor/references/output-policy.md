@@ -58,7 +58,24 @@ Write project artifacts to the project's `Outputs/` folder using:
 - `[Project]_Diagnostic_Dashboard_[runlabel].md`
 - `[Project]_Full_DE_Synthesis_[runlabel].md`
 
-`runlabel` should be date-based (`YYYY-MM-DD`) and may include agent tag (e.g., `codex53_2026-02-13`).
+`runlabel` format: `YYYY-MM-DD_[model-tag]`
+
+The model tag is **required**, not optional. It identifies which model generated the analysis.
+
+| Model | Tag |
+|-------|-----|
+| Claude Opus 4.6 | `opus46` |
+| Claude Sonnet 4.6 | `sonnet46` |
+| Claude Haiku 4.5 | `haiku45` |
+| Gemini 3.1 | `gemini31` |
+| ChatGPT o3 | `o3` |
+| Codex 5.4 | `codex54` |
+
+**Examples:** `2026-03-18_opus46`, `2026-03-18_gemini31`
+
+**Derivation:** Read the model identifier at runtime and derive the tag (e.g., `claude-opus-4-6` → `opus46`). If the model identifier is unavailable, use `unknown`.
+
+**Multi-model runs:** Each output file carries the tag of the model that wrote it. In swarm mode where different passes run on different models, the synthesis file carries the tag of the model that wrote the synthesis.
 
 **Partial Manuscript Diagnostic (when `artifact=partial`):**
 - `[Project]_Partial_Diagnostic_[runlabel].md` (replaces `Core_DE_Synthesis`)
@@ -215,7 +232,7 @@ Pass 0 (Reverse Outline) and Pass 10 (Entity Tracking) are data-building passes 
 
 Every editorial letter must include the following appendices. These are not optional even when the letter is otherwise strong — they provide the author with diagnostic transparency and the framework owner with reproducibility data.
 
-1. **Appendix A: Diagnostic Detail.** Pointers to companion pass files and supplementary audit findings, with brief descriptions of what each contains. This tells the author where to find the evidence and revision tools behind the letter's arguments.
+1. **Appendix A: Diagnostic Detail.** Pointers to companion pass files and supplementary audit findings, with brief descriptions of what each contains. This tells the author where to find the evidence and revision tools behind the letter's arguments. If any auto-recommend or user-accepted audits completed **after** synthesis was written, list them separately as: "**Post-synthesis audits** (findings not integrated into triage — review independently):" followed by the audit name and findings file pointer. Auto-run audits should never appear in this post-synthesis section — they are synthesis dependencies and must complete before synthesis begins (see `pass-dependencies.md` §4c).
 
 2. **Appendix B: Severity Calibration.** Compressed summary of the adversarial self-check — which findings were tested for softening or over-escalation, in which direction, and whether any severities were adjusted. This is the author's assurance that severity assignments were stress-tested, not just assigned.
 
