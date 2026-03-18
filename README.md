@@ -20,6 +20,8 @@ It runs 11 analytical passes: reverse outline, reader experience mapping, struct
 
 APODICTIC isn't just for finished drafts.
 
+- **Revision Coach** (`/coach`) — post-diagnostic coaching that helps you plan revision sessions without doing the revision for you. Four modes: session planning (leverage-ranked priorities matched to your available time), stuck-point coaching (reframes the mechanism when a scene resists revision), momentum tracking (session-over-session progress), and deadline coaching (honest triage with revision calendar)
+- **Series Continuity** (`/audit series-continuity`) — cross-volume consequence tracking for multi-book series. Five diagnostic channels: character state, world rules, unresolved threads, hope calibration, and intentional discontinuities. Rolling `Series_State.md` persists across volumes
 - **Pre-writing pathway** for writers who have an idea but no manuscript — takes you from seed to draftable structure
 - **Plot coach** with 50 structural spines across 12 families (not just three-act)
 - **31 available audits** (3 universal, 15 craft, 8 genre, 5 tag) including scene function, shelf positioning, emotional craft, AI-prose detection, worldbuilding integration, force architecture, reception risk, and intimacy/consent coverage
@@ -55,11 +57,13 @@ Then type `/start` — it asks you three questions to figure out what you need.
 | `/develop-edit` | Run a full development edit on a manuscript |
 | `/new-project` | Initialize a new project with contract and diagnostic state |
 | `/pre-writing` | Guide a writer from idea to draftable structure (no manuscript needed) |
-| `/revision-plan` | Generate revision priorities from diagnostic state |
+| `/coach` | **Post-diagnostic coaching.** Session planning, stuck-point help, momentum tracking, deadline management. |
+| `/ready` | Submission readiness check — runs Core DE → Synthesis → Pass 11 |
 | `/diagnose` | Quick targeted diagnostic on a specific concern |
 | `/plot-coach` | Plot structure selection and coaching |
 | `/audit [name]` | Run a specialized audit (no argument lists all available) |
 | `/research [mode]` | Run a research mode (no argument lists all available) |
+| `/revision-plan` | Compatibility alias for `/coach` (session planning mode) |
 
 ## Project Docs
 

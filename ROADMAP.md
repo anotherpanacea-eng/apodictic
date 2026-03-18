@@ -56,9 +56,9 @@ Writers stuck mid-draft. Run passes on available material without penalizing mis
 
 Writers with scattered scenes, notes, and fragments but no continuous narrative. Pre-processing step that clusters fragments into candidate contract/spine before Core DE runs. Output: candidate contract (provisional), recommended spine, fragment map showing what connects and what doesn't.
 
-### Cross-Volume Series Continuity
+### Cross-Volume Series Continuity ✓
 
-Series writers working across multiple books. Diagnostic state persists across volumes. Character state tracking, world rule ledger, unresolved thread inventory, hope calibration per volume.
+Series writers working across multiple books. Diagnostic state persists across volumes. Character state tracking, world rule ledger, unresolved thread inventory, hope calibration per volume. **Shipped in v1.1.1.** Moved to [Completed](#completed) section.
 
 ---
 
@@ -104,11 +104,27 @@ For web serial and newsletter fiction writers. Hook debt tracking, recap burden 
 
 ## v2.0 — Coaching Expansion
 
-Future deepening of the coaching layer, if user feedback indicates demand. The core Revision Coach ships in v1.1.2; v2.0 would add:
+The core Revision Coach ships in v1.1.2 with four modes: Session Planning, Stuck-Point Coaching, Momentum Tracking, and Deadline Coaching. v2.0 deepens the coaching layer based on real usage patterns.
 
-### Advanced Coaching Modes
+### Multi-Session Revision Arc Planning
 
-Capabilities that go beyond the initial four coaching modes (Session Planning, Stuck-Point Coaching, Momentum Tracking, Deadline Coaching). Candidates include: multi-session revision arc planning, genre-specific coaching calibration, collaborative revision coaching (for co-authors or author-editor pairs), and integration with external project management tools.
+Session Planning currently operates one session at a time. Arc Planning would produce a multi-week revision strategy: phase 1 tackles structural root causes, phase 2 handles downstream consequences, phase 3 addresses polish. The arc adapts as earlier phases reveal new issues. Requires momentum tracking to have enough session history to inform arc shape.
+
+### Genre-Specific Coaching Calibration
+
+The coaching protocol currently applies the same leverage-ranking and reframing logic regardless of genre. Genre-specific calibration would adjust coaching behavior: romance coaching emphasizes emotional-arc leverage over structural leverage; thriller coaching emphasizes pacing-first sequencing; literary coaching allows longer stuck-point exploration before recommending reframing. Builds on the existing genre module system.
+
+### Writer's Block & Rut-Breaking
+
+Structurally informed prompts for writers who are stuck — not generic writing prompts, but prompts tied to specific diagnosed problems. "You're stuck because the protagonist's choice in chapter 12 isn't a real choice; here are three ways to think about making it one." Stuck-point diagnosis, prompt generation tied to pass findings, escalation path. Extends Stuck-Point Coaching from reactive reframing to proactive prompt generation (still within the firewall — prompts surface structural possibility, not content).
+
+### Collaborative Revision Coaching
+
+For co-authoring teams or author-editor pairs working through a diagnostic together. Priority conflict resolution (when co-authors disagree about which root cause to tackle first), sign-off workflow (both parties confirm a revision is complete), and change ledger (who changed what, when). Build only if user feedback indicates demand.
+
+### Coaching History and Pattern Recognition
+
+Over multiple revision cycles, the coach accumulates session history. Pattern recognition would surface: "You tend to defer character-agency work — it's been in three consecutive session plans without completion. Is this a prioritization issue or a deeper resistance?" Requires enough coaching log data to be meaningful. Privacy-sensitive — patterns should be surfaced as observations, not judgments.
 
 ---
 
@@ -205,3 +221,17 @@ v0.5 UX overhaul complete: query-driven passes, intake router, scene-level hando
 - **Submission Readiness Workflow** (`/ready`). Single entry point for "is this ready to submit?" — runs Core DE → Synthesis → Pass 11, produces unified readiness assessment with query letter/synopsis diagnostic and structured readiness verdict.
 - **Submission Triage.** Fast go/no-go assessment for deadline-constrained writers. Runs Pass 1 only, applies SR codes, produces triage memo with mandatory blind-spots inventory.
 - **Context-aware single-agent execution mode** for 1M token windows. Token-adaptive run profiles detect available context budget and adjust execution accordingly.
+
+### v1.1.1 — Series Continuity & Pass 9 Deepening
+
+- **Cross-Volume Series Continuity Audit** (`/audit series-continuity`). Five diagnostic channels: Character State (CS), World Rules (WR), Unresolved Threads (UT), Hope Calibration (HC), Revision Ledger (RL). 24 named flags across consequence, state, rule, thread, and canon layers. Seven decision tests for cross-volume transitions. Mode calibration for 8 series types. Three-way classification: Working Continuity / Intentional but Undersupported / Serial State Amnesia. Rolling `Series_State.md` artifact persists across volumes. Three-model level-setting research brief (Opus 4.6 + Codex 5.4 + ChatGPT construct-validation framework).
+- **Pass 9 (Thematic Coherence) deepened.** Eight named failure modes: theme drift, theme-as-thesis, thematic intrusion, accidental motifs, unearned thematic resolution, thematic contradiction, thematic orphan, thematic overreach. Genre-specific thematic calibration. Semantic threading with observable patterns (synonym clusters, vocabulary colonization, loaded terms) and non-evidence guardrails. Cross-volume thematic extension hook for series continuity.
+- **Router gap filled.** `series | repair (continuity)` route built.
+
+### v1.1.2 — Revision Coach
+
+- **Revision Coach** (`/coach`). Fourth companion skill. Post-diagnostic coaching with four modes: Session Planning (leverage-ranked priorities matched to available time/energy), Stuck-Point Coaching (mechanism reframing without content invention), Momentum Tracking (session-over-session progress comparison), and Deadline Coaching (honest triage with revision calendar).
+- **Coaching firewall.** Conversation-specific drift check protocol. Coach reads diagnostic state but never overwrites root causes, triage, or author decisions. Keep/Cut decisions are locked inputs. Required self-test before each substantive response.
+- **New artifacts.** `Session_Plan` and `Revision_Calendar` output templates. `Diagnostic_State.md` extended with optional `Coaching Log` section.
+- **Command surface.** `/coach` as canonical entry point. `/revision-plan` retained as compatibility alias. Post-synthesis coaching offer integrated into Core DE workflow.
+- **Release tooling.** `bump-version.sh` updated to auto-discover SKILL.md files (no longer hardcoded to 4 skills).
