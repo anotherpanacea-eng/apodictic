@@ -75,25 +75,21 @@ else
   echo "  MISSING  $CLAUDE_MARKETPLACE"
 fi
 
-# 5. SKILL.md frontmatter (4 files)
-SKILL_FILES=(
-  "$PLUGIN_DIR/skills/core-editor/SKILL.md"
-  "$PLUGIN_DIR/skills/pre-writing-pathway/SKILL.md"
-  "$PLUGIN_DIR/skills/plot-architecture/SKILL.md"
-  "$PLUGIN_DIR/skills/specialized-audits/SKILL.md"
-)
+# 5. SKILL.md frontmatter (auto-discovered)
+SKILL_COUNT=0
+while IFS= read -r -d '' f; do
+  sedi "s/^version: .*/version: ${NEW_VERSION}/" "$f"
+  echo "  updated  $f"
+  SKILL_COUNT=$((SKILL_COUNT + 1))
+done < <(find "$PLUGIN_DIR/skills" -name "SKILL.md" -print0)
 
-for f in "${SKILL_FILES[@]}"; do
-  if [ -f "$f" ]; then
-    sedi "s/^version: .*/version: ${NEW_VERSION}/" "$f"
-    echo "  updated  $f"
-  else
-    echo "  MISSING  $f"
-  fi
-done
+if [ "$SKILL_COUNT" -eq 0 ]; then
+  echo "  WARNING  No SKILL.md files found under $PLUGIN_DIR/skills/"
+fi
 
+TOTAL=$((4 + SKILL_COUNT))
 echo "────────────────────────────────────"
-echo "Done. 8 files updated to v${NEW_VERSION}."
+echo "Done. $TOTAL files updated to v${NEW_VERSION} (4 JSON + ${SKILL_COUNT} SKILL.md)."
 echo ""
 echo "Next step:"
 echo "  Run the full release pipeline:"
