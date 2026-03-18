@@ -6,18 +6,18 @@
 
 ## Board
 
-| Backlog | Planned | In Progress | Done |
-|---------|---------|-------------|------|
-| [Feedback Triage](#feedback-triage) | [Editor Scaffolding](#editor-scaffolding) | [Genre Audit Expansion](#genre--audit-expansion) | [v1.0](#v10--public-release) |
-| [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) | [Diagnostic Vocabulary](#diagnostic-vocabulary-mode) | [Coaching Deepening](#coaching-deepening) | [v1.0.4](#v104) |
-| [Legal Risk Register](#legal-risk-register) | [Writer's Block & Rut-Breaking](#writers-block--rut-breaking) | | [v1.0.8](#v108) |
-| [Multi-Party Intake](#multi-party-intake) | | | [v1.0.9](#v109) |
-| [Episode Cadence](#episode-cadence) | | | [v1.1.0](#v110--token-aware-agent-usage) |
-| [Collaborative Revision Coaching](#collaborative-revision-coaching) | | | [v1.1.1](#v111--series-continuity--pass-9) |
-| [Framework Overview Dashboard](#framework-overview-dashboard) | | | [v1.1.2](#v112--revision-coach) |
-| [Pre-Skill Context Compaction](#pre-skill-context-compaction) | | | [v1.1.3](#v113--coaching-deepening) |
-| | | | [v1.2.0](#v120--artifact-coverage) |
-| | | | [v1.2.1](#v121--audit-sequencing--model-tags) |
+| In Progress | Planned | Done | Backlog |
+|-------------|---------|------|---------|
+| [Genre Audit Expansion](#genre--audit-expansion) | [Editor Scaffolding](#editor-scaffolding) | [v1.2.1](#v121--audit-sequencing--model-tags) | [Feedback Triage](#feedback-triage) |
+| [Coaching Deepening](#coaching-deepening) | [Diagnostic Vocabulary](#diagnostic-vocabulary-mode) | [v1.2.0](#v120--artifact-coverage) | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) |
+| | [Writer's Block & Rut-Breaking](#writers-block--rut-breaking) | [v1.1.3](#v113--coaching-deepening) | [Legal Risk Register](#legal-risk-register) |
+| | | [v1.1.2](#v112--revision-coach) | [Multi-Party Intake](#multi-party-intake) |
+| | | [v1.1.1](#v111--series-continuity--pass-9) | [Episode Cadence](#episode-cadence) |
+| | | [v1.1.0](#v110--token-aware-agent-usage) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
+| | | [v1.0.9](#v109) | [Framework Overview Dashboard](#framework-overview-dashboard) |
+| | | [v1.0.8](#v108) | [Pre-Skill Context Compaction](#pre-skill-context-compaction) |
+| | | [v1.0.4](#v104) | |
+| | | [v1.0](#v10--public-release) | |
 
 ---
 
