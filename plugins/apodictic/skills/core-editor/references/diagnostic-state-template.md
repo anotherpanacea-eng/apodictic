@@ -154,5 +154,15 @@
 
 ---
 
+## Coaching Log
+
+*Populated by the Revision Coach (`/coach`). Append-only.*
+
+| Date | Mode | Focus | Recommendation | Reassessment Trigger |
+|------|------|-------|----------------|---------------------|
+| | | | | |
+
+---
+
 *Framework: APODICTIC Development Editor (APDE)*
-*Last updated: February 2026*
+*Last updated: March 2026*

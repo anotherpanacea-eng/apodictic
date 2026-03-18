@@ -9,7 +9,8 @@
       "plugins/apodictic/skills/core-editor/SKILL.md",
       "plugins/apodictic/skills/pre-writing-pathway/SKILL.md",
       "plugins/apodictic/skills/plot-architecture/SKILL.md",
-      "plugins/apodictic/skills/specialized-audits/SKILL.md"
+      "plugins/apodictic/skills/specialized-audits/SKILL.md",
+      "plugins/apodictic/skills/revision-coach/SKILL.md"
     ],
     "pluginReadme": "plugins/apodictic/README.md",
     "auditCommand": "plugins/apodictic/commands/audit.md",

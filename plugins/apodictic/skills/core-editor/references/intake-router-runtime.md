@@ -94,6 +94,7 @@ Options change based on the Artifact answer.
 | B | Check if it's ready to submit (query, submission, self-pub) | Core DE → Pass 11 (Submission Readiness) |
 | C | Clean up AI-generated or AI-assisted prose | Core DE + AI-Prose Calibration |
 | D | I have beta reader feedback — help me sort through it | Feedback Triage → Core DE |
+| E | I have a diagnosis — help me plan revision | Revision Coach |
 
 **Execution mode:** For `full_draft` manuscripts over 40k words, §2b will fire after this question to surface the execution mode choice. No need to mention execution mode here.
 
@@ -247,6 +248,8 @@ Existing commands bypass the router with pre-filled values. The router is the re
 | full_draft | submit | hybrid | Core DE → Pass 11 (hybrid mode) | **Built** |
 | full_draft | submit | swarm | Core DE → Pass 11 (swarm mode) | **Built** |
 | full_draft | submit | time | Submission Triage | **Built** (v1.1) |
+| full_draft | coach | — | Revision Coach (`revision-coach/SKILL.md`) | **Built** (v1.1.2) |
+| full_draft | coach | deadline | Revision Coach (deadline mode) | **Built** (v1.1.2) |
 | full_draft | repair | editor | Core DE (editor scaffolding) | Gap |
 | full_draft | repair | facilitator | Core DE (diagnostic vocabulary) | Gap |
 | full_draft | repair (feedback) | — | Feedback Triage → Core DE | Gap |
