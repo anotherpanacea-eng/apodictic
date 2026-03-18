@@ -16,8 +16,9 @@
 | | | [v1.1.0](#v110--token-aware-agent-usage) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
 | | | [v1.0.9](#v109) | [Framework Overview Dashboard](#framework-overview-dashboard) |
 | | | [v1.0.8](#v108) | [Pre-Skill Context Compaction](#pre-skill-context-compaction) |
-| | | [v1.0.4](#v104) | |
-| | | [v1.0](#v10--public-release) | |
+| | | [v1.0.4](#v104) | [Command Surface Evaluation](#command-surface-evaluation) |
+| | | [v1.0](#v10--public-release) | [Output Organization by Question](#output-organization-by-question) |
+| | | | [Skill Boundary Evaluation](#skill-boundary-evaluation) |
 
 ---
 
@@ -134,6 +135,24 @@ Static, single-file HTML overview of the plugin's capabilities. System-at-a-glan
 ### Pre-Skill Context Compaction
 
 **Status:** Largely resolved by platform. 1M context on Opus 4.6 + Claude Code's built-in auto-compression. A dedicated pre-skill compaction hook remains a nice-to-have if Claude Code adds skill-lifecycle events.
+
+---
+
+## UX & Command Restructuring
+
+Continuing the v0.5 vision: the plugin should be organized around writer questions, not framework internals. The query-driven pass architecture and intake router shipped in v1.0, but the command surface, output naming, and skill boundaries still reflect build history.
+
+### Command Surface Evaluation
+
+Are 11 commands the right surface? The alias model works (most commands are shortcuts into `/start` with pre-filled values) but hasn't been evaluated against real usage. Questions to answer: Do writers use the shortcuts, or do they always go through `/start`? Should most commands retire in favor of `/start` + `/audit`? Is the current command set discoverable or overwhelming?
+
+### Output Organization by Question
+
+The editorial letter groups findings by macro block (Structure Map, Reader Dynamics, Character Architecture, etc.), but pass artifacts are still named by pass number (`Pass5_Character_Audit`, `Pass7_POV_Voice`). A writer looking for "what's wrong with my characters" has to know that means Pass 5 + Pass 7. Evaluate whether output artifacts should be named by macro block instead of pass number — or whether the current naming is fine because writers interact with the editorial letter, not individual pass files.
+
+### Skill Boundary Evaluation
+
+Five skills (core-editor, pre-writing-pathway, plot-architecture, specialized-audits, revision-coach) reflect the order they were built, not necessarily how writers navigate. Evaluate whether the boundaries match usage patterns. The main question: does a writer ever hit a skill boundary and feel lost? If skill loading is invisible to the user (which it mostly is), this may be a non-issue.
 
 ---
 
