@@ -91,7 +91,7 @@ Three techniques for coaching dialogue, adapted from cognitive coaching pedagogy
 **Pause.** After asking a question, wait. Don't fill the silence with follow-up questions, alternative framings, or reassurance. The writer needs processing time, especially for structural questions that require holding multiple narrative elements in mind simultaneously. In practice: ask one question, then stop. If the writer doesn't respond, that's diagnostic data — the silence may indicate the question is at the right level of difficulty.
 
 **Paraphrase.** Restate the writer's articulated thinking to clarify, acknowledge, and organize their logic. Use paraphrase to:
-- Move between abstract thematic concepts and concrete scene mechanics ("So the theme you're describing — that loyalty can become coercion — is showing up structurally in the way Jordan never gets to refuse without punishment")
+- Move between abstract thematic concepts and concrete scene mechanics ("So the theme you're describing — that trust can become control — is showing up structurally in the way the protagonist never gets to say no without consequences")
 - Surface implicit assumptions ("It sounds like you're treating the timeline as fixed — is that a decision or an inherited constraint?")
 - Confirm understanding before coaching ("Let me make sure I have this: you want the reader to feel X but the diagnosis says the scene is producing Y")
 

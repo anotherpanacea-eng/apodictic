@@ -168,7 +168,7 @@ Five skills (core-editor, pre-writing-pathway, plot-architecture, specialized-au
 ## Done
 
 ### v1.2.1 — Audit Sequencing & Model Tags
-Auto-run audits as synthesis dependencies (fixes Observer's Share sequencing bug). Model-tag required in output filenames.
+Auto-run audits as synthesis dependencies (fixes multi-story collection sequencing bug). Model-tag required in output filenames.
 
 ### v1.2.0 — Artifact Coverage
 Partial Manuscript Diagnostic (six stall causes, momentum report, setup inventory). Fragment Synthesis Mode (clustering, connection mapping, candidate structure). Router gaps filled for fragments and partial drafts.
