@@ -128,11 +128,9 @@ Architectural changes to how the plugin executes, not what it diagnoses.
 
 ### Pre-Skill Context Compaction
 
-Before loading the skill and manuscript, compact prior conversation history to reclaim context space. Currently requires the user to manually run `/compact`. Ideally would be a pre-skill hook in the plugin manifest — request this as a platform feature.
+Before loading the skill and manuscript, compact prior conversation history to reclaim context space. Currently requires the user to manually run `/compact`.
 
-### Token-Adaptive Run Profiles
-
-The execution engine detects available context budget and adjusts the run profile accordingly. Short manuscripts get full subagent treatment; long manuscripts get selective reading; very long manuscripts get a warning and a recommendation to use Submission Triage (v1.1) instead.
+**Status (2026-03-17):** Largely resolved by two platform developments: (1) 1M context on Opus 4.6 means most manuscripts fit comfortably even with conversation history, and (2) Claude Code's built-in auto-compression handles context overflow automatically. Claude Code now supports hooks (`PreToolUse`, `PostToolUse`, etc.), but no `BeforeSkillInvoke` event exists and hooks cannot trigger `/compact` (it's an internal command, not a shell command). A dedicated pre-skill compaction hook remains a nice-to-have if Claude Code adds skill-lifecycle events; not a blocker.
 
 ---
 

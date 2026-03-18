@@ -127,6 +127,7 @@ After generating the contract, recommend specialized audits based on genre, mode
 | Memoir, personal essay, creative nonfiction | Memoir/CNF (Gornick Layer), Franklin Pathway | Memoir requires situation/story distinction and narrating intelligence; Franklin tests pre-spine viability |
 | Narrative nonfiction, reported feature, profile | Narrative Nonfiction Craft (Hart), Franklin Pathway | Nonfiction with narrative ambitions requires scene construction and source integration diagnostics |
 | Composite novel or series | Series/Composite Novel | Multi-part works require standalone function and distance management |
+| Series continuity concern | Series Continuity | Cross-volume consequence propagation, state tracking, thread inventory; requires Pass 10 + Pass 8 |
 | Heat level > 0 or erotic content present | Erotic Content Tag | Intimate scenes require load-bearing vs. decorative analysis |
 | Consent complexity, power dynamics central | Consent Complexity | Works where consent is narratively interrogated, not just present |
 | Cozy signaling in marketing or tone | Cozy Tag | Cozy promise requires safety envelope and recovery rhythm diagnostics |

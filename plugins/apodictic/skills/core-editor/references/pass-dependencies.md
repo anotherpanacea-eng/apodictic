@@ -147,6 +147,7 @@ Activated by intake answers before passes run.
 | Narrative nonfiction | Narrative Nonfiction Craft | Auto-run (bundled) | `genre/narrative-nonfiction.md` |
 | Short fiction (<20K words) | Short Fiction | Auto-recommend | `craft/short-fiction.md` |
 | Series context flagged | Series & Composite Novel | Auto-recommend | `craft/series-composite-novel.md` |
+| Series continuity concern | Series Continuity | Auto-run (requires Pass 10 + Pass 8) | `craft/series-continuity.md` |
 | Queer romance / queer identity central | Queer Romance/Erotica | Auto-recommend | `tag/queer-romance-erotica.md` |
 | Submission readiness goal | Shelf Positioning | Auto-recommend with Pass 11 | `craft/shelf-positioning.md` |
 | Constraint = risk | (Risk Register — not yet built) | Note gap; proceed without | — |

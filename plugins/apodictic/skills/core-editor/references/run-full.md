@@ -130,13 +130,84 @@ Compare across these dimensions:
 
 ### Pass 9: Thematic Coherence
 
-Track motifs, thematic development, controlling idea alignment.
+Build a complete thematic architecture of the manuscript: what themes are present, how they are dramatized, whether they cohere with the controlling idea, and where thematic integration succeeds or fails.
 
-**Reference project story guides for thematic intent.**
+**Reference project story guides for thematic intent. The contract's controlling idea and anti-idea are the primary calibration anchors.**
 
-Detect: theme drift, theme-as-thesis, accidental motifs, unearned resolution, thematic contradiction.
+#### What to Build
 
-**Output:** `[Project]_Pass9_Thematic_Coherence_[runlabel].md` — Thematic inventory (primary, secondary, tertiary themes with statements of what each means and how dramatized), thematic architecture map showing hierarchy and relationships, controlling idea alignment check, genre-specific thematic assessment where applicable (e.g., horror metaphor assessment, romance thematic throughline). Flag theme-as-explanation if any character delivers the thesis statement.
+**Thematic inventory.** Identify primary, secondary, and tertiary themes. For each theme, state:
+- What the theme *is* (one sentence)
+- How it is *dramatized* — through which characters, conflicts, images, or structural patterns (not through narrator declaration or character speechifying)
+- Whether it supports, complicates, or contradicts the controlling idea
+
+**Thematic architecture map.** Show hierarchy and relationships among themes. Themes may be:
+- *Nested* (secondary theme is a specific case of primary)
+- *Tensioned* (two themes create productive friction — this is usually a sign of strength)
+- *Parallel* (themes coexist without interaction — may indicate thematic sprawl)
+- *Contradictory* (themes undermine each other without the text acknowledging the contradiction)
+
+**Controlling idea alignment check.** Test whether the manuscript's ending structurally supports the controlling idea declared at contract. The test is not whether the theme is "stated" but whether the narrative's causal architecture enacts it:
+- Does the climax resolve the central tension in a direction consistent with the controlling idea?
+- Does the protagonist's arc demonstrate the controlling idea through choice and consequence, not through realization monologue?
+- If the ending is open, does the pressure applied to the central question align with the controlling idea's direction?
+
+**Image system and motif tracking.** Map recurring images, objects, and sensory patterns across the manuscript:
+- Where each motif first appears and how it evolves
+- Whether motifs accrue meaning through variation or merely repeat
+- Whether the motif system coheres with the thematic architecture or runs parallel to it
+- Whether the final deployment of a recurring motif applies pressure (deepening, complicating, or inverting its earlier meaning)
+
+**Keyword and semantic threading.** Track words and semantic clusters that carry thematic weight across the manuscript. This is not word-frequency analysis — it is attention to whether the text's own vocabulary builds a coherent associative network around its themes.
+
+What to look for:
+- *Deliberate synonym clusters* — a manuscript about confinement that threads "cramped," "bounded," "hemmed," and "cornered" through varied contexts is building thematic texture through language. Track whether the cluster is sustained across the full manuscript or drops out after act one.
+- *Vocabulary colonization* — when a character, institution, or force in the narrative has a distinctive vocabulary (clinical language, legal jargon, religious register), track whether that vocabulary infiltrates other characters' internal speech or the narrator's diction. Colonization that deepens across the manuscript is a thematic technique. Colonization that appears and disappears without pattern is a threading gap.
+- *Loaded terms* — words that the text invests with specific meaning beyond their dictionary definition. Once a term is loaded (through repetition in charged contexts, through a character defining it, through ironic deployment), the text has committed to that loading. Subsequent uses that ignore the established weight create a threading inconsistency.
+
+What NOT to flag:
+- Natural vocabulary variation that serves voice rather than theme
+- Recurring words that are functional (character names, setting details) rather than thematically loaded
+- Synonym variation that serves prose quality rather than thematic threading — not every word choice is a thematic signal
+
+#### What to Detect
+
+**Theme drift.** The manuscript establishes a thematic direction in early acts but migrates to different thematic territory without the controlling idea evolving to accommodate the shift. Distinguished from legitimate thematic development (where the question deepens or complicates) by whether the original thematic question is answered, transformed, or simply abandoned.
+
+**Theme-as-thesis (didactic delivery).** The theme is delivered as argument rather than dramatized as experience. Symptoms: characters articulate the theme in dialogue or internal monologue; narrator commentary explains what scenes "mean"; the text tells the reader what to conclude rather than building the conclusion through story logic. Flag: *theme-as-explanation* — a character delivers the thesis statement. This is almost always a structural failure regardless of genre.
+
+**Thematic intrusion.** A scene or passage exists primarily to broadcast a theme rather than to advance plot, character, or reader experience. Symptoms: characters engage in philosophical dialogue that doesn't arise from dramatic pressure; convenient artwork, books, or media within the story mirror the theme too perfectly; dream sequences serve as thematic allegory without narrative function. The test: if the thematic content were removed, would the scene still earn its space through causality, character, or tension? If not, the theme is intruding rather than integrating.
+
+**Accidental motifs.** Patterns that emerge from repetition without apparent authorial intent — the text inadvertently builds a motif system the author isn't managing. This can be neutral (the accidental motif doesn't contradict the intended themes) or actively harmful (the accidental motif undermines or distracts from the intended thematic architecture). Flag only when the accidental pattern is strong enough that a reader would register it and when it conflicts with the intended themes.
+
+**Unearned thematic resolution.** The manuscript's thematic question is "answered" by the ending without the narrative having built the causal architecture to support that answer. The ending asserts a thematic conclusion the story hasn't earned through character choice, consequence, and dramatic pressure. Related to but distinct from unearned plot resolution (which is a causality problem, not a thematic one) — thematic resolution can fail even when plot causality is sound, if the thematic pressure hasn't been applied to the right questions.
+
+**Thematic contradiction.** Two themes in the manuscript undermine each other without the text acknowledging or productively using the tension. Distinguish from *productive thematic tension* (where contradiction is the point — the text deliberately holds two positions in friction) by whether the text demonstrates awareness of the contradiction. Productive tension is thematized; unproductive contradiction is invisible to the text.
+
+**Thematic orphan.** An isolated thematic element — a scene, subplot, or motif — that doesn't connect to the manuscript's broader thematic architecture. The element may have internal coherence or aesthetic value, but it is structurally superfluous to the thematic argument. Flag only when the orphan is prominent enough to create reader expectation of thematic significance.
+
+**Thematic overreach.** The manuscript attempts to address too many thematic concerns, diluting the primary controlling idea. Secondary and tertiary themes proliferate without hierarchy, and the reader cannot identify what the manuscript is primarily *about*. Distinguished from rich thematic texture (which deepens one central question through multiple angles) by whether the themes have a legible hierarchy or compete as equals.
+
+#### Genre-Specific Thematic Assessment
+
+When genre modules are active, adjust thematic expectations:
+
+- **Literary fiction:** Theme is often the primary structural engine. Higher tolerance for thematic complexity, ambiguity, and open-ended thematic questions. Lower tolerance for didactic resolution. Motif systems and image architecture carry more structural weight.
+- **Horror:** Assess whether the central metaphor (what the monster/threat represents) is consistent and whether the horror dramatizes the theme or merely illustrates it. Psychological horror relies on thematic coherence more heavily than supernatural horror.
+- **Romance:** The thematic throughline typically concerns what must change internally before love becomes possible. Assess whether the romance's emotional arc enacts this theme or whether it resolves through external plot convenience.
+- **SFF:** Worldbuilding details often carry thematic weight (a magic system's costs may dramatize themes of sacrifice or hubris). Assess whether speculative elements are thematically integrated or decorative.
+- **Mystery/thriller:** The investigation structure often enacts a thematic question about truth, justice, or knowledge. Assess whether the resolution's thematic implications are consistent with what the investigation dramatized.
+- **Satire/comedy:** Thematic targets must be consistently identified. Assess whether the satire's object is stable or whether it drifts between targets.
+
+#### Cross-Volume Thematic Continuity
+
+When running on a multi-volume work (series continuity audit active), extend thematic tracking to assess:
+- Whether thematic threads carry across volumes with development (not just repetition)
+- Whether thematic evolution is visible — the question deepens, complicates, or changes across volumes rather than restating
+- Whether motif systems evolve (water imagery that shifts meaning across volumes) or simply recur
+- Whether thematic continuity provides coherence when factual continuity is intentionally loose (common in literary series and linked collections)
+
+**Output:** `[Project]_Pass9_Thematic_Coherence_[runlabel].md` — Thematic inventory (primary, secondary, tertiary with dramatization and controlling-idea relationship), thematic architecture map showing hierarchy and relationships, controlling idea alignment check with climax-test, image system and motif map with evolution tracking, keyword/semantic threading assessment, genre-specific thematic assessment where applicable, thematic failure flags with specific scene/page references. Flag theme-as-explanation if any character delivers the thesis statement.
 
 ### Pass 10: Entity Tracking
 

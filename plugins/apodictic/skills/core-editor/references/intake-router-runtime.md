@@ -251,7 +251,7 @@ Existing commands bypass the router with pre-filled values. The router is the re
 | full_draft | repair | facilitator | Core DE (diagnostic vocabulary) | Gap |
 | full_draft | repair (feedback) | — | Feedback Triage → Core DE | Gap |
 | series | repair (single vol) | — | Core DE (series context) | Partially built |
-| series | repair (continuity) | — | Series Continuity Audit | Gap |
+| series | repair (continuity) | — | Series Continuity Audit (`craft/series-continuity.md`) | **Built** (v1.2) |
 | series | draft (plan next) | — | Pre-Writing Pathway (series-aware) | Partially built |
 
 ## §7. Gap Handling Protocol
