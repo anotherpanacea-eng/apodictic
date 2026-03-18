@@ -44,21 +44,9 @@ Moved to [Completed](#completed) section.
 
 ---
 
-## v1.2 — Artifact Coverage
+## v1.2 — Artifact Coverage ✓
 
-Extend the plugin to handle manuscript states beyond "complete draft" and "idea."
-
-### Partial Manuscript Diagnostic
-
-Writers stuck mid-draft. Run passes on available material without penalizing missing structure. Pass 0 runs on what exists, Pass 1 notes where momentum stops, synthesis focuses on "what's working, what's stalling, where to go next."
-
-### Fragment Synthesis Mode
-
-Writers with scattered scenes, notes, and fragments but no continuous narrative. Pre-processing step that clusters fragments into candidate contract/spine before Core DE runs. Output: candidate contract (provisional), recommended spine, fragment map showing what connects and what doesn't.
-
-### Cross-Volume Series Continuity ✓
-
-Series writers working across multiple books. Diagnostic state persists across volumes. Character state tracking, world rule ledger, unresolved thread inventory, hope calibration per volume. **Shipped in v1.1.1.** Moved to [Completed](#completed) section.
+Extend the plugin to handle manuscript states beyond "complete draft" and "idea." **All three items shipped across v1.1.1–v1.2.0.** Moved to [Completed](#completed) section.
 
 ---
 
@@ -227,6 +215,20 @@ v0.5 UX overhaul complete: query-driven passes, intake router, scene-level hando
 - **Cross-Volume Series Continuity Audit** (`/audit series-continuity`). Five diagnostic channels: Character State (CS), World Rules (WR), Unresolved Threads (UT), Hope Calibration (HC), Revision Ledger (RL). 24 named flags across consequence, state, rule, thread, and canon layers. Seven decision tests for cross-volume transitions. Mode calibration for 8 series types. Three-way classification: Working Continuity / Intentional but Undersupported / Serial State Amnesia. Rolling `Series_State.md` artifact persists across volumes. Three-model level-setting research brief (Opus 4.6 + Codex 5.4 + ChatGPT construct-validation framework).
 - **Pass 9 (Thematic Coherence) deepened.** Eight named failure modes: theme drift, theme-as-thesis, thematic intrusion, accidental motifs, unearned thematic resolution, thematic contradiction, thematic orphan, thematic overreach. Genre-specific thematic calibration. Semantic threading with observable patterns (synonym clusters, vocabulary colonization, loaded terms) and non-evidence guardrails. Cross-volume thematic extension hook for series continuity.
 - **Router gap filled.** `series | repair (continuity)` route built.
+
+### v1.1.3 — Revision Coach Deepening
+
+- **Guidance Without Specification** as named coaching stance with actionable test (does this intervention identify the problem and offer tools for exploration, or does it prescribe the solution?).
+- **Anti-chronological revision guidance.** Session planning actively discourages start-from-page-one linear revision.
+- **Three-way stuck-point block diagnosis.** Cognitive overload (too many variables), motivational/emotional (perfectionism, fear, self-doubt), physiological (burnout, life stressor). Diagnosis determines which intervention to offer.
+- **Stuck-point exercise library.** Six named exercises: Name the Resistance, Sit with the Draft, Write Toward the Difficulty, Permission Draft, Inventory What Works, Seek Outside Readers. Exercises are offered one at a time based on diagnosed block type.
+- **Pause/Paraphrase/Probe dialogue techniques** for coaching conversations.
+
+### v1.2.0 — Partial Manuscripts & Fragment Synthesis
+
+- **Partial Manuscript Diagnostic.** Full Core DE pass behavior modified for incomplete drafts. Pass 0 adds Momentum Report (stopping point, forward energy, trajectory). Pass 1 adds stall detection and momentum tracking — marks undelivered promises as "open" not "broken." Pass 2 maps available structure without projecting complete architecture. Pass 5 tracks arc trajectory without penalizing incomplete arcs. Pass 8 adds Setup Inventory — planted information and open questions treated as assets, not dropped threads. Synthesis produces a Partial Diagnostic Letter focused on "what's working, what's stalling, where to go next."
+- **Fragment Synthesis Mode.** Pre-diagnostic clustering for writers with scattered material. Three-step protocol: Fragment Inventory (typed, measured, connection-mapped), Connection Mapping (character/setting/temporal/tonal/thematic/conflict clusters with hub/satellite/orphan classification), Candidate Structure (1-3 proposed structural forms with fragment coverage and gap analysis). Produces Fragment Map, provisional Contract, and Recommended Spine. Hands off to Pre-Writing Pathway (default) or Partial Manuscript Diagnostic (if fragments sequence into 10K+ connected words).
+- **Router gaps filled.** `fragments | draft`, `fragments | repair`, `partial | repair (diagnostic)`, `partial | repair (targeted)` routes all built.
 
 ### v1.1.2 — Revision Coach
 

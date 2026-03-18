@@ -213,6 +213,88 @@ Do not offer the full library. Diagnose the block, then offer one exercise — t
 
 ---
 
+## Partial Manuscript Coaching
+
+When `Diagnostic_State.md` shows `Mode.Artifact: partial`, the coaching workflow shifts from systematic revision to forward-writing momentum. The writer isn't revising a complete work — they're trying to unstick an incomplete one.
+
+### What Changes
+
+**Session planning pivots from leverage-ranked revision to unblocking strategy.** The core question is not "which root cause should you fix first?" but "what is preventing you from writing the next scene?"
+
+**The stall diagnosis from the Partial Diagnostic Letter is the primary coaching input.** Read the letter's §3 (What's Stalling) for the diagnosed stall cause and its textual markers. The coaching intervention should address that cause directly.
+
+### Coaching by Stall Cause
+
+| Stall cause | Coaching approach |
+|---|---|
+| **Structural uncertainty** | The writer doesn't know what happens next. This is a cognitive block — the problem has too many open variables. Decompose: "What are the three possible next scenes? Which one your existing setup commits you to most?" Use the Setup Inventory from Pass 8 to show the writer what their draft has already promised. If structural uncertainty is deep (the writer can't articulate any possible next scene), recommend stepping back to Pre-Writing (see §Coach-to-Pre-Writing Handoff below). |
+| **Character motivation gap** | The writer knows the plot but doesn't know why the character would act. This is the most common mid-draft stall. Use Pass 5's arc trajectory: "Where is this character heading based on what you've written? What have they earned, learned, or lost that would drive a decision here?" If the motivation gap persists, recommend the **Write Toward the Difficulty** exercise — the writer may need to articulate, outside the manuscript, what this character wants at this specific moment. |
+| **Tonal drift** | The draft is becoming a different book. This is a contract problem, not an execution problem. Return to the provisional contract: "The draft started as [X] but the recent material reads more like [Y]. Is the drift intentional — are you discovering that the book wants to be something different? Or has it wandered?" If intentional, update the contract and reframe. If unintentional, identify where the drift started and use **Sit with the Draft** — re-read the transition zone without fixing, just noticing where the shift occurs. |
+| **Scope creep** | The draft is trying to do too much. The Setup Inventory is the primary tool — show the writer their growing thread count. "You currently have [N] active throughlines. Which ones are load-bearing for the story you set out to tell? Which ones arrived because you got interested in them while drafting?" The writer may need to make Keep/Cut decisions about storylines before they can move forward. This is coaching, not diagnosis — the coach facilitates the decision, doesn't make it. |
+| **Fear of commitment** | The draft is avoiding its own hard scene. This is a motivational block. The Momentum Report shows where forward energy redirects. Name it directly: "The draft has been building toward [scene/moment] for [N] chapters. The last three scenes diverted into [subplot/flashback/secondary character]. Is the hard scene the one you're avoiding?" If yes, offer **Permission Draft** — write the worst possible version of the hard scene. The structural decision matters; the prose quality doesn't, yet. |
+| **Exhaustion** | The writing quality has dropped but the structure is intact. This is a physiological block. Coach the writer away from the desk. Recommend a genuine break (days, not hours). If a deadline exists, use deadline coaching to draw an honest timeline. If the writer insists on continuing, drop scope to polish-level: "Instead of drafting new material today, go back and strengthen one scene you already like. Build momentum from existing strength, not from pushing through fatigue." |
+
+### Forward-Writing Session Plans
+
+Session plans for partial manuscripts have a different structure than revision session plans. Instead of "focus issue → intervention class → testable success condition," they use:
+
+```markdown
+## Session Plan: [date]
+
+**Stall diagnosis:** [from Partial Diagnostic Letter]
+**Current stopping point:** [where the draft ends]
+**Available time:** [stated]
+**Energy level:** [stated or default to mixed]
+
+### Goal
+[One concrete writing goal: "Draft the confrontation scene in chapter 8" / "Resolve the motivation gap for [character] in the existing chapter 6 scene" / "Cut the subplot that's causing scope creep"]
+
+### What the draft has committed to
+[From Setup Inventory — the 2-3 most relevant open threads]
+
+### Structural question to answer
+[Not "what should happen" — "what decision does the character/plot need to make here?"]
+
+### Coaching note
+[One sentence from the coach about the recommended approach]
+```
+
+### Coach-to-Pre-Writing Handoff
+
+When the coaching diagnosis points to deep structural uncertainty — the writer can't articulate what happens next, and the Setup Inventory alone isn't sufficient to unblock them — the coach should recommend stepping back to the Pre-Writing Pathway. This is not a failure; it's a recognition that the writer needs structural planning tools, not revision coaching.
+
+**When to recommend:**
+- The writer can't name any possible next scene, even after decomposition
+- The stall-cause diagnosis is "structural uncertainty" and the coaching intervention (decompose, use Setup Inventory) doesn't produce forward movement
+- The writer says something like "I don't know what this book is about anymore" or "I think I need to start over" — these signal that the contract itself is in question, not just the next scene
+- Tonal drift is diagnosed and the writer confirms it's unintentional — the draft's contract needs revisiting
+
+**How to hand off:**
+
+> "The coaching tools are for when you know where you're going but can't get there. Right now, the issue is that the destination itself isn't clear. The Pre-Writing Pathway is built for exactly this — it'll help you plan the remaining structure using what you've already written as a foundation, not starting from scratch.
+>
+> Run `/pre-writing` — it'll pick up in re-entry mode. Your existing contract, setup inventory, and everything the diagnostic found will carry over as starting context."
+
+**What carries over:**
+- The provisional contract from the partial diagnostic → seeds the prospective contract in Pre-Writing (the writer doesn't re-answer questions they've already answered)
+- The Setup Inventory from Pass 8 → feeds Phase 1 (Seed Inventory) — the writer's existing material is the seed
+- The stall diagnosis → noted in the Pre-Writing intake so the pathway knows what structural question to prioritize
+- The Diagnostic_State.md → preserved for when the writer returns to drafting
+
+**What doesn't carry over:**
+- Session plans and coaching logs (these are coaching artifacts, not structural planning artifacts)
+- Specific pass findings beyond the contract and setup inventory (Pre-Writing works from intent, not from diagnostic detail)
+
+The Pre-Writing Pathway's re-entry mode (see `pre-writing-pathway/SKILL.md` §Router Integration) is designed for exactly this case. It imports known structural decisions and starts from Phase 2+, skipping the initial seed inventory since the writer already has material.
+
+### When to Recommend Returning to Diagnosis
+
+- The writer completes a significant new section (5,000+ words) → recommend running a fresh partial diagnostic on the expanded material
+- The writer resolves the diagnosed stall but hits a new one → recommend re-running Pass 1 for updated stall detection
+- The writer finishes the draft → recommend switching to full Core DE with a fresh analysis (not a revision round, since the partial diagnostic used different standards)
+
+---
+
 ## Reassessment Triggers
 
 After the writer completes a session plan's focus item, assess whether the diagnostic state may have shifted:

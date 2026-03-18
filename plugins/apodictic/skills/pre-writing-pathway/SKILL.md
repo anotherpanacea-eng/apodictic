@@ -5,7 +5,7 @@ description: >
   draft-ready structure. Use when the user asks to "plan a story," "outline
   a novel," "develop a premise," "figure out my book," "structure my idea,"
   or any request for help moving from concept to ready-to-draft planning.
-version: 1.1.3
+version: 1.2.0
 ---
 
 # Pre-Writing Pathway
@@ -25,7 +25,7 @@ The Firewall still applies: the pathway helps the writer discover what they want
 - Writer asks for help planning, outlining, or "figuring out" a book
 - Writer has finished one project and wants to start the next
 
-**Does NOT activate for:** Writers with a complete draft (route to Core DE), writers stuck mid-draft (route to Core DE with partial-manuscript intake flag — see §9 capability gap: "Partial Manuscript Diagnostic"), writers with a draft needing revision (route to Core DE revision round).
+**Does NOT activate for:** Writers with a complete draft (route to Core DE), writers stuck mid-draft (route to Core DE with partial-manuscript flag — see `references/partial-manuscript.md`), writers with a draft needing revision (route to Core DE revision round). Exception: writers whose partial-manuscript coaching diagnosis reveals deep structural uncertainty may be handed off to Pre-Writing in re-entry mode (see Router Integration below).
 
 ---
 
@@ -46,6 +46,7 @@ Use prefilled values to skip redundant intake prompts:
 - `artifact=idea` + `goal=draft`: run standard Phase 0 -> Phase 6 flow.
 - `artifact=fragments`: start at Phase 1 Seed Inventory with fragment consolidation emphasis.
 - `artifact=partial` + rethink route: run pre-writing re-entry mode; import known structural decisions before Phase 2+.
+- `artifact=partial` + coaching handoff: the Revision Coach has diagnosed deep structural uncertainty and recommended Pre-Writing. Load the provisional contract from the partial diagnostic, the Setup Inventory from Pass 8, and the stall diagnosis from the coaching session. Start at Phase 2 (Controlling Idea exploration) — the writer has material (Phase 1 covered) but needs structural planning for the remaining draft. The stall diagnosis tells you which structural question to prioritize.
 
 Do not re-ask "what do you have?" when router already answered it unless the user indicates the classification is wrong.
 

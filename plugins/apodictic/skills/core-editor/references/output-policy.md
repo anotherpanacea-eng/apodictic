@@ -60,6 +60,15 @@ Write project artifacts to the project's `Outputs/` folder using:
 
 `runlabel` should be date-based (`YYYY-MM-DD`) and may include agent tag (e.g., `codex53_2026-02-13`).
 
+**Partial Manuscript Diagnostic (when `artifact=partial`):**
+- `[Project]_Partial_Diagnostic_[runlabel].md` (replaces `Core_DE_Synthesis`)
+- All pass artifacts use standard naming but follow partial-manuscript modifications (see `references/partial-manuscript.md`)
+
+**Fragment Synthesis (when `artifact=fragments`, goal=`draft`):**
+- `[Project]_Fragment_Map_[runlabel].md`
+- `[Project]_Contract_[runlabel].md` (marked as provisional)
+- `[Project]_Recommended_Spine_[runlabel].md`
+
 **Series Continuity (when active):**
 - `[Project]_Series_Continuity_Audit_[runlabel].md`
 

@@ -231,11 +231,11 @@ Existing commands bypass the router with pre-filled values. The router is the re
 | idea | draft | — | Pre-Writing Pathway | **Built** |
 | idea | draft (fast-track) | — | Pre-Writing Pathway (skip to Phase 4) | **Built** |
 | idea | draft | nonfiction | Nonfiction Pre-Writing | Gap |
-| fragments | draft | — | Fragment Synthesis → Pre-Writing | Gap (Pre-Writing fallback available) |
-| fragments | draft | ai | Fragment Synthesis → Pre-Writing + AI-Prose Calibration | Gap (partial) |
-| fragments | repair | — | Core DE (partial flag) | Gap: partial manuscript diagnostic |
-| partial | repair (diagnostic) | — | Core DE (partial flag) | Gap: partial manuscript diagnostic |
-| partial | repair (targeted) | — | Core DE (partial flag, targeted) | Gap: partial manuscript diagnostic |
+| fragments | draft | — | Fragment Synthesis → Pre-Writing | **Built** (v1.2.0) |
+| fragments | draft | ai | Fragment Synthesis → Pre-Writing + AI-Prose Calibration | **Built** (v1.2.0, calibration deferred to post-synthesis) |
+| fragments | repair | — | Core DE (partial flag) | **Built** (v1.2.0) |
+| partial | repair (diagnostic) | — | Core DE (partial flag) | **Built** (v1.2.0) |
+| partial | repair (targeted) | — | Core DE (partial flag, targeted) | **Built** (v1.2.0) |
 | partial | draft (rethink) | — | Pre-Writing Pathway (re-entry) | **Built** |
 | partial | repair | time | Submission Triage | Gap: triage requires complete manuscript. Offer targeted `/diagnose`. |
 | full_draft | repair | — | Core DE | **Built** |

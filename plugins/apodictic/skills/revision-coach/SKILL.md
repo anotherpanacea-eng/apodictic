@@ -2,12 +2,13 @@
 name: revision-coach
 description: >
   Post-diagnostic revision coaching for fiction and narrative nonfiction.
-  Use when the user has a completed development edit and wants help planning
-  revision sessions, working through stuck points, tracking revision momentum,
-  or managing a deadline. Triggers on "coach," "revision plan," "session plan,"
+  Use when the user has a completed development edit or partial manuscript
+  diagnostic and wants help planning revision sessions, working through stuck
+  points, tracking revision momentum, managing a deadline, or unblocking a
+  stalled draft. Triggers on "coach," "revision plan," "session plan,"
   "I have a diagnosis," "help me revise," "where should I start," "I'm stuck,"
-  "I have [time] to work," or "deadline."
-version: 1.1.3
+  "I have [time] to work," "I can't write," or "deadline."
+version: 1.2.0
 ---
 
 # APODICTIC Revision Coach
@@ -169,6 +170,21 @@ If not present in `Diagnostic_State.md`, append this section:
 |------|------|-------|----------------|---------------------|
 | | | | | |
 ```
+
+---
+
+## Partial Manuscript Coaching
+
+When `Diagnostic_State.md` shows `Mode.Artifact: partial`, the coaching workflow shifts. The writer isn't revising a complete work — they're trying to unstick an incomplete one.
+
+**What changes:**
+- **Session planning pivots from leverage-ranked revision to unblocking strategy.** The core question is "what is preventing you from writing the next scene?" not "which root cause should you fix first?"
+- **The stall diagnosis from the Partial Diagnostic Letter is the primary coaching input.** The coaching intervention addresses the diagnosed stall cause (structural uncertainty, character motivation gap, tonal drift, scope creep, fear of commitment, or exhaustion).
+- **Session plans use forward-writing format** — goal, setup commitments, structural question to answer — instead of the revision focus → intervention class → testable condition format.
+
+See `references/coaching-protocol.md` §Partial Manuscript Coaching for the full coaching-by-stall-cause table and forward-writing session plan template.
+
+**Post-synthesis offer (partial):** After a Partial Diagnostic Letter, surface: *"Diagnostic complete. Run `/coach` to plan your next writing session and work through what's stalling."*
 
 ---
 
