@@ -20,7 +20,9 @@ It runs 11 analytical passes: reverse outline, reader experience mapping, struct
 
 APODICTIC isn't just for finished drafts.
 
-- **Revision Coach** (`/coach`) — post-diagnostic coaching that helps you plan revision sessions without doing the revision for you. Four modes: session planning (leverage-ranked priorities matched to your available time), stuck-point coaching (reframes the mechanism when a scene resists revision), momentum tracking (session-over-session progress), and deadline coaching (honest triage with revision calendar)
+- **Partial manuscript diagnostic** — stuck mid-draft? APODICTIC runs on what exists without penalizing missing structure. Adds momentum tracking, stall detection, and a setup inventory showing what your draft has committed to. Synthesis focuses on what's working, what's stalling, and where to go next
+- **Fragment synthesis** — scattered scenes and notes but no continuous narrative? Fragment Synthesis clusters your material, maps connections, and produces a candidate structure showing what your fragments add up to
+- **Revision Coach** (`/coach`) — post-diagnostic coaching that helps you plan revision sessions without doing the revision for you. Four modes: session planning (leverage-ranked priorities matched to your available time), stuck-point coaching (reframes the mechanism when a scene resists revision), momentum tracking (session-over-session progress), and deadline coaching (honest triage with revision calendar). Includes a stuck-point exercise library and three-way block diagnosis
 - **Series Continuity** (`/audit series-continuity`) — cross-volume consequence tracking for multi-book series. Five diagnostic channels: character state, world rules, unresolved threads, hope calibration, and intentional discontinuities. Rolling `Series_State.md` persists across volumes
 - **Pre-writing pathway** for writers who have an idea but no manuscript — takes you from seed to draftable structure
 - **Plot coach** with 50 structural spines across 12 families (not just three-act)

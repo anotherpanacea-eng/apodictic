@@ -7,7 +7,7 @@ description: >
   "run the passes," "do a revision round," or any request involving manuscript
   analysis, structural diagnosis, or editorial feedback. Also triggers on
   "APODICTIC," "APDE," or "development editor."
-version: 1.1.3
+version: 1.2.0
 ---
 
 # APODICTIC Development Editor — Core Orchestrator
@@ -225,6 +225,8 @@ During intake, identify the manuscript's genre and load the corresponding module
 | `references/run-full.md` | When selected pass set includes advanced passes (3, 4, 6, 7, 9, 10) |
 | `references/output-policy.md` | Before writing any output (editorial letter, pass reports) |
 | `references/adversarial-stress-test.md` | During every editorial letter synthesis (§7 of letter) |
+| `references/partial-manuscript.md` | When `artifact=partial` — modifies pass behavior for incomplete drafts |
+| `references/fragment-synthesis.md` | When `artifact=fragments` and goal=`draft` — pre-diagnostic clustering |
 | `references/handoff-protocol.md` | When offering/entering/exiting scene-level execution mode |
 | `references/character-architecture.md` | When detailed character analysis needed beyond Pass 5 basics |
 | `references/pass-11.md` | When market viability / publication readiness is requested |
@@ -247,6 +249,7 @@ During intake, identify the manuscript's genre and load the corresponding module
 | `references/reverse-outline-template.md` | Reverse outline format |
 | `references/intake-router-runtime.md` | Runtime routing spec for `/start` command |
 | `references/intake-router-design.md` | Router rationale and implementation notes (non-runtime) |
+| `references/series-state-template.md` | Series continuity state initialization |
 
 ### Other References
 | File | Purpose |

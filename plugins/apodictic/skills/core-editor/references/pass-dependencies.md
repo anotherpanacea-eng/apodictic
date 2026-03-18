@@ -79,6 +79,19 @@ The Findings Ledger is not a pass. It has no tier. It is appended to by every pa
 | Full diagnostic ("everything") | all passes | Full |
 | Submission readiness | all + 11 | Submission Readiness |
 
+### §2a-partial. Partial manuscript pass behavior
+
+When `artifact=partial` is set, the standard resolver applies but all passes operate under modified expectations defined in `references/partial-manuscript.md`. Key differences:
+
+- **Pass 0** adds a Momentum Report (where the draft stops, what's building)
+- **Pass 1** adds stall detection and momentum tracking; marks undelivered promises as "open" not "broken"
+- **Pass 2** maps available structure without projecting complete architecture; reports trajectory not template
+- **Pass 5** tracks arc trajectory without penalizing incomplete arcs
+- **Pass 8** includes a Setup Inventory; marks unresolved setups as assets not failures
+- **Synthesis** produces a Partial Diagnostic Letter focused on "what's working, what's stalling, where to go next"
+
+The baseline floor (Passes 0, 1, 2, 5, 8) applies to partial manuscripts as it does to complete drafts. Auto-escalation to full pass set (§2b) is suppressed for partial manuscripts — the triggers assume complete-manuscript data.
+
 ### §2a. Baseline floor rule
 
 The "General diagnostic" row is the **floor**, not one option among equals. Apply it when:
