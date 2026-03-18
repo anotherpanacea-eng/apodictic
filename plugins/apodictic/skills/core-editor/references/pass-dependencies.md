@@ -42,7 +42,7 @@ Tier 2 passes run only when selected by the query resolver. Each depends on one 
 | Synthesis | Root cause analysis + editorial letter | All selected Tier 2 passes | `[Project]_Synthesis_[runlabel].md` |
 | 11 | Critical Quality & Market Viability | 0, 1, 2, 5, Synthesis | `[Project]_Pass11_Critical_Quality_[runlabel].md` |
 
-Synthesis always runs after all selected passes complete. Pass 11 runs only when submission readiness is in scope.
+Synthesis always runs after all selected passes **and all auto-run audits** complete. Auto-run audits (§4a) are synthesis dependencies — synthesis MUST NOT begin until their findings are in the Findings Ledger. Pass 11 runs only when submission readiness is in scope.
 
 ### Running Artifacts (not passes)
 
@@ -188,9 +188,9 @@ Activated by pass results during a diagnostic run. The system checks these after
 
 ### §4c. Policy definitions
 
-- **Auto-run:** Audit loads without user confirmation. Bundled with the workflow from intake. Used for audits that are definitional to the manuscript type (e.g., Memoir audit for a memoir, AI-Prose for an AI-assisted draft).
-- **Auto-recommend:** System recommends after the relevant pass completes. The user can decline. Used for genre-specific audits that would catch issues the passes surface but can't fully diagnose.
-- **Recommend:** System mentions availability when findings suggest relevance. The user opts in. Used for cross-cutting audits that *might* be relevant based on patterns.
+- **Auto-run:** Audit loads without user confirmation. Bundled with the workflow from intake. Used for audits that are definitional to the manuscript type (e.g., Memoir audit for a memoir, AI-Prose for an AI-assisted draft). **Auto-run audits are synthesis dependencies.** They must complete and append their findings to the Findings Ledger before synthesis begins. This ensures synthesis integrates auto-run audit findings into root cause analysis and triage rather than requiring post-hoc retrofitting.
+- **Auto-recommend:** System recommends after the relevant pass completes. The user can decline. Used for genre-specific audits that would catch issues the passes surface but can't fully diagnose. Auto-recommend audits run after their triggering pass; if the user accepts and the audit completes before synthesis begins, its findings are integrated. If it completes after synthesis, its findings appear in the editorial letter appendix as "post-synthesis audit — not integrated into triage."
+- **Recommend:** System mentions availability when findings suggest relevance. The user opts in. Used for cross-cutting audits that *might* be relevant based on patterns. Same post-synthesis labeling applies if they complete late.
 
 ### §4d. Presentation format
 

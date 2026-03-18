@@ -7,7 +7,7 @@ description: >
   "run the passes," "do a revision round," or any request involving manuscript
   analysis, structural diagnosis, or editorial feedback. Also triggers on
   "APODICTIC," "APDE," or "development editor."
-version: 1.2.0
+version: 1.2.1
 ---
 
 # APODICTIC Development Editor — Core Orchestrator
@@ -265,6 +265,12 @@ During intake, identify the manuscript's genre and load the corresponding module
 | `references/intake-questions.md` | `references/run-core.md` §Hypothesis-Driven Intake Questions |
 | `references/certainty-axis.md` | `references/run-full.md` §Certainty Axis Cues |
 | `references/structural-frameworks.md` | `references/run-full.md` §Structural Frameworks |
+
+---
+
+## Model Tag in Output Filenames
+
+When generating output filenames, append the model tag to the runlabel: `YYYY-MM-DD_[model-tag]`. Derive the tag from the model identifier (e.g., `claude-opus-4-6` → `opus46`). If the model identifier is unavailable, use `unknown`. See `references/output-policy.md` §Output Naming Convention for the full tag table.
 
 ---
 

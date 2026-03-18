@@ -596,10 +596,11 @@ The structured block is *supplementary*, not a replacement for the prose finding
 
 After all core passes are complete and before writing the synthesis:
 
-1. **Review accumulated audit triggers.** Compile all finding-driven recommendations from Passes 1, 2, 5, and 8.
-2. **Compare against contract-activated audits.** If a finding-driven trigger recommends an audit already activated at contract, confirm it should run. If it recommends an audit not activated at contract, present the recommendation to the author with evidence.
-3. **Run activated audits.** Load the full specialized audit module from `specialized-audits/references/` and apply to the manuscript. Each audit produces its own findings document.
-4. **Write the Audit Invocation Log.** Before synthesis, produce a log artifact tracking every audit considered during this run. Format:
+1. **Run auto-run audits first.** All audits with **auto-run** policy (see `pass-dependencies.md` §4c) are synthesis dependencies. They must complete and append their findings to the Findings Ledger before synthesis begins. Execute them immediately after their prerequisite passes are complete. Auto-run audits include: AI-Prose Calibration (when `constraint:ai`), Erotic Content (when erotic content flagged at intake), Memoir & CNF (when memoir/CNF), Narrative Nonfiction Craft (when narrative nonfiction), Series Continuity (when series continuity concern flagged).
+2. **Review accumulated audit triggers.** Compile all finding-driven recommendations from Passes 1, 2, 5, and 8.
+3. **Compare against contract-activated audits.** If a finding-driven trigger recommends an audit already activated at contract, confirm it should run. If it recommends an audit not activated at contract, present the recommendation to the author with evidence.
+4. **Run auto-recommend and user-accepted audits.** Load the full specialized audit module from `specialized-audits/references/` and apply to the manuscript. Each audit produces its own findings document. If an auto-recommend or user-accepted audit completes before synthesis begins, its findings are integrated. If it completes after, label it as a post-synthesis audit in the appendix.
+5. **Write the Audit Invocation Log.** Before synthesis, produce a log artifact tracking every audit considered during this run. Format:
 
 ```
 ## Audit Invocation Log
@@ -617,7 +618,7 @@ After all core passes are complete and before writing the synthesis:
 **Status** = `run`, `skipped` (author declined), or `deferred` (postponed to Full DE).
 Save as `[Project]_Audit_Invocation_Log_[runlabel].md`.
 
-5. **Feed audit findings into synthesis.** Specialized audit findings integrate into the editorial letter's "What Needs Work" sections — organized by problem, not by audit name. The author reads about the book's needs, not about which framework found the issue.
+6. **Feed audit findings into synthesis.** Specialized audit findings integrate into the editorial letter's "What Needs Work" sections — organized by problem, not by audit name. The author reads about the book's needs, not about which framework found the issue.
 
 **Cross-audit finding-driven triggers:**
 - **Representation Context** research mode surfaces active community contestation relevant to the manuscript's content → recommend **Reception Risk** audit if not already activated
@@ -634,6 +635,17 @@ These three audits address craft concerns that apply regardless of genre. They s
 ## Core DE Synthesis
 
 The synthesis is the author-facing editorial letter. It must read as one informed voice talking about a book — not as a framework generating output.
+
+### Pre-Synthesis Gate (Required)
+
+Before beginning synthesis, verify:
+
+1. All selected Tier 2 passes are complete
+2. All **auto-run audits** (per contract and constraint flags) are complete
+3. The Findings Ledger includes entries from both passes and auto-run audits
+4. The Audit Invocation Log is written
+
+If any auto-run audit has not completed, do not begin synthesis. Complete the audit first. Synthesis written without auto-run audit findings must be rewritten — this wastes tokens and produces incomplete editorial letters.
 
 ### Processing Protocol
 
