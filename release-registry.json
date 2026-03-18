@@ -18,8 +18,8 @@
     "geminiPublicPlugin": "../APODICTIC-Gemini/public/apodictic-plugin"
   },
   "counts": {
-    "availableAudits": 30,
-    "specializedAudits": 27,
+    "availableAudits": 31,
+    "specializedAudits": 28,
     "universalAudits": 3,
     "tagAudits": 5,
     "primaryTagAudits": 3,
@@ -188,6 +188,15 @@
           "files": [
             "craft/reception-risk.md",
             "craft/reception-risk-level-setting.md"
+          ]
+        },
+        {
+          "slug": "series-continuity",
+          "name": "Cross-Volume Series Continuity",
+          "summary": "consequence propagation, state tracking, thread inventory, hope calibration across volumes",
+          "files": [
+            "craft/series-continuity.md",
+            "craft/series-continuity-level-setting.md"
           ]
         }
       ]
