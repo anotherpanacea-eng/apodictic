@@ -60,7 +60,12 @@ Write project artifacts to the project's `Outputs/` folder using:
 
 `runlabel` should be date-based (`YYYY-MM-DD`) and may include agent tag (e.g., `codex53_2026-02-13`).
 
-`Diagnostic_State.md` is a rolling state file (not run-specific). If missing, initialize from `references/diagnostic-state-template.md`.
+**Series Continuity (when active):**
+- `[Project]_Series_Continuity_Audit_[runlabel].md`
+
+**Rolling state files** (not run-specific):
+- `Diagnostic_State.md` — per-volume diagnostic state. If missing, initialize from `references/diagnostic-state-template.md`.
+- `Series_State.md` — cross-volume series state. If missing, initialize from `references/series-state-template.md`. Persists across volumes; updated after each volume is analyzed.
 
 ---
 

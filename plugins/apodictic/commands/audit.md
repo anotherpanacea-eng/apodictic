@@ -22,6 +22,7 @@ Display the complete list of available audits with brief descriptions:
 - **dialectical** — Dialectical Clarity: argument structure, rhetorical fairness
 - **shelf** — Shelf Positioning: target reader, genre contract, comps, signals
 - **series** — Series & Composite Novel: standalone function, hope calibration
+- **series-continuity** — Cross-Volume Series Continuity: consequence propagation, state tracking, thread inventory, hope calibration across volumes
 - **interiority** — Interiority Preservation: POV interiority in high-intensity scenes
 - **female-interiority** — Female Interiority: agency, desire, independence
 - **literary-craft** — Literary Craft: load-bearing vs. ornamental prose, defamiliarization, hybrid calibrations
