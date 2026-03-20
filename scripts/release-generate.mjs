@@ -16,7 +16,7 @@ if (!fs.existsSync(registryPath)) {
 }
 
 const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
-const { paths, counts, categories, tagSummaryNames, commands } = registry;
+const { paths, counts, categories, tagSummaryNames, commands, passes, researchModes, argumentCompanions, macroBlocks } = registry;
 
 function abs(relPath) {
   return path.resolve(repoRoot, relPath);
@@ -157,6 +157,76 @@ function buildSpecializedAuditsTs() {
   return lines.join("\n");
 }
 
+function buildPassArrayTs(constName, items) {
+  if (!items || items.length === 0) return `const ${constName} = [];`;
+  const lines = [`const ${constName} = [`];
+  items.forEach((item, i) => {
+    const filesLiteral = item.files.map((f) => q(f)).join(", ");
+    const comma = i < items.length - 1 ? "," : "";
+    lines.push(`  { name: ${q(item.name)}, files: [${filesLiteral}] }${comma}`);
+  });
+  lines.push("];");
+  return lines.join("\n");
+}
+
+function buildAllPassConstantsTs() {
+  if (!passes) return null;
+  const blocks = [];
+  const mapping = [
+    ["BASE_PASSES", passes.base],
+    ["CORE_DE_PASSES", passes.coreDe],
+    ["FULL_DE_PASSES", passes.fullDe],
+    ["FULL_ONLY_SYNTHESIS_PASSES", passes.fullOnlySynthesis],
+    ["COMMON_SYNTHESIS_PASSES", passes.commonSynthesis],
+    ["SUBMISSION_TRIAGE_PASSES", passes.submissionTriage],
+    ["SUBMISSION_READINESS_ANALYTICAL_PASSES", passes.submissionReadinessAnalytical],
+    ["SUBMISSION_READINESS_SYNTHESIS_PASSES", passes.submissionReadinessSynthesis],
+    ["SUBMISSION_READINESS_VERDICT_PASSES", passes.submissionReadinessVerdict],
+  ];
+  for (const [name, items] of mapping) {
+    if (items) {
+      blocks.push(buildPassArrayTs(name, items));
+    }
+  }
+  return blocks.join("\n\n");
+}
+
+function buildMacroBlocksTs() {
+  if (!macroBlocks) return null;
+  const lines = ["const MACRO_BLOCKS = ["];
+  macroBlocks.forEach((block, i) => {
+    const passesLiteral = block.passes.map((p) => q(p)).join(", ");
+    const comma = i < macroBlocks.length - 1 ? "," : "";
+    lines.push(`  { question: ${q(block.question)}, passes: [${passesLiteral}] }${comma}`);
+  });
+  lines.push("] as const;");
+  return lines.join("\n");
+}
+
+function buildResearchModesTs() {
+  if (!researchModes) return null;
+  const lines = ["const RESEARCH_MODES = ["];
+  researchModes.forEach((mode, i) => {
+    const filesLiteral = mode.files.map((f) => q(f)).join(", ");
+    const comma = i < researchModes.length - 1 ? "," : "";
+    lines.push(`  { name: ${q(mode.name)}, files: [${filesLiteral}], description: ${q(mode.description)} }${comma}`);
+  });
+  lines.push("];");
+  return lines.join("\n");
+}
+
+function buildArgumentCompanionsTs() {
+  if (!argumentCompanions) return null;
+  const lines = ["const ARGUMENT_COMPANIONS = ["];
+  argumentCompanions.forEach((comp, i) => {
+    const filesLiteral = comp.files.map((f) => q(f)).join(", ");
+    const comma = i < argumentCompanions.length - 1 ? "," : "";
+    lines.push(`  { name: ${q(comp.name)}, files: [${filesLiteral}], description: ${q(comp.description)} }${comma}`);
+  });
+  lines.push("];");
+  return lines.join("\n");
+}
+
 function buildCommandAuditList() {
   return categories
     .map((category) => {
@@ -194,7 +264,7 @@ function buildRootReadmeAuditsLine(stats) {
 }
 
 function buildLandingPageSpecializedAuditBody(stats) {
-  return `Targeted analysis of specific craft concerns: emotional arc, tension mechanics, genre conventions, worldbuilding, and more. ${stats.available} audits across universal, craft, genre, and tag categories.`;
+  return `${stats.available} audits across universal, craft, genre, and tag categories. Emotional arc, tension mechanics, genre conventions, worldbuilding, force architecture, compression, reception risk, and more.`;
 }
 
 function buildGroupedCommandList() {
@@ -331,6 +401,48 @@ function main() {
       `Based on APODICTIC plugin v${pluginVersion}`,
       "App.tsx About version"
     );
+
+    // Pass arrays (all 9 constants in one block)
+    if (passes) {
+      const passConstants = buildAllPassConstantsTs();
+      content = replaceOrThrow(
+        content,
+        /const BASE_PASSES = \[[\s\S]*?\nconst SUBMISSION_READINESS_VERDICT_PASSES = \[[\s\S]*?\n\];/,
+        passConstants,
+        "App.tsx pass constants"
+      );
+    }
+
+    // Macro blocks
+    if (macroBlocks) {
+      content = replaceOrThrow(
+        content,
+        /const MACRO_BLOCKS = \[[\s\S]*?\n\] as const;/,
+        buildMacroBlocksTs(),
+        "App.tsx MACRO_BLOCKS"
+      );
+    }
+
+    // Research modes
+    if (researchModes) {
+      content = replaceOrThrow(
+        content,
+        /const RESEARCH_MODES = \[[\s\S]*?\n\];/,
+        buildResearchModesTs(),
+        "App.tsx RESEARCH_MODES"
+      );
+    }
+
+    // Argument companions
+    if (argumentCompanions) {
+      content = replaceOrThrow(
+        content,
+        /const ARGUMENT_COMPANIONS = \[[\s\S]*?\n\];/,
+        buildArgumentCompanionsTs(),
+        "App.tsx ARGUMENT_COMPANIONS"
+      );
+    }
+
     writeIfChanged(appTsxPath, content, changedFiles);
   }
 
@@ -369,7 +481,7 @@ function main() {
     let content = mustRead(landingPagePath);
     content = replaceOrThrow(
       content,
-      /Targeted analysis of specific craft concerns: emotional arc, tension mechanics, genre conventions, worldbuilding, and more\. \d+ audits across [^.]+ categories\./,
+      /\d+ audits across universal, craft, genre, and tag categories\. Emotional arc, tension mechanics, genre conventions, worldbuilding, force architecture, compression, reception risk, and more\./,
       buildLandingPageSpecializedAuditBody(auditStats),
       "LandingPage specialized audits card"
     );

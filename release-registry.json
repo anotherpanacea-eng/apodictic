@@ -122,6 +122,76 @@
       "description": "Compatibility alias for /coach."
     }
   ],
+  "passes": {
+    "base": [
+      { "name": "Reverse Outline", "files": ["core-editor/references/reverse-outline-template.md"] }
+    ],
+    "coreDe": [
+      { "name": "Reader Experience Mapping", "files": ["core-editor/references/core-framework.md"] },
+      { "name": "Structural Diagnosis", "files": ["core-editor/references/structural-frameworks.md"] }
+    ],
+    "fullDe": [
+      { "name": "Rhythm and Modulation (Pass 3)", "files": ["core-editor/references/run-full.md"] },
+      { "name": "Emotional Value Tracking (Pass 4)", "files": ["core-editor/references/run-full.md"] },
+      { "name": "Character Architecture (Pass 5)", "files": ["core-editor/references/character-architecture.md", "core-editor/references/run-full.md"] },
+      { "name": "Scene Function Audit (Pass 6)", "files": ["core-editor/references/run-full.md"] },
+      { "name": "POV and Voice (Pass 7)", "files": ["core-editor/references/run-full.md"] },
+      { "name": "Reveal Economy (Pass 8)", "files": ["core-editor/references/certainty-axis.md", "core-editor/references/run-full.md"] },
+      { "name": "Thematic Coherence (Pass 9)", "files": ["core-editor/references/run-full.md"] },
+      { "name": "Entity Tracking (Pass 10)", "files": ["core-editor/references/run-full.md"] },
+      { "name": "Pacing Analysis", "files": ["core-editor/references/run-core.md"] }
+    ],
+    "fullOnlySynthesis": [
+      { "name": "Shelf Audit & Market Viability (Pass 11)", "files": ["core-editor/references/pass-11.md", "specialized-audits/references/craft/shelf-positioning.md"] }
+    ],
+    "commonSynthesis": [
+      { "name": "Adversarial Stress Test", "files": ["core-editor/references/adversarial-stress-test.md"] },
+      { "name": "Editorial Letter Synthesis", "files": ["core-editor/references/run-full.md", "core-editor/references/output-policy.md"] }
+    ],
+    "submissionTriage": [
+      { "name": "Reader Experience Mapping", "files": ["core-editor/references/run-core.md", "core-editor/references/submission-triage.md"] }
+    ],
+    "submissionReadinessAnalytical": [
+      { "name": "Reverse Outline", "files": ["core-editor/references/reverse-outline-template.md"] },
+      { "name": "Reader Experience Mapping", "files": ["core-editor/references/core-framework.md"] },
+      { "name": "Structural Diagnosis", "files": ["core-editor/references/structural-frameworks.md"] },
+      { "name": "Character Architecture (Pass 5)", "files": ["core-editor/references/character-architecture.md", "core-editor/references/run-full.md"] },
+      { "name": "Reveal Economy (Pass 8)", "files": ["core-editor/references/certainty-axis.md", "core-editor/references/run-full.md"] }
+    ],
+    "submissionReadinessSynthesis": [
+      { "name": "Adversarial Stress Test", "files": ["core-editor/references/adversarial-stress-test.md"] },
+      { "name": "Editorial Letter Synthesis", "files": ["core-editor/references/run-full.md", "core-editor/references/output-policy.md"] }
+    ],
+    "submissionReadinessVerdict": [
+      { "name": "Pass 11: Writing Quality (11A)", "files": ["core-editor/references/pass-11.md", "core-editor/references/submission-readiness.md"] },
+      { "name": "Pass 11: Critical Verdict (11B)", "files": ["core-editor/references/pass-11.md", "core-editor/references/submission-readiness.md"] },
+      { "name": "Pass 11: Market Reality (11C)", "files": ["core-editor/references/pass-11.md", "specialized-audits/references/craft/shelf-positioning.md", "core-editor/references/submission-readiness.md"] },
+      { "name": "Pass 11: First-50 Gate (11D)", "files": ["core-editor/references/pass-11.md", "core-editor/references/submission-readiness.md"] },
+      { "name": "Compression Test", "files": ["core-editor/references/submission-readiness.md"] },
+      { "name": "Submission Readiness Assessment", "files": ["core-editor/references/submission-readiness.md"] }
+    ]
+  },
+  "researchModes": [
+    { "name": "Comp Validation", "files": ["craft/research-comp-validation.md"], "description": "Verify comps are current, positioned, and query-ready" },
+    { "name": "Factual Verification", "files": ["craft/research-factual-verification.md"], "description": "Spot-check real-world claims" },
+    { "name": "Genre Currency", "files": ["craft/research-genre-currency.md"], "description": "Verify genre expectations reflect current market" },
+    { "name": "Representation Context", "files": ["craft/research-representation-context.md"], "description": "Surface community discourse for writing outside experience" }
+  ],
+  "argumentCompanions": [
+    { "name": "Argument Red Team", "files": ["craft/argument-red-team.md", "craft/argument-red-team-level-setting.md"], "description": "Hostile-reader simulation" },
+    { "name": "Argument Persuasion", "files": ["craft/argument-persuasion.md", "craft/argument-persuasion-level-setting.md"], "description": "Audience matrix & framing" },
+    { "name": "Argument Evidence Deep-Dive", "files": ["craft/argument-evidence.md"], "description": "Provenance & testimony calibration" }
+  ],
+  "macroBlocks": [
+    { "question": "Is the structure working?", "passes": ["Reverse Outline", "Structural Diagnosis"] },
+    { "question": "Does the pacing hold?", "passes": ["Reader Experience Mapping", "Rhythm and Modulation (Pass 3)"] },
+    { "question": "Are my characters landing?", "passes": ["Character Architecture (Pass 5)", "POV and Voice (Pass 7)"] },
+    { "question": "Are the emotional beats earning their weight?", "passes": ["Emotional Value Tracking (Pass 4)"] },
+    { "question": "Are the scenes doing their jobs?", "passes": ["Scene Function Audit (Pass 6)"] },
+    { "question": "Is the information flow right?", "passes": ["Reveal Economy (Pass 8)"] },
+    { "question": "Does it cohere?", "passes": ["Thematic Coherence (Pass 9)", "Entity Tracking (Pass 10)"] },
+    { "question": "Is this ready?", "passes": ["Shelf Audit & Market Viability (Pass 11)"] }
+  ],
   "tagSummaryNames": [
     "cozy",
     "philosophical",
