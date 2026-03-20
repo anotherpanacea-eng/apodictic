@@ -55,6 +55,21 @@ Use when the writer is revising from `Argument_State.md`.
 
 ---
 
+## Structural Experiment (optional — included when coach diagnoses a block amenable to prompting)
+
+**Block diagnosis:** [type + refinement, e.g., "Decisional — two valid claim orderings, writer cannot commit"]
+
+**Prompt family:** [e.g., Scale-shift]
+
+**Prompt:**
+[Full prompt text, satisfying all 5 firewall conditions, including clinamen clause and self-check]
+
+**Framing:** This is low-stakes exploration, not new canonical draft material. The exercise is disposable. If it moves you, keep it. If it doesn't, the information about what didn't work is the value.
+
+**Note:** You may already be handling this structural problem through your own process. This prompt is one possible way in, not the only one.
+
+---
+
 ## If Time Remains
 
 **Secondary track:** [Only if downstream of the main task]

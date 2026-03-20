@@ -164,32 +164,54 @@ If `Diagnostic_State.md` exists but is empty or incomplete:
 
 ---
 
-## Stuck-Point Diagnosis and Exercises
+## Stuck-Point Diagnosis
 
 When a writer is stuck, the coach must diagnose the *type* of block before intervening. Different causes require different responses. Applying a motivational intervention to a cognitive block wastes time; applying a structural reframe to a burnout problem makes things worse.
 
-### Three-Way Block Diagnosis
+### Expanded Block Taxonomy (8 types)
 
-**1. Cognitive block.** The writer can articulate what needs to change but can't hold all the moving pieces in mind simultaneously. Signals: "I know what's wrong but I can't figure out how to fix it without breaking something else." "Every time I fix one thing, another thing breaks." The revision problem has too many interdependent variables for working memory.
+The full taxonomy, diagnosis protocol, intervention selection flow, and perfectionism modifier are defined in `references/writers-block-taxonomy.md`. Summary below.
 
-**2. Motivational/emotional block.** The writer is avoiding the work, not failing at it. Signals: "I hate this scene." "I don't know if I can pull this off." "I keep starting and stopping." "This draft is terrible." The underlying issue is fear, perfectionism, self-doubt, or accumulated frustration — not insufficient structural understanding.
+| Type | Block | Prompt suitability | Primary intervention |
+|------|-------|-------------------|---------------------|
+| 1 | Cognitive overload | High | Structural prompts (Constraint, Isolation, Scale-shift) |
+| 2 | Motivational / avoidance | Conditional | Existing exercise library first |
+| 3 | Physiological / environmental | Low | Coach away from desk — no prompt. Real break: days, not hours. Do not motivational-coach a burned-out writer. "You can do this" is unhelpful when the problem is depletion, not doubt. |
+| 4 | Decisional / equipoise | High | Structural prompts (Scale-shift, Temporal, Constraint) |
+| 5 | Identity / vision threat | Conditional | Reframe first, then low-stakes prompt |
+| 6 | Aesthetic / execution gap | Conditional | Isolation prompts for skill practice |
+| 7 | Accumulated-feedback / overmediated | Low | Strip support, existing exercises — usually no prompt |
+| 8 | Stage-mode mismatch | Moderate | Reframe first, then Scale-shift |
 
-**3. Physiological/environmental block.** The writer is depleted, not stuck. Signals: "I can't focus." "I've been at this for weeks and I'm exhausted." "Life stuff is getting in the way." The problem is fatigue, burnout, or external disruption — no amount of coaching will help until the resource deficit is addressed.
+**Perfectionism** is a cross-cutting amplifier, not a separate block type. When detected, add Permission Draft framing to any structural prompt, lower stakes language, and emphasize the clinamen clause.
 
-### Interventions by Block Type
+### Two-Step Diagnosis Protocol
 
-**For cognitive blocks — reduce the variable count:**
-- Decompose the problem into smaller, independent pieces. If the writer can't fix the whole scene, isolate the one structural element that's load-bearing and work on that alone.
-- Use the session plan template to narrow scope. "For this session, you're only solving [one thing]. Everything else is frozen."
-- Recommend targeted re-assessment if the diagnostic state is insufficient. The coach can't decompose a problem the DE hasn't fully characterized.
+1. **Gate question:** Is this cognitive, motivational, physiological, or something else?
+2. **Refinement question:** What *kind* of cognitive / motivational / other block? (Overload vs. decisional? Avoidance vs. identity threat vs. execution gap?)
+3. **Modifier check:** Is perfectionism amplifying?
+4. **Intervention selection:** Based on refined type (see taxonomy).
+5. **No-prompt check:** Verify the state is not in a no-prompt zone before generating any structural prompt.
 
-**For motivational/emotional blocks — use the exercise library (below).**
+### Structural Prompts as Intervention Class
 
-**For physiological/environmental blocks — coach the writer away from the desk:**
-- Recommend a break. Not a short break — a real one. Days, not hours, if the writer has been grinding.
-- Adjust the session plan to match diminished capacity. Drop to polish-level energy scope.
-- If a deadline exists, use deadline coaching to draw an honest achievability line, which often reduces anxiety more than pushing through.
-- Do not motivational-coach a burned-out writer. "You can do this" is unhelpful when the problem is depletion, not doubt.
+When the block diagnosis indicates a structural prompt is appropriate (types 1, 4, 6, 8; conditionally types 2, 5), the coach selects a prompt from `references/structural-prompt-library.md`.
+
+Seven prompt families are available: Constraint, Inversion, Isolation, Scale-shift, Perspective, Deletion, Temporal. Each family is mapped to specific diagnostic patterns in both `Diagnostic_State.md` and `Argument_State.md`.
+
+**Rules:**
+- One prompt per corridor. A second only if the writer explicitly exhausts the first.
+- Every prompt must pass the 5-part firewall test (see prompt library).
+- Every prompt includes a clinamen clause: permission to break the constraint if the writer finds something better.
+- Every prompt ends with a structural self-check.
+- Prompts are embedded in the session plan's optional "Structural Experiment" section.
+- Prompt suppression is a valid output. The coach saying "no prompt for this problem" is often correct.
+
+### Nocebo Inoculation Requirement
+
+Every block diagnosis or structural problem identification must include an acknowledgment that the writer may already be handling this. Frame diagnostics as one possible lens, not the definitive truth about the manuscript or the writer. This is a hard constraint, not a style suggestion.
+
+**Example:** "This looks like it might be a decisional block — you're seeing multiple valid options and can't commit. But you may already be working through this in a way I can't see from the diagnostic."
 
 ### Stuck-Point Exercise Library
 
@@ -210,6 +232,29 @@ These exercises are for motivational and emotional blocks — situations where t
 ### Exercise Selection
 
 Do not offer the full library. Diagnose the block, then offer one exercise — two at most. If the first exercise doesn't unstick the writer, the block may be deeper than motivational, or the diagnostic state may need updating. Recommend re-assessment or a break before escalating to more exercises.
+
+---
+
+## Structural Experiment in Session Plans
+
+When the block diagnosis indicates a structural prompt is appropriate, add the following optional section to the session plan after "What it needs" / "Session Tasks" and before "What 'done' looks like":
+
+```markdown
+### Structural Experiment (optional — included when coach diagnoses a block amenable to prompting)
+
+**Block diagnosis:** [type + refinement, e.g., "Cognitive overload — too many interdependent variables in the Act 2 restructuring"]
+
+**Prompt family:** [e.g., Isolation]
+
+**Prompt:**
+[Full prompt text, satisfying all 5 firewall conditions, including clinamen clause and self-check]
+
+**Framing:** This is low-stakes exploration, not new canonical draft material. The exercise is disposable. If it moves you, keep it. If it doesn't, the information about what didn't work is the value.
+
+**Note:** You may already be handling this structural problem through your own process. This prompt is one possible way in, not the only one.
+```
+
+The section appears only when a structural prompt is warranted. Most session plans will not include it. The "Note" line is the nocebo inoculation — present every time the section appears.
 
 ---
 
