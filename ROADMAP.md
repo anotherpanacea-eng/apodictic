@@ -8,17 +8,17 @@
 
 | In Progress | Planned | Done | Backlog |
 |-------------|---------|------|---------|
-| [Genre Audit Expansion](#genre--audit-expansion) | [Editor Scaffolding](#editor-scaffolding) | [v1.2.1](#v121--audit-sequencing--model-tags) | [Feedback Triage](#feedback-triage) |
-| [Coaching Deepening](#coaching-deepening) | [Diagnostic Vocabulary](#diagnostic-vocabulary-mode) | [v1.2.0](#v120--artifact-coverage) | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) |
-| [Nonfiction Argument Engine](#nonfiction-argument-engine) | [Writer's Block & Rut-Breaking](#writers-block--rut-breaking) | [v1.1.3](#v113--coaching-deepening) | [Legal Risk Register](#legal-risk-register) |
-| | | [v1.1.2](#v112--revision-coach) | [Multi-Party Intake](#multi-party-intake) |
-| | | [v1.1.1](#v111--series-continuity--pass-9) | [Episode Cadence](#episode-cadence) |
-| | | [v1.1.0](#v110--token-aware-agent-usage) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
-| | | [v1.0.9](#v109) | [Framework Overview Dashboard](#framework-overview-dashboard) |
-| | | [v1.0.8](#v108) | [Pre-Skill Context Compaction](#pre-skill-context-compaction) |
-| | | [v1.0.4](#v104) | [Command Surface Evaluation](#command-surface-evaluation) |
-| | | [v1.0](#v10--public-release) | [Output Organization by Question](#output-organization-by-question) |
-| | | | [Skill Boundary Evaluation](#skill-boundary-evaluation) |
+| [Genre Audit Expansion](#genre--audit-expansion) | [Editor Scaffolding](#editor-scaffolding) | [v1.3.0](#v130--nonfiction-argument-engine--genre-audits) | [Feedback Triage](#feedback-triage) |
+| [Coaching Deepening](#coaching-deepening) | [Diagnostic Vocabulary](#diagnostic-vocabulary-mode) | [v1.2.1](#v121--audit-sequencing--model-tags) | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) |
+| | [Writer's Block & Rut-Breaking](#writers-block--rut-breaking) | [v1.2.0](#v120--artifact-coverage) | [Legal Risk Register](#legal-risk-register) |
+| | | [v1.1.3](#v113--coaching-deepening) | [Multi-Party Intake](#multi-party-intake) |
+| | | [v1.1.2](#v112--revision-coach) | [Episode Cadence](#episode-cadence) |
+| | | [v1.1.1](#v111--series-continuity--pass-9) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
+| | | [v1.1.0](#v110--token-aware-agent-usage) | [Framework Overview Dashboard](#framework-overview-dashboard) |
+| | | [v1.0.9](#v109) | [Pre-Skill Context Compaction](#pre-skill-context-compaction) |
+| | | [v1.0.8](#v108) | [Command Surface Evaluation](#command-surface-evaluation) |
+| | | [v1.0.4](#v104) | [Output Organization by Question](#output-organization-by-question) |
+| | | [v1.0](#v10--public-release) | [Skill Boundary Evaluation](#skill-boundary-evaluation) |
 
 ---
 
@@ -212,6 +212,9 @@ Five skills (core-editor, pre-writing-pathway, plot-architecture, specialized-au
 ---
 
 ## Done
+
+### v1.3.0 — Nonfiction Argument Engine & Genre Audits
+Nonfiction Argument Engine: Dialectical Clarity v2.0 as kernel, Argument State Schema (v0.1.1), Red Team (12 flags, Distinguish Framework), Persuasion (12 signals, audience × form calibration), Evidence Deep-Dive (10 flags, form calibration, testimony handoff), Coaching Protocol (8 tracks, stuck-point diagnosis), nonfiction routing in intake. Supernatural Horror genre audit (25 flags, 7 dimensions, 8 subgenres). Grimdark / Dark Fantasy genre audit (22 flags, 7 dimensions, 6 subgenres).
 
 ### v1.2.1 — Audit Sequencing & Model Tags
 Auto-run audits as synthesis dependencies (fixes multi-story collection sequencing bug). Model-tag required in output filenames.
