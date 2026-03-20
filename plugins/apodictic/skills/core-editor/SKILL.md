@@ -29,12 +29,12 @@ Dedicated reference files (genre modules, specialized audits, `references/pass-1
 
 ## Plugin Structure
 
-This skill is the core of the APODICTIC plugin. Three companion skills handle specialized functions:
-- **plot-architecture** — Spine diagnosis (50 spines), selection coaching, fantasy & series architecture
-- **specialized-audits** — Deep-dive audits, tag audits, and research modes (loaded on demand)
-- **revision-coach** — Post-diagnostic revision coaching: session planning, stuck-point coaching, momentum tracking, deadline management (loaded via `/coach`)
+This skill is the core of the APODICTIC plugin. Three companion workflows handle specialized functions:
+- **Plot coaching** — Spine diagnosis (50 spines), selection coaching, fantasy & series architecture
+- **Specialized audits** — Deep-dive audits, tag audits, and research modes (loaded on demand)
+- **Revision coaching** — Post-diagnostic revision coaching: session planning, stuck-point coaching, momentum tracking, deadline management (loaded via `/coach`)
 
-**Delegation principle:** Core runs the development edit workflow. Everything else delegates to companion skills or reference files. Core does not carry audit catalogs, tag-audit internals, or genre deep-dives.
+**Delegation principle:** Core runs the development edit workflow. Everything else delegates to companion workflows or reference files. Core does not carry audit catalogs, tag-audit internals, or genre deep-dives.
 
 ---
 
@@ -128,6 +128,74 @@ Never synthesize before all selected passes and their dependencies are complete.
 - Confidence markers: HIGH / MEDIUM / LOW / UNCERTAIN — never present LOW or UNCERTAIN as definitive
 - Severity honesty: do not soften Must-Fix to Should-Fix. Apply severity floor rules.
 
+### Pass-Detail Artifact Headers
+
+Every pass-detail output artifact must begin with a YAML-style header that makes the file legible without framework knowledge:
+
+```
+---
+Macro block: [block name from §3 of pass-dependencies.md]
+Writer question: [the user-facing question this block answers]
+Pass: [number] ([pass name])
+---
+```
+
+Mapping:
+
+| Pass | Macro Block | Writer Question |
+|------|-------------|-----------------|
+| 0 | Structure Map | Is the structure working? |
+| 1 | Reader Dynamics | Does the pacing hold? |
+| 2 | Structure Map | Is the structure working? |
+| 3 | Reader Dynamics | Does the pacing hold? |
+| 4 | Emotional Dynamics | Are the emotional beats earning their weight? |
+| 5 | Character Architecture | Are my characters landing? |
+| 6 | Scene Delivery | Are the scenes doing their jobs? |
+| 7 | Character Architecture | Are my characters landing? |
+| 8 | Reveal Economy | Is the information flow right? |
+| 9 | Theme & Continuity | Does it cohere? |
+| 10 | Theme & Continuity | Does it cohere? |
+| 11 | Submission Readiness | Is this ready? |
+
+### Results Guide Artifact
+
+After synthesis, produce `[Project]_Results_Guide_[runlabel].md` — a map from writer questions to the relevant artifacts from the run. This is the first file after the editorial letter and helps the writer navigate their results without framework knowledge.
+
+Include only blocks and artifacts from passes that actually ran. Format:
+
+```markdown
+# Results Guide — [Project Name]
+_Run: [runlabel]_
+
+## How to use this guide
+Start with the **Editorial Letter** for the diagnosis and priority repairs.
+Use this guide to find the detailed analysis behind each finding.
+
+---
+
+## Your results by question
+
+### [Writer question — e.g., "Is the structure working?"]
+- Editorial Letter § [Macro block name]
+- Detail: `[pass artifact filename]`
+- Detail: `[pass artifact filename]`
+
+[... repeat for each macro block that ran ...]
+
+## Specialized audits run
+- [Audit Name]: `[artifact filename]`
+
+## State files
+- Diagnostic State: `Diagnostic_State.md`
+- Findings Ledger: `[Project]_Findings_Ledger_[runlabel].md`
+
+## What to do next
+- `/coach` — plan revision sessions from this diagnosis
+- `/audit [name]` — run a focused deep-dive on a specific concern
+```
+
+Omit the "Specialized audits run" section if no audits ran. Omit "Argument State" from state files unless the nonfiction engine was active.
+
 **Full output policy (tone, evidence burden, caps, anti-sycophancy, severity floors, pass-level output protocol):** Load `references/output-policy.md`.
 
 ---
@@ -172,13 +240,13 @@ Before reporting any word counts or proportions:
 ## Delegation Rules
 
 ### Pre-Writing
-Writer has idea but no manuscript → Delegate to **pre-writing-pathway** skill.
+Writer has idea but no manuscript → Start the pre-writing pathway.
 
 ### Plot Structure
-Spine diagnosis, selection coaching, structural triage → Delegate to **plot-architecture** skill.
+Spine diagnosis, selection coaching, structural triage → Start plot coaching.
 
 ### Specialized Audits
-Any deep-dive audit, tag audit, or research mode → Delegate to **specialized-audits** skill. That skill maintains its own routing table and trigger logic.
+Any deep-dive audit, tag audit, or research mode → Run the audit. The specialized-audits workflow maintains its own routing table and trigger logic.
 
 ### Scene-Level Handoff
 When the writer requests prose-level execution help for a diagnosed scene:

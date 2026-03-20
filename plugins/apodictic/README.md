@@ -42,26 +42,35 @@ The plugin assumes its user is an adult working on a creative project. Its outpu
 
 ## Components
 
-### Skills (4)
+### Workflows
 
-- **core-editor** — The main workflow: intake protocol, 11 analysis passes, synthesis, revision rounds, genre calibration
-- **pre-writing-pathway** — Guides writers from idea to draftable structure (no manuscript required). Writer mode calibration, seed inventory, readiness gates, option architecture, complexity budget, prospective contract, re-entry diff protocol.
-- **plot-architecture** — Plot structure diagnosis (50 spines across 12 families), selection coaching, fantasy & series architecture
-- **specialized-audits** — 33 available audits (3 universal, 15 craft, 10 genre, 5 tag), including 3 primary tags (cozy, philosophical, erotic content) and 2 companion intimacy audits; plus 4 internet-enabled research modes
+- **Development Edit** — The main workflow: intake protocol, 11 analysis passes, synthesis, revision rounds, genre calibration
+- **Pre-Writing Pathway** — Guides writers from idea to draftable structure (no manuscript required). Writer mode calibration, seed inventory, readiness gates, option architecture, complexity budget, prospective contract, re-entry diff protocol.
+- **Plot Coaching** — Plot structure diagnosis (50 spines across 12 families), selection coaching, fantasy & series architecture
+- **Specialized Audits** — 33 available audits (3 universal, 15 craft, 10 genre, 5 tag), including 3 primary tags (cozy, philosophical, erotic content) and 2 companion intimacy audits; plus 4 internet-enabled research modes
+- **Revision Coaching** — Post-diagnostic coaching: session planning, stuck-point help, momentum tracking, deadline management
 
-### Commands (9)
+### Commands
 
-| Command | Description |
-|---------|-------------|
-| `/start` | **Recommended entry point.** Routes to the right workflow in 2–3 questions. |
-| `/develop-edit` | Run a full development edit on a manuscript |
-| `/new-project` | Initialize a new project with contract and diagnostic state |
-| `/pre-writing` | Guide a writer from idea to draftable structure (no manuscript needed) |
-| `/revision-plan` | Generate revision priorities from diagnostic state |
-| `/diagnose` | Quick targeted diagnostic on a specific concern |
-| `/plot-coach` | Plot structure selection and coaching |
-| `/audit [name]` | Run a specialized audit (no argument lists all available) |
-| `/research [mode]` | Run a research mode (no argument lists all available) |
+**Start here:**
+- `/start` — I have a manuscript — what should I do with it?
+
+**Diagnostic workflows:**
+- `/develop-edit` — What's wrong with my manuscript?
+- `/diagnose` — I have a specific concern — is it a real problem?
+- `/ready` — Is this ready to submit?
+
+**Focused tools:**
+- `/audit` — Run a specific deep-dive analysis.
+- `/research` — I need internet-assisted verification.
+- `/coach` — I have a diagnosis — how do I revise?
+- `/plot-coach` — Is my plot structure working?
+
+**Setup:**
+- `/pre-writing` — I have an idea but no manuscript yet.
+- `/new-project` — Set up a new editing project.
+
+`/revision-plan` is a compatibility alias for `/coach`.
 
 ### Selection Guide
 

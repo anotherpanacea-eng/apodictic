@@ -16,7 +16,7 @@ if (!fs.existsSync(registryPath)) {
 }
 
 const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
-const { paths, counts, categories, tagSummaryNames } = registry;
+const { paths, counts, categories, tagSummaryNames, commands } = registry;
 
 function abs(relPath) {
   return path.resolve(repoRoot, relPath);
@@ -170,7 +170,7 @@ function buildCommandAuditList() {
 }
 
 function buildReadmeSpecializedLine(stats) {
-  return `- **specialized-audits** — ${stats.available} available audits (${stats.universal} universal, ${stats.craft} craft, ${stats.genre} genre, ${stats.tag} tag), including ${stats.primaryTag} primary tags (${tagSummaryNames.join(", ")}) and ${stats.companionTag} companion intimacy audits; plus ${counts.researchModes} internet-enabled research modes`;
+  return `- **Specialized Audits** — ${stats.available} available audits (${stats.universal} universal, ${stats.craft} craft, ${stats.genre} genre, ${stats.tag} tag), including ${stats.primaryTag} primary tags (${tagSummaryNames.join(", ")}) and ${stats.companionTag} companion intimacy audits; plus ${counts.researchModes} internet-enabled research modes`;
 }
 
 function buildReadmeAuditCountLine(stats) {
@@ -195,6 +195,41 @@ function buildRootReadmeAuditsLine(stats) {
 
 function buildLandingPageSpecializedAuditBody(stats) {
   return `Targeted analysis of specific craft concerns: emotional arc, tension mechanics, genre conventions, worldbuilding, and more. ${stats.available} audits across universal, craft, genre, and tag categories.`;
+}
+
+function buildGroupedCommandList() {
+  if (!commands || !Array.isArray(commands)) return null;
+
+  const groups = {
+    entry: { heading: "Start here:", items: [] },
+    diagnostic: { heading: "Diagnostic workflows:", items: [] },
+    focused: { heading: "Focused tools:", items: [] },
+    setup: { heading: "Setup:", items: [] }
+  };
+
+  const aliases = [];
+
+  for (const cmd of commands) {
+    if (cmd.status === "compat_alias") {
+      aliases.push(cmd);
+      continue;
+    }
+    const group = groups[cmd.category];
+    if (group) {
+      group.items.push(`- \`${cmd.command}\` — ${cmd.writerQuestion}`);
+    }
+  }
+
+  const sections = Object.values(groups)
+    .filter((g) => g.items.length > 0)
+    .map((g) => `**${g.heading}**\n${g.items.join("\n")}`)
+    .join("\n\n");
+
+  const aliasLines = aliases
+    .map((a) => `\`${a.command}\` is a compatibility alias for \`${a.routerEquivalent}\`.`)
+    .join("\n");
+
+  return aliasLines ? `${sections}\n\n${aliasLines}` : sections;
 }
 
 function main() {
@@ -231,7 +266,7 @@ function main() {
     let content = mustRead(readmePath);
     content = replaceOrThrow(
       content,
-      /^- \*\*specialized-audits\*\* — .*$/m,
+      /^- \*\*(?:specialized-audits|Specialized Audits)\*\* — .*$/m,
       buildReadmeSpecializedLine(auditStats),
       "README specialized line"
     );
@@ -297,6 +332,36 @@ function main() {
       "App.tsx About version"
     );
     writeIfChanged(appTsxPath, content, changedFiles);
+  }
+
+  if (commands && Array.isArray(commands)) {
+    const groupedCommandList = buildGroupedCommandList();
+
+    if (groupedCommandList) {
+      {
+        const rootReadmePath = abs(paths.rootReadme);
+        let content = mustRead(rootReadmePath);
+        content = replaceOrThrow(
+          content,
+          /## Commands\n\n\*\*Start here:\*\*[\s\S]*?`\/revision-plan` is a compatibility alias for `\/coach`\./,
+          `## Commands\n\n${groupedCommandList}`,
+          "root README grouped command list"
+        );
+        writeIfChanged(rootReadmePath, content, changedFiles);
+      }
+
+      {
+        const pluginReadmePath = abs(paths.pluginReadme);
+        let content = mustRead(pluginReadmePath);
+        content = replaceOrThrow(
+          content,
+          /### Commands\n\n\*\*Start here:\*\*[\s\S]*?`\/revision-plan` is a compatibility alias for `\/coach`\./,
+          `### Commands\n\n${groupedCommandList}`,
+          "plugin README grouped command list"
+        );
+        writeIfChanged(pluginReadmePath, content, changedFiles);
+      }
+    }
   }
 
   if (paths.landingPageTsx) {

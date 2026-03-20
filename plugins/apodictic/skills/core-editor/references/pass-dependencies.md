@@ -39,7 +39,7 @@ Tier 2 passes run only when selected by the query resolver. Each depends on one 
 
 | Pass | Name | Depends on | Output artifact |
 |------|------|-----------|-----------------|
-| Synthesis | Root cause analysis + editorial letter | All selected Tier 2 passes | `[Project]_Synthesis_[runlabel].md` |
+| Synthesis | Root cause analysis + editorial letter + results guide | All selected Tier 2 passes | `[Project]_Synthesis_[runlabel].md` + `[Project]_Results_Guide_[runlabel].md` |
 | 11 | Critical Quality & Market Viability | 0, 1, 2, 5, Synthesis | `[Project]_Pass11_Critical_Quality_[runlabel].md` |
 
 Synthesis always runs after all selected passes **and all auto-run audits** complete. Auto-run audits (§4a) are synthesis dependencies — synthesis MUST NOT begin until their findings are in the Findings Ledger. Pass 11 runs only when submission readiness is in scope.
@@ -72,7 +72,7 @@ The Findings Ledger is not a pass. It has no tier. It is appended to by every pa
 | Pacing / momentum | 0, 1, 3 | Reader Dynamics |
 | Characters / agency / arc | 0, 1, 5, 7 | Character Architecture |
 | Information flow / reveals | 0, 1, 8 | Reveal Economy |
-| Scene craft / function | 0, 2, 6, 7 | Scene Delivery |
+| Scene craft / function | 0, 2, 6 | Scene Delivery |
 | Theme / coherence / meaning | 0, 5, 9, 10 | Theme & Continuity |
 | Emotional dynamics / interiority | 0, 1, 4 | Emotional Dynamics |
 | General diagnostic ("what's wrong?") | 0, 1, 2, 5, 8 | **Baseline (see §2a)** |
@@ -121,17 +121,20 @@ The user can decline. If they accept, resolve the full pass set and continue.
 
 ## §3. Macro Block Definitions
 
-User-facing groupings that organize output. Writers see 7 blocks, not 12 passes. The editorial letter groups findings by macro block within each severity tier (primary sort: severity; secondary grouping: macro block).
+User-facing groupings that organize output. Writers see 8 blocks, not 12 passes. The editorial letter groups findings by macro block within each severity tier (primary sort: severity; secondary grouping: macro block).
 
 | Macro Block | Internal Passes | User Question |
 |-------------|----------------|---------------|
 | Structure Map | 0 + 2 | "Is the structure working?" |
 | Reader Dynamics | 1 + 3 | "Does the pacing hold?" |
-| Character Architecture | 5 (+ 4 when emotionally driven) | "Are my characters landing?" |
-| Scene Delivery | 6 + 7 | "Are the scenes doing their jobs?" |
+| Character Architecture | 5 + 7 | "Are my characters landing?" |
+| Emotional Dynamics | 4 | "Are the emotional beats earning their weight?" |
+| Scene Delivery | 6 | "Are the scenes doing their jobs?" |
 | Reveal Economy | 8 | "Is the information flow right?" |
 | Theme & Continuity | 9 + 10 | "Does it cohere?" |
 | Submission Readiness | 11 | "Is this ready?" |
+
+Pass 7 (POV & Voice) belongs to Character Architecture because voice is a character concern. Pass 4 (Emotional Value Tracking) has its own block — it was previously subordinated to Character Architecture, but emotional dynamics is a distinct diagnostic dimension.
 
 When a query-driven run selects a subset of passes, only the relevant macro blocks appear in the editorial letter. Blocks with no selected passes are omitted entirely — not shown as empty.
 

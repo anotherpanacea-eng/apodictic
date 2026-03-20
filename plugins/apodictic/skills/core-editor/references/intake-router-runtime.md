@@ -257,19 +257,21 @@ After Dialectical Clarity on nonfiction argument work, surface the next likely a
 
 ## §5. Command Shortcuts
 
-Existing commands bypass the router with pre-filled values. The router is the recommended entry for new users; shortcuts are for users who know what they want.
+All commands work as direct entry points. `/start` is recommended for new users; the other commands are shortcuts for writers who know what they want.
 
-| Command | Router equivalent |
-|---------|-------------------|
-| `/start` | The router itself |
-| `/develop-edit` | artifact=`full_draft`, goal=`repair` |
-| `/new-project` | Initialize project, then run router |
-| `/pre-writing` | artifact=`idea`, goal=`draft` |
-| `/diagnose` | Any artifact, goal=`repair` (targeted) |
-| `/revision-plan` | Post-diagnostic (not an intake question) |
-| `/plot-coach` | Callable from within workflows |
-| `/audit [name]` | Callable from within workflows |
-| `/research [mode]` | Callable from within workflows |
+| Command | What it does | Router equivalent |
+|---------|-------------|-------------------|
+| `/start` | Routes to the right workflow in 2–3 questions | The router itself |
+| `/develop-edit` | Run a full development edit | artifact=`full_draft`, goal=`repair` |
+| `/diagnose` | Quick targeted diagnostic | Any artifact, goal=`repair` (targeted) |
+| `/ready` | Submission readiness check | artifact=`full_draft`, goal=`submit` |
+| `/audit [name]` | Run a specific deep-dive analysis | Callable from within workflows |
+| `/research [mode]` | Internet-assisted verification | Callable from within workflows |
+| `/coach` | Post-diagnostic revision coaching | Post-diagnostic (not an intake question) |
+| `/plot-coach` | Plot structure coaching | Callable from within workflows |
+| `/pre-writing` | Idea to draftable structure | artifact=`idea`, goal=`draft` |
+| `/new-project` | Initialize a new project | Initialize project, then run router |
+| `/revision-plan` | *(compatibility alias for `/coach`)* | — |
 
 ---
 

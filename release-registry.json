@@ -32,6 +32,96 @@
     "preWritingPathways": 1,
     "intakeRouters": 1
   },
+  "commands": [
+    {
+      "command": "/start",
+      "category": "entry",
+      "status": "primary",
+      "routerEquivalent": null,
+      "writerQuestion": "I have a manuscript — what should I do with it?",
+      "description": "Recommended entry point. Routes to the right workflow in 2–3 questions."
+    },
+    {
+      "command": "/develop-edit",
+      "category": "diagnostic",
+      "status": "first_class_shortcut",
+      "routerEquivalent": "/start → full_draft + repair",
+      "writerQuestion": "What's wrong with my manuscript?",
+      "description": "Run a full development edit on a manuscript."
+    },
+    {
+      "command": "/diagnose",
+      "category": "diagnostic",
+      "status": "first_class_shortcut",
+      "routerEquivalent": "/start → any artifact + repair (targeted)",
+      "writerQuestion": "I have a specific concern — is it a real problem?",
+      "description": "Quick targeted diagnostic on a specific concern."
+    },
+    {
+      "command": "/ready",
+      "category": "diagnostic",
+      "status": "first_class_shortcut",
+      "routerEquivalent": "/start → full_draft + submit",
+      "writerQuestion": "Is this ready to submit?",
+      "description": "Submission readiness check — full diagnostic + verdict + query/synopsis assessment."
+    },
+    {
+      "command": "/audit",
+      "category": "focused",
+      "status": "first_class_shortcut",
+      "routerEquivalent": null,
+      "writerQuestion": "Run a specific deep-dive analysis.",
+      "description": "Run a named specialized audit or list all available audits."
+    },
+    {
+      "command": "/research",
+      "category": "focused",
+      "status": "first_class_shortcut",
+      "routerEquivalent": null,
+      "writerQuestion": "I need internet-assisted verification.",
+      "description": "Run a research mode (comp validation, fact-check, genre currency, representation context)."
+    },
+    {
+      "command": "/coach",
+      "category": "focused",
+      "status": "first_class_shortcut",
+      "routerEquivalent": "/start → full_draft + coach",
+      "writerQuestion": "I have a diagnosis — how do I revise?",
+      "description": "Post-diagnostic revision coaching: session planning, stuck-point help, momentum tracking, deadline management."
+    },
+    {
+      "command": "/plot-coach",
+      "category": "focused",
+      "status": "first_class_shortcut",
+      "routerEquivalent": null,
+      "writerQuestion": "Is my plot structure working?",
+      "description": "Plot structure diagnosis, selection, and coaching."
+    },
+    {
+      "command": "/pre-writing",
+      "category": "setup",
+      "status": "first_class_shortcut",
+      "routerEquivalent": "/start → idea + draft",
+      "writerQuestion": "I have an idea but no manuscript yet.",
+      "description": "Guide from idea to draftable structure (no manuscript required)."
+    },
+    {
+      "command": "/new-project",
+      "category": "setup",
+      "status": "first_class_shortcut",
+      "routerEquivalent": null,
+      "writerQuestion": "Set up a new editing project.",
+      "description": "Initialize a new project with contract and diagnostic state."
+    },
+    {
+      "command": "/revision-plan",
+      "category": "focused",
+      "status": "compat_alias",
+      "routerEquivalent": "/coach",
+      "writerQuestion": null,
+      "description": "Compatibility alias for /coach."
+    }
+  ],
   "tagSummaryNames": [
     "cozy",
     "philosophical",
