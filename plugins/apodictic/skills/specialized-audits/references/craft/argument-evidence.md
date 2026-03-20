@@ -68,6 +68,12 @@ Run when:
 
 ## Required Inputs
 
+### Precondition
+
+`Argument_State.md` must exist with §§ 1–9 populated by Dialectical Clarity v2.0. If the state is absent or §§ 1–9 are unpopulated, refuse to run and direct the user to run `/audit dialectical` first. Do not silently re-derive the argument graph.
+
+### What this module reads
+
 Read from `Argument_State.md`:
 
 1. § 2 Claim Architecture
@@ -77,7 +83,7 @@ Read from `Argument_State.md`:
 5. § 7 Narrative-as-Evidence Inventory when testimony or anecdote is important
 6. § 9 Diagnostic Summary
 
-Write to:
+### What this module writes
 
 1. § 10.1 Evidence Analysis
 2. § 10.3 Verification and Research Handoff when external checking is needed

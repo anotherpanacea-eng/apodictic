@@ -42,6 +42,12 @@ Run after Red Team when possible. Hostile-read findings make persuasion advice s
 
 ## Required Inputs
 
+### Precondition
+
+`Argument_State.md` must exist with §§ 1–9 populated by Dialectical Clarity v2.0. If the state is absent or §§ 1–9 are unpopulated, refuse to run and direct the user to run `/audit dialectical` first. Do not silently re-derive the argument graph.
+
+### What this module reads
+
 Read from `Argument_State.md`:
 
 1. § 1 Context and Classification
