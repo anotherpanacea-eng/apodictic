@@ -148,6 +148,8 @@ Activated by intake answers before passes run.
 | Router signal | Audit(s) | Policy | Reference file |
 |---------------|----------|--------|----------------|
 | Genre = Horror (Psychological) | Horror Craft Integration | Auto-recommend after Pass 1 | `genre/horror-craft.md` |
+| Genre = Supernatural Horror | Supernatural Horror | Auto-recommend after Pass 1 | `genre/supernatural-horror.md` |
+| Genre = Grimdark / Dark Fantasy | Grimdark / Dark Fantasy | Auto-recommend after Pass 1 | `genre/grimdark.md` |
 | Genre = Mystery | Mystery/Thriller Architecture | Auto-recommend after Pass 8 | `genre/mystery-thriller-architecture.md` |
 | Genre = Thriller | Mystery/Thriller Architecture | Auto-recommend after Pass 8 | `genre/mystery-thriller-architecture.md` |
 | Genre = SF/Fantasy | SFF Worldbuilding Integration | Auto-recommend after Pass 10 | `genre/sff-worldbuilding.md` |
@@ -174,6 +176,8 @@ Activated by pass results during a diagnostic run. The system checks these after
 |------|----------------|----------|--------|
 | 1 (Reader Experience) | Emotional flatness, forced affect, unearned catharsis | Emotional Craft | Recommend |
 | 1 (Reader Experience) | Dread/tension calibration problems | Horror Craft Integration | Recommend (if not already loaded) |
+| 1 (Reader Experience) | Wrongness, supernatural pressure, belief threshold problems | Supernatural Horror | Recommend (if not already loaded) |
+| 1 (Reader Experience) | Inert bleakness, violence without consequence, moral flatness, cynicism as posture | Grimdark / Dark Fantasy | Recommend (if not already loaded) |
 | 1 (Reader Experience) | Comedy landing rate low, tonal inconsistency | Comedy & Satire | Recommend |
 | 5 (Character Audit) | Character agency issues, puppet moments | Character Architecture | Recommend |
 | 5 (Character Audit) | Female POV interiority thinning patterns | Female Interiority | Recommend |

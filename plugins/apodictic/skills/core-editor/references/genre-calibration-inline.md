@@ -67,6 +67,47 @@ Glimpse → Graze → Collision → Retreat → Surrender
 
 ---
 
+## Supernatural Horror
+
+**Reader expects:** Ontological violation, belief-system destabilization, wrongness that persists despite explanation, rule/ritual integrity, aftermath effects that linger beyond the scene.
+
+**Additional intake:**
+- Is the supernatural rule-bound (magic system, ritual logic) or mysterious (unexplainable, resists systematization)?
+- Should the supernatural be explicable by story's end or remain impossible?
+- What is the "wrongness" — violations of physical law, narrative expectation, psychological safety, or spiritual boundary?
+- Is there a belief axis (character or reader moves between accepting and rejecting the supernatural premise)?
+
+**Pass modifications:**
+- **Pass 0 & 1:** Track belief axis (reader believes → disbelieves → believes something else). Monitor reader acceptance/rejection of supernatural premises across the text.
+- **Pass 1:** Flag "decorative supernaturality" — ghost, curse, or entity that could be removed without changing story logic. The supernatural must be load-bearing.
+- **Pass 4:** Separate Dread from Wrongness. Dread is anticipatory (something bad will happen). Wrongness is ontological (something is fundamentally not right with reality). Both can coexist but serve different functions and need separate tracking.
+- **Pass 10:** Rule/Ritual Ledger: every supernatural rule invoked, its cost, whether the cost is paid. Distinguish between hard systems (rules known to reader) and soft supernatural (mysterious, resists systematization). Track ritual integrity — does the ritual work as established, or does the text cheat?
+
+**False positive warning:** Ambiguity about the supernatural is often intentional. "Is it real or psychological?" tension is a feature, not a flaw. Do not flag ambiguity as inconsistency unless the text commits to an answer and then contradicts it.
+
+---
+
+## Grimdark / Dark Fantasy
+
+**Reader expects:** Moral complexity under pressure, consequential violence, institutional critique, compromised protagonists who remain investable, endings that are earned rather than optimistic.
+
+**Additional intake:**
+- Is the darkness argumentative (revealing how power/violence/compromise work) or atmospheric (setting a mood)?
+- What sustains reader investment — competence, wit, loyalty residue, moral flickers, or sheer narrative momentum?
+- Is hope present at all? If so, in what form — personal, institutional, defiant, or ironic?
+- What is the relationship between violence and consequence? Does harm persist?
+
+**Pass modifications:**
+- **Pass 1:** Track bleakness calibration — does darkness escalate, plateau, or modulate? Uniform bleakness is a pacing failure. Look for moments of contrast (humor, tenderness, competence, beauty) that make the darkness legible rather than numbing.
+- **Pass 4:** Do not flag "slow pacing" in political/institutional sequences. Power anatomy often requires deliberate, building tension rather than action-driven pacing.
+- **Pass 5:** Do not flag unlikable protagonists or moral compromise as character failures. Flag instead if the compromise is *legible* — does the reader understand what the character is trading and why? Investability without likability is the target.
+- **Pass 9:** Track whether cynicism functions as argument or posture. Cynicism-as-posture is a thematic failure: the text announces that everything is corrupt without showing how corruption works or what it costs.
+- **Pass 10:** Consequence persistence — do injuries, betrayals, deaths, and institutional damage remain present in later chapters? Grimdark's contract requires that violence leaves marks.
+
+**False positive warning:** Pyrrhic victories, morally grey protagonists, bleak endings, and institutional rot are features of the genre, not failures. Do not flag darkness as a problem. Flag only when darkness is *inert* — present as decoration rather than doing structural work.
+
+---
+
 ## Science Fiction / Fantasy
 
 **Core contract:** "A world that works differently, but works." Primary failure mode is not "unrealistic" but **inconsistent**.

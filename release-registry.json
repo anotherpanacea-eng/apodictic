@@ -19,8 +19,8 @@
     "geminiPublicPlugin": "../APODICTIC-Gemini/public/apodictic-plugin"
   },
   "counts": {
-    "availableAudits": 31,
-    "specializedAudits": 28,
+    "availableAudits": 33,
+    "specializedAudits": 30,
     "universalAudits": 3,
     "tagAudits": 5,
     "primaryTagAudits": 3,
@@ -262,6 +262,24 @@
           "files": [
             "genre/horror-craft.md",
             "genre/horror-craft-level-setting.md"
+          ]
+        },
+        {
+          "slug": "supernatural-horror",
+          "name": "Supernatural Horror",
+          "summary": "belief threshold, wrongness tracking, supernatural pressure architecture, 8 subgenre calibrations",
+          "files": [
+            "genre/supernatural-horror.md",
+            "genre/supernatural-horror-level-setting.md"
+          ]
+        },
+        {
+          "slug": "grimdark",
+          "name": "Grimdark / Dark Fantasy",
+          "summary": "moral argument, violence economy, power anatomy, compromise pressure, consequence persistence, hope calibration",
+          "files": [
+            "genre/grimdark.md",
+            "genre/grimdark-level-setting.md"
           ]
         },
         {

@@ -2,7 +2,7 @@
 
 **Status:** Reference documentation (not loaded at runtime)
 **For:** APODICTIC Development Editor v0.5
-**Last updated:** 2026-02-22
+**Last updated:** 2026-03-19 (nonfiction routing patch)
 
 This file contains the design rationale, axis model, and implementation notes for the intake router. It is not loaded during runtime — the LLM uses `intake-router-runtime.md` for execution.
 
@@ -65,6 +65,54 @@ Gaps are addressed in the roadmap: Fast Triage and Submission Readiness in v1.1;
 
 ---
 
+## Nonfiction Routing Protocol
+
+The original router treated `constraint:nonfiction` as a broad gap. That is no longer correct for prose-bearing argument work. The remaining gap is **Nonfiction Pre-Draft** for idea-stage projects. For existing nonfiction pages, the router should now distinguish among three built destinations:
+
+1. **Nonfiction Argument Engine** — claim/support material where argument dominates
+2. **Narrative Nonfiction Craft** — scene-led or reported nonfiction where reader experience and factual scene construction dominate
+3. **Memoir & Creative Nonfiction** — first-person, memory, truth-craft, and ethical-obligation work where experiential authority is central
+
+### Nonfiction classification signals
+
+Route to the **Nonfiction Argument Engine** when at least two of the following are true:
+
+1. the material makes an extractable main claim
+2. the prose is organized around support, comparison, evaluation, or recommendation
+3. the writer's purpose is to persuade, propose, testify, defend, or argue
+4. the dominant reading question is "does this case hold?" rather than "does this story work?"
+
+Route to **Narrative Nonfiction Craft** when:
+
+1. scenes, chronology, source integration, and reader experience dominate
+2. the prose may imply an argument, but the reading contract is primarily narrative
+
+Route to **Memoir & Creative Nonfiction** when:
+
+1. first-person witness or memory is central
+2. truth-craft, narrator reliability, and ethical obligation are foregrounded
+3. argument may be present, but experience remains the primary delivery vehicle
+
+### Hybrid rule
+
+For Franklin Classification 3 material, route:
+
+1. to Dialectical Clarity when argument dominates and narrative supports it
+2. to Narrative Nonfiction Craft when narrative dominates and argument is secondary
+
+### Default activation by form
+
+| Form | Default route |
+|---|---|
+| Op-ed / persuasive essay / open letter | Nonfiction Argument Engine |
+| Policy brief / recommendation memo / white paper | Nonfiction Argument Engine |
+| Testimony | Nonfiction Argument Engine |
+| Academic article / review essay / legal-style argument | Nonfiction Argument Engine |
+| Reported feature / scene-led journalism | Narrative Nonfiction Craft |
+| Memoir / personal essay / witness-driven CNF | Memoir & CNF, with Dialectical Clarity added when explicit claim burden dominates |
+
+---
+
 ## Implementation Notes
 
 ### Router as specification
@@ -77,11 +125,12 @@ The router produces a structured classification that downstream workflows consum
 
 ```
 artifact: [idea | fragments | partial | full_draft | series]
-goal: [draft | repair | submit]
+goal: [draft | repair | submit | coach]
 concern: [specific concern if targeted, else "general"]
 constraints: [list of active constraint flags]
 operator: [author | editor | facilitator | team]
 route: [workflow name from route map]
+nonfiction_route: [argument_engine | narrative_nonfiction | memoir_cnf | none]
 gap_flags: [any gaps acknowledged]
 ```
 

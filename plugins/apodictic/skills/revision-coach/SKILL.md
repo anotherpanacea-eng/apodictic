@@ -1,14 +1,17 @@
 ---
 name: revision-coach
 description: >
-  Post-diagnostic revision coaching for fiction and narrative nonfiction.
+  Post-diagnostic revision coaching for fiction, narrative nonfiction,
+  and persuasive / argument-shaped nonfiction.
   Use when the user has a completed development edit or partial manuscript
   diagnostic and wants help planning revision sessions, working through stuck
   points, tracking revision momentum, managing a deadline, or unblocking a
   stalled draft. Triggers on "coach," "revision plan," "session plan,"
   "I have a diagnosis," "help me revise," "where should I start," "I'm stuck,"
-  "I have [time] to work," "I can't write," or "deadline."
-version: 1.2.1
+  "I have [time] to work," "I can't write," "deadline," "policy brief,"
+  "testimony revision," "op-ed revision," "argument revision,"
+  "Argument_State," or "warrant repair."
+version: 1.3.0
 ---
 
 # APODICTIC Revision Coach
@@ -20,7 +23,7 @@ version: 1.2.1
 
 The Revision Coach helps writers move from diagnosis to the next productive revision session — without doing the revision for them.
 
-This skill reads the diagnostic state produced by the Core Editor (root causes, triage, author decisions, revision progress, handoff history) and produces prioritized session plans, stuck-point reframings, momentum reports, and deadline calendars.
+This skill reads the diagnostic state produced by the Core Editor (root causes, triage, author decisions, revision progress, handoff history) and/or the nonfiction engine's `Argument_State.md`, then produces prioritized session plans, stuck-point reframings, momentum reports, and deadline calendars.
 
 **Core constraint:** A coach that writes your revision is a ghostwriter with extra steps. A coach that helps you see your own path through a diagnosed problem is something writers come back to.
 
@@ -140,21 +143,65 @@ The coach operates in four modes. Select based on context:
 
 ---
 
+## Argument Revision Mode (v1.0)
+
+When `Argument_State.md` is present, the coach should switch from fiction-first leverage logic to argument-first dependency logic.
+
+### When to activate
+
+1. the project is op-ed, testimony, policy brief, persuasive essay, academic argument, or similar nonfiction
+2. the user has completed Dialectical Clarity and wants help revising
+3. the user asks for warrant repair, objection handling, evidence acquisition, audience recalibration, or testimony containment
+
+### Core read set
+
+Always read:
+
+1. `Argument_State.md` §§ 2, 4, 5, 6, 9
+2. `Argument_State.md` § 10 annotations when present
+
+Optionally read `Diagnostic_State.md` when the argument project is embedded in a larger manuscript workflow.
+
+### Argument coaching tracks
+
+1. Claim-first revision
+2. Warrant repair
+3. Evidence acquisition queue
+4. Definition stabilization
+5. Objection-handling pass
+6. Audience recalibration pass
+7. Short-form compression pass
+8. Testimony containment plan
+
+### Output
+
+Use:
+
+1. `references/argument-coaching-protocol.md` — v1.0 (8 intervention tracks, 3-type stuck-point diagnosis, dependency-order repair, time-box guidance, testable session conditions, drift checks)
+2. `references/argument-session-plan-template.md` — v1.0 (writer's framing + structural reframe, domain classification, testimony containment variant, deadline variant)
+
+Produce an argument session plan that cites the relevant `Argument_State` sections and codes driving the recommendation.
+
+---
+
 ## State Management
 
 ### READ (always)
 - `Diagnostic_State.md` — all sections
+- `Argument_State.md` — when present
 - Prior session plans and revision calendars (if they exist)
 - Handoff history entries for scenes the writer asks about
 
 ### WRITE (restricted)
 - **Append** to Change Log when coaching produces a material observation
 - **Append** to Coaching Log (see below) with compact session record
+- **Append** to `Argument_State.md` § 10.5 when argument-mode coaching produces a material revision plan
 - **Update** Revision Progress checkboxes only when the writer explicitly reports completion
 - **Produce** session plans and revision calendars as separate artifacts in `Outputs/`
 
 ### NEVER
 - Overwrite root causes, triage severity, or analytical findings
+- Overwrite `Argument_State.md` §§ 1-9
 - Silently substitute own impressions for DE findings
 - Mark revision checkboxes without explicit writer confirmation
 - Re-open Keep/Cut decisions unless the writer explicitly requests it
@@ -190,9 +237,9 @@ See `references/coaching-protocol.md` §Partial Manuscript Coaching for the full
 
 ## No-Diagnostic Fallback
 
-If `/coach` is invoked without a `Diagnostic_State.md`:
+If `/coach` is invoked without a `Diagnostic_State.md` and without an `Argument_State.md`:
 
-> I don't have a diagnostic to coach from. The Revision Coach works from the findings of a development edit — root causes, triage, and revision priorities.
+> I don't have a diagnostic to coach from. The Revision Coach works from the findings of a development edit or the nonfiction engine's `Argument_State.md`.
 >
 > Run `/start` or `/diagnose` first to generate a diagnostic, then come back to `/coach` to plan your revision.
 
@@ -202,7 +249,7 @@ Do not improvise findings. Do not attempt to diagnose from scratch. The coach is
 
 ## Integration with Core Framework
 
-- **Post-synthesis offer:** After any Core DE or Full DE synthesis, surface: *"Diagnostic complete. Run `/coach` to plan your revision session."*
+- **Post-synthesis offer:** After any Core DE, Full DE, or Dialectical Clarity run, surface: *"Diagnostic complete. Run `/coach` to plan your revision session."*
 - **Handoff complement:** The coach selects which scenes to work on (macro prioritization). The handoff protocol manages the DE→execution transition for each specific scene (micro management).
 - **Re-assessment loop:** When coaching identifies a possible new issue, recommend returning to Core Editor for targeted re-assessment rather than diagnosing on the fly.
 
