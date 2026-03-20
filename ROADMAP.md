@@ -31,27 +31,19 @@ New specialized audits built from real editorial engagements, not hypothetical c
 2. Structural spec phase (named flags, dimensions, hard gates, subgenre calibrations, distinguish framework)
 3. Three-model synthesis for quality assurance — validated with Reception Risk (v1.0.9)
 
+**Built** (shipped in v1.3.0):
+- **Supernatural Horror** (genre module, 25 flags, 7 dimensions, 8 subgenre calibrations, 10 hard gates)
+- **Grimdark / Dark Fantasy** (genre module, 22 flags, 7 dimensions, 6 subgenre calibrations, 9 hard gates)
+- **Nonfiction Argument Engine** — see [dedicated section](#nonfiction-argument-engine) below
+
 **Seeded candidates** — reference texts identified, ready for level-setting:
 
 **YA / Kidlit (genre module).** Protagonist age-authority dynamics, voice register calibration (too-adult vs. condescending), first-experience plot drivers, pacing expectations distinct from adult fiction. One module with MG/YA subgenre variation.
 - Mary Kole — *Writing Irresistible Kidlit*
 - Deborah Halverson — *Writing Young Adult Fiction For Dummies*
 
-**Supernatural Horror (genre module).** Rule consistency for supernatural systems (borrows SFF Rule Ledger logic), escalation through revelation rather than destabilization, uncanny-to-confirmed spectrum. Shares Horror Craft audit but loads different pass modifications.
-- Tim Waggoner — *Writing in the Dark*
-- Mort Castle (ed.) — *On Writing Horror*
-- Dan Coxon (ed.) — *Writing the Uncanny*
-
-**Grimdark / Dark Fantasy (tag audit).** Tonal modifier layering onto Fantasy, Historical Fiction, or Literary. Core diagnostic: is grimness load-bearing or decorative?
-- Rayne Hall — *Writing Dark Stories*
-- Jeff VanderMeer — *Wonderbook*
-
 **Military / War Fiction Plausibility (scope TBD).** Tactical plausibility, violence-meaning relationship, institutional voice. May be a subgenre variation within Historical Fiction or a specialized research mode. Build only if demand materializes.
 - Benjamin Sobieck — *The Writer's Guide to Weapons*
-
-**Nonfiction Argument Engine (codex54 build in progress).** Dialectical Clarity has been promoted into the core argument kernel and now has a shared `Argument_State` schema. Next build phases are Argument Red Team, nonfiction routing in intake, Argument Persuasion, Evidence Deep-Dive, and Revision Coach argument mode.
-- Core shipped: Dialectical Clarity v2.0 + `docs/argument-state-schema.md`
-- Next: `argument-red-team.md`, router integration, persuasion and evidence companions, revision-coach argument mode
 
 **Unseeded candidates** (build when manuscripts demand them):
 - Western
