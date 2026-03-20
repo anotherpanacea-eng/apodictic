@@ -41,6 +41,8 @@ Display the complete list of available audits with brief descriptions:
 - **fanfic** — Fan Fiction Conversion: IP scaffolding, worldbuilding gaps
 - **sff-worldbuilding** — SFF Worldbuilding Integration: five-dimension framework, load-bearing analysis
 - **horror-craft** — Horror Craft Integration: dread architecture, consequence embodiment, subgenre calibrations
+- **supernatural-horror** — Supernatural Horror: belief threshold, wrongness tracking, supernatural pressure architecture, 8 subgenre calibrations
+- **grimdark** — Grimdark / Dark Fantasy: moral argument, violence economy, power anatomy, compromise pressure, consequence persistence, hope calibration
 - **mystery-thriller** — Mystery/Thriller Architecture: information pressure, clue economy, fair play
 
 ### Tag Audits

@@ -9,7 +9,7 @@
 
 **Status:** Draft
 **For:** APODICTIC Development Editor v0.4.14.3
-**Last updated:** February 2026
+**Last updated:** March 2026 (nonfiction routing patch)
 
 ---
 
@@ -133,7 +133,7 @@ Always asked after routing, before work begins. Multiple selections allowed.
 |--------|-------|--------------|-------------------|
 | A | I'm on a deadline | `constraint:time` | Truncate to fast triage: Pass 1 only → triage memo with max 3 interventions. Skip full diagnostic. |
 | B | Parts of this were written with AI | `constraint:ai` | Add AI-Prose Calibration overlay to whatever workflow was selected. |
-| C | This is nonfiction | `constraint:nonfiction` | Swap fiction-specific passes for nonfiction equivalents (argument spine, evidence map, scene ethics). **Gap: nonfiction pathway not yet built.** |
+| C | This is nonfiction | `constraint:nonfiction` | Run nonfiction triage. Route argument-shaped work to the Nonfiction Argument Engine, scene-led nonfiction to Narrative Nonfiction Craft, and memoir / witness-led work to Memoir & CNF. Idea-stage nonfiction pre-draft remains a gap. |
 | D | There's sensitive or legally risky content | `constraint:risk` | Add risk register output. Flag for human expert referral where appropriate. |
 | E | I'm editing someone else's work | `operator:editor` | Shift output framing: scaffolding for the editor's practice, not direct advice to the author. Flag recommendations as "findings for your editorial letter" rather than "you should fix." |
 | F | I'm facilitating a writing group | `operator:facilitator` | Shift to diagnostic vocabulary mode: teach structural concepts, provide discussion prompts, frame issues as questions rather than prescriptions. |
@@ -171,11 +171,15 @@ These three map cleanly to the Goal axis:
 | fragments | repair | — | Core DE (partial flag) | Gap: partial manuscript diagnostic |
 | partial | repair (diagnostic) | — | Core DE (partial flag) | Gap: partial manuscript diagnostic |
 | partial | repair (targeted) | — | Core DE (partial flag, targeted) | Gap: partial manuscript diagnostic |
+| partial | repair | nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) on available sections | **Built (v1.0)** |
 | partial | draft (rethink) | — | Pre-Writing Pathway (re-entry) | **Built (v0.4.5.0)** |
 | partial | repair | time | Fast Triage | Gap |
 | full_draft | repair | — | Core DE | **Built (v0.4.5.0)** |
 | full_draft | repair | time | Fast Triage | Gap |
 | full_draft | repair | ai | Core DE + AI-Prose Calibration | **Built (v0.4.5.0)** |
+| full_draft | repair | nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) | **Built (v1.0)** |
+| full_draft | repair | nonfiction (scene-led) | Narrative Nonfiction Craft | **Built** |
+| full_draft | repair | nonfiction (memoir / witness-led) | Memoir & CNF | **Built** |
 | full_draft | audit | — | Specialized Audit (user selects) | **Built (v0.4.17)** |
 | full_draft | repair | risk | Core DE + Risk Register | Gap |
 | full_draft | submit | — | Core DE → Pass 11 | Gap: unified submission workflow |

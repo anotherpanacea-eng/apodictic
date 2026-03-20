@@ -10,7 +10,7 @@
 |-------------|---------|------|---------|
 | [Genre Audit Expansion](#genre--audit-expansion) | [Editor Scaffolding](#editor-scaffolding) | [v1.2.1](#v121--audit-sequencing--model-tags) | [Feedback Triage](#feedback-triage) |
 | [Coaching Deepening](#coaching-deepening) | [Diagnostic Vocabulary](#diagnostic-vocabulary-mode) | [v1.2.0](#v120--artifact-coverage) | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) |
-| | [Writer's Block & Rut-Breaking](#writers-block--rut-breaking) | [v1.1.3](#v113--coaching-deepening) | [Legal Risk Register](#legal-risk-register) |
+| [Nonfiction Argument Engine](#nonfiction-argument-engine) | [Writer's Block & Rut-Breaking](#writers-block--rut-breaking) | [v1.1.3](#v113--coaching-deepening) | [Legal Risk Register](#legal-risk-register) |
 | | | [v1.1.2](#v112--revision-coach) | [Multi-Party Intake](#multi-party-intake) |
 | | | [v1.1.1](#v111--series-continuity--pass-9) | [Episode Cadence](#episode-cadence) |
 | | | [v1.1.0](#v110--token-aware-agent-usage) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
@@ -49,9 +49,9 @@ New specialized audits built from real editorial engagements, not hypothetical c
 **Military / War Fiction Plausibility (scope TBD).** Tactical plausibility, violence-meaning relationship, institutional voice. May be a subgenre variation within Historical Fiction or a specialized research mode. Build only if demand materializes.
 - Benjamin Sobieck — *The Writer's Guide to Weapons*
 
-**Dialectical Clarity enrichment (audit deepening).** Graff & Birkenstein and Heinrichs would enrich the existing audit. Franklin Class 3 path ("Argument With Embedded Narrative") is stubbed but not built.
-- Graff & Birkenstein — *They Say / I Say*
-- Jay Heinrichs — *Thank You for Arguing*
+**Nonfiction Argument Engine (codex54 build in progress).** Dialectical Clarity has been promoted into the core argument kernel and now has a shared `Argument_State` schema. Next build phases are Argument Red Team, nonfiction routing in intake, Argument Persuasion, Evidence Deep-Dive, and Revision Coach argument mode.
+- Core shipped: Dialectical Clarity v2.0 + `docs/argument-state-schema.md`
+- Next: `argument-red-team.md`, router integration, persuasion and evidence companions, revision-coach argument mode
 
 **Unseeded candidates** (build when manuscripts demand them):
 - Western
@@ -61,6 +61,60 @@ New specialized audits built from real editorial engagements, not hypothetical c
 - Graphic novel/comics
 - Interactive fiction / game narrative
 - Translations (diagnostic for prose through a translation layer)
+
+---
+
+## Nonfiction Argument Engine
+
+APODICTIC now has the kernel of a full nonfiction and persuasive-argument workflow:
+
+1. Dialectical Clarity v2.0 as the canonical diagnostic audit
+2. `Argument_State.md` as the shared artifact
+3. companion-module architecture for red-team, persuasion, evidence, and coaching
+
+### Current status
+
+**Built**
+
+1. Dialectical Clarity v2.0 + level-setting research
+2. `docs/argument-state-schema.md` (v0.1.1)
+3. Argument Red Team (v1.0) + level-setting research
+4. Argument Persuasion + level-setting research
+5. Argument Evidence Deep-Dive
+6. Nonfiction routing in intake (runtime + design docs)
+7. Revision Coach argument mode (8 coaching tracks + argument session plan template)
+
+**Next**
+
+1. Argument Engine Benchmark Suite
+
+### Benchmark Suite
+
+Validate that the engine works on real argument-shaped nonfiction, not just in theory. Corpus-based testing against manuscripts where the correct structural diagnosis is already known.
+
+**Corpus buckets:**
+1. Op-eds
+2. Policy briefs
+3. Testimony (legislative, judicial, administrative)
+4. Personal essays with implicit argument
+5. Academic argument
+6. Advocacy journalism
+7. Argument-with-embedded-narrative hybrids
+
+**Test questions:**
+1. Did the system recover the actual main claim?
+2. Did it correctly distinguish support failure from warrant failure?
+3. Did it identify the strongest real objection?
+4. Did audience calibration improve rather than distort diagnosis?
+5. Did red-team output surface genuinely dangerous weaknesses?
+6. Did coaching produce a useful repair order?
+7. Did the system avoid penalizing unconventional but effective form?
+
+**Success condition:** Two serious editors using the engine independently should usually converge on the core claim, the top 1–3 structural failures, the main burden mismatch, and the strongest objection zone.
+
+### Design principle
+
+Treat Dialectical Clarity as the kernel, not the whole operating system. Companion modules should read `Argument_State.md` rather than rebuilding the argument from scratch.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Status:** Implementation-ready
 **For:** APODICTIC Development Editor v0.5
-**Last updated:** 2026-02-22
+**Last updated:** 2026-03-19 (nonfiction routing patch)
 
 This file is loaded on every `/start` invocation. It contains the question flow, route map, and gap-handling protocol — everything the LLM needs to execute routing. For design rationale, see `intake-router-design.md`.
 
@@ -176,7 +176,7 @@ Always asked after routing, before work begins. Multiple selections allowed.
 |--------|-------|--------------|-------------------|
 | A | I'm on a deadline | `constraint:time` | Route to Submission Triage: Pass 1 → SR codes (detectable subset) → go/no-go memo with blind spots. See `references/submission-triage.md`. |
 | B | Parts of this were written with AI | `constraint:ai` | Add AI-Prose Calibration overlay. |
-| C | This is nonfiction | `constraint:nonfiction` | Swap fiction-specific passes for nonfiction equivalents. **Gap: nonfiction pathway not yet built.** |
+| C | This is nonfiction | `constraint:nonfiction` | Run nonfiction triage. Route argument-shaped work to the Nonfiction Argument Engine, scene-led nonfiction to Narrative Nonfiction Craft, and memoir / witness-led work to Memoir & CNF. Idea-stage Nonfiction Pre-Draft remains a gap. |
 | D | There's sensitive or legally risky content | `constraint:risk` | Add risk register output. **Gap: risk register not yet built.** |
 | E | I'm editing someone else's work | `operator:editor` | Shift output to editor scaffolding. **Gap: editor mode not yet built.** |
 | F | I'm facilitating a writing group | `operator:facilitator` | Shift to diagnostic vocabulary mode. **Gap: facilitator mode not yet built.** |
@@ -203,6 +203,55 @@ Mapping:
 - Start drafting → `draft` (Pre-Writing Pathway or Fragment Synthesis)
 - Improve existing pages → `repair` (Core DE, with appropriate artifact flag)
 - Evaluate readiness → `submit` (Core DE + Pass 11)
+
+---
+
+## §4a. Nonfiction Routing Rules
+
+When `constraint:nonfiction` is active and the user has prose pages rather than an idea-only project, do not treat nonfiction as a generic gap. Apply this triage:
+
+### Route to the Nonfiction Argument Engine when:
+
+1. the manuscript makes an extractable main claim
+2. support, comparison, evaluation, proposal, or testimony dominates the structure
+3. the user is working on an op-ed, policy brief, testimony, academic argument, open letter, advocacy argument, recommendation memo, white paper, legal-style brief, or other claim-bearing prose
+
+### Route to Narrative Nonfiction Craft when:
+
+1. the material is primarily scene-led, reportorial, or chronologically narrative
+2. the reader's main question is about scene construction, pacing, source integration, and factual storytelling experience
+
+### Route to Memoir & Creative Nonfiction when:
+
+1. first-person witness, memory, truth-craft, and ethical obligation are central
+2. experiential authority dominates even if an argument is present
+
+### Hybrid rule
+
+If the manuscript is Franklin Classification 3:
+
+1. choose Dialectical Clarity when argument dominates and narrative is serving evidence or stakes
+2. choose Narrative Nonfiction Craft when narrative dominates and the argument is secondary
+
+### Default activation by form
+
+| Form | Default route |
+|---|---|
+| Op-ed / persuasive essay / open letter | Dialectical Clarity |
+| Policy brief / recommendation memo / white paper | Dialectical Clarity; offer Red Team next |
+| Testimony | Dialectical Clarity; offer Red Team next |
+| Academic argument / review essay / legal brief | Dialectical Clarity |
+| Reported feature / scene-led journalism | Narrative Nonfiction Craft |
+| Memoir / personal essay / witness-led CNF | Memoir & CNF; add Dialectical Clarity when explicit claim burden dominates |
+
+### Post-diagnostic offer
+
+After Dialectical Clarity on nonfiction argument work, surface the next likely action:
+
+1. `/audit argument-red-team` for hostile pressure testing
+2. `/audit argument-evidence` when evidence legitimacy is the likely bottleneck
+3. `/audit argument-persuasion` when audience fit is the likely bottleneck
+4. `/coach` for revision sequencing
 
 ---
 
@@ -236,6 +285,7 @@ Existing commands bypass the router with pre-filled values. The router is the re
 | fragments | repair | — | Core DE (partial flag) | **Built** (v1.2.0) |
 | partial | repair (diagnostic) | — | Core DE (partial flag) | **Built** (v1.2.0) |
 | partial | repair (targeted) | — | Core DE (partial flag, targeted) | **Built** (v1.2.0) |
+| partial | repair | nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) on available sections | **Built** (v1.0) |
 | partial | draft (rethink) | — | Pre-Writing Pathway (re-entry) | **Built** |
 | partial | repair | time | Submission Triage | Gap: triage requires complete manuscript. Offer targeted `/diagnose`. |
 | full_draft | repair | — | Core DE | **Built** |
@@ -243,6 +293,9 @@ Existing commands bypass the router with pre-filled values. The router is the re
 | full_draft | repair | swarm | Core DE (swarm mode) | **Built** |
 | full_draft | repair | time | Submission Triage | **Built** (v1.1) |
 | full_draft | repair | ai | Core DE + AI-Prose Calibration | **Built** |
+| full_draft | repair | nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) | **Built** (v1.0) |
+| full_draft | repair | nonfiction (scene-led) | Narrative Nonfiction Craft | **Built** |
+| full_draft | repair | nonfiction (memoir / witness-led) | Memoir & CNF | **Built** |
 | full_draft | repair | risk | Core DE + Risk Register | Gap |
 | full_draft | submit | — | Submission Readiness Workflow (`references/submission-readiness.md`) | **Built** (v1.1) |
 | full_draft | submit | hybrid | Core DE → Pass 11 (hybrid mode) | **Built** |

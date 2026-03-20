@@ -4,7 +4,23 @@ description: >
   Deep-dive specialized audits and research modes for the APODICTIC
   Development Editor. Use when the user asks to "run a scene audit,"
   "character architecture audit," "shelf positioning," "emotional craft
-  audit," "dialectical clarity," "consent audit," "comedy audit,"
+  audit," "dialectical clarity," "dialectical clarity audit," "argument audit,"
+  "warrant gap," "warrant analysis," "audience calibration," "dialectical integrity,"
+  "claim ladder," "support map," "burden of proof," "scope creep,"
+  "definitional smuggling," "concession without cost," "evidence laundering,"
+  "motte-and-bailey," "epistemic erasure," "false precision,"
+  "testimonial overburden," "emotional inflation," "implementation blindspot,"
+  "qualification erosion," "authority overreach," "anecdote-to-principle,"
+  "is the argument working," "does the argument hold," "structurally unsound,"
+  "argument structure," "nonfiction argument," "policy brief audit,"
+  "testimony audit," "op-ed audit," "argument red team", "red team",
+  "red-team", "stress test the argument", "hostile reader", "opposition memo",
+  "cross-examine", "cross examination", "strongest objection", "argument pressure test",
+  "argument persuasion", "persuasion memo", "audience memo", "framing options",
+  "concession placement", "make this land better", "argument evidence",
+  "evidence deep-dive", "evidence provenance", "testimony calibration",
+  "evidence ledger", "verification queue",
+  "consent audit," "comedy audit,"
   "historical fiction audit," "queer romance audit," "fan fiction conversion,"
   "interiority audit," "banister audit," "short fiction audit," "series audit,"
   "ai prose," "ai calibration," "slop to silver," "ai-prose calibration,"
@@ -15,6 +31,17 @@ description: >
   "literary craft," "literary mode," "ornamental prose," "load-bearing,"
   "horror craft," "horror integration," "inert dread," "dread architecture,"
   "horror pressure," "does the horror land,"
+  "supernatural horror," "supernatural audit," "ghost story audit,"
+  "haunting audit," "possession audit," "belief threshold,"
+  "wrongness," "inert supernaturality," "does the haunting land,"
+  "is the supernatural working," "the ghost feels decorative,"
+  "supernatural feels flat," "curse audit," "folk horror audit,"
+  "grimdark," "grimdark audit," "dark fantasy audit," "inert bleakness,"
+  "violence economy," "moral argument," "productive darkness,"
+  "is the darkness working," "nihilism collapse," "grimdark cosplay,"
+  "darkness tourism," "institutional wallpaper," "empathy bankruptcy,"
+  "military grimdark," "political grimdark," "noir dark fantasy,"
+  "mythic dark fantasy," "literary dark fantasy," "progression grimdark,"
   "mystery/thriller architecture," "mystery architecture," "thriller architecture,"
   "informational drift," "information pressure," "clue economy," "fair play,"
   "does the puzzle work," "is the reader playing,"
@@ -37,7 +64,7 @@ description: >
   or any request for a focused manuscript audit beyond the core development
   edit passes. Also triggers on "list audits," "what audits are available,"
   or "help audits."
-version: 1.2.1
+version: 1.3.0
 ---
 
 # Specialized Audits & Research Modes
@@ -60,7 +87,10 @@ Deep-dive analytical tools that supplement the core development edit. Each audit
 |-------|---------|-----------------|
 | **Character Architecture** | Psychology engine, arc types, agency quotient, voice distinctiveness | Character concerns, puppet moments, voice drift |
 | **Emotional Craft** | Emotional precision, earned moments, sentiment tracking | Emotional flatness, melodrama, unearned catharsis |
-| **Dialectical Clarity** | Argument structure, thesis-antithesis balance, rhetorical fairness | Theme-heavy work, philosophical fiction, didacticism concerns |
+| **Dialectical Clarity** | Argument structure (9 steps, 45 codes, 19 failure modes), warrant & inference bridge, audience calibration, dialectical integrity, cross-section tracking, distinguish protocol | All argument-shaped nonfiction: op-eds, policy briefs, testimony, academic articles, grant proposals, white papers, legal briefs, book reviews, advocacy journalism, open letters |
+| **Argument Red Team** | Hostile-reader simulation, strongest opposing case, cross-examination pressure, vulnerability ranking; consumes `Argument_State.md` and writes `Red_Team_Memo.md` | After Dialectical Clarity when the user wants a stress test, strongest objection set, opposition memo, or hostile-read analysis |
+| **Argument Persuasion** | Audience matrix, framing and sequence guidance, concession placement, compression calibration; consumes `Argument_State.md` and writes `Audience_Calibration_Memo.md` | After Dialectical Clarity when the user asks how to make the case land better for a specific audience |
+| **Argument Evidence Deep-Dive** | Provenance chain, testimony calibration, quantitative integrity, verification queue; consumes `Argument_State.md` and writes `Evidence_Ledger.md` | After Dialectical Clarity when evidence legitimacy, provenance, or verification is the likely bottleneck |
 | **Shelf Positioning** | Target reader, genre contract, comp validation, signal audit | Pre-submission, market positioning, genre straddling |
 | **Series & Composite Novel** | Standalone function, hope calibration, distance management | Multi-part works, novellas, linked stories |
 | **Memoir & Creative Nonfiction** | Truth-craft balance, narrator reliability, ethical obligations | Memoir, personal essay, literary journalism |
@@ -78,6 +108,8 @@ Deep-dive analytical tools that supplement the core development edit. Each audit
 | **SFF Worldbuilding Integration** | Worldbuilding integration (20 flags), five-dimension framework, load-bearing analysis, subgenre calibration, named failure modes | Any SF/F manuscript — tests whether the world does narrative work across character cognition, theme, prose, social systems, and emotion; stacks with Genre Module: SF/F (consistency) |
 | **Literary Craft Deep Dive** | Literary-mode integration (22 flags across 5+1 dimensions), load-bearing vs. ornamental analysis, defamiliarization test, 9 genre-hybrid calibrations, recognition architecture | Any manuscript operating in literary mode — tests whether prose, structure, image systems, subtext, and voice do narrative work or are cosmetic; cross-genre (literary fiction, literary thriller, literary SFF, literary horror, upmarket, etc.) |
 | **Horror Craft Integration** | Horror-pressure delivery (23 flags across 6 dimensions), producing vs. inert analysis, 9 subgenre calibrations with named failure modes, dread architecture tracking, consequence embodiment | Any horror or horror-hybrid manuscript — tests whether the horror apparatus produces sustained dread, destabilization, and felt consequence or merely delivers horror-coded content; stacks with Genre Module: Horror (contract) |
+| **Supernatural Horror** | Supernatural-pressure delivery (25 flags across 7 dimensions: BT, WO, HP, RL, MS, IE, RR), producing vs. inert analysis, 8 subgenre calibrations with named failure modes, belief threshold ledger, wrongness log, rule/ritual ledger, aftermath chain, 10 hard gates, distinguish framework (Working/Restrained/Unstable/Inert) | Any supernatural horror manuscript — tests whether the supernatural apparatus produces felt ontological violation or merely delivers paranormal content; child audit of Horror Craft Integration; ghost stories, possession, demonic/religious, haunted space, curse/folk, cosmic-agency, dark fairy tale, diasporic spiritual horror |
+| **Grimdark / Dark Fantasy** | Grimdark-darkness delivery (22 flags across 7 dimensions: MA, VE, PA, CC, IB, CP, HD), producing vs. inert analysis, 6 subgenre calibrations with named failure modes (Battlefield Wallpaper, Courtboard Cleverness, Snarl Without Soul, Bloodless Myth, Beautiful Rot, Corruption Deferred), moral architecture map, violence economy ledger, compromise chain, investment anchor map, institutional anatomy grid, defiance/value thread, 9 hard gates, distinguish framework (Productive Darkness/Deliberately Nihilistic/Unstable/Inert) | Any grimdark or dark fantasy manuscript — tests whether darkness produces moral argument, institutional critique, and sustained investment or merely decorates the story with brutality; sibling audit alongside Horror Craft Integration; military, political, noir, mythic, literary, progression grimdark |
 | **Mystery/Thriller Architecture** | Information-pressure delivery (28 flags across 6 dimensions), integrated vs. detached analysis, 9 subgenre calibrations with named failure modes, clue/herring/clock/fairness tracking, informational drift diagnosis | Any mystery or thriller manuscript — tests whether the information architecture generates inference, urgency, and surprise-with-inevitability or merely assembles genre components; stacks with Genre Modules: Mystery and Thriller (contract) |
 | **Force Architecture** | Force-delivery integration (25 flags across 6 dimensions), integrated vs. detached analysis, 8 mode calibrations with named failure modes, consequence/escalation/conversion tracking, inert force diagnosis | Any manuscript with significant physical conflict — tests whether force events produce legible, causal, persistent, meaningful change or are spectacle loops; cross-genre (military, progression, thriller, horror, crime, domestic, literary, superhero/speculative) |
 | **Compression** | Expendable material diagnosis (16 flags across 5 channels: SE, IR, ScE, ER, SS), Cut List artifact with word savings, Compression Map, two-pass procedure (discovery sample → enumeration), Distinguish framework (Cut/Compress/Keep), 7 mode calibrations with named failure modes, 4 hard gates | "Too long," "what can I cut," word-count target, Pass 2 orphan scenes ≥3, proportional imbalance >40%, revision-round re-entry with cut goal; cross-genre (literary fiction, thriller, romance, SFF, horror, mystery, memoir/nonfiction) |
@@ -167,7 +199,14 @@ See `references/craft/shelf-positioning.md` for the full audit.
 ### Craft Audits
 - `references/craft/character-architecture.md` — Full Character Architecture audit
 - `references/craft/emotional-craft.md` — Emotional Craft audit
-- `references/craft/dialectical-clarity.md` — Dialectical Clarity audit
+- `references/craft/dialectical-clarity.md` — Dialectical Clarity audit v2.0 (9 steps, 9 code families, 45 codes, 19 named failure modes, 5 tracking artifacts, 8 hard gates, 12 genre calibrations)
+- `references/craft/dialectical-clarity-level-setting.md` — Dialectical Clarity level-setting research (Toulmin, Walton, pragma-dialectics, Perelman/Bitzer, Fricker, 19 failure modes with theoretical grounding, positive cases by technique, audience calibration framework, 5 unsettled questions)
+- `../../../docs/argument-state-schema.md` — Argument State Schema v0.1.1 (shared artifact spec for Nonfiction Argument Engine: §§ 1–9 populated by Dialectical Clarity, § 10 annotated by companion modules)
+- `references/craft/argument-red-team.md` — Argument Red Team companion module v1.0 (12 named flags RT1–RT12, 6-step diagnostic, Distinguish Framework, adversary profiles by form, 7 hard gates)
+- `references/craft/argument-red-team-level-setting.md` — Argument Red Team level-setting research (Walton, pragma-dialectics, Mill, steelmanning, institutional adversarial reading, 7 meta-failure modes, structural isomorphism principle, positive cases, form calibration, false-positive risks)
+- `references/craft/argument-persuasion.md` — Argument Persuasion v1.0 (12 signals PS1–PS12, 7-step diagnostic with Distinguish Framework, audience-posture × form calibration, 7 hard rules)
+- `references/craft/argument-persuasion-level-setting.md` — Argument Persuasion level-setting research (audience theory, rhetorical situation, arrangement, trust architecture, false-positive risks by form, distinguish problem)
+- `references/craft/argument-evidence.md` — Argument Evidence Deep-Dive v1.0 (5 dimensions EV1–EV5, 10 flags AE1–AE10, 5 hard gates, form calibration table, testimony handoff to coaching Track 8)
 - `references/craft/shelf-positioning.md` — Shelf & Positioning audit
 - `references/craft/series-composite-novel.md` — Series & Composite Novel audit
 - `references/craft/interiority-preservation.md` — Interiority Preservation audit
@@ -200,6 +239,10 @@ See `references/craft/shelf-positioning.md` for the full audit.
 - `references/genre/sff-worldbuilding-level-setting.md` — SFF Worldbuilding Integration level-setting brief (theory, failure modes, positive cases, subgenre calibration evidence)
 - `references/genre/horror-craft.md` — Horror Craft Integration audit (23 flags, 6 dimensions, 9 hard gates, 9 subgenre calibrations)
 - `references/genre/horror-craft-level-setting.md` — Horror Craft level-setting brief (Carroll, Freud, Kristeva, Wood, Fisher, Ligotti, King, narrative psychology, positive cases)
+- `references/genre/supernatural-horror.md` — Supernatural Horror audit (25 flags, 7 dimensions, 8 subgenre calibrations, 10 hard gates)
+- `references/genre/supernatural-horror-level-setting.md` — Supernatural Horror level-setting brief (ontology, belief mechanics, wrongness taxonomy, narrative psychology, positive cases, subgenre calibration evidence)
+- `references/genre/grimdark.md` — Grimdark / Dark Fantasy audit (22 flags, 7 dimensions, 9 hard gates, 6 subgenre calibrations)
+- `references/genre/grimdark-level-setting.md` — Grimdark / Dark Fantasy level-setting brief (cynicism-as-argument, Abercrombie problem, violence economy, subversion, hope calibration, power anatomy, moral complexity, positive cases, submode calibration, distinguish problem)
 - `references/genre/mystery-thriller-architecture.md` — Mystery/Thriller Architecture audit (28 flags, 6 dimensions, 10 hard gates, 9 subgenre calibrations)
 - `references/genre/mystery-thriller-architecture-level-setting.md` — Mystery/Thriller Architecture level-setting brief (Sternberg, Barthes, Eco, Todorov, cognitive psychology, Christie, Highsmith, Child, French, Flynn, positive cases)
 
