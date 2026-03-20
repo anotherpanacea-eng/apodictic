@@ -10,15 +10,15 @@
 |-------------|---------|------|---------|
 | [Genre Audit Expansion](#genre--audit-expansion) | [Editor Scaffolding](#editor-scaffolding) | [v1.3.0](#v130--nonfiction-argument-engine--genre-audits) | [Feedback Triage](#feedback-triage) |
 | [Coaching Deepening](#coaching-deepening) | [Diagnostic Vocabulary](#diagnostic-vocabulary-mode) | [v1.2.1](#v121--audit-sequencing--model-tags) | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) |
-| | [Writer's Block & Rut-Breaking](#writers-block--rut-breaking) | [v1.2.0](#v120--artifact-coverage) | [Legal Risk Register](#legal-risk-register) |
-| | | [v1.1.3](#v113--coaching-deepening) | [Multi-Party Intake](#multi-party-intake) |
+| | [Writer-Question Surface Hardening](#writer-question-surface-hardening) | [v1.2.0](#v120--artifact-coverage) | [Legal Risk Register](#legal-risk-register) |
+| | [Writer's Block & Rut-Breaking](#writers-block--rut-breaking) | [v1.1.3](#v113--coaching-deepening) | [Multi-Party Intake](#multi-party-intake) |
 | | | [v1.1.2](#v112--revision-coach) | [Episode Cadence](#episode-cadence) |
 | | | [v1.1.1](#v111--series-continuity--pass-9) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
 | | | [v1.1.0](#v110--token-aware-agent-usage) | [Framework Overview Dashboard](#framework-overview-dashboard) |
 | | | [v1.0.9](#v109) | [Pre-Skill Context Compaction](#pre-skill-context-compaction) |
-| | | [v1.0.8](#v108) | [Command Surface Evaluation](#command-surface-evaluation) |
-| | | [v1.0.4](#v104) | [Output Organization by Question](#output-organization-by-question) |
-| | | [v1.0](#v10--public-release) | [Skill Boundary Evaluation](#skill-boundary-evaluation) |
+| | | [v1.0.8](#v108) | |
+| | | [v1.0.4](#v104) | |
+| | | [v1.0](#v10--public-release) | |
 
 ---
 
@@ -184,21 +184,32 @@ Static, single-file HTML overview of the plugin's capabilities. System-at-a-glan
 
 ---
 
-## UX & Command Restructuring
+## Writer-Question Surface Hardening
 
-Continuing the v0.5 vision: the plugin should be organized around writer questions, not framework internals. The query-driven pass architecture and intake router shipped in v1.0, but the command surface, output naming, and skill boundaries still reflect build history.
+Continuing the v0.5 vision: the plugin should be organized around writer questions, not framework internals. The query-driven pass architecture and intake router shipped in v1.0, but the command surface, output naming, and skill boundaries still reflect build history. Evaluated in v1.3.0 — no user-facing pain found, but the surface can be cleaner.
 
-### Command Surface Evaluation
+### What to build
 
-Are 11 commands the right surface? The alias model works (most commands are shortcuts into `/start` with pre-filled values) but hasn't been evaluated against real usage. Questions to answer: Do writers use the shortcuts, or do they always go through `/start`? Should most commands retire in favor of `/start` + `/audit`? Is the current command set discoverable or overwhelming?
+1. **Command taxonomy in release-registry.** Each command gets `category`, `status` (`primary` / `first_class_shortcut` / `compat_alias`), `router_equivalent`, and a plain-language writer question it answers. `/revision-plan` is the only true compat alias (→ `/coach`). All others stay first-class.
 
-### Output Organization by Question
+2. **Doc sync across all public surfaces.** Every public doc, README, help surface, and marketplace entry uses the same grouped command presentation generated from the registry. No more hand-maintained command lists.
 
-The editorial letter groups findings by macro block (Structure Map, Reader Dynamics, Character Architecture, etc.), but pass artifacts are still named by pass number (`Pass5_Character_Audit`, `Pass7_POV_Voice`). A writer looking for "what's wrong with my characters" has to know that means Pass 5 + Pass 7. Evaluate whether output artifacts should be named by macro block instead of pass number — or whether the current naming is fine because writers interact with the editorial letter, not individual pass files.
+3. **Canonical 8-block macro map.** Resolve Pass 4 ambiguity by giving Emotional Dynamics its own block permanently. The 8 blocks: Structure Map, Reader Dynamics, Character Architecture, Emotional Dynamics, Scene Delivery, Reveal Economy, Theme & Continuity, Submission Readiness. Source of truth in pass-dependencies.md.
 
-### Skill Boundary Evaluation
+4. **Pass-detail file headers.** Add a standard header to each pass artifact with `Macro block`, `Writer question`, and `Legacy pass id`. Makes a direct-opened file legible without framework knowledge.
 
-Five skills (core-editor, pre-writing-pathway, plot-architecture, specialized-audits, revision-coach) reflect the order they were built, not necessarily how writers navigate. Evaluate whether the boundaries match usage patterns. The main question: does a writer ever hit a skill boundary and feel lost? If skill loading is invisible to the user (which it mostly is), this may be a non-issue.
+5. **Results Guide artifact.** `[Project]_Results_Guide_[runlabel].md` — maps each writer question to the relevant artifacts, audits, and state files. First file after the editorial letter.
+
+6. **Skill names scrubbed from user-facing copy.** Public copy describes workflows and next steps, not which skill is being loaded.
+
+7. **Handoff language standardized.** Cross-skill transitions phrased as workflow moves: "run an audit next," "plan revision next," not "load specialized-audits."
+
+### What not to build (yet)
+
+- **Instrumentation.** APODICTIC-Gemini has a Cloud Run backend that could support event logging, but there's no current need for telemetry. Revisit when external users are active.
+- **Filename renames.** Keep pass-numbered filenames on disk. The Results Guide is the primary macro-block organizer. Bulk renames deferred unless usage shows writers navigate by detail files.
+- **Skill merges or renames.** Five-skill architecture stays. Skill loading is invisible to users. Evaluate only if handoff pain surfaces.
+- **Editorial Letter renaming.** `Core_DE_Synthesis` and `Full_DE_Synthesis` work. Don't alias.
 
 ---
 
