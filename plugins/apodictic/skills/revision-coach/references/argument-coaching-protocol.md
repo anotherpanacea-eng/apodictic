@@ -227,31 +227,52 @@ If the condition is not testable, the session plan is too vague.
 
 ## Argument-Specific Stuck-Point Diagnosis
 
-When the writer is blocked during argument revision, diagnose which of three block types is operating:
+When the writer is blocked during argument revision, use the expanded 8-type taxonomy from `references/writers-block-taxonomy.md` with the following argument-specific refinements:
 
-### Structural block
+### Argument block sub-types
 
-The writer cannot see how to fix the problem because the structural diagnosis is unclear or overwhelming.
+**Structural block (Type 1 — cognitive overload).** The writer cannot see how to fix the problem because the structural diagnosis is unclear or overwhelming.
 
 **Signals:** "I don't know where to start." "Everything is connected to everything." "If I fix this, that breaks."
 
-**Coaching move:** Narrow to a single claim corridor. Use the dependency order to identify the one upstream repair that would unlock downstream work. Reframe the problem as one testable session target.
+**Coaching move:** Narrow to a single claim corridor. Use the dependency order to identify the one upstream repair that would unlock downstream work. Reframe the problem as one testable session target. **Structural prompt:** Constraint or Isolation — freeze all corridors except the one under repair.
 
-### Conviction block
-
-The writer knows the claim is weak but believes it anyway, or cannot bring themselves to concede what the argument requires.
+**Conviction block (Type 5 — identity/vision threat, argument variant).** The writer knows the claim is weak but believes it anyway, or cannot bring themselves to concede what the argument requires.
 
 **Signals:** "I know this part doesn't work but I can't cut it." "I shouldn't have to concede that." "The audience should just understand."
 
-**Coaching move:** Separate the writer's belief from the argument's burden. The question is not whether the writer is right, but whether the manuscript has done the work to bring the reader along. Name the specific burden that is unmet. Do not argue about the writer's convictions.
+**Coaching move:** Separate the writer's belief from the argument's burden. The question is not whether the writer is right, but whether the manuscript has done the work to bring the reader along. Name the specific burden that is unmet. Do not argue about the writer's convictions. **Structural prompt (if reframe is insufficient):** Perspective — rework the corridor from the hostile reader's vantage. Clinamen clause critical.
 
-### Evaluative block
-
-The writer cannot tell whether their revisions are actually improving the argument or just moving the problem around.
+**Evaluative block (Type 8 — stage-mode mismatch, argument variant).** The writer cannot tell whether their revisions are actually improving the argument or just moving the problem around.
 
 **Signals:** "I revised this three times and it's not better." "I keep rewriting the same section." "I can't tell if this is done."
 
-**Coaching move:** Apply the session's testable completion condition. If no condition was set, set one now. The writer needs a yes/no test, not a feeling. If the condition passes, the section is done for now — move downstream.
+**Coaching move:** Apply the session's testable completion condition. If no condition was set, set one now. The writer needs a yes/no test, not a feeling. If the condition passes, the section is done for now — move downstream. **Structural prompt:** Scale-shift — compress the corridor to test whether the revision changed the structural situation.
+
+**Decisional block (Type 4).** The writer sees multiple valid restructuring options for the argument and cannot choose between them.
+
+**Signals:** "I could lead with the economic argument or the moral argument." "Both orderings work." "I've drafted two versions and can't pick."
+
+**Coaching move:** Satisficing heuristics. Scale-shift: compress both options to see which retains more argumentative energy. Temporal: trace downstream implications of each option. Commit to the one with more energy and treat the decision as reversible.
+
+### Argument-specific prompt mapping
+
+When a structural prompt is warranted during argument revision, select the family from `references/structural-prompt-library.md` using the Argument_State.md mapping table. Key patterns:
+
+| Argument_State pattern | Best-fit families |
+|----------------------|-------------------|
+| CL instability / blurred C0 | Isolation, Constraint |
+| WR gap / weak bridge | Isolation, Perspective, Constraint |
+| OB avoidance | Perspective, Inversion |
+| AC mismatch | Scale-shift, Perspective |
+| Testimony containment | Isolation, Constraint |
+| DI failure | Isolation, Inversion |
+
+**No-prompt zones for argument work:** Evidence corridor too thin (work is research, not writing), accepted cut decision, factual error.
+
+### Nocebo inoculation
+
+Every argument block diagnosis must acknowledge that the writer may already be handling this. The writer is the subject-matter expert; the coach is the structural analyst. Frame the diagnosis as one possible lens on the revision challenge.
 
 ---
 

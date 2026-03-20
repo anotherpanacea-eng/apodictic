@@ -8,14 +8,15 @@
 
 | In Progress | Planned | Done | Backlog |
 |-------------|---------|------|---------|
-| [Genre Audit Expansion](#genre--audit-expansion) | [Editor Scaffolding](#editor-scaffolding) | [v1.3.0](#v130--nonfiction-argument-engine--genre-audits) | [Feedback Triage](#feedback-triage) |
-| [Coaching Deepening](#coaching-deepening) | [Diagnostic Vocabulary](#diagnostic-vocabulary-mode) | [v1.2.1](#v121--audit-sequencing--model-tags) | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) |
-| | [Writer-Question Surface Hardening](#writer-question-surface-hardening) | [v1.2.0](#v120--artifact-coverage) | [Legal Risk Register](#legal-risk-register) |
-| | [Writer's Block & Rut-Breaking](#writers-block--rut-breaking) | [v1.1.3](#v113--coaching-deepening) | [Multi-Party Intake](#multi-party-intake) |
-| | | [v1.1.2](#v112--revision-coach) | [Episode Cadence](#episode-cadence) |
-| | | [v1.1.1](#v111--series-continuity--pass-9) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
-| | | [v1.1.0](#v110--token-aware-agent-usage) | [Framework Overview Dashboard](#framework-overview-dashboard) |
-| | | [v1.0.9](#v109) | [Pre-Skill Context Compaction](#pre-skill-context-compaction) |
+| [Genre Audit Expansion](#genre--audit-expansion) | [Editor Scaffolding](#editor-scaffolding) | [v1.4.0](#v140--surface-hardening--writers-block) | [Feedback Triage](#feedback-triage) |
+| [Coaching Deepening](#coaching-deepening) | [Diagnostic Vocabulary](#diagnostic-vocabulary-mode) | [v1.3.0](#v130--nonfiction-argument-engine--genre-audits) | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) |
+| | | [v1.2.1](#v121--audit-sequencing--model-tags) | [Legal Risk Register](#legal-risk-register) |
+| | | [v1.2.0](#v120--artifact-coverage) | [Multi-Party Intake](#multi-party-intake) |
+| | | [v1.1.3](#v113--coaching-deepening) | [Episode Cadence](#episode-cadence) |
+| | | [v1.1.2](#v112--revision-coach) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
+| | | [v1.1.1](#v111--series-continuity--pass-9) | [Framework Overview Dashboard](#framework-overview-dashboard) |
+| | | [v1.1.0](#v110--token-aware-agent-usage) | [Pre-Skill Context Compaction](#pre-skill-context-compaction) |
+| | | [v1.0.9](#v109) | |
 | | | [v1.0.8](#v108) | |
 | | | [v1.0.4](#v104) | |
 | | | [v1.0](#v10--public-release) | |
@@ -122,9 +123,9 @@ Session Planning currently operates one session at a time. Arc Planning would pr
 
 Adjust coaching behavior by genre: romance coaching emphasizes emotional-arc leverage; thriller coaching emphasizes pacing-first sequencing; literary coaching allows longer stuck-point exploration. Builds on the existing genre module system.
 
-### Writer's Block & Rut-Breaking
+### Writer's Block & Rut-Breaking — **Built (v1.4.0)**
 
-Structurally informed prompts tied to specific diagnosed problems. Extends Stuck-Point Coaching from reactive reframing to proactive prompt generation (still within the firewall — prompts surface structural possibility, not content).
+8-type expanded block taxonomy (replaces 3-way split), 7 structural prompt families (Constraint, Inversion, Isolation, Scale-shift, Perspective, Deletion, Temporal), 5-part firewall test, perfectionism modifier, nocebo inoculation, no-prompt zones, Structural Experiment session plan section. Integrated into both fiction and argument coaching protocols.
 
 ### Coaching History and Pattern Recognition
 
@@ -224,6 +225,9 @@ Continuing the v0.5 vision: the plugin should be organized around writer questio
 
 ## Done
 
+### v1.4.0 — Surface Hardening & Writer's Block
+Writer-Question Surface Hardening: command taxonomy in release-registry (11 commands with category/status/writer question), doc sync via release-generate, canonical 8-block macro map (Pass 4 → Emotional Dynamics), pass-detail artifact headers, Results Guide artifact, skill names scrubbed from user-facing copy, handoff language standardized. Writer's Block & Rut-Breaking module: 8-type expanded block taxonomy (replaces 3-way split), 7 structural prompt families, 5-part firewall test, clinamen clause, perfectionism modifier, nocebo inoculation, no-prompt zones, Structural Experiment session plan section, integrated into both fiction and argument coaching.
+
 ### v1.3.0 — Nonfiction Argument Engine & Genre Audits
 Nonfiction Argument Engine: Dialectical Clarity v2.0 as kernel, Argument State Schema (v0.1.1), Red Team (12 flags, Distinguish Framework), Persuasion (12 signals, audience × form calibration), Evidence Deep-Dive (10 flags, form calibration, testimony handoff), Coaching Protocol (8 tracks, stuck-point diagnosis), nonfiction routing in intake. Supernatural Horror genre audit (25 flags, 7 dimensions, 8 subgenres). Grimdark / Dark Fantasy genre audit (22 flags, 7 dimensions, 6 subgenres).
 
@@ -234,7 +238,7 @@ Auto-run audits as synthesis dependencies (fixes multi-story collection sequenci
 Partial Manuscript Diagnostic (six stall causes, momentum report, setup inventory). Fragment Synthesis Mode (clustering, connection mapping, candidate structure). Router gaps filled for fragments and partial drafts.
 
 ### v1.1.3 — Coaching Deepening
-Guidance Without Specification stance. Three-way stuck-point block diagnosis. Exercise library (6 exercises). Anti-chronological revision. Pause/Paraphrase/Probe.
+Guidance Without Specification stance. Stuck-point block diagnosis (expanded to 8-type taxonomy in v1.4.0). Exercise library (6 exercises). Anti-chronological revision. Pause/Paraphrase/Probe.
 
 ### v1.1.2 — Revision Coach
 Fourth companion skill. Session Planning, Stuck-Point Coaching, Momentum Tracking, Deadline Coaching. Coaching firewall with drift check.
