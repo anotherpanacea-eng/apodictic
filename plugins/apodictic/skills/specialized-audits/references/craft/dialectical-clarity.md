@@ -894,6 +894,14 @@ Priority diagnosis:
   First repair target: [diagnostic only; no rewrite]
 ```
 
+### 8. Argument State Artifact
+
+When this audit runs on argument-shaped nonfiction, emit `Argument_State.md` as a companion artifact alongside the editorial letter. Populate §§ 1–9 from the diagnostic steps above (§ 1 from Step 1, § 2 from Step 2, § 3 from Step 3, § 4 from Step 4, § 5 from Step 5, § 6 from Step 6, § 7 from Step 7, § 8 from Step 8, § 9 from the priority diagnosis). Initialize § 10 with empty subsections 10.1–10.5 for companion module annotations.
+
+The `Argument_State.md` schema is defined in `docs/argument-state-schema.md`. This artifact is the shared state contract for the Nonfiction Argument Engine — Red Team, Persuasion, Evidence, and Coaching companions all read from it rather than re-deriving the argument graph.
+
+If a companion module is requested and `Argument_State.md` does not yet exist, run this audit first to produce it.
+
 ---
 
 ## Integration with Core Framework
