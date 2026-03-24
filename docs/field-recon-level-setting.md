@@ -216,7 +216,51 @@ The two modules are complementary. Red Team may construct an objection that Fiel
 
 ---
 
-## 11. References
+## 11. PhilLit and OpenScholar — Transferable Techniques
+
+### From PhilLit (github.com/AI-4-Phi/PhilLit)
+
+**Counterevidence as a required domain.** PhilLit's literature review planner explicitly requires a "Critical Perspectives" domain covering objections, limitations, and arguments against the research proposal. Quality checks include "Identified objections and criticism?" This validates Field Recon's design and suggests counterevidence search should be a hard gate in any argument-aware literature assessment.
+
+**Domain-adaptive source hierarchy.** PhilLit starts with SEP/IEP (philosophy encyclopedias) before broadening to academic databases. Field Recon should adopt a similar domain-aware hierarchy: for policy manuscripts, start with government databases; for biomedical, start with PubMed; for philosophy, start with PhilPapers and SEP. The current spec's flat API search should become a domain-aware priority queue.
+
+**Citation chaining.** PhilLit uses Semantic Scholar's citation API for forward and backward citation traversal. A paper that cites your manuscript's sources but reaches different conclusions is a strong counterevidence candidate. Field Recon should add citation-chain traversal alongside keyword-based counterevidence search.
+
+**CORE API (431M papers).** PhilLit uses CORE for abstract enrichment. This is a larger corpus than what APODICTIC currently accesses and may improve counterevidence hit rates, especially for non-English and non-indexed sources.
+
+### From OpenScholar (Allen AI, Nature Feb 2026)
+
+**Self-feedback retrieval loop.** After initial search results, OpenScholar generates 2-3 self-feedback sentences identifying gaps in its own coverage. Each gap triggers a new retrieval query. The loop continues until coverage is adequate.
+
+**For Field Recon:** This replaces the fixed 3-5 queries per claim with an adaptive loop. After initial counterevidence search, the module asks: "What claims did I not find counterevidence for? What perspectives are missing?" Then searches again. This is more robust than a fixed query cap and addresses the "adaptive search depth" design question.
+
+**Keyword extraction before retrieval.** OpenScholar has the LM generate search keywords from the query before hitting APIs, rather than searching with raw claim text. This broadens coverage by capturing terminological variation.
+
+**For Field Recon:** Generate multiple keyword variants from each claim before searching for counterevidence. A claim about "recidivism" should also search "reoffending," "criminal desistance," "post-release outcomes." This addresses a gap in the current spec.
+
+**Reranker with per-paper caps and citation-count weighting.** OpenScholar limits to 3 passages per paper and normalizes citation counts into relevance scores.
+
+**For Field Recon:** The counterevidence ranking should cap results per source and incorporate normalized citation counts. The current "citation count × recency × relevance" formula doesn't prevent a single highly-cited paper from dominating results.
+
+**ScholarQABench.** OpenScholar's evaluation benchmark (2,967 expert queries, 208 long-form answers) provides a model for how to evaluate Field Recon's coverage quality. The citation F1 metric (precision and recall for whether citations support statements) is directly applicable.
+
+---
+
+## 12. Design Decisions Resolved
+
+Based on level-setting research and author input:
+
+1. **Field Recon runs independently.** It does not require Citation Verifier as a precondition. When the Citation Ledger is available, it uses it for a more accurate citation inventory. When running standalone, it parses the citation surface itself.
+
+2. **Non-English sources are in scope.** Counterevidence search should include non-English literature when relevant to the claim. OpenAlex has strong international coverage. LLM translation handles content assessment.
+
+3. **Adaptive search depth.** The fixed 3-5 queries per claim is replaced by an adaptive loop inspired by OpenScholar's self-feedback pattern. The loop terminates when coverage is adequate, not after a fixed number of queries.
+
+4. **Domain-aware source priority.** Inspired by PhilLit's philosophy-first hierarchy, Field Recon should select its starting search sources based on the manuscript's domain, inferred from `Argument_State.md` § 1 (Context and Classification) or from the manuscript itself.
+
+---
+
+## 13. References
 
 ### Theoretical grounding
 - Walton, D. (2006). *Fundamentals of Critical Argumentation.* Cambridge University Press.
@@ -234,7 +278,9 @@ The two modules are complementary. Red Team may construct an objection that Fiel
 - Fang, F. C., Steen, R. G., & Casadevall, A. (2012). "Misconduct accounts for the majority of retracted scientific publications." *PNAS*, 109(42).
 - Zittrain, J., Albert, K., & Lessig, L. (2014). "Perma: Scoping and Addressing the Problem of Link and Reference Rot in Legal Citations." *Harvard Law Review Forum*, 127.
 
-### Tools examined
+### Systems examined
+- PhilLit: github.com/AI-4-Phi/PhilLit (multi-agent philosophy literature review)
+- OpenScholar / OpenSciLM: openscilm.allen.ai (RAG scientific literature synthesis, Nature Feb 2026)
 - Litmaps (merged with Research Rabbit): litmaps.com
 - Connected Papers: connectedpapers.com
 - Inciteful: inciteful.xyz
