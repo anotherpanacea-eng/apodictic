@@ -1,7 +1,7 @@
 {
   "name": "apodictic",
   "metadata": {
-    "version": "1.4.0",
+    "version": "1.5.0",
     "description": "APODICTIC Development Editor. Developmental editing that listens before diagnosing."
   },
   "owner": {
@@ -12,8 +12,8 @@
     {
       "name": "apodictic",
       "source": "./plugins/apodictic",
-      "description": "APODICTIC Development Editor. Developmental editing that listens before diagnosing. Provides structural diagnosis, genre calibration, tag audits, plot architecture analysis, revision coaching, partial manuscript diagnostic, fragment synthesis, nonfiction argument engine (Dialectical Clarity + Red Team, Persuasion, Evidence, and Coaching companions), pre-writing pathway, and intake routing across 11 core passes, 33 available audits (3 universal, 15 craft, 10 genre, 5 tag), 4 research modes, 1 pre-writing pathway, and 1 intake router. Includes contract-driven and finding-driven audit integration pipeline.",
-      "version": "1.4.0",
+      "description": "APODICTIC Development Editor. Developmental editing that listens before diagnosing. Provides structural diagnosis, genre calibration, tag audits, plot architecture analysis, revision coaching, partial manuscript diagnostic, fragment synthesis, nonfiction argument engine (Dialectical Clarity + Red Team, Persuasion, Evidence, and Coaching companions), pre-writing pathway, and intake routing across 11 core passes, 33 available audits (3 universal, 15 craft, 10 genre, 5 tag), 6 research modes, 1 pre-writing pathway, and 1 intake router. Includes contract-driven and finding-driven audit integration pipeline.",
+      "version": "1.5.0",
       "author": {
         "name": "anotherpanacea"
       },

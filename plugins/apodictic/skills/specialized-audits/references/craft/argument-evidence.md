@@ -260,7 +260,9 @@ Recommended handoff:
 
 ## Handoff Rules
 
-Hand off to Factual Verification when:
+### To Factual Verification
+
+Hand off when:
 
 1. a central factual claim appears contestable
 2. a cited number lacks method or source clarity
@@ -268,6 +270,18 @@ Hand off to Factual Verification when:
 4. publication risk turns on whether an external fact is current or accurate
 
 Do not hand off simply because a reader *might* dislike the evidence base. The handoff should be targeted and claim-specific.
+
+### To Citation Verifier
+
+Hand off when:
+
+1. `AE1` (Provenance Opacity) fires on a cited source that needs external resolution
+2. `AE2` (Secondary Flattening) fires and the secondary source's fidelity to the primary needs checking
+3. `AE10` (Verification Hotspot Cluster) fires and the full citation corridor needs external verification
+
+### From Citation Verifier
+
+Citation Verifier may update § 10.1 annotations when it discovers that a source flagged as `AE7` (Orphaned Statistic) does have a traceable source, or when `AE2` (Secondary Flattening) is confirmed by finding that the secondary misrepresents the primary.
 
 ---
 
@@ -280,6 +294,14 @@ Use the core audit's map. Do not rebuild the structure.
 ### With Red Team
 
 If Red Team finds `RT9` Evidence Chain Snap or `RT11` Standing and Scope Exposure`, this mode should often run next.
+
+### With Citation Verifier
+
+Evidence Deep-Dive diagnoses evidence structure without browsing. Citation Verifier resolves and verifies sources externally. When both run, Citation Verifier should read § 10.1 before verifying to avoid duplicating work. Evidence's `AE1`, `AE2`, and `AE10` are the primary handoff triggers.
+
+### With Field Reconnaissance
+
+Evidence Deep-Dive identifies portfolio narrowness (`AE3`) and representative gaps (`AE4`). Field Reconnaissance deepens these with external literature search. Evidence flags the structural problem; Field Recon scouts for what's missing.
 
 ### With Persuasion
 
