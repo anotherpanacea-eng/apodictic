@@ -303,6 +303,10 @@ Evidence Deep-Dive diagnoses evidence structure without browsing. Citation Verif
 
 Evidence Deep-Dive identifies portfolio narrowness (`AE3`) and representative gaps (`AE4`). Field Reconnaissance deepens these with external literature search. Evidence flags the structural problem; Field Recon scouts for what's missing.
 
+### With Adversarial Evidence Review
+
+Argument Evidence identifies evidence quality diagnostically (AE codes). Adversarial Evidence Review deepens these with formal adversarial protocols (ACH, cross-examination, severe testing) to test whether claims survive hostile expert scrutiny. When Argument Evidence flags AE3 (Portfolio Narrowness), AE4 (Representative Gap), AE7 (Orphaned Statistic), AE8 (Methodless Precision), AE9 (Credential Substitution), or AE10 (Verification Hotspot Cluster), Adversarial Evidence Review should follow to test defensibility. The two modules have different postures: Evidence diagnoses; Adversarial Evidence attacks.
+
 ### With Persuasion
 
 If persuasion guidance depends on foregrounding stronger support, this mode can tell the Persuasion module what the strongest support actually is.

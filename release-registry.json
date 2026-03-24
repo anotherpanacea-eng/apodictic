@@ -180,7 +180,8 @@
   "argumentCompanions": [
     { "name": "Argument Red Team", "files": ["craft/argument-red-team.md", "craft/argument-red-team-level-setting.md"], "description": "Hostile-reader simulation" },
     { "name": "Argument Persuasion", "files": ["craft/argument-persuasion.md", "craft/argument-persuasion-level-setting.md"], "description": "Audience matrix & framing" },
-    { "name": "Argument Evidence Deep-Dive", "files": ["craft/argument-evidence.md"], "description": "Provenance & testimony calibration" }
+    { "name": "Argument Evidence Deep-Dive", "files": ["craft/argument-evidence.md"], "description": "Provenance & testimony calibration" },
+    { "name": "Adversarial Evidence Review", "files": ["craft/adversarial-evidence-review.md"], "description": "Evidence survivability under structured adversarial protocols" }
   ],
   "macroBlocks": [
     { "question": "Is the structure working?", "passes": ["Reverse Outline", "Structural Diagnosis"] },
