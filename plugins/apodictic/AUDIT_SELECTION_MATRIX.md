@@ -105,6 +105,7 @@ Use these when one craft system needs deeper diagnosis than core passes provide.
 | Force Architecture | Tests legibility, causality, cost, and meaning in physical conflict | Fights/action read as spectacle loops |
 | AI-Prose Calibration | Diagnoses AI-patterned prose failure modes | Manuscript is AI-assisted or "sounds AI" |
 | Dialectical Clarity | Tests argument structure and fairness | Idea-heavy or philosophical manuscripts |
+| Adversarial Evidence Review | Pressure-tests evidence under formal adversarial protocols (ACH, cross-exam, severe testing) | After Citation Verifier & Field Recon when evidence defensibility is critical for publication, testimony, or legislative advocacy |
 | Banister (Epistemic Humility) | Tests rhetorical humility and anti-strawman integrity | Moral certainty or authorial overreach concerns |
 | Shelf Positioning | Tests market shelf fit and signal clarity | Positioning, pitching, or comp selection stage |
 | Series & Composite Novel | Tests multi-part coherence and standalone function | Series entries or linked-story books |

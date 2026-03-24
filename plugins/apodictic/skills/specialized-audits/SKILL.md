@@ -32,6 +32,9 @@ description: >
   "field recon," "field reconnaissance," "counterevidence," "what am I missing,"
   "literature gaps," "source ecosystem," "hostile reviewer," "what would a reviewer cite,"
   "is my source base adequate," "dead links," "retracted sources,"
+  "adversarial evidence," "evidence pressure test," "evidence survivability,"
+  "does my evidence hold up," "hostile peer reviewer," "would this survive review,"
+  "attack my evidence," "stress test evidence," "evidence attack surface,"
   "cozy audit," "cozy tag," "philosophical audit,"
   "philosophical tag," "novel of ideas," "tag audit,"
   "sff worldbuilding," "worldbuilding integration," "worldbuilding audit,"
@@ -236,6 +239,7 @@ See `references/craft/shelf-positioning.md` for the full audit.
 - `references/craft/research-factual-verification.md` — Factual Verification research mode
 - `references/craft/research-genre-currency.md` — Genre Currency research mode
 - `references/craft/research-field-recon.md` — Field Reconnaissance research mode (counterevidence search with adaptive self-feedback loop, literature gap detection, source ecosystem health, domain-adaptive source priority, citation chain traversal, Field_Reconnaissance_Report.md artifact)
+- `references/craft/adversarial-evidence-review.md` — Adversarial Evidence Review companion module (HX/LX/SX code families, three adversarial protocols (ACH, legal cross-exam, severe testing), domain packs (GRADE, RoB 2, ROBINS-I, FRE 702), two-tier severity with convergence, survivability judgments, Adversarial_Evidence_Preparation_Guide.md artifact)
 - `references/craft/research-representation-context.md` — Representation Context research mode
 
 ### Research Mode Scripts

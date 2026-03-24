@@ -76,7 +76,8 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 5. Argument Evidence Deep-Dive
 6. Citation Verifier (v1.0) + level-setting research — CV1-CV12 flags, two-phase verification, 5 citation relation types, domain-adaptive source hierarchy, Python API scripts, Citation_Ledger.md artifact
 7. Field Reconnaissance (v1.0) + level-setting research — counterevidence search with adaptive self-feedback loop, literature gap detection, source ecosystem health, domain-adaptive priority, Field_Reconnaissance_Report.md artifact
-8. Nonfiction routing in intake (runtime + design docs)
+8. Adversarial Evidence Review (v1.0) + level-setting research — three-protocol adversarial pressure test (ACH, legal cross-exam, severe testing), HX/LX/SX code families, domain packs (GRADE, RoB 2, ROBINS-I, FRE 702), two-tier severity with convergence, survivability judgments, Adversarial_Evidence_Preparation_Guide.md artifact. Adversarial collaboration: Claude Opus 4.6 + Codex o3.
+9. Nonfiction routing in intake (runtime + design docs)
 9. Revision Coach argument mode (8 coaching tracks + argument session plan template)
 
 **Next**
