@@ -27,7 +27,7 @@ APODICTIC isn't just for finished drafts.
 - **Pre-writing pathway** for writers who have an idea but no manuscript — takes you from seed to draftable structure
 - **Plot coach** with 50 structural spines across 12 families (not just three-act)
 - **33 available audits** (3 universal, 15 craft, 10 genre, 5 tag) including scene function, shelf positioning, emotional craft, AI-prose detection, worldbuilding integration, force architecture, reception risk, and intimacy/consent coverage
-- **4 internet-enabled research modes** for comp validation, fact-checking, genre currency, and representation context
+- **6 internet-enabled research modes** for citation verification, comp validation, fact-checking, field reconnaissance (counterevidence + literature gaps), genre currency, and representation context
 - **Genre calibration** across literary fiction, horror, mystery, thriller, SF/F, romance, and hybrids
 
 ## Install

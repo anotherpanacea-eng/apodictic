@@ -364,6 +364,14 @@ _Status: not yet run_
 ### 10.5 Revision Plan
 [Populated by revision coach argument mode when it runs]
 _Status: not yet run_
+
+### 10.6 Citation Verification
+[Populated by citation-verifier research mode when it runs]
+_Status: not yet run_
+
+### 10.7 Field Reconnaissance
+[Populated by field-recon research mode when it runs]
+_Status: not yet run_
 ```
 
 **Annotation protocol:** Each companion module writes into its designated subsection. Annotations are signed with the module name and timestamp. Annotations may reference any field in §§ 1–9 by section and field name. Annotations may not modify §§ 1–9 directly; they add interpretive layers, not corrections. If a companion module disagrees with a diagnostic finding, it notes the disagreement in its annotation block.
@@ -404,6 +412,19 @@ _Status: not yet run_
 - Definition stabilization targets
 - Objection-handling pass plan
 - Audience recalibration plan
+
+### 10.6 Citation Verification
+- Citation resolution results and confidence levels
+- Fit verdicts per citation (supported / partial / misrepresented / etc.)
+- Named flags (CV1-CV12) with severity and location
+- Repair queue ordered by argumentative centrality
+- Full results reference: Citation_Ledger.md
+
+### 10.7 Field Reconnaissance
+- Counterevidence summary with action recommendations
+- Literature gap findings (temporal, methodological, perspectival, concentration)
+- Source ecosystem health (dead links, retractions, preprints)
+- Full results reference: Field_Reconnaissance_Report.md
 ```
 
 ---
@@ -412,7 +433,7 @@ _Status: not yet run_
 
 ### Creation
 
-The Dialectical Clarity audit creates `Argument_State.md` at the start of its run. Sections 1–8 are populated as each step completes. Section 9 is populated after all steps finish. Section 10 is initialized with empty subsections 10.1 through 10.5.
+The Dialectical Clarity audit creates `Argument_State.md` at the start of its run. Sections 1–8 are populated as each step completes. Section 9 is populated after all steps finish. Section 10 is initialized with empty subsections 10.1 through 10.7.
 
 ### Persistence
 

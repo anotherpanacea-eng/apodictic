@@ -70,12 +70,14 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 **Built**
 
 1. Dialectical Clarity v2.0 + level-setting research
-2. `docs/argument-state-schema.md` (v0.1.1)
+2. `docs/argument-state-schema.md` (v0.1.1, §§ 10.1–10.7)
 3. Argument Red Team (v1.0) + level-setting research
 4. Argument Persuasion + level-setting research
 5. Argument Evidence Deep-Dive
-6. Nonfiction routing in intake (runtime + design docs)
-7. Revision Coach argument mode (8 coaching tracks + argument session plan template)
+6. Citation Verifier (v1.0) + level-setting research — CV1-CV12 flags, two-phase verification, 5 citation relation types, domain-adaptive source hierarchy, Python API scripts, Citation_Ledger.md artifact
+7. Field Reconnaissance (v1.0) + level-setting research — counterevidence search with adaptive self-feedback loop, literature gap detection, source ecosystem health, domain-adaptive priority, Field_Reconnaissance_Report.md artifact
+8. Nonfiction routing in intake (runtime + design docs)
+9. Revision Coach argument mode (8 coaching tracks + argument session plan template)
 
 **Next**
 

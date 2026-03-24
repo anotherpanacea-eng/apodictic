@@ -47,7 +47,7 @@ The plugin assumes its user is an adult working on a creative project. Its outpu
 - **Development Edit** — The main workflow: intake protocol, 11 analysis passes, synthesis, revision rounds, genre calibration
 - **Pre-Writing Pathway** — Guides writers from idea to draftable structure (no manuscript required). Writer mode calibration, seed inventory, readiness gates, option architecture, complexity budget, prospective contract, re-entry diff protocol.
 - **Plot Coaching** — Plot structure diagnosis (50 spines across 12 families), selection coaching, fantasy & series architecture
-- **Specialized Audits** — 33 available audits (3 universal, 15 craft, 10 genre, 5 tag), including 3 primary tags (cozy, philosophical, erotic content) and 2 companion intimacy audits; plus 4 internet-enabled research modes
+- **Specialized Audits** — 33 available audits (3 universal, 15 craft, 10 genre, 5 tag), including 3 primary tags (cozy, philosophical, erotic content) and 2 companion intimacy audits; plus 6 internet-enabled research modes
 - **Revision Coaching** — Post-diagnostic coaching: session planning, stuck-point help, momentum tracking, deadline management
 
 ### Commands
@@ -152,7 +152,7 @@ APODICTIC is designed for and tested on **Claude Opus**. It will run on smaller 
 
 ## Framework Version
 
-Current version is in `.claude-plugin/plugin.json`. Capabilities: 50 plot spines across 12 families, 33 available audits (3 universal, 15 craft, 10 genre, 5 tag), 4 research modes, 11 core passes, the evaluative Pass 11 gate, the pre-writing pathway, and the intake router. Includes contract-driven and finding-driven audit integration pipeline.
+Current version is in `.claude-plugin/plugin.json`. Capabilities: 50 plot spines across 12 families, 33 available audits (3 universal, 15 craft, 10 genre, 5 tag), 6 research modes, 11 core passes, the evaluative Pass 11 gate, the pre-writing pathway, and the intake router. Includes contract-driven and finding-driven audit integration pipeline.
 
 ## License
 

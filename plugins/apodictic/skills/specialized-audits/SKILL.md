@@ -25,7 +25,14 @@ description: >
   "interiority audit," "banister audit," "short fiction audit," "series audit,"
   "ai prose," "ai calibration," "slop to silver," "ai-prose calibration,"
   "comp validation," "fact check," "genre currency check,"
-  "representation context," "cozy audit," "cozy tag," "philosophical audit,"
+  "representation context," "citation verifier," "citation verification,"
+  "verify citations," "check my citations," "are these citations real,"
+  "source verification," "quote verification," "ghost citation,"
+  "do my sources check out," "citation integrity," "source integrity,"
+  "field recon," "field reconnaissance," "counterevidence," "what am I missing,"
+  "literature gaps," "source ecosystem," "hostile reviewer," "what would a reviewer cite,"
+  "is my source base adequate," "dead links," "retracted sources,"
+  "cozy audit," "cozy tag," "philosophical audit,"
   "philosophical tag," "novel of ideas," "tag audit,"
   "sff worldbuilding," "worldbuilding integration," "worldbuilding audit,"
   "literary craft," "literary mode," "ornamental prose," "load-bearing,"
@@ -64,7 +71,7 @@ description: >
   or any request for a focused manuscript audit beyond the core development
   edit passes. Also triggers on "list audits," "what audits are available,"
   or "help audits."
-version: 1.4.0
+version: 1.5.0
 ---
 
 # Specialized Audits & Research Modes
@@ -224,10 +231,18 @@ See `references/craft/shelf-positioning.md` for the full audit.
 - `references/craft/reception-risk.md` — Reception Risk audit (17 flags, 5 channels, 5 hard gates, 8 mode calibrations, Risk Map + Pattern Summary + Handoff Memo artifacts)
 - `references/craft/reception-risk-level-setting.md` — Reception Risk level-setting brief (Jauss, Iser, Fish, Hall, Booth, Genette, Phelan, failure taxonomy, positive cases, distinguish problem, three-model workflow)
 - `references/craft/short-fiction.md` — Short Fiction audit
+- `references/craft/research-citation-verifier.md` — Citation Verification research mode (CV1-CV12 named flags, 7-tier verdict set, 5 citation relation types, two-phase verification, domain-adaptive source hierarchy, Citation_Ledger.md artifact, Python scripts for batch API resolution)
 - `references/craft/research-comp-validation.md` — Comp Validation research mode
 - `references/craft/research-factual-verification.md` — Factual Verification research mode
 - `references/craft/research-genre-currency.md` — Genre Currency research mode
+- `references/craft/research-field-recon.md` — Field Reconnaissance research mode (counterevidence search with adaptive self-feedback loop, literature gap detection, source ecosystem health, domain-adaptive source priority, citation chain traversal, Field_Reconnaissance_Report.md artifact)
 - `references/craft/research-representation-context.md` — Representation Context research mode
+
+### Research Mode Scripts
+- `scripts/academic_apis.py` — Batch API client for CrossRef, Semantic Scholar, OpenAlex, CORE, Unpaywall, PubMed, Wayback Machine. Handles resolution pipeline, rate limiting, and provenance tracking.
+- `scripts/fuzzy_match.py` — Fuzzy matching for citation metadata resolution (title similarity ≥80%, surname matching, year ±1 tolerance)
+- `scripts/response_cache.py` — In-memory + optional disk cache for API responses
+- `scripts/provenance.py` — Provenance tracking store (every verdict traces to a stored API response)
 
 ### Genre Audits (form/genre-specific)
 - `references/genre/comedy-satire.md` — Comedy & Satire audit

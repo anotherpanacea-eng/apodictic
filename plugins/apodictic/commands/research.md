@@ -11,8 +11,10 @@ Load the `specialized-audits` skill.
 **If no argument is provided** (or argument is "list" or "help"):
 Display the available research modes:
 
+- **citation-verifier** — Citation Verification: verify source existence, accuracy, and fit against attached claims. Produces `Citation_Ledger.md`
 - **comp** — Comp Validation: verify comps are current, correctly positioned, query-ready
 - **fact-check** — Factual Verification: spot-check real-world claims in historical fiction, memoir, technical works
+- **field-recon** — Field Reconnaissance: scout for counterevidence, literature gaps, and source ecosystem health. Produces `Field_Reconnaissance_Report.md`
 - **genre** — Genre Contract Currency: verify genre expectations reflect current market
 - **representation** — Representation Context: surface community discourse for writing outside author's experience
 

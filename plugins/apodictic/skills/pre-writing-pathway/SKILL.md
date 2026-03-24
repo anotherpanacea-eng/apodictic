@@ -5,7 +5,7 @@ description: >
   draft-ready structure. Use when the user asks to "plan a story," "outline
   a novel," "develop a premise," "figure out my book," "structure my idea,"
   or any request for help moving from concept to ready-to-draft planning.
-version: 1.4.0
+version: 1.5.0
 ---
 
 # Pre-Writing Pathway
