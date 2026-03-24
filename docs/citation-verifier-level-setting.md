@@ -212,7 +212,120 @@ These markers indicate citation integrity regardless of form:
 
 ---
 
-## 10. References
+## 10. PhilLit — Transferable Techniques
+
+PhilLit (github.com/AI-4-Phi/PhilLit, Himmelreich & Meyer) is an open-source multi-agent system built on Claude Code that generates analytical literature reviews for philosophy research. Several of its techniques are directly transferable:
+
+### Anti-hallucination validation hooks
+
+PhilLit stores every API response as a JSON intermediate. A `PreToolUse` hook validates that every bibliographic field in every BibTeX entry traces back to an actual API response. If the LLM writes a journal name, volume, page range, or DOI that was not returned by any API, the hook blocks the write. This is a hard enforcement layer — not a prompt instruction.
+
+**For APODICTIC:** The Citation Verifier should adopt this pattern. Store API resolution responses as intermediates. Validate that any claim about a source's content or metadata traces to a stored response. This converts the guardrail "never bluff verification" from a prompt instruction to an enforced constraint.
+
+### Prioritized source hierarchy for philosophy
+
+PhilLit's 8-phase search starts with the most authoritative sources for philosophy:
+1. SEP and IEP (encyclopedias) — extract bibliographies to seed further search
+2. PhilPapers (discipline-specific index)
+3. Semantic Scholar, OpenAlex, CORE, arXiv (broad academic)
+4. Citation chaining (forward/backward via Semantic Scholar)
+5. CrossRef verification for every DOI
+6. Abstract enrichment (multi-source, including NDPR book reviews)
+7. Encyclopedia context extraction (how SEP/IEP discuss specific papers)
+8. Web search fallback (Brave)
+
+**For APODICTIC:** The Citation Verifier and Field Recon should adopt domain-adaptive source hierarchies. For philosophy manuscripts, start with SEP/PhilPapers. For policy manuscripts, start with government databases. For biomedical manuscripts, start with PubMed. The current spec's flat API cascade (CrossRef → Semantic Scholar → OpenAlex) should become a domain-aware priority queue.
+
+### Citation context extraction
+
+PhilLit's `citation_context.py` builds regex patterns for philosophical argument verbs ("argues that," "contends that," "maintains that," "according to X") and extracts the claims attributed to cited works. This gives the synthesis writer expert framing of how sources are characterized.
+
+**For APODICTIC:** This technique maps directly to the Citation Verifier's content verification step. Instead of just checking whether a source exists, extract *how the manuscript characterizes* the source (using argument-verb patterns), then compare that characterization to what the source actually says. This operationalizes CV4 (Quote Drift) and CV5 (Paraphrase Inflation) detection.
+
+### CORE ARGUMENT / RELEVANCE / POSITION annotation
+
+PhilLit annotates each source with structured fields: what it argues, how it connects to the research question, and what theoretical position it represents.
+
+**For APODICTIC:** The Citation Ledger could adopt this structure. For each verified citation, record: what the source actually argues (from source text), what the manuscript claims it argues (from manuscript text), and the gap between them. This makes the ledger more useful for revision than a flat verdict list.
+
+### Counterevidence as a required domain
+
+PhilLit's planner explicitly requires a "Critical Perspectives" domain covering objections, limitations, and contrary evidence. Quality checks include "Identified objections and criticism?"
+
+**For APODICTIC:** Field Recon already does this, but PhilLit's explicit requirement — that any literature review must include a domain specifically for counter-positions — validates the design and suggests it should be a hard gate, not optional.
+
+### Metadata provenance validation as enforcement
+
+Beyond bibliography, PhilLit enforces: "every factual claim must trace to a verifiable source, enforced by hook, not by honor system."
+
+**For APODICTIC:** This principle extends beyond the Citation Verifier. Any APODICTIC module that makes claims about sources (Evidence, Red Team, Field Recon) should enforce provenance tracking. The hook-based enforcement pattern is available in Claude Code's infrastructure.
+
+### Additional APIs discovered via PhilLit
+
+| Source | What it provides | Relevance |
+|--------|-----------------|-----------|
+| CORE | 431M papers, good for abstracts | Broader than OpenAlex for abstract retrieval |
+| NDPR (Notre Dame Philosophical Reviews) | Opening summary paragraphs from book reviews | Useful for philosophy manuscripts citing books without abstracts |
+| Brave Search | General web fallback | Alternative to WebSearch for blog posts, working papers, non-indexed sources |
+
+---
+
+## 11. OpenScholar / OpenSciLM — Transferable Techniques
+
+OpenScholar (Allen Institute for AI, published in Nature Feb 2026: "Synthesizing scientific literature with retrieval-augmented language models") is an open-source retrieval-augmented LM that answers scientific queries by retrieving from 45 million open-access papers and synthesizing citation-backed responses. GPT-4o hallucinated citations 78-90% of the time; OpenScholar matched human expert citation accuracy.
+
+### Self-feedback retrieval loop
+
+OpenScholar's key innovation: after initial generation, the model generates 2-3 natural-language feedback sentences identifying gaps in its own response. Each feedback item triggers a new retrieval query, new passages are added to context, and the model regenerates. The loop continues until all gaps are addressed.
+
+**For APODICTIC:** Field Recon's counterevidence search could adopt this pattern. After initial search results, the module generates self-feedback: "What claims did I not find counterevidence for? What perspectives are missing?" Then triggers additional targeted searches. This replaces the fixed 3-5 queries per claim with an adaptive loop that terminates when coverage is adequate.
+
+### Post-hoc citation attribution
+
+After generating a response, OpenScholar rereads the text against retrieved passages and inserts reference markers where citation-worthy statements lack support. Citation accuracy is evaluated with precision, recall, and F1 metrics.
+
+**For APODICTIC:** This technique could be applied in reverse for the Citation Verifier. Instead of "does this generated text have citations?" the question is "do the citations in this manuscript actually support the claims they're attached to?" The same reread-and-compare pattern works — have the LLM read the source passage and the manuscript's claim, then assess support.
+
+### Reranker with citation-count weighting
+
+OpenScholar limits retrieved passages to 3 per paper and incorporates normalized citation counts into relevance scores. This prevents over-representation of a single highly-retrieved paper and biases toward established work.
+
+**For APODICTIC:** Field Recon's counterevidence ranking should incorporate this. The current spec uses "citation count × recency × relevance" but doesn't cap passages per paper or normalize. OpenScholar's approach is more robust.
+
+### Keyword extraction for retrieval
+
+OpenScholar has the LM generate search keywords from the query before hitting Semantic Scholar, rather than searching with the raw query text. This broadens retrieval coverage.
+
+**For APODICTIC:** Both the Citation Verifier (for source resolution) and Field Recon (for counterevidence search) should generate multiple keyword variants from each claim before searching APIs. The spec's current approach of using the claim text directly may miss sources indexed under different terminology.
+
+### Practical integration notes
+
+- OpenScholar's full pipeline requires hosting a 237M-passage embedding index — too infrastructure-heavy for APODICTIC.
+- The Semantic Scholar API alone (without the local dense retrieval) still provides paper search, citation graphs, and abstract access — this is what APODICTIC already uses.
+- The reranker and self-feedback loop logic could be adapted to run on top of Semantic Scholar API results without the full datastore.
+- OpenScholar's 45M paper datastore is open-access only. Paywalled literature (common in humanities, social science, law) is not included. APODICTIC's multi-API approach (CrossRef, OpenAlex, Unpaywall) provides broader coverage for paywalled work.
+
+### ScholarQABench as evaluation framework
+
+OpenScholar released ScholarQABench: 2,967 expert queries and 208 long-form answers across CS, physics, neuroscience, and biomedicine. The evaluation metrics (citation F1, coverage, correctness) could inform APODICTIC's benchmark suite for the Nonfiction Argument Engine.
+
+---
+
+## 12. Design Decisions Resolved
+
+Based on level-setting research and author input:
+
+1. **Standalone capability required.** The Citation Verifier must work without `Argument_State.md`. When running standalone, it prioritizes by document order and inferred claim load. When the state is available, it prioritizes by argumentative centrality. The module should be packageable separately from APODICTIC.
+
+2. **Non-English sources are in scope.** The module should use non-English sources when required by the claim and take advantage of LLM translation capability. API metadata is often multilingual (OpenAlex has strong international coverage). Content verification of non-English sources uses the same hedge fidelity and scope comparison framework, applied through the LLM's language capability.
+
+3. **Field Recon and Citation Verifier are independently runnable.** Each can run without the other. When both run, Field Recon benefits from the Citation Ledger (accurate citation inventory) and the Citation Verifier benefits from Field Recon's ecosystem health findings. But neither requires the other as a precondition.
+
+4. **Token budget is an estimate to be tested.** Current estimates (20-50K for Verifier, 25-50K for Recon) are acknowledged as potentially underestimated for deep content verification. Real-world testing will calibrate.
+
+---
+
+## 13. References
 
 ### Academic papers
 - Greenberg, S. A. (2009). "How citation distortions create unfounded authority." *BMJ*, 339, b2680.
@@ -231,7 +344,9 @@ These markers indicate citation integrity regardless of form:
 - RefCheckAI: github.com/Sydney-Informatics-Hub/RefCheckAI
 - Loki: github.com/Libr-AI/OpenFactVerification
 
-### Tools examined
+### Systems examined
+- PhilLit: github.com/AI-4-Phi/PhilLit (multi-agent philosophy literature review, anti-hallucination hooks)
+- OpenScholar / OpenSciLM: openscilm.allen.ai (RAG scientific literature synthesis, Nature Feb 2026)
 - Scite.ai — citation intent classification
 - Citely.ai — citation authenticity verification
 - GPTZero Source Checker — hallucinated source detection
