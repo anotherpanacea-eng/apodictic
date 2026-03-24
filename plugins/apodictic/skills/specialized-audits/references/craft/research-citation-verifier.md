@@ -489,6 +489,13 @@ For each verified citation, record structured annotation:
 - **VERDICT**: one of the 7 verdicts
 - **FLAGS**: any CV codes fired
 - **CONFIDENCE**: full-text / abstract-only / metadata-only / unretrievable
+- **LINK**: resolved URL (DOI link, institutional repository, publisher page, or Wayback URL)
+
+### Step 6a: Normalize citations with links
+
+When repairing metadata errors, always include the resolved link alongside the corrected citation. For academic sources, use the DOI URL (`https://doi.org/{doi}`). For institutional reports, use the official URL. For law review articles, use the institutional repository URL. This makes every citation independently verifiable by the reader without repeating the resolution process.
+
+Format: append the link to the footnote text, or embed as a markdown hyperlink on the title. The manuscript's existing citation style determines the format.
 
 *Annotation structure learned from PhilLit's CORE ARGUMENT / RELEVANCE / POSITION pattern.*
 
@@ -688,21 +695,37 @@ If Red Team identifies `RT9` (Evidence Chain Snap), the Citation Verifier should
 
 ## Token Budget
 
-**Note:** These are estimates to be tested against real manuscripts. Phase 2 (editorial verification) is especially variable — reading source PDFs and comparing them to manuscript claims can consume significant context.
+**Empirically tested.** First real-world run: a 155-citation policy white paper (TAY transition services). Results:
 
-| Component | Tokens | Notes |
-|---|---|---|
-| Phase 1: Citation parsing, mapping, context extraction | 5-8K | Scales with manuscript length |
-| Phase 1: Source resolution (API calls + fuzzy matching) | 10-20K | Batch of 10, scales with citation count; keyword variant generation adds overhead |
-| Phase 2: Content verification (reading sources + comparison) | 10-40K | Highly variable with OA PDF availability; full-text reads dominate |
-| Ledger generation + structured annotations | 5-8K | Richer per-citation annotation than original estimate |
-| State annotation (integrated mode) | 1-2K | |
-| **Total** | **30-75K** | |
+| Component | Estimated | Actual | Notes |
+|---|---|---|---|
+| Main conversation (parsing, mapping, editing, ledger) | 30-75K | ~200K | Manuscript reading, fix application, ledger writes, coordination |
+| Subagent verification (7 parallel agents) | — | ~474K | 7 agents averaging ~68K each; ran in parallel so wall-clock time was ~3 min/batch |
+| **Total** | **30-75K** | **~675K** | ~4,350 tokens per citation verified |
 
-Typical runs (estimates — test empirically):
-- Academic article, 30 footnotes, ~15 with OA access: ~50-65K
-- Policy brief, 10 statutory/data citations: ~30-40K
-- Blog post, 15 hyperlinks: ~25-35K
+The original estimates were ~10x too low. The main cost drivers:
+
+1. **Subagent overhead.** Each agent loads its own context, makes multiple API calls, and produces structured results. Parallel execution keeps wall-clock time fast (~3 minutes per batch of 15 citations) but token cost is high.
+2. **Fix application.** When errors are found, correcting them requires reading surrounding context, editing precisely, and checking for body-text references that also need updating. Content-level errors (e.g., a study cited as "confirming" a finding it actually disconfirmed) require tracing every in-text reference.
+3. **Iterative verification.** Some citations require multiple API calls (CrossRef miss → Semantic Scholar miss → OpenAlex miss → web search) before resolving.
+
+### Recommended batching strategy
+
+For manuscripts with 50+ citations, use parallel subagents grouped by citation type:
+- Academic citations with author/year/journal: batch of 15, resolve via CrossRef/OpenAlex
+- Legal/statutory citations: batch of 15, resolve via web search
+- Institutional/government reports: batch of 15, resolve via URL check + web search
+- WSIPP/database citations: single agent for all, resolve via wsipp.wa.gov
+- Gray literature/quotes: batch of 15, resolve via web search
+
+Each batch runs as a background agent (~60-80K tokens, ~3 minutes). Seven agents covering 155 citations completed in ~10 minutes of wall-clock time.
+
+### Revised estimates by manuscript type
+
+- Policy white paper, 155 citations: ~675K tokens (~10 min with parallel agents)
+- Academic article, 30 footnotes: ~150-200K tokens (~5 min)
+- Policy brief, 10 citations: ~75-100K tokens (~3 min)
+- Blog post, 15 hyperlinks: ~75-100K tokens (~3 min)
 
 ---
 
