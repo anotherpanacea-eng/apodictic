@@ -7,7 +7,7 @@ description: >
   "run the passes," "do a revision round," or any request involving manuscript
   analysis, structural diagnosis, or editorial feedback. Also triggers on
   "APODICTIC," "APDE," or "development editor."
-version: 1.5.0
+version: 1.6.0
 ---
 
 # APODICTIC Development Editor — Core Orchestrator
