@@ -5,7 +5,7 @@ description: >
   draft-ready structure. Use when the user asks to "plan a story," "outline
   a novel," "develop a premise," "figure out my book," "structure my idea,"
   or any request for help moving from concept to ready-to-draft planning.
-version: 1.6.0
+version: 1.6.4
 ---
 
 # Pre-Writing Pathway
@@ -285,7 +285,7 @@ When the draftable gate fails for a discovery-first writer who has enough to sta
 3. Scope guardrails — any complexity caps from Phase 4B, stated as practical advice ("Start with one POV; add a second only if the first 10K words demand it").
 4. When to come back — the three return triggers (10K-word checkpoint, stuck, complete draft).
 
-**File format:** Save as `[Project]_MVP_[runlabel].md` in `Outputs/[Project]/`, following Core DE naming conventions. Header line: `APDE | Pre-Writing MVP | [Date]`. Footer line: `Discovery scaffold — not a prospective contract.`
+**File format:** Save as `[Project]_MVP_[runlabel].md` in the active project output context beside the manuscript, following Core DE naming conventions. Reuse an existing output folder when one already exists; otherwise default to an `Outputs/` sibling next to the manuscript. Header line: `APDE | Pre-Writing MVP | [Date]`. Footer line: `Discovery scaffold — not a prospective contract.`
 
 The MVP is *not* a prospective contract. It doesn't feed the Re-Entry Diff Protocol directly — when the writer returns, standard intake runs from scratch, but the MVP file provides context for what the writer was trying to find.
 
@@ -293,7 +293,7 @@ The MVP is *not* a prospective contract. It doesn't feed the Re-Entry Diff Proto
 
 ### Output: Pre-Drafting Structural Plan
 
-Save as `[Project]_Structural_Plan_[runlabel].md` in `Outputs/[Project]/`.
+Save as `[Project]_Structural_Plan_[runlabel].md` in the active project output context beside the manuscript.
 
 ```markdown
 # Pre-Drafting Structural Plan: [Title or Working Title]
@@ -453,7 +453,7 @@ This makes the pre-writing pathway's output directly useful to the post-writing 
 
 ### Output Artifact Conventions
 
-The pre-writing pathway follows Core DE's existing naming convention: `[Project]_Artifact_[runlabel].md` stored in `Outputs/[Project]/`.
+The pre-writing pathway follows Core DE's existing naming convention: `[Project]_Artifact_[runlabel].md` stored in the active project output context beside the manuscript.
 
 | Artifact | Filename pattern | Notes |
 |----------|-----------------|-------|

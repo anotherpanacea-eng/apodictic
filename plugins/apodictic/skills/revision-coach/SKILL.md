@@ -15,7 +15,7 @@ description: >
   "choice paralysis," "execution gap," "too much feedback,"
   "overmediated," "I don't know what I think anymore,"
   "structural experiment," or "I need an exercise."
-version: 1.6.0
+version: 1.6.4
 ---
 
 # APODICTIC Revision Coach
@@ -195,9 +195,11 @@ Produce an argument session plan that cites the relevant `Argument_State` sectio
 
 ## State Management
 
+All coaching state reads and writes happen in the **active project output context**: the manuscript's external output folder. Reuse an existing output folder when one already exists; otherwise default to an `Outputs/` sibling next to the manuscript. Never use the plugin repo or installed plugin cache as the source of truth for `Diagnostic_State.md`, `Argument_State.md`, session plans, or calendars.
+
 ### READ (always)
-- `Diagnostic_State.md` — all sections
-- `Argument_State.md` — when present
+- `Diagnostic_State.md` — all sections, from the active project output context
+- `Argument_State.md` — when present, from the active project output context
 - Prior session plans and revision calendars (if they exist)
 - Handoff history entries for scenes the writer asks about
 
@@ -206,7 +208,7 @@ Produce an argument session plan that cites the relevant `Argument_State` sectio
 - **Append** to Coaching Log (see below) with compact session record
 - **Append** to `Argument_State.md` § 10.5 when argument-mode coaching produces a material revision plan
 - **Update** Revision Progress checkboxes only when the writer explicitly reports completion
-- **Produce** session plans and revision calendars as separate artifacts in `Outputs/`
+- **Produce** session plans and revision calendars as separate artifacts in the active project output context
 
 ### NEVER
 - Overwrite root causes, triage severity, or analytical findings

@@ -151,6 +151,8 @@ Naming the drift is more important than preventing it perfectly. Writers trust c
 
 ## No-Diagnostic Behavior
 
+All references to `Diagnostic_State.md` in this protocol mean the file in the active project output context: the manuscript's external output folder. Reuse an existing output folder when one already exists; otherwise default to an `Outputs/` sibling next to the manuscript. Never read from or write to the plugin repo or installed plugin cache.
+
 If no `Diagnostic_State.md` exists:
 - Do not improvise findings
 - Do not attempt diagnosis
@@ -324,7 +326,7 @@ When the coaching diagnosis points to deep structural uncertainty — the writer
 - The provisional contract from the partial diagnostic → seeds the prospective contract in Pre-Writing (the writer doesn't re-answer questions they've already answered)
 - The Setup Inventory from Pass 8 → feeds Phase 1 (Seed Inventory) — the writer's existing material is the seed
 - The stall diagnosis → noted in the Pre-Writing intake so the pathway knows what structural question to prioritize
-- The Diagnostic_State.md → preserved for when the writer returns to drafting
+- The `Diagnostic_State.md` in the active project output context → preserved for when the writer returns to drafting
 
 **What doesn't carry over:**
 - Session plans and coaching logs (these are coaching artifacts, not structural planning artifacts)

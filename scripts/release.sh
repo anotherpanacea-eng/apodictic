@@ -26,22 +26,25 @@ fi
 echo "Release pipeline starting for v${NEW_VERSION}"
 echo "────────────────────────────────────"
 
-echo "[1/6] Bump version fields"
+echo "[1/7] Bump version fields"
 "$REPO_ROOT/scripts/bump-version.sh" "$NEW_VERSION"
 
-echo "[2/6] Generate derived files from release-registry.json"
+echo "[2/7] Generate derived files from release-registry.json"
 node "$REPO_ROOT/scripts/release-generate.mjs"
 
-echo "[3/6] Verify repository consistency"
+echo "[3/7] Build generated Codex workspace and package"
+node "$REPO_ROOT/scripts/build-codex.mjs"
+
+echo "[4/7] Verify repository consistency"
 node "$REPO_ROOT/scripts/release-verify.mjs"
 
-echo "[4/6] Sync plugin -> APODICTIC-Gemini public mirror"
+echo "[5/7] Sync plugin -> APODICTIC-Gemini public mirror"
 rsync -a --delete --exclude ".git/" --exclude ".DS_Store" "$PLUGIN_DIR/" "$GEMINI_PUBLIC_DIR/"
 
-echo "[5/6] Verify mirror parity"
+echo "[6/7] Verify mirror parity"
 node "$REPO_ROOT/scripts/release-verify.mjs" --check-sync
 
-echo "[6/6] Package plugin artifact"
+echo "[7/7] Package Claude plugin artifact"
 (
   cd "$PLUGIN_DIR"
   zip -r "$REPO_ROOT/apodictic.plugin" . -x ".git/*" >/dev/null
@@ -49,6 +52,7 @@ echo "[6/6] Package plugin artifact"
 
 echo "────────────────────────────────────"
 echo "Release pipeline complete for v${NEW_VERSION}."
+echo "Codex package: $REPO_ROOT/dist/apodictic-codex-marketplace.zip"
 echo ""
 echo "Manual external follow-ups:"
 echo "  1. Custom GPT: update published instructions/knowledge if behavior changed."

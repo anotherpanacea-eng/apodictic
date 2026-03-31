@@ -1,0 +1,29 @@
+<svg width="1600" height="1000" viewBox="0 0 1600 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="1000" fill="#EFE4D2"/>
+  <rect x="58" y="54" width="1484" height="892" rx="36" fill="#17324D"/>
+  <circle cx="248" cy="242" r="108" fill="#F5EDDF"/>
+  <path d="M248 148L300 334H279.2L265.6 286.4H230.4L216.8 334H196L248 148ZM236.4 264.8H259.6L248 223.2L236.4 264.8Z" fill="#17324D"/>
+  <path d="M225 301C231.4 305.2 239.1 307.3 248 307.3C256.9 307.3 264.6 305.2 271 301" stroke="#C68A2D" stroke-width="10" stroke-linecap="round"/>
+  <text x="392" y="222" fill="#F8F2E6" font-size="90" font-family="Georgia, serif" letter-spacing="2">APODICTIC</text>
+  <text x="394" y="286" fill="#D8C7AE" font-size="34" font-family="Arial, sans-serif" letter-spacing="4">DEVELOPMENTAL EDITING</text>
+  <text x="126" y="410" fill="#F8F2E6" font-size="58" font-family="Georgia, serif">Developmental editing</text>
+  <text x="126" y="478" fill="#F8F2E6" font-size="58" font-family="Georgia, serif">that listens before diagnosing.</text>
+  <text x="126" y="548" fill="#D8C7AE" font-size="28" font-family="Arial, sans-serif">Structural diagnosis, plot coaching, specialized audits, and revision planning</text>
+  <text x="126" y="586" fill="#D8C7AE" font-size="28" font-family="Arial, sans-serif">for fiction and narrative nonfiction, all behind a strict no-rewrite firewall.</text>
+  <rect x="126" y="642" width="282" height="68" rx="18" fill="#F8F2E6"/>
+  <text x="162" y="685" fill="#17324D" font-size="28" font-family="Arial, sans-serif">apodictic-start</text>
+  <rect x="432" y="642" width="328" height="68" rx="18" fill="#243F5B"/>
+  <text x="470" y="685" fill="#F8F2E6" font-size="28" font-family="Arial, sans-serif">33 audits • 11 core passes</text>
+  <rect x="126" y="740" width="386" height="138" rx="28" fill="#F8F2E6"/>
+  <text x="162" y="796" fill="#17324D" font-size="30" font-family="Georgia, serif">Diagnostic Engine</text>
+  <text x="162" y="838" fill="#6E7985" font-size="22" font-family="Arial, sans-serif">Infer the manuscript's contract, then diagnose</text>
+  <text x="162" y="868" fill="#6E7985" font-size="22" font-family="Arial, sans-serif">structure, pacing, reveal economy, and character.</text>
+  <rect x="552" y="740" width="386" height="138" rx="28" fill="#F8F2E6"/>
+  <text x="588" y="796" fill="#17324D" font-size="30" font-family="Georgia, serif">Specialized Audits</text>
+  <text x="588" y="838" fill="#6E7985" font-size="22" font-family="Arial, sans-serif">Shelf positioning, AI prose calibration, genre</text>
+  <text x="588" y="868" fill="#6E7985" font-size="22" font-family="Arial, sans-serif">layers, tags, research, and deeper craft analysis.</text>
+  <rect x="978" y="740" width="438" height="138" rx="28" fill="#C68A2D"/>
+  <text x="1014" y="796" fill="#17324D" font-size="30" font-family="Georgia, serif">Firewall</text>
+  <text x="1014" y="838" fill="#17324D" font-size="22" font-family="Arial, sans-serif">Diagnose what the manuscript is doing and what</text>
+  <text x="1014" y="868" fill="#17324D" font-size="22" font-family="Arial, sans-serif">needs to change. Do not rewrite the author's prose.</text>
+</svg>

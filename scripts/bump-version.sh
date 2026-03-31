@@ -5,9 +5,11 @@
 # Usage: ./scripts/bump-version.sh 1.0.0
 #
 # Canonical source: plugins/apodictic/.claude-plugin/plugin.json
-# Also updates:     marketplace.json (root, both version fields)
+# Also updates:     plugins/apodictic/.codex-plugin/plugin.json
+#                   marketplace.json (root, both version fields)
 #                   .claude-plugin/marketplace.json (both version fields)
-#                   4 SKILL.md frontmatter version: fields
+#                   plugins/apodictic/README.codex.md version callout
+#                   5 SKILL.md frontmatter version: fields
 #
 # Does NOT touch: changelog entries, deprecated file banners,
 # individual audit/genre provenance versions, output template footers,
@@ -57,7 +59,16 @@ else
   echo "  MISSING  $ROOT_PLUGIN_JSON"
 fi
 
-# 3. marketplace.json — root copy (primary)
+# 3. plugin.json (Codex template)
+CODEX_PLUGIN_JSON="$PLUGIN_DIR/.codex-plugin/plugin.json"
+if [ -f "$CODEX_PLUGIN_JSON" ]; then
+  sedi "s/\"version\": \"[^\"]*\"/\"version\": \"${NEW_VERSION}\"/" "$CODEX_PLUGIN_JSON"
+  echo "  updated  $CODEX_PLUGIN_JSON"
+else
+  echo "  MISSING  $CODEX_PLUGIN_JSON"
+fi
+
+# 4. marketplace.json — root copy (primary)
 ROOT_MARKETPLACE="$REPO_ROOT/marketplace.json"
 if [ -f "$ROOT_MARKETPLACE" ]; then
   sedi "s/\"version\": \"[^\"]*\"/\"version\": \"${NEW_VERSION}\"/g" "$ROOT_MARKETPLACE"
@@ -66,7 +77,7 @@ else
   echo "  MISSING  $ROOT_MARKETPLACE"
 fi
 
-# 4. marketplace.json — .claude-plugin/ copy
+# 5. marketplace.json — .claude-plugin/ copy
 CLAUDE_MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
 if [ -f "$CLAUDE_MARKETPLACE" ]; then
   sedi "s/\"version\": \"[^\"]*\"/\"version\": \"${NEW_VERSION}\"/g" "$CLAUDE_MARKETPLACE"
@@ -75,7 +86,16 @@ else
   echo "  MISSING  $CLAUDE_MARKETPLACE"
 fi
 
-# 5. SKILL.md frontmatter (auto-discovered)
+# 6. Codex README version callout
+CODEX_README="$PLUGIN_DIR/README.codex.md"
+if [ -f "$CODEX_README" ]; then
+  sedi 's/Current Codex manifest version is `[^`]*`/Current Codex manifest version is `'"${NEW_VERSION}"'`/' "$CODEX_README"
+  echo "  updated  $CODEX_README"
+else
+  echo "  MISSING  $CODEX_README"
+fi
+
+# 7. SKILL.md frontmatter (auto-discovered)
 SKILL_COUNT=0
 while IFS= read -r -d '' f; do
   sedi "s/^version: .*/version: ${NEW_VERSION}/" "$f"
@@ -87,9 +107,9 @@ if [ "$SKILL_COUNT" -eq 0 ]; then
   echo "  WARNING  No SKILL.md files found under $PLUGIN_DIR/skills/"
 fi
 
-TOTAL=$((4 + SKILL_COUNT))
+TOTAL=$((6 + SKILL_COUNT))
 echo "────────────────────────────────────"
-echo "Done. $TOTAL files updated to v${NEW_VERSION} (4 JSON + ${SKILL_COUNT} SKILL.md)."
+echo "Done. $TOTAL files updated to v${NEW_VERSION} (5 JSON + 1 README + ${SKILL_COUNT} SKILL.md)."
 echo ""
 echo "Next step:"
 echo "  Run the full release pipeline:"
@@ -97,4 +117,5 @@ echo "    ./scripts/release.sh ${NEW_VERSION}"
 echo ""
 echo "Or run manually:"
 echo "  1. node ./scripts/release-generate.mjs"
-echo "  2. node ./scripts/release-verify.mjs"
+echo "  2. node ./scripts/build-codex.mjs"
+echo "  3. node ./scripts/release-verify.mjs"

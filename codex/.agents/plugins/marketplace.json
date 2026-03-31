@@ -1,0 +1,20 @@
+{
+  "name": "apodictic",
+  "interface": {
+    "displayName": "APODICTIC"
+  },
+  "plugins": [
+    {
+      "name": "apodictic",
+      "source": {
+        "source": "local",
+        "path": "./plugins/apodictic"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
