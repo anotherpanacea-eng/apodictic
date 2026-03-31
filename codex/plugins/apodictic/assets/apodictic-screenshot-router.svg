@@ -1,0 +1,42 @@
+<svg width="1600" height="1000" viewBox="0 0 1600 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="1000" fill="#EFE4D2"/>
+  <rect x="52" y="48" width="1496" height="904" rx="34" fill="#FAF5EC"/>
+  <rect x="92" y="92" width="1416" height="110" rx="28" fill="#17324D"/>
+  <text x="138" y="154" fill="#F7F0E4" font-size="48" font-family="Georgia, serif">APODICTIC Start</text>
+  <text x="520" y="154" fill="#D8C7AE" font-size="26" font-family="Arial, sans-serif">Route a writer to the right editorial workflow in 2-3 questions</text>
+  <rect x="126" y="252" width="520" height="606" rx="28" fill="#F7F0E4" stroke="#D9C8AE" stroke-width="3"/>
+  <text x="166" y="314" fill="#17324D" font-size="34" font-family="Georgia, serif">Intake Router</text>
+  <rect x="166" y="350" width="440" height="112" rx="24" fill="#FFFFFF"/>
+  <text x="196" y="395" fill="#17324D" font-size="26" font-family="Arial, sans-serif">1. What do you have?</text>
+  <text x="196" y="432" fill="#6A7786" font-size="22" font-family="Arial, sans-serif">idea, fragments, partial draft, full draft, series</text>
+  <rect x="166" y="490" width="440" height="112" rx="24" fill="#FFFFFF"/>
+  <text x="196" y="535" fill="#17324D" font-size="26" font-family="Arial, sans-serif">2. What do you need?</text>
+  <text x="196" y="572" fill="#6A7786" font-size="22" font-family="Arial, sans-serif">draft, diagnose, submit, plot help, audit, research</text>
+  <rect x="166" y="630" width="440" height="112" rx="24" fill="#FFFFFF"/>
+  <text x="196" y="675" fill="#17324D" font-size="26" font-family="Arial, sans-serif">3. What changes the route?</text>
+  <text x="196" y="712" fill="#6A7786" font-size="22" font-family="Arial, sans-serif">deadline, AI prose, nonfiction, co-authoring, editor mode</text>
+  <rect x="166" y="770" width="440" height="52" rx="16" fill="#17324D"/>
+  <text x="196" y="804" fill="#F7F0E4" font-size="22" font-family="Arial, sans-serif">Resume gate, not redundant intake</text>
+  <path d="M714 548H876" stroke="#C68A2D" stroke-width="10" stroke-linecap="round"/>
+  <path d="M855 526L891 548L855 570" fill="#C68A2D"/>
+  <rect x="940" y="252" width="534" height="606" rx="28" fill="#17324D"/>
+  <text x="980" y="314" fill="#F7F0E4" font-size="34" font-family="Georgia, serif">Downstream Workflows</text>
+  <rect x="980" y="352" width="218" height="124" rx="24" fill="#F7F0E4"/>
+  <text x="1012" y="403" fill="#17324D" font-size="28" font-family="Arial, sans-serif">Develop Edit</text>
+  <text x="1012" y="438" fill="#6A7786" font-size="20" font-family="Arial, sans-serif">11-pass structural diagnosis</text>
+  <rect x="1216" y="352" width="218" height="124" rx="24" fill="#F7F0E4"/>
+  <text x="1248" y="403" fill="#17324D" font-size="28" font-family="Arial, sans-serif">Submission</text>
+  <text x="1248" y="438" fill="#6A7786" font-size="20" font-family="Arial, sans-serif">Pass 11 and readiness gate</text>
+  <rect x="980" y="498" width="218" height="124" rx="24" fill="#F7F0E4"/>
+  <text x="1012" y="549" fill="#17324D" font-size="28" font-family="Arial, sans-serif">Pre-Writing</text>
+  <text x="1012" y="584" fill="#6A7786" font-size="20" font-family="Arial, sans-serif">Idea to draftable structure</text>
+  <rect x="1216" y="498" width="218" height="124" rx="24" fill="#F7F0E4"/>
+  <text x="1248" y="549" fill="#17324D" font-size="28" font-family="Arial, sans-serif">Plot Coach</text>
+  <text x="1248" y="584" fill="#6A7786" font-size="20" font-family="Arial, sans-serif">Spine selection and repair</text>
+  <rect x="980" y="644" width="218" height="124" rx="24" fill="#F7F0E4"/>
+  <text x="1012" y="695" fill="#17324D" font-size="28" font-family="Arial, sans-serif">Audit</text>
+  <text x="1012" y="730" fill="#6A7786" font-size="20" font-family="Arial, sans-serif">Deep-dive craft analysis</text>
+  <rect x="1216" y="644" width="218" height="124" rx="24" fill="#F7F0E4"/>
+  <text x="1248" y="695" fill="#17324D" font-size="28" font-family="Arial, sans-serif">Research</text>
+  <text x="1248" y="730" fill="#6A7786" font-size="20" font-family="Arial, sans-serif">Internet-assisted verification</text>
+</svg>

@@ -32,6 +32,49 @@
     "preWritingPathways": 1,
     "intakeRouters": 1
   },
+  "codex": {
+    "workspaceDir": "codex",
+    "distArchive": "dist/apodictic-codex-marketplace.zip",
+    "displayName": "APODICTIC",
+    "category": "Productivity",
+    "wrapperPrefix": "apodictic",
+    "policy": {
+      "installation": "AVAILABLE",
+      "authentication": "ON_INSTALL"
+    },
+    "defaultPrompts": [
+      "Use APODICTIC to tell me what kind of manuscript help I need.",
+      "Use APODICTIC to diagnose the structural problems in this draft.",
+      "Use APODICTIC to help me plan revisions without rewriting prose."
+    ],
+    "overrides": {
+      "plugins/apodictic/README.codex.md": "plugins/apodictic/README.md",
+      "plugins/apodictic/AUDIT_SELECTION_MATRIX.codex.md": "plugins/apodictic/AUDIT_SELECTION_MATRIX.md",
+      "plugins/apodictic/overview-dashboard.codex.html": "plugins/apodictic/overview-dashboard.html",
+      "plugins/apodictic/route-explorer.codex.html": "plugins/apodictic/route-explorer.html",
+      "plugins/apodictic/NON_PARITY_NOTES.codex.md": "NON_PARITY_NOTES.md"
+    },
+    "commandBaseSkills": {
+      "start": "core-editor",
+      "develop-edit": "core-editor",
+      "diagnose": "core-editor",
+      "ready": "core-editor",
+      "audit": "specialized-audits",
+      "research": "specialized-audits",
+      "coach": "revision-coach",
+      "plot-coach": "plot-architecture",
+      "pre-writing": "pre-writing-pathway",
+      "new-project": "core-editor",
+      "revision-plan": "revision-coach"
+    },
+    "requiredAssets": [
+      "plugins/apodictic/assets/apodictic-composer.svg",
+      "plugins/apodictic/assets/apodictic-composer.png",
+      "plugins/apodictic/assets/apodictic-screenshot-homepage.png",
+      "plugins/apodictic/assets/apodictic-screenshot-route-explorer.png",
+      "plugins/apodictic/assets/apodictic-screenshot-editor-letter.png"
+    ]
+  },
   "commands": [
     {
       "command": "/start",

@@ -9,12 +9,12 @@ Alias shortcut for `/start` with prefilled router values:
 - `goal=repair`
 - `concern=general` (unless the user provides a specific concern)
 
-Load `core-editor`, then execute the same runtime router behavior from `references/intake-router-runtime.md` with Q1/Q2 prefilled by this command. Still ask Q3 constraints/operator modifiers unless already known.
+Load `../skills/core-editor/SKILL.md`, then execute the same runtime router behavior from `../skills/core-editor/references/intake-router-runtime.md` with Q1/Q2 prefilled by this command. Still ask Q3 constraints/operator modifiers unless already known.
 
 After routing, run the selected workflow exactly as `/start` would:
 
-- Development edit route -> `references/run-core.md` + resolver from `references/pass-dependencies.md`
+- Development edit route -> `../skills/core-editor/references/run-core.md` + resolver from `../skills/core-editor/references/pass-dependencies.md`
 - Apply auto-escalation recommendation for expansion to advanced passes
-- Write artifacts to `Outputs/[Project]/`
+- Write artifacts and rolling state files to the active project output context beside the manuscript, never to the plugin repo
 
 If a manuscript file path is provided: @$1

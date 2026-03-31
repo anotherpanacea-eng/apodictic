@@ -7,7 +7,7 @@ description: >
   "run the passes," "do a revision round," or any request involving manuscript
   analysis, structural diagnosis, or editorial feedback. Also triggers on
   "APODICTIC," "APDE," or "development editor."
-version: 1.6.0
+version: 1.6.4
 ---
 
 # APODICTIC Development Editor — Core Orchestrator
@@ -23,7 +23,7 @@ Dedicated reference files (genre modules, specialized audits, `references/pass-1
 
 **Branding note:** Public-facing name is `APODICTIC Development Editor`. Tagline: *Developmental editing that listens before diagnosing.* The plugin author's identity must never be confused with the manuscript author's identity.
 
-**Model note:** This framework is designed for Claude Opus. Its anti-sycophancy protocols, severity floor rules, and adversarial self-checks require strong instruction-following. On smaller models, expect degraded severity honesty, weaker thematic interpretation, and lower fix quality.
+**Model note:** This framework is designed for strong frontier models with reliable instruction-following and ample context. On weaker models, expect degraded severity honesty, weaker thematic interpretation, and lower fix quality.
 
 ---
 
@@ -202,16 +202,18 @@ Omit the "Specialized audits run" section if no audits ran. Omit "Argument State
 
 ## Project Integration
 
+When operating within a manuscript project, the **active project output context** is the external folder that holds the manuscript's APODICTIC artifacts and rolling state. Reuse the writer's existing output folder when one already exists. Otherwise, default to an `Outputs/` sibling next to the manuscript. Never write project state inside the plugin repo, the installed plugin cache, or any other APODICTIC framework directory.
+
 When operating within a project:
 
 1. **CHECK** for existing contract artifact before running intake
 2. **REFERENCE** character portraits during Pass 5 for consistency
 3. **REFERENCE** story guides during Pass 9 for controlling idea alignment
-4. **OUTPUT** all diagnostic artifacts to the `Outputs/` subfolder
-5. **INITIALIZE** `Diagnostic_State.md` from `references/diagnostic-state-template.md` if it does not exist
+4. **OUTPUT** all diagnostic artifacts to the active project output context beside the manuscript
+5. **INITIALIZE** `Diagnostic_State.md` in that output context from `references/diagnostic-state-template.md` if it does not exist
 6. **SET** the Mode section's `**Current:**` field to `diagnostic` unless an active handoff is explicitly in effect
 7. **APPEND** handoff entries to `Handoff History` (never overwrite prior cycles)
-8. **UPDATE** `Diagnostic_State.md` with cumulative findings across sessions
+8. **UPDATE** `Diagnostic_State.md` in that output context with cumulative findings across sessions
 
 When no project context exists, proceed with intake from scratch.
 
@@ -252,7 +254,7 @@ Any deep-dive audit, tag audit, or research mode → Run the audit. The speciali
 When the writer requests prose-level execution help for a diagnosed scene:
 - Load `references/handoff-protocol.md`
 - Offer handoff using the required confirmation template
-- Write context into `Diagnostic_State.md` and set mode to `execution`
+- Write context into `Diagnostic_State.md` in the active project output context and set mode to `execution`
 - Suspend core-editor constraints for execution mode
 - Re-enter diagnostic mode only via explicit phrase trigger or `/start` resume check
 

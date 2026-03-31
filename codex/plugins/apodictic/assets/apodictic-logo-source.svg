@@ -1,0 +1,23 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="900" rx="52" fill="#F4EBDD"/>
+  <rect x="70" y="70" width="1060" height="760" rx="44" fill="#17324D"/>
+  <circle cx="280" cy="280" r="140" fill="#F6F1E7"/>
+  <path d="M280 160L348 332H321.6L303.6 286H256.4L238.4 332H212L280 160ZM264.8 264.8H295.2L280 225.2L264.8 264.8Z" fill="#17324D"/>
+  <path d="M251 307C259.8 312.6 269.5 315.4 280 315.4C290.5 315.4 300.2 312.6 309 307" stroke="#C68A2D" stroke-width="12" stroke-linecap="round"/>
+  <text x="440" y="275" fill="#F6F1E7" font-size="110" font-family="Georgia, serif" letter-spacing="4">APODICTIC</text>
+  <text x="440" y="360" fill="#D8C7AE" font-size="40" font-family="Arial, sans-serif" letter-spacing="5">DEVELOPMENT EDITOR</text>
+  <rect x="440" y="438" width="530" height="78" rx="18" fill="#233F5A"/>
+  <text x="474" y="486" fill="#F6F1E7" font-size="34" font-family="Arial, sans-serif">Developmental editing that listens before diagnosing</text>
+  <rect x="440" y="564" width="222" height="126" rx="24" fill="#F6F1E7"/>
+  <rect x="688" y="564" width="222" height="126" rx="24" fill="#F6F1E7"/>
+  <rect x="936" y="564" width="120" height="126" rx="24" fill="#C68A2D"/>
+  <text x="470" y="611" fill="#17324D" font-size="24" font-family="Arial, sans-serif">11 core passes</text>
+  <text x="470" y="650" fill="#58718A" font-size="18" font-family="Arial, sans-serif">Structure, pacing, reveal,</text>
+  <text x="470" y="676" fill="#58718A" font-size="18" font-family="Arial, sans-serif">character, theme</text>
+  <text x="718" y="611" fill="#17324D" font-size="24" font-family="Arial, sans-serif">33 audits</text>
+  <text x="718" y="650" fill="#58718A" font-size="18" font-family="Arial, sans-serif">Craft, genre, tags,</text>
+  <text x="718" y="676" fill="#58718A" font-size="18" font-family="Arial, sans-serif">research modes</text>
+  <text x="964" y="612" fill="#17324D" font-size="24" font-family="Arial, sans-serif">Firewall</text>
+  <text x="964" y="650" fill="#17324D" font-size="18" font-family="Arial, sans-serif">Diagnose.</text>
+  <text x="964" y="676" fill="#17324D" font-size="18" font-family="Arial, sans-serif">Do not rewrite.</text>
+</svg>

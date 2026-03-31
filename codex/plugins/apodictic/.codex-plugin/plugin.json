@@ -1,0 +1,46 @@
+{
+  "name": "apodictic",
+  "version": "1.6.4",
+  "description": "APODICTIC Development Editor. Developmental editing that listens before diagnosing. Provides structural diagnosis, genre calibration, tag audits, plot architecture analysis, revision coaching, partial manuscript diagnostic, fragment synthesis, nonfiction argument engine (Dialectical Clarity + Red Team, Persuasion, Evidence, and Coaching companions), pre-writing pathway, and intake routing across 11 core passes, 33 available audits (3 universal, 15 craft, 10 genre, 5 tag), 6 research modes, 1 pre-writing pathway, and 1 intake router. Includes contract-driven and finding-driven audit integration pipeline.",
+  "author": {
+    "name": "anotherpanacea"
+  },
+  "homepage": "https://apodictic.anotherpanacea.com",
+  "repository": "https://github.com/anotherpanacea-eng/apodictic",
+  "license": "CC-BY-NC-SA-4.0",
+  "keywords": [
+    "writing",
+    "editing",
+    "fiction",
+    "developmental-editing",
+    "manuscript-analysis",
+    "plot-structure",
+    "genre-calibration"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "APODICTIC",
+    "shortDescription": "Structural developmental editing for fiction and narrative nonfiction.",
+    "longDescription": "APODICTIC is a skill-first developmental editing framework for fiction and narrative nonfiction. It routes writers into diagnosis, audits, research, plot coaching, and revision planning while keeping a strict no-rewrite firewall.",
+    "developerName": "anotherpanacea",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://apodictic.anotherpanacea.com",
+    "defaultPrompt": [
+      "Use APODICTIC to tell me what kind of manuscript help I need.",
+      "Use APODICTIC to diagnose the structural problems in this draft.",
+      "Use APODICTIC to help me plan revisions without rewriting prose."
+    ],
+    "composerIcon": "./assets/apodictic-composer.svg",
+    "logo": "./assets/apodictic-composer.png",
+    "screenshots": [
+      "./assets/apodictic-screenshot-homepage.png",
+      "./assets/apodictic-screenshot-route-explorer.png",
+      "./assets/apodictic-screenshot-editor-letter.png"
+    ],
+    "brandColor": "#2B4C7E"
+  }
+}

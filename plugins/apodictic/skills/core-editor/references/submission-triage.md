@@ -201,4 +201,4 @@ The triage is the fast path; the full Submission Readiness Workflow is the thoro
 | Output | Triage memo (1-2 pages) | Full scorecard + reference materials |
 
 ### Re-entry path
-If triage produces a NO GO verdict, the natural next step is the full diagnostic when the writer has time. Triage findings should be saved to `Outputs/[Project]/Triage_Memo_[date].md` so they're available as context if the writer returns for a full edit. The full edit does not consume triage findings as formal input — it runs fresh — but the triage memo provides useful context for the writer's conversation with the editor about priorities.
+If triage produces a NO GO verdict, the natural next step is the full diagnostic when the writer has time. Triage findings should be saved as `Triage_Memo_[date].md` in the active project output context beside the manuscript so they're available as context if the writer returns for a full edit. The full edit does not consume triage findings as formal input — it runs fresh — but the triage memo provides useful context for the writer's conversation with the editor about priorities.

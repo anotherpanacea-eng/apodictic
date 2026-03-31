@@ -95,13 +95,27 @@ function main() {
     errors.push("Generated files are stale. Run scripts/release-generate.mjs.");
   }
 
+  try {
+    execFileSync(
+      process.execPath,
+      [path.join(repoRoot, "scripts/build-codex.mjs"), "--check"],
+      { stdio: "inherit" }
+    );
+  } catch {
+    errors.push("Codex workspace or package inputs are stale. Run scripts/build-codex.mjs.");
+  }
+
   // 2) Verify version parity across canonical files.
   const pluginVersion = readJson(abs(paths.pluginJson)).version;
+  const codexPluginVersion = readJson(abs("plugins/apodictic/.codex-plugin/plugin.json")).version;
   const rootPluginVersion = readJson(abs(paths.rootPluginJson)).version;
   const rootMarketplace = readJson(abs(paths.rootMarketplaceJson));
   const claudeMarketplace = readJson(abs(paths.claudeMarketplaceJson));
 
   const expected = pluginVersion;
+  if (codexPluginVersion !== expected) {
+    errors.push(`Version mismatch: plugins/apodictic/.codex-plugin/plugin.json is ${codexPluginVersion}, expected ${expected}.`);
+  }
   if (rootPluginVersion !== expected) {
     errors.push(`Version mismatch: root plugin.json is ${rootPluginVersion}, expected ${expected}.`);
   }

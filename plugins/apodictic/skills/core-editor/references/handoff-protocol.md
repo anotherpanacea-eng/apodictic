@@ -4,13 +4,15 @@
 **For:** APODICTIC Development Editor v0.5
 **Last updated:** 2026-02-22
 
-This file defines the mechanism for transitioning between diagnostic mode (DE skill active, Firewall active) and execution mode (DE constraints suspended, Claude works directly with the writer on prose).
+This file defines the mechanism for transitioning between diagnostic mode (DE skill active, Firewall active) and execution mode (DE constraints suspended, the assistant works directly with the writer on prose).
+
+All references to `Diagnostic_State.md` in this protocol mean the file in the **active project output context**: the manuscript's external output folder. Reuse an existing output folder when one already exists; otherwise default to an `Outputs/` sibling next to the manuscript. Never read from or write to the plugin repo or installed plugin cache.
 
 ---
 
 ## §1. The Problem
 
-After diagnosis, the DE skill stays loaded. Its Firewall rules prevent Claude from helping with prose execution, dialogue drafting, or scene-level revision. The writer has to manually exit the skill context — which means knowing that the skill context exists, which newcomers don't.
+After diagnosis, the DE skill stays loaded. Its Firewall rules prevent the assistant from helping with prose execution, dialogue drafting, or scene-level revision. The writer has to manually exit the skill context — which means knowing that the skill context exists, which newcomers don't.
 
 The handoff protocol makes this transition explicit, preserving diagnostic state across the boundary.
 
@@ -34,9 +36,9 @@ The project's `Diagnostic_State.md` tracks the current mode:
 
 ### `execution` mode
 - Core-editor constraints are explicitly suspended (behavior-contract switch).
-- Firewall is not active: Claude can help with prose, dialogue, scene drafting, revision.
-- The active handoff context (see §6) provides diagnostic background but does not constrain Claude's behavior.
-- Output follows Claude's standard conversational behavior, not DE output policy.
+- Firewall is not active: the assistant can help with prose, dialogue, scene drafting, revision.
+- The active handoff context (see §6) provides diagnostic background but does not constrain the assistant's behavior.
+- Output follows the assistant's standard conversational behavior, not DE output policy.
 
 ---
 
@@ -87,11 +89,11 @@ Offer handoff when any of these are true:
 
 While in execution mode:
 
-- Claude operates with DE constraints suspended.
+- The assistant operates with DE constraints suspended.
 - The active handoff context in `Diagnostic_State.md` provides background but does not constrain behavior.
-- Claude can draft prose, write dialogue, suggest specific imagery, rewrite scenes — all things the Firewall would normally prohibit.
-- The writer and Claude work together on the scene as they normally would in any Claude conversation.
-- If the writer asks a diagnostic question ("is this working?", "does this fix the pacing problem?"), Claude can offer informal assessment but should note: "For a formal check, say 'back to editor' and I'll run it through the diagnostic."
+- The assistant can draft prose, write dialogue, suggest specific imagery, rewrite scenes — all things the Firewall would normally prohibit.
+- The writer and the assistant work together on the scene as they normally would in a standard writing conversation.
+- If the writer asks a diagnostic question ("is this working?", "does this fix the pacing problem?"), the assistant can offer informal assessment but should note: "For a formal check, say 'back to editor' and I'll run it through the diagnostic."
 
 ---
 
@@ -187,11 +189,11 @@ Each handoff entry is preserved. The writer (and any future diagnostic run) can 
 
 ## §7. Edge Cases
 
-**Writer asks for prose help without a prior diagnosis.** If no diagnostic state exists, there's nothing to hand off from. Claude works in its normal mode — no handoff protocol needed. If the writer later wants a diagnostic, `/start` runs the router normally.
+**Writer asks for prose help without a prior diagnosis.** If no diagnostic state exists, there's nothing to hand off from. The assistant works in its normal mode — no handoff protocol needed. If the writer later wants a diagnostic, `/start` runs the router normally.
 
 **Writer asks for a full rewrite, not a scene fix.** Handoff is designed for scene-level work. If the writer wants to rewrite large sections, the handoff context may be too narrow to be useful. In this case, offer the handoff for the first scene and note: "We can do this scene by scene — I'll check each fix as we go."
 
-**Writer forgets to return to editor.** No harm done. The diagnostic state persists in `Diagnostic_State.md`. When the writer eventually says "back to editor" or `/start` fires the resume check, the state is still there. Execution mode has no timeout.
+**Writer forgets to return to editor.** No harm done. The diagnostic state persists in `Diagnostic_State.md` in the active project output context. When the writer eventually says "back to editor" or `/start` fires the resume check, the state is still there. Execution mode has no timeout.
 
 **Diagnostic state doesn't exist.** If `Diagnostic_State.md` hasn't been initialized (no prior diagnostic run), handoff isn't available — there's nothing to hand off from. Prompt the writer to run a diagnostic first.
 

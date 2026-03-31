@@ -782,6 +782,8 @@ After writing the editorial letter, update `Diagnostic_State.md` with:
 - Keep / Cut / Unsure decisions
 - Change log
 
+`Diagnostic_State.md` lives in the active project output context: the manuscript's external output folder. Reuse the writer's existing output folder when one already exists; otherwise default to an `Outputs/` sibling next to the manuscript. Never write this file to the plugin repo or installed plugin cache.
+
 If `Diagnostic_State.md` does not exist in the project output context, create it from `references/diagnostic-state-template.md` first.
 
 ---

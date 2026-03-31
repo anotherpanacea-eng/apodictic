@@ -69,7 +69,7 @@ All standard execution protocols apply (Findings Ledger, staged visibility, pre-
 
 Run synthesis per `run-core.md`: root cause analysis (max 5), triage, adversarial self-check, adversarial reader stress test (§8), editorial letter.
 
-The editorial letter is a standalone artifact, written to `Outputs/[Project]/` as usual. It does not change format for submission readiness; it's the same editorial letter as any Core DE run.
+The editorial letter is a standalone artifact, written to the active project output context beside the manuscript as usual. It does not change format for submission readiness; it's the same editorial letter as any Core DE run.
 
 ### Phase 4: Pass 11
 
@@ -354,7 +354,7 @@ A writer can reach roughly the same analytical coverage by running Core DE with 
 
 ### Artifact locations
 
-All artifacts go to `Outputs/[Project]/`:
+All artifacts go to the active project output context beside the manuscript:
 - `[Project]_Editorial_Letter_[date].md` — standard editorial letter from synthesis
 - `Submission_Readiness_Assessment_[date].md` — the unified output from this workflow
 - Pass artifacts and Findings Ledger in their standard locations

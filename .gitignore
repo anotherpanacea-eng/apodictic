@@ -1,5 +1,12 @@
 .DS_Store
 *.bak
 *.tmp
+.codex-build-tmp*/
+dist/
+/apodictic.plugin
 Outputs/
 issues/
+**/.apodictic_run/
+**/__pycache__/
+**/.pytest_cache/
+*.pyc
