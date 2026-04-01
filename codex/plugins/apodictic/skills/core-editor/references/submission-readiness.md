@@ -67,9 +67,11 @@ All standard execution protocols apply (Findings Ledger, staged visibility, pre-
 
 ### Phase 3: Synthesis
 
-Run synthesis per `run-core.md`: root cause analysis (max 5), triage, adversarial self-check, adversarial reader stress test (§8), editorial letter.
+Run synthesis per `run-core.md`: root cause analysis (max 5), triage, adversarial self-check, adversarial reader stress test (§10), editorial letter.
 
 The editorial letter is a standalone artifact, written to the active project output context beside the manuscript as usual. It does not change format for submission readiness; it's the same editorial letter as any Core DE run.
+
+**Blind-spot rule:** If the Audit Invocation Log or editorial letter names a deferred or declined high-risk audit (especially AI-Prose Calibration, Consent Complexity, Reception Risk, or Series Continuity), carry that forward into the readiness assessment as an explicit confidence limiter. Do not present a blind-spot-limited run as fully de-risked.
 
 ### Phase 4: Pass 11
 
@@ -107,6 +109,8 @@ This phase is unique to the Submission Readiness Workflow. It does not exist in 
 ### Phase 6: Unified Readiness Assessment
 
 Produce the combined output per the template below. This is the primary deliverable of the Submission Readiness Workflow, distinct from the editorial letter (which is also produced but covers craft diagnosis, not submission readiness).
+
+**Confidence and ceiling rule:** If a high-risk blind spot remains unresolved at the end of the run, confidence cannot exceed `MEDIUM`. If the blind spot materially affects ethics/governance legibility, category/reception exposure, or cross-volume consequence coherence, the verdict cannot exceed `CONDITIONALLY VIABLE` without an explicit rationale.
 
 ---
 
@@ -155,6 +159,8 @@ The full Submission Readiness Workflow has access to all 15 SR codes (unlike Sub
 [2-3 sentence plain-language summary. What this verdict means for the writer's next step.]
 
 **Confidence:** [HIGH / MEDIUM] — [brief basis for confidence level]
+
+**Blind Spots:** [None, or 1-3 bullets naming deferred/declined high-risk audits and how they limit readiness confidence]
 
 ---
 
@@ -338,8 +344,8 @@ The full Submission Readiness Workflow has access to all 15 SR codes (unlike Sub
 | Passes run | 1 only | All Core DE + Pass 11 |
 | SR codes available | 7 of 15 | All 15 |
 | Generates query/synopsis diagnostic | No | Yes (compression test) |
-| Stress tests | None | Adversarial (editorial letter §8) + compression |
-| Blind spots | Named explicitly | N/A (comprehensive coverage) |
+| Stress tests | None | Adversarial (editorial letter §10) + compression |
+| Blind spots | Named explicitly | Named when present; high-risk blind spots cap confidence |
 | Output | Triage memo (1-2 pages) | Full assessment + editorial letter |
 | Time | ~15 min | Full diagnostic run |
 

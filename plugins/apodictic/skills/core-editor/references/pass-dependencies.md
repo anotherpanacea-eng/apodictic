@@ -160,12 +160,14 @@ Activated by intake answers before passes run.
 | Constraint = ai | AI-Prose Calibration | Auto-run (bundled with workflow) | `craft/ai-prose-calibration.md` |
 | Erotic content flagged at intake | Erotic Content | Auto-run (bundled with workflow) | `tag/erotic-content.md` |
 | Genre = Romance + erotic content | Erotic Content + Consent Complexity | Auto-run / Auto-recommend | `tag/erotic-content.md`, `tag/consent-complexity.md` |
+| Erotic or intimate content + power dynamics / conditioning / authority asymmetry / consent ambiguity disclosed | Consent Complexity | Auto-recommend before synthesis | `tag/consent-complexity.md` |
 | Historical setting (>50 years) | Historical Fiction | Auto-recommend | `genre/historical-fiction.md` |
 | Memoir or creative nonfiction | Memoir & Creative Nonfiction | Auto-run (bundled) | `genre/memoir-creative-nonfiction.md` |
 | Narrative nonfiction | Narrative Nonfiction Craft | Auto-run (bundled) | `genre/narrative-nonfiction.md` |
 | Short fiction (<20K words) | Short Fiction | Auto-recommend | `craft/short-fiction.md` |
 | Series context flagged | Series & Composite Novel | Auto-recommend | `craft/series-composite-novel.md` |
 | Series continuity concern | Series Continuity | Auto-run (requires Pass 10 + Pass 8) | `craft/series-continuity.md` |
+| Representation or reception sensitivity disclosed at intake | Reception Risk | Auto-recommend before synthesis | `craft/reception-risk.md` |
 | Queer romance / queer identity central | Queer Romance/Erotica | Auto-recommend | `tag/queer-romance-erotica.md` |
 | Submission readiness goal | Shelf Positioning | Auto-recommend with Pass 11 | `craft/shelf-positioning.md` |
 | Constraint = risk | (Risk Register — not yet built) | Note gap; proceed without | — |
@@ -190,13 +192,19 @@ Activated by pass results during a diagnostic run. The system checks these after
 | 9 (Thematic Coherence) | Thematic argument under-structured, didacticism | Dialectical Clarity | Recommend |
 | 9 (Thematic Coherence) | Straw opposition, authorial thumb on scale | Banister (Epistemic Humility) | Recommend |
 | 6 (Scene Function) | Force delivery issues, inert action sequences | Force Architecture | Recommend |
-| 1 (Reader Experience) | Uniform fluency, voice genericism (AI indicators) | AI-Prose Calibration | Recommend (if not already loaded) |
+| 1 (Reader Experience) | Uniform fluency, voice genericism (AI indicators) | AI-Prose Calibration | Auto-recommend before synthesis (if not already loaded) |
+| 5 (Character Audit) | Puppet dialogue, cognitive sameness, generic fluency seams (AI indicators) | AI-Prose Calibration | Auto-recommend before synthesis (if not already loaded) |
+| Any pass | Consent ambiguity, governance legibility failure, coercion aestheticization risk, or aftercare / repair incoherence in intimate or power-dynamic material | Consent Complexity | Auto-recommend before synthesis |
+| Any pass | Representation contestation, screenshot risk, extractability, hostile-reader portability, or culturally volatile framing | Reception Risk | Auto-recommend before synthesis |
+| 8 (Reveal Economy) | Cross-volume state drift, thread amnesia, or consequence reset in series context | Series Continuity | Auto-recommend before synthesis (if not already loaded) |
+| 10 (Entity Tracking) | Cross-volume entity/state inconsistency or unresolved carry-forward consequences | Series Continuity | Auto-recommend before synthesis (if not already loaded) |
 | Any pass | Fan fiction origin markers (IP scaffolding, assumed worldbuilding) | Fan Fiction Conversion | Recommend |
 
 ### §4c. Policy definitions
 
 - **Auto-run:** Audit loads without user confirmation. Bundled with the workflow from intake. Used for audits that are definitional to the manuscript type (e.g., Memoir audit for a memoir, AI-Prose for an AI-assisted draft). **Auto-run audits are synthesis dependencies.** They must complete and append their findings to the Findings Ledger before synthesis begins. This ensures synthesis integrates auto-run audit findings into root cause analysis and triage rather than requiring post-hoc retrofitting.
 - **Auto-recommend:** System recommends after the relevant pass completes. The user can decline. Used for genre-specific audits that would catch issues the passes surface but can't fully diagnose. Auto-recommend audits run after their triggering pass; if the user accepts and the audit completes before synthesis begins, its findings are integrated. If it completes after synthesis, its findings appear in the editorial letter appendix as "post-synthesis audit — not integrated into triage."
+- **Auto-recommend before synthesis:** Same as Auto-recommend, but the recommendation must be resolved before synthesis begins. If the user declines or defers, the run records an explicit blind spot in the Audit Invocation Log and the synthesis/readiness layer must name the confidence limit.
 - **Recommend:** System mentions availability when findings suggest relevance. The user opts in. Used for cross-cutting audits that *might* be relevant based on patterns. Same post-synthesis labeling applies if they complete late.
 
 ### §4d. Presentation format

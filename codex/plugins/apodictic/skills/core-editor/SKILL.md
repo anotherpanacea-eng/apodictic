@@ -213,7 +213,7 @@ When operating within a project:
 5. **INITIALIZE** `Diagnostic_State.md` in that output context from `references/diagnostic-state-template.md` if it does not exist
 6. **SET** the Mode section's `**Current:**` field to `diagnostic` unless an active handoff is explicitly in effect
 7. **APPEND** handoff entries to `Handoff History` (never overwrite prior cycles)
-8. **UPDATE** `Diagnostic_State.md` in that output context with cumulative findings across sessions
+8. **UPDATE** `Diagnostic_State.md` in that output context with cumulative findings across sessions, including author decisions and control questions when synthesis produces them
 
 When no project context exists, proceed with intake from scratch.
 
