@@ -32,7 +32,26 @@ APODICTIC isn't just for finished drafts.
 
 ## Install
 
-Requires **Claude Opus** for intended results. Runs on smaller models with degraded severity honesty and thematic interpretation.
+APODICTIC works best on strong frontier models with enough context for large-manuscript analysis. The current tested Codex path is a generated local-workspace install.
+
+### Codex (current tested path)
+
+1. Clone this repo.
+2. From the repo root, run:
+
+```bash
+node scripts/build-codex.mjs
+```
+
+3. Open the generated `codex/` folder as your Codex workspace root.
+4. In Codex, open the Plugins view and install `APODICTIC` from the local marketplace.
+5. Start a fresh thread and run `apodictic-start`.
+
+If APODICTIC does not appear, the usual cause is opening the wrong folder. Codex must be opened on the generated `codex/` directory, not the repo root.
+
+### Claude Code / Cowork (legacy host flow)
+
+The instructions below are the older Claude-oriented install path.
 
 ### Claude Code (CLI)
 

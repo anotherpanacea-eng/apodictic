@@ -117,6 +117,27 @@ function buildCodexWorkspaceReadme() {
 
 This workspace is generated from the canonical APODICTIC source in this repo.
 
+## Install In Codex
+
+1. From the repo root, run:
+
+\`\`\`bash
+node scripts/build-codex.mjs
+\`\`\`
+
+2. Open this generated \`codex/\` folder as your Codex workspace root.
+3. In Codex, open the Plugins view and install \`APODICTIC\` from the local marketplace in \`.agents/plugins/marketplace.json\`.
+4. Start a fresh thread and run \`apodictic-start\`.
+
+If APODICTIC does not appear in Codex, the most common cause is opening the wrong folder. The workspace root must be this generated \`codex/\` directory, not the repo root.
+
+## Update The Plugin
+
+1. Pull or edit the main repo.
+2. Re-run \`node scripts/build-codex.mjs\`.
+3. Reopen or refresh the generated \`codex/\` workspace in Codex.
+4. Reinstall APODICTIC from the local marketplace if the installed copy is stale.
+
 ## Layout
 
 - \`plugins/apodictic/\` — generated Codex plugin workspace

@@ -4,6 +4,20 @@ Developmental editing that listens before diagnosing.
 
 AI-powered developmental editing framework for fiction and narrative nonfiction. Diagnoses structural issues in manuscripts through systematic passes, genre-calibrated analysis, and specialized audits.
 
+## Installation
+
+The current tested Codex install path is workspace-based:
+
+1. From the repo root, run:
+   ```bash
+   node scripts/build-codex.mjs
+   ```
+2. Open the generated `codex/` folder as your Codex workspace root.
+3. In Codex, open the Plugins view and install `APODICTIC` from the local marketplace.
+4. Start a fresh thread and run `apodictic-start`.
+
+If the plugin does not appear, make sure Codex is opened on the generated `codex/` directory, not the repo root.
+
 ## Quick Start In Codex
 
 If you're new to the plugin, start with a plain-language request:
