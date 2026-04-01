@@ -13,6 +13,7 @@
 **Date:**
 **Draft analyzed:**
 **Tier:** [Core DE / Full DE]
+**Execution mode:** [single-agent / sequential / hybrid / swarm]
 **Passes completed:**
 
 ---
@@ -70,6 +71,22 @@
 | Element | Location | Question |
 |---------|----------|----------|
 | | | |
+
+---
+
+## Control Questions
+
+*Exactly 7 manuscript-specific questions that should govern revision choices, unresolved interpretation, and risk posture:*
+
+| # | Question | Why it matters | Status |
+|---|----------|----------------|--------|
+| 1 | | | [open / answered / deferred] |
+| 2 | | | [open / answered / deferred] |
+| 3 | | | [open / answered / deferred] |
+| 4 | | | [open / answered / deferred] |
+| 5 | | | [open / answered / deferred] |
+| 6 | | | [open / answered / deferred] |
+| 7 | | | [open / answered / deferred] |
 
 ---
 

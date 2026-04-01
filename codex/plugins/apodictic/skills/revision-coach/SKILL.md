@@ -90,7 +90,7 @@ The coach operates in four modes. Select based on context:
 **Optional input:** Energy/focus level (structural / mixed / polish). Defaults to `mixed`.
 
 **Process:**
-1. Read `Diagnostic_State.md` — root causes, triage, revision progress, author decisions, handoff history
+1. Read `Diagnostic_State.md` — root causes, triage, revision progress, author decisions, control questions, handoff history
 2. Assess what's resolved, in progress, and untouched
 3. Rank remaining issues by **leverage** — which fix improves the most of the manuscript?
 4. Match leverage ranking against available time and energy

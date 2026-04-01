@@ -186,7 +186,7 @@ Before selecting an execution mode, the parent orchestrator runs a pre-flight me
 
 The parent orchestrator determines its available context window before selecting an execution mode. This is a model-level property, not something the preflight script can measure.
 
-**How to detect:** The parent orchestrator checks the model identifier from the current session. Models with ≥1M token context windows (e.g., `claude-opus-4-6` with 1M context) qualify for the large-context execution tier. When uncertain, assume standard-context and use the conservative recommendation tier.
+**How to detect:** The parent orchestrator checks the model identifier or host metadata from the current session. Any model documented as supporting ≥1M token context qualifies for the large-context execution tier. When uncertain, assume standard-context and use the conservative recommendation tier.
 
 **Why this matters:** The original motivation for per-pass subagent dispatch was twofold: (1) compaction resilience — platform context compaction could lose analytical work mid-run, and (2) salience decay — in a 200K window, earlier pass artifacts lose salience by synthesis time. With a 1M context window, a typical novel (~180K tokens) plus all analytical overhead fits comfortably without compaction risk or salience decay. This makes single-agent mode viable as a default for most manuscripts, while preserving multi-agent modes for manuscripts that exceed the window or for users who want architectural isolation.
 
@@ -255,11 +255,11 @@ Each evaluative pass runs as an independent subagent that receives the full manu
 5. Initialize the Findings Ledger
 
 **If single-agent mode:**
-6. Dispatch one subagent (Task tool, `model: opus`, `subagent_type: general-purpose`) with the full manuscript, contract, pass specifications for all resolved passes, and instructions to run passes sequentially, writing each artifact and ledger entry to disk as it completes each pass
+6. Dispatch one subagent using the host platform's delegated-agent facility with a frontier reasoning/editorial model and instructions to run passes sequentially, writing each artifact and ledger entry to disk as it completes each pass
 7. The single subagent runs all passes and synthesis, persisting each ledger entry to disk before beginning the next pass
 
 **If sequential, hybrid, or swarm mode:**
-6. Dispatch each pass as a subagent (Task tool, `model: opus`, `subagent_type: general-purpose`, `max_turns` per pre-flight)
+6. Dispatch each pass as a subagent using the host platform's delegated-agent facility, with turn budget sized per pre-flight where supported
 7. **Persist each subagent's ledger entry to disk immediately upon return** — before dispatching the next subagent
 8. Pass the growing Findings Ledger to each subsequent subagent
 9. Dispatch the synthesis subagent with the complete ledger
@@ -599,8 +599,24 @@ After all core passes are complete and before writing the synthesis:
 1. **Run auto-run audits first.** All audits with **auto-run** policy (see `pass-dependencies.md` §4c) are synthesis dependencies. They must complete and append their findings to the Findings Ledger before synthesis begins. Execute them immediately after their prerequisite passes are complete. Auto-run audits include: AI-Prose Calibration (when `constraint:ai`), Erotic Content (when erotic content flagged at intake), Memoir & CNF (when memoir/CNF), Narrative Nonfiction Craft (when narrative nonfiction), Series Continuity (when series continuity concern flagged).
 2. **Review accumulated audit triggers.** Compile all finding-driven recommendations from Passes 1, 2, 5, and 8.
 3. **Compare against contract-activated audits.** If a finding-driven trigger recommends an audit already activated at contract, confirm it should run. If it recommends an audit not activated at contract, present the recommendation to the author with evidence.
-4. **Run auto-recommend and user-accepted audits.** Load the full specialized audit module from `specialized-audits/references/` and apply to the manuscript. Each audit produces its own findings document. If an auto-recommend or user-accepted audit completes before synthesis begins, its findings are integrated. If it completes after, label it as a post-synthesis audit in the appendix.
-5. **Write the Audit Invocation Log.** Before synthesis, produce a log artifact tracking every audit considered during this run. Format:
+4. **Apply the high-risk blind-spot gate.** Before synthesis, explicitly check whether any of these risk classes are live:
+   - **AI-origin fluency risk** — AI-assisted draft disclosed, or Pass 1 / Pass 5 flags uniform fluency, lexical genericism, puppet dialogue, or register seams
+   - **Consent / governance risk** — intimate or power-dynamic material where consent architecture, conditioning, coercion, aftercare, or governance legibility is a live interpretive problem
+   - **Reception / extractability risk** — contested representation, likely screenshot/excerpt vulnerability, hostile-reader portability, or representation context active contestation
+   - **Series consequence risk** — cross-volume state drift, consequence reset, thread amnesia, or continuity pressure across volumes
+
+   For each live risk class:
+   - run the relevant audit before synthesis when policy or user acceptance allows;
+   - if the audit is declined or deferred, record the blind spot in the Audit Invocation Log and carry it into synthesis as a confidence limiter.
+
+   Relevant audits:
+   - AI-origin fluency risk -> **AI-Prose Calibration**
+   - Consent / governance risk -> **Consent Complexity**
+   - Reception / extractability risk -> **Reception Risk**
+   - Series consequence risk -> **Series Continuity**
+
+5. **Run auto-recommend and user-accepted audits.** Load the full specialized audit module from `specialized-audits/references/` and apply to the manuscript. Each audit produces its own findings document. If an auto-recommend or user-accepted audit completes before synthesis begins, its findings are integrated. If it completes after, label it as a post-synthesis audit in the appendix and name the resulting blind spot in the editorial letter or readiness assessment when material.
+6. **Write the Audit Invocation Log.** Before synthesis, produce a log artifact tracking every audit considered during this run. Format:
 
 ```
 ## Audit Invocation Log
@@ -618,7 +634,7 @@ After all core passes are complete and before writing the synthesis:
 **Status** = `run`, `skipped` (author declined), or `deferred` (postponed to Full DE).
 Save as `[Project]_Audit_Invocation_Log_[runlabel].md`.
 
-6. **Feed audit findings into synthesis.** Specialized audit findings integrate into the editorial letter's "What Needs Work" sections — organized by problem, not by audit name. The author reads about the book's needs, not about which framework found the issue.
+7. **Feed audit findings into synthesis.** Specialized audit findings integrate into the editorial letter's "What Needs Work" sections — organized by problem, not by audit name. The author reads about the book's needs, not about which framework found the issue.
 
 **Cross-audit finding-driven triggers:**
 - **Representation Context** research mode surfaces active community contestation relevant to the manuscript's content → recommend **Reception Risk** audit if not already activated
@@ -644,6 +660,7 @@ Before beginning synthesis, verify:
 2. All **auto-run audits** (per contract and constraint flags) are complete
 3. The Findings Ledger includes entries from both passes and auto-run audits
 4. The Audit Invocation Log is written
+5. Any deferred or declined high-risk audit is recorded as an explicit blind spot
 
 If any auto-run audit has not completed, do not begin synthesis. Complete the audit first. Synthesis written without auto-run audit findings must be rewritten — this wastes tokens and produces incomplete editorial letters.
 
@@ -677,18 +694,28 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
 
 6. **Adversarial Reader Stress Test (required).** Before writing the letter, run the stress test per `references/adversarial-stress-test.md`. **Begin the stress test by setting aside the pass findings and the Findings Ledger.** Inhabit the low-charity reader profiles and generate 3-5 adversarial claims from a holistic reading of the manuscript — what would a hostile reader attack regardless of what the passes found? Draw also from the Findings Ledger's "Unresolved Questions" entries, which may contain vulnerabilities the passes noticed but couldn't fully analyze. After generating the independent claims, reconcile them with the pass findings: which attacks are already covered by editorial letter findings? Which are new? New attacks enter the stress test section of the letter. Attacks already covered by the editorial argument are noted as convergent evidence but not duplicated. This is a separate exercise from the adversarial self-check (step 5) — the self-check tests severity calibration of existing findings; the stress test surfaces what hostile readers would attack, which may include issues not flagged by the passes.
 
-7. **Pre-Output Synthesis Verification (required gate).** Before writing the letter, verify the synthesis is actually drawing from pass findings — not generating an editorial letter from general impressions of the manuscript. Run these checks:
+7. **Decision-Layer Consolidation (required).** Before writing the letter, convert the diagnosis into explicit revision-control artifacts:
+
+   - **Protected Elements candidate list:** 3-6 load-bearing elements from §3 strength findings that revision could easily damage
+   - **Author Decisions:** 3-7 manuscript-specific decisions or commitments, organized as `Keep`, `Cut`, or `Unsure`. These are not generic preferences; they are the live choices that control revision order, book identity, interpretive stance, or risk posture.
+   - **Control Questions:** Exactly 7 manuscript-specific questions that should govern revision. These are not "reader questions" and not workshop prompts. They are the high-leverage unresolved questions whose answers determine whether the major fixes actually land.
+
+   Build these from root causes, audit findings, the stress test, and the strongest-case-against logic. If a decision or control question cannot be tied to a root cause, live blind spot, or structural pressure point, it probably does not belong here.
+
+8. **Pre-Output Synthesis Verification (required gate).** Before writing the letter, verify the synthesis is actually drawing from pass findings — not generating an editorial letter from general impressions of the manuscript. Run these checks:
 
    - **Findings integration check:** For each root cause identified in step 3, confirm it cites at least one specific ledger finding by pass and finding name. If a root cause exists only as a general impression without ledger grounding, either locate the supporting ledger entry or demote it to §4b (Additional Observations) with a note that it awaits pass-level confirmation.
-   - **Section ordering check:** Confirm the letter will follow the required §1-§9 order. §7 (Strongest Case Against) and §8 (Stress Test) are separate sections with distinct methodologies — they must not be merged or omitted.
+   - **Section ordering check:** Confirm the letter will follow the required §1-§11 order. Protected Elements, Author Decisions, Control Questions, Strongest Case Against, and Stress Test are separate sections with distinct jobs — they must not be merged or omitted.
    - **Cap compliance check:** Root causes ≤ 5. Revision checklist items ≤ 10 (Core DE) or ≤ 15 (Full DE). Must-Fix flags ≤ 10.
    - **Severity floor check:** If any core-promise axis is rated Weak at High or Medium intensity, at least one flag is Must-Fix. If any Must-Fix flag has Systemic blast radius, verdict does not exceed Partial Fit ceiling.
+   - **Decision-layer completeness check:** Protected Elements contains 3-6 items. Author Decisions contains 3-7 items distributed across Keep / Cut / Unsure as applicable. Control Questions contains exactly 7 questions, each tied to a root cause, blind spot, or major revision choice.
    - **Appendix completeness check:** The letter will include Appendix A (diagnostic detail), Appendix B (severity calibration), and Appendix C (framework notes). No appendix is optional.
+   - **Blind-spot disclosure check:** Any deferred or declined high-risk audit appears in Appendix A and is named in the letter where it materially limits confidence or readiness.
    - **Evidence density spot-check:** For the two highest-severity flags, confirm each has ≥ 2 specific scene/page references.
 
    If any check fails, fix it before proceeding. This gate exists because the most common synthesis failure mode is generating an editorially plausible letter that doesn't actually integrate the analytical work — the letter sounds right but isn't grounded in what the passes found.
 
-8. **Write the editorial letter** using the presentation format below. The self-check informs the letter's severities; the stress test becomes §8 of the letter.
+9. **Write the editorial letter** using the presentation format below. The self-check informs the letter's severities; the stress test becomes §10 of the letter.
 
 **Key principle:** Processing order ≠ presentation order. The self-check must happen before writing, but in the output document it belongs in an appendix. The author reads findings; the framework owner reads methodology.
 
@@ -754,14 +781,32 @@ Format: Brief prose list (not a table). Each element gets 1–3 sentences: what 
 
 **Relationship to §3:** §3 argues *why* the strengths matter. §6 translates that into *operational protection* — it tells the author which strengths are at risk from the specific revisions recommended in §4 and §5. An element in §3 that isn't threatened by the revision plan doesn't need to appear here. An element that isn't in §3 shouldn't appear here either — if it's worth protecting, it should have been identified as a strength first.
 
-**7. The Strongest Case Against.** The rejection memo, reframed for the author. Write it as: "If I were arguing for passing on this manuscript..." State the case in 1-2 paragraphs. Reference findings from the letter — no new uncited claims.
+**7. Author Decisions.** A compact decision layer that translates diagnosis into concrete authorial commitments.
+
+Organize under these subheads as needed:
+- **Keep** — elements or interpretive stances the revision should preserve on purpose
+- **Cut** — moves, explanations, scene functions, or repeated beats the revision should remove or stop relying on
+- **Unsure** — unresolved decisions the author must make before revision can proceed cleanly
+
+Each item should be 1-2 sentences and materially affect revision order, book identity, stance, or risk calibration. If the author has not made the decision yet, phrase it as the decision they now need to make.
+
+**8. Control Questions.** Exactly 7 manuscript-specific questions that should sit beside the draft during revision. These are not curiosity questions for the reader. They are control questions for the author and editor: if the answer changes, the revision plan changes.
+
+Each question should:
+- be anchored in a root cause, high-risk ambiguity, or unresolved decision
+- be specific enough to answer through revision choices
+- avoid generic workshop phrasing
+
+Add a brief note after each question: why the answer matters for the book's revision path.
+
+**9. The Strongest Case Against.** The rejection memo, reframed for the author. Write it as: "If I were arguing for passing on this manuscript..." State the case in 1-2 paragraphs. Reference findings from the letter — no new uncited claims.
 
 **Do not render a verdict on whether the case wins or loses.** The author assesses that. The framework's job is to make the strongest honest case for rejection and let it stand on its own evidence. If the case is weak, its weakness will be self-evident; if the case is strong, dismissing it is a disservice. End with the case, not with reassurance.
 
-**8. Adversarial Reader Stress Test.** Required for every editorial letter. Format and methodology per `references/adversarial-stress-test.md`. This section presents 3-5 adversarial claims from low-charity reader perspectives, each with evidence, severity, steelman defense, and net risk assessment. The stress test complements §7 — where §7 states the structural case against the manuscript in 1-2 paragraphs, §8 inhabits specific hostile reader types and surfaces what each would attack.
+**10. Adversarial Reader Stress Test.** Required for every editorial letter. Format and methodology per `references/adversarial-stress-test.md`. This section presents 3-5 adversarial claims from low-charity reader perspectives, each with evidence, severity, steelman defense, and net risk assessment. The stress test complements §9 — where §9 states the structural case against the manuscript in 1-2 paragraphs, §10 inhabits specific hostile reader types and surfaces what each would attack.
 
-**9. Appendices.**
-- **Appendix A: Diagnostic Detail.** Pointers to companion pass files and supplementary audit findings with brief descriptions of what each contains. For each supplementary audit that ran, list its companion findings file and any tracking artifacts produced (e.g., Decision Event Map, Stakes Ladder Map, Scene Turn code inventory). Group pass files first, then audit findings.
+**11. Appendices.**
+- **Appendix A: Diagnostic Detail.** Pointers to companion pass files and supplementary audit findings with brief descriptions of what each contains. For each supplementary audit that ran, list its companion findings file and any tracking artifacts produced (e.g., Decision Event Map, Stakes Ladder Map, Scene Turn code inventory). Group pass files first, then audit findings. If any high-risk audit was deferred or declined, name the blind spot here and state how it limits confidence or readiness claims.
 - **Appendix B: Severity Calibration.** Compressed summary of the adversarial self-check — which findings were tested, in which direction, whether any severities were adjusted.
 - **Appendix C: Framework Notes.** Analysis version, model, run date, passes completed, protocol flags, prior analyses on file, cross-version stability notes (if applicable).
 
@@ -780,6 +825,7 @@ The primary deliverable. Format specified in §Core DE Synthesis above.
 After writing the editorial letter, update `Diagnostic_State.md` with:
 - Findings from this session
 - Keep / Cut / Unsure decisions
+- Control Questions
 - Change log
 
 `Diagnostic_State.md` lives in the active project output context: the manuscript's external output folder. Reuse the writer's existing output folder when one already exists; otherwise default to an `Outputs/` sibling next to the manuscript. Never write this file to the plugin repo or installed plugin cache.
