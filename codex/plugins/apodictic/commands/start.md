@@ -28,7 +28,7 @@ Load `../skills/core-editor/SKILL.md` first (thin orchestrator). Do NOT preload 
    - **If state exists and mode is `diagnostic`**, present a summary of available state. When the sidecar is available, include: session count, root cause count, revision progress, and the resume target. When falling back to markdown-only, include whatever is parseable (root cause count, pass completion status). Then offer:
      - **Continue** — resume the next logical step (see §Resume Target below)
      - **Start fresh** — continue to full intake router
-   - **State gardening check (sidecar only):** If `state_lines` > 500, run state gardening before proceeding (see `../skills/core-editor/references/run-core.md` §State Gardening Protocol). If 300-500, advise the user that gardening is available. Skip this check when falling back to markdown-only (gardening requires the sidecar to track line counts).
+   - **State gardening check (sidecar only):** If `state_lines` > 500, run state gardening before proceeding (see `../skills/core-editor/references/state-lifecycle.md` §State Gardening Protocol). If 300-500, advise the user that gardening is available. Skip this check when falling back to markdown-only (gardening requires the sidecar to track line counts).
    - Route by user choice:
      - Check the fix -> follow `../skills/core-editor/references/handoff-protocol.md` §5b re-entry procedure
      - Keep working -> remain in execution mode, stop `apodictic-start` flow
@@ -42,10 +42,10 @@ The sidecar's `next_action` field uses an enumerated dispatch key (not free text
 | `next_action` value | Loads | When set |
 |---|---|---|
 | `run_passes` | `run-core.md` | After intake, before passes begin |
-| `run_synthesis` | `run-core.md` | After all passes complete, before synthesis |
-| `run_spot_check` | `run-core.md` | After synthesis, before evidence spot-check |
+| `run_synthesis` | `run-synthesis.md` | After all passes complete, before synthesis |
+| `run_spot_check` | `run-synthesis.md` | After synthesis, before evidence spot-check |
 | `deliver` | (none — present editorial letter) | After spot-check complete |
-| `revision_round` | `run-core.md` | After editorial letter delivered, author returns with revised draft |
+| `revision_round` | `state-lifecycle.md` | After editorial letter delivered, author returns with revised draft |
 | `run_audits` | `specialized-audits/SKILL.md` | After core passes, before deferred audits |
 | `coaching` | `revision-coach/SKILL.md` | After editorial letter, author requests coaching |
 | `handoff_reentry` | `handoff-protocol.md` | After execution mode, author says "back to editor" |

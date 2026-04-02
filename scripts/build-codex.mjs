@@ -484,7 +484,9 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
     ".agents/plugins/marketplace.json",
     "plugins/apodictic/.codex-plugin/plugin.json",
     "plugins/apodictic/scripts/preflight.sh",
-    "plugins/apodictic/scripts/validate.sh"
+    "plugins/apodictic/scripts/validate.sh",
+    "plugins/apodictic/skills/core-editor/references/run-synthesis.md",
+    "plugins/apodictic/skills/core-editor/references/state-lifecycle.md"
   ];
   for (const { wrapperName } of wrapperMappings) {
     requiredArchiveEntries.push(`plugins/apodictic/skills/${wrapperName}/SKILL.md`);

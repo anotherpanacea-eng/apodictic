@@ -347,7 +347,7 @@ Tag audits evaluate experience-layer promises that sit on top of any genre's str
 
 ### Editorial Letter (Full DE)
 
-The Core DE editorial letter format (§Core DE Synthesis in `references/run-core.md`) is the base. The Full DE letter uses the same structure, tone, and principles. Differences at Full DE scale:
+The Core DE editorial letter format (§Core DE Synthesis in `references/run-synthesis.md`) is the base. The Full DE letter uses the same structure, tone, and principles. Differences at Full DE scale:
 
 1. **Length:** 8-20 pages. The additional passes generate more findings.
 2. **"What Needs Work" expands.** Character-level findings (Pass 5), reveal economy findings (Pass 8), and thematic coherence findings (Pass 9) integrate as additional headed subsections — same format (bolded thesis-statement heading, prose argument, embedded line references). They do not appear as numbered passes or as a pass-by-pass walkthrough. The organizing principle is *what the book needs*, not *which pass found it*.

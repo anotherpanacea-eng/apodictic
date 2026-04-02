@@ -67,7 +67,7 @@ All standard execution protocols apply (Findings Ledger, staged visibility, pre-
 
 ### Phase 3: Synthesis
 
-Run synthesis per `run-core.md`: root cause analysis (max 5), triage, adversarial self-check, adversarial reader stress test (§10), editorial letter.
+Run synthesis per `run-synthesis.md`: root cause analysis (max 5), triage, adversarial self-check, adversarial reader stress test (§10), editorial letter.
 
 The editorial letter is a standalone artifact, written to the active project output context beside the manuscript as usual. It does not change format for submission readiness; it's the same editorial letter as any Core DE run.
 
