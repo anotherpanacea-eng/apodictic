@@ -85,13 +85,13 @@ If router output is available (`artifact`, `goal`, `concern`, `constraints`, `op
 Load `references/pass-dependencies.md`, resolve concern to minimum pass set, add dependencies, then run selected passes in dependency order.
 
 ### 3. Synthesis
-Root cause analysis (max 5), triage (Must-Fix / Should-Fix / Could-Fix), adversarial self-check, adversarial reader stress test, editorial letter. After writing: mechanical section validation, then evidence spot-check (5 claims verified against manuscript).
+Load `references/run-synthesis.md`. Root cause analysis (max 5), triage (Must-Fix / Should-Fix / Could-Fix), adversarial self-check, adversarial reader stress test, editorial letter. After writing: mechanical section validation, then evidence spot-check (5 claims verified against manuscript).
 
 ### 4. Expansion Recommendation
 Apply auto-escalation rules from `references/pass-dependencies.md` §2b. Recommend expansion to full pass set when issue density/complexity exceeds the scoped run.
 
 ### 5. Revision Round (when re-analyzing)
-Delta scan, ripple check, resolution verification, new issue detection.
+Load `references/state-lifecycle.md`. Delta scan, ripple check, resolution verification, new issue detection.
 
 ### 6. Submission Readiness (when submitting)
 When the writer asks "is this ready to submit?", run the Submission Readiness Workflow: Core DE → Synthesis → Pass 11 → Compression Test → Unified Readiness Assessment. Entry point: `/ready` command or `full_draft + submit` route. Load `references/submission-readiness.md` for full specification. For deadline-constrained writers, route to Submission Triage instead (`references/submission-triage.md`).
@@ -99,7 +99,7 @@ When the writer asks "is this ready to submit?", run the Submission Readiness Wo
 ### 7. Scene-Level Handoff (when requested)
 When diagnosis is complete for a scoped scene and the writer wants execution help, follow `references/handoff-protocol.md` for mode switch, state persistence, and re-entry.
 
-**Execution details for all of the above:** Load `references/run-core.md`. Use `references/pass-dependencies.md` for pass resolution. For full expansion: load `references/run-full.md`.
+**Execution details:** Load `references/run-core.md` for intake, pass execution, and Findings Ledger protocol. Load `references/run-synthesis.md` after passes complete for audit integration, synthesis, and deliverables. Load `references/state-lifecycle.md` for revision rounds and state gardening. Use `references/pass-dependencies.md` for pass resolution. For full expansion: load `references/run-full.md`.
 
 **Execution mode:** The system supports context-aware execution. **Single-agent** (default when ≥1M context tokens and manuscript fits): one subagent runs all passes sequentially in a single context, with the Findings Ledger persisted to disk after each pass. **Sequential** (default for standard-context or very large manuscripts): each pass runs as an independent subagent with the full manuscript. **Hybrid** (optional): Pass 0+1 produces a focus map; later passes run as independent subagents with targeted excerpts (~2–3x token cost). **Swarm** (optional): independent subagents with parallel execution (~5x token cost, ~2x findings, architectural isolation). Mode selection is automatic based on context window size and manuscript token load; the user can override at intake. See `references/run-core.md` §Execution Mode for protocol details; `references/hybrid-mode.md` for the focus map specification.
 
@@ -290,7 +290,9 @@ During intake, identify the manuscript's genre and load the corresponding module
 ### Execution
 | File | When to Load |
 |------|-------------|
-| `references/run-core.md` | Every Core DE and Full DE run (intake, passes, synthesis, revision rounds) |
+| `references/run-core.md` | Every Core DE and Full DE run (intake, pass execution, ledger protocol) |
+| `references/run-synthesis.md` | After passes complete (audit integration, synthesis, deliverables, evidence spot-check) |
+| `references/state-lifecycle.md` | State gardening and revision rounds (loaded by `/start`, `/coach`, revision workflows) |
 | `references/pass-dependencies.md` | When resolving concern to scoped pass set and dependency order |
 | `references/run-full.md` | When selected pass set includes advanced passes (3, 4, 6, 7, 9, 10) |
 | `references/output-policy.md` | Before writing any output (editorial letter, pass reports) |
@@ -353,7 +355,7 @@ When generating output filenames, append the model tag to the runlabel: `YYYY-MM
 4. Run adversarial self-check before writing editorial letter.
 5. Check every flag against stated author intent before finalizing.
 6. Run mechanical validation (plugin-bundled `scripts/validate.sh`, or inline fallback) at each checkpoint (see `references/run-core.md` §Mechanical Validation Protocol).
-7. Run evidence spot-check after synthesis — verify 5 claims against manuscript before delivering (see `references/run-core.md` §Evidence Spot-Check).
+7. Run evidence spot-check after synthesis — verify 5 claims against manuscript before delivering (see `references/run-synthesis.md` §Evidence Spot-Check).
 
 ---
 

@@ -159,11 +159,15 @@ case "$COMMAND" in
     LETTER="$1"
     ERRORS=0
 
-    # Required sections (checking for heading patterns)
+    # 14 required sections per run-synthesis.md §Post-Write Section Validation.
+    # Each must appear as a markdown heading (line starting with #).
+    # Checks are case-insensitive and match headings only, not prose mentions.
     declare -a CHECKS=(
+      "Development Edit"
       "The Short Version"
       "What the Book Does Best"
       "What Needs Work"
+      "Additional Observations"
       "Revision Checklist"
       "Protected Elements"
       "Author Decisions"
@@ -176,18 +180,21 @@ case "$COMMAND" in
     )
 
     for check in "${CHECKS[@]}"; do
-      if ! grep -qi "$check" "$LETTER"; then
-        echo "ERROR: Missing required section: '${check}'"
+      # Match lines that start with one or more # characters followed by the section name
+      if ! grep -iE "^#{1,4}\s.*${check}" "$LETTER" > /dev/null 2>&1; then
+        echo "ERROR: Missing required heading: '${check}'"
         ERRORS=$((ERRORS + 1))
       fi
     done
 
     if [ "$ERRORS" -gt 0 ]; then
       echo ""
-      echo "FAILED: ${ERRORS} missing required section(s) in editorial letter."
+      echo "FAILED: ${ERRORS} missing required heading(s) in editorial letter."
+      echo "NOTE: Sections must appear as markdown headings (lines starting with #),"
+      echo "not just as phrases in prose."
       exit 1
     else
-      echo "OK: All required sections present in editorial letter."
+      echo "OK: All 14 required section headings present in editorial letter."
       exit 0
     fi
     ;;

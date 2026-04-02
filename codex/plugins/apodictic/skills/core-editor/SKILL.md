@@ -85,13 +85,13 @@ If router output is available (`artifact`, `goal`, `concern`, `constraints`, `op
 Load `references/pass-dependencies.md`, resolve concern to minimum pass set, add dependencies, then run selected passes in dependency order.
 
 ### 3. Synthesis
-Root cause analysis (max 5), triage (Must-Fix / Should-Fix / Could-Fix), adversarial self-check, adversarial reader stress test, editorial letter. After writing: mechanical section validation, then evidence spot-check (5 claims verified against manuscript).
+Load `references/run-synthesis.md`. Root cause analysis (max 5), triage (Must-Fix / Should-Fix / Could-Fix), adversarial self-check, adversarial reader stress test, editorial letter. After writing: mechanical section validation, then evidence spot-check (5 claims verified against manuscript).
 
 ### 4. Expansion Recommendation
 Apply auto-escalation rules from `references/pass-dependencies.md` §2b. Recommend expansion to full pass set when issue density/complexity exceeds the scoped run.
 
 ### 5. Revision Round (when re-analyzing)
-Delta scan, ripple check, resolution verification, new issue detection.
+Load `references/state-lifecycle.md`. Delta scan, ripple check, resolution verification, new issue detection.
 
 ### 6. Submission Readiness (when submitting)
 When the writer asks "is this ready to submit?", run the Submission Readiness Workflow: Core DE → Synthesis → Pass 11 → Compression Test → Unified Readiness Assessment. Entry point: `apodictic-ready` command or `full_draft + submit` route. Load `references/submission-readiness.md` for full specification. For deadline-constrained writers, route to Submission Triage instead (`references/submission-triage.md`).
@@ -290,7 +290,9 @@ During intake, identify the manuscript's genre and load the corresponding module
 ### Execution
 | File | When to Load |
 |------|-------------|
-| `references/run-core.md` | Every Core DE and Full DE run (intake, passes, synthesis, revision rounds) |
+| `references/run-core.md` | Every Core DE and Full DE run (intake, pass execution, ledger protocol) |
+| `references/run-synthesis.md` | After passes complete (audit integration, synthesis, deliverables, evidence spot-check) |
+| `references/state-lifecycle.md` | State gardening and revision rounds (loaded by `apodictic-start`, `apodictic-coach`, revision workflows) |
 | `references/pass-dependencies.md` | When resolving concern to scoped pass set and dependency order |
 | `references/run-full.md` | When selected pass set includes advanced passes (3, 4, 6, 7, 9, 10) |
 | `references/output-policy.md` | Before writing any output (editorial letter, pass reports) |
@@ -353,7 +355,7 @@ When generating output filenames, append the model tag to the runlabel: `YYYY-MM
 4. Run adversarial self-check before writing editorial letter.
 5. Check every flag against stated author intent before finalizing.
 6. Run mechanical validation (plugin-bundled `scripts/validate.sh`, or inline fallback) at each checkpoint (see `references/run-core.md` §Mechanical Validation Protocol).
-7. Run evidence spot-check after synthesis — verify 5 claims against manuscript before delivering (see `references/run-core.md` §Evidence Spot-Check).
+7. Run evidence spot-check after synthesis — verify 5 claims against manuscript before delivering (see `references/run-synthesis.md` §Evidence Spot-Check).
 
 ---
 
