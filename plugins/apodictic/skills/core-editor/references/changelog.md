@@ -5,6 +5,66 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.7.0 - 2026-04-01
+
+### Added — Harness Engineering Improvements
+
+Applies design principles from Anthropic and OpenAI harness engineering research to the APODICTIC development editor. Motivated by three articles: "Harness Design for Long-Running Apps" (Anthropic), "Effective Harnesses for Long-Running Agents" (Anthropic), and "Harness Engineering: Leveraging Codex in an Agent-First World" (OpenAI).
+
+#### Machine-Readable Sidecar State
+- `Diagnostic_State.meta.json` — machine-readable sidecar alongside the human-facing `Diagnostic_State.md`
+- Enumerated `next_action.key` for reliable resume dispatch (8 valid values: `run_passes`, `run_synthesis`, `run_spot_check`, `deliver`, `revision_round`, `run_audits`, `coaching`, `handoff_reentry`)
+- Resume gate reads sidecar for fast structured routing; falls back to parsing markdown for pre-v1.7 projects
+- Template: `references/diagnostic-state-meta-template.json`
+
+#### Mechanical Validation
+- `scripts/validate.sh` — 6 zero-token invariant checks: contract hash, contract drift, ledger structure, artifact naming, synthesis sections (14 headings as markdown headings), state line count
+- Integrated at checkpoints: contract hash at intake, contract drift at pre-pass re-grounding, ledger check after each pass, artifact naming and ledger check at pre-synthesis gate, 14-heading section validation after editorial letter
+- Bundled inside the plugin tree (`plugins/apodictic/scripts/`) for Codex compatibility
+- Inline fallbacks for hosts that cannot run shell scripts (e.g., ChatGPT)
+
+#### Post-Synthesis Evidence Spot-Check
+- Independent verification layer after synthesis: samples 5 claims from the editorial letter and checks them against the manuscript
+- Verifies: evidence exists at cited location, diagnosis matches text, fix class matches root cause
+- In multi-agent modes, dispatched as a separate subagent for architectural isolation between letter writer and verifier
+- Reports findings as a verification block appended to the editorial letter
+
+#### State Gardening Protocol
+- Threshold-triggered archival when `Diagnostic_State.md` exceeds 500 lines (advisory at 300)
+- Archives to `Diagnostic_State_Archive_[datetime].md` (ISO 8601, minute-resolution, filesystem-safe)
+- Compresses completed sessions, resolved handoffs, answered control questions
+- Preserves all unresolved material, root causes, triage, author decisions, coaching log
+
+#### Enhanced Resume Gate
+- `/start` presents context-aware summary from sidecar: session count, root cause count, revision progress, next action
+- "Continue" option resumes from `next_action.key` dispatch table
+- State gardening triggered automatically when state exceeds threshold
+
+### Changed — run-core.md Refactored into Three Files
+
+Split `run-core.md` (1,091 → 653 lines) into three files along phase boundaries:
+
+| File | Lines | Content |
+|---|---|---|
+| `run-core.md` | ~650 | Intake, pass resolution, execution modes, pass specs, Findings Ledger protocol |
+| `run-synthesis.md` | ~330 | Audit integration, synthesis processing, editorial letter format, deliverables, evidence spot-check |
+| `state-lifecycle.md` | ~130 | State gardening, revision round protocol |
+
+Cross-references updated in: `SKILL.md`, `start.md`, `ready.md`, `submission-readiness.md`, `run-full.md`.
+
+#### Files
+- `references/run-synthesis.md` — new
+- `references/state-lifecycle.md` — new
+- `references/run-core.md` — refactored (synthesis and state sections removed, handoff pointers added)
+- `references/diagnostic-state-meta-template.json` — new
+- `scripts/validate.sh` — new (repo root + plugin bundle)
+- `scripts/preflight.sh` — copied into plugin bundle for Codex compatibility
+- `scripts/build-codex.mjs` — updated to require new files and bundled scripts in archive
+- `commands/start.md` — updated resume gate with sidecar routing, enumerated dispatch, state gardening
+- `SKILL.md` — updated reference table, workflow contract, QA guardrails
+
+---
+
 ## v1.1.0 - 2026-03-17
 
 ### Added — Submission Readiness Workflow

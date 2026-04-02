@@ -8,14 +8,15 @@
 
 | In Progress | Planned | Done | Backlog |
 |-------------|---------|------|---------|
-| [Genre Audit Expansion](#genre--audit-expansion) | [Editor Scaffolding](#editor-scaffolding) | [v1.4.0](#v140--surface-hardening--writers-block) | [Feedback Triage](#feedback-triage) |
-| [Coaching Deepening](#coaching-deepening) | [Diagnostic Vocabulary](#diagnostic-vocabulary-mode) | [v1.3.0](#v130--nonfiction-argument-engine--genre-audits) | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) |
-| | | [v1.2.1](#v121--audit-sequencing--model-tags) | [Legal Risk Register](#legal-risk-register) |
-| | | [v1.2.0](#v120--artifact-coverage) | [Multi-Party Intake](#multi-party-intake) |
-| | | [v1.1.3](#v113--coaching-deepening) | [Episode Cadence](#episode-cadence) |
-| | | [v1.1.2](#v112--revision-coach) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
-| | | [v1.1.1](#v111--series-continuity--pass-9) | [Framework Overview Dashboard](#framework-overview-dashboard) |
-| | | [v1.1.0](#v110--token-aware-agent-usage) | [Pre-Skill Context Compaction](#pre-skill-context-compaction) |
+| [Genre Audit Expansion](#genre--audit-expansion) | [Adaptive Mode Escalation](#adaptive-mid-run-mode-escalation) | [v1.7.0](#v170--harness-engineering) | [Feedback Triage](#feedback-triage) |
+| [Coaching Deepening](#coaching-deepening) | [Editor Scaffolding](#editor-scaffolding) | [v1.4.0](#v140--surface-hardening--writers-block) | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) |
+| | [Diagnostic Vocabulary](#diagnostic-vocabulary-mode) | [v1.3.0](#v130--nonfiction-argument-engine--genre-audits) | [Legal Risk Register](#legal-risk-register) |
+| | | [v1.2.1](#v121--audit-sequencing--model-tags) | [Multi-Party Intake](#multi-party-intake) |
+| | | [v1.2.0](#v120--artifact-coverage) | [Episode Cadence](#episode-cadence) |
+| | | [v1.1.3](#v113--coaching-deepening) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
+| | | [v1.1.2](#v112--revision-coach) | [Framework Overview Dashboard](#framework-overview-dashboard) |
+| | | [v1.1.1](#v111--series-continuity--pass-9) | [Pre-Skill Context Compaction](#pre-skill-context-compaction) |
+| | | [v1.1.0](#v110--token-aware-agent-usage) | |
 | | | [v1.0.9](#v109) | |
 | | | [v1.0.8](#v108) | |
 | | | [v1.0.4](#v104) | |
@@ -178,6 +179,36 @@ For co-authoring teams or author-editor pairs working through a diagnostic toget
 
 ## Infrastructure
 
+### Adaptive Mid-Run Mode Escalation
+
+After Tier 1 passes complete, the system has significantly more information about the manuscript than it had at preflight — multiple POV characters discovered, timeline complexity detected, genre hybridization identified. The execution mode selected at intake may no longer be optimal.
+
+**What it does:** A checkpoint after Tier 1 passes that compares the actual manuscript complexity (as revealed by Pass 0 and Pass 1 findings) against the preflight estimate. If complexity is materially higher than predicted, recommend escalating the execution mode before committing Tier 2 tokens.
+
+**Escalation paths:**
+- Single-agent → sequential (when salience decay risk rises due to unexpected complexity)
+- Sequential → hybrid (when the focus map would meaningfully reduce noise for later passes)
+- Sequential → swarm (when architectural isolation would catch cross-pass anchoring on a complex manuscript)
+
+**Constraints:**
+- Escalation is safe only between Tier 1 and Tier 2 — never retroactively re-run completed passes
+- Escalation is a recommendation to the author, not automatic — the user confirms before mode switch
+- The existing Findings Ledger entries from Tier 1 carry forward unchanged; only the dispatch method for Tier 2 passes changes
+
+**Triggers (checked after Tier 1 completes):**
+- Pass 0 discovers > 3 POV characters (preflight's pronoun heuristic underestimated)
+- Pass 0 discovers non-linear timeline or nested frame structure
+- Pass 1 flags > 5 belief failures or > 3 orientation failures (higher-than-expected analytical density)
+- Pass 0+1 combined findings exceed 20 notable items (suggesting the manuscript will generate a complex synthesis)
+
+**Dependencies:** Requires the sidecar state (`Diagnostic_State.meta.json`) and mechanical validation infrastructure from v1.7.0. The escalation check reads the Tier 1 findings from the Findings Ledger, compares against preflight metadata, and writes the mode change to the sidecar if accepted.
+
+**Where to implement:** Add a §Mid-Run Escalation Check section to `run-core.md` between the Execution Protocol and Pre-Pass Re-Grounding sections. The check runs once, after Tier 1, before the first Tier 2 pass is dispatched.
+
+**Open questions:**
+- Should the system also support *de-escalation* (swarm → sequential) if Tier 1 reveals the manuscript is simpler than expected? Lower priority — the cost of running a more expensive mode is wasted tokens, not wrong analysis.
+- What's the UX for presenting the escalation recommendation? Probably a brief summary: "Tier 1 found [X complexity signals]. I'd recommend switching from [current] to [recommended] mode for the remaining passes. Cost difference: ~[N]K tokens. Proceed?"
+
 ### Framework Overview Dashboard
 
 Static, single-file HTML overview of the plugin's capabilities. System-at-a-glance visual layout, highlighted workflow paths, the Firewall in user-facing language. Build after command restructuring is settled.
@@ -227,6 +258,9 @@ Continuing the v0.5 vision: the plugin should be organized around writer questio
 ---
 
 ## Done
+
+### v1.7.0 — Harness Engineering
+Machine-readable sidecar state (`Diagnostic_State.meta.json`) with enumerated resume dispatch. Mechanical validation script (`validate.sh`) for contract integrity, ledger structure, artifact naming, and 14-heading synthesis section verification — bundled in plugin tree for Codex. Post-synthesis evidence spot-check (5 claims verified against manuscript). State gardening protocol (threshold-triggered archival). Enhanced `/start` resume gate with context-aware summary and state gardening trigger. Refactored `run-core.md` into three files: `run-core.md` (orchestration + pass specs), `run-synthesis.md` (audit integration, synthesis, deliverables), `state-lifecycle.md` (gardening, revision rounds). Cross-references updated across all callers.
 
 ### v1.4.0 — Surface Hardening & Writer's Block
 Writer-Question Surface Hardening: command taxonomy in release-registry (11 commands with category/status/writer question), doc sync via release-generate, canonical 8-block macro map (Pass 4 → Emotional Dynamics), pass-detail artifact headers, Results Guide artifact, skill names scrubbed from user-facing copy, handoff language standardized. Writer's Block & Rut-Breaking module: 8-type expanded block taxonomy (replaces 3-way split), 7 structural prompt families, 5-part firewall test, clinamen clause, perfectionism modifier, nocebo inoculation, no-prompt zones, Structural Experiment session plan section, integrated into both fiction and argument coaching.

@@ -1,6 +1,7 @@
-# Core DE Passes & Synthesis
+# Core DE Intake, Execution & Pass Specs
 
 *Reference file for the APODICTIC Development Editor. Loaded for every Core DE and Full DE run.*
+*After passes complete, load `run-synthesis.md` for audit integration, synthesis, and deliverables.*
 
 ---
 
