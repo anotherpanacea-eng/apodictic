@@ -482,7 +482,9 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
     "README.md",
     "NON_PARITY_NOTES.md",
     ".agents/plugins/marketplace.json",
-    "plugins/apodictic/.codex-plugin/plugin.json"
+    "plugins/apodictic/.codex-plugin/plugin.json",
+    "plugins/apodictic/scripts/preflight.sh",
+    "plugins/apodictic/scripts/validate.sh"
   ];
   for (const { wrapperName } of wrapperMappings) {
     requiredArchiveEntries.push(`plugins/apodictic/skills/${wrapperName}/SKILL.md`);

@@ -85,7 +85,7 @@ If router output is available (`artifact`, `goal`, `concern`, `constraints`, `op
 Load `references/pass-dependencies.md`, resolve concern to minimum pass set, add dependencies, then run selected passes in dependency order.
 
 ### 3. Synthesis
-Root cause analysis (max 5), triage (Must-Fix / Should-Fix / Could-Fix), adversarial self-check, adversarial reader stress test, editorial letter.
+Root cause analysis (max 5), triage (Must-Fix / Should-Fix / Could-Fix), adversarial self-check, adversarial reader stress test, editorial letter. After writing: mechanical section validation, then evidence spot-check (5 claims verified against manuscript).
 
 ### 4. Expansion Recommendation
 Apply auto-escalation rules from `references/pass-dependencies.md` §2b. Recommend expansion to full pass set when issue density/complexity exceeds the scoped run.
@@ -316,6 +316,7 @@ During intake, identify the manuscript's genre and load the corresponding module
 |------|---------|
 | `references/contract-template.md` | Contract schema template |
 | `references/diagnostic-state-template.md` | Diagnostic state initialization |
+| `references/diagnostic-state-meta-template.json` | Machine-readable sidecar template (written alongside Diagnostic_State.md) |
 | `references/reverse-outline-template.md` | Reverse outline format |
 | `references/intake-router-runtime.md` | Runtime routing spec for `apodictic-start` command |
 | `references/intake-router-design.md` | Router rationale and implementation notes (non-runtime) |
@@ -351,6 +352,8 @@ When generating output filenames, append the model tag to the runlabel: `YYYY-MM
 3. Log uncertainty explicitly — never force false clarity.
 4. Run adversarial self-check before writing editorial letter.
 5. Check every flag against stated author intent before finalizing.
+6. Run mechanical validation (plugin-bundled `scripts/validate.sh`, or inline fallback) at each checkpoint (see `references/run-core.md` §Mechanical Validation Protocol).
+7. Run evidence spot-check after synthesis — verify 5 claims against manuscript before delivering (see `references/run-core.md` §Evidence Spot-Check).
 
 ---
 

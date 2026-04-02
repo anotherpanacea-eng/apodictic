@@ -109,6 +109,8 @@ Generate `Contract_and_Controlling_Idea.md` containing:
 - Selected genre modules and specialized audits
 - Confirmed non-negotiables
 
+After saving the contract, compute its SHA-256 hash (via `scripts/validate.sh contract-hash <contract_file>` if the script is available, otherwise `shasum -a 256 <contract_file>`) and store the hash in `Diagnostic_State.meta.json` under `contract_hash`. This enables contract drift detection during pre-pass re-grounding.
+
 ### Audit Activation at Contract
 
 After generating the contract, recommend specialized audits based on genre, mode, and content signals. These audits run after core passes (or after expanded pass sets when advanced passes are selected) and produce companion findings that feed the synthesis.
@@ -283,6 +285,8 @@ Each evaluative pass runs as an independent subagent that receives the full manu
 - Its pass artifact (analysis output), written to disk
 - Its Findings Ledger entry (formatted per §Ledger Entry Format), written to disk
 
+**Post-pass validation (all modes):** After each pass writes its ledger entry, verify the entry contains all 5 required subsection headings: Notable Findings, Data Artifacts for Letter Reference, Cross-Pass Connections, Unresolved Questions, Audit Triggers (use `scripts/validate.sh ledger-check` if available, otherwise check inline). If any section is missing, fix before dispatching the next pass. A structurally incomplete ledger degrades synthesis quality.
+
 **Pass grouping:** In multi-agent modes (sequential, hybrid, swarm), Pass 0 and Pass 1 run in a single combined subagent (both are full-read passes with no dependencies). All subsequent passes run as individual subagents. In swarm mode, passes 2, 5, and 8 may run in parallel. In single-agent mode, all passes run sequentially in one subagent context.
 
 **Staged visibility:** In multi-agent modes, isolation is architecturally enforced — no subagent has prior pass artifacts in its context, only the ledger entries provided for reconciliation. In single-agent mode, isolation is procedurally enforced: the agent completes each pass's analysis before reading the accumulated Findings Ledger for reconciliation. Prior pass artifacts remain in context, so the agent must actively compartmentalize its analysis. The explicit instruction to "analyze first, reconcile second" reduces anchoring, though it cannot fully eliminate it the way architectural isolation does.
@@ -307,7 +311,37 @@ For full architecture details, cost analysis, and risk discussion: see `docs/sub
 Before beginning each evaluative pass (Passes 1, 2, 5, 8, and any Full DE passes), re-read the contract and the Findings Ledger. This counteracts context salience drift — as conversation context grows, the most important analytical anchors (what the book promises, what earlier passes found) lose salience relative to more recent content. Re-grounding refreshes these anchors.
 
 **For Pass 0:** No re-grounding needed (first pass; no ledger yet).
-**For all subsequent passes:** Re-read (1) the contract's controlling idea, anti-idea, and non-negotiables, and (2) the accumulated Findings Ledger. Do not re-read full prior pass artifacts — the ledger is the compressed representation; the pass artifacts are reference material for specific claims, not re-reading material.
+**For all subsequent passes:**
+1. Check contract integrity: compare the current SHA-256 hash of the contract file against the `contract_hash` stored in `Diagnostic_State.meta.json` (use `scripts/validate.sh contract-check` if available, otherwise `shasum -a 256`). If drift is detected, warn before proceeding.
+2. Re-read the contract's controlling idea, anti-idea, and non-negotiables.
+3. Re-read the accumulated Findings Ledger.
+
+Do not re-read full prior pass artifacts — the ledger is the compressed representation; the pass artifacts are reference material for specific claims, not re-reading material.
+
+### Mechanical Validation Protocol
+
+APODICTIC uses `scripts/validate.sh` for lightweight, zero-token invariant checks when the script is available. These enforce structure mechanically rather than relying on prompt-level instructions alone.
+
+**Availability:** `scripts/validate.sh` and `scripts/preflight.sh` are bundled inside the plugin directory (`plugins/apodictic/scripts/`), so they ship with both the local repo and the installed Codex package. When the script is not available (e.g., on hosts that cannot execute local shell scripts, such as ChatGPT), the system must perform the equivalent checks inline — the invariants are required regardless of whether the script exists. The script is an optimization (zero-token, sub-second), not a dependency.
+
+**When to run each check:**
+
+| Checkpoint | Script Command (if available) | Inline Fallback | When |
+|---|---|---|---|
+| Contract integrity | `validate.sh contract-hash <file>` | `shasum -a 256 <file>` | At intake — store hash in sidecar |
+| Contract drift | `validate.sh contract-check <file> <hash>` | Compare `shasum -a 256` output to stored hash | Before each pre-pass re-grounding |
+| Ledger structure | `validate.sh ledger-check <file>` | Verify each pass entry contains 5 required subsection headings (see §Ledger Entry Format) | After each pass appends to the ledger |
+| Artifact naming | `validate.sh artifact-names <dir> <project> <runlabel>` | Check each pass artifact filename matches `[Project]_Pass[N]_[Name]_[runlabel].md` | Before synthesis |
+| Synthesis sections | `validate.sh synthesis-sections <file>` | Check for all 14 required section headings as markdown headings (see below) | After writing editorial letter |
+| State size | `validate.sh state-lines <file>` | `wc -l` | At resume gate |
+
+**On failure:**
+- **Contract drift:** Warn the user. If intentional (author-requested revision), update the hash. If unintentional, investigate before proceeding.
+- **Ledger structure:** Fix the missing section before dispatching the next pass. A ledger entry missing "Cross-Pass Connections" means synthesis loses its highest-value input.
+- **Artifact naming:** Rename before synthesis so the Results Guide points to correct files.
+- **Synthesis sections:** Fix before delivering to the author. A letter missing "Protected Elements" or "Control Questions" is incomplete.
+
+**Design principle:** These checks encode taste mechanically. They cost zero tokens when the script is available, and minimal tokens as inline checks when it isn't. When the system detects a pattern of failures, the fix should go into the script or the protocol — not into longer prompts.
 
 ### Staged Visibility (Recommended)
 
@@ -661,6 +695,9 @@ Before beginning synthesis, verify:
 3. The Findings Ledger includes entries from both passes and auto-run audits
 4. The Audit Invocation Log is written
 5. Any deferred or declined high-risk audit is recorded as an explicit blind spot
+6. **Mechanical checks (run before synthesis begins):**
+   - Final ledger structure validation — verify all pass entries have required subsection headings (script or inline per §Mechanical Validation Protocol)
+   - Pass artifact naming — verify all output files match `[Project]_Pass[N]_[Name]_[runlabel].md` convention
 
 If any auto-run audit has not completed, do not begin synthesis. Complete the audit first. Synthesis written without auto-run audit findings must be rewritten — this wastes tokens and produces incomplete editorial letters.
 
@@ -718,6 +755,25 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
 9. **Write the editorial letter** using the presentation format below. The self-check informs the letter's severities; the stress test becomes §10 of the letter.
 
 **Key principle:** Processing order ≠ presentation order. The self-check must happen before writing, but in the output document it belongs in an appendix. The author reads findings; the framework owner reads methodology.
+
+10. **Post-Write Section Validation (required).** After saving the editorial letter to disk, verify that all 14 required sections appear as markdown headings in the correct order. The required headings (in order):
+
+    1. Title block (level-1 heading with project name)
+    2. "The Short Version"
+    3. "What the Book Does Best"
+    4. "What Needs Work" (with subsection headings per root cause)
+    5. "Additional Observations" (§4b)
+    6. "Revision Checklist"
+    7. "Protected Elements"
+    8. "Author Decisions"
+    9. "Control Questions"
+    10. "The Strongest Case Against"
+    11. "Stress Test" (or "Adversarial Reader Stress Test")
+    12. "Appendix A" (Diagnostic Detail)
+    13. "Appendix B" (Severity Calibration)
+    14. "Appendix C" (Framework Notes)
+
+    Check that each appears as a heading (`#`, `##`, or `###`), not just as a phrase in prose. If using `scripts/validate.sh synthesis-sections`, note that the script performs substring matching — the inline check is more precise and should be preferred when the script's loose matching could give false confidence. If any section is missing or out of order, fix before delivering.
 
 ### Presentation Format (Editorial Letter)
 
@@ -831,6 +887,140 @@ After writing the editorial letter, update `Diagnostic_State.md` with:
 `Diagnostic_State.md` lives in the active project output context: the manuscript's external output folder. Reuse the writer's existing output folder when one already exists; otherwise default to an `Outputs/` sibling next to the manuscript. Never write this file to the plugin repo or installed plugin cache.
 
 If `Diagnostic_State.md` does not exist in the project output context, create it from `references/diagnostic-state-template.md` first.
+
+### Machine-Readable Sidecar (Required)
+
+Alongside `Diagnostic_State.md`, maintain a sidecar file `Diagnostic_State.meta.json` in the same directory. This file is machine-readable state for fast resume routing, revision coaching, and state gardening. The author never reads it; the system reads it instead of parsing the markdown when it needs structured data.
+
+**When to write:** Initialize from `references/diagnostic-state-meta-template.json` when creating `Diagnostic_State.md`. Update the sidecar every time `Diagnostic_State.md` is updated.
+
+**What to update:**
+- `mode` and `active_scene_scope` — on every mode transition (diagnostic ↔ execution)
+- `last_session` — after each session (date, focus, tier, execution_mode, passes_completed, runlabel)
+- `root_causes` — after synthesis (list of root cause names, max 5)
+- `triage_summary` — after synthesis (counts of must-fix, should-fix, could-fix)
+- `control_questions` — after synthesis and after each revision round (open/answered/deferred counts)
+- `revision_progress` — after each revision round (steps_complete, current_step)
+- `session_count` and `handoff_count` — increment on each new session or handoff
+- `state_lines` — line count of `Diagnostic_State.md` (used by state gardening to trigger archival)
+- `contract_hash` — SHA-256 of the contract file, set at intake, checked at pre-pass re-grounding (see §Mechanical Validation)
+- `next_action.key` — enumerated dispatch key for resume routing. Valid values: `run_passes`, `run_synthesis`, `run_spot_check`, `deliver`, `revision_round`, `run_audits`, `coaching`, `handoff_reentry`. See `commands/start.md` §Resume Target for the full dispatch table.
+- `next_action.description` — human-readable context for display (e.g., "resume Tier 2 passes — Pass 5 next"). Not used for routing.
+
+### Evidence Spot-Check (Required — Post-Synthesis)
+
+After the editorial letter is written, saved, and mechanically validated, run an independent evidence spot-check. This is the "verify from the outside" layer — it tests whether the editorial letter's claims actually match the manuscript, not just whether the analysis is internally consistent.
+
+**What it is:** A lightweight verification pass that samples specific claims from the editorial letter and checks them against the primary source (the manuscript). This is analogous to end-to-end testing in software: the editorial letter is the "application output"; the manuscript is the "running application."
+
+**Why it exists:** The most insidious synthesis failure mode is an editorially plausible letter that sounds right but doesn't accurately represent what's in the text. The Pre-Output Synthesis Verification (step 8) checks structural completeness; the spot-check tests factual accuracy. These are different failure modes.
+
+**How it runs:**
+
+1. **Select 5 claims to verify.** Choose the highest-stakes claims — prioritize:
+   - The 2 highest-severity Must-Fix flags (if any)
+   - 1 claim from "What the Book Does Best" (confirming a cited strength)
+   - 1 claim from "The Strongest Case Against"
+   - 1 claim from the stress test
+   If fewer than 5 claims meet these criteria, fill from the revision checklist.
+
+2. **For each claim, verify three things:**
+   - **Evidence exists:** The cited scene/page/line reference actually exists in the manuscript at approximately the stated location.
+   - **Diagnosis matches text:** The editorial letter's characterization of what happens in the cited passage is accurate — not hallucinated, conflated with a different scene, or significantly misrepresented.
+   - **Fix class matches root cause:** The recommended intervention class is logically connected to the diagnosed mechanism. (E.g., if the diagnosis is "motivation gap," the fix class should address motivation, not pacing.)
+
+3. **Report findings.** Append a brief verification block to the end of the editorial letter (before appendices), or as a note in Appendix C:
+
+   ```markdown
+   ### Evidence Spot-Check
+   Verified 5 claims against manuscript. Results:
+   - [Claim 1]: CONFIRMED — [scene ref] matches diagnosis.
+   - [Claim 2]: CONFIRMED — [scene ref] matches diagnosis.
+   - [Claim 3]: ADJUSTED — [scene ref] exists but characterization overstates X. [Correction applied to §4.]
+   - [Claim 4]: CONFIRMED — [scene ref] matches diagnosis.
+   - [Claim 5]: CONFIRMED — [scene ref] matches diagnosis.
+   ```
+
+4. **On failure:** If a claim fails verification:
+   - **Evidence doesn't exist:** Correct the scene reference in the editorial letter. If no supporting evidence can be found, downgrade the finding's confidence and note the gap.
+   - **Diagnosis doesn't match:** Revise the characterization in the editorial letter. If the revision changes the severity, re-run the adversarial self-check for that finding.
+   - **Fix class doesn't match:** Revise the intervention class. This usually means the root cause analysis was surface-level — the mechanism in the letter doesn't match the mechanism in the text.
+
+**Execution mode considerations:**
+- **Single-agent mode:** The spot-check runs in the same context after synthesis. The manuscript is already loaded; this adds ~5 targeted re-reads.
+- **Multi-agent modes:** Dispatch the spot-check as a separate subagent that receives the editorial letter and the manuscript file path. This provides architectural isolation between the writer of the letter and its verifier — the strongest form of this check.
+
+**Cost:** Minimal. 5 targeted scene lookups + comparison against 5 claims. Approximately 10-20K additional tokens in single-agent mode.
+
+**Design principle:** This check exists because self-evaluation is unreliable. The same process that wrote the editorial letter cannot reliably verify its own claims — even with an adversarial self-check, the failure mode is confirming what you already believe. The spot-check forces re-contact with the primary source after the analytical work is complete.
+
+---
+
+## State Gardening Protocol
+
+Over multiple revision rounds, `Diagnostic_State.md` accumulates session history, handoff history, coaching log entries, and resolved material. Unchecked growth crowds active context and makes the resume gate slower. State gardening prevents this entropy.
+
+### Trigger
+
+State gardening runs at the resume gate in `apodictic-start`. The trigger is the `state_lines` field in `Diagnostic_State.meta.json` (updated by `scripts/validate.sh state-lines`).
+
+| State Lines | Action |
+|---|---|
+| < 300 | No gardening needed |
+| 300–500 | Advisory: "State file is growing. Consider archiving after this session." |
+| > 500 | Required: run gardening before proceeding |
+
+### Gardening Procedure
+
+When gardening is required (or when the user accepts the advisory):
+
+1. **Archive the full state.** Copy `Diagnostic_State.md` to `Diagnostic_State_Archive_[datetime].md` in the same output directory, where `[datetime]` is ISO 8601 format truncated to minutes (e.g., `2026-04-01T14-30`). Use hyphens instead of colons for filesystem safety. This prevents collision if gardening runs twice on the same day. This is the permanent record — never modify archives.
+
+2. **Compress completed sessions.** Replace each completed session entry in the Session History with a one-line summary:
+   ```markdown
+   ### Session [N] (archived)
+   - [Date]: [Focus]. [Key outcome in one sentence]. Full record: Diagnostic_State_Archive_[datetime].md
+   ```
+
+3. **Compress resolved handoffs.** Replace each resolved handoff (Outcome = "resolved") with a one-line summary:
+   ```markdown
+   ### Handoff [N] (archived)
+   - [Scene]: Resolved [date]. Full record: Diagnostic_State_Archive_[datetime].md
+   ```
+   Unresolved and partially-resolved handoffs remain in full.
+
+4. **Archive resolved control questions.** Move questions with status "answered" to an "Archived Questions" subsection at the bottom of the Control Questions section. Keep only the question text and answer — drop the "why it matters" rationale. Open and deferred questions remain in full.
+
+5. **Compress completed revision steps.** In the Revision Progress checklist, replace completed steps with:
+   ```markdown
+   1. [x] Contract drift (resolved Session 3)
+   ```
+   Remove the Change Log entries that correspond to archived sessions. Keep only entries from active (non-archived) sessions.
+
+6. **Update the sidecar.** Set `state_lines` to the new line count. Update `session_count` and `handoff_count` if entries were archived.
+
+7. **Verify.** The gardened state file should be < 300 lines. If it isn't, the manuscript may have unusually many active handoffs or unresolved questions — this is information, not a failure.
+
+### What Gardening Preserves
+
+- All unresolved material (open control questions, active handoffs, in-progress revision steps)
+- The full Root Causes table (always active — never archived)
+- The full Triage Summary (always active)
+- The full Author Decisions section (always active — these are live revision commitments)
+- All coaching log entries (append-only, not compressed — the revision coach depends on the full log)
+- The current Mode section
+
+### What Gardening Compresses
+
+- Completed session history → one-line summaries with archive pointers
+- Resolved handoff history → one-line summaries with archive pointers
+- Answered control questions → question + answer only (rationale archived)
+- Completed revision steps → checkbox + session reference
+- Old change log entries → archived with their sessions
+
+### Design Principle
+
+State gardening is to `Diagnostic_State.md` what garbage collection is to a codebase: pay down entropy continuously in small increments rather than letting it compound. The archive preserves everything; the active state file keeps only what the system needs to make its next decision.
 
 ---
 
