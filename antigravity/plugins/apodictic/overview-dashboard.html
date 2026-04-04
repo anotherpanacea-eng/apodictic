@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APODICTIC Development Editor — Overview</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --text-secondary: #78716c;
+    --accent: #b45309;
+    --accent-light: #fef3c7;
+    --accent-hover: #92400e;
+    --pass-tier1: #dbeafe;
+    --pass-tier2: #e0e7ff;
+    --pass-tier3: #fce7f3;
+    --audit-craft: #d1fae5;
+    --audit-genre: #fef9c3;
+    --audit-tag: #ede9fe;
+    --genre-module: #ffedd5;
+    --gap: #f5f5f4;
+    --gap-text: #a8a29e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+  }
+
+  header p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .firewall-note {
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent);
+    padding: 0.75rem 1rem;
+    margin: 1.5rem auto;
+    max-width: 600px;
+    font-size: 0.85rem;
+    border-radius: 0 4px 4px 0;
+  }
+
+  section { margin-bottom: 3rem; }
+
+  h2 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--accent-hover);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.8rem;
+  }
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Router Flow */
+  .router-flow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .router-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    text-align: center;
+    min-width: 180px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    position: relative;
+  }
+
+  .router-step:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(180, 83, 9, 0.1);
+  }
+
+  .router-step .step-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--accent);
+  }
+
+  .router-step .step-question {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+  }
+
+  .router-arrow {
+    color: var(--text-secondary);
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .router-detail {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    width: 100%;
+  }
+
+  .router-detail.active { display: block; }
+
+  .router-detail ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .router-detail li {
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .router-detail li:last-child { border-bottom: none; }
+
+  /* Macro Blocks Grid */
+  .macro-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .macro-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .macro-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(180, 83, 9, 0.1);
+  }
+
+  .macro-card .card-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .macro-card .card-question {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-style: italic;
+    margin-bottom: 0.5rem;
+  }
+
+  .macro-card .card-passes {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+  }
+
+  .pass-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+
+  .pass-badge.tier1 { background: var(--pass-tier1); color: #1e40af; }
+  .pass-badge.tier2 { background: var(--pass-tier2); color: #3730a3; }
+  .pass-badge.tier3 { background: var(--pass-tier3); color: #9d174d; }
+
+  .macro-detail {
+    display: none;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .macro-detail.active { display: block; }
+
+  /* Audit & Genre Tables */
+  .component-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .component-chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    position: relative;
+  }
+
+  .component-chip:hover { border-color: var(--accent); }
+
+  .component-chip .chip-name { font-weight: 600; font-size: 0.85rem; }
+  .component-chip .chip-desc { color: var(--text-secondary); margin-top: 0.15rem; }
+
+  .component-chip.craft { border-left: 3px solid #059669; }
+  .component-chip.genre-audit { border-left: 3px solid #ca8a04; }
+  .component-chip.tag { border-left: 3px solid #7c3aed; }
+  .component-chip.genre-module { border-left: 3px solid #ea580c; }
+  .component-chip.research { border-left: 3px solid #0284c7; }
+  .component-chip.gap { border-left: 3px solid var(--gap-text); opacity: 0.6; }
+
+  .chip-type {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+  }
+
+  .chip-type.craft { color: #059669; }
+  .chip-type.genre-audit { color: #ca8a04; }
+  .chip-type.tag { color: #7c3aed; }
+  .chip-type.genre-module { color: #ea580c; }
+  .chip-type.research { color: #0284c7; }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    font-size: 0.75rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+
+  /* Common Workflows */
+  .workflow-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .workflow-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+  }
+
+  .workflow-item .wf-scenario {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .workflow-item .wf-path {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .workflow-item .wf-path span {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><a href="https://github.com/anotherpanacea-eng/apodictic" style="color:inherit; text-decoration:none;">APODICTIC</a></h1>
+  <p>Development Editor — developmental editing that listens before diagnosing.</p>
+  <div class="firewall-note">
+    <strong>The Firewall:</strong> This tool diagnoses structure. It identifies problems, explains mechanisms, and proposes classes of solution. It never invents content — no plot ideas, no dialogue, no prose. Creative authority stays with the author.
+  </div>
+</header>
+
+<!-- ROUTER FLOW -->
+<section>
+  <h2>How It Works — The Router</h2>
+  <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:1rem;">Start with <code>/start</code>. Three questions route you to the right workflow.</p>
+
+  <div class="router-flow">
+    <div class="router-step" onclick="toggleRouter('r1')">
+      <div class="step-label">Q1: What do you have?</div>
+      <div class="step-question">idea · fragments · partial · complete draft · series</div>
+    </div>
+    <div class="router-arrow">→</div>
+    <div class="router-step" onclick="toggleRouter('r2')">
+      <div class="step-label">Q2: What do you want?</div>
+      <div class="step-question">options depend on Q1</div>
+    </div>
+    <div class="router-arrow">→</div>
+    <div class="router-step" onclick="toggleRouter('r3')">
+      <div class="step-label">Q3: Any constraints?</div>
+      <div class="step-question">deadline · AI-written · nonfiction · risk</div>
+    </div>
+    <div class="router-arrow">→</div>
+    <div class="router-step" style="border-color:var(--accent); background:var(--accent-light);">
+      <div class="step-label">Workflow</div>
+      <div class="step-question">routed automatically</div>
+    </div>
+  </div>
+
+  <div class="router-detail" id="r1">
+    <strong>Q1 determines what you're working with:</strong>
+    <ul>
+      <li><strong>Idea</strong> — no prose yet (logline, premise, notes) → routes to Pre-Writing Pathway</li>
+      <li><strong>Fragments</strong> — disconnected scenes/sketches, no continuous narrative → Fragment Synthesis</li>
+      <li><strong>Partial</strong> — draft in progress, not finished → Core DE with partial-manuscript flag</li>
+      <li><strong>Complete draft</strong> — beginning, middle, and end exist → Core DE</li>
+      <li><strong>Series</strong> — multiple books in a shared world → series-aware routing</li>
+    </ul>
+  </div>
+
+  <div class="router-detail" id="r2">
+    <strong>Q2 options change based on Q1.</strong> For a complete draft:
+    <ul>
+      <li><strong>Figure out what's wrong</strong> → Core DE (general diagnostic)</li>
+      <li><strong>Check submission readiness</strong> → Core DE → Pass 11</li>
+      <li><strong>Clean up AI-assisted prose</strong> → Core DE + AI-Prose Calibration</li>
+      <li><strong>Sort through beta reader feedback</strong> → Feedback Triage → Core DE</li>
+    </ul>
+  </div>
+
+  <div class="router-detail" id="r3">
+    <strong>Q3 modifies how the workflow runs:</strong>
+    <ul>
+      <li><strong>On a deadline</strong> → Fast Triage (Pass 1 only, 3 interventions max)</li>
+      <li><strong>Parts written with AI</strong> → adds AI-Prose Calibration overlay</li>
+      <li><strong>Nonfiction</strong> → nonfiction-specific workflow adjustments</li>
+      <li><strong>Sensitive/risky content</strong> → adds risk flagging</li>
+      <li><strong>Editing someone else's work</strong> → editor-facing output framing</li>
+    </ul>
+  </div>
+</section>
+
+<!-- MACRO BLOCKS -->
+<section>
+  <h2>What It Analyzes — Macro Blocks</h2>
+  <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:1rem;">The system runs the passes your question requires, grouped into blocks you can understand.</p>
+
+  <div class="macro-grid">
+    <div class="macro-card" onclick="toggleMacro(this)">
+      <div class="card-title">Structure Map</div>
+      <div class="card-question">"Is the structure working?"</div>
+      <div class="card-passes">
+        <span class="pass-badge tier1">Pass 0: Reverse Outline</span>
+        <span class="pass-badge tier2">Pass 2: Structural Mapping</span>
+      </div>
+      <div class="macro-detail">Beat map, causal chain, proportional analysis. Identifies structural breaks, missing acts, proportion problems.</div>
+    </div>
+
+    <div class="macro-card" onclick="toggleMacro(this)">
+      <div class="card-title">Reader Dynamics</div>
+      <div class="card-question">"Does the pacing hold?"</div>
+      <div class="card-passes">
+        <span class="pass-badge tier1">Pass 1: Reader Experience</span>
+        <span class="pass-badge tier2">Pass 3: Rhythm & Modulation</span>
+      </div>
+      <div class="macro-detail">Naive-reader tracking: confusion, boredom, delight, belief breaks. Quantitative pacing analysis.</div>
+    </div>
+
+    <div class="macro-card" onclick="toggleMacro(this)">
+      <div class="card-title">Character Architecture</div>
+      <div class="card-question">"Are my characters landing?"</div>
+      <div class="card-passes">
+        <span class="pass-badge tier2">Pass 5: Character Audit</span>
+        <span class="pass-badge tier2">Pass 7: POV & Voice</span>
+        <span class="pass-badge tier2" style="opacity:0.6;">+Pass 4 if emotionally driven</span>
+      </div>
+      <div class="macro-detail">Psychology engine (Wound→Lie→Want→Need→Fear), agency quotient, arc tracking, voice distinctiveness, POV distribution.</div>
+    </div>
+
+    <div class="macro-card" onclick="toggleMacro(this)">
+      <div class="card-title">Scene Delivery</div>
+      <div class="card-question">"Are the scenes doing their jobs?"</div>
+      <div class="card-passes">
+        <span class="pass-badge tier2">Pass 6: Scene Function</span>
+        <span class="pass-badge tier2">Pass 7: POV & Voice</span>
+      </div>
+      <div class="macro-detail">Scene legitimacy, function verification (8 scene functions), scene-sequel mechanics.</div>
+    </div>
+
+    <div class="macro-card" onclick="toggleMacro(this)">
+      <div class="card-title">Reveal Economy</div>
+      <div class="card-question">"Is the information flow right?"</div>
+      <div class="card-passes">
+        <span class="pass-badge tier2">Pass 8: Reveal Economy</span>
+      </div>
+      <div class="macro-detail">Information pressure, clue economy, fairness tests, dramatic irony tracking.</div>
+    </div>
+
+    <div class="macro-card" onclick="toggleMacro(this)">
+      <div class="card-title">Theme & Continuity</div>
+      <div class="card-question">"Does it cohere?"</div>
+      <div class="card-passes">
+        <span class="pass-badge tier2">Pass 9: Thematic Coherence</span>
+        <span class="pass-badge tier1">Pass 10: Entity Tracking</span>
+      </div>
+      <div class="macro-detail">Motif alignment, controlling idea, continuity of people/places/rules/facts.</div>
+    </div>
+
+    <div class="macro-card" onclick="toggleMacro(this)">
+      <div class="card-title">Submission Readiness</div>
+      <div class="card-question">"Is this ready?"</div>
+      <div class="card-passes">
+        <span class="pass-badge tier3">Pass 11: Critical Quality & Market Viability</span>
+      </div>
+      <div class="macro-detail">Prose quality diagnostic, critical verdict, market reality check, first-50 conversion gate, revision economics.</div>
+    </div>
+  </div>
+</section>
+
+<!-- GENRE MODULES -->
+<section>
+  <h2>Genre Modules — Loaded at Intake</h2>
+  <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:1rem;">Genre modules modify how passes run. They recalibrate thresholds, add tracking, and adjust false-positive warnings.</p>
+
+  <div class="component-grid">
+    <div class="component-chip genre-module">
+      <div class="chip-type genre-module">Genre Module</div>
+      <div class="chip-name">Literary Fiction</div>
+      <div class="chip-desc">Thematic depth, ambiguity, psychological complexity. Priority: Pass 9.</div>
+    </div>
+    <div class="component-chip genre-module">
+      <div class="chip-type genre-module">Genre Module</div>
+      <div class="chip-name">Horror (Psychological)</div>
+      <div class="chip-desc">Dread escalation, reality destabilization, certainty axis. Priority: Pass 4 + Pass 1.</div>
+    </div>
+    <div class="component-chip genre-module">
+      <div class="chip-type genre-module">Genre Module</div>
+      <div class="chip-name">Science Fiction / Fantasy</div>
+      <div class="chip-desc">World rule consistency, Sanderson's Laws, integration tests. Priority: Pass 10.</div>
+    </div>
+    <div class="component-chip genre-module">
+      <div class="chip-type genre-module">Genre Module</div>
+      <div class="chip-name">Romance / Erotic</div>
+      <div class="chip-desc">Relationship engine, trust-rupture-repair cycle, 15 named flags. Priority: Pass 4 + Pass 5.</div>
+    </div>
+    <div class="component-chip genre-module">
+      <div class="chip-type genre-module">Genre Module</div>
+      <div class="chip-name">Mystery</div>
+      <div class="chip-desc">Information pressure, clue economy, fair play tests. Priority: Pass 8.</div>
+    </div>
+    <div class="component-chip genre-module">
+      <div class="chip-type genre-module">Genre Module</div>
+      <div class="chip-name">Thriller</div>
+      <div class="chip-desc">Threat escalation, clock pressure, protagonist competence. Priority: Pass 3.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SPECIALIZED AUDITS -->
+<section>
+  <h2>Specialized Audits — Deep Dives</h2>
+  <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:1rem;">Audits run alongside or after passes. Some are recommended automatically based on your genre and findings; all are available via <code>/audit [name]</code>.</p>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background:#d1fae5; border-color:#059669;"></div> Craft (universal)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#fef9c3; border-color:#ca8a04;"></div> Genre-specific</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#ede9fe; border-color:#7c3aed;"></div> Tag (experience layer)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#e0f2fe; border-color:#0284c7;"></div> Research mode</div>
+  </div>
+
+  <div class="component-grid">
+    <!-- Craft audits -->
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Character Architecture</div><div class="chip-desc">Psychology engine, arc types, agency quotient</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Scene Turn</div><div class="chip-desc">Entry/exit charge, turn identification, scene-sequel</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Emotional Craft</div><div class="chip-desc">Emotional precision, earned moments, sentiment tracking</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Dialectical Clarity</div><div class="chip-desc">Argument structure, thesis-antithesis balance</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Shelf Positioning</div><div class="chip-desc">Target reader, comps, signal audit, BISAC codes</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Series & Composite Novel</div><div class="chip-desc">Standalone function, hope calibration, distance</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Interiority Preservation</div><div class="chip-desc">POV interiority during peak-intensity scenes</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Female Interiority</div><div class="chip-desc">20 flags for interiority thinning patterns</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Banister (Epistemic Humility)</div><div class="chip-desc">Rhetorical fairness, straw opposition</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Literary Craft Deep Dive</div><div class="chip-desc">22 flags, load-bearing vs. ornamental analysis</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">AI-Prose Calibration</div><div class="chip-desc">Voice singularity, echo stacks, register seams</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Force Architecture</div><div class="chip-desc">25 flags, force-delivery integration, consequence</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Short Fiction</div><div class="chip-desc">Compression, single-effect design, ending resonance</div></div>
+
+    <!-- Genre audits -->
+    <div class="component-chip genre-audit"><div class="chip-type genre-audit">Genre</div><div class="chip-name">Horror Craft Integration</div><div class="chip-desc">23 flags, dread architecture, 9 subgenre calibrations</div></div>
+    <div class="component-chip genre-audit"><div class="chip-type genre-audit">Genre</div><div class="chip-name">Mystery/Thriller Architecture</div><div class="chip-desc">28 flags, information pressure, clue/herring/clock</div></div>
+    <div class="component-chip genre-audit"><div class="chip-type genre-audit">Genre</div><div class="chip-name">SFF Worldbuilding Integration</div><div class="chip-desc">20 flags, five-dimension framework, load-bearing</div></div>
+    <div class="component-chip genre-audit"><div class="chip-type genre-audit">Genre</div><div class="chip-name">Comedy & Satire</div><div class="chip-desc">Comedic timing, landing rate, tonal integration</div></div>
+    <div class="component-chip genre-audit"><div class="chip-type genre-audit">Genre</div><div class="chip-name">Historical Fiction</div><div class="chip-desc">Period authenticity, research integration</div></div>
+    <div class="component-chip genre-audit"><div class="chip-type genre-audit">Genre</div><div class="chip-name">Memoir & Creative Nonfiction</div><div class="chip-desc">Truth-craft balance, Gornick Layer, ethics</div></div>
+    <div class="component-chip genre-audit"><div class="chip-type genre-audit">Genre</div><div class="chip-name">Narrative Nonfiction Craft</div><div class="chip-desc">Scene construction, source integration</div></div>
+    <div class="component-chip genre-audit"><div class="chip-type genre-audit">Genre</div><div class="chip-name">Fan Fiction Conversion</div><div class="chip-desc">IP scaffolding, worldbuilding gaps, character independence</div></div>
+    <div class="component-chip genre-audit"><div class="chip-type genre-audit">Genre</div><div class="chip-name">Queer Romance/Erotica</div><div class="chip-desc">Pronoun clarity, trope navigation, joy/struggle</div></div>
+
+    <!-- Tag audits -->
+    <div class="component-chip tag"><div class="chip-type tag">Tag</div><div class="chip-name">Cozy</div><div class="chip-desc">Safety envelope, belonging engine, restoration arc</div></div>
+    <div class="component-chip tag"><div class="chip-type tag">Tag</div><div class="chip-name">Philosophical</div><div class="chip-desc">Question architecture, dramatic embodiment</div></div>
+    <div class="component-chip tag"><div class="chip-type tag">Tag</div><div class="chip-name">Erotic Content</div><div class="chip-desc">8 flags, consent calculus, heat level calibration</div></div>
+    <div class="component-chip tag"><div class="chip-type tag">Tag</div><div class="chip-name">Consent Complexity</div><div class="chip-desc">Consent timeline, boundary tracking, power dynamics</div></div>
+
+    <!-- Research modes -->
+    <div class="component-chip research"><div class="chip-type research">Research</div><div class="chip-name">Comp Validation</div><div class="chip-desc">Verify comps are current and query-ready</div></div>
+    <div class="component-chip research"><div class="chip-type research">Research</div><div class="chip-name">Genre Contract Currency</div><div class="chip-desc">Current market expectations for your subgenre</div></div>
+    <div class="component-chip research"><div class="chip-type research">Research</div><div class="chip-name">Factual Verification</div><div class="chip-desc">Spot-check real-world claims</div></div>
+    <div class="component-chip research"><div class="chip-type research">Research</div><div class="chip-name">Representation Context</div><div class="chip-desc">Community discourse for outside-experience writing</div></div>
+  </div>
+</section>
+
+<!-- COMMON WORKFLOWS -->
+<section>
+  <h2>Common Workflows</h2>
+
+  <div class="workflow-list">
+    <div class="workflow-item">
+      <div class="wf-scenario">I have a complete draft and want to know what's wrong</div>
+      <div class="wf-path"><span>/start</span> → full_draft → repair → Core DE (passes 0, 1, 2, 5, 8) → Synthesis</div>
+    </div>
+    <div class="workflow-item">
+      <div class="wf-scenario">My characters feel flat</div>
+      <div class="wf-path"><span>/start</span> → full_draft → repair (targeted: characters) → passes 0, 1, 5, 7 → Character Architecture audit</div>
+    </div>
+    <div class="workflow-item">
+      <div class="wf-scenario">I have an idea and need to figure out the structure</div>
+      <div class="wf-path"><span>/start</span> → idea → draft → Pre-Writing Pathway</div>
+    </div>
+    <div class="workflow-item">
+      <div class="wf-scenario">Is my horror novel ready to submit?</div>
+      <div class="wf-path"><span>/start</span> → full_draft → submit → all passes + Pass 11 + Horror Craft audit + Shelf Positioning</div>
+    </div>
+    <div class="workflow-item">
+      <div class="wf-scenario">I'm stuck mid-draft and don't know why</div>
+      <div class="wf-path"><span>/start</span> → partial → repair (diagnostic) → Core DE (partial flag) → Synthesis</div>
+    </div>
+    <div class="workflow-item">
+      <div class="wf-scenario">I used AI to draft and need to fix the voice</div>
+      <div class="wf-path"><span>/start</span> → full_draft → repair → constraint: AI → Core DE + AI-Prose Calibration</div>
+    </div>
+  </div>
+</section>
+
+<!-- PLOT ARCHITECTURE -->
+<section>
+  <h2>Plot Architecture — 48 Spines</h2>
+  <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:1rem;">Spine diagnosis, selection coaching, and structural triage. Available via <code>/plot-coach</code> or recommended during diagnosis.</p>
+
+  <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:0.5rem; font-size:0.8rem;">
+    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Linear/Teleological</strong> (5): Save the Cat, Three-Act, Fichtean, Freytag, Hero's Journey</div>
+    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Circular/Recursive</strong> (4): Spiral, Fugue, Loop, Braided</div>
+    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Information/Knowledge</strong> (5): Mystery, Howcatchem, Revelatory, Conspiracy, Puzzle Box</div>
+    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Relationship/Erotic</strong> (5): Courtship, Seduction, Captivity, Training, Betrayal-of-Self</div>
+    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Moral/Social</strong> (4): Corruption, Redemption, Justice/Revenge, Scapegoat</div>
+    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Constraint/Environment</strong> (4): Siege, Countdown, Procedural, Quest</div>
+    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Time/Causality</strong> (3): Nonlinear, Reverse Chronology, Two-Handed</div>
+    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Existential/Identity</strong> (5): Bildungsroman, Doppelgänger, Transformation, Aftermath, Prophecy</div>
+    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Tonal/Hybrid</strong> (4): Thriller, Psych Horror, Faustian, Rashomon</div>
+    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Rhythm/Intensity</strong> (3): Wave/Pulse, Lullaby, Pressure Cooker</div>
+    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Format/Frame</strong> (4): Episodic, Clinical Case File, Nested Dolls, Talisman</div>
+    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Transformation Extended</strong> (2): Heroine's Journey, Seven-Point</div>
+  </div>
+</section>
+
+<footer>
+  <p><a href="https://github.com/anotherpanacea-eng/apodictic" style="color:inherit;">APODICTIC</a> Development Editor v1.0.2</p>
+  <p style="margin-top:0.25rem;">The author invents content. The system identifies structural problems and classes of solution.</p>
+</footer>
+
+<script>
+function toggleRouter(id) {
+  const el = document.getElementById(id);
+  const wasActive = el.classList.contains('active');
+  document.querySelectorAll('.router-detail').forEach(d => d.classList.remove('active'));
+  if (!wasActive) el.classList.add('active');
+}
+
+function toggleMacro(card) {
+  const detail = card.querySelector('.macro-detail');
+  const wasActive = detail.classList.contains('active');
+  document.querySelectorAll('.macro-detail').forEach(d => d.classList.remove('active'));
+  if (!wasActive) detail.classList.add('active');
+}
+</script>
+
+</body>
+</html>

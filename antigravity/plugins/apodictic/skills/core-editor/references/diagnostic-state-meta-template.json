@@ -1,0 +1,48 @@
+{
+  "$comment": "Machine-readable sidecar for Diagnostic_State.md. Written/updated by the system alongside the human-facing state file. Consumed by /start resume gate, revision coach, and state gardening.",
+
+  "project": "",
+  "volume": 1,
+  "mode": "diagnostic",
+  "active_scene_scope": null,
+
+  "last_session": {
+    "date": "",
+    "focus": "",
+    "tier": "",
+    "execution_mode": "",
+    "passes_completed": [],
+    "runlabel": ""
+  },
+
+  "root_causes": [],
+  "triage_summary": {
+    "must_fix": 0,
+    "should_fix": 0,
+    "could_fix": 0
+  },
+
+  "control_questions": {
+    "total": 7,
+    "open": 0,
+    "answered": 0,
+    "deferred": 0
+  },
+
+  "revision_progress": {
+    "steps_total": 8,
+    "steps_complete": 0,
+    "current_step": ""
+  },
+
+  "session_count": 0,
+  "handoff_count": 0,
+  "state_lines": 0,
+
+  "contract_hash": "",
+
+  "next_action": {
+    "key": "run_passes",
+    "description": ""
+  }
+}
