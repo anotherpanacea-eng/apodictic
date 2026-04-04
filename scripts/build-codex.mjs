@@ -196,7 +196,7 @@ This generated skill exposes the legacy \`${slashCommand}\` workflow in Codex wi
 
 - Preserve the command's routing, output, and resume behavior.
 - Skip redundant intake when router output or project state has already prefilled the needed context.
-- Keep artifact writing aligned with the shared APODICTIC specs, including the manuscript-adjacent output folder rules.
+- Follow the folder architecture in \`../core-editor/references/output-policy.md\` §Folder Architecture: rolling state at the project root, run artifacts in \`runs/YYYY-MM-DD_{model}_{type}/\`.
 `;
 }
 
@@ -423,6 +423,18 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
   for (const docPath of walkFiles(tempPluginDir).filter((file) => file.endsWith(".md"))) {
     if (/Outputs\/\[Project\]/.test(mustRead(docPath))) {
       throw new Error(`Found legacy Outputs/[Project] wording in generated doc: ${path.relative(repoRoot, docPath)}`);
+    }
+  }
+
+  // Verify folder architecture section survived generation
+  const outputPolicyPath = path.join(tempPluginDir, "skills", "core-editor", "references", "output-policy.md");
+  if (fs.existsSync(outputPolicyPath)) {
+    const outputPolicyContent = mustRead(outputPolicyPath);
+    if (!outputPolicyContent.includes("## Folder Architecture")) {
+      throw new Error("Generated output-policy.md is missing §Folder Architecture section.");
+    }
+    if (!outputPolicyContent.includes("runs/YYYY-MM-DD_{model-tag}_{run-type}/")) {
+      throw new Error("Generated output-policy.md is missing run folder naming convention.");
     }
   }
 

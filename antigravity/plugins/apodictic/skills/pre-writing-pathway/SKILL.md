@@ -285,7 +285,7 @@ When the draftable gate fails for a discovery-first writer who has enough to sta
 3. Scope guardrails — any complexity caps from Phase 4B, stated as practical advice ("Start with one POV; add a second only if the first 10K words demand it").
 4. When to come back — the three return triggers (10K-word checkpoint, stuck, complete draft).
 
-**File format:** Save as `[Project]_MVP_[runlabel].md` in the active project output context beside the manuscript, following Core DE naming conventions. Reuse an existing output folder when one already exists; otherwise default to an `Outputs/` sibling next to the manuscript. Header line: `APDE | Pre-Writing MVP | [Date]`. Footer line: `Discovery scaffold — not a prospective contract.`
+**File format:** Save as `[Project]_MVP_[runlabel].md` at the project root, following Core DE naming conventions (see `core-editor/references/output-policy.md` §Folder Architecture). For legacy projects that used an `Outputs/` sibling, treat that folder as the project root. Header line: `APDE | Pre-Writing MVP | [Date]`. Footer line: `Discovery scaffold — not a prospective contract.`
 
 The MVP is *not* a prospective contract. It doesn't feed the Re-Entry Diff Protocol directly — when the writer returns, standard intake runs from scratch, but the MVP file provides context for what the writer was trying to find.
 

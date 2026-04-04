@@ -195,12 +195,13 @@ Produce an argument session plan that cites the relevant `Argument_State` sectio
 
 ## State Management
 
-All coaching state reads and writes happen in the **active project output context**: the manuscript's external output folder. Reuse an existing output folder when one already exists; otherwise default to an `Outputs/` sibling next to the manuscript. Never use the plugin repo or installed plugin cache as the source of truth for `Diagnostic_State.md`, `Argument_State.md`, session plans, or calendars.
+All coaching state reads and writes follow the folder architecture in `core-editor/references/output-policy.md` §Folder Architecture. The **project root** holds rolling state; **`runs/`** holds immutable per-run archives. Never use the plugin repo or installed plugin cache.
 
 ### READ (always)
-- `Diagnostic_State.md` — all sections, from the active project output context
-- `Argument_State.md` — when present, from the active project output context
-- Prior session plans and revision calendars (if they exist)
+- `Diagnostic_State.md` — all sections, from the **project root**
+- `SYNTHESIS.md` — from the **project root**
+- `Argument_State.md` — when present, from the **project root**
+- Prior session plans and revision calendars (check project root for active plans, `runs/` for archived sessions)
 - Handoff history entries for scenes the writer asks about
 
 ### WRITE (restricted)
@@ -208,7 +209,9 @@ All coaching state reads and writes happen in the **active project output contex
 - **Append** to Coaching Log (see below) with compact session record
 - **Append** to `Argument_State.md` § 10.5 when argument-mode coaching produces a material revision plan
 - **Update** Revision Progress checkboxes only when the writer explicitly reports completion
-- **Produce** session plans and revision calendars as separate artifacts in the active project output context
+- **Write** active `Session_Plan_{NN}.md` to the **project root** (working document during session)
+- **Archive** completed session plans: on session completion, create `runs/YYYY-MM-DD_{model}_coaching/` and move the completed plan there along with any revision calendars or momentum reports
+- **Append** a row to the `README.md` run archive table after archiving
 
 ### NEVER
 - Overwrite root causes, triage severity, or analytical findings

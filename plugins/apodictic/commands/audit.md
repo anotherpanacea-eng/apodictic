@@ -68,4 +68,13 @@ Companion modules will refuse to run without a populated `Argument_State.md`. Ru
 **If an argument is provided:**
 Load the named audit's reference file from `../skills/specialized-audits/references/` and run the full audit on the manuscript. Apply all logic gates, produce flagged findings with specific scene/page evidence, and output a focused audit report.
 
+**Output location** (per `../skills/core-editor/references/output-policy.md` §Folder Architecture):
+- Create run folder: `runs/YYYY-MM-DD_{model}_audit/` inside the project root
+- Write audit artifact(s) into the run folder
+- Update `Diagnostic_State.md` at the project root (merge any new findings or severity changes)
+- Update `SYNTHESIS.md` at the project root if new findings alter the revision plan
+- Append row to `README.md` run archive table
+
+If multiple audits run together in one session, they share a single `audit` run folder.
+
 Manuscript context: $ARGUMENTS

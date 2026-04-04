@@ -21,4 +21,4 @@ This generated skill exposes the legacy `/diagnose` workflow in Codex without du
 
 - Preserve the command's routing, output, and resume behavior.
 - Skip redundant intake when router output or project state has already prefilled the needed context.
-- Keep artifact writing aligned with the shared APODICTIC specs, including the manuscript-adjacent output folder rules.
+- Follow the folder architecture in `../core-editor/references/output-policy.md` §Folder Architecture: rolling state at the project root, run artifacts in `runs/YYYY-MM-DD_{model}_{type}/`.

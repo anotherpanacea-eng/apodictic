@@ -100,6 +100,34 @@
       "revision-plan": "revision-coach"
     }
   },
+  "folderArchitecture": {
+    "version": "0.5.0",
+    "runTypes": [
+      { "type": "full-de", "when": "Full development edit (all 11 passes + contract audits)" },
+      { "type": "core-de", "when": "Core development edit (6 passes)" },
+      { "type": "partial-de", "when": "Partial manuscript diagnostic" },
+      { "type": "fragment-de", "when": "Fragment synthesis" },
+      { "type": "audit", "when": "Standalone audit(s) without a DE run" },
+      { "type": "consolidated", "when": "Cross-model or cross-run consolidation" },
+      { "type": "coaching", "when": "Revision coaching session outputs" }
+    ],
+    "modelTags": [
+      { "model": "Claude Opus 4.6", "tag": "opus46" },
+      { "model": "Claude Sonnet 4.6", "tag": "sonnet46" },
+      { "model": "Claude Haiku 4.5", "tag": "haiku45" },
+      { "model": "Codex 5.4", "tag": "codex54" },
+      { "model": "ChatGPT o3", "tag": "o3" },
+      { "model": "Gemini 3.1", "tag": "gemini31" }
+    ],
+    "runFolderPattern": "YYYY-MM-DD_{model-tag}_{run-type}",
+    "rollingStateFiles": [
+      "Diagnostic_State.md",
+      "Diagnostic_State.meta.json",
+      "SYNTHESIS.md",
+      "Session_Plan_{NN}.md",
+      "README.md"
+    ]
+  },
   "commands": [
     {
       "command": "/start",

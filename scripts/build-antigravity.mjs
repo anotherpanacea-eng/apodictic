@@ -137,6 +137,7 @@ This command loads the canonical APODICTIC ${commandMeta.command} workflow.
 2. Read the canonical command doc: \`plugins/apodictic/commands/${slug}.md\`.
 3. Follow all routing, resume gate (if applicable), and execution mode semantics specified there exactly.
 4. Explicitly invoke the \`@core-orchestrator\` subagent to execute the passes required by the command, using the canonical execution model as instructed by the canonical doc.
+5. Follow the folder architecture: rolling state at the project root, run artifacts in \`runs/\`. See \`plugins/apodictic/skills/core-editor/references/output-policy.md\` §Folder Architecture.
 `;
 }
 
@@ -202,7 +203,14 @@ Your role is to act as a thin dispatcher executing APODICTIC's canonical lifecyc
    - If user explicitly overrides, respect \`hybrid\` or \`swarm\`.
 3. Handle state gardening autonomously if state lines > 500, and consult the user if 300-500.
 4. Do NOT invent new pass lifecycles.
-5. All diagnosis, mechanism, and intervention must strictly respect the APODICTIC firewall rules.`
+5. All diagnosis, mechanism, and intervention must strictly respect the APODICTIC firewall rules.
+
+## Folder Architecture
+Follow \`plugins/apodictic/skills/core-editor/references/output-policy.md\` §Folder Architecture:
+- Rolling state (\`Diagnostic_State.md\`, \`SYNTHESIS.md\`, \`README.md\`) lives at the **project root**.
+- Run artifacts (pass reports, contracts, findings ledgers, audit reports) go into \`runs/YYYY-MM-DD_{model}_{type}/\` inside the project root.
+- Create the run folder at the start of each run; update rolling state at the project root after synthesis.
+- Never write project state into the plugin directory.`
   );
 }
 
@@ -265,6 +273,7 @@ This file tracks the architectural alignment between the original APODICTIC fram
 1. **Slash Command Routing**: Native Antigravity \`.agents/workflows/\` intercept commands (e.g. \`/start\`, \`/develop-edit\`) directly from the user chat.
 2. **Execute Delegation**: Antigravity's \`core-orchestrator\` Subagent autonomously reads state triggers and executes the canonical \`run-core.md\` execution logic without requiring proxy wrappers.
 3. **Canonical Truth**: All files strictly reference the single authoritative APODICTIC runtime.
+4. **Folder Architecture**: Output follows the v0.5.0 folder architecture — rolling state at the project root, run artifacts in \`runs/YYYY-MM-DD_{model}_{type}/\`. See \`output-policy.md\` §Folder Architecture.
 `;
     writeFile(path.join(tempWorkspace, "NON_PARITY_NOTES.md"), parityNotes);
 

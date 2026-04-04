@@ -33,11 +33,120 @@ All DE outputs are author-facing documents. Framework shorthand — pass numbers
 
 ---
 
-## Output Naming Convention (v0.4.15)
+## Folder Architecture (v0.5.0)
 
-Write project artifacts to the active project output context: the manuscript's external output folder. Reuse an existing output folder when one already exists for that manuscript; otherwise default to an `Outputs/` sibling next to the manuscript. Never write project artifacts or rolling state files to the plugin repo, installed plugin cache, or any other APODICTIC framework directory.
+All APODICTIC work for a manuscript lives under a single **project root**. The `Outputs/` sibling convention from earlier versions is deprecated.
 
-Use these filenames within that output context:
+### Project Root
+
+```
+{project-root}/
+├── Diagnostic_State.md          # Rolling state (updated across runs + sessions)
+├── Diagnostic_State.meta.json   # Machine-readable sidecar
+├── SYNTHESIS.md                 # Master revision plan (consolidated from all runs)
+├── Session_Plan_{NN}.md         # Coaching session plans, numbered sequentially
+├── README.md                    # Project manifest (auto-generated, see below)
+└── runs/                        # Immutable run archive
+    └── {run-folders}
+```
+
+`{project-root}` is the active project output context. For new projects, this is created by `apodictic-new-project`. For existing projects, it is the folder that already contains the manuscript's APODICTIC output. The project folder name should use the manuscript's working title in Title_Case with underscores (e.g., `Regrets_Only`, `Chain_of_Command`).
+
+**Migration from `Outputs/`:** If an existing project has an `Outputs/` folder with APODICTIC artifacts, treat that folder as the project root. Create `runs/` inside it and continue.
+
+Never write project artifacts or rolling state files to the plugin repo, installed plugin cache, or any other APODICTIC framework directory.
+
+### Rolling State Files
+
+These files live at the project root and are updated in place:
+
+| File | Created By | Updated By |
+|------|-----------|------------|
+| `Diagnostic_State.md` | `apodictic-new-project` or first DE run | Every subsequent run, coaching session, and author revision |
+| `Diagnostic_State.meta.json` | `apodictic-new-project` or first DE run | Every time `Diagnostic_State.md` is updated |
+| `SYNTHESIS.md` | First DE synthesis | Each subsequent run's synthesis; carries a methodology note listing contributing runs |
+| `Session_Plan_{NN}.md` | `apodictic-coach` | Archived to coaching run folder on session completion; new file for each session |
+| `README.md` | `apodictic-new-project` or first run | Each new run (manifest table appended) |
+
+What does NOT live at project root: individual pass artifacts, contracts, findings ledgers, audit outputs, results guides. Those belong in `runs/`.
+
+### Series Structure
+
+For series projects, each volume gets its own project folder. A parent series folder holds the shared `Series_State.md`:
+
+```
+{series-root}/
+├── Series_State.md
+├── {Volume_One}/
+│   ├── Diagnostic_State.md
+│   ├── SYNTHESIS.md
+│   ├── README.md
+│   └── runs/
+├── {Volume_Two}/
+│   └── ...
+```
+
+`Series_State.md` lives at the series root, not duplicated inside each volume.
+
+### Run Folder Naming
+
+```
+runs/YYYY-MM-DD_{model-tag}_{run-type}/
+```
+
+**Date:** ISO 8601, the date the run started.
+
+**Model tag:** Required. From the model tag table below.
+
+**Run type:** Required. One of:
+
+| Type | When Used |
+|------|-----------|
+| `full-de` | Full development edit (all 11 passes + contract audits) |
+| `core-de` | Core development edit (6 passes) |
+| `partial-de` | Partial manuscript diagnostic |
+| `fragment-de` | Fragment synthesis |
+| `audit` | Standalone audit(s) without a DE run |
+| `consolidated` | Cross-model or cross-run consolidation/comparison work |
+| `coaching` | Revision coaching session outputs |
+
+**Collision rule:** If a second run of the same date + model + type occurs, append `-2` (then `-3`, etc.):
+```
+runs/2026-04-04_opus46_audit/
+runs/2026-04-04_opus46_audit-2/
+```
+
+**Multi-model runs:** For consolidation work, use the consolidating model's tag. For swarm-mode, use the synthesis model's tag. Individual pass files still carry their own model tags per file naming rules.
+
+### Project Manifest (README.md)
+
+Auto-generated or updated after each run:
+
+```markdown
+# {Project Title} — APODICTIC Development Editor Files
+
+## Start Here
+
+| File | Purpose |
+|------|---------|
+| **SYNTHESIS.md** | Master revision plan. Open this to revise. |
+| **Diagnostic_State.md** | Rolling state: findings, progress, decisions, change log. |
+| **Session_Plan_{NN}.md** | Current coaching session plan. |
+
+## Run Archive
+
+| Folder | Date | Model | Type | Passes/Audits | Notes |
+|--------|------|-------|------|---------------|-------|
+| `runs/YYYY-MM-DD_model_type/` | YYYY-MM-DD | Model Name | full-de | 11 passes + N audits | ... |
+```
+
+The run archive table is append-only. Each new run adds a row.
+
+---
+
+## Output Naming Convention (v0.5.0)
+
+Use these filenames within run folders:
 
 **Core DE:**
 - `[Project]_Contract_[runlabel].md`
@@ -95,9 +204,25 @@ The model tag is **required**, not optional. It identifies which model generated
 - `[Project]_Session_Plan_[runlabel].md`
 - `[Project]_Revision_Calendar_[runlabel].md` (deadline mode only)
 
-**Rolling state files** (not run-specific):
-- `Diagnostic_State.md` — per-volume diagnostic state in the active project output context. If missing, initialize from `references/diagnostic-state-template.md`.
-- `Series_State.md` — cross-volume series state in the active project output context. If missing, initialize from `references/series-state-template.md`. Persists across volumes; updated after each volume is analyzed.
+**Rolling state files** (live at project root, not inside run folders):
+- `Diagnostic_State.md` — per-volume diagnostic state at the project root. If missing, initialize from `references/diagnostic-state-template.md`.
+- `Diagnostic_State.meta.json` — machine-readable sidecar at the project root. If missing, initialize from `references/diagnostic-state-meta-template.json`.
+- `SYNTHESIS.md` — master revision plan at the project root. Created from the first run's synthesis; updated by subsequent runs with a methodology note listing contributing runs.
+- `Series_State.md` — cross-volume series state at the series root (not inside each volume's project root). If missing, initialize from `references/series-state-template.md`. Persists across volumes; updated after each volume is analyzed.
+
+### Results Guide
+
+Per-run artifact, not a rolling file. Lives inside its run folder alongside the pass artifacts it references. See §Results Guide Artifact in SKILL.md for format.
+
+### Lifecycle Summary
+
+| Workflow | Creates Run Folder | Updates Rolling State |
+|----------|-------------------|----------------------|
+| `apodictic-new-project` | No (initializes project root) | Creates `Diagnostic_State.md`, `README.md` |
+| `apodictic-develop-edit` | `runs/YYYY-MM-DD_{model}_{type}/` | Updates `Diagnostic_State.md`, `SYNTHESIS.md`, `README.md` |
+| `apodictic-audit` | `runs/YYYY-MM-DD_{model}_audit/` | Updates `Diagnostic_State.md`, `SYNTHESIS.md` (if findings alter plan), `README.md` |
+| `apodictic-coach` | `runs/YYYY-MM-DD_{model}_coaching/` (on session completion) | Updates `Diagnostic_State.md` coaching log, `README.md` |
+| Consolidation | `runs/YYYY-MM-DD_{model}_consolidated/` | Updates `SYNTHESIS.md` (typically the most significant update), `Diagnostic_State.md`, `README.md` |
 
 ---
 
