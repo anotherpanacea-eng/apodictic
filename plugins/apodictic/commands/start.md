@@ -19,7 +19,7 @@ Load `../skills/core-editor/SKILL.md` first (thin orchestrator). Do NOT preload 
 ## Procedure
 
 1. **Resume gate (runs before Q1):**
-   - Check for existing state in the active project output context. The active project output context is the manuscript's external output folder, not the plugin repo. Reuse an existing manuscript output folder when one is already in use; otherwise default to an `Outputs/` sibling next to the manuscript.
+   - Check for existing state in the active project output context. The active project output context is the project root folder (see `../skills/core-editor/references/output-policy.md` §Folder Architecture), not the plugin repo. Reuse an existing project root when one is already in use. For legacy projects that used an `Outputs/` sibling, treat that folder as the project root.
    - **State detection priority:** Check for `Diagnostic_State.meta.json` first (machine-readable sidecar). If it exists, read it for fast structured routing. If only `Diagnostic_State.md` exists (no sidecar — expected for projects created before v1.7), fall back to parsing the markdown directly: read the Mode section, scan Session History for session count, and check whether Root Causes or Control Questions are populated. This fallback path does not require `state_lines`, `revision_progress`, or `next_action` — present what's available and skip what isn't.
    - **If state exists and mode is `execution`**, do NOT run router questions yet. Present:
      - **Check the fix** — reload editor mode and run re-entry delta check on active scene (from sidecar's `active_scene_scope`, or from the markdown's `Active scene scope` field)
@@ -73,4 +73,4 @@ The `next_action` field also accepts a human-readable `description` subfield for
 
 ## Output location
 
-No direct output. `/start` routes into the selected workflow, which writes artifacts and rolling state files to the active project output context beside the manuscript, never to the plugin repo.
+No direct output. `/start` routes into the selected workflow, which writes run artifacts into `runs/` and updates rolling state at the project root per `../skills/core-editor/references/output-policy.md` §Folder Architecture. Never write to the plugin repo.

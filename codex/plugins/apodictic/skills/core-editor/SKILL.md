@@ -202,18 +202,27 @@ Omit the "Specialized audits run" section if no audits ran. Omit "Argument State
 
 ## Project Integration
 
-When operating within a manuscript project, the **active project output context** is the external folder that holds the manuscript's APODICTIC artifacts and rolling state. Reuse the writer's existing output folder when one already exists. Otherwise, default to an `Outputs/` sibling next to the manuscript. Never write project state inside the plugin repo, the installed plugin cache, or any other APODICTIC framework directory.
+When operating within a manuscript project, the **active project output context** is the project root folder that holds the manuscript's APODICTIC artifacts and rolling state. See `references/output-policy.md` §Folder Architecture for the canonical folder structure.
+
+**Key rules:**
+- Rolling state (`Diagnostic_State.md`, `SYNTHESIS.md`, `Session_Plan_{NN}.md`, `README.md`) lives at the **project root**
+- Run artifacts (pass outputs, contracts, findings ledgers, audit reports, results guides) live inside **`runs/YYYY-MM-DD_{model}_{type}/`**
+- The `Outputs/` sibling convention is deprecated. For existing projects with an `Outputs/` folder, treat it as the project root and create `runs/` inside it.
+- Never write project state inside the plugin repo, the installed plugin cache, or any other APODICTIC framework directory.
 
 When operating within a project:
 
 1. **CHECK** for existing contract artifact before running intake
 2. **REFERENCE** character portraits during Pass 5 for consistency
 3. **REFERENCE** story guides during Pass 9 for controlling idea alignment
-4. **OUTPUT** all diagnostic artifacts to the active project output context beside the manuscript
-5. **INITIALIZE** `Diagnostic_State.md` in that output context from `references/diagnostic-state-template.md` if it does not exist
-6. **SET** the Mode section's `**Current:**` field to `diagnostic` unless an active handoff is explicitly in effect
-7. **APPEND** handoff entries to `Handoff History` (never overwrite prior cycles)
-8. **UPDATE** `Diagnostic_State.md` in that output context with cumulative findings across sessions, including author decisions and control questions when synthesis produces them
+4. **CREATE** the run folder (`runs/YYYY-MM-DD_{model}_{type}/`) at the start of each run
+5. **OUTPUT** all run artifacts (pass reports, contract, findings ledger, results guide) into the run folder
+6. **INITIALIZE** `Diagnostic_State.md` at the project root from `references/diagnostic-state-template.md` if it does not exist
+7. **SET** the Mode section's `**Current:**` field to `diagnostic` unless an active handoff is explicitly in effect
+8. **APPEND** handoff entries to `Handoff History` (never overwrite prior cycles)
+9. **UPDATE** `Diagnostic_State.md` at the project root with cumulative findings across sessions, including author decisions and control questions when synthesis produces them
+10. **UPDATE** `SYNTHESIS.md` at the project root — if this is the first run, copy synthesis there; if prior runs exist, incorporate new findings with a methodology note listing contributing runs
+11. **APPEND** a row to `README.md` run archive table
 
 When no project context exists, proceed with intake from scratch.
 

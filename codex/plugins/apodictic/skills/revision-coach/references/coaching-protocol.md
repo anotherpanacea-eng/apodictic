@@ -151,7 +151,7 @@ Naming the drift is more important than preventing it perfectly. Writers trust c
 
 ## No-Diagnostic Behavior
 
-All references to `Diagnostic_State.md` in this protocol mean the file in the active project output context: the manuscript's external output folder. Reuse an existing output folder when one already exists; otherwise default to an `Outputs/` sibling next to the manuscript. Never read from or write to the plugin repo or installed plugin cache.
+All references to `Diagnostic_State.md` in this protocol mean the file at the **project root** (see `core-editor/references/output-policy.md` §Folder Architecture). For legacy projects that used an `Outputs/` sibling, treat that folder as the project root. Never read from or write to the plugin repo or installed plugin cache.
 
 If no `Diagnostic_State.md` exists:
 - Do not improvise findings

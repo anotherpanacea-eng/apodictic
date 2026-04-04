@@ -12,3 +12,4 @@ This command loads the canonical APODICTIC /revision-plan workflow.
 2. Read the canonical command doc: `plugins/apodictic/commands/revision-plan.md`.
 3. Follow all routing, resume gate (if applicable), and execution mode semantics specified there exactly.
 4. Explicitly invoke the `@core-orchestrator` subagent to execute the passes required by the command, using the canonical execution model as instructed by the canonical doc.
+5. Follow the folder architecture: rolling state at the project root, run artifacts in `runs/`. See `plugins/apodictic/skills/core-editor/references/output-policy.md` §Folder Architecture.

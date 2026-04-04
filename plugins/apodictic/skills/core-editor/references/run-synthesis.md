@@ -255,17 +255,25 @@ Add a brief note after each question: why the answer matters for the book's revi
 
 The primary deliverable. Format specified in §Core DE Synthesis above.
 
-### Diagnostic State
+### Run Folder and Rolling State
 
-After writing the editorial letter, update `Diagnostic_State.md` with:
-- Findings from this session
-- Keep / Cut / Unsure decisions
-- Control Questions
-- Change log
+All run artifacts (editorial letter, pass reports, contract, findings ledger, audit invocation log, results guide) are written to the **run folder** (`runs/YYYY-MM-DD_{model}_{type}/`) inside the project root. See `references/output-policy.md` §Folder Architecture.
 
-`Diagnostic_State.md` lives in the active project output context: the manuscript's external output folder. Reuse the writer's existing output folder when one already exists; otherwise default to an `Outputs/` sibling next to the manuscript. Never write this file to the plugin repo or installed plugin cache.
+After writing the editorial letter to the run folder, update the **rolling state at the project root:**
 
-If `Diagnostic_State.md` does not exist in the project output context, create it from `references/diagnostic-state-template.md` first.
+1. **Update `Diagnostic_State.md`** with:
+   - Findings from this session
+   - Keep / Cut / Unsure decisions
+   - Control Questions
+   - Change log
+
+2. **Update `SYNTHESIS.md`** at the project root:
+   - If this is the first run: copy the synthesis to the project root as `SYNTHESIS.md`
+   - If prior runs exist: update `SYNTHESIS.md` to incorporate new findings, with a methodology note listing contributing runs (e.g., "Consolidated from runs: 2026-03-15_opus46_full-de, 2026-04-04_opus46_core-de")
+
+3. **Append a row** to the `README.md` run archive table.
+
+`Diagnostic_State.md` lives at the project root, not inside run folders. If it does not exist, create it from `references/diagnostic-state-template.md` first. Never write rolling state to the plugin repo or installed plugin cache.
 
 ### Machine-Readable Sidecar (Required)
 

@@ -15,6 +15,11 @@ After routing, run the selected workflow exactly as `apodictic-start` would:
 
 - Development edit route -> `../skills/core-editor/references/run-core.md` + resolver from `../skills/core-editor/references/pass-dependencies.md`
 - Apply auto-escalation recommendation for expansion to advanced passes
-- Write artifacts and rolling state files to the active project output context beside the manuscript, never to the plugin repo
+- Create run folder (`runs/YYYY-MM-DD_{model}_{type}/`) at the start of the run
+- Write all run artifacts (pass reports, contract, findings ledger, results guide) into the run folder
+- Update rolling state (`Diagnostic_State.md`, `SYNTHESIS.md`, `README.md`) at the project root
+- Never write to the plugin repo
+
+See `../skills/core-editor/references/output-policy.md` §Folder Architecture for the full folder convention.
 
 If a manuscript file path is provided: @$1

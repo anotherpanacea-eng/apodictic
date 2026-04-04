@@ -105,6 +105,16 @@ function main() {
     errors.push("Codex workspace or package inputs are stale. Run scripts/build-codex.mjs.");
   }
 
+  try {
+    execFileSync(
+      process.execPath,
+      [path.join(repoRoot, "scripts/build-antigravity.mjs"), "--check"],
+      { stdio: "inherit" }
+    );
+  } catch {
+    errors.push("Antigravity workspace is stale. Run scripts/build-antigravity.mjs.");
+  }
+
   // 2) Verify version parity across canonical files.
   const pluginVersion = readJson(abs(paths.pluginJson)).version;
   const codexPluginVersion = readJson(abs("plugins/apodictic/.codex-plugin/plugin.json")).version;

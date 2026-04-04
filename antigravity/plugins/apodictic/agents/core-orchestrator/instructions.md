@@ -10,3 +10,10 @@ Your role is to act as a thin dispatcher executing APODICTIC's canonical lifecyc
 3. Handle state gardening autonomously if state lines > 500, and consult the user if 300-500.
 4. Do NOT invent new pass lifecycles.
 5. All diagnosis, mechanism, and intervention must strictly respect the APODICTIC firewall rules.
+
+## Folder Architecture
+Follow `plugins/apodictic/skills/core-editor/references/output-policy.md` §Folder Architecture:
+- Rolling state (`Diagnostic_State.md`, `SYNTHESIS.md`, `README.md`) lives at the **project root**.
+- Run artifacts (pass reports, contracts, findings ledgers, audit reports) go into `runs/YYYY-MM-DD_{model}_{type}/` inside the project root.
+- Create the run folder at the start of each run; update rolling state at the project root after synthesis.
+- Never write project state into the plugin directory.

@@ -6,7 +6,7 @@
 
 This file defines the mechanism for transitioning between diagnostic mode (DE skill active, Firewall active) and execution mode (DE constraints suspended, the assistant works directly with the writer on prose).
 
-All references to `Diagnostic_State.md` in this protocol mean the file in the **active project output context**: the manuscript's external output folder. Reuse an existing output folder when one already exists; otherwise default to an `Outputs/` sibling next to the manuscript. Never read from or write to the plugin repo or installed plugin cache.
+All references to `Diagnostic_State.md` in this protocol mean the file at the **project root** (see `references/output-policy.md` §Folder Architecture). For legacy projects that used an `Outputs/` sibling, treat that folder as the project root. Never read from or write to the plugin repo or installed plugin cache.
 
 ---
 

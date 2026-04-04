@@ -23,7 +23,7 @@ State gardening runs at the resume gate in `/start`. The trigger is the `state_l
 
 When gardening is required (or when the user accepts the advisory):
 
-1. **Archive the full state.** Copy `Diagnostic_State.md` to `Diagnostic_State_Archive_[datetime].md` in the same output directory, where `[datetime]` is ISO 8601 format truncated to minutes (e.g., `2026-04-01T14-30`). Use hyphens instead of colons for filesystem safety. This prevents collision if gardening runs twice on the same day. This is the permanent record — never modify archives.
+1. **Archive the full state.** Copy `Diagnostic_State.md` to `Diagnostic_State_Archive_[datetime].md` in the project root (same directory as the active state file), where `[datetime]` is ISO 8601 format truncated to minutes (e.g., `2026-04-01T14-30`). Use hyphens instead of colons for filesystem safety. This prevents collision if gardening runs twice on the same day. This is the permanent record — never modify archives.
 
 2. **Compress completed sessions.** Replace each completed session entry in the Session History with a one-line summary:
    ```markdown
