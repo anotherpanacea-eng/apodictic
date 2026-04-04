@@ -1,0 +1,10 @@
+{
+  "name": "core-orchestrator",
+  "description": "Thin Antigravity agent orchestrator handling APODICTIC execution modes.",
+  "tools": [
+    "read_file",
+    "write_to_file",
+    "search_web",
+    "run_command"
+  ]
+}

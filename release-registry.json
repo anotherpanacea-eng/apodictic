@@ -75,6 +75,31 @@
       "plugins/apodictic/assets/apodictic-screenshot-editor-letter.png"
     ]
   },
+  "antigravity": {
+    "workspaceDir": "antigravity",
+    "displayName": "APODICTIC",
+    "category": "Productivity",
+    "wrapperPrefix": "apodictic",
+    "defaultPrompts": [
+      "Use APODICTIC to tell me what kind of manuscript help I need.",
+      "Use APODICTIC to diagnose the structural problems in this draft.",
+      "Use APODICTIC to help me plan revisions without rewriting prose."
+    ],
+    "overrides": {},
+    "commandBaseSkills": {
+      "start": "core-editor",
+      "develop-edit": "core-editor",
+      "diagnose": "core-editor",
+      "ready": "core-editor",
+      "audit": "specialized-audits",
+      "research": "specialized-audits",
+      "coach": "revision-coach",
+      "plot-coach": "plot-architecture",
+      "pre-writing": "pre-writing-pathway",
+      "new-project": "core-editor",
+      "revision-plan": "revision-coach"
+    }
+  },
   "commands": [
     {
       "command": "/start",

@@ -32,9 +32,21 @@ APODICTIC isn't just for finished drafts.
 
 ## Install
 
-APODICTIC works best on strong frontier models with enough context for large-manuscript analysis. The current tested Codex path is a generated local-workspace install.
+APODICTIC works best on strong frontier models with enough context for large-manuscript analysis. 
 
-### Codex (current tested path)
+### Antigravity (Native)
+
+1. Clone this repo.
+2. From the repo root, run:
+
+```bash
+node scripts/build-antigravity.mjs
+```
+
+3. Open the generated `antigravity/` folder as your workspace root.
+4. Start a fresh thread and type `/start`.
+
+### Codex (legacy build path)
 
 1. Clone this repo.
 2. From the repo root, run:
