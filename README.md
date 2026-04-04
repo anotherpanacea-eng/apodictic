@@ -36,14 +36,42 @@ APODICTIC works best on strong frontier models with enough context for large-man
 
 ### Antigravity (Native)
 
+APODICTIC supports two modes of execution in Antigravity: Workspace Isolation (recommended) and Global Installation.
+
+#### Method 1: Workspace Isolation (Recommended)
+This method keeps APODICTIC isolated to its own project context, safely containing manuscript analysis.
+
 1. Clone this repo.
-2. From the repo root, run:
+2. From the repo root, run the native builder:
 
 ```bash
 node scripts/build-antigravity.mjs
 ```
 
-3. Open the generated `antigravity/` folder as your workspace root.
+3. Open the newly generated `antigravity/` folder as your **workspace root**.
+4. Start a fresh thread and type `/start`.
+
+#### Method 2: Global Installation
+If you want APODICTIC available globally across all of your Antigravity workspaces.
+
+1. Clone this repo and build the native target:
+
+```bash
+node scripts/build-antigravity.mjs
+```
+
+2. Symlink the generated plugin into your global Antigravity data directory:
+
+```bash
+mkdir -p ~/.gemini/antigravity/plugins
+ln -s "$(pwd)/antigravity/plugins/apodictic" ~/.gemini/antigravity/plugins/apodictic
+```
+
+3. Copy the workflow definitions into the `.agents/workflows` directory of whatever active workspace you want to run APODICTIC from:
+
+```bash
+cp -r antigravity/.agents/workflows/* /path/to/your/workspace/.agents/workflows/
+```
 4. Start a fresh thread and type `/start`.
 
 ### Codex (legacy build path)
