@@ -26,25 +26,28 @@ fi
 echo "Release pipeline starting for v${NEW_VERSION}"
 echo "────────────────────────────────────"
 
-echo "[1/7] Bump version fields"
+echo "[1/8] Bump version fields"
 "$REPO_ROOT/scripts/bump-version.sh" "$NEW_VERSION"
 
-echo "[2/7] Generate derived files from release-registry.json"
+echo "[2/8] Generate derived files from release-registry.json"
 node "$REPO_ROOT/scripts/release-generate.mjs"
 
-echo "[3/7] Build generated Codex workspace and package"
+echo "[3/8] Build generated Codex workspace and package"
 node "$REPO_ROOT/scripts/build-codex.mjs"
 
-echo "[4/7] Verify repository consistency"
+echo "[4/8] Build generated Antigravity workspace"
+node "$REPO_ROOT/scripts/build-antigravity.mjs"
+
+echo "[5/8] Verify repository consistency"
 node "$REPO_ROOT/scripts/release-verify.mjs"
 
-echo "[5/7] Sync plugin -> APODICTIC-Gemini public mirror"
+echo "[6/8] Sync plugin -> APODICTIC-Gemini public mirror"
 rsync -a --delete --exclude ".git/" --exclude ".DS_Store" "$PLUGIN_DIR/" "$GEMINI_PUBLIC_DIR/"
 
-echo "[6/7] Verify mirror parity"
+echo "[7/8] Verify mirror parity"
 node "$REPO_ROOT/scripts/release-verify.mjs" --check-sync
 
-echo "[7/7] Package Claude plugin artifact"
+echo "[8/8] Package Claude plugin artifact"
 (
   cd "$PLUGIN_DIR"
   zip -r "$REPO_ROOT/apodictic.plugin" . -x ".git/*" >/dev/null
