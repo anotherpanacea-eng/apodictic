@@ -13,6 +13,8 @@ This audit evaluates whether female characters maintain specific, psychologicall
 
 The audit's fundamental question: **Does this character have a persistent inner life, or does her interiority appear and disappear based on what the narrative needs from her?**
 
+**Deficit-First Diagnostic Rule:** Do not evaluate female interiority by validating scenes where she thinks about the plot. You must hunt for the *absence* of non-relational cognition, the *absence* of independent motive, and the *thinning* of interiority when male characters enter the scene. An active female character with no internal cost or independent friction is a failure. You are auditing for omission, not presence.
+
 This is a craft audit, not an ideological checklist. Complex, flawed, even villainous female characters are fine. Characters whose interiority is deliberately thinned for thematic reasons are fine. The audit identifies *unintentional* thinning — places where the author stopped simulating the character's mind without knowing it.
 
 **When to activate:**

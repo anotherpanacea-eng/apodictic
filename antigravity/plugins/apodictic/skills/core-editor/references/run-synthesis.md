@@ -93,9 +93,11 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
    - **Count consolidated problems, not individual flags.** A single root cause may have 8 audit flags supporting it. The flags are evidence; the root cause is what enters triage.
    - **Carry audit artifacts forward.** Audit-specific tracking artifacts (Decision Event Map, Stakes Ladder Map, Scene Turn code inventory, etc.) become appendix material. They support the editorial letter's arguments but don't appear in the letter body.
 
-3. **Root Cause Analysis.** Read the Findings Ledger as the primary input for root cause analysis. The ledger's cross-pass connections are pre-built hypotheses about shared root causes — evaluate each. Identify 3-5 root causes (maximum 5) from the ledger's notable findings, cross-pass connections, and consolidated audit findings. If more than 5 seem present, flag that manuscript may need reconception. Audit findings that cluster under the same root cause strengthen the diagnosis; they don't multiply the root cause count. For any ledger finding that doesn't cluster under a root cause, carry it forward to the "Additional Observations" section (§4b) of the editorial letter.
+3. **Blind Spot / Absence Inventory (required).** Before root cause analysis, explicitly scan the Findings Ledger to identify what is *missing* from the text rather than just evaluating what is present on the page. Missing elements (e.g., rushed sequence compression, lacking interiority, unsupported choice architecture) are often harder to detect because they leave no explicit textual footprint. Document an internal "Absence Inventory": what structural, emotional, or pacing elements *should* be here but aren't? This ensures the root cause analysis includes omission gaps.
 
-4. **Triage.** Assign severity to each finding:
+4. **Root Cause Analysis.** Read the Findings Ledger as the primary input for root cause analysis. The ledger's cross-pass connections are pre-built hypotheses about shared root causes — evaluate each. Identify 3-5 root causes (maximum 5) from the ledger's notable findings, cross-pass connections, and consolidated audit findings. If more than 5 seem present, flag that manuscript may need reconception. Audit findings that cluster under the same root cause strengthen the diagnosis; they don't multiply the root cause count. For any ledger finding that doesn't cluster under a root cause, carry it forward to the "Additional Observations" section (§4b) of the editorial letter.
+
+5. **Triage.** Assign severity to each finding:
    - **Must-Fix:** Book-breaking (max 10)
    - **Should-Fix:** Significant diminishment (max 15)
    - **Could-Fix:** Polish (no cap, deprioritized)
@@ -118,7 +120,13 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
 
    Build these from root causes, audit findings, the stress test, and the strongest-case-against logic. If a decision or control question cannot be tied to a root cause, live blind spot, or structural pressure point, it probably does not belong here.
 
-8. **Pre-Output Synthesis Verification (required gate).** Before writing the letter, verify the synthesis is actually drawing from pass findings — not generating an editorial letter from general impressions of the manuscript. Run these checks:
+9. **Conditional Underdiagnosis Retry Loop (required gate).** Evaluate the alignment between your findings (Step 4/5) and the adversarial/absence inputs (Steps 3, 6, 7). You MUST abort the current diagnostic synthesis and rerun the evaluation loop if any of the following triggers are met:
+   - Severity-floor logic is incoherent (e.g., core axes are weak but there are zero Must-Fixes).
+   - The Adversarial Reader Stress Test or Strongest Case Against identifies major attacks that are uncaptured in the root-cause Must-Fix/Should-Fix findings.
+   - Live audit blind spots (identified via the Absence Inventory) remain unrouted or undocumented.
+   Do not proceed to letter generation until the structural deficit analysis correctly reflects the manuscript's severity.
+
+10. **Pre-Output Synthesis Verification (required gate).** Before writing the letter, verify the synthesis is actually drawing from pass findings — not generating an editorial letter from general impressions of the manuscript. Run these checks:
 
    - **Findings integration check:** For each root cause identified in step 3, confirm it cites at least one specific ledger finding by pass and finding name. If a root cause exists only as a general impression without ledger grounding, either locate the supporting ledger entry or demote it to §4b (Additional Observations) with a note that it awaits pass-level confirmation.
    - **Section ordering check:** Confirm the letter will follow the required §1-§11 order. Protected Elements, Author Decisions, Control Questions, Strongest Case Against, and Stress Test are separate sections with distinct jobs — they must not be merged or omitted.
@@ -131,11 +139,11 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
 
    If any check fails, fix it before proceeding. This gate exists because the most common synthesis failure mode is generating an editorially plausible letter that doesn't actually integrate the analytical work — the letter sounds right but isn't grounded in what the passes found.
 
-9. **Write the editorial letter** using the presentation format below. The self-check informs the letter's severities; the stress test becomes §10 of the letter.
+11. **Write the editorial letter** using the presentation format below. The self-check informs the letter's severities; the stress test becomes §10 of the letter.
 
 **Key principle:** Processing order ≠ presentation order. The self-check must happen before writing, but in the output document it belongs in an appendix. The author reads findings; the framework owner reads methodology.
 
-10. **Post-Write Section Validation (required).** After saving the editorial letter to disk, verify that all 14 required sections appear as markdown headings in the correct order. The required headings (in order):
+12. **Post-Write Section Validation (required).** After saving the editorial letter to disk, verify that all 14 required sections appear as markdown headings in the correct order. The required headings (in order):
 
     1. Title block (level-1 heading with project name)
     2. "The Short Version"
@@ -153,6 +161,8 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
     14. "Appendix C" (Framework Notes)
 
     Check that each appears as a heading (`#`, `##`, or `###`), not just as a phrase in prose. If using `scripts/validate.sh synthesis-sections`, note that the script performs substring matching — the inline check is more precise and should be preferred when the script's loose matching could give false confidence. If any section is missing or out of order, fix before delivering.
+
+13. **Tone Compliance Check (required).** After section validation, run `scripts/validate.sh tone-check <letter_file>` on the saved editorial letter. The script blocks sycophantic superlatives (masterpiece, stunning, flawless, clean bill, tour de force, triumph, perfection) that indicate praise has displaced rigorous diagnosis. If the check fails, rewrite the offending passages with severity-calibrated language and re-run until it passes. This gate exists because the framework's job is accurate diagnosis; a letter that earns its praise through superlatives rather than evidence undermines every other structural check in this file.
 
 ### Presentation Format (Editorial Letter)
 
