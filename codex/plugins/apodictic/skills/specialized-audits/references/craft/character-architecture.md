@@ -16,6 +16,8 @@ This audit calibrates Pass 5 (Character Audit) and Pass 7 (Voice/POV) by providi
 
 **Core principle:** Characters are not decorations on plot; they are the engines that make plot meaningful. A structurally sound plot with psychologically incoherent characters is a failure.
 
+**Deficit-First Diagnostic Rule:** Do not evaluate characters by validating the presence of distinctive dialogue, sympathetic motivation, or interior language. You must hunt for the *absence* of genuine agency, the *absence* of psychological cost when choices are made, and the *absence* of internal contradiction under pressure. A richly rendered character whose agency disappears whenever the plot needs her to move is a failure, regardless of voice quality. You are auditing for puppet moments and for consciousness that fails to persist across structural load, not confirming that each POV has personality.
+
 **Genre-critical note:** In feminist erotic horror, psychological thrillers, and dark romance, *character is mechanism*. If agency isn't tracked, horror becomes exploitation. If wounds don't manifest in behavior, trauma becomes window dressing.
 
 ---

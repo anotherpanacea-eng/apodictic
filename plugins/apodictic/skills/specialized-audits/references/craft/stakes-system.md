@@ -27,6 +27,8 @@ and danger without converting those signals into:
 
 **The fundamental question: Do stakes escalate and convert into consequential pressure, or are they stated without structural force?**
 
+**Deficit-First Diagnostic Rule:** Do not evaluate stakes by confirming that risk, urgency, or danger are signaled on the page. You must hunt for the *absence* of conversion — the *absence* of visible consequence, the *absence* of narrowing options, and the *absence* of cost that persists after the threat passes. A scene that signals peril but pays no consequence back into the narrative is not a high-stakes scene, however charged its prose. You are auditing for stakes detachment, not validating tense atmosphere.
+
 ### Non-duplication boundaries
 
 1. **Pass 1 Reader Experience** tells you where readers disengage. This audit explains whether stakes architecture caused that disengagement.
