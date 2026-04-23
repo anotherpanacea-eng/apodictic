@@ -18,6 +18,8 @@ This audit evaluates rhetorical fairness in the manuscript—whether the text al
 
 **This audit does not judge beliefs or positions. It evaluates craft—whether the narrative achieves genuine complexity or merely performs it.**
 
+**Deficit-First Diagnostic Rule:** Do not evaluate epistemic humility by confirming that multiple positions are voiced on the page. You must hunt for the *absence* of genuine live alternatives — the *absence* of steelmanned opposition, the *absence* of author self-implication, and the *absence* of conclusions the text is willing to entertain reaching against its own preferences. Apparent balance that collapses into predetermined conclusions is failure, even when every position gets a speaking turn. You are auditing for rigged juries, not counting whose name appears in the transcript.
+
 ---
 
 ## Core Questions

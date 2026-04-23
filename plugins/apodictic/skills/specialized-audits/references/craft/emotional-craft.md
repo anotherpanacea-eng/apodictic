@@ -10,6 +10,8 @@ Detect and diagnose when a manuscript is structurally competent but emotionally 
 
 **Core claim:** Emotion on the page is not a label ("she was furious"). It is a meaning pipeline—perception → interpretation → judgment → impulse → choice—that the reader can experience. When the pipeline is intact, the reader feels. When it breaks, the reader is told.
 
+**Deficit-First Diagnostic Rule:** Do not evaluate emotional craft by validating the presence of feeling-words, affectively charged scenes, or emotionally loaded dialogue. You must hunt for the *absence* of the meaning pipeline — the *absence* of perception, interpretation, judgment, and impulse that convert labeled emotion into transmitted experience. A scene where "she was devastated" appears without embodied perceptual evidence fails the transmission diagnostic, even if the prose is grammatically accomplished. You are auditing for where the current dies, not where the vocabulary gestures at feeling.
+
 **What this audit is:** A transmission diagnostic. It identifies where emotional current dies and names the mechanism.
 
 **What this audit is not:** A substitute for Plot Architecture (spine mechanics) or Character Architecture (psychology/agency). Those audits determine whether the story works structurally and whether characters are psychologically coherent. This audit determines whether that structural and psychological competence reaches the reader as felt experience.
