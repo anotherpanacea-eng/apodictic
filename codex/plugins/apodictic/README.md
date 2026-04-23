@@ -185,7 +185,7 @@ APODICTIC works best on high-capability models with strong instruction-following
 
 ## Framework Version
 
-Current Codex manifest version is `1.7.0`. Capabilities: 50 plot spines across 12 families, 33 available audits (3 universal, 15 craft, 10 genre, 5 tag), 6 research modes, 11 core passes, the evaluative Pass 11 gate, the pre-writing pathway, and the intake router. Includes contract-driven and finding-driven audit integration pipeline.
+Current Codex manifest version is `1.7.1`. Capabilities: 50 plot spines across 12 families, 33 available audits (3 universal, 15 craft, 10 genre, 5 tag), 6 research modes, 11 core passes, the evaluative Pass 11 gate, the pre-writing pathway, and the intake router. Includes contract-driven and finding-driven audit integration pipeline.
 
 ## License
 
