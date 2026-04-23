@@ -34,7 +34,7 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, state-lines"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines"
   exit 2
 }
 
@@ -195,6 +195,41 @@ case "$COMMAND" in
       exit 1
     else
       echo "OK: All 14 required section headings present in editorial letter."
+      exit 0
+    fi
+    ;;
+
+  tone-check)
+    if [ $# -lt 1 ]; then echo "Usage: $0 tone-check <editorial_letter_file>"; exit 2; fi
+    if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
+    LETTER="$1"
+    ERRORS=0
+
+    declare -a BLOCKED=(
+      "masterpiece"
+      "stunning"
+      "flawless"
+      "clean bill"
+      "tour de force"
+      "triumph"
+      "perfection"
+    )
+
+    for word in "${BLOCKED[@]}"; do
+      # Case insensitive word boundary match
+      if grep -iq "\b${word}\b" "$LETTER"; then
+        echo "ERROR: Blocked superlative found: '${word}'"
+        ERRORS=$((ERRORS + 1))
+      fi
+    done
+
+    if [ "$ERRORS" -gt 0 ]; then
+      echo ""
+      echo "FAILED: ${ERRORS} blocked superlative(s) found in editorial letter."
+      echo "NOTE: The framework enforces rigorous diagnosis; sycophantic praise is not permitted."
+      exit 1
+    else
+      echo "OK: No blocked superlatives found. Severity tone is compliant."
       exit 0
     fi
     ;;

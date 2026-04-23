@@ -28,6 +28,8 @@ and dramatic consequences while failing to show:
 
 **The fundamental question: Do major decisions emerge from visible pressure geometry and character logic, or are they convenience pivots?**
 
+**Deficit-First Diagnostic Rule:** Do not diagnose decision pressure by validating the presence of strong emotional language. You must hunt for the *absence* of structural architecture (invisible options, non-specific constraints, uncollected debts). An emotionally resonant decision that lacks pressure architecture is a failure. You are auditing for omission and missing constraints.
+
 ### Non-duplication boundaries
 
 1. **Stakes System Audit** evaluates the pressure field (risk type, escalation, consequence). This audit evaluates choices made inside that field.

@@ -10,6 +10,8 @@ Diagnose prose-level failure patterns characteristic of AI-generated or AI-assis
 
 **Core claim:** AI-generated prose fails in categories, not just surface tells. The categories are more durable than any model's particular tics because they reflect what language models structurally cannot do: inhabit a specific consciousness, make surprising word choices under genuine constraint, or sustain voice across register shifts. Surface tells (em-dash density, hedge phrases, "I couldn't help but") shift every six months. The categories persist.
 
+**Deficit-First Diagnostic Rule:** Do not evaluate AI prose by confirming its grammatical fluency or logical coherence. You must hunt for the *absence* of friction, the *absence* of specificity, and the *absence* of unpredictable consciousness. AI prose fails because it is a velvet fog of competence without consequence. You are auditing for the omission of human interiority.
+
 **What this audit is:** A prose-level diagnostic overlay. It identifies where AI-generated text fails as *writing* — not where it fails as *imitation*. The question is never "did a machine write this?" The question is: "Where does this prose lack the specificity, friction, and voice that make a reader trust the narrator?"
 
 **What this audit is not:** A provenance detector. It does not guess which model produced which passage. It does not flag text as "AI" or "human." It diagnoses symptoms on the page. A human writer who produces voice-flattened, generically fluent prose will trigger the same flags — and benefit from the same salvage plan.

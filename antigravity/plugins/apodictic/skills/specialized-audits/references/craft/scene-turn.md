@@ -10,6 +10,8 @@ Diagnose whether individual scenes turn properly and whether scene-to-scene caus
 
 **Core claim:** A story can have a sound spine and psychologically coherent characters and still feel flat scene-by-scene. When a scene doesn't turn—when the situation at the end is the same as at the beginning—the reader's experience is "nothing happened," even if technically something did.
 
+**Deficit-First Diagnostic Rule:** Your job is not to validate the presence of attractive prose, atmospheric detail, or conversational wit. You must hunt for the *absence* of scene turning mechanisms: missing goals, unaligned conflict, missing outcomes, and dead sequels. If a scene contains beautiful language but no consequence, it fails the turn diagnostic.
+
 **What this audit is:** A scene-level mechanics diagnostic. It tests whether each scene has the internal engine (goal → conflict → outcome) and whether the processing between scenes (reaction → dilemma → decision) maintains causal momentum.
 
 **What this audit is not:** A substitute for Plot Architecture (spine mechanics), Emotional Craft (emotional transmission), or Character Architecture (psychology/agency). Plot Architecture diagnoses whether the story's overall structure works. Emotional Craft diagnoses whether emotion transmits. Character Architecture diagnoses whether characters are psychologically coherent and appropriately agentic. This audit diagnoses whether individual scenes execute their structural function—whether each scene is a machine that produces change.

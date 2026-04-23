@@ -2,6 +2,8 @@
 
 **The issue: when does POV interiority disappear during scenes of peak physical or psychological intensity?**
 
+**Deficit-First Diagnostic Rule:** Do not validate interiority preservation by confirming cognitive presence in quiet moments. You must hunt for the *absence* of interiority under high structural load. If a character becomes an empty vessel or a mechanical agent precisely when the plot demands action, it fails interiority preservation. You are auditing for the omission of consciousness.
+
 This applies across genres and scene types — combat, intimate encounter, interrogation, crisis, confrontation. The POV character may stop having internal experience and become a camera or action-delivery mechanism.
 
 This applies symmetrically in intimate scenes:
