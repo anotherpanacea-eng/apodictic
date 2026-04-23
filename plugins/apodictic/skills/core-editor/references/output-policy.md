@@ -291,6 +291,7 @@ Rules:
 2. If a flag's evidence meets Must-Fix criteria per its severity guidance, assign Must-Fix. Do not downgrade based on the overall "feel" of the manuscript.
 3. Strengths must be specific and evidence-based. "Strong voice" is not a strength finding. "Voice consistency in chapters 4-7 creates reliable POV trust" is.
 4. Never use severity assignment to manage the author's feelings. The framework's job is accurate diagnosis.
+5. **Evidence-first, verifier-backed underdiagnosis checks:** Do not assume a text is structurally sound simply because the prose flows well. Absence of structural friction must be proven, not assumed. A text is only "structurally clean" if the Reader Stress Test, the Rejection Memo, and the Absence/Blind-Spot Inventory explicitly fail to surface deep flaws.
 
 ---
 

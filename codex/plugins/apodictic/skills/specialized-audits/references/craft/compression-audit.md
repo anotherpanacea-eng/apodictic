@@ -16,6 +16,8 @@ A manuscript can preserve material the writer needed during drafting — establi
 
 **The fundamental question: What material can be removed or compressed without damaging causality, character, theme, or reader experience — and how many words would that save?**
 
+**Deficit-First Diagnostic Rule:** Do not evaluate compression based on whether the prose reads smoothly. You must hunt for the *absence* of structural necessity. If a scene contains no consequence or structural requirement, its fluency is irrelevant. You are auditing for structural over-extension and the omission of necessary force, not providing aesthetic validation.
+
 ### Activation
 
 - Author reports "the book is too long" or specifies a word-count target

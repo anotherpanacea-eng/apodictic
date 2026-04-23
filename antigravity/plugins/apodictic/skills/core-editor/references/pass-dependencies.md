@@ -179,21 +179,23 @@ Activated by pass results during a diagnostic run. The system checks these after
 
 | Pass | Finding pattern | Audit(s) | Policy |
 |------|----------------|----------|--------|
+| 1 (Reader Experience) | Pacing stalls, rushed sequence compression, narrative summary overuse | Compression | Auto-recommend before synthesis |
 | 1 (Reader Experience) | Emotional flatness, forced affect, unearned catharsis | Emotional Craft | Recommend |
 | 1 (Reader Experience) | Dread/tension calibration problems | Horror Craft Integration | Recommend (if not already loaded) |
 | 1 (Reader Experience) | Wrongness, supernatural pressure, belief threshold problems | Supernatural Horror | Recommend (if not already loaded) |
 | 1 (Reader Experience) | Inert bleakness, violence without consequence, moral flatness, cynicism as posture | Grimdark / Dark Fantasy | Recommend (if not already loaded) |
 | 1 (Reader Experience) | Comedy landing rate low, tonal inconsistency | Comedy & Satire | Recommend |
 | 5 (Character Audit) | Character agency issues, puppet moments | Character Architecture | Recommend |
-| 5 (Character Audit) | Female POV interiority thinning patterns | Female Interiority | Recommend |
-| 5 (Character Audit) | Voice drift, dialogue undifferentiated | Scene Turn | Recommend |
-| 7 (POV & Voice) | Interiority loss during peak-intensity scenes | Interiority Preservation | Recommend |
+| 5 (Character Audit) | Female POV interiority thinning patterns | Female Interiority | Auto-recommend before synthesis |
+| 5 (Character Audit) | Voice drift, dialogue undifferentiated | Scene Turn | Auto-recommend before synthesis |
+| 7 (POV & Voice) | Interiority loss during peak-intensity scenes | Interiority Preservation | Auto-recommend before synthesis |
 | 8 (Reveal Economy) | Information pressure problems in mystery/thriller | Mystery/Thriller Architecture | Recommend (if not already loaded) |
 | 9 (Thematic Coherence) | Thematic argument under-structured, didacticism | Dialectical Clarity | Recommend |
 | 9 (Thematic Coherence) | Straw opposition, authorial thumb on scale | Banister (Epistemic Humility) | Recommend |
 | 6 (Scene Function) | Force delivery issues, inert action sequences | Force Architecture | Recommend |
 | 1 (Reader Experience) | Uniform fluency, voice genericism (AI indicators) | AI-Prose Calibration | Auto-recommend before synthesis (if not already loaded) |
 | 5 (Character Audit) | Puppet dialogue, cognitive sameness, generic fluency seams (AI indicators) | AI-Prose Calibration | Auto-recommend before synthesis (if not already loaded) |
+| Any pass | Unsupported choice architecture, false dilemmas, or abstract risk persistence | Decision Pressure | Auto-recommend before synthesis |
 | Any pass | Consent ambiguity, governance legibility failure, coercion aestheticization risk, or aftercare / repair incoherence in intimate or power-dynamic material | Consent Complexity | Auto-recommend before synthesis |
 | Any pass | Representation contestation, screenshot risk, extractability, hostile-reader portability, or culturally volatile framing | Reception Risk | Auto-recommend before synthesis |
 | 8 (Reveal Economy) | Cross-volume state drift, thread amnesia, or consequence reset in series context | Series Continuity | Auto-recommend before synthesis (if not already loaded) |
@@ -204,7 +206,7 @@ Activated by pass results during a diagnostic run. The system checks these after
 
 - **Auto-run:** Audit loads without user confirmation. Bundled with the workflow from intake. Used for audits that are definitional to the manuscript type (e.g., Memoir audit for a memoir, AI-Prose for an AI-assisted draft). **Auto-run audits are synthesis dependencies.** They must complete and append their findings to the Findings Ledger before synthesis begins. This ensures synthesis integrates auto-run audit findings into root cause analysis and triage rather than requiring post-hoc retrofitting.
 - **Auto-recommend:** System recommends after the relevant pass completes. The user can decline. Used for genre-specific audits that would catch issues the passes surface but can't fully diagnose. Auto-recommend audits run after their triggering pass; if the user accepts and the audit completes before synthesis begins, its findings are integrated. If it completes after synthesis, its findings appear in the editorial letter appendix as "post-synthesis audit — not integrated into triage."
-- **Auto-recommend before synthesis:** Same as Auto-recommend, but the recommendation must be resolved before synthesis begins. If the user declines or defers, the run records an explicit blind spot in the Audit Invocation Log and the synthesis/readiness layer must name the confidence limit.
+- **Auto-recommend before synthesis:** Same as Auto-recommend, but the recommendation must be resolved before synthesis begins. If the user declines or defers, the run records an explicit blind spot in the Audit Invocation Log and the synthesis/readiness layer must name the confidence limit. This policy applies to critical structural and consent issues that undermine the core framework (e.g., Compression, Interiority, AI-Prose).
 - **Recommend:** System mentions availability when findings suggest relevance. The user opts in. Used for cross-cutting audits that *might* be relevant based on patterns. Same post-synthesis labeling applies if they complete late.
 
 ### §4d. Presentation format
