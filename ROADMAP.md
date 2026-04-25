@@ -277,6 +277,93 @@ Decisions whose framework default is documented and conservative, but whose empi
 
 ---
 
+## Deferred (Corpus Expansion Candidates)
+
+Instructions whose framework status is "load-bearing under current evidence" but whose decision surfaces are not exercised by the canonical fixture corpus (F1 Regrets Only Opus, F2 Regrets Only Codex, F3 Dinner Party, F4 TAY). Per the model-capability review spec's UNPROVEN provenance rule, these are corpus-expansion candidates rather than deletion candidates: the instruction's effect is ambiguous due to fixture scope, not absent.
+
+Surfaced by Phase 7 Wave 2 B1 eval coverage (`docs/.local/review-log/2026-04-25_phase-7-wave-2-eval-coverage.md`).
+
+### State-lifecycle gardening thresholds (300/500 lines)
+
+Framework instruction in `state-lifecycle.md` triggers gardening protocol when `state.md` exceeds 300 lines (warning) or 500 lines (forced gardening). Canonical fixtures don't reach the thresholds, so threshold-crossing behavior is not directly observed. Synthetic state-lifecycle fixtures at the 300/500 boundaries would exercise `validate.sh state-lines` threshold-crossing behavior and confirm gardening-trigger load-bearing.
+
+### AI-Prose Calibration unexercised flag families (AIC-2 / AIC-4 / AIC-6 / AIC-8)
+
+The AI-Prose Calibration audit defines flag families AIC-1 through AIC-8. F1-F4 exercise AIC-1 (Voice Singularity), AIC-3 (Echo Stack), AIC-5 (Puppet Dialogue), and AIC-7 (Discourse Leak). The remaining four families (AIC-2 Velvet Fog, AIC-4 Register Seams, AIC-6 Continuity Smear, AIC-8 Unearned Fluency) lack fixture coverage. A synthetic AI-heavy fixture (e.g., a deliberately AI-drafted prose sample with named-flag invocation targets) would exercise the unexercised families.
+
+### Genre-specific tag audits (queer-romance, cozy, philosophical)
+
+Tag audits for queer-romance-erotica, cozy-tag, and philosophical-tag are defined in `specialized-audits/references/tag/` but no canonical fixture invokes them. One ~500-word synthetic scene per genre territory would exercise tag-audit activation paths and confirm their findings vs. a no-tag baseline.
+
+### Single-agent vs. multi-agent staging A/B fixture pair
+
+Pre-Pass Re-Grounding and Staged Visibility instructions are mode-conditional. Their less-observable single-agent mode lacks a paired fixture for direct A/B observation. A synthetic A/B fixture pair (same scene, run in both modes) would exercise the mode-conditional instructions in their less-observable single-agent mode.
+
+---
+
+## Deferred (Out of Scope for This Cycle)
+
+Items deferred from the Phase 7 closeout per scope-control. Each has a documented rationale; each is a candidate for a future cycle if a forcing function justifies the investment.
+
+### Python helpers for true Timeline parsing (A3)
+
+Phase 7 plan §A3 specified four Python modules (`timeline_parser.py`, `timeline_arithmetic.py`, `timeline_anchor.py`, `timeline_diff.py`) that would lift the documented bash-validator capability ceiling for Pass 10 Timeline verification. Recommended out of scope for this cycle because:
+
+1. Substantial new tooling (4 modules + new test harness, ~870 lines)
+2. No Phase 4-6 finding requires it as blocking; v1.7.9 honestly reframed bash validators as marker-hygiene / pre-labeled-surfacing checks
+3. Pass 10 model judgment still does the primary verification; bash validators surface candidates for model judgment
+
+Best-fit follow-on: a "Python tooling" minor cycle, contingent on a forcing function (e.g., recurring real-world false-pass case on novella-length manuscripts with complex chronologies).
+
+### audit-signal-propagation §4e context-modifier extension
+
+Phase 7 plan §A2 specified three optional validators; the third (`audit-signal-propagation §4e context-modifier extension`) was deferred per scope-control. The v1.7.9 validator uses a default mapping; this extension would make the propagation table fully driven by the `§4e` source of truth. Refinement, not missing capability. Defer to v1.9.x or until `§4e` table changes force a re-derivation.
+
+### Codex `validateGeneratedWorkspace` allowlist maintainability
+
+Wave 4 D2 host parity sweep finding 3: the codex build's `validateGeneratedWorkspace` function maintains a hard-coded allowlist of files where historical "Claude Opus" / `.claude-plugin/` references are intentional. Future framework additions with intentional historical references must update the allowlist by hand. Cosmetic / future-cleanup observation; defer until it bites.
+
+---
+
+## Future Work
+
+Forward-looking design patterns and trajectories surfaced during the 2026-04-24 model-capability review. These are not feature commitments; they are design lessons carried forward as discipline for future cycles.
+
+### v1.9.x cycle considerations
+
+Likely shape of the next minor cycle:
+- **Corpus expansion** — synthetic fixtures for the four candidates listed in §Deferred (Corpus Expansion Candidates) above. Cost: synthetic-fixture authorship + per-fixture eval-coverage report.
+- **Python tooling** — only if a real-world forcing function (e.g., recurring Pass 10 false-pass) justifies the toolchain investment. Otherwise skip.
+- **Codex final-review adjudication outcomes** — if the Phase 7 Wave 5 Codex final review (drafted at `docs/.local/2026-04-25_codex-final-review-prompt.md`) surfaces P1 findings, v1.8.4 / v1.9.0 patches them. P0 findings would block before v1.9.x scope opens.
+
+### Forward design patterns (from the review)
+
+The review surfaced four reusable framework-design patterns. Each generalizes beyond its first application; future audits, validators, and pass artifacts can adopt them.
+
+#### Structured-marker pattern for validator overrides
+
+Where a mechanical validator would otherwise be tyrannical (correctly-failing on cases that author judgment should override), the override is a structured comment marker in the canonical artifact. The validator records the override but does not block. Used in `decision-layer-check`, `audit-signal-propagation`, and the timeline validators. Pattern generalizes to any future validator where author judgment must be allowed to override mechanical signal.
+
+#### Condition-triggered vs. model-emergent gates
+
+When the framework needs a behavior, the trigger conditions must be detectable — not "the model should notice." CR-6 (Underdiagnosis Retry Loop) was the canonical example: a model-emergent retry loop that fired for Opus and didn't fire for Codex on the same evidence. Phase 4 conversion to condition-triggered logic + `underdiagnosis-triggers` validator made the gate framework-honest. Discipline carries forward: any future gate of this class must be condition-triggered before it ships.
+
+#### Pass-10-class rolling structured artifact pattern
+
+Pass 10's Timeline.md is the first instance of a generalizable family: rolling project-root artifacts with structured schemas, diff'd across revisions by mechanical validators. Future passes facing cross-revision coherence challenges (cross-revision character voice consistency; cross-revision argument-state evolution beyond the existing `Argument_State.md`) can adopt the same pattern. Named in `core-editor/SKILL.md §Project Integration §Pass-10-Class Rolling Structured Artifacts`.
+
+#### Propagation-table pattern as audit-coverage extension mechanism
+
+`pass-dependencies.md §4e` propagation table maps audit-internal severity signals to synthesis-layer obligations. One row per audit; columns for signal type, signal level, synthesis-layer obligation, override condition. Future audits can be added by appending rows rather than rewriting framework rules. Pattern generalizes — analogous tables could cover audit precedence (CR-7 closure already uses a related rule), audit-tier promotion criteria (`§4c`), and audit-routing rules (`§4`).
+
+### Methodology carry-forward
+
+The bias-equalized parallel adjudication methodology developed during the review (cross-model fixture runs + per-side comparators + meta-comparison + manual ground-truth verification + per-phase done-gates) is now part of APODICTIC's development discipline. Documented in `docs/.local/blind-review-protocol.md` + `docs/.local/eval-harness-spec.md`. Any future model upgrade (Opus 5, Codex 6, Gemini 3, etc.) can be evaluated against the framework using the same pattern.
+
+The fixtures in place (F1-F4) are reusable for future model-capability reviews. Corpus expansion (per §Deferred above) increases the methodology's reach without changing its shape.
+
+---
+
 ## Done
 
 ### v1.7.0 — Harness Engineering
