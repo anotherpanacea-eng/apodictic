@@ -26,7 +26,7 @@ Tier 1 passes read the manuscript directly. They have no upstream dependencies a
 
 | Pass | Name | Depends on | Output artifact |
 |------|------|-----------|-----------------|
-| 2 | Structural Mapping | 0 | `[Project]_Pass2_Structural_Mapping_[runlabel].md` |
+| 2 | Structural Mapping | 0 | `[Project]_Pass2_Structural_Mapping_[runlabel].md` (on-page act/movement boundaries, beat presence, structural causality, orphan scenes; for spine-paradigm questions — "which spine is this," "is my structure working at the whole-work level" — use the `plot-architecture` skill instead per `plot-architecture/SKILL.md §Plot Architecture vs. Pass 2 (Structural Mapping) — Boundary`) |
 | 3 | Rhythm & Modulation | 0, 1 | `[Project]_Pass3_Rhythm_[runlabel].md` |
 | 4 | Emotional Value Tracking | 0, 1 | `[Project]_Pass4_Emotional_[runlabel].md` |
 | 5 | Character Audit | 0 | `[Project]_Pass5_Character_Audit_[runlabel].md` |

@@ -7,7 +7,7 @@ description: >
   draft," "plot coaching," "hybrid structure," "fantasy spine," "series
   architecture," or any request involving narrative spine identification,
   plot selection guidance, or structural coaching.
-version: 1.8.1
+version: 1.8.2
 ---
 
 # Plot Architecture, Selection & Coaching
@@ -17,6 +17,28 @@ This skill covers three interconnected functions:
 1. **Diagnosis** — Identify the manuscript's structural spine and test whether it's functioning (Plot Architecture audit)
 2. **Selection** — Help writers choose, combine, and adapt structural tools (Plot Selection & Coaching)
 3. **Fantasy & Series** — Diagnose fantasy-specific spines and series-level architectural patterns
+
+---
+
+## Plot Architecture vs. Pass 2 (Structural Mapping) — Boundary
+
+Plot Architecture and Pass 2 both produce structural diagnosis. They are not interchangeable; they answer different writer questions and operate at different layers.
+
+| | **Plot Architecture (this skill)** | **Pass 2: Structural Mapping (`core-editor`)** |
+|---|---|---|
+| **Writer question** | "Which spine is this — and is it working?" | "Are the act/movement boundaries, beats, and structural integrity present?" |
+| **Operates on** | The whole-work structural paradigm (which of the 50 spines / 12 families governs the shape; primary vs. secondary spines; hybrid layering) | The on-page structural execution (act breaks, midpoint, climax positioning, missing beats, scene-to-scene structural causality, orphan scenes) |
+| **Output** | Spine identification + spine-specific logic-gate diagnosis (PASS / FLAG / STRUCTURAL BREAK); selection coaching when no spine is committed; fantasy/series architecture | `[Project]_Pass2_Structural_Mapping_[runlabel].md` — section-by-section structural inventory, missing-beat list, causal-gap surfacing |
+| **When to invoke** | "Plot structure," "spine," "is my structure working," structural triage on a stuck draft, hybrid design, fantasy- or series-specific structural pressure | Concern resolves to "Structure / architecture" (`pass-dependencies.md §2 General diagnostic floor`); Pass 2 is auto-included when any other Tier 2 pass that depends on Pass 0 is selected |
+| **Routes through** | `apodictic:plot-architecture` skill (or `apodictic-plot-coach`) | Pass dispatch within a `core-editor` development edit run |
+
+**Cross-references in practice:**
+
+- **Plot Architecture → Pass 2.** When Plot Architecture finds a STRUCTURAL BREAK at the spine level (e.g., Save the Cat midpoint pivot fails the Reactive→Proactive logic gate at 45-55%), recommend a follow-on Pass 2 to map exactly *where* the on-page structure has eroded around the diagnosed break point. Spine-level breaks usually have section-level mappable evidence; Pass 2 surfaces it.
+- **Pass 2 → Plot Architecture.** When Pass 2 surfaces structural symptoms it cannot diagnose at the spine level (e.g., "the manuscript has act breaks but they don't generate momentum," or "the third act feels structurally arbitrary"), recommend escalation to Plot Architecture. Pass 2 maps the on-page structure honestly; whether the structure should exist *as it does* is a spine-paradigm question.
+- **Both can run in the same project.** They are complementary, not duplicative. A Full DE that includes Pass 2 may still benefit from a follow-on Plot Architecture audit if spine identification is uncertain or if the writer is mid-structural-pivot.
+
+**Rule of thumb:** If the writer asks "what kind of book is this structurally," start with Plot Architecture. If the writer asks "is the structure I have on the page working," start with Pass 2. If both are live concerns, sequence Pass 2 → Plot Architecture (so the spine diagnosis operates against an honest map of what's actually on the page).
 
 ---
 
