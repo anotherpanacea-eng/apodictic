@@ -111,6 +111,30 @@
 #       <!-- override: timeline-anchor-conflict -->. Pass --self-test for
 #       built-in cases.
 #
+#   audit-tier-criterion <pass_dependencies_file> [<audits_root_dir>]
+#       Verify audit tier assignments in pass-dependencies.md §4a/§4b
+#       satisfy criterion 1 (named hard gates / Must-Fix floor) of the
+#       §4c Audit Tier Promotion Criteria for any audit at Hard
+#       Prerequisite / Pre-DE Prerequisite / Auto-run / Auto-recommend
+#       before synthesis tier. Criteria 2 (undetectable-by-passes) and
+#       3 (disclosure-non-equivalence) require model judgment and are
+#       not mechanically verified. Per-audit override marker:
+#       <!-- override: audit-tier-criterion-<audit-slug> -->. Pass
+#       --self-test for built-in cases.
+#
+#   argument-recon-prerequisite <run_folder> [<editorial_letter_file>]
+#       Verify argument-shaped runs satisfy the Field Reconnaissance
+#       prerequisite per pass-dependencies.md §4a (Hard Prerequisite or
+#       Auto-recommend before synthesis) and v1.7.9 wiring. When
+#       argument-engine artifacts (Argument_State.md, Red_Team_Memo.md,
+#       Argument_Evidence.md, etc.) are present in the run folder, the
+#       validator requires either (a) Field_Reconnaissance_Report.md in
+#       the run folder, or (b) the canonical blind-spot disclosure
+#       ("literature-counterevidence not surveyed") in the editorial
+#       letter per run-synthesis.md §Step 3. Body-only override marker:
+#       <!-- override: argument-recon-prerequisite -->. Pass --self-test
+#       for built-in cases.
+#
 # Exit codes:
 #   0 — all checks pass
 #   1 — validation failure (details on stdout)
@@ -120,7 +144,7 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite"
   exit 2
 }
 
@@ -1328,14 +1352,53 @@ EOF
   #
   # Verifies five mechanical checks:
   #   1. Protected Elements — 3-6 entries (count list items / paragraphs
-  #      under the "Protected Elements" heading).
-  #   2. Author Decisions — 3-7 entries (count list items across
-  #      Keep/Cut/Unsure subheads, or under the heading).
-  #   3. Control Questions — exactly 7 entries.
+  #      under the "Protected Elements" heading; argument-DE variant
+  #      "Strengths / Protected Elements" or "Coalition-Partner
+  #      Ground-Truth Recommendations" also accepted — see C3 below).
+  #   2. Author Decisions — 3-7 entries (count Keep/Cut/Unsure subhead
+  #      clusters when subheads present, or list items under the heading
+  #      otherwise; see C1 below).
+  #   3. Control Questions — exactly 7 entries (skipped for argument-DE
+  #      class; see C3 below).
   #   4. Mandatory Appendices A, B, C — each present as a heading with a
-  #      non-empty body.
+  #      non-empty body (skipped for argument-DE class; see C3).
   #   5. Must-Fix evidence density — every Must-Fix entry has ≥2
-  #      references (line numbers, scene refs, audit codes counted).
+  #      references in a paragraph-block window scanning until next
+  #      Must-Fix or section header (see C4 below).
+  #
+  # Phase 7 Wave 1 calibration (C1-C4 from Phase 4 Wave 3 eval coverage):
+  #   C1 — When the Author Decisions section has Keep/Cut/Unsure subheads,
+  #        count subhead clusters (3) rather than the sub-bullets within
+  #        them. The contract intent is "3-7 distinct decision categories"
+  #        and Keep/Cut/Unsure naturally produces 2-3 categories with
+  #        sub-bullets as evidence. Subhead-cluster mode is detected when
+  #        any of `### Keep`, `### Cut`, `### Unsure` headings appears
+  #        within the Author Decisions section.
+  #   C2 — When neither list items nor bolded paragraphs are detected,
+  #        fall back to paragraph-form detection: count blank-line-
+  #        separated paragraphs whose first sentence begins with one of
+  #        the canonical decision verbs (Protect, Keep, Cut, Defer,
+  #        Decide, Unsure) or contains an opening bolded keyword
+  #        (`**Decision:**`, `**Question:**`). Risk-controlled fallback —
+  #        only fires when the first two heuristics return zero.
+  #   C3 — Detect argument-DE letter class via marker presence:
+  #        "Coalition-Partner Ground-Truth Recommendations",
+  #        "Editorial-Dispute Territory", "Argument_State", "Claim
+  #        Ladder", or "Argument Engine". When detected, swap to argument-
+  #        DE schema: skip Check 3 (Control Questions) and Check 4
+  #        (Appendices A/B/C); for Check 1, accept argument-DE variant
+  #        names ("Strengths / Protected Elements", "Coalition-Partner
+  #        Ground-Truth Recommendations") in addition to the canonical
+  #        "Protected Elements".
+  #   C4 — Evidence-density window widened from a fixed 6-line span to
+  #        a paragraph-block window: scan from the Must-Fix line until
+  #        the next Must-Fix occurrence OR the next section header
+  #        (^## or ^### at column 0), whichever comes first. Trade-off:
+  #        wider window reduces false-positive density flags but makes
+  #        the validator slightly less strict on truly under-evidenced
+  #        Must-Fixes — the surrounding paragraph must still contain
+  #        2+ references, just within the section block rather than the
+  #        immediate 6-line trail.
   #
   # Override markers (per Wave 2 pattern; body-only honored, appendix-only
   # ignored): one per check ID.
@@ -1437,7 +1500,12 @@ detail
 ## Appendix C
 notes
 EOF
-      # Negative 3: 8 Author Decisions.
+      # Negative 3: 8 Author Decisions in non-subheaded list form.
+      # Phase 7 calibration: when no Keep/Cut/Unsure subheads are
+      # present, the validator falls back to list-item count, and 8
+      # items still exceed the 3-7 range. (Subhead-cluster mode would
+      # mask this case if the test used subheads — see C1 fixture
+      # which deliberately uses 3 subheads with sub-bullets.)
       cat > "$TMPDIR/neg3.md" <<'EOF'
 # Development Edit
 ## Protected Elements
@@ -1445,15 +1513,12 @@ EOF
 - Two.
 - Three.
 ## Author Decisions
-### Keep
 - D1
 - D2
 - D3
 - D4
-### Cut
 - D5
 - D6
-### Unsure
 - D7
 - D8
 ## Control Questions
@@ -1501,6 +1566,8 @@ calibration
 notes
 EOF
       # Override: only 5 Control Questions but body marker present → WARN.
+      # Author Decisions uses 4 list items (no subheads) so subhead-cluster
+      # mode does not mask it; falls into list-item count = 4 (in range).
       cat > "$TMPDIR/over1.md" <<'EOF'
 # Development Edit
 ## Protected Elements
@@ -1508,10 +1575,10 @@ EOF
 - Two.
 - Three.
 ## Author Decisions
-### Keep
-- A.
-- B.
-- C.
+- Keep the dual POV.
+- Cut the prologue.
+- Unsure on Chapter 5.
+- Decide pacing of Part II.
 <!-- override: decision-layer-control-questions — Short-fiction tier; 5 questions documented in Appendix B. -->
 ## Control Questions
 1. Q one.
@@ -1534,10 +1601,10 @@ EOF
 - Two.
 - Three.
 ## Author Decisions
-### Keep
-- A.
-- B.
-- C.
+- Keep the dual POV.
+- Cut the prologue.
+- Unsure on Chapter 5.
+- Decide pacing of Part II.
 ## Control Questions
 1. Q one.
 2. Q two.
@@ -1552,6 +1619,165 @@ calibration
 ## Appendix C
 notes
 EOF
+      # C1 case: Author Decisions with Keep/Cut/Unsure subheads + many
+      # sub-bullets. Phase 4-6 validator counted 13 sub-bullets and FAILed
+      # on the 3-7 range; Phase 7 calibration counts 3 subhead clusters
+      # and PASSes. Mirrors the canonical Regrets Only Opus / Dinner Party
+      # fixture pattern.
+      cat > "$TMPDIR/c1_subhead_clusters.md" <<'EOF'
+# Development Edit
+## What Needs Work
+Must-Fix: pacing collapse in Chapter 7, lines 142-160; also Chapter 9, line 220.
+## Protected Elements
+- Voice consistency in Part I.
+- Scene 4 pivot from Chapter 3.
+- Sister relationship arc.
+- Final image of Chapter 12.
+## Author Decisions
+### Keep
+- Keep the dual POV throughout Part II.
+- Keep the unreliable narrator frame.
+- Keep the prologue's epistolary form.
+- Keep the time-jump between Parts I and II.
+- Keep the sibling reconciliation thread.
+- Keep the ambiguous final image.
+### Cut
+- Cut the secondary romance subplot.
+- Cut the dream sequence in Chapter 4.
+- Cut the third epigraph.
+- Cut the metafictional aside in Chapter 9.
+### Unsure
+- Unsure whether Chapter 5 stays in Part I or moves to Part II.
+- Unsure whether the antagonist's POV chapter survives.
+- Unsure whether the dedication should be removed.
+## Control Questions
+1. What does the protagonist learn in the final third?
+2. Whose POV closes Part II?
+3. Does the prologue earn its place?
+4. What is the cost of Chapter 7's choice?
+5. Is Chapter 5 working in its current position?
+6. Does the final image land?
+7. What is the book's controlling idea?
+## Appendix A — Diagnostic Detail
+Pointers to pass artifacts.
+## Appendix B — Severity Calibration
+Tested upward and downward.
+## Appendix C — Framework Notes
+Run metadata.
+EOF
+      # C2 case: Codex-style paragraph form (no bullets, no bold) for
+      # Protected Elements and Author Decisions. Phase 4-6 validator
+      # counted 0 and FAILed; Phase 7 calibration's paragraph-form
+      # fallback detects verb-leading paragraphs.
+      cat > "$TMPDIR/c2_paragraph_form.md" <<'EOF'
+# Development Edit
+## What Needs Work
+Must-Fix: voice drift in Chapter 3 (lines 80-95) and Chapter 7 (lines 200-215).
+## Protected Elements
+Protect the dual-narrator structure across Parts I and II. The shifting POV is the book's load-bearing architecture and revision should not flatten it.
+
+Protect the slow opening in Chapter 1. Its pacing rewards the patient reader and survives multiple test passes without losing tension.
+
+Protect the sibling reconciliation in Chapter 11. This is the emotional spine of the closing third and any cut here will undo the climax.
+
+Protect the metafictional epigraph. It cues the unreliable-narrator frame readers need.
+
+## Author Decisions
+Keep the prologue. The distance frame it establishes is doing work the body cannot do without it.
+
+Cut the third dream sequence. It duplicates the second and dilutes thematic charge.
+
+Decide whether Chapter 5 stays in Part I. The decision determines whether Part I lands on the sister scene or the road scene; both are defensible but only one survives.
+
+Unsure on the chapter break between 7 and 8. Either an explicit break or a soft fade works structurally; this is a craft decision the author owns.
+
+## Control Questions
+1. What does the protagonist learn in the final third?
+2. Whose POV closes Part II?
+3. Does the prologue earn its place?
+4. What is the cost of Chapter 7's choice?
+5. Is Chapter 5 working in its current position?
+6. Does the final image land?
+7. What is the book's controlling idea?
+## Appendix A — Diagnostic Detail
+Pointers to pass artifacts. Chapter 3 lines 80-95 cited; Chapter 7 lines 200-215 cited; Scene 4 cross-reference noted.
+## Appendix B — Severity Calibration
+Tested upward and downward.
+## Appendix C — Framework Notes
+Run metadata.
+EOF
+      # C3 case: argument-DE letter using Coalition-Partner Ground-Truth
+      # Recommendations + Editorial-Dispute Territory headings, no
+      # canonical Control Questions, no Appendix A/B/C. Phase 4-6
+      # validator FAILed Check 4 (missing appendices) and WARNed Check 3
+      # (missing Control Questions); Phase 7 calibration detects the
+      # argument-DE class and skips Checks 3-4.
+      cat > "$TMPDIR/c3_argument_de.md" <<'EOF'
+# Editorial Letter — Argument-Shaped Run
+## What Needs Work
+Must-Fix: warrant gap on §3 claim (page 14, lines 320-340); Must-Fix: missing counterevidence on §5 (page 22, lines 580-600).
+## Coalition-Partner Ground-Truth Recommendations
+- Center the lived-experience testimony in §2 before introducing the statistical frame in §3.
+- Cite the 2024 longitudinal study (page 8) before pivoting to policy implications in §4.
+- Replace the abstract case in §6 with the named program example partners flagged.
+- Re-sequence §7 conclusions to lead with coalition-partner recommendations rather than authorial conclusions.
+## Editorial-Dispute Territory
+Decide whether the methodology critique in §4 stays at its current scope. Reviewers split on this — three readers wanted it expanded to address replication failures; two wanted it cut as scope creep.
+
+Cut the second example in §6 if the methodology critique stays at current scope; keep it if the methodology critique expands.
+
+Defer the call-to-action framing decision until after Field Reconnaissance returns. The literature-counterevidence may shift the policy frame.
+
+Decide whether the regulatory recommendations in §8 belong in the body or in an annex. Argument_State analysis suggests body placement strengthens the claim ladder.
+
+Decide on the executive summary's length cap (current 1 page; partner asked for 2).
+## Stress Test
+Hostile-reader attack 1: scope creep in §4.
+Hostile-reader attack 2: cherry-picked sample in §3 (lines 320-340 vulnerable).
+EOF
+      # C4 case: Must-Fix with paragraph-form evidence (references in
+      # the surrounding paragraph block, not in the immediate 6-line
+      # window). Phase 4-6 validator FAILed; Phase 7 paragraph-window
+      # passes.
+      cat > "$TMPDIR/c4_paragraph_evidence.md" <<'EOF'
+# Development Edit
+## What Needs Work
+
+Must-Fix: pacing collapse in the middle third.
+
+The Compression audit flagged this at Pattern severity — see Chapter 7 (lines 142-160) where the text summarizes three days in two sentences while the surrounding scenes operate at scene-level granularity. The same compression appears in Chapter 9 around line 220, and the Compression audit's §7 hard gate fires on the cumulative pattern. Page 88 contains the load-bearing scene that should anchor the middle third's pacing recovery; instead it's compressed into a paragraph.
+
+Must-Fix: voice drift in Chapter 3.
+
+Scene 4 (line 95) shows the first drift; the AI-Prose Calibration audit flagged AIC-2 voice flattening at Pattern severity. The drift recurs at Chapter 5 line 180 and Chapter 7 lines 200-215, producing a manuscript-wide pattern the audit elevated from Spot to Pattern.
+
+## Protected Elements
+- Voice consistency in Part I.
+- Scene 4 pivot from Chapter 3.
+- Sister relationship arc.
+- Final image of Chapter 12.
+## Author Decisions
+### Keep
+- Keep the dual POV.
+### Cut
+- Cut the prologue.
+### Unsure
+- Unsure whether Chapter 5 stays.
+## Control Questions
+1. Q1
+2. Q2
+3. Q3
+4. Q4
+5. Q5
+6. Q6
+7. Q7
+## Appendix A
+detail
+## Appendix B
+calibration
+## Appendix C
+notes
+EOF
       RESULTS=0
       "$0" decision-layer-check "$TMPDIR/pos.md" >/dev/null 2>&1 && echo "  pos: OK" || { echo "  pos: FAIL (expected OK)"; RESULTS=1; }
       "$0" decision-layer-check "$TMPDIR/neg1.md" >/dev/null 2>&1 && { echo "  neg1: FAIL (expected ERROR — 5 Control Questions)"; RESULTS=1; } || echo "  neg1: OK (caught)"
@@ -1560,6 +1786,10 @@ EOF
       "$0" decision-layer-check "$TMPDIR/neg4.md" >/dev/null 2>&1 && { echo "  neg4: FAIL (expected ERROR — Must-Fix with <2 refs)"; RESULTS=1; } || echo "  neg4: OK (caught)"
       "$0" decision-layer-check "$TMPDIR/over1.md" >/dev/null 2>&1 && echo "  over1: OK (marker in body downgraded ERROR→WARN)" || { echo "  over1: FAIL (expected OK after override)"; RESULTS=1; }
       "$0" decision-layer-check "$TMPDIR/over_appx.md" >/dev/null 2>&1 && { echo "  over_appx: FAIL (appendix-only marker should not downgrade)"; RESULTS=1; } || echo "  over_appx: OK (caught — marker in appendix is non-canonical)"
+      "$0" decision-layer-check "$TMPDIR/c1_subhead_clusters.md" >/dev/null 2>&1 && echo "  c1_subhead_clusters: OK (3 Keep/Cut/Unsure subhead clusters counted, not 13 sub-bullets)" || { echo "  c1_subhead_clusters: FAIL (Phase 7 C1 calibration regression — subhead-cluster counting expected)"; RESULTS=1; }
+      "$0" decision-layer-check "$TMPDIR/c2_paragraph_form.md" >/dev/null 2>&1 && echo "  c2_paragraph_form: OK (paragraph-form decision verbs counted via fallback)" || { echo "  c2_paragraph_form: FAIL (Phase 7 C2 calibration regression — paragraph-form fallback expected)"; RESULTS=1; }
+      "$0" decision-layer-check "$TMPDIR/c3_argument_de.md" >/dev/null 2>&1 && echo "  c3_argument_de: OK (argument-DE class detected; Checks 3-4 skipped)" || { echo "  c3_argument_de: FAIL (Phase 7 C3 calibration regression — argument-DE schema expected)"; RESULTS=1; }
+      "$0" decision-layer-check "$TMPDIR/c4_paragraph_evidence.md" >/dev/null 2>&1 && echo "  c4_paragraph_evidence: OK (paragraph-block window finds inline-prose evidence)" || { echo "  c4_paragraph_evidence: FAIL (Phase 7 C4 calibration regression — paragraph-block window expected)"; RESULTS=1; }
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
@@ -1584,44 +1814,135 @@ EOF
     echo "$BODY" | grep -F "<!-- override: decision-layer-appendices" > /dev/null 2>&1 && OV_APP=1
     echo "$BODY" | grep -F "<!-- override: decision-layer-evidence-density" > /dev/null 2>&1 && OV_ED=1
 
-    # Helper: count list items / numbered items between a section heading and
-    # the next level-2 heading. We accept "- ", "* ", "<n>. ", or bolded
-    # paragraph entries ("**...**" at start of line) as item markers;
-    # subheadings (### Keep / ### Cut / ### Unsure) do not reset the count
-    # but ARE counted distinctly from list items if they introduce labeled
-    # paragraphs (heuristic: in Author Decisions, total list items across
-    # subheads count). For Protected Elements, bolded-paragraph form
-    # ("**Element name.**") is also accepted as one item per paragraph.
-    count_items_in_section() {
+    # ----- C3: argument-DE class detection -----
+    # Detect argument-DE letter class via marker presence anywhere in
+    # the letter. When detected, swap to argument-DE schema:
+    #   - Check 1 accepts "Coalition-Partner Ground-Truth Recommendations"
+    #     and "Strengths / Protected Elements" as Protected Elements
+    #     equivalents; Author Decisions accepts "Editorial-Dispute
+    #     Territory" as the equivalent decision section.
+    #   - Check 3 (Control Questions) is skipped (argument-DE class does
+    #     not require canonical 7 Control Questions).
+    #   - Check 4 (Appendices A/B/C) is skipped (argument-DE class does
+    #     not require canonical Appendix A/B/C).
+    ARGUMENT_DE=0
+    if grep -iE "(Coalition-Partner Ground-Truth|Editorial-Dispute Territory|Argument_State|Claim Ladder|Argument Engine)" "$LETTER" > /dev/null 2>&1; then
+      ARGUMENT_DE=1
+    fi
+
+    # Helper: extract section text between a heading (matching one of
+    # several alternative patterns) and the next level-2 heading.
+    # Returns the section body text on stdout; empty string + return 1
+    # if no matching heading found.
+    extract_section() {
       local file="$1"
-      local heading_pattern="$2"
-      local start_line
-      start_line=$(grep -niE "^#{1,4}\s.*${heading_pattern}" "$file" 2>/dev/null | head -1 | cut -d: -f1)
-      if [ -z "$start_line" ]; then echo "-1"; return; fi
+      shift
+      local start_line=""
+      for pat in "$@"; do
+        start_line=$(grep -niE "^#{1,4}[[:space:]]+.*${pat}" "$file" 2>/dev/null | head -1 | cut -d: -f1 || true)
+        [ -n "$start_line" ] && break
+      done
+      if [ -z "$start_line" ]; then return 1; fi
       local next_line
       next_line=$(awk -v s="$start_line" 'NR > s && /^##[^#]/ {print NR; exit}' "$file" 2>/dev/null)
       if [ -z "$next_line" ]; then
         next_line=$(wc -l < "$file" | tr -d ' ')
       fi
+      sed -n "$((start_line + 1)),${next_line}p" "$file"
+      return 0
+    }
+
+    # Helper: count decision-layer entries within a section using a
+    # three-tier heuristic with C1 (subhead-cluster) and C2 (paragraph-
+    # form) extensions. Returns count on stdout; -1 if section absent.
+    #
+    # Args: $1 = file path; $2... = alternative heading patterns.
+    #
+    # Heuristic order:
+    #   (a) C1 — if section contains Keep/Cut/Unsure (case-insensitive)
+    #       level-3 subheads, count the subhead clusters (typical 1-3).
+    #       This implements the "3-7 distinct decision categories"
+    #       contract intent for fixtures with many sub-bullets per
+    #       subhead.
+    #   (b) Default — count list items ("- ", "* ", "<n>. ").
+    #   (c) Bolded-paragraph fallback — when (a) and (b) return zero,
+    #       count "^**...**" paragraph leaders.
+    #   (d) C2 — when (a), (b), (c) return zero, count blank-line-
+    #       separated paragraphs whose first sentence begins with a
+    #       canonical decision verb (Protect, Keep, Cut, Defer, Decide,
+    #       Unsure) or contains an opening bolded keyword
+    #       (**Decision:**, **Question:**, **Element:**).
+    count_decision_entries() {
+      local file="$1"
+      shift
       local section
-      section=$(sed -n "$((start_line + 1)),${next_line}p" "$file")
+      if ! section=$(extract_section "$file" "$@"); then
+        echo "-1"
+        return
+      fi
+
+      # (a) C1: subhead-cluster count.
+      # Count distinct level-3 subheads matching Keep/Cut/Unsure (case-
+      # insensitive). Each subhead is one cluster regardless of how many
+      # sub-bullets it contains.
+      local subhead_count
+      subhead_count=$( { echo "$section" | grep -cE "^###[[:space:]]+(Keep|Cut|Unsure|Defer|Decide)[[:space:]:]*" 2>/dev/null || true; } | head -1 | tr -d ' \n')
+      subhead_count=${subhead_count:-0}
+      if [ "$subhead_count" -ge 1 ]; then
+        echo "$subhead_count"
+        return
+      fi
+
+      # (b) Default: list-item count.
       local list_items
       list_items=$( { echo "$section" | grep -cE "^([-*]|[0-9]+\.) " 2>/dev/null || true; } | head -1 | tr -d ' \n')
       list_items=${list_items:-0}
-      # If there are zero list items, count bolded-paragraph entries as
-      # fallback (Protected Elements often uses this form).
-      if [ "$list_items" = "0" ]; then
-        local bold_paras
-        bold_paras=$( { echo "$section" | grep -cE "^\*\*[^*]" 2>/dev/null || true; } | head -1 | tr -d ' \n')
-        bold_paras=${bold_paras:-0}
-        echo "$bold_paras"
-      else
+      if [ "$list_items" -gt 0 ]; then
         echo "$list_items"
+        return
       fi
+
+      # (c) Bolded-paragraph fallback.
+      local bold_paras
+      bold_paras=$( { echo "$section" | grep -cE "^\*\*[^*]" 2>/dev/null || true; } | head -1 | tr -d ' \n')
+      bold_paras=${bold_paras:-0}
+      if [ "$bold_paras" -gt 0 ]; then
+        echo "$bold_paras"
+        return
+      fi
+
+      # (d) C2: paragraph-form fallback.
+      # Count blank-line-separated paragraphs whose first non-blank line
+      # starts with a canonical decision verb. Implementation: walk
+      # lines, increment count when a non-blank line starts a new
+      # paragraph (previous line was blank OR is the first line) AND
+      # matches the verb pattern.
+      local para_count
+      para_count=$(echo "$section" | awk '
+        BEGIN { count = 0; prev_blank = 1 }
+        {
+          if (NF == 0) { prev_blank = 1; next }
+          if (prev_blank == 1) {
+            if (match($0, /^[[:space:]]*(Protect|Keep|Cut|Defer|Decide|Unsure)[[:space:]:.,]/) ||
+                match($0, /^[[:space:]]*\*\*(Decision|Question|Element|Protect|Keep|Cut|Defer|Decide|Unsure)/)) {
+              count++
+            }
+          }
+          prev_blank = 0
+        }
+        END { print count }
+      ')
+      para_count=${para_count:-0}
+      echo "$para_count"
     }
 
     # Check 1: Protected Elements — 3-6 items.
-    PE_COUNT=$(count_items_in_section "$LETTER" "Protected Elements")
+    # Argument-DE accepts variant heading names per C3.
+    if [ "$ARGUMENT_DE" -eq 1 ]; then
+      PE_COUNT=$(count_decision_entries "$LETTER" "Coalition-Partner Ground-Truth" "Strengths.*Protected Elements" "Protected Elements")
+    else
+      PE_COUNT=$(count_decision_entries "$LETTER" "Protected Elements")
+    fi
     if [ "$PE_COUNT" -ge 0 ]; then
       if [ "$PE_COUNT" -lt 3 ] || [ "$PE_COUNT" -gt 6 ]; then
         if [ "$OV_PE" -eq 1 ]; then
@@ -1632,15 +1953,17 @@ EOF
         fi
       fi
     fi
-    # Note: PE_COUNT == -1 means heading absent. Some genres / argument-DE
-    # variants use "Strengths / Protected Elements" — surface as informational
-    # WARN, not ERROR (calibration territory, not contract failure).
     if [ "$PE_COUNT" = "-1" ]; then
-      echo "WARN: Check 1 (protected-elements) — 'Protected Elements' heading not found (may use variant name; review manually)."
+      echo "WARN: Check 1 (protected-elements) — 'Protected Elements' (or argument-DE variant) heading not found."
     fi
 
     # Check 2: Author Decisions — 3-7 items.
-    AD_COUNT=$(count_items_in_section "$LETTER" "Author Decisions")
+    # Argument-DE accepts "Editorial-Dispute Territory" as the equivalent.
+    if [ "$ARGUMENT_DE" -eq 1 ]; then
+      AD_COUNT=$(count_decision_entries "$LETTER" "Editorial-Dispute Territory" "Author Decisions")
+    else
+      AD_COUNT=$(count_decision_entries "$LETTER" "Author Decisions")
+    fi
     if [ "$AD_COUNT" -ge 0 ]; then
       if [ "$AD_COUNT" -lt 3 ] || [ "$AD_COUNT" -gt 7 ]; then
         if [ "$OV_AD" -eq 1 ]; then
@@ -1652,52 +1975,77 @@ EOF
       fi
     fi
     if [ "$AD_COUNT" = "-1" ]; then
-      echo "WARN: Check 2 (author-decisions) — 'Author Decisions' heading not found."
+      echo "WARN: Check 2 (author-decisions) — 'Author Decisions' (or argument-DE variant) heading not found."
     fi
 
-    # Check 3: Control Questions — exactly 7.
-    CQ_COUNT=$(count_items_in_section "$LETTER" "Control Questions")
-    if [ "$CQ_COUNT" -ge 0 ]; then
-      if [ "$CQ_COUNT" -ne 7 ]; then
-        if [ "$OV_CQ" -eq 1 ]; then
-          echo "WARN: Check 3 (control-questions) — count ${CQ_COUNT} (expected exactly 7; override marker present)."
+    # Check 3: Control Questions — exactly 7. Skipped for argument-DE.
+    if [ "$ARGUMENT_DE" -eq 0 ]; then
+      CQ_COUNT=$(count_decision_entries "$LETTER" "Control Questions")
+      if [ "$CQ_COUNT" -ge 0 ]; then
+        if [ "$CQ_COUNT" -ne 7 ]; then
+          if [ "$OV_CQ" -eq 1 ]; then
+            echo "WARN: Check 3 (control-questions) — count ${CQ_COUNT} (expected exactly 7; override marker present)."
+          else
+            echo "ERROR: Check 3 (control-questions) — count ${CQ_COUNT} (expected exactly 7; no override marker in body)."
+            ERRORS=$((ERRORS + 1))
+          fi
+        fi
+      fi
+      if [ "$CQ_COUNT" = "-1" ]; then
+        echo "WARN: Check 3 (control-questions) — 'Control Questions' heading not found."
+      fi
+    fi
+
+    # Check 4: Appendices A, B, C all present as headings. Skipped for
+    # argument-DE class (argument-shaped letters use different appendix
+    # conventions per the argument-DE schema).
+    if [ "$ARGUMENT_DE" -eq 0 ]; then
+      MISSING_APPS=""
+      for app in "Appendix A" "Appendix B" "Appendix C"; do
+        if ! grep -iE "^#{1,4}[[:space:]]+.*${app}" "$LETTER" > /dev/null 2>&1; then
+          MISSING_APPS="${MISSING_APPS}${app}, "
+        fi
+      done
+      if [ -n "$MISSING_APPS" ]; then
+        if [ "$OV_APP" -eq 1 ]; then
+          echo "WARN: Check 4 (appendices) — missing: ${MISSING_APPS%, } (override marker present)."
         else
-          echo "ERROR: Check 3 (control-questions) — count ${CQ_COUNT} (expected exactly 7; no override marker in body)."
+          echo "ERROR: Check 4 (appendices) — missing: ${MISSING_APPS%, } (no override marker in body)."
           ERRORS=$((ERRORS + 1))
         fi
       fi
     fi
-    if [ "$CQ_COUNT" = "-1" ]; then
-      echo "WARN: Check 3 (control-questions) — 'Control Questions' heading not found."
-    fi
 
-    # Check 4: Appendices A, B, C all present as headings.
-    MISSING_APPS=""
-    for app in "Appendix A" "Appendix B" "Appendix C"; do
-      if ! grep -iE "^#{1,4}\s.*${app}" "$LETTER" > /dev/null 2>&1; then
-        MISSING_APPS="${MISSING_APPS}${app}, "
-      fi
-    done
-    if [ -n "$MISSING_APPS" ]; then
-      if [ "$OV_APP" -eq 1 ]; then
-        echo "WARN: Check 4 (appendices) — missing: ${MISSING_APPS%, } (override marker present)."
-      else
-        echo "ERROR: Check 4 (appendices) — missing: ${MISSING_APPS%, } (no override marker in body)."
-        ERRORS=$((ERRORS + 1))
-      fi
-    fi
-
-    # Check 5: Must-Fix evidence density. For each line containing "Must-Fix"
-    # (case-insensitive), count references in that line and the 5 lines that
-    # follow. References = chapter/scene refs, line numbers, or audit codes
-    # (heuristics: Chapter\s+\d+, Ch\.\s*\d+, Scene\s+\d+, line\s+\d+,
-    # lines?\s+\d+-?\d*, page\s+\d+, [A-Z]{2,4}-\d+, §\s*\w+).
+    # Check 5: Must-Fix evidence density (C4 calibration).
+    # For each line containing "Must-Fix" (case-insensitive), scan a
+    # paragraph-block window from the Must-Fix line until the next
+    # Must-Fix occurrence OR the next section header (^## at column 0),
+    # whichever comes first. Within that window, count reference
+    # patterns. This widens the Phase 4-6 fixed 6-line window so that
+    # paragraph-form evidence (references in surrounding prose, not in
+    # an immediate trailing list) is detected.
     MF_LINES=$( { grep -niE "Must-Fix" "$LETTER" 2>/dev/null || true; } | cut -d: -f1)
     MF_THIN=0
     if [ -n "$MF_LINES" ]; then
+      # Build sorted unique list of Must-Fix line numbers + section
+      # boundary line numbers for paragraph-block delimitation.
+      ALL_MF=$(echo "$MF_LINES" | sort -n -u)
+      # Section boundaries: lines starting with ## (level-2 heading).
+      SECTION_LINES=$(grep -nE "^##[^#]" "$LETTER" 2>/dev/null | cut -d: -f1 || true)
+      TOTAL_LINES=$(wc -l < "$LETTER" | tr -d ' ')
       while IFS= read -r ln; do
         [ -z "$ln" ] && continue
-        END=$((ln + 5))
+        # Find the next Must-Fix line strictly greater than ln.
+        NEXT_MF=$(echo "$ALL_MF" | awk -v c="$ln" '$1 > c {print; exit}')
+        # Find the next section boundary strictly greater than ln.
+        NEXT_SEC=$(echo "$SECTION_LINES" | awk -v c="$ln" '$1 > c {print; exit}')
+        # End of window = min(NEXT_MF, NEXT_SEC, TOTAL_LINES). If
+        # nothing found, use TOTAL_LINES.
+        END="$TOTAL_LINES"
+        if [ -n "$NEXT_MF" ] && [ "$NEXT_MF" -lt "$END" ]; then END="$NEXT_MF"; fi
+        if [ -n "$NEXT_SEC" ] && [ "$NEXT_SEC" -lt "$END" ]; then END="$NEXT_SEC"; fi
+        # Subtract 1 to stay before the next boundary (exclusive end).
+        if [ "$END" -gt "$ln" ]; then END=$((END - 1)); fi
         BLOCK=$(sed -n "${ln},${END}p" "$LETTER")
         # Count distinct reference patterns within block.
         REF_COUNT=$( { echo "$BLOCK" | grep -oiE "(Chapter\s+[0-9]+|Ch\.\s*[0-9]+|Scene\s+[0-9]+|lines?\s+[0-9]+|L[0-9]+|page\s+[0-9]+|p\.\s*[0-9]+|§\s*[A-Za-z0-9.-]+|[A-Z]{2,5}-[0-9]+)" 2>/dev/null || true; } | wc -l | tr -d ' ')
@@ -1709,19 +2057,27 @@ EOF
     fi
     if [ "$MF_THIN" -gt 0 ]; then
       if [ "$OV_ED" -eq 1 ]; then
-        echo "WARN: Check 5 (evidence-density) — ${MF_THIN} Must-Fix mention(s) with <2 references in 6-line window (override marker present)."
+        echo "WARN: Check 5 (evidence-density) — ${MF_THIN} Must-Fix mention(s) with <2 references in paragraph-block window (override marker present)."
       else
-        echo "ERROR: Check 5 (evidence-density) — ${MF_THIN} Must-Fix mention(s) with <2 references in 6-line window (no override marker in body)."
+        echo "ERROR: Check 5 (evidence-density) — ${MF_THIN} Must-Fix mention(s) with <2 references in paragraph-block window (no override marker in body)."
         ERRORS=$((ERRORS + 1))
       fi
     fi
 
     if [ "$ERRORS" -gt 0 ]; then
       echo ""
-      echo "FAILED: ${ERRORS} decision-layer-check failure(s). Canonical homes: core-editor/references/run-synthesis.md §Step 7 + core-editor/references/output-policy.md §Mandatory Appendices / §Evidence Density Self-Check."
+      if [ "$ARGUMENT_DE" -eq 1 ]; then
+        echo "FAILED: ${ERRORS} decision-layer-check failure(s) (argument-DE class — Checks 3-4 skipped). Canonical homes: core-editor/references/run-synthesis.md §Step 7 + core-editor/references/output-policy.md §Mandatory Appendices / §Evidence Density Self-Check."
+      else
+        echo "FAILED: ${ERRORS} decision-layer-check failure(s). Canonical homes: core-editor/references/run-synthesis.md §Step 7 + core-editor/references/output-policy.md §Mandatory Appendices / §Evidence Density Self-Check."
+      fi
       exit 1
     else
-      echo "OK: Decision-Layer Consolidation contract satisfied (or override markers present)."
+      if [ "$ARGUMENT_DE" -eq 1 ]; then
+        echo "OK: Decision-Layer Consolidation contract satisfied (argument-DE class — Checks 3-4 skipped per C3 calibration; or override markers present)."
+      else
+        echo "OK: Decision-Layer Consolidation contract satisfied (or override markers present)."
+      fi
       exit 0
     fi
     ;;
@@ -2631,6 +2987,400 @@ EOF
     fi
 
     echo "ERROR: ${CANDIDATES} pre-labeled anchor-conflict candidate(s) surfaced. Pass 10 model judgment must classify each as paradox / drift / ambiguity / intentional-feature in Section 4 (Inconsistency Ledger), or place a body override marker <!-- override: timeline-anchor-conflict — <reason> --> above Section 8. Pre-labeled conflict surfacing only — true anchor parsing for unlabeled drift is deferred to a Phase 7 Python helper. Canonical home: core-editor/references/pass-10.md §Section 4."
+    exit 1
+    ;;
+
+  # ----------------------------------------------------------------------
+  # audit-tier-criterion <pass_dependencies_file> [<audits_root_dir>]
+  #
+  # Mechanical check that audit tier assignments in pass-dependencies.md
+  # §4a/§4b match the §4c Audit Tier Promotion Criteria documented in
+  # the same file (Phase 6 Wave 2 added the criteria).
+  #
+  # Three criteria from §4c (per the canonical home):
+  #   1. The audit produces named hard gates or audit-internal Must-Fix
+  #      floors (severity signals strong enough to gate synthesis).
+  #   2. The audit catches a class of issue undetectable by passes
+  #      alone (the audit's absence creates a blind spot, not just
+  #      lower-resolution coverage).
+  #   3. Disclosure is non-equivalent to running the audit (blind-spot
+  #      disclosure cannot reasonably substitute for the audit's
+  #      output).
+  #
+  # The validator scans §4a + §4b for tier assignments per audit and,
+  # for each audit at Auto-run / Auto-recommend before synthesis /
+  # Pre-DE Prerequisite / Hard Prerequisite tier, looks for hard-gate
+  # / Must-Fix-floor language in the audit's reference file. Audits
+  # at high tiers without named hard gates / Must-Fix floors are
+  # surfaced as candidates for tier review.
+  #
+  # IMPORTANT — capability ceiling. This validator can only verify
+  # criterion 1 mechanically (named hard gates / Must-Fix floors are
+  # detectable by reference-file pattern matching). Criteria 2 and 3
+  # require model judgment about the manuscript / fixture corpus and
+  # cannot be verified by bash. The validator surfaces criterion-1
+  # gaps; criteria 2 and 3 remain in the §4a/§4b verification
+  # subsection prose.
+  #
+  # Override marker: <!-- override: audit-tier-criterion-<audit-slug>
+  # — <rationale> --> placed in pass-dependencies.md body. One marker
+  # per audit; rationale must name which criterion is overridden and
+  # why.
+  #
+  # Self-test: pass --self-test as the only argument to run built-in
+  # cases.
+  # ----------------------------------------------------------------------
+  audit-tier-criterion)
+    if [ $# -lt 1 ]; then echo "Usage: $0 audit-tier-criterion <pass_dependencies_file> [<audits_root_dir>] | --self-test"; exit 2; fi
+
+    if [ "$1" = "--self-test" ]; then
+      TMPDIR=$(mktemp -d)
+      trap 'rm -rf "$TMPDIR"' EXIT
+      mkdir -p "$TMPDIR/audits"
+      # Positive case: pass-dependencies references audits at high
+      # tiers that ALL document hard gates / Must-Fix floors in their
+      # reference files.
+      cat > "$TMPDIR/pos_pd.md" <<'EOF'
+## §4a. Router-triggered audits
+| Trigger | Audit | Tier | Reference |
+|---|---|---|---|
+| Erotic content flagged at intake | Erotic Content | Auto-run (bundled with workflow) | `audits/erotic-content.md` |
+| Representation or reception sensitivity disclosed at intake | Reception Risk | Auto-recommend before synthesis | `audits/reception-risk.md` |
+## §4b. Finding-triggered audits
+| Layer | Trigger | Audit | Tier |
+|---|---|---|---|
+| 1 (Reader Experience) | Pacing stalls | Compression | Auto-recommend before synthesis |
+EOF
+      cat > "$TMPDIR/audits/erotic-content.md" <<'EOF'
+# Erotic Content Audit
+## Hard Gates
+- EC-1 hard gate: explicit non-consensual content without aftercare framing.
+## Must-Fix floor
+Any §Hard Gate firing produces audit-internal Must-Fix floor.
+EOF
+      cat > "$TMPDIR/audits/reception-risk.md" <<'EOF'
+# Reception Risk Audit
+## §7 Severity Hard Gates
+Five hard gates: extractable hate, minor exploitation, etc.
+Must-Fix floor when any hard gate fires.
+EOF
+      cat > "$TMPDIR/audits/compression-audit.md" <<'EOF'
+# Compression Audit
+## §7 Hard Gates
+Compression hard gate fires on systematic narrative summary.
+Must-Fix floor: any §7 hard gate triggers audit-internal Must-Fix.
+EOF
+      # Negative case: an audit at Auto-recommend before synthesis tier
+      # whose reference file documents only Recommend/Note-class output
+      # (no hard gates, no Must-Fix floor).
+      cat > "$TMPDIR/neg_pd.md" <<'EOF'
+## §4a. Router-triggered audits
+| Trigger | Audit | Tier | Reference |
+|---|---|---|---|
+| Some trigger | Soft Audit | Auto-recommend before synthesis | `audits/soft-audit.md` |
+EOF
+      cat > "$TMPDIR/audits/soft-audit.md" <<'EOF'
+# Soft Audit
+## Output
+Produces only Note-class observations. Surfaces patterns for editorial review. Severity outputs: Recommend / Note / Suggestion.
+EOF
+      # Override case: same as neg_pd but with override marker present.
+      cat > "$TMPDIR/over_pd.md" <<'EOF'
+## §4a. Router-triggered audits
+| Trigger | Audit | Tier | Reference |
+|---|---|---|---|
+| Some trigger | Soft Audit | Auto-recommend before synthesis | `audits/soft-audit.md` |
+
+<!-- override: audit-tier-criterion-soft-audit — Promoted on cross-fixture material findings (criterion 2); criterion 1 deliberately waived per Phase 7 Wave 2 plan. -->
+EOF
+      # Edge case: audit at Recommend tier (low tier — no criterion check
+      # applies). Should pass regardless of reference-file content.
+      cat > "$TMPDIR/edge_pd.md" <<'EOF'
+## §4b. Finding-triggered audits
+| Layer | Trigger | Audit | Tier |
+|---|---|---|---|
+| 9 (Thematic Coherence) | Some pattern | Some Recommend Audit | Recommend |
+EOF
+      RESULTS=0
+      "$0" audit-tier-criterion "$TMPDIR/pos_pd.md" "$TMPDIR/audits" >/dev/null 2>&1 && echo "  pos: OK (high-tier audits document hard gates / Must-Fix floors)" || { echo "  pos: FAIL (expected OK)"; RESULTS=1; }
+      "$0" audit-tier-criterion "$TMPDIR/neg_pd.md" "$TMPDIR/audits" >/dev/null 2>&1 && { echo "  neg: FAIL (expected ERROR — high-tier audit lacks criterion-1 hard-gate language)"; RESULTS=1; } || echo "  neg: OK (caught — soft audit at Auto-recommend before synthesis tier)"
+      "$0" audit-tier-criterion "$TMPDIR/over_pd.md" "$TMPDIR/audits" >/dev/null 2>&1 && echo "  over: OK (override marker downgrades ERROR→WARN)" || { echo "  over: FAIL (expected OK after override)"; RESULTS=1; }
+      "$0" audit-tier-criterion "$TMPDIR/edge_pd.md" "$TMPDIR/audits" >/dev/null 2>&1 && echo "  edge: OK (Recommend-tier audit not subject to criterion-1 check)" || { echo "  edge: FAIL (expected OK — Recommend tier exempt)"; RESULTS=1; }
+      [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
+    fi
+
+    if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
+    PD_FILE="$1"
+    AUDIT_ROOT="${2:-}"
+    # Default audit root: try the conventional layout if not provided.
+    if [ -z "$AUDIT_ROOT" ]; then
+      PD_DIR=$(dirname "$PD_FILE")
+      # Common layout: pass-dependencies.md is in core-editor/references;
+      # audits live in ../../specialized-audits/references/.
+      if [ -d "$PD_DIR/../../specialized-audits/references" ]; then
+        AUDIT_ROOT="$PD_DIR/../../specialized-audits/references"
+      else
+        AUDIT_ROOT="$PD_DIR"
+      fi
+    fi
+
+    ERRORS=0
+    WARNS=0
+
+    # Tiers that require the criterion-1 (hard-gate / Must-Fix floor)
+    # check. Recommend / Auto-recommend tiers are exempt.
+    HIGH_TIER_PATTERN="(Hard Prerequisite|Pre-DE Prerequisite|Auto-run|Auto-recommend before synthesis)"
+
+    # Extract pipe-table rows that mention a high-tier assignment.
+    # Each row format (in §4a / §4b): | <trigger> | <audit name> | <tier> | <reference> |
+    # We scan all pipe rows and try to extract audit name + tier + reference.
+    HIGH_TIER_ROWS=$(grep -E "^\|" "$PD_FILE" 2>/dev/null | grep -E "$HIGH_TIER_PATTERN" || true)
+
+    if [ -z "$HIGH_TIER_ROWS" ]; then
+      echo "OK: No high-tier audit assignments detected in pipe-table rows of ${PD_FILE}."
+      exit 0
+    fi
+
+    # For each high-tier row, extract audit name and reference path.
+    while IFS= read -r row; do
+      [ -z "$row" ] && continue
+      # Parse pipe-separated cells; trim surrounding whitespace.
+      AUDIT_NAME=$(echo "$row" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
+      REF_CELL=$(echo "$row" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $5); print $5}')
+      # Reference path is in backticks like `craft/foo.md` or `audits/foo.md`.
+      REF_PATH=$(echo "$REF_CELL" | grep -oE '`[^`]+\.md`' | head -1 | tr -d '`' || true)
+
+      [ -z "$AUDIT_NAME" ] && continue
+      [ -z "$REF_PATH" ] && continue
+
+      # Compute slug for override marker matching: lowercase audit name,
+      # spaces and slashes to hyphens, strip non-alphanumerics.
+      AUDIT_SLUG=$(echo "$AUDIT_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//; s/-$//')
+
+      # Per-audit override check: marker in the body of pass-dependencies.
+      OV_AUDIT=0
+      if grep -F "<!-- override: audit-tier-criterion-${AUDIT_SLUG}" "$PD_FILE" > /dev/null 2>&1; then
+        OV_AUDIT=1
+      fi
+
+      # Locate the reference file. Try AUDIT_ROOT/REF_PATH; fall back to
+      # walking AUDIT_ROOT for any file matching the basename.
+      REF_FILE=""
+      if [ -f "$AUDIT_ROOT/$REF_PATH" ]; then
+        REF_FILE="$AUDIT_ROOT/$REF_PATH"
+      else
+        BASENAME=$(basename "$REF_PATH")
+        FOUND=$(find "$AUDIT_ROOT" -name "$BASENAME" -type f 2>/dev/null | head -1 || true)
+        [ -n "$FOUND" ] && REF_FILE="$FOUND"
+      fi
+
+      if [ -z "$REF_FILE" ]; then
+        echo "WARN: '${AUDIT_NAME}' — reference file '${REF_PATH}' not found under '${AUDIT_ROOT}'; cannot verify criterion 1."
+        WARNS=$((WARNS + 1))
+        continue
+      fi
+
+      # Criterion 1: reference file must mention hard gates OR Must-Fix
+      # floor language. Pattern: "hard gate", "Hard Gate", "Must-Fix
+      # floor", "Must-Fix-floor".
+      if grep -iE "(hard[ -]?gate|must-?fix[ -]?floor)" "$REF_FILE" > /dev/null 2>&1; then
+        : # criterion-1 satisfied
+      else
+        if [ "$OV_AUDIT" -eq 1 ]; then
+          echo "WARN: '${AUDIT_NAME}' — reference file '${REF_PATH}' does not document hard gates / Must-Fix floor (criterion 1 unmet); audit-tier-criterion-${AUDIT_SLUG} override marker present."
+          WARNS=$((WARNS + 1))
+        else
+          echo "ERROR: '${AUDIT_NAME}' — reference file '${REF_PATH}' does not document hard gates / Must-Fix floor (criterion 1 unmet for high-tier assignment). Add hard-gate / Must-Fix-floor language to the audit reference, demote the tier, or add <!-- override: audit-tier-criterion-${AUDIT_SLUG} — <rationale> --> in pass-dependencies body."
+          ERRORS=$((ERRORS + 1))
+        fi
+      fi
+    done <<< "$HIGH_TIER_ROWS"
+
+    if [ "$ERRORS" -gt 0 ]; then
+      echo ""
+      echo "FAILED: ${ERRORS} audit-tier-criterion failure(s); ${WARNS} warning(s). Capability ceiling: criterion 1 (hard gates / Must-Fix floor) is mechanically verified; criteria 2 (undetectable-by-passes) and 3 (disclosure-non-equivalence) require model judgment and remain in the §4a/§4b verification subsection prose. Canonical home: core-editor/references/pass-dependencies.md §4c Audit Tier Promotion Criteria."
+      exit 1
+    else
+      echo "OK: All high-tier audit assignments satisfy criterion 1 (named hard gates / Must-Fix floor in reference file) or carry override markers. ${WARNS} warning(s) surfaced. Capability ceiling: criteria 2 + 3 remain prose-verified."
+      exit 0
+    fi
+    ;;
+
+  # ----------------------------------------------------------------------
+  # argument-recon-prerequisite <run_folder> [<editorial_letter_file>]
+  #
+  # Mechanical check that argument-shaped runs satisfy the Field
+  # Reconnaissance prerequisite per pass-dependencies.md §4a (Hard
+  # Prerequisite or Auto-recommend before synthesis tier) and v1.7.9
+  # Hard Prerequisite tier wiring.
+  #
+  # Behavior: scan the run folder for argument-engine artifacts
+  # (Argument_State.md, Red_Team_Memo.md, Argument_Evidence.md, or
+  # editorial-letter mentions of Dialectical Clarity / Argument Red
+  # Team / Argument Evidence Deep-Dive / argument-engine pass output).
+  # If argument-engine artifacts are present, verify that EITHER:
+  #   (a) Field_Reconnaissance_Report.md exists in the run folder, OR
+  #   (b) the editorial letter records the canonical blind-spot
+  #       disclosure per run-synthesis.md §Step 3 (Phase 6 Wave 3 /
+  #       CR-4): "literature-counterevidence not surveyed" naming what
+  #       is unsurveyed and what the absence implies for synthesis
+  #       confidence.
+  #
+  # If neither (a) nor (b) holds, the validator fails — Hard
+  # Prerequisite policy forbids silent omission.
+  #
+  # Run folders without argument-engine artifacts (fiction runs;
+  # narrative-NF runs; non-argument-shaped runs) are exempt and the
+  # validator returns OK.
+  #
+  # Override marker: <!-- override: argument-recon-prerequisite —
+  # <rationale> --> in the editorial letter body (e.g., "argument-
+  # engine artifacts present pre-date Phase 6 Wave 3 prerequisite
+  # policy; back-fill blind-spot disclosure scheduled for next
+  # revision round").
+  #
+  # Self-test: pass --self-test as the only argument to run built-in
+  # cases.
+  # ----------------------------------------------------------------------
+  argument-recon-prerequisite)
+    if [ $# -lt 1 ]; then echo "Usage: $0 argument-recon-prerequisite <run_folder> [<editorial_letter_file>] | --self-test"; exit 2; fi
+
+    if [ "$1" = "--self-test" ]; then
+      TMPDIR=$(mktemp -d)
+      trap 'rm -rf "$TMPDIR"' EXIT
+
+      # Positive case 1: argument-engine artifacts present + Field
+      # Reconnaissance report present. Should pass.
+      mkdir -p "$TMPDIR/run_pos1"
+      touch "$TMPDIR/run_pos1/Argument_State.md"
+      touch "$TMPDIR/run_pos1/Field_Reconnaissance_Report.md"
+      cat > "$TMPDIR/run_pos1/Editorial_Letter.md" <<'EOF'
+# Editorial Letter
+## §1 What Needs Work
+Must-Fix: warrant gap on §3 claim.
+EOF
+
+      # Positive case 2: argument-engine artifacts present + no Field
+      # Recon, but editorial letter records canonical blind-spot
+      # disclosure. Should pass.
+      mkdir -p "$TMPDIR/run_pos2"
+      touch "$TMPDIR/run_pos2/Red_Team_Memo.md"
+      cat > "$TMPDIR/run_pos2/Editorial_Letter.md" <<'EOF'
+# Editorial Letter
+## §3 Blind Spot / Absence Inventory
+Field Reconnaissance was declined at intake. The synthesis layer records "literature-counterevidence not surveyed" as a confidence-limiting blind spot: competing studies, counter-citations, replication failures, and opposing scholarly positions in the literature were not surfaced. Dialectical Clarity, Argument Red Team, and Argument Evidence Deep-Dive operated against a manuscript-internal claim graph rather than a literature-aware one.
+EOF
+
+      # Positive case 3: no argument-engine artifacts (fiction run).
+      # Should pass — validator exempt.
+      mkdir -p "$TMPDIR/run_pos3"
+      cat > "$TMPDIR/run_pos3/Editorial_Letter.md" <<'EOF'
+# Editorial Letter
+## §1 What Needs Work
+Must-Fix: pacing collapse in Chapter 7.
+EOF
+
+      # Negative case: argument-engine artifacts present + no Field
+      # Recon report + no blind-spot disclosure in editorial letter.
+      # Should fail.
+      mkdir -p "$TMPDIR/run_neg"
+      touch "$TMPDIR/run_neg/Argument_State.md"
+      touch "$TMPDIR/run_neg/Red_Team_Memo.md"
+      cat > "$TMPDIR/run_neg/Editorial_Letter.md" <<'EOF'
+# Editorial Letter
+## §1 What Needs Work
+Must-Fix: warrant gap on §3 claim.
+## §3 Absence Inventory
+The pass artifacts are complete; no missing structural elements identified.
+EOF
+
+      # Override case: same setup as neg, but with override marker in
+      # editorial letter body. Should pass with WARN.
+      mkdir -p "$TMPDIR/run_over"
+      touch "$TMPDIR/run_over/Argument_State.md"
+      cat > "$TMPDIR/run_over/Editorial_Letter.md" <<'EOF'
+# Editorial Letter
+## §1 What Needs Work
+Must-Fix: warrant gap on §3 claim.
+<!-- override: argument-recon-prerequisite — Argument-engine artifacts present pre-date Phase 6 Wave 3 prerequisite policy; back-fill blind-spot disclosure scheduled for next revision round. -->
+EOF
+
+      RESULTS=0
+      "$0" argument-recon-prerequisite "$TMPDIR/run_pos1" >/dev/null 2>&1 && echo "  pos1: OK (argument-engine + Field Recon report)" || { echo "  pos1: FAIL (expected OK)"; RESULTS=1; }
+      "$0" argument-recon-prerequisite "$TMPDIR/run_pos2" >/dev/null 2>&1 && echo "  pos2: OK (argument-engine + canonical blind-spot disclosure)" || { echo "  pos2: FAIL (expected OK)"; RESULTS=1; }
+      "$0" argument-recon-prerequisite "$TMPDIR/run_pos3" >/dev/null 2>&1 && echo "  pos3: OK (fiction run — no argument-engine artifacts; exempt)" || { echo "  pos3: FAIL (expected OK)"; RESULTS=1; }
+      "$0" argument-recon-prerequisite "$TMPDIR/run_neg" >/dev/null 2>&1 && { echo "  neg: FAIL (expected ERROR — argument-engine present, no Field Recon, no disclosure)"; RESULTS=1; } || echo "  neg: OK (caught — silent omission of Hard Prerequisite)"
+      "$0" argument-recon-prerequisite "$TMPDIR/run_over" >/dev/null 2>&1 && echo "  over: OK (override marker downgrades ERROR→WARN)" || { echo "  over: FAIL (expected OK after override)"; RESULTS=1; }
+      [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
+    fi
+
+    if [ ! -d "$1" ]; then echo "Error: Run folder not found: $1" >&2; exit 2; fi
+    RUN_FOLDER="$1"
+    LETTER="${2:-}"
+
+    # Auto-detect editorial letter if not provided: look for
+    # *Editorial_Letter*.md or *editorial_letter*.md in run folder.
+    if [ -z "$LETTER" ]; then
+      LETTER=$(find "$RUN_FOLDER" -maxdepth 2 -type f \( -iname "*editorial_letter*.md" -o -iname "*_de*.md" \) 2>/dev/null | head -1 || true)
+    fi
+
+    # Detect argument-engine artifacts by filename pattern.
+    ARG_ARTIFACTS=$(find "$RUN_FOLDER" -maxdepth 3 -type f \( -iname "Argument_State*.md" -o -iname "Red_Team_Memo*.md" -o -iname "Argument_Evidence*.md" -o -iname "Argument_Red_Team*.md" -o -iname "Argument_Persuasion*.md" -o -iname "Adversarial_Evidence*.md" \) 2>/dev/null | head -5 || true)
+
+    # Also check editorial letter body for argument-engine pass mentions.
+    ARG_LETTER_MENTION=0
+    if [ -n "$LETTER" ] && [ -f "$LETTER" ]; then
+      if grep -iE "(Dialectical Clarity|Argument Red Team|Argument Evidence Deep-Dive|argument-engine|Argument_State|Claim Ladder)" "$LETTER" > /dev/null 2>&1; then
+        ARG_LETTER_MENTION=1
+      fi
+    fi
+
+    if [ -z "$ARG_ARTIFACTS" ] && [ "$ARG_LETTER_MENTION" -eq 0 ]; then
+      echo "OK: No argument-engine artifacts detected in '${RUN_FOLDER}'; Field Reconnaissance prerequisite does not apply (non-argument-shaped run)."
+      exit 0
+    fi
+
+    # Argument-engine present. Check (a): Field Recon report exists.
+    FIELD_RECON=$(find "$RUN_FOLDER" -maxdepth 3 -type f -iname "Field_Reconnaissance_Report*.md" 2>/dev/null | head -1 || true)
+
+    if [ -n "$FIELD_RECON" ]; then
+      echo "OK: Argument-engine artifacts detected; Field_Reconnaissance_Report.md present at '${FIELD_RECON}'."
+      exit 0
+    fi
+
+    # Check (b): canonical blind-spot disclosure in editorial letter.
+    DISCLOSURE_OK=0
+    if [ -n "$LETTER" ] && [ -f "$LETTER" ]; then
+      if grep -iE "literature[- ]counterevidence[- ]not[- ]surveyed" "$LETTER" > /dev/null 2>&1; then
+        DISCLOSURE_OK=1
+      fi
+    fi
+
+    # Override marker check (in editorial letter body, above appendices).
+    OV_ARP=0
+    if [ -n "$LETTER" ] && [ -f "$LETTER" ]; then
+      APPENDIX_LINE=$(grep -niE "^#{1,4}.*Appendix [A-C]" "$LETTER" 2>/dev/null | head -1 | cut -d: -f1 || true)
+      if [ -n "$APPENDIX_LINE" ]; then
+        BODY=$(sed -n "1,$((APPENDIX_LINE - 1))p" "$LETTER")
+      else
+        BODY=$(cat "$LETTER")
+      fi
+      if echo "$BODY" | grep -F "<!-- override: argument-recon-prerequisite" > /dev/null 2>&1; then
+        OV_ARP=1
+      fi
+    fi
+
+    if [ "$DISCLOSURE_OK" -eq 1 ]; then
+      echo "OK: Argument-engine artifacts detected; canonical blind-spot disclosure ('literature-counterevidence not surveyed') present in editorial letter."
+      exit 0
+    fi
+
+    if [ "$OV_ARP" -eq 1 ]; then
+      echo "WARN: Argument-engine artifacts detected; no Field_Reconnaissance_Report.md and no canonical blind-spot disclosure found, but override marker present in editorial letter body. Phase 6 Wave 3 / CR-4 Hard Prerequisite policy: this run carries documented exception rationale."
+      exit 0
+    fi
+
+    echo "ERROR: Argument-engine artifacts detected in '${RUN_FOLDER}' (no Field_Reconnaissance_Report.md present), but the editorial letter does not record the canonical blind-spot disclosure ('literature-counterevidence not surveyed'). Per pass-dependencies.md §4a (Hard Prerequisite) + run-synthesis.md §Step 3 (Phase 6 Wave 3 / CR-4): silent omission is forbidden. Either (a) run Field Reconnaissance and produce Field_Reconnaissance_Report.md, (b) record the canonical blind-spot disclosure in the editorial letter naming what is unsurveyed and what the absence implies for synthesis confidence, or (c) place a body override marker <!-- override: argument-recon-prerequisite — <rationale> --> in the editorial letter."
     exit 1
     ;;
 
