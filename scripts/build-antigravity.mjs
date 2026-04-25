@@ -247,7 +247,7 @@ function main() {
     // Write plugin.json
     writeFile(
       path.join(tempPluginDir, "plugin.json"),
-      JSON.stringify(buildPluginJson(canonicalManifest, canonicalVersion), null, 2) + "\\n"
+      JSON.stringify(buildPluginJson(canonicalManifest, canonicalVersion), null, 2) + "\n"
     );
 
     // Build Orchestrator Tooling
@@ -260,6 +260,16 @@ function main() {
         path.join(tempWorkspace, ".agents", "workflows", `${slug}.md`),
         buildNativeWorkflow(commandMeta)
       );
+    }
+
+    // Defensive: re-parse generated plugin.json to catch JSON-corruption bugs
+    // (e.g., literal "\\n" sneaking into the trailing-newline append). The
+    // mechanical compareTrees check would otherwise silently approve a broken
+    // file as long as both temp and persisted copies are corrupted identically.
+    try {
+      readJson(path.join(tempPluginDir, "plugin.json"));
+    } catch (err) {
+      throw new Error(`Generated antigravity plugin.json is not valid JSON: ${err.message}`);
     }
 
     // Write Workspace README and Parity Notes
