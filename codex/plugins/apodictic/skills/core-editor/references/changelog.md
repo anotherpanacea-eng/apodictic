@@ -5,6 +5,77 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.8.0 - 2026-04-25
+
+### Added — Phase 7 Wave 1: decision-layer-check calibration + optional validators batch + v1.7.1 changelog backfill
+
+Closes Phase 7 Wave 1 of the model-capability review per `docs/review-log/2026-04-25_phase-7-implementation-plan.md` §Wave 1. Three jobs ship as a coordinated wave: decision-layer-check calibration against the four C1-C4 Phase 4 Wave 3 eval-coverage findings (A1); two new validators from the Phase 6 + v1.7.9 §Out-of-scope queue (A2); v1.7.1 changelog backfill closing the documented release-hygiene gap (D1). Validator suite total: 9 → 11. v1.8.0 ships as the first release of the Phase 7 cycle (rc1 in plan terms; final 1.8.0 number reserved for end of Phase 7 closure once Waves 2-5 land).
+
+#### A1 — `decision-layer-check` calibration (Phase 4 Wave 3 C1-C4 closure)
+
+The Phase 4 Wave 3 eval-coverage report (`docs/review-log/2026-04-25_phase-4-eval-coverage.md`) documented four calibration findings against the four canonical fixtures (Regrets Only Opus + Codex, Dinner Party, TAY argument-DE). All four FAILs were calibration artifacts, not contract violations. v1.8.0 calibrates the validator's parsing logic to close them.
+
+- **C1 — Author Decisions count over-fires on Keep/Cut/Unsure subhead clusters.** Phase 4-6 validator counted each sub-bullet across subheads (13 sub-bullets in Regrets Opus → out-of-3-7 ERROR). v1.8.0 detects `### Keep` / `### Cut` / `### Unsure` (also `### Defer` / `### Decide`) subheads within the Author Decisions section and counts subhead clusters (typical 1-3) when present. Implements the contract intent: "3-7 distinct decision categories, with sub-items permitted." Falls back to list-item counting when no subheads.
+
+- **C2 — Codex paragraph-form decision entries undetected.** Phase 4-6 validator's heuristic order (list items → bolded paragraphs) returned zero on Codex 5.5 letters that use blank-line-separated paragraphs leading with verb-prefixed sentences ("Protect..." / "Keep..." / "Cut..."). v1.8.0 adds a third-fallback heuristic: count blank-line-separated paragraphs whose first sentence begins with a canonical decision verb (Protect / Keep / Cut / Defer / Decide / Unsure) or contains an opening bolded keyword (`**Decision:**`, `**Question:**`, `**Element:**`). Risk-controlled — only fires when list-item and bolded-paragraph heuristics return zero.
+
+- **C3 — Argument-DE letters use different headings + lack canonical Appendix A/B/C.** TAY argument-shaped letters use "Coalition-Partner Ground-Truth Recommendations" and "Editorial-Dispute Territory" instead of "Protected Elements" / "Author Decisions"; they don't include Control Questions or Appendix A/B/C blocks. v1.8.0 detects argument-DE class via marker presence ("Coalition-Partner Ground-Truth Recommendations", "Editorial-Dispute Territory", "Argument_State", "Claim Ladder", "Argument Engine"). When detected: Check 1 accepts the variant heading names; Check 2 accepts "Editorial-Dispute Territory" as the equivalent decision section; Checks 3-4 (Control Questions, Appendix A/B/C) are skipped — argument-DE class is not held to fiction-DE structural contract.
+
+- **C4 — Evidence-density 6-line window misses inline-prose evidence.** Phase 4-6 validator scanned exactly 6 lines after each Must-Fix mention; Codex letters with paragraph-form evidence (references in surrounding prose, not in an immediate trailing list) FAILed despite documenting evidence within the Must-Fix's section block. v1.8.0 widens the window to a paragraph-block scan: from each Must-Fix line until the next Must-Fix occurrence OR the next section header (^## at column 0), whichever comes first. Trade-off documented: wider window reduces false-positive density flags but is slightly less strict on truly under-evidenced Must-Fixes.
+
+- **Self-test extended from 7 cases to 11.** Original cases preserved (pos, neg1-4, over1, over_appx); new cases added — `c1_subhead_clusters` (Keep/Cut/Unsure with 13 sub-bullets → 3 cluster count → PASS), `c2_paragraph_form` (Codex-style verb-leading paragraphs → paragraph-form fallback → PASS), `c3_argument_de` (argument-DE letter with Coalition-Partner / Editorial-Dispute headings → Checks 3-4 skipped → PASS), `c4_paragraph_evidence` (Must-Fix with inline-prose evidence in the surrounding paragraph block → paragraph-block window → PASS). Negative cases (neg3 specifically) restructured from subheaded form to bare list form so list-item count = 8 still triggers the out-of-range error; over1 / over_appx restructured to bare list form so subhead-cluster mode does not mask the original Control Questions test.
+
+- **B3 deferral.** Re-running the calibrated validator against the four canonical fixtures (B3 in the Phase 7 plan) is deferred to Wave 2 — Wave 1 lands the calibration; Wave 2 confirms F1-F4 produce expected results post-calibration. The Phase 7 plan §Wave 2 sequencing (B3 depends on A1) is honored.
+
+#### A2 — Optional validators batch (`audit-tier-criterion` + `argument-recon-prerequisite`)
+
+Two of the three optional validators identified in v1.7.9 §Out of scope and the Phase 7 plan §A2 ship in Wave 1. The third (`audit-signal-propagation §4e context-modifier extension`) is deferred to a later Phase 7 wave per scope-control. Validator total: 9 → 11.
+
+- **`audit-tier-criterion` (new validator, ~250 lines).** Verifies audit tier assignments in `pass-dependencies.md §4a/§4b` against the §4c Audit Tier Promotion Criteria (Phase 6 Wave 2). Mechanically verifies criterion 1 (named hard gates / Must-Fix floor) by scanning each high-tier audit's reference file for `hard[ -]?gate` or `must-?fix[ -]?floor` patterns. Audits at Hard Prerequisite / Pre-DE Prerequisite / Auto-run / Auto-recommend before synthesis tiers without criterion-1 language are surfaced as candidates for tier review. Recommend / Auto-recommend tiers are exempt. **Capability ceiling documented:** criteria 2 (undetectable-by-passes) and 3 (disclosure-non-equivalence) require model judgment about the manuscript / fixture corpus and remain in the §4a/§4b verification subsection prose. Per-audit override marker: `<!-- override: audit-tier-criterion-<audit-slug> --> `. Self-test: 4 cases (pos, neg, over, edge — Recommend tier exempt).
+
+- **`argument-recon-prerequisite` (new validator, ~190 lines).** Verifies argument-shaped runs satisfy the Field Reconnaissance prerequisite per `pass-dependencies.md §4a` (Hard Prerequisite or Auto-recommend before synthesis tier) and v1.7.9's wired execution-flow Pre-Pass Prerequisite Resolution step. Detects argument-engine artifacts (Argument_State.md, Red_Team_Memo.md, Argument_Evidence.md, Argument_Persuasion.md, Adversarial_Evidence.md) by filename pattern in the run folder, plus editorial-letter mentions of Dialectical Clarity / Argument Red Team / Argument Evidence Deep-Dive / argument-engine pass output. When argument-engine present, requires either (a) `Field_Reconnaissance_Report.md` in the run folder, OR (b) the canonical blind-spot disclosure ("literature-counterevidence not surveyed") in the editorial letter per `run-synthesis.md §Step 3` (Phase 6 Wave 3 / CR-4). Silent omission is forbidden at the Hard Prerequisite tier per the canonical decline policy. Body-only override marker: `<!-- override: argument-recon-prerequisite -->`. Self-test: 5 cases (pos1 — argument-engine + Field Recon; pos2 — argument-engine + canonical disclosure; pos3 — fiction run exempt; neg — silent omission caught; over — override marker downgrades).
+
+- **Deferred from A2 batch:** `audit-signal-propagation §4e context-modifier extension` (per-audit table-driven dispatch reading §4e programmatically). Listed in Phase 7 plan as one of three A2 items; deferred to a later wave to keep Wave 1 scope bounded. v1.7.9's audit-signal-propagation default mapping continues to handle the verification.
+
+#### D1 — v1.7.1 changelog backfill
+
+The v1.7.1 release ("underdiagnosis hardening") shipped 2026-04-23 without a changelog entry — flagged in Phase 4 Wave 1 as a deferred hygiene item. Wave 1 of Phase 7 backfills the entry between v1.7.0 and v1.7.2 with explicit non-contemporaneous note. Cites originating commits `cfaadef` (underdiagnosis hardening), `7bb9c34` (Deficit-First extension to 5 craft audits), `9cd8948` (release.sh build-antigravity step), and version-bump commit `6b477d5`. See v1.7.1 entry below for full content.
+
+#### Files
+
+- `plugins/apodictic/scripts/validate.sh` — `decision-layer-check` calibrated for C1-C4 with extended self-test (~+330 lines net: doc-comment expansion, three-tier counting helper with subhead-cluster + paragraph-form fallbacks, argument-DE class detection, paragraph-block evidence-density window, four new self-test fixtures); two new validators added (`audit-tier-criterion` ~250 lines including self-test; `argument-recon-prerequisite` ~190 lines including self-test); top-of-file usage doc-comments extended for both new validators; usage help text updated. Net ~+750 lines.
+- `scripts/validate.sh` — synced with plugin copy (canonical lives at `plugins/apodictic/scripts/validate.sh`; root copy is the user-facing alias).
+- `plugins/apodictic/skills/specialized-audits/SKILL.md` — added Field Reconnaissance prerequisite paragraph in How to Use section pointing to `argument-recon-prerequisite` validator (~+3 lines).
+- `plugins/apodictic/skills/core-editor/references/changelog.md` — v1.8.0 entry; v1.7.1 backfill entry between v1.7.0 and v1.7.2.
+- Version bumped via `scripts/bump-version.sh 1.8.0`.
+- Generated host workspaces (codex, antigravity) regenerated via release pipeline.
+
+Total prose change: ~3 lines added (SKILL.md). Total validator change: ~+750 lines in `validate.sh`. All 11 validator self-tests PASS. All 4 release checks PASS.
+
+#### Self-test verification (v1.8.0)
+
+| Validator | Cases (was → now) | New coverage |
+|---|---|---|
+| `severity-floor` | 7 | Unaffected |
+| `audit-signal-propagation` | 9 | Unaffected |
+| `underdiagnosis-triggers` | 5 | Unaffected |
+| `ledger-consolidation` | 5 | Unaffected |
+| `decision-layer-check` | 7 → 11 | C1 (subhead clusters), C2 (paragraph form), C3 (argument-DE class), C4 (paragraph-block evidence window) |
+| `quality-risk-triggers` | 12 | Unaffected |
+| `timeline-diff` | 8 | Unaffected |
+| `timeline-arithmetic` | 6 | Unaffected |
+| `timeline-anchor-conflict` | 6 | Unaffected |
+| `audit-tier-criterion` | 0 → 4 | NEW — pos / neg / over / edge (Recommend-tier exempt) |
+| `argument-recon-prerequisite` | 0 → 5 | NEW — pos1 (Field Recon present) / pos2 (canonical disclosure) / pos3 (fiction exempt) / neg (silent omission) / over |
+
+#### Out of scope (deferred Phase 7 work)
+
+- **B3 — decision-layer-check re-eval against canonical fixtures (F1-F4).** Wave 2 work per Phase 7 plan §Wave 2 sequencing.
+- **`audit-signal-propagation §4e context-modifier extension`.** Third A2 validator deferred to a later Phase 7 wave; v1.7.9 default mapping continues to handle propagation verification.
+- **A3 Python-helper-based true Timeline parsing.** Recommended out of scope for the model-capability review cycle per Phase 7 plan §A3; added to ROADMAP.md as future Python tooling cycle candidate.
+
+---
+
 ## v1.7.9 - 2026-04-25
 
 ### Fixed — Honest Validator Capability Correction + Execution-Flow Prerequisite Wiring
@@ -473,6 +544,80 @@ Implements the first wave of Phase 4 of the model-capability review (see `docs/r
 - Decision-Layer Consolidation validator (Priority 5 in revised plan).
 - Pass-10-class artifact pattern naming (Priority 6 in revised plan; Phase 6 unblocker, may be deferred to Phase 7).
 - Per-audit propagation table (Phase 6 work; the canonical rule added here establishes the specification basis).
+
+---
+
+## v1.7.1 - 2026-04-23
+
+> **Backfilled 2026-04-25 during Phase 7 Wave 1 of the model-capability review.** The original release shipped 2026-04-23 without a changelog entry; the gap was flagged in Phase 4 Wave 1 as a deferred hygiene item and closed here per `docs/review-log/2026-04-25_phase-7-implementation-plan.md` §D1. Entry reconstructed from commits `cfaadef`, `7bb9c34`, `9cd8948`, and version-bump commit `6b477d5`.
+
+### Added — Underdiagnosis Hardening + Deficit-First Diagnostic Rule + release.sh build-antigravity step
+
+Tightens synthesis against soft-pedaled diagnosis. The framework now hunts for absence instead of validating presence, installs tripwires when severity-floor logic is incoherent, and blocks delivery on tone-compliance violations. Eleven craft audits gain a Deficit-First Diagnostic Rule opening block; five audits promoted from Recommend → Auto-recommend before synthesis. Closes the v1.7.0 underdiagnosis vector documented in archaeology and motivates the Phase 4 audit-signal propagation + condition-triggered retry-loop work.
+
+#### Synthesis flow tightening (cfaadef)
+
+- **`core-editor/references/run-synthesis.md` Step 3 (new) — Blind Spot / Absence Inventory.** Before root-cause analysis, scan the Findings Ledger to identify what is missing from the text rather than just evaluating what is present on the page. Missing elements (rushed sequence compression, lacking interiority, unsupported choice architecture) leave no explicit textual footprint and are harder to detect; the Absence Inventory makes the omission scan a required gate before triage.
+- **`core-editor/references/run-synthesis.md` Step 9 (new) — Conditional Underdiagnosis Retry Loop.** Abort synthesis if severity-floor logic is incoherent, the Reader Stress Test surfaces uncaptured attacks, or live audit blind spots remain unrouted. (v1.7.2 + v1.7.4 + v1.7.9 later refined this loop into the canonical condition-triggered enumerated-trigger form with `validate.sh underdiagnosis-triggers`.)
+- **`core-editor/references/run-synthesis.md` Step 13 (new) — Tone Compliance Check.** Wired to `validate.sh tone-check`; blocks letters containing sycophantic superlatives ("masterpiece," "stunning," "flawless," "clean bill," "tour de force," "triumph," "perfection") before delivery.
+- **Steps 10, 11, 12 renumbered** to accommodate Step 3 + Step 9 + Step 13 additions.
+
+#### Output policy (cfaadef)
+
+- **`core-editor/references/output-policy.md` rule #5 (new).** A text is only "structurally clean" if Reader Stress Test, Rejection Memo, and Absence Inventory all explicitly fail to surface deep flaws. Codifies the prohibition against asserting structural soundness from absence-of-flag-firing.
+
+#### Pass dependencies — five audits promoted (cfaadef)
+
+Five audits promoted from Recommend → Auto-recommend before synthesis because they catch omission patterns that undermine the whole letter if skipped:
+- Compression
+- Female Interiority
+- Scene Turn
+- Interiority Preservation
+- Decision Pressure
+
+(Phase 6 Wave 2 §4a/§4b verification confirmed the promotions hold under the formal Audit Tier Promotion Criteria added in §4c.)
+
+#### Craft audits — Deficit-First Diagnostic Rule (cfaadef + 7bb9c34)
+
+Each audit gets a tailored "Deficit-First Diagnostic Rule" opening block directing the auditor to hunt for absence of structural necessity, interiority, or consequence rather than validate presence of fluent prose. Initial six audits in cfaadef; commit 7bb9c34 extended the rule to five additional craft audits with audit-specific tailoring (no cargo-culting):
+
+**Initial six (cfaadef):**
+- `craft/ai-prose-calibration.md` — hunt for absence of voice signature.
+- `craft/compression-audit.md` — hunt for absence of scene-level granularity.
+- `craft/decision-pressure.md` — hunt for absence of choice architecture.
+- `craft/female-interiority.md` — hunt for absence of perception → interpretation → judgment in interiority-load scenes.
+- `craft/interiority-preservation.md` — hunt for absence of POV interiority during peak-intensity scenes.
+- `craft/scene-turn.md` — hunt for absence of goal + change + consequence (Bickham Turn Test).
+
+**Extension five (7bb9c34):**
+- `craft/character-architecture.md` — hunt for absence of genuine agency, psychological cost, and internal contradiction under pressure. Distinctive voice does not prove coherent agency.
+- `craft/emotional-craft.md` — hunt for absence of the meaning pipeline (perception → interpretation → judgment → impulse). Feeling-words do not prove transmission.
+- `craft/stakes-system.md` — hunt for absence of conversion (visible consequence, narrowing options, persistent cost). Signaled peril does not prove stakes architecture.
+- `craft/banister.md` — hunt for absence of steelmanned opposition, author self-implication, and conclusions the text could lose to. Voicing multiple positions does not prove epistemic humility.
+- `craft/dialectical-clarity.md` — hunt for absence of the inferential bridge (warrant, honest scope, live disagreement). Citing evidence and gesturing at objection does not prove the argument holds.
+
+#### Tooling (cfaadef + 9cd8948)
+
+- **`scripts/validate.sh tone-check` (new subcommand)** — blocks sycophantic superlatives (masterpiece, stunning, flawless, clean bill, tour de force, triumph, perfection). Wired into `run-synthesis.md` Step 13 as a delivery gate.
+- **`scripts/release.sh` extended with build-antigravity step (commit 9cd8948).** Adds a `[4/8] Build generated Antigravity workspace` step invoking `scripts/build-antigravity.mjs`, mirroring how `build-codex.mjs` is run. Without this step, bumping the version left the `antigravity/` workspace mirror stale, and the next `release-verify` run failed with "Antigravity workspace is stale." Renumbers subsequent steps and updates the banner total from 7 to 8.
+
+#### Files
+
+- `plugins/apodictic/skills/core-editor/references/run-synthesis.md` — Step 3 (Absence Inventory), Step 9 (Underdiagnosis Retry Loop initial form), Step 13 (Tone Compliance Check) added; subsequent steps renumbered.
+- `plugins/apodictic/skills/core-editor/references/output-policy.md` — rule #5 added (structural-clean condition).
+- `plugins/apodictic/skills/core-editor/references/pass-dependencies.md` — five-audit promotion (Compression / Female Interiority / Scene Turn / Interiority Preservation / Decision Pressure).
+- `plugins/apodictic/skills/specialized-audits/references/craft/{ai-prose-calibration,compression-audit,decision-pressure,female-interiority,interiority-preservation,scene-turn,character-architecture,emotional-craft,stakes-system,banister,dialectical-clarity}.md` — Deficit-First Diagnostic Rule opening block (11 audits total across cfaadef + 7bb9c34).
+- `plugins/apodictic/scripts/validate.sh` — `tone-check` subcommand added.
+- `scripts/release.sh` — `[4/8] Build generated Antigravity workspace` step added (commit 9cd8948); banner total 7 → 8.
+- Mirrors (antigravity/, codex/, APODICTIC-Gemini/public/apodictic-plugin/) regenerated via `build-codex.mjs`, `build-antigravity.mjs`, and rsync.
+- Version bumped via `scripts/bump-version.sh 1.7.1` (commit 6b477d5).
+
+#### Originating commits
+
+- `cfaadef` — Underdiagnosis hardening: absence inventory, retry loop, deficit-first audits.
+- `7bb9c34` — Extend Deficit-First rule to 5 additional craft audits.
+- `9cd8948` — Extend release.sh with build-antigravity step.
+- `6b477d5` — Bump version to 1.7.1 for underdiagnosis hardening release.
 
 ---
 
