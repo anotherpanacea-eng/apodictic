@@ -29,7 +29,7 @@ All DE outputs are author-facing documents. Framework shorthand — pass numbers
 - Quote budget: ≤25 words per excerpt, or paraphrase + pointer
 - Every proposed fix must list what it risks harming
 - **Fix-Diagnosis Coherence Test (required):** Before finalizing any proposed intervention, verify that the fix addresses the *mechanism* of the diagnosed problem, not just its surface symptom. If the diagnosis is "Character X lacks narrative agency," a fix that adds more male-gaze contemplation of Character X deepens the problem. Ask: "Does this intervention change the mechanism, or does it add surface content that leaves the mechanism intact?" If the latter, revise the intervention class or flag it as insufficient.
-- **Evidence Density Self-Check (required):** Before finalizing each flag, count its specific scene/page references. If a flag cites fewer than 2 references, either locate additional textual evidence to support it or downgrade confidence (not severity — a real problem with thin evidence is still a real problem, but the author needs to know the evidence base is narrow). This check runs at the flag level during triage, not as a separate pass.
+- **Evidence Density Self-Check (required):** Before finalizing each flag, count its specific scene/page references. If a flag cites fewer than 2 references, either locate additional textual evidence to support it or downgrade confidence (not severity — a real problem with thin evidence is still a real problem, but the author needs to know the evidence base is narrow). This check runs at the flag level during triage, not as a separate pass. *Per-Must-Fix evidence density is mechanically validated as Check 5 of `scripts/validate.sh decision-layer-check`; the validator counts chapter/scene/line/page/audit-code references in the 6-line window from each Must-Fix mention. Manual self-check remains the editorial step (downgrade confidence, not severity); the validator is the gate. Override marker: `<!-- override: decision-layer-evidence-density — <rationale> -->` in the body downgrades ERROR → WARN.*
 
 ---
 
@@ -297,6 +297,8 @@ Rules:
 
 ## Severity Floor Rules (v0.4.14.3)
 
+*Canonical home for severity-floor rules. Mechanical check: `scripts/validate.sh severity-floor <editorial_letter_file>`. Other framework surfaces (e.g., `run-synthesis.md` Step 10, `specialized-audits/references/craft/reception-risk.md` §7) reference these rules rather than restating them; if a surface appears to encode a fourth rule, treat that as a duplication bug and consolidate here.*
+
 These rules prevent diagnostic softening from producing incoherent verdicts:
 
 1. If any core-promise axis is rated Weak at High or Medium intensity, at least one flag must be Must-Fix. (A Weak core-promise axis with no Must-Fix flags means either the axis rating is wrong or the flag severity is wrong. Reconcile before proceeding.) At Low intensity or for peripheral axes, a Weak rating may stand with Should-Fix flags only, but must be explicitly justified.
@@ -304,6 +306,16 @@ These rules prevent diagnostic softening from producing incoherent verdicts:
 2. If any Must-Fix flag has Systemic blast radius, the verdict cannot exceed Partial Fit (for tag audits) or equivalent ceiling for passes.
 
 3. If three or more flags are Should-Fix or above, the verdict cannot be the highest positive band without explicit justification of why the flag volume doesn't impair the core contract.
+
+**Override path:** A run that intentionally deviates from a rule (e.g., a Weak axis the model judges does not warrant a Must-Fix because the underlying issue is editorial-stance not craft-failure) must record the deviation via a structured marker placed **in the letter body** (not in an appendix), plus a parallel narrative entry in Appendix B (Severity Calibration). Marker syntax (one per rule):
+
+```
+<!-- override: severity-floor-weak-axis — <one-sentence rationale> -->
+<!-- override: severity-floor-systemic — <one-sentence rationale> -->
+<!-- override: severity-floor-band-cap — <one-sentence rationale> -->
+```
+
+Markers in appendix bodies are non-canonical (synthesis body is canonical for findings; appendices hold evidence) and the validator will not honor them. Absence of marker and rationale = blocked synthesis: re-tier or override-with-reason in the body, but do not silently violate the floor.
 
 ---
 
@@ -359,6 +371,8 @@ Pass 0 (Reverse Outline) and Pass 10 (Entity Tracking) are data-building passes 
 ## Mandatory Appendices (v0.4.15)
 
 Every editorial letter must include the following appendices. These are not optional even when the letter is otherwise strong — they provide the author with diagnostic transparency and the framework owner with reproducibility data.
+
+*Appendix presence is mechanically validated by `scripts/validate.sh decision-layer-check <editorial_letter_file>`. The validator surfaces missing A/B/C as ERROR; an override marker placed in the synthesis body — `<!-- override: decision-layer-appendices — <rationale> -->` — downgrades to WARN per the body-vs-appendix override discipline established in §Severity Floor Rules. The validator does not check appendix content; that remains an editorial step.*
 
 1. **Appendix A: Diagnostic Detail.** Pointers to companion pass files and supplementary audit findings, with brief descriptions of what each contains. This tells the author where to find the evidence and revision tools behind the letter's arguments. If any auto-recommend or user-accepted audits completed **after** synthesis was written, list them separately as: "**Post-synthesis audits** (findings not integrated into triage — review independently):" followed by the audit name and findings file pointer. Auto-run audits should never appear in this post-synthesis section — they are synthesis dependencies and must complete before synthesis begins (see `pass-dependencies.md` §4c). If any high-risk audit was deferred or declined, Appendix A must also name that blind spot and state how it limits confidence, readiness, or interpretive certainty.
 

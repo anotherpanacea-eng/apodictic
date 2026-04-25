@@ -162,6 +162,16 @@ Options change based on the Artifact answer.
 - It does not ask about token budgets. The user rarely knows their budget in tokens. "Roughly 2–3x" and "roughly 5x" are sufficient framing.
 - It does not override the user's choice. If they pick standard read on a 120k novel, that's their call.
 
+**Quality-risk overlay (router-side detection).** Before presenting §2b options, the router scans the contract draft and intake answers for the five quality-risk triggers (Q1-Q5) defined in `run-core.md` §Quality-Risk Mode Selection. Detection is mechanical — based on contract fields and intake values, not model judgment:
+
+- **Q1 — Consent/governance risk:** genre = Horror or Erotic; OR `Consent Complexity` / `Reception Risk` audits on the recommended list; OR `darkness level: HIGH` in contract.
+- **Q2 — Argument-shaped nonfiction with high stakes:** `constraint:nonfiction` set AND form is policy brief / testimony / op-ed / academic argument / open letter / white paper (per §4a Form table); OR `Dialectical Clarity` audit recommended with submission readiness signaled.
+- **Q3 — Many POVs or non-linear structure:** contract POV count ≥3; OR intake notes non-linear chronology / fragmented structure / nested narratives.
+- **Q4 — Prior thin synthesis:** prior-run `Diagnostic_State.meta.json` shows Underdiagnosis Retry Loop fired in prior runs; OR user states "last round felt thin."
+- **Q5 — Submission readiness:** Q2 goal = `submit`; OR Pass 11 in resolved pass set.
+
+When any trigger fires, the router pre-fills its mode recommendation at the trigger's escalation target (per `run-core.md` §Quality-Risk Mode Selection) and surfaces the rationale to the user *before* §2b's recommendation table. Stacking triggers cap at swarm. The user retains the override path (explicit acknowledgment recorded in run metadata as `quality_risk_override`). See `run-core.md` §Quality-Risk Mode Selection for the canonical rationale per trigger and `scripts/validate.sh quality-risk-triggers` for the mechanical check.
+
 ---
 
 ## §3. Question 3: Anything that should change how we work?
