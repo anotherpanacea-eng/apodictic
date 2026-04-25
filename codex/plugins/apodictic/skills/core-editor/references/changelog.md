@@ -5,6 +5,74 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.8.3 - 2026-04-25
+
+### Fixed — Phase 7 Wave 4: antigravity plugin.json JSON-corruption bug; defensive JSON-parse check added
+
+Closes Phase 7 Wave 4 of the model-capability review per `docs/review-log/2026-04-25_phase-7-implementation-plan.md` §Wave 4. Wave 4 is closing-gate work: D2 host parity sweep + D3 Phase 7 done-gate verification. The parity sweep surfaced one critical drift item beyond what the mechanical `--check` calls catch — fixed in this release.
+
+#### D2 host parity sweep — finding
+
+`antigravity/plugins/apodictic/plugin.json` was being generated with a literal two-character string `\n` (backslash followed by lowercase n) instead of a real newline at end-of-file, because `scripts/build-antigravity.mjs` line 250 wrote `+ "\\n"` (escaped backslash) rather than `+ "\n"` (newline). The mechanical `node scripts/build-antigravity.mjs --check` did not catch this because it compared the freshly-generated workspace to the persisted workspace; both copies were corrupted identically. Result: the antigravity host's `plugin.json` was unparseable JSON (`SyntaxError: Unexpected non-whitespace character after JSON at position 1227`) for the entirety of v1.7.7 (when antigravity build was added) through v1.8.2.
+
+Severity assessment: **build-script bug** per Phase 7 plan §D2.4 classification — fix immediately. The bug never surfaced in mechanical release checks because no consumer verifies JSON validity of the generated plugin.json — the file is consumed by the Antigravity host runtime, which would presumably reject it on installation. No user reports to date, so blast radius is limited to whoever attempted an Antigravity install of APODICTIC during the v1.7.7-v1.8.2 window.
+
+#### Fix
+
+- **`scripts/build-antigravity.mjs` line 250** — changed `+ "\\n"` (literal backslash-n) to `+ "\n"` (newline). One-character change.
+- **`scripts/build-antigravity.mjs`** — added defensive `readJson(...)` re-parse of the generated `plugin.json` after write, so any future JSON-corruption regression fails the build immediately rather than silently passing through `--check` (which compares against itself). ~10 lines of validation logic + comment.
+- **`antigravity/plugins/apodictic/plugin.json`** — regenerated with valid trailing newline; now parses as valid JSON.
+
+#### D2 sweep — full results (parity holds elsewhere)
+
+Spot-checked semantic parity across canonical → codex and canonical → antigravity:
+
+- **Validate.sh + preflight.sh** — byte-identical across plugin source, codex, antigravity (`diff -q` confirms).
+- **Skills tree (canonical → antigravity)** — byte-identical except .DS_Store cruft. All `references/` content preserved.
+- **Skills tree (canonical → codex)** — diffs are all mechanical slash-to-wrapper rewrites (`apodictic-start` → `apodictic-start`, etc.) per the documented Codex transform. Spot-checked SKILL.md, run-core.md, changelog.md, series-continuity.md, plot-architecture/SKILL.md, pre-writing-pathway/SKILL.md, command files: every diff line is the slash-rewrite transformation, no semantic drift.
+- **Frontmatter versions** — all SKILL.md frontmatter matches canonical (1.8.2 pre-bump, 1.8.3 post-bump) across all three trees.
+- **Codex wrapper skills** — 11/11 commands have matching `apodictic-*` wrapper SKILL.md; all reference correct base skill and command path.
+- **Antigravity workflow files** — 11/11 commands have matching `.agents/workflows/*.md`; orchestrator `instructions.md` reads correct canonical paths.
+- **Cross-host contamination** — Codex `NON_PARITY_NOTES.md` does not mention Antigravity; Antigravity `NON_PARITY_NOTES.md` does not mention Codex. Host isolation preserved.
+- **Codex JSONs (`.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`)** — both parse as valid JSON.
+- **Antigravity `agents/core-orchestrator/agent.json`** — parses as valid JSON.
+
+#### D3 Phase 7 done-gate verification
+
+All 10 Phase 7 done-gate criteria verified CLOSED. All 6 spec §First Ship Gate criteria verified CLOSED. Verdict: **Phase 7 complete.** See `docs/review-log/2026-04-25_phase-7-wave-4-done-gate-verification.md` for per-criterion evidence.
+
+#### Files
+
+- `scripts/build-antigravity.mjs` — fix `"\\n"` → `"\n"` literal; add defensive JSON re-parse of generated plugin.json (~10 lines).
+- `antigravity/plugins/apodictic/plugin.json` — regenerated valid (trailing newline correct; parses as JSON).
+- `plugins/apodictic/skills/core-editor/references/changelog.md` — v1.8.3 entry.
+- Version bumped via `scripts/bump-version.sh 1.8.3`.
+- Generated host workspaces (codex, antigravity) regenerated via release pipeline (validate.sh / preflight.sh remain byte-identical to plugin source).
+
+Total framework prose change: ~10 lines net (build-script fix + JSON parse guard). No skill content edits. No validator changes; all 11 validator self-tests PASS.
+
+#### Self-test verification (v1.8.3)
+
+| Validator | Cases | Status |
+|---|---|---|
+| `severity-floor` | 7 | PASS |
+| `audit-signal-propagation` | 9 | PASS |
+| `underdiagnosis-triggers` | 5 | PASS |
+| `ledger-consolidation` | 5 | PASS |
+| `decision-layer-check` | 12 | PASS |
+| `quality-risk-triggers` | 12 | PASS |
+| `timeline-diff` | 8 | PASS |
+| `timeline-arithmetic` | 6 | PASS |
+| `timeline-anchor-conflict` | 6 | PASS |
+| `audit-tier-criterion` | 4 | PASS |
+| `argument-recon-prerequisite` | 5 | PASS |
+
+#### Out of scope
+
+- Wave 5 closeout (Codex final review + E1 final report + E2 ROADMAP update) is the next and final wave; not in v1.8.3 scope.
+
+---
+
 ## v1.8.2 - 2026-04-25
 
 ### Added — Phase 7 Wave 3: cross-cutting rule dedup + Plot Architecture vs Pass 2 boundary + Focus Map empirical test ROADMAP deferral
