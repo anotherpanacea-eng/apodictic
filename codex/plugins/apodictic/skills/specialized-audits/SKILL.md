@@ -74,7 +74,7 @@ description: >
   or any request for a focused manuscript audit beyond the core development
   edit passes. Also triggers on "list audits," "what audits are available,"
   or "help audits."
-version: 1.7.9
+version: 1.8.0
 ---
 
 # Specialized Audits & Research Modes
@@ -166,6 +166,8 @@ Tag audits evaluate experience-layer promises — reader expectations that sit o
 **Running a research mode:** Request by name. The agent activates internet-enabled research following the mode's protocol.
 
 **Severity signals from audits propagate to the synthesis layer per `core-editor/references/run-synthesis.md §Step 2 — Canonical Audit-Signal Propagation Rule`.** Audit-internal Must-Fix floors, hard gates, and HIGH/Alert ratings do not become synthesis-layer severity automatically; the propagation rule + `scripts/validate.sh audit-signal-propagation` enforce that they reach the editorial letter at the right severity tier (or are overridden with a documented rationale in Appendix B). Per-audit propagation specifics (which signal classes map to which synthesis severities for which audits, with context modifiers) live in `core-editor/references/pass-dependencies.md §4e — Audit-Signal Propagation Table`. Audit authors adding a new audit should add a §4e row at registration time; un-enumerated audits fall back to the canonical default mapping.
+
+**Field Reconnaissance prerequisite for argument-shaped runs (Phase 6 Wave 3 / CR-4; v1.7.9 wired; v1.8.0 verified).** Argument-shaped runs route Field Reconnaissance as a Hard Prerequisite (high-stakes signal) or Auto-recommend before synthesis (lower-stakes) per `core-editor/references/pass-dependencies.md §4a`. The `scripts/validate.sh argument-recon-prerequisite <run_folder>` validator (added v1.8.0) verifies that argument-engine runs either produce a `Field_Reconnaissance_Report.md` artifact OR record the canonical blind-spot disclosure ("literature-counterevidence not surveyed") in the editorial letter per `run-synthesis.md §Step 3`. Silent omission is forbidden at the Hard Prerequisite tier; the validator surfaces violations.
 
 **Research Mode Principles:**
 1. Research supplements structural judgment; it doesn't replace it
