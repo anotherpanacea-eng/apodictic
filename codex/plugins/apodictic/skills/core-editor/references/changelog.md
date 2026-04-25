@@ -5,6 +5,68 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.8.1 - 2026-04-25
+
+### Added — Phase 7 Wave 2: 11 UNPROVEN instructions eval coverage + decision-layer-check re-eval against canonical fixtures
+
+Closes Phase 7 Wave 2 of the model-capability review per `docs/review-log/2026-04-25_phase-7-implementation-plan.md` §Wave 2. Two jobs ship as a coordinated wave: B1 — static-analysis eval coverage of the 11 UNPROVEN instructions identified by Phase 3 inventory + archaeology log against the four canonical fixtures (Regrets Only Opus + Codex, Dinner Party, TAY argument-DE); B3 — re-run of `decision-layer-check` against the four canonical fixtures after Wave 1 A1 calibration, with B3-extension calibration to close two remaining gaps (bold-paragraph subhead detection; Must-Fix entry-form filter). Validator suite total stays at 11; self-test extended from 11 cases to 12 (`decision-layer-check` adds `c1b_bold_subhead_clusters`). Phase 7 Wave 3 (Group C compression work) unblocked.
+
+#### B1 — 11 UNPROVEN instructions eval coverage (static analysis)
+
+Per Phase 3 inventory + archaeology, 11 instructions were classified Keep-UNPROVEN — meaning provenance evidence is missing OR the instruction's load-bearing effect was unverified at Phase 3 close. v1.8.1 documents static-analysis eval coverage of each instruction against the four canonical fixtures, classifying per fixture and producing per-instruction verdicts.
+
+- **Verdict distribution:** 7 Confirmed load-bearing / 0 No detectable effect / 4 Ambiguous-or-Partial (3 due to fixture scope outside instruction's natural exercise class; 1 split confirmed/needs-corpus-expansion).
+- **Zero v1.9.x deletion candidates surfaced.** All 11 instructions either show direct fixture evidence of load-bearing behavior or are scoped outside the current fixture set in ways the report documents — per spec discipline ("guesswork includes guessing the rule still matters when no test catches it failing"; unexercised ≠ not load-bearing), unexercised instructions are flagged for v1.8.x or v1.9.x corpus expansion, not deletion.
+- **Highest-confidence findings:** (1) Universal-audit status criterion (B1-2): confirmed load-bearing in all four fixtures including in negative-disclosure form. (2) consent-complexity.md full file (B1-4): confirmed load-bearing across three of four in-scope fixtures with named-flag invocation (CC-6 Perpetrator Erasure observed in Dinner Party). (3) Auto-escalation + root-cause + findings-table caps (B1-3 / B1-8 / B1-9): three overlapping evals all converge on cap-honoring behavior across all four fixtures.
+- **Corpus-expansion candidates for v1.9.x (per fixture-scope limitation, not deletion):** state-lifecycle gardening thresholds (synthetic state-file fixtures); ai-prose-calibration AIC-2 / AIC-4 / AIC-6 / AIC-8 flag families (synthetic AI-heavy fixture); queer-romance-erotica / cozy-tag / philosophical-tag tag audits (genre-specific short fixtures).
+- **Output:** `docs/review-log/2026-04-25_phase-7-wave-2-eval-coverage.md` documents per-instruction location, stated effect, eval method, per-fixture findings, verdict, and recommendation. Summary table at top.
+
+#### B3 — `decision-layer-check` re-eval against canonical fixtures + Wave 2 calibration extensions
+
+Wave 1 (v1.8.0) shipped A1 calibration for the four C1-C4 patterns identified by Phase 4 Wave 3. B3 re-runs the calibrated validator against F1-F4 to confirm the four FAILs from Phase 4 Wave 3 are resolved.
+
+- **Pre-Wave-1 baseline:** F1 FAIL (2 checks); F2 FAIL (3 checks); F3 FAIL (2 checks); F4 FAIL (1 check + 1 WARN).
+- **Post-Wave-1 (A1) result:** Approximately half of the original failures closed. Two patterns remained as A1 calibration scope-misses: (1) F1's Author Decisions section uses bold-paragraph subheads (`**Keep**`, `**Cut / Release**`, `**Unsure — decide before revision**`) rather than level-3 markdown subheads (`### Keep`); A1's C1 calibration only detected `### Keep`. (2) All four fixtures discuss "Must-Fix" extensively in body prose (severity-test commentary, Findings Ledger discussions) without those mentions being labeled finding entries; A1's C5 paragraph-block widening helped but didn't address the prose-vs-label distinction.
+- **Wave 2 B3a — Bold-paragraph subhead detection.** C1 subhead-cluster count extended to detect both level-3 markdown subheads AND bold-paragraph subheads (`**Keep**`, `**Cut / Release**`, etc.) as cluster delimiters. Both forms are equivalent semantically; the validator now treats them as equivalent. Self-test adds `c1b_bold_subhead_clusters` (mirrors canonical Regrets Only Opus 4.7 fixture pattern: 13 sub-bullets across 3 bold-paragraph subheads → 3 cluster count → PASS).
+- **Wave 2 B3b — Must-Fix entry-form filter.** Check 5 evidence-density previously counted every line containing the literal "Must-Fix" string as a labeled finding. Editorial letters discuss Must-Fix extensively in body prose (verdict commentary, severity-test discussion, ledger summaries) without those mentions being labeled entries. v1.8.1 extends the filter to count Must-Fix mentions only when in label form: heading line; list-item leader within first 80 chars; numbered list-item leader within first 80 chars; `**Severity:**` label co-located with Must-Fix; bare `Severity:` label at line start; MF-N anchor co-located with Must-Fix; pipe-table cell. Plus appendix-exclusion (appendix-only mentions are severity-calibration discussion, not labeled findings). The filter uses POSIX-portable `tolower()` + `index()` for case-insensitive matching (awk's `/i` regex flag is not POSIX-portable; initial implementation discovered this and corrected to portable form). Existing `neg4` self-test fixture restructured from bare prose `Must-Fix:` line to `### Must-Fix:` heading form to preserve the original test intent (label form with <2 references should still FAIL Check 5).
+- **Post-Wave-2 (A1 + B3) result:** All four canonical fixtures (F1, F2, F3, F4) now produce **OK** on `decision-layer-check`. All 12 self-test cases PASS (added `c1b_bold_subhead_clusters`). No regression on the 6 prior validator self-tests.
+- **Calibration effectiveness:** A1 (Wave 1) was partially effective; B3 extension (Wave 2) closes the remaining gaps. Across the two waves, all four Phase 4 Wave 3 calibration findings (C1-C4) plus the two Wave 2-surfaced patterns (bold-paragraph subhead form; prose-vs-label Must-Fix distinction) are resolved.
+
+#### Files
+
+- `plugins/apodictic/scripts/validate.sh` — `decision-layer-check`: B3a bold-paragraph subhead detection (~+15 lines); B3b Must-Fix entry-form filter with body-only scope (~+30 lines); self-test extended from 11 to 12 cases (added `c1b_bold_subhead_clusters`); `neg4` fixture restructured to use `### Must-Fix:` heading + bare-bullet Author Decisions to preserve original Check 5 negative-test intent. Net ~+95 lines.
+- `scripts/validate.sh` — synced with plugin copy (canonical lives at `plugins/apodictic/scripts/validate.sh`; root copy is the user-facing alias).
+- `plugins/apodictic/skills/core-editor/references/changelog.md` — v1.8.1 entry.
+- Version bumped via `scripts/bump-version.sh 1.8.1`.
+- Generated host workspaces (codex, antigravity) regenerated via release pipeline.
+
+Total prose change: 0 lines in framework prose (all edits in `validate.sh` validator + self-test + new review-log entry). Total validator change: ~+95 lines in `validate.sh`. All 11 validator self-tests PASS. All 4 release checks PASS.
+
+#### Self-test verification (v1.8.1)
+
+| Validator | Cases (was → now) | New coverage |
+|---|---|---|
+| `severity-floor` | 7 | Unaffected |
+| `audit-signal-propagation` | 9 | Unaffected |
+| `underdiagnosis-triggers` | 5 | Unaffected |
+| `ledger-consolidation` | 5 | Unaffected |
+| `decision-layer-check` | 11 → 12 | B3a `c1b_bold_subhead_clusters` (bold-paragraph subhead form); B3b Must-Fix entry-form filter (existing `neg4` restructured) |
+| `quality-risk-triggers` | 12 | Unaffected |
+| `timeline-diff` | 8 | Unaffected |
+| `timeline-arithmetic` | 6 | Unaffected |
+| `timeline-anchor-conflict` | 6 | Unaffected |
+| `audit-tier-criterion` | 4 | Unaffected |
+| `argument-recon-prerequisite` | 5 | Unaffected |
+
+#### Out of scope (deferred Phase 7 work)
+
+- **B2 — Focus Map empirical test.** Wave 3+ work per Phase 7 plan §Wave 3 sequencing.
+- **C1 — Cross-cutting prose compression.** Wave 3 work; unblocked by B1 closure.
+- **C2 — Plot Architecture vs Pass 2 boundary clarification.** Wave 3 work.
+- **D2 — Generated host parity sweep + D3 — Phase 7 done-gate verification.** Wave 4 work.
+
+---
+
 ## v1.8.0 - 2026-04-25
 
 ### Added — Phase 7 Wave 1: decision-layer-check calibration + optional validators batch + v1.7.1 changelog backfill
