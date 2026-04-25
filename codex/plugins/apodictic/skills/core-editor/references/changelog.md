@@ -5,6 +5,84 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.8.2 - 2026-04-25
+
+### Added — Phase 7 Wave 3: cross-cutting rule dedup + Plot Architecture vs Pass 2 boundary + Focus Map empirical test ROADMAP deferral
+
+Closes Phase 7 Wave 3 of the model-capability review per `docs/review-log/2026-04-25_phase-7-implementation-plan.md` §Wave 3. Three jobs ship as a coordinated wave: C1 — cross-cutting rule dedup with canonical-home annotations (firewall, anti-sycophancy / no-self-revise, absence-first / blind-spot disclosure, Pass-10-Class artifact pattern); C2 — Plot Architecture vs. Pass 2 (Structural Mapping) boundary clarification; B2 — Focus Map empirical test formalized as ROADMAP entry (test runs not executed in this cycle; deferred per Phase 5 resource-cost rationale, formalized in Wave 3 with named re-evaluation triggers). Net framework prose change: small positive (canonical-home annotations and boundary block exceed the few collapsed restatements). No validator changes; all 11 validator self-tests pass.
+
+#### C1 — Cross-cutting rule dedup
+
+Phase 3 inventory identified five cross-cutting rules added during Phase 4-6 to a shared dedup table; per Phase 3 spec ("compression deferred to Phase 7 only after eval coverage exists"), Wave 2's B1 eval coverage of UNPROVEN instructions unblocked compression work in Wave 3. Each rule receives a canonical-home annotation marking the authoritative statement; non-canonical surfaces collapse generic restatements to pointers while preserving any context-specific elaboration.
+
+- **Firewall — canonical home: `core-editor/SKILL.md §The Firewall`.** Annotation added naming downstream surfaces (`revision-coach/SKILL.md §The Coaching Firewall`, `adversarial-stress-test.md §Firewall Compliance`, `run-full.md §QA gate`, `pass-11.md §Forbidden`) and noting that those surfaces preserve only context-specific elaborations (coaching-mode drift, stress-test scope, market-viability scope). No generic restatements collapsed in this Wave — all downstream firewall mentions are already context-specific (coaching-firewall, stress-test firewall, pass-11 firewall, supplementary-audit firewall). The annotation prevents future drift by marking the canonical home explicitly.
+
+- **Anti-sycophancy / no-self-revise — canonical home: `core-editor/references/output-policy.md §Severity Honesty Protocol`.** Annotation added naming downstream surfaces (`adversarial-stress-test.md §Lock-then-test protocol` / §Anti-softening rule, `specialized-audits/references/craft/reception-risk.md §Lock-then-classify` / §Forbidden #6, `run-synthesis.md §Step 5 Adversarial Self-Check`). Two reception-risk parentheticals collapsed to canonical pointer ("Anti-sycophancy / no-self-revise rule canonical in `core-editor/references/output-policy.md §Severity Honesty Protocol`."); preserves the audit-specific operational instructions (lock-then-classify discipline; "Reduce severity ratings through self-generated counter-arguments after locking" forbidden). Adversarial-stress-test §Lock-then-test sentence rewritten to point at the canonical rule while preserving the stress-test-specific elaboration (lock-before-steelman ordering). Per-audit Deficit-First Diagnostic Rule blocks (each audit-tailored) explicitly preserved in their audit reference files — they are operational expressions of the principle, not generic restatements.
+
+- **Absence-first / deficit-first framing AND blind-spot disclosure as confidence limiter — canonical home: `core-editor/references/run-synthesis.md §Step 3 Blind Spot / Absence Inventory`.** (Two cross-cutting rules consolidated under one canonical home because Step 3 already integrates both: the Absence Inventory is the absence-first operational step; the Mandatory blind-spot disclosure paragraph is the confidence-limiter rule.) Annotation added naming downstream surfaces (`output-policy.md §Severity Honesty Protocol` rule #5 evidence-first checks, `submission-readiness.md §Blind-spot rule`, `pass-dependencies.md §4c` Auto-recommend before synthesis decline policy, `specialized-audits/SKILL.md §How to Use` Field Reconnaissance prerequisite paragraph). Submission-readiness §Blind-spot rule extended with canonical-home pointer while preserving the submission-readiness-specific elaboration (which audits, how the readiness verdict carries the limiter forward). Per-audit Deficit-First Diagnostic Rule opening blocks in `specialized-audits/references/craft/*.md` (11 audits — stakes-system, dialectical-clarity, ai-prose-calibration, interiority-preservation, emotional-craft, banister, decision-pressure, scene-turn, female-interiority, character-architecture, compression-audit) explicitly preserved — they are audit-tailored operational expressions, not generic restatements.
+
+- **Pass-10-Class rolling artifact pattern — canonical home: `core-editor/SKILL.md §Project Integration §Pass-10-Class Rolling Structured Artifacts`** (already established in Phase 4). Annotation added naming downstream surfaces (`pass-dependencies.md §1 Tier 1 Pass 10 row`, `run-synthesis.md §Step 2 Pass-10-Class artifact integration`, `references/pass-10.md`) and noting that those surfaces add only artifact-instance specifics (Timeline schema, Argument_State schema, etc.). No generic restatements collapsed — downstream surfaces already cite back to the canonical home; the annotation prevents future drift.
+
+**Risk-controlled dedup decisions (no rule deferred for risk).** Each cross-cutting rule had its canonical home statement spot-checked for sufficiency in isolation: the firewall block in `core-editor/SKILL.md` is complete (FORBIDDEN list + ALLOWED list + example); the anti-sycophancy block in `output-policy.md §Severity Honesty Protocol` is complete (5 manifestations + 5 rules); the absence-first + blind-spot disclosure block in `run-synthesis.md §Step 3` is complete (Absence Inventory protocol + Mandatory blind-spot disclosure paragraph for argument-shaped runs). Pointers preserve the contextual hint ("the audit-specific lock-then-classify discipline implements the canonical rule") so downstream readers reach the canonical statement without losing the local operational instruction. **No load-bearing redundancy was deferred** — all collapsed locations were generic parentheticals or one-line restatements, never the load-bearing operational instruction itself.
+
+#### C2 — Plot Architecture vs. Pass 2 (Structural Mapping) boundary clarification
+
+Phase 3 inventory flagged the boundary between Plot Architecture (a separate skill orchestrator covering 50 spines, 12 families, fantasy/series architecture) and Pass 2 (Structural Mapping in core editor) as ambiguous. Authors and models could confuse which to invoke when. Wave 3 ships explicit boundary documentation in three locations:
+
+- **`plot-architecture/SKILL.md` — new §Plot Architecture vs. Pass 2 (Structural Mapping) — Boundary section** (~25 lines). Comparison table covering writer question, layer-of-operation, output, when-to-invoke, and routing for each. Cross-references in practice: Plot Architecture → Pass 2 (when a STRUCTURAL BREAK at the spine level wants on-page mapping); Pass 2 → Plot Architecture (when on-page structural symptoms cannot be diagnosed at the spine level). Rule-of-thumb: "what kind of book is this structurally" → Plot Architecture; "is the structure I have on the page working" → Pass 2; both → Pass 2 first, then Plot Architecture against the honest map.
+- **`pass-dependencies.md §1 Tier 1 Pass 2 row** — extended Pass 2 output-artifact cell (~1 line) with the boundary callout pointing at `plot-architecture/SKILL.md` for spine-paradigm questions.
+- **`core-editor/SKILL.md §Delegation Rules §Plot Structure** — extended (~3 lines) with the boundary distinction (Plot Architecture handles whole-work spine paradigm; Pass 2 handles on-page structural execution) and a cross-reference to the plot-architecture boundary section.
+
+Total ~30 lines added across three files. The boundary clarification is small-scope and additive — no existing prose was rewritten or removed, no existing routing changed.
+
+#### B2 — Focus Map empirical test formalized as ROADMAP deferral
+
+Phase 5 deferred the Focus Map empirical test (6-fixture comparison: 3 fixtures × 2 arms — control vs. treatment) for resource reasons. The test framework was documented in `hybrid-mode.md §Focus Map Architectural Decision Framework`. Wave 3 formalizes the deferral as a named ROADMAP item rather than running the test in this cycle.
+
+- **`ROADMAP.md` — new §Deferred (Empirically-Gated Decisions) section** added between §Not Planned and §Done, with one entry: "Focus Map Architectural Decision — Empirical Test." Entry covers source (Phase 5 deferred; Phase 7 Wave 3 formalized), current default (Focus Map remains hybrid-only — conservative per spec §Phase 5), hypothesis + acceptance criteria reference (pointer to `hybrid-mode.md §Focus Map Architectural Decision Framework`), test scope (6 runs total: 3 fixtures × 2 arms), and re-evaluation triggers (fixture corpus expansion making the 6-run cost worthwhile, OR Pass 10 Timeline integration forcing the cross-mode question). Decision until re-evaluated: default holds.
+- **`hybrid-mode.md §Focus Map Architectural Decision Framework §Test deferred`** — extended (~3 lines) with explicit pointer to the new ROADMAP entry, naming the re-evaluation triggers and confirming the framework default holds until trigger + acceptance-bar clearance.
+
+#### Files
+
+- `plugins/apodictic/skills/core-editor/SKILL.md` — firewall canonical-home annotation (~2 lines); Pass-10-Class artifact pattern canonical-home annotation (~2 lines); §Delegation Rules §Plot Structure boundary clarification (~3 lines).
+- `plugins/apodictic/skills/core-editor/references/output-policy.md` — anti-sycophancy / no-self-revise canonical-home annotation in §Severity Honesty Protocol (~2 lines).
+- `plugins/apodictic/skills/core-editor/references/run-synthesis.md` — absence-first + blind-spot disclosure canonical-home annotation in §Step 3 Blind Spot / Absence Inventory (~2 lines).
+- `plugins/apodictic/skills/core-editor/references/adversarial-stress-test.md` — §Lock-then-test protocol rewritten to point at canonical rule (~1 line net change, no collapse).
+- `plugins/apodictic/skills/specialized-audits/references/craft/reception-risk.md` — two parenthetical anti-sycophancy restatements collapsed to canonical pointers (~0 lines net; same word count).
+- `plugins/apodictic/skills/core-editor/references/submission-readiness.md` — §Blind-spot rule extended with canonical-home pointer (~1 line).
+- `plugins/apodictic/skills/plot-architecture/SKILL.md` — new §Plot Architecture vs. Pass 2 (Structural Mapping) — Boundary section (~25 lines).
+- `plugins/apodictic/skills/core-editor/references/pass-dependencies.md` — Pass 2 row extended with boundary callout (~1 line).
+- `ROADMAP.md` — new §Deferred (Empirically-Gated Decisions) section + Focus Map entry (~20 lines).
+- `plugins/apodictic/skills/core-editor/references/hybrid-mode.md` — §Test deferred extended with ROADMAP pointer (~3 lines).
+- `plugins/apodictic/skills/core-editor/references/changelog.md` — v1.8.2 entry.
+- Version bumped via `scripts/bump-version.sh 1.8.2`.
+- Generated host workspaces (codex, antigravity, APODICTIC-Gemini) regenerated via release pipeline.
+
+Total framework prose change: net positive ~50 lines (canonical-home annotations + C2 boundary block + B2 ROADMAP/hybrid-mode pointers exceed the few collapsed parentheticals). No validator changes; no `validate.sh` change; root `scripts/validate.sh` remains byte-identical to plugin source. All 11 validator self-tests PASS. All 4 release checks PASS.
+
+#### Self-test verification (v1.8.2)
+
+| Validator | Cases | Status |
+|---|---|---|
+| `severity-floor` | 7 | PASS |
+| `audit-signal-propagation` | 9 | PASS |
+| `underdiagnosis-triggers` | 5 | PASS |
+| `ledger-consolidation` | 5 | PASS |
+| `decision-layer-check` | 12 | PASS |
+| `quality-risk-triggers` | 12 | PASS |
+| `timeline-diff` | 8 | PASS |
+| `timeline-arithmetic` | 6 | PASS |
+| `timeline-anchor-conflict` | 6 | PASS |
+| `audit-tier-criterion` | 4 | PASS |
+| `argument-recon-prerequisite` | 5 | PASS |
+
+#### Out of scope (deferred Phase 7 work)
+
+- **D2 — Generated host parity sweep + D3 — Phase 7 done-gate verification.** Wave 4 work.
+- **E1 — Model-capability review final report + E2 — ROADMAP.md update.** Wave 5 work (the v1.8.2 ROADMAP edit is scoped to the B2 deferral entry only; the broader Wave 5 ROADMAP closeout updates ship in Wave 5).
+
+---
+
 ## v1.8.1 - 2026-04-25
 
 ### Added — Phase 7 Wave 2: 11 UNPROVEN instructions eval coverage + decision-layer-check re-eval against canonical fixtures
