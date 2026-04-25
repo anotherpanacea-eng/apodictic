@@ -257,6 +257,26 @@ Continuing the v0.5 vision: the plugin should be organized around writer questio
 
 ---
 
+## Deferred (Empirically-Gated Decisions)
+
+Decisions whose framework default is documented and conservative, but whose empirical re-evaluation requires fixture/token resources beyond a single release cycle. Re-evaluation triggers are named per item; the framework default holds until the trigger fires.
+
+### Focus Map Architectural Decision — Empirical Test
+
+**Source:** Phase 5 (test framework documented; runs deferred for resource reasons). Phase 7 Wave 3 (formalized as ROADMAP entry rather than running the test in this cycle).
+
+**Current default:** Focus Map remains **hybrid-only**. Single-agent, sequential, and swarm modes do not produce a Focus Map. This is the conservative default per the model-capability review spec §Phase 5.
+
+**Hypothesis + acceptance criteria:** Specified in `plugins/apodictic/skills/core-editor/references/hybrid-mode.md §Focus Map Architectural Decision Framework`. The acceptance bar requires improvement on ≥2 of {Severity Honesty, Audit Routing Coverage, Cross-Pass Connection Density, Author Usability} for ≥2 of 3 fixtures, with G1 (Cross-Pass Connection independence) and G2 (≥40% findings outside Focus Map) satisfied for all fixtures.
+
+**Test scope:** 6 runs total. 3 fixtures (one literary fiction, one argument-shaped nonfiction, one short-fiction control) × 2 arms (control: current behavior; treatment: Focus Map produced in all four modes). Per Phase 5 design, the treatment arm preserves anti-overfit guards: in non-hybrid modes the Focus Map is analytical framing only, never gates manuscript access.
+
+**Re-evaluation trigger:** Either (a) the canonical fixture corpus expands enough that the 6-run cost becomes worthwhile alongside other planned eval work, OR (b) Pass 10 Timeline integration with Focus Map raises the issue urgency (Pass 10's Timeline artifact may interact with Focus Map's pass-targeting in ways that force the cross-mode question). When triggered, run per the recording protocol in `hybrid-mode.md §Decision-recording protocol` and record the result + decision in a date-stamped review-log entry.
+
+**Decision until re-evaluated:** Default holds. Focus Map stays hybrid-only.
+
+---
+
 ## Done
 
 ### v1.7.0 — Harness Engineering

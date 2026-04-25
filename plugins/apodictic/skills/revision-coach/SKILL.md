@@ -15,7 +15,7 @@ description: >
   "choice paralysis," "execution gap," "too much feedback,"
   "overmediated," "I don't know what I think anymore,"
   "structural experiment," or "I need an exercise."
-version: 1.8.1
+version: 1.8.2
 ---
 
 # APODICTIC Revision Coach

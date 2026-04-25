@@ -50,7 +50,7 @@ Not every reader type will produce findings for every manuscript. Use the profil
 
 ## Assessment Structure
 
-**Lock-then-test protocol:** For each finding, commit to severity and prevalence *before* generating the steelman defense. The defense cannot retroactively downgrade a severity rating — it can only note that the author has a counter-argument available. This ordering exists because LLMs reliably talk themselves out of hard findings when asked to generate both sides simultaneously.
+**Lock-then-test protocol:** For each finding, commit to severity and prevalence *before* generating the steelman defense. The defense cannot retroactively downgrade a severity rating — it can only note that the author has a counter-argument available. The ordering implements the anti-sycophancy / no-self-revise rule canonical in `core-editor/references/output-policy.md §Severity Honesty Protocol` — the stress-test-specific elaboration is the lock-before-steelman discipline.
 
 **For each finding:**
 

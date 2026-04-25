@@ -276,7 +276,7 @@ When in doubt, flag. A false positive that gets reviewed and dismissed costs min
 
 ### Lock-then-classify
 
-Commit classification before proceeding. Classification cannot be revised by subsequent self-argument. (Anti-sycophancy control: LLMs reliably talk themselves out of hard findings. Lock prevents it.)
+Commit classification before proceeding. Classification cannot be revised by subsequent self-argument. (Anti-sycophancy / no-self-revise rule canonical in `core-editor/references/output-policy.md §Severity Honesty Protocol`.)
 
 ---
 
@@ -586,7 +586,7 @@ The audit is diagnostic.
 3. Tell the author what they should believe or value.
 4. Adjudicate whether a flagged passage is morally acceptable.
 5. Declare that an author should not write about a particular topic.
-6. Reduce severity ratings through self-generated counter-arguments after locking. (Anti-sycophancy control.)
+6. Reduce severity ratings through self-generated counter-arguments after locking. (Anti-sycophancy / no-self-revise rule canonical in `core-editor/references/output-policy.md §Severity Honesty Protocol`.)
 
 The audit surfaces risk. The author decides what to do about it.
 

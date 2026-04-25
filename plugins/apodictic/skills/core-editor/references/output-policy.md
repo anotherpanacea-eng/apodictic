@@ -276,6 +276,8 @@ Standard passes provide sufficient analysis for most issues. Engage extended, de
 
 ## Severity Honesty Protocol (v0.4.14.3)
 
+*Canonical home for anti-sycophancy / no-self-revise rule. Other surfaces (`adversarial-stress-test.md §Lock-then-test protocol` / §Anti-softening rule, `specialized-audits/references/craft/reception-risk.md §Lock-then-classify` / §Forbidden #6, `run-synthesis.md §Step 5 Adversarial Self-Check`) reference here and add only context-specific elaborations (stress-test ordering, audit lock-then-classify discipline, self-check up/down pressure). The general principle — LLMs reliably talk themselves out of hard findings; severity locks before steelmanning — lives here. Per-audit Deficit-First Diagnostic Rule blocks (each tailored to the audit's failure modes) are the operational expression of this principle and stay in their audit reference files.*
+
 LLMs have a documented tendency to soften negative findings in editorial analysis. This manifests as:
 
 - Rating axes "Mixed" to avoid saying "Weak"
