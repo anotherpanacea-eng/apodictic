@@ -2,6 +2,7 @@
 ## APODICTIC Development Editor v4.15
 ## Three-Model Synthesis (Opus46 + Codex53 + Gemini)
 *Audit Classification: Cross-Genre Craft*
+*Universal status: Verified 2026-04-25 (Phase 6 Wave 3 / Priority 5). Recommended at intake for every manuscript regardless of genre, length, or form. Universal-status criterion (per `specialized-audits/SKILL.md §Universal Audits`): catches a class of failure any narrative manuscript can exhibit; produces material findings on cross-genre fixture coverage (Regrets Only / Dinner Party / TAY); computationally cheap relative to information yield. Cross-model parity confirmed (Opus + Codex both fire correctly on parity sets per Phase 3 §17).*
 
 ---
 
