@@ -11,10 +11,5 @@ issues/
 **/.pytest_cache/
 *.pyc
 
-# Local-only review planning (model capability review, 2026-04-24)
-docs/blind-review-protocol.md
-docs/eval-harness-spec.md
-docs/model-capability-review-spec.md
-docs/model-upgrade-backlog.md
-docs/prompt-inventory.md
-docs/review-log/
+# Local-only working notes (planning, drafts, in-flight artifacts)
+docs/.local/
