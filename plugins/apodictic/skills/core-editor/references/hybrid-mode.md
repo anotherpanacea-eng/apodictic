@@ -417,6 +417,8 @@ If acceptance criteria met: adopt per per-mode role definitions — single-agent
 
 **Implementation note (Phase 5):** running 6 fixture comparisons (3 fixtures × 2 arms) is non-trivial scope expansion beyond Phase 5's prose-and-validator priorities. The decision framework above is documented; the test runs are deferred to a follow-on workstream when bandwidth permits. Until that test runs and produces data supporting broader adoption, Focus Map remains hybrid-only. This preserves the conservative default per spec.
 
+**Phase 7 Wave 3 formalization (v1.8.2):** the deferral is now a named ROADMAP item — see `ROADMAP.md §Deferred (Empirically-Gated Decisions) §Focus Map Architectural Decision — Empirical Test`. The ROADMAP entry names the re-evaluation triggers (canonical fixture corpus expansion making the 6-run cost worthwhile, OR Pass 10 Timeline integration forcing the cross-mode question). The framework default — Focus Map hybrid-only — holds until a re-evaluation trigger fires and the test produces data clearing the acceptance bar above.
+
 ### Decision-recording protocol
 
 When the test eventually runs:

@@ -71,7 +71,7 @@ Run synthesis per `run-synthesis.md`: root cause analysis (max 5), triage, adver
 
 The editorial letter is a standalone artifact, written to the active project output context beside the manuscript as usual. It does not change format for submission readiness; it's the same editorial letter as any Core DE run.
 
-**Blind-spot rule:** If the Audit Invocation Log or editorial letter names a deferred or declined high-risk audit (especially AI-Prose Calibration, Consent Complexity, Reception Risk, or Series Continuity), carry that forward into the readiness assessment as an explicit confidence limiter. Do not present a blind-spot-limited run as fully de-risked.
+**Blind-spot rule:** If the Audit Invocation Log or editorial letter names a deferred or declined high-risk audit (especially AI-Prose Calibration, Consent Complexity, Reception Risk, or Series Continuity), carry that forward into the readiness assessment as an explicit confidence limiter. Do not present a blind-spot-limited run as fully de-risked. (Blind-spot disclosure rule canonical in `run-synthesis.md §Step 3 Blind Spot / Absence Inventory`; the submission-readiness elaboration is the carry-forward into readiness verdicts.)
 
 ### Phase 4: Pass 11
 

@@ -7,7 +7,7 @@ description: >
   "run the passes," "do a revision round," or any request involving manuscript
   analysis, structural diagnosis, or editorial feedback. Also triggers on
   "APODICTIC," "APDE," or "development editor."
-version: 1.8.1
+version: 1.8.2
 ---
 
 # APODICTIC Development Editor — Core Orchestrator
@@ -39,6 +39,8 @@ This skill is the core of the APODICTIC plugin. Three companion workflows handle
 ---
 
 ## The Firewall
+
+*Canonical home for the no-content-invention firewall. Other surfaces (`revision-coach/SKILL.md §The Coaching Firewall`, `adversarial-stress-test.md §Firewall Compliance`, `run-full.md` §QA gate, `pass-11.md` §Forbidden) reference here and add only context-specific elaborations (coaching-mode drift, stress-test scope, market-viability scope). Generic restatements of the firewall belong here only.*
 
 Editor mode maintains strict boundaries around output types:
 
@@ -228,6 +230,8 @@ When no project context exists, proceed with intake from scratch.
 
 ### Pass-10-Class Rolling Structured Artifacts
 
+*Canonical home for the Pass-10-Class artifact pattern. Other surfaces (`pass-dependencies.md §1 Tier 1 Pass 10 row`, `run-synthesis.md §Step 2 Pass-10-Class artifact integration`, `references/pass-10.md`) reference this section's definition and add only artifact-instance specifics (Timeline schema, Argument_State schema, etc.).*
+
 A recognized class of project-level rolling artifacts the framework uses to track manuscript state across runs. Pass-10-class artifacts share these properties:
 
 - **Project-level**, not run-folder-scoped (lives at the project root, persists across runs)
@@ -276,7 +280,9 @@ Before reporting any word counts or proportions:
 Writer has idea but no manuscript → Start the pre-writing pathway.
 
 ### Plot Structure
-Spine diagnosis, selection coaching, structural triage → Start plot coaching.
+Spine diagnosis (which of the 50 spines / 12 families governs the whole-work shape), selection coaching, structural triage on stuck drafts, hybrid design, fantasy/series architecture → Start plot coaching (`plot-architecture` skill).
+
+This is distinct from **Pass 2: Structural Mapping** (Tier 2 pass within a development edit run), which maps on-page act/movement boundaries, beat presence, missing-beat lists, and structural causality. Pass 2 answers "is the structure I have on the page working"; Plot Architecture answers "which spine is this and does that paradigm hold." See `plot-architecture/SKILL.md §Plot Architecture vs. Pass 2 (Structural Mapping) — Boundary` for cross-reference and sequencing.
 
 ### Specialized Audits
 Any deep-dive audit, tag audit, or research mode → Run the audit. The specialized-audits workflow maintains its own routing table and trigger logic.
