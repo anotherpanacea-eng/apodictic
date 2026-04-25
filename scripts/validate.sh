@@ -1537,19 +1537,27 @@ calibration
 notes
 EOF
       # Negative 4: Must-Fix with only 1 reference.
+      # Updated for Phase 7 Wave 2 B3 entry-form filter: the Must-Fix
+      # mention must be in label form (heading, list-item leader,
+      # Severity label, or MF-N anchor) for the validator to count it
+      # as a labeled finding. Bare prose "Must-Fix:" at line start is
+      # treated as discussion, not a labeled entry.
+      # Author Decisions section uses bare bullet form (no subhead) to
+      # avoid C1 subhead-cluster collapse and exercise Check 5 in
+      # isolation.
       cat > "$TMPDIR/neg4.md" <<'EOF'
 # Development Edit
 ## What Needs Work
-Must-Fix: voice problem in Chapter 3 only.
+### Must-Fix: voice problem in Chapter 3 only.
+The voice flattens in places throughout the manuscript.
 ## Protected Elements
 - One.
 - Two.
 - Three.
 ## Author Decisions
-### Keep
-- A.
-- B.
-- C.
+- Keep the dual POV.
+- Cut the prologue.
+- Unsure on Chapter 5 placement.
 ## Control Questions
 1. Q1
 2. Q2
@@ -1650,6 +1658,59 @@ Must-Fix: pacing collapse in Chapter 7, lines 142-160; also Chapter 9, line 220.
 - Unsure whether Chapter 5 stays in Part I or moves to Part II.
 - Unsure whether the antagonist's POV chapter survives.
 - Unsure whether the dedication should be removed.
+## Control Questions
+1. What does the protagonist learn in the final third?
+2. Whose POV closes Part II?
+3. Does the prologue earn its place?
+4. What is the cost of Chapter 7's choice?
+5. Is Chapter 5 working in its current position?
+6. Does the final image land?
+7. What is the book's controlling idea?
+## Appendix A — Diagnostic Detail
+Pointers to pass artifacts.
+## Appendix B — Severity Calibration
+Tested upward and downward.
+## Appendix C — Framework Notes
+Run metadata.
+EOF
+      # C1b case (Phase 7 Wave 2 B3 extension): subhead clusters
+      # expressed as bold-paragraph leaders (`**Keep**`, `**Cut /
+      # Release**`, `**Unsure — decide before revision**`) rather than
+      # level-3 markdown subheads. Mirrors the canonical Regrets Only
+      # Opus 4.7 fixture pattern that initially failed Wave 1's C1
+      # calibration.
+      cat > "$TMPDIR/c1b_bold_subhead_clusters.md" <<'EOF'
+# Development Edit
+## What Needs Work
+Must-Fix: pacing collapse in Chapter 7, lines 142-160; also Chapter 9, line 220.
+## Protected Elements
+- Voice consistency in Part I.
+- Scene 4 pivot from Chapter 3.
+- Sister relationship arc.
+- Final image of Chapter 12.
+## Author Decisions
+
+Translate diagnosis into commitments before revision.
+
+**Keep**
+- Keep the dual POV throughout Part II.
+- Keep the unreliable narrator frame.
+- Keep the prologue's epistolary form.
+- Keep the time-jump between Parts I and II.
+- Keep the sibling reconciliation thread.
+- Keep the ambiguous final image.
+
+**Cut / Release**
+- Cut the secondary romance subplot.
+- Cut the dream sequence in Chapter 4.
+- Cut the third epigraph.
+- Cut the metafictional aside in Chapter 9.
+
+**Unsure — decide before revision**
+- Unsure whether Chapter 5 stays in Part I or moves to Part II.
+- Unsure whether the antagonist's POV chapter survives.
+- Unsure whether the dedication should be removed.
+
 ## Control Questions
 1. What does the protagonist learn in the final third?
 2. Whose POV closes Part II?
@@ -1787,6 +1848,7 @@ EOF
       "$0" decision-layer-check "$TMPDIR/over1.md" >/dev/null 2>&1 && echo "  over1: OK (marker in body downgraded ERROR→WARN)" || { echo "  over1: FAIL (expected OK after override)"; RESULTS=1; }
       "$0" decision-layer-check "$TMPDIR/over_appx.md" >/dev/null 2>&1 && { echo "  over_appx: FAIL (appendix-only marker should not downgrade)"; RESULTS=1; } || echo "  over_appx: OK (caught — marker in appendix is non-canonical)"
       "$0" decision-layer-check "$TMPDIR/c1_subhead_clusters.md" >/dev/null 2>&1 && echo "  c1_subhead_clusters: OK (3 Keep/Cut/Unsure subhead clusters counted, not 13 sub-bullets)" || { echo "  c1_subhead_clusters: FAIL (Phase 7 C1 calibration regression — subhead-cluster counting expected)"; RESULTS=1; }
+      "$0" decision-layer-check "$TMPDIR/c1b_bold_subhead_clusters.md" >/dev/null 2>&1 && echo "  c1b_bold_subhead_clusters: OK (3 bold-paragraph Keep/Cut/Unsure subheads counted, not 13 sub-bullets)" || { echo "  c1b_bold_subhead_clusters: FAIL (Phase 7 Wave 2 B3 calibration regression — bold-paragraph subhead form expected)"; RESULTS=1; }
       "$0" decision-layer-check "$TMPDIR/c2_paragraph_form.md" >/dev/null 2>&1 && echo "  c2_paragraph_form: OK (paragraph-form decision verbs counted via fallback)" || { echo "  c2_paragraph_form: FAIL (Phase 7 C2 calibration regression — paragraph-form fallback expected)"; RESULTS=1; }
       "$0" decision-layer-check "$TMPDIR/c3_argument_de.md" >/dev/null 2>&1 && echo "  c3_argument_de: OK (argument-DE class detected; Checks 3-4 skipped)" || { echo "  c3_argument_de: FAIL (Phase 7 C3 calibration regression — argument-DE schema expected)"; RESULTS=1; }
       "$0" decision-layer-check "$TMPDIR/c4_paragraph_evidence.md" >/dev/null 2>&1 && echo "  c4_paragraph_evidence: OK (paragraph-block window finds inline-prose evidence)" || { echo "  c4_paragraph_evidence: FAIL (Phase 7 C4 calibration regression — paragraph-block window expected)"; RESULTS=1; }
@@ -1882,12 +1944,22 @@ EOF
       fi
 
       # (a) C1: subhead-cluster count.
-      # Count distinct level-3 subheads matching Keep/Cut/Unsure (case-
-      # insensitive). Each subhead is one cluster regardless of how many
-      # sub-bullets it contains.
-      local subhead_count
-      subhead_count=$( { echo "$section" | grep -cE "^###[[:space:]]+(Keep|Cut|Unsure|Defer|Decide)[[:space:]:]*" 2>/dev/null || true; } | head -1 | tr -d ' \n')
-      subhead_count=${subhead_count:-0}
+      # Count distinct subheads matching Keep/Cut/Unsure (case-
+      # insensitive). Two recognized subhead forms:
+      #   - Level-3 markdown subheads: `### Keep`, `### Cut`, etc.
+      #   - Bold-paragraph subheads: `**Keep**`, `**Cut / Release**`,
+      #     `**Unsure — decide before revision**`, etc. (bolded short
+      #     leader as a section divider, common in Opus 4.7-style
+      #     editorial letters).
+      # Each subhead is one cluster regardless of how many sub-bullets
+      # it contains. (Phase 7 Wave 2 B3 extension: F1 fixture used
+      # bold-paragraph form; subhead detection extended accordingly.)
+      local subhead_count_l3 subhead_count_bold subhead_count
+      subhead_count_l3=$( { echo "$section" | grep -cE "^###[[:space:]]+(Keep|Cut|Unsure|Defer|Decide)[[:space:]:]*" 2>/dev/null || true; } | head -1 | tr -d ' \n')
+      subhead_count_l3=${subhead_count_l3:-0}
+      subhead_count_bold=$( { echo "$section" | grep -cE "^\*\*(Keep|Cut|Unsure|Defer|Decide)([[:space:]/—–-]|\*\*$)" 2>/dev/null || true; } | head -1 | tr -d ' \n')
+      subhead_count_bold=${subhead_count_bold:-0}
+      subhead_count=$((subhead_count_l3 + subhead_count_bold))
       if [ "$subhead_count" -ge 1 ]; then
         echo "$subhead_count"
         return
@@ -2016,15 +2088,67 @@ EOF
       fi
     fi
 
-    # Check 5: Must-Fix evidence density (C4 calibration).
-    # For each line containing "Must-Fix" (case-insensitive), scan a
-    # paragraph-block window from the Must-Fix line until the next
-    # Must-Fix occurrence OR the next section header (^## at column 0),
-    # whichever comes first. Within that window, count reference
-    # patterns. This widens the Phase 4-6 fixed 6-line window so that
-    # paragraph-form evidence (references in surrounding prose, not in
-    # an immediate trailing list) is detected.
-    MF_LINES=$( { grep -niE "Must-Fix" "$LETTER" 2>/dev/null || true; } | cut -d: -f1)
+    # Check 5: Must-Fix evidence density (C4 calibration + B3 entry-form
+    # filter).
+    # For each *labeled* Must-Fix entry (heading, list-item severity
+    # label, "Severity:" label, or MF-N anchor), scan a paragraph-block
+    # window from the Must-Fix line until the next Must-Fix occurrence
+    # OR the next section header (^## at column 0), whichever comes
+    # first. Within that window, count reference patterns. This widens
+    # the Phase 4-6 fixed 6-line window so that paragraph-form evidence
+    # (references in surrounding prose, not in an immediate trailing
+    # list) is detected.
+    #
+    # Phase 7 Wave 2 B3 entry-form filter: prose discussion that
+    # mentions Must-Fix is not a labeled finding. The filter accepts
+    # only lines that look like entry labels:
+    #   - heading: ^#{1,6}.*Must-Fix
+    #   - list-item severity leader: ^[[:space:]]*[-*][[:space:]].*Must-Fix
+    #     within the first ~80 chars (i.e., the label position, not
+    #     deep prose).
+    #   - severity-label line: ^.*\*\*Severity:\*\* .*Must-Fix or
+    #     ^Severity: .*Must-Fix.
+    #   - MF-N anchor: a line where Must-Fix is co-located with the
+    #     finding-id pattern (MF-[0-9]+) within 30 chars.
+    # Prose discussion (deep-in-paragraph mentions) is excluded from
+    # the count to avoid false-positive evidence-density failures on
+    # editorial letters that discuss findings extensively in body
+    # prose.
+    # Determine body-only line range for MF labeling. Appendix-only
+    # mentions are severity-calibration discussion (not labeled
+    # findings) and excluded.
+    if [ -n "$APPENDIX_LINE" ]; then
+      BODY_END=$((APPENDIX_LINE - 1))
+    else
+      BODY_END=$(wc -l < "$LETTER" | tr -d ' ')
+    fi
+    MF_LINES=$(awk -v body_end="$BODY_END" '
+      NR > body_end { exit }
+      {
+        line = $0
+        ll = tolower(line)
+        # Must-Fix marker must literally be present (case-insensitive
+        # via tolower; awk regex /i flag is not POSIX-portable).
+        if (index(ll, "must-fix") == 0) next
+        head80 = substr(line, 1, 80)
+        head80_l = tolower(head80)
+        # heading (markdown #-prefix)
+        if (match(line, /^#+[[:space:]]/) && index(ll, "must-fix") > 0) { print NR; next }
+        # list-item leader within first 80 chars
+        if (match(line, /^[[:space:]]*[-*][[:space:]]/) && index(head80_l, "must-fix") > 0) { print NR; next }
+        # numbered list-item leader within first 80 chars
+        if (match(line, /^[[:space:]]*[0-9]+\.[[:space:]]/) && index(head80_l, "must-fix") > 0) { print NR; next }
+        # **Severity:** label form
+        if (match(line, /\*\*[Ss]everity:?\*\*/) && index(ll, "must-fix") > 0) { print NR; next }
+        # bare Severity: label form at start of line
+        if (match(line, /^[[:space:]]*[Ss]everity:[[:space:]]/) && index(ll, "must-fix") > 0) { print NR; next }
+        # MF-N anchor co-located with Must-Fix label in same line
+        if (match(line, /MF-[0-9]+/) && index(ll, "must-fix") > 0) { print NR; next }
+        # table row severity column (pipe-delimited cell containing
+        # Must-Fix label form, not embedded in long prose)
+        if (match(line, /^[[:space:]]*\|/) && match(line, /\|[[:space:]]*[Mm]ust-[Ff]ix[[:space:]]*\|/)) { print NR; next }
+      }
+    ' "$LETTER")
     MF_THIN=0
     if [ -n "$MF_LINES" ]; then
       # Build sorted unique list of Must-Fix line numbers + section
