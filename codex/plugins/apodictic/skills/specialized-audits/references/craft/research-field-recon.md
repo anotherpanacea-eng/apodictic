@@ -25,6 +25,39 @@ Three jobs:
 
 ---
 
+## Prerequisite Mode for Argument-Shaped Runs (Phase 6 Wave 3 / CR-4)
+
+**When this section applies.** When a run is argument-shaped (intake routes `constraint=nonfiction` plus a persuasive-argument form: white paper, policy brief, testimony, op-ed, academic article, regulatory comment, expert affidavit, peer-reviewed publication), Field Reconnaissance is invoked as a **prerequisite** rather than as a Wave-2 sibling audit. See `core-editor/references/pass-dependencies.md §4a` for the router-triggered policy and tier definitions.
+
+**Two prerequisite tiers.** The router resolves to one of two prerequisite tiers:
+
+- **Hard Prerequisite** — when the high-stakes signal fires (testimony, expert affidavit, regulatory comment, peer-reviewed publication, or `constraint=high-stakes` flag). Field Reconnaissance MUST complete and write `Field_Reconnaissance_Report.md` before the argument-engine passes (Dialectical Clarity, Argument Red Team, Argument Persuasion, Argument Evidence Deep-Dive, Adversarial Evidence Review) can begin. The argument engine consumes the report as part of its claim-graph construction; running the engine without it is forbidden at this tier.
+- **Auto-recommend before synthesis** — when the run is argument-shaped but lacks the high-stakes signal (default for op-eds, policy briefs without explicit high-stakes flagging, academic articles without peer-review designation). The recommendation must be resolved before synthesis begins; if declined, the synthesis layer must record "literature-counterevidence not surveyed" as a confidence-limiting blind spot per `run-synthesis.md` Step 3 Blind Spot / Absence Inventory and Step 11 Appendix A.
+
+**Why prerequisite mode exists.** TAY Stage 2 (`docs/review-log/2026-04-24_tay-stage-2-comparative.md`) documented the largest single class of Stage 1 misses: literature-counterevidence the author had documented privately but the development edit never surfaced because Field Recon was not prerequisited. Wave 2 audits operate on manuscript-as-written; without prior literature surfacing, replication failures, meta-analytic counterevidence, opposing scholarly positions, and competing studies do not enter the Findings Ledger at all. Prerequisite mode closes this gap by routing literature surfacing **before** the argument engine fires, so the engine evaluates a literature-aware claim graph rather than a manuscript-internal one.
+
+**Literature-counterevidence focus in prerequisite mode.** When invoked as a prerequisite, Field Reconnaissance prioritizes Part 1 (Counterevidence Search) above Parts 2 and 3. Specifically, the prerequisite-mode pass searches for:
+
+1. **Competing studies** — published work that measures the same variable on the same population and reaches a different result.
+2. **Counter-citations** — sources cited *against* the manuscript's load-bearing positions in the discipline's recent literature (use Semantic Scholar citation graph: papers citing the manuscript's load-bearing sources but reaching opposing conclusions).
+3. **Replication failures and meta-analytic disagreement** — published replication studies that failed to confirm a finding the manuscript treats as settled, or meta-analyses whose pooled estimates contradict the manuscript's headline figures.
+4. **Opposing scholarly positions** — peer-reviewed work, court opinions, government reports, or institutional analyses that take a contrary normative or empirical stance on the manuscript's central claims.
+
+Parts 2 (Literature Gap Detection) and 3 (Source Ecosystem Health) still run in prerequisite mode but at lower priority — the gating output is the counterevidence inventory, not the gap analysis.
+
+**Canonical artifact and downstream integration.** Prerequisite mode produces the same canonical artifact as Wave-2-sibling mode: `Field_Reconnaissance_Report.md` written to the project directory. The argument-engine passes consume it as follows:
+
+- **Dialectical Clarity** reads the COUNTEREVIDENCE SUMMARY and incorporates ADDRESS-class items as opposition nodes in `Argument_State.md` § 3 (Support Map) and § 5 (Burden, Scope, and Comparative Assessment).
+- **Argument Red Team** reads the report's Top counterevidence items and uses them to inform RT9 (Evidence Chain Snap) and RT11 (Standing and Scope Exposure) attack construction.
+- **Argument Evidence Deep-Dive** reads the report's LITERATURE GAPS section to inform AE3 (Portfolio Narrowness) and AE4 (Representative Gap) findings.
+- **Synthesis** reads the report's RECOMMENDATIONS and integrates ADDRESS-class items into Must-Fix triage when the items hit C0 or central subclaims; ACKNOWLEDGE-class items enter Should-Fix; SET ASIDE-class items remain documented in Appendix A.
+
+**Decline path.** If the user declines a Hard Prerequisite Field Recon invocation, the resolver presents the §4f edge-case-8 fork: (a) terminate the run, or (b) downgrade to Auto-recommend before synthesis with a body-of-letter blind-spot disclosure. Silent omission is forbidden. If the user declines an Auto-recommend before synthesis Field Recon invocation, the run records the literature-counterevidence blind spot per `run-synthesis.md` Step 3.
+
+**When to use Wave-2-sibling mode instead.** Field Reconnaissance retains its existing activation paths (post-Citation-Verifier CV12, post-Argument-Evidence AE3/AE4, post-Red-Team RT9/RT11, user request, pre-submission review) for fiction runs, narrative-nonfiction runs, memoir runs, and argument-shaped runs that have already completed prerequisite-mode Field Recon and re-invoke it later in the workflow for additional claim coverage. Tier resolution under §4f ensures a re-invocation does not trigger a duplicate prerequisite run.
+
+---
+
 ## Part 1: Counterevidence Search
 
 For each load-bearing claim (C0 and central subclaims from `Argument_State.md`, or the strongest claims identified during Citation Verifier's run, or inferred from the manuscript if running standalone):

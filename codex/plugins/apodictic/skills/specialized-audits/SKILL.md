@@ -74,7 +74,7 @@ description: >
   or any request for a focused manuscript audit beyond the core development
   edit passes. Also triggers on "list audits," "what audits are available,"
   or "help audits."
-version: 1.7.1
+version: 1.7.9
 ---
 
 # Specialized Audits & Research Modes
@@ -85,11 +85,22 @@ Deep-dive analytical tools that supplement the core development edit. Each audit
 
 ### Universal Audits (recommend for every manuscript)
 
+**Universal-status criterion (Phase 6 Wave 3 / Priority 5).** An audit earns universal status when **all three** hold: (1) the audit catches a class of failure that any narrative manuscript can exhibit regardless of genre, length, or form; (2) the audit produces material findings on cross-genre fixture coverage at a rate sufficient to justify default-on routing; (3) the audit is computationally cheap relative to its information yield (deferring it to opt-in would lose more diagnostic signal than the routing cost saves). Audits not meeting all three drop to Auto-recommend or Recommend tier per `core-editor/references/pass-dependencies.md §4c` Audit Tier Promotion Criteria.
+
+**Universal status verification (2026-04-25, Phase 6 Wave 3).** Stakes System / Decision Pressure / Scene Turn re-audited against fixture coverage per Phase 6 plan §Priority 5. Outcome: **Outcome A — keep universal**. Verification basis:
+
+- **Cross-model parity (Phase 3 §17):** Both Opus and Codex correctly fire all three audits on parity sets. The cross-model evidence shows the universal-status routing produces consistent material findings regardless of model capability variance.
+- **Cross-fixture material findings:** All three audits produced material findings on the cross-genre fixture set (Regrets Only Stage 2 — fiction, novel-length; Dinner Party — short fiction; TAY White Paper Stage 2 — argument-shaped nonfiction; the cross-model comparison's "3 universal skipped for fixture parity" was a procedural choice for the cross-model comparison protocol, not a finding-of-no-material-output). Stakes and Decision Pressure apply across all three forms (fiction and argument-shaped nonfiction both need pressure architecture and choice plausibility); Scene Turn applies fully to fiction fixtures and at reduced scope to argument-shaped runs (it surfaces narrative-section turns inside argument-shaped pieces with embedded scene work — case studies, vignettes, narrative ledes — without over-firing on purely propositional sections).
+- **Computational cost:** The three universal audits run inside the same context as the passes that surface their finding-triggers (Pass 1 / Pass 5 / Pass 7); marginal cost is low relative to their convergence-trigger contribution to the underdiagnosis-retry loop.
+- **Demotion candidates considered and rejected:** Scene Turn for argument-shaped runs was the closest demotion candidate (purely propositional argument-shaped pieces produce limited Scene Turn output). Rejected because the audit self-attenuates on propositional material without producing false positives, and because argument-shaped runs with embedded narrative sections (case studies, anecdotal evidence, opening vignettes) need it to fire there. The audit's self-attenuation is a feature, not an over-firing risk.
+
+The universal status holds; future audit additions follow the criterion above with explicit rationale logged in the changelog.
+
 | Audit | Purpose | When to Activate |
 |-------|---------|-----------------|
-| **Stakes System** | Pressure architecture: escalation geometry, consequence engine, multi-axis pressure, climax load. 22 diagnostic flags across 6 channels (STX, PC, IM, EG, MP, CL) | Universal — recommended at intake for every manuscript. "Stakes feel low," intensity plateau, consequence deficit |
-| **Decision Pressure** | Choice plausibility: option visibility, constraint specificity, information-state integrity, tradeoff reality, pivot integrity. 23 diagnostic flags across 7 channels (AV, CS, IS, EC, RF, TR, PV) | Universal — recommended at intake for every manuscript. "I don't buy why they did that," convenient pivots, obvious alternatives unaddressed |
-| **Scene Turn** | Scene-level mechanics, entry/exit charge, turn identification (Bickham). G-, C-, O-, Sq-, H-, U-, P-code flag system | Universal — recommended at intake for every manuscript. Scene-level pacing, "nothing happens" concerns |
+| **Stakes System** | Pressure architecture: escalation geometry, consequence engine, multi-axis pressure, climax load. 22 diagnostic flags across 6 channels (STX, PC, IM, EG, MP, CL) | Universal — recommended at intake for every manuscript (status verified 2026-04-25 against Regrets Only / Dinner Party / TAY fixtures). "Stakes feel low," intensity plateau, consequence deficit |
+| **Decision Pressure** | Choice plausibility: option visibility, constraint specificity, information-state integrity, tradeoff reality, pivot integrity. 23 diagnostic flags across 7 channels (AV, CS, IS, EC, RF, TR, PV) | Universal — recommended at intake for every manuscript (status verified 2026-04-25 against Regrets Only / Dinner Party / TAY fixtures). "I don't buy why they did that," convenient pivots, obvious alternatives unaddressed |
+| **Scene Turn** | Scene-level mechanics, entry/exit charge, turn identification (Bickham). G-, C-, O-, Sq-, H-, U-, P-code flag system | Universal — recommended at intake for every manuscript (status verified 2026-04-25 against Regrets Only / Dinner Party / TAY fixtures; self-attenuates on purely propositional argument-shaped sections). Scene-level pacing, "nothing happens" concerns |
 
 ### Craft Audits
 
@@ -153,6 +164,8 @@ Tag audits evaluate experience-layer promises — reader expectations that sit o
 **Running a specific audit:** Request by name. The agent loads the full audit module from references and applies it to the manuscript.
 
 **Running a research mode:** Request by name. The agent activates internet-enabled research following the mode's protocol.
+
+**Severity signals from audits propagate to the synthesis layer per `core-editor/references/run-synthesis.md §Step 2 — Canonical Audit-Signal Propagation Rule`.** Audit-internal Must-Fix floors, hard gates, and HIGH/Alert ratings do not become synthesis-layer severity automatically; the propagation rule + `scripts/validate.sh audit-signal-propagation` enforce that they reach the editorial letter at the right severity tier (or are overridden with a documented rationale in Appendix B). Per-audit propagation specifics (which signal classes map to which synthesis severities for which audits, with context modifiers) live in `core-editor/references/pass-dependencies.md §4e — Audit-Signal Propagation Table`. Audit authors adding a new audit should add a §4e row at registration time; un-enumerated audits fall back to the canonical default mapping.
 
 **Research Mode Principles:**
 1. Research supplements structural judgment; it doesn't replace it

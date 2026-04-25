@@ -299,7 +299,7 @@ Mode calibration is especially important here because reception risk norms vary 
 
 ## §7. Severity Hard Gates
 
-Minimum severity floors for non-negotiable flags. Hard gates override mode-based loosening and Distinguish-framework downgrades.
+Audit-local non-negotiable severity floors. These five gates are additive to — and never substitute for — the framework-level severity-floor rules canonical in `core-editor/references/output-policy.md §Severity Floor Rules`. Hard gates override the audit's own mode-based loosening and Distinguish-framework downgrades; they raise an audit-internal flag's severity. Synthesis-layer consequence (whether a hard-gate flag becomes a synthesis Must-Fix, Should-Fix, or override-with-rationale) follows the canonical Audit-Signal Propagation Rule in `core-editor/references/run-synthesis.md §Step 2`.
 
 | # | Condition | Minimum Severity | Evidence Requirement |
 |---|-----------|-----------------|---------------------|
@@ -312,6 +312,10 @@ Minimum severity floors for non-negotiable flags. Hard gates override mode-based
 Hard gates override mode-based loosening. Even in dark romance, certain reception risks have minimum severity floors.
 
 **Constraint:** Hard gates are few and high-threshold. The audit's default mode is over-inclusive flagging with human review. Hard gates exist only for cases where the severity floor is genuinely non-negotiable.
+
+**Relation to canonical floors:** A hard gate triggered here is a Reception-Risk-internal severity event. It does not by itself overwrite the verdict ceiling rules in `output-policy.md §Severity Floor Rules`; instead it produces an audit-internal Must-Fix-floor or Alert-class signal that must propagate to synthesis per the canonical propagation rule. If the canonical floor and a hard gate disagree, the canonical floor governs verdict ceilings; the hard gate governs the audit-internal severity assigned to the offending finding.
+
+**Propagation to synthesis-layer triggers.** Reception Risk Alerts and §7 hard-gate signals also propagate to the Underdiagnosis Retry Loop trigger #2 (hard-gate trigger) in `core-editor/references/run-synthesis.md §Step 9`. See also the canonical Audit-Signal Propagation Rule in `core-editor/references/run-synthesis.md §Step 2` (Wave 1).
 
 ---
 

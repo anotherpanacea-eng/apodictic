@@ -5,6 +5,477 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.7.9 - 2026-04-25
+
+### Fixed — Honest Validator Capability Correction + Execution-Flow Prerequisite Wiring
+
+Closes five review findings on the v1.7.8 framework state (Joshua's substantive code review). Four validators overclaimed what they actually verified; the new Hard Prerequisite tier policy from Phase 6 Wave 3 wasn't wired into the `run-core.md` execution flow. v1.7.9 ships the coordinated correction: one validator tightened to actually do per-audit, per-signal propagation verification; one validator extended to cover Section 3 marker inventory and to count-match Section 8 documentation; two validators reframed honestly as marker-hygiene / pre-labeled-conflict-surfacing checks with Phase 7 deferral noted for true verification; one execution-protocol step added to wire Hard Prerequisite resolution before pass dispatch. No commits, no behavior regression for Phase 4-6 work that was already correct.
+
+#### Finding 1 — `audit-signal-propagation` overclaim (P1, tightened)
+
+The Phase 4-6 validator only checked the whole letter for severity-vocabulary presence (any "Must-Fix" anywhere in body satisfied any audit's hard-gate signal in any appendix). A letter with an unrelated Decision Pressure Must-Fix in the body and a Reception Risk hard gate buried in Appendix A passed. The `run-synthesis.md §Step 2` prose promised per-signal §4e-table-driven verification; the implementation didn't do this.
+
+- **`plugins/apodictic/scripts/validate.sh` `audit-signal-propagation`** — substantial rewrite (~+200 lines net). The validator now: (a) detects each audit appendix subsection by name (`<Audit Name> Audit` heading or in-appendix prose mention); (b) for each detected audit, identifies its severity signals (hard-gate, Must-Fix floor, HIGH/Alert) within that audit's subsection; (c) for each signal, verifies the synthesis body's Must-Fix or Should-Fix list contains either an explicit audit-name reference (e.g., "Reception Risk Alert at L2956") OR a finding tied to evidence-line numbers shared with the audit's appendix subsection. Per-class override markers (`audit-propagation-hard-gate`, etc.) preserved; new per-audit override marker form added (`audit-propagation-<audit-slug>`) for principled single-audit deviations. Body-only marker invariant preserved. Self-test extended from 6 cases to 9 cases including Joshua's canonical false-pass case (`neg1b`) — letter with unrelated Decision Pressure Must-Fix in body and Reception Risk hard gate in Appendix A — which now correctly FAILS where Phase 4-6 PASSED. Falls back to legacy whole-letter taxonomy check when no audit appendix subsections are detected (preserves Phase 4 behavior for letters that mention severity vocabulary without dedicated audit appendices).
+
+- **`plugins/apodictic/skills/core-editor/references/run-synthesis.md` §Step 2** — Canonical Audit-Signal Propagation Rule prose tightened to honestly describe what the validator verifies (per-audit, per-signal; audit-name reference OR shared evidence-line; not generic Must-Fix presence). New per-audit override marker form documented.
+
+#### Finding 2 — `timeline-diff` Section 3 + Section 8 count-match (P1, extended)
+
+The Phase 4-6 validator only extracted Section 1 Event Ledger pipe-table rows. Section 3 (Temporal Marker Inventory) bullet items, Section 2 calendar shifts, Section 4 paradoxes, and Section 8 prose-only documentation all went uncovered. Section 8 documentation was accepted on keyword presence alone (any "Added" / "Removed" / "Changed" satisfied any structural delta).
+
+- **`plugins/apodictic/scripts/validate.sh` `timeline-diff`** — extended (~+50 lines net). The validator now: (a) continues extracting Section 1 pipe-table rows (preserved Phase 4-6 behavior); (b) ALSO extracts Section 3 bullet items (`- ...` lines under the Section 3 heading) and diffs them; (c) when Section 8 contains bullet-form documentation (`- Added: ...`, `- Removed: ...`), counts those bullets and requires them to cover the structural totals across Section 1 + Section 3 (count-match, not just keyword-presence). Sections 2 (Master Calendar) and 4 (Inconsistency Ledger) are documented as freeform prose deferred to Phase 7 item-level diffing — diffed at section-presence level only by the bash validator. Self-test extended to 8 cases including a Section-3-only change (Phase 4-6 missed; v1.7.9 catches) and a count-mismatch case (Section 8 documents 1 added when structural diff shows 3 added).
+
+- **`plugins/apodictic/skills/core-editor/references/pass-10.md` §Validator Integration** — `timeline-diff` description updated to reflect the actual Section 1 + Section 3 + Section 8 count-match behavior.
+
+#### Finding 3 — `timeline-arithmetic` honest reframing (P1, reframed)
+
+Real arithmetic checks need date-format parsing across heterogeneous anchor formats (`Day 1 morning`, `the following Friday`, `January 14`) plus span normalization plus pairwise compatibility reasoning — not feasible in bash. The Phase 4-6 validator only grepped for negative-gap text or pre-written conflict markers, but the `--help` text and the `pass-10.md` description claimed it verified span calculations. Real arithmetic violations passed.
+
+- **`plugins/apodictic/scripts/validate.sh` `timeline-arithmetic`** — reframed (~+25 lines net, no semantic change to detection). Doc-comment, OK/WARN/ERROR messages, and self-test descriptions updated to honestly describe the validator as "marker hygiene only" with "true arithmetic verification deferred to a Phase 7 Python helper." Self-test extended with a `silent_arithmetic` case that documents the Phase 7 limitation (the case passes with an explicit comment that bash cannot detect it). Validator command name preserved (no integration breakage).
+
+- **`plugins/apodictic/skills/core-editor/references/pass-10.md` §Validator Integration** — `timeline-arithmetic` description updated to match validator's honest semantics.
+
+#### Finding 4 — `timeline-anchor-conflict` honest reframing (P1, reframed)
+
+Same pattern as Finding 3. The Phase 4-6 validator only counted parenthetical `(contradicts ...)` annotations — i.e., only caught conflicts the Pass 10 model had already pre-labeled. The `--help` text and `pass-10.md` claimed it identified pairs of explicit temporal markers that cannot both be true. Same Ch 1 §1 with both "Monday morning" and "Tuesday morning" passed unless the model pre-labeled it.
+
+- **`plugins/apodictic/scripts/validate.sh` `timeline-anchor-conflict`** — reframed (~+25 lines net, no semantic change to detection). Doc-comment, OK/WARN/ERROR messages, and self-test descriptions updated to "pre-labeled-conflict surfacing only" with "true anchor parsing deferred to a Phase 7 Python helper." Self-test extended with a `silent_anchor` case (same scene with two different anchors, no parenthetical pre-labeling) that documents the Phase 7 limitation. Validator command name preserved.
+
+- **`plugins/apodictic/skills/core-editor/references/pass-10.md` §Validator Integration** — `timeline-anchor-conflict` description updated to match validator's honest semantics.
+
+#### Finding 5 — Hard Prerequisite tier wired into `run-core.md` execution flow (P2, wired)
+
+Phase 6 Wave 3 added `Hard Prerequisite` and `Pre-DE Prerequisite` tiers in `pass-dependencies.md §4a/§4c/§4f` (Field Reconnaissance and Citation Verifier for high-stakes argument-shaped runs). The tier definitions named the obligation ("Field Recon MUST complete before any Tier 2 evaluative pass") but `run-core.md`'s execution protocol jumped from pass resolution directly to pass dispatch with no prerequisite resolution step. The policy was documented but not executable.
+
+- **`plugins/apodictic/skills/core-editor/references/run-core.md` §Audit Activation at Contract** — paragraph extended (~3 lines) to call out Hard Prerequisite and Pre-DE Prerequisite tiers as exceptions to the "audits run after core passes" baseline, with cross-reference to `pass-dependencies.md §4a/§4c/§4f`.
+
+- **`plugins/apodictic/skills/core-editor/references/run-core.md` §Execution Protocol** — new step 6 (`Pre-Pass Prerequisite Resolution`) added before pass dispatch (~12 lines). The step walks `pass-dependencies.md §4a` for Hard Prerequisite and Pre-DE Prerequisite audits given the resolved contract, dispatches them in the correct order (Pre-DE first, Hard before Tier 2), handles the decline path per `pass-dependencies.md §4c` + §4f edge cases 8-9 (terminate or downgrade-with-disclosure; silent omission forbidden), records resolution in the Audit Invocation Log, and honors the §4f tier precedence invariant. Subsequent dispatch steps renumbered (single-agent: step 7-8; multi-agent: steps 7-10) to inherit Pre-Pass Prerequisite outputs as analytical context alongside the contract.
+
+#### Files
+
+- `plugins/apodictic/scripts/validate.sh` — `audit-signal-propagation` rewritten for per-audit per-signal verification (~+200 lines); `timeline-diff` extended to Section 3 + Section 8 count-match (~+50 lines); `timeline-arithmetic` reframed as marker hygiene with Phase 7 deferral (~+25 lines); `timeline-anchor-conflict` reframed as pre-labeled surfacing with Phase 7 deferral (~+25 lines); top-of-file usage doc-comments updated. Net ~+300 lines.
+- `scripts/validate.sh` — synced with plugin copy (canonical lives at `plugins/apodictic/scripts/validate.sh`; root copy is the user-facing alias).
+- `plugins/apodictic/skills/core-editor/references/run-core.md` — Audit Activation at Contract paragraph extended (~3 lines); new §Execution Protocol step 6 (Pre-Pass Prerequisite Resolution) with subsequent steps renumbered (~+12 lines). Net ~+15 lines.
+- `plugins/apodictic/skills/core-editor/references/run-synthesis.md` — §Step 2 Canonical Audit-Signal Propagation Rule prose tightened to honestly describe per-audit per-signal verification (~+5 lines); per-audit override marker form documented (~+8 lines). Net ~+13 lines.
+- `plugins/apodictic/skills/core-editor/references/pass-10.md` — §Validator Integration descriptions rewritten to honestly state validator capabilities (Section 1 + Section 3 + count-match for `timeline-diff`; marker hygiene only for `timeline-arithmetic`; pre-labeled surfacing only for `timeline-anchor-conflict`); new §Phase 7 Work Items section (~+30 lines) listing the Python helper work items with a framework-design lesson on bash validator ceiling. Net ~+50 lines.
+- Version bumped via `scripts/bump-version.sh 1.7.9`.
+- Generated host workspaces (codex, antigravity) regenerated via release pipeline; APODICTIC-Gemini public mirror synced.
+
+Total prose change: ~78 lines added across framework files. Total validator change: ~+300 lines in `validate.sh`. All 9 validator self-tests PASS. All 4 release checks PASS.
+
+#### Self-test verification (v1.7.9)
+
+| Validator | Cases (was → now) | Joshua's false-pass case |
+|---|---|---|
+| `severity-floor` | 7 | Unaffected |
+| `audit-signal-propagation` | 6 → 9 | `neg1b` (unrelated Must-Fix in body + Reception Risk hard gate in appendix) — was PASS, now FAIL |
+| `underdiagnosis-triggers` | 5 | Unaffected (delegates to audit-signal-propagation; tighter delegate behavior preserved) |
+| `ledger-consolidation` | 5 | Unaffected |
+| `decision-layer-check` | 8 | Unaffected |
+| `quality-risk-triggers` | 12 | Unaffected |
+| `timeline-diff` | 5 → 8 | `s3_neg` (Section 3 marker change undocumented), `count_mismatch` (Section 8 documents 1 of 3 added) — was PASS, now FAIL |
+| `timeline-arithmetic` | 5 → 6 | `silent_arithmetic` documents Phase 7 limitation (still passes; honest about ceiling) |
+| `timeline-anchor-conflict` | 5 → 6 | `silent_anchor` documents Phase 7 limitation (still passes; honest about ceiling) |
+
+#### Framework-design lesson (logged in `pass-10.md §Phase 7 Work Items`)
+
+Bash validators have a real ceiling. Bash is excellent for structural and pattern-presence checks (heading inventory, table-row diff, marker keyword surfacing, count matching) but cannot do parsing, normalization, or reasoning over heterogeneous formats (date math across `Day N` / `Monday morning` / `January 14`; cross-format span normalization; pairwise compatibility reasoning). Phase 4-6 validator work mixed the two by *claiming* parsing capability in bash validators that only did keyword grepping — producing validators that overclaimed and false-passed on the cases that most matter. v1.7.9's correction: each validator's `--help` text, doc-comment, OK/ERROR messages, and the framework prose that describes them now match what the validator actually does. Future validator work should choose the implementation tool to match the verification kind needed, and document the ceiling explicitly when bash is the right tool for part of the job.
+
+#### Out of scope (Phase 7 candidates, documented in `pass-10.md §Phase 7 Work Items`)
+
+- Python-based Timeline parser (Section 1 + Section 3 normalized scene records; anchor-format normalization; span normalization).
+- True arithmetic verification (replaces `timeline-arithmetic` marker-hygiene).
+- True anchor conflict detection (replaces `timeline-anchor-conflict` pre-labeled surfacing).
+- Item-level diff for Sections 2 (Master Calendar) and 4 (Inconsistency Ledger).
+- Per-audit table-driven dispatch in `audit-signal-propagation` (currently the validator detects audit names by appendix-heading pattern; a Phase 7 enhancement would read `pass-dependencies.md §4e` programmatically and apply per-audit context modifiers).
+
+---
+
+## v1.7.8 - 2026-04-25
+
+### Added — Phase 6 Wave 3: Field Reconnaissance Prerequisite for Argument-Shaped Runs (CR-4) + Universal Audit Re-Audit
+
+Closes Phase 6 Wave 3 of the model-capability review (see `docs/review-log/2026-04-25_phase-6-implementation-plan.md` Wave 3 = Priorities 2 + 5). With Wave 3, all six Phase 6 priorities are closed and Phase 6 is complete.
+
+#### Priority 2 — Field Reconnaissance Prerequisite (CR-4 closed)
+
+Closes the literature-counterevidence blind spot identified in TAY Stage 2 (`docs/review-log/2026-04-24_tay-stage-2-comparative.md`). Stage 2 documented seven literature-counterevidence misses where competing studies, replication failures, meta-analytic disagreement, and opposing scholarly positions never entered the Findings Ledger because Field Reconnaissance was not prerequisited for argument-shaped runs. Wave 3 establishes Field Recon as a prerequisite (Hard or Auto-recommend before synthesis depending on stakes signal) and Citation Verifier as a Pre-DE Prerequisite for high-stakes argument-shaped runs.
+
+- **`core-editor/references/pass-dependencies.md` §4a** — added two new router-triggered audit rows (Field Reconnaissance and Citation Verifier) with explicit argument-shaped routing definition, high-stakes signal definition, and a why-prerequisite-tier-exists prose block citing TAY Stage 2 evidence (~25 lines).
+
+- **`core-editor/references/pass-dependencies.md` §4c** — added two new tier definitions above the existing four: **Hard Prerequisite** (stronger than Auto-run; gates Tier 2 passes rather than synthesis; used for Field Recon on high-stakes argument-shaped runs) and **Pre-DE Prerequisite** (audit runs before the DE begins; not a DE-internal audit; used for Citation Verifier on high-stakes argument-shaped runs). Both definitions include explicit decline-path semantics (terminate or downgrade-with-disclosure; silent omission forbidden). The header sentence updated to reflect the six-tier ordering. ~10 lines added.
+
+- **`core-editor/references/pass-dependencies.md` §4f** — tier-ordering block extended from four tiers to six (Hard Prerequisite > Pre-DE Prerequisite > Auto-run > Auto-recommend before synthesis > Auto-recommend > Recommend). Added a Hard Prerequisite ordering note explaining why these tiers sit above Auto-run (pass dependencies vs. synthesis dependencies). Added two new edge cases (8 + 9) covering Hard Prerequisite and Pre-DE Prerequisite decline forks. ~12 lines added.
+
+- **`specialized-audits/references/craft/research-field-recon.md`** — added Prerequisite Mode for Argument-Shaped Runs section after Core principle paragraph (~50 lines). Documents two prerequisite tiers (Hard Prerequisite when high-stakes signal present; Auto-recommend before synthesis otherwise), the four-class literature-counterevidence focus (competing studies / counter-citations / replication failures / opposing scholarly positions), the canonical artifact (`Field_Reconnaissance_Report.md`) and how the argument-engine passes (Dialectical Clarity / Argument Red Team / Argument Evidence Deep-Dive / Synthesis) consume it, the decline path (terminate or downgrade-with-disclosure), and when Wave-2-sibling mode still applies (fiction, narrative nonfiction, memoir, re-invocations).
+
+- **`specialized-audits/references/craft/research-citation-verifier.md`** — added Pre-DE Prerequisite Mode subsection inside §Activation (~25 lines). Documents the Pre-DE Prerequisite tier semantics (runs before any Tier 1 pass; produces `Citation_Ledger.md` consumed by argument-engine passes; not a DE-internal audit), the rationale (citation integrity is an evidentiary precondition for argument analysis, not a finding within it), the decline path (terminate or downgrade-with-disclosure naming "citation provenance not verified"), and the lower-stakes case (Citation Verifier remains available via existing activation paths and direct `apodictic-research citation-verifier`).
+
+- **`core-editor/references/run-synthesis.md`** — added a mandatory blind-spot disclosure paragraph inside Step 3 (Blind Spot / Absence Inventory) covering declined Field Reconnaissance on argument-shaped runs (~6 lines). The disclosure must name what is unsurveyed (competing studies, counter-citations, replication failures, opposing scholarly positions) and what the absence implies for synthesis confidence (the argument engine operated against a manuscript-internal claim graph rather than a literature-aware one). Parallel disclosure rule for declined Pre-DE Citation Verifier on high-stakes runs. Appendix A description extended to require the disclosure in editorial-letter Diagnostic Detail (~3 lines).
+
+#### Priority 5 — Universal Audit Re-Audit (Outcome A: keep universal)
+
+Phase 3 inventory classified Stakes / Decision Pressure / Scene Turn as UNPROVEN-keep universal, with Phase 6 instructed to re-audit against fixture data. Wave 3 verifies and ratifies universal status.
+
+- **`specialized-audits/SKILL.md` §Universal Audits** — added Universal-status criterion (~2 lines: three-criterion definition matching the §4c Audit Tier Promotion Criteria pattern from Wave 2) and Universal status verification block dated 2026-04-25 (~8 lines: cross-model parity from Phase 3 §17; cross-fixture material findings on Regrets Only / Dinner Party / TAY; computational-cost reasoning; demotion candidates considered and rejected — Scene Turn for argument-shaped runs was the closest demotion candidate, rejected because the audit self-attenuates on propositional material without producing false positives). Each of the three universal-audit table rows updated to reference verification status with date and fixture set. ~15 lines net.
+
+- **`specialized-audits/references/craft/stakes-system.md`** — added Universal status verification line in frontmatter under audit classification (~2 lines).
+
+- **`specialized-audits/references/craft/decision-pressure.md`** — added Universal status verification line in frontmatter under audit classification, with explicit note that the audit applies fully to argument-shaped runs (~2 lines).
+
+- **`specialized-audits/references/craft/scene-turn.md`** — added Universal status verification line in frontmatter under audit classification, with explicit note about self-attenuation on purely propositional argument-shaped sections (~2 lines).
+
+Outcome A (keep universal) chosen over Outcome B (demote to baseline-recommend with explicit opt-out). Verification basis: cross-model parity (Phase 3 §17 — both Opus and Codex correctly fire all three on parity sets); cross-fixture material findings on Regrets Only / Dinner Party / TAY; computational cost is low because the audits run inside the same context as their finding-trigger passes (Pass 1 / Pass 5 / Pass 7); the convergence-trigger contribution to the underdiagnosis-retry loop is material. No demotions or tier changes; universal status holds.
+
+#### Files
+
+- `plugins/apodictic/skills/core-editor/references/pass-dependencies.md` — §4a Field Recon + Citation Verifier router rows with argument-shaped routing definition, high-stakes signal definition, and CR-4 closure rationale (~25 lines); §4c Hard Prerequisite + Pre-DE Prerequisite tier definitions with header sentence updated to six-tier ordering (~10 lines); §4f tier-ordering block extended to six tiers, Hard Prerequisite ordering note, edge cases 8 and 9 (~12 lines). Net ~+47 lines.
+- `plugins/apodictic/skills/core-editor/references/run-synthesis.md` — Step 3 Blind Spot / Absence Inventory mandatory disclosure paragraph for declined Field Recon on argument-shaped runs and parallel rule for Pre-DE Citation Verifier (~6 lines); Appendix A description extension naming literature-counterevidence and citation-provenance blind spots (~3 lines). Net ~+9 lines.
+- `plugins/apodictic/skills/specialized-audits/SKILL.md` — Universal-status criterion + verification block + updated table rows for the three universal audits (~15 lines net).
+- `plugins/apodictic/skills/specialized-audits/references/craft/research-field-recon.md` — new Prerequisite Mode for Argument-Shaped Runs section between Core principle and Part 1 (~50 lines).
+- `plugins/apodictic/skills/specialized-audits/references/craft/research-citation-verifier.md` — new Pre-DE Prerequisite Mode subsection inside §Activation (~25 lines).
+- `plugins/apodictic/skills/specialized-audits/references/craft/stakes-system.md` — Universal status verification line in frontmatter (~2 lines).
+- `plugins/apodictic/skills/specialized-audits/references/craft/decision-pressure.md` — Universal status verification line in frontmatter (~2 lines).
+- `plugins/apodictic/skills/specialized-audits/references/craft/scene-turn.md` — Universal status verification line in frontmatter (~2 lines).
+- Version bumped via `scripts/bump-version.sh 1.7.8` (Wave 2 may bump to 1.7.7 in coordination; Wave 3 ships as 1.7.8).
+
+Total prose change: ~152 lines added across framework files. No validators added (existing `audit-signal-propagation` validator covers post-Field-Recon propagation; activation policy is documented contract). No fixture changes (Field Recon prerequisite would have surfaced TAY Stage 2 blind spots had it been in place; verification by trace analysis per Phase 6 plan §Priority 2 acceptance criterion 6).
+
+#### Out of scope (Phase 7 candidates)
+
+- Optional `validate.sh argument-recon-prerequisite <intake_file> <audit_invocation_log>` validator that would verify, for argument-shaped intake, either Field Recon ran or a blind-spot disclosure exists in the synthesis. Deferred to Phase 7.
+- Pass 10 Timeline cross-fixture eval coverage (still deferred from Wave 1).
+- Cross-model fixture re-evaluation against the §4e propagation table (Wave 2 territory; Wave 3 does not affect this).
+
+#### Phase 6 closure
+
+Wave 3 closes the final two priorities. All six Phase 6 priorities are now complete:
+
+- **Wave 1 (v1.7.6):** Priority 1 (CR-5 Pass 10 Timeline) + Priority 6 (CR-7 Audit Tier Precedence Rule).
+- **Wave 2 (v1.7.7):** Priority 3 (CR-8 Audit-Signal Propagation Table) + Priority 4 (CR-3 Auto-recommend tier re-audit + Priority Queue).
+- **Wave 3 (v1.7.8):** Priority 2 (CR-4 Field Reconnaissance Prerequisite) + Priority 5 (Universal Audit Re-Audit).
+
+Phase 6 is closed. All four Codex critique items (CR-3, CR-4, CR-5, CR-7, CR-8) plus the Phase 3 Universal Audit re-audit are resolved.
+
+---
+
+## v1.7.7 - 2026-04-25
+
+### Added — Phase 6 Wave 2: Audit-Signal Propagation Table (CR-8 operationalized) + Auto-Recommend Tier Re-Audit + Priority Queue (CR-3 closed)
+
+Closes Phase 6 Wave 2 of the model-capability review (see `docs/review-log/2026-04-25_phase-6-implementation-plan.md` Wave 2 = Priorities 3 + 4, `docs/review-log/2026-04-24_phase-2-archaeology.md` for CR-3 promotion-drift evidence, `docs/review-log/2026-04-25_phase-3-codex-critique-adjudication.md` §3 + §6 for CR-8 evidence, and Phase 4's canonical Audit-Signal Propagation Rule in `core-editor/references/run-synthesis.md §Step 2` which Wave 2 operationalizes per-audit). Wave 2 ships alongside Wave 3 (v1.7.8); both edit `pass-dependencies.md §4` and were coordinated in parallel. Version files were already bumped to 1.7.8 by Wave 3; the v1.7.7 entry here documents the Wave 2 changes for changelog continuity.
+
+#### Priority 3 — Audit-Signal Propagation Table (CR-8 operationalized)
+
+Phase 4 established the canonical Audit-Signal Propagation Rule (`run-synthesis.md §Step 2`) that defines the propagation taxonomy (Must-Fix floor → synthesis Must-Fix; hard gate → synthesis Must-Fix; HIGH → synthesis Must-Fix or Should-Fix per audit context; MEDIUM → Should-Fix; LOW → Could-Fix). Wave 2 builds the per-audit table the rule defers to.
+
+- **`core-editor/references/pass-dependencies.md` §4e — Audit-Signal Propagation Table** — new section between §4d and §4f (~140 lines). Six subsections covering Universal audits (Stakes / Decision Pressure / Scene Turn), High-priority craft audits (Compression / Reception Risk / Banister / AI-Prose / Female Interiority / Interiority Preservation), Argument cluster (Dialectical Clarity / Red Team / Persuasion / Evidence / Adversarial Evidence Review / Field Recon / Citation Verifier), Specialized craft audits (Character Architecture / Emotional Craft / Literary Craft / Force Architecture / Series Continuity / Series Composite Novel / Shelf Positioning / Short Fiction), Genre audits (Comedy/Satire / Historical / Memoir/CNF / Narrative NF / Fan Fiction / SFF Worldbuilding / Horror / Supernatural Horror / Grimdark / Mystery-Thriller), and Tag audits (Consent Complexity / Erotic Content / Queer Romance / Cozy / Philosophical). Approximately 95 rows total; each row maps one audit-internal signal class to one synthesis severity, with explicit context modifier and source-file reference. Includes prologue explaining how to read each row, validator integration with Phase 4's `audit-signal-propagation`, override-path reminder, and footer with default mapping (canonical rule's column-2 fallback) for un-enumerated audits.
+
+- **CR-8 closure cases enumerated explicitly** in §4e: Compression Must-Fix floor → synthesis Must-Fix (always; primary CR-8 case); Reception Risk Alert post-calibration → synthesis Must-Fix (when not artifact-of-method); Reception Risk coercion-marked Alert → synthesis Must-Fix + retry-loop trigger #2 (refines default per cross-step trigger); Banister HIGH-confidence rhetorical-fairness failure → synthesis Must-Fix when thematic-coherence-load is high (refines default per Codex §9.4 closure). Each closure case carries explicit context modifiers and Override column annotations.
+
+- **`core-editor/references/run-synthesis.md` §Step 2** — "Per-audit specifics live elsewhere" sentence updated. Old text pointed to "Phase 6 work" with "until that table exists, treat the column-2 mapping above as the default." New text points to `pass-dependencies.md §4e`, names the validator, and clarifies that un-enumerated audits fall back to the column-2 default (so the canonical rule still governs un-enumerated audits via the default). +1 line net.
+
+- **`core-editor/references/pass-dependencies.md` §4 header** — "Audit-signal propagation" paragraph updated to point to §4e instead of "Phase 6 work." +0 lines net (sentence rewrite).
+
+- **`specialized-audits/SKILL.md` §How to Use** — existing "Severity signals from audits propagate" paragraph extended with a one-sentence pointer to `pass-dependencies.md §4e` and audit-author guidance ("add a §4e row at registration time; un-enumerated audits fall back to the canonical default mapping"). +1 sentence.
+
+No new validator. The existing Phase 4 `audit-signal-propagation` validator covers the new table without modification; it reads §4e's per-audit context modifiers as refinements to the canonical default. Validator extension to read context modifiers programmatically is deferred to Phase 7.
+
+#### Priority 4 — Auto-Recommend Tier Re-Audit + Priority Queue (CR-3 closed)
+
+Phase 2 archaeology surfaced cfaadef's batch promotion of five audits (Compression / Female Interiority / Scene Turn / Interiority Preservation / Decision Pressure) from Recommend to Auto-recommend before synthesis without an explicit promotion criterion. Wave 2 closes the criterion gap and verifies all existing tier assignments.
+
+- **`core-editor/references/pass-dependencies.md` §4a Router-triggered audits** — added Tier verification subsection at the top of §4a (~3 lines). Result: existing tiers hold. Auto-recommend before synthesis tier on Reception Risk and Consent Complexity confirmed against Phase 2 archaeology (the obligation tier's defining condition — absent these audits, the run records explicit blind spots — is met). Auto-run audits (Constraint=ai → AI-Prose; Erotic Content; Memoir; Narrative NF) confirmed against §4c Auto-run definition. No router-tier promotions or demotions.
+
+- **`core-editor/references/pass-dependencies.md` §4b Finding-triggered audits** — added Tier verification subsection at the top of §4b (~5 lines). Result: existing tiers hold. The five cfaadef-promoted audits (Compression / Female Interiority / Scene Turn / Interiority Preservation / Decision Pressure) verified against the new §4c Audit Tier Promotion Criteria — promotions justified. Demotion candidates considered and rejected: each catches undetectable-by-passes-alone omissions; blind-spot disclosure is non-equivalent to running them. Recommend tier on Character Architecture / Emotional Craft / Banister and others remains: each catches a class of issue that *could* be inferred from passes, so opt-in is the right tier. Banister-for-thematic-runs candidate flagged in Phase 3 documented in §4e propagation entry but tier stays at Recommend pending stronger Phase 7 evidence.
+
+- **`core-editor/references/pass-dependencies.md` §4c — new Audit Tier Promotion Criteria subsection** (~16 lines). Documents the three-criterion test for Auto-recommend before synthesis status: (1) audit has named hard gates or audit-internal Must-Fix floors; (2) audit catches a class of issue undetectable by passes alone; (3) blind-spot disclosure is non-equivalent to running the audit. Documents the Auto-run derivation (all three above + definitional-or-prerequisite-signal); Auto-recommend derivation (criterion 1 + partial criterion 2, criterion 3 fails). Establishes the logging requirement: each promotion (or principled non-promotion) recorded in the changelog entry that introduces it. The §4a/§4b verification subsections at the start of each table document the criterion's application to existing audits.
+
+- **`core-editor/references/pass-dependencies.md` §4d — Presentation format & Priority Queue** — section title updated; section restructured to add explicit Priority Queue specification (~30 lines). Four ordering rules in sequence: (1) higher tier fires first; (2) within tier, higher audit-internal severity fires first (hard gate beats Must-Fix floor beats HIGH/Alert beats MEDIUM/Flag beats LOW/Note); (3) within severity, higher signal count fires first; (4) tie-breaking alphabetical by audit name. Re-prompt suppression rule cross-references §4f (CR-7); tier resolution precedes queue ordering. Three worked examples illustrating: same-tier different-internal-severity (Female Interiority vs Scene Turn after Pass 5); two Auto-recommend-before-synthesis audits at different signal classes (Reception Risk Alert vs Compression Must-Fix floor after Pass 1); two Recommend audits with different signal counts (Dialectical Clarity vs Banister after Pass 9).
+
+#### Files
+
+- `plugins/apodictic/skills/core-editor/references/pass-dependencies.md` — §4 header propagation paragraph rewrite (0 net); §4a verification subsection (~3 lines); §4b verification subsection (~5 lines); §4c Audit Tier Promotion Criteria subsection (~16 lines); §4d Priority Queue + worked examples (~30 lines); §4e Audit-Signal Propagation Table (~140 lines, ~95 audit rows). Net ~+194 lines.
+- `plugins/apodictic/skills/core-editor/references/run-synthesis.md` — §Step 2 "Per-audit specifics live elsewhere" sentence rewrite (+1 line net).
+- `plugins/apodictic/skills/specialized-audits/SKILL.md` — §How to Use propagation paragraph extended with §4e pointer + audit-author guidance (+1 sentence).
+- Version files — already bumped 1.7.6 → 1.7.8 by Wave 3 in parallel; Wave 2's nominal v1.7.7 slot is documented here without re-bumping (Wave 2 + Wave 3 share a same-day release window).
+
+Total prose change: ~196 lines added across framework files. No validators added (existing `audit-signal-propagation` from Phase 4 covers the table without modification). No fixture changes (CR-3 closure is documentation; CR-8 operationalization is documentation; the validator behavior on Regrets Only Opus / Codex / TAY / Dinner Party fixtures from Phase 4 Wave 3 is unchanged — §4e refines per-audit defaults but the canonical rule still applies for un-enumerated audits).
+
+#### Out of scope (Phase 7 candidates)
+
+- Optional `audit-signal-propagation` validator extension to read per-audit context modifiers from §4e and check audit-context propagation programmatically. Defer to Phase 7.
+- Optional `validate.sh audit-tier-criterion <audit_invocation_log>` validator to verify every audit's promotion-criterion satisfaction is logged. Defer to Phase 7.
+- Cross-model fixture re-evaluation against §4e: Codex's documented under-propagation of Compression / Reception / Banister signals (per Codex critique adjudication §3) would now be surfaced as validator failures under §4e. Re-running the cross-model fixtures to confirm is downstream eval work, not Wave 2 scope.
+
+---
+
+## v1.7.6 - 2026-04-25
+
+### Added — Phase 6 Wave 1: Pass 10 Timeline Enhancement (CR-5) + Audit Tier Precedence Rule (CR-7)
+
+Closes Phase 6 Wave 1 of the model-capability review (see `docs/review-log/2026-04-25_phase-6-implementation-plan.md` Wave 1 = Priorities 1 + 6, `docs/review-log/2026-04-25_pass-10-timeline-enhancement-spec.md` for the lifted Pass 10 schema, and `docs/review-log/2026-04-25_phase-3-codex-critique-adjudication.md` §5 for CR-7 origin). Implements the first live instance of the Pass-10-Class Rolling Structured Artifacts pattern named in Phase 4 (`Timeline.md`), and resolves the §4 audit-tier ambiguity surfaced in the Codex critique adjudication.
+
+#### Pass 10 Timeline Artifact (CR-5 closed; Pass-10-Class first live instance)
+
+- **`core-editor/references/pass-10.md`** — new reference file (~150 lines). Documents the eight-section Timeline artifact schema lifted from `docs/review-log/2026-04-25_pass-10-timeline-enhancement-spec.md`:
+  1. Event Ledger (tabular, one row per scene)
+  2. Master Calendar (day/week reconstruction)
+  3. Temporal Marker Inventory (every explicit temporal marker)
+  4. Inconsistency Ledger (paradox / drift / ambiguity classification)
+  5. Ambiguity Ledger (structural vs. accidental ambiguity)
+  6. Revision-Drift Hot Spots (repair recommendation classes)
+  7. Recommended Anchor Set (3-7 author decisions)
+  8. Diff Notes (input to the timeline-diff validator)
+
+  Also documents naming convention (`Timeline.md` at project root), migration / backward compatibility (existing projects get first Timeline.md on next Pass 10 run with empty Section 8), validator integration (three new validators below), and synthesis integration (Section 4 counts feed severity propagation).
+
+- **`core-editor/references/pass-dependencies.md` §1 Tier 1** — Pass 10 row updated. Pass 10 now produces both a run-folder artifact (existing Entity Tracking output: Rule Ledger + Entity Table + legacy chronology) and a project-level rolling artifact (`Timeline.md`). Added an explanatory paragraph naming Timeline as the first live instance of the Pass-10-Class Rolling Structured Artifacts pattern, listing the three paired validators, and pointing to the canonical schema in `references/pass-10.md`. ~5 lines added.
+
+- **`core-editor/references/run-synthesis.md` §Step 2 Canonical Audit-Signal Propagation Rule** — extended with a new Pass-10-Class artifact integration subsection (~14 lines). Timeline Inconsistency Ledger counts feed synthesis severity via the same canonical rule that governs audit signals: ≥1 paradox → Must-Fix candidate (timeline coherence); ≥3 drifts → Should-Fix candidate (revision-drift hygiene); load-bearing ambiguity → Author Decision. Names the artifact-class-agnostic principle: severity propagation is the same whether the signal originates in an audit findings file or a rolling structured artifact (`Argument_State.md`, `Series_State.md`, `Timeline.md`, future `Plot_Spine.md`).
+
+- **`core-editor/SKILL.md` §Project Integration / Pass-10-Class Rolling Structured Artifacts** — Timeline.md instance status updated from "(Phase 6 implementation per spec)" to "(live; schema in `references/pass-10.md`; three mechanical validators in `scripts/validate.sh`: `timeline-diff`, `timeline-arithmetic`, `timeline-anchor-conflict`)". Closing paragraph updated to mark Timeline as the first live Pass-10-Class instance landed under the named pattern.
+
+#### Three Mechanical Validators for Timeline (Pass-10-Class instance)
+
+Three new validators added to `scripts/validate.sh`. All three honor body-only override markers and Section-8-vs-body discipline (Section 8 is the appendix-equivalent for the Timeline artifact; markers placed there are non-canonical) parallel to the Phase 4 pattern.
+
+- **`scripts/validate.sh timeline-diff <prior_timeline> <current_timeline>`** — surfaces every changed / removed / added Event Ledger row between two Timeline artifacts. Verifies Section 8 (Diff Notes) annotates each diff. Exit 0 if no diff exists, diff is documented in Section 8, or body override marker present; exit 1 if undocumented diff. ~110 lines including self-test (5 cases: positive identical, negative undocumented diff, documented diff, body override, Section-8-only override).
+
+- **`scripts/validate.sh timeline-arithmetic <timeline_file>`** — verifies span calculations sum correctly. Detects negative gaps (revision broke ordering) and explicit conflict markers in Event Ledger rows. Exit 0 if clean; exit 1 if conflicts detected and no body override. ~90 lines including self-test (5 cases: positive clean, negative gap, anchor conflict marker, body override, Section-8-only override).
+
+- **`scripts/validate.sh timeline-anchor-conflict <timeline_file>`** — identifies pre-flagged anchor contradictions / paradoxes in Section 3 (Temporal Marker Inventory). Surfaces candidates (per Pass 10 spec §Risks: validators surface candidates; Pass 10 model judgment classifies). Exit 0 if no candidates; exit 1 if candidates surfaced and no body override. ~95 lines including self-test (5 cases: positive distinct anchors, negative contradiction marker, paradox marker, body override, Section-8-only override).
+
+Override marker syntax (one per validator, body-only honored):
+
+```
+<!-- override: timeline-diff-undocumented — <one-sentence rationale> -->
+<!-- override: timeline-arithmetic-conflict — <one-sentence rationale> -->
+<!-- override: timeline-anchor-conflict — <one-sentence rationale> -->
+```
+
+All three validator self-tests pass on the canonical 5-case fixture set per validator. Five Phase 4 validator self-tests (severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check) remain green — no regressions.
+
+#### Audit Tier Precedence Rule (CR-7 closed)
+
+- **`core-editor/references/pass-dependencies.md` §4f** — new Audit Tier Precedence Rule subsection (~32 lines). Documents the highest-obligation-wins rule: Auto-run > Auto-recommend before synthesis > Auto-recommend > Recommend. Enumerates seven edge cases (router Auto-run + finding Recommend → Auto-run; router Auto-recommend + finding Auto-recommend before synthesis → promoted; two finding-triggers at Auto-recommend before synthesis → deduplicated; multi-pass Recommend triggers → no promotion; user-declined-at-Recommend later promoted by finding-trigger → re-prompt with new rationale; user-declined-at-Auto-recommend-before-synthesis later trigger → no re-prompt, blind-spot disclosure persists; tier-precedence vs. priority-queue interaction).
+
+- **Cross-references added in §4a, §4b, §4c, §4d** (one-line pointers each, ~4 lines total). §4a: router-triggered audits use §4f when also finding-triggered. §4b: finding-triggered audits use §4f when also router-triggered or fired by multiple passes. §4c: tier definitions establish the §4f ordering. §4d: priority queue applies *after* tier resolution per §4f.
+
+Closes Codex critique §5 (CR-7) — the §4 ambiguity that the same audit could surface through router-triggered (§4a) and finding-triggered (§4b) paths at different obligation levels with no canonical resolution rule.
+
+#### Files
+
+- `plugins/apodictic/skills/core-editor/references/pass-10.md` — new reference file (~150 lines).
+- `plugins/apodictic/skills/core-editor/references/pass-dependencies.md` — §1 Tier 1 Pass 10 row + Pass-10-Class explanatory paragraph (~5 lines); §4a/§4b/§4c/§4d cross-reference pointers (~4 lines); §4f new Audit Tier Precedence Rule (~32 lines). Net ~+41 lines.
+- `plugins/apodictic/skills/core-editor/references/run-synthesis.md` — §Step 2 Pass-10-Class artifact integration subsection (~14 lines added).
+- `plugins/apodictic/skills/core-editor/SKILL.md` — Pass-10-Class subsection Timeline-instance status updated (~3 lines net).
+- `plugins/apodictic/scripts/validate.sh` and `scripts/validate.sh` — three new validator commands (`timeline-diff`, `timeline-arithmetic`, `timeline-anchor-conflict`) added before the final `*)` case (~295 lines total including self-tests); usage block extended; doc-comment block extended (~30 lines).
+- Version files bumped 1.7.4 → 1.7.6 via `scripts/bump-version.sh 1.7.6` (Phase 5 had not bumped to 1.7.5 yet at Wave 1 execution time; the direct bump to 1.7.6 is documented as a coordination note here for the eventual Phase 5 Wave 1.7.5 retrofit).
+
+#### Out of scope (Phase 6 Wave 2+)
+
+- Priority 3 — Audit-Signal Propagation Table (CR-8 operationalization): per-audit propagation entries deferred to Wave 2.
+- Priority 4 — Auto-recommend tier re-audit (CR-3): tier reassignment deferred to Wave 2.
+- Priority 2 — Field Reconnaissance prerequisite for argument-shaped runs (CR-4): deferred to Wave 3.
+- Priority 5 — Universal audit re-audit: deferred to Wave 3.
+- Pass 10 Timeline cross-fixture eval coverage (Regrets Only / Dinner Party / TAY): the Wave 1 release ships the schema + validators + synthesis integration; live-fixture re-runs are downstream eval work.
+
+---
+
+## v1.7.5 - 2026-04-25
+
+### Added — Phase 5: Quality-Risk Mode Triggers + Mode-Conditional Re-Grounding + Focus Map Decision Framework
+
+Closes Phase 5 of the model-capability review (see `docs/review-log/2026-04-25_phase-5-implementation-plan.md`). Three priorities: (1) Quality-Risk Mode Selection layered atop token-fit floor (CR-2 closed); (2) Pre-Pass Re-Grounding restructured into three named blocks (universal contract-hash + standard-context full re-read + single-agent anchor confirmation); (3) Focus Map cross-mode decision framework documented; empirical test deferred to a follow-on workstream.
+
+#### Priority 1 — Quality-Risk Mode Selection (CR-2 closed)
+
+- **`core-editor/references/run-core.md` — new §Quality-Risk Mode Selection subsection** (placed between §Context Window Detection and §Single-Agent Mode). Specifies five enumerated triggers (Q1 consent/governance; Q2 argument-shaped nonfiction with high stakes; Q3 many POVs / non-linear; Q4 prior thin synthesis; Q5 submission readiness), each with a detectable predicate, escalation target, and named rationale. Stacking ceiling = swarm. Override path documented (explicit user acknowledgment recorded as `quality_risk_override` in run metadata).
+- **`core-editor/references/run-core.md` §Pre-flight Diagnostics** — appended a one-sentence pointer noting the token-fit recommendations are the floor, with quality-risk overlay above.
+- **`core-editor/references/run-core.md` §Single-Agent / §Sequential / §Hybrid / §Swarm Mode "When to use" subsections** — appended one-line pointers to §Quality-Risk Mode Selection.
+- **`core-editor/references/run-core.md` §Execution Protocol step 3** — replaced single-line selection rule with three-clause layered rule (token-fit floor → quality-risk overlay → final mode = max(floor, recommendation), user override takes precedence).
+- **`core-editor/references/intake-router-runtime.md` §2b** — added a Quality-risk overlay paragraph documenting router-side detection of Q1-Q5 triggers from intake fields and contract draft, with cross-reference to `run-core.md` §Quality-Risk Mode Selection.
+- **`scripts/validate.sh quality-risk-triggers <contract_file> [<diagnostic_state_meta_file>]`** — new mechanical check (~280 lines including self-test). Detects Q1-Q5 triggers from contract artifact and (for Q4) optional `Diagnostic_State.meta.json`. Emits per-trigger fired set + escalation target (none / hybrid / swarm). Per-trigger override marker support: `<!-- override: quality-risk-Q[1-5] — <rationale> -->` in contract body. Self-test mode covers one positive (clean fiction), five negative (one per Q1-Q5), one override case. All self-tests PASS.
+
+Closes CR-2 (HIGH confidence — execution mode auto-selection was token-fit only; now layered with quality-risk overlay). The token-fit floor is preserved (mode definitions unchanged); quality-risk only escalates upward. Coordinates with Phase 6 CR-4 (Q2's rationale anticipates Field Reconnaissance prerequisite for argument-shaped runs).
+
+#### Priority 2 — Pre-Pass Re-Grounding mode-conditional restructure
+
+- **`core-editor/references/run-core.md` §Pre-Pass Re-Grounding** — restructured single-protocol re-grounding into three named blocks:
+  - **Block A — Contract Integrity Check (Universal, all modes).** Mechanical SHA-256 hash compare against `contract_hash` in `Diagnostic_State.meta.json`. Mode-independent Tool-invocable check; fires in single-agent, sequential, hybrid, and swarm. Reuses existing `validate.sh contract-check`.
+  - **Block B — Full Re-Grounding (sequential / hybrid / swarm).** Re-read of contract's controlling idea + anti-idea + non-negotiables and accumulated Findings Ledger before each evaluative pass. Compensation for context salience decay on standard-context per-pass subagent dispatch. Existing behavior preserved verbatim.
+  - **Block C — Anchor Confirmation (single-agent large-context).** Lighter protocol: contract integrity check (Block A) + one-line restatement of controlling idea + anti-idea + non-negotiables from active context + review of most recent ledger entry. No fresh text re-load (decorative on a 1M-context single-agent run where anchors remain in attention).
+- **Block-selection table** documented; Block A is universal regardless of mode. Mode escalation (per Priority 1) at run start re-runs the selection. Future mid-run escalation handler (ROADMAP) is responsible for re-running this selection table.
+- No new validator — Block A reuses existing `validate.sh contract-hash` / `validate.sh contract-check` per §Mechanical Validation Protocol.
+
+Salience-decay rationale named explicitly: it is the original failure mode the protocol was designed to counteract; it is real on standard-context per-pass dispatch (Block B) and negligible in single-agent large-context (Block C). The contract-drift check (Block A) is mode-independent because it catches out-of-band file modification, which can happen in any architecture.
+
+#### Priority 3 — Focus Map Architectural Decision Framework
+
+- **`core-editor/references/hybrid-mode.md` — new §Focus Map Architectural Decision Framework (Phase 5)** appended after §Open Questions. Documents the test hypothesis, test design (3 fixtures × 2 arms), target metrics M1-M4 (Severity Honesty, Audit Routing Coverage, Cross-Pass Connection Density, Author Usability), pass-independence guards G1-G2 (Cross-Pass Connection independence; Findings outside Focus Map ≥40%), and acceptance criteria per spec §Phase 5 ("adopt only if M1-M4 improves on ≥2 metrics for ≥2 fixtures, AND G1-G2 satisfied for all fixtures").
+- **Default: Focus Map remains hybrid-only** unless future test produces data supporting cross-mode adoption.
+- **Test deferred** note: 6 fixture comparisons (3 × 2) is non-trivial scope expansion beyond Phase 5's prose-and-validator priorities. Decision-recording protocol specifies that when the test runs, the data + decision get logged in a date-stamped review-log entry under `docs/review-log/<YYYY-MM-DD>_focus-map-cross-mode-test.md`, and this section gets a "Resolved" annotation.
+
+#### Files
+
+- `plugins/apodictic/skills/core-editor/references/run-core.md` — §Pre-flight Diagnostics token-fit-floor pointer (~1 line); §Quality-Risk Mode Selection new subsection (~30 lines: 5 triggers + stacking + override path + validator pointer); 4 mode "When to use" pointers (~4 lines); §Execution Protocol step 3 layered-rule rewrite (~6 lines); §Pre-Pass Re-Grounding restructured into Blocks A/B/C with selection table (~70 lines, replacing ~12 lines of single-protocol prose). Net ~+100 lines.
+- `plugins/apodictic/skills/core-editor/references/intake-router-runtime.md` — §2b Quality-risk overlay paragraph (~10 lines added).
+- `plugins/apodictic/skills/core-editor/references/hybrid-mode.md` — §Focus Map Architectural Decision Framework (Phase 5) (~70 lines added after §Open Questions).
+- `plugins/apodictic/scripts/validate.sh` and `scripts/validate.sh` — `quality-risk-triggers` command added (~280 lines including self-test).
+
+#### Out of scope (deferred)
+
+- Adaptive Mid-Run Mode Escalation (spec §Phase 5 Task 4) — ROADMAP execution work, not Phase 5 scope.
+- Focus Map empirical test runs — deferred to follow-on workstream when bandwidth permits. Decision framework is documented; default (hybrid-only) maintained.
+- Phase 6 priorities (Pass 10 Timeline implementation, Field Reconnaissance prerequisite, Auto-recommend tier re-audit) — Phase 6 (parallel implementation in progress, ships as v1.7.6).
+- Phase 4 calibration follow-ups C1-C4 (`decision-layer-check` semantics) — Phase 7 or post-review calibration phase.
+
+---
+
+## v1.7.4 - 2026-04-25
+
+### Added — Phase 4 Wave 3: Decision-Layer Validator + Pass-10-Class Pattern + Initial Eval Coverage
+
+Closes Phase 4 of the model-capability review (see `docs/review-log/2026-04-25_phase-4-implementation-plan.md` and `docs/review-log/2026-04-25_phase-4-eval-coverage.md`). Mechanizes Decision-Layer Consolidation counts (Priority 5), names the Pass-10-class artifact pattern as the Phase 6 unblocker (Priority 6), and runs the initial eval coverage check across all 5 Phase 4 validators against canonical Stage 1 fixtures.
+
+#### Decision-Layer Consolidation Validator (Priority 5)
+
+- **`scripts/validate.sh decision-layer-check`** — new mechanical check (~250 lines including self-test). Verifies five contract checks per `core-editor/references/run-synthesis.md §Step 7` (counts) and `core-editor/references/output-policy.md §Mandatory Appendices / §Evidence Density Self-Check` (presence + density):
+  1. Protected Elements — 3-6 entries (counts list items, falls back to bolded paragraphs when no list items present).
+  2. Author Decisions — 3-7 entries.
+  3. Control Questions — exactly 7 entries.
+  4. Mandatory Appendices A, B, C — each present as a heading.
+  5. Per-Must-Fix evidence density — every Must-Fix mention has ≥2 references (chapter/scene/line/page/audit-code) in the 6-line window.
+  Per-check override markers (body-only honored, appendix-only ignored): `<!-- override: decision-layer-protected-elements -->`, `<!-- override: decision-layer-author-decisions -->`, `<!-- override: decision-layer-control-questions -->`, `<!-- override: decision-layer-appendices -->`, `<!-- override: decision-layer-evidence-density -->`. Self-test mode covers one positive case, four negative cases (5 Control Questions; missing Appendix B; 8 Author Decisions; Must-Fix with <2 refs), and two override cases (body marker downgrades; appendix marker does not).
+- **`core-editor/references/run-synthesis.md §Step 7`** — added a Mechanical check paragraph naming the validator and the override-marker syntax. Editorial judgment about WHICH elements/decisions/questions appear is preserved at Step 7; counts and structural compliance become mechanical at Step 10. ~6 lines added.
+- **`core-editor/references/run-synthesis.md §Step 10`** — collapsed three formerly-redundant bullets (decision-layer completeness, appendix completeness, evidence density) into a single combined bullet that points to `validate.sh decision-layer-check` and the canonical homes in output-policy. Removes inline rule restatement; runtime gate semantics preserved. Net: -3 lines.
+- **`core-editor/references/output-policy.md §Mandatory Appendices`** — added a one-line validator-authoritative annotation (parallel to severity-floor's canonical-home annotation). ~2 lines added.
+- **`core-editor/references/output-policy.md §Evidence Density Self-Check`** — appended a sentence pointing to `validate.sh decision-layer-check` Check 5 + override marker syntax; preserves the editorial nuance ("downgrade confidence, not severity"). ~1 line appended.
+
+Closes Codex critique §9.4 ("final author-facing consolidation" model-compensation finding) by making counts mechanical. Phase 2 §2.4 numerical invariants (3-6 / 3-7 / exactly 7) preserved as the validator's rule basis.
+
+#### Pass-10-Class Artifact Pattern Naming (Priority 6 — Phase 6 unblocker)
+
+- **`core-editor/SKILL.md §Project Integration`** — added a Pass-10-Class Rolling Structured Artifacts subsection (~22 lines). Names the pattern: project-level rolling artifacts that share five properties (project-level, structured, diffable, validator-paired, synthesis-layer integrated). Lists existing instances (Diagnostic_State, SYNTHESIS, Argument_State, Series_State) and proposed instances (Timeline per Phase 6, Plot_Spine future). Provides Phase 6 Timeline implementation a clear class to instantiate against per `docs/review-log/2026-04-25_pass-10-timeline-enhancement-spec.md` §Cross-application to non-fiction.
+
+Per Phase 3 §Sequencing interlock (b), this completes in Phase 4 to unblock Phase 6.
+
+#### Initial Eval Coverage Check
+
+- **`docs/review-log/2026-04-25_phase-4-eval-coverage.md`** — new review-log entry documenting validator runs against the four canonical Stage 1 fixtures (Regrets Only Opus, Regrets Only Codex, Dinner Party, TAY).
+- **Headline result:** Wave 1 + Wave 2 validators (severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation) produce expected results — OK on positive cases; FAIL on the negative case (Codex Stage 1's underdiagnosis convergence) the loop was designed to catch. No false-positive cascade.
+- **Wave 3 decision-layer-check surfaces three calibration follow-ups** documented in the eval-coverage entry as C1-C4 (Author Decisions count semantics; Protected Elements paragraph form; tier-awareness for argument-DE; evidence-density window width). Per Wave 2 guidance, Phase 4 documents calibration findings without re-tuning; these become Phase 5+ work.
+- **Pre-existing Wave 2 bash-arithmetic noise fixed.** `ledger-consolidation` was emitting `[: 0\n0: integer expression expected` warnings when grep -c returned nonzero under `set -euo pipefail`. Same bug pattern was present in three locations of the Wave 2 validator and would have appeared in Wave 3 decision-layer-check. Fixed by routing through `{ grep ... || true; } | head -1 | tr -d ' \n'`. All 5 validator self-tests remain green.
+
+Closes Phase 4 Done Gate criterion 7 (eval coverage). No regression on firewall compliance, evidence specificity, severity honesty, or audit-routing blind-spot disclosure (binary checks per `docs/eval-harness-spec.md §Binary Checks`).
+
+#### Files
+
+- `plugins/apodictic/skills/core-editor/SKILL.md` — Pass-10-Class Rolling Structured Artifacts subsection in §Project Integration (~22 lines added).
+- `plugins/apodictic/skills/core-editor/references/run-synthesis.md` — Step 7 Mechanical check pointer (~6 lines); Step 10 three-bullet collapse to single combined bullet (net -3 lines).
+- `plugins/apodictic/skills/core-editor/references/output-policy.md` — §Mandatory Appendices validator-authoritative annotation (~2 lines); §Evidence Density Self-Check validator pointer (~1 line appended).
+- `plugins/apodictic/scripts/validate.sh` and `scripts/validate.sh` — `decision-layer-check` command added (~270 lines including self-test); arithmetic-noise fix for `ledger-consolidation` (~4 hunks); arithmetic-noise fix for new `decision-layer-check` helper. Net ~+422 lines (validator host previously had 11 commands, now 12).
+- `docs/review-log/2026-04-25_phase-4-eval-coverage.md` — new eval-coverage report.
+
+#### Out of scope (future phases)
+
+- Decision-layer-check calibration follow-ups C1-C4 (Phase 5 or post-review calibration phase).
+- Phase 6: Pass 10 Timeline implementation as the next Pass-10-class instance; per-audit propagation table.
+- Phase 7: prose compression / dedup of cross-cutting rules (firewall, anti-sycophancy, absence-first canonical statements where deferred).
+
+---
+
+## v1.7.3 - 2026-04-24
+
+### Added — Phase 4 Wave 2: Override Markers, Underdiagnosis Triggers, Findings Ledger Consolidation
+
+Implements the second wave of Phase 4 of the model-capability review (see `docs/review-log/2026-04-25_phase-4-implementation-plan.md` and `docs/review-log/2026-04-25_phase-3-codex-critique-adjudication.md`). Refactors Wave 1's override detection per Joshua's correction (regex ≠ loose detection), closes CR-6 (Underdiagnosis Retry Loop model-judgment language), and closes the Codex-critique-identified gap on Findings Ledger consolidation.
+
+#### Refactor — Wave 1 override detection migrates from regex to structured markers
+
+- **`scripts/validate.sh severity-floor`** — replaced regex-based override detection ("severity floor", "floor override") with HTML-comment marker detection in the letter body. Per-rule markers: `<!-- override: severity-floor-weak-axis -->`, `<!-- override: severity-floor-systemic -->`, `<!-- override: severity-floor-band-cap -->`. Markers in appendix bodies are non-canonical and ignored. Self-test extended with `over1` (body marker downgrades) and `over_appx` (appendix-only marker does not downgrade) cases.
+- **`scripts/validate.sh audit-signal-propagation`** — replaced regex-based override detection ("propagation override", "audit-signal rationale") with HTML-comment marker detection in the synthesis body. Per-class markers: `<!-- override: audit-propagation-must-fix -->`, `<!-- override: audit-propagation-hard-gate -->`, `<!-- override: audit-propagation-high -->`. Same body-vs-appendix discipline. Self-test extended with marker cases.
+- **`core-editor/references/output-policy.md §Severity Floor Rules`** — extended the override-path paragraph (Wave 1) with marker syntax + body-vs-appendix rule (~9 lines added).
+- **`core-editor/references/run-synthesis.md §Step 2 Canonical Audit-Signal Propagation Rule`** — extended the override-path paragraph (Wave 1) with marker syntax + body-vs-appendix rule (~10 lines added).
+
+Rationale: regex on prose gives narrow precision (false negatives when the magic phrase isn't used), not loose detection. Structured markers give the model a low-friction signal to opt into; looseness comes from the model choosing to insert the marker, not from fuzzy prose matching.
+
+#### Underdiagnosis Retry Loop — condition-triggered logic (CR-6)
+
+- **`core-editor/references/run-synthesis.md §Step 9 Conditional Underdiagnosis Retry Loop`** — replaced model-judgment trigger language with six enumerated detectable triggers:
+  1. Convergence trigger (3+ artifacts share a mechanism with no synthesis Must-Fix)
+  2. Hard-gate trigger (high-risk audit Alert / hard gate without synthesis Must-Fix)
+  3. Cross-pass complication trigger (final-third concern in both character + structure passes)
+  4. Multi-axis severity trigger (concern spans 2+ severity classes)
+  5. Severity-floor trigger (severity-floor validator returns WARN/FAIL)
+  6. Propagation trigger (audit-signal-propagation validator returns ERROR/WARN)
+  
+  Each trigger is detectable from named artifacts (Findings Ledger, Audit Invocation Log, audit findings files, in-progress letter); none rely on model self-judgment. Override marker syntax documented for each trigger; markers must be in letter body, not appendix. Loop semantics specified: fires once per synthesis pass; addressing all triggers (upgrade or override) advances to Step 10. Net change: ~+30 lines (was 5 lines of model-judgment prose, now ~35 lines of enumerated triggers + override syntax).
+- **`scripts/validate.sh underdiagnosis-triggers`** — new mechanical check (~210 lines including self-test). Detects all six triggers; per-trigger override marker downgrades ERROR → WARN. Triggers 5 and 6 invoke `severity-floor` and `audit-signal-propagation` for composability. Self-test mode covers one positive case, three negative cases (convergence, hard-gate, final-third), and one override case.
+- **`specialized-audits/references/craft/reception-risk.md §7 Severity Hard Gates`** — added one-line pointer noting that Reception Risk Alerts and §7 hard-gate signals propagate to Underdiagnosis Retry Loop trigger #2 in `run-synthesis.md §Step 9`.
+
+Closes CR-6 (HIGH confidence — cross-bias load-bearing convergence #7 in Phase 3 inventory): converts Step 9 from model-emergent trigger detection to artifact-detectable trigger conditions.
+
+#### Findings Ledger Consolidation Contract + Validator (Codex-critique gap)
+
+- **`core-editor/references/run-synthesis.md §Step 2`** — added a new Findings Ledger Consolidation Contract subsection (sister to the Wave 1 Canonical Audit-Signal Propagation Rule). Specifies inputs (raw Ledger Snippets), outputs (consolidated by-mechanism ledger), required transformations (deduplication, cross-reference annotation, severity collation, source-pointer preservation), reduction expectation (≤70% of raw item count), validator invocation, override marker syntax, and single-agent vs. swarm mode application. ~30 lines added.
+- **`core-editor/references/run-core.md §Findings Ledger Protocol`** — added one-line consolidation requirement pointing to the canonical contract. Mandatory after pass dispatch, before synthesis begins.
+- **`scripts/validate.sh ledger-consolidation`** — new mechanical check (~150 lines including self-test). Verifies four contract checks: (1) consolidation actually happened (raw "Pass N Findings" headers don't appear ≥3 times in concatenation); (2) cross-pass convergence preserved as annotation; (3) severity collation visible when multiple tiers present; (4) reduction ratio ≤70% if raw ledger provided. Override markers downgrade per-check failures to WARN. Self-test mode covers one positive case (consolidated by mechanism), two negative cases (raw concatenation, no convergence annotation), and one override case.
+
+Closes the Codex-critique-identified gap: turning raw pass/audit Ledger Snippets into a consolidated by-mechanism ledger was model-dependent (Opus produced 337-line consolidated ledger; Codex produced 2,558-line raw-aggregate). The contract specifies the consolidation behavior; the validator verifies compliance.
+
+#### Files
+- `plugins/apodictic/skills/core-editor/references/output-policy.md` — marker syntax in §Severity Floor Rules override path (~9 lines added).
+- `plugins/apodictic/skills/core-editor/references/run-synthesis.md` — marker syntax in §Step 2 Audit-Signal Propagation Rule (~10 lines); Findings Ledger Consolidation Contract subsection in §Step 2 (~30 lines); §Step 9 rewrite from model-judgment to enumerated triggers (net ~+30 lines).
+- `plugins/apodictic/skills/core-editor/references/run-core.md` — consolidation requirement pointer in §Findings Ledger Protocol (~3 lines added).
+- `plugins/apodictic/skills/specialized-audits/references/craft/reception-risk.md` — Step 9 trigger pointer on §7 (~3 lines added).
+- `plugins/apodictic/scripts/validate.sh` and `scripts/validate.sh` — `severity-floor` and `audit-signal-propagation` refactored to marker-based override detection; two new commands added (`underdiagnosis-triggers`, `ledger-consolidation`) with self-test modes. Net ~+360 lines (validator host previously had 9 commands, now 11).
+
+#### Out of scope (Phase 4 later waves)
+- Decision-Layer Consolidation validator (Priority 5 in revised plan).
+- Pass-10-class artifact pattern naming (Priority 6 in revised plan; Phase 6 unblocker, may be deferred to Phase 7).
+- Per-audit propagation table (Phase 6 work; Wave 1 propagation rule + Wave 2 marker discipline together establish the specification basis).
+
+---
+
+## v1.7.2 - 2026-04-24
+
+### Added — Phase 4 Wave 1: Severity-Floor Consolidation + Audit-Signal Propagation
+
+Implements the first wave of Phase 4 of the model-capability review (see `docs/review-log/2026-04-25_phase-4-implementation-plan.md` and `docs/review-log/2026-04-25_phase-3-codex-critique-adjudication.md`). Closes CR-1 (severity-floor triplication) and CR-8 (audit-internal severity signals had no canonical synthesis propagation rule).
+
+#### Severity-Floor Canonical Home + Validator (CR-1)
+
+- `core-editor/references/output-policy.md §Severity Floor Rules` — designated as the canonical home with a one-line annotation. Added an explicit override-with-rationale path (Appendix B documents any deviation; absence of rationale blocks synthesis). Three numerical rules unchanged (Phase 2 archaeology preserved).
+- `core-editor/references/run-synthesis.md §Step 10 Pre-Output Verification` — replaced the duplicate severity-floor restatement bullet with a pointer to the canonical home and a validator-call instruction. Runtime protocol (when the check fires, what blocks delivery) preserved.
+- `specialized-audits/references/craft/reception-risk.md §7 Severity Hard Gates` — added an explicit relation-to-canonical statement clarifying that the five reception-specific hard gates are additive (audit-internal severity-event triggers) and never substitute for the framework-level floors. Hard-gate table unchanged.
+- `scripts/validate.sh severity-floor` — new mechanical check (~110 lines, including self-test). Verifies the three rules; advisory output (WARN/ERROR/OK); supports an override-rationale path that downgrades ERROR to WARN when Appendix B documents the deviation. Self-test mode (`--self-test`) covers one positive case and three negative cases (one per rule).
+
+#### Audit-Signal Propagation Rule + Validator (CR-8)
+
+- `core-editor/references/run-synthesis.md §Step 2 Audit Finding Consolidation` — added a Canonical Audit-Signal Propagation Rule subsection. Establishes the propagation taxonomy (audit-internal Must-Fix floor → synthesis Must-Fix; hard gate → Must-Fix; HIGH/Alert → MF or SF; MEDIUM/Flag → SF; LOW/Note → CF). Names the validator and the override-with-rationale path. Distinguishes the canonical taxonomy from per-audit specifics (Phase 6 propagation table).
+- `core-editor/references/pass-dependencies.md §4 Audit Resolver` — added a one-line pointer to the canonical propagation rule and noted that the per-audit propagation table is Phase 6 work.
+- `specialized-audits/SKILL.md` — added a one-line pointer in the How to Use section directing readers to the canonical rule for severity-signal propagation.
+- `scripts/validate.sh audit-signal-propagation` — new mechanical check (~125 lines, including self-test). Splits the editorial letter into synthesis body and audit appendix to detect when audit-internal hard gates / Must-Fix floors / HIGH-Alert signals fail to propagate to synthesis-layer Must-Fix or Should-Fix. Override-rationale path supported. Self-test mode (`--self-test`) covers one positive case and three negative cases.
+
+#### Files
+- `plugins/apodictic/skills/core-editor/references/output-policy.md` — canonical-home annotation + override path (~5 lines added).
+- `plugins/apodictic/skills/core-editor/references/run-synthesis.md` — Step 2 propagation rule (~25 lines added); Step 10 severity-floor bullet collapsed to pointer (-2 / +1 lines net).
+- `plugins/apodictic/skills/core-editor/references/pass-dependencies.md` — propagation pointer (~2 lines added).
+- `plugins/apodictic/skills/specialized-audits/references/craft/reception-risk.md` — relation-to-canonical statement on §7 (~3 lines added; hard-gate table unchanged).
+- `plugins/apodictic/skills/specialized-audits/SKILL.md` — propagation pointer in How to Use (~3 lines added).
+- `plugins/apodictic/scripts/validate.sh` and `scripts/validate.sh` — two new commands (`severity-floor`, `audit-signal-propagation`) with self-test modes (~235 lines added; validator host previously had 7 commands, now 9).
+
+#### Out of scope (Phase 4 later waves)
+- Underdiagnosis Retry Loop conversion to condition-triggered logic (Priority 3 in revised plan; CR-6).
+- Findings Ledger consolidation contract / subagent (Priority 4 in revised plan).
+- Decision-Layer Consolidation validator (Priority 5 in revised plan).
+- Pass-10-class artifact pattern naming (Priority 6 in revised plan; Phase 6 unblocker, may be deferred to Phase 7).
+- Per-audit propagation table (Phase 6 work; the canonical rule added here establishes the specification basis).
+
+---
+
 ## v1.7.0 - 2026-04-01
 
 ### Added — Harness Engineering Improvements

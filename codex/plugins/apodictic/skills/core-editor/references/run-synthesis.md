@@ -93,7 +93,77 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
    - **Count consolidated problems, not individual flags.** A single root cause may have 8 audit flags supporting it. The flags are evidence; the root cause is what enters triage.
    - **Carry audit artifacts forward.** Audit-specific tracking artifacts (Decision Event Map, Stakes Ladder Map, Scene Turn code inventory, etc.) become appendix material. They support the editorial letter's arguments but don't appear in the letter body.
 
+   **Canonical Audit-Signal Propagation Rule.** Audit-internal severity signals do not become synthesis-layer Must-Fix / Should-Fix decisions automatically — the model must propagate them. Without an explicit rule, audit-internal signals (Compression Must-Fix floors, Reception Risk hard gates, Banister HIGH ratings) reliably die inside the audit findings file even when the model integrates the audit's narrative content into the editorial letter. The rule:
+
+   | Audit-internal signal | Propagates to synthesis as |
+   |---|---|
+   | Audit-internal Must-Fix floor | Synthesis Must-Fix |
+   | Audit-internal hard gate | Synthesis Must-Fix |
+   | Audit-internal HIGH / Alert | Synthesis Must-Fix or Should-Fix (per audit context) |
+   | Audit-internal MEDIUM / Flag | Synthesis Should-Fix |
+   | Audit-internal LOW / Note | Synthesis Could-Fix |
+
+   For each audit that ran, scan its findings file for these signal classes and confirm each one appears at the rule-mandated severity in the synthesis layer (root causes, Must-Fix flags, Should-Fix flags, or revision-checklist items). **Per-signal verification (v1.7.9).** Propagation is verified per-audit, per-signal — not by the mere presence of *some* Must-Fix or Should-Fix item in the synthesis body. A Reception Risk hard gate in Appendix A is propagated only when the synthesis-body Must-Fix list contains either (a) a finding that names the audit by name (e.g., "Reception Risk Alert at L2956") or (b) a finding that cites at least one evidence line number that also appears in the audit's appendix subsection. An unrelated Must-Fix in the body — e.g., a Decision Pressure flag at a different scene — does not satisfy the Reception Risk propagation requirement. The validator (`scripts/validate.sh audit-signal-propagation`) implements this per-audit, per-signal check as of v1.7.9; prior versions accepted any body Must-Fix as evidence and produced false passes.
+
+   **Override path.** The model may decline to propagate at the rule-mandated severity when the audit signal is genuinely an artifact-of-method (e.g., a hard gate fired on a passage the manuscript itself has already retracted, or an Alert that survives only by ignoring stated authorial intent). Deviation requires a structured marker placed **in the letter body** (not in an appendix) near the affected finding, plus a parallel narrative entry in Appendix B (Severity Calibration). Marker syntax (one per propagation class):
+
+   ```
+   <!-- override: audit-propagation-must-fix — <one-sentence rationale> -->
+   <!-- override: audit-propagation-hard-gate — <one-sentence rationale> -->
+   <!-- override: audit-propagation-high — <one-sentence rationale> -->
+   ```
+
+   A per-audit override marker form is also honored (v1.7.9), allowing a single override scoped to one audit rather than the whole class:
+
+   ```
+   <!-- override: audit-propagation-<audit-slug> — <one-sentence rationale> -->
+   ```
+
+   where `<audit-slug>` is the lowercase-hyphenated audit name (e.g. `reception-risk`, `compression`, `banister`). Use the per-audit form when one audit's signal is genuinely artifact-of-method but other audits at the same class still warrant propagation.
+
+   Markers in appendix bodies are non-canonical (synthesis body is canonical for findings; appendices hold evidence) and do not satisfy the override path. **Absence of marker and rationale = blocked synthesis** — propagate at the rule-mandated severity or override-with-reason in the body; do not silently drop the signal.
+
+   **Mechanical check.** Run `scripts/validate.sh audit-signal-propagation <editorial_letter_file>` (or perform the equivalent inline check on hosts without shell execution) before delivery. The validator surfaces un-propagated signals; the model still owns the final severity decision but must justify any deviation.
+
+   **Per-audit specifics live elsewhere.** This rule is the *propagation taxonomy*. Per-audit applicability — e.g., which Reception Risk hard gate maps to synthesis Must-Fix vs. Should-Fix in which manuscript class, or how Banister HIGH-confidence findings calibrate against thematic-coherence verdicts — lives in `pass-dependencies.md §4e — Audit-Signal Propagation Table`. The validator `scripts/validate.sh audit-signal-propagation` reads §4e to verify compliance. Audits not enumerated in §4e fall back to the column-2 default mapping above; the override path applies to principled per-finding exceptions in either case.
+
+   **Pass-10-Class artifact integration (Timeline).** When Pass 10 ran and produced a `Timeline.md` artifact at the project root, its Section 4 (Inconsistency Ledger) counts feed synthesis severity per the same propagation taxonomy. Pass-10-Class artifacts are not audits; they are rolling structured state. But the Inconsistency Ledger entries function as audit-equivalent signals and propagate per these thresholds:
+
+   | Timeline signal class | Trigger | Synthesis-layer effect |
+   |---|---|---|
+   | `paradox` rows in Inconsistency Ledger | ≥1 | Must-Fix candidate (timeline coherence) |
+   | `drift` rows in Inconsistency Ledger | ≥3 | Should-Fix candidate (revision-drift hygiene pass) |
+   | `ambiguity` rows tied to load-bearing structural elements | Any (climax positioning, intervention windows, character-development arc spans) | Author Decision |
+
+   The same override-path discipline applies: a timeline paradox that is artifact-of-method (e.g., the manuscript itself flags the paradox as character-perception) can be downgraded with a structured marker in the synthesis body. Markers in Timeline appendix or in the Diff Notes section are non-canonical for synthesis-severity purposes. See `references/pass-10.md §Synthesis Integration` for the full Timeline artifact contract; see `references/pass-10.md §Validator Integration` for the three mechanical validators (`timeline-diff`, `timeline-arithmetic`, `timeline-anchor-conflict`) that surface candidates for the Inconsistency Ledger.
+
+   Other Pass-10-Class artifacts (`Argument_State.md`, `Series_State.md`, future `Plot_Spine.md`) propagate signals through the same canonical rule. The taxonomy is artifact-class-agnostic; severity propagation is the same whether the signal originates in an audit findings file or a rolling structured artifact.
+
+   **Findings Ledger Consolidation Contract.** Audit Finding Consolidation operates on a *consolidated* Findings Ledger, not the raw per-pass Ledger Snippets. Turning raw snippets into a consolidated by-mechanism ledger is the consolidation step. It is mandatory and must run after pass dispatch completes, before this audit-integration step begins. The contract:
+
+   - **Inputs.** Raw Ledger Snippet sections from each pass artifact and each completed audit findings file (the "Notable Findings", "Cross-Pass Connections", "Unresolved Questions", and "Audit Triggers" subsections per `run-core.md §Findings Ledger Protocol`).
+   - **Outputs.** A consolidated by-mechanism ledger where related findings from multiple sources cluster under a single mechanism heading (e.g., `## Mechanism: Aftermath Compression`) rather than appearing as parallel raw entries.
+   - **Required transformations.**
+     - **Deduplication.** Multiple raw entries describing the same underlying mechanism collapse to one consolidated entry; the source artifacts become an annotation, not separate entries.
+     - **Cross-reference annotation.** Each consolidated entry that came from multiple sources includes an explicit annotation: `(confirmed by Pass 1, Pass 5, Reception Risk audit)` or equivalent. Single-source entries do not require this annotation.
+     - **Severity collation.** When the same mechanism was rated at different severities by different sources, the consolidated entry shows the resolution. By default, highest severity wins per the severity-floor rules; documented downgrades (with a one-sentence rationale) are permitted but must be visible (keyword: `collated`, `downgrade`, `upgrade`, `highest severity wins`, `resolved`).
+     - **Cross-reference to source artifacts.** Each consolidated entry preserves a pointer back to the raw pass/audit artifacts where the underlying evidence lives (so synthesis can trace any finding back to its source for spot-checking).
+   - **Reduction expectation.** A compliant consolidation produces fewer entries than the raw aggregate. Heuristic threshold: consolidated item count ≤ 70% of raw item count (i.e., ≥30% reduction). Single-pass runs and naturally low-friction manuscripts may legitimately fall below this threshold; in those cases use the override path.
+   - **Validator.** Run `scripts/validate.sh ledger-consolidation <consolidated_ledger_file> [<raw_ledger_file>]` (or perform the equivalent inline check). The validator surfaces non-compliance; the model owns the final ledger structure.
+   - **Override path.** Documented deviations use a structured marker in the consolidated ledger:
+
+     ```
+     <!-- override: ledger-consolidation-raw-aggregate — <rationale> -->
+     <!-- override: ledger-consolidation-no-convergence — <rationale> -->
+     <!-- override: ledger-consolidation-no-collation — <rationale> -->
+     <!-- override: ledger-consolidation-no-reduction — <rationale> -->
+     ```
+
+   - **Single-agent vs. swarm.** The contract applies in both execution modes. In single-agent mode, consolidation is an inline sub-step the synthesis agent performs. In swarm/multi-agent mode, consolidation may be delegated to a dedicated subagent that reads all raw Ledger Snippets and writes the consolidated ledger; the synthesis subagent then operates on the consolidated output. Either way, the contract is the same.
+
 3. **Blind Spot / Absence Inventory (required).** Before root cause analysis, explicitly scan the Findings Ledger to identify what is *missing* from the text rather than just evaluating what is present on the page. Missing elements (e.g., rushed sequence compression, lacking interiority, unsupported choice architecture) are often harder to detect because they leave no explicit textual footprint. Document an internal "Absence Inventory": what structural, emotional, or pacing elements *should* be here but aren't? This ensures the root cause analysis includes omission gaps.
+
+   **Mandatory blind-spot disclosure: declined Field Reconnaissance on argument-shaped runs (Phase 6 Wave 3 / CR-4).** When a run is argument-shaped (constraint=nonfiction + persuasive-argument form per `pass-dependencies.md §4a`) AND Field Reconnaissance was not run — whether because the user declined the Hard Prerequisite or Auto-recommend before synthesis invocation, the user opted out at intake, or the run pre-dates the prerequisite policy — the synthesis layer MUST record "literature-counterevidence not surveyed" as a confidence-limiting blind spot in this Absence Inventory and carry it forward to Appendix A (Diagnostic Detail). The disclosure must name what is unsurveyed (competing studies, counter-citations, replication failures, opposing scholarly positions) and what the absence implies for synthesis confidence (Dialectical Clarity, Argument Red Team, and Argument Evidence Deep-Dive operated against a manuscript-internal claim graph rather than a literature-aware one). This disclosure is not optional for argument-shaped runs without Field Recon coverage; the §4c Auto-recommend before synthesis decline policy treats it as the canonical confidence limiter for this audit-class. For Pre-DE Prerequisite Citation Verifier declines on high-stakes argument-shaped runs, additionally name "citation provenance not verified" as the parallel confidence limit. Fiction runs and non-argument nonfiction runs do not require this disclosure (Field Recon is not prerequisited for those forms; absence is not a blind spot).
 
 4. **Root Cause Analysis.** Read the Findings Ledger as the primary input for root cause analysis. The ledger's cross-pass connections are pre-built hypotheses about shared root causes — evaluate each. Identify 3-5 root causes (maximum 5) from the ledger's notable findings, cross-pass connections, and consolidated audit findings. If more than 5 seem present, flag that manuscript may need reconception. Audit findings that cluster under the same root cause strengthen the diagnosis; they don't multiply the root cause count. For any ledger finding that doesn't cluster under a root cause, carry it forward to the "Additional Observations" section (§4b) of the editorial letter.
 
@@ -120,22 +190,44 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
 
    Build these from root causes, audit findings, the stress test, and the strongest-case-against logic. If a decision or control question cannot be tied to a root cause, live blind spot, or structural pressure point, it probably does not belong here.
 
-9. **Conditional Underdiagnosis Retry Loop (required gate).** Evaluate the alignment between your findings (Step 4/5) and the adversarial/absence inputs (Steps 3, 6, 7). You MUST abort the current diagnostic synthesis and rerun the evaluation loop if any of the following triggers are met:
-   - Severity-floor logic is incoherent (e.g., core axes are weak but there are zero Must-Fixes).
-   - The Adversarial Reader Stress Test or Strongest Case Against identifies major attacks that are uncaptured in the root-cause Must-Fix/Should-Fix findings.
-   - Live audit blind spots (identified via the Absence Inventory) remain unrouted or undocumented.
-   Do not proceed to letter generation until the structural deficit analysis correctly reflects the manuscript's severity.
+   **Mechanical check.** Decision-layer counts (3-6 / 3-7 / exactly 7) are mechanically validated by `scripts/validate.sh decision-layer-check <editorial_letter_file>` (or the equivalent inline check on hosts without shell execution) at Step 10's pre-output gate. Editorial judgment about *which* elements, decisions, and questions appear is preserved here at Step 7; counts and structural compliance are mechanical at Step 10. Override markers (one per check ID, body-only): `<!-- override: decision-layer-protected-elements -->`, `<!-- override: decision-layer-author-decisions -->`, `<!-- override: decision-layer-control-questions -->`. Markers in appendix bodies are non-canonical (synthesis body is canonical for findings; appendices hold evidence). Use the override path for principled deviations (e.g., short-fiction tier reduces Control Questions to 5; the model must say so in the body and explain in Appendix B).
+
+9. **Conditional Underdiagnosis Retry Loop (required gate).** This step uses **enumerated detectable triggers**, not model self-judgment. Run `scripts/validate.sh underdiagnosis-triggers <editorial_letter_file>` (or perform the equivalent inline check on hosts without shell execution). The validator surfaces triggers; the model still owns the decision. For each fired trigger, you MUST either (a) upgrade the affected finding's severity in the synthesis layer, OR (b) document an override marker in the letter body (not in an appendix).
+
+   **Enumerated triggers (detectable from artifacts; no model-judgment language):**
+
+   1. **Convergence trigger:** the same concern (shared mechanism keyword) is flagged in 3+ pass artifacts, audit findings, or ledger entries with no synthesis-layer Must-Fix on it.
+   2. **Hard-gate trigger:** any high-risk audit produces an Alert or hard gate (e.g., Reception Risk §7 hard gates, Compression Must-Fix floor) without a synthesis-layer Must-Fix.
+   3. **Cross-pass complication trigger:** a final-third concern appears in both a character-pass and a structure-pass artifact.
+   4. **Multi-axis severity trigger:** a single concern is rated across 2+ severity classes (series-impact, representation, reader-trust, or equivalent multi-axis hit) with no synthesis-layer Must-Fix.
+   5. **Severity-floor trigger:** `validate.sh severity-floor` returns WARN or FAIL on the in-progress letter.
+   6. **Propagation trigger:** `validate.sh audit-signal-propagation` returns ERROR or WARN — i.e., audit-internal signals failed to propagate to synthesis.
+
+   **Override marker syntax** (one per trigger ID, placed in the letter body near the affected finding — NOT in an appendix):
+
+   ```
+   <!-- override: underdiagnosis-trigger-convergence — <one-sentence rationale> -->
+   <!-- override: underdiagnosis-trigger-hard-gate — <one-sentence rationale> -->
+   <!-- override: underdiagnosis-trigger-final-third — <one-sentence rationale> -->
+   <!-- override: underdiagnosis-trigger-multi-axis — <one-sentence rationale> -->
+   <!-- override: underdiagnosis-trigger-severity-floor — <one-sentence rationale> -->
+   <!-- override: underdiagnosis-trigger-propagation — <one-sentence rationale> -->
+   ```
+
+   Markers in appendix bodies are non-canonical (synthesis body is canonical for findings; appendices hold evidence) and do not satisfy the override path. **Absence of override marker AND absence of severity upgrade = blocked synthesis.**
+
+   **Loop semantics:** Step 9 fires once per synthesis pass. If any trigger remains unaddressed (neither upgraded nor overridden) when validate.sh runs, retry synthesis at higher severity for the affected findings. Once all fired triggers are addressed (upgrade-in-place or override-marker-in-body), Step 9 passes and synthesis proceeds to Step 10.
+
+   Do not proceed to letter generation until the structural deficit analysis correctly reflects the manuscript's severity. Trigger conditions are detectable from named artifacts (Findings Ledger, Audit Invocation Log, audit findings files, in-progress letter); they are not "if the synthesis feels too soft" judgments.
 
 10. **Pre-Output Synthesis Verification (required gate).** Before writing the letter, verify the synthesis is actually drawing from pass findings — not generating an editorial letter from general impressions of the manuscript. Run these checks:
 
    - **Findings integration check:** For each root cause identified in step 3, confirm it cites at least one specific ledger finding by pass and finding name. If a root cause exists only as a general impression without ledger grounding, either locate the supporting ledger entry or demote it to §4b (Additional Observations) with a note that it awaits pass-level confirmation.
    - **Section ordering check:** Confirm the letter will follow the required §1-§11 order. Protected Elements, Author Decisions, Control Questions, Strongest Case Against, and Stress Test are separate sections with distinct jobs — they must not be merged or omitted.
    - **Cap compliance check:** Root causes ≤ 5. Revision checklist items ≤ 10 (Core DE) or ≤ 15 (Full DE). Must-Fix flags ≤ 10.
-   - **Severity floor check:** If any core-promise axis is rated Weak at High or Medium intensity, at least one flag is Must-Fix. If any Must-Fix flag has Systemic blast radius, verdict does not exceed Partial Fit ceiling.
-   - **Decision-layer completeness check:** Protected Elements contains 3-6 items. Author Decisions contains 3-7 items distributed across Keep / Cut / Unsure as applicable. Control Questions contains exactly 7 questions, each tied to a root cause, blind spot, or major revision choice.
-   - **Appendix completeness check:** The letter will include Appendix A (diagnostic detail), Appendix B (severity calibration), and Appendix C (framework notes). No appendix is optional.
+   - **Severity floor check:** Severity-floor rules are canonical in `references/output-policy.md §Severity Floor Rules`. Run `scripts/validate.sh severity-floor <editorial_letter_file>` (or perform the equivalent inline check on hosts without shell execution) before delivering the letter. Failures block delivery until the model either re-tiers the offending finding or documents an override rationale in Appendix B (Severity Calibration). Do not restate the rules here — point to the canonical home.
+   - **Decision-layer + appendix + evidence-density check:** Run `scripts/validate.sh decision-layer-check <editorial_letter_file>` (or perform the equivalent inline check on hosts without shell execution). The validator mechanically verifies Protected Elements count (3-6), Author Decisions count (3-7), Control Questions count (exactly 7), Appendices A/B/C presence, and per-Must-Fix evidence density (≥2 references). Editorial judgment about *which* elements/decisions/questions/appendix content appear is preserved at Step 7 and the editorial layer; counts and structural compliance are the validator's job. Do not restate the count contract here — point to the canonical homes (`references/output-policy.md §Mandatory Appendices` and `references/output-policy.md §Evidence Density Self-Check`). This validator runs alongside `severity-floor` and `audit-signal-propagation` as part of pre-output verification.
    - **Blind-spot disclosure check:** Any deferred or declined high-risk audit appears in Appendix A and is named in the letter where it materially limits confidence or readiness.
-   - **Evidence density spot-check:** For the two highest-severity flags, confirm each has ≥ 2 specific scene/page references.
 
    If any check fails, fix it before proceeding. This gate exists because the most common synthesis failure mode is generating an editorially plausible letter that doesn't actually integrate the analytical work — the letter sounds right but isn't grounded in what the passes found.
 
@@ -251,7 +343,7 @@ Add a brief note after each question: why the answer matters for the book's revi
 **10. Adversarial Reader Stress Test.** Required for every editorial letter. Format and methodology per `references/adversarial-stress-test.md`. This section presents 3-5 adversarial claims from low-charity reader perspectives, each with evidence, severity, steelman defense, and net risk assessment. The stress test complements §9 — where §9 states the structural case against the manuscript in 1-2 paragraphs, §10 inhabits specific hostile reader types and surfaces what each would attack.
 
 **11. Appendices.**
-- **Appendix A: Diagnostic Detail.** Pointers to companion pass files and supplementary audit findings with brief descriptions of what each contains. For each supplementary audit that ran, list its companion findings file and any tracking artifacts produced (e.g., Decision Event Map, Stakes Ladder Map, Scene Turn code inventory). Group pass files first, then audit findings. If any high-risk audit was deferred or declined, name the blind spot here and state how it limits confidence or readiness claims.
+- **Appendix A: Diagnostic Detail.** Pointers to companion pass files and supplementary audit findings with brief descriptions of what each contains. For each supplementary audit that ran, list its companion findings file and any tracking artifacts produced (e.g., Decision Event Map, Stakes Ladder Map, Scene Turn code inventory). Group pass files first, then audit findings. If any high-risk audit was deferred or declined, name the blind spot here and state how it limits confidence or readiness claims. **For argument-shaped runs without Field Reconnaissance coverage (Phase 6 Wave 3 / CR-4):** name "literature-counterevidence not surveyed" as a blind spot and state the implication (the argument engine operated against a manuscript-internal claim graph; competing studies / counter-citations / replication failures / opposing scholarly positions in the literature were not surfaced; synthesis confidence on counterevidence completeness is bounded). For high-stakes argument-shaped runs without Pre-DE Citation Verifier coverage, additionally name "citation provenance not verified" with the same disclosure pattern.
 - **Appendix B: Severity Calibration.** Compressed summary of the adversarial self-check — which findings were tested, in which direction, whether any severities were adjusted.
 - **Appendix C: Framework Notes.** Analysis version, model, run date, passes completed, protocol flags, prior analyses on file, cross-version stability notes (if applicable).
 

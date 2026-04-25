@@ -1,6 +1,7 @@
 # Specialized Audit: Scene Turn Diagnostics
 ## Version 1.1
 *Last Updated: February 2026*
+*Universal status: Verified 2026-04-25 (Phase 6 Wave 3 / Priority 5). Recommended at intake for every manuscript regardless of genre, length, or form. Universal-status criterion (per `specialized-audits/SKILL.md §Universal Audits`): catches a class of failure any narrative manuscript can exhibit; produces material findings on cross-genre fixture coverage (Regrets Only / Dinner Party / TAY); computationally cheap relative to information yield. Self-attenuates on purely propositional argument-shaped sections without producing false positives — the audit fires fully on argument-shaped runs that contain narrative work (case studies, vignettes, opening narrative ledes) and produces minimal output on purely propositional sections. Cross-model parity confirmed (Opus + Codex both fire correctly on parity sets per Phase 3 §17).*
 
 ---
 

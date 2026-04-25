@@ -70,6 +70,18 @@ Run when:
 4. the piece is an op-ed, policy brief, white paper, academic article, testimony, reported essay, or investigative CNF
 5. the manuscript was drafted with AI assistance (elevated hallucination risk for citations)
 
+### Pre-DE Prerequisite Mode for High-Stakes Argument-Shaped Runs (Phase 6 Wave 3 / CR-4)
+
+For argument-shaped runs carrying the high-stakes signal (testimony, expert affidavit, regulatory comment, peer-reviewed publication, or `constraint=high-stakes` flag — see `core-editor/references/pass-dependencies.md §4a` for the high-stakes signal definition), Citation Verifier is invoked as a **Pre-DE Prerequisite** — it runs *before* the Development Edit begins and is not a DE-internal audit. The §4c Pre-DE Prerequisite tier definition governs invocation policy.
+
+**What pre-DE invocation looks like.** Pre-DE Prerequisite mode produces `Citation_Ledger.md` at the project root before any Tier 1 pass runs. The ledger is consumed by argument-engine passes (Dialectical Clarity, Argument Evidence Deep-Dive) as evidence of citation-to-claim integrity; passes operate against a citation-verified manuscript rather than against a manuscript whose citation surface has not been checked.
+
+**Why pre-DE rather than DE-internal.** Citation integrity is an evidentiary precondition for argument analysis, not a finding within it. Ghost citations, quote drift, and paraphrase inflation invalidate downstream reasoning about claim support; they cannot be diagnosed *as part of* the argument analysis without circular contamination of the analysis itself. TAY Stage 2 (`docs/review-log/2026-04-24_tay-stage-2-comparative.md`) named Citation Verifier as "correctly out-of-scope for the Development Edit but should be a hard prerequisite" for high-stakes argument-shaped runs.
+
+**Decline path.** If the user declines a Pre-DE Prerequisite Citation Verifier invocation, the resolver presents the §4f edge-case-9 fork: (a) terminate the run, or (b) downgrade to Auto-recommend before synthesis with a body-of-letter blind-spot disclosure naming "citation provenance not verified — Ghost Citation / Quote Drift / Paraphrase Inflation risks not surveyed." Silent omission is forbidden. The downgrade path does not run Citation Verifier inside the DE — it preserves the DE's citation-handling boundary and disclosesinside the synthesis layer.
+
+**Lower-stakes argument-shaped runs.** When an argument-shaped run lacks the high-stakes signal (op-eds, policy briefs without high-stakes flagging, academic articles not designated for peer review), Citation Verifier remains available via the existing activation paths above (typically (1), (2), or (3)) and via direct `apodictic-research citation-verifier` invocation. Pre-DE Prerequisite tier is reserved for the high-stakes case.
+
 ---
 
 ## Required Inputs

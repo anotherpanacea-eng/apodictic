@@ -366,3 +366,67 @@ The intake router presents hybrid as a third execution mode option. Pre-flight r
 4. **Broad-net signal value.** Untested directly. Would require comparing findings from targeted vs. untargeted scenes. No gaps were identified in the 83k test where a finding seemed to be missing a scene it should have accessed, but this is negative evidence.
 
 5. **Synthesis verification adequacy.** Partially tested. The synthesis subagent correctly identified that it could verify structural claims from the outline but not prose-level claims (voice analysis, sensory detail, specific dialogue). For a full editorial letter, the verification excerpt mechanism needs more scenes than the 83k test provided. The synthesis should receive 5–10 key evidence scenes for spot-checking.
+
+---
+
+## Focus Map Architectural Decision Framework (Phase 5)
+
+**Status:** Decision framework documented. Empirical test deferred (see "Test deferred" note below). **Default: Focus Map remains hybrid-only** unless a future test produces data supporting cross-mode adoption.
+
+The model-capability review spec §Phase 5 specified an empirical acceptance criterion for adopting Focus Map across all execution modes (single-agent, sequential, hybrid, swarm). The framework below specifies the test, the metrics, the guards, and the decision rule. When the test is run, the data + decision are recorded in a date-stamped review-log entry under `docs/review-log/`.
+
+### Test hypothesis
+
+> Adopting Focus Map in single-agent and sequential modes (in addition to its existing hybrid-mode use) improves at least 2 of {Severity Honesty, Audit Routing Coverage, Cross-Pass Connection Density, Author Usability} by ≥1 point on at least 2 of {Fixture A, Fixture B, Fixture C} fixtures, without reducing pass independence and without causing the synthesis to overfit to triage framing.
+
+### Test design
+
+For each of three test fixtures (one literary fiction, one argument-shaped nonfiction, one short-fiction control), run two arms:
+
+- **Arm A (control):** Current behavior. Single-agent, sequential, and swarm produce no Focus Map. Hybrid produces it.
+- **Arm B (treatment):** Focus Map produced in all four modes. In single-agent and sequential, the Focus Map is analytical framing only — later passes still see the full manuscript (no excerpt extraction). In hybrid, existing behavior. In swarm, triage produces it; passes 2/5/8 may consult it as a seeding artifact but remain architecturally isolated.
+
+The treatment arm preserves the spec's anti-overfit condition: in non-hybrid modes the Focus Map does not gate manuscript access, so passes retain independence.
+
+### Target metrics (M1-M4)
+
+Per `docs/eval-harness-spec.md §Synthesis-Specific Eval`:
+
+- **M1 — Severity Honesty:** 1-5 manual scoring. Whether severity matches evidence weight; whether retry loop fires when warranted; whether final verdict is calibrated.
+- **M2 — Audit Routing Coverage:** Count of audit recommendations made vs. ground-truth audit need per fixture's known-good calibration.
+- **M3 — Cross-Pass Connection Density:** Count of distinct cross-pass connections logged in Findings Ledger entries.
+- **M4 — Author Usability:** 1-5 manual scoring. Whether the editorial letter's Decision-Layer (Protected Elements / Author Decisions / Control Questions) gives the author actionable revision control.
+
+### Pass-independence guards (G1-G2, anti-overfit)
+
+- **G1 — Cross-Pass Connection independence:** Treatment arm's Cross-Pass Connections per pass must not decrease vs. control arm. Decrease indicates passes converging on triage's framing (overfitting).
+- **G2 — Findings outside Focus Map:** Synthesis Notable Findings that originate outside the Focus Map's targeting list must remain ≥40% of total findings, matching current swarm-mode baseline of independent findings.
+
+### Acceptance criteria
+
+Adopt Focus Map in all modes only if:
+- M1-M4 improves on **≥2 metrics for ≥2 fixtures**, AND
+- G1 satisfied for all fixtures, AND
+- G2 satisfied for all fixtures.
+
+If only one fixture improves, only one metric improves, or G1/G2 fails on any fixture: **do not adopt**. Keep Focus Map hybrid-only.
+
+If acceptance criteria met: adopt per per-mode role definitions — single-agent (planning + self-check artifact), sequential (pass-targeting guide, not excerpt selector), hybrid (controls selective reading and excerpt packages — existing behavior), swarm (may seed independent passes or be skipped to preserve maximum independence).
+
+### Test deferred
+
+**Implementation note (Phase 5):** running 6 fixture comparisons (3 fixtures × 2 arms) is non-trivial scope expansion beyond Phase 5's prose-and-validator priorities. The decision framework above is documented; the test runs are deferred to a follow-on workstream when bandwidth permits. Until that test runs and produces data supporting broader adoption, Focus Map remains hybrid-only. This preserves the conservative default per spec.
+
+### Decision-recording protocol
+
+When the test eventually runs:
+
+1. Pre-register the test per `docs/eval-harness-spec.md §Decision Rules` (fixture set, target metrics, binary checks, regression fixtures).
+2. Run both arms on all three fixtures.
+3. Score M1-M4 and G1-G2 per arm per fixture.
+4. Compare against acceptance criteria.
+5. Record the result + decision in a date-stamped review-log entry: `docs/review-log/<YYYY-MM-DD>_focus-map-cross-mode-test.md`. The entry documents the test, the data, the decision rationale, and any framework changes that follow (per the "If adopted" / "If not adopted" branches of the Phase 5 implementation plan).
+6. If adopted: update this section with a "Resolved (date)" annotation; restructure the Architecture section to specify per-mode Focus Map roles; update `run-core.md` mode subsections; update `run-synthesis.md` for cross-mode verification excerpts.
+7. If not adopted: update this section with a "Resolved (date) — keep hybrid-only" annotation citing the test data.
+
+**Default until then:** Focus Map remains a hybrid-mode-only artifact. Single-agent, sequential, and swarm modes do not produce a Focus Map.
