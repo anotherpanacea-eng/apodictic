@@ -11,5 +11,13 @@ issues/
 **/.pytest_cache/
 *.pyc
 
-# Local-only working notes (planning, drafts, in-flight artifacts)
-docs/.local/
+# Local-only review-planning + working notes
+# (process/methodology filenames only; no manuscript references in any
+# gitignored file or folder name)
+docs/blind-review-protocol.md
+docs/eval-harness-spec.md
+docs/model-capability-review-spec.md
+docs/model-upgrade-backlog.md
+docs/prompt-inventory.md
+docs/2026-04-25_codex-final-review-prompt.md
+docs/review-log/
