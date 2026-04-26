@@ -657,26 +657,28 @@ Targets are framed as structural requirements, not content:
 
 ## Diagnostic Flags
 
-### Must-Fix Flags
+### Must-Fix Floor — Hard Gates
 
-**"Memory Fraud"**
+The four flags below are **audit-internal hard gates**. When any one fires, it carries an audit-internal **Must-Fix floor** that propagates to synthesis severity per the canonical Audit-Signal Propagation Rule in `core-editor/references/run-synthesis.md §Step 2`. Synthesis cannot downgrade a hard-gate flag below Must-Fix without an explicit override marker recording rationale. These hard gates are why the Memoir & Creative Nonfiction audit is Auto-run for memoir and creative-nonfiction manuscripts: the audit's gates are definitional to the truth-contract of the form.
+
+**"Memory Fraud"** *(Hard Gate)*
 - Memoir presents invented scenes as factual
 - Extended precise dialogue from events decades ago
 - Details that couldn't plausibly be remembered, presented without acknowledgment
 - **This is an ethics flag, not just craft**
 
-**"Living Person Harm"**
+**"Living Person Harm"** *(Hard Gate)*
 - Identifiable person portrayed in damaging way without consent
 - No protection for minors or vulnerable subjects
 - Potential legal exposure
 - **Recommend: Legal review, not just editorial**
 
-**"No Transformation"** *(→ Gornick: GS0, EP2)*
+**"No Transformation"** *(Hard Gate)* *(→ Gornick: GS0, EP2)*
 - Narrator at end has same understanding as beginning
 - Events reported but not interpreted
 - Reader asked to care without reason given
 
-**"False Precision"**
+**"False Precision"** *(Hard Gate)*
 - Dialogue, detail, and scene presented with novelistic certainty
 - No acknowledgment of memory's limits
 - Creates false authority that genre doesn't support
