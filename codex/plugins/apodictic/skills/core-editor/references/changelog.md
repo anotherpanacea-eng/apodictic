@@ -5,6 +5,36 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.8.5 - 2026-04-26
+
+### Hygiene — disclosure-discipline fixes; re-release of v1.8.4 with sanitized fixture references
+
+No behavior changes. v1.8.5 ships v1.8.4 with two post-release hygiene commits folded in:
+
+- **Fixture references in framework files replaced with abstract IDs (F1/F2/F3/F4)** — specific fixture identifiers had leaked into ~96 lines across 21 framework file copies (changelog entries, audit reference frontmatter, validator inline comments, ROADMAP). Sanitized to abstract IDs with generic genre tags (fiction-novella / short-fiction / argument-shaped nonfiction). Substitution applied across canonical + codex + antigravity trees.
+- **Per-fixture manifest files gitignored via wildcard + allowlist pattern** — `evals/manifests/*.md` with `!evals/manifests/README.md` and `!evals/manifests/fixture-manifest-template.md`. Working copies preserved locally; index entries removed via `git rm --cached`. The .gitignore pattern itself does not enumerate the manifest filenames.
+- **`.gitignore` reverted to explicit-filename pattern** for working notes (the `docs/.local/` hidden-directory pattern was reverted in favor of explicit gitignore entries with manuscript-discipline applied to filenames).
+
+Validator suite unchanged at 11 (all self-test PASS via `validate.sh --self-test-all`). All 4 release checks PASS at parity with v1.8.4. Generated host workspaces sanitized in-place to match canonical (no behavior regen).
+
+False-positive disambiguations preserved (left intact during sanitization):
+- "Faustian Spine" plot type from Goethe (one of 39 plot types in framework taxonomy)
+- Bibliographic citations to published authors with surname-only matches (left as-is)
+- "Codex" as model identifier (vs. fixture binding)
+
+#### Files
+
+- `scripts/validate.sh` (canonical + repo-root + codex + antigravity copies): inline self-test fixture comments
+- `plugins/apodictic/skills/core-editor/references/changelog.md` (3 trees): historical entries
+- `plugins/apodictic/skills/specialized-audits/SKILL.md` (3 trees): Universal Audits verification block
+- `plugins/apodictic/skills/specialized-audits/references/craft/{stakes-system,decision-pressure,scene-turn,research-citation-verifier,research-field-recon,adversarial-evidence-review}.md` (3 trees each)
+- `plugins/apodictic/skills/core-editor/references/{pass-dependencies,output-policy}.md` (3 trees)
+- `plugins/apodictic/skills/{pre-writing-pathway,core-editor}/SKILL.md` (3 trees)
+- `plugins/apodictic/commands/new-project.md` (3 trees)
+- `ROADMAP.md` (root)
+- `docs/adversarial-evidence-level-setting.md` (root)
+- `evals/manifests/*.md` (4 manifest files removed from index; working copies preserved)
+
 ## v1.8.4 - 2026-04-25
 
 ### Fixed — Phase 7 Codex final critique adjudication: audit-tier-criterion canonical-input closure + governance sharpening
