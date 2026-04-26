@@ -400,15 +400,15 @@ Ch 7, full chapter | Replace | Bridge chapter with no structural function and ve
 Ch 9, pp 4–5      | Recast  | Interiority passage; the emotional pipeline is correct but the words are generic — nothing specific to this character
 ```
 
-### 5. Readiness Impact Note
+### 5. Readiness Impact Note (Hard Gates / Must-Fix Floor)
 
-A short assessment of how the audit's findings affect submission readiness (Pass 11):
+A short assessment of how the audit's findings affect submission readiness (Pass 11). The conditions below are **audit-internal hard gates**: when they fire, the AIC finding carries an audit-internal **Must-Fix floor** that propagates to synthesis severity per the canonical Audit-Signal Propagation Rule in `core-editor/references/run-synthesis.md §Step 2`. Synthesis cannot downgrade a hard-gate flag below Must-Fix without an explicit override marker recording rationale.
 
-- If **any AIC flag is Systemic and confirmed by expanded scope (contamination map)** → submission readiness cannot pass until the systemic flag is resolved. State which flag and why.
-- If **any AIC flag is Systemic from sample scope only (3 passages)** → do not hard-block Pass 11. Instead, flag as: "Systemic finding from limited sample — expand to contamination map before gating submission readiness." The audit must run expanded scope to justify a readiness block.
-- If **AIC-4 (Register Seams) is Pattern or higher** → flag as a gate: agents and editors will detect the patchwork, and it signals unfinished revision.
-- If **AIC-7 (Discourse Leak) is Pattern or higher in interiority passages** → flag for revision but do not gate submission readiness independently. Discourse leak in interiority is revisable without structural changes. However, if AIC-7 co-occurs with AIC-1 (Generic Hand) at Pattern or higher, the combination gates readiness — the manuscript's voice layer needs rebuilding, not patching.
-- If **all flags are Spot** → the manuscript can proceed through Pass 11 with the salvage plan as a revision checklist item.
+- If **any AIC flag is Systemic and confirmed by expanded scope (contamination map)** → **Hard Gate.** Submission readiness cannot pass until the systemic flag is resolved; produces a Must-Fix floor for the named flag. State which flag and why.
+- If **any AIC flag is Systemic from sample scope only (3 passages)** → not yet a hard gate. Instead, flag as: "Systemic finding from limited sample — expand to contamination map before gating submission readiness." The audit must run expanded scope to justify a readiness block.
+- If **AIC-4 (Register Seams) is Pattern or higher** → **Hard Gate.** Flag as readiness-gating: agents and editors will detect the patchwork, and it signals unfinished revision; produces a Must-Fix floor.
+- If **AIC-7 (Discourse Leak) is Pattern or higher in interiority passages** → flag for revision but do not gate submission readiness independently. Discourse leak in interiority is revisable without structural changes. However, if AIC-7 co-occurs with AIC-1 (Generic Hand) at Pattern or higher, the combination is a **Hard Gate** — the manuscript's voice layer needs rebuilding, not patching; produces a compound Must-Fix floor.
+- If **all flags are Spot** → no hard gate. Manuscript can proceed through Pass 11 with the salvage plan as a revision checklist item.
 
 ---
 

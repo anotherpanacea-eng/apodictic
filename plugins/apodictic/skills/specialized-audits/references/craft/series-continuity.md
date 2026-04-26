@@ -146,6 +146,17 @@ Track intentional discontinuities, acknowledged revisions, and recontextualizati
 - Patterns of retcon across multiple state dimensions elevate to readiness-threatening
 - Isolated additive retcons with reread support are local notes at most
 
+### Hard Gates — Must-Fix Floor
+
+The following four cross-volume failures are **audit-internal hard gates**. When any one fires, the finding carries an audit-internal **Must-Fix floor** that propagates to synthesis severity per the canonical Audit-Signal Propagation Rule in `core-editor/references/run-synthesis.md §Step 2`. Synthesis cannot downgrade a hard-gate flag below Must-Fix without an explicit override marker recording rationale. These gates are why Series Continuity is at Auto-run (`pass-dependencies.md §4a`) when series context is flagged: cross-volume canon breaks cannot be diagnosed by within-volume passes and disclosure is non-equivalent to running the audit.
+
+- **SC-Gate-1 (Consequence-Erasure Floor):** Trauma vanishes, betrayal is forgotten, or earned change is reset between volumes without textual acknowledgment. Consequence-level state violations carrying durable plot weight in the prior volume.
+- **SC-Gate-2 (Silent-Retcon Floor / RL-SILENT at explicit-canon layer):** Explicit prior-volume canon contradicted with no acknowledgment and no reread support — the highest-severity retcon class.
+- **SC-Gate-3 (Reader-Promise Failure Floor):** Series ending breaks the kind-of-continuation promise made earlier; readiness-threatening hope-calibration failure at series midpoints or finales.
+- **SC-Gate-4 (High-Signal Thread Drop Floor):** A thread the prior volume marked as load-bearing (explicit reader promise, named cliffhanger, explicit narrator commitment) is silently abandoned without dormancy signaling.
+
+A hard-gate hit produces a Must-Fix floor on the named cross-volume transition regardless of mode (epic series, composite novel, linked collection); the per-channel Severity guides above remain authoritative for non-gate findings.
+
 ---
 
 ## Decision Tests
