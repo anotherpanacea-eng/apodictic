@@ -279,7 +279,7 @@ Decisions whose framework default is documented and conservative, but whose empi
 
 ## Deferred (Corpus Expansion Candidates)
 
-Instructions whose framework status is "load-bearing under current evidence" but whose decision surfaces are not exercised by the canonical fixture corpus (F1 Regrets Only Opus, F2 Regrets Only Codex, F3 Dinner Party, F4 TAY). Per the model-capability review spec's UNPROVEN provenance rule, these are corpus-expansion candidates rather than deletion candidates: the instruction's effect is ambiguous due to fixture scope, not absent.
+Instructions whose framework status is "load-bearing under current evidence" but whose decision surfaces are not exercised by the canonical fixture corpus (F1 fiction-novella baseline-model run, F2 fiction-novella comparator-model run, F3 short-fiction control, F4 argument-shaped nonfiction). Per the model-capability review spec's UNPROVEN provenance rule, these are corpus-expansion candidates rather than deletion candidates: the instruction's effect is ambiguous due to fixture scope, not absent.
 
 Surfaced by Phase 7 Wave 2 B1 eval coverage (`docs/.local/review-log/2026-04-25_phase-7-wave-2-eval-coverage.md`).
 

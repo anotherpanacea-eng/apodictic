@@ -7,7 +7,7 @@ Initialize a new project for the APODICTIC Development Editor.
 
 Load `../skills/core-editor/SKILL.md`. Create the project scaffolding per `../skills/core-editor/references/output-policy.md` §Folder Architecture:
 
-1. **Create or confirm the project root** outside the plugin repo. Use Title_Case with underscores for the folder name (e.g., `Regrets_Only`). If the writer already has an existing output folder in use, reuse it as the project root — create `runs/` inside it if it doesn't exist yet.
+1. **Create or confirm the project root** outside the plugin repo. Use Title_Case with underscores for the folder name (e.g., `My_Novel`). If the writer already has an existing output folder in use, reuse it as the project root — create `runs/` inside it if it doesn't exist yet.
 
 2. **Create the `runs/` directory** inside the project root.
 

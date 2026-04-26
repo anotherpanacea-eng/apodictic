@@ -1666,8 +1666,7 @@ EOF
       # C1 case: Author Decisions with Keep/Cut/Unsure subheads + many
       # sub-bullets. Phase 4-6 validator counted 13 sub-bullets and FAILed
       # on the 3-7 range; Phase 7 calibration counts 3 subhead clusters
-      # and PASSes. Mirrors the canonical Regrets Only Opus / Dinner Party
-      # fixture pattern.
+      # and PASSes. Mirrors canonical fixture F1 / F3 patterns.
       cat > "$TMPDIR/c1_subhead_clusters.md" <<'EOF'
 # Development Edit
 ## What Needs Work
@@ -1712,9 +1711,8 @@ EOF
       # C1b case (Phase 7 Wave 2 B3 extension): subhead clusters
       # expressed as bold-paragraph leaders (`**Keep**`, `**Cut /
       # Release**`, `**Unsure — decide before revision**`) rather than
-      # level-3 markdown subheads. Mirrors the canonical Regrets Only
-      # Opus 4.7 fixture pattern that initially failed Wave 1's C1
-      # calibration.
+      # level-3 markdown subheads. Mirrors canonical fixture F1
+      # pattern that initially failed Wave 1's C1 calibration.
       cat > "$TMPDIR/c1b_bold_subhead_clusters.md" <<'EOF'
 # Development Edit
 ## What Needs Work

@@ -2,7 +2,7 @@
 *Date: March 24, 2026*
 *Status: Level-setting research — not yet a spec*
 *Proposed location: Nonfiction Argument Engine, companion to Argument Evidence Deep-Dive*
-*Trigger: TAY White Paper test run revealed structural ceiling of persona-based adversarial critique*
+*Trigger: F4 (argument-shaped nonfiction) test run revealed structural ceiling of persona-based adversarial critique*
 
 ---
 
@@ -312,17 +312,17 @@ For high-consequence reviews (testimony, publication, legislative advocacy):
 
 ## Design Decisions (Resolved)
 
-Per Codex review and empirical test on the TAY White Paper:
+Per Codex review and empirical test on F4 (argument-shaped nonfiction):
 
 ### 1. Scope: evidence-node-bound, not full-manuscript
 
 The module fires only on claim-evidence pairings with explicit upstream anchors in `Argument_State.md`, `Citation_Ledger.md`, or `Field_Reconnaissance_Report.md`. It does not scan the full manuscript for unanchored problems — that's the diagnostic modules' job.
 
-However, the TAY test revealed that some vulnerabilities (the CBT tier asymmetry) weren't flagged by any diagnostic code but emerged under adversarial pressure. **Resolution:** The module also tests all unflagged C0 and central-subclaim supports, regardless of whether diagnostic codes fired. The requirement is an upstream anchor (the claim-evidence pairing must be identifiable in the support map), not a prior flag.
+However, the F4 test revealed that some vulnerabilities (the CBT tier asymmetry) weren't flagged by any diagnostic code but emerged under adversarial pressure. **Resolution:** The module also tests all unflagged C0 and central-subclaim supports, regardless of whether diagnostic codes fired. The requirement is an upstream anchor (the claim-evidence pairing must be identifiable in the support map), not a prior flag.
 
 ### 2. Protocol execution: parallel
 
-ACH, cross-exam taxonomy, and severe testing run in parallel on the same claim-evidence pairings. The DMAD research (Du et al. ICLR 2024) shows genuinely different analytical frameworks produce better results than sequential deepening of a single approach. The TAY test confirmed this — the attacks that landed hardest came from different analytical angles.
+ACH, cross-exam taxonomy, and severe testing run in parallel on the same claim-evidence pairings. The DMAD research (Du et al. ICLR 2024) shows genuinely different analytical frameworks produce better results than sequential deepening of a single approach. The F4 test confirmed this — the attacks that landed hardest came from different analytical angles.
 
 ### 3. Output format: preparation guide with grounding
 

@@ -21,3 +21,10 @@ docs/model-upgrade-backlog.md
 docs/prompt-inventory.md
 docs/2026-04-25_codex-final-review-prompt.md
 docs/review-log/
+
+# Local-only fixture manifests. Manifests name specific manuscripts and
+# therefore cannot ship in-repo. Wildcard + allowlist keeps the
+# .gitignore itself free of manuscript-trackable filenames.
+evals/manifests/*.md
+!evals/manifests/README.md
+!evals/manifests/fixture-manifest-template.md

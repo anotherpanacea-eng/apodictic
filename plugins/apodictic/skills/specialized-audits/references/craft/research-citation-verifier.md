@@ -76,7 +76,7 @@ For argument-shaped runs carrying the high-stakes signal (testimony, expert affi
 
 **What pre-DE invocation looks like.** Pre-DE Prerequisite mode produces `Citation_Ledger.md` at the project root before any Tier 1 pass runs. The ledger is consumed by argument-engine passes (Dialectical Clarity, Argument Evidence Deep-Dive) as evidence of citation-to-claim integrity; passes operate against a citation-verified manuscript rather than against a manuscript whose citation surface has not been checked.
 
-**Why pre-DE rather than DE-internal.** Citation integrity is an evidentiary precondition for argument analysis, not a finding within it. Ghost citations, quote drift, and paraphrase inflation invalidate downstream reasoning about claim support; they cannot be diagnosed *as part of* the argument analysis without circular contamination of the analysis itself. TAY Stage 2 (`docs/review-log/2026-04-24_tay-stage-2-comparative.md`) named Citation Verifier as "correctly out-of-scope for the Development Edit but should be a hard prerequisite" for high-stakes argument-shaped runs.
+**Why pre-DE rather than DE-internal.** Citation integrity is an evidentiary precondition for argument analysis, not a finding within it. Ghost citations, quote drift, and paraphrase inflation invalidate downstream reasoning about claim support; they cannot be diagnosed *as part of* the argument analysis without circular contamination of the analysis itself. F4 Stage 2 (`docs/review-log/2026-04-24_tay-stage-2-comparative.md`) named Citation Verifier as "correctly out-of-scope for the Development Edit but should be a hard prerequisite" for high-stakes argument-shaped runs.
 
 **Decline path.** If the user declines a Pre-DE Prerequisite Citation Verifier invocation, the resolver presents the §4f edge-case-9 fork: (a) terminate the run, or (b) downgrade to Auto-recommend before synthesis with a body-of-letter blind-spot disclosure naming "citation provenance not verified — Ghost Citation / Quote Drift / Paraphrase Inflation risks not surveyed." Silent omission is forbidden. The downgrade path does not run Citation Verifier inside the DE — it preserves the DE's citation-handling boundary and disclosesinside the synthesis layer.
 
@@ -707,7 +707,7 @@ If Red Team identifies `RT9` (Evidence Chain Snap), the Citation Verifier should
 
 ## Token Budget
 
-**Empirically tested.** First real-world run: a 155-citation policy white paper (TAY transition services). Results:
+**Empirically tested.** First real-world run: a 155-citation policy white paper (canonical fixture F4). Results:
 
 | Component | Estimated | Actual | Notes |
 |---|---|---|---|

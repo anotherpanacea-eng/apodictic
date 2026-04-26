@@ -94,7 +94,7 @@ Listen for which of these the writer already has:
 | **Character** | "I want to write about a retired detective who can't stop investigating" | Protagonist, want, possibly lie, possibly spine family |
 | **World** | "It's set in a space station where gravity is rationed" | Setting, possibly novum, possibly genre (SFF), possibly constraint spine |
 | **Feeling** | "I want the reader to feel like the ground keeps shifting" | Reader promise, possibly tension type (epistemic), possibly genre (horror, literary) |
-| **Scene** | "I keep imagining this dinner party where everything goes wrong" | A structural moment without a surrounding architecture |
+| **Scene** | "I keep imagining this funeral where everyone says the wrong thing" | A structural moment without a surrounding architecture |
 | **Theme** | "I want to write about how institutions make people complicit" | Controlling idea direction, possibly spine (corruption), possibly anti-idea |
 | **Genre instinct** | "I want to write a cozy mystery" | Genre, reader promise, contract constraints, relevant modules |
 | **Comp** | "Something like Gone Girl but from the husband's perspective" | Tone, structure, genre, reader expectations |

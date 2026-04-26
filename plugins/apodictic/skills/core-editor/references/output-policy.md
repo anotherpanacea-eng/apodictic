@@ -50,7 +50,7 @@ All APODICTIC work for a manuscript lives under a single **project root**. The `
     └── {run-folders}
 ```
 
-`{project-root}` is the active project output context. For new projects, this is created by `/new-project`. For existing projects, it is the folder that already contains the manuscript's APODICTIC output. The project folder name should use the manuscript's working title in Title_Case with underscores (e.g., `Regrets_Only`, `Chain_of_Command`).
+`{project-root}` is the active project output context. For new projects, this is created by `/new-project`. For existing projects, it is the folder that already contains the manuscript's APODICTIC output. The project folder name should use the manuscript's working title in Title_Case with underscores (e.g., `My_Novel`, `Policy_Brief_Draft`).
 
 **Migration from `Outputs/`:** If an existing project has an `Outputs/` folder with APODICTIC artifacts, treat that folder as the project root. Create `runs/` inside it and continue.
 
