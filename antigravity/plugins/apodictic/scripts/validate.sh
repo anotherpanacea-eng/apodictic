@@ -145,10 +145,46 @@ set -euo pipefail
 usage() {
   echo "Usage: $0 <command> [args...]"
   echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite"
+  echo "Aggregate: --self-test-all (runs --self-test on all 11 self-testable validators; exit 0 only if every validator's self-test passes)"
   exit 2
 }
 
 if [ $# -lt 1 ]; then usage; fi
+
+# Aggregate self-test dispatcher (v1.8.4). Runs --self-test on every
+# self-testable validator and exits 0 only if every per-validator
+# self-test exits 0. Added per Codex P2 finding: the E1 final report
+# referred to an aggregate command that did not exist; this closes the
+# documentation-vs-implementation mismatch and simplifies CI invocation.
+# The first seven commands (contract-hash, contract-check, ledger-check,
+# artifact-names, synthesis-sections, tone-check, state-lines) are
+# pure utilities that do not carry self-tests; only the 11 model-
+# capability-review validators do.
+if [ "$1" = "--self-test-all" ]; then
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite"
+  AGG_FAIL=0
+  AGG_PASS_COUNT=0
+  AGG_FAIL_COUNT=0
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 11 validators:"
+  for v in $AGG_VALIDATORS; do
+    if "$0" "$v" --self-test >/dev/null 2>&1; then
+      echo "  $v: PASS"
+      AGG_PASS_COUNT=$((AGG_PASS_COUNT + 1))
+    else
+      echo "  $v: FAIL"
+      AGG_FAIL_COUNT=$((AGG_FAIL_COUNT + 1))
+      AGG_FAIL=1
+    fi
+  done
+  echo ""
+  if [ "$AGG_FAIL" -eq 0 ]; then
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/11 validators)"
+    exit 0
+  else
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/11 validators failed; rerun individually with --self-test for details)"
+    exit 1
+  fi
+fi
 
 COMMAND="$1"
 shift
@@ -3225,11 +3261,55 @@ EOF
 |---|---|---|---|
 | 9 (Thematic Coherence) | Some pattern | Some Recommend Audit | Recommend |
 EOF
+      # Auto-run definitional case (v1.8.4 canonical-failure analogue):
+      # mirrors the Memoir / Narrative-NF pattern surfaced when running
+      # against canonical pass-dependencies.md. An Auto-run (definitional)
+      # audit at high tier whose reference file documents named gates as
+      # a §Hard Gates section header form (header line "## Hard Gates" or
+      # bold-paragraph form) plus per-flag (Hard Gate) parenthetical
+      # markers — the form Memoir / Series Continuity / Narrative NF /
+      # Consent Complexity / AI-Prose now use. Should PASS.
+      cat > "$TMPDIR/autorun_pd.md" <<'EOF'
+## §4a. Router-triggered audits
+| Trigger | Audit | Tier | Reference |
+|---|---|---|---|
+| Memoir-shape disclosed at intake | Definitional Memoir Audit | Auto-run (bundled) | `audits/definitional-memoir.md` |
+EOF
+      cat > "$TMPDIR/audits/definitional-memoir.md" <<'EOF'
+# Definitional Memoir Audit
+## Diagnostic Flags
+### Must-Fix Floor — Hard Gates
+The two flags below are audit-internal hard gates carrying an audit-internal Must-Fix floor that propagates to synthesis.
+**"Memory Fraud"** (Hard Gate) — invented scenes presented as factual.
+**"Living Person Harm"** (Hard Gate) — identifiable person damaged without consent.
+EOF
+      # Finding-triggered §4b high-tier case (v1.8.4): mirrors the
+      # canonical Consent Complexity / AI-Prose / Series Continuity §4b
+      # rows where the audit appears in §4b at Auto-recommend before
+      # synthesis tier. Validator must extract audit name from §4b's
+      # different column ordering (| Pass | Trigger | Audit | Policy |
+      # vs. §4a's | Trigger | Audit | Tier | Reference |). Note: the §4b
+      # column-3 cell holds the audit name and the canonical reference
+      # path lives in the §4a row for the same audit. Self-test asserts
+      # the validator does not error when §4b rows lack a backtick
+      # reference path (which is the canonical pattern).
+      cat > "$TMPDIR/findingtrig_pd.md" <<'EOF'
+## §4b. Finding-triggered audits
+| Pass | Finding pattern | Audit(s) | Policy |
+|------|----------------|----------|--------|
+| 1 (Reader Experience) | Uniform fluency | AI-Prose Calibration | Auto-recommend before synthesis (if not already loaded) |
+EOF
+      # Note: §4b row's column 5 is empty (no backtick reference path
+      # cell). Validator's REF_PATH extraction returns empty; the row
+      # is correctly skipped without erroring. This is canonical
+      # behavior — §4a is the source of truth for reference paths.
       RESULTS=0
       "$0" audit-tier-criterion "$TMPDIR/pos_pd.md" "$TMPDIR/audits" >/dev/null 2>&1 && echo "  pos: OK (high-tier audits document hard gates / Must-Fix floors)" || { echo "  pos: FAIL (expected OK)"; RESULTS=1; }
       "$0" audit-tier-criterion "$TMPDIR/neg_pd.md" "$TMPDIR/audits" >/dev/null 2>&1 && { echo "  neg: FAIL (expected ERROR — high-tier audit lacks criterion-1 hard-gate language)"; RESULTS=1; } || echo "  neg: OK (caught — soft audit at Auto-recommend before synthesis tier)"
       "$0" audit-tier-criterion "$TMPDIR/over_pd.md" "$TMPDIR/audits" >/dev/null 2>&1 && echo "  over: OK (override marker downgrades ERROR→WARN)" || { echo "  over: FAIL (expected OK after override)"; RESULTS=1; }
       "$0" audit-tier-criterion "$TMPDIR/edge_pd.md" "$TMPDIR/audits" >/dev/null 2>&1 && echo "  edge: OK (Recommend-tier audit not subject to criterion-1 check)" || { echo "  edge: FAIL (expected OK — Recommend tier exempt)"; RESULTS=1; }
+      "$0" audit-tier-criterion "$TMPDIR/autorun_pd.md" "$TMPDIR/audits" >/dev/null 2>&1 && echo "  autorun: OK (v1.8.4: Auto-run definitional audit with §Hard Gates section header + per-flag (Hard Gate) markers)" || { echo "  autorun: FAIL (expected OK — Auto-run definitional with hard-gate section-header form)"; RESULTS=1; }
+      "$0" audit-tier-criterion "$TMPDIR/findingtrig_pd.md" "$TMPDIR/audits" >/dev/null 2>&1 && echo "  findingtrig: OK (v1.8.4: §4b finding-triggered row without ref-path cell skipped without error)" || { echo "  findingtrig: FAIL (expected OK — §4b without ref path should not error)"; RESULTS=1; }
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
