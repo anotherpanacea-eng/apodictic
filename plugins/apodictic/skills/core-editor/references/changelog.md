@@ -5,6 +5,103 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.8.4 - 2026-04-25
+
+### Fixed — Phase 7 Codex final critique adjudication: audit-tier-criterion canonical-input closure + governance sharpening
+
+Closes the Codex 5.5 final external review of Phase 7 work per `docs/.local/review-log/2026-04-25_phase-7-codex-final-critique.md`. One P1 + three P2s + three P3s adjudicated; full adjudication at `docs/.local/review-log/2026-04-25_codex-final-critique-adjudication.md`. Same failure-mode class as Joshua's earlier substantive code review caught for `audit-signal-propagation` (closed in v1.7.9): a validator passes its synthetic self-test but fails against the canonical framework file it was built to police. v1.8.4 closes the specific instance + adds ROADMAP item naming the class.
+
+#### P1 — `audit-tier-criterion` canonical-input failure (5 audit-side fixes)
+
+The v1.8.0 validator passed its 4-case synthetic self-test (PASS) but failed against canonical `pass-dependencies.md` (5 ERRORs: AI-Prose Calibration, Consent Complexity, Memoir & Creative Nonfiction, Narrative Nonfiction Craft, Series Continuity). Each audit was assigned to Auto-run or Auto-recommend before synthesis tier per §4a; each audit's reference file genuinely lacked the criterion-1 hard-gate / Must-Fix-floor language the §4c Audit Tier Promotion Criteria require for that tier. The validator's pattern matching was correct; the audit references needed updating.
+
+Per-failure resolution — all five are audit-side fixes (no override markers; no validator pattern extension; no audit demotions):
+
+| # | Audit | Tier | Fix |
+|---|---|---|---|
+| 1 | AI-Prose Calibration | Auto-run / Auto-rec-before-syn | §Readiness Impact Note retitled "Hard Gates / Must-Fix Floor"; per-condition (Hard Gate) labels added; explicit "Must-Fix floor" propagation language tied to the canonical Audit-Signal Propagation Rule. |
+| 2 | Consent Complexity | Auto-rec-before-syn | New §Hard Gates — Must-Fix Floor block at top of §Detection Targets with four named gates (CC-Gate-1 Anti-Exploitation Floor, CC-Gate-2 Capacity-Bypass Floor, CC-Gate-3 Retcon Floor, CC-Gate-4 Perpetrator-Erasure Floor / CC-6). |
+| 3 | Memoir & Creative Nonfiction | Auto-run | §Diagnostic Flags §Must-Fix Flags renamed §Must-Fix Floor — Hard Gates; per-flag (Hard Gate) labels added to Memory Fraud, Living Person Harm, No Transformation, False Precision; preamble names the audit-internal Must-Fix floor and propagation. |
+| 4 | Narrative Nonfiction Craft | Auto-run | New §Hard Gates — Must-Fix Floor section after Step 8 with four named gates (NN-Gate-1 Source-Integration / Fact-Anchor — closing the previously-broken cross-reference from `pass-dependencies.md §4e`; NN-Gate-2 Attribution-Risk Convergence; NN-Gate-3 Composite/Identity Disclosure; NN-Gate-4 Lead-Contract Breach). Notes that Franklin remains the spine gate; the Hard Gates above are craft-layer gates that operate within a viable spine. |
+| 5 | Series Continuity | Auto-run (when series flagged) | New §Hard Gates — Must-Fix Floor subsection in CS/RL channel block with four named gates (SC-Gate-1 Consequence-Erasure; SC-Gate-2 Silent-Retcon at explicit-canon layer; SC-Gate-3 Reader-Promise Failure; SC-Gate-4 High-Signal Thread Drop). |
+
+Post-fix: `validate.sh audit-tier-criterion plugins/apodictic/skills/core-editor/references/pass-dependencies.md` PASSES with 0 errors / 0 warnings.
+
+Validator self-test extended from 4 cases to 6 (analogous to Wave 2 B3 extension after canonical-fixture findings): added `autorun` (Auto-run definitional audit with §Hard Gates section header + per-flag (Hard Gate) markers — mirrors the canonical Memoir / Narrative-NF / Series Continuity pattern this v1.8.4 work surfaces) and `findingtrig` (§4b finding-triggered row without ref-path cell — confirms validator does not error on §4b's column form, since canonical §4b reference paths live in §4a). All 6 cases PASS. Validator total stays at 11.
+
+#### P2 — `argument-recon-prerequisite` framing sharpening
+
+Codex's correct read: the validator backstops argument-engine artifact runs against silent omission of Field Recon / disclosure; it does not detect argument-shaped runs from contract or intake. The execution-flow Pre-Pass Prerequisite Resolution step in `run-core.md` is the real router/intake verifier; the validator is the post-run backstop. v1.8.0 changelog framing ("Verifies argument-shaped runs satisfy the Field Reconnaissance prerequisite") was directionally true but technically over-broad. Honest framing: "verifies argument-engine runs did not silently omit Field Recon or disclosure." No code change required; validator behavior was correct.
+
+#### P2 — B1 verdict-language sharpening (`docs/.local/review-log/2026-04-25_phase-7-wave-2-eval-coverage.md`)
+
+Codex's correct read: "Confirmed load-bearing" is ablation-strength language; static analysis on existing canonical fixtures supports "evidence consistent with load-bearing" but not the stronger claim. v1.8.4 sharpens 18 occurrences of "Confirmed load-bearing" to "Static-analysis evidence consistent with load-bearing" throughout the eval-coverage doc; updates summary table verdict distribution; adds a v1.8.4 sharpening note at top of summary table; reworks highest-confidence-findings section to use ablation-honest language. The no-deletion outcome is unchanged: unexercised ≠ no effect, and observed in-output compliance is enough to keep instructions until ablation evidence proves removability.
+
+#### P2 — Aggregate self-test dispatcher implemented
+
+The E1 final report referred to an aggregate self-test command that did not exist (`validate.sh --self-test` exited "Unknown command"). v1.8.4 adds `validate.sh --self-test-all` (~30 lines): dispatcher iterates over the 11 self-testable validators, runs `--self-test` on each, reports per-validator PASS/FAIL, exits 0 only if every per-validator self-test exits 0. Closes the documentation-vs-implementation mismatch and simplifies CI / release workflows. Tested: 11/11 PASS.
+
+#### P3 — ROADMAP additions
+
+Three new entries under §Deferred (Out of Scope for This Cycle):
+
+- **Canonical-framework validator runs as release gate.** Names the class of failure mode that produced both the v1.7.9 audit-signal-propagation case and the v1.8.4 audit-tier-criterion case. Currently release-check set covers self-tests + four mechanical generation/check pipelines; canonical-target validator runs are not gated. Adding a `release-canonical-checks.sh` orchestrator (or extending `release-verify.mjs`) would catch this class earlier. Estimated cost: ~50 lines + ~5 canonical invocations.
+- **Clearer §4e table-driven propagation framing.** Pairs with the existing §4e context-modifier extension entry; if/when the §4e table is taken up for full source-of-truth parsing, the framing should be sharpened first.
+
+The third recommendation (aggregate self-test dispatcher) was implementable inline and is shipped in v1.8.4 (see P2 above) rather than deferred.
+
+#### v1.8.0 + v1.8.2 entries sharpened
+
+- **v1.8.0:** `audit-tier-criterion` description extended with explicit honest correction noting the v1.8.0 self-test was insufficient against canonical input; closure cross-reference to v1.8.4 added. The capability-ceiling framing remains accurate; what was missing was the canonical-input check, now added in v1.8.4.
+- **v1.8.2:** C1 framing sharpened from "cross-cutting rule dedup" to "cross-cutting rule canonical-home governance." Per Wave 3 report's own acknowledgment ("Net positive prose change for C1 rather than the typical compression negative: the canonical-home annotations themselves are the durable compression value"), the durable value is forward-looking drift prevention, not present-cycle compression. Title and opening sentence updated to match.
+
+#### Files
+
+- `plugins/apodictic/skills/specialized-audits/references/craft/ai-prose-calibration.md` — §Readiness Impact Note retitled + Hard Gate / Must-Fix floor labels (~+3 lines).
+- `plugins/apodictic/skills/specialized-audits/references/tag/consent-complexity.md` — new §Hard Gates — Must-Fix Floor block in §Detection Targets (~+15 lines).
+- `plugins/apodictic/skills/specialized-audits/references/genre/memoir-creative-nonfiction.md` — §Diagnostic Flags §Must-Fix Flags renamed + Hard Gate labels (~+4 lines).
+- `plugins/apodictic/skills/specialized-audits/references/genre/narrative-nonfiction.md` — new §Hard Gates — Must-Fix Floor section (~+12 lines).
+- `plugins/apodictic/skills/specialized-audits/references/craft/series-continuity.md` — new §Hard Gates — Must-Fix Floor subsection in CS/RL channel block (~+12 lines).
+- `plugins/apodictic/scripts/validate.sh` — `audit-tier-criterion` self-test extended 4 → 6 cases (~+40 lines); new top-level `--self-test-all` aggregate dispatcher (~+30 lines). Net ~+70 lines.
+- `scripts/validate.sh` — synced with plugin copy.
+- `plugins/apodictic/skills/core-editor/references/changelog.md` — v1.8.4 entry; v1.8.0 + v1.8.2 sharpening notes.
+- `ROADMAP.md` — two new entries under §Deferred (Out of Scope for This Cycle): canonical-framework validator runs as release gate; clearer §4e table-driven propagation framing.
+- `docs/.local/review-log/2026-04-25_phase-7-wave-2-eval-coverage.md` — verdict-language sharpening (gitignored; sharpening matters for honest internal documentation).
+- `docs/.local/review-log/2026-04-25_codex-final-critique-adjudication.md` — new adjudication entry (gitignored).
+- `docs/.local/review-log/2026-04-25_phase-7-implementation-plan.md` — appended v1.8.4 Codex-critique adjudication subsection.
+- Version bumped via `scripts/bump-version.sh 1.8.4`.
+- Generated host workspaces (codex, antigravity) regenerated via release pipeline.
+
+Total framework prose change: ~+46 lines across five audit reference files (Hard Gate / Must-Fix Floor language). Total validator change: ~+70 lines in `validate.sh` (extended self-test + aggregate dispatcher). All 11 validator self-tests PASS. `--self-test-all` aggregate dispatcher returns 11/11 PASS. Canonical-input check: `audit-tier-criterion` PASSES against `pass-dependencies.md` (0 errors / 0 warnings). All 4 release checks PASS.
+
+#### Self-test verification (v1.8.4)
+
+| Validator | Cases (was → now) | Status |
+|---|---|---|
+| `severity-floor` | 7 | PASS |
+| `audit-signal-propagation` | 9 | PASS |
+| `underdiagnosis-triggers` | 5 | PASS |
+| `ledger-consolidation` | 5 | PASS |
+| `decision-layer-check` | 12 | PASS |
+| `quality-risk-triggers` | 12 | PASS |
+| `timeline-diff` | 8 | PASS |
+| `timeline-arithmetic` | 6 | PASS |
+| `timeline-anchor-conflict` | 6 | PASS |
+| `audit-tier-criterion` | 4 → 6 | PASS (+ NEW: canonical pass-dependencies.md PASS, 0/0) |
+| `argument-recon-prerequisite` | 5 | PASS |
+| `--self-test-all` aggregate | NEW | PASS (11/11) |
+
+#### Methodology validation
+
+This is the second instance in the model-capability review where bias-equalized parallel adjudication caught a Joshua-flagged failure mode (validator overclaiming). v1.7.9 closed the audit-signal-propagation case after Joshua's substantive code review; v1.8.4 closes the audit-tier-criterion case after Codex's final critique. The pattern is durable: validators that pass synthetic self-tests can fail canonical inputs, and the only reliable detector is running the validator against its real target. The new ROADMAP item (Canonical-framework validator runs as release gate) names the class explicitly.
+
+#### Out of scope
+
+- The class-level fix (canonical-framework validator runs as a release-check gate) is documented in ROADMAP but not implemented in v1.8.4; defer to a forcing-function-justified later cycle.
+- §4e table-driven propagation framing sharpening is documented in ROADMAP and pairs with the existing §4e context-modifier extension entry.
+
+---
+
 ## v1.8.3 - 2026-04-25
 
 ### Fixed — Phase 7 Wave 4: antigravity plugin.json JSON-corruption bug; defensive JSON-parse check added
@@ -75,11 +172,13 @@ Total framework prose change: ~10 lines net (build-script fix + JSON parse guard
 
 ## v1.8.2 - 2026-04-25
 
-### Added — Phase 7 Wave 3: cross-cutting rule dedup + Plot Architecture vs Pass 2 boundary + Focus Map empirical test ROADMAP deferral
+### Added — Phase 7 Wave 3: cross-cutting rule canonical-home governance + Plot Architecture vs Pass 2 boundary + Focus Map empirical test ROADMAP deferral
 
-Closes Phase 7 Wave 3 of the model-capability review per `docs/review-log/2026-04-25_phase-7-implementation-plan.md` §Wave 3. Three jobs ship as a coordinated wave: C1 — cross-cutting rule dedup with canonical-home annotations (firewall, anti-sycophancy / no-self-revise, absence-first / blind-spot disclosure, Pass-10-Class artifact pattern); C2 — Plot Architecture vs. Pass 2 (Structural Mapping) boundary clarification; B2 — Focus Map empirical test formalized as ROADMAP entry (test runs not executed in this cycle; deferred per Phase 5 resource-cost rationale, formalized in Wave 3 with named re-evaluation triggers). Net framework prose change: small positive (canonical-home annotations and boundary block exceed the few collapsed restatements). No validator changes; all 11 validator self-tests pass.
+Closes Phase 7 Wave 3 of the model-capability review per `docs/review-log/2026-04-25_phase-7-implementation-plan.md` §Wave 3. Three jobs ship as a coordinated wave: C1 — cross-cutting rule **canonical-home governance / annotation work** (firewall, anti-sycophancy / no-self-revise, absence-first / blind-spot disclosure, Pass-10-Class artifact pattern); C2 — Plot Architecture vs. Pass 2 (Structural Mapping) boundary clarification; B2 — Focus Map empirical test formalized as ROADMAP entry (test runs not executed in this cycle; deferred per Phase 5 resource-cost rationale, formalized in Wave 3 with named re-evaluation triggers). Net framework prose change: small positive (canonical-home annotations and boundary block exceed the few collapsed restatements). No validator changes; all 11 validator self-tests pass.
 
-#### C1 — Cross-cutting rule dedup
+**v1.8.4 framing correction (Codex final critique):** the v1.8.2 changelog originally described C1 as "cross-cutting rule dedup," which overclaimed compression value. The honest framing is **canonical-home governance**: the durable value is the canonical-home annotations themselves (forward-looking drift prevention naming the authoritative location for each cross-cutting rule), not present-cycle prose compression. Past Phase 4-6 work had already largely deduped the rules in their operational locations; the few remaining collapses (two reception-risk parentheticals, one adversarial-stress-test sentence) are small. The Wave 3 report itself acknowledged this ("Net positive prose change for C1 rather than the typical compression negative: the canonical-home annotations themselves are the durable compression value"); the title and opening sentence of this entry are now updated to match. "Dedup" should be read as governance against future drift, not substantial present compression.
+
+#### C1 — Cross-cutting rule canonical-home governance
 
 Phase 3 inventory identified five cross-cutting rules added during Phase 4-6 to a shared dedup table; per Phase 3 spec ("compression deferred to Phase 7 only after eval coverage exists"), Wave 2's B1 eval coverage of UNPROVEN instructions unblocked compression work in Wave 3. Each rule receives a canonical-home annotation marking the authoritative statement; non-canonical surfaces collapse generic restatements to pointers while preserving any context-specific elaboration.
 
@@ -239,7 +338,7 @@ The Phase 4 Wave 3 eval-coverage report (`docs/review-log/2026-04-25_phase-4-eva
 
 Two of the three optional validators identified in v1.7.9 §Out of scope and the Phase 7 plan §A2 ship in Wave 1. The third (`audit-signal-propagation §4e context-modifier extension`) is deferred to a later Phase 7 wave per scope-control. Validator total: 9 → 11.
 
-- **`audit-tier-criterion` (new validator, ~250 lines).** Verifies audit tier assignments in `pass-dependencies.md §4a/§4b` against the §4c Audit Tier Promotion Criteria (Phase 6 Wave 2). Mechanically verifies criterion 1 (named hard gates / Must-Fix floor) by scanning each high-tier audit's reference file for `hard[ -]?gate` or `must-?fix[ -]?floor` patterns. Audits at Hard Prerequisite / Pre-DE Prerequisite / Auto-run / Auto-recommend before synthesis tiers without criterion-1 language are surfaced as candidates for tier review. Recommend / Auto-recommend tiers are exempt. **Capability ceiling documented:** criteria 2 (undetectable-by-passes) and 3 (disclosure-non-equivalence) require model judgment about the manuscript / fixture corpus and remain in the §4a/§4b verification subsection prose. Per-audit override marker: `<!-- override: audit-tier-criterion-<audit-slug> --> `. Self-test: 4 cases (pos, neg, over, edge — Recommend tier exempt).
+- **`audit-tier-criterion` (new validator, ~250 lines).** Verifies audit tier assignments in `pass-dependencies.md §4a/§4b` against the §4c Audit Tier Promotion Criteria (Phase 6 Wave 2). Mechanically verifies criterion 1 (named hard gates / Must-Fix floor) by scanning each high-tier audit's reference file for `hard[ -]?gate` or `must-?fix[ -]?floor` patterns. Audits at Hard Prerequisite / Pre-DE Prerequisite / Auto-run / Auto-recommend before synthesis tiers without criterion-1 language are surfaced as candidates for tier review. Recommend / Auto-recommend tiers are exempt. **Capability ceiling documented:** criteria 2 (undetectable-by-passes) and 3 (disclosure-non-equivalence) require model judgment about the manuscript / fixture corpus and remain in the §4a/§4b verification subsection prose. Per-audit override marker: `<!-- override: audit-tier-criterion-<audit-slug> --> `. Self-test: 4 cases (pos, neg, over, edge — Recommend tier exempt). **v1.8.4 honest correction:** the v1.8.0 self-test (PASS) was insufficient — Codex final critique surfaced 5 canonical-input failures against `pass-dependencies.md` (AI-Prose Calibration / Consent Complexity / Memoir & Creative Nonfiction / Narrative Nonfiction Craft / Series Continuity), all closed in v1.8.4 via audit-side hard-gate / Must-Fix-floor language additions. The validator's logic was correct; the audit references genuinely lacked the language their tier required. Self-test passing on synthetic fixtures did not prove canonical-framework conformance; v1.8.4 closes both. See v1.8.4 entry below.
 
 - **`argument-recon-prerequisite` (new validator, ~190 lines).** Verifies argument-shaped runs satisfy the Field Reconnaissance prerequisite per `pass-dependencies.md §4a` (Hard Prerequisite or Auto-recommend before synthesis tier) and v1.7.9's wired execution-flow Pre-Pass Prerequisite Resolution step. Detects argument-engine artifacts (Argument_State.md, Red_Team_Memo.md, Argument_Evidence.md, Argument_Persuasion.md, Adversarial_Evidence.md) by filename pattern in the run folder, plus editorial-letter mentions of Dialectical Clarity / Argument Red Team / Argument Evidence Deep-Dive / argument-engine pass output. When argument-engine present, requires either (a) `Field_Reconnaissance_Report.md` in the run folder, OR (b) the canonical blind-spot disclosure ("literature-counterevidence not surveyed") in the editorial letter per `run-synthesis.md §Step 3` (Phase 6 Wave 3 / CR-4). Silent omission is forbidden at the Hard Prerequisite tier per the canonical decline policy. Body-only override marker: `<!-- override: argument-recon-prerequisite -->`. Self-test: 5 cases (pos1 — argument-engine + Field Recon; pos2 — argument-engine + canonical disclosure; pos3 — fiction run exempt; neg — silent omission caught; over — override marker downgrades).
 

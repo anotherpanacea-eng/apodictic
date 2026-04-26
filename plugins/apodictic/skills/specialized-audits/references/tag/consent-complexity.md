@@ -135,6 +135,17 @@ Track how the narrative positions the reader:
 
 ## Detection Targets
 
+### Hard Gates — Must-Fix Floor
+
+The following four patterns are **audit-internal hard gates**. When any one fires, the finding carries an audit-internal **Must-Fix floor** that propagates to synthesis severity per the canonical Audit-Signal Propagation Rule in `core-editor/references/run-synthesis.md §Step 2`. Synthesis cannot downgrade a hard-gate flag below Must-Fix without an explicit override marker recording rationale. These gates are why Consent Complexity is at Auto-recommend before synthesis tier per `pass-dependencies.md §4a`.
+
+- **CC-Gate-1 (Anti-Exploitation Floor):** Consent violation used for titillation without examination, victim experience invisible/minimized, and consequences avoided or minimized — the three Exploitation markers from §Exploitation vs. Exploration co-occurring in the same scene cluster.
+- **CC-Gate-2 (Capacity-Bypass Floor):** Altered-state exploitation unmarked — drunk, drugged, magically-affected, or otherwise capacity-impaired character pursued without narrative acknowledgment of capacity issues.
+- **CC-Gate-3 (Retcon Floor):** Violation reframed as awakening or "wanted it all along" without narrative signaling that the reframing is itself problematic.
+- **CC-Gate-4 (Perpetrator-Erasure Floor / CC-6):** Violator removed from culpability frame; narrative treats the violation as something that happened *to* the violated party rather than something a perpetrator did.
+
+A hard-gate hit produces a Must-Fix floor on the named scene cluster regardless of mode (dark romance, erotic horror, dubcon-territory) and regardless of whether the work is otherwise interrogating consent thematically. The audit's general Detection Targets below are evidence sources for the hard gates and as Note/Flag-class observations in their own right.
+
 ### Unintentional Consent Problems
 
 **Flag when consent complexity appears accidental rather than intentional:**

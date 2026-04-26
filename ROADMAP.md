@@ -323,6 +323,14 @@ Phase 7 plan §A2 specified three optional validators; the third (`audit-signal-
 
 Wave 4 D2 host parity sweep finding 3: the codex build's `validateGeneratedWorkspace` function maintains a hard-coded allowlist of files where historical "Claude Opus" / `.claude-plugin/` references are intentional. Future framework additions with intentional historical references must update the allowlist by hand. Cosmetic / future-cleanup observation; defer until it bites.
 
+### Canonical-framework validator runs as release gate
+
+Surfaced by Codex final critique (P1, v1.8.4): the `audit-tier-criterion` validator passed its synthetic self-test but failed against the actual canonical `pass-dependencies.md` it was built to police. v1.8.4 closed the specific instance, but the *class* of failure remains: validator self-tests prove the validator works on its own fixtures, not that the canonical framework satisfies the validator. Currently the four release checks (`release-generate.mjs --check`, `build-codex.mjs --check`, `build-antigravity.mjs --check`, `release-verify.mjs`) plus per-validator `--self-test` invocations gate releases; canonical-framework runs (e.g., `validate.sh audit-tier-criterion plugins/apodictic/skills/core-editor/references/pass-dependencies.md`, plus analogous canonical runs for `decision-layer-check` against canonical fixtures, `audit-signal-propagation` against sample editorial letters, and `timeline-*` against canonical Timeline.md fixtures) are not part of the release-gate set. Adding a `release-canonical-checks.sh` orchestrator (or extending `release-verify.mjs`) to run validators against their canonical targets would catch the audit-tier-criterion class of overclaim earlier — before the next external review surfaces it. Estimated cost: ~50 lines of shell + ~5 canonical-fixture invocations. Defer until a forcing function (next minor cycle's release prep, or a second canonical-validator-mismatch finding).
+
+### Clearer §4e table-driven propagation framing
+
+Surfaced by Codex final critique (P3, v1.8.4): the current `pass-dependencies.md §4e` framing is sufficient for the present validator suite (per-audit propagation rules with default mapping for un-tabled cases), but could be sharpened with explicit table-driven language — naming each row's columns, formalizing the override-modifier column, and pulling the modifier semantics into the §4e header rather than the per-row prose. Pairs with the deferred `audit-signal-propagation §4e context-modifier extension` above: if/when the propagation table is fully driven by §4e source-of-truth parsing, the table framing should be sharpened first. Defer to whichever cycle picks up the §4e extension; not a release-blocker.
+
 ---
 
 ## Future Work

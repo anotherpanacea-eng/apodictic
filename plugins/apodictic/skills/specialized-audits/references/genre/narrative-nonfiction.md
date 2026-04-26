@@ -342,6 +342,17 @@ Scene [X]: Attribution Audit
 
 **Firewall compliance:** This step flags risks and recommends mitigation types (attribution phrasing, hedging, sourcing note, structural relocation). It does not evaluate journalistic ethics, adjudicate truth claims, or prescribe reporting methods.
 
+### Hard Gates — Must-Fix Floor
+
+The following four patterns are **audit-internal hard gates** for narrative nonfiction. When any one fires, the finding carries an audit-internal **Must-Fix floor** that propagates to synthesis severity per the canonical Audit-Signal Propagation Rule in `core-editor/references/run-synthesis.md §Step 2` and per `pass-dependencies.md §4e` Narrative Nonfiction propagation rows. Synthesis cannot downgrade a hard-gate flag below Must-Fix without an explicit override marker recording rationale. These gates are why Narrative Nonfiction Craft is at Auto-run for narrative-NF manuscripts: the gates are definitional to the truth contract and cannot be diagnosed by Tier 1 passes alone.
+
+- **NN-Gate-1 (Source-Integration / Fact-Anchor Hard Gate):** A load-bearing factual claim — one the piece's argument, scene, or character assessment cannot survive without — is presented unsourced or with attribution insufficient to support the certainty level claimed. Triggers Must-Fix floor on the named load-bearing claim. (This is the gate referenced from `pass-dependencies.md §4e` Narrative Nonfiction row.)
+- **NN-Gate-2 (Attribution-Risk Convergence):** Three or more A-codes (A0–A5 from Step 8 Attribution & Certainty Discipline) co-occur in the same scene cluster, indicating systemic certainty mismatch rather than isolated reconstruction questions.
+- **NN-Gate-3 (Composite/Identity Disclosure Floor / A5):** Implicit composite of sources or events — or identity composite — without authorial acknowledgment. Disclosure is not a craft preference at this signal level; it is a reader-contract gate.
+- **NN-Gate-4 (Lead-Contract Breach / LC0):** Lead promises one reader experience (scene narrative, mystery, character revelation) and the body delivers another in a way that breaches the reader contract. Pattern-level LC0 across the piece, not isolated mismatch.
+
+A hard-gate hit produces a Must-Fix floor on the named scene cluster or claim; the per-step failure-code tables remain authoritative for non-gate findings. Note: **Franklin Pathway is the spine gate** ("Franklin is the gate; this audit is the craft layer," per §Conclusion). The Hard Gates above are *craft-layer* gates that operate within a viable spine — they do not duplicate Franklin's structural verdict.
+
 ### Step 9: Lead Contract (LC-codes)
 
 Diagnose whether the lead establishes a contract the body fulfills. This is often where popular-audience nonfiction fails: the lead promises one kind of reading experience, the body delivers another.
