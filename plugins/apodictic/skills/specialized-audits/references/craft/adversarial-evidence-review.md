@@ -170,7 +170,7 @@ The module reviews only evidence packets that meet all of the following:
 3. The packet has at least one mapped citation with Phase 2 data in `Citation_Ledger.md`
 4. The packet has at least one external challenge input: counterevidence, gap signal, or domain-standard pressure
 
-Additionally, all unflagged C0 and central-subclaim supports are eligible regardless of whether diagnostic codes fired, since the TAY White Paper test revealed that some vulnerabilities only emerge under adversarial pressure.
+Additionally, all unflagged C0 and central-subclaim supports are eligible regardless of whether diagnostic codes fired, since the canonical argument-shaped fixture (F4) test revealed that some vulnerabilities only emerge under adversarial pressure.
 
 ### Run modes
 
