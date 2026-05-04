@@ -1,0 +1,19 @@
+# Project anchors example
+# One word per line, or comma/whitespace-separated. Lines starting with # are ignored.
+# Use for character names, scene-anchored vocabulary, and other words that
+# you don't want repetition_audit to flag because their repetition is structurally
+# necessary (e.g. names, recurring objects, location nouns).
+#
+# Customize this file for your project. Example below is for a fiction project
+# with three POV characters and a closed-room setting.
+
+# Character names
+ada daphne jordan ben maya chloe
+
+# Closed-room scene anchors
+milk pill bond body hand mouth eyes face
+kitchen bedroom door window table chair bed
+phone car ring blouse shirt mirror
+
+# Project-specific anchors (drug names, locations, etc.)
+trial drug study irb
