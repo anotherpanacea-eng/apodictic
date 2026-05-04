@@ -26,32 +26,46 @@ fi
 echo "Release pipeline starting for v${NEW_VERSION}"
 echo "────────────────────────────────────"
 
-echo "[1/8] Bump version fields"
+echo "[1/9] Bump version fields"
 "$REPO_ROOT/scripts/bump-version.sh" "$NEW_VERSION"
 
-echo "[2/8] Generate derived files from release-registry.json"
+echo "[2/9] Generate derived files from release-registry.json"
 node "$REPO_ROOT/scripts/release-generate.mjs"
 
-echo "[3/8] Build generated Codex workspace and package"
+echo "[3/9] Build generated Codex workspace and package"
 node "$REPO_ROOT/scripts/build-codex.mjs"
 
-echo "[4/8] Build generated Antigravity workspace"
+echo "[4/9] Build generated Antigravity workspace"
 node "$REPO_ROOT/scripts/build-antigravity.mjs"
 
-echo "[5/8] Verify repository consistency"
+echo "[5/9] Verify repository consistency"
 node "$REPO_ROOT/scripts/release-verify.mjs"
 
-echo "[6/8] Sync plugin -> APODICTIC-Gemini public mirror"
+echo "[6/9] Sync plugin -> APODICTIC-Gemini public mirror"
 rsync -a --delete --exclude ".git/" --exclude ".DS_Store" "$PLUGIN_DIR/" "$GEMINI_PUBLIC_DIR/"
 
-echo "[7/8] Verify mirror parity"
+echo "[7/9] Verify mirror parity"
 node "$REPO_ROOT/scripts/release-verify.mjs" --check-sync
 
-echo "[8/8] Package Claude plugin artifact"
+echo "[8/9] Package Claude plugin artifact"
 (
   cd "$PLUGIN_DIR"
   zip -r "$REPO_ROOT/apodictic.plugin" . -x ".git/*" >/dev/null
 )
+
+echo "[9/9] Tag + GitHub release"
+if [ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]; then
+  echo "  Skipped: working tree dirty. After committing all release changes, run:"
+  echo "    git tag v${NEW_VERSION} && git push origin v${NEW_VERSION}"
+  echo "    gh release create v${NEW_VERSION} --generate-notes"
+elif git -C "$REPO_ROOT" rev-parse "v${NEW_VERSION}" >/dev/null 2>&1; then
+  echo "  Skipped: tag v${NEW_VERSION} already exists."
+else
+  git -C "$REPO_ROOT" tag "v${NEW_VERSION}"
+  git -C "$REPO_ROOT" push origin "v${NEW_VERSION}"
+  gh -R "anotherpanacea-eng/apodictic" release create "v${NEW_VERSION}" --generate-notes
+  echo "  Created tag v${NEW_VERSION} and GitHub release."
+fi
 
 echo "────────────────────────────────────"
 echo "Release pipeline complete for v${NEW_VERSION}."

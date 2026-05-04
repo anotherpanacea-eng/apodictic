@@ -106,6 +106,16 @@ Go to **Customize > Browse > Personal > +** and select **Add marketplace from Gi
 
 Or download `apodictic.plugin` from the [latest release](https://github.com/anotherpanacea-eng/apodictic/releases/latest) and upload it through Cowork. (Mac users: if your browser auto-unzips the download, re-zip the folder and rename it to `apodictic.plugin`.)
 
+### Updating to a new version
+
+```bash
+claude plugin marketplace update apodictic
+```
+
+Or `/plugin marketplace update apodictic` from inside Claude Code (CLI). For Cowork Desktop, use the marketplace's update control in the Customize panel.
+
+**Then fully quit and relaunch Claude Code / Cowork** — a restart is required to apply the new version. The marketplace cache will refresh on update, but the running process keeps the previous version loaded until relaunched.
+
 ---
 
 Then type `/start` — it asks you three questions to figure out what you need.
