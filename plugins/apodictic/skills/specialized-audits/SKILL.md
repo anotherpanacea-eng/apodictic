@@ -24,6 +24,13 @@ description: >
   "historical fiction audit," "queer romance audit," "fan fiction conversion,"
   "interiority audit," "banister audit," "short fiction audit," "series audit,"
   "ai prose," "ai calibration," "slop to silver," "ai-prose calibration,"
+  "variance audit," "manuscript audit," "repetition audit," "lexical compression,"
+  "personal baseline," "voice fingerprint," "burstiness," "MATTR," "function-word fingerprint,"
+  "negation hedge," "indefinite-pronoun gesture," "disguised correctio,"
+  "pseudo-aphorism," "manifesto cadence," "source triage," "payoff test,"
+  "voice slip," "lost callback," "earned by frame,"
+  "abstraction shielding," "false-balance," "hedge-and-affirm,"
+  "recommendation template," "authority laundering,"
   "comp validation," "fact check," "genre currency check,"
   "representation context," "citation verifier," "citation verification,"
   "verify citations," "check my citations," "are these citations real,"
@@ -125,7 +132,7 @@ The universal status holds; future audit additions follow the criterion above wi
 | **Queer Romance/Erotica** | Pronoun clarity, trope navigation, joy/struggle calibration | Same-gender romance, queer identity central |
 | **Fan Fiction Conversion** | IP scaffolding, worldbuilding gaps, character independence | Fanfic-to-original conversion |
 | **Short Fiction** | Compression, single-effect design, ending resonance | Short stories, flash fiction |
-| **AI-Prose Calibration** | Voice singularity, lexical genericism, echo stacks, register seams, puppet dialogue, continuity smear, scene fog | Writer identifies draft as AI-generated/assisted; Pass 1 flags uniform fluency; Pass 5 flags coherence without specificity; "it reads like AI" |
+| **AI-Prose Calibration v2.0** | Three-layer diagnostic: Layer A distributional (variance signals against personal/genre baseline, Python scripts), Layer B pattern (AIC-1 through AIC-7 with named subtypes — Indefinite-Pronoun Gesture, Negation Hedge, Disguised Correctio, Pseudo-Aphorism, Manifesto Cadence — plus argument-shaped nonfiction parallel set), Layer C source triage (payoff test, voice slip vs. lost callback, earned-by-frame verdict) | Writer identifies draft as AI-generated/assisted; Pass 1 flags uniform fluency; Pass 5 flags coherence without specificity; "it reads like AI"; lexical compression; manuscript-wide drift; voice attribution required |
 | **SFF Worldbuilding Integration** | Worldbuilding integration (20 flags), five-dimension framework, load-bearing analysis, subgenre calibration, named failure modes | Any SF/F manuscript — tests whether the world does narrative work across character cognition, theme, prose, social systems, and emotion; stacks with Genre Module: SF/F (consistency) |
 | **Literary Craft Deep Dive** | Literary-mode integration (22 flags across 5+1 dimensions), load-bearing vs. ornamental analysis, defamiliarization test, 9 genre-hybrid calibrations, recognition architecture | Any manuscript operating in literary mode — tests whether prose, structure, image systems, subtext, and voice do narrative work or are cosmetic; cross-genre (literary fiction, literary thriller, literary SFF, literary horror, upmarket, etc.) |
 | **Horror Craft Integration** | Horror-pressure delivery (23 flags across 6 dimensions), producing vs. inert analysis, 9 subgenre calibrations with named failure modes, dread architecture tracking, consequence embodiment | Any horror or horror-hybrid manuscript — tests whether the horror apparatus produces sustained dread, destabilization, and felt consequence or merely delivers horror-coded content; stacks with Genre Module: Horror (contract) |
@@ -240,7 +247,9 @@ See `references/craft/shelf-positioning.md` for the full audit.
 - `references/craft/literary-craft.md` — Literary Craft Deep Dive audit (22 flags, 5+1 dimensions, 8 hard gates, 9 hybrid calibrations)
 - `references/craft/literary-craft-level-setting.md` — Literary Craft level-setting brief (Shklovsky, Brooks, Booth, Phelan, Wood, Wallace, McGurl, positive cases)
 - `references/craft/banister.md` — Banister (Epistemic Humility) audit
-- `references/craft/ai-prose-calibration.md` — AI-Prose Calibration audit (AIC-1 through AIC-7)
+- `references/craft/ai-prose-calibration.md` — AI-Prose Calibration audit v2.0 (AIC-1 through AIC-7 with named subtypes, three-layer architecture, argument-shaped nonfiction parallel set, source-triage step)
+- `references/craft/ai-prose-calibration-level-setting.md` — AI-Prose Calibration level-setting examples (earned/unearned for each named pattern, payoff test, voice slip vs. lost callback)
+- `references/craft/ai-prose-calibration-distributional.md` — AI-Prose Calibration Layer A reference (eleven variance signals with formulas, calibration warnings, three Python scripts)
 - `references/craft/force-architecture.md` — Force Architecture audit (25 flags, 6 dimensions, 9 hard gates, 8 mode calibrations)
 - `references/craft/force-architecture-level-setting.md` — Force Architecture level-setting brief (SPECT, Clausewitz, Arendt, Scarry, Hayakawa, O'Brien, McCarthy, Morrison, physiological realism, positive cases)
 - `references/craft/compression-audit.md` — Compression audit (16 flags, 5 channels, 4 hard gates, 7 mode calibrations, Cut List + Compression Map artifacts)

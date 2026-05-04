@@ -8,7 +8,8 @@
 
 | In Progress | Planned | Done | Backlog |
 |-------------|---------|------|---------|
-| [Genre Audit Expansion](#genre--audit-expansion) | [Adaptive Mode Escalation](#adaptive-mid-run-mode-escalation) | [v1.7.0](#v170--harness-engineering) | [Feedback Triage](#feedback-triage) |
+| [Genre Audit Expansion](#genre--audit-expansion) | [Adaptive Mode Escalation](#adaptive-mid-run-mode-escalation) | [v1.9.0](#v190--ai-prose-calibration-v20) | [Feedback Triage](#feedback-triage) |
+| | | [v1.7.0](#v170--harness-engineering) | |
 | [Coaching Deepening](#coaching-deepening) | [Editor Scaffolding](#editor-scaffolding) | [v1.4.0](#v140--surface-hardening--writers-block) | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) |
 | | [Diagnostic Vocabulary](#diagnostic-vocabulary-mode) | [v1.3.0](#v130--nonfiction-argument-engine--genre-audits) | [Legal Risk Register](#legal-risk-register) |
 | | | [v1.2.1](#v121--audit-sequencing--model-tags) | [Multi-Party Intake](#multi-party-intake) |
@@ -373,6 +374,9 @@ The fixtures in place (F1-F4) are reusable for future model-capability reviews. 
 ---
 
 ## Done
+
+### v1.9.0 — AI-Prose Calibration v2.0
+Three-layer architecture extending the v1.0 audit. Layer A distributional pre-scan: variance_audit (single document), manuscript_audit (cross-chapter), repetition_audit (vocabulary diagnostic), eleven signals against personal/genre baseline with z-score band classification. Layer B named subtypes: AIC-2 Indefinite-Pronoun Gesture; AIC-7 Negation Hedge, Disguised Correctio, Pseudo-Aphorism, Manifesto Cadence. Argument-shaped nonfiction parallel set: Abstraction Shielding, False-Balance Construction, Hedge-and-Affirm, Recommendation Template, Authority Laundering. Layer C Source Triage Pass: payoff test, voice slip vs. lost callback distinction, earned-by-frame verdict. Cross-detector caveat for AIC-4 / Pangram signal-9 tension. Source-triage modifier table layered onto existing severity translation. v1.0 spec preserved verbatim — additions are integrative.
 
 ### v1.7.0 — Harness Engineering
 Machine-readable sidecar state (`Diagnostic_State.meta.json`) with enumerated resume dispatch. Mechanical validation script (`validate.sh`) for contract integrity, ledger structure, artifact naming, and 14-heading synthesis section verification — bundled in plugin tree for Codex. Post-synthesis evidence spot-check (5 claims verified against manuscript). State gardening protocol (threshold-triggered archival). Enhanced `/start` resume gate with context-aware summary and state gardening trigger. Refactored `run-core.md` into three files: `run-core.md` (orchestration + pass specs), `run-synthesis.md` (audit integration, synthesis, deliverables), `state-lifecycle.md` (gardening, revision rounds). Cross-references updated across all callers.
