@@ -15,9 +15,9 @@ This document specifies the eleven variance signals used by the Layer A pre-scan
 
 ---
 
-## The Mode-Collapse Claim
+## The Mode-Collapse Lens
 
-Every working AI-prose detector measures one underlying asymmetry: human writing occupies a high-variance, long-tailed, multi-modal region of stylometric distributions. RLHF-aligned LLM output occupies a narrower sub-region that overlaps the human mode but conspicuously lacks the tails. This compression is not an accident of training data; it is a consequence of policy-gradient optimization against human preference signals that reward "helpful, polished, neutral" prose.
+A useful conceptual lens — though not a literal claim about what every AI-prose detector computes — is that RLHF-aligned LLM output tends to occupy a narrower, lower-variance sub-region of human stylometric space. This compression is not an accident of training data; it is a consequence of policy-gradient optimization against human preference signals that reward "helpful, polished, neutral" prose. Different detectors compute different operations on the resulting prose surface (Burrows Delta on function-word distance, GLTR on token rank, DetectGPT/Fast-DetectGPT on local curvature, Binoculars on cross-perplexity ratio, EditLens on embedding shift, Pangram on labeled examples). Their outputs correlate because the underlying compressions are correlated, not because they are different formulations of one master metric.
 
 Formally, for any stylometric variable X (sentence length, FKGL, function-word frequency, etc.):
 

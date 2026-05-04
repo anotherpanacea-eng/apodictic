@@ -4,16 +4,17 @@
 # you don't want repetition_audit to flag because their repetition is structurally
 # necessary (e.g. names, recurring objects, location nouns).
 #
-# Customize this file for your project. Example below is for a fiction project
-# with three POV characters and a closed-room setting.
+# Customize this file for your project. Example below is a generic template
+# for a fiction project with several POV characters and a domestic setting.
 
 # Character names
-ada daphne jordan ben maya chloe
+alice bob carol dana eli fern
 
-# Closed-room scene anchors
-milk pill bond body hand mouth eyes face
-kitchen bedroom door window table chair bed
-phone car ring blouse shirt mirror
+# Scene anchors (recurring objects, body language, setting nouns)
+hand face eye mouth voice shoulder
+table chair window door bed lamp
+kitchen hallway study garden bedroom
+phone book glass cup coat
 
-# Project-specific anchors (drug names, locations, etc.)
-trial drug study irb
+# Project-specific anchors (recurring nouns, terminology, locations)
+village forest river market season
