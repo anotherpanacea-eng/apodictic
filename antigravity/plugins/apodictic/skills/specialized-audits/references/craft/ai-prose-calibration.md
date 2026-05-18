@@ -12,7 +12,7 @@ Diagnose prose-level failure patterns characteristic of AI-generated or AI-assis
 
 **The mode-collapse lens.** A useful conceptual frame — though not a literal claim about what every AI-prose detector computes — is that RLHF-aligned LLM output tends to occupy a narrower, lower-variance sub-region of human stylometric space. Sentence lengths cluster in a band. Readability scores cluster in a band. Function-word ratios converge. Connectives appear at metronome density. This is *one reason* multiple statistical signals correlate when run on AI-drafted prose: they pick up correlated compressions rather than measuring the same thing. Different detectors (Burrows Delta, GLTR, GPTZero, DetectGPT/Fast-DetectGPT, Binoculars, EditLens, Pangram) compute different operations on this same prose surface and produce related-but-distinct outputs. The diagnostic question this audit asks is therefore not "did a machine write this" but "where does this prose lack the irregularity that human consciousness produces by accident, and what kind of revision does that lack invite?"
 
-**Distinguish from voice-coherence diagnosis.** This audit measures *smoothing* — distance from a typical human-prose region. A separate task, voice-coherence comparison (companion scripts `ai_prose_voice_distance` / `ai_prose_voice_profile` if installed), measures distance from a *specific writer or register*. The two share signals but answer different questions and license different claims. This audit's verdict is "this prose shows the patterns characteristic of AI smoothing" — not "this prose was written by AI" or "this prose deviates from the writer's voice."
+**Distinguish from voice-coherence diagnosis.** This audit measures *smoothing* — distance from a typical human-prose region. A separate task, voice-coherence comparison (companion shims `ai_prose_voice_distance` / `ai_prose_voice_profile`, which delegate to SETEC's `voice_distance.py` / `voice_profile.py`), measures distance from a *specific writer or register*. The two share signals but answer different questions and license different claims. This audit's verdict is "this prose shows the patterns characteristic of AI smoothing" — not "this prose was written by AI" or "this prose deviates from the writer's voice."
 
 **Validation status.** The audit's band thresholds (Spot / Pattern / Systemic), salvage triage, and severity-translation table are calibrated against the literature plus targeted manuscript-corpus testing. They are not yet empirically validated against a labeled corpus with measured false-positive and false-negative rates. A planned `validation_harness.py` (companion script, future) will read a labeled corpus through this audit and the voice-distance scripts, then report per-register and per-length-band performance with confidence intervals. Until that harness has run, treat the bands as *provisional* — the framework's structure is sound; the specific cut-offs may shift after empirical calibration.
 
@@ -175,11 +175,15 @@ Eleven variance signals against a personal baseline (the writer's own prior uned
 
 For a single document, a band classification (Lightly / Moderately / Heavily smoothed) plus per-signal z-scores against baseline. For a manuscript, a chapters × signals dashboard plus identification of which signals are manuscript-wide patterns vs. chapter-specific.
 
-### Three scripts
+### Three scripts (SETEC subprocess shims)
 
-- `scripts/ai_prose_variance_audit.py` — single document, eleven signals, optional baseline z-scoring.
-- `scripts/ai_prose_manuscript_audit.py` — cross-chapter dashboard, surfaces manuscript-wide compression patterns and outlier chapters.
-- `scripts/ai_prose_repetition_audit.py` — vocabulary-level diagnostic. Surfaces words a writer is using more than expected against their own baseline, plus within-document clustering. Run when Layer A flags lexical compression and you want specific candidates for restoration.
+The Layer A scripts in APODICTIC are thin shims that delegate to **SETEC Voiceprint** (minimum version 1.86.0 — the release in which schema_version 1.0 envelope coverage completed across every entry point this audit calls). The shims forward all CLI arguments unchanged; SETEC owns the underlying computation. See `ai-prose-calibration-distributional.md §Computing the Signals` for the full discovery contract, required dependencies, and the JSON envelope shape.
+
+- `scripts/ai_prose_variance_audit.py` → `setec/variance_audit.py` — single document, eleven signals, optional baseline z-scoring; SETEC also exposes `--tier4`, `--aic7/8/9`, `--window-size`, and `--bootstrap` for advanced diagnostics.
+- `scripts/ai_prose_manuscript_audit.py` → `setec/manuscript_audit.py` — cross-chapter dashboard, surfaces manuscript-wide compression patterns and outlier chapters.
+- `scripts/ai_prose_repetition_audit.py` → `setec/repetition_audit.py` — vocabulary-level diagnostic. Surfaces words a writer is using more than expected against their own baseline, plus within-document clustering. Run when Layer A flags lexical compression and you want specific candidates for restoration.
+
+When the audit consumes SETEC JSON, parse the schema_version 1.0 envelope: read the `results` block for signal magnitudes, but bound every claim the audit makes by the `claim_license` block (especially `licenses`, `does_not_license`, `comparison_set`, `length_range_words`, and `additional_caveats`). Heuristic-tier output (no baseline supplied) carries a narrower claim license than baseline-z-scored output; the audit's verdict text must honor those limits.
 
 ### How Layer A signals predict Layer B flags
 
@@ -367,7 +371,7 @@ The convergence habit is more durable than any particular word list. Early ChatG
 
 *Maintain a per-project watchlist, but use it as an evidence tool, not a rule engine.* The watchlist identifies candidates; the convergence test determines whether they're flags. A word earns its watchlist spot when it (a) appears in multiple unrelated contexts (different subject matter, different characters, different emotional registers) and (b) could be replaced with a more specific or more ordinary word each time.
 
-*Layer A integration.* `scripts/ai_prose_repetition_audit.py` surfaces convergence candidates automatically against a personal or genre baseline. The script identifies words a writer is using more than expected; the auditor's judgment determines whether the recurrence is convergence (flag) or thematic anchor (keep).
+*Layer A integration.* `scripts/ai_prose_repetition_audit.py` (a SETEC subprocess shim) surfaces convergence candidates automatically against a personal or genre baseline. The script identifies words a writer is using more than expected; the auditor's judgment determines whether the recurrence is convergence (flag) or thematic anchor (keep).
 
 *Genre calibration rider:* Tolerance for lexical convergence varies by genre and narrative mode. Essayistic, literary, and philosophical narration naturally reuses conceptual vocabulary — a narrator thinking about "architecture" as a sustained metaphor across a novel may be doing deliberate thematic work. Commercial thriller, romance, and horror prioritize diction clarity and immediacy; convergence on prestige vocabulary reads as artificial faster in these registers. The auditor should calibrate the flag threshold to the manuscript's genre and narrative mode before firing.
 

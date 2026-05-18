@@ -83,6 +83,7 @@ Ask with explicit hypotheses. Format: *"My hypothesis is [X]. Is this accurate?"
 
 **Structure:**
 14. **Format:** Is this [novel / collection / composite novel with unified arc]?
+14a. **POV structure:** Is this manuscript multi-POV? If yes, list the POV characters and which chapters belong to each (e.g., "Ada: chs 1, 4, 7, 10; Daphne: chs 2, 5, 8; Makayla: chs 3, 6, 9"). The mapping enables stylometric voice-distinctiveness measurement during Pass 7 (POV/Voice). Accepted answers: (a) author-supplied mapping (preferred — author-confirmed); (b) "I'd rather Pass 7 detect POV transitions automatically" (LLM-detected; results carry an author-not-confirmed caveat); (c) "single POV" (skip POV-specific stylometry); (d) "prefer not to say" (Pass 7 defaults to LLM-only voice-distinctiveness comparison). When the intake step is skipped or the question is unanswered, Pass 7 will ask the equivalent runtime question at pass start when the execution mode supports interactive input, and fall back to LLM detection otherwise.
 15. **Inciting Incident Hypothesis:** My scan suggests [moment] functions as inciting incident. Accurate?
 16. **Midpoint Hypothesis:** I identify [scene/chapter] as midpoint pivot. Accurate?
 17. **Climax:** What is the real moment of no return?

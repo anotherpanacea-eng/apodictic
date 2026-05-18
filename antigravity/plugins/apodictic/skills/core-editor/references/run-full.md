@@ -14,14 +14,37 @@ Use this file when the user requests "full diagnostic" explicitly, or when auto-
 Quantitative analysis to investigate Pass 1 flags only.
 
 **Measure:**
-- Sentence length variation
-- Active verb density
-- Dialogue-to-prose ratio
-- Compression ratio (story time / word count)
+- Sentence length variation (SETEC-measured per §SETEC supplementation below)
+- Active verb density (LLM)
+- Dialogue-to-prose ratio (LLM)
+- Compression ratio (story time / word count) (LLM)
+- Punctuation rhythm and interruption grammar (SETEC-measured)
 
 **Constraint:** Metrics cannot flag scenes unless Pass 1 also logged an issue.
 
-**Output:** `[Project]_Pass3_Rhythm_Modulation_[runlabel].md` — Intensity map (visual scene-by-scene trajectory using ASCII or table format), peak-valley pattern analysis, relief ratio assessment, sentence-level rhythm sampling at 3+ distributed points, pacing diagnosis with specific scenes flagged, title/framing architecture evaluation (when conceit detected). Genre modules may add genre-specific checks (e.g., dread fatigue threshold for horror, clock-pressure rhythm for thriller).
+#### SETEC supplementation (Layer A measurements)
+
+Pass 3 bolsters the LLM's rhythm reading with SETEC measurements where Python does the job better. SETEC produces ground-truth numbers (sentence-length distribution, burstiness B, punctuation densities); the LLM reads those numbers and does the craft diagnosis. The Pass 1 gate is unchanged: SETEC numbers investigate Pass 1's flags; they do not produce new flags of their own.
+
+Run as Step 1 of the pass, before generating the intensity map:
+
+1. **Variance audit (two invocations).** Use the supplementation runner:
+   - **Manuscript-aggregate.** `setec_runner.run_supplement("variance_audit.py", [manuscript_path, ...optional --baseline-dir, --no-tier3 if no embedder])`. Use `--baseline-dir` only when the writer-project already has one in contract state — no intake prompt for it; per spec §6.3.
+   - **Window-mode.** Same args plus `--window-size 2000`. Produces per-window measurements the LLM projects onto scene positions when reading.
+2. **Punctuation cadence.** `setec_runner.run_supplement("punctuation_cadence_audit.py", [manuscript_path, ...optional --baseline-dir])`.
+3. **Per-scene escalation (conditional).** When Pass 1 flagged specific scenes AND those scenes don't fall cleanly within a token window, run variance_audit per flagged scene. Bound: at most N invocations where N = count(Pass-1-flagged rhythm scenes).
+4. **Warnings handling (three tiers):**
+   - **Blocking** (`available: false` on the envelope, populating `blocking_warnings`): SETEC measurement N/A for this run; the pass head records the gap and proceeds with LLM-only rhythm analysis.
+   - **Reliability-affecting** (`reliability_warnings`): render inline next to the measurements they qualify ("sentence-length SD compressed to 4.2; *short-text warning: N=1850, signal noisy below 2000*").
+   - **Cosmetic** (`cosmetic_warnings`): silent in pass output; available to the auditor on drill-in.
+5. **Citations.** When a finding rests on a SETEC number, cite it terse and traceable: *"sentence-length SD = 4.2 (writer baseline mean 9.1, z = −1.4); SETEC variance_audit v1.0, Layer A band = Moderately smoothed."* Respect the `claim_license.does_not_license` bounds — heuristic-tier output (no baseline supplied) carries a narrower license than baseline-z-scored output.
+6. **Contradiction reporting.** When SETEC's measurement and the LLM's qualitative reading **diverge** in a single scene or chapter, name the divergence in the pass output rather than choosing a side. Format:
+   > *Qualitative reading:* rhythm sustained across Ch 7's high-intensity sequence; sentence variety registers as deliberate.
+   > *Quantitative measurement:* sentence-length SD compressed to 4.2 against writer baseline; Layer A band = Moderately smoothed.
+   > *Reconciliation:* the compression may be earned (close third in a controlled emotional register often suppresses variance); surface to the writer for review rather than flagging as a defect.
+7. **Post-hoc baseline advisory (conditional).** If Pass 1 flagged rhythm issues AND SETEC ran heuristic-tier (no baseline) AND the diagnosis would tighten meaningfully against a personal baseline (the `claim_license.additional_caveats` flags the heuristic limit), append at the foot of the pass output: *"This diagnosis is heuristic against literature priors. If you have prior unedited work in this register, a personal-baseline run would tighten the claim. See SETEC's baseline-acquisition tooling for setup."*
+
+**Output:** `[Project]_Pass3_Rhythm_Modulation_[runlabel].md` — opens with a "Layer A measurements" section (sentence-length stats, burstiness B, punctuation densities, compression band, with reliability warnings inline next to the numbers they qualify), followed by intensity map (visual scene-by-scene trajectory using ASCII or table format), peak-valley pattern analysis, relief ratio assessment, sentence-level rhythm sampling at 3+ distributed points (citing SETEC numbers where they support a claim, naming contradictions where they exist), pacing diagnosis with specific scenes flagged, title/framing architecture evaluation (when conceit detected). Footer carries the post-hoc baseline advisory when its conditions fire. Genre modules may add genre-specific checks (e.g., dread fatigue threshold for horror, clock-pressure rhythm for thriller).
 
 **Title/Framing Architecture (conditional — evaluate only when present):**
 
@@ -97,6 +120,8 @@ Track POV holder, narrative distance, information access, **tense**.
 | POV Character | Word Count | % of Total | Sections |
 ```
 
+Word counts are simple text-processing — the pass counts them directly, no SETEC needed.
+
 **Flag:** POV character <15% in multi-POV novel; POV characters who disappear in later acts; imbalance between equally weighted characters.
 
 **Second Person Considerations:**
@@ -105,6 +130,26 @@ Track POV holder, narrative distance, information access, **tense**.
 - Consider: Does POV choice match power dynamic?
 
 **Detect:** Perspective slips, head-hopping, voice intrusion, distance inconsistency, **POV-power mismatch**.
+
+#### SETEC supplementation (stylometric voice-distinctiveness)
+
+For multi-POV manuscripts, Pass 7 supplements the LLM's qualitative voice reading with per-POV stylometric centroids and a pairwise voice-distance matrix. The Blind Swap test and the 6-dimension qualitative comparison (below) remain the source of truth for craft judgment; SETEC provides empirical confirmation.
+
+**POV mapping cascade** — determine how the pass learns which chapters belong to which POV character, in priority order:
+
+1. **Contract intake answer.** When the intake protocol's multi-POV question was answered (see `intake-questions.md`), use the author-supplied POV-to-chapter mapping. Author-confirmed.
+2. **Runtime interactive question.** When intake didn't capture POV info AND the runtime context supports interactive input, ask the writer once at pass start: *"This manuscript appears multi-POV. List the POV characters and which chapters belong to each."* Build the in-memory manifest from the answer. Author-confirmed.
+3. **LLM POV-shift detection (non-interactive fallback).** When neither (1) nor (2) is available — pipeline/headless modes — the LLM detects POV transitions from the prose and builds the manifest from the detection. NOT author-confirmed; the pass output records this provenance and all downstream stylometric findings carry the caveat *"POV mapping detected by LLM; not author-confirmed."*
+
+Run as Step 1 of the pass for multi-POV manuscripts, before the voice-distinctiveness comparison:
+
+1. **Determine POV mapping** via the cascade above. Record the source (intake / runtime / LLM).
+2. **If multi-POV:** build the in-memory JSONL manifest from the POV mapping; invoke `setec_runner.run_supplement("pov_voice_profile.py", ["--manifest", manifest_path, ...])`. Read `results.pairwise_distances`, `results.pov_vs_corpus`, `results.collapse_verdict`.
+3. **If single-POV:** skip POV-specific stylometry. Optionally run `voice_distance.py` against the writer's baseline (when present in contract state) for register-drift signal within the single POV.
+4. **Per-POV signature features (advisory):** `setec_runner.run_supplement("idiolect_detector.py", [...])` per POV slice (target = single-POV chapters from the manifest; reference = the writer's other POVs or a register-matched baseline). Surfaces the words/phrases that distinguish each POV — useful for revision passes that need to preserve POV-specific voice when line-editing.
+5. **Warnings handling:** same three-tier classification as Pass 3 (§Pass 3 SETEC supplementation, step 4). Blocking → SETEC N/A, LLM-only proceeds with the gap recorded. Reliability-affecting → rendered inline next to citations. Cosmetic → silent.
+6. **Citations.** When findings cite SETEC: *"POV pair (Ada, Daphne) Burrows Delta = 0.39, below collapse threshold 0.45; SETEC pov_voice_profile v1.0."* When POV mapping came from LLM detection, every citation carries the *"author-not-confirmed POV mapping"* caveat.
+7. **Contradiction reporting:** when SETEC's collapse verdict and the LLM's qualitative voice reading **diverge** (LLM says voices are distinct; SETEC says collapsed, or vice versa), name the divergence in the pass output per the same convention as Pass 3 — surface to the writer, don't adjudicate.
 
 **Voice Distinctiveness Comparison (multi-POV manuscripts):**
 
@@ -119,14 +164,16 @@ Compare across these dimensions:
 - **Emotional register:** How does this character experience and name (or fail to name) emotion? Somatic, analytical, deflective, performative?
 
 ```
-| POV Character | Sentence Style | Attention Bias | Metaphor Domain | Temporal Lean | Epistemic Mode | Emotional Register |
+| POV Character | Sentence Style | Attention Bias | Metaphor Domain | Temporal Lean | Epistemic Mode | Emotional Register | Stylometric Distance |
 ```
 
-**Flag: Under-individuation** — two or more POV characters share cognitive texture across 4+ dimensions. This typically indicates the author's own cognitive patterns overriding character differentiation. Most visible in high-stakes or emotionally charged scenes, where authorial voice tends to absorb character voice.
+The **Stylometric Distance** column carries SETEC's pairwise Burrows-Delta when the §SETEC supplementation step ran. Where SETEC has spoken (sentence architecture indicators, function-word fingerprint, punctuation cadence), cite the numbers as supporting evidence. Where SETEC is silent (metaphor source domain, temporal orientation, epistemic style, emotional register), the LLM is the source of truth — those dimensions stay LLM-read.
 
-**Flag: Selective individuation** — POV characters are distinct in surface markers (vocabulary, topic) but converge in deep texture (sentence architecture, attention pattern, epistemic style). Surface-level differentiation without cognitive differentiation creates characters who *discuss* different things but *think* the same way.
+**Flag: Under-individuation** — two or more POV characters share cognitive texture across 4+ dimensions. This typically indicates the author's own cognitive patterns overriding character differentiation. Most visible in high-stakes or emotionally charged scenes, where authorial voice tends to absorb character voice. SETEC's voice-collapse verdict (when run) is a co-signal: a confirming Burrows-Delta-below-threshold on a flagged pair strengthens the finding; a contradicting verdict (LLM flags but SETEC measures distinct) gets reported per the contradiction-reporting convention rather than silently suppressed.
 
-**Output:** `[Project]_Pass7_POV_Voice_[runlabel].md` — POV distribution table (character, word count, % of total, sections), narrative distance tracking, tense consistency log, perspective slip inventory with specific line references, voice distinctiveness assessment per POV character, voice distinctiveness comparison table (multi-POV only).
+**Flag: Selective individuation** — POV characters are distinct in surface markers (vocabulary, topic) but converge in deep texture (sentence architecture, attention pattern, epistemic style). Surface-level differentiation without cognitive differentiation creates characters who *discuss* different things but *think* the same way. When SETEC's per-POV signature features (idiolect_detector advisory) show the distinguishing entries are topical nouns (character names, setting nouns, profession vocabulary) rather than voice-bearing collocations, that's empirical evidence for the surface-vs-deep distinction.
+
+**Output:** `[Project]_Pass7_POV_Voice_[runlabel].md` — head records the POV mapping source (intake / runtime / LLM-detected, with the latter carrying the author-not-confirmed caveat); POV distribution table (character, word count, % of total, sections); narrative distance tracking; tense consistency log; perspective slip inventory with specific line references; voice distinctiveness assessment per POV character; voice distinctiveness comparison table (multi-POV only) with Stylometric Distance column when SETEC ran; per-POV signature-features advisory subsection when idiolect_detector ran; reliability warnings rendered inline near the citations they qualify.
 
 ### Pass 9: Thematic Coherence
 
