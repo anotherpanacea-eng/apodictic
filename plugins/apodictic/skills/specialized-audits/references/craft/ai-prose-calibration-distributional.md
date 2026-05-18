@@ -225,17 +225,61 @@ over n−1 non-root edges. Report MDD per sentence; take SD across sentences.
 
 ## Computing the Signals
 
-The script `ai_prose_variance_audit.py` computes all eleven signals where dependencies are available. The script handles graceful degradation:
+The Layer A scripts in APODICTIC are thin shims that delegate to **SETEC Voiceprint**, which is the source of truth for variance, repetition, and voice-coherence stylometry. Stylometry development lives in one place; APODICTIC consumes SETEC's JSON output and interprets it against the audit's bands and Layer B flag families.
+
+Requirements:
+- SETEC Voiceprint plugin ≥ **1.86.0** must be installed. This is the release in which schema_version 1.0 envelope coverage completed across every entry point APODICTIC delegates to (waves 4 + 5 of SETEC's output-schema unification). Below 1.86.0 the JSON shape differs across entry points and downstream parsing breaks.
+- Discovery order: `SETEC_VOICEPRINT_DIR` env var (explicit path to a SETEC plugin root) → `~/.claude/plugins/marketplaces/*/plugins/setec-voiceprint` from a marketplace install. Hard error with install instructions if neither resolves.
+- Diagnose location/version problems with `python3 setec_discovery.py` from the audit scripts directory.
+
+| APODICTIC entry point | Delegates to (SETEC) | Purpose |
+|---|---|---|
+| `ai_prose_variance_audit.py` | `variance_audit.py` | Single-document eleven-signal Layer A, optional baseline z-scoring, window-mode localization. |
+| `ai_prose_manuscript_audit.py` | `manuscript_audit.py` | Chapters × signals dashboard, manuscript-wide pattern detection, outlier-chapter ranking. |
+| `ai_prose_repetition_audit.py` | `repetition_audit.py` | Vocabulary over-representation against a baseline (Lexical Convergence candidates for AIC-7). |
+| `ai_prose_voice_distance.py` | `voice_distance.py` | Burrows Delta + per-feature cosine against a baseline corpus or JSONL manifest. |
+| `ai_prose_voice_profile.py` | `voice_profile.py` | Private stylometric profile from a writer/register baseline. |
+
+Each shim forwards CLI arguments unchanged; pass `--help` to see the full SETEC surface, which is a superset of the pre-shim APODICTIC arg list (adds `--tier4`, `--aic7/8/9`, `--window-size`, `--bootstrap`, manifest selectors, and other capabilities documented in SETEC).
+
+SETEC handles graceful degradation across optional dependencies:
 
 - **Tier 1 (always works):** sentence-length stats, MATTR, MTLD, Yule's K, Shannon entropy, FKGL stats, connective density. Requires only Python + textstat + nltk.
 - **Tier 2 (requires spaCy):** POS-bigram KL, MDD variance.
 - **Tier 3 (requires sentence-transformers or scikit-learn):** adjacent-sentence cosine similarity. Falls back to TF-IDF cosine if no sentence embedder is available.
+- **Tier 4 (opt-in, requires transformers + torch):** surprisal-based signals; provisional bands per SETEC SPEC §3.5 with `calibration_anchor: user-baseline-required`.
 
-Output is JSON plus a human-readable summary. The script accepts an optional baseline corpus directory; with one supplied, it reports per-signal quantiles relative to the baseline. Without one, it reports absolute values that the auditor interprets against genre baselines.
+### JSON envelope (schema_version 1.0)
 
-The cross-chapter version (`ai_prose_manuscript_audit.py`) detects chapter boundaries and runs variance_audit logic on each chapter, producing a chapters × signals dashboard plus manuscript-wide pattern detection (signals fired on >50% of chapters) and outlier-chapter ranking.
+Every SETEC script that APODICTIC delegates to emits the same top-level envelope under `--json`. Pin against `schema_version` and parse from there.
 
-The vocabulary-level version (`ai_prose_repetition_audit.py`) surfaces words a writer is using more than expected against a baseline, plus within-document clustering. Useful when Layer A flags lexical compression and the auditor wants specific candidates for restoration.
+```json
+{
+  "schema_version": "1.0",
+  "task_surface": "smoothing_diagnosis",
+  "tool": "variance_audit",
+  "version": "<SETEC SCRIPT_VERSION>",
+  "available": true,
+  "target": {"path": "draft.md", "words": 4523, ...},
+  "baseline": null,
+  "results": { /* script-specific payload */ },
+  "claim_license": { /* 11 structured keys */ },
+  "claim_license_rendered": "## What this result licenses\n…",
+  "warnings": [],
+  "ai_status": null
+}
+```
+
+Reading the envelope:
+
+- **`schema_version`** — pin against `"1.0"`. Future contract bumps land here, not in `version`.
+- **`available`** — when `false`, the script could not produce results (text too short, dep missing, etc.); `results` may be empty and `warnings` explains why. Downstream audit synthesis should skip the script-specific payload.
+- **`target` / `baseline`** — input + comparison-corpus metadata. `baseline` is `null` when no baseline corpus was supplied (heuristic-tier output; weakened but usable claim licensing).
+- **`results`** — the script-specific payload. For `variance_audit` this contains `tier1`, `tier2`, `tier3`, `tier4`, plus optional `windows`, `baseline_comparison`, `ablation`. For per-pattern audits (`aic_pattern_audit`) it's `patterns`. For per-category audits it's `categories`. See SETEC's `internal/SPEC_output_schema_unification.md` §3 for the shape definitions.
+- **`claim_license`** — structured 11-key block (`task_surface`, `licenses`, `does_not_license`, `comparison_set`, `length_range_words`, `register_match`, `language_match`, `fpr_target`, `confidence_interval_95`, `additional_caveats`, `references`). This is the contract that constrains what claims downstream synthesis can make from the result; it tightens when a baseline is supplied and weakens when SETEC ran on heuristic tier only.
+- **`claim_license_rendered`** — same content as `claim_license`, pre-rendered as Markdown for direct paste into editorial letters. Parse either the structured dict OR this string; never both.
+
+Variance audit also surfaces top-level `compression` and (per `--allow-non-prose`) `preprocessing` metadata; these sit outside `results` because they're diagnosis-about-the-diagnosis rather than payload.
 
 ---
 

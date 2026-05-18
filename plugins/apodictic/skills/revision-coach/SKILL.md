@@ -95,6 +95,7 @@ The coach operates in four modes. Select based on context:
 3. Rank remaining issues by **leverage** — which fix improves the most of the manuscript?
 4. Match leverage ranking against available time and energy
 5. Produce session plan using `references/session-plan-template.md`
+6. **Surface idiolect preservation list (optional, voice-preservation guardrail).** When the session plan includes line-editing or polish work, run the **Idiolect Preservation List** audit (see `../specialized-audits/references/craft/idiolect-preservation.md`) against the writer's prior work (or against the manuscript itself if no separate baseline exists) and include the resulting "do not normalize" list at the head of the session plan. Goal: keep line-editing passes from sanding off the moves the writer is actually known for. This step is **advisory**, not gating — the audit produces signature/habit candidates the writer reads against the revision targets. Skip when no reference corpus is available, when the session is structural-only, or when AIC-7 (Lexical Convergence) findings already specify the targets.
 
 **Output:** `[Project]_Session_Plan_[runlabel].md`
 

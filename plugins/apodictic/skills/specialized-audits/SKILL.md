@@ -31,6 +31,15 @@ description: >
   "voice slip," "lost callback," "earned by frame,"
   "abstraction shielding," "false-balance," "hedge-and-affirm,"
   "recommendation template," "authority laundering,"
+  "idiolect," "idiolect preservation," "preservation list,"
+  "do not normalize," "do not flatten," "signature moves,"
+  "voice preservation," "keyness," "collocation preservation,"
+  "punctuation cadence," "punctuation rhythm," "interruption grammar,"
+  "punctuation regularization," "dash density," "em-dash audit,"
+  "house style," "copyedit drift," "my editor flattened me,"
+  "pov voice," "pov voice profile," "per-pov voiceprint,"
+  "do my povs sound different," "voice-collapse," "pov collapse,"
+  "blind swap fail," "interchangeable povs," "pov differentiation,"
   "comp validation," "fact check," "genre currency check,"
   "representation context," "citation verifier," "citation verification,"
   "verify citations," "check my citations," "are these citations real,"
@@ -133,6 +142,9 @@ The universal status holds; future audit additions follow the criterion above wi
 | **Fan Fiction Conversion** | IP scaffolding, worldbuilding gaps, character independence | Fanfic-to-original conversion |
 | **Short Fiction** | Compression, single-effect design, ending resonance | Short stories, flash fiction |
 | **AI-Prose Calibration v2.0** | Three-layer diagnostic: Layer A distributional (variance signals against personal/genre baseline, Python scripts), Layer B pattern (AIC-1 through AIC-7 with named subtypes — Indefinite-Pronoun Gesture, Negation Hedge, Disguised Correctio, Pseudo-Aphorism, Manifesto Cadence — plus argument-shaped nonfiction parallel set), Layer C source triage (payoff test, voice slip vs. lost callback, earned-by-frame verdict) | Writer identifies draft as AI-generated/assisted; Pass 1 flags uniform fluency; Pass 5 flags coherence without specificity; "it reads like AI"; lexical compression; manuscript-wide drift; voice attribution required |
+| **Idiolect Preservation List** | Surfaces words and collocations the writer uses idiosyncratically against a reference corpus; produces a "do not normalize" preservation list for revision passes. Voice preservation, not provenance detection. Default for `/coach`; companion to AIC-7 Lexical Convergence | Building a revision plan; preparing for a copyedit pass; AIC-7 Lexical Convergence flagged words that may be signature; writer reports "my editor flattened me"; before a heavy line edit |
+| **Punctuation Cadence** | Punctuation rhythm + interruption-grammar audit: per-mark density, sentence-final distribution, interruption-grammar profile, punctuation bigrams, compression-fraction band, optional baseline z-scoring. Subsumes the territory of the standalone em-dash-reduction skill | Lexical compression flagged but writer wants to know *what* changed; suspected AI line-edit or heavy copyedit; "the edit changed something I can't name"; triage check on AI-revised prose |
+| **POV Voice Profile (Opt-In)** | Per-POV-character voiceprints for multi-POV fiction: pairwise voice-distance matrix, distinguishing features per POV, voice-collapse verdict (Burrows-Delta-driven). Opt-in due to JSONL-with-`pov`-tags manifest requirement and per-POV stylometric weight | Multi-POV manuscript AND Pass 7 Blind Swap fails; multi-POV AND AIC-1 + AIC-5 co-occur; author asks "do my POVs sound different"; series consistency check across books |
 | **SFF Worldbuilding Integration** | Worldbuilding integration (20 flags), five-dimension framework, load-bearing analysis, subgenre calibration, named failure modes | Any SF/F manuscript — tests whether the world does narrative work across character cognition, theme, prose, social systems, and emotion; stacks with Genre Module: SF/F (consistency) |
 | **Literary Craft Deep Dive** | Literary-mode integration (22 flags across 5+1 dimensions), load-bearing vs. ornamental analysis, defamiliarization test, 9 genre-hybrid calibrations, recognition architecture | Any manuscript operating in literary mode — tests whether prose, structure, image systems, subtext, and voice do narrative work or are cosmetic; cross-genre (literary fiction, literary thriller, literary SFF, literary horror, upmarket, etc.) |
 | **Horror Craft Integration** | Horror-pressure delivery (23 flags across 6 dimensions), producing vs. inert analysis, 9 subgenre calibrations with named failure modes, dread architecture tracking, consequence embodiment | Any horror or horror-hybrid manuscript — tests whether the horror apparatus produces sustained dread, destabilization, and felt consequence or merely delivers horror-coded content; stacks with Genre Module: Horror (contract) |
@@ -249,7 +261,10 @@ See `references/craft/shelf-positioning.md` for the full audit.
 - `references/craft/banister.md` — Banister (Epistemic Humility) audit
 - `references/craft/ai-prose-calibration.md` — AI-Prose Calibration audit v2.0 (AIC-1 through AIC-7 with named subtypes, three-layer architecture, argument-shaped nonfiction parallel set, source-triage step)
 - `references/craft/ai-prose-calibration-level-setting.md` — AI-Prose Calibration level-setting examples (earned/unearned for each named pattern, payoff test, voice slip vs. lost callback)
-- `references/craft/ai-prose-calibration-distributional.md` — AI-Prose Calibration Layer A reference (eleven variance signals with formulas, calibration warnings, three Python scripts)
+- `references/craft/ai-prose-calibration-distributional.md` — AI-Prose Calibration Layer A reference (eleven variance signals with formulas, calibration warnings, SETEC subprocess shims with schema_version 1.0 envelope)
+- `references/craft/idiolect-preservation.md` — Idiolect Preservation List audit (keyness + collocation extraction, preservation list output, `/coach` integration, AIC-7 Lexical Convergence cross-reference)
+- `references/craft/punctuation-cadence.md` — Punctuation Cadence audit (per-mark density, sentence-final distribution, interruption grammar, punctuation bigrams, compression bands, subsumes em-dash-reduction)
+- `references/craft/pov-voice-profile.md` — POV Voice Profile audit (opt-in; per-POV centroids, pairwise distance matrix, voice-collapse verdict, Pass 7 Blind Swap cross-reference)
 - `references/craft/force-architecture.md` — Force Architecture audit (25 flags, 6 dimensions, 9 hard gates, 8 mode calibrations)
 - `references/craft/force-architecture-level-setting.md` — Force Architecture level-setting brief (SPECT, Clausewitz, Arendt, Scarry, Hayakawa, O'Brien, McCarthy, Morrison, physiological realism, positive cases)
 - `references/craft/compression-audit.md` — Compression audit (16 flags, 5 channels, 4 hard gates, 7 mode calibrations, Cut List + Compression Map artifacts)
