@@ -39,6 +39,14 @@ Registered at **Recommend (opt-in)** in `pass-dependencies.md §4b`, not a highe
 - READMEs (root + plugin + codex), `plugin.json` (root + canonical), `marketplace.json` (root + `.claude-plugin/`) — count strings 34/16.
 - Generated Codex + Antigravity host workspaces regenerated from canonical.
 
+#### Review-round hardening (PR #6)
+
+SETEC-runner plumbing fixes surfaced during PR review, all in the same unreleased version:
+
+- `setec_runner.run_supplement` gained a `min_version` parameter so the documented narrative-decision path enforces the 1.107.0 Surface 6 floor (discovery otherwise ran at the framework-wide 1.86.0 floor and failed "script not found" instead of giving the upgrade path). Backward-compatible (default `None`).
+- `setec_discovery`'s install/upgrade message is now floor-aware (`_install_instructions(min_version)`); the narrative-decision shim's "requires 1.107.0" error no longer appends a stale "Minimum required version: 1.86.0" line. Module-level `INSTALL_INSTRUCTIONS` retained at the default floor for compatibility.
+- `setec_runner.run_supplement` gained `json_out=True`, a file-based JSON strategy for SETEC surfaces (e.g. `pov_voice_profile.py`) that write the envelope via `--json-out <path>` rather than stdout `--json`. The runner writes into an ephemeral `ai-prose-baselines-private/` directory (SETEC's default-private output policy refuses voice-cloning outputs elsewhere short of the unsafe `--allow-public-output`), reads the envelope back, and removes the tree; caller-supplied `--json-out` paths are honored. `run-full.md` Pass 7 multi-POV wiring now calls `pov_voice_profile.py` with `json_out=True`. Scoped to `pov_voice_profile`; other surfaces keep stdout `--json` unchanged.
+
 Release note: the Gemini-mirror steps of `release.sh` (App.tsx / LandingPage.tsx generation, public-plugin rsync) are maintainer-local and were not run in this environment; `release-generate.mjs` count regeneration for those external targets is pending a maintainer run.
 
 ## v1.8.5 - 2026-04-26
