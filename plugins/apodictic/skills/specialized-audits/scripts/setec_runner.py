@@ -36,9 +36,11 @@ handles the envelope):
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -171,13 +173,14 @@ def run_supplement(
     *,
     location: SetecLocation | None = None,
     min_version: tuple[int, ...] | None = None,
+    json_out: bool = False,
 ) -> SupplementResult:
     """Run a SETEC script and return a SupplementResult.
 
-    Adds ``--json`` to the arg list if not already present. Captures
-    stdout, parses the schema_version 1.0 envelope, classifies the
-    warnings array per spec §6.4, and returns the result for the
-    caller to consume.
+    By default adds ``--json`` to the arg list if not already present and
+    parses the schema_version 1.0 envelope from stdout. Classifies the
+    warnings array per spec §6.4 and returns the result for the caller to
+    consume.
 
     ``min_version`` enforces a per-script SETEC version floor higher
     than the framework-wide default in setec_discovery. Surface 6
@@ -187,6 +190,16 @@ def run_supplement(
     with the intended upgrade message rather than reaching the script and
     failing "script not found". When ``location`` is supplied the caller
     has already resolved discovery, so ``min_version`` is ignored.
+
+    ``json_out`` selects the file-based JSON strategy for SETEC scripts
+    whose ``--json`` surface writes the envelope to a path rather than to
+    stdout. ``pov_voice_profile.py`` is the current case: it exposes
+    ``--json-out <path>`` (argparse prefix-matching makes a bare
+    ``--json`` resolve to ``--json-out`` and fail "expected one
+    argument"). When ``json_out=True`` the runner allocates a temp path,
+    injects ``--json-out <path>`` if absent, runs the script, reads the
+    envelope back from the file, and removes the temp file. A
+    caller-supplied ``--json-out`` path is honored and left in place.
 
     Raises ``SetecDiscoveryError`` if SETEC cannot be located or fails
     the version-floor check (callers handle this as the blocking tier
@@ -199,27 +212,61 @@ def run_supplement(
     if location is None and min_version is not None:
         location = discover_setec(min_version=min_version)
     args_with_json = list(args)
-    if "--json" not in args_with_json:
+    tmp_json_path: str | None = None
+    if json_out:
+        if "--json-out" not in args_with_json:
+            fd, tmp_json_path = tempfile.mkstemp(prefix="setec_", suffix=".json")
+            os.close(fd)
+            args_with_json = ["--json-out", tmp_json_path, *args_with_json]
+    elif "--json" not in args_with_json:
         args_with_json = ["--json", *args_with_json]
-    completed: subprocess.CompletedProcess = run_setec_script(
-        script,
-        args_with_json,
-        location=location,
-        capture_output=True,
-    )
-    if not completed.stdout.strip():
-        raise SetecRunnerError(
-            f"SETEC {script} produced no stdout (returncode="
-            f"{completed.returncode}). Stderr (truncated): "
-            f"{completed.stderr[:500]!r}"
-        )
     try:
-        envelope = json.loads(completed.stdout)
-    except json.JSONDecodeError as exc:
-        raise SetecRunnerError(
-            f"SETEC {script} stdout did not parse as JSON: {exc}. "
-            f"First 500 chars: {completed.stdout[:500]!r}"
-        ) from exc
+        completed: subprocess.CompletedProcess = run_setec_script(
+            script,
+            args_with_json,
+            location=location,
+            capture_output=True,
+        )
+        if json_out:
+            read_path = tmp_json_path
+            if read_path is None:
+                # Caller supplied their own --json-out path; recover it.
+                read_path = args_with_json[args_with_json.index("--json-out") + 1]
+            try:
+                raw = Path(read_path).read_text(encoding="utf-8")
+            except OSError as exc:
+                raise SetecRunnerError(
+                    f"SETEC {script} did not write a JSON envelope to "
+                    f"{read_path} (returncode={completed.returncode}). "
+                    f"Stderr (truncated): {completed.stderr[:500]!r}"
+                ) from exc
+            if not raw.strip():
+                raise SetecRunnerError(
+                    f"SETEC {script} wrote an empty JSON envelope to "
+                    f"{read_path} (returncode={completed.returncode}). "
+                    f"Stderr (truncated): {completed.stderr[:500]!r}"
+                )
+        else:
+            if not completed.stdout.strip():
+                raise SetecRunnerError(
+                    f"SETEC {script} produced no stdout (returncode="
+                    f"{completed.returncode}). Stderr (truncated): "
+                    f"{completed.stderr[:500]!r}"
+                )
+            raw = completed.stdout
+        try:
+            envelope = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise SetecRunnerError(
+                f"SETEC {script} JSON output did not parse: {exc}. "
+                f"First 500 chars: {raw[:500]!r}"
+            ) from exc
+    finally:
+        if tmp_json_path is not None:
+            try:
+                os.unlink(tmp_json_path)
+            except OSError:
+                pass
     _coerce_envelope(envelope)
     available = bool(envelope["available"])
     blocking, reliability, cosmetic = _classify_warnings(
