@@ -78,7 +78,7 @@ The plugin assumes its user is an adult working on a creative project. Its outpu
 - **Development Edit** — The main workflow: intake protocol, 11 analysis passes, synthesis, revision rounds, genre calibration
 - **Pre-Writing Pathway** — Guides writers from idea to draftable structure (no manuscript required). Writer mode calibration, seed inventory, readiness gates, option architecture, complexity budget, prospective contract, re-entry diff protocol.
 - **Plot Coaching** — Plot structure diagnosis (50 spines across 12 families), selection coaching, fantasy & series architecture
-- **Specialized Audits** — 33 available audits (3 universal, 15 craft, 10 genre, 5 tag), including 3 primary tags (cozy, philosophical, erotic content) and 2 companion intimacy audits; plus 6 internet-enabled research modes
+- **Specialized Audits** — 34 available audits (3 universal, 16 craft, 10 genre, 5 tag), including 3 primary tags (cozy, philosophical, erotic content) and 2 companion intimacy audits; plus 6 internet-enabled research modes
 - **Revision Coaching** — Post-diagnostic coaching: session planning, stuck-point help, momentum tracking, deadline management
 
 ### Entrypoints
@@ -154,7 +154,7 @@ apodictic-audit character
 apodictic-audit shelf
 apodictic-audit
 ```
-Run a named audit or list all 33 available audits.
+Run a named audit or list all 34 available audits.
 
 ### Research Mode
 ```
@@ -185,7 +185,7 @@ APODICTIC works best on high-capability models with strong instruction-following
 
 ## Framework Version
 
-Current Codex manifest version is `1.10.0`. Capabilities: 50 plot spines across 12 families, 33 available audits (3 universal, 15 craft, 10 genre, 5 tag), 6 research modes, 11 core passes, the evaluative Pass 11 gate, the pre-writing pathway, and the intake router. Includes contract-driven and finding-driven audit integration pipeline.
+Current Codex manifest version is `1.11.0`. Capabilities: 50 plot spines across 12 families, 34 available audits (3 universal, 16 craft, 10 genre, 5 tag), 6 research modes, 11 core passes, the evaluative Pass 11 gate, the pre-writing pathway, and the intake router. Includes contract-driven and finding-driven audit integration pipeline.
 
 ## License
 

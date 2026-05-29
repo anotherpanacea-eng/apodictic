@@ -5,6 +5,42 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v1.11.0 - 2026-05-29
+
+### Added — Narrative-Decision (StoryScope) audit: APODICTIC consumer integration of SETEC Surface 6
+
+Integrates SETEC Voiceprint's sixth task surface — `narrative_decision_audit` — into APODICTIC as a new opt-in craft audit, **Narrative-Decision (StoryScope)**. Closes the consumer-side decisions in SETEC's 2026-05-28 handoff (StoryScope / narrative-decision integration; Russell et al. 2026 arXiv:2604.03136v4, SETEC PRs #128/#129/#130). The surface scores prose against the 30 core narrative-decision features (33 signals) across 10 NarraBench dimensions and 7 bundles — measuring how a story is *built* (themes, plot, sensory register, reader stance, time) rather than how its sentences are *phrased*. It is a structure-level complement to AI-Prose Calibration (texture) and a sibling to POV Voice Profile (voice); all three are SETEC-backed and answer distinct questions under distinct claim licenses.
+
+**Audit count: 33 → 34 (craft 15 → 16).** Specialized audits 30 → 31. Source of truth is `release-registry.json` (Craft category + `counts.availableAudits` / `counts.specializedAudits`); derived count strings regenerate to 34/16 across the READMEs, plugin/marketplace manifests, and the `/audit` command list.
+
+#### New files
+
+- `plugins/apodictic/skills/specialized-audits/scripts/ai_prose_narrative_decision_audit.py` — SETEC subprocess shim → `narrative_decision_audit.py`. Forwards CLI args unchanged; enforces its own version floor **SETEC ≥ 1.107.0** (Surface 6's ship release, higher than the framework-wide 1.86.0 floor) by discovering with that floor and passing the validated location through, so an older SETEC fails with an upgrade message rather than a missing-script error.
+- `plugins/apodictic/skills/specialized-audits/references/craft/narrative-decision-audit.md` — audit reference v0.1 (consumer-pinning contract): envelope/`results` shape, `claim_license` fields to surface, the interpretive procedure, required outputs, the rewrite-resistance framing note, and the anti-verdict discipline.
+
+#### Consumer decisions (SETEC handoff open questions)
+
+- **Which surfaces pinned.** Tier A.1 `narrative_decision_audit` pinned (with experimental-handoff awareness — only the committed envelope shape, `contributions`, and `claim_license` are pinned). Tier B vocabulary (`narrative_feature_schema` keys, 7 `BUNDLE_LABELS`, 10 `DIMENSION_LABELS`, `literature_anchored` status) adopted as shared cross-tool vocabulary. **Tier A.2 `narrative_polarity_audit` NOT pinned** — it is a non-envelope sidecar (no `schema_version`, not in the capabilities manifest); contract-stable consumption would require a separate SETEC request (envelope wrapping or manifest entry).
+- **Aggregate posture.** Per-signal `contributions` is the load-bearing payload; APODICTIC does **not** pin verdicts to SETEC's aggregate `score` (unequal/unbounded per-signal influence; not the paper's XGBoost+SHAP statistic). If a single number is needed, APODICTIC computes a clip-to-[−1,1]-then-mean pool, labeled distinctly; SETEC's `aggregate.score` / `verdict_band` are surfaced as provenance only.
+- **Judge provenance.** `judge_identity` and `prompt_fingerprint_sha256` consumed as informational provenance / cross-run parity; verdicts are not gated on a specific judge model.
+- **Register discipline.** Long-form-fiction home register; `claim_license.length_range_words = [2000, 25000]`. Out-of-register targets surface `register_warnings` and the register caveat first and stop short of direction claims. No default polarity-check report ships (operator-supplied).
+- **Replication scaffold.** Out of scope; APODICTIC pins the runtime surface + vocabulary only.
+
+#### Registration & tier rationale (§4c Audit Tier Promotion Criteria)
+
+Registered at **Recommend (opt-in)** in `pass-dependencies.md §4b`, not a higher tier. Principled non-promotion per §4c: criterion 1 fails by design — the surface ships `uncalibrated` and the claim_license forbids provenance verdicts, so the audit produces **no audit-internal Must-Fix floor and no hard gates**. §4e gains three provisional Narrative-Decision rows (Could-Fix per-signal; Should-Fix only on convergence with texture-level AI-Prose Calibration evidence; SETEC aggregate surfaced as provenance only). The `audit-tier-criterion` validator's Recommend-tier exemption applies; the `audit-signal-propagation` validator operates on editorial letters (runtime), not on this table.
+
+#### Files
+
+- `release-registry.json` — Craft category item `narrative-decision`; `counts.availableAudits` 33→34, `counts.specializedAudits` 30→31.
+- `plugins/apodictic/skills/specialized-audits/SKILL.md` — description triggers (storyscope / narrative-decision / rewrite-resistant / structure-level ai); Craft Audits table row; Reference Files entry.
+- `plugins/apodictic/skills/core-editor/references/pass-dependencies.md` — §4b Recommend-tier finding-trigger row; three §4e propagation rows + a Narrative-Decision §4e note.
+- `plugins/apodictic/commands/audit.md` — `/audit` Craft list entry.
+- READMEs (root + plugin + codex), `plugin.json` (root + canonical), `marketplace.json` (root + `.claude-plugin/`) — count strings 34/16.
+- Generated Codex + Antigravity host workspaces regenerated from canonical.
+
+Release note: the Gemini-mirror steps of `release.sh` (App.tsx / LandingPage.tsx generation, public-plugin rsync) are maintainer-local and were not run in this environment; `release-generate.mjs` count regeneration for those external targets is pending a maintainer run.
+
 ## v1.8.5 - 2026-04-26
 
 ### Hygiene — disclosure-discipline fixes; re-release of v1.8.4 with sanitized fixture references
