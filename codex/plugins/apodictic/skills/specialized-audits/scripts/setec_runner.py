@@ -170,6 +170,7 @@ def run_supplement(
     args: list[str],
     *,
     location: SetecLocation | None = None,
+    min_version: tuple[int, ...] | None = None,
 ) -> SupplementResult:
     """Run a SETEC script and return a SupplementResult.
 
@@ -177,6 +178,15 @@ def run_supplement(
     stdout, parses the schema_version 1.0 envelope, classifies the
     warnings array per spec §6.4, and returns the result for the
     caller to consume.
+
+    ``min_version`` enforces a per-script SETEC version floor higher
+    than the framework-wide default in setec_discovery. Surface 6
+    (``narrative_decision_audit.py``) shipped in SETEC 1.107.0, above the
+    1.86.0 floor the texture-level surfaces use; callers consuming it
+    pass ``min_version=(1, 107, 0)`` so an older SETEC fails discovery
+    with the intended upgrade message rather than reaching the script and
+    failing "script not found". When ``location`` is supplied the caller
+    has already resolved discovery, so ``min_version`` is ignored.
 
     Raises ``SetecDiscoveryError`` if SETEC cannot be located or fails
     the version-floor check (callers handle this as the blocking tier
@@ -186,6 +196,8 @@ def run_supplement(
     does not conform to schema_version 1.0 (defense-in-depth; should
     not happen at the supported SETEC version floor).
     """
+    if location is None and min_version is not None:
+        location = discover_setec(min_version=min_version)
     args_with_json = list(args)
     if "--json" not in args_with_json:
         args_with_json = ["--json", *args_with_json]
