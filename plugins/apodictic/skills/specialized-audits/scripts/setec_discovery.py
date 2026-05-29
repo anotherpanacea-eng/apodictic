@@ -34,8 +34,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 MIN_SETEC_VERSION = (1, 86, 0)
-INSTALL_INSTRUCTIONS = """\
-SETEC Voiceprint is required for the AI-Prose Calibration audit.
+def _install_instructions(min_version: tuple[int, ...] = MIN_SETEC_VERSION) -> str:
+    """Render the install/upgrade message for a given required floor.
+
+    The floor is parameterized so per-script shims that enforce a higher
+    version than the framework-wide MIN_SETEC_VERSION (e.g. Surface 6 /
+    narrative_decision_audit at 1.107.0) surface the correct minimum
+    rather than the default 1.86.0."""
+    return """\
+SETEC Voiceprint is required for this APODICTIC AI-prose audit.
 
 Install one of:
   1. Add SETEC's marketplace and install:
@@ -46,7 +53,11 @@ Install one of:
        export SETEC_VOICEPRINT_DIR=/path/to/setec-voiceprint/plugins/setec-voiceprint
 
 Minimum required version: {min_ver}
-""".format(min_ver=".".join(str(p) for p in MIN_SETEC_VERSION))
+""".format(min_ver=".".join(str(p) for p in min_version))
+
+
+# Backward-compatible module constant (framework-wide default floor).
+INSTALL_INSTRUCTIONS = _install_instructions()
 
 
 @dataclass
@@ -129,7 +140,7 @@ def discover_setec(min_version: tuple[int, ...] = MIN_SETEC_VERSION) -> SetecLoc
             raise SetecDiscoveryError(
                 f"SETEC_VOICEPRINT_DIR is set to {env_root}, but that path is "
                 f"not a SETEC plugin root (missing scripts/ or plugin.json with "
-                f"name='setec-voiceprint').\n\n{INSTALL_INSTRUCTIONS}"
+                f"name='setec-voiceprint').\n\n{_install_instructions(min_version)}"
             )
         return _build_location(env_root, "env", min_version)
 
@@ -140,7 +151,7 @@ def discover_setec(min_version: tuple[int, ...] = MIN_SETEC_VERSION) -> SetecLoc
     raise SetecDiscoveryError(
         "SETEC Voiceprint plugin not found. Searched: SETEC_VOICEPRINT_DIR "
         "env var, ~/.claude/plugins/marketplaces/*/plugins/setec-voiceprint."
-        f"\n\n{INSTALL_INSTRUCTIONS}"
+        f"\n\n{_install_instructions(min_version)}"
     )
 
 
@@ -151,20 +162,20 @@ def _build_location(
     if not manifest:
         raise SetecDiscoveryError(
             f"Found SETEC plugin root at {plugin_root}, but plugin.json is "
-            f"unreadable.\n\n{INSTALL_INSTRUCTIONS}"
+            f"unreadable.\n\n{_install_instructions(min_version)}"
         )
     version_str = str(manifest.get("version", ""))
     version = _parse_version(version_str)
     if not version:
         raise SetecDiscoveryError(
             f"SETEC plugin.json at {plugin_root} has missing or unparseable "
-            f"version: {version_str!r}.\n\n{INSTALL_INSTRUCTIONS}"
+            f"version: {version_str!r}.\n\n{_install_instructions(min_version)}"
         )
     if version < min_version:
         min_str = ".".join(str(p) for p in min_version)
         raise SetecDiscoveryError(
             f"SETEC version {version_str} found at {plugin_root}, but APODICTIC "
-            f"requires {min_str} or newer.\n\n{INSTALL_INSTRUCTIONS}"
+            f"requires {min_str} or newer.\n\n{_install_instructions(min_version)}"
         )
     return SetecLocation(
         plugin_root=plugin_root,

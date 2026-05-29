@@ -19,8 +19,8 @@
     "geminiPublicPlugin": "../APODICTIC-Gemini/public/apodictic-plugin"
   },
   "counts": {
-    "availableAudits": 33,
-    "specializedAudits": 30,
+    "availableAudits": 34,
+    "specializedAudits": 31,
     "universalAudits": 3,
     "tagAudits": 5,
     "primaryTagAudits": 3,
@@ -411,6 +411,14 @@
           "summary": "voice singularity, lexical genericism, echo stacks, register seams",
           "files": [
             "craft/ai-prose-calibration.md"
+          ]
+        },
+        {
+          "slug": "narrative-decision",
+          "name": "Narrative-Decision (StoryScope)",
+          "summary": "structure-level AI tells, 33 narrative-decision signals, per-signal contributions",
+          "files": [
+            "craft/narrative-decision-audit.md"
           ]
         },
         {
