@@ -168,6 +168,18 @@ def _coerce_envelope(envelope: dict[str, Any]) -> None:
         )
 
 
+def _caller_json_out_path(args: list[str]) -> str | None:
+    """Return the path from a caller-supplied ``--json-out`` argument, or
+    None if absent. Handles both argparse forms: the split token
+    ``--json-out PATH`` and the equals form ``--json-out=PATH``."""
+    for i, arg in enumerate(args):
+        if arg == "--json-out":
+            return args[i + 1] if i + 1 < len(args) else None
+        if arg.startswith("--json-out="):
+            return arg.split("=", 1)[1]
+    return None
+
+
 def run_supplement(
     script: str,
     args: list[str],
@@ -219,8 +231,9 @@ def run_supplement(
     args_with_json = list(args)
     tmp_json_path: str | None = None
     tmp_json_dir: str | None = None
+    caller_json_out = _caller_json_out_path(args_with_json) if json_out else None
     if json_out:
-        if "--json-out" not in args_with_json:
+        if caller_json_out is None:
             # SETEC's default-private output policy refuses --json-out
             # paths that are not inside an `ai-prose-baselines-private/`
             # directory (POV voiceprints / idiolect output are
@@ -250,10 +263,10 @@ def run_supplement(
             capture_output=True,
         )
         if json_out:
-            read_path = tmp_json_path
-            if read_path is None:
-                # Caller supplied their own --json-out path; recover it.
-                read_path = args_with_json[args_with_json.index("--json-out") + 1]
+            # Read the temp file when the runner injected one; otherwise
+            # the caller supplied --json-out (either argparse form) and
+            # SETEC wrote to that path.
+            read_path = tmp_json_path if tmp_json_path is not None else caller_json_out
             try:
                 raw = Path(read_path).read_text(encoding="utf-8")
             except OSError as exc:
