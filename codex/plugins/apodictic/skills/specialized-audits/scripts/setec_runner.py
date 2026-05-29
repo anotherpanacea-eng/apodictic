@@ -36,9 +36,12 @@ handles the envelope):
 from __future__ import annotations
 
 import json
+import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -165,18 +168,55 @@ def _coerce_envelope(envelope: dict[str, Any]) -> None:
         )
 
 
+def _caller_json_out_path(args: list[str]) -> str | None:
+    """Return the path from a caller-supplied ``--json-out`` argument, or
+    None if absent. Handles both argparse forms: the split token
+    ``--json-out PATH`` and the equals form ``--json-out=PATH``."""
+    for i, arg in enumerate(args):
+        if arg == "--json-out":
+            return args[i + 1] if i + 1 < len(args) else None
+        if arg.startswith("--json-out="):
+            return arg.split("=", 1)[1]
+    return None
+
+
 def run_supplement(
     script: str,
     args: list[str],
     *,
     location: SetecLocation | None = None,
+    min_version: tuple[int, ...] | None = None,
+    json_out: bool = False,
 ) -> SupplementResult:
     """Run a SETEC script and return a SupplementResult.
 
-    Adds ``--json`` to the arg list if not already present. Captures
-    stdout, parses the schema_version 1.0 envelope, classifies the
-    warnings array per spec §6.4, and returns the result for the
-    caller to consume.
+    By default adds ``--json`` to the arg list if not already present and
+    parses the schema_version 1.0 envelope from stdout. Classifies the
+    warnings array per spec §6.4 and returns the result for the caller to
+    consume.
+
+    ``min_version`` enforces a per-script SETEC version floor higher
+    than the framework-wide default in setec_discovery. Surface 6
+    (``narrative_decision_audit.py``) shipped in SETEC 1.107.0, above the
+    1.86.0 floor the texture-level surfaces use; callers consuming it
+    pass ``min_version=(1, 107, 0)`` so an older SETEC fails discovery
+    with the intended upgrade message rather than reaching the script and
+    failing "script not found". When ``location`` is supplied the caller
+    has already resolved discovery, so ``min_version`` is ignored.
+
+    ``json_out`` selects the file-based JSON strategy for SETEC scripts
+    whose ``--json`` surface writes the envelope to a path rather than to
+    stdout. ``pov_voice_profile.py`` is the current case: it exposes
+    ``--json-out <path>`` (argparse prefix-matching makes a bare
+    ``--json`` resolve to ``--json-out`` and fail "expected one
+    argument"). When ``json_out=True`` and no ``--json-out`` is already
+    present, the runner writes into an ephemeral
+    ``ai-prose-baselines-private/`` directory — SETEC's default-private
+    output policy refuses voice-cloning outputs anywhere else (short of
+    the unsafe ``--allow-public-output``) — then reads the envelope back
+    and removes the whole tree. A caller-supplied ``--json-out`` path
+    (e.g. under the writer's real baselines dir) is honored and left in
+    place.
 
     Raises ``SetecDiscoveryError`` if SETEC cannot be located or fails
     the version-floor check (callers handle this as the blocking tier
@@ -186,28 +226,79 @@ def run_supplement(
     does not conform to schema_version 1.0 (defense-in-depth; should
     not happen at the supported SETEC version floor).
     """
+    if location is None and min_version is not None:
+        location = discover_setec(min_version=min_version)
     args_with_json = list(args)
-    if "--json" not in args_with_json:
+    tmp_json_path: str | None = None
+    tmp_json_dir: str | None = None
+    caller_json_out = _caller_json_out_path(args_with_json) if json_out else None
+    if json_out:
+        if caller_json_out is None:
+            # SETEC's default-private output policy refuses --json-out
+            # paths that are not inside an `ai-prose-baselines-private/`
+            # directory (POV voiceprints / idiolect output are
+            # voice-cloning input), unless --allow-public-output is
+            # passed — which is unsafe for personal corpora. Allocate an
+            # ephemeral private-named directory, write the envelope there,
+            # read it back, and remove the whole tree afterward: this
+            # satisfies the policy without --allow-public-output and
+            # without persisting personal data. A caller-supplied
+            # --json-out path (e.g. under the writer's real baselines
+            # dir) is honored as-is and left in place.
+            tmp_json_dir = tempfile.mkdtemp(prefix="setec_")
+            private_dir = os.path.join(tmp_json_dir, "ai-prose-baselines-private")
+            os.mkdir(private_dir)
+            fd, tmp_json_path = tempfile.mkstemp(
+                prefix="setec_", suffix=".json", dir=private_dir
+            )
+            os.close(fd)
+            args_with_json = ["--json-out", tmp_json_path, *args_with_json]
+    elif "--json" not in args_with_json:
         args_with_json = ["--json", *args_with_json]
-    completed: subprocess.CompletedProcess = run_setec_script(
-        script,
-        args_with_json,
-        location=location,
-        capture_output=True,
-    )
-    if not completed.stdout.strip():
-        raise SetecRunnerError(
-            f"SETEC {script} produced no stdout (returncode="
-            f"{completed.returncode}). Stderr (truncated): "
-            f"{completed.stderr[:500]!r}"
-        )
     try:
-        envelope = json.loads(completed.stdout)
-    except json.JSONDecodeError as exc:
-        raise SetecRunnerError(
-            f"SETEC {script} stdout did not parse as JSON: {exc}. "
-            f"First 500 chars: {completed.stdout[:500]!r}"
-        ) from exc
+        completed: subprocess.CompletedProcess = run_setec_script(
+            script,
+            args_with_json,
+            location=location,
+            capture_output=True,
+        )
+        if json_out:
+            # Read the temp file when the runner injected one; otherwise
+            # the caller supplied --json-out (either argparse form) and
+            # SETEC wrote to that path.
+            read_path = tmp_json_path if tmp_json_path is not None else caller_json_out
+            try:
+                raw = Path(read_path).read_text(encoding="utf-8")
+            except OSError as exc:
+                raise SetecRunnerError(
+                    f"SETEC {script} did not write a JSON envelope to "
+                    f"{read_path} (returncode={completed.returncode}). "
+                    f"Stderr (truncated): {completed.stderr[:500]!r}"
+                ) from exc
+            if not raw.strip():
+                raise SetecRunnerError(
+                    f"SETEC {script} wrote an empty JSON envelope to "
+                    f"{read_path} (returncode={completed.returncode}). "
+                    f"Stderr (truncated): {completed.stderr[:500]!r}"
+                )
+        else:
+            if not completed.stdout.strip():
+                raise SetecRunnerError(
+                    f"SETEC {script} produced no stdout (returncode="
+                    f"{completed.returncode}). Stderr (truncated): "
+                    f"{completed.stderr[:500]!r}"
+                )
+            raw = completed.stdout
+        try:
+            envelope = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise SetecRunnerError(
+                f"SETEC {script} JSON output did not parse: {exc}. "
+                f"First 500 chars: {raw[:500]!r}"
+            ) from exc
+    finally:
+        if tmp_json_dir is not None:
+            shutil.rmtree(tmp_json_dir, ignore_errors=True)
     _coerce_envelope(envelope)
     available = bool(envelope["available"])
     blocking, reliability, cosmetic = _classify_warnings(

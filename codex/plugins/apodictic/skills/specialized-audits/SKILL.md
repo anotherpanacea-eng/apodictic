@@ -24,6 +24,9 @@ description: >
   "historical fiction audit," "queer romance audit," "fan fiction conversion,"
   "interiority audit," "banister audit," "short fiction audit," "series audit,"
   "ai prose," "ai calibration," "slop to silver," "ai-prose calibration,"
+  "narrative decision," "narrative-decision audit," "narrative decision audit,"
+  "storyscope," "story scope," "narrative feature scoring," "narrative-decision signals,"
+  "rewrite-resistant," "structure-level ai," "structure-level ai detection,"
   "variance audit," "manuscript audit," "repetition audit," "lexical compression,"
   "personal baseline," "voice fingerprint," "burstiness," "MATTR," "function-word fingerprint,"
   "negation hedge," "indefinite-pronoun gesture," "disguised correctio,"
@@ -90,7 +93,7 @@ description: >
   or any request for a focused manuscript audit beyond the core development
   edit passes. Also triggers on "list audits," "what audits are available,"
   or "help audits."
-version: 1.10.0
+version: 1.11.0
 ---
 
 # Specialized Audits & Research Modes
@@ -142,6 +145,7 @@ The universal status holds; future audit additions follow the criterion above wi
 | **Fan Fiction Conversion** | IP scaffolding, worldbuilding gaps, character independence | Fanfic-to-original conversion |
 | **Short Fiction** | Compression, single-effect design, ending resonance | Short stories, flash fiction |
 | **AI-Prose Calibration v2.0** | Three-layer diagnostic: Layer A distributional (variance signals against personal/genre baseline, Python scripts), Layer B pattern (AIC-1 through AIC-7 with named subtypes — Indefinite-Pronoun Gesture, Negation Hedge, Disguised Correctio, Pseudo-Aphorism, Manifesto Cadence — plus argument-shaped nonfiction parallel set), Layer C source triage (payoff test, voice slip vs. lost callback, earned-by-frame verdict) | Writer identifies draft as AI-generated/assisted; Pass 1 flags uniform fluency; Pass 5 flags coherence without specificity; "it reads like AI"; lexical compression; manuscript-wide drift; voice attribution required |
+| **Narrative-Decision (StoryScope)** | Structure-level AI-tell scoring (opt-in; SETEC-backed). 30 core narrative-decision features / 33 signals from Russell et al. 2026 across 10 NarraBench dimensions and 7 bundles; per-signal contributions vs. paper-anchored human/AI means + bundle rollup. Complement to AI-Prose Calibration (texture) — measures how a story is *built* (themes, plot, sensory register, reader stance, time), the most rewrite-resistant AI-prose axis. Ships uncalibrated (no thresholds, `uncalibrated` band); pins the per-signal payload, not the aggregate score; anti-verdict | AI-assisted draft and the writer wants structure-level (not texture-level) evidence; AI-Prose Calibration fired and structural corroboration wanted; mixed-evidence adjudication. Requires SETEC ≥ 1.107.0; long-form fiction, 2000–25000 words |
 | **Idiolect Preservation List** | Surfaces words and collocations the writer uses idiosyncratically against a reference corpus; produces a "do not normalize" preservation list for revision passes. Voice preservation, not provenance detection. Default for `apodictic-coach`; companion to AIC-7 Lexical Convergence | Building a revision plan; preparing for a copyedit pass; AIC-7 Lexical Convergence flagged words that may be signature; writer reports "my editor flattened me"; before a heavy line edit |
 | **Punctuation Cadence** | Punctuation rhythm + interruption-grammar audit: per-mark density, sentence-final distribution, interruption-grammar profile, punctuation bigrams, compression-fraction band, optional baseline z-scoring. Subsumes the territory of the standalone em-dash-reduction skill | Lexical compression flagged but writer wants to know *what* changed; suspected AI line-edit or heavy copyedit; "the edit changed something I can't name"; triage check on AI-revised prose |
 | **POV Voice Profile (Opt-In)** | Per-POV-character voiceprints for multi-POV fiction: pairwise voice-distance matrix, distinguishing features per POV, voice-collapse verdict (Burrows-Delta-driven). Opt-in due to JSONL-with-`pov`-tags manifest requirement and per-POV stylometric weight | Multi-POV manuscript AND Pass 7 Blind Swap fails; multi-POV AND AIC-1 + AIC-5 co-occur; author asks "do my POVs sound different"; series consistency check across books |
@@ -262,6 +266,7 @@ See `references/craft/shelf-positioning.md` for the full audit.
 - `references/craft/ai-prose-calibration.md` — AI-Prose Calibration audit v2.0 (AIC-1 through AIC-7 with named subtypes, three-layer architecture, argument-shaped nonfiction parallel set, source-triage step)
 - `references/craft/ai-prose-calibration-level-setting.md` — AI-Prose Calibration level-setting examples (earned/unearned for each named pattern, payoff test, voice slip vs. lost callback)
 - `references/craft/ai-prose-calibration-distributional.md` — AI-Prose Calibration Layer A reference (eleven variance signals with formulas, calibration warnings, SETEC subprocess shims with schema_version 1.0 envelope)
+- `references/craft/narrative-decision-audit.md` — Narrative-Decision (StoryScope) audit v0.1, consumer of SETEC Surface 6 `narrative_decision_audit` (30 core features / 33 signals from Russell et al. 2026, 7 bundles, 10 NarraBench dimensions; per-signal contributions are load-bearing, aggregate score not pinned; anti-verdict, ships uncalibrated, long-form-fiction register; SETEC ≥ 1.107.0)
 - `references/craft/idiolect-preservation.md` — Idiolect Preservation List audit (keyness + collocation extraction, preservation list output, `apodictic-coach` integration, AIC-7 Lexical Convergence cross-reference)
 - `references/craft/punctuation-cadence.md` — Punctuation Cadence audit (per-mark density, sentence-final distribution, interruption grammar, punctuation bigrams, compression bands, subsumes em-dash-reduction)
 - `references/craft/pov-voice-profile.md` — POV Voice Profile audit (opt-in; per-POV centroids, pairwise distance matrix, voice-collapse verdict, Pass 7 Blind Swap cross-reference)
