@@ -56,7 +56,7 @@ This audit owns no computation. It consumes SETEC Voiceprint's `narrative_decisi
 
 ### The envelope (schema_version 1.0)
 
-The surface emits the same top-level envelope APODICTIC already parses for `variance_audit`, `voice_distance`, etc. The pass-side helper `setec_runner.run_supplement("narrative_decision_audit.py", args)` parses it; read from `result.results`. The load-bearing keys:
+The surface emits the same top-level envelope APODICTIC already parses for `variance_audit`, `voice_distance`, etc. Consume it through the pass-side helper with the Surface 6 floor enforced — `setec_runner.run_supplement("narrative_decision_audit.py", args, min_version=(1, 107, 0))` — then read from `result.results`. Passing `min_version` is required here: without it the runner discovers at the framework-wide 1.86.0 floor, so a SETEC older than 1.107.0 would pass discovery and then fail "script not found" instead of surfacing the intended upgrade path. (The direct shim `ai_prose_narrative_decision_audit.py` enforces the same 1.107.0 floor for CLI use.) The load-bearing keys:
 
 ```jsonc
 "results": {
