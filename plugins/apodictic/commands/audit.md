@@ -27,6 +27,7 @@ Display the complete list of available audits with brief descriptions:
 - **literary-craft** — Literary Craft: load-bearing vs. ornamental prose, defamiliarization, hybrid calibrations
 - **banister** — Banister (Epistemic Humility): rhetorical fairness, straw opposition
 - **ai-prose** — AI-Prose Calibration: voice singularity, lexical genericism, echo stacks, register seams
+- **narrative-decision** — Narrative-Decision (StoryScope): structure-level AI tells, 33 narrative-decision signals, per-signal contributions
 - **force** — Force Architecture: force delivery, consequence/escalation tracking, inert force diagnosis
 - **short** — Short Fiction: compression, single-effect, ending resonance
 - **compression** — Compression: expendable material, cut list, word-savings map
