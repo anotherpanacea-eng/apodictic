@@ -60,11 +60,15 @@ arguments alone) is not a passing engine.
 
 ## Convergence
 
-Score per-run, then assess convergence across two independent runs on the
-four anchors (core claim, top 1–3 failures, burden mismatch, objection zone).
-Agreement = both runs land in the same ground-truth band on ≥3 of 4 anchors,
-core claim mandatory. See
-[argument-benchmark-spec.md §Convergence](../../docs/argument-benchmark-spec.md#convergence-protocol-the-success-condition).
+Score per-run, then assess convergence across two independent **engine** runs.
+For failure-bearing fixtures the anchors are core claim, top 1–3 failures,
+burden mismatch, and objection zone; agreement = both runs land in the same
+ground-truth band on ≥3 of 4 anchors, core claim mandatory. **Positive controls
+use the control-specific anchor set** — claim (GT1) + Distinguish classification
+(GT7) + no invented failure — and converge only when all three hold. Two
+reviewers scoring one output is reliability, not convergence. See
+[argument-benchmark-spec.md §Convergence](../../docs/argument-benchmark-spec.md#convergence-protocol-the-success-condition)
+and §Positive-control convergence.
 
 ## Decision Rules And Failure Attribution
 

@@ -1,10 +1,3 @@
-<!--
-SYNTHETIC FIXTURE — authored for the APODICTIC Argument Engine Benchmark.
-Not a real op-ed; no real city, hospital, or person is referenced.
-Provenance: synthetic-or-derived. Planted diagnosis: see ../groundtruth (op-ed-warrant-leap).
-Do not quote as a real-world source.
--->
-
 # Ban the Scooters Before Someone Else Gets Hurt
 
 When the rental e-scooters arrived in Westhaven eighteen months ago, the

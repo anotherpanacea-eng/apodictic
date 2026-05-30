@@ -5,7 +5,8 @@
 - **Fixture slug:** op-ed-warrant-leap
 - **Bucket:** 1 op-ed
 - **Source class:** synthetic-or-derived
-- **Text stored in-repo?:** yes
+- **Text stored in-repo?:** yes — `fixture.md` is the verbatim engine input: argument text only, no metadata or comments (so nothing leaks the answer key into the run). All provenance/diagnosis lives here, never in the input file.
+- **Synthetic-source note:** invented op-ed; no real city, hospital, or person is referenced. Do not quote as a real-world source.
 - **Authored or adapted by:** APODICTIC benchmark (synthetic)
 - **Registered (date):** 2026-05-30
 - **Ground-truth authority:** author-registered; deterministic by construction (the warrant gap is planted)

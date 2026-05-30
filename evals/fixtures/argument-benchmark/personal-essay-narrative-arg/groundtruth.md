@@ -5,7 +5,8 @@
 - **Fixture slug:** personal-essay-narrative-arg
 - **Bucket:** 4 personal essay with implicit argument
 - **Source class:** synthetic-or-derived
-- **Text stored in-repo?:** yes
+- **Text stored in-repo?:** yes — `fixture.md` is the verbatim engine input: argument text only, no metadata or comments. Critically for a positive control, the input carries **no hint of its control status** (an earlier draft leaked "this is a positive control" in a comment header — removed). All provenance/diagnosis lives here, never in the input file.
+- **Synthetic-source note:** not a memoir of any real person; events and figures are invented. Do not quote as a real-world source.
 - **Authored or adapted by:** APODICTIC benchmark (synthetic)
 - **Registered (date):** 2026-05-30
 - **Ground-truth authority:** author-registered; this is a **positive control** for the Q7 specificity gate
