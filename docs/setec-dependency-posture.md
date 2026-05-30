@@ -38,6 +38,8 @@ Two consequences fall out of the table:
 
 **Graceful degradation applies to the *judgment* tier, not the *computational* tier.** The three-tier warnings classification in `setec_runner` (blocking / reliability / cosmetic) and the LLM-only fallback remain correct for judgment-tier supplementation; they are not a license to substitute for a missing computation.
 
+**A computed value earns trust only by passing a plausibility bound — "SETEC ran" is not "SETEC is right."** The present/absent framing has a third state: SETEC present, the computation completes, but the number is invalid. (Empirically: a Tier-4 surprisal run on a DirectML backend returned 14–22 nats/token against a theoretical maximum of log │vocab│ ≈ 11.76 — a confident, precise, unfalsifiable, *wrong* value.) That is the LLM-estimate ban's failure mode arriving from the compute backend instead of from substitution, and the claim-license discipline forbids it either way. Computational surfaces must **self-validate their raw outputs against cheap bounds** (surprisal ≤ log │vocab│; cosine ∈ [−1, 1]; finite, correctly-shaped vectors) and emit a clean failure on violation. This generalizes the framework's existing **polarity-inversion gate**, which already refuses to publish a below-chance calibration rather than ship one that ranks backwards: an out-of-bounds computation is a clean failure, not a result.
+
 ---
 
 ## Decision 2 — Version floors are a property of the **surface**, discovered, not hardcoded per shim
@@ -64,13 +66,14 @@ Requiring SETEC does **not** fix drift; narrowing the contract does. The roadmap
 - **Do not fuse the tools** or vendor SETEC into APODICTIC. The subprocess boundary keeps the heavy dependency stack out of the writer-facing plugin; that isolation is intended.
 - **Do not require the Python stack for all of APODICTIC.** Only the computational audits declare the dependency, and only when invoked.
 - **Do not LLM-fake a computation.** A missing computational surface is a clean failure, never an approximation.
+- **Do not emit an out-of-bounds computation.** A computed value that fails a cheap plausibility bound (e.g. surprisal exceeding log │vocab│) is a clean failure, not a number — the same discipline as "never an approximation," applied to the compute backend rather than to LLM substitution.
 
 ---
 
 ## How a new SETEC-backed audit declares its posture (checklist)
 
 1. Classify it: **computational** (required) or **judgment** (independent / optional supplement)?
-2. If computational: set the surface's **version floor** in its shim, route through `run_supplement(min_version=...)`, and ensure the failure path gives an install/upgrade message (not a silent skip, not an LLM estimate).
+2. If computational: set the surface's **version floor** in its shim, route through `run_supplement(min_version=...)`, ensure the failure path gives an install/upgrade message (not a silent skip, not an LLM estimate), and confirm the surface **self-validates its output against plausibility bounds** — failing cleanly rather than emitting an out-of-bounds number.
 3. If judgment: keep it SETEC-independent; if it *optionally* consumes a SETEC signal, treat the signal as reliability-tier supplementation that degrades per `setec_runner`'s three-tier rule.
 4. Record the audit's row in the Decision 1 table above.
 5. When the capabilities query (Decision 2 target) lands, drop the hardcoded floor in favor of the manifest value.
