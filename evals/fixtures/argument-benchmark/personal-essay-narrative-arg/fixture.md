@@ -1,11 +1,3 @@
-<!--
-SYNTHETIC FIXTURE — authored for the APODICTIC Argument Engine Benchmark.
-Not a memoir of any real person; events and figures are invented.
-Provenance: synthetic-or-derived. Planted diagnosis: see ../groundtruth (personal-essay-narrative-arg).
-This is a POSITIVE CONTROL: the correct verdict is UNCONVENTIONAL-BUT-EFFECTIVE, not a failure.
-Do not quote as a real-world source.
--->
-
 # The Casseroles Stop
 
 The casseroles stop after three weeks. I learned this the way you learn the

@@ -10,10 +10,27 @@ the design, corpus plan, and convergence protocol are in
 ## Provenance rule
 
 In-repo fixture *text* is **synthetic-or-derived** or **public-domain** only,
-per the fixture-provenance policy. Synthetic fixtures are clearly marked in an
-HTML comment header and reference no real person, place, or source. Real
-modern manuscripts are never stored here — they are referenced by gitignored
-manifest (`evals/manifests/*.md`).
+per the fixture-provenance policy. Synthetic provenance and the "do not quote
+as a real-world source" note live in each fixture's `groundtruth.md` (**not** in
+`fixture.md` — see input hygiene below); synthetic fixtures reference no real
+person, place, or source. Real modern manuscripts are never stored here — they
+are referenced by gitignored manifest (`evals/manifests/*.md`).
+
+## Input hygiene (do not leak the answer key)
+
+`fixture.md` is the **verbatim engine input: argument text only, with no
+provenance, synthetic markers, slug, or diagnosis pointers.** Markdown/HTML
+comments are still raw input — if the file is fed to the engine, anything in a
+comment leaks the answer key (and, for positive controls, their control status),
+so the benchmark could "pass" by reading metadata instead of diagnosing.
+Therefore:
+
+- All provenance and ground truth live in `groundtruth.md`, which is **never**
+  fed to the engine.
+- Feed the engine the *contents* of `fixture.md` plus a **neutral label** — do
+  **not** pass the descriptive fixture slug (e.g., `warrant-leap`) to the engine
+  as a title or prompt, since the slug also encodes the diagnosis.
+- When adding a fixture, keep `fixture.md` metadata-free from the start.
 
 ## Vertical slice (Increment 1)
 
@@ -33,18 +50,21 @@ false-positive trap fired on a control is Q7 = 0 and blocks the bucket.
 
 ```
 <fixture-slug>/
-  fixture.md       # the argument text (omitted when text is referenced, not stored)
-  groundtruth.md   # pre-registered answer key — GT1–GT7; see ../../argument-groundtruth-template.md
+  fixture.md       # verbatim engine input: argument text ONLY, no metadata/comments
+                   #   (omitted when text is referenced, not stored)
+  groundtruth.md   # pre-registered answer key + provenance — GT1–GT7; never fed to the engine
+                   #   see ../../argument-groundtruth-template.md
 ```
 
 ## Running a fixture
 
 1. Route the text through nonfiction intake (→ Dialectical Clarity) or invoke
-   `/audit dialectical-clarity` directly. For referenced fixtures (text not
-   stored), fetch the pinned source named in `groundtruth.md` first, apply the
-   analyzed-text scope anchors, and — on the first authoritative retrieval —
-   record the SHA-256 back into `groundtruth.md` so the source is pinned for
-   all subsequent runs.
+   `/audit dialectical-clarity` directly. Feed the engine the *contents* of
+   `fixture.md` with a neutral label (not the slug) — see Input hygiene above.
+   For referenced fixtures (text not stored), fetch the pinned source named in
+   `groundtruth.md` first, apply the analyzed-text scope anchors, and — on the
+   first authoritative retrieval — record the SHA-256 back into `groundtruth.md`
+   so the source is pinned for all subsequent runs.
 2. Run the companion modules the fixture's GT scope requires (Red Team for
    Q5, Revision Coach argument mode for Q6).
 3. Capture the editorial letter + `Argument_State.md` (+ companion artifacts).

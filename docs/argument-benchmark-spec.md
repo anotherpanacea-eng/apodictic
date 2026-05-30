@@ -227,15 +227,36 @@ Operationalized:
    same single output is _not_ an independence path** — that measures scorer
    reliability (see below), not convergence, and must never be used to pass the
    convergence gate.
-2. **Convergence is measured on four anchors:** core claim (GT1), top 1–3
-   structural failures (GT2 primary + secondary), main burden mismatch (GT2
-   BURDEN / GT4), strongest objection zone (GT3).
-3. **Agreement threshold:** the two runs *converge* on a fixture when they
-   agree on ≥3 of the 4 anchors, with the core-claim anchor (GT1) mandatory
-   among them. "Agree" means both runs land in the same ground-truth band.
+2. **Convergence is measured on four anchors (failure-bearing fixtures):** core
+   claim (GT1), top 1–3 structural failures (GT2 primary + secondary), main
+   burden mismatch (GT2 BURDEN / GT4), strongest objection zone (GT3).
+   *Positive controls use a different anchor set — see below.*
+3. **Agreement threshold:** the two runs *converge* on a failure-bearing fixture
+   when they agree on ≥3 of the 4 anchors, with the core-claim anchor (GT1)
+   mandatory among them. "Agree" means both runs land in the same ground-truth
+   band.
 4. **Suite-level success:** the engine passes a bucket when ≥⅔ of that
    bucket's fixtures converge, with no positive control mis-classified
    (Q7 = 0). Suite passes when every bucket passes.
+
+### Positive-control convergence
+
+Positive controls have no planted failure, so three of the four anchors above
+(top failures, burden mismatch, objection zone) are N/A and the ≥3-of-4 rule
+cannot be computed. Controls converge on a **control-specific anchor set**:
+
+1. **Claim (GT1)** — both runs recover the claim within the GT1 paraphrase band.
+2. **Distinguish classification (GT7)** — both runs return the GT7
+   classification (SOUND or UNCONVENTIONAL-BUT-EFFECTIVE).
+3. **No invented failure** — *neither* run fires the GT7 false-positive trap
+   code or fabricates a Must-Fix structural failure, objection, or burden gap.
+
+A control **converges only when all three hold.** Anchor 3 is also the
+specificity check: a run that violates it scores Q7 = 0 for that fixture and,
+per item 4, blocks the bucket regardless of the other run. (The two slice
+controls — `personal-essay-narrative-arg` and the referenced
+`modest-proposal-satire` — score on this set; their `groundtruth.md` marks
+GT2/GT3/GT5/GT6 as N/A.)
 
 ### Reviewer reliability is a separate layer, not a convergence path
 
@@ -268,8 +289,11 @@ engine fault vs. ground-truth ambiguity vs. reviewer error.
 
 For each fixture:
 
-1. **Input.** The fixture text (in-repo file, or referenced source for
-   text-not-stored public-domain pieces).
+1. **Input.** The fixture text only — the contents of `fixture.md` (or the
+   referenced source for text-not-stored pieces), which is metadata-free by
+   construction. Feed it with a **neutral label**, never the descriptive slug;
+   `groundtruth.md` is never fed to the engine. (Comments/metadata in the input
+   would leak the answer key — see the fixture README's Input hygiene rule.)
 2. **Invocation.** Route through nonfiction intake (Franklin Classification 3
    or 4 → Dialectical Clarity), or invoke the audit directly
    (`/audit dialectical-clarity`). Companion modules run per the fixture's GT

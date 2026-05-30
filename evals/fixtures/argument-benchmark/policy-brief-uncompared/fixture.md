@@ -1,10 +1,3 @@
-<!--
-SYNTHETIC FIXTURE — authored for the APODICTIC Argument Engine Benchmark.
-Not a real policy brief; no real city, agency, or study is referenced.
-Provenance: synthetic-or-derived. Planted diagnosis: see ../groundtruth (policy-brief-uncompared).
-Do not quote as a real-world source.
--->
-
 # Policy Brief: Make Metro Transit Fare-Free in Rivermont
 
 **Prepared for the Rivermont City Council — Transportation Committee**
