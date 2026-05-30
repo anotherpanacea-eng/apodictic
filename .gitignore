@@ -28,3 +28,10 @@ docs/review-log/
 evals/manifests/*.md
 !evals/manifests/README.md
 !evals/manifests/fixture-manifest-template.md
+
+# Eval run outputs. Gitignored by default — may contain private-fixture
+# outputs or model artifacts. Permitted synthetic/public-domain outputs are
+# committed explicitly (git add -f) per the fixture-provenance policy.
+# Wildcard + README allowlist mirrors the manifests pattern above.
+evals/results/*
+!evals/results/README.md
