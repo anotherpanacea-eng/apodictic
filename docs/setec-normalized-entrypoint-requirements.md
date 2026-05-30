@@ -134,18 +134,33 @@ R4 semantics apply throughout.
 
 ---
 
-## Open questions for SETEC
+## Open questions for SETEC — RESOLVED 2026-05-30
 
-1. **Capabilities source.** SETEC already maintains a capabilities manifest (`capabilities.yaml` / `capabilities.py`). Can `setec capabilities --json` emit it directly, or is a normalization layer needed?
-2. **Dispatcher vs. per-script.** Is a single `setec run <surface>` dispatcher preferred, or would normalizing each existing script's flags (uniform stdout `--json`, no prefix-match ambiguity) be a smaller change with the same consumer benefit?
-3. **Envelope-vs-artifact split for private surfaces.** For `pov_voice_profile` / `idiolect_detector`, what's the cleanest way to return the consumer envelope on stdout while keeping the voice-cloning artifact under the private-output policy?
-4. **Error model surface.** Is `available: false` + `reason_category` in the envelope sufficient, or should there also be a distinct typed-error envelope for pre-run failures (bad surface name, version floor)?
-5. **Fixture ownership.** Where do the shared golden envelopes live so both repos' CI can consume them without a circular dependency?
+Answered by the SETEC-side implementation spec (`plugins/setec-voiceprint/references/setec-normalized-entrypoint-spec.md`):
+
+1. **Capabilities source.** Extend `capabilities.py` to emit `--json`; add four fields to `capabilities.yaml` (`min_setec_version`, `json_delivery`, `inputs`, `calibration_status`) plus a top-level `setec_version` sourced from `plugin.json`. **No second source of truth.**
+2. **Dispatcher vs. per-script.** A thin `setec run <surface> --json` dispatcher, table-driven from the manifest's `script_path`. Normalizes all nine surfaces and hosts the floor/dependency/error checks in one place rather than touching nine argparsers.
+3. **Envelope-vs-artifact split.** The script writes the private artifact (default-private policy); the **dispatcher projects the consumer subset to the stdout envelope**. Fixes the `pov_voice_profile` conflation; longer term, `pov_voice_profile` gets a native stdout `--json` mode.
+4. **Error model surface.** One envelope shape for success **and** failure (`available: false` + a `reason_category` enum), with exit codes `0` success / `2` discovery·version / `3` contract·usage / `1` unexpected.
+5. **Fixture ownership.** Golden envelopes + a reference fake-SETEC are **producer-owned** in `references/contract_fixtures/`; the consumer **vendors a pinned copy** (no circular dependency).
+
+**Target versions:** R1 + R5 ≈ SETEC 1.110.0; R2 + R3 ≈ 1.111.0; `schema_version` stays 1.0 (all additive).
+
+### Output-validity gate (SETEC impl-spec R4 §5)
+
+The SETEC spec additionally folds an output-validity gate into `build_output()`: computed values are bounds-checked at the envelope boundary (e.g. surprisal ≤ log │vocab│; cosine ∈ [−1, 1]), so an out-of-bounds result (the DirectML-surprisal case) is rejected at construction rather than shipped. Consumer benefit: envelope numeric values arrive pre-validated, reducing defensive parsing on APODICTIC's side. Recorded consumer-side in `docs/setec-dependency-posture.md` — folded into **Decision 1** (the "SETEC ran ≠ SETEC is right" plausibility-bound paragraph), the **"do not emit an out-of-bounds computation"** non-goal, and the posture checklist.
+
+### Consumer adoption notes (checkpoints for when SETEC ships R1–R5)
+
+1. **Projected subset must preserve Pass 7's read keys.** APODICTIC's `run-full.md` Pass 7 reads `results.pairwise_distances`, `results.pov_vs_corpus`, and `results.collapse_verdict` (the operative artifact) from `pov_voice_profile`. The dispatcher's stdout projection must include these — an R5 fixture should assert it.
+2. **`reason_category` enum + exit codes are a shared vocabulary.** On adoption, `setec_runner`'s `available:false` handling branches on `reason_category` and `setec_discovery` maps the exit codes. Current shims `return 2` on discovery/version, consistent with the `2` slot; the enum values must be pinned so both sides agree.
+3. **Vendored fixtures need a home + a pin.** APODICTIC needs a fixtures location and a "sync fixtures at SETEC version N" step when it vendors the pinned copy from `references/contract_fixtures/`. Lands with Phase 1.
+4. **Sequence the deletions.** The acceptance-criteria deletions (collapse `run_supplement`, drop `json_out`/`--json-out`/private-dir/equals-form, drop per-shim floors) require R2 live **and** `pov_voice_profile`'s native stdout mode. Adopt R1 first (data-drive floors from the capabilities query); keep the v1.11.0 `json_out` path until R2 ships.
 
 ---
 
 ## Status
 
 - **Filed:** 2026-05-30 (APODICTIC consumer side).
-- **Next artifact:** a SETEC-side implementation spec (authored in the `setec-voiceprint` repo, where the CLI surface, capabilities manifest, and producer-side fixtures live) that answers the open questions and maps R1–R5 onto SETEC's internals.
-- **No SETEC-side commitment implied.** APODICTIC continues to function against the current per-surface contract (with the per-shim floors and the `json_out` handling shipped in v1.11.0) until/unless this lands.
+- **Answered:** 2026-05-30 by the SETEC-side implementation spec at `plugins/setec-voiceprint/references/setec-normalized-entrypoint-spec.md` (in the `setec-voiceprint` repo, alongside the StoryScope handoff). The five open questions are resolved above.
+- **No SETEC-side commitment implied beyond that spec.** APODICTIC continues to function against the current per-surface contract (with the per-shim floors and the `json_out` handling shipped in v1.11.0) until R1–R5 land; adoption follows the consumer checkpoints above.
