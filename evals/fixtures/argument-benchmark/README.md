@@ -54,6 +54,15 @@ failures and locate them in the right layer?). The two positive controls test
 **specificity** (does it leave sound-but-unconventional arguments alone?). A
 false-positive trap fired on a control is Q7 = 0 and blocks the bucket.
 
+### Referenced real corpus (severity calibration)
+
+Ten published arguments (Coates, Andreessen, Amodei, Bender et al., AECF, PPI,
+and the four-way abundance debate) are registered in [CORPUS.md](CORPUS.md) with
+an independent editor's diagnoses as ground truth. Text is not stored
+(referenced by URL); they test whether the engine resists *over-pathologizing* a
+competent argument. To run them, follow [RUN-PROTOCOL.md](RUN-PROTOCOL.md) in a
+web-enabled session.
+
 ## Layout per fixture
 
 ```
