@@ -101,11 +101,25 @@ built from three sources:
    - *Federalist* No. 10 (1787) — academic/policy argument with explicit
      warrant structure; a *positive* control (should largely PASS). Bucket 5.
 
-3. **Private / permission-cleared real fixtures (external validity, later).**
-   Real modern manuscripts referenced by gitignored manifest. Not part of the
-   in-repo slice; added when external validity beyond synthetic+public-domain
-   is needed. These are the only fixtures that exercise contemporary register
-   and live political stakes.
+3. **Third-party published works (external validity).** Real, published,
+   attributed arguments (op-eds, manifestos, think-tank briefs, academic
+   papers) — referenced by public URL; **text never stored** (copyright), but
+   the citation + an independently-authored diagnosis live in-repo (paraphrase
+   only). These supply contemporary register, live stakes, and — crucially — an
+   *external* ground-truth authority distinct from the benchmark author. Most
+   are competent arguments with one structural soft spot, so their primary value
+   is **severity calibration** (does the engine resist over-pathologizing a
+   sound argument?), complementing the synthetic corpus's catastrophic failures.
+   Registered in `evals/fixtures/argument-benchmark/CORPUS.md`.
+
+4. **Private / unpublished / client manuscripts.** Referenced by gitignored
+   manifest and never named in-repo (confidentiality). Added when external
+   validity beyond published sources is needed.
+
+> **Run environment note.** Referenced fixtures (tiers 2–4) require fetching the
+> source at run time, so they can only be run where outbound web access is
+> available. The build/CI sandbox blocks it; runs happen in a web-enabled
+> session.
 
 ### Anti-overfit guard: positive controls are mandatory
 

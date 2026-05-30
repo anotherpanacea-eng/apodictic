@@ -9,12 +9,20 @@ the design, corpus plan, and convergence protocol are in
 
 ## Provenance rule
 
-In-repo fixture *text* is **synthetic-or-derived** or **public-domain** only,
-per the fixture-provenance policy. Synthetic provenance and the "do not quote
-as a real-world source" note live in each fixture's `groundtruth.md` (**not** in
-`fixture.md` — see input hygiene below); synthetic fixtures reference no real
-person, place, or source. Real modern manuscripts are never stored here — they
-are referenced by gitignored manifest (`evals/manifests/*.md`).
+Fixtures fall in three provenance tiers:
+
+1. **Synthetic / public-domain** — text **may** be stored in-repo (synthetic
+   pieces are authored here; public-domain pieces like Swift are referenced).
+   Synthetic provenance and the "do not quote as a real-world source" note live
+   in each fixture's `groundtruth.md` (**not** in `fixture.md` — see input
+   hygiene below); synthetic fixtures reference no real person, place, or source.
+2. **Third-party published** (Coates, a16z, Cato, …) — text is **never stored**
+   (copyright); the work is *referenced* by public URL, and its key
+   (citation + diagnosis, no source text) lives in-repo. Naming and analyzing
+   published, attributed works is ordinary scholarship. Quotation policy:
+   **paraphrase only**. These are registered in [CORPUS.md](CORPUS.md).
+3. **Private / unpublished / client manuscripts** — never stored and never named
+   in-repo; referenced by gitignored manifest (`evals/manifests/*.md`).
 
 ## Input hygiene (do not leak the answer key)
 
