@@ -8,8 +8,8 @@
 
 | In Progress | Planned | Done | Backlog |
 |-------------|---------|------|---------|
-| [Genre Audit Expansion](#genre--audit-expansion) | [Adaptive Mode Escalation](#adaptive-mid-run-mode-escalation) | [v1.9.0](#v190--ai-prose-calibration-v20) | [Feedback Triage](#feedback-triage) |
-| | | [v1.7.0](#v170--harness-engineering) | |
+| [Argument Benchmark Suite](#benchmark-suite) | [Adaptive Mode Escalation](#adaptive-mid-run-mode-escalation) | [v1.9.0](#v190--ai-prose-calibration-v20) | [Feedback Triage](#feedback-triage) |
+| [Genre Audit Expansion](#genre--audit-expansion) | | [v1.7.0](#v170--harness-engineering) | |
 | [Coaching Deepening](#coaching-deepening) | [Editor Scaffolding](#editor-scaffolding) | [v1.4.0](#v140--surface-hardening--writers-block) | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) |
 | | [Diagnostic Vocabulary](#diagnostic-vocabulary-mode) | [v1.3.0](#v130--nonfiction-argument-engine--genre-audits) | [Legal Risk Register](#legal-risk-register) |
 | | | [v1.2.1](#v121--audit-sequencing--model-tags) | [Multi-Party Intake](#multi-party-intake) |
@@ -82,13 +82,17 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 9. Nonfiction routing in intake (runtime + design docs)
 9. Revision Coach argument mode (8 coaching tracks + argument session plan template)
 
-**Next**
+**In progress**
 
-1. Argument Engine Benchmark Suite
+1. Argument Engine Benchmark Suite — spec + vertical slice landed (see below)
 
 ### Benchmark Suite
 
 Validate that the engine works on real argument-shaped nonfiction, not just in theory. Corpus-based testing against manuscripts where the correct structural diagnosis is already known.
+
+**Status:** Spec landed at [`docs/argument-benchmark-spec.md`](docs/argument-benchmark-spec.md). Vertical slice (Increment 1) built: rubric ([`evals/rubrics/argument-benchmark.md`](evals/rubrics/argument-benchmark.md)), ground-truth answer-key template ([`evals/argument-groundtruth-template.md`](evals/argument-groundtruth-template.md)), and four pre-registered fixtures under [`evals/fixtures/argument-benchmark/`](evals/fixtures/argument-benchmark/) — two broken (op-ed warrant leap; uncompared policy brief) for sensitivity, two positive controls (narrative-argumentation personal essay; Swift's *A Modest Proposal*, referenced) for specificity. Corpus is synthetic + public-domain (provenance policy blocks shipping copyrighted op-eds/testimony in-repo); real modern fixtures are added by gitignored manifest.
+
+**Remaining (Increment 2–3):** fill buckets 3, 5, 6, 7 with positive controls; add public-domain exemplars (Douglass, *Federalist* No. 10) and private/permission-cleared real fixtures; build the specced `validate.sh argument-groundtruth-check` validator (deferred — touching `validate.sh` requires host-workspace regeneration, so it lands once the GT schema is corpus-proven); run the two-independent-runs convergence protocol across the full corpus.
 
 **Corpus buckets:**
 1. Op-eds
