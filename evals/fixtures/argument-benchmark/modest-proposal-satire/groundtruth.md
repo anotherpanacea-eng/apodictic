@@ -5,9 +5,16 @@
 - **Fixture slug:** modest-proposal-satire
 - **Bucket:** 6 advocacy journalism / persuasive essay (satire); doubles as a bucket-4-adjacent Q7 hard case
 - **Source class:** public-domain
-- **Text stored in-repo?:** **no — referenced.** Jonathan Swift, *A Modest Proposal for Preventing the Children of Poor People from Being a Burthen to Their Parents or Country, and for Making Them Beneficial to the Publick* (1729). Public domain; widely available (e.g., Project Gutenberg). This fixture demonstrates the reference-by-source path for non-stored public-domain text.
+- **Text stored in-repo?:** **no — referenced.** This fixture demonstrates the reference path for non-stored public-domain text; the source is pinned below so a run is reproducible.
+- **Work:** Jonathan Swift, *A Modest Proposal for Preventing the Children of Poor People from Being a Burthen to Their Parents or Country, and for Making Them Beneficial to the Publick* (first published 1729).
+- **Pinned source (immutable identifier):** Project Gutenberg **eBook #1080** — `https://www.gutenberg.org/ebooks/1080`. The eBook ID is immutable and always resolves to this work.
+- **Exact retrieval URL (Plain Text UTF-8):** `https://www.gutenberg.org/cache/epub/1080/pg1080.txt` (mirror: `https://www.gutenberg.org/files/1080/1080-0.txt`).
+- **Analyzed-text scope (boilerplate-independent):** the essay body only — from the title line *"A Modest Proposal"* through the final sentence ("...the publick good of my country, by advancing our trade, providing for infants, relieving the poor, and giving some pleasure to the rich."). **Exclude** the Project Gutenberg license header and footer (the `*** START ...` / `*** END ...` boundary markers). Defining scope by these textual anchors makes the analyzed text well-defined regardless of Gutenberg header/boilerplate churn.
+- **SHA-256 (record-on-first-retrieval):** `<pending — sandbox network blocked Gutenberg at registration (HTTP 403); the first reviewer with outbound access records the SHA-256 of the retrieved Plain Text UTF-8 file here, after which it is pinned and every re-run must match>`. Not fabricated.
+- **Fallback citation (if Gutenberg is unavailable):** any unabridged 1729 text; a standard scholarly reference is Jonathan Swift, *A Modest Proposal and Other Satirical Works* (Dover Thrift Editions, 1996), ISBN 978-0-486-29030-1, which reproduces the full essay. The analyzed-text scope anchors above apply to any edition.
 - **Authored or adapted by:** Jonathan Swift (1729); ground truth registered by APODICTIC benchmark
 - **Registered (date):** 2026-05-30
+- **Retrieval date of pinned source:** `<record at first authoritative retrieval>` (sandbox could not fetch at registration)
 - **Ground-truth authority:** author-registered against the established scholarly reading of the text as Juvenalian satire; the ironic structure is not interpretively contested
 - **Scope:** Q1, Q7 (primary). Q2/Q3/Q5/Q6 = N/A — the surface argument is intentionally monstrous; scoring its support/warrant on a literal reading is a category error the Distinguish protocol must prevent.
 

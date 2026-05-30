@@ -40,8 +40,11 @@ false-positive trap fired on a control is Q7 = 0 and blocks the bucket.
 ## Running a fixture
 
 1. Route the text through nonfiction intake (→ Dialectical Clarity) or invoke
-   `/audit dialectical-clarity` directly. For referenced fixtures, fetch the
-   source named in `groundtruth.md` first.
+   `/audit dialectical-clarity` directly. For referenced fixtures (text not
+   stored), fetch the pinned source named in `groundtruth.md` first, apply the
+   analyzed-text scope anchors, and — on the first authoritative retrieval —
+   record the SHA-256 back into `groundtruth.md` so the source is pinned for
+   all subsequent runs.
 2. Run the companion modules the fixture's GT scope requires (Red Team for
    Q5, Revision Coach argument mode for Q6).
 3. Capture the editorial letter + `Argument_State.md` (+ companion artifacts).

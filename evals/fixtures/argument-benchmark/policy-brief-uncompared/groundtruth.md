@@ -20,14 +20,14 @@
 
 - **Primary failure layer:** BURDEN
 - **Discriminator (why this layer, not the adjacent one):** The support for the *benefits* is adequate for the form — ridership, emissions, equity, and boarding-speed claims are each plausibly evidenced and point the same way. The break is not "the benefits are unproven" (support) and not a single missing inference (warrant). It is that an AT3 proposal carries a *comparative* burden the brief never discharges: it never compares fare-free transit to alternatives that target the same goals (fare-capping, means-tested free passes, congestion pricing, frequency/service investment), never costs the policy or names a funding mechanism, and never addresses opportunity cost (revenue forgone could buy more service). The benefits being real does not establish that *this* policy is the best use of the funds. Locating the failure in support ("add more benefit data") would deepen the actual error.
-- **Expected codes:** BP5 (comparative burden — alternatives not considered); BP (scope: benefit evidence does not reach the comparative/feasibility claim the recommendation needs).
-- **Expected primary FM-A pattern + cluster:** FM-A10 The Uncompared Proposal (Dynamic).
+- **Expected codes:** **BP5** (missing alternatives — an AT3 proposal not comparatively defended; FM-A10's canonical signature code) + **OB3** (the dominated-alternative objection is unaddressed; FM-A10 fires "frequently with OB3" per the framework). **BP1** (evidence type mismatch — benefit data offered for a normative "should" recommendation) is an accepted-equivalent secondary if the scorer locates the scope gap there. Q2 = 3 requires BP5 as primary with the comparative-burden discriminator named.
+- **Expected primary FM-A pattern + cluster:** FM-A10 The Uncompared Proposal (Dynamic). Signature AT3 + BP5, frequently with OB3.
 - **Secondary patterns (if any):** FM-A18 Implementation Blindspot (no funding mechanism, no cost, no transition plan); FM-A2 The Evidence Pile (benefits accumulate in one direction with no countervailing analysis).
 
 ## GT3 — Strongest real objection *(Q3; §6)*
 
 - **Objection zone:** opportunity cost / dominated alternative — the same forgone fare revenue could fund *more service* (frequency, coverage), which several analyses find raises ridership more per dollar than zero fares; fare-free may also induce low-value trips and crowd out paying riders' service quality. The brief engages no alternative and no objection.
-- **Expected OB / DI codes:** OB3 (central objection for an AT3 recommendation missing); the proposal is not comparatively defended.
+- **Expected OB / DI codes:** **OB3** (the central objection for an AT3 recommendation — the dominated-alternative / opportunity-cost case — is missing entirely) + **OB0** (no objection of any kind is engaged). OB3 is the primary expected code; the proposal is not comparatively defended.
 
 ## GT4 — Audience calibration *(Q4; §1 Audience + AC codes)*
 

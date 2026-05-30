@@ -92,8 +92,10 @@ built from three sources:
    structural audit would misfire on. Mapped exemplars:
    - Swift, *A Modest Proposal* (1729) — satire / sustained irony. The
      hardest Q7 trap: the surface argument is monstrous; the real argument
-     emerges through irony. Text not stored (universally available);
-     referenced.
+     emerges through irony. Text not stored; referenced by a pinned immutable
+     source (Project Gutenberg eBook #1080) with a boilerplate-independent
+     analyzed-text scope and a record-on-first-retrieval checksum — see the
+     fixture's `groundtruth.md`.
    - Frederick Douglass, *What to the Slave Is the Fourth of July?* (1852) —
      prophetic address / call-and-response. Bucket 3 (testimony) + Q7.
    - *Federalist* No. 10 (1787) — academic/policy argument with explicit
@@ -216,26 +218,49 @@ single-run statement:
 
 Operationalized:
 
-1. **Two independent runs per fixture.** Independence is achieved by *one* of:
-   (a) two different editors driving the engine; (b) two model
-   configurations (e.g., baseline vs. comparator); (c) two blind reviewers
-   scoring against ground truth. The slice uses (b)/(c); (a) is added when
-   external editors are available.
+1. **Two independent *engine* runs per fixture.** Convergence is a property of
+   two independent *productions* of a diagnosis, not two scorings of one
+   production. Independence is achieved by *one* of: (a) two different editors
+   each driving the engine on the fixture; (b) two model configurations (e.g.,
+   baseline vs. comparator) each producing a full run. The slice uses (b); (a)
+   is added when external editors are available. **Two reviewers scoring the
+   same single output is _not_ an independence path** — that measures scorer
+   reliability (see below), not convergence, and must never be used to pass the
+   convergence gate.
 2. **Convergence is measured on four anchors:** core claim (GT1), top 1–3
    structural failures (GT2 primary + secondary), main burden mismatch (GT2
    BURDEN / GT4), strongest objection zone (GT3).
 3. **Agreement threshold:** the two runs *converge* on a fixture when they
    agree on ≥3 of the 4 anchors, with the core-claim anchor (GT1) mandatory
-   among them. "Agree" means both land in the same ground-truth band.
+   among them. "Agree" means both runs land in the same ground-truth band.
 4. **Suite-level success:** the engine passes a bucket when ≥⅔ of that
    bucket's fixtures converge, with no positive control mis-classified
    (Q7 = 0). Suite passes when every bucket passes.
 
-Convergence runs reuse the blind-review packet format from
-`blind-review-protocol.md`. Disagreements are logged with a failure-attribution
-cause class (`eval-harness-spec.md §Failure Attribution`) — engine fault vs.
-ground-truth ambiguity vs. reviewer error. Ground-truth ambiguity is itself a
-finding: it means the answer key, not the engine, needs sharpening.
+### Reviewer reliability is a separate layer, not a convergence path
+
+Inter-rater agreement — two reviewers independently scoring the *same* engine
+output against the same ground truth — answers a different question:
+*is the rubric and answer key applied consistently?* It does **not** tell you
+whether two independent runs of the engine converge. The two are measured and
+reported separately:
+
+- **Convergence (engine):** two independent *runs* → do the diagnoses agree on
+  the four anchors? (§ items 1–4 above.)
+- **Reliability (scoring):** ≥2 reviewers score a *shared* sample of outputs →
+  do the scores agree? Systematic reviewer disagreement is the *ground-truth
+  ambiguity* cause class: it means the answer key, not the engine, needs
+  sharpening, and convergence results are not trusted until reliability is
+  acceptable.
+
+A benchmark that lets "two reviewers agreed on one output" stand in for "two
+runs converged" can pass while the engine is non-reproducible — the failure
+this separation exists to prevent.
+
+Both layers reuse the blind-review packet format from
+`blind-review-protocol.md`. Disagreements (in either layer) are logged with a
+failure-attribution cause class (`eval-harness-spec.md §Failure Attribution`) —
+engine fault vs. ground-truth ambiguity vs. reviewer error.
 
 ---
 
