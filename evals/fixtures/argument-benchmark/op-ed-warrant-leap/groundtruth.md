@@ -20,14 +20,14 @@
 
 - **Primary failure layer:** WARRANT
 - **Discriminator (why this layer, not the adjacent one):** The *support* is unusually clean for an op-ed — counted ED visits, a named records source, a confirmatory quote, 911 logs. Step 3 should largely PASS the support map: the data exists and is specific. The break is the inferential bridge. The piece moves from "injuries rose when scooters appeared" to "scooters caused the injuries" to "a ban is the proportionate remedy" with no warrant. Confounders (more riders outdoors, displaced car trips, denominator = rides taken) are never addressed; the causal warrant and the remedy warrant are both leapt. Diagnosing this as a *support* failure ("needs more data") would be wrong — more of the same data cannot close a warrant gap.
-- **Expected codes:** WR (missing/contested warrant on the causal link and on the ban-as-remedy step); SM should read closer to PASS than fail.
-- **Expected primary FM-A pattern + cluster:** FM-A6 The Warrant Leap (Relational).
-- **Secondary patterns (if any):** FM-A4 Scope Inflation (raw counts asserted without a rate/denominator → "222 percent" treated as a per-rider risk it does not measure).
+- **Expected codes:** **WR0** (warrant gap — the causal premise "scooters *caused* the injuries" and the remedy premise "a ban is the proportionate response" must both be supplied by the reader; this is FM-A6's canonical signature code) + **WR2** (scheme fragility — a causal claim resting only on temporal sequence, the literal WR2 example). SM = PASS (evidence is clean and specific). A scorer earns Q2 = 3 by reporting WR0 (primary) + WR2 and explicitly *not* firing an SM failure.
+- **Expected primary FM-A pattern + cluster:** FM-A6 The Warrant Leap (Relational). Signature WR0 with otherwise-clean SM.
+- **Secondary patterns (if any):** FM-A4 Scope Inflation (Dynamic) → **BP2** (scope creep — a local ED signal asserted as grounds for a citywide ban); **BP0** also acceptable if the scorer reads the per-rider risk scope as undeclared (raw counts presented without a rate/denominator). BP2 is the primary expected code; BP0 is an accepted-equivalent.
 
 ## GT3 — Strongest real objection *(Q3; §6)*
 
 - **Objection zone:** confounding / base-rate — the injury rise could reflect more riders, displaced (more dangerous) car trips avoided, or simply usage volume with no per-trip risk increase; the piece offers raw counts, not a rate. The strongest skeptic asks "injuries *per ride*?" The op-ed engages no objection at all.
-- **Expected OB / DI codes:** OB (central objection unaddressed / no objection engaged).
+- **Expected OB / DI codes:** **OB0** (no objections engaged — the piece proceeds as if no reasonable person could disagree) + **OB3** (the *central* confounding/base-rate objection is the one a well-informed skeptic raises first and it is missing entirely). Either code alone is a partial; Q3 = 3 requires naming the confounding/base-rate zone and classifying it OB3 (with OB0 as the general condition).
 
 ## GT4 — Audience calibration *(Q4; §1 Audience + AC codes)*
 
