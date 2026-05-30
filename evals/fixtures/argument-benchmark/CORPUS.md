@@ -42,8 +42,9 @@ analog of the Q7 specificity gate.
 
 ## The corpus (10 pieces, 4 clusters)
 
-`✓ key built` = full `groundtruth.md` exists. `▢ queued` = diagnosis registered
-below; full key to be built.
+`✓ key built` = full `groundtruth.md` exists for the slug. All ten keys are
+built; GT1–GT3 are authoritative from the registered diagnosis, GT4–GT7 are
+provisional pending a run or a second editor.
 
 ### Cluster A — The "abundance" debate (topic-controlled; 4 stances)
 
@@ -62,22 +63,22 @@ structural weaknesses while topic is held constant.
 
 | Slug | Piece | Bucket | Registered diagnosis (authority: J. Miller) |
 |------|-------|--------|---------------------------------------------|
-| `andreessen-techno-optimist-manifesto` | Marc Andreessen, "The Techno-Optimist Manifesto" — https://a16z.com/the-techno-optimist-manifesto/ | 6 manifesto | **Claim:** technological acceleration + markets is the central path to human flourishing. **Main structural problem:** manifesto cadence substitutes for argument at key moments. **Strongest objection:** many harms are governance/distribution/externality problems, not shortages of technology. ▢ queued |
-| `amodei-machines-of-loving-grace` | Dario Amodei, "Machines of Loving Grace" — https://darioamodei.com/essay/machines-of-loving-grace | 6 visionary essay | **Claim:** powerful AI, if made safe, could produce radical gains across health, poverty, governance, and meaning. **Main structural problem:** confessed speculation still functions like a roadmap. **Strongest objection:** corporate futurism can launder institutional authority through benevolent scenario-building. ▢ queued |
-| `bender-stochastic-parrots` | Bender, Gebru et al., "On the Dangers of Stochastic Parrots" — https://dl.acm.org/doi/10.1145/3442188.3445922 | 5 academic | **Claim:** scaling language models produces serious environmental, bias, opacity, and misuse risks. **Main structural problem:** several distinct risk arguments are gathered under one "too big?" frame. **Strongest objection:** the piece develops harms more fully than benefit tradeoffs or institutional alternatives. ▢ queued |
+| `andreessen-techno-optimist-manifesto` | Marc Andreessen, "The Techno-Optimist Manifesto" — https://a16z.com/the-techno-optimist-manifesto/ | 6 manifesto | **Claim:** technological acceleration + markets is the central path to human flourishing. **Main structural problem:** manifesto cadence substitutes for argument at key moments. **Strongest objection:** many harms are governance/distribution/externality problems, not shortages of technology. ✓ key built |
+| `amodei-machines-of-loving-grace` | Dario Amodei, "Machines of Loving Grace" — https://darioamodei.com/essay/machines-of-loving-grace | 6 visionary essay | **Claim:** powerful AI, if made safe, could produce radical gains across health, poverty, governance, and meaning. **Main structural problem:** confessed speculation still functions like a roadmap. **Strongest objection:** corporate futurism can launder institutional authority through benevolent scenario-building. ✓ key built |
+| `bender-stochastic-parrots` | Bender, Gebru et al., "On the Dangers of Stochastic Parrots" — https://dl.acm.org/doi/10.1145/3442188.3445922 | 5 academic | **Claim:** scaling language models produces serious environmental, bias, opacity, and misuse risks. **Main structural problem:** several distinct risk arguments are gathered under one "too big?" frame. **Strongest objection:** the piece develops harms more fully than benefit tradeoffs or institutional alternatives. ✓ key built |
 
 ### Cluster C — Criminal justice / probation (2 policy briefs)
 
 | Slug | Piece | Bucket | Registered diagnosis (authority: J. Miller) |
 |------|-------|--------|---------------------------------------------|
-| `aecf-eliminate-confinement` | Annie E. Casey Foundation, "Eliminate Confinement as a Response to Probation Rule Violations" — https://www.aecf.org/resources/eliminate-confinement-as-a-response-to-probation-rule-violations | 2 policy brief | **Claim:** youth should not be confined for noncriminal probation violations. **Main structural problem:** harm, adolescent development, racial disparity, and efficacy arguments are compressed into one policy ask. **Strongest objection:** what to do with repeated high-risk noncriminal violations short of confinement. ▢ queued |
-| `ppi-one-size-fits-none` | Prison Policy Initiative, "One Size Fits None" — https://www.prisonpolicy.org/reports/probation_conditions.html | 2 policy brief / report | **Claim:** standardized probation conditions manufacture technical violations and revocation risk. **Main structural problem:** proving that overbreadth itself (vs. supervision culture or client need) drives outcomes. **Strongest objection:** some standardization may protect fairness and notice. ▢ queued |
+| `aecf-eliminate-confinement` | Annie E. Casey Foundation, "Eliminate Confinement as a Response to Probation Rule Violations" — https://www.aecf.org/resources/eliminate-confinement-as-a-response-to-probation-rule-violations | 2 policy brief | **Claim:** youth should not be confined for noncriminal probation violations. **Main structural problem:** harm, adolescent development, racial disparity, and efficacy arguments are compressed into one policy ask. **Strongest objection:** what to do with repeated high-risk noncriminal violations short of confinement. ✓ key built |
+| `ppi-one-size-fits-none` | Prison Policy Initiative, "One Size Fits None" — https://www.prisonpolicy.org/reports/probation_conditions.html | 2 policy brief / report | **Claim:** standardized probation conditions manufacture technical violations and revocation risk. **Main structural problem:** proving that overbreadth itself (vs. supervision culture or client need) drives outcomes. **Strongest objection:** some standardization may protect fairness and notice. ✓ key built |
 
 ### Cluster D — Long-form advocacy + embedded narrative (standalone)
 
 | Slug | Piece | Bucket | Registered diagnosis (authority: J. Miller) |
 |------|-------|--------|---------------------------------------------|
-| `coates-case-for-reparations` | Ta-Nehisi Coates, "The Case for Reparations" — https://www.theatlantic.com/magazine/archive/2014/06/the-case-for-reparations/361631/ | 7 hybrid (advocacy + narrative) | **Claim:** reparations are owed as a national reckoning for legally structured theft, not merely as compensation for slavery. **Main structural problem:** the leap from concrete housing predation to national remedy. **Strongest objection:** the essay proves *debt* more clearly than it specifies *institutional design*. ▢ queued |
+| `coates-case-for-reparations` | Ta-Nehisi Coates, "The Case for Reparations" — https://www.theatlantic.com/magazine/archive/2014/06/the-case-for-reparations/361631/ | 7 hybrid (advocacy + narrative) | **Claim:** reparations are owed as a national reckoning for legally structured theft, not merely as compensation for slavery. **Main structural problem:** the leap from concrete housing predation to national remedy. **Strongest objection:** the essay proves *debt* more clearly than it specifies *institutional design*. ✓ key built |
 
 ---
 
