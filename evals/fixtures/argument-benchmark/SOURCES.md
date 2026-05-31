@@ -29,8 +29,10 @@ and reproducible rather than arbitrary.
 - On first retrieval the preparer caches the extracted text **outside the git
 tree** (sibling of the repo — copyrighted full text is never committed) and
 records, in the source's `RECORDED` block below, the SHA-256, byte count,
-retrieval date, and method. The cache is a convenience; re-fetch at run time is
-still the default, and any re-fetch must reproduce the recorded SHA-256.
+retrieval date, and method. Format:
+`retrieved YYYY-MM-DD | method | N bytes | sha256: <hex>`. The cache is a
+convenience; re-fetch at run time is still the default, and any re-fetch must
+reproduce the recorded SHA-256.
 
 **Extraction convention used for the recorded hashes (2026-05-30 cache):**
 boilerplate (nav, donate/subscribe, footers, social) stripped; **article body,
@@ -49,7 +51,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **START:** first sentence of the report body after the title/author/date block.
 - **END:** last sentence before footnotes/citations, "related publications," or site footer.
 - **EXCLUDE:** nav, author bios, footnote list, share/related widgets, newsletter CTA.
-- **RECORDED format:** `retrieved YYYY-MM-DD | method | N bytes | sha256: <hex>` (filled per source below).
+- **RECORDED:** `retrieved 2026-05-30 | web_fetch | 39013 bytes | sha256: d4d5a70b16012cbc2d9222f4218349519e296adab0ba05318206e75e3915e6bf`
 
 ### current-affairs-abandon-abundance
 - **Cite:** Current Affairs, "Abandon 'Abundance.'"
@@ -100,7 +102,9 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **START:** the Abstract's first sentence (academic paper: abstract + body are the argument).
 - **END:** the last sentence of the Conclusion (section before Acknowledgments).
 - **EXCLUDE:** ACM header/citation block, author affiliations, Acknowledgments, References, appendices, page furniture.
-- **RECORDED:** `<pending first run — also record which copy (ACM vs. open PDF) was used>`
+- **License:** CC BY 4.0 (open-access FAccT '21 PDF).
+- **RECORDED:** `retrieved 2026-05-30 | local PDF + pdftotext (open-access copy) | 69145 bytes | sha256: 1928f4018c264800139b428dcaea851f10cd623091d533ad01cd692585057f9a`
+- **Extraction caveats:** bibliography dropped, running headers/footers stripped. Minor two-column artifact at the abstract/intro seam (text complete; a few lines reordered) and Table 1 renders as stacked values. None affect the GT1–GT3 anchors, but a scorer should not read the seam reordering as a structural finding.
 
 ## Cluster C — criminal justice
 
@@ -130,7 +134,8 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **START:** the Roman-numeral-section "I." opening (the Clyde Ross narrative begins the body); include from the essay's first body sentence after the title/epigraph.
 - **END:** the last sentence of the final numbered section before magazine footer/related.
 - **EXCLUDE:** magazine chrome, photo captions if not part of the prose, "more stories," footer. Note the essay's section epigraphs are part of the text — keep them.
-- **RECORDED:** `<pending first run — record which copy was used>`
+- **RECORDED:** `retrieved 2026-05-30 | user .docx + textutil (personal copy, not an archive mirror) | 98516 bytes | sha256: 2cce74f1dcc7c4a6583e5edba9d12cee8e1fdb7d8e0ce98c84fa0eef4f457a07`
+- **⚠ INPUT-INTEGRITY CAVEAT (scoring-relevant — read before running):** this conversion has two structural anomalies. (1) A block of modern predatory-lending paragraphs (Rugh & Massey; Wells Fargo / Beth Jacobson; Bank of America) sits **out of sequence at the END** rather than mid-essay. (2) A few photo captions and the "Auschwitz All Around Us" sidebar are **interleaved into the prose.** Both touch the scored anchors — GT2 (predation → national-remedy leap) and the conclusion. An engine may flag the out-of-order block or interleaved captions as a structural / cross-section (Step 8) problem; that is a **conversion artifact, not a property of Coates's argument**, and must not be scored against the engine (nor credited as a real find). **Recommendation:** re-extract from a clean, correctly-ordered copy before Coates is treated as a load-bearing fixture; until then mark Coates results provisional.
 
 ---
 
