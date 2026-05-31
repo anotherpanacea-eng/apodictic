@@ -61,14 +61,24 @@ arguments alone) is not a passing engine.
 ## Convergence
 
 Score per-run, then assess convergence across two independent **engine** runs.
-For failure-bearing fixtures the anchors are core claim, top 1–3 failures,
-burden mismatch, and objection zone; agreement = both runs land in the same
-ground-truth band on ≥3 of 4 anchors, core claim mandatory. **Positive controls
-use the control-specific anchor set** — claim (GT1) + Distinguish classification
-(GT7) + no invented failure — and converge only when all three hold. Two
-reviewers scoring one output is reliability, not convergence. See
-[argument-benchmark-spec.md §Convergence](../../docs/argument-benchmark-spec.md#convergence-protocol-the-success-condition)
-and §Positive-control convergence.
+There are three convergence classes:
+
+- **Failure-bearing fixtures** — anchors are core claim, top 1–3 failures,
+  burden mismatch, and objection zone; agreement = both runs land in the same
+  ground-truth band on ≥3 of 4 anchors, core claim mandatory.
+- **Pure positive controls** (no registered soft spot) — claim (GT1) +
+  Distinguish classification (GT7) + no invented failure; all three required.
+- **SOUND real calibration fixtures** (the referenced `CORPUS.md` pieces — SOUND
+  *with* a registered Should-Fix soft spot) — both runs must agree on **all
+  five**: GT1 claim, GT2 failure locus/layer, GT3 objection zone, the
+  severity-calibration check (soft spot named at Should-Fix, no over-firing), and
+  GT7 = SOUND. The pure-control rule is insufficient here (two runs could agree
+  on SOUND yet miss the registered soft spot). Full rule + role separation:
+  [RUN-PROTOCOL.md §Step 4](../fixtures/argument-benchmark/RUN-PROTOCOL.md).
+
+Two reviewers scoring one output is reliability, not convergence. See
+[argument-benchmark-spec.md §Convergence](../../docs/argument-benchmark-spec.md#convergence-protocol-the-success-condition),
+§Positive-control convergence, and the calibration-fixture note.
 
 ## Decision Rules And Failure Attribution
 
