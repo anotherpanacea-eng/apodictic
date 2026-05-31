@@ -13,8 +13,9 @@ editor's diagnosis.
 - **Registered:** 2026-05-30.
 - **Source texts:** all 10 fetched + hashed (preparer, 2026-05-30); SHA-256 +
   method + byte count recorded per source in [SOURCES.md](SOURCES.md). Full text
-  is cached **outside the git tree** (copyright; never committed). Coates carries
-  an input-integrity caveat — see its `groundtruth.md` and SOURCES.md.
+  is cached **outside the git tree** (copyright; never committed). Coates was
+  re-extracted from a clean, correctly-ordered copy (superseding an artifacted
+  extraction); all 10 are now clean and load-bearing.
 - **Run status:** texts staged for blind runs; **no engine runs yet** (this
   sandbox blocks outbound fetches, so runs happen in a web-enabled session per
   [RUN-PROTOCOL.md](RUN-PROTOCOL.md); any re-fetch must reproduce the recorded
