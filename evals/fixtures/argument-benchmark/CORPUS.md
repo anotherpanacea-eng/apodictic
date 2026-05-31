@@ -5,29 +5,72 @@ text is **not stored** (third-party copyright); each piece is *referenced* by
 public URL and carries a ground-truth answer key derived from an independent
 editor's diagnosis.
 
-- **Ground-truth authority:** Joshua A. Miller (editor) — independent
-  diagnoses provided 2026-05-30. This is the external authority the synthetic
-  fixtures lack: the diagnoses below were registered *before* any engine run
-  and are not the benchmark author's own key.
+- **Ground-truth authority:** Joshua A. Miller (editor) — diagnoses
+  **pre-registered 2026-05-30, before any engine run.** The independence here is
+  **temporal, not personal**: the editor is also the benchmark author, so this
+  is *single-editor pre-registration*, not an external cross-check. A genuine
+  external authority requires a second editor — which GT4–GT7 explicitly await.
 - **Registered:** 2026-05-30.
 - **Run status:** no engine runs yet — the build sandbox blocks outbound web
   fetches (a16z/Atlantic/Reason/Gutenberg all 403 / domain-blocked). Runs must
   happen in a web-enabled environment; see [README.md](README.md) §Running.
 
-## Provenance tier for this corpus (third-party published)
+## Provenance tier (canonical — matches the spec's four-tier scheme)
 
-These are a distinct tier from the synthetic and public-domain fixtures:
+These fixtures are **tier 3** in the four-tier provenance scheme used across
+the spec, the fixtures README, and this file:
 
-| Tier | Example | Text stored in-repo? | Key in-repo? |
-|------|---------|----------------------|--------------|
-| Synthetic / public-domain | `op-ed-warrant-leap`, Swift | yes (synthetic) / no (PD, referenced) | yes |
-| **Third-party published (this file)** | Coates, a16z, Cato | **no — referenced (copyright)** | **yes — citation + diagnosis only, no source text** |
-| Private / unpublished / client | (none here) | no | gitignored manifest only |
+| Tier | Class | Text stored in-repo? | Key in-repo? |
+|------|-------|----------------------|--------------|
+| 1 | Synthetic | yes (authored) | yes |
+| 2 | Public-domain | no — referenced | yes |
+| **3** | **Third-party published (this file)** | **no — referenced (copyright)** | **yes — citation + diagnosis only, no source text** |
+| 4 | Private / unpublished / client | no | gitignored manifest only |
 
 Naming and analyzing *published, attributed* works is ordinary scholarship and
 poses no confidentiality issue, so their keys live in-repo. Their **text** is
 never stored, and outputs must **paraphrase, not reproduce** (quotation policy:
 paraphrase-only).
+
+## Recognition contamination (construct-validity threat)
+
+The biggest threat to these fixtures is **recognition, not leakage.** The blind
+protocol withholds the answer-key *file*, but an LLM engine has very likely seen
+the famous pieces — and their *canonical critiques* — in training. A neutral
+label does not stop the model from recognizing the text and reciting the
+standard objection. Coates GT3 ("proves the debt more clearly than it specifies
+institutional design") *is* the textbook critique of that essay, so a "hit"
+there may measure **recall, not diagnosis**. This caps construct validity for
+the most prominent fixtures.
+
+**Recognition-risk tags** (how memorizable the piece + its standard critique are):
+
+| Risk | Fixtures | Interpretation |
+|------|----------|----------------|
+| HIGH | Coates, Andreessen, Amodei, Bender et al. | Famous; canonical critiques likely memorized. Treat hits as **recall-susceptible**; weight lightly. |
+| MODERATE→LOW | abundance cluster (Roosevelt, Current Affairs, Reason, Cato), AECF, PPI | Real but niche; far less likely to have a memorized canonical critique. **These carry the construct validity.** |
+
+**Mitigations:**
+1. **Weight by tag.** Lower-recognition fixtures are the load-bearing evidence;
+   HIGH-recognition results are corroborating at best.
+2. **Recognition probe (required).** The run must report whether it recognized
+   the author/title (see [RUN-PROTOCOL.md](RUN-PROTOCOL.md) Step 2b). If it
+   names them, flag the score recall-susceptible.
+3. **Optional input perturbation.** Run on a lightly-excerpted / paraphrased
+   input to defeat verbatim recognition — with the caveat that paraphrase can
+   itself alter structure, so prefer representative excerpting over rewriting.
+4. **Future: held-out obscure controls.** Add an obscure piece per cluster (no
+   public critique) as a recognition control; convergence between an obscure
+   control and its famous sibling separates diagnosis from recall.
+
+## Scope convention (what is authoritative vs. provisional)
+
+For these referenced fixtures, the editor's **prose diagnosis is authoritative**
+— GT1 (claim), GT2's *named structural problem* and failure *locus*, and GT3's
+*objection zone*. The **code and layer mappings** under GT2 (e.g., "Provisional
+codes: …") and **all of GT4–GT7** are provisional benchmark-author scaffolding
+pending a run or a second editor. **Score Q2 on the failure locus/layer, not the
+exact code** for these fixtures (see RUN-PROTOCOL Step 3).
 
 ## Why these are mostly calibration tests, not failure-detection tests
 

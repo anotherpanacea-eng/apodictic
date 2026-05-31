@@ -5,9 +5,9 @@ copy-pasteable. Use this in a **web-enabled** Claude Code session — referenced
 fixtures (Swift, the CORPUS.md pieces) require fetching their source, which the
 build/CI sandbox blocks.
 
-See also: [../../docs/argument-benchmark-spec.md](../../../docs/argument-benchmark-spec.md)
-(design + convergence), [../../rubrics/argument-benchmark.md](../../rubrics/argument-benchmark.md)
-(scoring), [CORPUS.md](CORPUS.md) (referenced real fixtures).
+See also: [the benchmark spec](../../../docs/argument-benchmark-spec.md)
+(design + convergence), [the rubric](../../rubrics/argument-benchmark.md)
+(scoring), and [CORPUS.md](CORPUS.md) (referenced real fixtures + recognition risk).
 
 ## Principles
 
@@ -57,6 +57,22 @@ See also: [../../docs/argument-benchmark-spec.md](../../../docs/argument-benchma
 Run this twice with two different model configs (the two runs are independent
 productions). Keep each run's full output.
 
+## Step 2b — Recognition probe (referenced real fixtures)
+
+The main validity threat for famous pieces is **recognition, not leakage**: the
+engine may recognize the text and recite its *canonical* critique from training
+rather than diagnose it. After the diagnosis (as a separate question, so it
+doesn't prime the run), ask the runner:
+
+> Did you recognize this piece — author, title, or its standard published
+> critiques? Answer yes/no; if yes, name them.
+
+If the runner names the author/title or a canonical critique, **flag the score
+as recall-susceptible** and weight it lightly. Per CORPUS.md, the
+MODERATE→LOW-recognition fixtures (abundance cluster, AECF, PPI) carry the
+construct validity; HIGH-recognition fixtures (Coates, Andreessen, Amodei,
+Bender) corroborate at best.
+
 ## Step 3 — Score against the key
 
 For each run, open `groundtruth.md` and score the seven dimensions on the
@@ -65,7 +81,7 @@ rubric's 0–3 bands:
 | Dim | Check |
 |-----|-------|
 | Q1 | C0 within GT1 paraphrase band |
-| Q2 | failure located in GT2's layer; primary code matches (accepted equivalents allowed); discriminator named |
+| Q2 | failure located in GT2's layer; primary code matches (accepted equivalents allowed); discriminator named. **Referenced real fixtures:** score on the failure *locus/layer*, not the exact code — GT2 codes there are provisional (CORPUS.md §Scope convention). |
 | Q3 | GT3 objection zone named with correct OB/DI code |
 | Q4 | GT4 "improve" surfaced; "distort" avoided |
 | Q5 | hit ≥1 pre-registered vulnerability above the decoys (if Red Team run) |

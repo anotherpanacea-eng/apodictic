@@ -9,19 +9,21 @@ the design, corpus plan, and convergence protocol are in
 
 ## Provenance rule
 
-Fixtures fall in three provenance tiers:
+Fixtures fall in four provenance tiers (the same numbering used in
+[CORPUS.md](CORPUS.md) and the spec):
 
-1. **Synthetic / public-domain** — text **may** be stored in-repo (synthetic
-   pieces are authored here; public-domain pieces like Swift are referenced).
-   Synthetic provenance and the "do not quote as a real-world source" note live
-   in each fixture's `groundtruth.md` (**not** in `fixture.md` — see input
-   hygiene below); synthetic fixtures reference no real person, place, or source.
-2. **Third-party published** (Coates, a16z, Cato, …) — text is **never stored**
-   (copyright); the work is *referenced* by public URL, and its key
-   (citation + diagnosis, no source text) lives in-repo. Naming and analyzing
-   published, attributed works is ordinary scholarship. Quotation policy:
-   **paraphrase only**. These are registered in [CORPUS.md](CORPUS.md).
-3. **Private / unpublished / client manuscripts** — never stored and never named
+1. **Synthetic** — text authored here and stored in-repo. Synthetic provenance
+   and the "do not quote as a real-world source" note live in each fixture's
+   `groundtruth.md` (**not** in `fixture.md` — see input hygiene below);
+   synthetic fixtures reference no real person, place, or source.
+2. **Public-domain** — text not stored; *referenced* by a pinned source (e.g.,
+   Swift via Project Gutenberg); key in-repo.
+3. **Third-party published** (Coates, a16z, Cato, …) — text **never stored**
+   (copyright); *referenced* by public URL, key (citation + diagnosis, no source
+   text) in-repo. Naming and analyzing published, attributed works is ordinary
+   scholarship. Quotation policy: **paraphrase only**. Registered in
+   [CORPUS.md](CORPUS.md).
+4. **Private / unpublished / client manuscripts** — never stored and never named
    in-repo; referenced by gitignored manifest (`evals/manifests/*.md`).
 
 ## Input hygiene (do not leak the answer key)
