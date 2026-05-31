@@ -36,7 +36,7 @@ The surfaces APODICTIC consumes today (via shims that forward to SETEC scripts):
 | `ai_prose_voice_distance.py` | `voice_distance.py` | 1.86.0 | stdout `--json` |
 | `ai_prose_voice_profile.py` | `voice_profile.py` | 1.86.0 | stdout `--json` |
 | `ai_prose_pov_voice_profile.py` | `pov_voice_profile.py` | 1.86.0 | **file `--json-out`** |
-| `ai_prose_punctuation_cadence.py` | `punctuation_cadence.py` | 1.86.0 | stdout `--json` |
+| `ai_prose_punctuation_cadence.py` | `punctuation_cadence_audit.py` | 1.86.0 | stdout `--json` |
 | `ai_prose_idiolect_detector.py` | `idiolect_detector.py` | 1.86.0 | stdout `--json` |
 | `ai_prose_narrative_decision_audit.py` | `narrative_decision_audit.py` | **1.107.0** | stdout `--json` |
 
