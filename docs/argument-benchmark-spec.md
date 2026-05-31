@@ -71,14 +71,15 @@ matrix.
 | 6 | Advocacy journalism | FM-A3 Persuasion Machine, FM-A9 Concession Without Cost, FM-A14 Epistemic Erasure | MIXED / partisan |
 | 7 | Argument-with-embedded-narrative hybrids | NE function classification, dual-audit handoff (Narrative Nonfiction Craft) | MIXED |
 
-### Provenance strategy (chosen: synthetic + public-domain mix)
+### Provenance strategy (four tiers)
 
-In-repo fixture *text* is restricted to **public-domain** and
-**synthetic-or-derived** classes by the fixture-provenance policy
+Only **public-domain** and **synthetic-or-derived** text may be *stored* in-repo
 (`eval-harness-spec.md §Fixture Provenance Policy`). Real modern op-eds,
-testimony, and journalism are copyrighted and therefore can only be
-*referenced* by gitignored manifest, never stored. The corpus is therefore
-built from three sources:
+testimony, and journalism are copyrighted, so their **text is never stored** —
+but a *published* work can be *referenced* by public URL with its answer key
+(citation + diagnosis, no source text) living in-repo, while *unpublished /
+private* manuscripts are referenced only by gitignored manifest. The corpus
+draws on four tiers:
 
 1. **Synthetic fixtures (primary).** Argument-shaped pieces authored for the
    benchmark with a *planted, pre-registered* failure. These give
@@ -101,11 +102,27 @@ built from three sources:
    - *Federalist* No. 10 (1787) — academic/policy argument with explicit
      warrant structure; a *positive* control (should largely PASS). Bucket 5.
 
-3. **Private / permission-cleared real fixtures (external validity, later).**
-   Real modern manuscripts referenced by gitignored manifest. Not part of the
-   in-repo slice; added when external validity beyond synthetic+public-domain
-   is needed. These are the only fixtures that exercise contemporary register
-   and live political stakes.
+3. **Third-party published works (external validity).** Real, published,
+   attributed arguments (op-eds, manifestos, think-tank briefs, academic
+   papers) — referenced by public URL; **text never stored** (copyright), but
+   the citation + an independently-authored diagnosis live in-repo (paraphrase
+   only). These supply contemporary register, live stakes, and a
+   *pre-registered, single-editor* ground truth (registered before any run;
+   the independence is **temporal, not personal** — the editor is the benchmark
+   author, so it is not yet a second-editor cross-check). Most are competent
+   arguments with one structural soft spot, so their primary value is
+   **severity calibration** (does the engine resist over-pathologizing a
+   sound argument?), complementing the synthetic corpus's catastrophic failures.
+   Registered in `evals/fixtures/argument-benchmark/CORPUS.md`.
+
+4. **Private / unpublished / client manuscripts.** Referenced by gitignored
+   manifest and never named in-repo (confidentiality). Added when external
+   validity beyond published sources is needed.
+
+> **Run environment note.** Referenced fixtures (tiers 2–4) require fetching the
+> source at run time, so they can only be run where outbound web access is
+> available. The build/CI sandbox blocks it; runs happen in a web-enabled
+> session.
 
 ### Anti-overfit guard: positive controls are mandatory
 
@@ -257,6 +274,17 @@ per item 4, blocks the bucket regardless of the other run. (The two slice
 controls — `personal-essay-narrative-arg` and the referenced
 `modest-proposal-satire` — score on this set; their `groundtruth.md` marks
 GT2/GT3/GT5/GT6 as N/A.)
+
+**SOUND-but-with-a-soft-spot is not a pure control.** The referenced real
+fixtures (`CORPUS.md`) are SOUND *and carry a registered Should-Fix soft spot* —
+their whole purpose is severity calibration. The three-anchor control rule above
+is **insufficient** for them: two runs could both say SOUND, miss the registered
+failure locus and objection, and falsely "converge." They use the
+**calibration-fixture convergence rule** instead: agreement on GT1 (claim),
+GT2 failure *locus/layer*, GT3 objection zone, a severity check (soft spot named
+at Should-Fix with no over-firing), and GT7 = SOUND. See
+`evals/fixtures/argument-benchmark/RUN-PROTOCOL.md` §Step 4. Pure controls (no
+registered soft spot) keep the three-anchor rule.
 
 ### Reviewer reliability is a separate layer, not a convergence path
 
