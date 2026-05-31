@@ -26,9 +26,18 @@ and reproducible rather than arbitrary.
   abstract-metadata as noted per source).
 - **END anchor** = the last sentence of the argument body (before notes /
   references / comments / site footer).
-- On first retrieval, record the exact first ~8 and last ~8 words actually
-  present, the retrieval date, and the SHA-256 of the extracted text in the
-  `RECORDED` block for that source.
+- On first retrieval the preparer caches the extracted text **outside the git
+tree** (sibling of the repo — copyrighted full text is never committed) and
+records, in the source's `RECORDED` block below, the SHA-256, byte count,
+retrieval date, and method. The cache is a convenience; re-fetch at run time is
+still the default, and any re-fetch must reproduce the recorded SHA-256.
+
+**Extraction convention used for the recorded hashes (2026-05-30 cache):**
+boilerplate (nav, donate/subscribe, footers, social) stripped; **article body,
+headings, and footnotes preserved.** This means the recorded hashes include
+footnotes even where an `EXCLUDE` line below names a "footnote list" — the
+preserve-footnotes convention is authoritative for the hash (footnotes are part
+of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 
 ---
 
@@ -40,7 +49,7 @@ and reproducible rather than arbitrary.
 - **START:** first sentence of the report body after the title/author/date block.
 - **END:** last sentence before footnotes/citations, "related publications," or site footer.
 - **EXCLUDE:** nav, author bios, footnote list, share/related widgets, newsletter CTA.
-- **RECORDED:** `<first-words … last-words | retrieved YYYY-MM-DD | sha256: …>` (pending first run)
+- **RECORDED format:** `retrieved YYYY-MM-DD | method | N bytes | sha256: <hex>` (filled per source below).
 
 ### current-affairs-abandon-abundance
 - **Cite:** Current Affairs, "Abandon 'Abundance.'"
@@ -48,7 +57,7 @@ and reproducible rather than arbitrary.
 - **START:** first sentence of the article body after headline/byline/deck.
 - **END:** last sentence before comments, "support us" CTA, or footer.
 - **EXCLUDE:** nav, deck/subhead if duplicated, donation/subscription CTAs, comments.
-- **RECORDED:** `<pending first run>`
+- **RECORDED:** `retrieved 2026-05-30 | web_fetch | 26069 bytes | sha256: 6352c7c92ba244874cd2f602e5366e2a0bcba9be4c74aeeccbf4663c82fd7d95`
 
 ### reason-problem-with-abundance-agenda
 - **Cite:** Reason, "The Problem With the 'Abundance Agenda.'"
@@ -56,7 +65,7 @@ and reproducible rather than arbitrary.
 - **START:** first sentence of the article body after headline/byline.
 - **END:** last sentence before "RELATED," comments, or footer.
 - **EXCLUDE:** nav, ad slots, related-links, comments, newsletter CTA.
-- **RECORDED:** `<pending first run>`
+- **RECORDED:** `retrieved 2026-05-30 | web_fetch | 15890 bytes | sha256: e103ac687a7238207e6720e99b5686ad8415de09c3688a9952bf538aeb312345`
 
 ### cato-industrial-policy-bad-idea
 - **Cite:** Cato Institute, "Industrial Policy: A Bad Idea Is Back," *Cato Policy Report* (Jul/Aug 2021).
@@ -64,7 +73,8 @@ and reproducible rather than arbitrary.
 - **START:** first sentence of the essay body after title/author/issue block.
 - **END:** last sentence before endnotes, "about the author," or footer.
 - **EXCLUDE:** nav, issue masthead, author bio, endnote list, share widgets.
-- **RECORDED:** `<pending first run>`
+- **License:** CC BY-NC-SA 4.0 (Cato) — compatible with this repo's license.
+- **RECORDED:** `retrieved 2026-05-30 | Chrome render (web_fetch returned a JS shell) | 19718 bytes | sha256: c1f8895c84243d6a5fda8a42ffc9d1d1a69f02886c680ecb383a31fc1f629a7a`
 
 ## Cluster B — AI & tech futures
 
@@ -74,7 +84,7 @@ and reproducible rather than arbitrary.
 - **START:** first line of the manifesto body (the opening "We are told…"-type line) after title.
 - **END:** last line of the manifesto body before the "patron saints" / credits list and footer.
 - **EXCLUDE:** nav, the patron-saints/credits appendix (it is a list, not argument), footer. **Note:** if a run wants to test whether the credits list is argument or ornament, record that as a separate variant; the default analyzed text excludes it.
-- **RECORDED:** `<pending first run>`
+- **RECORDED:** `retrieved 2026-05-30 | web_fetch | 33619 bytes | sha256: 1ba705936f3b4deb560d8b53a0f08690d40f16a13048a39615a80cf4e55924f3`
 
 ### amodei-machines-of-loving-grace
 - **Cite:** Dario Amodei, "Machines of Loving Grace" (Oct 2024).
@@ -82,7 +92,7 @@ and reproducible rather than arbitrary.
 - **START:** first sentence of the essay body after the title.
 - **END:** last sentence of the conclusion before any footnotes or site footer.
 - **EXCLUDE:** nav, footnote list, footer.
-- **RECORDED:** `<pending first run>`
+- **RECORDED:** `retrieved 2026-05-30 | web_fetch | 91273 bytes | sha256: c089c0ff8a4345473a1d60b1c01f4380d1ecf940158b9384a718d0e857de3dc5`
 
 ### bender-stochastic-parrots
 - **Cite:** Bender, Gebru, McMillan-Major, Shmitchell, "On the Dangers of Stochastic Parrots: Can Language Models Be Too Big? 🦜," FAccT '21. DOI 10.1145/3442188.3445922.
@@ -96,19 +106,21 @@ and reproducible rather than arbitrary.
 
 ### aecf-eliminate-confinement
 - **Cite:** Annie E. Casey Foundation, "Eliminate Confinement as a Response to Probation Rule Violations."
-- **URL:** https://www.aecf.org/resources/eliminate-confinement-as-a-response-to-probation-rule-violations
-- **START:** first sentence of the brief body after title/date.
+- **URL (landing):** https://www.aecf.org/resources/eliminate-confinement-as-a-response-to-probation-rule-violations — landing page only; the substance is in the linked PDF.
+- **SOURCE_PDF (the actual analyzed text):** https://assets.aecf.org/m/resourcedoc/aecf-eliminateconfinementasresponse-2020.pdf
+- **START:** first sentence of the report body after title/date.
 - **END:** last sentence of the argument before "download," "related," or footer.
 - **EXCLUDE:** nav, download CTAs, related-resources, footer.
-- **RECORDED:** `<pending first run>`
+- **RECORDED:** `retrieved 2026-05-30 | web_fetch (PDF) | 18885 bytes | sha256: 69491f3335858edeae3663331fd873d31c2a451b17ff4c4e7d32705b614b2df9`
 
 ### ppi-one-size-fits-none
 - **Cite:** Prison Policy Initiative, "One Size Fits None: How 'standard conditions' of probation set people up to fail."
 - **URL:** https://www.prisonpolicy.org/reports/probation_conditions.html
 - **START:** first sentence of the report body after title/byline/date.
 - **END:** last sentence before the Footnotes/Methodology section or footer.
-- **EXCLUDE:** nav, footnotes, methodology appendix, donation CTA, footer.
-- **RECORDED:** `<pending first run>`
+- **EXCLUDE:** nav, methodology appendix, donation CTA, footer. (Footnotes 1–68 preserved.)
+- **RECORDED:** `retrieved 2026-05-30 | web_fetch | 77509 bytes | sha256: 4944b26c9b2392d523530cc6f807e2024052a6b1ca016e83d650bb54fc0ecb4a`
+- **Extraction caveat:** footnote 41 was absent from the source (text jumps fn 40 → 42); a bracketed placeholder marks the gap. Immaterial to GT1–GT3.
 
 ## Cluster D — long-form hybrid
 
