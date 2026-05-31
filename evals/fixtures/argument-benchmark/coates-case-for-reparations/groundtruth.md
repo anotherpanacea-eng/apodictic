@@ -6,7 +6,7 @@
 - **Bucket:** 7 argument-with-embedded-narrative hybrid · **Cluster:** D (standalone long-form) · also advocacy journalism (6)
 - **Source class:** third-party published — **referenced (text NOT stored; copyright)**
 - **Work:** Ta-Nehisi Coates, "The Case for Reparations," *The Atlantic*, June 2014.
-- **Pinned source:** https://www.theatlantic.com/magazine/archive/2014/06/the-case-for-reparations/361631/ (record retrieval date + content hash on first authoritative run; note possible paywall — use an accessible copy or library access).
+- **Pinned source:** https://www.theatlantic.com/magazine/archive/2014/06/the-case-for-reparations/361631/ (record retrieval date + content hash on first authoritative run; analyzed-text extraction anchors (START / END / EXCLUDE) in [../SOURCES.md](../SOURCES.md); note possible paywall — use an accessible copy or library access).
 - **Quotation policy:** paraphrase only — do not reproduce the source text.
 - **Ground-truth authority:** Joshua A. Miller (editor), independent diagnosis registered 2026-05-30, before any engine run.
 - **Scope:** GT1–GT3 authoritative. **GT4–GT7 PROVISIONAL.**

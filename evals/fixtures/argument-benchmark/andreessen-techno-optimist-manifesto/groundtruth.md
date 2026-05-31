@@ -6,7 +6,7 @@
 - **Bucket:** 6 advocacy / manifesto · **Cluster:** B (AI & tech futures) · stance: techno-optimist
 - **Source class:** third-party published — **referenced (text NOT stored; copyright)**
 - **Work:** Marc Andreessen, "The Techno-Optimist Manifesto," a16z, October 2023.
-- **Pinned source:** https://a16z.com/the-techno-optimist-manifesto/ (record retrieval date + content hash on first authoritative run).
+- **Pinned source:** https://a16z.com/the-techno-optimist-manifesto/ (record retrieval date + content hash on first authoritative run; analyzed-text extraction anchors (START / END / EXCLUDE) in [../SOURCES.md](../SOURCES.md)).
 - **Quotation policy:** paraphrase only.
 - **Ground-truth authority:** Joshua A. Miller (editor), diagnosis registered 2026-05-30, before any run.
 - **Scope:** GT1–GT3 authoritative. **GT4–GT7 PROVISIONAL.**
@@ -32,7 +32,8 @@
 - **GT4 audience:** MIXED · SYMPATHETIC (tech base) → HOSTILE (critics) · MEDIUM. AC3 is the signature risk.
 - **GT5 red-team:** load-bearing = the governance/externality objection + the assertion gaps. Decoy = the enemies/villains list's tone.
 - **GT6 repair order:** first target = **convert cadence to support** at the load-bearing claims before broadening the vision.
-- **GT7 Distinguish:** the corpus's key **form-fit test** — manifesto is a recognized form, so Step 9 must decide whether the cadence is *doing real work* (UNCONVENTIONAL-BUT-EFFECTIVE) or *shielding weakness* at the load-bearing claims (tipping toward UNSOUND). Per the diagnosis, cadence *substitutes* for argument at key moments → likely **SOUND-but-borderline**, with the form-fit decision as the scored event. **Calibration trap:** granting blanket manifesto charity, or failing it purely for not being thesis-evidence prose.
+- **GT7 Distinguish — expected classification: SOUND** (a competent manifesto with a Should-Fix cadence-over-support soft spot; not UNSOUND, not UNCONVENTIONAL-BUT-EFFECTIVE — the manifesto form is recognized and conventional, so it is not "unconventional," and the cadence substitutes for argument only *at key moments*, not pervasively enough to block evaluability). The scored answer is fixed: **SOUND**. The form-fit nuance is the calibration event, not the classification.
+  - **Calibration trap:** the failure modes are (a) granting blanket manifesto charity and calling it UNCONVENTIONAL-BUT-EFFECTIVE to excuse the support gaps; (b) failing it as UNSOUND purely for not being thesis-evidence prose; or (c) over-firing the cadence gaps as Must-Fix. Correct: SOUND, with the cadence-substitution named at Should-Fix.
 
 ## Notes
 

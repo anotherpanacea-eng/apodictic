@@ -6,7 +6,7 @@
 - **Bucket:** 6 visionary essay · **Cluster:** B (AI & tech futures) · stance: optimism-with-safety
 - **Source class:** third-party published — **referenced (text NOT stored; copyright)**
 - **Work:** Dario Amodei, "Machines of Loving Grace," October 2024.
-- **Pinned source:** https://darioamodei.com/essay/machines-of-loving-grace (record retrieval date + content hash on first authoritative run).
+- **Pinned source:** https://darioamodei.com/essay/machines-of-loving-grace (record retrieval date + content hash on first authoritative run; analyzed-text extraction anchors (START / END / EXCLUDE) in [../SOURCES.md](../SOURCES.md)).
 - **Quotation policy:** paraphrase only.
 - **Ground-truth authority:** Joshua A. Miller (editor), diagnosis registered 2026-05-30, before any run.
 - **Scope:** GT1–GT3 authoritative. **GT4–GT7 PROVISIONAL.**

@@ -275,6 +275,17 @@ controls — `personal-essay-narrative-arg` and the referenced
 `modest-proposal-satire` — score on this set; their `groundtruth.md` marks
 GT2/GT3/GT5/GT6 as N/A.)
 
+**SOUND-but-with-a-soft-spot is not a pure control.** The referenced real
+fixtures (`CORPUS.md`) are SOUND *and carry a registered Should-Fix soft spot* —
+their whole purpose is severity calibration. The three-anchor control rule above
+is **insufficient** for them: two runs could both say SOUND, miss the registered
+failure locus and objection, and falsely "converge." They use the
+**calibration-fixture convergence rule** instead: agreement on GT1 (claim),
+GT2 failure *locus/layer*, GT3 objection zone, a severity check (soft spot named
+at Should-Fix with no over-firing), and GT7 = SOUND. See
+`evals/fixtures/argument-benchmark/RUN-PROTOCOL.md` §Step 4. Pure controls (no
+registered soft spot) keep the three-anchor rule.
+
 ### Reviewer reliability is a separate layer, not a convergence path
 
 Inter-rater agreement — two reviewers independently scoring the *same* engine
