@@ -38,3 +38,5 @@
 ## Notes
 
 The corpus's hybrid (bucket 7) anchor — tests the NE inventory and the two-audit handoff, not just the argument layer.
+
+**⚠ Input-integrity caveat (see [../SOURCES.md](../SOURCES.md)).** The 2026-05-30 cached extraction (from a personal `.docx`) has two conversion anomalies: a modern predatory-lending block (Rugh & Massey; Wells Fargo / Beth Jacobson; Bank of America) sits out of sequence at the END, and some photo captions + the "Auschwitz All Around Us" sidebar are interleaved into the prose. These touch the GT2 (predation → national-remedy leap) and conclusion anchors. A run may surface the disordering as a Step 8 cross-section / structural finding — that is a **conversion artifact, not a feature of the argument**, and must be excluded from scoring in both directions. **Treat Coates results as provisional until re-extracted from a clean, correctly-ordered copy.**

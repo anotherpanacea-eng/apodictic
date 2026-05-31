@@ -11,9 +11,14 @@ editor's diagnosis.
   is *single-editor pre-registration*, not an external cross-check. A genuine
   external authority requires a second editor — which GT4–GT7 explicitly await.
 - **Registered:** 2026-05-30.
-- **Run status:** no engine runs yet — the build sandbox blocks outbound web
-  fetches (a16z/Atlantic/Reason/Gutenberg all 403 / domain-blocked). Runs must
-  happen in a web-enabled environment; see [README.md](README.md) §Running.
+- **Source texts:** all 10 fetched + hashed (preparer, 2026-05-30); SHA-256 +
+  method + byte count recorded per source in [SOURCES.md](SOURCES.md). Full text
+  is cached **outside the git tree** (copyright; never committed). Coates carries
+  an input-integrity caveat — see its `groundtruth.md` and SOURCES.md.
+- **Run status:** texts staged for blind runs; **no engine runs yet** (this
+  sandbox blocks outbound fetches, so runs happen in a web-enabled session per
+  [RUN-PROTOCOL.md](RUN-PROTOCOL.md); any re-fetch must reproduce the recorded
+  SHA-256).
 
 ## Provenance tier (canonical — matches the spec's four-tier scheme)
 
