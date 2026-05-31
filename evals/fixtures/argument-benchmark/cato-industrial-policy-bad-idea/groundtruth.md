@@ -6,7 +6,7 @@
 - **Bucket:** 2 policy essay (also bucket-6-adjacent) · **Cluster:** A (abundance debate — industrial-policy flank) · stance: anti-industrial-policy (libertarian)
 - **Source class:** third-party published — **referenced (text NOT stored; copyright)**
 - **Work:** Cato Institute, "Industrial Policy: A Bad Idea Is Back."
-- **Pinned source:** https://www.cato.org/policy-report/july/august-2021/industrial-policy-bad-idea-back (record retrieval date + content hash on first authoritative run).
+- **Pinned source:** https://www.cato.org/policy-report/july/august-2021/industrial-policy-bad-idea-back (record retrieval date + content hash on first authoritative run; analyzed-text extraction anchors (START / END / EXCLUDE) in [../SOURCES.md](../SOURCES.md)).
 - **Quotation policy:** paraphrase only — do not reproduce the source text.
 - **Ground-truth authority:** Joshua A. Miller (editor), independent diagnosis registered 2026-05-30, before any engine run.
 - **Scope:** GT1–GT3 authoritative. **GT4–GT7 PROVISIONAL** (confirm on run or by a second editor).

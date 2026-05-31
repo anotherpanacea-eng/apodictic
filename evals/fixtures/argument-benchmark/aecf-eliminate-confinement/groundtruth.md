@@ -6,7 +6,7 @@
 - **Bucket:** 2 policy brief · **Cluster:** C (criminal justice / probation) · stance: reform advocacy
 - **Source class:** third-party published — **referenced (text NOT stored; copyright)**
 - **Work:** Annie E. Casey Foundation, "Eliminate Confinement as a Response to Probation Rule Violations."
-- **Pinned source:** https://www.aecf.org/resources/eliminate-confinement-as-a-response-to-probation-rule-violations (record retrieval date + content hash on first authoritative run).
+- **Pinned source:** https://www.aecf.org/resources/eliminate-confinement-as-a-response-to-probation-rule-violations (record retrieval date + content hash on first authoritative run; analyzed-text extraction anchors (START / END / EXCLUDE) in [../SOURCES.md](../SOURCES.md)).
 - **Quotation policy:** paraphrase only.
 - **Ground-truth authority:** Joshua A. Miller (editor), diagnosis registered 2026-05-30, before any run.
 - **Scope:** GT1–GT3 authoritative. **GT4–GT7 PROVISIONAL.**

@@ -6,7 +6,7 @@
 - **Bucket:** 2 policy brief / report · **Cluster:** C (criminal justice / probation) · stance: reform advocacy
 - **Source class:** third-party published — **referenced (text NOT stored; copyright)**
 - **Work:** Prison Policy Initiative, "One Size Fits None: How 'standard conditions' of probation set people up to fail."
-- **Pinned source:** https://www.prisonpolicy.org/reports/probation_conditions.html (record retrieval date + content hash on first authoritative run).
+- **Pinned source:** https://www.prisonpolicy.org/reports/probation_conditions.html (record retrieval date + content hash on first authoritative run; analyzed-text extraction anchors (START / END / EXCLUDE) in [../SOURCES.md](../SOURCES.md)).
 - **Quotation policy:** paraphrase only.
 - **Ground-truth authority:** Joshua A. Miller (editor), diagnosis registered 2026-05-30, before any run.
 - **Scope:** GT1–GT3 authoritative. **GT4–GT7 PROVISIONAL.**

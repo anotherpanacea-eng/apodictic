@@ -6,7 +6,7 @@
 - **Bucket:** 2 policy brief · **Cluster:** A (abundance debate) · stance: pro-reframe (left)
 - **Source class:** third-party published — **referenced (text NOT stored; copyright)**
 - **Work:** Roosevelt Institute, "Democratic Abundance: An Abundance That Works for Workers."
-- **Pinned source:** https://rooseveltinstitute.org/publications/democratic-abundance/ (record retrieval date + a content hash of the fetched text on first authoritative run).
+- **Pinned source:** https://rooseveltinstitute.org/publications/democratic-abundance/ (record retrieval date + a content hash of the fetched text on first authoritative run; analyzed-text extraction anchors (START / END / EXCLUDE) in [../SOURCES.md](../SOURCES.md)).
 - **Quotation policy:** paraphrase only — do not reproduce the source text.
 - **Ground-truth authority:** Joshua A. Miller (editor), independent diagnosis registered 2026-05-30, before any engine run.
 - **Scope:** GT1–GT3 are authoritative (from the registered diagnosis). **GT4–GT7 are PROVISIONAL** (benchmark-author mapping; confirm on run or by a second editor).

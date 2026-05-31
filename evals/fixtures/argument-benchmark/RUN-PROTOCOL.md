@@ -11,22 +11,40 @@ See also: [the benchmark spec](../../../docs/argument-benchmark-spec.md)
 
 ## Principles
 
-1. **Blind runs.** The runner sees only the argument text + the audit procedure.
-   It must **not** read `groundtruth.md`, `CORPUS.md`, the rubric, or the spec.
+1. **Three disjoint roles — never the same session for 1 and 3.**
+   - **Preparer:** fetches/extracts the input. Reads **only** [SOURCES.md](SOURCES.md)
+     (metadata: URL, anchors, hash — *no* answer key). Never opens `groundtruth.md`.
+   - **Runner (blind):** sees **only** the extracted argument text + the audit
+     procedure. Never sees `groundtruth.md`, `SOURCES.md`, `CORPUS.md`, the
+     rubric, or the spec.
+   - **Scorer:** reads `groundtruth.md` + the rubric, *after* the runs.
+   The preparer and runner must be **separate sessions/contexts** so fetch
+   metadata (or the act of reading a GT-bearing file) cannot enter the runner's
+   context. A single session that both reads `groundtruth.md` and then diagnoses
+   is **not a blind run.**
 2. **Two independent runs per fixture** for convergence — use two model configs
    (e.g., Opus + Sonnet) or two editors. Two reviewers scoring *one* output is
    reliability, not convergence.
 3. **Score after**, against `groundtruth.md`, using the rubric. GT1–GT3 are
    authoritative; for referenced real pieces GT4–GT7 are provisional.
-4. **Record provenance.** For referenced sources, record retrieval date + a
-   SHA-256 of the fetched text into the fixture's `groundtruth.md` on first run.
+4. **Record provenance.** For referenced sources, the *preparer* records the
+   retrieval date + SHA-256 of the extracted text into [SOURCES.md](SOURCES.md)
+   (not `groundtruth.md`, which the preparer never opens).
 
-## Step 1 — Get the input (metadata-free)
+## Step 1 — Get the input (preparer role; metadata-free hand-off)
+
+Done by the **preparer**, in a session separate from the runner.
 
 - **Stored fixture** (`fixture.md` present): use its contents verbatim.
-- **Referenced fixture** (text not stored): fetch the pinned URL from
-  `groundtruth.md`; apply the analyzed-text scope anchors if given; strip site
-  boilerplate. Give the runner a **neutral label**, never the slug.
+- **Referenced fixture** (text not stored): read the fixture's entry in
+  [SOURCES.md](SOURCES.md) — **not** `groundtruth.md` — for the URL and
+  analyzed-text START/END anchors. Fetch, keep only the text between the anchors,
+  drop the EXCLUDE boilerplate, and (on first authoritative retrieval) record the
+  exact anchor strings + retrieval date + SHA-256 into that SOURCES.md entry's
+  `RECORDED` block.
+- **Hand-off:** give the runner the extracted text under a **neutral label**
+  (e.g., "Submission X") — never the slug, the URL, the author/title, or any
+  SOURCES.md / `groundtruth.md` content.
 
 ## Step 2 — Blind-run prompt (paste per run, per fixture)
 
@@ -100,14 +118,32 @@ test: same causal-warrant family, opposite correct severity.
 - **Failure-bearing fixtures:** the two runs converge if they agree on ≥3 of 4
   anchors (claim, top failures, burden mismatch, objection zone), claim
   mandatory.
-- **Positive controls / SOUND real pieces:** converge if both agree on claim
-  (GT1) + Distinguish classification (GT7) + no invented failure.
+- **Pure positive controls** (no registered soft spot — `personal-essay-narrative-arg`,
+  `modest-proposal-satire`): converge if both agree on claim (GT1) + Distinguish
+  classification (GT7) + no invented failure.
+- **SOUND real calibration fixtures** (the CORPUS.md pieces — SOUND *with* a
+  registered Should-Fix soft spot): the positive-control rule is **not enough**,
+  because two runs could both say `SOUND`, miss the registered failure locus and
+  objection, and still "converge" — passing a calibration fixture without testing
+  the calibration. These converge only when both runs agree on:
+  1. **GT1** claim,
+  2. **GT2** failure *locus/layer* (the registered soft spot — not the exact code),
+  3. **GT3** objection zone,
+  4. **severity calibration:** the soft spot is named at **Should-Fix** (not
+     Must-Fix) **and** the run does not over-fire (no flood of Must-Fix codes on a
+     SOUND argument), and
+  5. **GT7 = SOUND.**
+  Require GT1 + GT2-locus + the severity-calibration check, plus at least one of
+  {GT3, GT7}. A run that says SOUND but misses the locus, or fires the soft spot
+  as Must-Fix, **fails** the fixture even if the two runs agree with each other —
+  agreement on a wrong diagnosis is not convergence.
 
 ## Step 5 — Record
 
 - Save both run outputs + the scorecard under `evals/results/` (gitignored;
   `git add -f` only outputs the provenance policy permits).
-- For referenced sources, write retrieval date + SHA-256 into `groundtruth.md`.
+- For referenced sources, the preparer writes retrieval date + SHA-256 into the
+   source's `RECORDED` block in [SOURCES.md](SOURCES.md) (kept out of `groundtruth.md`).
 - Log convergence/score disagreements with a cause class (engine fault /
   ground-truth ambiguity / reviewer error). Ground-truth ambiguity → sharpen the
   key; that is a valid and expected outcome.

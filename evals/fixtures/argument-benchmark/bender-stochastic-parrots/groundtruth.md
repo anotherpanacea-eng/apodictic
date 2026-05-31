@@ -6,7 +6,7 @@
 - **Bucket:** 5 academic argument · **Cluster:** B (AI & tech futures) · stance: risk
 - **Source class:** third-party published — **referenced (text NOT stored; copyright)**
 - **Work:** Bender, Gebru, McMillan-Major, Shmitchell, "On the Dangers of Stochastic Parrots: Can Language Models Be Too Big? 🦜," FAccT '21.
-- **Pinned source:** https://dl.acm.org/doi/10.1145/3442188.3445922 (record retrieval date + content hash on first authoritative run; ACM may gate — use an open author copy if needed).
+- **Pinned source:** https://dl.acm.org/doi/10.1145/3442188.3445922 (record retrieval date + content hash on first authoritative run; analyzed-text extraction anchors (START / END / EXCLUDE) in [../SOURCES.md](../SOURCES.md); ACM may gate — use an open author copy if needed).
 - **Quotation policy:** paraphrase only.
 - **Ground-truth authority:** Joshua A. Miller (editor), diagnosis registered 2026-05-30, before any run.
 - **Scope:** GT1–GT3 authoritative. **GT4–GT7 PROVISIONAL.**
