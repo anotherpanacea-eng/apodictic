@@ -80,10 +80,12 @@ web-enabled session.
 1. Route the text through nonfiction intake (→ Dialectical Clarity) or invoke
    `/audit dialectical-clarity` directly. Feed the engine the *contents* of
    `fixture.md` with a neutral label (not the slug) — see Input hygiene above.
-   For referenced fixtures (text not stored), fetch the pinned source named in
-   `groundtruth.md` first, apply the analyzed-text scope anchors, and — on the
-   first authoritative retrieval — record the SHA-256 back into `groundtruth.md`
-   so the source is pinned for all subsequent runs.
+   For referenced fixtures (text not stored), follow [RUN-PROTOCOL.md](RUN-PROTOCOL.md):
+   the **preparer** reads only [SOURCES.md](SOURCES.md) (URL + extraction anchors
+   + hash — never `groundtruth.md`), extracts the analyzed text, records the
+   SHA-256 in that source's `RECORDED` block in `SOURCES.md`, and hands **only
+   the extracted text** to the blind runner. `groundtruth.md` is never opened by
+   the preparer or runner — only by the scorer, afterward.
 2. Run the companion modules the fixture's GT scope requires (Red Team for
    Q5, Revision Coach argument mode for Q6).
 3. Capture the editorial letter + `Argument_State.md` (+ companion artifacts).

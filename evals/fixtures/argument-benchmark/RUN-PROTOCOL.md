@@ -125,17 +125,17 @@ test: same causal-warrant family, opposite correct severity.
   registered Should-Fix soft spot): the positive-control rule is **not enough**,
   because two runs could both say `SOUND`, miss the registered failure locus and
   objection, and still "converge" — passing a calibration fixture without testing
-  the calibration. These converge only when both runs agree on:
+  the calibration. These converge only when **both runs agree on all five**:
   1. **GT1** claim,
   2. **GT2** failure *locus/layer* (the registered soft spot — not the exact code),
-  3. **GT3** objection zone,
+  3. **GT3** objection zone (authoritative for these fixtures),
   4. **severity calibration:** the soft spot is named at **Should-Fix** (not
      Must-Fix) **and** the run does not over-fire (no flood of Must-Fix codes on a
      SOUND argument), and
   5. **GT7 = SOUND.**
-  Require GT1 + GT2-locus + the severity-calibration check, plus at least one of
-  {GT3, GT7}. A run that says SOUND but misses the locus, or fires the soft spot
-  as Must-Fix, **fails** the fixture even if the two runs agree with each other —
+  All five are required (no either/or). A run that says SOUND but misses the
+  locus or the objection zone, or fires the soft spot as Must-Fix, **fails** the
+  fixture even if the two runs agree with each other —
   agreement on a wrong diagnosis is not convergence.
 
 ## Step 5 — Record
