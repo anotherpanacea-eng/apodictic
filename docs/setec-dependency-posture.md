@@ -26,7 +26,7 @@ There is no blanket "voice work requires SETEC" rule. Each SETEC-touching audit 
 | **Narrative-Decision (StoryScope)** | `narrative_decision_audit` | Computational | **Required.** No audit without SETEC. Hard prerequisite with a version floor and a clean upgrade-path failure. |
 | **POV Voice Profile** | `pov_voice_profile`, `voice_distance`, `voice_profile` | Computational | **Required.** Stylometric distance *is* the audit. |
 | **Idiolect Preservation** | `idiolect_detector` | Computational | **Required** for the keyness/collocation extraction. |
-| **Punctuation Cadence** | `punctuation_cadence` | Computational | **Required** for the per-mark/bigram stylometry. |
+| **Punctuation Cadence** | `punctuation_cadence_audit` | Computational | **Required** for the per-mark/bigram stylometry. |
 | **AI-Prose Calibration — Layer A** (distributional) | `variance_audit`, `manuscript_audit`, `repetition_audit` | Computational | **Required for Layer A only.** An LLM approximating burstiness / MATTR / MTLD is theater; do not fake it. |
 | **AI-Prose Calibration — Layer B** (AIC pattern scan) | — | Judgment | **SETEC-independent.** Runs on the model alone. |
 | **AI-Prose Calibration — Layer C** (source triage) | — | Judgment | **SETEC-independent.** Runs on the model alone. |
