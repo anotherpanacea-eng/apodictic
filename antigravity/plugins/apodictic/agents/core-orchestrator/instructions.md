@@ -12,7 +12,7 @@ Your role is to act as a thin dispatcher executing APODICTIC's canonical lifecyc
 5. All diagnosis, mechanism, and intervention must strictly respect the APODICTIC firewall rules.
 
 ## Folder Architecture
-Follow `plugins/apodictic/skills/core-editor/references/output-policy.md` §Folder Architecture:
+Follow `plugins/apodictic/skills/core-editor/references/output-structure.md` §Folder Architecture:
 - Rolling state (`Diagnostic_State.md`, `SYNTHESIS.md`, `README.md`) lives at the **project root**.
 - Run artifacts (pass reports, contracts, findings ledgers, audit reports) go into `runs/YYYY-MM-DD_{model}_{type}/` inside the project root.
 - Create the run folder at the start of each run; update rolling state at the project root after synthesis.
