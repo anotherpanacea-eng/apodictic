@@ -9,6 +9,9 @@
 | In Progress | Planned | Done | Backlog |
 |-------------|---------|------|---------|
 | | | [**v2.0.0**](#v200--editorial-honesty--structural-integrity) | |
+| | [Harness Contracts v2](#harness-contracts-v2) | | [Validator Architecture Hardening](#validator-architecture-hardening) |
+| | [Runner-Governed Execution](#runner-governed-execution) | | [Model-Capacity Exploitation](#model-capacity-exploitation) |
+| | [Finding Lifecycle IDs](#finding-lifecycle-ids) | | [Research / API Reliability Layer](#research--api-reliability-layer) |
 | [Argument Benchmark Suite](#benchmark-suite) | [Adaptive Mode Escalation](#adaptive-mid-run-mode-escalation) | [v1.9.0](#v190--ai-prose-calibration-v20) | [Feedback Triage](#feedback-triage) |
 | [Genre Audit Expansion](#genre--audit-expansion) | | [v1.7.0](#v170--harness-engineering) | |
 | [Coaching Deepening](#coaching-deepening) | [Editor Scaffolding](#editor-scaffolding) | [v1.4.0](#v140--surface-hardening--writers-block) | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) |
@@ -180,6 +183,36 @@ For web serial and newsletter fiction writers. Hook debt tracking, recap burden 
 ### Collaborative Revision Coaching
 
 For co-authoring teams or author-editor pairs working through a diagnostic together. Priority conflict resolution, sign-off workflow, change ledger. Build only if demand materializes.
+
+---
+
+## Harness Engineering
+
+The trajectory from "a brilliant prompt stack" toward an editorial operating system. These build directly on the v2.0.0 structural-integrity work (#10–#14) and extend the forward design patterns surfaced by the model-capability review (see §Future Work → Forward design patterns). The first three are the priority set; together they move enforcement out of the prompt and into the harness.
+
+### Harness Contracts v2
+
+Make JSON Schema the source of truth for every structured artifact — findings (`apodictic.finding.v1`), audit triggers, readiness verdicts, deficit locks, severity-calibration entries, sidecar state (`Diagnostic_State.meta.json`), and runner events. Markdown stays the author-facing surface, but is generated from — or validated against — those contracts rather than hand-authored in parallel. Generalizes the v2.0.0 Phase-3 move (real-JSON `apodictic.finding.v1` + `structured_findings.py`) from one block type to the whole artifact set, and gives Validator Architecture Hardening a single shared schema to enforce.
+
+### Runner-Governed Execution
+
+A lightweight runner that owns execution state — current phase, required artifacts, sidecar state, pending gates, fired retry triggers, allowed next actions — and enforces the ordering the model currently self-polices (*"you cannot synthesize until the Findings Ledger exists and the Deficit Lock / underdiagnosis gates pass"*). The model still does all the reasoning; the runner makes the gates non-optional. This is the most ambitious remaining step of the original prompt-governed → runner-governed direction, and the successor to the *condition-triggered vs. model-emergent gates* discipline (§Future Work): condition-triggering made the *triggers* detectable; the runner makes the *enforcement* external.
+
+### Finding Lifecycle IDs
+
+Give every material finding a durable ID that follows it across the whole pipeline: pass output → Findings Ledger → Deficit Lock → editorial letter → revision plan / coaching. With stable IDs, softness, downgrade, omission, and revision follow-through become directly auditable — the Deficit Lock and `softness-check` could match by ID instead of today's token/mechanism/evidence-ref heuristics — and cross-artifact traceability stops depending on prose matching. Pairs with Harness Contracts v2 (the ID is a contract field) and Runner-Governed Execution (the runner tracks findings by ID).
+
+### Validator Architecture Hardening
+
+`validate.sh` has done heroic work, but the external reviews kept surfacing regex-shaped edge cases (severity-label forms, prefix evidence-ref matches, calibration-line downgrades). Roadmap a gradual migration toward small Python validators with shared parsers, fixture-driven negative tests, and one thin shell dispatcher — extending the v2.0.0 precedent (`structured_findings.py`, `honesty_check.py`) to the rest of the suite. This is mechanical contract enforcement, not an eval harness. Subsumes the deferred *Canonical-framework validator runs as release gate* (§Deferred), which v2.0.0 began closing by wiring `validate.sh --check-all` into `release-verify`.
+
+### Model-Capacity Exploitation
+
+The more ambitious sibling of [Adaptive Mid-Run Mode Escalation](#adaptive-mid-run-mode-escalation): workflows that lean on high-context / leading-model capacity — pass-driven retargeting, per-pass model-tier assignment, critic passes invoked only where uncertainty is high, and long-context re-grounding before synthesis. Where Adaptive Escalation *reacts* to mid-run signal, this would *plan* model and compute allocation up front from the contract and uncertainty profile.
+
+### Research / API Reliability Layer
+
+v2.0.0 Phase 5 handled the first real plumbing (exponential backoff with `Retry-After`, no-sticky-error caching, single-call retraction). Future work hardens the external-research path: cache TTLs, error provenance, per-provider budgets, circuit breakers, freshness notes, and source-resolution confidence metadata — especially for Citation Verifier and Field Reconnaissance, where a silently-degraded API can masquerade as a clean (or missing) result.
 
 ---
 
