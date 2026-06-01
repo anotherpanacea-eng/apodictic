@@ -135,6 +135,14 @@
 #       <!-- override: argument-recon-prerequisite -->. Pass --self-test
 #       for built-in cases.
 #
+#   structured-findings <file> [<file>...]
+#       Validate embedded apodictic:* JSON blocks (apodictic.finding.v1,
+#       audit_trigger.v1, readiness.v1) in ledger/letter markdown and the
+#       Diagnostic_State.meta.json sidecar (findings[] severities must tally to
+#       triage_summary). Delegates to scripts/structured_findings.py (real JSON
+#       parser); degrades to a presence check without python3. Pass --self-test
+#       for built-in cases.
+#
 # Exit codes:
 #   0 — all checks pass
 #   1 — validation failure (details on stdout)
@@ -144,8 +152,9 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite"
-  echo "Aggregate: --self-test-all (runs --self-test on all 11 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings"
+  echo "Aggregate: --self-test-all (runs --self-test on all 12 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry and structured-findings on the shipped templates)"
   exit 2
 }
 
@@ -161,11 +170,11 @@ if [ $# -lt 1 ]; then usage; fi
 # pure utilities that do not carry self-tests; only the 11 model-
 # capability-review validators do.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite"
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 11 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 12 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -178,10 +187,44 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/11 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/12 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/11 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/12 validators failed; rerun individually with --self-test for details)"
+    exit 1
+  fi
+fi
+
+# Standard verification path (Phase 3): hermetic self-tests PLUS the real-file
+# invariants that --self-test-all (synthetic fixtures only) does not cover — the
+# audit-signal-propagation registry-vs-§4e check and structured-findings
+# validation of the shipped artifact templates. Closes the gap where a future
+# change could pass --self-test-all while breaking a real-file invariant.
+if [ "$1" = "--check-all" ]; then
+  CA_SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+  CA_FAIL=0
+  echo "== --self-test-all =="
+  "$0" --self-test-all || CA_FAIL=1
+  echo ""
+  echo "== audit-signal-propagation --check-registry (real registry vs §4e) =="
+  "$0" audit-signal-propagation --check-registry || CA_FAIL=1
+  echo ""
+  echo "== structured-findings (shipped artifact templates) =="
+  CA_DONE=0
+  for base in "$CA_SCRIPT_DIR/../skills/core-editor/references" "$CA_SCRIPT_DIR/../plugins/apodictic/skills/core-editor/references"; do
+    if [ -f "$base/diagnostic-state-meta-template.json" ]; then
+      "$0" structured-findings "$base/diagnostic-state-meta-template.json" "$base/findings-ledger-format.md" || CA_FAIL=1
+      CA_DONE=1
+      break
+    fi
+  done
+  [ "$CA_DONE" -eq 0 ] && { echo "ERROR: could not locate reference templates for structured-findings — --check-all cannot verify the real-file invariant"; CA_FAIL=1; }
+  echo ""
+  if [ "$CA_FAIL" -eq 0 ]; then
+    echo "check-all: PASS (self-tests + real-file invariants)"
+    exit 0
+  else
+    echo "check-all: FAIL (one or more checks failed; rerun individually for details)"
     exit 1
   fi
 fi
@@ -3642,6 +3685,42 @@ EOF
 
     echo "ERROR: Argument-engine artifacts detected in '${RUN_FOLDER}' (no Field_Reconnaissance_Report.md present), but the editorial letter does not record the canonical blind-spot disclosure ('literature-counterevidence not surveyed'). Per pass-dependencies.md §4a (Hard Prerequisite) + run-synthesis.md §Step 3 (Phase 6 Wave 3 / CR-4): silent omission is forbidden. Either (a) run Field Reconnaissance and produce Field_Reconnaissance_Report.md, (b) record the canonical blind-spot disclosure in the editorial letter naming what is unsurveyed and what the absence implies for synthesis confidence, or (c) place a body override marker <!-- override: argument-recon-prerequisite — <rationale> --> in the editorial letter."
     exit 1
+    ;;
+
+  structured-findings)
+    # Phase 3: validate embedded apodictic:* JSON blocks (in ledger/letter .md)
+    # and the Diagnostic_State.meta.json sidecar. Delegates JSON parsing to
+    # scripts/structured_findings.py (a real parser). On a host without python3,
+    # degrade to a presence check so the block — which stays human-readable —
+    # does not hard-block; full validation needs python3 (present on Cowork).
+    SF_DIR=$(cd "$(dirname "$0")" && pwd)
+    SF_HELPER="$SF_DIR/structured_findings.py"
+    if command -v python3 >/dev/null 2>&1 && [ -f "$SF_HELPER" ]; then
+      python3 "$SF_HELPER" "$@"
+      exit $?
+    fi
+    # Degraded path (no python3).
+    if [ "${1:-}" = "--self-test" ]; then
+      SF_TMP=$(mktemp -d); trap 'rm -rf "$SF_TMP"' EXIT
+      printf '<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","severity":"Must-Fix"}\n-->\n' > "$SF_TMP/f.md"
+      if grep -q 'apodictic:finding' "$SF_TMP/f.md" && grep -q '"schema"' "$SF_TMP/f.md"; then
+        echo "Self-test: PASS (degraded — python3 unavailable; presence check only)"; exit 0
+      else
+        echo "Self-test: FAIL"; exit 1
+      fi
+    fi
+    if [ $# -lt 1 ]; then echo "Usage: $0 structured-findings <file> [<file>...] | --self-test"; exit 2; fi
+    SF_WARN=0
+    for f in "$@"; do
+      if [ ! -f "$f" ]; then echo "Error: File not found: $f" >&2; exit 2; fi
+      if grep -q 'apodictic:' "$f" 2>/dev/null; then SF_WARN=1; fi
+    done
+    if [ "$SF_WARN" -eq 1 ]; then
+      echo "WARN: python3 unavailable — presence check only; full JSON validation skipped (blocks remain human-readable). Install python3 for full structured-findings validation."
+    else
+      echo "structured-findings: PASS (degraded presence check; no structured blocks found)"
+    fi
+    exit 0
     ;;
 
   *)

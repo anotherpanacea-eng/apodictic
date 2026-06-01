@@ -22,6 +22,11 @@
     "could_fix": 0
   },
 
+  "$comment_structured": "Phase 3 — optional machine-readable arrays mirroring the embedded apodictic:* blocks in ledger/letter artifacts. Validated by scripts/structured_findings.py (validate.sh structured-findings). When findings[] is populated, its severities must tally to triage_summary; omit any array to keep older sidecars valid.",
+  "findings": [],
+  "audit_triggers": [],
+  "readiness": [],
+
   "control_questions": {
     "total": 7,
     "open": 0,
