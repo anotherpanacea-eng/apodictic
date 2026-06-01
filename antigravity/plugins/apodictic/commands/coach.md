@@ -22,7 +22,7 @@ Load `../skills/revision-coach/SKILL.md`. Follow the coaching protocol in `../sk
 
 **After synthesis completion** (when invoked by post-synthesis offer): Skip mode detection — enter Session Planning directly.
 
-**State and output locations** (per `../skills/core-editor/references/output-policy.md` §Folder Architecture):
+**State and output locations** (per `../skills/core-editor/references/output-structure.md` §Folder Architecture):
 - Read `Diagnostic_State.md`, `SYNTHESIS.md`, and `Argument_State.md` from the **project root**
 - Write active `Session_Plan_{NN}.md` to the **project root** (working document while session is in progress)
 - On session completion, archive the plan: create `runs/YYYY-MM-DD_{model}_coaching/` and move the completed session plan there, along with any revision calendars or momentum reports

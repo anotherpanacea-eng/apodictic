@@ -204,7 +204,7 @@ Omit the "Specialized audits run" section if no audits ran. Omit "Argument State
 
 ## Project Integration
 
-When operating within a manuscript project, the **active project output context** is the project root folder that holds the manuscript's APODICTIC artifacts and rolling state. See `references/output-policy.md` §Folder Architecture for the canonical folder structure.
+When operating within a manuscript project, the **active project output context** is the project root folder that holds the manuscript's APODICTIC artifacts and rolling state. See `references/output-structure.md` §Folder Architecture for the canonical folder structure.
 
 **Key rules:**
 - Rolling state (`Diagnostic_State.md`, `SYNTHESIS.md`, `Session_Plan_{NN}.md`, `README.md`) lives at the **project root**
@@ -324,63 +324,13 @@ During intake, identify the manuscript's genre and load the corresponding module
 
 ## Reference Files (Load on Demand)
 
-### Execution
-| File | When to Load |
-|------|-------------|
-| `references/run-core.md` | Every Core DE and Full DE run (intake, pass execution, ledger protocol) |
-| `references/run-synthesis.md` | After passes complete (audit integration, synthesis, deliverables, evidence spot-check) |
-| `references/state-lifecycle.md` | State gardening and revision rounds (loaded by `apodictic-start`, `apodictic-coach`, revision workflows) |
-| `references/pass-dependencies.md` | When resolving concern to scoped pass set and dependency order |
-| `references/run-full.md` | When selected pass set includes advanced passes (3, 4, 6, 7, 9, 10) |
-| `references/output-policy.md` | Before writing any output (editorial letter, pass reports) |
-| `references/adversarial-stress-test.md` | During every editorial letter synthesis (§7 of letter) |
-| `references/partial-manuscript.md` | When `artifact=partial` — modifies pass behavior for incomplete drafts |
-| `references/fragment-synthesis.md` | When `artifact=fragments` and goal=`draft` — pre-diagnostic clustering |
-| `references/handoff-protocol.md` | When offering/entering/exiting scene-level execution mode |
-| `references/character-architecture.md` | When detailed character analysis needed beyond Pass 5 basics |
-| `references/pass-11.md` | When market viability / publication readiness is requested |
+Compact routing map below. Full index — templates, deprecated files, and per-file descriptions — in `references/reference-index.md`.
 
-### Genre Modules
-| File | When to Load |
-|------|-------------|
-| `references/genre-literary.md` | Literary fiction primary or secondary |
-| `references/genre-horror.md` | Horror primary or secondary |
-| `references/genre-sff.md` | SF/F primary or secondary |
-| `references/genre-romance.md` | Romance primary or secondary |
-| `references/genre-mystery.md` | Mystery primary or secondary |
-| `references/genre-thriller.md` | Thriller primary or secondary |
+**Execution:** `run-core.md` (every run: intake, pass execution, ledger protocol) · `run-synthesis.md` (after passes: audit integration, synthesis, deliverables, evidence spot-check) · `pass-dependencies.md` (concern → scoped pass set + order) · `run-full.md` (advanced passes 3/4/6/7/9/10) · `output-policy.md` (before writing output) · `output-structure.md` (folders, naming, lifecycle, sidecar — at write time) · `adversarial-stress-test.md` (letter §7) · `state-lifecycle.md` (revision rounds, state gardening) · situational: `partial-manuscript.md`, `fragment-synthesis.md`, `handoff-protocol.md`, `character-architecture.md`, `pass-11.md`.
 
-### Templates
-| File | Purpose |
-|------|---------|
-| `references/contract-template.md` | Contract schema template |
-| `references/diagnostic-state-template.md` | Diagnostic state initialization |
-| `references/diagnostic-state-meta-template.json` | Machine-readable sidecar template (written alongside Diagnostic_State.md) |
-| `references/reverse-outline-template.md` | Reverse outline format |
-| `references/intake-router-runtime.md` | Runtime routing spec for `apodictic-start` command |
-| `references/intake-router-design.md` | Router rationale and implementation notes (non-runtime) |
-| `references/series-state-template.md` | Series continuity state initialization |
+**Genre modules** (load by detected genre, primary or secondary): `genre-literary.md` · `genre-horror.md` · `genre-sff.md` · `genre-romance.md` · `genre-mystery.md` · `genre-thriller.md`.
 
-### Other References
-| File | Purpose |
-|------|---------|
-| `references/changelog.md` | Version history |
-
-### Deprecated (do not load)
-| File | Superseded by |
-|------|--------------|
-| `references/core-framework.md` | SKILL.md + run-core.md + run-full.md + all reference files |
-| `references/module-index.md` | `AUDIT_SELECTION_MATRIX.md` + `specialized-audits/SKILL.md` |
-| `references/intake-router.md` | `references/intake-router-runtime.md` + `references/intake-router-design.md` |
-| `references/intake-questions.md` | `references/run-core.md` §Hypothesis-Driven Intake Questions |
-| `references/certainty-axis.md` | `references/run-full.md` §Certainty Axis Cues |
-| `references/structural-frameworks.md` | `references/run-full.md` §Structural Frameworks |
-
----
-
-## Model Tag in Output Filenames
-
-When generating output filenames, append the model tag to the runlabel: `YYYY-MM-DD_[model-tag]`. Derive the tag from the model identifier (e.g., `claude-opus-4-6` → `opus46`). If the model identifier is unavailable, use `unknown`. See `references/output-policy.md` §Output Naming Convention for the full tag table.
+**Templates, other references, and deprecated files:** see `references/reference-index.md`.
 
 ---
 

@@ -117,31 +117,7 @@ After saving the contract, compute its SHA-256 hash (via `scripts/validate.sh co
 
 After generating the contract, recommend specialized audits based on genre, mode, and content signals. Most audits run after core passes (or after expanded pass sets when advanced passes are selected) and produce companion findings that feed the synthesis. Two tiers added in Phase 6 Wave 3 are exceptions: **Hard Prerequisite** audits (currently Field Reconnaissance for high-stakes argument-shaped runs) MUST complete before any Tier 2 evaluative pass can begin, and **Pre-DE Prerequisite** audits (currently Citation Verifier for high-stakes argument-shaped runs) run before the Development Edit begins. The Pre-Pass Prerequisite Resolution step in §Execution Protocol resolves both tiers before pass dispatch. See `references/pass-dependencies.md §4a/§4c/§4f` for tier definitions and decline-path semantics.
 
-**Contract-driven activation rules:**
-
-| Signal in Contract | Recommended Audits | Rationale |
-|---|---|---|
-| Thriller or Suspense | Stakes System, Decision Pressure, Mystery/Thriller Architecture | Thriller contract demands escalating pressure field, credible urgent choices, and information-pressure delivery |
-| Mystery or Investigation | Decision Pressure, Mystery/Thriller Architecture, Stakes System | Mystery contract demands evidence-governed choices, clue economy, and consequence architecture |
-| Romance | Emotional Craft, Decision Pressure | Romance contract demands felt emotional transmission and credible commitment/withdrawal choices |
-| Horror | Stakes System, Emotional Craft, Horror Craft | Horror contract demands consequence delivery, dread transmission, and sustained pressure |
-| Literary or Upmarket | Scene Turn, Emotional Craft, Literary Craft, Decision Pressure | Literary mode demands scene-level precision, emotional specificity, prose-as-structure integration, and psychologically precise choices |
-| SFF (Science Fiction / Fantasy) | SFF Worldbuilding, Stakes System | SFF contract demands world-rule integrity and system-scale consequence |
-| Significant physical conflict present | Force Architecture | Any manuscript where physical confrontation carries narrative weight |
-| Memoir, personal essay, creative nonfiction | Memoir/CNF (Gornick Layer), Franklin Pathway | Memoir requires situation/story distinction and narrating intelligence; Franklin tests pre-spine viability |
-| Narrative nonfiction, reported feature, profile | Narrative Nonfiction Craft (Hart), Franklin Pathway | Nonfiction with narrative ambitions requires scene construction and source integration diagnostics |
-| Composite novel or series | Series/Composite Novel | Multi-part works require standalone function and distance management |
-| Series continuity concern | Series Continuity | Cross-volume consequence propagation, state tracking, thread inventory; requires Pass 10 + Pass 8 |
-| Heat level > 0 or erotic content present | Erotic Content Tag | Intimate scenes require load-bearing vs. decorative analysis |
-| Consent complexity, power dynamics central | Consent Complexity | Works where consent is narratively interrogated, not just present |
-| Cozy signaling in marketing or tone | Cozy Tag | Cozy promise requires safety envelope and recovery rhythm diagnostics |
-| Philosophical themes, novel of ideas | Philosophical Tag, Dialectical Clarity | Idea-driven work requires question architecture and rhetorical fairness |
-| Historical setting (>50 years before composition) | Historical Fiction | Period settings require authenticity and attitude diagnostics |
-| Significant female characters in any genre | Female Interiority | Tracks persistent inner life across all scene types; catches interiority thinning |
-
-**Activation is recommendation, not mandate.** Present the recommended audit list to the author at intake. Author can accept, decline, or add audits. Record selections in the contract document.
-
-**Minimum recommendation:** Every manuscript should receive at least Stakes System and Decision Pressure recommendations, since both address universal craft concerns (pressure architecture and choice plausibility).
+The contract-driven activation rules (genre/mode/content signal → recommended audits), the recommendation-not-mandate rule, and the minimum-recommendation floor live in `references/audit-routing-table.md`. Load it at the contract step.
 
 ---
 
@@ -166,33 +142,9 @@ Pass specifications below define how each pass runs once selected.
 
 APODICTIC supports multiple execution modes. The mode choice affects how passes run, not what they diagnose — the same pass specifications, Findings Ledger protocol, and synthesis format apply in all modes.
 
-### Pre-flight Diagnostics (Required)
+### Pre-flight & Context-Window Detection
 
-Before selecting an execution mode, the parent orchestrator runs a pre-flight metadata scan. Pre-flight is a bash script — not a model call — that gathers manuscript measurements needed for informed dispatch decisions.
-
-**What it does:** Runs `scripts/preflight.sh` on the manuscript file. Produces a metadata packet containing: total lines, estimated word count, section/chapter boundaries, POV and tense detection (pronoun-frequency heuristic on three 200-line samples), dialogue ratio, mean paragraph length, estimated token load, and dispatch recommendations.
-
-**What it computes:**
-- **Estimated token load:** Approximate manuscript tokens (word count × 4/3) plus analytical overhead (~75K for pass specs, contract, ledger growth, and synthesis). Used by the parent orchestrator to determine whether single-agent mode is viable.
-- **Execution mode recommendations:** Two tiers based on context window size. For large-context models (≥1M tokens): single-agent if estimated load < 600K tokens, sequential otherwise. For standard-context models (<1M tokens): <60K words → sequential; 60–100K → hybrid; >100K → swarm. The parent orchestrator selects the appropriate tier based on its own context window. **These are token-fit recommendations only — they establish the floor. Manuscript and contract characteristics may upgrade the recommendation per §Quality-Risk Mode Selection below.**
-- **Triage subagent `max_turns`:** `ceil(total_lines / 500) + 20`. This ensures enough turns for full-manuscript I/O (at 500 lines per read chunk) plus output file generation, with a 20-turn buffer for reasoning, complex structural decisions, and focus map targeting.
-- **Conversion artifacts flag:** If the section boundary count is low relative to word count (e.g., 4 breaks in 84K words), the metadata packet notes that chapter structure may have been lost in file conversion. The triage subagent should identify scene boundaries from narrative content rather than relying on headers.
-
-**What it does NOT do:** No scene identification, no structural function tagging, no reader experience tracking, no focus map targeting, no diagnostic flags of any kind, no genre identification. Pre-flight is a tape measure, not a stethoscope.
-
-**Cost:** Zero model tokens. Sub-second execution time. The bash script runs locally.
-
-**How it integrates:** The parent orchestrator runs pre-flight immediately after loading the manuscript path. It reads the metadata packet, determines its own context window size, selects the execution mode from the appropriate recommendation tier, sets `max_turns` for the triage subagent, and passes relevant metadata (total lines, section boundaries, POV pattern) to subagents so they don't have to rediscover it.
-
-**Script location:** `scripts/preflight.sh`. Usage: `./scripts/preflight.sh <manuscript_path> [output_path]`. If output path is omitted, writes to stdout.
-
-### Context Window Detection
-
-The parent orchestrator determines its available context window before selecting an execution mode. This is a model-level property, not something the preflight script can measure.
-
-**How to detect:** The parent orchestrator checks the model identifier or host metadata from the current session. Any model documented as supporting ≥1M token context qualifies for the large-context execution tier. When uncertain, assume standard-context and use the conservative recommendation tier.
-
-**Why this matters:** The original motivation for per-pass subagent dispatch was twofold: (1) compaction resilience — platform context compaction could lose analytical work mid-run, and (2) salience decay — in a 200K window, earlier pass artifacts lose salience by synthesis time. With a 1M context window, a typical novel (~180K tokens) plus all analytical overhead fits comfortably without compaction risk or salience decay. This makes single-agent mode viable as a default for most manuscripts, while preserving multi-agent modes for manuscripts that exceed the window or for users who want architectural isolation.
+Pre-flight metadata scanning (`scripts/preflight.sh`: line/word counts, POV/tense heuristics, token-load and mode recommendations, triage `max_turns`) and context-window detection are specified in `references/execution-modes-reference.md`. Pre-flight runs at run start; the orchestrator reads its output to set the token-fit mode floor (see §Execution Protocol) and the triage turn budget.
 
 ### Quality-Risk Mode Selection
 
@@ -317,7 +269,7 @@ Each evaluative pass runs as an independent subagent that receives the full manu
 
 **What each pass subagent returns:**
 - Its pass artifact (analysis output), written to disk
-- Its Findings Ledger entry (formatted per §Ledger Entry Format), written to disk
+- Its Findings Ledger entry (formatted per `references/findings-ledger-format.md` §Ledger Entry Format), written to disk
 
 **Post-pass validation (all modes):** After each pass writes its ledger entry, verify the entry contains all 5 required subsection headings: Notable Findings, Data Artifacts for Letter Reference, Cross-Pass Connections, Unresolved Questions, Audit Triggers (use `scripts/validate.sh ledger-check` if available, otherwise check inline). If any section is missing, fix before dispatching the next pass. A structurally incomplete ledger degrades synthesis quality.
 
@@ -405,7 +357,7 @@ APODICTIC uses `scripts/validate.sh` for lightweight, zero-token invariant check
 |---|---|---|---|
 | Contract integrity | `validate.sh contract-hash <file>` | `shasum -a 256 <file>` | At intake — store hash in sidecar |
 | Contract drift | `validate.sh contract-check <file> <hash>` | Compare `shasum -a 256` output to stored hash | Before each pre-pass re-grounding |
-| Ledger structure | `validate.sh ledger-check <file>` | Verify each pass entry contains 5 required subsection headings (see §Ledger Entry Format) | After each pass appends to the ledger |
+| Ledger structure | `validate.sh ledger-check <file>` | Verify each pass entry contains 5 required subsection headings (see `references/findings-ledger-format.md` §Ledger Entry Format) | After each pass appends to the ledger |
 | Artifact naming | `validate.sh artifact-names <dir> <project> <runlabel>` | Check each pass artifact filename matches `[Project]_Pass[N]_[Name]_[runlabel].md` | Before synthesis |
 | Synthesis sections | `validate.sh synthesis-sections <file>` | Check for all 14 required section headings as markdown headings (see below) | After writing editorial letter |
 | State size | `validate.sh state-lines <file>` | `wc -l` | At resume gate |
@@ -593,7 +545,7 @@ After completing each pass artifact, immediately append a ledger entry to `[Proj
 
 **When to write:** Immediately after the pass artifact is saved — while the pass content is still in active context. Do not defer ledger entries to the synthesis step.
 
-**What to include:** See §Ledger Entry Format below.
+**What to include:** See `references/findings-ledger-format.md` §Ledger Entry Format below.
 
 **What NOT to include:** The full pass analysis. The ledger is an extraction, not a copy. If a finding is in the ledger, the evidence is in the pass artifact; the ledger points to it.
 
@@ -601,94 +553,9 @@ After completing each pass artifact, immediately append a ledger entry to `[Proj
 
 **Pass 0 and Pass 10 exception:** These are data-building passes. They do not require ledger entries unless they surface an observation that warrants it (e.g., a Rule Ledger inconsistency detected during outline construction, or an entity continuity error noticed during tracking). When a genre module adds analytical tracking to Pass 0 (such as the SFF Rule Ledger), notable patterns in that tracking should generate a ledger entry.
 
-#### Ledger Entry Format
+#### Ledger Entry Format & Structured Findings Block
 
-Each pass appends a section using this structure:
-
-```markdown
----
-
-## Pass [N]: [Name] — Ledger Entry
-
-### Notable Findings
-
-[Numbered list. Each entry: one sentence stating the finding, one sentence
-stating why it matters for the editorial letter, a pointer to the
-specific location in the pass artifact, and optionally, the best case
-against the finding.]
-
-1. **[Finding name].** [What it is.] [Why it matters.]
-   *(See Pass N, §[Section], [table/paragraph name].)*
-   *Counterevidence:* [Optional. The strongest case that this finding is
-   wrong, overstated, or explained by authorial intent. Omit if no
-   plausible countercase exists. When present, helps synthesis calibrate
-   severity and prevents the ledger from reading as a list of assertions.]
-
-### Data Artifacts for Letter Reference
-
-[List of tables, inventories, matrices, or other structured data in the
-pass artifact that the editorial letter should direct the author to.
-One sentence per artifact describing what it shows and why it's useful
-for revision.]
-
-- **[Artifact name]** — [What it shows, in one sentence.]
-  *(Pass N, §[Section].)*
-
-### Cross-Pass Connections
-
-[Findings from this pass that connect to earlier ledger entries. These
-are pre-built hypotheses about shared root causes — the synthesis step
-evaluates them. Format: what this pass found, what it connects to,
-and why the connection matters.]
-
-- [Connection description.]
-  *(Connects to: Pass M, Finding N.)*
-
-### Unresolved Questions
-
-[Observations this pass surfaced but couldn't fully analyze within its
-scope. These may become stress test material, deferred audit triggers,
-or items for the "Additional Observations" section of the editorial
-letter.]
-
-- [Question.]
-
-### Audit Triggers
-
-[Migrated here from pass artifact. The pass artifact retains its own
-audit triggers section for standalone readability, but the ledger
-consolidates them for the synthesis step.]
-
-| Trigger | Evidence | Recommendation |
-|---------|----------|----------------|
-```
-
-#### Structured Findings Block (Optional — Recommended for Hybrid/Swarm)
-
-When running in hybrid or swarm mode, each Notable Finding in the ledger entry may include an optional structured metadata block after the prose description. This block provides machine-parseable fields that help the synthesis subagent integrate findings across independently-run passes without relying solely on prose interpretation.
-
-The structured block is *supplementary*, not a replacement for the prose finding. The prose is the primary record; the structured block is an index.
-
-```markdown
-1. **[Finding name].** [What it is.] [Why it matters.]
-   *(See Pass N, §[Section], [table/paragraph name].)*
-   *Counterevidence:* [If applicable.]
-
-   <!-- structured-finding
-   mechanism: [One sentence: the craft mechanism that produces the problem]
-   severity: [Must-Fix | Should-Fix | Could-Fix]
-   confidence: [HIGH | MEDIUM | LOW | UNCERTAIN]
-   evidence-refs: [Scene X (ch Y), Scene Z (ch W)]
-   fix-class: [Class of intervention — e.g., "redistribute dramatic weight," "add interiority at decision point"]
-   risk-if-fixed: [What the fix might harm]
-   -->
-```
-
-**Usage rules:**
-- In sequential mode, the structured block is optional — the synthesis step has the full ledger in context and prose is sufficient.
-- In hybrid and swarm modes, the structured block is strongly recommended because the synthesis subagent may receive ledger entries from passes it didn't witness. The structured fields make cross-pass clustering faster and more reliable.
-- The `mechanism` field is the most important. If two findings from different passes name the same mechanism, the synthesis step should investigate whether they share a root cause.
-- Never let the structured block contradict the prose. If they diverge, the prose governs.
+The per-pass ledger entry template (the five required subsections: Notable Findings, Data Artifacts for Letter Reference, Cross-Pass Connections, Unresolved Questions, Audit Triggers) and the optional machine-parseable Structured Findings Block live in `references/findings-ledger-format.md`. Load it when writing or validating ledger entries.
 
 ---
 

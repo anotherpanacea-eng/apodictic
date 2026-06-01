@@ -1,0 +1,7 @@
+# The codex/ and antigravity/ trees are generated mirrors of plugins/apodictic/**
+# produced by scripts/build-codex.mjs and scripts/build-antigravity.mjs. They are
+# committed because the Codex and Antigravity hosts install from them, but they are
+# not hand-edited. Mark them generated so they collapse in PR diffs and are excluded
+# from language statistics. Review the plugins/ sources instead.
+codex/** linguist-generated=true
+antigravity/** linguist-generated=true
