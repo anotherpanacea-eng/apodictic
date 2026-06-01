@@ -388,6 +388,9 @@ function main() {
 
   {
     const appTsxPath = abs(paths.appTsx);
+    if (!fs.existsSync(appTsxPath)) {
+      console.warn(`WARN: ${paths.appTsx} absent (APODICTIC-Gemini sibling not checked out) — skipping App.tsx generation. The public release path is not coupled to the private sibling.`);
+    } else {
     let content = mustRead(appTsxPath);
     content = replaceOrThrow(
       content,
@@ -444,6 +447,7 @@ function main() {
     }
 
     writeIfChanged(appTsxPath, content, changedFiles);
+    }
   }
 
   if (commands && Array.isArray(commands)) {
@@ -476,7 +480,7 @@ function main() {
     }
   }
 
-  if (paths.landingPageTsx) {
+  if (paths.landingPageTsx && fs.existsSync(abs(paths.landingPageTsx))) {
     const landingPagePath = abs(paths.landingPageTsx);
     let content = mustRead(landingPagePath);
     content = replaceOrThrow(
