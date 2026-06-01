@@ -14,7 +14,7 @@ Load `../skills/core-editor/SKILL.md`. Create the project scaffolding per `../sk
 3. **Initialize rolling state at the project root:**
    - `Diagnostic_State.md` from `../skills/core-editor/references/diagnostic-state-template.md`
    - `Diagnostic_State.meta.json` from `../skills/core-editor/references/diagnostic-state-meta-template.json`
-   - `README.md` with project manifest header and empty run archive table (see output-policy §Project Manifest)
+   - `README.md` with project manifest header and empty run archive table (see `../skills/core-editor/references/output-structure.md` §Project Manifest)
 
 4. **Run Intake Protocol:** If a manuscript is provided, read it and generate a DRAFT Contract Schema by inferring genre, reader promise, controlling idea, and structural features from the text. Present the draft to the author — misalignments between inferred contract and author intent are diagnostically valuable.
 

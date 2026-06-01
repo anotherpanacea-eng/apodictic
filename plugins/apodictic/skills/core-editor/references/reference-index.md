@@ -6,11 +6,15 @@
 | File | When to Load |
 |------|-------------|
 | `references/run-core.md` | Every Core DE and Full DE run (intake, pass execution, ledger protocol) |
+| `references/audit-routing-table.md` | At the contract step — contract-driven audit-activation rules + signal-emitting-audit registry |
+| `references/execution-modes-reference.md` | At dispatch (run start) — pre-flight and context-window detection detail |
+| `references/findings-ledger-format.md` | When writing or validating per-pass ledger entries (entry template + Structured Findings Block) |
 | `references/run-synthesis.md` | After passes complete (audit integration, synthesis, deliverables, evidence spot-check) |
 | `references/state-lifecycle.md` | State gardening and revision rounds (loaded by `/start`, `/coach`, revision workflows) |
 | `references/pass-dependencies.md` | When resolving concern to scoped pass set and dependency order |
 | `references/run-full.md` | When selected pass set includes advanced passes (3, 4, 6, 7, 9, 10) |
 | `references/output-policy.md` | Before writing any output (editorial letter, pass reports) |
+| `references/output-structure.md` | At write/persist time — folder architecture, output naming, lifecycle, rolling-state and sidecar updates |
 | `references/adversarial-stress-test.md` | During every editorial letter synthesis (§7 of letter) |
 | `references/partial-manuscript.md` | When `artifact=partial` — modifies pass behavior for incomplete drafts |
 | `references/fragment-synthesis.md` | When `artifact=fragments` and goal=`draft` — pre-diagnostic clustering |
