@@ -598,7 +598,42 @@ EOF
   # Self-test: pass --self-test as the only argument to run built-in cases.
   # ----------------------------------------------------------------------
   audit-signal-propagation)
-    if [ $# -lt 1 ]; then echo "Usage: $0 audit-signal-propagation <editorial_letter_file> [<ledger_file>] | --self-test"; exit 2; fi
+    if [ $# -lt 1 ]; then echo "Usage: $0 audit-signal-propagation <editorial_letter_file> [<ledger_file>] | --self-test | --check-registry [<registry_file> <pass_deps_file>]"; exit 2; fi
+
+    # Registry completeness check (Phase 2): every signal-emitting audit listed in
+    # the registry (audit-routing-table.md §Signal-Emitting Audit Registry) must
+    # have a §4e propagation row in pass-dependencies.md, so its internal signal
+    # reaches the Canonical Severity Scale instead of dying in the findings file.
+    # With no file args, the real files are auto-located relative to this script
+    # (works from both the plugin copy and the repo-root copy of validate.sh).
+    if [ "$1" = "--check-registry" ]; then
+      SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+      REG="${2:-}"; DEP="${3:-}"
+      if [ -z "$REG" ]; then
+        for base in "$SCRIPT_DIR/../skills/core-editor/references" "$SCRIPT_DIR/../plugins/apodictic/skills/core-editor/references"; do
+          if [ -f "$base/audit-routing-table.md" ]; then REG="$base/audit-routing-table.md"; DEP="$base/pass-dependencies.md"; break; fi
+        done
+      fi
+      if [ ! -f "$REG" ] || [ ! -f "$DEP" ]; then echo "Error: registry or pass-dependencies file not found (REG=$REG DEP=$DEP)" >&2; exit 2; fi
+      TMPREG=$(mktemp)
+      sed -n '/registry:signal-emitting-audits:begin/,/registry:signal-emitting-audits:end/p' "$REG" | grep '^- ' | sed 's/^- //' > "$TMPREG"
+      if [ ! -s "$TMPREG" ]; then echo "Error: no registry entries found in $REG" >&2; rm -f "$TMPREG"; exit 2; fi
+      REG_MISSING=0; REG_TOTAL=0
+      while IFS= read -r AUDIT; do
+        [ -z "$AUDIT" ] && continue
+        REG_TOTAL=$((REG_TOTAL + 1))
+        if ! grep -Fq "| $AUDIT |" "$DEP"; then
+          echo "ERROR: signal-emitting audit '$AUDIT' has no §4e propagation row in $(basename "$DEP")"
+          REG_MISSING=$((REG_MISSING + 1))
+        fi
+      done < "$TMPREG"
+      rm -f "$TMPREG"
+      if [ "$REG_MISSING" -eq 0 ]; then
+        echo "Registry check: PASS ($REG_TOTAL signal-emitting audits all have §4e rows)"; exit 0
+      else
+        echo "Registry check: FAIL ($REG_MISSING of $REG_TOTAL registry audits missing a §4e row)"; exit 1
+      fi
+    fi
 
     if [ "$1" = "--self-test" ]; then
       TMPDIR=$(mktemp -d)
@@ -692,6 +727,29 @@ EOF
       "$0" audit-signal-propagation "$TMPDIR/over1.md" >/dev/null 2>&1 && echo "  over1: OK (class marker downgraded ERROR→WARN)" || { echo "  over1: FAIL (expected OK after override)"; RESULTS=1; }
       "$0" audit-signal-propagation "$TMPDIR/over2.md" >/dev/null 2>&1 && echo "  over2: OK (per-audit marker downgraded ERROR→WARN)" || { echo "  over2: FAIL (expected OK after per-audit override)"; RESULTS=1; }
       "$0" audit-signal-propagation "$TMPDIR/over_appx.md" >/dev/null 2>&1 && { echo "  over_appx: FAIL (appendix-only marker should not downgrade)"; RESULTS=1; } || echo "  over_appx: OK (caught — marker in appendix is non-canonical)"
+      # Registry completeness sub-test (Phase 2): synthetic registry + §4e fixtures.
+      cat > "$TMPDIR/reg_ok.md" <<'EOF'
+## Signal-Emitting Audit Registry
+<!-- registry:signal-emitting-audits:begin -->
+- Foo Audit
+- Bar Audit
+<!-- registry:signal-emitting-audits:end -->
+EOF
+      cat > "$TMPDIR/reg_missing.md" <<'EOF'
+## Signal-Emitting Audit Registry
+<!-- registry:signal-emitting-audits:begin -->
+- Foo Audit
+- Bar Audit
+- Ghost Audit
+<!-- registry:signal-emitting-audits:end -->
+EOF
+      cat > "$TMPDIR/dep_fixture.md" <<'EOF'
+### §4e. Audit-Signal Propagation Table
+| Foo Audit | hard gate | Must-Fix | — | src | — |
+| Bar Audit | flag | Should-Fix | — | src | — |
+EOF
+      "$0" audit-signal-propagation --check-registry "$TMPDIR/reg_ok.md" "$TMPDIR/dep_fixture.md" >/dev/null 2>&1 && echo "  registry_ok: OK (all registry audits have §4e rows)" || { echo "  registry_ok: FAIL (expected PASS)"; RESULTS=1; }
+      "$0" audit-signal-propagation --check-registry "$TMPDIR/reg_missing.md" "$TMPDIR/dep_fixture.md" >/dev/null 2>&1 && { echo "  registry_missing: FAIL (Ghost Audit has no §4e row — expected FAIL)"; RESULTS=1; } || echo "  registry_missing: OK (caught — registry-listed audit missing §4e row)"
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 

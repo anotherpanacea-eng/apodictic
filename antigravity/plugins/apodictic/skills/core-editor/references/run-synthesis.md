@@ -93,7 +93,7 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
    - **Count consolidated problems, not individual flags.** A single root cause may have 8 audit flags supporting it. The flags are evidence; the root cause is what enters triage.
    - **Carry audit artifacts forward.** Audit-specific tracking artifacts (Decision Event Map, Stakes Ladder Map, Scene Turn code inventory, etc.) become appendix material. They support the editorial letter's arguments but don't appear in the letter body.
 
-   **Canonical Audit-Signal Propagation Rule.** Audit-internal severity signals do not become synthesis-layer Must-Fix / Should-Fix decisions automatically — the model must propagate them. Without an explicit rule, audit-internal signals (Compression Must-Fix floors, Reception Risk hard gates, Banister HIGH ratings) reliably die inside the audit findings file even when the model integrates the audit's narrative content into the editorial letter. The rule:
+   **Canonical Audit-Signal Propagation Rule.** The three synthesis-layer tiers (Must-Fix / Should-Fix / Could-Fix) are defined canonically in `output-policy.md §Canonical Severity Scale`, which also names the orthogonal axes (confidence, prose tier, readiness) that are *not* severity. Audit-internal severity signals do not become synthesis-layer Must-Fix / Should-Fix decisions automatically — the model must propagate them. Without an explicit rule, audit-internal signals (Compression Must-Fix floors, Reception Risk hard gates, Banister HIGH ratings) reliably die inside the audit findings file even when the model integrates the audit's narrative content into the editorial letter. The rule:
 
    | Audit-internal signal | Propagates to synthesis as |
    |---|---|

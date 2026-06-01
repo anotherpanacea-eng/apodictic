@@ -30,3 +30,56 @@
 
 **Minimum recommendation:** Every manuscript should receive at least Stakes System and Decision Pressure recommendations, since both address universal craft concerns (pressure architecture and choice plausibility).
 
+---
+
+## Signal-Emitting Audit Registry (v0.5.0)
+
+Audits that emit internal severity signals — Must-Fix floors, hard gates, HIGH/Alert ratings, named flags, or Pass-10 inconsistency counts — and therefore **must** carry an explicit row in `pass-dependencies.md` §4e, so the signal propagates onto the Canonical Severity Scale (`output-policy.md §Canonical Severity Scale`) rather than dying in the audit findings file. `scripts/validate.sh audit-signal-propagation --check-registry` fails if any entry below lacks a §4e row.
+
+Intentionally **excluded** (no severity signals — they need no §4e row): purely advisory audits — Idiolect Preservation, Punctuation Cadence — and research audits whose priority-flagged findings propagate under the §4e default mapping (Factual Verification, Comp Validation, Genre Currency, Representation Context). When adding a signal-emitting audit, add it here **and** add its §4e row in the same change.
+
+<!-- registry:signal-emitting-audits:begin -->
+- Stakes System
+- Decision Pressure
+- Scene Turn
+- Compression
+- Reception Risk
+- Banister (Epistemic Humility)
+- AI-Prose Calibration
+- Female Interiority
+- Interiority Preservation
+- Dialectical Clarity
+- Argument Red Team
+- Argument Persuasion
+- Argument Evidence
+- Adversarial Evidence Review
+- Field Reconnaissance
+- Citation Verifier
+- Character Architecture
+- Emotional Craft
+- Literary Craft Deep Dive
+- Force Architecture
+- Series Continuity
+- Series & Composite Novel
+- Shelf Positioning
+- Short Fiction
+- Narrative-Decision (StoryScope)
+- POV Voice Profile
+- Comedy & Satire
+- Historical Fiction
+- Memoir / Creative NF
+- Narrative Nonfiction
+- Fan Fiction Conversion
+- SFF Worldbuilding Integration
+- Horror Craft Integration
+- Supernatural Horror
+- Grimdark / Dark Fantasy
+- Mystery / Thriller Architecture
+- Consent Complexity
+- Erotic Content
+- Queer Romance / Erotica
+- Cozy Tag
+- Philosophical Tag
+- Timeline (Pass 10)
+<!-- registry:signal-emitting-audits:end -->
+
