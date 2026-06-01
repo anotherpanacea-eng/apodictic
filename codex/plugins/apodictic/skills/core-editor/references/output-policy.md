@@ -87,6 +87,28 @@ Standard passes provide sufficient analysis for most issues. Engage extended, de
 
 ---
 
+## Canonical Severity Scale (v0.5.0)
+
+*Canonical home for the framework's single severity vocabulary. Every audit-internal severity signal — Must-Fix floors, hard gates, HIGH/Alert ratings, named flags, Pass-10 inconsistency counts — maps onto this one scale via the Canonical Audit-Signal Propagation Rule (`run-synthesis.md §Step 2`) and its per-audit table (`pass-dependencies.md §4e`). Do not introduce a parallel severity vocabulary; relabel local audit scales onto these three tokens.*
+
+APODICTIC has exactly three severity tiers:
+
+- **Must-Fix** — the manuscript fails a core promise here; shipping without addressing it risks the book. Audit hard gates and Must-Fix floors land here.
+- **Should-Fix** — a real, pattern-level weakness the author should address; not contract-breaking on its own. Most pattern-level flags and MEDIUM signals land here.
+- **Could-Fix** — a local, low-blast-radius issue; optional polish. Isolated flags and LOW/Note signals land here.
+
+**These are the only severity tokens.** Use them verbatim — the mechanical validators `severity-floor` and `audit-signal-propagation` grep these exact strings.
+
+**Not severity — orthogonal axes (do not collapse into the scale):**
+- **Confidence** (`HIGH` / `MEDIUM` / `LOW` / `UNCERTAIN`, see §Confidence Calibration) — how sure the diagnosis is, not how bad the problem is. A real problem with thin evidence keeps its severity and loses confidence, never the reverse.
+- **Prose tier** (`P0`–`P3`) — line-level prose-quality band; independent of structural severity.
+- **Readiness / verdict bands** (submission-readiness tiers, tag-audit Fit verdicts) — whole-manuscript dispositions that *consume* severity counts; they are not themselves severity.
+- **Lens verdicts** (per-lens agreement signals) — convergence indicators that feed confidence, not severity.
+
+Audit-internal scales (AIC Spot/Pattern/Systemic, Reception Note/Flag/Alert, Red Team Fatal/Major/Manageable, Timeline paradox/drift/ambiguity, etc.) are *local vocabularies* that propagate **onto** this canonical scale per §4e; they are not additional severity tiers.
+
+---
+
 ## Severity Honesty Protocol (v0.4.14.3)
 
 *Canonical home for anti-sycophancy / no-self-revise rule. Other surfaces (`adversarial-stress-test.md §Lock-then-test protocol` / §Anti-softening rule, `specialized-audits/references/craft/reception-risk.md §Lock-then-classify` / §Forbidden #6, `run-synthesis.md §Step 5 Adversarial Self-Check`) reference here and add only context-specific elaborations (stress-test ordering, audit lock-then-classify discipline, self-check up/down pressure). The general principle — LLMs reliably talk themselves out of hard findings; severity locks before steelmanning — lives here. Per-audit Deficit-First Diagnostic Rule blocks (each tailored to the audit's failure modes) are the operational expression of this principle and stay in their audit reference files.*

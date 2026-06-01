@@ -437,6 +437,16 @@ This is the per-audit operationalization of the Canonical Audit-Signal Propagati
 | Philosophical Tag | Counterposition-strength hard gate (no live counterposition for central question) | Must-Fix | Philosophical contract | `tag/philosophical-tag.md` §Hard Gates | — |
 | Philosophical Tag | Question-architecture / dramatic-embodiment flag | Should-Fix | Pattern-level | `tag/philosophical-tag.md` §Named flags | — |
 
+#### Pass-10-Class structured artifacts
+
+Pass 10 (Timeline) is a data-building pass that carries no severity itself; severity emerges from its Section 4 (Inconsistency Ledger) and propagates per the canonical rule (`pass-10.md` §Synthesis integration). These rows make that propagation explicit.
+
+| Audit | Audit-internal signal | Synthesis severity | Context modifier | Source | Override |
+|---|---|---|---|---|---|
+| Timeline (Pass 10) | Inconsistency Ledger `paradox` (markers cannot both be true) | Must-Fix | ≥1 paradox; timeline-coherence failure | `pass-10.md` §4 Inconsistency Ledger + §Synthesis integration | — |
+| Timeline (Pass 10) | Inconsistency Ledger `drift` (loosely incompatible; visible only when calculated) | Should-Fix | ≥3 drifts; revision-drift hygiene | `pass-10.md` §4 + §Synthesis integration | — |
+| Timeline (Pass 10) | Inconsistency Ledger `ambiguity` (under-determined; manuscript does not commit) | Could-Fix | Isolated; **surfaces as an Author Decision (not auto-gated) when tied to a load-bearing structural element** — climax positioning, intervention windows, arc spans | `pass-10.md` §4 + §5 Ambiguity Ledger | Refines default (load-bearing ambiguity → Author Decision, not a severity flag) |
+
 #### Default mapping (fallback for un-enumerated audits)
 
 Audits not enumerated above default to the canonical rule's column-2 mapping (`run-synthesis.md §Step 2`):
