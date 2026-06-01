@@ -367,7 +367,7 @@ The primary deliverable. Format specified in §Core DE Synthesis above.
 
 ### Run Folder and Rolling State
 
-All run artifacts (editorial letter, pass reports, contract, findings ledger, audit invocation log, results guide) are written to the **run folder** (`runs/YYYY-MM-DD_{model}_{type}/`) inside the project root. See `references/output-policy.md` §Folder Architecture.
+All run artifacts (editorial letter, pass reports, contract, findings ledger, audit invocation log, results guide) are written to the **run folder** (`runs/YYYY-MM-DD_{model}_{type}/`) inside the project root. See `references/output-structure.md` §Folder Architecture.
 
 After writing the editorial letter to the run folder, update the **rolling state at the project root:**
 
