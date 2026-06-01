@@ -51,8 +51,11 @@ BLOCK_RE = re.compile(r"<!--\s*apodictic:([A-Za-z_]+)\s*(.*?)-->", re.DOTALL)
 # A ledger entry is identified by these structural markers; only ledgers must
 # carry a finding block per synthesis-bound (Must-Fix/Should-Fix) Notable Finding.
 LEDGER_MARKER_RE = re.compile(r"Notable Findings|Ledger Entry", re.IGNORECASE)
-# Prose severity labels that mark a synthesis-bound finding (outside any block).
-PROSE_SEVERITY_RE = re.compile(r"(?:\*\*|Severity[:\s]+|held at\s+|Tier[:\s]+)(Must-Fix|Should-Fix)")
+# Prose severity labels marking a synthesis-bound finding (outside any block):
+# after ** (with optional space, covering "**Severity:** Must-Fix"), "Severity:",
+# "held at", "Tier:", or a line-start bullet/number ("- Must-Fix:", "1. Must-Fix").
+PROSE_SEVERITY_RE = re.compile(
+    r"(?:\*\*\s*|Severity[:\s]+|held at\s+|Tier[:\s]+|(?:^|\n)[ \t]*(?:[-*]|\d+[.)])[ \t]+)(Must-Fix|Should-Fix)\b")
 
 
 def validate_object(obj, where):
@@ -267,6 +270,15 @@ def run_self_test():
     check("ledger_block_missing",
           check_block_presence("## Pass 5 — Ledger Entry\n### Notable Findings\n"
                                "1. **Agency collapse.** Severity: Must-Fix.\n", "<t>"),
+          False)
+    # bold-label and bullet/number severity forms must also be caught
+    check("ledger_block_missing_bold_label",
+          check_block_presence("## Pass 5 — Ledger Entry\n### Notable Findings\n"
+                               "1. **Severity:** Must-Fix — Agency collapse.\n", "<t>"),
+          False)
+    check("ledger_block_missing_bullet",
+          check_block_presence("## Pass 5 — Ledger Entry\n### Notable Findings\n"
+                               "- Must-Fix: Agency collapse.\n", "<t>"),
           False)
     # ledger block-presence: finding + block -> clean
     check("ledger_block_present",
