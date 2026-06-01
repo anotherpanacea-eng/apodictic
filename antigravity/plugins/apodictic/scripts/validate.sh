@@ -143,6 +143,19 @@
 #       parser); degrades to a presence check without python3. Pass --self-test
 #       for built-in cases.
 #
+#   softness-check <editorial_letter> <findings_ledger>
+#       Deficit-Lock softness gate (Phase 4). Compares the delivered letter
+#       against the Triage-locked apodictic.finding.v1 findings in the ledger;
+#       ERROR on an unmarked downgrade/drop of a locked Must-Fix/Should-Fix,
+#       WARN on hedged delivery. Body-only override marker:
+#       <!-- override: softness-downgrade — <rationale> -->. Weak-axis coherence
+#       stays in severity-floor. Delegates to scripts/honesty_check.py.
+#
+#   deficit-lock <findings_ledger>
+#       Verify the Deficit Lock was recorded structurally (ledger carries
+#       apodictic.finding.v1 locks). Delegates to honesty_check.py. Pass
+#       --self-test for built-in cases.
+#
 # Exit codes:
 #   0 — all checks pass
 #   1 — validation failure (details on stdout)
@@ -152,8 +165,8 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings"
-  echo "Aggregate: --self-test-all (runs --self-test on all 12 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock"
+  echo "Aggregate: --self-test-all (runs --self-test on all 14 self-testable validators; exit 0 only if every validator's self-test passes)"
   echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry and structured-findings on the shipped templates)"
   exit 2
 }
@@ -170,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # pure utilities that do not carry self-tests; only the 11 model-
 # capability-review validators do.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings"
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 12 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 14 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -187,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/12 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/14 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/12 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/14 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -3720,6 +3733,44 @@ EOF
     else
       echo "structured-findings: PASS (degraded presence check; no structured blocks found)"
     fi
+    exit 0
+    ;;
+
+  softness-check)
+    # Phase 4 (Harden Honesty): compare the delivered letter against the
+    # Triage-locked findings (Deficit Lock). Delegates to honesty_check.py;
+    # degrades to advisory (WARN, exit 0) without python3 — the Deficit Lock
+    # prose rule still applies.
+    HC_DIR=$(cd "$(dirname "$0")" && pwd)
+    HC_HELPER="$HC_DIR/honesty_check.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$HC_HELPER" ]; then python3 "$HC_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; softness-check is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$HC_HELPER" ]; then
+      if [ $# -lt 2 ]; then echo "Usage: $0 softness-check <editorial_letter> <findings_ledger> | --self-test"; exit 2; fi
+      python3 "$HC_HELPER" softness-check "$@"
+      exit $?
+    fi
+    echo "WARN: python3 unavailable — softness-check (delivered-vs-locked severity) skipped; the Deficit Lock prose rule still applies. Install python3 for the mechanical gate."
+    exit 0
+    ;;
+
+  deficit-lock)
+    # Phase 4: verify the Triage Deficit Lock was recorded structurally in the
+    # ledger. Delegates to honesty_check.py; degrades to advisory without python3.
+    HC_DIR=$(cd "$(dirname "$0")" && pwd)
+    HC_HELPER="$HC_DIR/honesty_check.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$HC_HELPER" ]; then python3 "$HC_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$HC_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 deficit-lock <findings_ledger> | --self-test"; exit 2; fi
+      python3 "$HC_HELPER" deficit-lock "$@"
+      exit $?
+    fi
+    echo "WARN: python3 unavailable — deficit-lock (structured-lock presence) skipped."
     exit 0
     ;;
 
