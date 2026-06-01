@@ -218,7 +218,7 @@ if [ "$1" = "--check-all" ]; then
       break
     fi
   done
-  [ "$CA_DONE" -eq 0 ] && echo "WARN: could not locate reference templates for structured-findings"
+  [ "$CA_DONE" -eq 0 ] && { echo "ERROR: could not locate reference templates for structured-findings — --check-all cannot verify the real-file invariant"; CA_FAIL=1; }
   echo ""
   if [ "$CA_FAIL" -eq 0 ]; then
     echo "check-all: PASS (self-tests + real-file invariants)"
