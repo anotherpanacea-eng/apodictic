@@ -66,31 +66,44 @@ consolidates them for the synthesis step.]
 |---------|----------|----------------|
 ```
 
-#### Structured Findings Block (Optional — Recommended for Hybrid/Swarm)
+#### Structured Findings Block (`apodictic.finding.v1` — required for synthesis-bound findings)
 
-When running in hybrid or swarm mode, each Notable Finding in the ledger entry may include an optional structured metadata block after the prose description. This block provides machine-parseable fields that help the synthesis subagent integrate findings across independently-run passes without relying solely on prose interpretation.
+Each Notable Finding that propagates to synthesis (any Must-Fix or Should-Fix) **must** carry a structured block after its prose. The block is a machine-parseable *index* — the prose stays primary and author-facing; the block lets the synthesis step and `scripts/validate.sh structured-findings` integrate findings across independently-run passes without re-parsing prose. Purely local Could-Fix observations may omit it.
 
-The structured block is *supplementary*, not a replacement for the prose finding. The prose is the primary record; the structured block is an index.
+The block is **real JSON** inside an HTML comment, validated by a real parser (`scripts/structured_findings.py`) — not shell regex on colon-lines. `severity` and `confidence` use the canonical tokens (`output-policy.md §Canonical Severity Scale` / §Confidence Calibration):
 
 ```markdown
 1. **[Finding name].** [What it is.] [Why it matters.]
    *(See Pass N, §[Section], [table/paragraph name].)*
    *Counterevidence:* [If applicable.]
 
-   <!-- structured-finding
-   mechanism: [One sentence: the craft mechanism that produces the problem]
-   severity: [Must-Fix | Should-Fix | Could-Fix]
-   confidence: [HIGH | MEDIUM | LOW | UNCERTAIN]
-   evidence-refs: [Scene X (ch Y), Scene Z (ch W)]
-   fix-class: [Class of intervention — e.g., "redistribute dramatic weight," "add interiority at decision point"]
-   risk-if-fixed: [What the fix might harm]
+   <!-- apodictic:finding
+   {
+     "schema": "apodictic.finding.v1",
+     "mechanism": "One sentence: the craft mechanism that produces the problem",
+     "severity": "Must-Fix",
+     "confidence": "HIGH",
+     "evidence_refs": ["Pass 4 §Scene Turns", "Ch. 12"],
+     "fix_class": "redistribute dramatic weight",
+     "risk_if_fixed": "What the fix might harm"
+   }
    -->
 ```
 
+**Fields (all required):** `schema` (pinned `apodictic.finding.v1`), `mechanism`, `severity` (Must-Fix | Should-Fix | Could-Fix), `confidence` (HIGH | MEDIUM | LOW | UNCERTAIN), `evidence_refs` (non-empty array), `fix_class`, `risk_if_fixed`.
+
 **Usage rules:**
-- In sequential mode, the structured block is optional — the synthesis step has the full ledger in context and prose is sufficient.
-- In hybrid and swarm modes, the structured block is strongly recommended because the synthesis subagent may receive ledger entries from passes it didn't witness. The structured fields make cross-pass clustering faster and more reliable.
-- The `mechanism` field is the most important. If two findings from different passes name the same mechanism, the synthesis step should investigate whether they share a root cause.
-- Never let the structured block contradict the prose. If they diverge, the prose governs.
+- The prose finding is canonical. If the block and prose diverge, the prose governs — fix the block.
+- `mechanism` is the highest-value field: two findings from different passes naming the same mechanism are a root-cause-cluster candidate for synthesis.
+- The block is versioned via `schema`. If the field set changes, bump the version (`apodictic.finding.v2`); the validator keys off the `schema` value.
+
+#### Companion structured blocks (same envelope)
+
+The same `<!-- apodictic:<type> { ... } -->` envelope carries two companion record types, validated by the same helper:
+
+- **`apodictic.audit_trigger.v1`** — for the Audit Triggers section. Fields: `schema`, `audit` (use the registry name in `audit-routing-table.md` where applicable), `evidence`, `recommendation` (run | recommend | defer).
+- **`apodictic.readiness.v1`** — for readiness verdicts (Pass 11 / submission readiness). Fields: `schema`, `dimension`, `verdict`, `rationale`.
+
+The **ledger entry** as a whole has no separate JSON wrapper: its structured representation is the set of finding / audit-trigger blocks it contains, mirrored into the `findings[]` / `audit_triggers[]` / `readiness[]` arrays of `Diagnostic_State.meta.json` (where `findings[]` severities must tally to `triage_summary`). This pairs the artifact with a mechanical validator per the Pass-10-Class discipline.
 
 ---
