@@ -74,15 +74,25 @@ def _mech_tokens(mech):
     return {w for w in words if w not in STOP}
 
 
+def _ref_present(ref, region):
+    """Token-boundary match for an evidence ref, so 'Chapter 3' does not match
+    'Chapter 34' (raw substring matching would). The ref is bounded by non-word
+    chars on both sides — this is what stops a numeric prefix from matching a
+    longer number."""
+    return re.search(r"(?<![\w])%s(?![\w])" % re.escape(ref), region) is not None
+
+
 def _region_contains(region, finding):
-    """True if `finding` is present in `region` — any evidence_ref substring, or
-    >= 2 distinctive mechanism tokens."""
+    """True if `finding` is present in `region` — any evidence_ref (token-boundary
+    match), or >= 2 distinctive mechanism tokens (word-boundary match, so 'arc'
+    does not match 'search')."""
     refs = [r for r in (finding.get("evidence_refs") or []) if r]
-    if any(ref in region for ref in refs):
+    if any(_ref_present(ref, region) for ref in refs):
         return True
     low = region.lower()
     toks = _mech_tokens(finding.get("mechanism", ""))
-    return sum(1 for t in toks if t in low) >= 2
+    hits = sum(1 for t in toks if re.search(r"\b%s\b" % re.escape(t), low))
+    return hits >= 2
 
 
 def _body(text):
@@ -227,6 +237,14 @@ def run_self_test():
     # dropped: absent from both
     check("dropped_from_both",
           softness_check("# Edit\n## What Needs Work\nPacing only.\n## Appendix B: Severity Calibration\nNothing relevant.\n", lock)[0], False)
+    # prefix-ref: a locked "Chapter 3" finding must NOT be marked delivered by text
+    # that only mentions "Chapter 34" (raw substring would false-pass).
+    lock_ch3 = ('<!-- apodictic:finding\n'
+                '{"schema":"apodictic.finding.v1","mechanism":"subplot stall qrstuv","severity":"Must-Fix",'
+                '"confidence":"HIGH","evidence_refs":["Chapter 3"],"fix_class":"x","risk_if_fixed":"y"}\n-->')
+    letter_ch34 = ("# Edit\n## What Needs Work\nMust-Fix: pacing wanders in Chapter 34.\n"
+                   "## Appendix B: Severity Calibration\nChapter 34 pacing: Severity held at Must-Fix.\n")
+    check("prefix_ref_not_matched", softness_check(letter_ch34, lock_ch3)[0], False)
     # downgrade WITH body marker -> WARN not ERROR
     body_mk = ("# Edit\n## What Needs Work\nTheo has no arc (Chapter 34).\n"
                "<!-- override: softness-downgrade — over-diagnosed; see Appendix B -->\n"
