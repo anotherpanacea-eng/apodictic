@@ -47,6 +47,10 @@ STOP = {"the", "and", "for", "not", "with", "that", "this", "from", "into",
         "when", "does", "are", "was", "but", "its", "has", "you", "your",
         "than", "then", "doesn", "isn"}
 BLOCK_RE = re.compile(r"<!--\s*apodictic:finding\s*(\{.*?\})\s*-->", re.DOTALL)
+# Prose severity labels marking a synthesis-bound finding (outside any block):
+# after **, "Severity:", "held at", "Tier:", or a line-start bullet/number.
+PROSE_SEVERITY_RE = re.compile(
+    r"(?:\*\*\s*|Severity[:\s]+|held at\s+|Tier[:\s]+|(?:^|\n)[ \t]*(?:[-*]|\d+[.)])[ \t]+)(Must-Fix|Should-Fix)\b")
 APPENDIX_A_RE = re.compile(r"Appendix\s+A\b", re.IGNORECASE)
 SEVCAL_RE = re.compile(r"Severity\s+Calibration|Appendix\s+B\b", re.IGNORECASE)
 NEXT_APPENDIX_RE = re.compile(r"Appendix\s+[C-Z]\b", re.IGNORECASE)
@@ -96,20 +100,22 @@ def _sevcal(text):
 
 
 def _recorded_severity(sevcal, finding):
-    """Highest severity token recorded for `finding` within the Severity
-    Calibration region (matched by mechanism tokens / evidence refs). None if the
-    finding is not recorded there."""
+    """Delivered severity recorded for `finding` in the Severity Calibration region
+    (matched by mechanism tokens / evidence refs). The delivered severity is the
+    LAST severity token on the matching line, so "locked Must-Fix, softened to
+    Should-Fix" reads as Should-Fix (not the first token). Across multiple matching
+    lines keep the lowest — any recorded downgrade counts. None if not recorded."""
     best = None
-    # Severity Calibration records one finding + its severity per line, so read
-    # the severity from the matching line itself (a wider window lets an adjacent
-    # entry's severity bleed in and mask a downgrade).
     for line in sevcal.splitlines():
-        if _region_contains(line, finding):
-            for sev in SEV_TOKENS:
-                if sev in line:
-                    if best is None or SEV_RANK[sev] > SEV_RANK[best]:
-                        best = sev
-                    break
+        if not _region_contains(line, finding):
+            continue
+        delivered, pos = None, -1
+        for sev in SEV_TOKENS:
+            p = line.rfind(sev)
+            if p > pos:
+                pos, delivered = p, sev
+        if delivered is not None and (best is None or SEV_RANK[delivered] < SEV_RANK[best]):
+            best = delivered
     return best
 
 
@@ -159,15 +165,19 @@ def softness_check(letter_text, ledger_text):
 
 
 def deficit_lock(ledger_text):
-    """Return (errors, warnings). Verifies the lock was recorded structurally."""
+    """Return (errors, warnings). Verifies EVERY synthesis-bound finding was locked
+    structurally — not merely that at least one lock exists. Compares the count of
+    prose severity labels (outside blocks) to the count of structured Must-Fix/
+    Should-Fix locks; more labels than locks means a finding was left unlocked."""
     errs, warns = [], []
     locks = parse_locked_findings(ledger_text)
     n_struct = len([f for f in locks if f.get("severity") in LOCKED])
     stripped = BLOCK_RE.sub("", ledger_text)
-    prose_hits = len(re.findall(r"Must-Fix", stripped)) + len(re.findall(r"Should-Fix", stripped))
-    if n_struct == 0 and prose_hits > 0:
-        errs.append("ledger states Must-Fix/Should-Fix severities in prose (%d mention(s)) but "
-                    "records zero structured apodictic.finding.v1 locks — Deficit Lock not applied" % prose_hits)
+    prose_labels = len(PROSE_SEVERITY_RE.findall(stripped))
+    if prose_labels > n_struct:
+        errs.append("ledger has %d synthesis-bound (Must-Fix/Should-Fix) finding label(s) but only "
+                    "%d structured apodictic.finding.v1 lock(s) — every synthesis-bound finding must "
+                    "be locked (Deficit Lock)" % (prose_labels, n_struct))
     return errs, warns
 
 
@@ -227,6 +237,13 @@ def run_self_test():
                  "## Appendix B: Severity Calibration\nTheo's zero arc: Severity Should-Fix.\n"
                  "<!-- override: softness-downgrade — appendix only -->\n")
     check("appendix_only_marker_still_errors", softness_check(body_appx, lock)[0], False)
+    # downgrade RECORDED INLINE on the calibration line ("locked X, softened to Y"):
+    # delivered severity is the LAST token, so this must ERROR (not read the first token).
+    inline_dn = ("# Edit\n## What Needs Work\nTheo has no arc (Chapter 34).\n"
+                 "## Appendix A: Diagnostic Detail\np\n"
+                 "## Appendix B: Severity Calibration\n"
+                 "Theo's zero arc: locked Must-Fix, softened to Should-Fix on reflection.\n")
+    check("downgrade_recorded_inline", softness_check(inline_dn, lock)[0], False)
     # delivered + recorded but hedged in body -> WARN (no error)
     e_h, w_h = softness_check(letter("Theo's arc could perhaps be strengthened (Chapter 34).", "Must-Fix"), lock)
     check("hedged_warns_no_error", e_h, True)
@@ -238,6 +255,14 @@ def run_self_test():
           deficit_lock("## Ledger\n- Must-Fix: agency collapse (prose only)\n")[0], False)
     # deficit-lock: empty ledger -> OK
     check("lock_empty_ledger_ok", deficit_lock("## Ledger\n- data-building pass\n")[0], True)
+    # deficit-lock: every finding locked (prose label + block each) -> OK
+    realistic_lock = ("## Pass 5 — Ledger Entry\n### Notable Findings\n"
+                      "1. **Theo's zero arc.** Severity: Must-Fix.\n"
+                      '<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","severity":"Must-Fix"}\n-->\n')
+    check("lock_all_present_ok", deficit_lock(realistic_lock)[0], True)
+    # deficit-lock: one finding locked, a second prose-only Should-Fix -> ERROR (missing lock)
+    partial = realistic_lock + "2. **Reveal fairness.** Severity: Should-Fix.\n"
+    check("lock_partial_missing_errors", deficit_lock(partial)[0], False)
 
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
