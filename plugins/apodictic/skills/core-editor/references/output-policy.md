@@ -138,7 +138,7 @@ At Triage (`run-synthesis.md §Step 5`), the moment a finding is assigned **Must
 
 - Later steps may **raise** severity freely (under-diagnosis is the failure mode being guarded against — there is no friction on getting harder).
 - Later steps may **lower** a locked severity, or decline to deliver a locked finding at its locked tier, **only** by recording a body override marker — `<!-- override: softness-downgrade — <one-sentence rationale> -->` — plus a parallel Appendix B (Severity Calibration) entry. Silent softening is forbidden.
-- Mechanical gates: `scripts/validate.sh softness-check <editorial_letter> <findings_ledger>` compares the delivered letter against the locked ledger and blocks delivery on any unmarked downgrade; `scripts/validate.sh deficit-lock <editorial_letter>` verifies the lock exists and that any softening carries a marker. (Weak-axis-vs-Must-Fix coherence remains owned by `severity-floor`; the softness gate does not duplicate it.)
+- Mechanical gates: `scripts/validate.sh softness-check <editorial_letter> <findings_ledger>` compares the delivered letter against the locked ledger and blocks delivery on any unmarked downgrade; `scripts/validate.sh deficit-lock <findings_ledger>` verifies every synthesis-bound finding was locked structurally (not merely that one lock exists). (Weak-axis-vs-Must-Fix coherence remains owned by `severity-floor`; the softness gate does not duplicate it.)
 
 The Deficit Lock does not forbid charity — it makes charity *legible*. A genuine over-diagnosis can still be corrected; it just leaves a recorded trace instead of disappearing silently.
 
