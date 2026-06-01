@@ -115,6 +115,19 @@ function main() {
     errors.push("Antigravity workspace is stale. Run scripts/build-antigravity.mjs.");
   }
 
+  // 1.5) Aggregate real-file gate: self-tests + registry-vs-§4e + structured-findings
+  // on the shipped templates (validate.sh --check-all). Closes the gap where the
+  // standard verification path skipped real-file invariants.
+  try {
+    execFileSync(
+      "bash",
+      [path.join(repoRoot, "plugins/apodictic/scripts/validate.sh"), "--check-all"],
+      { stdio: "inherit" }
+    );
+  } catch {
+    errors.push("validate.sh --check-all failed (self-tests or real-file invariants). Run plugins/apodictic/scripts/validate.sh --check-all.");
+  }
+
   // 2) Verify version parity across canonical files.
   const pluginVersion = readJson(abs(paths.pluginJson)).version;
   const codexPluginVersion = readJson(abs("plugins/apodictic/.codex-plugin/plugin.json")).version;
@@ -167,13 +180,16 @@ function main() {
   }
 
   const appTsxPath = abs(paths.appTsx);
-  mustExist(appTsxPath);
-  const appTsx = read(appTsxPath);
-  const aboutMatch = appTsx.match(/Based on APODICTIC plugin v(\d+\.\d+\.\d+)/);
-  if (!aboutMatch) {
-    errors.push("Could not find About version string in src/App.tsx.");
-  } else if (aboutMatch[1] !== expected) {
-    errors.push(`Version mismatch: App.tsx About string is ${aboutMatch[1]}, expected ${expected}.`);
+  if (!fs.existsSync(appTsxPath)) {
+    console.warn(`WARN: ${paths.appTsx} absent (APODICTIC-Gemini sibling not checked out) — skipping App.tsx version parity. The public release path is not coupled to the private sibling.`);
+  } else {
+    const appTsx = read(appTsxPath);
+    const aboutMatch = appTsx.match(/Based on APODICTIC plugin v(\d+\.\d+\.\d+)/);
+    if (!aboutMatch) {
+      errors.push("Could not find About version string in src/App.tsx.");
+    } else if (aboutMatch[1] !== expected) {
+      errors.push(`Version mismatch: App.tsx About string is ${aboutMatch[1]}, expected ${expected}.`);
+    }
   }
 
   // 3) Optional: verify plugin/public mirror parity.
@@ -181,18 +197,21 @@ function main() {
     const pluginDir = abs("plugins/apodictic");
     const geminiPublicDir = abs(paths.geminiPublicPlugin);
     mustExist(pluginDir);
-    mustExist(geminiPublicDir);
-    const rsyncDiff = checkRsyncParity(pluginDir, geminiPublicDir);
-    if (rsyncDiff.length > 0) {
-      errors.push(
-        [
-          "Gemini public plugin mirror is out of sync with plugins/apodictic.",
-          "Run release sync step or: rsync -a --delete --exclude '.git/' plugins/apodictic/ ../APODICTIC-Gemini/public/apodictic-plugin/",
-          "Diff:",
-          ...rsyncDiff.slice(0, 40).map((line) => `  ${line}`),
-          rsyncDiff.length > 40 ? `  ... (${rsyncDiff.length - 40} more)` : ""
-        ].join("\n")
-      );
+    if (!fs.existsSync(geminiPublicDir)) {
+      console.warn(`WARN: ${paths.geminiPublicPlugin} absent — skipping mirror parity (--check-sync).`);
+    } else {
+      const rsyncDiff = checkRsyncParity(pluginDir, geminiPublicDir);
+      if (rsyncDiff.length > 0) {
+        errors.push(
+          [
+            "Gemini public plugin mirror is out of sync with plugins/apodictic.",
+            "Run release sync step or: rsync -a --delete --exclude '.git/' plugins/apodictic/ ../APODICTIC-Gemini/public/apodictic-plugin/",
+            "Diff:",
+            ...rsyncDiff.slice(0, 40).map((line) => `  ${line}`),
+            rsyncDiff.length > 40 ? `  ... (${rsyncDiff.length - 40} more)` : ""
+          ].join("\n")
+        );
+      }
     }
   }
 
