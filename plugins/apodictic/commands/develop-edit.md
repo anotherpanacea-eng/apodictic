@@ -20,6 +20,6 @@ After routing, run the selected workflow exactly as `/start` would:
 - Update rolling state (`Diagnostic_State.md`, `SYNTHESIS.md`, `README.md`) at the project root
 - Never write to the plugin repo
 
-See `../skills/core-editor/references/output-policy.md` §Folder Architecture for the full folder convention.
+See `../skills/core-editor/references/output-structure.md` §Folder Architecture for the full folder convention.
 
 If a manuscript file path is provided: @$1

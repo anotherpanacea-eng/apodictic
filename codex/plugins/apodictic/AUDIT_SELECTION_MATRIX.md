@@ -40,7 +40,7 @@ Use this in intake order.
 13. "I'm stuck / my draft isn't working" -> **Plot Architecture** or **Plot Selection & Coaching** (structural triage)
 14. "Need submission-readiness honesty" -> **Pass 11**
 
-**Note on automatic activation:** You don't always need to select audits manually. During a Core or Full DE run, audits activate two ways: (1) **at contract** — genre/mode signals recommend specific audits at intake, and (2) **during passes** — finding-driven triggers recommend audits when pass results indicate the need. See `run-core.md` §Audit Activation at Contract for the full activation table.
+**Note on automatic activation:** You don't always need to select audits manually. During a Core or Full DE run, audits activate two ways: (1) **at contract** — genre/mode signals recommend specific audits at intake, and (2) **during passes** — finding-driven triggers recommend audits when pass results indicate the need. See `audit-routing-table.md` for the full activation table.
 
 ---
 
