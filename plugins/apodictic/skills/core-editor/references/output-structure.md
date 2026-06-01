@@ -232,7 +232,10 @@ Alongside `Diagnostic_State.md`, maintain a sidecar file `Diagnostic_State.meta.
 - `mode` and `active_scene_scope` — on every mode transition (diagnostic ↔ execution)
 - `last_session` — after each session (date, focus, tier, execution_mode, passes_completed, runlabel)
 - `root_causes` — after synthesis (list of root cause names, max 5)
-- `triage_summary` — after synthesis (counts of must-fix, should-fix, could-fix)
+- `triage_summary` — after synthesis (counts of must-fix, should-fix, could-fix). Required whenever `findings[]` is populated; its counts must equal the `findings[]` severity tally (`validate.sh structured-findings`).
+- `findings` — after Triage/synthesis, mirror the synthesis-bound (Must-Fix/Should-Fix) ledger findings here as `apodictic.finding.v1` objects (the same locks recorded in the Findings Ledger; see `findings-ledger-format.md`). Leave `[]` only when there are no such findings.
+- `audit_triggers` — after audit consolidation, mirror the ledger's `apodictic.audit_trigger.v1` records here. `[]` when none.
+- `readiness` — after a readiness pass (Pass 11 / submission readiness), record `apodictic.readiness.v1` verdicts here. `[]` when not assessed.
 - `control_questions` — after synthesis and after each revision round (open/answered/deferred counts)
 - `revision_progress` — after each revision round (steps_complete, current_step)
 - `session_count` and `handoff_count` — increment on each new session or handoff

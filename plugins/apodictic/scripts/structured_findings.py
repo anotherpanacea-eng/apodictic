@@ -48,6 +48,11 @@ SCHEMA_REQUIRED = {
 
 # Capture everything between the apodictic:<type> marker and the closing --> .
 BLOCK_RE = re.compile(r"<!--\s*apodictic:([A-Za-z_]+)\s*(.*?)-->", re.DOTALL)
+# A ledger entry is identified by these structural markers; only ledgers must
+# carry a finding block per synthesis-bound (Must-Fix/Should-Fix) Notable Finding.
+LEDGER_MARKER_RE = re.compile(r"Notable Findings|Ledger Entry", re.IGNORECASE)
+# Prose severity labels that mark a synthesis-bound finding (outside any block).
+PROSE_SEVERITY_RE = re.compile(r"(?:\*\*|Severity[:\s]+|held at\s+|Tier[:\s]+)(Must-Fix|Should-Fix)")
 
 
 def validate_object(obj, where):
@@ -122,30 +127,59 @@ def validate_sidecar_obj(obj, label="<sidecar>"):
             continue
         for i, el in enumerate(arr):
             where = "%s.%s[%d]" % (label, arr_name, i)
-            if isinstance(el, dict) and "schema" not in el:
-                el = dict(el, schema=default_schema)  # schema inferred from the array
+            if isinstance(el, dict):
+                el_schema = el.get("schema")
+                if el_schema is None:
+                    el = dict(el, schema=default_schema)  # inferred from the array
+                elif el_schema != default_schema:
+                    errs.append("%s: schema '%s' does not match the '%s' array (expected '%s')"
+                                % (where, el_schema, arr_name, default_schema))
+                    continue
             errs.extend(validate_object(el, where))
-    # Cross-check triage_summary against the findings[] tally — only when findings
-    # are present (counts may legitimately come from prose on older sidecars).
+    # Cross-check triage_summary against the findings[] tally. A non-empty
+    # findings[] REQUIRES a triage_summary object — otherwise the tally invariant
+    # the sidecar advertises would silently go unenforced.
     findings = obj.get("findings")
     triage = obj.get("triage_summary")
-    if findings and isinstance(findings, list) and isinstance(triage, dict):
-        tally = {"Must-Fix": 0, "Should-Fix": 0, "Could-Fix": 0}
-        for el in findings:
-            if isinstance(el, dict) and el.get("severity") in tally:
-                tally[el["severity"]] += 1
-        expect = {"must_fix": tally["Must-Fix"],
-                  "should_fix": tally["Should-Fix"],
-                  "could_fix": tally["Could-Fix"]}
-        for key, want in expect.items():
-            try:
-                got = int(triage.get(key, 0))
-            except (TypeError, ValueError):
-                got = None
-            if got != want:
-                errs.append("%s: triage_summary.%s=%s but findings[] tally for that "
-                            "severity is %d" % (label, key, triage.get(key), want))
+    if findings and isinstance(findings, list):
+        if not isinstance(triage, dict):
+            errs.append("%s: findings[] is non-empty but triage_summary is missing or not an "
+                        "object — the severity tally cannot be verified" % label)
+        else:
+            tally = {"Must-Fix": 0, "Should-Fix": 0, "Could-Fix": 0}
+            for el in findings:
+                if isinstance(el, dict) and el.get("severity") in tally:
+                    tally[el["severity"]] += 1
+            expect = {"must_fix": tally["Must-Fix"],
+                      "should_fix": tally["Should-Fix"],
+                      "could_fix": tally["Could-Fix"]}
+            for key, want in expect.items():
+                try:
+                    got = int(triage.get(key, 0))
+                except (TypeError, ValueError):
+                    got = None
+                if got != want:
+                    errs.append("%s: triage_summary.%s=%s but findings[] tally for that "
+                                "severity is %d" % (label, key, triage.get(key), want))
     return errs
+
+
+def check_block_presence(text, label):
+    """In a ledger, every synthesis-bound (Must-Fix/Should-Fix) Notable Finding must
+    carry an apodictic:finding block (findings-ledger-format.md). Heuristic: compare
+    the count of prose severity labels (outside any block) to the count of finding
+    blocks. Enforced only for ledger entries; author-facing letters keep severities
+    in prose / the Severity Calibration appendix and are not required to embed blocks."""
+    if not LEDGER_MARKER_RE.search(text):
+        return []
+    outside = BLOCK_RE.sub("", text)
+    labels = len(PROSE_SEVERITY_RE.findall(outside))
+    finding_blocks = sum(1 for btype, _ in BLOCK_RE.findall(text) if btype == "finding")
+    if labels > finding_blocks:
+        return ["%s: %d synthesis-bound (Must-Fix/Should-Fix) finding label(s) but only %d "
+                "apodictic:finding block(s) — each synthesis-bound Notable Finding requires a "
+                "structured block (findings-ledger-format.md)" % (label, labels, finding_blocks)]
+    return []
 
 
 def validate_file(path):
@@ -161,6 +195,7 @@ def validate_file(path):
             return ["%s: invalid JSON — %s" % (path, exc)]
         return validate_sidecar_obj(obj, label=path)
     errs, _ = validate_markdown_text(text, label=path)
+    errs.extend(check_block_presence(text, path))
     return errs
 
 
@@ -215,6 +250,33 @@ def run_self_test():
           True)
     check("sidecar_no_arrays_backcompat",
           validate_sidecar_obj({"triage_summary": {"must_fix": 3, "should_fix": 1, "could_fix": 0}}),
+          True)
+    # schema/array mismatch: a readiness object placed in findings[] must be rejected
+    check("sidecar_schema_array_mismatch",
+          validate_sidecar_obj({"findings": [{"schema": "apodictic.readiness.v1", "dimension": "d",
+                                              "verdict": "v", "rationale": "r"}],
+                                "triage_summary": {"must_fix": 0, "should_fix": 0, "could_fix": 0}}),
+          False)
+    # findings[] non-empty but triage_summary missing -> must error
+    check("sidecar_findings_without_triage",
+          validate_sidecar_obj({"findings": [{"schema": "apodictic.finding.v1", "mechanism": "m",
+                                              "severity": "Must-Fix", "confidence": "HIGH",
+                                              "evidence_refs": ["c"], "fix_class": "x", "risk_if_fixed": "y"}]}),
+          False)
+    # ledger block-presence: severity-labeled finding with no block -> error
+    check("ledger_block_missing",
+          check_block_presence("## Pass 5 — Ledger Entry\n### Notable Findings\n"
+                               "1. **Agency collapse.** Severity: Must-Fix.\n", "<t>"),
+          False)
+    # ledger block-presence: finding + block -> clean
+    check("ledger_block_present",
+          check_block_presence("## Pass 5 — Ledger Entry\n### Notable Findings\n"
+                               "1. **Agency collapse.** Severity: Must-Fix.\n"
+                               '<!-- apodictic:finding\n{"schema":"apodictic.finding.v1"}\n-->\n', "<t>"),
+          True)
+    # non-ledger (letter) with prose Must-Fix and no block -> not enforced (clean)
+    check("non_ledger_presence_not_enforced",
+          check_block_presence("# Editorial Letter\nThe pacing is a Must-Fix problem.\n", "<t>"),
           True)
     if results["rc"] == 0:
         print("Self-test: PASS")
