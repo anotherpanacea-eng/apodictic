@@ -32,7 +32,7 @@
 
 ---
 
-## Signal-Emitting Audit Registry (v0.5.0)
+## Signal-Emitting Audit Registry (v2.0.0)
 
 Audits that emit internal severity signals — Must-Fix floors, hard gates, HIGH/Alert ratings, named flags, or Pass-10 inconsistency counts — and therefore **must** carry an explicit row in `pass-dependencies.md` §4e, so the signal propagates onto the Canonical Severity Scale (`output-policy.md §Canonical Severity Scale`) rather than dying in the audit findings file. `scripts/validate.sh audit-signal-propagation --check-registry` fails if any entry below lacks a §4e row.
 

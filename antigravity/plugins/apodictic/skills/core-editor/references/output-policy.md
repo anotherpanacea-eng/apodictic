@@ -87,7 +87,7 @@ Standard passes provide sufficient analysis for most issues. Engage extended, de
 
 ---
 
-## Canonical Severity Scale (v0.5.0)
+## Canonical Severity Scale (v2.0.0)
 
 *Canonical home for the framework's single severity vocabulary. Every audit-internal severity signal — Must-Fix floors, hard gates, HIGH/Alert ratings, named flags, Pass-10 inconsistency counts — maps onto this one scale via the Canonical Audit-Signal Propagation Rule (`run-synthesis.md §Step 2`) and its per-audit table (`pass-dependencies.md §4e`). Do not introduce a parallel severity vocabulary; relabel local audit scales onto these three tokens.*
 
@@ -130,7 +130,7 @@ Rules:
 4. Never use severity assignment to manage the author's feelings. The framework's job is accurate diagnosis.
 5. **Evidence-first, verifier-backed underdiagnosis checks:** Do not assume a text is structurally sound simply because the prose flows well. Absence of structural friction must be proven, not assumed. A text is only "structurally clean" if the Reader Stress Test, the Rejection Memo, and the Absence/Blind-Spot Inventory explicitly fail to surface deep flaws. **The Deficit Lock (below) is the operational enforcement of this rule.**
 
-### Deficit Lock (generation-order rule, v0.5.0)
+### Deficit Lock (generation-order rule, v2.0.0)
 
 *The highest-leverage anti-softening mechanism: lock severity before any charity reframing can soften it. This is the synthesis-layer sequencing of the lock-then-test discipline canonical in `adversarial-stress-test.md §Lock-then-test protocol` — it does not restate that protocol, it orders it against the synthesis steps. It closes the one honesty leak the existing coherence gates miss: a letter that quietly under-delivers a finding it already diagnosed, while still passing severity-floor and audit-signal-propagation.*
 
