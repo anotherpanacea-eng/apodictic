@@ -48,8 +48,14 @@ class ResponseCache:
         return None
 
     def set(self, key: str, value: dict) -> None:
-        """Store a response in cache."""
+        """Store a response in cache. Transient error payloads (dicts containing
+        `_error`, e.g. a retry-exhausted 429/5xx) are kept MEMORY-ONLY and never
+        written to disk — otherwise a temporary outage would stick across runs and
+        keep masquerading as an unretrievable/ghost citation until the cache is
+        cleared by hand."""
         self._memory[key] = value
+        if isinstance(value, dict) and "_error" in value:
+            return
         disk = self._disk_path(key)
         if disk:
             try:
