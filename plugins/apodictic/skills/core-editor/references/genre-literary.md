@@ -472,6 +472,8 @@ For any scene flagged as "slow" or "nothing happens," check against these functi
 
 **Output:** Function assessment, stillness/stasis classification, recommendation
 
+**Charity-gate (Deficit Lock).** Classifying a scene the function check flagged as benign "Stillness" (rather than problematic Stasis) is a charity downgrade. Record the rationale so it carries to synthesis as a marked call, not a silent pass (`output-policy.md §Severity Honesty Protocol → Deficit Lock`).
+
 ---
 
 ## Genre-Specific Flags
@@ -522,6 +524,7 @@ For any scene flagged as "slow" or "nothing happens," check against these functi
 - *Threshold:* 3+ high-craft passages with no thematic, emotional, or recognition payoff → flag. If this pattern persists across >30% of the manuscript, flag "Beautiful Emptiness — the prose is performing for no one."
 - *Flag:* "Style as Compensation — the writing is excellent, but it isn't doing anything"
 - *Exception:* Works where style IS the content (experimental, poetic, or prose-poetry modes where the language experience is the reader's reward). But even here, precision of observation should produce recognition.
+- *Charity-gate (Deficit Lock):* invoking this exception to *not* flag passages the detection logic surfaced is a charity downgrade. Record the suppressed finding and the exception rationale so it carries to synthesis as a marked call, never a silent drop (`output-policy.md §Severity Honesty Protocol → Deficit Lock`).
 
 **LIT-DD4: The "Quiet Evasion" Problem**
 - *Detection:* Work avoids emotional or thematic pressure while appearing to engage with it. Ambiguity is used to avoid commitment rather than to create meaning. Open endings serve the author's comfort rather than the work's needs.
@@ -529,6 +532,7 @@ For any scene flagged as "slow" or "nothing happens," check against these functi
 - *Threshold:* Work raises 2+ significant thematic questions and the ending addresses zero of them → flag. Work uses ambiguity in resolution AND at least 3 other unresolved threads → "Pattern Evasion — ambiguity is a habit, not a choice."
 - *Flag:* "Quiet Evasion — the work is avoiding its own subject"
 - *Exception:* Deliberately anti-resolution works where the refusal of pressure IS the thematic content (Beckett, late Coetzee). The test is whether the refusal is itself meaningful or merely absent.
+- *Charity-gate (Deficit Lock):* invoking this exception to *not* flag an ending the detection logic surfaced is a charity downgrade. Record the suppressed finding and the exception rationale so it carries to synthesis as a marked call, never a silent drop (`output-policy.md §Severity Honesty Protocol → Deficit Lock`).
 
 ---
 

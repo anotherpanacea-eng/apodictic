@@ -500,6 +500,7 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
     "plugins/apodictic/scripts/preflight.sh",
     "plugins/apodictic/scripts/validate.sh",
     "plugins/apodictic/scripts/structured_findings.py",
+    "plugins/apodictic/scripts/honesty_check.py",
     "plugins/apodictic/skills/core-editor/references/run-synthesis.md",
     "plugins/apodictic/skills/core-editor/references/state-lifecycle.md"
   ];

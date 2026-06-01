@@ -546,6 +546,8 @@ After the full diagnostic runs, this terminal step asks: did this text fail beca
 
 **Output:** Three-way classification + decision test results + any retroactive adjustments to prior codes.
 
+**Charity-gate (Deficit Lock).** Retroactively downgrading a prior code to an advisory note via the cultural-charity principle is a charity downgrade: legitimate, but it must be *legible*. Record the original code and the downgrade rationale so the deficit carries forward to synthesis as a marked adjustment rather than a silent disappearance — at synthesis it is locked at Triage and any further softening requires a body override marker (`core-editor/references/output-policy.md §Severity Honesty Protocol → Deficit Lock`). Never use the Distinguish Protocol to avoid recording the original finding.
+
 ---
 
 ## Common Patterns
