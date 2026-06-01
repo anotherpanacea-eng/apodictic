@@ -545,7 +545,7 @@ After completing each pass artifact, immediately append a ledger entry to `[Proj
 
 **When to write:** Immediately after the pass artifact is saved — while the pass content is still in active context. Do not defer ledger entries to the synthesis step.
 
-**What to include:** See `references/findings-ledger-format.md` §Ledger Entry Format below.
+**What to include:** See `references/findings-ledger-format.md` §Ledger Entry Format.
 
 **What NOT to include:** The full pass analysis. The ledger is an extraction, not a copy. If a finding is in the ledger, the evidence is in the pass artifact; the ledger points to it.
 
