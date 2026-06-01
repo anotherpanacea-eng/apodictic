@@ -196,7 +196,7 @@ Produce an argument session plan that cites the relevant `Argument_State` sectio
 
 ## State Management
 
-All coaching state reads and writes follow the folder architecture in `core-editor/references/output-policy.md` §Folder Architecture. The **project root** holds rolling state; **`runs/`** holds immutable per-run archives. Never use the plugin repo or installed plugin cache.
+All coaching state reads and writes follow the folder architecture in `core-editor/references/output-structure.md` §Folder Architecture. The **project root** holds rolling state; **`runs/`** holds immutable per-run archives. Never use the plugin repo or installed plugin cache.
 
 ### READ (always)
 - `Diagnostic_State.md` — all sections, from the **project root**

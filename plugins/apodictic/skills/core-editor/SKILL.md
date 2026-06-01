@@ -204,7 +204,7 @@ Omit the "Specialized audits run" section if no audits ran. Omit "Argument State
 
 ## Project Integration
 
-When operating within a manuscript project, the **active project output context** is the project root folder that holds the manuscript's APODICTIC artifacts and rolling state. See `references/output-policy.md` §Folder Architecture for the canonical folder structure.
+When operating within a manuscript project, the **active project output context** is the project root folder that holds the manuscript's APODICTIC artifacts and rolling state. See `references/output-structure.md` §Folder Architecture for the canonical folder structure.
 
 **Key rules:**
 - Rolling state (`Diagnostic_State.md`, `SYNTHESIS.md`, `Session_Plan_{NN}.md`, `README.md`) lives at the **project root**
@@ -380,7 +380,7 @@ During intake, identify the manuscript's genre and load the corresponding module
 
 ## Model Tag in Output Filenames
 
-When generating output filenames, append the model tag to the runlabel: `YYYY-MM-DD_[model-tag]`. Derive the tag from the model identifier (e.g., `claude-opus-4-6` → `opus46`). If the model identifier is unavailable, use `unknown`. See `references/output-policy.md` §Output Naming Convention for the full tag table.
+When generating output filenames, append the model tag to the runlabel: `YYYY-MM-DD_[model-tag]`. Derive the tag from the model identifier (e.g., `claude-opus-4-6` → `opus46`). If the model identifier is unavailable, use `unknown`. See `references/output-structure.md` §Output Naming Convention for the full tag table.
 
 ---
 
