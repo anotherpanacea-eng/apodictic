@@ -21,7 +21,7 @@ All APODICTIC work for a manuscript lives under a single **project root**. The `
     └── {run-folders}
 ```
 
-`{project-root}` is the active project output context. For new projects, this is created by `/new-project`. For existing projects, it is the folder that already contains the manuscript's APODICTIC output. The project folder name should use the manuscript's working title in Title_Case with underscores (e.g., `My_Novel`, `Policy_Brief_Draft`).
+`{project-root}` is the active project output context. For new projects, this is created by `apodictic-new-project`. For existing projects, it is the folder that already contains the manuscript's APODICTIC output. The project folder name should use the manuscript's working title in Title_Case with underscores (e.g., `My_Novel`, `Policy_Brief_Draft`).
 
 **Migration from `Outputs/`:** If an existing project has an `Outputs/` folder with APODICTIC artifacts, treat that folder as the project root. Create `runs/` inside it and continue.
 
@@ -33,11 +33,11 @@ These files live at the project root and are updated in place:
 
 | File | Created By | Updated By |
 |------|-----------|------------|
-| `Diagnostic_State.md` | `/new-project` or first DE run | Every subsequent run, coaching session, and author revision |
-| `Diagnostic_State.meta.json` | `/new-project` or first DE run | Every time `Diagnostic_State.md` is updated |
+| `Diagnostic_State.md` | `apodictic-new-project` or first DE run | Every subsequent run, coaching session, and author revision |
+| `Diagnostic_State.meta.json` | `apodictic-new-project` or first DE run | Every time `Diagnostic_State.md` is updated |
 | `SYNTHESIS.md` | First DE synthesis | Each subsequent run's synthesis; carries a methodology note listing contributing runs |
-| `Session_Plan_{NN}.md` | `/coach` | Archived to coaching run folder on session completion; new file for each session |
-| `README.md` | `/new-project` or first run | Each new run (manifest table appended) |
+| `Session_Plan_{NN}.md` | `apodictic-coach` | Archived to coaching run folder on session completion; new file for each session |
+| `README.md` | `apodictic-new-project` or first run | Each new run (manifest table appended) |
 
 What does NOT live at project root: individual pass artifacts, contracts, findings ledgers, audit outputs, results guides. Those belong in `runs/`.
 
@@ -189,10 +189,10 @@ Per-run artifact, not a rolling file. Lives inside its run folder alongside the 
 
 | Workflow | Creates Run Folder | Updates Rolling State |
 |----------|-------------------|----------------------|
-| `/new-project` | No (initializes project root) | Creates `Diagnostic_State.md`, `README.md` |
-| `/develop-edit` | `runs/YYYY-MM-DD_{model}_{type}/` | Updates `Diagnostic_State.md`, `SYNTHESIS.md`, `README.md` |
-| `/audit` | `runs/YYYY-MM-DD_{model}_audit/` | Updates `Diagnostic_State.md`, `SYNTHESIS.md` (if findings alter plan), `README.md` |
-| `/coach` | `runs/YYYY-MM-DD_{model}_coaching/` (on session completion) | Updates `Diagnostic_State.md` coaching log, `README.md` |
+| `apodictic-new-project` | No (initializes project root) | Creates `Diagnostic_State.md`, `README.md` |
+| `apodictic-develop-edit` | `runs/YYYY-MM-DD_{model}_{type}/` | Updates `Diagnostic_State.md`, `SYNTHESIS.md`, `README.md` |
+| `apodictic-audit` | `runs/YYYY-MM-DD_{model}_audit/` | Updates `Diagnostic_State.md`, `SYNTHESIS.md` (if findings alter plan), `README.md` |
+| `apodictic-coach` | `runs/YYYY-MM-DD_{model}_coaching/` (on session completion) | Updates `Diagnostic_State.md` coaching log, `README.md` |
 | Consolidation | `runs/YYYY-MM-DD_{model}_consolidated/` | Updates `SYNTHESIS.md` (typically the most significant update), `Diagnostic_State.md`, `README.md` |
 
 

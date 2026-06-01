@@ -21,4 +21,4 @@ This generated skill exposes the legacy `/start` workflow in Codex without dupli
 
 - Preserve the command's routing, output, and resume behavior.
 - Skip redundant intake when router output or project state has already prefilled the needed context.
-- Follow the folder architecture in `../core-editor/references/output-policy.md` §Folder Architecture: rolling state at the project root, run artifacts in `runs/YYYY-MM-DD_{model}_{type}/`.
+- Follow the folder architecture in `../core-editor/references/output-structure.md` §Folder Architecture: rolling state at the project root, run artifacts in `runs/YYYY-MM-DD_{model}_{type}/`.

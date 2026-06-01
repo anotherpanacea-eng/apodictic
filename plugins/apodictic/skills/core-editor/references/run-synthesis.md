@@ -365,44 +365,9 @@ Add a brief note after each question: why the answer matters for the book's revi
 
 The primary deliverable. Format specified in §Core DE Synthesis above.
 
-### Run Folder and Rolling State
+### Run Folder, Rolling State & Machine-Readable Sidecar
 
-All run artifacts (editorial letter, pass reports, contract, findings ledger, audit invocation log, results guide) are written to the **run folder** (`runs/YYYY-MM-DD_{model}_{type}/`) inside the project root. See `references/output-structure.md` §Folder Architecture.
-
-After writing the editorial letter to the run folder, update the **rolling state at the project root:**
-
-1. **Update `Diagnostic_State.md`** with:
-   - Findings from this session
-   - Keep / Cut / Unsure decisions
-   - Control Questions
-   - Change log
-
-2. **Update `SYNTHESIS.md`** at the project root:
-   - If this is the first run: copy the synthesis to the project root as `SYNTHESIS.md`
-   - If prior runs exist: update `SYNTHESIS.md` to incorporate new findings, with a methodology note listing contributing runs (e.g., "Consolidated from runs: 2026-03-15_opus46_full-de, 2026-04-04_opus46_core-de")
-
-3. **Append a row** to the `README.md` run archive table.
-
-`Diagnostic_State.md` lives at the project root, not inside run folders. If it does not exist, create it from `references/diagnostic-state-template.md` first. Never write rolling state to the plugin repo or installed plugin cache.
-
-### Machine-Readable Sidecar (Required)
-
-Alongside `Diagnostic_State.md`, maintain a sidecar file `Diagnostic_State.meta.json` in the same directory. This file is machine-readable state for fast resume routing, revision coaching, and state gardening. The author never reads it; the system reads it instead of parsing the markdown when it needs structured data.
-
-**When to write:** Initialize from `references/diagnostic-state-meta-template.json` when creating `Diagnostic_State.md`. Update the sidecar every time `Diagnostic_State.md` is updated.
-
-**What to update:**
-- `mode` and `active_scene_scope` — on every mode transition (diagnostic ↔ execution)
-- `last_session` — after each session (date, focus, tier, execution_mode, passes_completed, runlabel)
-- `root_causes` — after synthesis (list of root cause names, max 5)
-- `triage_summary` — after synthesis (counts of must-fix, should-fix, could-fix)
-- `control_questions` — after synthesis and after each revision round (open/answered/deferred counts)
-- `revision_progress` — after each revision round (steps_complete, current_step)
-- `session_count` and `handoff_count` — increment on each new session or handoff
-- `state_lines` — line count of `Diagnostic_State.md` (used by state gardening to trigger archival)
-- `contract_hash` — SHA-256 of the contract file, set at intake, checked at pre-pass re-grounding (see `run-core.md` §Mechanical Validation)
-- `next_action.key` — enumerated dispatch key for resume routing. Valid values: `run_passes`, `run_synthesis`, `run_spot_check`, `deliver`, `revision_round`, `run_audits`, `coaching`, `handoff_reentry`. See `commands/start.md` §Resume Target for the full dispatch table.
-- `next_action.description` — human-readable context for display (e.g., "resume Tier 2 passes — Pass 5 next"). Not used for routing.
+Where run artifacts and rolling state are written (run folder vs. project root), the post-synthesis update steps for `Diagnostic_State.md` / `SYNTHESIS.md` / `README.md`, and the `Diagnostic_State.meta.json` sidecar update schedule live in `references/output-structure.md` (loaded at write/persist time). The sidecar `contract_hash` is set at intake and checked at pre-pass re-grounding (see `run-core.md` §Mechanical Validation).
 
 ### Evidence Spot-Check (Required — Post-Synthesis)
 
