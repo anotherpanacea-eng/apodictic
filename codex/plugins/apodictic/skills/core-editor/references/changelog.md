@@ -5,6 +5,34 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.0.0 - 2026-06-01
+
+A milestone release that hardens APODICTIC's editorial honesty and structural integrity, delivered as five sequenced phases. The strategy was **subtraction + honesty hardening, not added plumbing**: shrink the always-loaded instruction floor, normalize the severity vocabulary, make findings machine-checkable, and close the silent-softening leak — then fix the surrounding ops. The plugin's command/API surface is unchanged; the major bump headlines the behavior-changing honesty work (the Deficit Lock) and the severity-model normalization.
+
+### Phase 1 — Subtract bookkeeping from the instruction floor
+
+Moved filesystem/format/mode-mechanics bookkeeping out of the always-loaded judgment files into on-demand references (`output-structure.md`, `reference-index.md`, `audit-routing-table.md`, `execution-modes-reference.md`, `findings-ledger-format.md`), leaving one-line pointers. **Always-on instruction floor −9.5%** (32,132 → 29,078 words; `output-policy.md` alone −31%). A root `.gitattributes` marks `codex/**` and `antigravity/**` `linguist-generated` so the mechanical mirrors collapse in review.
+
+### Phase 2 — Normalize severity (Canonical Severity Scale)
+
+One canonical **Must-Fix / Should-Fix / Could-Fix** scale (`output-policy.md §Canonical Severity Scale`), with the orthogonal axes (confidence, prose tier, readiness bands, lens verdicts) named explicitly as *not* severity. Local audit scales propagate onto it via the `pass-dependencies.md §4e` table; a machine-readable **Signal-Emitting Audit Registry** (42 audits) in `audit-routing-table.md` is enforced by `validate.sh audit-signal-propagation --check-registry` (42/42).
+
+### Phase 3 — Minimal structured state (real-JSON findings)
+
+Replaced the YAML-ish structured-finding block with **real JSON** (`apodictic.finding.v1`) validated by a real parser, `scripts/structured_findings.py`. Synthesis-bound (Must-Fix/Should-Fix) Notable Findings must carry a block (enforced for ledgers). The `Diagnostic_State.meta.json` sidecar gains optional `findings[]` / `audit_triggers[]` / `readiness[]` arrays whose severities must tally to `triage_summary` (schema/array mismatch and missing-tally now fail). New `validate.sh structured-findings`, plus a `validate.sh --check-all` aggregate (self-tests + real-file invariants).
+
+### Phase 4 — Harden honesty (Deficit Lock + Softness Gate) — behavior change
+
+New **Deficit Lock** generation-order rule (`output-policy.md §Severity Honesty Protocol`): at Triage, severities lock as structured findings *before* any charity reframing; later steps may raise freely but may only lower with a body override marker (`<!-- override: softness-downgrade -->`) plus an Appendix B (Severity Calibration) entry. The charity hatches (Distinguish Protocol retroactive downgrade; the literary Beautiful-Emptiness / Quiet-Evasion exceptions; the Stillness classification) are gated so charity is legible, not silent. New `scripts/honesty_check.py` drives `validate.sh softness-check` (delivered-vs-locked severity, read from the Severity Calibration appendix with token-boundary evidence matching) and `deficit-lock` (every synthesis-bound finding is structurally locked). Validated by a mandatory before/after read on the frozen sample letters.
+
+### Phase 5 — Plumbing
+
+`academic_apis.py` HTTP backoff with exponential retry honoring `Retry-After` for 429/5xx + transient errors (a rate-limit no longer masquerades as a ghost citation); transient `_error` payloads stay memory-only (never disk-persisted, so an outage isn't sticky across runs); retraction is derived from the single cached DOI lookup. Response-cache disk persistence engaged (`$APODICTIC_CACHE_DIR` or `.apodictic_run/cache`). The release pipeline (`release.sh`, `release-verify.mjs`, `release-generate.mjs`) skips-with-WARN the private `APODICTIC-Gemini` sibling steps when absent, decoupling the public release path; `release-verify` now runs `validate.sh --check-all` as part of the gate.
+
+### Validators
+
+11 → **14** self-testable validators (`structured-findings`, `softness-check`, `deficit-lock` added). `validate.sh --self-test-all`: 14/14. New `validate.sh --check-all` real-file gate (self-tests + registry-vs-§4e + structured-findings on the shipped templates).
+
 ## v1.11.0 - 2026-05-29
 
 ### Added — Narrative-Decision (StoryScope) audit: APODICTIC consumer integration of SETEC Surface 6
