@@ -242,19 +242,6 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         "provenance_refs": []
     }
 
-    # Retraction check (Phase 5): if a DOI is present, surface retraction status on
-    # the result regardless of which tier resolves it. A retracted source is a
-    # citation problem the audit must not silently pass. Cached like other lookups.
-    if doi:
-        rk = f"crossref:retraction:{doi}"
-        retraction = cache.get(rk)
-        if retraction is None:
-            retraction = check_retraction(doi)
-            cache.set(rk, retraction)
-        if retraction.get("retracted") is True:
-            result["retracted"] = True
-            result["retraction_note"] = retraction.get("note", "Source is retracted per CrossRef metadata.")
-
     # --- Tier 2: DOI resolution ---
     if doi:
         cache_key = f"crossref:doi:{doi}"
@@ -268,6 +255,12 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
             prov_ref = provenance.store(ref_id, "crossref", cr_result)
             result["provenance_refs"].append(prov_ref)
             msg = cr_result["message"]
+            # Retraction (Phase 5) is derived from the SAME CrossRef metadata
+            # (message.update-to) — no second CrossRef call. A retracted source is a
+            # citation problem the audit must not silently pass.
+            if any(u.get("type") == "retraction" for u in msg.get("update-to", [])):
+                result["retracted"] = True
+                result["retraction_note"] = "Source is retracted per CrossRef metadata."
             result["resolved"] = True
             result["confidence"] = "metadata-only verified"
             result["source_tier"] = "crossref-doi"
