@@ -111,7 +111,7 @@ Audit-internal scales (AIC Spot/Pattern/Systemic, Reception Note/Flag/Alert, Red
 
 ## Severity Honesty Protocol (v0.4.14.3)
 
-*Canonical home for anti-sycophancy / no-self-revise rule. Other surfaces (`adversarial-stress-test.md §Lock-then-test protocol` / §Anti-softening rule, `specialized-audits/references/craft/reception-risk.md §Lock-then-classify` / §Forbidden #6, `run-synthesis.md §Step 5 Adversarial Self-Check`) reference here and add only context-specific elaborations (stress-test ordering, audit lock-then-classify discipline, self-check up/down pressure). The general principle — LLMs reliably talk themselves out of hard findings; severity locks before steelmanning — lives here. Per-audit Deficit-First Diagnostic Rule blocks (each tailored to the audit's failure modes) are the operational expression of this principle and stay in their audit reference files.*
+*Canonical home for anti-sycophancy / no-self-revise rule. Other surfaces (`adversarial-stress-test.md §Lock-then-test protocol` / §Anti-softening rule, `specialized-audits/references/craft/reception-risk.md §Lock-then-classify` / §Forbidden #6, `run-synthesis.md §Step 6 Adversarial Self-Check`) reference here and add only context-specific elaborations (stress-test ordering, audit lock-then-classify discipline, self-check up/down pressure). The general principle — LLMs reliably talk themselves out of hard findings; severity locks before steelmanning — lives here. Per-audit Deficit-First Diagnostic Rule blocks (each tailored to the audit's failure modes) are the operational expression of this principle and stay in their audit reference files.*
 
 LLMs have a documented tendency to soften negative findings in editorial analysis. This manifests as:
 
@@ -128,7 +128,19 @@ Rules:
 2. If a flag's evidence meets Must-Fix criteria per its severity guidance, assign Must-Fix. Do not downgrade based on the overall "feel" of the manuscript.
 3. Strengths must be specific and evidence-based. "Strong voice" is not a strength finding. "Voice consistency in chapters 4-7 creates reliable POV trust" is.
 4. Never use severity assignment to manage the author's feelings. The framework's job is accurate diagnosis.
-5. **Evidence-first, verifier-backed underdiagnosis checks:** Do not assume a text is structurally sound simply because the prose flows well. Absence of structural friction must be proven, not assumed. A text is only "structurally clean" if the Reader Stress Test, the Rejection Memo, and the Absence/Blind-Spot Inventory explicitly fail to surface deep flaws.
+5. **Evidence-first, verifier-backed underdiagnosis checks:** Do not assume a text is structurally sound simply because the prose flows well. Absence of structural friction must be proven, not assumed. A text is only "structurally clean" if the Reader Stress Test, the Rejection Memo, and the Absence/Blind-Spot Inventory explicitly fail to surface deep flaws. **The Deficit Lock (below) is the operational enforcement of this rule.**
+
+### Deficit Lock (generation-order rule, v0.5.0)
+
+*The highest-leverage anti-softening mechanism: lock severity before any charity reframing can soften it. This is the synthesis-layer sequencing of the lock-then-test discipline canonical in `adversarial-stress-test.md §Lock-then-test protocol` — it does not restate that protocol, it orders it against the synthesis steps. It closes the one honesty leak the existing coherence gates miss: a letter that quietly under-delivers a finding it already diagnosed, while still passing severity-floor and audit-signal-propagation.*
+
+At Triage (`run-synthesis.md §Step 5`), the moment a finding is assigned **Must-Fix** or **Should-Fix**, commit it as a structured Finding (`apodictic.finding.v1`, see `findings-ledger-format.md`) at that severity in the Findings Ledger — **before** any later step that could lower it runs: the Adversarial Self-Check's downward pressure, the Distinguish Protocol's cultural-charity downgrade, or any genre-specific exception. Once a severity is locked:
+
+- Later steps may **raise** severity freely (under-diagnosis is the failure mode being guarded against — there is no friction on getting harder).
+- Later steps may **lower** a locked severity, or decline to deliver a locked finding at its locked tier, **only** by recording a body override marker — `<!-- override: softness-downgrade — <one-sentence rationale> -->` — plus a parallel Appendix B (Severity Calibration) entry. Silent softening is forbidden.
+- Mechanical gates: `scripts/validate.sh softness-check <editorial_letter> <findings_ledger>` compares the delivered letter against the locked ledger and blocks delivery on any unmarked downgrade; `scripts/validate.sh deficit-lock <editorial_letter>` verifies the lock exists and that any softening carries a marker. (Weak-axis-vs-Must-Fix coherence remains owned by `severity-floor`; the softness gate does not duplicate it.)
+
+The Deficit Lock does not forbid charity — it makes charity *legible*. A genuine over-diagnosis can still be corrected; it just leaves a recorded trace instead of disappearing silently.
 
 ---
 
