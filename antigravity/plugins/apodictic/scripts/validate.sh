@@ -167,7 +167,7 @@ usage() {
   echo "Usage: $0 <command> [args...]"
   echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate"
   echo "Aggregate: --self-test-all (runs --self-test on all 16 self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry and structured-findings on the shipped templates)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, and the ported letter/timeline validators vs the canonical worked examples)"
   exit 2
 }
 
@@ -233,6 +233,45 @@ if [ "$1" = "--check-all" ]; then
   done
   [ "$CA_DONE" -eq 0 ] && { echo "ERROR: could not locate reference templates for structured-findings — --check-all cannot verify the real-file invariant"; CA_FAIL=1; }
   echo ""
+
+  # Canonical-framework validator runs (Inc.6 / Track B). Resolve the references dir once,
+  # then run the ported validators against the actual shipped framework files and the
+  # canonical worked examples, so a drift in pass-dependencies.md tiers, the letter contracts,
+  # or the Timeline schema is caught at release time (not only against synthetic fixtures).
+  CA_BASE=""
+  for base in "$CA_SCRIPT_DIR/../skills/core-editor/references" "$CA_SCRIPT_DIR/../plugins/apodictic/skills/core-editor/references"; do
+    if [ -d "$base" ]; then CA_BASE="$base"; break; fi
+  done
+  if [ -z "$CA_BASE" ]; then
+    echo "ERROR: could not locate core-editor/references for canonical validator runs"; CA_FAIL=1
+  else
+    echo "== audit-tier-criterion (real pass-dependencies.md) =="
+    if [ -f "$CA_BASE/pass-dependencies.md" ]; then
+      "$0" audit-tier-criterion "$CA_BASE/pass-dependencies.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/pass-dependencies.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical editorial letter (decision-layer-check, audit-signal-propagation, severity-floor) =="
+    if [ -f "$CA_BASE/example-editorial-letter.md" ]; then
+      "$0" decision-layer-check "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
+      "$0" audit-signal-propagation "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
+      "$0" severity-floor "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-editorial-letter.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Timeline (timeline-arithmetic, timeline-anchor-conflict, timeline-diff self) =="
+    if [ -f "$CA_BASE/example-timeline.md" ]; then
+      "$0" timeline-arithmetic "$CA_BASE/example-timeline.md" || CA_FAIL=1
+      "$0" timeline-anchor-conflict "$CA_BASE/example-timeline.md" || CA_FAIL=1
+      "$0" timeline-diff "$CA_BASE/example-timeline.md" "$CA_BASE/example-timeline.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-timeline.md not found"; CA_FAIL=1
+    fi
+    echo ""
+  fi
+
   if [ "$CA_FAIL" -eq 0 ]; then
     echo "check-all: PASS (self-tests + real-file invariants)"
     exit 0
