@@ -56,6 +56,7 @@
     "phase": "",
     "run_folder": "",
     "gates": {},
-    "allowed_next": []
+    "allowed_next": [],
+    "finding_states": {}
   }
 }

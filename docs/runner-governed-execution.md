@@ -1,6 +1,6 @@
 # Runner-Governed Execution — Design Spec
 
-**Status:** design only (not built). Roadmap: `ROADMAP.md` → Harness Engineering → Runner-Governed Execution. This is the concretized spec for **increment 1** (the cooperative gate manifest + state); it is intended to be implementation-ready and approved before code. Later increments (host-orchestrator) are sketched at the end.
+**Status:** increments **1–3 built** (cooperative gate manifest + engine + sidecar state + finding-ID lifecycle); increment **4** (external host orchestrator) remains future. Roadmap: `ROADMAP.md` → Harness Engineering → Runner-Governed Execution. Implementation: `plugins/apodictic/schemas/execution-gates.v1.json`, `scripts/run_gate.py`, `validate.sh gate`.
 
 ## Problem
 
@@ -115,7 +115,7 @@ Declarative; the source of truth for *what each transition requires*. `run-core.
 }
 ```
 
-Increment 1: `gate` *reads* `run_folder`/`phase` and *reports*; the model updates `execution` after a passing gate. Increment 2: `gate` writes it. `/start` resume uses `phase` + `allowed_next` (a superset of today's `next_action.key`).
+**Increment 2 (built):** `gate` *writes* this block — `gates[<phase>]` = result, plus `phase` + `allowed_next` on a pass — by walking up from the run folder to the project-root sidecar. **Increment 3 (built):** a passing gate also advances `finding_states` (`finding_id` → `locked`/`delivered`, forward-only) from the ledger's `apodictic.finding` IDs. `--no-write` disables the write. `/start` resume uses `phase` + `allowed_next` (a superset of today's `next_action.key`).
 
 ## Prose rewrite (run-core.md / run-synthesis.md)
 
@@ -136,10 +136,10 @@ When shell/python is unavailable, `gate` cannot run. The prose instructs the mod
 5. Rewrite the two gate sites in `run-synthesis.md` (+ the pre-synthesis gate in `run-core.md`) to call `gate`.
 6. Regenerate mirrors; `--check-all`, builds, `release-verify`.
 
-## Out of scope here (later increments)
+## Later increments
 
-- **Increment 3 — finding-ID lifecycle states** (`locked` → `delivered` → `revised`) tracked in `execution`/`findings[]`, so the runner can assert "every locked finding was delivered or marked."
-- **Increment 4 — external orchestrator.** Increment 1 is still cooperative (the model chooses to run `gate`). True enforcement needs a host (the Agent SDK or a wrapper) that drives phase transitions and invokes `gate` itself between phases — a larger, different effort that leaves the "plugin runs inside the model" model. Specced separately if/when increments 1–3 show residual skipped-gate incidents.
+- **Increment 3 — finding-ID lifecycle states (built).** `execution.finding_states` maps each finding ID to `locked` (set by `gate run_synthesis`) → `delivered` (set by `gate run_spot_check`), forward-only. The `revised` state awaits a gated `revision_round` phase (not yet defined). `softness-check` already *enforces* delivery; `finding_states` is the auditable trail.
+- **Increment 4 — external orchestrator (future).** Increments 1–3 are still cooperative (the model chooses to run `gate`; it writes state but does not *block* the process). True enforcement needs a host (the Agent SDK or a wrapper) that drives phase transitions and invokes `gate` itself between phases — a larger effort that leaves the "plugin runs inside the model" model. Revisit if increments 1–3 show residual skipped-gate incidents.
 
 ## Open questions
 

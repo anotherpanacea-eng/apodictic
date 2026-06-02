@@ -26,6 +26,11 @@ except ImportError:
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
+# Finding-ID lifecycle: a passing gate advances each ledger finding's state
+# (forward-only). revised is reached at a revision round (no gated phase yet).
+_PHASE_FINDING_STATE = {"run_synthesis": "locked", "run_spot_check": "delivered"}
+_STATE_RANK = {"locked": 1, "delivered": 2, "revised": 3}
+
 
 def _manifest_path():
     env = os.environ.get("APODICTIC_GATES_MANIFEST")
@@ -42,18 +47,69 @@ def _manifest_path():
     return None
 
 
-def _runlabel(run_folder):
+def _find_sidecar(run_folder):
+    """Walk up from the run folder to the project-root Diagnostic_State.meta.json."""
     d = os.path.abspath(run_folder)
     for _ in range(4):
         sc = os.path.join(d, "Diagnostic_State.meta.json")
         if os.path.exists(sc):
-            try:
-                with open(sc, encoding="utf-8") as fh:
-                    return (json.load(fh).get("last_session") or {}).get("runlabel")
-            except (OSError, ValueError):
-                return None
+            return sc
         d = os.path.dirname(d)
     return None
+
+
+def _runlabel(run_folder):
+    sc = _find_sidecar(run_folder)
+    if not sc:
+        return None
+    try:
+        with open(sc, encoding="utf-8") as fh:
+            return (json.load(fh).get("last_session") or {}).get("runlabel")
+    except (OSError, ValueError):
+        return None
+
+
+def _ledger_finding_ids(ledger_path):
+    """Lifecycle IDs of the apodictic.finding blocks in the ledger."""
+    if not ledger_path or art is None:
+        return []
+    try:
+        with open(ledger_path, encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError:
+        return []
+    return [obj["id"] for bt, obj, _e in art.parse_blocks(text)
+            if bt == "finding" and isinstance(obj, dict) and obj.get("id")]
+
+
+def _write_execution(sidecar, phase, result, allowed_next, run_folder, finding_states=None):
+    """Record the gate result into the sidecar's execution block. Returns True if written."""
+    try:
+        with open(sidecar, encoding="utf-8") as fh:
+            meta = json.load(fh)
+    except (OSError, ValueError):
+        return False
+    ex = meta.setdefault("execution", {})
+    ex.setdefault("gates", {})[phase] = result
+    try:
+        ex["run_folder"] = os.path.relpath(run_folder, os.path.dirname(sidecar))
+    except ValueError:
+        ex["run_folder"] = run_folder
+    if result in ("passed", "pass-with-warn"):
+        ex["phase"] = phase
+        ex["allowed_next"] = list(allowed_next or [])
+    if finding_states:
+        fs = ex.setdefault("finding_states", {})
+        for fid, st in finding_states.items():
+            if _STATE_RANK.get(st, 0) >= _STATE_RANK.get(fs.get(fid), 0):
+                fs[fid] = st  # forward-only
+    try:
+        with open(sidecar, "w", encoding="utf-8") as fh:
+            json.dump(meta, fh, indent=2)
+            fh.write("\n")
+        return True
+    except OSError:
+        return False
 
 
 def _resolve(run_folder, patterns, runlabel):
@@ -82,7 +138,7 @@ def _project_and_runlabel(run_folder, keys, runlabel):
     return project or "Project", rl or "run"
 
 
-def run_gate(phase, run_folder, strict_warnings=False, validate_sh=None):
+def run_gate(phase, run_folder, strict_warnings=False, validate_sh=None, write=False):
     """Return (exit_code, lines)."""
     manifest_path = _manifest_path()
     if not manifest_path:
@@ -147,11 +203,27 @@ def run_gate(phase, run_folder, strict_warnings=False, validate_sh=None):
     for a in er.get("attested", []):
         lines.append("  ATTEST   %s" % a)
 
-    if fail:
-        lines.append("gate %s: BLOCKED" % phase)
-        return 1, lines
-    if warn and strict_warnings:
-        lines.append("gate %s: BLOCKED (--strict-warnings: unresolved WARN)" % phase)
+    if fail or (warn and strict_warnings):
+        result, code = "blocked", 1
+    elif warn:
+        result, code = "pass-with-warn", 0
+    else:
+        result, code = "passed", 0
+
+    if write:
+        sidecar = _find_sidecar(run_folder)
+        finding_states = {}
+        if code == 0 and phase in _PHASE_FINDING_STATE:
+            led = resolved.get("findings_ledger") or _resolve(run_folder, keys.get("findings_ledger", ""), runlabel)
+            for fid in _ledger_finding_ids(led):
+                finding_states[fid] = _PHASE_FINDING_STATE[phase]
+        if sidecar and _write_execution(sidecar, phase, result, phase_spec.get("allowed_next", []),
+                                        run_folder, finding_states):
+            extra = " + %d finding state(s)→%s" % (len(finding_states), _PHASE_FINDING_STATE.get(phase, "")) if finding_states else ""
+            lines.append("  (recorded execution.gates[%s]=%s%s in %s)" % (phase, result, extra, os.path.basename(sidecar)))
+
+    if code == 1:
+        lines.append("gate %s: BLOCKED%s" % (phase, " (--strict-warnings: unresolved WARN)" if (warn and strict_warnings) else ""))
         return 1, lines
     lines.append("gate %s: %s" % (phase, "PASS-WITH-WARN — resolve or acknowledge each WARN before transitioning"
                                    if warn else "PASS"))
@@ -223,6 +295,20 @@ def run_self_test():
     check("warn_strict_blocks", run_gate("warn_test", wd, validate_sh=vs, strict_warnings=True)[0] == 1)
     os.environ.pop("APODICTIC_GATES_MANIFEST", None)
 
+    # increment 2: a passing gate records its result into the sidecar's execution block
+    sd = folder(ledger_ok)
+    with open(os.path.join(sd, "Diagnostic_State.meta.json"), "w") as fh:
+        json.dump({"project": "Proj", "execution": {}}, fh)
+    run_gate("run_synthesis", sd, validate_sh=vs, write=True)
+    with open(os.path.join(sd, "Diagnostic_State.meta.json")) as fh:
+        ex = json.load(fh).get("execution", {})
+    check("writes_execution_state",
+          ex.get("gates", {}).get("run_synthesis") == "passed"
+          and ex.get("phase") == "run_synthesis"
+          and "run_spot_check" in ex.get("allowed_next", []))
+    # increment 3: a passing gate advances each ledger finding's lifecycle state
+    check("records_finding_lifecycle", ex.get("finding_states", {}).get("F-P5-01") == "locked")
+
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
@@ -236,7 +322,8 @@ def main(argv):
     if len(args) < 2:
         print("Usage: run_gate.py <phase> <run_folder> [--strict-warnings] | --self-test")
         return 2
-    code, lines = run_gate(args[0], args[1], strict_warnings="--strict-warnings" in argv)
+    code, lines = run_gate(args[0], args[1], strict_warnings="--strict-warnings" in argv,
+                           write="--no-write" not in argv)
     for ln in lines:
         print(ln)
     return code
