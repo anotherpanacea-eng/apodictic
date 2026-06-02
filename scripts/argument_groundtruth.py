@@ -48,10 +48,13 @@ _BARE_PREFIX_RE = re.compile(r"\b(?:AT|CL|SM|WR|BP|OB|DI|NE|AC)\b")
 # Leading verdict token of a GT7 "Expected classification" value, skipping markdown emphasis.
 _GT7_VERDICT_RE = re.compile(r"[\s*`]*([A-Z][A-Z-]*)")
 # Decoy code mentions that do NOT name the diagnosed family: explicitly negated ("not WR0",
-# "not WR0/WR2") or marked passing ("WR0 = PASS", "WR0 (PASS)"). Masked before the GT2
+# "not WR0/WR2") or marked passing ("WR0 = PASS", "WR0/WR2 (PASS)"). Masked before the GT2
 # locus<->code-family check so a correct family named only to deny it can't satisfy the check.
+# Both forms consume a whole grouped code list (slash/comma-separated) so no leading positive
+# token survives the mask.
 _NEGATED_CODES_RE = re.compile(r"\b[Nn][Oo][Tt]\s+((?:[A-Z]{2}[0-9]+(?:\s*[/,]\s*)?)+)")
-_PASS_CODE_RE = re.compile(r"\b[A-Z]{2}[0-9]+\s*(?:=\s*PASS\b|\(\s*PASS\s*\))")
+_PASS_CODE_RE = re.compile(
+    r"\b(?:[A-Z]{2}[0-9]+\s*[/,]\s*)*[A-Z]{2}[0-9]+\s*(?:=\s*PASS\b|\(\s*PASS\s*\))")
 
 
 def _positive_code_text(text):
@@ -291,6 +294,15 @@ def run_self_test(which=None):
     check("gt2_pass_decoy_family", errs_of(_VALID_GT.replace(
         "- **Expected codes:** WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
         "- **Expected codes:** SM0 (assertion gap); WR0 = PASS.")), False)
+    # Check 3: a grouped PASS list ("WR0/WR2 = PASS") must mask the *whole* group — a leading
+    # positive token ("WR0/") must not survive to satisfy the WARRANT locus.
+    check("gt2_pass_decoy_grouped_eq", errs_of(_VALID_GT.replace(
+        "- **Expected codes:** WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
+        "- **Expected codes:** SM0 (assertion gap); WR0/WR2 = PASS.")), False)
+    # Check 3: grouped PASS with spaced separator + paren form ("WR0 / WR2 (PASS)") likewise.
+    check("gt2_pass_decoy_grouped_paren", errs_of(_VALID_GT.replace(
+        "- **Expected codes:** WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
+        "- **Expected codes:** SM0 (assertion gap); WR0 / WR2 (PASS).")), False)
 
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
