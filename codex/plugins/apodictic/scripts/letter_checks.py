@@ -535,11 +535,118 @@ def check_registry(reg_path, dep_path):
     return 1
 
 
+# --------------------------------------------------------------------------
+# underdiagnosis-triggers — Conditional Underdiagnosis Retry Loop.
+# Canonical home: run-synthesis.md §Step 9. Faithful port: triggers #1-4 scan the
+# whole letter (mechanism convergence, hard-gate, final-third, multi-axis) against the
+# body Must-Fix; triggers #5-6 reuse the ported severity_floor / audit_signal_propagation.
+# --------------------------------------------------------------------------
+
+_CONV_KEYWORDS = ["aftermath", "compression", "status", "thread", "final-third",
+                  "coercion", "agency", "opacity"]
+
+
+def underdiagnosis_triggers(text):
+    errors, warnings, fired = [], [], []
+    lines = _content_lines(text)
+    appendix_idx = None
+    appx_rx = re.compile(r"^#{1,4}.*Appendix [A-C]", re.IGNORECASE)
+    for i, ln in enumerate(lines):
+        if appx_rx.search(ln):
+            appendix_idx = i + 1
+            break
+    body = "\n".join(lines[: appendix_idx - 1]) if appendix_idx else "\n".join(lines)
+    body_mustfix = re.search(r"Must-Fix", body, re.IGNORECASE) is not None
+
+    ov = {k: ("<!-- override: underdiagnosis-trigger-%s" % k) in body
+          for k in ("convergence", "hard-gate", "final-third", "multi-axis",
+                    "severity-floor", "propagation")}
+
+    def fire(key, ovkey, warn_msg, err_msg):
+        if ov[ovkey]:
+            warnings.append(warn_msg)
+        else:
+            errors.append(err_msg)
+        fired.append(key)
+
+    # Trigger 1: convergence — same mechanism keyword in 3+ artifacts, no body Must-Fix.
+    if not body_mustfix:
+        for kw in _CONV_KEYWORDS:
+            if len(re.findall(kw, text, re.IGNORECASE)) >= 3:
+                fire("convergence", "convergence",
+                     "WARN: Trigger #1 (convergence) — '%s' appears in 3+ artifacts with no "
+                     "synthesis Must-Fix (override marker detected in body)." % kw,
+                     "ERROR: Trigger #1 (convergence) — '%s' appears in 3+ artifacts with no "
+                     "synthesis Must-Fix and no override marker in body." % kw)
+                break
+
+    # Trigger 2: hard-gate — audit Alert/hard gate present, no body Must-Fix.
+    if re.search(r"(hard gate|Alert (concentration|finding))", text, re.IGNORECASE) and not body_mustfix:
+        fire("hard-gate", "hard-gate",
+             "WARN: Trigger #2 (hard-gate) — high-risk audit Alert/hard gate present without "
+             "synthesis Must-Fix (override marker detected in body).",
+             "ERROR: Trigger #2 (hard-gate) — high-risk audit Alert/hard gate present without "
+             "synthesis Must-Fix and no override marker in body.")
+
+    # Trigger 3: final-third — character pass + structure pass both flag the final third.
+    ft = r"(final[- ]third|act[- ]?(III|3)|close|climax)"
+    if (re.search(r"(character pass|character audit).*" + ft, text, re.IGNORECASE)
+            and re.search(r"(structure pass|structural pass|structure audit).*" + ft, text, re.IGNORECASE)
+            and not body_mustfix):
+        fire("final-third", "final-third",
+             "WARN: Trigger #3 (final-third) — final-third concern flagged by both character + "
+             "structure passes without synthesis Must-Fix (override marker in body).",
+             "ERROR: Trigger #3 (final-third) — final-third concern flagged by both character + "
+             "structure passes without synthesis Must-Fix and no override marker in body.")
+
+    # Trigger 4: multi-axis — 2+ of {series, representation, reader-trust}, no body Must-Fix.
+    axis = (bool(re.search(r"series", text, re.IGNORECASE))
+            + bool(re.search(r"representation", text, re.IGNORECASE))
+            + bool(re.search(r"reader[- ]trust", text, re.IGNORECASE)))
+    if axis >= 2 and not body_mustfix:
+        fire("multi-axis", "multi-axis",
+             "WARN: Trigger #4 (multi-axis) — concern spans %d+ severity classes without "
+             "synthesis Must-Fix (override marker in body)." % axis,
+             "ERROR: Trigger #4 (multi-axis) — concern spans %d+ severity classes "
+             "(series/representation/reader-trust) without synthesis Must-Fix and no override "
+             "marker in body." % axis)
+
+    # Trigger 5: severity-floor — reuse the ported check (fires on its WARN/ERROR).
+    sf_e, sf_w, _, _ = severity_floor(text)
+    if sf_e or sf_w:
+        fire("severity-floor", "severity-floor",
+             "WARN: Trigger #5 (severity-floor) — severity-floor validator surfaced WARN/ERROR "
+             "(override marker in body).",
+             "ERROR: Trigger #5 (severity-floor) — severity-floor validator surfaced WARN/ERROR "
+             "with no override marker in body.")
+
+    # Trigger 6: propagation — reuse the ported check.
+    ap_e, ap_w, _, _ = audit_signal_propagation(text)
+    if ap_e or ap_w:
+        fire("propagation", "propagation",
+             "WARN: Trigger #6 (propagation) — audit-signal-propagation validator surfaced "
+             "un-propagated signal (override marker in body).",
+             "ERROR: Trigger #6 (propagation) — audit-signal-propagation validator surfaced "
+             "un-propagated signal with no override marker in body.")
+
+    fired_str = "".join(f + " " for f in fired)
+    if fired:
+        ok = "OK: Triggers fired (%s); all addressed via override markers in body." % fired_str
+    else:
+        ok = "OK: No underdiagnosis triggers fired."
+    failed = ("FAILED: %d underdiagnosis trigger(s) fired. Triggers: %s\n"
+              "Synthesis must either upgrade the affected finding's severity OR insert an "
+              "override marker in the letter body. Canonical home: "
+              "core-editor/references/run-synthesis.md §Step 9." % (len(errors), fired_str))
+    return errors, warnings, ok, failed
+
+
 # Registry of file-driven checks: name -> function(text) -> (errors, warnings, ok, failed).
 CHECKS = {
     "severity-floor": severity_floor,
     "decision-layer-check": decision_layer_check,
     "audit-signal-propagation": audit_signal_propagation,
+    "underdiagnosis-triggers": underdiagnosis_triggers,
 }
 
 
