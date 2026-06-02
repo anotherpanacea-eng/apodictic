@@ -132,8 +132,11 @@ def _norm_anchor_tod(*texts):
                 h += 12
             return float(h)
         low = t.lower()
+        # Word-boundary match, not substring: "noon" must not match inside "afternoon"
+        # (and "morning" not inside a longer token). Order still resolves "early morning"
+        # before "morning" and "late night" before "night".
         for word, hour in _TOD_WORDS:
-            if word in low:
+            if re.search(r"\b" + re.escape(word) + r"\b", low):
                 return hour
     return None
 
