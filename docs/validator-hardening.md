@@ -1,9 +1,11 @@
 # Validator Architecture Hardening (Tier 1 Harness bundle)
 
-**Status:** Increments 1–3 built — the whole **editorial-letter / ledger validator family**
-is now on the shared parser (severity-floor, decision-layer-check, audit-signal-propagation,
-underdiagnosis-triggers, ledger-consolidation). Increments 4–6 + the contract/config/run-folder
-validators are planned.
+**Status:** Increments 1–4 built — the whole **editorial-letter / ledger validator family**
+is on the shared `letter_checks.py` parser (severity-floor, decision-layer-check,
+audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation), and the **timeline
+family** is on the new `timeline_checks.py` parser (timeline-diff, timeline-arithmetic with true
+span arithmetic, timeline-anchor-conflict with true anchor-drift detection). Increments 5–7 +
+the contract/config/run-folder validators are planned.
 **Theme:** move mechanical contract enforcement out of brittle shell regex and into
 small Python validators with shared parsers and fixture-driven negative tests — *without*
 turning `validate.sh` into anything other than the thin command surface, and without
@@ -57,7 +59,7 @@ helpers use.
 | **1** | A — Validator Hardening | `letter_checks.py` shared module + port **severity-floor**; fixture suite; degrade path; build-archive registration. | ✅ done |
 | **2** | A | Port **decision-layer-check** (2a) + **audit-signal-propagation** incl. `--check-registry` (2b) onto `letter_checks.py`. | ✅ done |
 | **3** | A | Port **underdiagnosis-triggers** (3a) + **ledger-consolidation** (3b) — completing the **editorial-letter / ledger** family (the five arms that take a letter or ledger; the regex-edge-case sources the reviews flagged). | ✅ done |
-| 4 | A | `timeline_checks.py` + port the three **timeline-** arms (true arithmetic). | next |
+| **4** | A | `timeline_checks.py` + the three **timeline-** arms. `timeline-diff` faithfully ported; `timeline-arithmetic` / `timeline-anchor-conflict` gain **true** verification (span-overrun arithmetic; same-scene anchor drift) — the capability pass-10.md §Phase 7 deferred. The two `silent_*` cases that bash false-passed now fail. | ✅ done |
 | 5 | A — other artifact families | Port the non-letter validators that still use shell regex but operate on *different artifact types*: **quality-risk-triggers** (contract + sidecar), **audit-tier-criterion** (pass-dependencies + audits dir tree), **argument-recon-prerequisite** (run-folder scan). These are a separate family from the letter-prose parser — likely their own module(s) (e.g. `config_checks.py`), not `letter_checks.py`. | next |
 | 6 | B — Release gate | Extend `validate.sh --check-all` to run validators against the *actual* canonical/shipped files: `audit-tier-criterion` vs `pass-dependencies.md` §4a/§4b; `decision-layer-check` + `audit-signal-propagation` vs the shipped sample letters; `timeline-*` vs a new shipped canonical Timeline fixture. Closes the deferred *Canonical-framework validator runs as release gate* item. | next |
 | 7 | C — Contracts v2 completion | Schema the still-unschema'd artifacts so JSON Schema is source-of-truth for the whole set: Severity Calibration appendix entries (`apodictic.severity_calibration.v1`) and gate-event records. The calibration schema lets `softness-check` read structured data instead of parsing appendix prose — closing the loop with Track A. | next |

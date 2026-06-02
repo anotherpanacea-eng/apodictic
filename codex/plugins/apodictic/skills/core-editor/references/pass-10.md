@@ -135,15 +135,15 @@ The Pass-10-Class artifact integration is the same pattern used for `Argument_St
 
 ## Validator Integration
 
-Three mechanical validators pair with the Timeline artifact. Each has a real capability ceiling — bash cannot do structured Timeline parsing, so the validators are honest about what they actually verify. The Phase 7 Work Items section below documents what a Python helper would add.
+Three mechanical validators pair with the Timeline artifact. They are now backed by a structured Python parser (`scripts/timeline_checks.py`); `validate.sh` stays the command surface and delegates to the parser when `python3` is present, degrading to the prior bash marker-hygiene/pre-labeled-surfacing implementation when it is not. The Phase 7 Work Items section below records which capabilities this lifted.
 
 1. `scripts/validate.sh timeline-diff <prior_timeline> <current_timeline>` — extracts Section 1 (Event Ledger) pipe-table rows AND Section 3 (Temporal Marker Inventory) bullet items, computes a structural diff across both, and verifies that Section 8 (Diff Notes) bullet-counts cover the structural totals (count-match, not just keyword-presence — v1.7.9 tightening). Sections 2 (Master Calendar) and 4 (Inconsistency Ledger) are largely freeform prose; the bash validator does not item-diff them. Exit 0 if no diff or diff documented in Section 8 with covering counts; exit 1 if undocumented or under-documented.
 
-2. `scripts/validate.sh timeline-arithmetic <timeline_file>` — **marker-hygiene check only** (v1.7.9 honest reframing). Surfaces rows with a negative gap-from-previous numeric value or with a pre-labeled `(conflicts ...)` / `(contradicts ...)` parenthetical. Does NOT independently compute span arithmetic — true arithmetic verification (span sums, anchor-format normalization across heterogeneous markers) requires structured Timeline parsing and is deferred to a Phase 7 Python helper. A model that wrote consistent-looking pipe rows whose spans don't actually sum will pass this validator. Exit 0 if no marker-hygiene candidates; exit 1 if surfaced.
+2. `scripts/validate.sh timeline-arithmetic <timeline_file>` — marker hygiene **plus true span arithmetic** (Phase 7 Python helper). Still surfaces rows with a negative gap-from-previous value or a pre-labeled `(conflicts ...)` / `(contradicts ...)` parenthetical, AND now parses the Event Ledger to normalize each scene's anchor (`Day N` / `Week M` + time-of-day) and span to hours and flags a row whose computed start precedes the previous row's computed end (an overrun the model did not pre-label). The arithmetic is conservative: it fires only on rows that normalize to a `(day, time-of-day)` with HIGH/MEDIUM (or unstated) confidence and that are not marked flashback / concurrent / simultaneous — unparseable, `LOW`/`UNCERTAIN`, and non-linear rows are exempt. Exit 0 if clean; exit 1 if surfaced. (Degrade path: bash marker-hygiene only.)
 
-3. `scripts/validate.sh timeline-anchor-conflict <timeline_file>` — **pre-labeled-conflict surfacing only** (v1.7.9 honest reframing). Counts parenthetical `(contradicts ...)`, `(paradox with ...)`, and `(conflicts with ...)` annotations in the Timeline body — i.e., Pass 10 model judgment has already pre-labeled the conflict. Does NOT independently parse temporal anchors per scene/chapter and reason about same-anchor-different-time conflicts; true anchor-format parsing is deferred to a Phase 7 Python helper. A model that wrote inconsistent anchors but didn't notice the conflict will pass this validator. Exit 0 if no candidates; exit 1 if candidates surfaced.
+3. `scripts/validate.sh timeline-anchor-conflict <timeline_file>` — pre-labeled-conflict surfacing **plus true anchor-drift detection** (Phase 7 Python helper). Still counts `(contradicts ...)` / `(paradox with ...)` / `(conflicts with ...)` annotations, AND now parses Section 3 markers and the Event Ledger into a per-Scene-ID set of resolved day anchors and flags any Scene ID that resolves to two different absolute days (drift the model failed to pre-label). Exit 0 if no candidates; exit 1 if candidates surfaced. (Degrade path: bash pre-labeled surfacing only.)
 
-All three validators surface **candidates**, not conclusions. Pass 10 model judgment classifies each candidate (paradox vs. drift vs. ambiguity vs. intentional-feature). Mechanical detection reduces the inference load Pass 10 must carry for the cases the model already noticed; it does not replace Pass 10's classification work, and (per the v1.7.9 honest reframing) it does not catch the cases the model failed to notice.
+All three validators surface **candidates**, not conclusions. Pass 10 model judgment classifies each candidate (paradox vs. drift vs. ambiguity vs. intentional-feature). Mechanical detection reduces the inference load Pass 10 must carry; the Python parser now also catches a class of unlabeled drift/overrun the bash check could not, but classification of each surfaced candidate remains Pass 10's work.
 
 **Override-marker support.** Each validator honors structured override markers in the Timeline body (not appendix), parallel to the Phase 4 pattern in other validators:
 
@@ -159,24 +159,18 @@ Markers placed inside Section 8 (Diff Notes appendix-equivalent) or anywhere out
 
 ## Phase 7 Work Items
 
-The bash Timeline validators have a documented capability ceiling. The following work items would lift that ceiling; each is deferred to Phase 7 (Python tooling phase) because bash cannot do the work feasibly:
+The bash Timeline validators had a documented capability ceiling. Items 1-3 are now implemented in `scripts/timeline_checks.py` (Validator Architecture Hardening Inc.4); item 4 remains future work.
 
-1. **Python-based Timeline parser** — structured parser for Section 1 (Event Ledger) pipe-tables and Section 3 (Temporal Marker Inventory) bullets that produces a normalized scene-by-scene anchor record, including:
-   - Anchor-format normalization across heterogeneous markers (`Day N`, `Monday morning`, `March 14`, `the day after the half marathon`, `the following Friday`)
-   - Span normalization to a common time unit (minutes / hours / days)
-   - Per-scene calculated start-time and end-time derived from span + gap-from-previous
+1. ✅ **Python-based Timeline parser** (`timeline_checks.py`) — structured parser for Section 1 (Event Ledger) pipe-tables (header-name-driven column mapping) and Section 3 (Temporal Marker Inventory) bullets, producing normalized scene records:
+   - Anchor-format normalization to an absolute day (`Day N`, `Week M`) + time-of-day (morning/afternoon/evening/night words and explicit clock times). Heterogeneous prose markers (`the day after the half marathon`) rely on the model-resolved `Day N` / `Calculated date` the schema already requires.
+   - Span / gap normalization to hours (minutes / hours / days / weeks / months / years).
+   - Per-scene computed start and end (start = day·24 + time-of-day; end = start + span).
 
-2. **True arithmetic verification** (replaces `timeline-arithmetic` marker-hygiene check) — given the parsed scene records, verify that:
-   - Each scene's calculated end-time precedes the next scene's calculated start-time (or that the gap is consistent with the gap-from-previous claim)
-   - No pair of scenes occupies overlapping time without explicit POV-split or flashback marker
-   - Cumulative span totals match calendar-section claims
+2. ✅ **True arithmetic verification** (`timeline-arithmetic`) — flags a scene whose computed start precedes the previous scene's computed end (overrun), in addition to the retained marker-hygiene checks. Conservative gating: parseable `(day, time-of-day)` + HIGH/MEDIUM confidence + not flashback/concurrent; other rows exempt. (Cumulative-vs-Master-Calendar cross-checks remain partial — see item 4.)
 
-3. **True anchor conflict detection** (replaces `timeline-anchor-conflict` pre-labeled surfacing) — given the parsed scene records, detect:
-   - Same Scene ID with two different absolute anchors (drift the model failed to pre-label)
-   - Anchor-format incompatibilities (e.g., scene anchored "Monday" appears between scenes anchored to specific Tuesday-and-later dates)
-   - Calendar-section / Event-Ledger inconsistencies (Section 2 and Section 1 disagreeing on which day a scene falls)
+3. ✅ **True anchor conflict detection** (`timeline-anchor-conflict`) — flags a Scene ID that resolves to two different absolute days (drift the model failed to pre-label), in addition to the retained pre-labeled surfacing. (Cross-format incompatibility and Section 2 ↔ Section 1 calendar disagreement remain partial — see item 4.)
 
-4. **Item-level diff for Sections 2 and 4** (extends `timeline-diff`) — Master Calendar day/week shifts and Inconsistency Ledger row changes parsed and diffed at item level rather than the current section-presence level.
+4. **Item-level diff + calendar cross-checks for Sections 2 and 4** (extends `timeline-diff` / the arithmetic + anchor checks) — Master Calendar day/week shifts and Inconsistency Ledger row changes parsed and diffed at item level, and Section 2 ↔ Section 1 day-assignment cross-validation. Still future work (the freeform prose of those sections needs a richer parser).
 
 **Migration path.** When the Phase 7 Python helpers exist, the bash validators can call them as shell-out helpers (preserving the existing CLI contract) and the framework prose (this section + the §Validator Integration descriptions above) updates to reflect the now-true mechanical verification. The bash validators remain available as a marker-hygiene fallback for hosts that cannot execute Python. The Phase 7 work also enables a Pass 10 self-verification step: the model can re-read its own Timeline artifact through the parser and surface drift it didn't notice during initial construction.
 
