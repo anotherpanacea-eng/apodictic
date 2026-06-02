@@ -641,16 +641,102 @@ def underdiagnosis_triggers(text):
     return errors, warnings, ok, failed
 
 
+# --------------------------------------------------------------------------
+# ledger-consolidation — Findings Ledger Consolidation Contract.
+# Canonical home: run-synthesis.md §Step 2. Faithful port: raw-aggregate detection,
+# convergence annotation, severity collation, and (when a raw ledger is supplied) the
+# reduction-ratio check. Override markers may appear anywhere (no body/appendix split).
+# --------------------------------------------------------------------------
+
+
+def _count_lines_matching(text, pattern, flags=0):
+    rx = re.compile(pattern, flags)
+    return sum(1 for ln in text.split("\n") if rx.match(ln))
+
+
+def ledger_consolidation(text, raw_text=None):
+    errors, warnings = [], []
+
+    def gate(ov_present, warn_msg, err_msg):
+        if ov_present:
+            warnings.append(warn_msg)
+        else:
+            errors.append(err_msg)
+
+    ov_raw = "<!-- override: ledger-consolidation-raw-aggregate" in text
+    ov_conv = "<!-- override: ledger-consolidation-no-convergence" in text
+    ov_collate = "<!-- override: ledger-consolidation-no-collation" in text
+    ov_reduction = "<!-- override: ledger-consolidation-no-reduction" in text
+
+    # Check 1: raw concatenation.
+    raw_count = _count_lines_matching(text, r"^##+ Pass [0-9]+ Findings")
+    if raw_count >= 3:
+        gate(ov_raw,
+             "WARN: Check 1 (raw-aggregate) — %d 'Pass N Findings' headers detected "
+             "(override marker present)." % raw_count,
+             "ERROR: Check 1 (raw-aggregate) — %d 'Pass N Findings' headers detected; raw "
+             "concatenation pattern (no override marker)." % raw_count)
+
+    # Check 2: convergence annotation.
+    consol_headers = _count_lines_matching(text, r"^##+ (Mechanism|Finding|Cluster|Concern):")
+    if consol_headers > 0:
+        if not re.search(r"(confirmed by|also flagged|cross[- ]pass|Pass [0-9].*Pass [0-9]|"
+                         r"appears in [0-9]+ pass)", text, re.IGNORECASE):
+            gate(ov_conv,
+                 "WARN: Check 2 (convergence) — consolidated entries present but no convergence "
+                 "annotation found (override marker present).",
+                 "ERROR: Check 2 (convergence) — consolidated entries present but no convergence "
+                 "annotation found (no override marker). Add '(confirmed by Pass N, ...)' to "
+                 "multi-source entries.")
+
+    # Check 3: severity collation.
+    sev_tiers = sum(bool(re.search(t, text, re.IGNORECASE))
+                    for t in ("Must-Fix", "Should-Fix", "Could-Fix"))
+    if sev_tiers >= 2 and consol_headers > 0:
+        if not re.search(r"(collated|highest severity|downgrad|upgrad|resolved)", text, re.IGNORECASE):
+            gate(ov_collate,
+                 "WARN: Check 3 (severity-collation) — multiple severity tiers present without "
+                 "collation annotation (override marker present).",
+                 "ERROR: Check 3 (severity-collation) — multiple severity tiers present in "
+                 "consolidated entries but no collation annotation "
+                 "(collated/downgrade/upgrade/resolved). No override marker.")
+
+    # Check 4: reduction ratio (only when a raw ledger is supplied).
+    if raw_text is not None:
+        raw_items = _count_lines_matching(raw_text, r"^- ")
+        cons_items = _count_lines_matching(text, r"^- ")
+        if raw_items > 0:
+            threshold = raw_items * 70 // 100
+            if cons_items > threshold:
+                gate(ov_reduction,
+                     "WARN: Check 4 (reduction) — consolidated items (%d) exceed 70%% of raw items "
+                     "(%d; threshold %d); insufficient reduction (override marker present)."
+                     % (cons_items, raw_items, threshold),
+                     "ERROR: Check 4 (reduction) — consolidated items (%d) exceed 70%% of raw items "
+                     "(%d; threshold %d); insufficient reduction. No override marker."
+                     % (cons_items, raw_items, threshold))
+
+    return errors, warnings, \
+        "OK: Findings Ledger consolidation contract satisfied (or override markers present).", \
+        ("FAILED: %d ledger-consolidation contract failure(s). Canonical contract: "
+         "core-editor/references/run-synthesis.md §Step 2 — Findings Ledger Consolidation "
+         "Contract." % len(errors))
+
+
 # Registry of file-driven checks: name -> function(text) -> (errors, warnings, ok, failed).
 CHECKS = {
     "severity-floor": severity_floor,
     "decision-layer-check": decision_layer_check,
     "audit-signal-propagation": audit_signal_propagation,
     "underdiagnosis-triggers": underdiagnosis_triggers,
+    "ledger-consolidation": ledger_consolidation,
 }
 
+# Checks that accept an optional second file (raw ledger for ledger-consolidation).
+_TWO_FILE_CHECKS = {"ledger-consolidation"}
 
-def run_check(name, path):
+
+def run_check(name, path, extra_path=None):
     """Run a registered check against a file; print legacy-format lines; return rc."""
     fn = CHECKS.get(name)
     if fn is None:
@@ -661,7 +747,14 @@ def run_check(name, path):
         return 2
     with open(path, "r", encoding="utf-8", errors="replace") as fh:
         text = fh.read()
-    errors, warnings, ok_line, failed_line = fn(text)
+    if name in _TWO_FILE_CHECKS:
+        raw_text = None
+        if extra_path and os.path.isfile(extra_path):
+            with open(extra_path, "r", encoding="utf-8", errors="replace") as fh:
+                raw_text = fh.read()
+        errors, warnings, ok_line, failed_line = fn(text, raw_text)
+    else:
+        errors, warnings, ok_line, failed_line = fn(text)
     for w in warnings:
         print(w)
     for e in errors:
@@ -791,7 +884,7 @@ def main(argv):
         if len(argv) < 3:
             sys.stderr.write("Usage: letter_checks.py %s <file> [<ledger_file>]\n" % argv[1])
             return 2
-        return run_check(argv[1], argv[2])
+        return run_check(argv[1], argv[2], argv[3] if len(argv) > 3 else None)
     sys.stderr.write("Error: unknown command: %s\n" % argv[1])
     return 2
 
