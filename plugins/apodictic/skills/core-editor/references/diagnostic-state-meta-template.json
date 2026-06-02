@@ -49,5 +49,13 @@
   "next_action": {
     "key": "run_passes",
     "description": ""
+  },
+
+  "$comment_execution": "Runner-Governed Execution state (Phase: Harness Engineering). `phase` is the current next_action.key-aligned phase; `gates` records each phase gate's result (passed / pass-with-warn / blocked / attested); `allowed_next` mirrors the gate manifest. Updated after `validate.sh gate <phase> <run_folder>`. See docs/runner-governed-execution.md + schemas/execution-gates.v1.json.",
+  "execution": {
+    "phase": "",
+    "run_folder": "",
+    "gates": {},
+    "allowed_next": []
   }
 }

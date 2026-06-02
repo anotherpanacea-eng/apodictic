@@ -15,6 +15,16 @@
         "should_fix": {"type": "integer"},
         "could_fix": {"type": "integer"}
       }
+    },
+    "execution": {
+      "type": "object",
+      "$comment": "Runner-Governed Execution state. phase = current next_action.key-aligned phase; gates = per-phase gate result; allowed_next = legal transitions (from execution-gates.v1.json).",
+      "properties": {
+        "phase": {"type": "string"},
+        "run_folder": {"type": "string"},
+        "gates": {"type": "object"},
+        "allowed_next": {"type": "array", "items": {"type": "string"}}
+      }
     }
   }
 }

@@ -506,6 +506,8 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
     "plugins/apodictic/schemas/apodictic.audit_trigger.v1.schema.json",
     "plugins/apodictic/schemas/apodictic.readiness.v1.schema.json",
     "plugins/apodictic/schemas/apodictic.diagnostic-state.v1.schema.json",
+    "plugins/apodictic/schemas/execution-gates.v1.json",
+    "plugins/apodictic/scripts/run_gate.py",
     "plugins/apodictic/skills/core-editor/references/run-synthesis.md",
     "plugins/apodictic/skills/core-editor/references/state-lifecycle.md"
   ];
