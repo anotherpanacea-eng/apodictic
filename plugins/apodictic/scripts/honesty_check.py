@@ -152,6 +152,21 @@ def _recorded_severity_by_id(sevcal, fid):
     return best
 
 
+def _structured_calibration(letter_text):
+    """id -> delivered severity from embedded apodictic:severity_calibration blocks
+    (structured Appendix B entries). Read in preference to the prose heuristic; lowest
+    delivered wins if an id is repeated (mirrors the prose 'any downgrade counts' rule)."""
+    out = {}
+    for btype, obj, jerr in art.parse_blocks(letter_text):
+        if btype != "severity_calibration" or jerr or not isinstance(obj, dict):
+            continue
+        fid, delivered = obj.get("id"), obj.get("delivered")
+        if fid and delivered in SEV_RANK:
+            if fid not in out or SEV_RANK[delivered] < SEV_RANK[out[fid]]:
+                out[fid] = delivered
+    return out
+
+
 def _has_hedge(body, finding):
     for line in body.splitlines():
         if _region_contains(line, finding) and any(h in line.lower() for h in HEDGES):
@@ -169,6 +184,7 @@ def softness_check(letter_text, ledger_text):
     errs, warns = [], []
     body = _body(letter_text)
     sevcal = _sevcal(letter_text)
+    struct_cal = _structured_calibration(letter_text)
     marker = SOFT_MARKER in body
     for f in parse_locked_findings(ledger_text):
         lock = f.get("severity")
@@ -178,7 +194,10 @@ def softness_check(letter_text, ledger_text):
         fid = f.get("id")
         if fid:
             in_body = _id_delivered_in_body(body, fid, f)
-            rec = _recorded_severity_by_id(sevcal, fid)
+            # Prefer the structured Severity Calibration block; fall back to prose.
+            rec = struct_cal.get(fid)
+            if rec is None:
+                rec = _recorded_severity_by_id(sevcal, fid)
             label = "%s — %s" % (fid, mech)
         else:
             in_body = _region_contains(body, f)
@@ -301,6 +320,22 @@ def run_self_test():
                          "<!-- finding: F-P5-02 -->\n## Appendix B: Severity Calibration\n"
                          "F-P5-02 Theo's zero arc: Severity held at Must-Fix.\n"
                          "F-P5-02 on reflection: softened to Should-Fix.\n", lock_id)[0], False)
+
+    # ---- structured Severity Calibration (apodictic.severity_calibration.v1) ----
+    def letter_struct(delivered, prose_sev="Must-Fix"):
+        direction = "unchanged" if delivered == "Must-Fix" else "softened"
+        return ("# Edit\n## What Needs Work\n"
+                "The protagonist never changes across the novel (Chapter 34).\n"
+                "<!-- finding: F-P5-02 -->\n"
+                "## Appendix A\np\n## Appendix B: Severity Calibration\n"
+                "F-P5-02 Theo's zero arc: Severity held at %s.\n" % prose_sev
+                + '<!-- apodictic:severity_calibration\n'
+                  '{"schema":"apodictic.severity_calibration.v1","id":"F-P5-02","locked":"Must-Fix",'
+                  '"delivered":"%s","direction":"%s"}\n-->\n' % (delivered, direction))
+    check("struct_cal_match_pass", softness_check(letter_struct("Must-Fix"), lock_id)[0], True)
+    check("struct_cal_downgrade_errors", softness_check(letter_struct("Should-Fix"), lock_id)[0], False)
+    # structured block is authoritative over the prose line (prose says Must-Fix, block says Should-Fix)
+    check("struct_cal_overrides_prose", softness_check(letter_struct("Should-Fix", prose_sev="Must-Fix"), lock_id)[0], False)
 
     # ---- deficit-lock ----
     valid_block = ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"F-P5-01","mechanism":"m",'

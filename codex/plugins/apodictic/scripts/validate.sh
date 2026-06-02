@@ -252,11 +252,12 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/pass-dependencies.md not found"; CA_FAIL=1
     fi
     echo ""
-    echo "== canonical editorial letter (decision-layer-check, audit-signal-propagation, severity-floor) =="
+    echo "== canonical editorial letter (decision-layer-check, audit-signal-propagation, severity-floor, structured-findings) =="
     if [ -f "$CA_BASE/example-editorial-letter.md" ]; then
       "$0" decision-layer-check "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
       "$0" audit-signal-propagation "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
       "$0" severity-floor "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
+      "$0" structured-findings "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-editorial-letter.md not found"; CA_FAIL=1
     fi

@@ -18,7 +18,7 @@ The dual-POV voice holds across both timelines, and the close earns its restrain
 
 - **Must-Fix:** Pacing collapse in the middle third. The Reception Risk Audit hard gate at
   L2956 surfaces here; the same compression recurs in Chapter 7 (lines 142-160) and again in
-  Chapter 9 (line 220), where three days pass in two sentences.
+  Chapter 9 (line 220), where three days pass in two sentences. <!-- finding: F-RR-01 -->
 - **Should-Fix:** The prologue's frame competes with Chapter 1 for the reader's first
   orientation (Chapter 1, lines 1-40).
 
@@ -64,6 +64,13 @@ third). Cross-referenced to Chapter 7 (lines 142-160).
 ## Appendix B — Severity Calibration
 
 Severity tested upward and downward; the Must-Fix above held at Must-Fix under both directions.
+The structured entry below is the machine-readable form `softness-check` reads (it records the
+locked vs delivered tier per finding ID, so softening can't hide in prose):
+
+<!-- apodictic:severity_calibration
+{"schema":"apodictic.severity_calibration.v1","id":"F-RR-01","locked":"Must-Fix","delivered":"Must-Fix","direction":"unchanged","rationale":"Stress-tested for softening against the Reception Risk hard gate; held at Must-Fix in both directions."}
+-->
+
 
 ## Appendix C — Framework Notes
 
