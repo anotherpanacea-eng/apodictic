@@ -50,7 +50,7 @@ Declarative; the source of truth for *what each transition requires*. `run-core.
           {"validator": "ledger-consolidation",  "targets": ["findings_ledger"]},
           {"validator": "structured-findings",   "targets": ["findings_ledger"]},
           {"validator": "deficit-lock",          "targets": ["findings_ledger"]},
-          {"validator": "artifact-names",        "targets": ["run_folder"]}
+          {"validator": "artifact-names",        "targets": ["run_folder", "$project", "$runlabel"]}
         ],
         "attested": [
           "all selected Tier-2 passes are complete and appended to the ledger",
@@ -84,7 +84,7 @@ Declarative; the source of truth for *what each transition requires*. `run-core.
 }
 ```
 
-`checks[].targets` is an ordered list of artifact keys → the file arguments passed to the validator (so `softness-check <letter> <ledger>` is expressible). The reserved key `run_folder` passes the run-folder path itself (used by `artifact-names`). Phases not listed have no mechanical entry gate.
+`checks[].targets` is an ordered list of artifact keys → the file arguments passed to the validator (so `softness-check <letter> <ledger>` is expressible). The reserved keys `run_folder`, `$project`, and `$runlabel` pass the run-folder path and the project / runlabel derived from the findings-ledger filename (used by `artifact-names <dir> <project> <runlabel>`). Phases not listed have no mechanical entry gate.
 
 **Mechanical vs. attested — the gate does not claim to replace human judgment.** `entry_requires.checks` are validator-backed and run by `gate`. `entry_requires.attested` are preconditions that are **contract-driven or judgment-based and have no validator** — selected-pass / auto-run-audit completeness and blind-spot recording (pre-synthesis), and findings-integration / cap-compliance / blind-spot disclosure (pre-delivery). The gate cannot verify these mechanically; it prints them as a required checklist the model must confirm. Naming them in the manifest is the point: it keeps the gate from *silently narrowing* the existing pre-synthesis / Step-10 gates to only their mechanical subset.
 
@@ -100,7 +100,7 @@ Declarative; the source of truth for *what each transition requires*. `run-core.
 - For each check `gate` captures **both the exit code and stdout** (not exit code alone — a validator can exit 0 while printing a WARN-level blocker).
   - **ERROR** (exit 1) or a **missing required artifact** ⇒ hard block; `gate` exits 1 with a per-requirement PASS/FAIL summary.
   - **WARN** (exit 0 with a `WARN` line — e.g. `softness-check` on a hedged-but-delivered locked finding, which is intentionally exit-0-with-WARN *and* a softness trigger per `run-synthesis.md` Step 9) ⇒ **soft block**: by default `gate` prints `GATE-WARN` and exits 0, and the prose requires the model to resolve the warning (re-word / upgrade) or record an acknowledgment before transitioning — the same discipline as the underdiagnosis retry loop. `gate --strict-warnings` promotes any WARN to a hard block (exit 1) for release/CI use.
-- **Attested requirements** (`entry_requires.attested`): `gate` prints them as a required checklist; the model confirms each and records `execution.gates[<phase>].attested = [...]` in the sidecar. The gate's exit code reflects only the mechanical checks — the prose makes the attested confirmations a hard precondition (un-attested ⇒ do not transition).
+- **Attested requirements** (`entry_requires.attested`): `gate` prints them as a required checklist; the model confirms each and records the confirmed items in **`execution.attested[<phase>]`** (a list) — separate from `execution.gates[<phase>]`, which the gate owns as the mechanical result string and would overwrite. The gate preserves `execution.attested`. The gate's exit code reflects only the mechanical checks — the prose makes the attested confirmations a hard precondition (un-attested ⇒ do not transition).
 - **Overrides** ride the *validator* level — body markers (`softness-downgrade`, `severity-floor-*`, `underdiagnosis-trigger-*`) downgrade a validator's ERROR→WARN, so a properly-marked exception passes (or soft-warns) the gate without a separate gate-level override. Missing *artifacts* cannot be override-marked (you cannot synthesize without a ledger).
 - **`gate --self-test`** runs against bundled fixture run-folders (pass; fail-on-missing-lock; warn-on-hedged-delivery) — gated in `--self-test-all` (validator count 15 → 16).
 
@@ -125,7 +125,7 @@ Declarative; the source of truth for *what each transition requires*. `run-core.
 
 ## Degradation (no-shell hosts)
 
-When shell/python is unavailable, `gate` cannot run. The prose instructs the model to: read the manifest for the phase, perform the equivalent inline checks, and **record a blind spot** in the sidecar `execution.gates[<phase>] = "attested"` plus an Audit Invocation Log line — never silently skip. This mirrors the existing "or the equivalent inline check on hosts without shell execution" pattern.
+When shell/python is unavailable, `gate` cannot run. The prose instructs the model to: read the manifest for the phase, perform the equivalent inline checks, and **record a blind spot** — set `execution.gates[<phase>] = "attested"` (checks done inline) and list the confirmed items in `execution.attested[<phase>]`, plus an Audit Invocation Log line — never silently skip. This mirrors the existing "or the equivalent inline check on hosts without shell execution" pattern.
 
 ## Increment 1 build plan (for the follow-up, once this spec is approved)
 

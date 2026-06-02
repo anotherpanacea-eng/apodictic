@@ -95,9 +95,14 @@ def _write_execution(sidecar, phase, result, allowed_next, run_folder, finding_s
         ex["run_folder"] = os.path.relpath(run_folder, os.path.dirname(sidecar))
     except ValueError:
         ex["run_folder"] = run_folder
-    if result in ("passed", "pass-with-warn"):
+    if result == "passed":
         ex["phase"] = phase
         ex["allowed_next"] = list(allowed_next or [])
+    else:
+        # pass-with-warn or blocked: no transition is authorized yet — do not
+        # advance `phase`, and retract any stale `allowed_next` so the sidecar
+        # never advertises a next step the gate did not clear.
+        ex["allowed_next"] = []
     if finding_states:
         fs = ex.setdefault("finding_states", {})
         for fid, st in finding_states.items():
@@ -293,6 +298,15 @@ def run_self_test():
     os.environ["APODICTIC_GATES_MANIFEST"] = tm
     check("warn_soft_block_passes", run_gate("warn_test", wd, validate_sh=vs)[0] == 0)
     check("warn_strict_blocks", run_gate("warn_test", wd, validate_sh=vs, strict_warnings=True)[0] == 1)
+    # [P1] pass-with-warn must not advance phase or advertise a transition
+    with open(os.path.join(wd, "Diagnostic_State.meta.json"), "w") as fh:
+        json.dump({"execution": {"phase": "prior", "allowed_next": ["stale"]}}, fh)
+    run_gate("warn_test", wd, validate_sh=vs, write=True)
+    with open(os.path.join(wd, "Diagnostic_State.meta.json")) as fh:
+        wx = json.load(fh).get("execution", {})
+    check("warn_does_not_advertise",
+          wx.get("allowed_next") == [] and wx.get("phase") == "prior"
+          and wx.get("gates", {}).get("warn_test") == "pass-with-warn")
     os.environ.pop("APODICTIC_GATES_MANIFEST", None)
 
     # increment 2: a passing gate records its result into the sidecar's execution block
@@ -308,6 +322,19 @@ def run_self_test():
           and "run_spot_check" in ex.get("allowed_next", []))
     # increment 3: a passing gate advances each ledger finding's lifecycle state
     check("records_finding_lifecycle", ex.get("finding_states", {}).get("F-P5-01") == "locked")
+    # [P1] a blocked gate retracts stale allowed_next and does not advance phase
+    bd = folder(ledger_ok)
+    with open(os.path.join(bd, "Proj_Core_DE_Synthesis_run.md"), "w") as fh:
+        fh.write("# Letter\nminimal; fails structural checks.\n")
+    with open(os.path.join(bd, "Diagnostic_State.meta.json"), "w") as fh:
+        json.dump({"execution": {"phase": "run_synthesis", "allowed_next": ["run_spot_check"],
+                                 "gates": {"run_synthesis": "passed"}}}, fh)
+    bc, _bl = run_gate("run_spot_check", bd, validate_sh=vs, write=True)
+    with open(os.path.join(bd, "Diagnostic_State.meta.json")) as fh:
+        bx = json.load(fh).get("execution", {})
+    check("blocked_retracts_allowed_next",
+          bc == 1 and bx.get("gates", {}).get("run_spot_check") == "blocked"
+          and bx.get("allowed_next") == [] and bx.get("phase") == "run_synthesis")
 
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
