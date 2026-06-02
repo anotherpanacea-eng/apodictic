@@ -24,7 +24,8 @@
         "run_folder": {"type": "string"},
         "gates": {"type": "object"},
         "allowed_next": {"type": "array", "items": {"type": "string"}},
-        "finding_states": {"type": "object", "$comment": "finding_id -> lifecycle state (locked | delivered | revised); advanced forward-only by the gate."}
+        "finding_states": {"type": "object", "$comment": "finding_id -> lifecycle state (locked | delivered | revised); advanced forward-only by the gate."},
+        "attested": {"type": "object", "$comment": "phase -> list of confirmed attested items (model-written; the gate preserves it, never overwrites it)."}
       }
     }
   }

@@ -57,6 +57,7 @@
     "run_folder": "",
     "gates": {},
     "allowed_next": [],
-    "finding_states": {}
+    "finding_states": {},
+    "attested": {}
   }
 }
