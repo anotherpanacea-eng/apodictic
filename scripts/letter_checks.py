@@ -339,10 +339,207 @@ def decision_layer_check(text):
     return errors, warnings, ok, failed
 
 
+# --------------------------------------------------------------------------
+# audit-signal-propagation — Canonical Audit-Signal Propagation Rule.
+# Canonical homes: run-synthesis.md §Step 2; per-audit table pass-dependencies.md §4e.
+# Faithful port of the bash arm (per-audit appendix-subsection detection; name-match
+# OR shared-evidence-line propagation; per-class + per-audit override markers; legacy
+# whole-letter fallback when no audit appendix is present).
+# --------------------------------------------------------------------------
+
+_HIGH_SIGNAL_RE = re.compile(
+    r"(HIGH[- ]severity|Alert finding|Alert concentration|HIGH signal|HIGH rating|"
+    r"HIGH-severity|HIGH-confidence)", re.IGNORECASE)
+_AUDIT_NAME_RE = re.compile(
+    r"([A-Z][A-Za-z/&-]+(?: [A-Z][A-Za-z/&-]+){0,3}) [Aa]udit", re.IGNORECASE)
+_EVIDENCE_RE = re.compile(r"(?:L|line )[0-9]+", re.IGNORECASE)
+
+
+def _audit_slug(name):
+    s = name.lower().replace("&", "")
+    s = re.sub(r"[\s/]+", "-", s)
+    s = re.sub(r"-+", "-", s)
+    return s.strip("-")
+
+
+def _evidence_lines(text):
+    return {re.sub(r"^(?:L|line )", "", m, flags=re.IGNORECASE)
+            for m in _EVIDENCE_RE.findall(text)}
+
+
+def _grep_after(text, pattern, n):
+    seg = text.split("\n")
+    rx = re.compile(pattern, re.IGNORECASE)
+    keep = set()
+    for i, ln in enumerate(seg):
+        if rx.search(ln):
+            keep.update(range(i, min(len(seg), i + n + 1)))
+    return "\n".join(seg[i] for i in sorted(keep))
+
+
+def _audit_subsection(appx_body, name, fallback_after):
+    """Lines from the heading containing '<name> audit' through the next heading;
+    fall back to grep '<name> audit' -A <fallback_after> when no heading matches."""
+    pat = re.compile(re.escape(name) + r" audit", re.IGNORECASE)
+    out, in_section = [], False
+    for ln in appx_body.split("\n"):
+        is_heading = ln.startswith("#")
+        if is_heading and pat.search(ln):
+            in_section = True
+            out.append(ln)
+            continue
+        if in_section and is_heading:
+            break
+        if in_section:
+            out.append(ln)
+    if not out:
+        return _grep_after(appx_body, re.escape(name) + r" audit", fallback_after)
+    return "\n".join(out)
+
+
+def audit_signal_propagation(text):
+    errors, warnings = [], []
+    lines = _content_lines(text)
+    total = len(lines)
+    appendix_idx = None  # 1-based
+    appx_rx = re.compile(r"^#{1,4}.*Appendix [A-C]", re.IGNORECASE)
+    for i, ln in enumerate(lines):
+        if appx_rx.search(ln):
+            appendix_idx = i + 1
+            break
+    if appendix_idx:
+        synth_body = "\n".join(lines[: appendix_idx - 1])
+        appx_body = "\n".join(lines[appendix_idx - 1:])
+    else:
+        synth_body, appx_body = "\n".join(lines), ""
+
+    ov_must_fix = "<!-- override: audit-propagation-must-fix" in synth_body
+    ov_hard_gate = "<!-- override: audit-propagation-hard-gate" in synth_body
+    ov_high = "<!-- override: audit-propagation-high" in synth_body
+    per_audit_overrides = set(re.findall(
+        r"<!-- override: audit-propagation-([a-z][a-z0-9-]*)", synth_body))
+
+    def tier_items(tier):
+        rx = {"must-fix": r"Must-Fix",
+              "must-or-should": r"Must-Fix|Should-Fix",
+              "should-fix": r"Should-Fix",
+              "could-fix": r"Could-Fix"}[tier]
+        pat = re.compile(rx, re.IGNORECASE)
+        return "\n".join(ln for ln in synth_body.split("\n") if pat.search(ln))
+
+    def check_audit_signal(audit_name, signal_class, required_tier):
+        slug = _audit_slug(audit_name)
+        subsection = _audit_subsection(appx_body, audit_name, 5)
+        audit_lines = _evidence_lines(subsection)
+        body_items = tier_items(required_tier)
+        name_match = bool(body_items) and re.search(
+            re.escape(audit_name), body_items, re.IGNORECASE) is not None
+        line_match = bool(audit_lines) and bool(body_items) and \
+            bool(audit_lines & _evidence_lines(body_items))
+        if name_match or line_match:
+            return 0
+        class_override = {"must-fix-floor": ov_must_fix, "hard-gate": ov_hard_gate,
+                          "high": ov_high}.get(signal_class, False)
+        per_audit_override = slug in per_audit_overrides
+        if class_override or per_audit_override:
+            kind = ("per-audit (audit-propagation-%s)" % slug) if per_audit_override else "class"
+            warnings.append("WARN: %s %s signal not propagated to synthesis body "
+                            "(override marker present in body — %s)."
+                            % (audit_name, signal_class, kind))
+            return 0
+        errors.append("ERROR: %s %s signal in appendix did not propagate to synthesis-body "
+                      "%s item (no audit-name reference and no shared evidence-line; no "
+                      "override marker in body)." % (audit_name, signal_class, required_tier))
+        return 1
+
+    audit_names = sorted(set(_AUDIT_NAME_RE.findall(appx_body)))
+
+    if not audit_names:
+        synth_mf = re.search(r"Must-Fix", synth_body, re.IGNORECASE) is not None
+        synth_sf = re.search(r"Should-Fix", synth_body, re.IGNORECASE) is not None
+        if re.search(r"hard gate", text, re.IGNORECASE) and not synth_mf:
+            if ov_hard_gate:
+                warnings.append("WARN: Audit hard gate present without synthesis-layer "
+                                "Must-Fix (override marker detected in body).")
+            else:
+                errors.append("ERROR: Audit hard gate present but no synthesis-layer "
+                              "Must-Fix flag (no override marker in body).")
+        if re.search(r"Must-Fix floor", text, re.IGNORECASE) and not synth_mf:
+            if ov_must_fix:
+                warnings.append("WARN: Audit Must-Fix floor present without synthesis-layer "
+                                "Must-Fix (override marker detected in body).")
+            else:
+                errors.append("ERROR: Audit Must-Fix floor present but no synthesis-layer "
+                              "Must-Fix flag (no override marker in body).")
+        if re.search(r"(HIGH[- ]severity|Alert finding|Alert concentration|HIGH signal|"
+                     r"HIGH rating)", text, re.IGNORECASE) and not synth_mf and not synth_sf:
+            if ov_high:
+                warnings.append("WARN: Audit HIGH/Alert signal present without synthesis "
+                                "Must-Fix or Should-Fix (override marker detected in body).")
+            else:
+                errors.append("ERROR: Audit HIGH/Alert signal present but no synthesis "
+                              "Must-Fix or Should-Fix (no override marker in body).")
+    else:
+        for audit_name in audit_names:
+            sub = _audit_subsection(appx_body, audit_name, 8)
+            saw_strong = False
+            if re.search(r"(hard gate|hard-gate)", sub, re.IGNORECASE):
+                check_audit_signal(audit_name, "hard-gate", "must-fix")
+                saw_strong = True
+            if re.search(r"Must-Fix floor", sub, re.IGNORECASE):
+                check_audit_signal(audit_name, "must-fix-floor", "must-fix")
+                saw_strong = True
+            if not saw_strong and _HIGH_SIGNAL_RE.search(sub):
+                check_audit_signal(audit_name, "high", "must-or-should")
+
+    return errors, warnings, \
+        "OK: Audit-internal severity signals propagated to synthesis layer (per-audit; or override marker present in body).", \
+        ("FAILED: %d audit-signal propagation failure(s). Canonical rule: "
+         "core-editor/references/run-synthesis.md §Step 2; per-audit table: "
+         "pass-dependencies.md §4e." % len(errors))
+
+
+def check_registry(reg_path, dep_path):
+    """Every registry-listed signal-emitting audit must have a §4e row ('| <audit> |')
+    in pass-dependencies.md. Prints the legacy Registry-check summary; returns rc."""
+    if not os.path.isfile(reg_path) or not os.path.isfile(dep_path):
+        sys.stderr.write("Error: registry or pass-dependencies file not found "
+                         "(REG=%s DEP=%s)\n" % (reg_path, dep_path))
+        return 2
+    with open(reg_path, "r", encoding="utf-8", errors="replace") as fh:
+        reg_lines = fh.read().split("\n")
+    with open(dep_path, "r", encoding="utf-8", errors="replace") as fh:
+        dep_text = fh.read()
+    entries, capture = [], False
+    for ln in reg_lines:
+        if "registry:signal-emitting-audits:begin" in ln:
+            capture = True
+            continue
+        if "registry:signal-emitting-audits:end" in ln:
+            break
+        if capture and ln.startswith("- "):
+            entries.append(ln[2:])
+    if not entries:
+        sys.stderr.write("Error: no registry entries found in %s\n" % reg_path)
+        return 2
+    missing = [a for a in entries if ("| %s |" % a) not in dep_text]
+    for a in missing:
+        print("ERROR: signal-emitting audit '%s' has no §4e propagation row in %s"
+              % (a, os.path.basename(dep_path)))
+    if not missing:
+        print("Registry check: PASS (%d signal-emitting audits all have §4e rows)"
+              % len(entries))
+        return 0
+    print("Registry check: FAIL (%d of %d registry audits missing a §4e row)"
+          % (len(missing), len(entries)))
+    return 1
+
+
 # Registry of file-driven checks: name -> function(text) -> (errors, warnings, ok, failed).
 CHECKS = {
     "severity-floor": severity_floor,
     "decision-layer-check": decision_layer_check,
+    "audit-signal-propagation": audit_signal_propagation,
 }
 
 
@@ -427,6 +624,30 @@ def run_self_test(which=None):
                      "Should-Fix one. Should-Fix two. Should-Fix three.\n")
         check("sf_justified_band", severity_floor(justified)[0], True)
 
+    if which in (None, "audit-signal-propagation"):
+        # Registry completeness sub-tests: synthetic registry + §4e fixtures (2-file).
+        import tempfile
+        dep = ("### §4e. Audit-Signal Propagation Table\n"
+               "| Foo Audit | hard gate | Must-Fix | — | src | — |\n"
+               "| Bar Audit | flag | Should-Fix | — | src | — |\n")
+        reg_ok = ("## Signal-Emitting Audit Registry\n"
+                  "<!-- registry:signal-emitting-audits:begin -->\n"
+                  "- Foo Audit\n- Bar Audit\n"
+                  "<!-- registry:signal-emitting-audits:end -->\n")
+        reg_missing = reg_ok.replace("- Bar Audit\n", "- Bar Audit\n- Ghost Audit\n")
+        def expect_rc(name, got, want):
+            if got == want:
+                print("  %s: OK" % name)
+            else:
+                print("  %s: FAIL (rc=%s, expected %s)" % (name, got, want))
+                rc["v"] = 1
+        with tempfile.TemporaryDirectory() as td:
+            dp = os.path.join(td, "dep.md"); open(dp, "w").write(dep)
+            rp_ok = os.path.join(td, "reg_ok.md"); open(rp_ok, "w").write(reg_ok)
+            rp_bad = os.path.join(td, "reg_bad.md"); open(rp_bad, "w").write(reg_missing)
+            expect_rc("registry_ok", check_registry(rp_ok, dp), 0)
+            expect_rc("registry_missing", check_registry(rp_bad, dp), 1)
+
     # Data-driven fixtures: lc.<pass|fail>.<check>.<name>.md in test_fixtures/.
     fdir = _fixture_dir()
     if fdir:
@@ -454,6 +675,11 @@ def main(argv):
     if argv[1] == "--self-test":
         which = argv[2] if len(argv) > 2 else None
         return run_self_test(which)
+    if argv[1] == "check-registry":
+        if len(argv) < 4:
+            sys.stderr.write("Usage: letter_checks.py check-registry <registry_file> <pass_deps_file>\n")
+            return 2
+        return check_registry(argv[2], argv[3])
     if argv[1] in CHECKS:
         if len(argv) < 3:
             sys.stderr.write("Usage: letter_checks.py %s <file> [<ledger_file>]\n" % argv[1])

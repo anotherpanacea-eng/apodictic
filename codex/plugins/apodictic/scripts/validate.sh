@@ -667,6 +667,10 @@ EOF
   # ----------------------------------------------------------------------
   audit-signal-propagation)
     if [ $# -lt 1 ]; then echo "Usage: $0 audit-signal-propagation <editorial_letter_file> [<ledger_file>] | --self-test | --check-registry [<registry_file> <pass_deps_file>]"; exit 2; fi
+    # Primary path: real parser in scripts/letter_checks.py (Validator Architecture
+    # Hardening). Degrades to the bash implementation below when python3 is unavailable.
+    ASP_DIR=$(cd "$(dirname "$0")" && pwd)
+    LC_HELPER="$ASP_DIR/letter_checks.py"
 
     # Registry completeness check (Phase 2): every signal-emitting audit listed in
     # the registry (audit-routing-table.md §Signal-Emitting Audit Registry) must
@@ -683,6 +687,10 @@ EOF
         done
       fi
       if [ ! -f "$REG" ] || [ ! -f "$DEP" ]; then echo "Error: registry or pass-dependencies file not found (REG=$REG DEP=$DEP)" >&2; exit 2; fi
+      # Delegate parsing to the helper when python3 is present (bash resolves paths).
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+        python3 "$LC_HELPER" check-registry "$REG" "$DEP"; exit $?
+      fi
       TMPREG=$(mktemp)
       sed -n '/registry:signal-emitting-audits:begin/,/registry:signal-emitting-audits:end/p' "$REG" | grep '^- ' | sed 's/^- //' > "$TMPREG"
       if [ ! -s "$TMPREG" ]; then echo "Error: no registry entries found in $REG" >&2; rm -f "$TMPREG"; exit 2; fi
@@ -704,6 +712,7 @@ EOF
     fi
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then python3 "$LC_HELPER" --self-test audit-signal-propagation; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: audit hard gate present, audit named in synthesis Must-Fix.
@@ -821,6 +830,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+      python3 "$LC_HELPER" audit-signal-propagation "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash regex implementation (kept for python-less hosts).
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     LETTER="$1"
     ERRORS=0
