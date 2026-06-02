@@ -45,13 +45,13 @@
 #   REQUIRE_HASH       1 = refuse to run a fixture whose text fails hash check;
 #                      0 = warn and run anyway (default — see note below).
 #
-# NOTE on hashing: SOURCES.md records the SHA-256 of the *extracted* text. The
-# exact byte-extent (header stripped? trailing newline?) is the preparer's, so
-# this check is BEST-EFFORT: it compares both the whole file and the
-# header-stripped body to the recorded hash and reports which (if either)
-# matches. A mismatch does not affect run validity (blindness is structural,
-# not hash-dependent) — it only flags that reproducibility provenance needs
-# reconciling. Set REQUIRE_HASH=1 to be strict.
+# NOTE on hashing: SOURCES.md records the SHA-256 of the cached text. This check
+# is BEST-EFFORT: it compares both the whole file and the runner-visible body
+# (the slug's BODY_START/BODY_END-anchored body, exactly what the runner sends)
+# to the recorded hash and reports which (if either) matches. A mismatch does not
+# affect run validity (blindness is structural, not hash-dependent); it only
+# flags that reproducibility provenance needs reconciling. Set REQUIRE_HASH=1 to
+# be strict.
 # ---------------------------------------------------------------------------
 
 set -uo pipefail
