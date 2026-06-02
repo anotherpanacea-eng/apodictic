@@ -23,7 +23,8 @@
         "phase": {"type": "string"},
         "run_folder": {"type": "string"},
         "gates": {"type": "object"},
-        "allowed_next": {"type": "array", "items": {"type": "string"}}
+        "allowed_next": {"type": "array", "items": {"type": "string"}},
+        "finding_states": {"type": "object", "$comment": "finding_id -> lifecycle state (locked | delivered | revised); advanced forward-only by the gate."}
       }
     }
   }
