@@ -900,9 +900,13 @@ EOF
     # from being captured across two audit mentions on one line. Without these the names
     # go undetected/truncated and the validator falls through to the permissive legacy
     # whole-letter check (false pass) or computes a wrong override slug.
+    # The trailing 's/^(The|An?|This|That|These|Those) //' drops a sentence-initial
+    # determiner that prose puts before an audit name ("The Reception Risk Audit ...") so a
+    # prose mention collapses onto the heading-derived name rather than inventing a phantom.
     AUDIT_NAMES=$(echo "$APPX_BODY" \
       | grep -oE "([A-Z][A-Za-z/&-]*( ([&/]|[A-Z][A-Za-z/&-]*)){0,6}( \([^)]+\))?) [Aa]udit" \
       | sed -E 's/ [Aa]udit$//' \
+      | sed -E 's/^(The|An?|This|That|These|Those) //' \
       | sort -u \
       | tr '\n' '|' || true)
     # Strip trailing pipe.

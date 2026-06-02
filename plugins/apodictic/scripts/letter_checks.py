@@ -357,7 +357,16 @@ _HIGH_SIGNAL_RE = re.compile(
 # "Banister (Epistemic Humility)" are captured whole rather than truncated to a suffix.
 _AUDIT_NAME_RE = re.compile(
     r"([A-Z][A-Za-z/&-]*(?: (?:[&/]|[A-Z][A-Za-z/&-]*)){0,6}(?: \([^)]+\))?) [Aa]udit")
+# Sentence-initial determiners that prose puts in front of an audit name
+# ("The Reception Risk Audit triggered ...") are not part of the name. Strip a leading
+# determiner WORD (the trailing \s+ guards real first words like "Theme"/"Anchor") so the
+# prose mention collapses onto the heading-derived name instead of inventing a phantom.
+_LEADING_DETERMINER_RE = re.compile(r"^(?:the|an?|this|that|these|those)\s+", re.IGNORECASE)
 _EVIDENCE_RE = re.compile(r"(?:L|line )[0-9]+", re.IGNORECASE)
+
+
+def _strip_leading_determiner(name):
+    return _LEADING_DETERMINER_RE.sub("", name)
 
 
 def _audit_slug(name):
@@ -458,7 +467,7 @@ def audit_signal_propagation(text):
                       "override marker in body)." % (audit_name, signal_class, required_tier))
         return 1
 
-    audit_names = sorted(set(_AUDIT_NAME_RE.findall(appx_body)))
+    audit_names = sorted({_strip_leading_determiner(n) for n in _AUDIT_NAME_RE.findall(appx_body)})
 
     if not audit_names:
         synth_mf = re.search(r"Must-Fix", synth_body, re.IGNORECASE) is not None
