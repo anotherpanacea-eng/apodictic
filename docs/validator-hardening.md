@@ -1,11 +1,13 @@
 # Validator Architecture Hardening (Tier 1 Harness bundle)
 
-**Status:** Increments 1–5 built. The **editorial-letter / ledger family** is on
+**Status:** Increments 1–6 built. The **editorial-letter / ledger family** is on
 `letter_checks.py`; the **timeline family** is on `timeline_checks.py`; the
 **contract/config/run-folder family** (quality-risk-triggers, audit-tier-criterion,
 argument-recon-prerequisite) is on `config_checks.py`. All `validate.sh` prose/config arms now
-delegate to a real parser with a bash degrade path. Increments 6–7 (release-gate canonical
-runs; Contracts v2 completion) remain.
+delegate to a real parser with a bash degrade path. **Inc 6** extends `--check-all` to run the
+ported validators against the real `pass-dependencies.md` and two canonical worked examples
+(`example-editorial-letter.md`, `example-timeline.md`), so framework drift is caught at release
+time. Increment 7 (Contracts v2 completion) remains.
 
 <!-- Pre-Inc-5 status retained below for context. -->
 Increments 1–4 built — the whole **editorial-letter / ledger validator family**
@@ -69,7 +71,7 @@ helpers use.
 | **3** | A | Port **underdiagnosis-triggers** (3a) + **ledger-consolidation** (3b) — completing the **editorial-letter / ledger** family (the five arms that take a letter or ledger; the regex-edge-case sources the reviews flagged). | ✅ done |
 | **4** | A | `timeline_checks.py` + the three **timeline-** arms. `timeline-diff` faithfully ported; `timeline-arithmetic` / `timeline-anchor-conflict` gain **true** verification (span-overrun arithmetic; same-scene anchor drift) — the capability pass-10.md §Phase 7 deferred. The two `silent_*` cases that bash false-passed now fail. | ✅ done |
 | **5** | A — other artifact families | `config_checks.py` + port the non-letter validators that operate on *different artifact types*: **quality-risk-triggers** (contract + sidecar), **audit-tier-criterion** (pass-dependencies + audits dir tree), **argument-recon-prerequisite** (run-folder scan). Their own module (not `letter_checks.py`) since they take paths/dirs and do filesystem I/O. Faithful ports (oracle-diff identical, incl. byte-identical output on the real `pass-dependencies.md`). | ✅ done |
-| 6 | B — Release gate | Extend `validate.sh --check-all` to run validators against the *actual* canonical/shipped files: `audit-tier-criterion` vs `pass-dependencies.md` §4a/§4b; `decision-layer-check` + `audit-signal-propagation` vs the shipped sample letters; `timeline-*` vs a new shipped canonical Timeline fixture. Closes the deferred *Canonical-framework validator runs as release gate* item. | next |
+| **6** | B — Release gate | Extend `validate.sh --check-all` to run validators against the *actual* canonical files: `audit-tier-criterion` vs the real `pass-dependencies.md`; `decision-layer-check` + `audit-signal-propagation` + `severity-floor` vs a new canonical worked-example letter; `timeline-arithmetic`/`-anchor-conflict`/`-diff` vs a new canonical worked-example Timeline. Both examples ship under `core-editor/references/` (`example-editorial-letter.md`, `example-timeline.md`) and double as docs. (The shipped sample letters are HTML renders and fail the markdown parsers, so canonical worked examples are gated instead.) Closes the deferred *Canonical-framework validator runs as release gate* item. | ✅ done |
 | 7 | C — Contracts v2 completion | Schema the still-unschema'd artifacts so JSON Schema is source-of-truth for the whole set: Severity Calibration appendix entries (`apodictic.severity_calibration.v1`) and gate-event records. The calibration schema lets `softness-check` read structured data instead of parsing appendix prose — closing the loop with Track A. | next |
 
 Increments 1–3 ship together as one PR (the coherent letter/ledger family); 4–7 follow as
