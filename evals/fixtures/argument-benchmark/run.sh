@@ -97,12 +97,42 @@ src_file() {
   else return 1; fi
 }
 
-# --- strip the provenance header to get the argument body -----------------
+# --- first-body-sentence anchor for a slug, read from SOURCES.md (empty if none)
+body_start_for() {
+  awk -v slug="$1" '
+    $0=="### " slug {inblk=1; next}
+    /^### / {inblk=0}
+    inblk && index($0,"**BODY_START:**")>0 {
+      i=index($0,"`"); rest=substr($0,i+1); j=index(rest,"`")
+      if (i>0 && j>0) { print substr(rest,1,j-1); exit }
+    }
+  ' "$SOURCES"
+}
+
+# --- strip the provenance header AND article masthead to get the argument body
+# Removes two layers of identifying metadata so the blind runner sees only the
+# argument prose: (1) the `---`-fenced provenance header (SLUG/SOURCE_URL/...),
+# stripped through its CLOSING fence — a prior bug stripped only the opening
+# `---` and leaked the slug + source URL into the run; (2) the article masthead
+# (title/deck/byline/date), cut at the literal BODY_START anchor recorded for the
+# slug in SOURCES.md. A custom STRIP_CMD overrides both.
 extract_body() {
-  local f="$1"
+  local f="$1" slug="${2:-}"
   if [ -n "${STRIP_CMD:-}" ]; then bash -c "$STRIP_CMD" < "$f"; return; fi
-  local hr; hr="$(head -25 "$f" | grep -nE '^---[[:space:]]*$' | head -1 | cut -d: -f1)"
-  if [ -n "$hr" ]; then sed "1,${hr}d" "$f"; else cat "$f"; fi
+  local body=""
+  if head -1 "$f" | grep -qE '^---[[:space:]]*$'; then
+    local close; close="$(head -40 "$f" | grep -nE '^---[[:space:]]*$' | sed -n '2p' | cut -d: -f1)"
+    [ -n "$close" ] && body="$(sed "1,${close}d" "$f")"
+  fi
+  [ -n "$body" ] || body="$(cat "$f")"
+  if [ -n "$slug" ]; then
+    local anchor; anchor="$(body_start_for "$slug")"
+    if [ -n "$anchor" ]; then
+      local ln; ln="$(printf '%s\n' "$body" | grep -nF -- "$anchor" | head -1 | cut -d: -f1)"
+      [ -n "$ln" ] && [ "$ln" -gt 1 ] && body="$(printf '%s\n' "$body" | sed "1,$((ln-1))d")"
+    fi
+  fi
+  printf '%s\n' "$body"
 }
 
 # SHA-256 tool: macOS ships `shasum`, most Linux/WSL ship `sha256sum`. Prefer
@@ -176,7 +206,7 @@ for s in "${SLUGS[@]}"; do
     echo "      -> skipped (REQUIRE_HASH=1)"; fail=1; continue
   fi
 
-  body="$(extract_body "$f")"
+  body="$(extract_body "$f" "$s")"
   [ -n "$body" ] || { echo "      -> empty after strip; skipping"; fail=1; continue; }
   prompt="$(printf '%s\n\n<audit_reference>\n%s\n</audit_reference>\n\n<submission label="Submission X">\n%s\n</submission>\n' \
             "$HEADER" "$(cat "$AUDIT")" "$body")"
