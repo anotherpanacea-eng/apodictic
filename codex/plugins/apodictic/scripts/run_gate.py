@@ -200,7 +200,7 @@ def run_gate(phase, run_folder, strict_warnings=False, validate_sh=None, write=F
             lines.append("  check    %-22s ERROR (exit %d)" % (v, proc.returncode))
             fail = 1
         elif "WARN" in out:
-            lines.append("  check    %-22s WARN" % v)
+            lines.append("  check    %-22s GATE-WARN" % v)
             warn = 1
         else:
             lines.append("  check    %-22s ok" % v)
@@ -230,7 +230,7 @@ def run_gate(phase, run_folder, strict_warnings=False, validate_sh=None, write=F
     if code == 1:
         lines.append("gate %s: BLOCKED%s" % (phase, " (--strict-warnings: unresolved WARN)" if (warn and strict_warnings) else ""))
         return 1, lines
-    lines.append("gate %s: %s" % (phase, "PASS-WITH-WARN — resolve or acknowledge each WARN before transitioning"
+    lines.append("gate %s: %s" % (phase, "PASS-WITH-WARN — resolve or acknowledge each GATE-WARN before transitioning"
                                    if warn else "PASS"))
     if er.get("attested"):
         lines.append("gate %s: also confirm the %d ATTEST item(s) above before transitioning"
