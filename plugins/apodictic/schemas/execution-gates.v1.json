@@ -36,6 +36,7 @@
           {"validator": "decision-layer-check",      "targets": ["editorial_letter"]},
           {"validator": "audit-signal-propagation",  "targets": ["editorial_letter"]},
           {"validator": "underdiagnosis-triggers",   "targets": ["editorial_letter"]},
+          {"validator": "structured-findings",       "targets": ["editorial_letter"]},
           {"validator": "softness-check",            "targets": ["editorial_letter", "findings_ledger"]},
           {"validator": "tone-check",                "targets": ["editorial_letter"]}
         ],

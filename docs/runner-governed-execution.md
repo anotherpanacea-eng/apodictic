@@ -140,6 +140,13 @@ When shell/python is unavailable, `gate` cannot run. The prose instructs the mod
 
 - **Increment 3 — finding-ID lifecycle states (built).** `execution.finding_states` maps each finding ID to `locked` (set by `gate run_synthesis`) → `delivered` (set by `gate run_spot_check`), forward-only. The `revised` state awaits a gated `revision_round` phase (not yet defined). `softness-check` already *enforces* delivery; `finding_states` is the auditable trail.
 - **Increment 4 — external orchestrator (future).** Increments 1–3 are still cooperative (the model chooses to run `gate`; it writes state but does not *block* the process). True enforcement needs a host (the Agent SDK or a wrapper) that drives phase transitions and invokes `gate` itself between phases — a larger effort that leaves the "plugin runs inside the model" model. Revisit if increments 1–3 show residual skipped-gate incidents.
+- **Increment 5 — structured gate-event records (future; "option 2, after design").** Today `execution.gates[<phase>]` is a bare status string (`passed` / `pass-with-warn` / `blocked` / `attested`) and the `apodictic.diagnostic-state.v1` schema types `gates` as an untyped `object`. Validator Architecture Hardening Track C deliberately **left this unschema'd** — it did *not* enum-tighten the status, and did *not* extend the shared stdlib validator to police object-map values, because that would either freeze a thin vocabulary this track owns or change the sidecar contract for low payoff. When this track takes it up, design a **richer** gate-event record deliberately (a real per-event schema, not a bolted-on enum), answering the runner-owned questions first:
+  - **State vs. history.** Is `execution.gates` current-state-only, or should it become an event ledger / history (append-only entries with ordering)?
+  - **Phase identity.** Are phases arbitrary strings, a fixed known enumeration, or namespaced runner phases?
+  - **Status vocabulary.** Is `passed` / `pass-with-warn` / `blocked` enough, or do we need `skipped`, `deferred`, `not-run`, `superseded`, etc.?
+  - **`allowed_next` placement.** Does it belong in each event record, or is it derivable runner state that should not be duplicated per event?
+  - **Degrade path.** How does the no-`python3` path author a structured record without becoming brittle (today it writes a single word)?
+  Until then, `gates` stays `{"type": "object"}` (already valid; existing sidecars conform), and the stdlib validator is untouched.
 
 ## Open questions
 
