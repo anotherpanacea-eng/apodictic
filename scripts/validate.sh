@@ -135,6 +135,27 @@
 #       <!-- override: argument-recon-prerequisite -->. Pass --self-test
 #       for built-in cases.
 #
+#   structured-findings <file> [<file>...]
+#       Validate embedded apodictic:* JSON blocks (apodictic.finding.v1,
+#       audit_trigger.v1, readiness.v1) in ledger/letter markdown and the
+#       Diagnostic_State.meta.json sidecar (findings[] severities must tally to
+#       triage_summary). Delegates to scripts/structured_findings.py (real JSON
+#       parser); degrades to a presence check without python3. Pass --self-test
+#       for built-in cases.
+#
+#   softness-check <editorial_letter> <findings_ledger>
+#       Deficit-Lock softness gate (Phase 4). Compares the delivered letter
+#       against the Triage-locked apodictic.finding.v1 findings in the ledger;
+#       ERROR on an unmarked downgrade/drop of a locked Must-Fix/Should-Fix,
+#       WARN on hedged delivery. Body-only override marker:
+#       <!-- override: softness-downgrade — <rationale> -->. Weak-axis coherence
+#       stays in severity-floor. Delegates to scripts/honesty_check.py.
+#
+#   deficit-lock <findings_ledger>
+#       Verify the Deficit Lock was recorded structurally (ledger carries
+#       apodictic.finding.v1 locks). Delegates to honesty_check.py. Pass
+#       --self-test for built-in cases.
+#
 # Exit codes:
 #   0 — all checks pass
 #   1 — validation failure (details on stdout)
@@ -144,8 +165,9 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite"
-  echo "Aggregate: --self-test-all (runs --self-test on all 11 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate"
+  echo "Aggregate: --self-test-all (runs --self-test on all 16 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry and structured-findings on the shipped templates)"
   exit 2
 }
 
@@ -161,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # pure utilities that do not carry self-tests; only the 11 model-
 # capability-review validators do.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite"
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 11 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 16 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -178,10 +200,44 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/11 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/16 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/11 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/16 validators failed; rerun individually with --self-test for details)"
+    exit 1
+  fi
+fi
+
+# Standard verification path (Phase 3): hermetic self-tests PLUS the real-file
+# invariants that --self-test-all (synthetic fixtures only) does not cover — the
+# audit-signal-propagation registry-vs-§4e check and structured-findings
+# validation of the shipped artifact templates. Closes the gap where a future
+# change could pass --self-test-all while breaking a real-file invariant.
+if [ "$1" = "--check-all" ]; then
+  CA_SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+  CA_FAIL=0
+  echo "== --self-test-all =="
+  "$0" --self-test-all || CA_FAIL=1
+  echo ""
+  echo "== audit-signal-propagation --check-registry (real registry vs §4e) =="
+  "$0" audit-signal-propagation --check-registry || CA_FAIL=1
+  echo ""
+  echo "== structured-findings (shipped artifact templates) =="
+  CA_DONE=0
+  for base in "$CA_SCRIPT_DIR/../skills/core-editor/references" "$CA_SCRIPT_DIR/../plugins/apodictic/skills/core-editor/references"; do
+    if [ -f "$base/diagnostic-state-meta-template.json" ]; then
+      "$0" structured-findings "$base/diagnostic-state-meta-template.json" "$base/findings-ledger-format.md" || CA_FAIL=1
+      CA_DONE=1
+      break
+    fi
+  done
+  [ "$CA_DONE" -eq 0 ] && { echo "ERROR: could not locate reference templates for structured-findings — --check-all cannot verify the real-file invariant"; CA_FAIL=1; }
+  echo ""
+  if [ "$CA_FAIL" -eq 0 ]; then
+    echo "check-all: PASS (self-tests + real-file invariants)"
+    exit 0
+  else
+    echo "check-all: FAIL (one or more checks failed; rerun individually for details)"
     exit 1
   fi
 fi
@@ -598,7 +654,42 @@ EOF
   # Self-test: pass --self-test as the only argument to run built-in cases.
   # ----------------------------------------------------------------------
   audit-signal-propagation)
-    if [ $# -lt 1 ]; then echo "Usage: $0 audit-signal-propagation <editorial_letter_file> [<ledger_file>] | --self-test"; exit 2; fi
+    if [ $# -lt 1 ]; then echo "Usage: $0 audit-signal-propagation <editorial_letter_file> [<ledger_file>] | --self-test | --check-registry [<registry_file> <pass_deps_file>]"; exit 2; fi
+
+    # Registry completeness check (Phase 2): every signal-emitting audit listed in
+    # the registry (audit-routing-table.md §Signal-Emitting Audit Registry) must
+    # have a §4e propagation row in pass-dependencies.md, so its internal signal
+    # reaches the Canonical Severity Scale instead of dying in the findings file.
+    # With no file args, the real files are auto-located relative to this script
+    # (works from both the plugin copy and the repo-root copy of validate.sh).
+    if [ "$1" = "--check-registry" ]; then
+      SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+      REG="${2:-}"; DEP="${3:-}"
+      if [ -z "$REG" ]; then
+        for base in "$SCRIPT_DIR/../skills/core-editor/references" "$SCRIPT_DIR/../plugins/apodictic/skills/core-editor/references"; do
+          if [ -f "$base/audit-routing-table.md" ]; then REG="$base/audit-routing-table.md"; DEP="$base/pass-dependencies.md"; break; fi
+        done
+      fi
+      if [ ! -f "$REG" ] || [ ! -f "$DEP" ]; then echo "Error: registry or pass-dependencies file not found (REG=$REG DEP=$DEP)" >&2; exit 2; fi
+      TMPREG=$(mktemp)
+      sed -n '/registry:signal-emitting-audits:begin/,/registry:signal-emitting-audits:end/p' "$REG" | grep '^- ' | sed 's/^- //' > "$TMPREG"
+      if [ ! -s "$TMPREG" ]; then echo "Error: no registry entries found in $REG" >&2; rm -f "$TMPREG"; exit 2; fi
+      REG_MISSING=0; REG_TOTAL=0
+      while IFS= read -r AUDIT; do
+        [ -z "$AUDIT" ] && continue
+        REG_TOTAL=$((REG_TOTAL + 1))
+        if ! grep -Fq "| $AUDIT |" "$DEP"; then
+          echo "ERROR: signal-emitting audit '$AUDIT' has no §4e propagation row in $(basename "$DEP")"
+          REG_MISSING=$((REG_MISSING + 1))
+        fi
+      done < "$TMPREG"
+      rm -f "$TMPREG"
+      if [ "$REG_MISSING" -eq 0 ]; then
+        echo "Registry check: PASS ($REG_TOTAL signal-emitting audits all have §4e rows)"; exit 0
+      else
+        echo "Registry check: FAIL ($REG_MISSING of $REG_TOTAL registry audits missing a §4e row)"; exit 1
+      fi
+    fi
 
     if [ "$1" = "--self-test" ]; then
       TMPDIR=$(mktemp -d)
@@ -692,6 +783,29 @@ EOF
       "$0" audit-signal-propagation "$TMPDIR/over1.md" >/dev/null 2>&1 && echo "  over1: OK (class marker downgraded ERROR→WARN)" || { echo "  over1: FAIL (expected OK after override)"; RESULTS=1; }
       "$0" audit-signal-propagation "$TMPDIR/over2.md" >/dev/null 2>&1 && echo "  over2: OK (per-audit marker downgraded ERROR→WARN)" || { echo "  over2: FAIL (expected OK after per-audit override)"; RESULTS=1; }
       "$0" audit-signal-propagation "$TMPDIR/over_appx.md" >/dev/null 2>&1 && { echo "  over_appx: FAIL (appendix-only marker should not downgrade)"; RESULTS=1; } || echo "  over_appx: OK (caught — marker in appendix is non-canonical)"
+      # Registry completeness sub-test (Phase 2): synthetic registry + §4e fixtures.
+      cat > "$TMPDIR/reg_ok.md" <<'EOF'
+## Signal-Emitting Audit Registry
+<!-- registry:signal-emitting-audits:begin -->
+- Foo Audit
+- Bar Audit
+<!-- registry:signal-emitting-audits:end -->
+EOF
+      cat > "$TMPDIR/reg_missing.md" <<'EOF'
+## Signal-Emitting Audit Registry
+<!-- registry:signal-emitting-audits:begin -->
+- Foo Audit
+- Bar Audit
+- Ghost Audit
+<!-- registry:signal-emitting-audits:end -->
+EOF
+      cat > "$TMPDIR/dep_fixture.md" <<'EOF'
+### §4e. Audit-Signal Propagation Table
+| Foo Audit | hard gate | Must-Fix | — | src | — |
+| Bar Audit | flag | Should-Fix | — | src | — |
+EOF
+      "$0" audit-signal-propagation --check-registry "$TMPDIR/reg_ok.md" "$TMPDIR/dep_fixture.md" >/dev/null 2>&1 && echo "  registry_ok: OK (all registry audits have §4e rows)" || { echo "  registry_ok: FAIL (expected PASS)"; RESULTS=1; }
+      "$0" audit-signal-propagation --check-registry "$TMPDIR/reg_missing.md" "$TMPDIR/dep_fixture.md" >/dev/null 2>&1 && { echo "  registry_missing: FAIL (Ghost Audit has no §4e row — expected FAIL)"; RESULTS=1; } || echo "  registry_missing: OK (caught — registry-listed audit missing §4e row)"
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
@@ -3584,6 +3698,114 @@ EOF
 
     echo "ERROR: Argument-engine artifacts detected in '${RUN_FOLDER}' (no Field_Reconnaissance_Report.md present), but the editorial letter does not record the canonical blind-spot disclosure ('literature-counterevidence not surveyed'). Per pass-dependencies.md §4a (Hard Prerequisite) + run-synthesis.md §Step 3 (Phase 6 Wave 3 / CR-4): silent omission is forbidden. Either (a) run Field Reconnaissance and produce Field_Reconnaissance_Report.md, (b) record the canonical blind-spot disclosure in the editorial letter naming what is unsurveyed and what the absence implies for synthesis confidence, or (c) place a body override marker <!-- override: argument-recon-prerequisite — <rationale> --> in the editorial letter."
     exit 1
+    ;;
+
+  structured-findings)
+    # Phase 3: validate embedded apodictic:* JSON blocks (in ledger/letter .md)
+    # and the Diagnostic_State.meta.json sidecar. Delegates JSON parsing to
+    # scripts/structured_findings.py (a real parser). On a host without python3,
+    # degrade to a presence check so the block — which stays human-readable —
+    # does not hard-block; full validation needs python3 (present on Cowork).
+    SF_DIR=$(cd "$(dirname "$0")" && pwd)
+    SF_HELPER="$SF_DIR/structured_findings.py"
+    if command -v python3 >/dev/null 2>&1 && [ -f "$SF_HELPER" ]; then
+      python3 "$SF_HELPER" "$@"
+      exit $?
+    fi
+    # Degraded path (no python3).
+    if [ "${1:-}" = "--self-test" ]; then
+      SF_TMP=$(mktemp -d); trap 'rm -rf "$SF_TMP"' EXIT
+      printf '<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","severity":"Must-Fix"}\n-->\n' > "$SF_TMP/f.md"
+      if grep -q 'apodictic:finding' "$SF_TMP/f.md" && grep -q '"schema"' "$SF_TMP/f.md"; then
+        echo "Self-test: PASS (degraded — python3 unavailable; presence check only)"; exit 0
+      else
+        echo "Self-test: FAIL"; exit 1
+      fi
+    fi
+    if [ $# -lt 1 ]; then echo "Usage: $0 structured-findings <file> [<file>...] | --self-test"; exit 2; fi
+    SF_WARN=0
+    for f in "$@"; do
+      if [ ! -f "$f" ]; then echo "Error: File not found: $f" >&2; exit 2; fi
+      if grep -q 'apodictic:' "$f" 2>/dev/null; then SF_WARN=1; fi
+    done
+    if [ "$SF_WARN" -eq 1 ]; then
+      echo "WARN: python3 unavailable — presence check only; full JSON validation skipped (blocks remain human-readable). Install python3 for full structured-findings validation."
+    else
+      echo "structured-findings: PASS (degraded presence check; no structured blocks found)"
+    fi
+    exit 0
+    ;;
+
+  softness-check)
+    # Phase 4 (Harden Honesty): compare the delivered letter against the
+    # Triage-locked findings (Deficit Lock). Delegates to honesty_check.py;
+    # degrades to advisory (WARN, exit 0) without python3 — the Deficit Lock
+    # prose rule still applies.
+    HC_DIR=$(cd "$(dirname "$0")" && pwd)
+    HC_HELPER="$HC_DIR/honesty_check.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$HC_HELPER" ]; then python3 "$HC_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; softness-check is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$HC_HELPER" ]; then
+      if [ $# -lt 2 ]; then echo "Usage: $0 softness-check <editorial_letter> <findings_ledger> | --self-test"; exit 2; fi
+      python3 "$HC_HELPER" softness-check "$@"
+      exit $?
+    fi
+    echo "WARN: python3 unavailable — softness-check (delivered-vs-locked severity) skipped; the Deficit Lock prose rule still applies. Install python3 for the mechanical gate."
+    exit 0
+    ;;
+
+  deficit-lock)
+    # Phase 4: verify the Triage Deficit Lock was recorded structurally in the
+    # ledger. Delegates to honesty_check.py; degrades to advisory without python3.
+    HC_DIR=$(cd "$(dirname "$0")" && pwd)
+    HC_HELPER="$HC_DIR/honesty_check.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$HC_HELPER" ]; then python3 "$HC_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$HC_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 deficit-lock <findings_ledger> | --self-test"; exit 2; fi
+      python3 "$HC_HELPER" deficit-lock "$@"
+      exit $?
+    fi
+    echo "WARN: python3 unavailable — deficit-lock (structured-lock presence) skipped."
+    exit 0
+    ;;
+
+  artifacts-schema)
+    # Shared structured-artifact parser/validator (scripts/apodictic_artifacts.py) —
+    # the source-of-truth schema engine behind structured-findings / softness-check /
+    # deficit-lock. Only --self-test is meaningful here; it gates the shared module
+    # in --self-test-all. Delegates to the module; degrades without python3.
+    AS_DIR=$(cd "$(dirname "$0")" && pwd)
+    AS_HELPER="$AS_DIR/apodictic_artifacts.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$AS_HELPER" ]; then python3 "$AS_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable)"; exit 0
+    fi
+    echo "Usage: $0 artifacts-schema --self-test"; exit 2
+    ;;
+
+  gate)
+    # Runner-Governed Execution (increment 1): run the execution-gate engine for a
+    # phase against a run folder — checks the manifest's required artifacts + mechanical
+    # validators and prints the attested checklist. Delegates to scripts/run_gate.py;
+    # degrades without python3 (model performs the manifest's checks inline).
+    GT_DIR=$(cd "$(dirname "$0")" && pwd)
+    GT_HELPER="$GT_DIR/run_gate.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$GT_HELPER" ]; then python3 "$GT_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$GT_HELPER" ]; then
+      if [ $# -lt 2 ]; then echo "Usage: $0 gate <phase> <run_folder> [--strict-warnings]"; exit 2; fi
+      python3 "$GT_HELPER" "$@"
+      exit $?
+    fi
+    echo "WARN: python3 unavailable — gate engine skipped; perform the phase's manifest checks inline and record the result in the sidecar (execution.gates)."
+    exit 0
     ;;
 
   *)

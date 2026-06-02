@@ -196,7 +196,7 @@ This generated skill exposes the legacy \`${slashCommand}\` workflow in Codex wi
 
 - Preserve the command's routing, output, and resume behavior.
 - Skip redundant intake when router output or project state has already prefilled the needed context.
-- Follow the folder architecture in \`../core-editor/references/output-policy.md\` §Folder Architecture: rolling state at the project root, run artifacts in \`runs/YYYY-MM-DD_{model}_{type}/\`.
+- Follow the folder architecture in \`../core-editor/references/output-structure.md\` §Folder Architecture: rolling state at the project root, run artifacts in \`runs/YYYY-MM-DD_{model}_{type}/\`.
 `;
 }
 
@@ -426,15 +426,16 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
     }
   }
 
-  // Verify folder architecture section survived generation
-  const outputPolicyPath = path.join(tempPluginDir, "skills", "core-editor", "references", "output-policy.md");
-  if (fs.existsSync(outputPolicyPath)) {
-    const outputPolicyContent = mustRead(outputPolicyPath);
-    if (!outputPolicyContent.includes("## Folder Architecture")) {
-      throw new Error("Generated output-policy.md is missing §Folder Architecture section.");
+  // Verify folder architecture section survived generation (moved from output-policy.md
+  // to output-structure.md in the Phase 1 subtract pass).
+  const outputStructurePath = path.join(tempPluginDir, "skills", "core-editor", "references", "output-structure.md");
+  if (fs.existsSync(outputStructurePath)) {
+    const outputStructureContent = mustRead(outputStructurePath);
+    if (!outputStructureContent.includes("## Folder Architecture")) {
+      throw new Error("Generated output-structure.md is missing §Folder Architecture section.");
     }
-    if (!outputPolicyContent.includes("runs/YYYY-MM-DD_{model-tag}_{run-type}/")) {
-      throw new Error("Generated output-policy.md is missing run folder naming convention.");
+    if (!outputStructureContent.includes("runs/YYYY-MM-DD_{model-tag}_{run-type}/")) {
+      throw new Error("Generated output-structure.md is missing run folder naming convention.");
     }
   }
 
@@ -448,6 +449,7 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
         "NON_PARITY_NOTES.md",
         "plugins/apodictic/skills/core-editor/references/changelog.md",
         "plugins/apodictic/skills/core-editor/references/output-policy.md",
+        "plugins/apodictic/skills/core-editor/references/output-structure.md",
         "plugins/apodictic/skills/specialized-audits/references/craft/adversarial-evidence-review.md"
       ]).has(relPath);
     });
@@ -497,6 +499,15 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
     "plugins/apodictic/.codex-plugin/plugin.json",
     "plugins/apodictic/scripts/preflight.sh",
     "plugins/apodictic/scripts/validate.sh",
+    "plugins/apodictic/scripts/structured_findings.py",
+    "plugins/apodictic/scripts/honesty_check.py",
+    "plugins/apodictic/scripts/apodictic_artifacts.py",
+    "plugins/apodictic/schemas/apodictic.finding.v1.schema.json",
+    "plugins/apodictic/schemas/apodictic.audit_trigger.v1.schema.json",
+    "plugins/apodictic/schemas/apodictic.readiness.v1.schema.json",
+    "plugins/apodictic/schemas/apodictic.diagnostic-state.v1.schema.json",
+    "plugins/apodictic/schemas/execution-gates.v1.json",
+    "plugins/apodictic/scripts/run_gate.py",
     "plugins/apodictic/skills/core-editor/references/run-synthesis.md",
     "plugins/apodictic/skills/core-editor/references/state-lifecycle.md"
   ];

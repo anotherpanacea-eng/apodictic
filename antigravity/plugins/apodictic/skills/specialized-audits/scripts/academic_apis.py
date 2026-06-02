@@ -42,8 +42,37 @@ RATE_LIMIT_DELAY = 1.0  # seconds between API calls
 # HTTP helper
 # ---------------------------------------------------------------------------
 
+# HTTP retry policy (Phase 5). A rate-limit (429) or transient 5xx/timeout must not
+# be swallowed into {_error} and mistaken for a ghost citation. Set
+# APODICTIC_HTTP_RETRIES=0 to disable (e.g., offline tests).
+_HTTP_MAX_RETRIES = int(os.environ.get("APODICTIC_HTTP_RETRIES", "3"))
+_HTTP_BACKOFF_BASE = float(os.environ.get("APODICTIC_HTTP_BACKOFF", "2"))
+_RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+
+
+def _default_cache_dir() -> str:
+    """Run-local disk cache directory: $APODICTIC_CACHE_DIR or ./.apodictic_run/cache.
+    Engaging disk persistence makes citation lookups idempotent across runs."""
+    return os.environ.get("APODICTIC_CACHE_DIR") or str(Path(".apodictic_run") / "cache")
+
+
+def _retry_after_delay(exc, fallback: float) -> float:
+    """Seconds to wait before retry, honoring a Retry-After header (delta-seconds
+    form) when present and sane; otherwise the exponential-backoff fallback."""
+    hdrs = getattr(exc, "headers", None)
+    retry_after = hdrs.get("Retry-After") if hdrs else None
+    if retry_after:
+        try:
+            return min(float(retry_after), 60.0)
+        except (TypeError, ValueError):
+            pass  # HTTP-date form not parsed; fall back to backoff
+    return fallback
+
+
 def _fetch_json(url: str, headers: dict | None = None, timeout: int = 15) -> dict | None:
-    """Fetch a URL and parse as JSON. Returns None on failure."""
+    """Fetch a URL and parse as JSON. Retries 429/5xx and transient network errors
+    with bounded exponential backoff (honoring Retry-After). On exhaustion returns
+    the existing {_error} dict so callers are unchanged."""
     req_headers = {"User-Agent": f"APODICTIC/1.0 (mailto:{CROSSREF_MAILTO})"}
     if headers:
         req_headers.update(headers)
@@ -51,11 +80,29 @@ def _fetch_json(url: str, headers: dict | None = None, timeout: int = 15) -> dic
         req_headers["x-api-key"] = S2_API_KEY
 
     req = urllib.request.Request(url, headers=req_headers)
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return json.loads(resp.read().decode("utf-8"))
-    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, TimeoutError) as e:
-        return {"_error": str(e), "_url": url}
+    delay = _HTTP_BACKOFF_BASE
+    last_error = None
+    for attempt in range(_HTTP_MAX_RETRIES + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            last_error = e
+            if e.code in _RETRYABLE_STATUS and attempt < _HTTP_MAX_RETRIES:
+                time.sleep(_retry_after_delay(e, delay))
+                delay *= 2
+                continue
+            return {"_error": str(e), "_url": url, "_status": e.code}
+        except (urllib.error.URLError, TimeoutError) as e:
+            last_error = e
+            if attempt < _HTTP_MAX_RETRIES:
+                time.sleep(delay)
+                delay *= 2
+                continue
+            return {"_error": str(e), "_url": url}
+        except json.JSONDecodeError as e:
+            return {"_error": str(e), "_url": url}
+    return {"_error": str(last_error), "_url": url}
 
 
 def _check_url(url: str, timeout: int = 10) -> dict:
@@ -208,6 +255,12 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
             prov_ref = provenance.store(ref_id, "crossref", cr_result)
             result["provenance_refs"].append(prov_ref)
             msg = cr_result["message"]
+            # Retraction (Phase 5) is derived from the SAME CrossRef metadata
+            # (message.update-to) — no second CrossRef call. A retracted source is a
+            # citation problem the audit must not silently pass.
+            if any(u.get("type") == "retraction" for u in msg.get("update-to", [])):
+                result["retracted"] = True
+                result["retraction_note"] = "Source is retracted per CrossRef metadata."
             result["resolved"] = True
             result["confidence"] = "metadata-only verified"
             result["source_tier"] = "crossref-doi"
@@ -378,7 +431,7 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
 
 def resolve_batch(citations: list[dict], output_path: str | None = None) -> list[dict]:
     """Resolve a batch of citations. Returns list of results."""
-    cache = ResponseCache()
+    cache = ResponseCache(_default_cache_dir())
     provenance = ProvenanceStore()
     results = []
 
@@ -445,7 +498,7 @@ def main():
     args = parser.parse_args()
 
     if args.command == "resolve":
-        cache = ResponseCache()
+        cache = ResponseCache(_default_cache_dir())
         provenance = ProvenanceStore()
         citation = {
             "ref_id": "cli-1",

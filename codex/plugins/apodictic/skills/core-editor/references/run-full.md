@@ -273,7 +273,7 @@ Detect: state errors, timeline impossibilities, spatial violations, world rule v
 
 ## Supplementary Audits
 
-Supplementary audits are specialized diagnostic modules that go deeper than any single pass. They are activated at contract (genre/mode-driven) or by finding-driven triggers during passes. See `run-core.md` §Audit Activation at Contract for the full activation table.
+Supplementary audits are specialized diagnostic modules that go deeper than any single pass. They are activated at contract (genre/mode-driven) or by finding-driven triggers during passes. See `references/audit-routing-table.md` for the full activation table.
 
 Each audit has its own reference file in `specialized-audits/references/`. Load the full module when running the audit. The summaries below describe what each audit does and how it connects to the pass sequence — they are not substitutes for the full audit modules.
 
