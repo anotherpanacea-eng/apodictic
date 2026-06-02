@@ -385,6 +385,8 @@ Identify 2–4 objections the piece implicitly anticipates or conspicuously igno
 
 **Run on:** full draft — look for concessive moves ("to be sure," "one might argue," "critics say"), anticipated counterarguments, and structural gaps where an obvious objection goes unaddressed.
 
+**6a. Name the single strongest objection first.** Before inventorying objections, identify the one objection a well-informed adversary raises *first*: the load-bearing one. Prefer **text-internal** objections (those that turn the argument's own central warrant, evidence, or target against it) over **canonical imported** objections (the standard counter from the surrounding debate, which often applies equally to many arguments in the genre). Then check what the strongest objection attacks: an objection to the proposed *alternative*, or to a *secondary* claim, is not a substitute for an objection to **C0 as actually argued**. Record this as `STRONGEST OBJECTION` even if the piece never raises it, and let it anchor the inventory below. If the inventory leads with a merely plausible objection while a sharper text-internal one goes unnamed, fire **OB5**.
+
 ```
 OBJECTION 1: [what the strongest objection would be]
   Engaged: [Y/N]
@@ -415,6 +417,7 @@ OBJECTION 2: [...]
 | **OB2** | Evasion | Objection named but not answered; text acknowledges disagreement then moves on without engaging |
 | **OB3** | Central objection unaddressed | The hardest counterargument — the one a well-informed skeptic would raise first — is missing entirely |
 | **OB4** | Concession without cost | The piece performs concession language but the concession changes nothing; the argument proceeds exactly as if the objection were never raised |
+| **OB5** | Decoy strongest objection | The inventory engages a plausible objection, but the genuinely strongest, most load-bearing objection (the one that turns the argument's own central warrant, evidence, or target against it) is neither named nor engaged. Distinct from OB3: OB3 = the strongest objection is identified but unaddressed; OB5 = it is *misidentified*, a weaker or merely canonical objection having taken its place |
 
 **Note on AT1:** For explanatory arguments, OB0 is not automatically a failure. If the explanation is accurate and clear, absence of objection handling is acceptable. For all other argument types, OB0 is diagnostic.
 
@@ -430,7 +433,7 @@ OBJECTION 2: [...]
 
 **Working rule:** Mentioning disagreement is not the same thing as earning argumentative trust. OB4 and the DI family exist to catch drafts that *sound* fair without actually carrying the burden of fairness.
 
-**Output:** Objection inventory (2–4) + engagement quality + OB-codes + DI-codes for any failures.
+**Output:** The named STRONGEST OBJECTION (6a) + objection inventory (2–4) + engagement quality + OB-codes + DI-codes for any failures.
 
 ---
 
