@@ -467,8 +467,14 @@ case "$COMMAND" in
   # ----------------------------------------------------------------------
   severity-floor)
     if [ $# -lt 1 ]; then echo "Usage: $0 severity-floor <editorial_letter_file> [<ledger_file>] | --self-test"; exit 2; fi
+    # Primary path: real parser in scripts/letter_checks.py (Validator Architecture
+    # Hardening) — token-boundary matching + body/appendix split, replacing the brittle
+    # shell regex below. Degrades to the bash implementation when python3 is unavailable.
+    SF_DIR=$(cd "$(dirname "$0")" && pwd)
+    LC_HELPER="$SF_DIR/letter_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then python3 "$LC_HELPER" --self-test severity-floor; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: clean letter — no Weak axes, no Systemic, < 3 Should-Fix.
@@ -537,6 +543,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+      python3 "$LC_HELPER" severity-floor "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash regex implementation (kept for python-less hosts).
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     LETTER="$1"
     ERRORS=0
@@ -655,6 +667,10 @@ EOF
   # ----------------------------------------------------------------------
   audit-signal-propagation)
     if [ $# -lt 1 ]; then echo "Usage: $0 audit-signal-propagation <editorial_letter_file> [<ledger_file>] | --self-test | --check-registry [<registry_file> <pass_deps_file>]"; exit 2; fi
+    # Primary path: real parser in scripts/letter_checks.py (Validator Architecture
+    # Hardening). Degrades to the bash implementation below when python3 is unavailable.
+    ASP_DIR=$(cd "$(dirname "$0")" && pwd)
+    LC_HELPER="$ASP_DIR/letter_checks.py"
 
     # Registry completeness check (Phase 2): every signal-emitting audit listed in
     # the registry (audit-routing-table.md §Signal-Emitting Audit Registry) must
@@ -671,6 +687,10 @@ EOF
         done
       fi
       if [ ! -f "$REG" ] || [ ! -f "$DEP" ]; then echo "Error: registry or pass-dependencies file not found (REG=$REG DEP=$DEP)" >&2; exit 2; fi
+      # Delegate parsing to the helper when python3 is present (bash resolves paths).
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+        python3 "$LC_HELPER" check-registry "$REG" "$DEP"; exit $?
+      fi
       TMPREG=$(mktemp)
       sed -n '/registry:signal-emitting-audits:begin/,/registry:signal-emitting-audits:end/p' "$REG" | grep '^- ' | sed 's/^- //' > "$TMPREG"
       if [ ! -s "$TMPREG" ]; then echo "Error: no registry entries found in $REG" >&2; rm -f "$TMPREG"; exit 2; fi
@@ -692,6 +712,7 @@ EOF
     fi
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then python3 "$LC_HELPER" --self-test audit-signal-propagation; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: audit hard gate present, audit named in synthesis Must-Fix.
@@ -809,6 +830,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+      python3 "$LC_HELPER" audit-signal-propagation "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash regex implementation (kept for python-less hosts).
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     LETTER="$1"
     ERRORS=0
@@ -865,9 +892,21 @@ EOF
     # enumerated audits fall back to the canonical default mapping (per
     # §4e footer). The recognizer is pattern-based, not table-driven —
     # the canonical table itself is the source of truth.
+    # The optional trailing "( ... )" group recognizes registry names that carry a
+    # parenthetical, e.g. "Banister (Epistemic Humility)", "Narrative-Decision
+    # (StoryScope)", "Timeline (Pass 10)". The standalone "&" / "/" connector tokens
+    # recognize spaced-connector names, e.g. "Series & Composite Novel", "Memoir /
+    # Creative NF". Title-case-only (no -i) keeps lowercase connector words like "and"
+    # from being captured across two audit mentions on one line. Without these the names
+    # go undetected/truncated and the validator falls through to the permissive legacy
+    # whole-letter check (false pass) or computes a wrong override slug.
+    # The trailing 's/^(The|An?|This|That|These|Those) //' drops a sentence-initial
+    # determiner that prose puts before an audit name ("The Reception Risk Audit ...") so a
+    # prose mention collapses onto the heading-derived name rather than inventing a phantom.
     AUDIT_NAMES=$(echo "$APPX_BODY" \
-      | grep -oiE "([A-Z][A-Za-z/&-]+( [A-Z][A-Za-z/&-]+){0,3}) [Aa]udit" \
+      | grep -oE "([A-Z][A-Za-z/&-]*( ([&/]|[A-Z][A-Za-z/&-]*)){0,6}( \([^)]+\))?) [Aa]udit" \
       | sed -E 's/ [Aa]udit$//' \
+      | sed -E 's/^(The|An?|This|That|These|Those) //' \
       | sort -u \
       | tr '\n' '|' || true)
     # Strip trailing pipe.
@@ -1106,8 +1145,13 @@ EOF
   # ----------------------------------------------------------------------
   underdiagnosis-triggers)
     if [ $# -lt 1 ]; then echo "Usage: $0 underdiagnosis-triggers <editorial_letter_file> [<ledger_file>] | --self-test"; exit 2; fi
+    # Primary path: real parser in scripts/letter_checks.py (Validator Architecture
+    # Hardening). Degrades to the bash implementation below when python3 is unavailable.
+    UDT_DIR=$(cd "$(dirname "$0")" && pwd)
+    LC_HELPER="$UDT_DIR/letter_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then python3 "$LC_HELPER" --self-test underdiagnosis-triggers; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: clean letter, no triggers fire.
@@ -1168,6 +1212,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+      python3 "$LC_HELPER" underdiagnosis-triggers "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash regex implementation (kept for python-less hosts).
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     LETTER="$1"
     LEDGER="${2:-}"
@@ -1331,8 +1381,13 @@ EOF
   # ----------------------------------------------------------------------
   ledger-consolidation)
     if [ $# -lt 1 ]; then echo "Usage: $0 ledger-consolidation <consolidated_ledger_file> [<raw_ledger_file>] | --self-test"; exit 2; fi
+    # Primary path: real parser in scripts/letter_checks.py (Validator Architecture
+    # Hardening). Degrades to the bash implementation below when python3 is unavailable.
+    LCONS_DIR=$(cd "$(dirname "$0")" && pwd)
+    LC_HELPER="$LCONS_DIR/letter_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then python3 "$LC_HELPER" --self-test ledger-consolidation; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: consolidated by mechanism, convergence annotated, severity collated.
@@ -1397,6 +1452,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+      python3 "$LC_HELPER" ledger-consolidation "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash regex implementation (kept for python-less hosts).
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     LEDGER="$1"
     RAW_LEDGER="${2:-}"
@@ -1562,8 +1623,13 @@ EOF
   # ----------------------------------------------------------------------
   decision-layer-check)
     if [ $# -lt 1 ]; then echo "Usage: $0 decision-layer-check <editorial_letter_file> | --self-test"; exit 2; fi
+    # Primary path: real parser in scripts/letter_checks.py (Validator Architecture
+    # Hardening). Degrades to the bash implementation below when python3 is unavailable.
+    DLC_DIR=$(cd "$(dirname "$0")" && pwd)
+    LC_HELPER="$DLC_DIR/letter_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then python3 "$LC_HELPER" --self-test decision-layer-check; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: 4 Protected Elements, 4 Author Decisions, 7 Control Questions,
@@ -2003,6 +2069,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+      python3 "$LC_HELPER" decision-layer-check "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash regex implementation (kept for python-less hosts).
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     LETTER="$1"
     ERRORS=0
@@ -2661,8 +2733,14 @@ EOF
   # ----------------------------------------------------------------------
   timeline-diff)
     if [ $# -lt 1 ]; then echo "Usage: $0 timeline-diff <prior_timeline> <current_timeline> | --self-test"; exit 2; fi
+    # Primary path: real Timeline parser in scripts/timeline_checks.py (Validator
+    # Architecture Hardening Inc.4). Degrades to the bash implementation below when
+    # python3 is unavailable.
+    TL_DIR=$(cd "$(dirname "$0")" && pwd)
+    TL_HELPER="$TL_DIR/timeline_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$TL_HELPER" ]; then python3 "$TL_HELPER" --self-test timeline-diff; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: identical timelines → no diff.
@@ -2806,7 +2884,13 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present.
     if [ $# -lt 2 ]; then echo "Usage: $0 timeline-diff <prior_timeline> <current_timeline>"; exit 2; fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$TL_HELPER" ]; then
+      python3 "$TL_HELPER" timeline-diff "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash structural-diff implementation.
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     if [ ! -f "$2" ]; then echo "Error: File not found: $2" >&2; exit 2; fi
     PRIOR="$1"
@@ -2982,8 +3066,13 @@ EOF
   # ----------------------------------------------------------------------
   timeline-arithmetic)
     if [ $# -lt 1 ]; then echo "Usage: $0 timeline-arithmetic <timeline_file> | --self-test"; exit 2; fi
+    # Primary path: real Timeline parser (Inc.4) — adds TRUE span arithmetic on top of
+    # the bash marker-hygiene check below (which is kept as the no-python3 degrade path).
+    TL_DIR=$(cd "$(dirname "$0")" && pwd)
+    TL_HELPER="$TL_DIR/timeline_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$TL_HELPER" ]; then python3 "$TL_HELPER" --self-test timeline-arithmetic; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: clean spans, sequential days.
@@ -3069,6 +3158,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS (marker hygiene only — see Phase 7 deferral note)"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present (adds true
+    # span-overrun arithmetic). The bash marker-hygiene check below is the degrade path.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$TL_HELPER" ]; then
+      python3 "$TL_HELPER" timeline-arithmetic "$@"; exit $?
+    fi
+
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     TIMELINE="$1"
 
@@ -3150,8 +3245,13 @@ EOF
   # ----------------------------------------------------------------------
   timeline-anchor-conflict)
     if [ $# -lt 1 ]; then echo "Usage: $0 timeline-anchor-conflict <timeline_file> | --self-test"; exit 2; fi
+    # Primary path: real Timeline parser (Inc.4) — adds TRUE same-scene anchor-drift
+    # detection on top of the bash pre-labeled surfacing below (the degrade path).
+    TL_DIR=$(cd "$(dirname "$0")" && pwd)
+    TL_HELPER="$TL_DIR/timeline_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$TL_HELPER" ]; then python3 "$TL_HELPER" --self-test timeline-anchor-conflict; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: distinct anchors, no conflicts.
@@ -3223,6 +3323,12 @@ EOF
       "$0" timeline-anchor-conflict "$TMPDIR/over_appx.md" >/dev/null 2>&1 && { echo "  over_appx: FAIL (Section-8 marker should not downgrade)"; RESULTS=1; } || echo "  over_appx: OK (caught — marker in Section 8 is non-canonical)"
       "$0" timeline-anchor-conflict "$TMPDIR/silent_anchor.md" >/dev/null 2>&1 && echo "  silent_anchor: PASSES (documented Phase 7 limitation — bash cannot independently parse anchor formats; true conflict detection deferred)" || { echo "  silent_anchor: UNEXPECTED — bash claims to detect un-pre-labeled drift; investigate"; RESULTS=1; }
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS (pre-labeled surfacing only — see Phase 7 deferral note)"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
+    fi
+
+    # Real-file invocation: delegate to the parser when python3 is present (adds true
+    # same-scene anchor-drift detection). The bash surfacing check below is the degrade path.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$TL_HELPER" ]; then
+      python3 "$TL_HELPER" timeline-anchor-conflict "$@"; exit $?
     fi
 
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
