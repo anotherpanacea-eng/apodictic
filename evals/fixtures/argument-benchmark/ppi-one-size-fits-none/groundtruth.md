@@ -25,7 +25,9 @@
 ## GT3 — Strongest real objection *(Q3)*
 
 - **Objection zone (authority):** some **standardization may protect fairness and notice** — uniform conditions have a legitimate due-process function the critique must answer.
-- **Provisional codes:** OB3 (the legitimate-function counter unengaged).
+- **Why this is the *strongest* (structurally prior):** it is **text-internal**, turning the report's own central warrant against it. The piece's case is that vague, individualized conditions transfer discretion to officers ("shadow policing") and produce arbitrary, disparate enforcement; standardization is the classic *cure* for exactly that arbitrariness (uniform conditions give notice and constrain officer discretion). So it attacks C0 on its own terms, where the public-safety objection only contests the proposal's costs from outside.
+- **Decoy (rank below):** the **public-safety / deterrence** objection (do standard conditions reduce reoffending?). Real and reasonable, and a hostile policymaker may raise it *first*, but it is the canonical, genre-generic counter to any decarceration proposal and is not text-internal. A run that names public-safety as *the* strongest objection has surfaced a plausible decoy and missed the structurally prior one: score **OB5**, not a GT3 hit.
+- **Provisional codes:** OB3 (the legitimate fairness/notice counter unengaged); OB5 if the run substitutes the public-safety decoy.
 
 ## GT4–GT7 — *(PROVISIONAL)*
 

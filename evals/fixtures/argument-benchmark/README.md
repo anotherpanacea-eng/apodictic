@@ -65,6 +65,15 @@ an independent editor's diagnoses as ground truth. Text is not stored
 competent argument. To run them, follow [RUN-PROTOCOL.md](RUN-PROTOCOL.md) in a
 web-enabled session.
 
+[`run.sh`](run.sh) automates the blind-runner step (Protocol §1–2): point `SRC`
+at your local cache of the source texts, and it inlines each argument + the audit
+reference into a tools-disabled prompt and runs two model configs (the two
+independent runs). It never touches `groundtruth.md` — scoring stays a separate
+step. `./run.sh --verify` just checks the cache against the SOURCES.md hashes;
+`./run.sh <slug>...` runs a subset. Read the header comment before first use —
+two vars (`SRC`, and possibly `CLAUDE_TOOL_FLAGS`/`STRIP_CMD`) may need matching
+to your setup.
+
 ## Layout per fixture
 
 ```
