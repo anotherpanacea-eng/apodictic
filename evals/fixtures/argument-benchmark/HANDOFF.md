@@ -1,0 +1,155 @@
+# Handoff — Argument Engine Benchmark
+
+*Last updated: 2026-06-02. Pick up here later.*
+
+This is a resume point for the Nonfiction Argument Engine **benchmark suite**:
+what's done, what's on which branch, and the exact next action. Read this first,
+then [`RUN-PROTOCOL.md`](RUN-PROTOCOL.md) for the run mechanics.
+
+---
+
+## TL;DR — the one next action
+
+The benchmark is **built and provenance-complete**; the only thing left is to
+**execute the blind runs** (needs a machine with the Claude CLI + the local
+source-text cache + web access — i.e. your Mac, not the cloud sandbox).
+
+```bash
+# 1. find your apodictic clone (you are NOT in it by default)
+find ~ -type d -name apodictic 2>/dev/null
+
+# 2. cd into it, get the runner branch
+cd /path/to/apodictic            # <- result of step 1
+git fetch origin
+git checkout claude/benchmark-runner-script
+
+# 3. point at the local source cache and DRY-CHECK first (no model calls)
+cd evals/fixtures/argument-benchmark
+export SRC="/Users/anotherpanacea/Library/CloudStorage/Dropbox/Cowork/Development Editor/argument-benchmark-sources"
+./run.sh --verify
+```
+
+`--verify` reports, per fixture, whether the cached text matches the recorded
+SHA-256 (`whole` / `body` / neither). Once it looks right, run a subset:
+
+```bash
+./run.sh roosevelt-democratic-abundance current-affairs-abandon-abundance \
+         reason-problem-with-abundance-agenda cato-industrial-policy-bad-idea \
+         ppi-one-size-fits-none
+```
+
+Then hand the outputs in `evals/results/run-<timestamp>/` to a scorer (a fresh
+session *with* repo access, or paste them back to Claude) — scoring is a
+**separate** step and never happens in the blind-run session.
+
+---
+
+## Where everything lives (branches)
+
+| Branch | State | Contents |
+|--------|-------|----------|
+| `main` @ `ed8cd21` | merged | The whole benchmark: spec, rubric, schema, synthetic fixtures, the 10-piece referenced corpus + answer keys, SOURCES.md with all 10 hashes (incl. corrected Coates). |
+| `claude/benchmark-runner-script` @ `712ba36` | **branch only — no PR yet** | `run.sh` (blind-runner automation) + this handoff. Branched off `main`. **Decision pending: open a PR or keep as a pull-branch?** |
+| `claude/stoic-gates-ooP11` | merged (was #7 + #8) | historical; nothing left to do here. |
+
+PRs **#7** (spec + synthetic slice) and **#8** (referenced corpus + protocol)
+are both merged. Don't reopen them.
+
+---
+
+## What's done
+
+- **Engine itself:** complete before this work (Dialectical Clarity v2.0 +
+  `Argument_State.md` + 8 companion modules). The benchmark only *tests* it; it
+  changes no engine behavior.
+- **Benchmark scaffolding** (`docs/argument-benchmark-spec.md`,
+  `evals/rubrics/argument-benchmark.md`, `evals/argument-groundtruth-template.md`):
+  7 test questions → 0–3 scoring, three convergence classes (failure-bearing /
+  pure positive control / SOUND-real-calibration), recognition-contamination
+  handling.
+- **Synthetic fixtures** (text in-repo): `op-ed-warrant-leap`,
+  `policy-brief-uncompared` (sensitivity); `personal-essay-narrative-arg`,
+  `modest-proposal-satire` (specificity / Q7 controls).
+- **Referenced real corpus** (10 pieces, text NOT stored — see `CORPUS.md`),
+  each with a `groundtruth.md` whose GT1–GT3 are an editor's pre-registered
+  diagnosis; GT4–GT7 provisional. All 10 fetched, hashed, and anchored in
+  `SOURCES.md`.
+- **`run.sh`** verified statically: `bash -n` clean; the SOURCES.md hash parser
+  extracts all 10 slug→hash pairs and resolves Coates to the **corrected** hash
+  (`d4407650…`), not the superseded one.
+- **One real run already done:** the synthetic `op-ed-warrant-leap`, Opus +
+  Sonnet — both converged on all four anchors, scored 3 across in-scope
+  dimensions, and surfaced two ground-truth refinements (see RUN-PROTOCOL
+  "Worked example"). That proves the loop end-to-end.
+
+## What's NOT done (the actual remaining work)
+
+1. **Blind runs on the 10 referenced pieces** — the TL;DR above. Highest-signal
+   first: the **abundance cluster** (4 stances, 1 topic, 4 distinct loci) and
+   the **`ppi-one-size-fits-none` ↔ `op-ed-warrant-leap` pair** (same
+   causal-warrant family, opposite correct severity — the calibration test).
+2. **Score + record convergence** per RUN-PROTOCOL §Step 3–5; log any
+   ground-truth ambiguity as a finding (it sharpens the key, not the engine).
+3. **Decide `run.sh` branch fate** — open a PR to `main`, or keep as a
+   pull-branch.
+4. **Deferred (Increment 3, only after runs prove the schema):** build the
+   `validate.sh argument-groundtruth-check` validator (specced in
+   `docs/argument-benchmark-spec.md`; deferred because it touches `validate.sh`
+   → host-workspace regeneration). Also: GT4–GT7 second-editor confirmation.
+
+---
+
+## Gotchas / things that bit us
+
+- **You must be *inside* the clone.** `~` is not a git repo; the first failed
+  attempt was just running from `$HOME`. `find ~ -type d -name apodictic` finds it.
+- **The cloud sandbox can't run this.** No Claude CLI, no web fetch (Gutenberg /
+  a16z / Atlantic / Reason all 403 there), and the source cache is local-only.
+  Runs and re-fetches happen on your Mac. The cloud session is fine for
+  *scoring* (it has repo + key access) and for editing fixtures/docs.
+- **Source texts are never committed** (copyright). They live in `$SRC` outside
+  the git tree; `evals/results/` is gitignored. Re-fetch must reproduce the
+  recorded SHA-256.
+- **`--verify` saying "neither"** for a fixture is not a blocker — blindness is
+  structural, not hash-dependent. It only means the strip heuristic didn't match
+  how the text was hashed; tell Claude what it reports and the strip logic
+  (`STRIP_CMD`) gets aligned.
+- **`run.sh` tunables** (header comment has detail): `SRC` (required),
+  `CLAUDE_TOOL_FLAGS` (empty default; set to your CLI's tool-disable flag if you
+  want belt-and-suspenders — `claude --help` to confirm `--allowedTools` vs
+  `--allowed-tools`), `STRIP_CMD`, `MODELS`, `REQUIRE_HASH`.
+- **Coates** was re-extracted to fix ordering artifacts; the corrected file is
+  `coates-case-for-reparations-corrected.md` and `run.sh` prefers the
+  `-corrected` copy automatically.
+- **Recognition contamination:** for the famous four (Coates, Andreessen,
+  Amodei, Bender) a model may recite the *canonical* critique from memory rather
+  than diagnose. `run.sh` appends a `RECOGNITION:` self-report line; weight those
+  hits lightly. The abundance cluster + AECF + PPI carry the real validity.
+
+---
+
+## Key files (all under `evals/fixtures/argument-benchmark/` unless noted)
+
+- `CORPUS.md` — the 10 referenced pieces, clusters, editor diagnoses, recognition tags.
+- `SOURCES.md` — metadata-only manifest: URL + extraction anchors + recorded SHA-256. **Preparer reads this, never `groundtruth.md`.**
+- `RUN-PROTOCOL.md` — the 3-role (preparer / blind runner / scorer) procedure + convergence rules.
+- `run.sh` — automates preparer + blind-runner.
+- `<slug>/groundtruth.md` — per-fixture answer keys (scorer-only).
+- `../../rubrics/argument-benchmark.md` — scoring rubric.
+- `../../../docs/argument-benchmark-spec.md` — design, convergence, deferred validator.
+
+---
+
+## How to resume with Claude
+
+Paste this:
+
+> Resuming the argument-engine benchmark. Read
+> `evals/fixtures/argument-benchmark/HANDOFF.md`. I've run `run.sh` on
+> [which fixtures] — here are the outputs [paste or attach]. Score them against
+> the keys and report convergence.
+
+or, if you haven't run yet and want help getting `./run.sh --verify` green:
+
+> Read `evals/fixtures/argument-benchmark/HANDOFF.md`. `./run.sh --verify`
+> reported [paste output] — help me get the cache/paths right.
