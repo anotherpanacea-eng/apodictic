@@ -140,11 +140,16 @@ def _recorded_severity(sevcal, finding):
 
 
 def _recorded_severity_by_id(sevcal, fid):
-    """Exact: delivered severity on the calibration line citing the finding's ID."""
+    """Exact: delivered severity across ALL calibration lines citing the finding's
+    ID; lowest wins, so a later 'softened to Should-Fix' line is authoritative
+    (mirrors the heuristic path)."""
+    best = None
     for line in sevcal.splitlines():
         if _id_present(line, fid):
-            return _last_severity_on(line)
-    return None
+            d = _last_severity_on(line)
+            if d is not None and (best is None or SEV_RANK[d] < SEV_RANK[best]):
+                best = d
+    return best
 
 
 def _has_hedge(body, finding):
@@ -290,6 +295,12 @@ def run_self_test():
     check("id_comment_only_not_delivered", softness_check(letter_id("F-P5-02", "Must-Fix", prose=False), lock_id)[0], False)
     # near-miss ID must NOT match (boundary): letter cites F-P5-021, lock is F-P5-02
     check("id_near_miss_not_matched", softness_check(letter_id("F-P5-021", "Must-Fix"), lock_id)[0], False)
+    # a LATER calibration line that downgrades the same ID is authoritative (lowest wins)
+    check("id_later_downgrade_caught",
+          softness_check("# Edit\n## What Needs Work\nThe protagonist never changes across the novel (Chapter 34).\n"
+                         "<!-- finding: F-P5-02 -->\n## Appendix B: Severity Calibration\n"
+                         "F-P5-02 Theo's zero arc: Severity held at Must-Fix.\n"
+                         "F-P5-02 on reflection: softened to Should-Fix.\n", lock_id)[0], False)
 
     # ---- deficit-lock ----
     valid_block = ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"F-P5-01","mechanism":"m",'
