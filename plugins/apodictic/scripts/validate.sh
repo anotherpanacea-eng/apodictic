@@ -1574,8 +1574,13 @@ EOF
   # ----------------------------------------------------------------------
   decision-layer-check)
     if [ $# -lt 1 ]; then echo "Usage: $0 decision-layer-check <editorial_letter_file> | --self-test"; exit 2; fi
+    # Primary path: real parser in scripts/letter_checks.py (Validator Architecture
+    # Hardening). Degrades to the bash implementation below when python3 is unavailable.
+    DLC_DIR=$(cd "$(dirname "$0")" && pwd)
+    LC_HELPER="$DLC_DIR/letter_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then python3 "$LC_HELPER" --self-test decision-layer-check; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: 4 Protected Elements, 4 Author Decisions, 7 Control Questions,
@@ -2015,6 +2020,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+      python3 "$LC_HELPER" decision-layer-check "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash regex implementation (kept for python-less hosts).
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     LETTER="$1"
     ERRORS=0
