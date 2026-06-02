@@ -10,9 +10,10 @@ then [`RUN-PROTOCOL.md`](RUN-PROTOCOL.md) for the run mechanics.
 
 ## TL;DR — the one next action
 
-The benchmark is **built and provenance-complete**; the only thing left is to
-**execute the blind runs** (needs a machine with the Claude CLI + the local
-source-text cache + web access — i.e. your Mac, not the cloud sandbox).
+The benchmark is **built, provenance-complete, and has been run and scored once**
+(that first cycle surfaced and fixed a Dialectical Clarity over-firing bug, now
+in **PR #22**). To re-run it you need a machine with the Claude CLI + the local
+source-text cache + web access (your Mac, not the cloud sandbox):
 
 ```bash
 # 1. find your apodictic clone (you are NOT in it by default)
@@ -48,20 +49,22 @@ session *with* repo access, or paste them back to Claude) — scoring is a
 
 | Branch | State | Contents |
 |--------|-------|----------|
-| `main` @ `ed8cd21` | merged | The whole benchmark: spec, rubric, schema, synthetic fixtures, the 10-piece referenced corpus + answer keys, SOURCES.md with all 10 hashes (incl. corrected Coates). |
-| `claude/benchmark-runner-script` @ `712ba36` | **branch only — no PR yet** | `run.sh` (blind-runner automation) + this handoff. Branched off `main`. **Decision pending: open a PR or keep as a pull-branch?** |
+| `main` | merged | The whole benchmark: spec, rubric, schema, synthetic fixtures, the 10-piece referenced corpus + answer keys, SOURCES.md with all 10 hashes (incl. corrected Coates). |
+| `claude/benchmark-runner-script` | **open as PR #22**, rebased onto current `main` | `run.sh` (blind-runner automation), this handoff, the SOURCES `BODY_START`/`BODY_END` anchors, and the Dialectical Clarity calibration + Step-6 (`6a`/`OB5`) edits with their codex/antigravity mirrors. |
 | `claude/stoic-gates-ooP11` | merged (was #7 + #8) | historical; nothing left to do here. |
 
 PRs **#7** (spec + synthetic slice) and **#8** (referenced corpus + protocol)
-are both merged. Don't reopen them.
+are both merged. The runner branch is now **PR #22** (owner review addressed;
+based on current `main`); land it after its dependencies #20 and #21.
 
 ---
 
 ## What's done
 
-- **Engine itself:** complete before this work (Dialectical Clarity v2.0 +
-  `Argument_State.md` + 8 companion modules). The benchmark only *tests* it; it
-  changes no engine behavior.
+- **Engine itself:** Dialectical Clarity v2.0 + `Argument_State.md` + 8 companion
+  modules. The benchmark *tests* it; the first run surfaced a severity over-firing
+  bug now fixed in PR #22 (a Step-9 default-to-SOUND rule + a Hard-Gate Severity
+  Floor, plus the Step-6 `6a`/`OB5` objection-discrimination round).
 - **Benchmark scaffolding** (`docs/argument-benchmark-spec.md`,
   `evals/rubrics/argument-benchmark.md`, `evals/argument-groundtruth-template.md`):
   7 test questions → 0–3 scoring, three convergence classes (failure-bearing /
@@ -84,18 +87,24 @@ are both merged. Don't reopen them.
 
 ## What's NOT done (the actual remaining work)
 
-1. **Blind runs on the 10 referenced pieces** — the TL;DR above. Highest-signal
-   first: the **abundance cluster** (4 stances, 1 topic, 4 distinct loci) and
-   the **`ppi-one-size-fits-none` ↔ `op-ed-warrant-leap` pair** (same
-   causal-warrant family, opposite correct severity — the calibration test).
-2. **Score + record convergence** per RUN-PROTOCOL §Step 3–5; log any
-   ground-truth ambiguity as a finding (it sharpens the key, not the engine).
-3. **Decide `run.sh` branch fate** — open a PR to `main`, or keep as a
-   pull-branch.
-4. **Deferred (Increment 3, only after runs prove the schema):** build the
-   `validate.sh argument-groundtruth-check` validator (specced in
-   `docs/argument-benchmark-spec.md`; deferred because it touches `validate.sh`
-   → host-workspace regeneration). Also: GT4–GT7 second-editor confirmation.
+The first full cycle is **done**: the blind runs executed (abundance cluster +
+ppi), were scored, and both the convergence findings and the Dialectical Clarity
+calibration fix landed in **PR #22**. See `evals/results/*/SCORECARD.md` plus the
+`regression-*` and `experiment-*` records. What remains:
+
+1. **Land PR #22** after its dependencies (#20, #21).
+2. **GT3 as a set (next engine round).** The Step-6 `6a`/`OB5` edit shifted runs
+   off canonical decoys onto text-internal objections, but "the strongest
+   objection" proved plural. Register each fixture's GT3 as a *set* of acceptable
+   strong objections, and fold in the two the experiment surfaced (the ppi
+   discretion-contradiction and the current-affairs motte-bailey symmetry).
+3. **Recognition re-test.** With the masthead + trailing-bio leaks closed,
+   re-confirm the recognition picture (ppi already flipped to "not recognized");
+   the lower-recognition fixtures now carry the construct validity.
+4. **Deferred (Increment 3):** build the `validate.sh argument-groundtruth-check`
+   validator (specced in `docs/argument-benchmark-spec.md`; it touches
+   `validate.sh` → host-workspace regeneration). Also: GT4–GT7 second-editor
+   confirmation.
 
 ---
 
