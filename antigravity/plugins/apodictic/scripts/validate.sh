@@ -2458,8 +2458,13 @@ EOF
   # ----------------------------------------------------------------------
   quality-risk-triggers)
     if [ $# -lt 1 ]; then echo "Usage: $0 quality-risk-triggers <contract_file> [<diagnostic_state_meta_file>] | --self-test"; exit 2; fi
+    # Primary path: real parser in scripts/config_checks.py (Validator Architecture
+    # Hardening Inc.5). Degrades to the bash implementation below when python3 is absent.
+    CFG_DIR=$(cd "$(dirname "$0")" && pwd)
+    CFG_HELPER="$CFG_DIR/config_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$CFG_HELPER" ]; then python3 "$CFG_HELPER" --self-test quality-risk-triggers; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: clean fiction contract, no triggers fire.
@@ -2542,6 +2547,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$CFG_HELPER" ]; then
+      python3 "$CFG_HELPER" quality-risk-triggers "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash regex implementation.
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     CONTRACT="$1"
     META="${2:-}"
@@ -3410,8 +3421,12 @@ EOF
   # ----------------------------------------------------------------------
   audit-tier-criterion)
     if [ $# -lt 1 ]; then echo "Usage: $0 audit-tier-criterion <pass_dependencies_file> [<audits_root_dir>] | --self-test"; exit 2; fi
+    # Primary path: real parser in scripts/config_checks.py (Inc.5). Degrades to bash below.
+    CFG_DIR=$(cd "$(dirname "$0")" && pwd)
+    CFG_HELPER="$CFG_DIR/config_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$CFG_HELPER" ]; then python3 "$CFG_HELPER" --self-test audit-tier-criterion; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       mkdir -p "$TMPDIR/audits"
@@ -3531,6 +3546,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$CFG_HELPER" ]; then
+      python3 "$CFG_HELPER" audit-tier-criterion "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash regex implementation.
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     PD_FILE="$1"
     AUDIT_ROOT="${2:-}"
@@ -3666,8 +3687,12 @@ EOF
   # ----------------------------------------------------------------------
   argument-recon-prerequisite)
     if [ $# -lt 1 ]; then echo "Usage: $0 argument-recon-prerequisite <run_folder> [<editorial_letter_file>] | --self-test"; exit 2; fi
+    # Primary path: real parser in scripts/config_checks.py (Inc.5). Degrades to bash below.
+    CFG_DIR=$(cd "$(dirname "$0")" && pwd)
+    CFG_HELPER="$CFG_DIR/config_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$CFG_HELPER" ]; then python3 "$CFG_HELPER" --self-test argument-recon-prerequisite; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
 
@@ -3736,6 +3761,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-folder invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$CFG_HELPER" ]; then
+      python3 "$CFG_HELPER" argument-recon-prerequisite "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash regex implementation.
     if [ ! -d "$1" ]; then echo "Error: Run folder not found: $1" >&2; exit 2; fi
     RUN_FOLDER="$1"
     LETTER="${2:-}"
