@@ -14,7 +14,9 @@ ledger block-presence invariant, and the sidecar triage cross-check).
 
 Exit: 0 pass, 1 validation error(s), 2 usage error.
 """
+import glob
 import json
+import os
 import re
 import sys
 
@@ -156,6 +158,16 @@ def validate_file(path):
     return errs
 
 
+def _fixture_dir():
+    """Locate test_fixtures/ from the plugin or root scripts copy."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    for c in (os.path.join(here, "test_fixtures"),
+              os.path.join(here, "..", "plugins", "apodictic", "scripts", "test_fixtures")):
+        if os.path.isdir(c):
+            return c
+    return None
+
+
 def run_self_test():
     results = {"rc": 0}
 
@@ -218,6 +230,14 @@ def run_self_test():
                                '<!-- apodictic:finding\n{"schema":"apodictic.finding.v1"}\n-->\n', "<t>"), True)
     check("non_ledger_presence_not_enforced",
           check_block_presence("# Editorial Letter\nThe pacing is a Must-Fix problem.\n", "<t>"), True)
+    # Data-driven fixtures: sf.<pass|fail>.<name>.<md|json> in test_fixtures/.
+    fdir = _fixture_dir()
+    if fdir:
+        for path in sorted(glob.glob(os.path.join(fdir, "sf.*"))):
+            name = os.path.basename(path)
+            check("fixture:%s" % name, validate_file(path), ".pass." in name)
+    else:
+        print("  fixtures: SKIP (test_fixtures/ not found)")
     print("Self-test: PASS" if results["rc"] == 0 else "Self-test: FAIL")
     return results["rc"]
 

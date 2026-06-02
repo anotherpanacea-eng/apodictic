@@ -80,6 +80,7 @@ The block is **real JSON** inside an HTML comment, validated by a real parser (`
    <!-- apodictic:finding
    {
      "schema": "apodictic.finding.v1",
+     "id": "F-P4-01",
      "mechanism": "One sentence: the craft mechanism that produces the problem",
      "severity": "Must-Fix",
      "confidence": "HIGH",
@@ -90,12 +91,13 @@ The block is **real JSON** inside an HTML comment, validated by a real parser (`
    -->
 ```
 
-**Fields (all required):** `schema` (pinned `apodictic.finding.v1`), `mechanism`, `severity` (Must-Fix | Should-Fix | Could-Fix), `confidence` (HIGH | MEDIUM | LOW | UNCERTAIN), `evidence_refs` (non-empty array), `fix_class`, `risk_if_fixed`.
+**Fields (all required):** `schema` (pinned `apodictic.finding.v1`), **`id`** (Finding Lifecycle ID — `F-<ORIGIN>-<NN>`, e.g. `F-P5-01` / `F-DP-02`; unique per run), `mechanism`, `severity` (Must-Fix | Should-Fix | Could-Fix), `confidence` (HIGH | MEDIUM | LOW | UNCERTAIN), `evidence_refs` (non-empty array), `fix_class`, `risk_if_fixed`. The field set is canonical in `plugins/apodictic/schemas/apodictic.finding.v1.schema.json` (validated by `scripts/apodictic_artifacts.py`), not in this prose.
 
 **Usage rules:**
 - The prose finding is canonical. If the block and prose diverge, the prose governs — fix the block.
 - `mechanism` is the highest-value field: two findings from different passes naming the same mechanism are a root-cause-cluster candidate for synthesis.
 - The block is versioned via `schema`. If the field set changes, bump the version (`apodictic.finding.v2`); the validator keys off the `schema` value.
+- **Finding Lifecycle ID (`id`).** Assign once at finding creation as `F-<ORIGIN>-<NN>` (ORIGIN = pass/audit code; NN = zero-padded sequence within that origin) — e.g. `F-P5-01`, `F-DP-02`. The ID is durable and unique per run, and follows the finding through its whole lifecycle: pass output → this ledger block → the **Deficit Lock** → the **editorial letter** (cited in an HTML comment near the delivered finding and in the Severity Calibration appendix — never in author-facing prose) → the **revision plan / coaching**. This lets `softness-check` / `deficit-lock` match a locked finding to its delivery **by ID (exact)** instead of prose heuristics. `scripts/validate.sh structured-findings` checks ID presence, format, and per-run uniqueness.
 
 #### Companion structured blocks (same envelope)
 
