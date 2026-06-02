@@ -165,8 +165,8 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema"
-  echo "Aggregate: --self-test-all (runs --self-test on all 15 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate"
+  echo "Aggregate: --self-test-all (runs --self-test on all 16 self-testable validators; exit 0 only if every validator's self-test passes)"
   echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry and structured-findings on the shipped templates)"
   exit 2
 }
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # pure utilities that do not carry self-tests; only the 11 model-
 # capability-review validators do.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema"
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 15 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 16 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/15 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/16 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/15 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/16 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -3786,6 +3786,26 @@ EOF
       echo "Self-test: PASS (degraded — python3 unavailable)"; exit 0
     fi
     echo "Usage: $0 artifacts-schema --self-test"; exit 2
+    ;;
+
+  gate)
+    # Runner-Governed Execution (increment 1): run the execution-gate engine for a
+    # phase against a run folder — checks the manifest's required artifacts + mechanical
+    # validators and prints the attested checklist. Delegates to scripts/run_gate.py;
+    # degrades without python3 (model performs the manifest's checks inline).
+    GT_DIR=$(cd "$(dirname "$0")" && pwd)
+    GT_HELPER="$GT_DIR/run_gate.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$GT_HELPER" ]; then python3 "$GT_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$GT_HELPER" ]; then
+      if [ $# -lt 2 ]; then echo "Usage: $0 gate <phase> <run_folder> [--strict-warnings]"; exit 2; fi
+      python3 "$GT_HELPER" "$@"
+      exit $?
+    fi
+    echo "WARN: python3 unavailable — gate engine skipped; perform the phase's manifest checks inline and record the result in the sidecar (execution.gates)."
+    exit 0
     ;;
 
   *)
