@@ -518,7 +518,7 @@ After the full diagnostic runs, this terminal step asks: did this text fail beca
 
 | Classification | Meaning | Action |
 |----------------|---------|--------|
-| **Structurally Sound** | The claim, support, scope, and disagreement handling are evaluable by whatever form the piece uses | Report all codes as issued |
+| **Structurally Sound** | The claim, support, scope, and disagreement handling remain evaluable by whatever form the piece uses, even if codes (including Must-Fix codes) fired. The argument is sound; the codes are its repair agenda | Report all codes as issued, ranked by severity. The priority repair is the highest-severity soft spot, not an unsound verdict |
 | **Structurally Unconventional but Effective** | The piece does not follow thesis-evidence-objection form, but a careful reader can recover and test the argument | Retroactively downgrade form-dependent failures (missing thesis sentence, absent formal concession paragraph, non-linear structure) to advisory notes rather than structural diagnoses |
 | **Structurally Unsound** | The reader cannot reliably identify, evaluate, or pressure the argument regardless of form | Report all codes as issued; note that form does not explain the failures |
 
@@ -532,6 +532,13 @@ After the full diagnostic runs, this terminal step asks: did this text fail beca
 | **Scope-honesty** | Does the manuscript signal how far its evidence travels? |
 | **Objection-awareness** | Does the manuscript show that alternative positions exist and matter? |
 | **Form-fit** | Is the unconventional form doing real argumentative work, or shielding weakness? |
+
+**Classification decision rule (apply in order):**
+
+1. **Default to Structurally Sound.** Firing codes, including Hard-Gate (Must-Fix) codes, does not by itself make an argument unsound. Codes are the repair agenda; the classification is a separate, higher-order judgment about evaluability.
+2. **Unsound requires a defeat, not a weakness.** Classify Structurally Unsound only when at least one decision test above fails as a *defeat*: the reader genuinely cannot identify the claim, find or assess the evidence, recover the inferential bridge, judge the scope, or see that objections exist. A recoverable-but-unstated warrant, a strong objection thinned rather than absent, scope tightened toward the conclusion, or an alternative gestured at but not engaged are soft spots in a sound argument, not structural breaks.
+3. **Unconventional-but-Effective** applies when the *form* is non-standard but a careful reader can still recover and test the argument (downgrade form-dependent failures to advisory).
+4. **When in doubt between a soft spot and a structural break, default to Sound** and carry the issue as the priority Should-Fix repair. Over-firing an unsound verdict on a competent argument is as serious an error as missing a real break.
 
 **Recognized unconventional argument forms:**
 
@@ -767,7 +774,30 @@ Purpose: Documents the Distinguish Protocol's reasoning. When prior codes are re
 
 ## Hard Gates
 
-These do not replace judgment. They identify failures that should default to top-tier concern because they break the audit's central promise of evaluability.
+These do not replace judgment. They identify failures that should default to top-tier concern because they break the audit's central promise of evaluability. Escalate to Must-Fix only through the Severity Floor below: a Hard-Gate pattern that fires but does not defeat C0's evaluability caps at Should-Fix.
+
+### Severity definitions
+
+These tiers are referenced throughout (artifacts, Hard Gates) and are defined here:
+
+- **Must-Fix:** the failure *defeats* evaluability or soundness of **C0**. The main claim cannot be identified or is unstable; its central inferential bridge is *unrecoverable* (warrant MISSING, not merely RECOVERABLE-but-unstated); or the conclusion asserts something the evidence cannot reach at all. A Must-Fix code forces an Unsound classification in Step 9.
+- **Should-Fix:** a real weakness a competent reader can route around: a recoverable-but-understated warrant, a strong objection thinned rather than absent, scope tightened toward the conclusion, an alternative gestured at but not engaged. This is the **default tier for soft spots in an otherwise-sound argument** and is the priority repair agenda; it does not force Unsound.
+- **Could-Fix:** improves rigor; does not affect whether C0 holds.
+
+### Severity Floor
+
+A Hard-Gate code escalates to Must-Fix **only when it meets the Must-Fix definition above** (it defeats C0's evaluability, not merely weakens it):
+
+- **WR0** on C0 is Must-Fix only when the warrant is MISSING for the *actual, declared* audience, not merely under-stated for a hypothetical hostile one. Use Step 4's EXPLICIT / RECOVERABLE / MISSING / CONTESTED scale; RECOVERABLE caps at Should-Fix and must name the importable premise.
+- **OB3** is Must-Fix only when the objection is central *and* its absence makes C0 unevaluable, not merely less persuasive.
+- **BP5** is Must-Fix only when no comparative reasoning for the recommendation exists *anywhere* in the piece.
+- **BP2 / DI4** are Must-Fix only when the scope creep or motte-and-bailey is load-bearing for C0 as actually concluded.
+
+A Hard-Gate code that fires but does not meet the Must-Fix definition caps at **Should-Fix**.
+
+### Specificity guard (anti-over-firing)
+
+Deficit-hunting is calibrated against a *competent* baseline. A published, edited argument typically carries one or two genuine soft spots, not a flood of structural breaks. If the diagnosis returns **three or more Must-Fix codes** on a piece that passes Claim-accessibility, Evidence-evaluability, and Form-fit, treat that as a **re-examination trigger** (not an automatic downgrade): re-test each Must-Fix against the Severity Floor before classifying Unsound. Firing an unsound verdict on a competent argument is as serious a failure as missing a real break; leaving sound arguments classified sound is a pass condition, not a courtesy.
 
 ### Default Must-Fix
 
@@ -787,7 +817,7 @@ These do not replace judgment. They identify failures that should default to top
 - **SM4** becomes Must-Fix in academic and expert-facing prose
 - **OB4** becomes Must-Fix when objection handling is central to the piece's claim of fairness or seriousness
 - **CL4** becomes Must-Fix when the definitional shift affects C0's meaning
-- **FM-A13** (Structural Motte-and-Bailey) is always Must-Fix when detected — it breaks pragma-dialectical rules of standpoint defense
+- **FM-A13** (Structural Motte-and-Bailey) is Must-Fix when the bailey is the argument's actual conclusion (C0); when the motte-and-bailey is local and not load-bearing for C0, it caps at Should-Fix per the Severity Floor
 - **FM-A14** (Epistemic Erasure) becomes Must-Fix in advocacy, testimony, and policy writing about affected populations
 
 ---
@@ -995,6 +1025,8 @@ The diagnostic procedure identifies structural failures with specific codes. Whe
 
 If yes: the argument is structurally sound, regardless of whether it's correct.
 If no: name which step breaks first. That's the priority diagnosis.
+
+This is the operative test for the Step 9 classification: if it returns "yes," classify the argument **Structurally Sound** even when Hard-Gate (Must-Fix) codes fired. The codes become the Should-Fix repair agenda, not an Unsound verdict.
 
 ---
 
