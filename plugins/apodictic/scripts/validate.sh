@@ -892,8 +892,12 @@ EOF
     # enumerated audits fall back to the canonical default mapping (per
     # §4e footer). The recognizer is pattern-based, not table-driven —
     # the canonical table itself is the source of truth.
+    # The optional trailing "( ... )" group recognizes registry names that carry a
+    # parenthetical, e.g. "Banister (Epistemic Humility)", "Narrative-Decision
+    # (StoryScope)", "Timeline (Pass 10)". Without it, those names go undetected and the
+    # validator falls through to the permissive legacy whole-letter check (false pass).
     AUDIT_NAMES=$(echo "$APPX_BODY" \
-      | grep -oiE "([A-Z][A-Za-z/&-]+( [A-Z][A-Za-z/&-]+){0,3}) [Aa]udit" \
+      | grep -oiE "([A-Z][A-Za-z/&-]+( [A-Z][A-Za-z/&-]+){0,3}( \([^)]+\))?) [Aa]udit" \
       | sed -E 's/ [Aa]udit$//' \
       | sort -u \
       | tr '\n' '|' || true)

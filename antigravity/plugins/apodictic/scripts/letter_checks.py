@@ -351,12 +351,13 @@ _HIGH_SIGNAL_RE = re.compile(
     r"(HIGH[- ]severity|Alert finding|Alert concentration|HIGH signal|HIGH rating|"
     r"HIGH-severity|HIGH-confidence)", re.IGNORECASE)
 _AUDIT_NAME_RE = re.compile(
-    r"([A-Z][A-Za-z/&-]+(?: [A-Z][A-Za-z/&-]+){0,3}) [Aa]udit", re.IGNORECASE)
+    r"([A-Z][A-Za-z/&-]+(?: [A-Z][A-Za-z/&-]+){0,3}(?: \([^)]+\))?) [Aa]udit", re.IGNORECASE)
 _EVIDENCE_RE = re.compile(r"(?:L|line )[0-9]+", re.IGNORECASE)
 
 
 def _audit_slug(name):
     s = name.lower().replace("&", "")
+    s = re.sub(r"[()]", "", s)  # drop parens so e.g. "Banister (Epistemic Humility)" slugs cleanly
     s = re.sub(r"[\s/]+", "-", s)
     s = re.sub(r"-+", "-", s)
     return s.strip("-")
