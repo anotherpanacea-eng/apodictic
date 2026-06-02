@@ -2733,8 +2733,14 @@ EOF
   # ----------------------------------------------------------------------
   timeline-diff)
     if [ $# -lt 1 ]; then echo "Usage: $0 timeline-diff <prior_timeline> <current_timeline> | --self-test"; exit 2; fi
+    # Primary path: real Timeline parser in scripts/timeline_checks.py (Validator
+    # Architecture Hardening Inc.4). Degrades to the bash implementation below when
+    # python3 is unavailable.
+    TL_DIR=$(cd "$(dirname "$0")" && pwd)
+    TL_HELPER="$TL_DIR/timeline_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$TL_HELPER" ]; then python3 "$TL_HELPER" --self-test timeline-diff; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: identical timelines → no diff.
@@ -2878,7 +2884,13 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present.
     if [ $# -lt 2 ]; then echo "Usage: $0 timeline-diff <prior_timeline> <current_timeline>"; exit 2; fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$TL_HELPER" ]; then
+      python3 "$TL_HELPER" timeline-diff "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash structural-diff implementation.
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     if [ ! -f "$2" ]; then echo "Error: File not found: $2" >&2; exit 2; fi
     PRIOR="$1"
@@ -3054,8 +3066,13 @@ EOF
   # ----------------------------------------------------------------------
   timeline-arithmetic)
     if [ $# -lt 1 ]; then echo "Usage: $0 timeline-arithmetic <timeline_file> | --self-test"; exit 2; fi
+    # Primary path: real Timeline parser (Inc.4) — adds TRUE span arithmetic on top of
+    # the bash marker-hygiene check below (which is kept as the no-python3 degrade path).
+    TL_DIR=$(cd "$(dirname "$0")" && pwd)
+    TL_HELPER="$TL_DIR/timeline_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$TL_HELPER" ]; then python3 "$TL_HELPER" --self-test timeline-arithmetic; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: clean spans, sequential days.
@@ -3141,6 +3158,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS (marker hygiene only — see Phase 7 deferral note)"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present (adds true
+    # span-overrun arithmetic). The bash marker-hygiene check below is the degrade path.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$TL_HELPER" ]; then
+      python3 "$TL_HELPER" timeline-arithmetic "$@"; exit $?
+    fi
+
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     TIMELINE="$1"
 
@@ -3222,8 +3245,13 @@ EOF
   # ----------------------------------------------------------------------
   timeline-anchor-conflict)
     if [ $# -lt 1 ]; then echo "Usage: $0 timeline-anchor-conflict <timeline_file> | --self-test"; exit 2; fi
+    # Primary path: real Timeline parser (Inc.4) — adds TRUE same-scene anchor-drift
+    # detection on top of the bash pre-labeled surfacing below (the degrade path).
+    TL_DIR=$(cd "$(dirname "$0")" && pwd)
+    TL_HELPER="$TL_DIR/timeline_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$TL_HELPER" ]; then python3 "$TL_HELPER" --self-test timeline-anchor-conflict; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: distinct anchors, no conflicts.
@@ -3295,6 +3323,12 @@ EOF
       "$0" timeline-anchor-conflict "$TMPDIR/over_appx.md" >/dev/null 2>&1 && { echo "  over_appx: FAIL (Section-8 marker should not downgrade)"; RESULTS=1; } || echo "  over_appx: OK (caught — marker in Section 8 is non-canonical)"
       "$0" timeline-anchor-conflict "$TMPDIR/silent_anchor.md" >/dev/null 2>&1 && echo "  silent_anchor: PASSES (documented Phase 7 limitation — bash cannot independently parse anchor formats; true conflict detection deferred)" || { echo "  silent_anchor: UNEXPECTED — bash claims to detect un-pre-labeled drift; investigate"; RESULTS=1; }
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS (pre-labeled surfacing only — see Phase 7 deferral note)"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
+    fi
+
+    # Real-file invocation: delegate to the parser when python3 is present (adds true
+    # same-scene anchor-drift detection). The bash surfacing check below is the degrade path.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$TL_HELPER" ]; then
+      python3 "$TL_HELPER" timeline-anchor-conflict "$@"; exit $?
     fi
 
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
