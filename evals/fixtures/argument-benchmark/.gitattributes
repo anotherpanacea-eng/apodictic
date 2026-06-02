@@ -1,0 +1,4 @@
+# Shell scripts must stay LF so the `#!/usr/bin/env bash` shebang executes when
+# the repo is checked out on Windows (Git Bash / WSL). Without this, a checkout
+# with core.autocrlf=true rewrites run.sh to CRLF and bash fails on the `\r`.
+*.sh text eol=lf
