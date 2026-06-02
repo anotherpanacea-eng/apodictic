@@ -29,6 +29,19 @@ PROSE_SEVERITY_RE = re.compile(
     r"(?:\*\*\s*|Severity[:\s]+|held at\s+|Tier[:\s]+|(?:^|\n)[ \t]*(?:[-*]|\d+[.)])[ \t]+)(Must-Fix|Should-Fix)\b")
 
 
+def _duplicate_id_errors(ids, label):
+    """Finding Lifecycle IDs must be unique per run."""
+    seen, errs = {}, []
+    for fid in ids:
+        if fid:
+            seen[fid] = seen.get(fid, 0) + 1
+    for fid, count in seen.items():
+        if count > 1:
+            errs.append("%s: finding id %r appears %d times — Lifecycle IDs must be unique per run"
+                        % (label, fid, count))
+    return errs
+
+
 def validate_markdown_text(text, label="<md>"):
     """Validate every embedded apodictic:* block against its schema. (errors, count)."""
     errs = []
@@ -48,6 +61,8 @@ def validate_markdown_text(text, label="<md>"):
                         % (where, schema_id, ", ".join(art.known_schema_ids())))
             continue
         errs.extend(art.validate_obj(obj, schema, where))
+    errs.extend(_duplicate_id_errors(
+        [obj.get("id") for bt, obj, je in blocks if bt == "finding" and isinstance(obj, dict)], label))
     return errs, len(blocks)
 
 
@@ -76,6 +91,9 @@ def validate_sidecar_obj(obj, label="<sidecar>"):
                                 % (where, el_schema, arr_name, schema_id))
                     continue
             errs.extend(art.validate_obj(el, item_schema, where))
+    if isinstance(obj.get("findings"), list):
+        errs.extend(_duplicate_id_errors(
+            [el.get("id") for el in obj["findings"] if isinstance(el, dict)], "%s.findings" % label))
     # Cross-field rule (not expressible in schema): a non-empty findings[] REQUIRES
     # a triage_summary whose counts equal the findings[] severity tally.
     findings = obj.get("findings")
@@ -149,17 +167,21 @@ def run_self_test():
             results["rc"] = 1
 
     F = ('<!-- apodictic:finding\n'
-         '{"schema":"apodictic.finding.v1","mechanism":"m","severity":"Must-Fix",'
+         '{"schema":"apodictic.finding.v1","id":"F-P5-01","mechanism":"m","severity":"Must-Fix",'
          '"confidence":"HIGH","evidence_refs":["Ch.1"],"fix_class":"x","risk_if_fixed":"y"}\n-->')
     e, n = validate_markdown_text(F)
     check("finding_valid", e, True)
     check("finding_count", [] if n == 1 else ["count=%d" % n], True)
     check("finding_bad_severity", validate_markdown_text(F.replace("Must-Fix", "Critical"))[0], False)
     check("finding_bad_confidence", validate_markdown_text(F.replace("HIGH", "PRETTY-SURE"))[0], False)
-    miss = ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","severity":"Must-Fix",'
+    miss = ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"F-P5-02","severity":"Must-Fix",'
             '"confidence":"HIGH","evidence_refs":["c"],"fix_class":"x","risk_if_fixed":"y"}\n-->')
     check("finding_missing_mechanism", validate_markdown_text(miss)[0], False)
     check("finding_empty_evidence", validate_markdown_text(F.replace('["Ch.1"]', "[]"))[0], False)
+    check("finding_missing_id", validate_markdown_text(F.replace('"id":"F-P5-01",', ""))[0], False)
+    check("finding_bad_id_format", validate_markdown_text(F.replace("F-P5-01", "P5-1"))[0], False)
+    check("finding_duplicate_ids",
+          validate_markdown_text(F + "\n" + F.replace('"mechanism":"m"', '"mechanism":"n"'))[0], False)
     check("finding_bad_json",
           validate_markdown_text('<!-- apodictic:finding\n{"schema":"x", "severity": }\n-->')[0], False)
     check("marker_schema_mismatch",
@@ -171,7 +193,7 @@ def run_self_test():
     RD = ('<!-- apodictic:readiness\n{"schema":"apodictic.readiness.v1","dimension":"structure",'
           '"verdict":"not-ready","rationale":"r"}\n-->')
     check("readiness_valid", validate_markdown_text(RD)[0], True)
-    fobj = {"schema": "apodictic.finding.v1", "mechanism": "m", "severity": "Must-Fix",
+    fobj = {"schema": "apodictic.finding.v1", "id": "F-P5-03", "mechanism": "m", "severity": "Must-Fix",
             "confidence": "HIGH", "evidence_refs": ["c"], "fix_class": "x", "risk_if_fixed": "y"}
     sc_ok = {"findings": [fobj], "triage_summary": {"must_fix": 1, "should_fix": 0, "could_fix": 0}}
     check("sidecar_tally_match", validate_sidecar_obj(sc_ok), True)
