@@ -1,0 +1,20 @@
+{
+  "$id": "apodictic.diagnostic-state.v1",
+  "$comment": "Contract for the structured arrays + triage_summary in Diagnostic_State.meta.json. items.$schema_ref names the per-element schema each array must satisfy (a stdlib extension to JSON Schema, read by structured_findings.py). The validator additionally enforces the cross-field rule — a non-empty findings[] requires a triage_summary whose counts equal the findings[] severity tally — which plain schema cannot express. Other sidecar fields are permitted (additionalProperties true).",
+  "title": "APODICTIC diagnostic-state sidecar (apodictic.diagnostic-state.v1)",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "findings": {"type": "array", "items": {"$schema_ref": "apodictic.finding.v1"}},
+    "audit_triggers": {"type": "array", "items": {"$schema_ref": "apodictic.audit_trigger.v1"}},
+    "readiness": {"type": "array", "items": {"$schema_ref": "apodictic.readiness.v1"}},
+    "triage_summary": {
+      "type": "object",
+      "properties": {
+        "must_fix": {"type": "integer"},
+        "should_fix": {"type": "integer"},
+        "could_fix": {"type": "integer"}
+      }
+    }
+  }
+}
