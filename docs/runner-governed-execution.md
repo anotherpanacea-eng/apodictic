@@ -46,9 +46,16 @@ Declarative; the source of truth for *what each transition requires*. `run-core.
       "entry_requires": {
         "artifacts": ["findings_ledger", "audit_invocation_log"],
         "checks": [
-          {"validator": "ledger-check",         "targets": ["findings_ledger"]},
-          {"validator": "structured-findings",  "targets": ["findings_ledger"]},
-          {"validator": "deficit-lock",         "targets": ["findings_ledger"]}
+          {"validator": "ledger-check",          "targets": ["findings_ledger"]},
+          {"validator": "ledger-consolidation",  "targets": ["findings_ledger"]},
+          {"validator": "structured-findings",   "targets": ["findings_ledger"]},
+          {"validator": "deficit-lock",          "targets": ["findings_ledger"]},
+          {"validator": "artifact-names",        "targets": ["run_folder"]}
+        ],
+        "attested": [
+          "all selected Tier-2 passes are complete and appended to the ledger",
+          "all auto-run audits (per contract + constraint flags) are complete and in the ledger",
+          "every deferred/declined high-risk audit is recorded as an explicit blind spot"
         ]
       },
       "allowed_next": ["run_spot_check"]
@@ -64,6 +71,11 @@ Declarative; the source of truth for *what each transition requires*. `run-core.
           {"validator": "underdiagnosis-triggers",   "targets": ["editorial_letter"]},
           {"validator": "softness-check",            "targets": ["editorial_letter", "findings_ledger"]},
           {"validator": "tone-check",                "targets": ["editorial_letter"]}
+        ],
+        "attested": [
+          "each root cause cites >= 1 specific ledger finding (findings integration)",
+          "root-cause / revision-checklist / must-fix caps are within limits (cap compliance)",
+          "every deferred/declined high-risk audit is named where it limits confidence or readiness (blind-spot disclosure)"
         ]
       },
       "allowed_next": ["deliver"]
@@ -72,7 +84,9 @@ Declarative; the source of truth for *what each transition requires*. `run-core.
 }
 ```
 
-`checks[].targets` is an ordered list of artifact keys → the file arguments passed to the validator (so `softness-check <letter> <ledger>` is expressible). Phases not listed have no mechanical entry gate.
+`checks[].targets` is an ordered list of artifact keys → the file arguments passed to the validator (so `softness-check <letter> <ledger>` is expressible). The reserved key `run_folder` passes the run-folder path itself (used by `artifact-names`). Phases not listed have no mechanical entry gate.
+
+**Mechanical vs. attested — the gate does not claim to replace human judgment.** `entry_requires.checks` are validator-backed and run by `gate`. `entry_requires.attested` are preconditions that are **contract-driven or judgment-based and have no validator** — selected-pass / auto-run-audit completeness and blind-spot recording (pre-synthesis), and findings-integration / cap-compliance / blind-spot disclosure (pre-delivery). The gate cannot verify these mechanically; it prints them as a required checklist the model must confirm. Naming them in the manifest is the point: it keeps the gate from *silently narrowing* the existing pre-synthesis / Step-10 gates to only their mechanical subset.
 
 ## Artifact resolution
 
@@ -83,9 +97,12 @@ Declarative; the source of truth for *what each transition requires*. `run-core.
 - **Reads** `execution-gates.v1.json`, looks up `<phase>`.
 - For `entry_requires.artifacts`: confirm each resolves to a file.
 - For `entry_requires.checks`: resolve each `targets` to files and run `"$0" <validator> <file>...`; collect exit codes.
-- **Exit 0** iff every required artifact exists and every check exits 0 (transition permitted); **exit 1** on any missing artifact or failing check (transition blocked, with a per-requirement PASS/FAIL summary); **exit 2** usage.
-- **Overrides** are handled at the *validator* level — the individual validators already honor body override markers (e.g. `softness-downgrade`, `severity-floor-*`, `underdiagnosis-trigger-*`) that downgrade ERROR→WARN; `gate` simply respects each validator's exit code, so a properly-marked exception passes the gate without a separate gate-level override. Missing *artifacts* cannot be override-marked (you cannot synthesize without a ledger).
-- **`gate --self-test`** runs the gate against bundled fixture run-folders (one that passes, one that fails for a missing lock) — gated in `--self-test-all` (validator count 15 → 16).
+- For each check `gate` captures **both the exit code and stdout** (not exit code alone — a validator can exit 0 while printing a WARN-level blocker).
+  - **ERROR** (exit 1) or a **missing required artifact** ⇒ hard block; `gate` exits 1 with a per-requirement PASS/FAIL summary.
+  - **WARN** (exit 0 with a `WARN` line — e.g. `softness-check` on a hedged-but-delivered locked finding, which is intentionally exit-0-with-WARN *and* a softness trigger per `run-synthesis.md` Step 9) ⇒ **soft block**: by default `gate` prints `GATE-WARN` and exits 0, and the prose requires the model to resolve the warning (re-word / upgrade) or record an acknowledgment before transitioning — the same discipline as the underdiagnosis retry loop. `gate --strict-warnings` promotes any WARN to a hard block (exit 1) for release/CI use.
+- **Attested requirements** (`entry_requires.attested`): `gate` prints them as a required checklist; the model confirms each and records `execution.gates[<phase>].attested = [...]` in the sidecar. The gate's exit code reflects only the mechanical checks — the prose makes the attested confirmations a hard precondition (un-attested ⇒ do not transition).
+- **Overrides** ride the *validator* level — body markers (`softness-downgrade`, `severity-floor-*`, `underdiagnosis-trigger-*`) downgrade a validator's ERROR→WARN, so a properly-marked exception passes (or soft-warns) the gate without a separate gate-level override. Missing *artifacts* cannot be override-marked (you cannot synthesize without a ledger).
+- **`gate --self-test`** runs against bundled fixture run-folders (pass; fail-on-missing-lock; warn-on-hedged-delivery) — gated in `--self-test-all` (validator count 15 → 16).
 
 ## Sidecar state — extend `apodictic.diagnostic-state.v1`
 
@@ -102,9 +119,9 @@ Increment 1: `gate` *reads* `run_folder`/`phase` and *reports*; the model update
 
 ## Prose rewrite (run-core.md / run-synthesis.md)
 
-- Pre-synthesis gate → "**Do not begin synthesis until `validate.sh gate run_synthesis <run_folder>` exits 0.**" (replaces the per-item pre-synthesis checklist; the manifest is the list).
-- Step 10/12/13 (pre-output + sections + tone) → "**Do not deliver until `validate.sh gate run_spot_check <run_folder>` exits 0.**"
-- The individual `validate.sh <validator>` invocations stay valid (the gate calls them); the prose stops enumerating them and points at the gate + manifest as the single source.
+- Pre-synthesis gate → "**Do not begin synthesis until `validate.sh gate run_synthesis <run_folder>` exits 0 AND every `attested` item is confirmed.**" The gate replaces the *mechanical* pre-synthesis checklist; the contract-driven completeness checks (selected passes, auto-run audits, blind-spot recording) remain as `attested` items named in the manifest so they are not dropped.
+- Step 10/12/13 (pre-output + sections + tone) → "**Do not deliver until `validate.sh gate run_spot_check <run_folder>` exits 0, no `GATE-WARN` is left unresolved, and every `attested` item is confirmed.**" The non-validator Step 10 checks (findings integration, cap compliance, blind-spot disclosure) are the `attested` items.
+- The individual `validate.sh <validator>` invocations stay valid (the gate calls them); the prose stops enumerating the *mechanical* checks (the manifest is the list) but keeps the attested checklist explicit.
 
 ## Degradation (no-shell hosts)
 
