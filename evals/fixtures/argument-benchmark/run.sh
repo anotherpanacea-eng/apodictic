@@ -90,8 +90,10 @@ parse_hashes() {
 # --- locate the cached file for a slug (prefer the -corrected copy) -------
 src_file() {
   local s="$1"
-  if   [ -f "$SRC/$s-corrected.md" ]; then echo "$SRC/$s-corrected.md"
-  elif [ -f "$SRC/$s.md" ];           then echo "$SRC/$s.md"
+  if   [ -f "$SRC/$s-corrected.md" ];  then echo "$SRC/$s-corrected.md"
+  elif [ -f "$SRC/$s-corrected.txt" ]; then echo "$SRC/$s-corrected.txt"
+  elif [ -f "$SRC/$s.md" ];            then echo "$SRC/$s.md"
+  elif [ -f "$SRC/$s.txt" ];           then echo "$SRC/$s.txt"
   else return 1; fi
 }
 
@@ -132,12 +134,15 @@ EOF
 VERIFY_ONLY=0
 [ "${1:-}" = "--verify" ] && { VERIFY_ONLY=1; shift; }
 
-declare -A WANT
-while IFS=$'\t' read -r slug h; do WANT[$slug]="$h"; done < <(parse_hashes)
-[ "${#WANT[@]}" -gt 0 ] || die "no recorded hashes parsed from SOURCES.md"
+# slug -> recorded sha256, kept as TAB-separated lines. Bash 3.2 compatible:
+# macOS ships bash 3.2, which lacks `declare -A`, and the blind runs happen on
+# the Mac, so the runner must not depend on associative arrays.
+PAIRS="$(parse_hashes)"
+[ -n "$PAIRS" ] || die "no recorded hashes parsed from SOURCES.md"
+want_for() { printf '%s\n' "$PAIRS" | awk -F'\t' -v s="$1" '$1==s{print $2; exit}'; }
 
 # fixtures to process: CLI args, else all parsed slugs
-if [ "$#" -gt 0 ]; then SLUGS=("$@"); else SLUGS=("${!WANT[@]}"); fi
+if [ "$#" -gt 0 ]; then SLUGS=("$@"); else SLUGS=($(printf '%s\n' "$PAIRS" | awk -F'\t' '{print $1}')); fi
 
 [ "$VERIFY_ONLY" -eq 1 ] || mkdir -p "$OUT"
 echo "repo=$REPO"
@@ -147,7 +152,7 @@ echo
 
 fail=0
 for s in "${SLUGS[@]}"; do
-  want="${WANT[$s]:-}"
+  want="$(want_for "$s")"
   [ -n "$want" ] || { echo "SKIP  $s  (no recorded hash in SOURCES.md)"; continue; }
   f="$(src_file "$s")" || { echo "MISS  $s  (no cached file in \$SRC)"; fail=1; continue; }
 
