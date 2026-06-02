@@ -51,6 +51,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **START:** first sentence of the report body after the title/author/date block.
 - **BODY_START:** `## Key Takeaways`
 - **END:** last sentence before footnotes/citations, "related publications," or site footer.
+- **BODY_END:** `## Acknowledgments`
 - **EXCLUDE:** nav, author bios, footnote list, share/related widgets, newsletter CTA.
 - **RECORDED:** `retrieved 2026-05-30 | web_fetch | 39013 bytes | sha256: d4d5a70b16012cbc2d9222f4218349519e296adab0ba05318206e75e3915e6bf`
 
@@ -69,6 +70,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **START:** first sentence of the article body after headline/byline.
 - **BODY_START:** `With much fanfare, the Biden administration announced`
 - **END:** last sentence before "RELATED," comments, or footer.
+- **BODY_END:** `Christian Britschgi is a reporter at Reason`
 - **EXCLUDE:** nav, ad slots, related-links, comments, newsletter CTA.
 - **RECORDED:** `retrieved 2026-05-30 | web_fetch | 15890 bytes | sha256: e103ac687a7238207e6720e99b5686ad8415de09c3688a9952bf538aeb312345`
 
@@ -78,6 +80,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **START:** first sentence of the essay body after title/author/issue block.
 - **BODY_START:** `In the wake of the COVID-19 pandemic`
 - **END:** last sentence before endnotes, "about the author," or footer.
+- **BODY_END:** `ABOUT THE AUTHOR`
 - **EXCLUDE:** nav, issue masthead, author bio, endnote list, share widgets.
 - **License:** CC BY-NC-SA 4.0 (Cato) — compatible with this repo's license.
 - **RECORDED:** `retrieved 2026-05-30 | Chrome render (web_fetch returned a JS shell) | 19718 bytes | sha256: c1f8895c84243d6a5fda8a42ffc9d1d1a69f02886c680ecb383a31fc1f629a7a`
@@ -131,6 +134,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **START:** first sentence of the report body after title/byline/date.
 - **BODY_START:** `Table of Contents:`
 - **END:** last sentence before the Footnotes/Methodology section or footer.
+- **BODY_END:** `## About the author`
 - **EXCLUDE:** nav, methodology appendix, donation CTA, footer. (Footnotes 1–68 preserved.)
 - **RECORDED:** `retrieved 2026-05-30 | web_fetch | 77509 bytes | sha256: 4944b26c9b2392d523530cc6f807e2024052a6b1ca016e83d650bb54fc0ecb4a`
 - **Extraction caveat:** footnote 41 was absent from the source (text jumps fn 40 → 42); a bracketed placeholder marks the gap. Immaterial to GT1–GT3.

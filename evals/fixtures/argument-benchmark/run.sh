@@ -97,12 +97,12 @@ src_file() {
   else return 1; fi
 }
 
-# --- first-body-sentence anchor for a slug, read from SOURCES.md (empty if none)
-body_start_for() {
-  awk -v slug="$1" '
+# --- read a literal anchor (BODY_START / BODY_END) for a slug from SOURCES.md
+sources_anchor() {           # $1 = slug, $2 = field label (BODY_START | BODY_END)
+  awk -v slug="$1" -v field="$2" '
     $0=="### " slug {inblk=1; next}
     /^### / {inblk=0}
-    inblk && index($0,"**BODY_START:**")>0 {
+    inblk && index($0,"**" field ":**")>0 {
       i=index($0,"`"); rest=substr($0,i+1); j=index(rest,"`")
       if (i>0 && j>0) { print substr(rest,1,j-1); exit }
     }
@@ -110,12 +110,13 @@ body_start_for() {
 }
 
 # --- strip the provenance header AND article masthead to get the argument body
-# Removes two layers of identifying metadata so the blind runner sees only the
+# Removes three layers of identifying metadata so the blind runner sees only the
 # argument prose: (1) the `---`-fenced provenance header (SLUG/SOURCE_URL/...),
-# stripped through its CLOSING fence — a prior bug stripped only the opening
-# `---` and leaked the slug + source URL into the run; (2) the article masthead
-# (title/deck/byline/date), cut at the literal BODY_START anchor recorded for the
-# slug in SOURCES.md. A custom STRIP_CMD overrides both.
+# stripped through its CLOSING fence (a prior bug stripped only the opening
+# `---`, leaking the slug + source URL into the run); (2) the article masthead
+# (title/deck/byline/date), cut at the literal BODY_START anchor; (3) the trailing
+# author bio / "about" / recommended-citation footer, cut at the BODY_END anchor.
+# Both anchors live per slug in SOURCES.md. A custom STRIP_CMD overrides all.
 extract_body() {
   local f="$1" slug="${2:-}"
   if [ -n "${STRIP_CMD:-}" ]; then bash -c "$STRIP_CMD" < "$f"; return; fi
@@ -126,10 +127,17 @@ extract_body() {
   fi
   [ -n "$body" ] || body="$(cat "$f")"
   if [ -n "$slug" ]; then
-    local anchor; anchor="$(body_start_for "$slug")"
+    # Drop the leading article masthead (title/byline/date) at BODY_START.
+    local anchor; anchor="$(sources_anchor "$slug" BODY_START)"
     if [ -n "$anchor" ]; then
       local ln; ln="$(printf '%s\n' "$body" | grep -nF -- "$anchor" | head -1 | cut -d: -f1)"
       [ -n "$ln" ] && [ "$ln" -gt 1 ] && body="$(printf '%s\n' "$body" | sed "1,$((ln-1))d")"
+    fi
+    # Drop the trailing author bio / "about" / citation footer at BODY_END.
+    local eanchor; eanchor="$(sources_anchor "$slug" BODY_END)"
+    if [ -n "$eanchor" ]; then
+      local eln; eln="$(printf '%s\n' "$body" | grep -nF -- "$eanchor" | head -1 | cut -d: -f1)"
+      [ -n "$eln" ] && [ "$eln" -gt 1 ] && body="$(printf '%s\n' "$body" | sed "${eln},\$d")"
     fi
   fi
   printf '%s\n' "$body"
