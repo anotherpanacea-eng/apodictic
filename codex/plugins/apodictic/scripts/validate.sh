@@ -894,10 +894,14 @@ EOF
     # the canonical table itself is the source of truth.
     # The optional trailing "( ... )" group recognizes registry names that carry a
     # parenthetical, e.g. "Banister (Epistemic Humility)", "Narrative-Decision
-    # (StoryScope)", "Timeline (Pass 10)". Without it, those names go undetected and the
-    # validator falls through to the permissive legacy whole-letter check (false pass).
+    # (StoryScope)", "Timeline (Pass 10)". The standalone "&" / "/" connector tokens
+    # recognize spaced-connector names, e.g. "Series & Composite Novel", "Memoir /
+    # Creative NF". Title-case-only (no -i) keeps lowercase connector words like "and"
+    # from being captured across two audit mentions on one line. Without these the names
+    # go undetected/truncated and the validator falls through to the permissive legacy
+    # whole-letter check (false pass) or computes a wrong override slug.
     AUDIT_NAMES=$(echo "$APPX_BODY" \
-      | grep -oiE "([A-Z][A-Za-z/&-]+( [A-Z][A-Za-z/&-]+){0,3}( \([^)]+\))?) [Aa]udit" \
+      | grep -oE "([A-Z][A-Za-z/&-]*( ([&/]|[A-Z][A-Za-z/&-]*)){0,6}( \([^)]+\))?) [Aa]udit" \
       | sed -E 's/ [Aa]udit$//' \
       | sort -u \
       | tr '\n' '|' || true)

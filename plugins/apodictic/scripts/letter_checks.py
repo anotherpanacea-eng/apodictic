@@ -350,8 +350,13 @@ def decision_layer_check(text):
 _HIGH_SIGNAL_RE = re.compile(
     r"(HIGH[- ]severity|Alert finding|Alert concentration|HIGH signal|HIGH rating|"
     r"HIGH-severity|HIGH-confidence)", re.IGNORECASE)
+# Audit-name recognizer. Title-case words (no IGNORECASE, so lowercase connector words
+# like "and"/"the" cannot be consumed — prevents over-capturing across two audits on one
+# line) plus standalone "&" / "/" connectors and an optional trailing parenthetical, so
+# registry names like "Series & Composite Novel", "Memoir / Creative NF", and
+# "Banister (Epistemic Humility)" are captured whole rather than truncated to a suffix.
 _AUDIT_NAME_RE = re.compile(
-    r"([A-Z][A-Za-z/&-]+(?: [A-Z][A-Za-z/&-]+){0,3}(?: \([^)]+\))?) [Aa]udit", re.IGNORECASE)
+    r"([A-Z][A-Za-z/&-]*(?: (?:[&/]|[A-Z][A-Za-z/&-]*)){0,6}(?: \([^)]+\))?) [Aa]udit")
 _EVIDENCE_RE = re.compile(r"(?:L|line )[0-9]+", re.IGNORECASE)
 
 
