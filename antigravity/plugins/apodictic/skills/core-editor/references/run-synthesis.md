@@ -67,6 +67,8 @@ The synthesis is the author-facing editorial letter. It must read as one informe
 
 ### Pre-Synthesis Gate (Required)
 
+**Run `scripts/validate.sh gate run_synthesis <run_folder>` (or the equivalent inline check on hosts without shell execution); do not begin synthesis until it exits 0 *and* you have confirmed each `ATTEST` item it prints.** The gate runs the *mechanical* checks below (ledger structure + consolidation, structured-findings, deficit-lock, artifact naming) from `schemas/execution-gates.v1.json`; the items it lists as `ATTEST` (selected-pass + auto-run-audit completeness, blind-spot recording) are contract/judgment-based and remain yours to confirm. The checklist below is the human-readable expansion of that gate.
+
 Before beginning synthesis, verify:
 
 1. All selected Tier 2 passes are complete
@@ -232,7 +234,7 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
 
    Do not proceed to letter generation until the structural deficit analysis correctly reflects the manuscript's severity. Trigger conditions are detectable from named artifacts (Findings Ledger, Audit Invocation Log, audit findings files, in-progress letter); they are not "if the synthesis feels too soft" judgments.
 
-10. **Pre-Output Synthesis Verification (required gate).** Before writing the letter, verify the synthesis is actually drawing from pass findings — not generating an editorial letter from general impressions of the manuscript. Run these checks:
+10. **Pre-Output Synthesis Verification (required gate).** Before delivering the letter, **run `scripts/validate.sh gate run_spot_check <run_folder>` (or the equivalent inline check); do not deliver until it exits 0, no `GATE-WARN` is left unresolved, and each `ATTEST` item is confirmed.** The gate runs the mechanical letter checks below (sections, severity-floor, decision-layer, audit-signal-propagation, underdiagnosis, softness-check, tone) from `schemas/execution-gates.v1.json`; the `ATTEST` items it prints (findings integration, cap compliance, blind-spot disclosure) remain your confirmation. The per-check detail below is the expansion of that gate. Verify the synthesis is actually drawing from pass findings — not generating an editorial letter from general impressions of the manuscript. Run these checks:
 
    - **Findings integration check:** For each root cause identified in step 3, confirm it cites at least one specific ledger finding by pass and finding name. If a root cause exists only as a general impression without ledger grounding, either locate the supporting ledger entry or demote it to §4b (Additional Observations) with a note that it awaits pass-level confirmation.
    - **Section ordering check:** Confirm the letter will follow the required §1-§11 order. Protected Elements, Author Decisions, Control Questions, Strongest Case Against, and Stress Test are separate sections with distinct jobs — they must not be merged or omitted.

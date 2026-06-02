@@ -37,6 +37,8 @@ Load `../skills/core-editor/SKILL.md` first (thin orchestrator). Do NOT preload 
 
 ### Resume Target
 
+**Runner state (preferred when present).** If the sidecar carries an `execution` block with a `phase` (written by `scripts/validate.sh gate` — Runner-Governed Execution), resume from it: `execution.phase` is the last phase whose gate **passed**, and `execution.allowed_next` lists the authorized next phases. Load the workflow for the current/next phase via the dispatch table below — the phase keys are the same `next_action` values. Before transitioning into a phase, its gate must have passed: a phase recorded in `execution.gates` as `blocked` or `pass-with-warn`, or an empty `execution.allowed_next`, means re-run `validate.sh gate <phase> <run_folder>` (resolving the WARN/ERROR) first. Fall back to `next_action` (below) when there is no `execution` block (pre-runner projects).
+
 The sidecar's `next_action` field uses an enumerated dispatch key (not free text) to identify the workflow to load on resume. Valid values:
 
 | `next_action` value | Loads | When set |
