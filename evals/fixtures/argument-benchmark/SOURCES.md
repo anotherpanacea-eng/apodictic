@@ -93,6 +93,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **START:** first line of the manifesto body (the opening "We are told…"-type line) after title.
 - **BODY_START:** `We are told that technology takes our jobs`
 - **END:** last line of the manifesto body before the "patron saints" / credits list and footer.
+- **BODY_END:** `## Patron Saints of Techno-Optimism`
 - **EXCLUDE:** nav, the patron-saints/credits appendix (it is a list, not argument), footer. **Note:** if a run wants to test whether the credits list is argument or ornament, record that as a separate variant; the default analyzed text excludes it.
 - **RECORDED:** `retrieved 2026-05-30 | web_fetch | 33619 bytes | sha256: 1ba705936f3b4deb560d8b53a0f08690d40f16a13048a39615a80cf4e55924f3`
 
@@ -111,6 +112,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **START:** the Abstract's first sentence (academic paper: abstract + body are the argument).
 - **BODY_START:** `The past 3 years of work in NLP have been characterized by`
 - **END:** the last sentence of the Conclusion (section before Acknowledgments).
+- **BODY_END:** `ACKNOWLEDGMENTS`
 - **EXCLUDE:** ACM header/citation block, author affiliations, Acknowledgments, References, appendices, page furniture.
 - **License:** CC BY 4.0 (open-access FAccT '21 PDF).
 - **RECORDED:** `retrieved 2026-05-30 | local PDF + pdftotext (open-access copy) | 69145 bytes | sha256: 1928f4018c264800139b428dcaea851f10cd623091d533ad01cd692585057f9a`
