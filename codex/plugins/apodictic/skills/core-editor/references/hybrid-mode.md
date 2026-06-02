@@ -12,7 +12,7 @@
 
 Hybrid mode is an execution mode between sequential and full swarm. Pass 0+1 reads the entire manuscript and produces a **focus map** alongside the standard reverse outline and reader experience log. Subsequent passes load the reverse outline (the compressed manuscript) plus only the excerpts the focus map targets — not the full text.
 
-**Pre-flight dependency:** Hybrid mode requires pre-flight metadata (see `run-core.md` §Pre-flight Diagnostics). Pre-flight provides the triage subagent's `max_turns` budget — computed as `ceil(total_lines / 500) + 20` — which ensures enough turns for full-manuscript I/O plus a buffer for complex targeting decisions. Pre-flight also detects missing chapter structure (e.g., from epub conversion) and passes section boundary data to the triage subagent so it doesn't waste turns searching for headers that don't exist.
+**Pre-flight dependency:** Hybrid mode requires pre-flight metadata (see `execution-modes-reference.md` §Pre-flight Diagnostics). Pre-flight provides the triage subagent's `max_turns` budget — computed as `ceil(total_lines / 500) + 20` — which ensures enough turns for full-manuscript I/O plus a buffer for complex targeting decisions. Pre-flight also detects missing chapter structure (e.g., from epub conversion) and passes section boundary data to the triage subagent so it doesn't waste turns searching for headers that don't exist.
 
 **Cost profile:** Approximately 1–1.5x the tokens of sequential mode (~500–690k for a 118k-word manuscript), versus swarm's ~2.5x (~1.2M).
 

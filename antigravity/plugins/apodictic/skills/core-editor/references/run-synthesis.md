@@ -67,6 +67,8 @@ The synthesis is the author-facing editorial letter. It must read as one informe
 
 ### Pre-Synthesis Gate (Required)
 
+**Run `scripts/validate.sh gate run_synthesis <run_folder>` (or the equivalent inline check on hosts without shell execution); do not begin synthesis until it exits 0 *and* you have confirmed each `ATTEST` item it prints.** The gate runs the *mechanical* checks below (ledger structure + consolidation, structured-findings, deficit-lock, artifact naming) from `schemas/execution-gates.v1.json`; the items it lists as `ATTEST` (selected-pass + auto-run-audit completeness, blind-spot recording) are contract/judgment-based and remain yours to confirm. The checklist below is the human-readable expansion of that gate.
+
 Before beginning synthesis, verify:
 
 1. All selected Tier 2 passes are complete
@@ -93,7 +95,7 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
    - **Count consolidated problems, not individual flags.** A single root cause may have 8 audit flags supporting it. The flags are evidence; the root cause is what enters triage.
    - **Carry audit artifacts forward.** Audit-specific tracking artifacts (Decision Event Map, Stakes Ladder Map, Scene Turn code inventory, etc.) become appendix material. They support the editorial letter's arguments but don't appear in the letter body.
 
-   **Canonical Audit-Signal Propagation Rule.** Audit-internal severity signals do not become synthesis-layer Must-Fix / Should-Fix decisions automatically — the model must propagate them. Without an explicit rule, audit-internal signals (Compression Must-Fix floors, Reception Risk hard gates, Banister HIGH ratings) reliably die inside the audit findings file even when the model integrates the audit's narrative content into the editorial letter. The rule:
+   **Canonical Audit-Signal Propagation Rule.** The three synthesis-layer tiers (Must-Fix / Should-Fix / Could-Fix) are defined canonically in `output-policy.md §Canonical Severity Scale`, which also names the orthogonal axes (confidence, prose tier, readiness) that are *not* severity. Audit-internal severity signals do not become synthesis-layer Must-Fix / Should-Fix decisions automatically — the model must propagate them. Without an explicit rule, audit-internal signals (Compression Must-Fix floors, Reception Risk hard gates, Banister HIGH ratings) reliably die inside the audit findings file even when the model integrates the audit's narrative content into the editorial letter. The rule:
 
    | Audit-internal signal | Propagates to synthesis as |
    |---|---|
@@ -174,7 +176,9 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
    - **Should-Fix:** Significant diminishment (max 15)
    - **Could-Fix:** Polish (no cap, deprioritized)
 
-5. **Adversarial Self-Check (required before writing the letter).** Re-evaluate findings in both directions — test whether each severity is too soft (under-diagnosed) or too harsh (over-escalated). Adjust if the adversarial case is stronger than the original assignment. Record the results.
+   **Deficit Lock (required, generation-order).** The moment a finding is triaged Must-Fix or Should-Fix, commit it as a structured Finding (`apodictic.finding.v1`, see `findings-ledger-format.md`) at that severity in the Findings Ledger — **before** Step 6 (Adversarial Self-Check) or any later charity reframing runs. From here later steps may raise severity freely, but may only lower a locked severity (or drop a locked finding) by recording a body override marker `<!-- override: softness-downgrade — <rationale> -->` plus an Appendix B entry. Each locked finding keeps its **Finding Lifecycle ID** (`id`); when you deliver it in the letter, cite that ID in an HTML comment near the finding and in the Severity Calibration appendix so the gates can match locked→delivered by ID. Canonical rule: `output-policy.md §Severity Honesty Protocol → Deficit Lock`; enforced at Step 10 by `scripts/validate.sh softness-check <letter> <ledger>` and `deficit-lock <ledger>`.
+
+6. **Adversarial Self-Check (required before writing the letter).** Re-evaluate findings in both directions — test whether each severity is too soft (under-diagnosed) or too harsh (over-escalated). Adjust if the adversarial case is stronger than the original assignment. Record the results.
 
    **Upward pressure (testing for softening):** For each Should-Fix flag, state in one sentence why it should be Must-Fix. If the Must-Fix case is stronger, upgrade. For each Mixed axis, state in one sentence why it should be Weak. If the Weak case is stronger, downgrade.
 
@@ -182,9 +186,9 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
 
    **Evidence check (both directions):** For each Must-Fix flag, confirm you have 2+ specific scene/line references. If not, either find them or downgrade your confidence (not the severity).
 
-6. **Adversarial Reader Stress Test (required).** Before writing the letter, run the stress test per `references/adversarial-stress-test.md`. **Begin the stress test by setting aside the pass findings and the Findings Ledger.** Inhabit the low-charity reader profiles and generate 3-5 adversarial claims from a holistic reading of the manuscript — what would a hostile reader attack regardless of what the passes found? Draw also from the Findings Ledger's "Unresolved Questions" entries, which may contain vulnerabilities the passes noticed but couldn't fully analyze. After generating the independent claims, reconcile them with the pass findings: which attacks are already covered by editorial letter findings? Which are new? New attacks enter the stress test section of the letter. Attacks already covered by the editorial argument are noted as convergent evidence but not duplicated. This is a separate exercise from the adversarial self-check (step 5) — the self-check tests severity calibration of existing findings; the stress test surfaces what hostile readers would attack, which may include issues not flagged by the passes.
+7. **Adversarial Reader Stress Test (required).** Before writing the letter, run the stress test per `references/adversarial-stress-test.md`. **Begin the stress test by setting aside the pass findings and the Findings Ledger.** Inhabit the low-charity reader profiles and generate 3-5 adversarial claims from a holistic reading of the manuscript — what would a hostile reader attack regardless of what the passes found? Draw also from the Findings Ledger's "Unresolved Questions" entries, which may contain vulnerabilities the passes noticed but couldn't fully analyze. After generating the independent claims, reconcile them with the pass findings: which attacks are already covered by editorial letter findings? Which are new? New attacks enter the stress test section of the letter. Attacks already covered by the editorial argument are noted as convergent evidence but not duplicated. This is a separate exercise from the adversarial self-check (step 6) — the self-check tests severity calibration of existing findings; the stress test surfaces what hostile readers would attack, which may include issues not flagged by the passes.
 
-7. **Decision-Layer Consolidation (required).** Before writing the letter, convert the diagnosis into explicit revision-control artifacts:
+8. **Decision-Layer Consolidation (required).** Before writing the letter, convert the diagnosis into explicit revision-control artifacts:
 
    - **Protected Elements candidate list:** 3-6 load-bearing elements from §3 strength findings that revision could easily damage
    - **Author Decisions:** 3-7 manuscript-specific decisions or commitments, organized as `Keep`, `Cut`, or `Unsure`. These are not generic preferences; they are the live choices that control revision order, book identity, interpretive stance, or risk posture.
@@ -192,7 +196,7 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
 
    Build these from root causes, audit findings, the stress test, and the strongest-case-against logic. If a decision or control question cannot be tied to a root cause, live blind spot, or structural pressure point, it probably does not belong here.
 
-   **Mechanical check.** Decision-layer counts (3-6 / 3-7 / exactly 7) are mechanically validated by `scripts/validate.sh decision-layer-check <editorial_letter_file>` (or the equivalent inline check on hosts without shell execution) at Step 10's pre-output gate. Editorial judgment about *which* elements, decisions, and questions appear is preserved here at Step 7; counts and structural compliance are mechanical at Step 10. Override markers (one per check ID, body-only): `<!-- override: decision-layer-protected-elements -->`, `<!-- override: decision-layer-author-decisions -->`, `<!-- override: decision-layer-control-questions -->`. Markers in appendix bodies are non-canonical (synthesis body is canonical for findings; appendices hold evidence). Use the override path for principled deviations (e.g., short-fiction tier reduces Control Questions to 5; the model must say so in the body and explain in Appendix B).
+   **Mechanical check.** Decision-layer counts (3-6 / 3-7 / exactly 7) are mechanically validated by `scripts/validate.sh decision-layer-check <editorial_letter_file>` (or the equivalent inline check on hosts without shell execution) at Step 10's pre-output gate. Editorial judgment about *which* elements, decisions, and questions appear is preserved here at Step 8; counts and structural compliance are mechanical at Step 10. Override markers (one per check ID, body-only): `<!-- override: decision-layer-protected-elements -->`, `<!-- override: decision-layer-author-decisions -->`, `<!-- override: decision-layer-control-questions -->`. Markers in appendix bodies are non-canonical (synthesis body is canonical for findings; appendices hold evidence). Use the override path for principled deviations (e.g., short-fiction tier reduces Control Questions to 5; the model must say so in the body and explain in Appendix B).
 
    **Author Decisions counting (v1.8.0 calibration).** When the Author Decisions section uses Keep / Cut / Unsure (or Defer / Decide) level-3 subheads, the validator counts subhead clusters (typical 1-3) rather than the sub-bullets within them — the contract intent is "3-7 distinct decision categories," and Keep / Cut / Unsure naturally clusters multiple sub-decisions under each category. Letters without subheads are still counted by list-item or paragraph-form rules (verb-leading paragraphs starting with Protect / Keep / Cut / Defer / Decide / Unsure also count when neither list items nor bolded paragraphs are present). This calibration closes Phase 4 Wave 3 eval-coverage findings C1 + C2.
 
@@ -210,6 +214,7 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
    4. **Multi-axis severity trigger:** a single concern is rated across 2+ severity classes (series-impact, representation, reader-trust, or equivalent multi-axis hit) with no synthesis-layer Must-Fix.
    5. **Severity-floor trigger:** `validate.sh severity-floor` returns WARN or FAIL on the in-progress letter.
    6. **Propagation trigger:** `validate.sh audit-signal-propagation` returns ERROR or WARN — i.e., audit-internal signals failed to propagate to synthesis.
+   7. **Softness trigger:** `validate.sh softness-check <editorial_letter> <findings_ledger>` reports a problem — the delivered letter softens a Triage-locked finding below its locked severity (Deficit Lock, `output-policy.md §Severity Honesty Protocol`) without a body override marker. An unmarked downgrade is an ERROR (exit 1); a hedged-but-delivered finding is a WARN printed to stdout at exit 0 — parse stdout and treat a WARN as a softness trigger too.
 
    **Override marker syntax** (one per trigger ID, placed in the letter body near the affected finding — NOT in an appendix):
 
@@ -220,6 +225,7 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
    <!-- override: underdiagnosis-trigger-multi-axis — <one-sentence rationale> -->
    <!-- override: underdiagnosis-trigger-severity-floor — <one-sentence rationale> -->
    <!-- override: underdiagnosis-trigger-propagation — <one-sentence rationale> -->
+   <!-- override: underdiagnosis-trigger-softness — <one-sentence rationale> -->
    ```
 
    Markers in appendix bodies are non-canonical (synthesis body is canonical for findings; appendices hold evidence) and do not satisfy the override path. **Absence of override marker AND absence of severity upgrade = blocked synthesis.**
@@ -228,13 +234,14 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
 
    Do not proceed to letter generation until the structural deficit analysis correctly reflects the manuscript's severity. Trigger conditions are detectable from named artifacts (Findings Ledger, Audit Invocation Log, audit findings files, in-progress letter); they are not "if the synthesis feels too soft" judgments.
 
-10. **Pre-Output Synthesis Verification (required gate).** Before writing the letter, verify the synthesis is actually drawing from pass findings — not generating an editorial letter from general impressions of the manuscript. Run these checks:
+10. **Pre-Output Synthesis Verification (required gate).** Before delivering the letter, **run `scripts/validate.sh gate run_spot_check <run_folder>` (or the equivalent inline check); do not deliver until it exits 0, no `GATE-WARN` is left unresolved, and each `ATTEST` item is confirmed.** The gate runs the mechanical letter checks below (sections, severity-floor, decision-layer, audit-signal-propagation, underdiagnosis, softness-check, tone) from `schemas/execution-gates.v1.json`; the `ATTEST` items it prints (findings integration, cap compliance, blind-spot disclosure) remain your confirmation. The per-check detail below is the expansion of that gate. Verify the synthesis is actually drawing from pass findings — not generating an editorial letter from general impressions of the manuscript. Run these checks:
 
    - **Findings integration check:** For each root cause identified in step 3, confirm it cites at least one specific ledger finding by pass and finding name. If a root cause exists only as a general impression without ledger grounding, either locate the supporting ledger entry or demote it to §4b (Additional Observations) with a note that it awaits pass-level confirmation.
    - **Section ordering check:** Confirm the letter will follow the required §1-§11 order. Protected Elements, Author Decisions, Control Questions, Strongest Case Against, and Stress Test are separate sections with distinct jobs — they must not be merged or omitted.
    - **Cap compliance check:** Root causes ≤ 5. Revision checklist items ≤ 10 (Core DE) or ≤ 15 (Full DE). Must-Fix flags ≤ 10.
    - **Severity floor check:** Severity-floor rules are canonical in `references/output-policy.md §Severity Floor Rules`. Run `scripts/validate.sh severity-floor <editorial_letter_file>` (or perform the equivalent inline check on hosts without shell execution) before delivering the letter. Failures block delivery until the model either re-tiers the offending finding or documents an override rationale in Appendix B (Severity Calibration). Do not restate the rules here — point to the canonical home.
-   - **Decision-layer + appendix + evidence-density check:** Run `scripts/validate.sh decision-layer-check <editorial_letter_file>` (or perform the equivalent inline check on hosts without shell execution). The validator mechanically verifies Protected Elements count (3-6), Author Decisions count (3-7), Control Questions count (exactly 7), Appendices A/B/C presence, and per-Must-Fix evidence density (≥2 references). Editorial judgment about *which* elements/decisions/questions/appendix content appear is preserved at Step 7 and the editorial layer; counts and structural compliance are the validator's job. Do not restate the count contract here — point to the canonical homes (`references/output-policy.md §Mandatory Appendices` and `references/output-policy.md §Evidence Density Self-Check`). This validator runs alongside `severity-floor` and `audit-signal-propagation` as part of pre-output verification.
+   - **Decision-layer + appendix + evidence-density check:** Run `scripts/validate.sh decision-layer-check <editorial_letter_file>` (or perform the equivalent inline check on hosts without shell execution). The validator mechanically verifies Protected Elements count (3-6), Author Decisions count (3-7), Control Questions count (exactly 7), Appendices A/B/C presence, and per-Must-Fix evidence density (≥2 references). Editorial judgment about *which* elements/decisions/questions/appendix content appear is preserved at Step 8 and the editorial layer; counts and structural compliance are the validator's job. Do not restate the count contract here — point to the canonical homes (`references/output-policy.md §Mandatory Appendices` and `references/output-policy.md §Evidence Density Self-Check`). This validator runs alongside `severity-floor` and `audit-signal-propagation` as part of pre-output verification.
+   - **Deficit Lock / softness check:** Run `scripts/validate.sh deficit-lock <findings_ledger_file>` (verifies every synthesis-bound finding was locked structurally) and `scripts/validate.sh softness-check <editorial_letter_file> <findings_ledger_file>` (compares the delivered letter against the Triage-time locks — Deficit Lock, canonical in `references/output-policy.md §Severity Honesty Protocol`), or the equivalent inline check on hosts without shell execution. An unmarked downgrade of a locked Must-Fix/Should-Fix blocks delivery (ERROR, exit 1); hedged delivery of a locked finding is surfaced as WARN (exit 0) — treat it as a softness trigger and re-examine the wording. Resolve by re-tiering, delivering at the locked severity, or recording a `<!-- override: softness-downgrade — <rationale> -->` marker in the body plus an Appendix B entry. Weak-axis-vs-Must-Fix coherence is owned separately by `severity-floor` and is not duplicated here.
    - **Blind-spot disclosure check:** Any deferred or declined high-risk audit appears in Appendix A and is named in the letter where it materially limits confidence or readiness.
 
    If any check fails, fix it before proceeding. This gate exists because the most common synthesis failure mode is generating an editorially plausible letter that doesn't actually integrate the analytical work — the letter sounds right but isn't grounded in what the passes found.
@@ -365,44 +372,9 @@ Add a brief note after each question: why the answer matters for the book's revi
 
 The primary deliverable. Format specified in §Core DE Synthesis above.
 
-### Run Folder and Rolling State
+### Run Folder, Rolling State & Machine-Readable Sidecar
 
-All run artifacts (editorial letter, pass reports, contract, findings ledger, audit invocation log, results guide) are written to the **run folder** (`runs/YYYY-MM-DD_{model}_{type}/`) inside the project root. See `references/output-policy.md` §Folder Architecture.
-
-After writing the editorial letter to the run folder, update the **rolling state at the project root:**
-
-1. **Update `Diagnostic_State.md`** with:
-   - Findings from this session
-   - Keep / Cut / Unsure decisions
-   - Control Questions
-   - Change log
-
-2. **Update `SYNTHESIS.md`** at the project root:
-   - If this is the first run: copy the synthesis to the project root as `SYNTHESIS.md`
-   - If prior runs exist: update `SYNTHESIS.md` to incorporate new findings, with a methodology note listing contributing runs (e.g., "Consolidated from runs: 2026-03-15_opus46_full-de, 2026-04-04_opus46_core-de")
-
-3. **Append a row** to the `README.md` run archive table.
-
-`Diagnostic_State.md` lives at the project root, not inside run folders. If it does not exist, create it from `references/diagnostic-state-template.md` first. Never write rolling state to the plugin repo or installed plugin cache.
-
-### Machine-Readable Sidecar (Required)
-
-Alongside `Diagnostic_State.md`, maintain a sidecar file `Diagnostic_State.meta.json` in the same directory. This file is machine-readable state for fast resume routing, revision coaching, and state gardening. The author never reads it; the system reads it instead of parsing the markdown when it needs structured data.
-
-**When to write:** Initialize from `references/diagnostic-state-meta-template.json` when creating `Diagnostic_State.md`. Update the sidecar every time `Diagnostic_State.md` is updated.
-
-**What to update:**
-- `mode` and `active_scene_scope` — on every mode transition (diagnostic ↔ execution)
-- `last_session` — after each session (date, focus, tier, execution_mode, passes_completed, runlabel)
-- `root_causes` — after synthesis (list of root cause names, max 5)
-- `triage_summary` — after synthesis (counts of must-fix, should-fix, could-fix)
-- `control_questions` — after synthesis and after each revision round (open/answered/deferred counts)
-- `revision_progress` — after each revision round (steps_complete, current_step)
-- `session_count` and `handoff_count` — increment on each new session or handoff
-- `state_lines` — line count of `Diagnostic_State.md` (used by state gardening to trigger archival)
-- `contract_hash` — SHA-256 of the contract file, set at intake, checked at pre-pass re-grounding (see `run-core.md` §Mechanical Validation)
-- `next_action.key` — enumerated dispatch key for resume routing. Valid values: `run_passes`, `run_synthesis`, `run_spot_check`, `deliver`, `revision_round`, `run_audits`, `coaching`, `handoff_reentry`. See `commands/start.md` §Resume Target for the full dispatch table.
-- `next_action.description` — human-readable context for display (e.g., "resume Tier 2 passes — Pass 5 next"). Not used for routing.
+Where run artifacts and rolling state are written (run folder vs. project root), the post-synthesis update steps for `Diagnostic_State.md` / `SYNTHESIS.md` / `README.md`, and the `Diagnostic_State.meta.json` sidecar update schedule live in `references/output-structure.md` (loaded at write/persist time). The sidecar `contract_hash` is set at intake and checked at pre-pass re-grounding (see `run-core.md` §Mechanical Validation).
 
 ### Evidence Spot-Check (Required — Post-Synthesis)
 

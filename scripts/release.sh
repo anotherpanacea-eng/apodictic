@@ -18,9 +18,12 @@ if [ ! -d "$PLUGIN_DIR" ]; then
   exit 1
 fi
 
+GEMINI_AVAILABLE=1
 if [ ! -d "$GEMINI_PUBLIC_DIR" ]; then
-  echo "Missing Gemini public plugin directory: $GEMINI_PUBLIC_DIR"
-  exit 1
+  echo "WARN: Gemini public plugin directory absent ($GEMINI_PUBLIC_DIR) — skipping the"
+  echo "      APODICTIC-Gemini mirror sync + parity steps. The public release path is not"
+  echo "      coupled to the private sibling; the Claude/Codex/Antigravity artifacts still build."
+  GEMINI_AVAILABLE=0
 fi
 
 echo "Release pipeline starting for v${NEW_VERSION}"
@@ -41,11 +44,16 @@ node "$REPO_ROOT/scripts/build-antigravity.mjs"
 echo "[5/9] Verify repository consistency"
 node "$REPO_ROOT/scripts/release-verify.mjs"
 
-echo "[6/9] Sync plugin -> APODICTIC-Gemini public mirror"
-rsync -a --delete --exclude ".git/" --exclude ".DS_Store" "$PLUGIN_DIR/" "$GEMINI_PUBLIC_DIR/"
+if [ "$GEMINI_AVAILABLE" -eq 1 ]; then
+  echo "[6/9] Sync plugin -> APODICTIC-Gemini public mirror"
+  rsync -a --delete --exclude ".git/" --exclude ".DS_Store" "$PLUGIN_DIR/" "$GEMINI_PUBLIC_DIR/"
 
-echo "[7/9] Verify mirror parity"
-node "$REPO_ROOT/scripts/release-verify.mjs" --check-sync
+  echo "[7/9] Verify mirror parity"
+  node "$REPO_ROOT/scripts/release-verify.mjs" --check-sync
+else
+  echo "[6/9] Skipped — Gemini sibling absent (mirror sync)"
+  echo "[7/9] Skipped — Gemini sibling absent (mirror parity)"
+fi
 
 echo "[8/9] Package Claude plugin artifact"
 (

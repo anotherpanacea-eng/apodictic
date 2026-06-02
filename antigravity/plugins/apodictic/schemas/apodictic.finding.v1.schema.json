@@ -1,0 +1,17 @@
+{
+  "$id": "apodictic.finding.v1",
+  "$comment": "Source of truth for the embedded structured finding block. Validated by scripts/apodictic_artifacts.py — a stdlib SUBSET JSON-Schema checker (required / const / enum / type / array minItems / pattern), not a full engine (the plugin runtime is stdlib-only). The author-facing docs (findings-ledger-format.md) describe this block; they must not re-list the field set — this file is canonical.",
+  "title": "APODICTIC structured finding (apodictic.finding.v1)",
+  "type": "object",
+  "required": ["schema", "id", "mechanism", "severity", "confidence", "evidence_refs", "fix_class", "risk_if_fixed"],
+  "properties": {
+    "schema": {"const": "apodictic.finding.v1"},
+    "id": {"type": "string", "pattern": "^F-[A-Za-z0-9]+-[0-9]{2,}$", "$comment": "Finding Lifecycle ID: F-<ORIGIN>-<NN>, ORIGIN = pass/audit code (e.g. F-P5-01, F-DP-02). Durable + unique per run; follows the finding pass -> ledger -> Deficit Lock -> letter -> revision."},
+    "mechanism": {"type": "string"},
+    "severity": {"enum": ["Must-Fix", "Should-Fix", "Could-Fix"]},
+    "confidence": {"enum": ["HIGH", "MEDIUM", "LOW", "UNCERTAIN"]},
+    "evidence_refs": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "fix_class": {"type": "string"},
+    "risk_if_fixed": {"type": "string"}
+  }
+}

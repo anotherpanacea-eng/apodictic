@@ -1,0 +1,1 @@
+{ "findings": [ {"schema": "apodictic.readiness.v1", "dimension": "d", "verdict": "v", "rationale": "r"} ], "triage_summary": {"must_fix": 0, "should_fix": 0, "could_fix": 0} }

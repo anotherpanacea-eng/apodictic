@@ -8,6 +8,10 @@
 
 | In Progress | Planned | Done | Backlog |
 |-------------|---------|------|---------|
+| | | [**v2.0.0**](#v200--editorial-honesty--structural-integrity) | |
+| | [Harness Contracts v2](#harness-contracts-v2) | | [Validator Architecture Hardening](#validator-architecture-hardening) |
+| | [Runner-Governed Execution](#runner-governed-execution) | | [Model-Capacity Exploitation](#model-capacity-exploitation) |
+| | [Finding Lifecycle IDs](#finding-lifecycle-ids) | | [Research / API Reliability Layer](#research--api-reliability-layer) |
 | [Argument Benchmark Suite](#benchmark-suite) | [Adaptive Mode Escalation](#adaptive-mid-run-mode-escalation) | [v1.9.0](#v190--ai-prose-calibration-v20) | [Feedback Triage](#feedback-triage) |
 | [Genre Audit Expansion](#genre--audit-expansion) | | [v1.7.0](#v170--harness-engineering) | |
 | [Coaching Deepening](#coaching-deepening) | [Editor Scaffolding](#editor-scaffolding) | [v1.4.0](#v140--surface-hardening--writers-block) | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) |
@@ -182,6 +186,36 @@ For co-authoring teams or author-editor pairs working through a diagnostic toget
 
 ---
 
+## Harness Engineering
+
+The trajectory from "a brilliant prompt stack" toward an editorial operating system. These build directly on the v2.0.0 structural-integrity work (#10–#14) and extend the forward design patterns surfaced by the model-capability review (see §Future Work → Forward design patterns). The first three are the priority set; together they move enforcement out of the prompt and into the harness.
+
+### Harness Contracts v2
+
+Make JSON Schema the source of truth for every structured artifact — findings (`apodictic.finding.v1`), audit triggers, readiness verdicts, deficit locks, severity-calibration entries, sidecar state (`Diagnostic_State.meta.json`), and runner events. Markdown stays the author-facing surface, but is generated from — or validated against — those contracts rather than hand-authored in parallel. Generalizes the v2.0.0 Phase-3 move (real-JSON `apodictic.finding.v1` + `structured_findings.py`) from one block type to the whole artifact set, and gives Validator Architecture Hardening a single shared schema to enforce.
+
+### Runner-Governed Execution
+
+A lightweight runner that owns execution state — current phase, required artifacts, sidecar state, pending gates, fired retry triggers, allowed next actions — and enforces the ordering the model currently self-polices (*"you cannot synthesize until the Findings Ledger exists and the Deficit Lock / underdiagnosis gates pass"*). The model still does all the reasoning; the runner makes the gates non-optional. This is the most ambitious remaining step of the original prompt-governed → runner-governed direction, and the successor to the *condition-triggered vs. model-emergent gates* discipline (§Future Work): condition-triggering made the *triggers* detectable; the runner makes the *enforcement* external.
+
+### Finding Lifecycle IDs
+
+Give every material finding a durable ID that follows it across the whole pipeline: pass output → Findings Ledger → Deficit Lock → editorial letter → revision plan / coaching. With stable IDs, softness, downgrade, omission, and revision follow-through become directly auditable — the Deficit Lock and `softness-check` could match by ID instead of today's token/mechanism/evidence-ref heuristics — and cross-artifact traceability stops depending on prose matching. Pairs with Harness Contracts v2 (the ID is a contract field) and Runner-Governed Execution (the runner tracks findings by ID).
+
+### Validator Architecture Hardening
+
+`validate.sh` has done heroic work, but the external reviews kept surfacing regex-shaped edge cases (severity-label forms, prefix evidence-ref matches, calibration-line downgrades). Roadmap a gradual migration toward small Python validators with shared parsers, fixture-driven negative tests, and one thin shell dispatcher — extending the v2.0.0 precedent (`structured_findings.py`, `honesty_check.py`) to the rest of the suite. This is mechanical contract enforcement, not an eval harness. Subsumes the deferred *Canonical-framework validator runs as release gate* (§Deferred), which v2.0.0 began closing by wiring `validate.sh --check-all` into `release-verify`.
+
+### Model-Capacity Exploitation
+
+The more ambitious sibling of [Adaptive Mid-Run Mode Escalation](#adaptive-mid-run-mode-escalation): workflows that lean on high-context / leading-model capacity — pass-driven retargeting, per-pass model-tier assignment, critic passes invoked only where uncertainty is high, and long-context re-grounding before synthesis. Where Adaptive Escalation *reacts* to mid-run signal, this would *plan* model and compute allocation up front from the contract and uncertainty profile.
+
+### Research / API Reliability Layer
+
+v2.0.0 Phase 5 handled the first real plumbing (exponential backoff with `Retry-After`, no-sticky-error caching, single-call retraction). Future work hardens the external-research path: cache TTLs, error provenance, per-provider budgets, circuit breakers, freshness notes, and source-resolution confidence metadata — especially for Citation Verifier and Field Reconnaissance, where a silently-degraded API can masquerade as a clean (or missing) result.
+
+---
+
 ## Infrastructure
 
 ### Adaptive Mid-Run Mode Escalation
@@ -330,7 +364,11 @@ Wave 4 D2 host parity sweep finding 3: the codex build's `validateGeneratedWorks
 
 ### Canonical-framework validator runs as release gate
 
-Surfaced by Codex final critique (P1, v1.8.4): the `audit-tier-criterion` validator passed its synthetic self-test but failed against the actual canonical `pass-dependencies.md` it was built to police. v1.8.4 closed the specific instance, but the *class* of failure remains: validator self-tests prove the validator works on its own fixtures, not that the canonical framework satisfies the validator. Currently the four release checks (`release-generate.mjs --check`, `build-codex.mjs --check`, `build-antigravity.mjs --check`, `release-verify.mjs`) plus per-validator `--self-test` invocations gate releases; canonical-framework runs (e.g., `validate.sh audit-tier-criterion plugins/apodictic/skills/core-editor/references/pass-dependencies.md`, plus analogous canonical runs for `decision-layer-check` against canonical fixtures, `audit-signal-propagation` against sample editorial letters, and `timeline-*` against canonical Timeline.md fixtures) are not part of the release-gate set. Adding a `release-canonical-checks.sh` orchestrator (or extending `release-verify.mjs`) to run validators against their canonical targets would catch the audit-tier-criterion class of overclaim earlier — before the next external review surfaces it. Estimated cost: ~50 lines of shell + ~5 canonical-fixture invocations. Defer until a forcing function (next minor cycle's release prep, or a second canonical-validator-mismatch finding).
+**Status: partially shipped (v2.0.0).** v2.0.0 added `validate.sh --check-all` and wired it into `release-verify.mjs`, putting *real-file* canonical invariants into the release gate for the first time: `audit-signal-propagation --check-registry` (the 42-audit Signal-Emitting Registry checked against `pass-dependencies.md §4e`) and `structured-findings` against the shipped templates (`findings-ledger-format.md`, `diagnostic-state-meta-template.json`). For those checks the class is closed — the gate now proves the *canonical framework* satisfies the validator, not just that the validator passes its own fixtures.
+
+Original finding (Codex final critique, P1, v1.8.4): the `audit-tier-criterion` validator passed its synthetic self-test but failed against the actual canonical `pass-dependencies.md` it was built to police. The *class* of failure motivated the item: validator self-tests prove the validator works on its own fixtures, not that the canonical framework satisfies the validator.
+
+**Remaining:** the rest of the canonical-framework runs are still not gated — `audit-tier-criterion` against canonical `pass-dependencies.md`, `decision-layer-check` / `audit-signal-propagation` against sample editorial letters, and `timeline-*` against canonical `Timeline.md` fixtures. Extending `--check-all` (or the originally-proposed `release-canonical-checks.sh` orchestrator) to cover them would finish the job; estimated ~50 lines of shell + ~5 canonical-fixture invocations. Now subsumed by §Harness Engineering → Validator Architecture Hardening. Defer the remainder until a forcing function (next minor cycle's release prep, or a second canonical-validator-mismatch finding).
 
 ### Clearer §4e table-driven propagation framing
 
@@ -378,6 +416,9 @@ The fixtures in place (F1-F4) are reusable for future model-capability reviews. 
 ---
 
 ## Done
+
+### v2.0.0 — Editorial Honesty & Structural Integrity
+Five-phase subtraction-and-hardening pass. **Subtract:** bookkeeping moved out of the always-loaded judgment files into on-demand references (instruction floor −9.5%); `.gitattributes` collapses the generated mirrors in review. **Normalize severity:** one canonical Must-Fix/Should-Fix/Could-Fix scale with the orthogonal axes (confidence, prose tier, readiness, lens verdicts) named as not-severity, plus a 42-audit Signal-Emitting Registry enforced by `audit-signal-propagation --check-registry`. **Structured state:** real-JSON `apodictic.finding.v1` blocks + Python validator (`structured_findings.py`), required for synthesis-bound findings and mirrored into the sidecar under a triage-tally invariant. **Harden honesty (behavior change):** the Deficit Lock generation-order rule locks severities at Triage before any charity reframing, with the Distinguish / literary-exception / Stillness hatches gated so charity is legible; `honesty_check.py` drives `softness-check` (delivered-vs-locked, read from the Severity Calibration appendix) and `deficit-lock`. **Plumbing:** API exponential backoff honoring Retry-After, no-sticky-error caching, response-cache disk persistence, and full decoupling of the public release path from the private Gemini sibling; `release-verify` runs `validate.sh --check-all`. Validators 11 → 14.
 
 ### v1.9.0 — AI-Prose Calibration v2.0
 Three-layer architecture extending the v1.0 audit. Layer A distributional pre-scan: variance_audit (single document), manuscript_audit (cross-chapter), repetition_audit (vocabulary diagnostic), eleven signals against personal/genre baseline with z-score band classification. Layer B named subtypes: AIC-2 Indefinite-Pronoun Gesture; AIC-7 Negation Hedge, Disguised Correctio, Pseudo-Aphorism, Manifesto Cadence. Argument-shaped nonfiction parallel set: Abstraction Shielding, False-Balance Construction, Hedge-and-Affirm, Recommendation Template, Authority Laundering. Layer C Source Triage Pass: payoff test, voice slip vs. lost callback distinction, earned-by-frame verdict. Cross-detector caveat for AIC-4 / Pangram signal-9 tension. Source-triage modifier table layered onto existing severity translation. v1.0 spec preserved verbatim — additions are integrative.
