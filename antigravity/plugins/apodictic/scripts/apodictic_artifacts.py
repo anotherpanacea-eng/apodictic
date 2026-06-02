@@ -130,8 +130,14 @@ def validate_obj(obj, schema, where="<obj>"):
             errs.append("%s: '%s'=%r not in %s" % (where, key, val, spec["enum"]))
         if "type" in spec and not _type_ok(val, spec["type"]):
             errs.append("%s: '%s' must be type %s" % (where, key, spec["type"]))
-        if spec.get("type") == "array" and isinstance(val, list) and len(val) < spec.get("minItems", 0):
-            errs.append("%s: '%s' requires >= %d item(s)" % (where, key, spec["minItems"]))
+        if spec.get("type") == "array" and isinstance(val, list):
+            if len(val) < spec.get("minItems", 0):
+                errs.append("%s: '%s' requires >= %d item(s)" % (where, key, spec["minItems"]))
+            item_type = (spec.get("items") or {}).get("type")
+            if item_type:
+                for j, el in enumerate(val):
+                    if not _type_ok(el, item_type):
+                        errs.append("%s: '%s'[%d]=%r must be type %s" % (where, key, j, el, item_type))
         if "pattern" in spec and isinstance(val, str) and not re.search(spec["pattern"], val):
             errs.append("%s: '%s'=%r does not match pattern /%s/" % (where, key, val, spec["pattern"]))
     return errs
@@ -152,13 +158,16 @@ def run_self_test():
         print("Self-test: FAIL")
         return 1
     print("  schema_load: OK (%s)" % schema_dir())
-    good = {"schema": "apodictic.finding.v1", "mechanism": "m", "severity": "Must-Fix",
+    good = {"schema": "apodictic.finding.v1", "id": "F-P5-01", "mechanism": "m", "severity": "Must-Fix",
             "confidence": "HIGH", "evidence_refs": ["c"], "fix_class": "x", "risk_if_fixed": "y"}
     check("finding_valid", validate_obj(good, finding), True)
     check("bad_severity", validate_obj(dict(good, severity="Critical"), finding), False)
     check("bad_confidence", validate_obj(dict(good, confidence="SURE"), finding), False)
     check("missing_field", validate_obj({k: v for k, v in good.items() if k != "mechanism"}, finding), False)
+    check("missing_id", validate_obj({k: v for k, v in good.items() if k != "id"}, finding), False)
+    check("bad_id_pattern", validate_obj(dict(good, id="P5-1"), finding), False)
     check("empty_evidence", validate_obj(dict(good, evidence_refs=[]), finding), False)
+    check("non_string_evidence_item", validate_obj(dict(good, evidence_refs=[123]), finding), False)
     check("wrong_const", validate_obj(dict(good, schema="apodictic.readiness.v1"), finding), False)
     check("severity_enum_matches_rank",
           [] if set(load_severity_values()) == set(SEVERITY_RANK) else ["mismatch"], True)

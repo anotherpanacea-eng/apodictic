@@ -165,8 +165,8 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock"
-  echo "Aggregate: --self-test-all (runs --self-test on all 14 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema"
+  echo "Aggregate: --self-test-all (runs --self-test on all 15 self-testable validators; exit 0 only if every validator's self-test passes)"
   echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry and structured-findings on the shipped templates)"
   exit 2
 }
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # pure utilities that do not carry self-tests; only the 11 model-
 # capability-review validators do.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock"
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 14 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 15 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/14 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/15 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/14 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/15 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -3772,6 +3772,20 @@ EOF
     fi
     echo "WARN: python3 unavailable — deficit-lock (structured-lock presence) skipped."
     exit 0
+    ;;
+
+  artifacts-schema)
+    # Shared structured-artifact parser/validator (scripts/apodictic_artifacts.py) —
+    # the source-of-truth schema engine behind structured-findings / softness-check /
+    # deficit-lock. Only --self-test is meaningful here; it gates the shared module
+    # in --self-test-all. Delegates to the module; degrades without python3.
+    AS_DIR=$(cd "$(dirname "$0")" && pwd)
+    AS_HELPER="$AS_DIR/apodictic_artifacts.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$AS_HELPER" ]; then python3 "$AS_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable)"; exit 0
+    fi
+    echo "Usage: $0 artifacts-schema --self-test"; exit 2
     ;;
 
   *)
