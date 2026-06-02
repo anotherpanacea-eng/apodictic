@@ -206,6 +206,8 @@ Give every material finding a durable ID that follows it across the whole pipeli
 
 `validate.sh` has done heroic work, but the external reviews kept surfacing regex-shaped edge cases (severity-label forms, prefix evidence-ref matches, calibration-line downgrades). Roadmap a gradual migration toward small Python validators with shared parsers, fixture-driven negative tests, and one thin shell dispatcher — extending the v2.0.0 precedent (`structured_findings.py`, `honesty_check.py`) to the rest of the suite. This is mechanical contract enforcement, not an eval harness. Subsumes the deferred *Canonical-framework validator runs as release gate* (§Deferred), which v2.0.0 began closing by wiring `validate.sh --check-all` into `release-verify`.
 
+**In progress.** Spec + increment plan at [`docs/validator-hardening.md`](docs/validator-hardening.md), bundled with the two adjacent loose ends it closes (release-gate canonical runs; Harness Contracts v2 completion). Increment 1 landed: shared `scripts/letter_checks.py` prose-parser module + `severity-floor` ported off shell regex (token-boundary matching, body/appendix split, fixture-driven negatives), with the bash implementation retained as the no-`python3` degrade path.
+
 ### Model-Capacity Exploitation
 
 The more ambitious sibling of [Adaptive Mid-Run Mode Escalation](#adaptive-mid-run-mode-escalation): workflows that lean on high-context / leading-model capacity — pass-driven retargeting, per-pass model-tier assignment, critic passes invoked only where uncertainty is high, and long-context re-grounding before synthesis. Where Adaptive Escalation *reacts* to mid-run signal, this would *plan* model and compute allocation up front from the contract and uncertainty profile.

@@ -467,8 +467,14 @@ case "$COMMAND" in
   # ----------------------------------------------------------------------
   severity-floor)
     if [ $# -lt 1 ]; then echo "Usage: $0 severity-floor <editorial_letter_file> [<ledger_file>] | --self-test"; exit 2; fi
+    # Primary path: real parser in scripts/letter_checks.py (Validator Architecture
+    # Hardening) — token-boundary matching + body/appendix split, replacing the brittle
+    # shell regex below. Degrades to the bash implementation when python3 is unavailable.
+    SF_DIR=$(cd "$(dirname "$0")" && pwd)
+    LC_HELPER="$SF_DIR/letter_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then python3 "$LC_HELPER" --self-test severity-floor; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: clean letter — no Weak axes, no Systemic, < 3 Should-Fix.
@@ -537,6 +543,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+      python3 "$LC_HELPER" severity-floor "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash regex implementation (kept for python-less hosts).
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     LETTER="$1"
     ERRORS=0
