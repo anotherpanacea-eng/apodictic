@@ -202,6 +202,12 @@ def _parse_section3_anchors(text):
             if m:
                 add(m.group(1), _norm_anchor_day(ln))
     for row in _parse_event_ledger(text):
+        # Honor the contract: LOW/UNCERTAIN Event Ledger rows are exempt from drift,
+        # parallel to the arithmetic check (an explicitly uncertain guess must not become
+        # a hard validator failure). Section 3 markers carry no confidence field, so they
+        # are always counted.
+        if not _confidence_ok(_row_get(row, "confidence")):
+            continue
         scene = _row_get(row, "scene id")
         add(scene, _norm_anchor_day(_row_get(row, "calculated date"),
                                     _row_get(row, "anchor")))
@@ -244,7 +250,11 @@ def timeline_arithmetic(text):
         parsed.append({"start": start, "span": span, "conf_ok": conf_ok, "nonlinear": nonlinear})
     for i in range(1, len(parsed)):
         prev, cur = parsed[i - 1], parsed[i]
-        if cur["nonlinear"] or not cur["conf_ok"] or not prev["conf_ok"]:
+        # Exempt the pair if EITHER side is non-linear (a flashback/concurrent row is
+        # exempt whether it is the current row or the predecessor used for overrun math)
+        # or either side is LOW/UNCERTAIN confidence.
+        if (cur["nonlinear"] or prev["nonlinear"]
+                or not cur["conf_ok"] or not prev["conf_ok"]):
             continue
         if prev["start"] is None or cur["start"] is None or prev["span"] is None:
             continue
@@ -345,38 +355,38 @@ def timeline_diff(prior_text, current_text):
 
     counts = ("%d change(s); §1: %d added, %d removed; §3: %d added, %d removed"
               % (diff_total, added, removed, s3_added, s3_removed))
-    documented = bool(section8) and re.search(
-        r"(Added|Removed|Changed|Anchors changed|Calculations changed|"
-        r"Paradoxes (resolved|introduced))", section8, re.IGNORECASE) is not None
-    if documented:
-        doc_added = sum(1 for ln in section8.split("\n")
-                        if re.match(r"^[-*]\s+(Added|Anchors? added)", ln))
-        doc_removed = sum(1 for ln in section8.split("\n")
-                          if re.match(r"^[-*]\s+(Removed|Anchors? removed)", ln))
-        count_ok = True
-        if doc_added > 0 or doc_removed > 0:
-            if doc_added < exp_added or doc_removed < exp_removed:
-                count_ok = False
-        if count_ok:
-            return [], [], "OK: Diff detected (%s) and documented in Section 8." % counts, ""
-        msg = ("Section 8 documented-entry counts (%d added, %d removed) do not cover structural "
-               "diff (%d added, %d removed) across §1 + §3" % (doc_added, doc_removed, exp_added, exp_removed))
-        if ov:
-            warnings.append("WARN: %s; body override marker present." % msg)
-        else:
-            errors.append("ERROR: %s. Add missing entries in Section 8 or place a body override "
-                          "marker. Canonical home: %s §Section 8." % (msg, _PASS10))
-        return errors, warnings, "", ("FAILED: timeline-diff — %s." % msg)
+    # Coverage gate (per diff class). Section 8 must actually cover the structural diff:
+    # added rows need 'Added'/'Anchors added' bullets, removed rows need 'Removed'/'Anchors
+    # removed'. A row *edit* shows up in the line-level structural diff as one added + one
+    # removed line, so a 'Changed'/'Anchors changed'/'Calculations changed' bullet documents
+    # one add+remove pair. Generic 'Changed' text can no longer mask a pure addition or
+    # removal (a 'Changed' bullet only offsets a matched add/remove pair).
+    s8 = section8.split("\n")
+    doc_added = sum(1 for ln in s8
+                    if re.match(r"^[-*]\s+(Added|Events? added|Anchors? added)", ln, re.IGNORECASE))
+    doc_removed = sum(1 for ln in s8
+                      if re.match(r"^[-*]\s+(Removed|Events? removed|Anchors? removed)", ln, re.IGNORECASE))
+    doc_changed = sum(1 for ln in s8
+                      if re.match(r"^[-*]\s+(Changed|Events? changed|Anchors? changed|"
+                                  r"Calculations? changed)", ln, re.IGNORECASE))
+    changed_applied = min(doc_changed, min(exp_added, exp_removed))  # edit pairs
+    need_added = exp_added - changed_applied
+    need_removed = exp_removed - changed_applied
+    if doc_added >= need_added and doc_removed >= need_removed:
+        return [], [], "OK: Diff detected (%s) and documented in Section 8." % counts, ""
 
+    msg = ("Section 8 documentation does not cover the structural diff: need %d added / %d "
+           "removed bullet(s) (have %d added, %d removed, %d changed) for §1+§3 totals "
+           "%d added / %d removed"
+           % (need_added, need_removed, doc_added, doc_removed, doc_changed, exp_added, exp_removed))
     if ov:
-        warnings.append("WARN: Diff detected (%s); Section 8 does not document, but body override "
-                        "marker present." % counts)
-        return errors, warnings, "OK: override (undocumented diff).", ""
-    errors.append("ERROR: Diff detected (%s). Section 8 (Diff Notes) does not document the change. "
-                  "Add an entry in Section 8 or place a body override marker "
-                  "<!-- override: timeline-diff-undocumented — <reason> --> above Section 8. "
-                  "Canonical home: %s §Section 8." % (counts, _PASS10))
-    return errors, warnings, "", ("FAILED: timeline-diff — undocumented diff (%s)." % counts)
+        warnings.append("WARN: %s; body override marker present." % msg)
+        return errors, warnings, "OK: override (under-documented diff).", ""
+    errors.append("ERROR: %s. Document each class in Section 8 (added rows need 'Added', removed "
+                  "rows need 'Removed', a row edit may be one 'Changed'), or place a body override "
+                  "marker <!-- override: timeline-diff-undocumented — <reason> --> above Section 8. "
+                  "Canonical home: %s §Section 8." % (msg, _PASS10))
+    return errors, warnings, "", ("FAILED: timeline-diff — %s." % msg)
 
 
 SINGLE_FILE_CHECKS = {
@@ -465,10 +475,20 @@ def run_self_test(which=None):
                 pp = os.path.join(td, "p.md"); open(pp, "w").write(p)
                 cc = os.path.join(td, "c.md"); open(cc, "w").write(c)
                 return _emit(*timeline_diff(_read(pp), _read(cc)))
+        # Generic 'Changed' text must NOT cover a pure addition (review fix).
+        cur_changed_masks = prior.replace("## Section 8: Diff Notes\n", added_row).replace(
+            "n/a.", "- Changed: refreshed timeline wording only.")
+        # A genuine row edit (span 2h->3h = one added + one removed line) IS covered by
+        # a single 'Changed' bullet.
+        cur_edit = prior.replace("| Ch 1 §2 | Tuesday afternoon | 2 hours |",
+                                 "| Ch 1 §2 | Tuesday afternoon | 3 hours |").replace(
+            "n/a.", "- Changed: Ch 1 §2 span 2h->3h.")
         expect("diff_no_change", diff_rc(prior, cur_same), 0)
         expect("diff_undocumented", diff_rc(prior, cur_undoc), 1)
         expect("diff_documented", diff_rc(prior, cur_doc), 0)
         expect("diff_override_body", diff_rc(prior, cur_over), 0)
+        expect("diff_changed_masks_add", diff_rc(prior, cur_changed_masks), 1)
+        expect("diff_edit_changed_covers", diff_rc(prior, cur_edit), 0)
 
     if rc["v"] == 0:
         print("Self-test: PASS")
