@@ -49,6 +49,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **Cite:** Roosevelt Institute, "Democratic Abundance: An Abundance That Works for Workers."
 - **URL:** https://rooseveltinstitute.org/publications/democratic-abundance/
 - **START:** first sentence of the report body after the title/author/date block.
+- **BODY_START:** `## Key Takeaways`
 - **END:** last sentence before footnotes/citations, "related publications," or site footer.
 - **EXCLUDE:** nav, author bios, footnote list, share/related widgets, newsletter CTA.
 - **RECORDED:** `retrieved 2026-05-30 | web_fetch | 39013 bytes | sha256: d4d5a70b16012cbc2d9222f4218349519e296adab0ba05318206e75e3915e6bf`
@@ -57,6 +58,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **Cite:** Current Affairs, "Abandon 'Abundance.'"
 - **URL:** https://www.currentaffairs.org/news/abandon-abundance
 - **START:** first sentence of the article body after headline/byline/deck.
+- **BODY_START:** `Well, it looks like Abundance isn't going away`
 - **END:** last sentence before comments, "support us" CTA, or footer.
 - **EXCLUDE:** nav, deck/subhead if duplicated, donation/subscription CTAs, comments.
 - **RECORDED:** `retrieved 2026-05-30 | web_fetch | 26069 bytes | sha256: 6352c7c92ba244874cd2f602e5366e2a0bcba9be4c74aeeccbf4663c82fd7d95`
@@ -65,6 +67,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **Cite:** Reason, "The Problem With the 'Abundance Agenda.'"
 - **URL:** https://reason.com/2023/03/03/the-problem-with-the-abundance-agenda/
 - **START:** first sentence of the article body after headline/byline.
+- **BODY_START:** `With much fanfare, the Biden administration announced`
 - **END:** last sentence before "RELATED," comments, or footer.
 - **EXCLUDE:** nav, ad slots, related-links, comments, newsletter CTA.
 - **RECORDED:** `retrieved 2026-05-30 | web_fetch | 15890 bytes | sha256: e103ac687a7238207e6720e99b5686ad8415de09c3688a9952bf538aeb312345`
@@ -73,6 +76,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **Cite:** Cato Institute, "Industrial Policy: A Bad Idea Is Back," *Cato Policy Report* (Jul/Aug 2021).
 - **URL:** https://www.cato.org/policy-report/july/august-2021/industrial-policy-bad-idea-back
 - **START:** first sentence of the essay body after title/author/issue block.
+- **BODY_START:** `In the wake of the COVID-19 pandemic`
 - **END:** last sentence before endnotes, "about the author," or footer.
 - **EXCLUDE:** nav, issue masthead, author bio, endnote list, share widgets.
 - **License:** CC BY-NC-SA 4.0 (Cato) — compatible with this repo's license.
@@ -121,6 +125,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **Cite:** Prison Policy Initiative, "One Size Fits None: How 'standard conditions' of probation set people up to fail."
 - **URL:** https://www.prisonpolicy.org/reports/probation_conditions.html
 - **START:** first sentence of the report body after title/byline/date.
+- **BODY_START:** `Table of Contents:`
 - **END:** last sentence before the Footnotes/Methodology section or footer.
 - **EXCLUDE:** nav, methodology appendix, donation CTA, footer. (Footnotes 1–68 preserved.)
 - **RECORDED:** `retrieved 2026-05-30 | web_fetch | 77509 bytes | sha256: 4944b26c9b2392d523530cc6f807e2024052a6b1ca016e83d650bb54fc0ecb4a`
