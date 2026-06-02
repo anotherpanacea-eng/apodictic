@@ -105,7 +105,15 @@ extract_body() {
   if [ -n "$hr" ]; then sed "1,${hr}d" "$f"; else cat "$f"; fi
 }
 
-sha() { shasum -a 256 | awk '{print $1}'; }
+# SHA-256 tool: macOS ships `shasum`, most Linux/WSL ship `sha256sum`. Prefer
+# whichever exists so the hash check works on macOS, Linux, and Git Bash/WSL.
+if command -v shasum >/dev/null 2>&1; then
+  sha() { shasum -a 256 | awk '{print $1}'; }
+elif command -v sha256sum >/dev/null 2>&1; then
+  sha() { sha256sum | awk '{print $1}'; }
+else
+  die "no SHA-256 tool found (need shasum or sha256sum)"
+fi
 
 # --- best-effort hash check; echoes "whole|body|none" ---------------------
 hash_status() {
