@@ -45,6 +45,19 @@ _CODE_RE = re.compile(r"\b([A-Z]{2})([0-9]+)\b")
 _FM_A_RE = re.compile(r"\bFM-A([0-9]+)\b")
 _HEADING_RE = re.compile(r"^#{1,4}\s")
 _BARE_PREFIX_RE = re.compile(r"\b(?:AT|CL|SM|WR|BP|OB|DI|NE|AC)\b")
+# Leading verdict token of a GT7 "Expected classification" value, skipping markdown emphasis.
+_GT7_VERDICT_RE = re.compile(r"[\s*`]*([A-Z][A-Z-]*)")
+# Decoy code mentions that do NOT name the diagnosed family: explicitly negated ("not WR0",
+# "not WR0/WR2") or marked passing ("WR0 = PASS", "WR0 (PASS)"). Masked before the GT2
+# locus<->code-family check so a correct family named only to deny it can't satisfy the check.
+_NEGATED_CODES_RE = re.compile(r"\b[Nn][Oo][Tt]\s+((?:[A-Z]{2}[0-9]+(?:\s*[/,]\s*)?)+)")
+_PASS_CODE_RE = re.compile(r"\b[A-Z]{2}[0-9]+\s*(?:=\s*PASS\b|\(\s*PASS\s*\))")
+
+
+def _positive_code_text(text):
+    """`text` with decoy (negated / PASS-marked) code mentions removed, so only codes asserted
+    as the actual diagnosis remain for the GT2 locus<->code-family consistency check."""
+    return _PASS_CODE_RE.sub(" ", _NEGATED_CODES_RE.sub(" ", text))
 
 
 def _gt_numbers_in_heading(line):
@@ -129,9 +142,12 @@ def argument_groundtruth_check(text):
         if not locus.strip():
             errors.append("Check 3 (GT2 locus) — 'Primary failure layer' field is missing or empty.")
         else:
+            # Only codes asserted as the diagnosis count — a family named solely to negate it
+            # ("not WR0") or mark it passing ("WR0 = PASS") must not satisfy the locus.
+            gt2_pos = _positive_code_text(gt2)
             named = {layer: fam for layer, fam in _LOCUS_FAMILY.items()
                      if re.search(r"\b%s\b" % layer, locus)}
-            if named and not any(_has_family(gt2, fam) for fam in named.values()):
+            if named and not any(_has_family(gt2_pos, fam) for fam in named.values()):
                 want = ", ".join("%s->%s*" % (l, "/".join(f)) for l, f in named.items())
                 errors.append("Check 3 (GT2 locus) — locus names %s but GT2 carries no matching "
                               "code (expected one of: %s)." % ("/".join(named), want))
@@ -142,7 +158,13 @@ def argument_groundtruth_check(text):
     m = re.search(r"Expected classification:\*\*\s*(.+)", gt7)
     if m:
         cls_line = m.group(1)
-        cls = next((c for c in _GT7_CLASSES if re.search(r"\b%s\b" % re.escape(c), cls_line)), None)
+        # The verdict is the field value at the *start* of the line; a trailing parenthetical,
+        # dash-set-off rationale, or "..., not UNSOUND" gloss is commentary, not the
+        # classification. Parse the leading token so "SOUND — ... not UNSOUND" reads as SOUND
+        # (not UNSOUND) and "BROKEN, not UNSOUND" is correctly rejected.
+        vm = _GT7_VERDICT_RE.match(cls_line)
+        verdict = vm.group(1) if vm else ""
+        cls = verdict if verdict in _GT7_CLASSES else None
         if cls is None:
             errors.append("Check 4 (GT7) — classification is not one of SOUND / "
                           "UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND (got %r)." % cls_line.strip())
@@ -251,6 +273,24 @@ def run_self_test(which=None):
     check("positive_control_gt2_na", errs_of(_VALID_GT.replace(
         "- **Primary failure layer:** WARRANT\n- **Expected codes:** WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
         "- **N/A — positive control.** No planted failure.")), True)
+    # Check 4: the verdict is the leading token — a SOUND key glossed "..., not UNSOUND" must
+    # parse as SOUND (clean), and must NOT be misread as UNSOUND off the explanatory token.
+    check("gt7_sound_not_unsound", errs_of(_VALID_GT.replace(
+        "Expected classification:** UNSOUND",
+        "Expected classification:** SOUND — a competent essay, not UNSOUND")), True)
+    # Check 4: an out-of-enum verdict followed by a valid token in the gloss is still rejected.
+    check("gt7_broken_not_unsound", errs_of(_VALID_GT.replace(
+        "Expected classification:** UNSOUND",
+        "Expected classification:** BROKEN, not UNSOUND")), False)
+    # Check 3: the correct family named only as a negation ("not WR0") must not satisfy a
+    # WARRANT locus — the "warrant break mis-coded as support" error must still fire.
+    check("gt2_negated_family", errs_of(_VALID_GT.replace(
+        "- **Expected codes:** WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
+        "- **Expected codes:** SM0 (assertion gap); not WR0.")), False)
+    # Check 3: the correct family named only as PASS ("WR0 = PASS") must not satisfy the locus.
+    check("gt2_pass_decoy_family", errs_of(_VALID_GT.replace(
+        "- **Expected codes:** WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
+        "- **Expected codes:** SM0 (assertion gap); WR0 = PASS.")), False)
 
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
