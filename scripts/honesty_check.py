@@ -153,18 +153,34 @@ def _recorded_severity_by_id(sevcal, fid):
 
 
 def _structured_calibration(letter_text):
-    """id -> delivered severity from embedded apodictic:severity_calibration blocks
-    (structured Appendix B entries). Read in preference to the prose heuristic; lowest
-    delivered wins if an id is repeated (mirrors the prose 'any downgrade counts' rule)."""
-    out = {}
+    """(id -> delivered severity, block_errors). Embedded apodictic:severity_calibration blocks
+    are read in preference to the prose heuristic (lowest delivered wins on repeats). Each block
+    is schema-validated: a malformed or schema-invalid block is an ERROR rather than being
+    silently skipped — the structured Severity Calibration is a delivery contract, so an invalid
+    block must not quietly fall back to prose delivery."""
+    out, errs = {}, []
+    schema = art.load_schema("apodictic.severity_calibration.v1")
+    n = 0
     for btype, obj, jerr in art.parse_blocks(letter_text):
-        if btype != "severity_calibration" or jerr or not isinstance(obj, dict):
+        if btype != "severity_calibration":
+            continue
+        n += 1
+        where = "Severity Calibration block #%d" % n
+        if jerr:
+            errs.append("%s: invalid JSON — %s" % (where, jerr))
+            continue
+        if not isinstance(obj, dict):
+            errs.append("%s: not a JSON object" % where)
+            continue
+        block_errs = art.validate_obj(obj, schema, where) if schema is not None else []
+        if block_errs:
+            errs.extend(block_errs)
             continue
         fid, delivered = obj.get("id"), obj.get("delivered")
         if fid and delivered in SEV_RANK:
             if fid not in out or SEV_RANK[delivered] < SEV_RANK[out[fid]]:
                 out[fid] = delivered
-    return out
+    return out, errs
 
 
 def _has_hedge(body, finding):
@@ -184,7 +200,10 @@ def softness_check(letter_text, ledger_text):
     errs, warns = [], []
     body = _body(letter_text)
     sevcal = _sevcal(letter_text)
-    struct_cal = _structured_calibration(letter_text)
+    struct_cal, cal_block_errs = _structured_calibration(letter_text)
+    # A malformed/schema-invalid Severity Calibration block is a broken delivery contract —
+    # hard ERROR (the softness-downgrade override cannot mask it).
+    errs.extend("invalid Severity Calibration block — %s" % e for e in cal_block_errs)
     marker = SOFT_MARKER in body
     for f in parse_locked_findings(ledger_text):
         lock = f.get("severity")
@@ -336,6 +355,24 @@ def run_self_test():
     check("struct_cal_downgrade_errors", softness_check(letter_struct("Should-Fix"), lock_id)[0], False)
     # structured block is authoritative over the prose line (prose says Must-Fix, block says Should-Fix)
     check("struct_cal_overrides_prose", softness_check(letter_struct("Should-Fix", prose_sev="Must-Fix"), lock_id)[0], False)
+
+    # A malformed / schema-invalid calibration block is a hard ERROR (delivery contract),
+    # even when the body delivers the locked finding at the right tier (no silent prose fallback).
+    def letter_bad_block(block_json):
+        return ("# Edit\n## What Needs Work\n"
+                "The protagonist never changes across the novel (Chapter 34).\n"
+                "<!-- finding: F-P5-02 -->\n"
+                "## Appendix B: Severity Calibration\n"
+                "<!-- apodictic:severity_calibration\n%s\n-->\n" % block_json)
+    bad_delivered = ('{"schema":"apodictic.severity_calibration.v1","id":"F-P5-02",'
+                     '"locked":"Must-Fix","delivered":"Critical","direction":"unchanged"}')
+    missing_direction = ('{"schema":"apodictic.severity_calibration.v1","id":"F-P5-02",'
+                         '"locked":"Must-Fix","delivered":"Must-Fix"}')
+    bad_json = ('{"schema":"apodictic.severity_calibration.v1","id":"F-P5-02" '
+                '"delivered":"Must-Fix","direction":"unchanged"}')  # missing comma -> invalid JSON
+    check("struct_cal_bad_delivered_errors", softness_check(letter_bad_block(bad_delivered), lock_id)[0], False)
+    check("struct_cal_missing_direction_errors", softness_check(letter_bad_block(missing_direction), lock_id)[0], False)
+    check("struct_cal_malformed_json_errors", softness_check(letter_bad_block(bad_json), lock_id)[0], False)
 
     # ---- deficit-lock ----
     valid_block = ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"F-P5-01","mechanism":"m",'
