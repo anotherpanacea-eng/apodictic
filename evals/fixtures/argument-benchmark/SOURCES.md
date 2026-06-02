@@ -88,6 +88,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **Cite:** Marc Andreessen, "The Techno-Optimist Manifesto," a16z (Oct 2023).
 - **URL:** https://a16z.com/the-techno-optimist-manifesto/
 - **START:** first line of the manifesto body (the opening "We are told…"-type line) after title.
+- **BODY_START:** `We are told that technology takes our jobs`
 - **END:** last line of the manifesto body before the "patron saints" / credits list and footer.
 - **EXCLUDE:** nav, the patron-saints/credits appendix (it is a list, not argument), footer. **Note:** if a run wants to test whether the credits list is argument or ornament, record that as a separate variant; the default analyzed text excludes it.
 - **RECORDED:** `retrieved 2026-05-30 | web_fetch | 33619 bytes | sha256: 1ba705936f3b4deb560d8b53a0f08690d40f16a13048a39615a80cf4e55924f3`
@@ -96,6 +97,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **Cite:** Dario Amodei, "Machines of Loving Grace" (Oct 2024).
 - **URL:** https://darioamodei.com/essay/machines-of-loving-grace
 - **START:** first sentence of the essay body after the title.
+- **BODY_START:** `I think and talk a lot about the risks of powerful AI`
 - **END:** last sentence of the conclusion before any footnotes or site footer.
 - **EXCLUDE:** nav, footnote list, footer.
 - **RECORDED:** `retrieved 2026-05-30 | web_fetch | 91273 bytes | sha256: c089c0ff8a4345473a1d60b1c01f4380d1ecf940158b9384a718d0e857de3dc5`
@@ -104,6 +106,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **Cite:** Bender, Gebru, McMillan-Major, Shmitchell, "On the Dangers of Stochastic Parrots: Can Language Models Be Too Big? 🦜," FAccT '21. DOI 10.1145/3442188.3445922.
 - **URL:** https://dl.acm.org/doi/10.1145/3442188.3445922 — **prefer a stable PDF** (ACM may gate); if using an open author copy, record which.
 - **START:** the Abstract's first sentence (academic paper: abstract + body are the argument).
+- **BODY_START:** `The past 3 years of work in NLP have been characterized by`
 - **END:** the last sentence of the Conclusion (section before Acknowledgments).
 - **EXCLUDE:** ACM header/citation block, author affiliations, Acknowledgments, References, appendices, page furniture.
 - **License:** CC BY 4.0 (open-access FAccT '21 PDF).
@@ -117,6 +120,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **URL (landing):** https://www.aecf.org/resources/eliminate-confinement-as-a-response-to-probation-rule-violations — landing page only; the substance is in the linked PDF.
 - **SOURCE_PDF (the actual analyzed text):** https://assets.aecf.org/m/resourcedoc/aecf-eliminateconfinementasresponse-2020.pdf
 - **START:** first sentence of the report body after title/date.
+- **BODY_START:** `This brief presents the research case for eliminating`
 - **END:** last sentence of the argument before "download," "related," or footer.
 - **EXCLUDE:** nav, download CTAs, related-resources, footer.
 - **RECORDED:** `retrieved 2026-05-30 | web_fetch (PDF) | 18885 bytes | sha256: 69491f3335858edeae3663331fd873d31c2a451b17ff4c4e7d32705b614b2df9`
@@ -137,6 +141,7 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **Cite:** Ta-Nehisi Coates, "The Case for Reparations," *The Atlantic* (June 2014).
 - **URL:** https://www.theatlantic.com/magazine/archive/2014/06/the-case-for-reparations/361631/ — **paywall likely**; use an accessible/library copy and record which.
 - **START:** the Roman-numeral-section "I." opening (the Clyde Ross narrative begins the body); include from the essay's first body sentence after the title/epigraph.
+- **BODY_START:** `Clyde Ross was born in 1923`
 - **END:** the last sentence of the final numbered section before magazine footer/related.
 - **EXCLUDE:** magazine chrome, photo captions if not part of the prose, "more stories," footer. Note the essay's section epigraphs are part of the text — keep them.
 - **RECORDED:** `retrieved 2026-05-30 | corrected re-extraction (coates-case-for-reparations-corrected.md) | 100281 bytes | sha256: d4407650b3ceafcc5853418e158fa00a1d32aac7979e5d190bd7a27032f987d2`
