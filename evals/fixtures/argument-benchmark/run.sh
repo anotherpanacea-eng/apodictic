@@ -155,9 +155,9 @@ fi
 
 # --- best-effort hash check; echoes "whole|body|none" ---------------------
 hash_status() {
-  local f="$1" want="$2"
+  local f="$1" want="$2" slug="${3:-}"
   [ "$(sha < "$f")" = "$want" ] && { echo whole; return; }
-  [ "$(extract_body "$f" | sha)" = "$want" ] && { echo body; return; }
+  [ "$(extract_body "$f" "$slug" | sha)" = "$want" ] && { echo body; return; }
   echo none
 }
 
@@ -202,10 +202,10 @@ for s in "${SLUGS[@]}"; do
   [ -n "$want" ] || { echo "SKIP  $s  (no recorded hash in SOURCES.md)"; continue; }
   f="$(src_file "$s")" || { echo "MISS  $s  (no cached file in \$SRC)"; fail=1; continue; }
 
-  st="$(hash_status "$f" "$want")"
+  st="$(hash_status "$f" "$want" "$s")"
   case "$st" in
     whole) echo "OK    $s  (hash: whole-file)";;
-    body)  echo "OK    $s  (hash: header-stripped body)";;
+    body)  echo "OK    $s  (hash: runner-visible body)";;
     none)  echo "HASH? $s  (recorded hash matched neither whole nor stripped — provenance needs reconciling)";;
   esac
 
