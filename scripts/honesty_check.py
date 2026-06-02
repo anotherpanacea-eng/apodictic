@@ -373,6 +373,10 @@ def run_self_test():
     check("struct_cal_bad_delivered_errors", softness_check(letter_bad_block(bad_delivered), lock_id)[0], False)
     check("struct_cal_missing_direction_errors", softness_check(letter_bad_block(missing_direction), lock_id)[0], False)
     check("struct_cal_malformed_json_errors", softness_check(letter_bad_block(bad_json), lock_id)[0], False)
+    # broken carrier: payload has no closing brace before --> (was 0 blocks pre-fix) -> hard ERROR
+    broken_carrier = ('{"schema":"apodictic.severity_calibration.v1","id":"F-P5-02",'
+                      '"locked":"Must-Fix","delivered":"Critical","direction":"unchanged"')  # no closing }
+    check("struct_cal_broken_carrier_errors", softness_check(letter_bad_block(broken_carrier), lock_id)[0], False)
 
     # ---- deficit-lock ----
     valid_block = ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"F-P5-01","mechanism":"m",'
