@@ -245,10 +245,16 @@ def run_checks(phase, run_folder, manifest, strict_warnings=False, validate_sh=N
 
 # ---------------------------------------------------------------- fold (pointer)
 
+def _ev(e):
+    """A gate_event as a dict — a non-dict / malformed element becomes {} so the fold helpers never
+    traceback; check_state separately reports it as 'not an object' (Review fix — Codex #28 P2)."""
+    return e if isinstance(e, dict) else {}
+
+
 def _prefix_len(events):
     n = 0
     for e in events:
-        if e.get("migrated"):
+        if _ev(e).get("migrated"):
             n += 1
         else:
             break
@@ -257,7 +263,7 @@ def _prefix_len(events):
 
 def _has_real_event(events):
     """True if the log contains any non-migrated event (evidence of real upgrade work)."""
-    return any(not e.get("migrated") for e in events)
+    return any(not _ev(e).get("migrated") for e in events)
 
 
 def _grandfathered(events, idx):
@@ -267,23 +273,23 @@ def _grandfathered(events, idx):
     # migrated events is a hand-authored clearing bypass, not a migration, so its migrated `passed`
     # is NOT grandfathered: it then needs a real attested_contract and is rejected as malformed.
     # (Review fix — Codex #28 P1: prefix position alone was a bypass.)
-    return (bool(events[idx].get("migrated")) and idx < _prefix_len(events)
+    return (bool(_ev(events[idx]).get("migrated")) and idx < _prefix_len(events)
             and _has_real_event(events))
 
 
 def _required_ids(events, idx):
     if _grandfathered(events, idx):
         return set()
-    return set(events[idx].get("attested_contract") or [])
+    return set(_ev(events[idx]).get("attested_contract") or [])
 
 
 def _attested_items(e):
-    return set(e.get("attested_items") or [])
+    return set(_ev(e).get("attested_items") or [])
 
 
 def is_clearing(events, idx):
     """clearing_pass(e): a passed that authorizes a transition (see spec Open exceptions)."""
-    e = events[idx]
+    e = _ev(events[idx])
     if e.get("result") != "passed":
         return False
     if not _grandfathered(events, idx) and "attested_contract" not in e:
@@ -299,11 +305,11 @@ def fold_pointer(events, manifest):
     frontier = None
     for idx in range(len(events)):
         if is_clearing(events, idx):
-            frontier = events[idx].get("gate")  # last clearing wins (highest index)
+            frontier = _ev(events[idx]).get("gate")  # last clearing wins (highest index)
 
     latest_idx = {}
     for idx, e in enumerate(events):
-        g = e.get("gate")
+        g = _ev(e).get("gate")
         if g is not None:
             latest_idx[g] = idx
     open_gates = {g for g, idx in latest_idx.items() if not is_clearing(events, idx)}
@@ -321,7 +327,7 @@ def fold_pointer(events, manifest):
 
     finding_states = {}
     for e in events:
-        for fid, st in (e.get("finding_deltas") or {}).items():
+        for fid, st in (_ev(e).get("finding_deltas") or {}).items():
             if _STATE_RANK.get(st, 0) >= _STATE_RANK.get(finding_states.get(fid), 0):
                 finding_states[fid] = st
 
@@ -656,9 +662,9 @@ def check_state(sidecar, manifest, strict=False):
     if (ex.get("finding_states") or {}) != ptr["finding_states"]:
         errs.append("pointer drift: execution.finding_states=%r but fold=%r" % (ex.get("finding_states"), ptr["finding_states"]))
 
-    open_gates = sorted(g for g in {e.get("gate") for e in events if isinstance(e, dict)}
+    open_gates = sorted(g for g in {_ev(e).get("gate") for e in events}
                         if g is not None
-                        and not is_clearing(events, max(i for i, e in enumerate(events) if e.get("gate") == g)))
+                        and not is_clearing(events, max(i for i, e in enumerate(events) if _ev(e).get("gate") == g)))
 
     for e in errs:
         lines.append("  ERROR: %s" % e)
@@ -863,6 +869,17 @@ def run_self_test():
     code, lines = check_state(os.path.join(dsh, "Diagnostic_State.meta.json"), manifest)
     check("shuffled_migrated_prefix_rejected",
           code == 1 and any("manifest phase order" in ln for ln in lines))
+
+    # --- (Codex #28 P2) a malformed (non-dict) gate_events entry is a CLEAN validation failure,
+    # not a Python traceback — the fold helpers tolerate non-dicts
+    malformed = {"project": "Proj", "execution": {"state_version": 2, "gate_events": ["not an object"]}}
+    dmf = folder(ledger_ok, sidecar=malformed)
+    try:
+        code, lines = check_state(os.path.join(dmf, "Diagnostic_State.meta.json"), manifest)
+        ok = code == 1 and any("not an object" in ln for ln in lines)
+    except Exception:
+        ok = False
+    check("malformed_event_no_traceback", ok)
 
     # --- (Codex #28 P2) stale execution.phase accepted when the fold cleared nothing
     stalephase = {"project": "Proj", "execution": {"state_version": 2, "gate_events": [
