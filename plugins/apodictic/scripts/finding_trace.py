@@ -17,10 +17,11 @@ dimension: cross-artifact REFERENTIAL INTEGRITY + sidecar lifecycle COHERENCE.
                           (advisory; ERROR under --strict).
   W2 revision coverage    a Must-Fix ledger ID not referenced in any revision plan, when one
                           is present (advisory; ERROR under --strict).
-  E5 phantom completion   finding_states[id]=="revised" for a ledger ID not referenced in any
-                          completed-revision (*_Revision_*.md) artifact, when one is present.
-  W3 completion coverage  a ledger ID worked in a completed-revision artifact whose finding_states
-                          entry is not "revised" (advisory; ERROR under --strict).
+  E5 phantom completion   finding_states[id]=="revised" for a ledger ID not marked resolved
+                          (`<!-- resolved: F-... -->` in a completed-revision artifact), when one
+                          is present.
+  W3 completion coverage  a ledger ID marked resolved in a completed-revision artifact whose
+                          finding_states entry is not "revised" (advisory; ERROR under --strict).
 
 Each artifact is optional; a missing one skips its dimension (no false failure).
 Reuses apodictic_artifacts.parse_blocks (one block grammar). See docs/finding-lifecycle-ids.md.
@@ -50,6 +51,10 @@ _SYNTH_CLEARED_PHASES = ("run_synthesis", "run_spot_check")
 # Exact Lifecycle-ID token (so F-P5-01 != F-P5-011); mirrors honesty_check._id_present.
 _ID_RE = re.compile(r"(?<![\w-])F-[A-Za-z0-9]+-[0-9]{2,}(?![\w-])")
 _COMMENT_RE = re.compile(r"<!--(.*?)-->", re.DOTALL)
+# Explicit resolution marker in a completed-revision artifact: `<!-- resolved: F-XX-NN -->`.
+# A bare mention (e.g. a finding listed under "Flags still present") is NOT a resolution claim,
+# so completion (E5/W3) keys on this marker, not on any F-... token in the report.
+_RESOLVED_RE = re.compile(r"<!--\s*resolved:(.*?)-->", re.DOTALL | re.IGNORECASE)
 
 # Editorial-letter filename globs (output-structure.md naming).
 _LETTER_GLOBS = ("*_Core_DE_Synthesis_*.md", "*_Full_DE_*.md", "*_Editorial_Letter_*.md")
@@ -99,6 +104,19 @@ def revision_cited_ids(text):
     return set(_ID_RE.findall(text)) if text else set()
 
 
+def resolved_cited_ids(text):
+    """F-... IDs explicitly marked resolved in a completed-revision artifact via
+    `<!-- resolved: F-XX-NN -->` markers. A bare mention (a finding under "Flags still present"
+    or "New issues introduced") is NOT a resolution claim and is excluded — only an explicit
+    marker counts a finding as a completed revision."""
+    ids = set()
+    if not text:
+        return ids
+    for body in _RESOLVED_RE.findall(text):
+        ids.update(_ID_RE.findall(body))
+    return ids
+
+
 def sidecar_state(sidecar_text):
     """(finding_states dict, phase, parse_ok) from a Diagnostic_State.meta.json.
     parse_ok is False when a *discovered* sidecar is present but not valid JSON — the
@@ -138,9 +156,9 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completio
     rev_cited = set()
     for rt in revision_texts:
         rev_cited |= revision_cited_ids(rt)
-    comp_cited = set()
+    resolved_ids = set()  # explicitly resolved (<!-- resolved: ID -->) in a completion artifact
     for ct in completion_texts:
-        comp_cited |= revision_cited_ids(ct)
+        resolved_ids |= resolved_cited_ids(ct)
     finding_states, phase, sc_ok = sidecar_state(sidecar_text) if have_sidecar else ({}, None, True)
 
     # E1 — dangling reference (letter cites an ID not in the ledger)
@@ -179,20 +197,24 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completio
             if inv[fid] == "Must-Fix" and fid not in rev_cited:
                 warns.append("W2 follow-through: Must-Fix %s not referenced in any revision plan" % fid)
     # E5 — phantom completion: a `revised` ledger finding with no completed-revision artifact
-    # behind it. Gated on a completion artifact being present in scope (a revised state with no
-    # completion artifact here may have been worked in an earlier session — left alone).
+    # behind it. Keyed on an explicit `<!-- resolved: ID -->` marker (NOT a bare mention — a
+    # report's "Flags still present" list names worked-but-unresolved findings). Gated on a
+    # completion artifact being present in scope (a revised state with no completion artifact
+    # here may have been resolved in an earlier session — left alone).
     if have_sidecar and sc_ok and have_completion:
         for fid in sorted(finding_states):
-            if finding_states.get(fid) == "revised" and fid in inv and fid not in comp_cited:
-                errs.append("E5 phantom completion: finding_states[%s]=revised — not referenced "
-                            "in any completed-revision artifact" % fid)
-    # W3 — completion follow-through: a finding worked in a completed round whose lifecycle was
-    # not advanced to `revised`. Needs a parseable sidecar to judge advancement against.
+            if finding_states.get(fid) == "revised" and fid in inv and fid not in resolved_ids:
+                errs.append("E5 phantom completion: finding_states[%s]=revised — not marked "
+                            "resolved (<!-- resolved: %s -->) in any completed-revision artifact"
+                            % (fid, fid))
+    # W3 — completion follow-through: a finding explicitly marked resolved in a completed round
+    # whose lifecycle was not advanced to `revised`. Keys on the resolved marker (so a
+    # still-present mention never triggers it). Needs a parseable sidecar to judge against.
     if have_completion and have_sidecar and sc_ok:
-        for fid in sorted(comp_cited):
+        for fid in sorted(resolved_ids):
             if fid in inv and finding_states.get(fid) != "revised":
-                warns.append("W3 completion: %s worked in a completed-revision artifact but "
-                             "finding_states[%s]=%r (expected 'revised')"
+                warns.append("W3 completion: %s marked resolved in a completed-revision artifact "
+                             "but finding_states[%s]=%r (expected 'revised')"
                              % (fid, fid, finding_states.get(fid)))
 
     # Per-ID trace report
@@ -212,10 +234,10 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completio
         mark = ("cited" if fid in cited else "UNCITED") if have_letter else "n/a"
         if not have_revision:
             rev_mark = "n/a"
-        elif fid in comp_cited:
-            rev_mark = "done"      # referenced in a completed-revision artifact
+        elif fid in resolved_ids:
+            rev_mark = "done"      # explicitly marked resolved in a completed-revision artifact
         elif fid in rev_cited:
-            rev_mark = "planned"   # referenced in a session plan only
+            rev_mark = "planned"   # mentioned in a revision plan / report (not marked resolved)
         else:
             rev_mark = "—"
         lines.append("  %-12s sev=%-9s state=%-9s letter=%-7s rev=%s" % (fid, inv[fid], state, mark, rev_mark))
@@ -392,11 +414,15 @@ def run_self_test():
     # --- Increment 3: revision-completion (`revised`) lifecycle ---
     sc_revised = sidecar({"F-P5-01": "revised", "F-P5-02": "locked"})
     sc_delivered = sidecar({"F-P5-01": "delivered", "F-P5-02": "delivered"})
-    rev_done_01 = "# Revision Report\nConfirmed F-P5-01 resolved (pacing now lands)."
-    rev_done_02 = "# Revision Report\nReworked F-P5-02 (stakes)."
+    # Completion = an explicit `<!-- resolved: ID -->` marker (NOT a bare mention).
+    rev_done_01 = "# Revision Report\n## Flags resolved\nPacing now lands. <!-- resolved: F-P5-01 -->"
+    rev_done_02 = "# Revision Report\n## Flags resolved\nStakes reworked. <!-- resolved: F-P5-02 -->"
+    # A legitimate report naming a worked-but-unresolved finding (no resolved marker).
+    rev_still_present = ("# Revision Report\n## Flags still present\nF-P5-01 remains present; the "
+                         "attempted fix did not land.\n")
 
-    # E5 phantom completion: F-P5-01 marked revised, but the completed-revision artifact works
-    # only F-P5-02 -> the `revised` claim has no completion artifact behind it.
+    # E5 phantom completion: F-P5-01 marked revised, but only F-P5-02 carries a resolved marker
+    # -> the `revised` claim has no completed-revision artifact behind it.
     code, lines = trace(ledger, letter_clean, sc_revised,
                         revision_texts=[rev_done_02], completion_texts=[rev_done_02])
     check("e5_phantom_completion",
@@ -406,12 +432,12 @@ def run_self_test():
     code, _ = trace(ledger, letter_clean, sc_revised)
     check("e5_skipped_without_completion", code == 0)
 
-    # revised + referenced in a completed-revision artifact -> clean (no E5, no W3)
+    # revised + explicitly marked resolved -> clean (no E5, no W3)
     code, _ = trace(ledger, letter_clean, sc_revised,
                     revision_texts=[rev_done_01], completion_texts=[rev_done_01])
     check("revised_with_completion_clean", code == 0)
 
-    # W3 completion follow-through: worked in a completed round but state still `delivered`
+    # W3 completion follow-through: marked resolved but state still `delivered`
     code_w, lines_w = trace(ledger, letter_clean, sc_delivered,
                             revision_texts=[rev_done_01], completion_texts=[rev_done_01])
     check("w3_completion_advisory",
@@ -419,6 +445,18 @@ def run_self_test():
     code_s, _ = trace(ledger, letter_clean, sc_delivered,
                       revision_texts=[rev_done_01], completion_texts=[rev_done_01], strict=True)
     check("w3_completion_strict_fails", code_s == 1)
+
+    # REGRESSION (PR #32 review P1): a worked-but-unresolved finding ("Flags still present", no
+    # resolved marker) must NOT count as completed -> no W3, and must pass even under --strict.
+    code, lines = trace(ledger, letter_clean, sc_delivered,
+                        revision_texts=[rev_still_present], completion_texts=[rev_still_present])
+    check("w3_skips_unresolved_mention", code == 0 and not any("W3 completion" in ln for ln in lines))
+    check("w3_strict_ok_on_still_present",
+          trace(ledger, letter_clean, sc_delivered, revision_texts=[rev_still_present],
+                completion_texts=[rev_still_present], strict=True)[0] == 0)
+    # ...and a still-present finding shows rev=planned (mentioned), not rev=done (resolved)
+    check("still_present_not_done",
+          any("F-P5-01" in ln and "rev=planned" in ln for ln in lines))
 
     # W3 needs a parseable sidecar to judge advancement: completion present, no sidecar -> skipped
     code, _ = trace(ledger, letter_clean, None,
@@ -451,10 +489,10 @@ def run_self_test():
     with open(os.path.join(d, "Proj_Session_Plan_run.md"), "w") as fh:
         fh.write("# Session 1\nAddress F-P5-01 (pacing) and F-P5-02 (stakes).\n")
     with open(os.path.join(d, "Proj_Revision_run.md"), "w") as fh:
-        fh.write("# Revision Report\nConfirmed F-P5-01 resolved (pacing now lands).\n")
+        fh.write("# Revision Report\n## Flags resolved\nPacing now lands. <!-- resolved: F-P5-01 -->\n")
     rc_code, rc_lines = run([d])
     check("run_folder_resolution", rc_code == 0)
-    check("run_folder_rev_done", any("rev=done" in ln for ln in rc_lines))       # F-P5-01 in *_Revision_*
+    check("run_folder_rev_done", any("rev=done" in ln for ln in rc_lines))       # F-P5-01 resolved marker
     check("run_folder_rev_planned", any("rev=planned" in ln for ln in rc_lines))  # F-P5-02 in plan only
     check("explicit_files_classify",
           run([os.path.join(d, "Proj_Findings_Ledger_run.md"),
