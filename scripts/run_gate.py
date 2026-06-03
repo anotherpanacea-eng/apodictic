@@ -561,9 +561,11 @@ def check_state(sidecar, manifest, strict=False):
         return 1, ["check-state: execution.gate_events must be an array"]
 
     phases = manifest.get("phases", {})
+    phase_order = list(phases.keys())
     gate_event_schema = art.load_schema("apodictic.gate_event.v1") if art else None
     prefix = _prefix_len(events)
     seen_migrated_gates = set()
+    last_mig_order = -1  # manifest-order index of the previous migrated gate
 
     # A migration prefix must be followed by real work — the engine seeds the baseline atomically
     # with the first real v2 event. A migrated-only log is a forged clearing baseline, not an
@@ -583,7 +585,9 @@ def check_state(sidecar, manifest, strict=False):
         # gate enum == manifest phases keys
         if e.get("gate") not in phases:
             errs.append("%s: gate %r not in manifest phases %s" % (where, e.get("gate"), list(phases)))
-        # migration-prefix integrity (Codex P1): migrated only as contiguous head, <=1/gate
+        # migration-prefix integrity (Codex P1/P2): migrated only as a contiguous head, <=1/gate,
+        # in MANIFEST PHASE ORDER (a shuffled prefix would reconstruct the wrong frontier, since the
+        # fold takes the last clearing event in append order).
         if e.get("migrated"):
             if i >= prefix:
                 errs.append("%s: migrated:true outside the contiguous migration prefix" % where)
@@ -591,6 +595,12 @@ def check_state(sidecar, manifest, strict=False):
             if g in seen_migrated_gates:
                 errs.append("%s: second migrated event for gate %r" % (where, g))
             seen_migrated_gates.add(g)
+            if g in phase_order:
+                gi = phase_order.index(g)
+                if gi <= last_mig_order:
+                    errs.append("%s: migrated prefix not in manifest phase order "
+                                "(gate %r out of order)" % (where, g))
+                last_mig_order = gi
         # reason iff skipped/deferred; provenance attested for them
         if e.get("result") in ("skipped", "deferred"):
             if not e.get("reason"):
@@ -841,6 +851,18 @@ def run_self_test():
           code == 1 and any("not followed by any real event" in ln for ln in lines))
     check("migrated_only_does_not_clear",
           fold_pointer(migonly["execution"]["gate_events"], manifest)["phase"] is None)
+
+    # --- (Codex #28 P2) a SHUFFLED migrated prefix (wrong manifest order) is rejected — it would
+    # otherwise reconstruct the wrong frontier (fold takes the last clearing event in append order)
+    shuffled = {"project": "Proj", "execution": {"state_version": 2, "gate_events": [
+        {"gate": "run_spot_check", "result": "passed", "provenance": "mechanical", "ts": "t0", "migrated": True, "attested_items": []},
+        {"gate": "run_synthesis", "result": "passed", "provenance": "mechanical", "ts": "t1", "migrated": True, "attested_items": []},
+        {"gate": "run_spot_check", "result": "blocked", "provenance": "mechanical", "ts": "t2"},
+    ]}}
+    dsh = folder(ledger_ok, sidecar=shuffled)
+    code, lines = check_state(os.path.join(dsh, "Diagnostic_State.meta.json"), manifest)
+    check("shuffled_migrated_prefix_rejected",
+          code == 1 and any("manifest phase order" in ln for ln in lines))
 
     # --- (Codex #28 P2) stale execution.phase accepted when the fold cleared nothing
     stalephase = {"project": "Proj", "execution": {"state_version": 2, "gate_events": [
