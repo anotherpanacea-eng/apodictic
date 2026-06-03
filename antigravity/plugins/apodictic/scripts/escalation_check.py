@@ -63,16 +63,39 @@ def tier1_finding_count(ledger_text):
 
 
 def load_sidecar(sidecar_text):
-    """(execution_mode, complexity_signals, parse_ok)."""
+    """(execution_mode, complexity_signals, parse_ok). Tolerant of model-authored shapes:
+    a non-dict last_session / complexity_signals degrades to unknown / empty, never crashes."""
     try:
         meta = json.loads(sidecar_text)
     except (ValueError, TypeError):
         return None, {}, False
     if not isinstance(meta, dict):
         return None, {}, False
-    mode = (meta.get("last_session") or {}).get("execution_mode") or None
+    ls = meta.get("last_session")
+    mode = ls.get("execution_mode") if isinstance(ls, dict) else None
     cs = meta.get("complexity_signals")
-    return mode, (cs if isinstance(cs, dict) else {}), True
+    return (mode or None), (cs if isinstance(cs, dict) else {}), True
+
+
+def _int_signal(signals, key):
+    """(value, status) — status in 'ok' / 'absent' / 'bad'. The sidecar is model-authored, so a
+    non-integer (string, float, bool) is 'bad' (reported unevaluable), never compared or coerced."""
+    if key not in signals:
+        return None, "absent"
+    v = signals[key]
+    if isinstance(v, bool) or not isinstance(v, int):
+        return None, "bad"
+    return v, "ok"
+
+
+def _bool_signal(signals, key):
+    """(value, status) — a non-boolean is 'bad' (so a string like \"false\" is not truthy-fired)."""
+    if key not in signals:
+        return None, "absent"
+    v = signals[key]
+    if not isinstance(v, bool):
+        return None, "bad"
+    return v, "ok"
 
 
 def evaluate(mode, signals, t1count):
@@ -80,25 +103,35 @@ def evaluate(mode, signals, t1count):
     and recommendation is (current_mode, recommended_mode) or None."""
     fired, uneval = [], []
 
-    pov = signals.get("pov_count")
-    if pov is None:
-        uneval.append("T1 pov_count")
-    elif pov > 3:
+    def _note(label, status):  # absent vs malformed, reported distinctly; neither fires
+        if status == "absent":
+            uneval.append(label)
+        elif status == "bad":
+            uneval.append(label + " (malformed — wrong type; treated as unevaluable)")
+
+    pov, pst = _int_signal(signals, "pov_count")
+    _note("T1 pov_count", pst)
+    if pst == "ok" and pov > 3:
         fired.append("T1 pov_count=%d (>3)" % pov)
 
-    nl = signals.get("nonlinear_timeline")
-    if nl is None:
-        uneval.append("T2 nonlinear_timeline")
-    elif nl:
+    nl, nst = _bool_signal(signals, "nonlinear_timeline")
+    _note("T2 nonlinear_timeline", nst)
+    if nst == "ok" and nl:
         fired.append("T2 nonlinear_timeline")
 
-    bf, of = signals.get("belief_failures"), signals.get("orientation_failures")
-    if bf is None and of is None:
+    bf, bst = _int_signal(signals, "belief_failures")
+    of, ost = _int_signal(signals, "orientation_failures")
+    if bst == "bad":
+        uneval.append("T3 belief_failures (malformed — wrong type; treated as unevaluable)")
+    if ost == "bad":
+        uneval.append("T3 orientation_failures (malformed — wrong type; treated as unevaluable)")
+    if bst == "absent" and ost == "absent":
         uneval.append("T3 belief_failures / orientation_failures")
-    else:
-        bf, of = bf or 0, of or 0
-        if bf > 5 or of > 3:
-            fired.append("T3 belief_failures=%d (>5) or orientation_failures=%d (>3)" % (bf, of))
+    elif bst == "ok" or ost == "ok":
+        bfv = bf if bst == "ok" else 0
+        ofv = of if ost == "ok" else 0
+        if bfv > 5 or ofv > 3:
+            fired.append("T3 belief_failures=%d (>5) or orientation_failures=%d (>3)" % (bfv, ofv))
 
     if t1count > 20:
         fired.append("T4 tier1_finding_count=%d (>20)" % t1count)
@@ -108,7 +141,9 @@ def evaluate(mode, signals, t1count):
         if mode == "single-agent":
             rec = ("single-agent", "sequential")
         elif mode == "sequential":
-            architectural = (pov is not None and pov > 3) and (t1count > 20 or bool(nl))
+            pov_complex = pst == "ok" and pov > 3
+            nl_complex = nst == "ok" and nl
+            architectural = pov_complex and (t1count > 20 or nl_complex)
             rec = ("sequential", "swarm" if architectural else "hybrid")
         # hybrid / swarm: already at/above the ceiling -> no recommendation
     return fired, uneval, rec
@@ -259,6 +294,25 @@ def run_self_test():
     # malformed sidecar -> error
     code, lines = check(ledger(3), "{ not json")
     chk("malformed_sidecar_errors", code == 1 and any("not valid JSON" in ln for ln in lines))
+
+    # model-authored type hardening (Codex #31 P2): wrong-typed signals are unevaluable,
+    # never a traceback or a truthiness over-trigger
+    code, lines = check(ledger(3), sidecar("single-agent", pov_count="4"))  # string int
+    chk("string_pov_unevaluable",
+        code == 0 and any("T1 pov_count (malformed" in ln for ln in lines)
+        and not any("TRIGGER T1" in ln for ln in lines))
+    code, lines = check(ledger(3), sidecar("single-agent", nonlinear_timeline="false"))  # string bool
+    chk("string_timeline_not_fired",
+        code == 0 and not any("TRIGGER T2" in ln for ln in lines)
+        and any("T2 nonlinear_timeline (malformed" in ln for ln in lines))
+    code, lines = check(ledger(3), sidecar("single-agent", belief_failures="6"))
+    chk("string_belief_unevaluable",
+        code == 0 and not any("TRIGGER T3" in ln for ln in lines)
+        and any("T3 belief_failures (malformed" in ln for ln in lines))
+    # non-dict last_session must not crash .get()
+    code, lines = check(ledger(25), '{"last_session": "single-agent"}')
+    chk("nondict_last_session_no_crash",
+        any("current mode=unknown" in ln for ln in lines) and any("TRIGGER T4" in ln for ln in lines))
 
     # run-folder resolution
     d = tempfile.mkdtemp()
