@@ -17,6 +17,12 @@ dimension: cross-artifact REFERENTIAL INTEGRITY + sidecar lifecycle COHERENCE.
                           (advisory; ERROR under --strict).
   W2 revision coverage    a Must-Fix ledger ID not referenced in any revision plan, when one
                           is present (advisory; ERROR under --strict).
+  E5 phantom completion   a completed-revision artifact MENTIONS a ledger ID whose finding_states
+                          is "revised" but carries no `<!-- resolved: F-... -->` marker for it (the
+                          in-scope report and the rolling sidecar disagree; IDs not in the report
+                          are out of scope — a finding resolved in an earlier round is left alone).
+  W3 completion coverage  a ledger ID marked resolved in a completed-revision artifact whose
+                          finding_states entry is not "revised" (advisory; ERROR under --strict).
 
 Each artifact is optional; a missing one skips its dimension (no false failure).
 Reuses apodictic_artifacts.parse_blocks (one block grammar). See docs/finding-lifecycle-ids.md.
@@ -46,12 +52,20 @@ _SYNTH_CLEARED_PHASES = ("run_synthesis", "run_spot_check")
 # Exact Lifecycle-ID token (so F-P5-01 != F-P5-011); mirrors honesty_check._id_present.
 _ID_RE = re.compile(r"(?<![\w-])F-[A-Za-z0-9]+-[0-9]{2,}(?![\w-])")
 _COMMENT_RE = re.compile(r"<!--(.*?)-->", re.DOTALL)
+# Explicit resolution marker in a completed-revision artifact: `<!-- resolved: F-XX-NN -->`.
+# A bare mention (e.g. a finding listed under "Flags still present") is NOT a resolution claim,
+# so completion (E5/W3) keys on this marker, not on any F-... token in the report.
+_RESOLVED_RE = re.compile(r"<!--\s*resolved:(.*?)-->", re.DOTALL | re.IGNORECASE)
 
 # Editorial-letter filename globs (output-structure.md naming).
 _LETTER_GLOBS = ("*_Core_DE_Synthesis_*.md", "*_Full_DE_*.md", "*_Editorial_Letter_*.md")
 _LEDGER_GLOB = "*_Findings_Ledger_*.md"
 # Revision-plan / coaching artifact globs (the lifecycle stage after the letter).
 _REVISION_GLOBS = ("*_Session_Plan_*.md", "*_Revision_*.md")
+# Completed-revision artifacts — a SUBSET of _REVISION_GLOBS: the Revision Report stage where a
+# finding's lifecycle advances to `revised` (state-lifecycle.md §Revision Round Output). Session
+# plans express intent (plan coverage, W2); completed-revision artifacts express done work (E5/W3).
+_COMPLETION_GLOBS = ("*_Revision_*.md",)
 
 
 def _read(path):
@@ -91,6 +105,19 @@ def revision_cited_ids(text):
     return set(_ID_RE.findall(text)) if text else set()
 
 
+def resolved_cited_ids(text):
+    """F-... IDs explicitly marked resolved in a completed-revision artifact via
+    `<!-- resolved: F-XX-NN -->` markers. A bare mention (a finding under "Flags still present"
+    or "New issues introduced") is NOT a resolution claim and is excluded — only an explicit
+    marker counts a finding as a completed revision."""
+    ids = set()
+    if not text:
+        return ids
+    for body in _RESOLVED_RE.findall(text):
+        ids.update(_ID_RE.findall(body))
+    return ids
+
+
 def sidecar_state(sidecar_text):
     """(finding_states dict, phase, parse_ok) from a Diagnostic_State.meta.json.
     parse_ok is False when a *discovered* sidecar is present but not valid JSON — the
@@ -104,8 +131,16 @@ def sidecar_state(sidecar_text):
     return (fs if isinstance(fs, dict) else {}), ex.get("phase"), True
 
 
-def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, strict=False):
-    """Run the cross-artifact trace. Returns (code, lines)."""
+def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completion_texts=None,
+          strict=False):
+    """Run the cross-artifact trace. Returns (code, lines).
+
+    revision_texts   = ALL revision-stage artifacts (session plans + completed revisions) — the
+                       surface for E4 (dangling) and W2 (plan coverage).
+    completion_texts = the completed-revision (*_Revision_*.md) SUBSET — the surface for E5
+                       (phantom completion) and W3 (completion follow-through). Callers keep the
+                       invariant completion_texts ⊆ revision_texts.
+    """
     lines, errs, warns = [], [], []
 
     inv = ledger_inventory(ledger_text)
@@ -116,10 +151,17 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, strict=Fa
     have_sidecar = sidecar_text is not None
     revision_texts = revision_texts or []
     have_revision = bool(revision_texts)
+    completion_texts = completion_texts or []
+    have_completion = bool(completion_texts)
     cited = letter_cited_ids(letter_text) if have_letter else set()
     rev_cited = set()
     for rt in revision_texts:
         rev_cited |= revision_cited_ids(rt)
+    resolved_ids = set()    # explicitly resolved (<!-- resolved: ID -->) in a completion artifact
+    comp_mentioned = set()  # any F-... token (bare) in a completion artifact — E5's in-scope set
+    for ct in completion_texts:
+        resolved_ids |= resolved_cited_ids(ct)
+        comp_mentioned |= revision_cited_ids(ct)
     finding_states, phase, sc_ok = sidecar_state(sidecar_text) if have_sidecar else ({}, None, True)
 
     # E1 — dangling reference (letter cites an ID not in the ledger)
@@ -157,6 +199,27 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, strict=Fa
         for fid in sorted(inv):
             if inv[fid] == "Must-Fix" and fid not in rev_cited:
                 warns.append("W2 follow-through: Must-Fix %s not referenced in any revision plan" % fid)
+    # E5 — phantom completion: an in-scope contradiction — a completed-revision artifact *mentions*
+    # a `revised` ledger finding (bare, e.g. under "Flags still present") but carries no
+    # `<!-- resolved: ID -->` marker for it, so the report and the sidecar disagree. Scoped to IDs
+    # the current report actually mentions (comp_mentioned): the sidecar's finding_states is a
+    # rolling all-session map, so a finding resolved in an EARLIER (out-of-scope) round is durably
+    # `revised` but simply won't appear in this report — and must not be flagged (PR #32 review P1).
+    if have_sidecar and sc_ok:
+        for fid in sorted(comp_mentioned):
+            if finding_states.get(fid) == "revised" and fid in inv and fid not in resolved_ids:
+                errs.append("E5 phantom completion: finding_states[%s]=revised but the completed-"
+                            "revision artifact mentions it without a <!-- resolved: %s --> marker "
+                            "— the report and the sidecar disagree" % (fid, fid))
+    # W3 — completion follow-through: a finding explicitly marked resolved in a completed round
+    # whose lifecycle was not advanced to `revised`. Keys on the resolved marker (so a
+    # still-present mention never triggers it). Needs a parseable sidecar to judge against.
+    if have_completion and have_sidecar and sc_ok:
+        for fid in sorted(resolved_ids):
+            if fid in inv and finding_states.get(fid) != "revised":
+                warns.append("W3 completion: %s marked resolved in a completed-revision artifact "
+                             "but finding_states[%s]=%r (expected 'revised')"
+                             % (fid, fid, finding_states.get(fid)))
 
     # Per-ID trace report
     if not have_sidecar:
@@ -173,7 +236,14 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, strict=Fa
     for fid in sorted(inv):
         state = ((finding_states.get(fid, "—") if sc_ok else "?") if have_sidecar else "n/a")
         mark = ("cited" if fid in cited else "UNCITED") if have_letter else "n/a"
-        rev_mark = ("cited" if fid in rev_cited else "—") if have_revision else "n/a"
+        if not have_revision:
+            rev_mark = "n/a"
+        elif fid in resolved_ids:
+            rev_mark = "done"      # explicitly marked resolved in a completed-revision artifact
+        elif fid in rev_cited:
+            rev_mark = "planned"   # mentioned in a revision plan / report (not marked resolved)
+        else:
+            rev_mark = "—"
         lines.append("  %-12s sev=%-9s state=%-9s letter=%-7s rev=%s" % (fid, inv[fid], state, mark, rev_mark))
 
     for e in errs:
@@ -209,7 +279,8 @@ def _newest(paths):
 
 
 def resolve_run_folder(folder):
-    """(ledger, letter, sidecar, [revisions]) — newest match per artifact (revisions: all matches)."""
+    """(ledger, letter, sidecar, [revisions], [completions]) — newest per single artifact;
+    revisions = all session-plan + revision matches; completions = the *_Revision_*.md subset."""
     ledger = _newest(glob.glob(os.path.join(folder, _LEDGER_GLOB)))
     letter = None
     for g in _LETTER_GLOBS:
@@ -220,13 +291,16 @@ def resolve_run_folder(folder):
     revisions = []
     for g in _REVISION_GLOBS:
         revisions += glob.glob(os.path.join(folder, g))
-    return ledger, letter, sidecar, revisions
+    completions = []
+    for g in _COMPLETION_GLOBS:
+        completions += glob.glob(os.path.join(folder, g))
+    return ledger, letter, sidecar, revisions, completions
 
 
 def classify_files(paths):
-    """Classify explicit file args into (ledger, letter, sidecar, [revisions])."""
+    """Classify explicit file args into (ledger, letter, sidecar, [revisions], [completions])."""
     ledger = letter = sidecar = None
-    revisions = []
+    revisions, completions = [], []
     for p in paths:
         base = os.path.basename(p)
         if p.endswith(".json"):
@@ -235,16 +309,18 @@ def classify_files(paths):
             ledger = p
         elif "_Session_Plan_" in base or "_Revision_" in base:
             revisions.append(p)
+            if "_Revision_" in base:
+                completions.append(p)
         else:
             letter = p
-    return ledger, letter, sidecar, revisions
+    return ledger, letter, sidecar, revisions, completions
 
 
 def run(paths, strict=False):
     if len(paths) == 1 and os.path.isdir(paths[0]):
-        ledger, letter, sidecar, revisions = resolve_run_folder(paths[0])
+        ledger, letter, sidecar, revisions, completions = resolve_run_folder(paths[0])
     else:
-        ledger, letter, sidecar, revisions = classify_files(paths)
+        ledger, letter, sidecar, revisions, completions = classify_files(paths)
     if not ledger:
         return 2, ["finding-trace: no Findings Ledger found (need a *_Findings_Ledger_*.md or a "
                    "file with apodictic:finding blocks)"]
@@ -254,8 +330,9 @@ def run(paths, strict=False):
         if sidecar_text is None:
             sidecar_text = ""
     revision_texts = [t for t in (_read(r) for r in revisions) if t is not None]
+    completion_texts = [t for t in (_read(c) for c in completions) if t is not None]
     return trace(_read(ledger), _read(letter) if letter else None, sidecar_text,
-                 revision_texts=revision_texts, strict=strict)
+                 revision_texts=revision_texts, completion_texts=completion_texts, strict=strict)
 
 
 # ---------------------------------------------------------------- self-test
@@ -338,6 +415,68 @@ def run_self_test():
     code_s, _ = trace(ledger, letter_clean, sc_ok, revision_texts=["Session 1: polish only."], strict=True)
     check("w2_followthrough_strict_fails", code_s == 1)
 
+    # --- Increment 3: revision-completion (`revised`) lifecycle ---
+    sc_revised = sidecar({"F-P5-01": "revised", "F-P5-02": "locked"})
+    sc_delivered = sidecar({"F-P5-01": "delivered", "F-P5-02": "delivered"})
+    # Completion = an explicit `<!-- resolved: ID -->` marker (NOT a bare mention).
+    rev_done_01 = "# Revision Report\n## Flags resolved\nPacing now lands. <!-- resolved: F-P5-01 -->"
+    rev_done_02 = "# Revision Report\n## Flags resolved\nStakes reworked. <!-- resolved: F-P5-02 -->"
+    # A legitimate report naming a worked-but-unresolved finding (no resolved marker).
+    rev_still_present = ("# Revision Report\n## Flags still present\nF-P5-01 remains present; the "
+                         "attempted fix did not land.\n")
+
+    # E5 phantom completion: the in-scope report MENTIONS F-P5-01 (still present, no resolved
+    # marker) but the sidecar marks it revised -> the report and the sidecar disagree.
+    rev_contradict = ("# Revision Report\n## Flags still present\nF-P5-01 remains present.\n"
+                      "## Flags resolved\nStakes reworked. <!-- resolved: F-P5-02 -->")
+    code, lines = trace(ledger, letter_clean, sc_revised,
+                        revision_texts=[rev_contradict], completion_texts=[rev_contradict])
+    check("e5_phantom_completion",
+          code == 1 and any("E5 phantom" in ln and "F-P5-01" in ln for ln in lines))
+
+    # E5 scope (PR #32 re-review P1): finding_states is a rolling all-session map. A finding
+    # revised in an EARLIER round, with a new report resolving only F-P5-02 and NOT mentioning
+    # F-P5-01, must NOT E5-fail F-P5-01 (it was resolved out of scope).
+    code, lines = trace(ledger, letter_clean, sc_revised,
+                        revision_texts=[rev_done_02], completion_texts=[rev_done_02])
+    check("e5_no_falsepos_out_of_scope",
+          code == 0 and not any("E5 phantom" in ln for ln in lines))
+
+    # E5 needs a completion artifact mentioning the finding: revised state, no completion -> no E5
+    code, _ = trace(ledger, letter_clean, sc_revised)
+    check("e5_skipped_without_completion", code == 0)
+
+    # revised + explicitly marked resolved -> clean (no E5, no W3)
+    code, _ = trace(ledger, letter_clean, sc_revised,
+                    revision_texts=[rev_done_01], completion_texts=[rev_done_01])
+    check("revised_with_completion_clean", code == 0)
+
+    # W3 completion follow-through: marked resolved but state still `delivered`
+    code_w, lines_w = trace(ledger, letter_clean, sc_delivered,
+                            revision_texts=[rev_done_01], completion_texts=[rev_done_01])
+    check("w3_completion_advisory",
+          code_w == 0 and any("W3 completion" in ln and "F-P5-01" in ln for ln in lines_w))
+    code_s, _ = trace(ledger, letter_clean, sc_delivered,
+                      revision_texts=[rev_done_01], completion_texts=[rev_done_01], strict=True)
+    check("w3_completion_strict_fails", code_s == 1)
+
+    # REGRESSION (PR #32 review P1): a worked-but-unresolved finding ("Flags still present", no
+    # resolved marker) must NOT count as completed -> no W3, and must pass even under --strict.
+    code, lines = trace(ledger, letter_clean, sc_delivered,
+                        revision_texts=[rev_still_present], completion_texts=[rev_still_present])
+    check("w3_skips_unresolved_mention", code == 0 and not any("W3 completion" in ln for ln in lines))
+    check("w3_strict_ok_on_still_present",
+          trace(ledger, letter_clean, sc_delivered, revision_texts=[rev_still_present],
+                completion_texts=[rev_still_present], strict=True)[0] == 0)
+    # ...and a still-present finding shows rev=planned (mentioned), not rev=done (resolved)
+    check("still_present_not_done",
+          any("F-P5-01" in ln and "rev=planned" in ln for ln in lines))
+
+    # W3 needs a parseable sidecar to judge advancement: completion present, no sidecar -> skipped
+    code, _ = trace(ledger, letter_clean, None,
+                    revision_texts=[rev_done_01], completion_texts=[rev_done_01])
+    check("w3_skipped_without_sidecar", code == 0)
+
     # graceful: ledger-only run skips letter + sidecar dimensions
     code, lines = trace(ledger, None, None)
     check("ledger_only_graceful", code == 0 and any("letter trace skipped" in ln for ln in lines))
@@ -363,13 +502,19 @@ def run_self_test():
         fh.write(sc_ok)
     with open(os.path.join(d, "Proj_Session_Plan_run.md"), "w") as fh:
         fh.write("# Session 1\nAddress F-P5-01 (pacing) and F-P5-02 (stakes).\n")
+    with open(os.path.join(d, "Proj_Revision_run.md"), "w") as fh:
+        fh.write("# Revision Report\n## Flags resolved\nPacing now lands. <!-- resolved: F-P5-01 -->\n")
     rc_code, rc_lines = run([d])
     check("run_folder_resolution", rc_code == 0)
-    check("run_folder_traces_revision", any("rev=cited" in ln for ln in rc_lines))
+    check("run_folder_rev_done", any("rev=done" in ln for ln in rc_lines))       # F-P5-01 resolved marker
+    check("run_folder_rev_planned", any("rev=planned" in ln for ln in rc_lines))  # F-P5-02 in plan only
     check("explicit_files_classify",
           run([os.path.join(d, "Proj_Findings_Ledger_run.md"),
                os.path.join(d, "Proj_Core_DE_Synthesis_run.md"),
                os.path.join(d, "Diagnostic_State.meta.json")])[0] == 0)
+    check("explicit_files_completion",
+          any("rev=done" in ln for ln in run([os.path.join(d, "Proj_Findings_Ledger_run.md"),
+                                              os.path.join(d, "Proj_Revision_run.md")])[1]))
     check("missing_ledger_usage_error", run([os.path.join(d, "Diagnostic_State.meta.json")])[0] == 2)
 
     for d in made:
