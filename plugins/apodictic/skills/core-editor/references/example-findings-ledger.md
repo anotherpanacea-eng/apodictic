@@ -16,10 +16,10 @@ sync with the IDs cited by the example letter. See docs/finding-lifecycle-ids.md
    {
      "schema": "apodictic.finding.v1",
      "id": "F-RR-01",
-     "mechanism": "elided transit time collapses three days into two sentences, reading as a continuity break",
+     "mechanism": "the middle third's pacing collapses — three days pass in two sentences at Chapter 9, reading as a continuity break",
      "severity": "Must-Fix",
      "confidence": "HIGH",
-     "evidence_refs": ["Chapter 9, line 220"],
+     "evidence_refs": ["Chapter 9"],
      "fix_class": "restore a transit beat or an explicit time marker",
      "risk_if_fixed": "a too-explicit marker could slow the chapter's momentum"
    }
