@@ -165,9 +165,9 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, argument-groundtruth-check"
-  echo "Aggregate: --self-test-all (runs --self-test on all 21 self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples, finding-trace + softness-check vs the canonical example ledger<->letter pair (both directions), and feedback-triage vs the canonical example Feedback Triage)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, argument-groundtruth-check"
+  echo "Aggregate: --self-test-all (runs --self-test on all 22 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples, finding-trace + softness-check vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, and editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter)"
   exit 2
 }
 
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # pure utilities that do not carry self-tests; only the 11 model-
 # capability-review validators do.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage argument-groundtruth-check"
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding argument-groundtruth-check"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 21 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 22 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/21 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/22 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/21 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/22 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -260,6 +260,15 @@ if [ "$1" = "--check-all" ]; then
       "$0" structured-findings "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-editorial-letter.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical scaffolded letter (editor-scaffolding + decision-layer-check + severity-floor compose) =="
+    if [ -f "$CA_BASE/example-editorial-letter-scaffolded.md" ]; then
+      "$0" editor-scaffolding "$CA_BASE/example-editorial-letter-scaffolded.md" || CA_FAIL=1
+      "$0" decision-layer-check "$CA_BASE/example-editorial-letter-scaffolded.md" || CA_FAIL=1
+      "$0" severity-floor "$CA_BASE/example-editorial-letter-scaffolded.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-editorial-letter-scaffolded.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical example ledger <-> letter (both directions: finding-trace forward refs + softness-check reverse delivery) =="
@@ -4127,6 +4136,28 @@ EOF
       python3 "$AGT_HELPER" argument-groundtruth-check "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — argument-groundtruth-check skipped; the GT template + spec define the contract. Install python3 for the mechanical check."
+    exit 0
+    ;;
+
+  editor-scaffolding)
+    # Editor Scaffolding operator-mode presentation contract (docs/editor-scaffolding.md): when
+    # the editorial letter declares `<!-- mode: editor-scaffolding -->` (operator:editor),
+    # enforce the editor-facing reframe — E1 Editor Brief addressee, E2 What-You-Might-Have-Missed
+    # blind-spot section, E3 Intervention Menu (prescription deferred to the human editor),
+    # E4 severity vocabulary preserved; W1 author-directed prescription leak is advisory (ERROR
+    # under --strict). A letter WITHOUT the marker is a no-op pass, so this is safe over any
+    # letter. Delegates to scripts/editor_scaffolding.py; degrades to an advisory WARN without python3.
+    ES_DIR=$(cd "$(dirname "$0")" && pwd)
+    ES_HELPER="$ES_DIR/editor_scaffolding.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$ES_HELPER" ]; then python3 "$ES_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; editor-scaffolding is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$ES_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 editor-scaffolding <editorial_letter|run_folder> [--strict] | --self-test"; exit 2; fi
+      python3 "$ES_HELPER" editor-scaffolding "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — editor-scaffolding skipped; if the letter declares editor-scaffolding mode, verify inline that it carries an Editor Brief, a 'What You Might Have Missed' section, an Intervention Menu, and that severity tokens survive. See docs/editor-scaffolding.md."
     exit 0
     ;;
 
