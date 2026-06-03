@@ -5,6 +5,36 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.1.0 - 2026-06-03
+
+Harness Engineering: the prompt-governed → runner-governed step lands, plus cross-artifact finding-lifecycle auditing and the Argument Benchmark ground-truth gate. Additive throughout — no command/API change. **14 → 19 self-testable validators.**
+
+### Runner-Governed Execution — cooperative gate engine (increments 1–3)
+
+Execution gates move out of scattered prose into one declarative manifest, `schemas/execution-gates.v1.json`, consolidated behind a single command the model must pass: **`validate.sh gate <phase> <run_folder>`** (`scripts/run_gate.py`). The manifest names each phase's required artifacts, mechanical checks (validator + target artifacts), and the contract/judgment **attested** preconditions the gate prints as a required checklist — so the gate can't silently narrow the pre-synthesis / pre-delivery gates to their mechanical subset. The two load-bearing gates are `run_synthesis` (pre-synthesis lock) and `run_spot_check` (consolidated letter-delivery, subsuming the scattered Step 10/12/13 checks). Results record into the `Diagnostic_State.meta.json` `execution` block; `apodictic-start` resumes from it. A passing gate advances each ledger finding's **lifecycle state** (`locked` → `delivered`), keyed by `apodictic.finding.v1.id`. Adds the `gate` validator; the shared schema engine `scripts/apodictic_artifacts.py` is exposed as the `artifacts-schema` self-test. Still cooperative (the model invokes the gate) — external host enforcement is a future increment. Design: [`docs/runner-governed-execution.md`](../../../docs/runner-governed-execution.md).
+
+### Runner-Governed Execution — structured gate-event records (increment 5)
+
+Replaces the lossy per-phase `execution.gates` map with an **append-only `execution.gate_events[]` log** (`apodictic.gate_event.v1`) as the canonical record of gate decisions; `phase` / `allowed_next` / `pending_gate` / `finding_states` become a recomputable **resume pointer (`== fold(gate_events)`)**, asserted by a new **`gate-state`** validator (`validate.sh gate-state` / `run_gate.py --check-state`). Properties hardened across review:
+
+- **Attestation is part of a clean pass** — a `passed` clears a gate only if its `attested_items` cover its own `attested_contract` (snapshotted manifest IDs); the engine never auto-emits a clearing pass on mechanical success — `gate --attest` re-runs the checks (freshness) and records the clearing pass only if still clean. Manifest `attested` entries gain stable `{id, text}` IDs.
+- **Durable history** — coverage is validated against each event's *recorded* contract, never the live manifest, so a later rename/retire can't retroactively un-clear history.
+- **Safe migration** — upgrading a legacy sidecar seeds a grandfathered baseline in manifest phase order so the prior frontier survives; `migrated` is legal only as a contiguous prefix followed by real work (so it can't be reused as a clearing bypass), and `gate-state` tolerates malformed entries with a clean validation failure rather than a traceback.
+
+Adds the `gate-state` validator. The lifecycle vocabulary, degrade-path event authoring, and `--strict` CI mode are in [`docs/runner-governed-execution.md`](../../../docs/runner-governed-execution.md) §Increment 5.
+
+### Finding Lifecycle IDs — cross-artifact trace (increment 1)
+
+New **`finding-trace`** validator (`validate.sh finding-trace <run_folder>`, `scripts/finding_trace.py`) audits the un-owned dimension of the Finding Lifecycle ID: cross-artifact **referential integrity + sidecar lifecycle coherence** — complementary to `structured-findings` (intra-ledger ID hygiene) and `softness-check` (severity fidelity, locked→delivered). E1 dangling letter/calibration reference (a cited `F-…` ID not in the ledger), E2 phantom `execution.finding_states` key, E3 invalid lifecycle state, W1 lifecycle coverage (advisory; ERROR under `--strict`). Graceful — each artifact optional, but a present-but-malformed sidecar is an error, not a silent skip. Design + ownership-boundary table: [`docs/finding-lifecycle-ids.md`](../../../docs/finding-lifecycle-ids.md).
+
+### Argument Benchmark — ground-truth answer-key validator
+
+New **`argument-groundtruth-check`** validator (`scripts/argument_groundtruth.py`): GT1–GT7 coverage, Dialectical-Clarity code-namespace resolution, GT2 locus↔code consistency, and GT7 Distinguish classification for the Argument Engine Benchmark answer keys; tuned against the registered corpus and run over it by `--check-all`. See [`docs/argument-benchmark-spec.md`](../../../docs/argument-benchmark-spec.md).
+
+### Validators
+
+14 → **19** self-testable validators. Added since v2.0.0: `gate`, `gate-state`, `finding-trace`, `argument-groundtruth-check`, `artifacts-schema`. `validate.sh --self-test-all`: **19/19**; `--check-all` (real-file invariants) and `release-verify` green; `codex/` + `antigravity/` mirrors regenerated.
+
 ## v2.0.0 - 2026-06-01
 
 A milestone release that hardens APODICTIC's editorial honesty and structural integrity, delivered as five sequenced phases. The strategy was **subtraction + honesty hardening, not added plumbing**: shrink the always-loaded instruction floor, normalize the severity vocabulary, make findings machine-checkable, and close the silent-softening leak — then fix the surrounding ops. The plugin's command/API surface is unchanged; the major bump headlines the behavior-changing honesty work (the Deficit Lock) and the severity-model normalization.
