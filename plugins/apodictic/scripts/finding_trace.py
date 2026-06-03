@@ -81,14 +81,16 @@ def letter_cited_ids(letter_text):
 
 
 def sidecar_state(sidecar_text):
-    """(finding_states dict, phase str) from a Diagnostic_State.meta.json."""
+    """(finding_states dict, phase, parse_ok) from a Diagnostic_State.meta.json.
+    parse_ok is False when a *discovered* sidecar is present but not valid JSON — the
+    caller must treat that as an error, not a clean empty lifecycle state."""
     try:
         meta = json.loads(sidecar_text)
     except (ValueError, TypeError):
-        return {}, None
+        return {}, None, False
     ex = meta.get("execution", {}) if isinstance(meta, dict) else {}
     fs = ex.get("finding_states") or {}
-    return (fs if isinstance(fs, dict) else {}), ex.get("phase")
+    return (fs if isinstance(fs, dict) else {}), ex.get("phase"), True
 
 
 def trace(ledger_text, letter_text, sidecar_text, strict=False):
@@ -102,36 +104,47 @@ def trace(ledger_text, letter_text, sidecar_text, strict=False):
     have_letter = letter_text is not None
     have_sidecar = sidecar_text is not None
     cited = letter_cited_ids(letter_text) if have_letter else set()
-    finding_states, phase = sidecar_state(sidecar_text) if have_sidecar else ({}, None)
+    finding_states, phase, sc_ok = sidecar_state(sidecar_text) if have_sidecar else ({}, None, True)
 
     # E1 — dangling reference (letter cites an ID not in the ledger)
     if have_letter:
         for cid in sorted(cited):
             if cid not in inv:
                 errs.append("E1 dangling reference: letter cites %s — not in the ledger" % cid)
-    # E2 / E3 — sidecar coherence
-    if have_sidecar:
+    # E0 — a discovered sidecar that cannot be parsed is an ERROR, not a clean empty lifecycle:
+    # otherwise E2/E3/W1 are silently bypassed on the artifact that is supposed to carry the state.
+    if have_sidecar and not sc_ok:
+        errs.append("E0 unparseable sidecar: Diagnostic_State.meta.json is present but not valid "
+                    "JSON — lifecycle coherence cannot be verified")
+    # E2 / E3 — sidecar coherence (only when the sidecar parsed)
+    if have_sidecar and sc_ok:
         for fid in sorted(finding_states):
             if fid not in inv:
                 errs.append("E2 phantom sidecar state: finding_states[%s] — not in the ledger" % fid)
             if finding_states[fid] not in _STATES:
                 errs.append("E3 invalid state: finding_states[%s]=%r (expected %s)"
                             % (fid, finding_states[fid], "/".join(_STATES)))
-    # W1 — lifecycle coverage (only once synthesis has cleared)
-    synth_cleared = phase in _SYNTH_CLEARED_PHASES
-    if have_sidecar and synth_cleared:
+    # W1 — lifecycle coverage (only once synthesis has cleared, and the sidecar parsed)
+    synth_cleared = sc_ok and phase in _SYNTH_CLEARED_PHASES
+    if have_sidecar and sc_ok and synth_cleared:
         for fid in sorted(inv):
             if inv[fid] in _SYNTH_BOUND and fid not in finding_states:
                 warns.append("W1 coverage: %s (%s) locked but has no finding_states entry"
                              % (fid, inv[fid]))
 
     # Per-ID trace report
+    if not have_sidecar:
+        sc_note = " (no sidecar — lifecycle trace skipped)"
+    elif not sc_ok:
+        sc_note = " (sidecar UNPARSEABLE — see E0)"
+    else:
+        sc_note = ""
     lines.append("finding-trace: %d ledger finding(s)%s%s"
                  % (len(inv),
                     "" if have_letter else " (no letter — letter trace skipped)",
-                    "" if have_sidecar else " (no sidecar — lifecycle trace skipped)"))
+                    sc_note))
     for fid in sorted(inv):
-        state = finding_states.get(fid, "—") if have_sidecar else "n/a"
+        state = ((finding_states.get(fid, "—") if sc_ok else "?") if have_sidecar else "n/a")
         mark = ("cited" if fid in cited else "UNCITED") if have_letter else "n/a"
         lines.append("  %-12s sev=%-10s state=%-10s letter=%s" % (fid, inv[fid], state, mark))
 
@@ -202,8 +215,12 @@ def run(paths, strict=False):
     if not ledger:
         return 2, ["finding-trace: no Findings Ledger found (need a *_Findings_Ledger_*.md or a "
                    "file with apodictic:finding blocks)"]
-    return trace(_read(ledger), _read(letter) if letter else None,
-                 _read(sidecar) if sidecar else None, strict=strict)
+    sidecar_text = None
+    if sidecar:  # a sidecar was discovered — read it; unreadable counts as present-but-bad (E0)
+        sidecar_text = _read(sidecar)
+        if sidecar_text is None:
+            sidecar_text = ""
+    return trace(_read(ledger), _read(letter) if letter else None, sidecar_text, strict=strict)
 
 
 # ---------------------------------------------------------------- self-test
@@ -266,6 +283,10 @@ def run_self_test():
     # W1 skipped pre-synthesis (no false positive before findings are locked)
     code, _ = trace(ledger, letter_clean, sc_presynth)
     check("w1_skipped_presynthesis", code == 0)
+
+    # present-but-malformed sidecar is an ERROR (not a clean empty lifecycle state)
+    code, lines = trace(ledger, letter_clean, "{ not valid json")
+    check("malformed_sidecar_errors", code == 1 and any("E0 unparseable" in ln for ln in lines))
 
     # graceful: ledger-only run skips letter + sidecar dimensions
     code, lines = trace(ledger, None, None)
