@@ -165,9 +165,9 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, argument-groundtruth-check"
-  echo "Aggregate: --self-test-all (runs --self-test on all 22 self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples, finding-trace + softness-check vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, and editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, argument-groundtruth-check"
+  echo "Aggregate: --self-test-all (runs --self-test on all 23 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples, finding-trace + softness-check vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, and diagnostic-vocabulary vs the canonical Vocabulary Guide)"
   exit 2
 }
 
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # pure utilities that do not carry self-tests; only the 11 model-
 # capability-review validators do.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding argument-groundtruth-check"
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary argument-groundtruth-check"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 22 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 23 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/22 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/23 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/22 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/23 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -269,6 +269,13 @@ if [ "$1" = "--check-all" ]; then
       "$0" severity-floor "$CA_BASE/example-editorial-letter-scaffolded.md" || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-editorial-letter-scaffolded.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Vocabulary Guide (diagnostic-vocabulary: glossary grounding + question framing) =="
+    if [ -f "$CA_BASE/example-vocabulary-guide.md" ]; then
+      "$0" diagnostic-vocabulary "$CA_BASE/example-vocabulary-guide.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-vocabulary-guide.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical example ledger <-> letter (both directions: finding-trace forward refs + softness-check reverse delivery) =="
@@ -4136,6 +4143,27 @@ EOF
       python3 "$AGT_HELPER" argument-groundtruth-check "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — argument-groundtruth-check skipped; the GT template + spec define the contract. Install python3 for the mechanical check."
+    exit 0
+    ;;
+
+  diagnostic-vocabulary)
+    # Diagnostic Vocabulary Mode teaching-aid contract (docs/diagnostic-vocabulary.md): when the
+    # Vocabulary Guide declares `<!-- mode: diagnostic-vocabulary -->` (operator:facilitator),
+    # enforce V1 Glossary present (>=3 entries), V2 entries defined, V3 >=3 entries grounded in the
+    # manuscript, V4 Discussion Prompts (>=3, all questions); W1 author-directed prescription leak is
+    # advisory (ERROR under --strict). A file WITHOUT the marker is a no-op pass, so this is safe over
+    # any file. Delegates to scripts/diagnostic_vocabulary.py; degrades to an advisory WARN without python3.
+    DV_DIR=$(cd "$(dirname "$0")" && pwd)
+    DV_HELPER="$DV_DIR/diagnostic_vocabulary.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$DV_HELPER" ]; then python3 "$DV_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; diagnostic-vocabulary is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$DV_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 diagnostic-vocabulary <vocab_guide|run_folder> [--strict] | --self-test"; exit 2; fi
+      python3 "$DV_HELPER" diagnostic-vocabulary "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — diagnostic-vocabulary skipped; if the file declares diagnostic-vocabulary mode, verify inline that it carries a grounded Glossary (>=3 entries) and a Discussion Prompts section (>=3 questions). See docs/diagnostic-vocabulary.md."
     exit 0
     ;;
 
