@@ -35,6 +35,10 @@ import re
 import sys
 
 MODE_MARKER_RE = re.compile(r"<!--\s*mode:\s*diagnostic-vocabulary\s*-->", re.IGNORECASE)
+# This file IS a Vocabulary Guide (so the mode marker is mandatory, not optional) when its H1
+# title says so. Paired with a filename signal from run(); either is sufficient.
+_GUIDE_TITLE_RE = re.compile(r"^#\s+.*Vocabulary\s+Guide", re.IGNORECASE | re.MULTILINE)
+_GUIDE_NAME_RE = re.compile(r"vocabulary[-_]guide", re.IGNORECASE)
 _LEVEL2_RE = re.compile(r"^##\s")
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 _LETTER_GLOB = ("*_Vocabulary_Guide_*.md",)
@@ -136,12 +140,26 @@ def _entry_blocks(section):
     return blocks
 
 
-def check(guide_text, strict=False):
-    """Return (exit_code, report_lines)."""
+def check(guide_text, strict=False, is_named_guide=False):
+    """Return (exit_code, report_lines). `is_named_guide` is set by run() when the resolved
+    filename identifies a Vocabulary Guide artifact."""
     out = []
     if not MODE_MARKER_RE.search(guide_text):
+        looks_like_guide = is_named_guide or bool(_GUIDE_TITLE_RE.search(guide_text))
+        if looks_like_guide:
+            # A Vocabulary Guide (by name/title) is a facilitator-mode artifact; the marker is
+            # mandatory. Missing it means V1-V4/W1 would be silently skipped — a false pass.
+            out.append("diagnostic-vocabulary: this is a Vocabulary Guide (by name/title) but is "
+                       "missing the <!-- mode: diagnostic-vocabulary --> marker — the contract "
+                       "(V1-V4/W1) would be unenforced.")
+            out.append("  ERROR: V0: add the <!-- mode: diagnostic-vocabulary --> marker to the "
+                       "Vocabulary Guide so the teaching-aid contract is enforced.")
+            out.append("FAILED: diagnostic-vocabulary contract not satisfied. "
+                       "See docs/diagnostic-vocabulary.md.")
+            return 1, out
         out.append("diagnostic-vocabulary: not in diagnostic-vocabulary mode "
-                   "(no <!-- mode: diagnostic-vocabulary --> marker) — nothing to enforce.")
+                   "(no <!-- mode: diagnostic-vocabulary --> marker, and not a Vocabulary Guide) "
+                   "— nothing to enforce.")
         return 0, out
 
     out.append("diagnostic-vocabulary: mode declared — enforcing the operator:facilitator contract.")
@@ -247,7 +265,8 @@ def run(paths, strict=False):
     text = _read(guide)
     if text is None:
         return 2, ["diagnostic-vocabulary: cannot read %s" % guide]
-    return check(text, strict=strict)
+    is_named = bool(_GUIDE_NAME_RE.search(os.path.basename(guide)))
+    return check(text, strict=strict, is_named_guide=is_named)
 
 
 # ---------------------------------------------------------------- self-test
@@ -299,9 +318,21 @@ def run_self_test():
             s.append("\n## Facilitator Notes\nAdd a scene where the consequence lands.\n")
         return "".join(s)
 
-    # No marker -> no-op.
+    # No marker on a file that IS a Vocabulary Guide (by title) -> ERROR (PR #35 review P2),
+    # under both default and --strict.
     code, lines = check(guide(mode=False))
-    chk("no_marker_is_noop", code == 0 and any("not in diagnostic-vocabulary mode" in l for l in lines))
+    chk("no_marker_on_guide_errors",
+        code == 1 and any("V0:" in l for l in lines)
+        and any("missing the <!-- mode: diagnostic-vocabulary --> marker" in l for l in lines))
+    code_s, _ls = check(guide(mode=False), strict=True)
+    chk("no_marker_on_guide_strict_errors", code_s == 1)
+    # Named guide (filename signal) without a guide title still errors.
+    code, lines = check("# Notes\n\nsome prose.\n", is_named_guide=True)
+    chk("named_guide_no_marker_errors", code == 1 and any("V0:" in l for l in lines))
+    # An UNRELATED file (no marker, no guide name/title) stays a no-op pass.
+    code, lines = check("# Random Doc\n\nUnrelated content here.\n")
+    chk("unrelated_file_noop",
+        code == 0 and any("not in diagnostic-vocabulary mode" in l for l in lines))
 
     # Clean guide -> pass.
     code, lines = check(guide())
