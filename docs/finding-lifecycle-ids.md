@@ -1,6 +1,6 @@
 # Finding Lifecycle IDs — cross-artifact trace
 
-**Status:** Increments 1–2 **built**. Roadmap: `ROADMAP.md` → Harness Engineering → Finding Lifecycle IDs. Implementation: `scripts/finding_trace.py`, `validate.sh finding-trace` (+ canonical `--check-all` gate).
+**Status:** Increments 1–3 **built**. Roadmap: `ROADMAP.md` → Harness Engineering → Finding Lifecycle IDs. Implementation: `scripts/finding_trace.py`, `validate.sh finding-trace` (+ canonical `--check-all` gate).
 
 Every material finding already carries a durable **Finding Lifecycle ID** — `apodictic.finding.v1.id`, pattern `F-<ORIGIN>-<NN>` (e.g. `F-P5-01`, `F-DP-02`), described in the schema's `$comment` as following the finding *pass → ledger → Deficit Lock → editorial letter → revision/coaching*. The ID exists; this track makes the **lifecycle itself auditable by ID** instead of prose matching.
 
@@ -84,10 +84,40 @@ Two additions, both extending `finding-trace` — no new validator, no count cha
 - *Revision ID surface* — revision plans have no comment-only convention, so IDs match anywhere in the text; the exact-boundary regex still prevents `F-P5-01` ≠ `F-P5-011`. A passing mention ("superseded F-RR-01") counts as addressing it — acceptable for a coverage signal.
 - *Canonical-gate scope* — the gate asserts **referential integrity** (every cited ID resolves) on the worked example, not severity (`softness-check` owns that on the same letter); no overlap, and the example ledger is itself a valid `apodictic.finding.v1` carrier.
 
+## Increment 3 — revision-completion (`revised`) lifecycle (built)
+
+Gives the third lifecycle state `revised` its first real meaning and teaches `finding-trace` to audit revision **completion** by ID — not just plan coverage (W2). Like Increment 2, this extends `finding-trace` with **no new validator and no count change**.
+
+**Artifact-role split.** The revision-stage globs already in use split into two roles by filename:
+- **plan** (`*_Session_Plan_*.md`) — *intent*. A finding referenced here is planned (W2 coverage, Increment 2).
+- **completion** (`*_Revision_*.md`) — a *completed* revision round (the Revision Report, `state-lifecycle.md §Revision Round Output`). A finding referenced in a completed-revision artifact is worked.
+
+E4 (dangling) and W2 (plan coverage) keep treating **both** globs as "a revision artifact is present" — unchanged. The completion checks below read only the `*_Revision_*.md` subset.
+
+**The `revised` state.** `execution.finding_states[id]` advances `locked → delivered → revised`. The revision coach advances a finding to `revised` when a revision round confirms it resolved (`state-lifecycle.md §Revision Round Output → Flags resolved`). Until this increment `revised` was a valid-but-unreached enum value.
+
+**Completion is an explicit marker, not a bare mention.** The Revision Report names findings in **both** *Flags resolved* and *Flags still present* (a worked-but-unresolved finding whose fix didn't land). So completion cannot key on "the ID appears in the report" — a still-present finding is named there and must **not** count as completed. A finding is marked completed only by an explicit `<!-- resolved: F-XX-NN -->` HTML-comment marker (mirroring the letter's `<!-- finding: … -->` discipline). Bare mentions still feed E4/W2 (a still-present finding is "planned" coverage), but only the marker drives E5/W3.
+
+**Two checks:**
+- **E5 phantom completion** (ERROR) — an **in-scope contradiction**: a completed-revision (`*_Revision_*.md`) artifact *mentions* a ledger finding (bare — e.g. under *Flags still present*) whose `finding_states` is `revised`, but carries **no** `<!-- resolved: … -->` marker for it. The report and the sidecar disagree. E5 is scoped to IDs the **current** report mentions, because `finding_states` is a rolling all-session map: a finding resolved in an earlier (out-of-scope) round is durably `revised` and simply won't appear in this report — flagging it would be a false-positive (PR #32 re-review, P1). (A `revised` key that isn't a ledger ID is already E2; `revised` is a valid `_STATES` value so it is never E3.)
+- **W3 completion follow-through** (advisory; ERROR under `--strict`) — a ledger finding *marked resolved* in a completed-revision artifact whose `finding_states` entry is not `revised` (still `locked`/`delivered`/absent). The round resolved it but the lifecycle wasn't advanced. Advisory because the state write may lag the artifact; `--strict` gates it. Skipped when no completion artifact is present, or when there is no parseable sidecar to judge advancement against.
+
+**Report.** The per-ID `rev=` column gains completion resolution: `done` (carries a resolved marker) / `planned` (mentioned in a revision plan/report but **not** marked resolved) / `—` (no reference) / `n/a` (no revision artifacts). The `state=` column already surfaces `revised`.
+
+**Ownership boundary.** W2 asks "did the plan pick it up?"; W3 asks "the report resolved it — was the lifecycle advanced?"; E5 asks "the report mentions it as unresolved — why does the sidecar say `revised`?" Each is a class no other check raises. Severity fidelity stays `softness-check`'s; intra-ledger hygiene stays `structured-findings`'.
+
+### Self-review (Increment 3)
+
+- *Bare-mention false-positive (PR #32 review, P1)* — the first cut keyed completion on **any** `F-…` token in a `*_Revision_*.md` artifact. But the Revision Report template lists *Flags still present* alongside *Flags resolved*, so a legitimate report ("`F-P5-01` remains present; the attempted fix did not land") was classified `rev=done` and W3-failed under `--strict` unless the sidecar wrongly marked the unresolved finding `revised` — pushing the lifecycle toward a false state. Fixed by requiring an explicit `<!-- resolved: F-… -->` marker for completion; a still-present mention stays `planned` and triggers nothing. Regression-tested (`w3_skips_unresolved_mention`, `w3_strict_ok_on_still_present`, `still_present_not_done`).
+- *E5 cross-session scope (PR #32 re-review, P1)* — the first cut gated E5 only on "≥1 completion artifact present" and checked **every** `revised` sidecar ID against that artifact's resolved markers. But `finding-trace <run_folder>` walks up to the project-root sidecar (a rolling all-session `finding_states`) while the completion artifacts are just the current run folder's — so a later round resolving only `F-P5-02` would hard-fail E5 for an already-`revised` `F-P5-01`. Fixed by scoping E5 to IDs the **current** report actually mentions (`comp_mentioned`): an out-of-scope resolution isn't named here, so it's left alone. Regression-tested (`e5_no_falsepos_out_of_scope`). The principled alternative — run/event-scoped state instead of the rolling sidecar — is a Runner-Governed Execution concern, deferred to that track.
+- *plan vs completion by filename* — the role split keys on the established naming convention (`_Session_Plan_` = intent, `_Revision_` = completed round) from `output-structure.md`. A misnamed artifact degrades to the safe direction (treated as plan-only), so at worst a W3/E5 is **not** raised — never a false ERROR.
+- *W3 vs W2 overlap* — distinct artifacts, distinct questions: W2 reads any revision artifact for *plan* coverage; W3 reads only completion artifacts for *lifecycle advancement*. A finding can be W2-clean (planned) yet W3-warn (worked but state not advanced).
+- *monotonic ordering not asserted* — `finding-trace` holds no event history, so it does not assert that `revised` implies a prior `delivered` (the letter may be absent from scope). Ordering is the runner/gate's job; this increment audits completion reconciliation only.
+
 ## Out of scope (later increments)
 
 - **`deficit-lock` / `softness-check` by-ID consolidation.** Folding their residual prose heuristics fully onto IDs is a separate hardening pass.
-- **Revision-state lifecycle (`revised`).** A passing revision round could advance `finding_states[id]` to `revised` (the third lifecycle state, currently unreached); `finding-trace` would then audit revision *completion* by ID, not just plan coverage.
+- **Runner-advanced `revised` writes.** Increment 3 *audits* the `revised` state; having the execution gate itself write `finding_states[id] = revised` on a verified revision round (rather than the coach updating the sidecar) is a Runner-Governed Execution concern, deferred to that track.
 
 ## Self-review (pre-build)
 
