@@ -149,9 +149,11 @@ Over multiple revision cycles, surface patterns: "You tend to defer character-ag
 
 ## Operators
 
-### Editor Scaffolding
+### Editor Scaffolding — **Built (Increment 1)**
 
 For human developmental editors using the framework as analytical assist. Output framing shifts to "here's what I found that you might have missed." Suppress prescriptive language, add blind-spot emphasis.
+
+**Built.** The `operator:editor` routing gap is closed (intake router → `references/editor-scaffolding.md`). The mode is a superset overlay on the Core DE editorial letter: an **Editor Brief** addressee reorientation, a required **What You Might Have Missed** blind-spot section, and an **Intervention Menu (editor's discretion)** that defers the author-facing prescription to the human editor — while severity honesty, the Firewall, and the decision layer are preserved unchanged. Enforced by the `editor-scaffolding` validator (E1–E4 + advisory W1), conditional on a `<!-- mode: editor-scaffolding -->` marker, with a canonical `--check-all` gate proving it composes with `decision-layer-check` / `severity-floor`. Spec + ownership boundary: [`docs/editor-scaffolding.md`](docs/editor-scaffolding.md). Validators 21 → 22. **Future increments:** per-pass scaffolding, blind-spot ranking by severity-vs-salience gap, editor↔author dual output. The sibling operators (Diagnostic Vocabulary Mode, Multi-Party Intake) remain separate gaps.
 
 ### Diagnostic Vocabulary Mode
 
