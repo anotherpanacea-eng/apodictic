@@ -175,7 +175,8 @@ Every lifecycle state is either a **stored event** (something that happened at a
 
 | State | Kind | Notes |
 |---|---|---|
-| `passed` | stored event `result` | × `provenance` `mechanical` / `attested` |
+| `passed` | stored event `result` | × `provenance` `mechanical` / `attested`; **clears** a gate only with attestation coverage (see Attestation) |
+| `mechanical-passed` | **stored event** `result` | python-path intermediate: mechanical checks green, attestation still owed — **non-clearing** (does not advance the frontier) |
 | `pass-with-warn` | stored event `result` | cleared with an unresolved soft warning; does **not** authorize a transition |
 | `blocked` | stored event `result` | failed |
 | `skipped` | **stored event** `result` | deliberate bypass of a gate — **requires `reason` + an Audit-Invocation-Log blind-spot line** |
@@ -193,14 +194,15 @@ A **standalone** schema file `apodictic.gate_event.v1.schema.json`, referenced f
 | Field | Required? | Type / values | Notes |
 |---|---|---|---|
 | `gate` | **required** | enum = manifest `phases` keys | which gate this event records |
-| `result` | **required** | `passed` \| `pass-with-warn` \| `blocked` \| `skipped` \| `deferred` | the outcome |
+| `result` | **required** | `passed` \| `mechanical-passed` \| `pass-with-warn` \| `blocked` \| `skipped` \| `deferred` | the outcome (`mechanical-passed` is the python-path "attestation owed" intermediate) |
 | `provenance` | **required** | `mechanical` \| `attested` | how decided; `skipped` / `deferred` are always `attested` |
 | `ts` | **required** | ISO-8601 string | informational/ordering aid; day-granularity acceptable on the degrade path |
 | `reason` | **required iff** `result ∈ {skipped, deferred}` | string | the exception rationale (enforced by `gate-state`, not the subset schema) |
 | `until` | optional | string | for `deferred`: when it is expected to resume |
 | `run_folder` | optional | string | the run folder the gate ran against |
 | `checks` | optional (python-only) | `[{"validator": str, "result": "ok"\|"warn"\|"error"}]` | per-validator breakdown |
-| `attested_items` | optional* | string[] | confirmed attested-checklist items. *\*Required for a **clearing** `passed` on a gate whose manifest `attested` list is non-empty (see Attestation below); enforced by `gate-state`.* |
+| `attested_items` | optional* | string[] | confirmed attested-checklist **IDs** (from the manifest `attested[*].id`). *\*Must cover the gate's checklist for a **clearing** `passed` when that list is non-empty (see Attestation); enforced by `gate-state`.* |
+| `attested_snapshots` | optional | `{id: text}` | point-in-time text of each confirmed item, so a later manifest re-wording doesn't rewrite history |
 | `finding_deltas` | optional (python-only) | `{finding_id: state}` | finding-lifecycle advances this event made |
 | `migrated` | optional | boolean | seeded from the legacy `gates` map (see Migration) |
 | `note` | optional | string | free text |
@@ -225,9 +227,11 @@ A **standalone** schema file `apodictic.gate_event.v1.schema.json`, referenced f
 ```
 
 ```jsonc
-// degrade-path event (no shell) — one flat, copy-pasteable object
+// degrade-path event (no shell) — one flat, copy-pasteable combined clearing pass.
+// attested_items are the manifest IDs; the optional snapshot records the text confirmed.
 {"gate":"run_synthesis","result":"passed","provenance":"attested","ts":"2026-06-03",
- "attested_items":["selected passes complete","auto-run audits complete","blind spots recorded"],
+ "attested_items":["syn-a1","syn-a2","syn-a3"],
+ "attested_snapshots":{"syn-a3":"every deferred/declined high-risk audit is recorded as a blind spot"},
  "note":"no shell; inline checks"}
 ```
 
@@ -235,11 +239,17 @@ A **standalone** schema file `apodictic.gate_event.v1.schema.json`, referenced f
 
 The manifest's `entry_requires.attested` lists are non-mechanical preconditions the gate cannot check by running a validator — *"all selected Tier-2 passes are complete," "every deferred high-risk audit is recorded as a blind spot,"* etc. The v1 prose makes confirming them a hard precondition for transitioning, even though the gate's exit code reflects only the mechanical half. If a `passed` event advanced the frontier on `result == "passed"` alone (with `attested_items` merely optional), it would re-create the exact failure this whole track exists to prevent: *the model says the gate passed, but only the mechanical half did.*
 
-So attestation is folded into the definition of a clean pass:
+So attestation is folded into the definition of a **clearing pass**, with a deterministic coverage contract and an explicit two-step handshake.
 
-- A `passed` event **clears** a gate (advances `execution.phase`) only if, for a gate whose manifest `attested` list is non-empty, its `attested_items` **cover that checklist**. `attested_items` stays optional for gates with no attested requirements; it is *required for a clearing pass* otherwise.
-- `gate-state` enforces this as a hard error (same standing as a missing required field): a `passed` event on a gate-with-attestations that does not cover the checklist is **invalid**, and — defensively — the frontier fold treats only *covering* passes as clearing, so even a malformed log cannot advertise an un-attested gate as cleared.
-- Because the engine cannot judge the attested items, it **does not auto-emit a clearing `passed` on mechanical success alone** (a change from today's write-on-mechanical-pass): the clearing `passed` is recorded only once the attested checklist is confirmed — the model supplies `attested_items`, the engine records the mechanical `checks[]` alongside (provenance `mechanical` for the check half; `attested_items` for the judgment half). This makes the old prose precondition machine-checkable rather than silently narrowing it.
+**Deterministic coverage by stable IDs (review fix — Codex P2).** The manifest `attested` entries become `{id, text}` objects with author-assigned stable IDs (e.g. `syn-a1 … syn-a3`, `spot-a1 …`) instead of bare strings — so coverage is a set-inclusion test, not brittle exact-string or fuzzy matching. An event's `attested_items` records the confirmed **IDs**; coverage is `set(event.attested_items) ⊇ set(manifest.phases[gate].attested[*].id)`. (Optionally the event also stores `attested_snapshots` — `{id: text}` of what was confirmed — so a later manifest re-wording doesn't rewrite history.) `gate-state` enforces both the inclusion test and that recorded IDs are a subset of the manifest's current IDs (a stale/renamed-item drift guard).
+
+**The two-step handshake (review fix — Codex P1).** Mechanical success and attestation are recorded as a lifecycle, so "mechanical checks passed, waiting for attestation" is a real, valid event rather than an undefined gap (with the current enum there was no legal event for it):
+
+- `validate.sh gate <gate> <run_folder>` runs the mechanical checks and appends one event reflecting *only* the mechanical outcome: `blocked` (error/missing), `pass-with-warn` (WARN), or — for a gate **with** a non-empty `attested` list — the new non-clearing **`mechanical-passed`** (checks green, attestation still owed). For a gate with **no** attested requirements, mechanical success is a clearing `passed` directly (nothing to attest).
+- `validate.sh gate --attest <gate> <run_folder>` is the handshake that records the **clearing `passed`**: the model confirms the printed checklist, and the engine appends one `passed` event carrying `attested_items` (the confirmed IDs), re-asserting the mechanical `checks[]`. Provenance stays `mechanical` (the checks ran mechanically); the `attested_items` carry the judgment half. The forward-only `finding_deltas` ride this clearing event, not the `mechanical-passed` one.
+- **Degrade path (no shell)** writes the *combined* clearing `passed` directly — provenance `attested`, `attested_items` covering the checklist — in one event; there is no separate `mechanical-passed` step (the model did the mechanical checks inline). So `mechanical-passed` is a python-path intermediate only.
+
+**Enforcement.** A `passed` event is a **clearing pass** iff its `attested_items` cover the gate's manifest checklist (vacuously true when that checklist is empty). `gate-state` treats a `passed` lacking coverage as a hard error (same standing as a missing required field), and — defensively — the frontier fold and `open_exceptions` (below) count only clearing passes, so even a malformed log cannot advertise an un-attested or mechanical-only gate as cleared.
 
 ### Derived current-state — the thin checkable pointer
 
@@ -257,19 +267,23 @@ The log is canonical; the engine also writes a small resume pointer so `/start` 
 
 ### Open exceptions — the formal resolution rule (review fix — Codex P2#2)
 
-"Unresolved" is load-bearing (it gates strict CI), so define it by a fold, not by vibes. Per gate, take its **latest** event (highest array index for that gate):
+"Unresolved" is load-bearing (it gates strict CI), so define it by a fold, not by vibes. First define a **clearing pass** once, then derive the open set from it. Per gate, take its **latest** event (highest array index for that gate):
 
 ```
-open_exceptions = { gate : latest_event(gate).result ∈ {blocked, pass-with-warn, skipped, deferred} }
+clearing_pass(e) ≡ e.result == passed ∧ attested_items(e) ⊇ manifest.attested_ids(e.gate)
+                   (the coverage test is vacuously true when the gate has no attested items)
+open_exceptions   = { gate : latest_event(gate) exists ∧ ¬ clearing_pass(latest_event(gate)) }
 ```
 
-- A gate's exception is **resolved** exactly when a *later* event for the same gate is a **clearing pass** (`result == passed` with attestation coverage; mechanical or attested provenance) — it supersedes the exception. That is the only way to clear `skipped` / `deferred`: re-running the gate to a clearing pass (an attested pass counts, so a no-shell host can resolve its own deferral). There is no "mark resolved" event — resolution is always a real clearing pass, which keeps the audit honest.
-- `gate --strict` / CI: nonzero while `open_exceptions` is non-empty. `blocked` is already a hard failure; `skipped` / `deferred` / `pass-with-warn` are the *soft* exceptions this mode refuses to ship unresolved. So strict CI is red until every gate's latest event is a clearing pass — it neither stays red forever (a clean re-pass clears it) nor clears casually (only a real pass clears it).
+So a gate is open whenever its latest event is anything other than a clearing pass — that subsumes `blocked`, `pass-with-warn`, `skipped`, `deferred`, the non-clearing `mechanical-passed`, **and** a malformed `passed` that fails attestation coverage. (Review fix — Codex P2: the earlier formal set enumerated only the four bad-result values and silently excluded `mechanical-passed` / un-attested `passed`, contradicting the prose; "not a clearing pass" closes that.)
+
+- A gate's exception is **resolved** exactly when a *later* event for the same gate is a clearing pass — it supersedes the exception. That is the only way to clear `skipped` / `deferred` / `mechanical-passed`: re-running (and, where required, attesting) the gate to a clearing pass. An attested pass counts, so a no-shell host can resolve its own deferral. There is no "mark resolved" event — resolution is always a real clearing pass, which keeps the audit honest.
+- `gate --strict` / CI: nonzero while `open_exceptions` is non-empty. `blocked` is already a hard failure; `skipped` / `deferred` / `pass-with-warn` / `mechanical-passed` are the *soft* exceptions this mode refuses to ship unresolved. So strict CI is red until every gate's latest event is a clearing pass — it neither stays red forever (a clearing re-pass clears it) nor clears casually (only a real clearing pass clears it).
 - `execution.pending_gate` = the manifest-order-earliest member of `open_exceptions` (resolve first); **omitted when `open_exceptions` is empty** (never `null`).
 
 ### `/start` read changes
 
-- Read the pointer. **If `pending_gate` is set, resolve *that* gate** — re-run `validate.sh gate <pending_gate> <run_folder>` (or, on a no-shell host, re-attest it) — *not* `execution.phase`. (Review fix — Codex P1#2: the v1 "empty `allowed_next` ⇒ re-run `gate <phase>`" re-ran the last *passed* gate.)
+- Read the pointer. **If `pending_gate` is set, resolve *that* gate** — *not* `execution.phase` (Review fix — Codex P1#2: the v1 "empty `allowed_next` ⇒ re-run `gate <phase>`" re-ran the last *passed* gate). The resolution depends on the gate's latest result: `mechanical-passed` ⇒ confirm the checklist via `validate.sh gate --attest <pending_gate> <run_folder>`; anything else ⇒ re-run `validate.sh gate <pending_gate> <run_folder>` (or, on a no-shell host, author the combined clearing event inline).
 - Else proceed along `allowed_next` from the frontier.
 - For per-gate status display, fold `gate_events[]` → `status(gate)` (cheap; a run has a handful of events).
 - Optionally assert the pointer against the fold and self-heal (log wins).
@@ -281,7 +295,7 @@ The subset checker exposes a reusable **per-object** validator, `apodictic_artif
 
 - **Structural (reuse `validate_obj` per item).** `gate-state` **iterates `execution.gate_events[]` itself and calls the shared `validate_obj(item, apodictic.gate_event.v1)` per element** — giving the unconditional required minimum (`gate`, `result`, `provenance`, `ts`), the `result` / `provenance` / `gate` **enums**, and field **types** from the one shared validator (same engine that checks finding blocks). *(Correction — Codex P2: this is **not** "for free" via `validate_sidecar_obj`. That helper's `array_item_schemas` discovers only **top-level** sidecar arrays from the schema's `properties`; `gate_events` is nested under `execution`, so the existing walker won't reach it. The structural layer therefore reuses `validate_obj` but `gate-state` owns the iteration — or, alternatively, the shared walker is extended to recurse one level into `execution`. The first is lower-risk and self-contained; the build plan takes it.)*
 - **Semantic (new `gate-state` Python validator).** `validate_obj` has **no conditional-required, no cross-field rules, no null/union types, and does not recurse into nested array-objects or object-map values** — so `gate-state` owns everything the subset checker cannot express, each with positive + negative fixtures (mirroring the `run_gate.py` / `apodictic_artifacts.py` self-test style):
-  - **attestation coverage (Codex P1):** a `passed` event on a gate with a non-empty manifest `attested` list must have `attested_items` covering that checklist — else it is not a clearing pass (hard error);
+  - **attestation coverage (Codex P1/P2):** a `passed` event on a gate with a non-empty manifest `attested` list must have `attested_items` whose **ID set ⊇ the manifest's `attested[*].id`** (deterministic inclusion, not string matching) — else it is not a clearing pass (hard error); plus the **drift guard** that recorded IDs are a subset of the manifest's *current* IDs (catches stale/renamed items);
   - `reason` **required iff** `result ∈ {skipped, deferred}`;
   - `provenance == attested` whenever `result ∈ {skipped, deferred}`;
   - the Audit-Invocation-Log **blind-spot line** exists for each `skipped`;
@@ -301,12 +315,13 @@ Adding `gate_events` (plus `pending_gate` / `state_version`) is additive, and th
 ### Build plan (later increment — not this round)
 
 1. Ship `apodictic.gate_event.v1.schema.json`; add `gate_events` (`items.$schema_ref`), `pending_gate`, `state_version` to the `execution` block of `apodictic.diagnostic-state.v1`; deprecate `gates`. The structural layer is `gate-state` iterating `execution.gate_events[]` and calling the shared `validate_obj` per item (the array is nested under `execution`, so `validate_sidecar_obj`'s top-level walker won't reach it — or extend that walker; the proposal takes the iterate-in-`gate-state` route).
-2. `run_gate.py`: **append** an event per run instead of overwriting `gates[<phase>]`; recompute the pointer (`phase`, `allowed_next`, `pending_gate`, `finding_states`) from the log; set `state_version: 2`; **stop auto-emitting a clearing `passed` on mechanical success alone — a clearing `passed` requires recorded `attested_items` coverage** (Codex P1); author `skipped` / `deferred` events (required `reason` + Audit-Invocation-Log blind-spot); add `gate --strict` (nonzero while `open_exceptions` is non-empty).
-3. New **`gate-state`** validator (its own arm, or `run_gate.py --check-state <sidecar>`) owning the semantic invariants listed under *Enforcement* — attestation coverage, conditional `reason`, provenance constraints, blind-spot presence, `checks[]` / `finding_deltas` inner shapes, the pointer/fold invariant, `open_exceptions`, and the enum drift guard — each with positive + negative fixtures. Register in `--self-test-all` (17 → 18; bump the count strings + usage + docblocks in lockstep).
-4. `commands/start.md`: resolve `pending_gate` first, else proceed along `allowed_next`; per-gate status via fold; `state_version` legacy fallback; the self-heal note.
-5. Degrade-path prose (run-core.md / run-synthesis.md §Degradation): append one minimal event + update the pointer (`phase`, `allowed_next`, `pending_gate`) — replacing the v1 one-word `gates[<phase>] = "attested"`.
-6. Migration: faithful seeding from any legacy `gates` map; reader keys off `state_version`.
-7. Regenerate `codex/` + `antigravity/` mirrors; `--check-all`, `build-*.mjs --check`, `release-verify`.
+2. **Manifest:** change `execution-gates.v1.json` `entry_requires.attested` from bare strings to `{id, text}` objects with stable IDs (Codex P2); update `run_gate.py` to print the `text` and record the `id`s. (The manifest is data, not a versioned schema, so this is a localized format change.)
+3. `run_gate.py`: **append** an event per run instead of overwriting `gates[<phase>]`; recompute the pointer (`phase`, `allowed_next`, `pending_gate`, `finding_states`) from the log; set `state_version: 2`. **Attestation handshake (Codex P1):** mechanical success on a gate with attested items writes the non-clearing **`mechanical-passed`**; a new `gate --attest <gate> <run_folder>` records the clearing `passed` with the confirmed `attested_items` (and the mechanical `checks[]`); `finding_deltas` ride the clearing event. Gates with no attested items clear directly on mechanical success. Author `skipped` / `deferred` events (required `reason` + Audit-Invocation-Log blind-spot); add `gate --strict` (nonzero while `open_exceptions` is non-empty).
+4. New **`gate-state`** validator (its own arm, or `run_gate.py --check-state <sidecar>`) owning the semantic invariants listed under *Enforcement* — attestation coverage by ID-set inclusion + manifest-ID drift guard, conditional `reason`, provenance constraints, blind-spot presence, `checks[]` / `finding_deltas` inner shapes, the pointer/fold invariant, `open_exceptions` (= "latest event is not a clearing pass"), and the enum drift guard — each with positive + negative fixtures. Register in `--self-test-all` (17 → 18; bump the count strings + usage + docblocks in lockstep).
+5. `commands/start.md`: resolve `pending_gate` first, else proceed along `allowed_next`; per-gate status via fold; `state_version` legacy fallback; the self-heal note.
+6. Degrade-path prose (run-core.md / run-synthesis.md §Degradation): append one combined clearing `passed` (provenance `attested`, `attested_items` covering the checklist) + update the pointer (`phase`, `allowed_next`, `pending_gate`) — replacing the v1 one-word `gates[<phase>] = "attested"`.
+7. Migration: faithful seeding from any legacy `gates` map; reader keys off `state_version`.
+8. Regenerate `codex/` + `antigravity/` mirrors; `--check-all`, `build-*.mjs --check`, `release-verify`.
 
 ### Out of scope
 
