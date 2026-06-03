@@ -1,6 +1,6 @@
 # Finding Lifecycle IDs — cross-artifact trace
 
-**Status:** Increment 1 (this doc + `finding-trace` validator) **built**. Roadmap: `ROADMAP.md` → Harness Engineering → Finding Lifecycle IDs. Implementation: `scripts/finding_trace.py`, `validate.sh finding-trace`.
+**Status:** Increments 1–2 **built**. Roadmap: `ROADMAP.md` → Harness Engineering → Finding Lifecycle IDs. Implementation: `scripts/finding_trace.py`, `validate.sh finding-trace` (+ canonical `--check-all` gate).
 
 Every material finding already carries a durable **Finding Lifecycle ID** — `apodictic.finding.v1.id`, pattern `F-<ORIGIN>-<NN>` (e.g. `F-P5-01`, `F-DP-02`), described in the schema's `$comment` as following the finding *pass → ledger → Deficit Lock → editorial letter → revision/coaching*. The ID exists; this track makes the **lifecycle itself auditable by ID** instead of prose matching.
 
@@ -68,11 +68,26 @@ Without `python3`: `finding-trace` prints an advisory `WARN` and the model perfo
 4. Light prose pointer: the `finding-trace` arm in `findings-ledger-format.md` §Finding Lifecycle ID (the citation convention already documented there).
 5. Regenerate `codex/` + `antigravity/` mirrors; sync root `scripts/`; `--check-all`, `build-*.mjs --check`, `release-verify`.
 
+## Increment 2 — revision follow-through + canonical release-gate (built)
+
+Two additions, both extending `finding-trace` — no new validator, no count change (stays 19/19).
+
+**A. Revision-plan / coaching follow-through.** `finding-trace` now also traces finding IDs into revision artifacts (`*_Session_Plan_*.md`, `*_Revision_*.md`) — the lifecycle stage after the letter. Unlike the letter (where IDs live only in HTML comments to keep author-facing prose clean), revision plans are working documents, so IDs are matched **anywhere** in the text (inline prose references count). Two checks:
+- **E4 dangling revision reference** (ERROR) — a revision artifact cites an `F-…` ID not in the ledger.
+- **W2 follow-through coverage** (advisory; ERROR under `--strict`) — a **Must-Fix** ledger finding not referenced in any revision plan, when a revision plan is present. The "did the revision plan actually pick up the must-fix findings" audit. Advisory by default because an author may legitimately stage must-fix work across sessions; `--strict` makes it a CI gate. Skipped entirely when no revision artifact is present.
+
+**B. Canonical `--check-all` release gate.** Ships a canonical ledger (`core-editor/references/example-findings-ledger.md`) paired with the existing `example-editorial-letter.md` (which cites `F-RR-01`), and wires `finding-trace <ledger> <letter>` into `validate.sh --check-all`. A drift between the worked-example letter's citations and its ledger — or a `finding-trace` regression against real artifacts — now fails at release time, not just in the synthetic self-test (the release-gate discipline Validator Hardening applied to the letter/timeline validators).
+
+### Self-review (Increment 2)
+
+- *W2 false-positive risk* — a Must-Fix legitimately deferred across sessions would W2-warn; kept advisory (not ERROR) by default for exactly that reason, with `--strict` as the opt-in gate. Mirrors W1's posture.
+- *Revision ID surface* — revision plans have no comment-only convention, so IDs match anywhere in the text; the exact-boundary regex still prevents `F-P5-01` ≠ `F-P5-011`. A passing mention ("superseded F-RR-01") counts as addressing it — acceptable for a coverage signal.
+- *Canonical-gate scope* — the gate asserts **referential integrity** (every cited ID resolves) on the worked example, not severity (`softness-check` owns that on the same letter); no overlap, and the example ledger is itself a valid `apodictic.finding.v1` carrier.
+
 ## Out of scope (later increments)
 
-- **Increment 2 — revision follow-through.** Trace IDs into the revision plan / coaching artifacts (dangling-ref + Must-Fix coverage) once those artifacts carry ID citations.
-- **Increment 2 — canonical `--check-all` gating.** Run `finding-trace` against the shipped `example-editorial-letter.md` + a paired canonical ledger so a citation drift is a release-gate failure (the synthetic self-test is the gate this increment).
-- **`deficit-lock` / `softness-check` by-ID consolidation.** Already partly done; folding their residual prose heuristics fully onto IDs is a separate hardening pass.
+- **`deficit-lock` / `softness-check` by-ID consolidation.** Folding their residual prose heuristics fully onto IDs is a separate hardening pass.
+- **Revision-state lifecycle (`revised`).** A passing revision round could advance `finding_states[id]` to `revised` (the third lifecycle state, currently unreached); `finding-trace` would then audit revision *completion* by ID, not just plan coverage.
 
 ## Self-review (pre-build)
 

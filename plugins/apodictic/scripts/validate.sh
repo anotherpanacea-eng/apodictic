@@ -167,7 +167,7 @@ usage() {
   echo "Usage: $0 <command> [args...]"
   echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, argument-groundtruth-check"
   echo "Aggregate: --self-test-all (runs --self-test on all 19 self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, and the ported letter/timeline validators vs the canonical worked examples)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples, and finding-trace vs the canonical example ledger<->letter pair)"
   exit 2
 }
 
@@ -260,6 +260,13 @@ if [ "$1" = "--check-all" ]; then
       "$0" structured-findings "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-editorial-letter.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical finding-trace (example ledger <-> letter ID referential integrity) =="
+    if [ -f "$CA_BASE/example-findings-ledger.md" ]; then
+      "$0" finding-trace "$CA_BASE/example-findings-ledger.md" "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-findings-ledger.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical Timeline (timeline-arithmetic, timeline-anchor-conflict, timeline-diff self) =="
