@@ -4,10 +4,13 @@
 Worked example of a contract-conformant Development Edit synthesis letter (see
 run-synthesis.md §Step 7 Decision-Layer Consolidation + output-policy.md §Mandatory
 Appendices / §Evidence Density Self-Check / §Severity Floor Rules). This file is exercised by
-`validate.sh --check-all` as a canonical release-gate target for `decision-layer-check` and
-`audit-signal-propagation` (the Reception Risk hard gate in Appendix A propagates to the
-synthesis-body Must-Fix below). It is illustrative, not a run artifact; keep it passing when
-the letter contracts or the letter validators change.
+`validate.sh --check-all` as a canonical release-gate target for `decision-layer-check`,
+`audit-signal-propagation`, `softness-check`, and `finding-trace` (the Reception Risk hard gate
+in the §Diagnostic Detail appendix propagates to the synthesis-body Must-Fix below, which is
+delivered for finding F-RR-01 and locked in the paired example-findings-ledger.md). It is
+illustrative, not a run artifact; keep it passing when the letter contracts or the validators
+change. Keep this header note free of the appendix-heading words softness-check uses to find the
+body boundary, or it will truncate the body before the delivered finding.
 -->
 
 ## What the Book Does Best
