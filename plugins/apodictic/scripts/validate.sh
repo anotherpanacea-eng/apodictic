@@ -165,8 +165,8 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate"
-  echo "Aggregate: --self-test-all (runs --self-test on all 16 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, argument-groundtruth-check"
+  echo "Aggregate: --self-test-all (runs --self-test on all 17 self-testable validators; exit 0 only if every validator's self-test passes)"
   echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, and the ported letter/timeline validators vs the canonical worked examples)"
   exit 2
 }
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # pure utilities that do not carry self-tests; only the 11 model-
 # capability-review validators do.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate"
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate argument-groundtruth-check"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 16 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 17 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/16 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/17 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/16 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/17 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -270,6 +270,21 @@ if [ "$1" = "--check-all" ]; then
     else
       echo "ERROR: $CA_BASE/example-timeline.md not found"; CA_FAIL=1
     fi
+    echo ""
+  fi
+
+  # Argument Benchmark ground-truth corpus — only present in the repo (evals/ is not shipped to
+  # the generated host workspaces), so resolve-and-skip when absent rather than fail.
+  CA_EVALS=""
+  for cand in "$CA_SCRIPT_DIR/../../../evals/fixtures/argument-benchmark" "$CA_SCRIPT_DIR/../evals/fixtures/argument-benchmark"; do
+    if [ -d "$cand" ]; then CA_EVALS="$cand"; break; fi
+  done
+  if [ -n "$CA_EVALS" ]; then
+    echo "== argument-groundtruth-check (registered GT corpus) =="
+    for gt in "$CA_EVALS"/*/groundtruth.md; do
+      [ -f "$gt" ] || continue
+      "$0" argument-groundtruth-check "$gt" >/dev/null 2>&1 && echo "  ok $(basename "$(dirname "$gt")")" || { echo "  FAIL $(basename "$(dirname "$gt")")"; "$0" argument-groundtruth-check "$gt"; CA_FAIL=1; }
+    done
     echo ""
   fi
 
@@ -3982,6 +3997,25 @@ EOF
       exit $?
     fi
     echo "WARN: python3 unavailable — gate engine skipped; perform the phase's manifest checks inline and record the result in the sidecar (execution.gates)."
+    exit 0
+    ;;
+
+  argument-groundtruth-check)
+    # Argument Benchmark ground-truth answer-key validator (docs/argument-benchmark-spec.md
+    # §Mechanical validator): GT1-GT7 presence; DC code-namespace resolution; GT2 locus<->code
+    # consistency; GT7 Distinguish classification. Delegates to scripts/argument_groundtruth.py;
+    # degrades to an advisory WARN without python3 (the GT contract is prose in the template + spec).
+    AGT_DIR=$(cd "$(dirname "$0")" && pwd)
+    AGT_HELPER="$AGT_DIR/argument_groundtruth.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$AGT_HELPER" ]; then python3 "$AGT_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; argument-groundtruth-check is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$AGT_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 argument-groundtruth-check <groundtruth_file> | --self-test"; exit 2; fi
+      python3 "$AGT_HELPER" argument-groundtruth-check "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — argument-groundtruth-check skipped; the GT template + spec define the contract. Install python3 for the mechanical check."
     exit 0
     ;;
 

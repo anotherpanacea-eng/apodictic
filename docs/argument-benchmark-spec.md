@@ -337,33 +337,37 @@ For each fixture:
 
 ---
 
-## Mechanical validator (specced; implementation deferred)
+## Mechanical validator (built)
 
-A self-testable `validate.sh argument-groundtruth-check <groundtruth_file>`
-validator is the natural mechanical-honesty layer for this benchmark,
-matching the existing 11 self-testable validators. It would check:
+`validate.sh argument-groundtruth-check <groundtruth_file>` is the mechanical-honesty layer
+for this benchmark — the 17th self-testable validator (`scripts/argument_groundtruth.py`, with
+a no-`python3` advisory degrade path; wired into `--self-test-all` and run over the registered
+corpus by `--check-all`). It checks:
 
-- All seven GT sections (GT1–GT7) are present and non-empty.
+- All seven GT sections (GT1–GT7) are **covered** by a heading and non-empty. Corpus fixtures
+  legitimately combine sections under one heading (`## GT4–GT7 — *(PROVISIONAL)*`, `## GT5 / GT6
+  — …`); the parser expands ranges and lists so each number is accounted for.
 - Every code referenced resolves to the Dialectical Clarity namespace
-  (`AT / CL / SM / WR / BP / OB / DI / NE / AC`) or a valid `FM-Ax` pattern
-  (x ∈ 1–19).
-- GT2's primary failure layer is one of the enumerated values and is
-  consistent with its expected codes (e.g., a WARRANT locus carries a `WR*`
-  code, not an `SM*` code).
-- GT7's classification is one of the three Distinguish values, and an
-  unconventional classification names at least one downgraded form-dependent
-  code.
+  (`AT / CL / SM / WR / BP / OB / DI / NE / AC`) or a valid `FM-Ax` pattern (x ∈ 1–19). The
+  `GT` section-label prefix is excluded.
+- GT2 locus ↔ code consistency: when the locus names any of the canonical four loci
+  (SUPPORT/WARRANT/BURDEN/OBJECTION), at least one named locus's code family is present
+  (`WARRANT → WR*`, `SUPPORT → SM*`, `BURDEN → BP*`, `OBJECTION → OB*/DI*`). This catches the
+  spec's example error (a warrant break mis-coded as a support break) while tolerating the
+  corpus's richer/compound loci (`WARRANT / OBJECTION`, `SCOPE / CLAIM`, `… / FORM`). Positive
+  controls (`N/A — positive control`) are exempt.
+- GT7's Distinguish classification is one of SOUND / UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND
+  (validated when the field is present; provisional/derive-on-run fixtures may omit it); an
+  UNCONVENTIONAL classification must name ≥1 form-dependent code to downgrade — specific
+  (`SM0`, `FM-A1`) or family-level (`DI codes`, `SM/WR on the cost accounting`) references both
+  count.
 
-**Why deferred to a follow-up, not built in this slice:** `validate.sh` is a
-canonical artifact mirrored into the generated `codex/` and `antigravity/`
-host workspaces. Adding a 12th self-testable validator requires updating the
-five `--self-test-all` count references (11 → 12), editing both canonical
-copies (`scripts/` and `plugins/apodictic/scripts/`), regenerating both host
-workspaces, and re-passing `release-verify.mjs`. That is release-cycle work
-and should land once the GT schema has been exercised against the full
-corpus and is unlikely to churn. Building it against a still-moving schema
-would mean re-coding the validator each time a field changes. The schema is
-proven against the vertical slice first; the validator follows.
+**Calibration note.** The four checks were tuned against the full registered corpus (14 GT
+files across both the Increment-1 full fixtures and the Increment-2 provisional/derive-on-run
+fixtures) so the validator passes every registered ground truth and catches malformed/edited
+ones. The original spec assumed a fixed GT2 locus enum and fully-populated GT7s; the realized
+corpus is richer, so the checks validate *consistency and resolution* rather than strict enum
+membership.
 
 ---
 
@@ -397,9 +401,10 @@ bucket needs ≥1 positive control.
 
 ### Increment 3 — Mechanical validator + convergence runs
 
-Build `argument-groundtruth-check`, wire it into `--self-test-all`,
-regenerate host workspaces. Run the two-independent-runs convergence protocol
-across the full corpus; record results in the review log.
+`argument-groundtruth-check` is **built** (see §Mechanical validator above): wired into
+`--self-test-all` (17th validator) and run over the registered corpus by `--check-all`; host
+workspaces regenerated. **Remaining:** run the two-independent-runs convergence protocol across
+the full corpus and record results in the review log.
 
 ---
 
