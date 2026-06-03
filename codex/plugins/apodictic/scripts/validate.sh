@@ -165,9 +165,9 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, argument-groundtruth-check"
-  echo "Aggregate: --self-test-all (runs --self-test on all 20 self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples, and finding-trace + softness-check vs the canonical example ledger<->letter pair, both directions)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, argument-groundtruth-check"
+  echo "Aggregate: --self-test-all (runs --self-test on all 21 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples, finding-trace + softness-check vs the canonical example ledger<->letter pair (both directions), and feedback-triage vs the canonical example Feedback Triage)"
   exit 2
 }
 
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # pure utilities that do not carry self-tests; only the 11 model-
 # capability-review validators do.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check argument-groundtruth-check"
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage argument-groundtruth-check"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 20 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 21 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/20 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/21 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/20 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/21 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -268,6 +268,13 @@ if [ "$1" = "--check-all" ]; then
       "$0" softness-check "$CA_BASE/example-editorial-letter.md" "$CA_BASE/example-findings-ledger.md" || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-findings-ledger.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Feedback Triage (feedback-triage: contract + conflict integrity) =="
+    if [ -f "$CA_BASE/example-feedback-triage.md" ]; then
+      "$0" feedback-triage "$CA_BASE/example-feedback-triage.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-feedback-triage.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical Timeline (timeline-arithmetic, timeline-anchor-conflict, timeline-diff self) =="
@@ -4058,6 +4065,28 @@ EOF
       python3 "$FT_HELPER" finding-trace "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — finding-trace skipped; perform the cross-artifact ID trace inline (every cited F-... ID resolves to a ledger finding; finding_states keys are ledger IDs). See docs/finding-lifecycle-ids.md."
+    exit 0
+    ;;
+
+  feedback-triage)
+    # Feedback Triage workflow integrity (docs/feedback-triage.md): structural checks over the
+    # apodictic.feedback_item.v1 blocks in a Feedback Triage artifact — E1 invalid item, E2
+    # duplicate id, E3 dangling conflict reference, E4 self conflict, W1 unresolved conflict (both
+    # sides still actionable), W2 acting now on an unvalidated claim (W1/W2 advisory; ERROR under
+    # --strict). Owns conflict referential integrity + the "contradiction kept live" coherence gap.
+    # Takes a run folder (globs *_Feedback_Triage_*.md) or explicit files. Delegates to
+    # scripts/feedback_triage.py; degrades to an advisory WARN without python3.
+    FBT_DIR=$(cd "$(dirname "$0")" && pwd)
+    FBT_HELPER="$FBT_DIR/feedback_triage.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$FBT_HELPER" ]; then python3 "$FBT_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; feedback-triage is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$FBT_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 feedback-triage <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$FBT_HELPER" feedback-triage "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — feedback-triage skipped; check inline that every conflicts_with id resolves to a real feedback item and no contradiction is left actionable on both sides. See docs/feedback-triage.md."
     exit 0
     ;;
 
