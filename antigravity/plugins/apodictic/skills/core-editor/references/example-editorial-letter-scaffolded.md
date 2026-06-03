@@ -86,7 +86,7 @@ Option-classes for the middle third, for you to adopt, sequence, or set aside wi
 
 ### Cut
 
-- Cut the prologue, or fold its single load-bearing detail into Chapter 1.
+- The prologue: fold its one load-bearing detail into Chapter 1, then let it go.
 
 ### Unsure
 
