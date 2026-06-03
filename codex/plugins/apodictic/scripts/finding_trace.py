@@ -17,9 +17,10 @@ dimension: cross-artifact REFERENTIAL INTEGRITY + sidecar lifecycle COHERENCE.
                           (advisory; ERROR under --strict).
   W2 revision coverage    a Must-Fix ledger ID not referenced in any revision plan, when one
                           is present (advisory; ERROR under --strict).
-  E5 phantom completion   finding_states[id]=="revised" for a ledger ID not marked resolved
-                          (`<!-- resolved: F-... -->` in a completed-revision artifact), when one
-                          is present.
+  E5 phantom completion   a completed-revision artifact MENTIONS a ledger ID whose finding_states
+                          is "revised" but carries no `<!-- resolved: F-... -->` marker for it (the
+                          in-scope report and the rolling sidecar disagree; IDs not in the report
+                          are out of scope — a finding resolved in an earlier round is left alone).
   W3 completion coverage  a ledger ID marked resolved in a completed-revision artifact whose
                           finding_states entry is not "revised" (advisory; ERROR under --strict).
 
@@ -156,9 +157,11 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completio
     rev_cited = set()
     for rt in revision_texts:
         rev_cited |= revision_cited_ids(rt)
-    resolved_ids = set()  # explicitly resolved (<!-- resolved: ID -->) in a completion artifact
+    resolved_ids = set()    # explicitly resolved (<!-- resolved: ID -->) in a completion artifact
+    comp_mentioned = set()  # any F-... token (bare) in a completion artifact — E5's in-scope set
     for ct in completion_texts:
         resolved_ids |= resolved_cited_ids(ct)
+        comp_mentioned |= revision_cited_ids(ct)
     finding_states, phase, sc_ok = sidecar_state(sidecar_text) if have_sidecar else ({}, None, True)
 
     # E1 — dangling reference (letter cites an ID not in the ledger)
@@ -196,17 +199,18 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completio
         for fid in sorted(inv):
             if inv[fid] == "Must-Fix" and fid not in rev_cited:
                 warns.append("W2 follow-through: Must-Fix %s not referenced in any revision plan" % fid)
-    # E5 — phantom completion: a `revised` ledger finding with no completed-revision artifact
-    # behind it. Keyed on an explicit `<!-- resolved: ID -->` marker (NOT a bare mention — a
-    # report's "Flags still present" list names worked-but-unresolved findings). Gated on a
-    # completion artifact being present in scope (a revised state with no completion artifact
-    # here may have been resolved in an earlier session — left alone).
-    if have_sidecar and sc_ok and have_completion:
-        for fid in sorted(finding_states):
+    # E5 — phantom completion: an in-scope contradiction — a completed-revision artifact *mentions*
+    # a `revised` ledger finding (bare, e.g. under "Flags still present") but carries no
+    # `<!-- resolved: ID -->` marker for it, so the report and the sidecar disagree. Scoped to IDs
+    # the current report actually mentions (comp_mentioned): the sidecar's finding_states is a
+    # rolling all-session map, so a finding resolved in an EARLIER (out-of-scope) round is durably
+    # `revised` but simply won't appear in this report — and must not be flagged (PR #32 review P1).
+    if have_sidecar and sc_ok:
+        for fid in sorted(comp_mentioned):
             if finding_states.get(fid) == "revised" and fid in inv and fid not in resolved_ids:
-                errs.append("E5 phantom completion: finding_states[%s]=revised — not marked "
-                            "resolved (<!-- resolved: %s -->) in any completed-revision artifact"
-                            % (fid, fid))
+                errs.append("E5 phantom completion: finding_states[%s]=revised but the completed-"
+                            "revision artifact mentions it without a <!-- resolved: %s --> marker "
+                            "— the report and the sidecar disagree" % (fid, fid))
     # W3 — completion follow-through: a finding explicitly marked resolved in a completed round
     # whose lifecycle was not advanced to `revised`. Keys on the resolved marker (so a
     # still-present mention never triggers it). Needs a parseable sidecar to judge against.
@@ -421,14 +425,24 @@ def run_self_test():
     rev_still_present = ("# Revision Report\n## Flags still present\nF-P5-01 remains present; the "
                          "attempted fix did not land.\n")
 
-    # E5 phantom completion: F-P5-01 marked revised, but only F-P5-02 carries a resolved marker
-    # -> the `revised` claim has no completed-revision artifact behind it.
+    # E5 phantom completion: the in-scope report MENTIONS F-P5-01 (still present, no resolved
+    # marker) but the sidecar marks it revised -> the report and the sidecar disagree.
+    rev_contradict = ("# Revision Report\n## Flags still present\nF-P5-01 remains present.\n"
+                      "## Flags resolved\nStakes reworked. <!-- resolved: F-P5-02 -->")
     code, lines = trace(ledger, letter_clean, sc_revised,
-                        revision_texts=[rev_done_02], completion_texts=[rev_done_02])
+                        revision_texts=[rev_contradict], completion_texts=[rev_contradict])
     check("e5_phantom_completion",
           code == 1 and any("E5 phantom" in ln and "F-P5-01" in ln for ln in lines))
 
-    # E5 gated on completion-artifact presence: revised state, no completion artifact -> no E5
+    # E5 scope (PR #32 re-review P1): finding_states is a rolling all-session map. A finding
+    # revised in an EARLIER round, with a new report resolving only F-P5-02 and NOT mentioning
+    # F-P5-01, must NOT E5-fail F-P5-01 (it was resolved out of scope).
+    code, lines = trace(ledger, letter_clean, sc_revised,
+                        revision_texts=[rev_done_02], completion_texts=[rev_done_02])
+    check("e5_no_falsepos_out_of_scope",
+          code == 0 and not any("E5 phantom" in ln for ln in lines))
+
+    # E5 needs a completion artifact mentioning the finding: revised state, no completion -> no E5
     code, _ = trace(ledger, letter_clean, sc_revised)
     check("e5_skipped_without_completion", code == 0)
 
