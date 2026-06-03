@@ -189,7 +189,7 @@ Always asked after routing, before work begins. Multiple selections allowed.
 | C | This is nonfiction | `constraint:nonfiction` | Run nonfiction triage. Route argument-shaped work to the Nonfiction Argument Engine, scene-led nonfiction to Narrative Nonfiction Craft, and memoir / witness-led work to Memoir & CNF. Idea-stage Nonfiction Pre-Draft remains a gap. |
 | D | There's sensitive or legally risky content | `constraint:risk` | Add risk register output. **Gap: risk register not yet built.** |
 | E | I'm editing someone else's work | `operator:editor` | Shift output to editor scaffolding (editor-facing reframe of the synthesis letter). **Built** — see `references/editor-scaffolding.md`. |
-| F | I'm facilitating a writing group | `operator:facilitator` | Shift to diagnostic vocabulary mode. **Gap: facilitator mode not yet built.** |
+| F | I'm facilitating a writing group | `operator:facilitator` | Shift to diagnostic vocabulary mode (produce a teaching Vocabulary Guide: glossary + discussion prompts). **Built** — see `references/diagnostic-vocabulary.md`. |
 | G | We're co-authoring (multiple writers) | `operator:team` | Note conflicting-vision risk. **Gap: multi-party intake not yet built.** |
 | H | Use hybrid mode (better analysis, moderate token cost) | `execution:hybrid` | Pass 0+1 reads full manuscript and builds a focus map; later passes read the outline + targeted excerpts as independent subagents. ~2–3x token cost. See `run-core.md` §Execution Mode. |
 | I | Use swarm mode (deepest analysis, highest token cost) | `execution:swarm` | Each pass runs as an independent subagent with full manuscript. ~2x findings, ~5x token cost. See `run-core.md` §Execution Mode. |
@@ -316,7 +316,7 @@ All commands work as direct entry points. `/start` is recommended for new users;
 | full_draft | coach | — | Revision Coach (`revision-coach/SKILL.md`) | **Built** (v1.1.2) |
 | full_draft | coach | deadline | Revision Coach (deadline mode) | **Built** (v1.1.2) |
 | full_draft | repair | editor | Core DE (editor scaffolding) | **Built** (`references/editor-scaffolding.md`) |
-| full_draft | repair | facilitator | Core DE (diagnostic vocabulary) | Gap |
+| full_draft | repair | facilitator | Core DE (diagnostic vocabulary) | **Built** (`references/diagnostic-vocabulary.md`) |
 | full_draft | repair (feedback) | — | Feedback Triage → Core DE | Gap |
 | series | repair (single vol) | — | Core DE (series context) | Partially built |
 | series | repair (continuity) | — | Series Continuity Audit (`craft/series-continuity.md`) | **Built** (v1.2) |
