@@ -166,7 +166,7 @@ set -euo pipefail
 usage() {
   echo "Usage: $0 <command> [args...]"
   echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, argument-groundtruth-check"
-  echo "Aggregate: --self-test-all (runs --self-test on all 19 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --self-test-all (runs --self-test on all 20 self-testable validators; exit 0 only if every validator's self-test passes)"
   echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, and the ported letter/timeline validators vs the canonical worked examples)"
   exit 2
 }
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # pure utilities that do not carry self-tests; only the 11 model-
 # capability-review validators do.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace argument-groundtruth-check"
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check argument-groundtruth-check"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 19 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 20 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/19 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/20 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/19 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/20 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -4047,6 +4047,27 @@ EOF
       python3 "$FT_HELPER" finding-trace "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — finding-trace skipped; perform the cross-artifact ID trace inline (every cited F-... ID resolves to a ledger finding; finding_states keys are ledger IDs). See docs/finding-lifecycle-ids.md."
+    exit 0
+    ;;
+
+  escalation-check)
+    # Adaptive Mid-Run Mode Escalation detector (docs/adaptive-mode-escalation.md): a
+    # CONDITION-TRIGGERED checkpoint after Tier 1 that compares revealed complexity (POV count,
+    # nonlinear timeline, belief/orientation density, Tier-1 finding count from the ledger) against
+    # the preflight estimate and recommends escalating the execution mode before Tier 2. Advisory
+    # by default (escalation is a recommendation, never automatic); --strict exits 1 when an
+    # escalation is recommended. Delegates to scripts/escalation_check.py; degrades to advisory WARN.
+    EC_DIR=$(cd "$(dirname "$0")" && pwd)
+    EC_HELPER="$EC_DIR/escalation_check.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$EC_HELPER" ]; then python3 "$EC_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; escalation-check is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$EC_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 escalation-check <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$EC_HELPER" escalation-check "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — escalation-check skipped; evaluate the escalation triggers inline (pov_count>3, nonlinear timeline, belief>5/orientation>3, Tier-1 findings>20). See docs/adaptive-mode-escalation.md."
     exit 0
     ;;
 
