@@ -154,11 +154,20 @@ When shell/python is unavailable, `gate` cannot run. The prose instructs the mod
 
 | Question | Decision |
 |---|---|
-| **State vs. history** | **History-only.** A new append-only `execution.gate_events[]` is the canonical record. The per-phase `gates` map is **removed** — it is fully derivable from the log (the redundant, drift-prone duplication). |
-| **Phase identity** | **Fixed enum** = the `next_action` dispatch keys (`intake … handoff_reentry`, the same set `/start` routes on). Not free strings (a typo'd phase should be invalid, not silently logged), not a new namespace (there is one runner). |
-| **Status vocabulary** | A **lifecycle vocabulary**, split into *stored event results* and *derived labels* (table below). Now enum-tightened — Track C's deferral was pending exactly this design. |
-| **`allowed_next` placement** | **Derived runner state**, not per-event. It is a pure function of the manifest + current phase; duplicating it per event invites drift. It lives once, on the thin resume pointer. |
+| **State vs. history** | **History-only.** A new append-only `execution.gate_events[]` is the canonical record. The per-phase `gates` map is **removed** — fully derivable from the log (the redundant, drift-prone duplication). |
+| **Event identity** | A gate event names the **`gate`** it records, enum = the manifest's `phases` keys (today `run_synthesis`, `run_spot_check`) — *the gates the runner can actually execute*, not the full 9-key `next_action` dispatch set. Gate identity ≠ workflow phase (see *Gate identity vs. workflow phase* below). |
+| **Status vocabulary** | A **lifecycle vocabulary**, split into *stored event results* and *derived labels* (table below). Enum-tightened — Track C's deferral was pending exactly this design. |
+| **`allowed_next` placement** | **Derived runner state**, not per-event — a pure function of the manifest + cleared frontier; duplicating it per event invites drift. Lives once, on the thin resume pointer. |
 | **Degrade path** | **Minimal required fields; ordering = array append position (no monotonic `seq` for a model to compute).** The no-shell path appends one flat, hand-authorable event. |
+
+#### Gate identity vs. workflow phase (review fix — Codex P1)
+
+The first draft set the event's identity field to the full `next_action` dispatch enum (`intake … handoff_reentry`). That conflated two different things and was wrong: the **runner can only execute the gates the manifest defines** — today exactly `run_synthesis` and `run_spot_check` (`execution-gates.v1.json` → `phases`), and `run_gate.py` rejects any other phase with exit 2. An event keyed `deliver` or `coaching` would name a gate the engine cannot run, and would pretend non-gated workflow steps are gate decisions. So the spec separates the two axes:
+
+- **`gate`** (the event's identity) — enum = manifest `phases` keys. A gate event records a decision about a gate the runner can execute. Non-gated workflow steps (`intake`, `run_passes`, `deliver`, `revision_round`, `coaching`, `handoff_reentry`) **do not** produce gate events — there is no gate to record; their progress is tracked as today (artifact presence + `next_action` in `/start`), not in this log.
+- **`execution.phase`** (the resume pointer) — the **gate frontier**: the last gate that cleanly passed. Unchanged from today (`run_gate.py` only ever sets `execution.phase` to a manifest gate key), drawing from the same small gate set — so the two axes stay consistent, and neither spans the 9-key dispatch set.
+
+The gate set is **sourced from the manifest**, so adding a future gate is one manifest entry + the enum (a consistency check asserts `gate_event` enum == manifest `phases` keys ⊆ dispatch keys). Generalizing the log to *all* workflow phases — every dispatch phase with defined transition semantics — is the larger Increment-4 manifest expansion, explicitly out of scope here.
 
 ### Status vocabulary — stored events vs. derived labels
 
@@ -169,93 +178,123 @@ Every lifecycle state is either a **stored event** (something that happened at a
 | `passed` | stored event `result` | × `provenance` `mechanical` / `attested` |
 | `pass-with-warn` | stored event `result` | cleared with an unresolved soft warning; does **not** authorize a transition |
 | `blocked` | stored event `result` | failed |
-| `skipped` | **stored event** `result` | deliberate bypass — **requires `reason` + an Audit-Invocation-Log blind-spot line** |
-| `deferred` | **stored event** `result` | postponed to a later session — **requires `reason`**, optional `until` |
-| `not-run` | **derived label** | no events for the phase (do not write a "nothing happened" event) |
-| `superseded` | **derived label** | a later event shares the phase — never mutate the prior event |
-| `current` | **derived label** | the phase of the latest cleared (`passed`) event |
+| `skipped` | **stored event** `result` | deliberate bypass of a gate — **requires `reason` + an Audit-Invocation-Log blind-spot line** |
+| `deferred` | **stored event** `result` | gate postponed to a later session — **requires `reason`**, optional `until` |
+| `not-run` | **derived label** | no events for the gate (do not write a "nothing happened" event) |
+| `superseded` | **derived label** | a later event shares the gate — never mutate the prior event |
+| `current` | **derived label** | the gate frontier — `execution.phase` |
 
-`skipped` / `deferred` are the genuinely *new stored* states (the audit value). The guardrail against a silent-bypass honeypot: they require a recorded `reason` (and `skipped` a blind-spot line), and a `gate --strict` / CI mode returns nonzero if the log carries any unresolved `skipped` / `deferred` / `pass-with-warn` — so the exception is recorded and CI-blockable, never silent. `provenance` (mechanical | attested) is an orthogonal axis on any cleared event: an *attested pass* is `result: passed` + `provenance: attested` (this subsumes the v1 `"attested"` status).
+`skipped` / `deferred` are the genuinely *new stored* states (the audit value). Guardrail against a silent-bypass honeypot: they require a recorded `reason` (and `skipped` a blind-spot line), and `gate --strict` / CI returns nonzero while any gate has an **open exception** (formalized below) — so the bypass is recorded and CI-blockable, never silent. `provenance` (mechanical | attested) is an orthogonal axis on any cleared event: an *attested pass* is `result: passed` + `provenance: attested` (this subsumes the v1 `"attested"` status). `skipped` / `deferred` are always `provenance: attested` (a human/model decision, never a mechanical outcome).
 
 ### The event record — `apodictic.gate_event.v1`
 
-Inlined under `execution.gate_events.items` in `apodictic.diagnostic-state.v1` (no cross-file `$ref` — the stdlib JSON-Schema subset checker may not support it; one home, no new carrier). Events live in the sidecar JSON only — there is no markdown-embedded gate-event block.
+A **standalone** schema file `apodictic.gate_event.v1.schema.json`, referenced from the diagnostic-state schema as `"gate_events": {"type": "array", "items": {"$schema_ref": "apodictic.gate_event.v1"}}` — the **same supported `items.$schema_ref` extension** that already backs `findings[]` / `audit_triggers[]` / `readiness[]` (iterated by `validate_sidecar_obj`). *(The earlier draft said "inline, no `$ref`, the checker may not support it" — that was wrong: `$schema_ref` is the project's established stdlib extension for arrays of typed objects, and routing through it buys per-item structural validation for free; see Enforcement below.)* Events live in the sidecar JSON only — there is no markdown-embedded gate-event block. Items need not carry a `schema` field (`validate_sidecar_obj` infers it from the array).
 
 | Field | Required? | Type / values | Notes |
 |---|---|---|---|
-| `phase` | **required** | enum (dispatch keys) | which phase's gate this event records |
+| `gate` | **required** | enum = manifest `phases` keys | which gate this event records |
 | `result` | **required** | `passed` \| `pass-with-warn` \| `blocked` \| `skipped` \| `deferred` | the outcome |
 | `provenance` | **required** | `mechanical` \| `attested` | how decided; `skipped` / `deferred` are always `attested` |
 | `ts` | **required** | ISO-8601 string | informational/ordering aid; day-granularity acceptable on the degrade path |
-| `reason` | **required iff** `result ∈ {skipped, deferred}` | string | the exception rationale |
+| `reason` | **required iff** `result ∈ {skipped, deferred}` | string | the exception rationale (enforced by `gate-state`, not the subset schema) |
 | `until` | optional | string | for `deferred`: when it is expected to resume |
 | `run_folder` | optional | string | the run folder the gate ran against |
 | `checks` | optional (python-only) | `[{"validator": str, "result": "ok"\|"warn"\|"error"}]` | per-validator breakdown |
 | `attested_items` | optional | string[] | confirmed attested-checklist items (attested / degrade) |
 | `finding_deltas` | optional (python-only) | `{finding_id: state}` | finding-lifecycle advances this event made |
+| `migrated` | optional | boolean | seeded from the legacy `gates` map (see Migration) |
 | `note` | optional | string | free text |
 
-**Ordering is array append position** (the array *is* the order); `ts` is advisory and may be coarse on the degrade path. There is no `seq` counter for a model to maintain. **Required minimum** (degrade-path hand-authorable): `phase`, `result`, `provenance`, `ts` (+ `reason` when skipped/deferred).
+**Ordering is array append position** (the array *is* the order); `ts` is advisory and may be coarse on the degrade path. There is no `seq` counter for a model to maintain. **Required minimum** (degrade-path hand-authorable): `gate`, `result`, `provenance`, `ts` (+ `reason` when skipped/deferred).
 
 ```jsonc
 // engine-written event (full)
 {
-  "phase": "run_synthesis",
+  "gate": "run_spot_check",
   "result": "pass-with-warn",
   "provenance": "mechanical",
   "ts": "2026-06-03T14:22:00Z",
   "run_folder": "runs/2026-06-02_opus_full-de",
   "checks": [
-    {"validator": "ledger-check",   "result": "ok"},
-    {"validator": "softness-check", "result": "warn"}
+    {"validator": "softness-check", "result": "warn"},
+    {"validator": "tone-check",     "result": "ok"}
   ],
-  "finding_deltas": {"F-P5-01": "locked"},
+  "finding_deltas": {"F-P5-01": "delivered"},
   "note": "softness WARN on F-P5-01; re-word before deliver"
 }
 ```
 
 ```jsonc
 // degrade-path event (no shell) — one flat, copy-pasteable object
-{"phase":"run_synthesis","result":"passed","provenance":"attested","ts":"2026-06-03",
+{"gate":"run_synthesis","result":"passed","provenance":"attested","ts":"2026-06-03",
  "attested_items":["selected passes complete","auto-run audits complete","blind spots recorded"],
  "note":"no shell; inline checks"}
 ```
 
 ### Derived current-state — the thin checkable pointer
 
-The log is canonical; the engine also writes a small resume pointer so `/start` and the no-shell path read current state in one glance instead of folding the log every resume. Each pointer field is **recomputable from the log**, so it is an index, not a competing source of truth:
+The log is canonical; the engine also writes a small resume pointer so `/start` and the no-shell path read current state in one glance instead of folding the log every resume. Each field is **recomputable from the log**, so it is an index, not a competing source of truth:
 
-- `execution.phase` = phase of the last event with `result == "passed"` (mechanical or attested). `pass-with-warn` does **not** advance it (soft-block — matches the current engine).
-- `execution.allowed_next` = `execution-gates.v1.json` → `phases[execution.phase].allowed_next`; emptied whenever the latest event for the intended phase did not cleanly pass.
-- `execution.finding_states` = forward-only fold of every event's `finding_deltas`.
+- `execution.phase` — the **gate frontier**: the `gate` of the last event with `result == "passed"` (mechanical or attested). `pass-with-warn` does **not** advance it (soft-block — matches the current engine).
+- `execution.allowed_next` — `execution-gates.v1.json` → `phases[execution.phase].allowed_next` when `pending_gate` is `null`; **empty whenever `pending_gate` is non-null** (an open exception exists), matching the v1 engine's retraction of `allowed_next` after any non-passing gate. So `allowed_next` is non-empty ⟺ there is no pending gate — the two pointer fields are complementary, never contradictory.
+- `execution.pending_gate` — **(review fix — Codex P1#2)** the gate `/start` must resolve next: the manifest-order-earliest gate whose **latest** event is *not* a clean pass (`result ∈ {blocked, pass-with-warn, skipped, deferred}`), else `null`. Without this field the dropped `gates` map left no signal for *which* gate is in trouble: after `run_synthesis` passes and `run_spot_check` returns `pass-with-warn`, the frontier is still `run_synthesis` and `allowed_next` is empty — so "empty ⇒ re-run `gate <phase>`" would wrongly re-run the *passed* `run_synthesis` instead of the warned `run_spot_check`. `pending_gate` names `run_spot_check`.
+- `execution.finding_states` — forward-only fold of every event's `finding_deltas`.
+- `execution.state_version` — **(review fix — Codex P3)** integer marking the gate-events model (`2`); absent / `1` = legacy `gates`-map sidecar. Readers branch on it instead of sniffing for `gate_events`.
 
-**Invariant.** A `gate-state` check (and `/start` itself) asserts `pointer == fold(gate_events)`. On mismatch the **log wins** — recompute the pointer from the log and note the self-heal. Drift is therefore a *checked invariant*, not a hazard.
+**Invariant.** A `gate-state` check (and `/start`) asserts `pointer == fold(gate_events)` for `phase`, `allowed_next`, `pending_gate`, and `finding_states`. On mismatch the **log wins** — recompute from the log and note the self-heal. Drift is a *checked invariant*, not a hazard.
 
-**Derived labels** (computed, never stored): `not-run(phase)` = no event for the phase; `superseded(event)` = a later event shares its phase; `current` = phase of the last `passed` event; `status(phase)` = result+provenance of the last event for the phase (this replaces the v1 `gates[phase]` read).
+**Derived labels** (computed, never stored): `not-run(gate)` = no event for the gate; `superseded(event)` = a later event shares its gate; `current` = the frontier `execution.phase`; `status(gate)` = result+provenance of the gate's latest event (replaces the v1 `gates[gate]` read).
+
+### Open exceptions — the formal resolution rule (review fix — Codex P2#2)
+
+"Unresolved" is load-bearing (it gates strict CI), so define it by a fold, not by vibes. Per gate, take its **latest** event (highest array index for that gate):
+
+```
+open_exceptions = { gate : latest_event(gate).result ∈ {blocked, pass-with-warn, skipped, deferred} }
+```
+
+- A gate's exception is **resolved** exactly when a *later* event for the same gate has `result == passed` (mechanical **or** attested) — a clean pass supersedes it. That is the only way to clear `skipped` / `deferred`: re-running the gate to a clean pass (an attested pass counts, so a no-shell host can resolve its own deferral). There is no "mark resolved" event — resolution is always a real clean pass, which keeps the audit honest.
+- `gate --strict` / CI: nonzero while `open_exceptions` is non-empty. `blocked` is already a hard failure; `skipped` / `deferred` / `pass-with-warn` are the *soft* exceptions this mode refuses to ship unresolved. So strict CI is red until every gate's latest event is a clean pass — it neither stays red forever (a clean re-pass clears it) nor clears casually (only a real pass clears it).
+- `execution.pending_gate` = the manifest-order-earliest member of `open_exceptions` (resolve first), or `null`.
 
 ### `/start` read changes
 
-- Read `execution.phase` + `execution.allowed_next` (the pointer) as today; **empty `allowed_next` ⇒ the current phase is not cleared, re-run `validate.sh gate <phase> <run_folder>`** (the v1 `gates[phase] ∈ {blocked, pass-with-warn}` check is dropped — emptiness already encodes it).
-- For per-phase status display, fold `gate_events[]` → `status(phase)` (cheap; a single run has only a handful of events).
+- Read the pointer. **If `pending_gate` is set, resolve *that* gate** — re-run `validate.sh gate <pending_gate> <run_folder>` (or, on a no-shell host, re-attest it) — *not* `execution.phase`. (Review fix — Codex P1#2: the v1 "empty `allowed_next` ⇒ re-run `gate <phase>`" re-ran the last *passed* gate.)
+- Else proceed along `allowed_next` from the frontier.
+- For per-gate status display, fold `gate_events[]` → `status(gate)` (cheap; a run has a handful of events).
 - Optionally assert the pointer against the fold and self-heal (log wins).
-- **Legacy fallback:** a sidecar with no `gate_events` (pre-Increment-5 project) falls back to the v1 `gates` map, so old projects still resume.
+- **Legacy fallback:** `state_version` absent / `1` (no `gate_events`) ⇒ read the v1 `gates` map, so old projects still resume.
+
+### Enforcement — schema layer vs. `gate-state` validator (review fix — Codex P2)
+
+The subset checker (`apodictic_artifacts.validate_obj`) honors `required` / `const` / `enum` / `type` / `minItems` / item-`type` / `pattern` on a single object, and `validate_sidecar_obj` already iterates `$schema_ref` arrays through it. So enforcement is two layers with a clean split:
+
+- **Structural (schema + `$schema_ref`, reused machinery).** Routing `gate_events[]` through `validate_sidecar_obj` enforces, per item, *for free* (exactly as finding blocks are validated): the unconditional required minimum (`gate`, `result`, `provenance`, `ts`), the `result` / `provenance` / `gate` **enums**, and field **types**.
+- **Semantic (new `gate-state` Python validator).** `validate_obj` has **no conditional-required, no cross-field rules, and does not recurse into arrays-of-objects on its own** — so `gate-state` owns everything the subset checker cannot express, each with positive + negative fixtures (mirroring the `run_gate.py` / `apodictic_artifacts.py` self-test style):
+  - `reason` **required iff** `result ∈ {skipped, deferred}`;
+  - `provenance == attested` whenever `result ∈ {skipped, deferred}`;
+  - the Audit-Invocation-Log **blind-spot line** exists for each `skipped`;
+  - `pointer == fold(gate_events)` (phase / allowed_next / pending_gate / finding_states);
+  - the `open_exceptions` computation behind `gate --strict`;
+  - `gate` enum == manifest `phases` keys ⊆ dispatch keys (drift guard).
 
 ### Migration / backward-compat (no schema version bump)
 
-Adding `execution.gate_events` is additive; deprecating `gates` (kept optional for back-compat reads) is non-breaking — so `apodictic.diagnostic-state.v1` stays **v1**.
+Adding `gate_events` (plus `pending_gate` / `state_version`) is additive, and the sidecar schema is `additionalProperties: true`; deprecating `gates` (kept optional for back-compat reads) is non-breaking — so `apodictic.diagnostic-state.v1` stays **v1**. `state_version` is the *internal* model marker (distinct from the schema `$id`) Codex suggested.
 
-- **Schema:** add `execution.gate_events` (array; inline `apodictic.gate_event.v1` item shape). Keep `execution.gates` as `{"type": "object"}` with a `$comment: deprecated by gate_events; readers fall back to it when gate_events is absent`.
-- **Reader rule:** `gate_events` present ⇒ use it; absent ⇒ use the legacy `gates` map.
-- **Writer rule (Increment-5 engine):** first write creates `gate_events[]` and stops writing the `gates` map. Optionally seed one synthetic `provenance: attested` event per legacy `gates` entry (`note: "migrated from legacy gates map"`, coarse `ts`) so a migrated project's history isn't blank.
+- **Schema:** add `gate_events` (`items.$schema_ref: apodictic.gate_event.v1`), `pending_gate` (string), `state_version` (integer) to the `execution` block; ship `apodictic.gate_event.v1.schema.json`. Keep `execution.gates` as `{"type": "object"}` with `$comment: deprecated by gate_events; read only when state_version < 2`.
+- **Reader rule:** `state_version >= 2` ⇒ use `gate_events`; else fall back to the legacy `gates` map.
+- **Writer rule (Increment-5 engine):** first write sets `state_version: 2`, creates `gate_events[]`, and stops writing the `gates` map. Migration seeding is **faithful, not blanket-attested** (review fix — Codex P3): seed one event per legacy `gates` entry mapping the recorded value to its *real* provenance — legacy `"attested"` → `{result: passed, provenance: attested}`; legacy `passed` / `pass-with-warn` / `blocked` (all engine-written) → that result with `provenance: mechanical` — each flagged `"migrated": true`, `note: "migrated from legacy gates map"`, coarse `ts`. (The earlier draft's blanket `provenance: attested` would have mislabeled mechanically-written results as model-attested.) Seeding is recommended for history continuity but optional; the conservative alternative is no seed (history starts at the first Increment-5 gate run).
 
 ### Build plan (later increment — not this round)
 
-1. Extend `apodictic.diagnostic-state.v1`: inline `gate_event.v1` under `execution.gate_events.items`; deprecate `gates`. (Optionally ship a standalone `apodictic.gate_event.v1.schema.json` as documentation kept in sync.)
-2. `run_gate.py`: **append** an event per run instead of overwriting `gates[phase]`; recompute the pointer (`phase`, `allowed_next`, `finding_states`) from the log; author `skipped` / `deferred` events (with required `reason` + Audit-Invocation-Log blind-spot) and add `gate --strict` (nonzero on any unresolved `skipped` / `deferred` / `pass-with-warn`).
-3. `run_gate.py --check-state <sidecar>` (or a `gate-state` validator arm): conform events to the schema; assert `pointer == fold(log)`; assert the `phase` enum == the dispatch keys. Register in `--self-test-all` (17 → 18; bump the count strings + usage + docblocks in lockstep).
-4. `commands/start.md`: read the thin pointer; per-phase status via fold; legacy `gates` fallback; the self-heal note.
-5. Degrade-path prose (run-core.md / run-synthesis.md §Degradation): append one minimal event + update the pointer (replaces the v1 one-word `gates[<phase>] = "attested"`).
-6. Regenerate `codex/` + `antigravity/` mirrors; `--check-all`, `build-*.mjs --check`, `release-verify`.
+1. Ship `apodictic.gate_event.v1.schema.json`; add `gate_events` (`items.$schema_ref`), `pending_gate`, `state_version` to the `execution` block of `apodictic.diagnostic-state.v1`; deprecate `gates`. Route `gate_events[]` through `validate_sidecar_obj` for the structural layer.
+2. `run_gate.py`: **append** an event per run instead of overwriting `gates[<phase>]`; recompute the pointer (`phase`, `allowed_next`, `pending_gate`, `finding_states`) from the log; set `state_version: 2`; author `skipped` / `deferred` events (required `reason` + Audit-Invocation-Log blind-spot); add `gate --strict` (nonzero while `open_exceptions` is non-empty).
+3. New **`gate-state`** validator (its own arm, or `run_gate.py --check-state <sidecar>`) owning the semantic invariants listed under *Enforcement*, each with positive + negative fixtures. Register in `--self-test-all` (17 → 18; bump the count strings + usage + docblocks in lockstep).
+4. `commands/start.md`: resolve `pending_gate` first, else proceed along `allowed_next`; per-gate status via fold; `state_version` legacy fallback; the self-heal note.
+5. Degrade-path prose (run-core.md / run-synthesis.md §Degradation): append one minimal event + update the pointer (`phase`, `allowed_next`, `pending_gate`) — replacing the v1 one-word `gates[<phase>] = "attested"`.
+6. Migration: faithful seeding from any legacy `gates` map; reader keys off `state_version`.
+7. Regenerate `codex/` + `antigravity/` mirrors; `--check-all`, `build-*.mjs --check`, `release-verify`.
 
 ### Out of scope
 
