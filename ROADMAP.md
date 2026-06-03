@@ -155,9 +155,11 @@ For human developmental editors using the framework as analytical assist. Output
 
 **Built.** The `operator:editor` routing gap is closed (intake router → `references/editor-scaffolding.md`). The mode is a superset overlay on the Core DE editorial letter: an **Editor Brief** addressee reorientation, a required **What You Might Have Missed** blind-spot section, and an **Intervention Menu (editor's discretion)** that defers the author-facing prescription to the human editor — while severity honesty, the Firewall, and the decision layer are preserved unchanged. Enforced by the `editor-scaffolding` validator (E1–E4 + advisory W1), conditional on a `<!-- mode: editor-scaffolding -->` marker, with a canonical `--check-all` gate proving it composes with `decision-layer-check` / `severity-floor`. Spec + ownership boundary: [`docs/editor-scaffolding.md`](docs/editor-scaffolding.md). Validators 21 → 22. **Future increments:** per-pass scaffolding, blind-spot ranking by severity-vs-salience gap, editor↔author dual output. The sibling operators (Diagnostic Vocabulary Mode, Multi-Party Intake) remain separate gaps.
 
-### Diagnostic Vocabulary Mode
+### Diagnostic Vocabulary Mode — **Built (Increment 1)**
 
 For writing group facilitators who want to teach structural feedback vocabulary. Glossary/cheat sheet output, discussion prompts tied to structural concepts.
+
+**Built.** The `operator:facilitator` routing gap is closed (intake router → `references/diagnostic-vocabulary.md`). Facilitator mode produces a `[Project]_Vocabulary_Guide_[runlabel].md` teaching aid alongside the editorial letter: a **Glossary** of the structural concepts the diagnosis used (each grounded in a specific manuscript spot) and a **Discussion Prompts** section that frames issues as questions for the group. The author-facing letter keeps its severity record — the Guide is a teaching companion, not a softer letter. Enforced by the `diagnostic-vocabulary` validator (V1 glossary present, V2 entries defined, V3 ≥3 grounded, V4 ≥3 prompts all questions; W1 prescription-leak advisory), conditional on a `<!-- mode: diagnostic-vocabulary -->` marker, with a canonical `--check-all` gate. Spec: [`docs/diagnostic-vocabulary.md`](docs/diagnostic-vocabulary.md). Validators 22 → 23. This completes the **operator pair** with [Editor Scaffolding](#editor-scaffolding); the remaining operator, **Multi-Party Intake** (`operator:team`), stays a gap. (Rule-of-three: if it lands, extract the shared operator-mode prose helpers into one module then.)
 
 ### Multi-Party Intake
 
