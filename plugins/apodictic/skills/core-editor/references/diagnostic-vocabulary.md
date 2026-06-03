@@ -41,7 +41,7 @@ Worked example: `references/example-vocabulary-guide.md`.
 
 ## Mechanical check
 
-`scripts/validate.sh diagnostic-vocabulary <vocab_guide>` enforces the contract **only when the artifact declares `<!-- mode: diagnostic-vocabulary -->`** (otherwise a no-op pass — safe to run over any file). All checks are body-scoped (before any Appendix A heading):
+`scripts/validate.sh diagnostic-vocabulary <vocab_guide>` enforces the contract when the artifact declares `<!-- mode: diagnostic-vocabulary -->`. Because the Vocabulary Guide is a distinct named artifact, a file identifiable as one (by `*_Vocabulary_Guide_*.md` name or a `# … Vocabulary Guide` title) that is **missing** the marker is a **V0 ERROR** — only genuinely unrelated files stay a no-op pass. All checks are body-scoped (before any Appendix A heading):
 
 - **V1** non-empty Glossary, ≥3 entries; **V2** every entry is `term — definition` shaped; **V3** ≥3 entries grounded in the manuscript (override `<!-- override: vocabulary-grounding — … -->`); **V4** a Discussion Prompts section, ≥3 prompts, all phrased as questions.
 - **W1** (advisory; ERROR under `--strict`) author-directed prescription in the body — modal ("you should rewrite") or a bare line-start imperative ("Add a scene…", "Cut the prologue"); override `<!-- override: vocabulary-prescription — … -->`.
