@@ -4039,10 +4039,12 @@ EOF
   finding-trace)
     # Finding Lifecycle IDs cross-artifact trace (docs/finding-lifecycle-ids.md): referential
     # integrity + sidecar lifecycle coherence by Finding Lifecycle ID — E1 dangling letter
-    # reference, E2 phantom sidecar finding_states key, E3 invalid state, W1 lifecycle coverage
-    # (advisory; ERROR under --strict). Complements softness-check (severity fidelity) and
+    # reference, E2 phantom sidecar finding_states key, E3 invalid state, E4 dangling revision
+    # reference, E5 phantom completion (a `revised` state with no completed-revision artifact);
+    # W1 lifecycle coverage, W2 revision-plan follow-through, W3 completion follow-through (all
+    # advisory; ERROR under --strict). Complements softness-check (severity fidelity) and
     # structured-findings (intra-ledger ID hygiene) — raises only classes neither owns.
-    # Takes a run folder (globs ledger/letter, walks up for the sidecar) or explicit files.
+    # Takes a run folder (globs ledger/letter/revisions, walks up for the sidecar) or explicit files.
     # Delegates to scripts/finding_trace.py; degrades to an advisory WARN without python3.
     FT_DIR=$(cd "$(dirname "$0")" && pwd)
     FT_HELPER="$FT_DIR/finding_trace.py"
