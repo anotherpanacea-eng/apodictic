@@ -117,7 +117,7 @@ Before running passes, gather:
 - Ripple effects detected: [list with severity]
 - Next priority: [single most important remaining issue]
 
-**Lifecycle advance.** For each previously-delivered finding the round confirms **resolved**, advance its **Finding Lifecycle ID** in the sidecar: `execution.finding_states[<id>] = "revised"` (the third lifecycle state, `locked → delivered → revised`), and cite that ID in the Revision Report. `scripts/validate.sh finding-trace <run_folder>` then audits completion by ID — a finding worked in a completed-revision artifact (`*_Revision_*.md`) but left below `revised` is W3 (advisory; ERROR under `--strict`), and a `revised` state with no completed-revision artifact behind it is E5. See `docs/finding-lifecycle-ids.md` §Increment 3.
+**Lifecycle advance.** For each finding the round confirms **resolved** (the *Flags resolved* list — **not** *Flags still present*), mark it resolved in the Revision Report with an explicit marker `<!-- resolved: <id> -->` and advance its **Finding Lifecycle ID** in the sidecar: `execution.finding_states[<id>] = "revised"` (the third lifecycle state, `locked → delivered → revised`). A finding under *Flags still present* / *New issues introduced* is named (bare) but carries **no** resolved marker, so it correctly stays `delivered`. `scripts/validate.sh finding-trace <run_folder>` then audits completion by ID — a finding marked resolved but left below `revised` in the sidecar is W3 (advisory; ERROR under `--strict`), and a `revised` state with no `<!-- resolved -->` marker behind it is E5. See `docs/finding-lifecycle-ids.md` §Increment 3.
 
 ### When to Reset to Full Analysis
 
