@@ -166,7 +166,7 @@ set -euo pipefail
 usage() {
   echo "Usage: $0 <command> [args...]"
   echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, argument-groundtruth-check"
-  echo "Aggregate: --self-test-all (runs --self-test on all 17 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --self-test-all (runs --self-test on all 18 self-testable validators; exit 0 only if every validator's self-test passes)"
   echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, and the ported letter/timeline validators vs the canonical worked examples)"
   exit 2
 }
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # pure utilities that do not carry self-tests; only the 11 model-
 # capability-review validators do.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate argument-groundtruth-check"
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state argument-groundtruth-check"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 17 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 18 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/17 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/18 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/17 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/18 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -3981,10 +3981,16 @@ EOF
     ;;
 
   gate)
-    # Runner-Governed Execution (increment 1): run the execution-gate engine for a
+    # Runner-Governed Execution (increments 1-5): run the execution-gate engine for a
     # phase against a run folder — checks the manifest's required artifacts + mechanical
-    # validators and prints the attested checklist. Delegates to scripts/run_gate.py;
-    # degrades without python3 (model performs the manifest's checks inline).
+    # validators, prints the attested checklist, and records the decision as an append-only
+    # event in execution.gate_events[]. Subcommands (passed through to run_gate.py):
+    #   gate <phase> <run_folder> [--strict-warnings]   mechanical run (-> mechanical-passed
+    #                                                    for a gate with attested items)
+    #   gate --attest <phase> <run_folder>              re-run checks + record clearing pass
+    #   gate --skip/--defer <phase> <run_folder> --reason ...   record an exception
+    # Degrades without python3 (model performs the manifest's checks inline and hand-authors
+    # the gate_events[] entry — see docs/runner-governed-execution.md §Degradation).
     GT_DIR=$(cd "$(dirname "$0")" && pwd)
     GT_HELPER="$GT_DIR/run_gate.py"
     if [ "${1:-}" = "--self-test" ]; then
@@ -3992,11 +3998,33 @@ EOF
       echo "Self-test: PASS (degraded — python3 unavailable)"; exit 0
     fi
     if command -v python3 >/dev/null 2>&1 && [ -f "$GT_HELPER" ]; then
-      if [ $# -lt 2 ]; then echo "Usage: $0 gate <phase> <run_folder> [--strict-warnings]"; exit 2; fi
+      if [ $# -lt 2 ]; then echo "Usage: $0 gate <phase> <run_folder> [--strict-warnings] | gate --attest <phase> <run_folder> | gate --skip/--defer <phase> <run_folder> --reason ..."; exit 2; fi
       python3 "$GT_HELPER" "$@"
       exit $?
     fi
-    echo "WARN: python3 unavailable — gate engine skipped; perform the phase's manifest checks inline and record the result in the sidecar (execution.gates)."
+    echo "WARN: python3 unavailable — gate engine skipped; perform the phase's manifest checks inline and append the result as an event in the sidecar (execution.gate_events)."
+    exit 0
+    ;;
+
+  gate-state)
+    # Runner-Governed Execution (increment 5): gate-state validator — validate a sidecar's
+    # execution.gate_events[] log (structural + the semantic invariants the stdlib subset
+    # checker cannot express: attestation coverage, migration-prefix integrity, finding_deltas
+    # clearing-only, pointer==fold) and assert pointer==fold. --strict is nonzero while any
+    # open exception (non-clearing latest event) remains. Delegates to scripts/run_gate.py
+    # --check-state; degrades to advisory without python3.
+    GS_DIR=$(cd "$(dirname "$0")" && pwd)
+    GS_HELPER="$GS_DIR/run_gate.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$GS_HELPER" ]; then python3 "$GS_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; gate-state is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$GS_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 gate-state <Diagnostic_State.meta.json> [--strict]"; exit 2; fi
+      python3 "$GS_HELPER" --check-state "$@"
+      exit $?
+    fi
+    echo "WARN: python3 unavailable — gate-state skipped; the gate_events[] contract is documented in docs/runner-governed-execution.md. Install python3 for the mechanical check."
     exit 0
     ;;
 

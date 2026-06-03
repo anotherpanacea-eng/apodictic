@@ -37,7 +37,13 @@ Load `../skills/core-editor/SKILL.md` first (thin orchestrator). Do NOT preload 
 
 ### Resume Target
 
-**Runner state (preferred when present).** If the sidecar carries an `execution` block with a `phase` (written by `scripts/validate.sh gate` — Runner-Governed Execution), resume from it: `execution.phase` is the last phase whose gate **passed**, and `execution.allowed_next` lists the authorized next phases. Load the workflow for the current/next phase via the dispatch table below — the phase keys are the same `next_action` values. Before transitioning into a phase, its gate must have passed: a phase recorded in `execution.gates` as `blocked` or `pass-with-warn`, or an empty `execution.allowed_next`, means re-run `validate.sh gate <phase> <run_folder>` (resolving the WARN/ERROR) first. Fall back to `next_action` (below) when there is no `execution` block (pre-runner projects).
+**Runner state (preferred when present).** If the sidecar carries an `execution` block (written by `scripts/validate.sh gate` — Runner-Governed Execution), resume from it. With `state_version >= 2`, `execution.gate_events[]` is the canonical append-only gate log and the rest of the block is a recomputable resume pointer: `execution.phase` is the **gate frontier** (the last gate that cleanly cleared) and `execution.allowed_next` lists the authorized next phases. Load the workflow for the current/next phase via the dispatch table below — the phase keys are the same `next_action` values.
+
+- **Resolve a pending gate first.** If `execution.pending_gate` is present, that gate's latest event is not a clearing pass — resolve **it** (not `execution.phase`) before advancing. If its latest event is `mechanical-passed`, confirm the attested checklist with `validate.sh gate --attest <pending_gate> <run_folder>`; otherwise re-run `validate.sh gate <pending_gate> <run_folder>` (resolving the WARN/ERROR). An empty `execution.allowed_next` always co-occurs with a `pending_gate`.
+- **Per-gate status**, when needed, is the latest `gate_events[]` entry for that gate (fold the log); you may also run `validate.sh gate-state <sidecar>` to validate the log and confirm the pointer matches the fold (on drift, the log wins).
+- **Legacy fallback.** A sidecar with `state_version` absent/`1` (no `gate_events`) uses the deprecated `execution.gates` map: a phase recorded `blocked`/`pass-with-warn`, or an empty `allowed_next`, means re-run `validate.sh gate <phase> <run_folder>` first.
+
+Fall back to `next_action` (below) when there is no `execution` block (pre-runner projects).
 
 The sidecar's `next_action` field uses an enumerated dispatch key (not free text) to identify the workflow to load on resume. Valid values:
 
