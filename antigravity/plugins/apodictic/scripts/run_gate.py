@@ -255,8 +255,20 @@ def _prefix_len(events):
     return n
 
 
+def _has_real_event(events):
+    """True if the log contains any non-migrated event (evidence of real upgrade work)."""
+    return any(not e.get("migrated") for e in events)
+
+
 def _grandfathered(events, idx):
-    return bool(events[idx].get("migrated")) and idx < _prefix_len(events)
+    # A migrated seed is grandfathered (required_ids = ∅, exempt from attestation/freshness) ONLY as
+    # part of a genuine upgrade baseline: a contiguous prefix (idx < prefix_len) AND followed by real
+    # work — the non-migrated event the engine appends atomically with the upgrade. A log of *only*
+    # migrated events is a hand-authored clearing bypass, not a migration, so its migrated `passed`
+    # is NOT grandfathered: it then needs a real attested_contract and is rejected as malformed.
+    # (Review fix — Codex #28 P1: prefix position alone was a bypass.)
+    return (bool(events[idx].get("migrated")) and idx < _prefix_len(events)
+            and _has_real_event(events))
 
 
 def _required_ids(events, idx):
@@ -358,9 +370,13 @@ def append_event(sidecar, event, manifest):
     ex["state_version"] = _STATE_VERSION
     ex.pop("gates", None)  # deprecated; gate_events is canonical
 
+    # Write the pointer EXACTLY as the fold computes it — clear stale phase / finding_states when the
+    # fold no longer supports them, so the recomputable pointer never lags the log (Codex #28 P2).
     ptr = fold_pointer(ex["gate_events"], manifest)
     if ptr["phase"] is not None:
         ex["phase"] = ptr["phase"]
+    else:
+        ex.pop("phase", None)
     ex["allowed_next"] = ptr["allowed_next"]
     if ptr["pending_gate"]:
         ex["pending_gate"] = ptr["pending_gate"]
@@ -368,6 +384,8 @@ def append_event(sidecar, event, manifest):
         ex.pop("pending_gate", None)  # omitted when none (never null)
     if ptr["finding_states"]:
         ex["finding_states"] = ptr["finding_states"]
+    else:
+        ex.pop("finding_states", None)
     if event.get("run_folder"):
         ex["run_folder"] = event["run_folder"]
 
@@ -494,25 +512,32 @@ def cmd_attest(phase, run_folder, manifest, write=False, validate_sh=None):
 
 
 def cmd_exception(phase, run_folder, manifest, kind, reason, until=None, write=False):
-    """Append a skipped / deferred event (reason required)."""
+    """Append a skipped / deferred event (reason required). Recording IS the point of an exception,
+    so a no-write is an ERROR, never a silent success — a caller must not believe a bypass is
+    auditable when no gate_events[] entry exists (Review fix — Codex #28 P2)."""
     if phase not in manifest.get("phases", {}):
         return 2, ["gate --%s: unknown phase %r" % (kind, phase)]
     if not reason:
         return 2, ["gate --%s: --reason is required" % kind]
+    if not os.path.isdir(run_folder):
+        return 2, ["gate --%s: run_folder not found: %s — NOTHING RECORDED" % (kind, run_folder)]
     result = "skipped" if kind == "skip" else "deferred"
-    if write:
-        sidecar = _find_sidecar(run_folder)
-        if sidecar:
-            event = {"gate": phase, "result": result, "provenance": "attested",
-                     "ts": _now_iso(), "run_folder": _rel_run_folder(run_folder, sidecar), "reason": reason}
-            if until and kind == "defer":
-                event["until"] = until
-            append_event(sidecar, event, manifest)
-    note = ""
-    if result == "skipped":
-        note = " — record a blind-spot line in the Audit Invocation Log"
-    lines = ["gate --%s %s: recorded %s (reason: %s)%s" % (kind, phase, result, reason, note)]
-    return 0, lines
+    if not write:
+        return 0, ["gate --%s %s: --no-write set — NOTHING RECORDED (dry run)" % (kind, phase)]
+    sidecar = _find_sidecar(run_folder)
+    if not sidecar:
+        return 2, ["gate --%s: no Diagnostic_State.meta.json found under %s — NOTHING RECORDED "
+                   "(an exception must be auditable; create the sidecar first)" % (kind, run_folder)]
+    event = {"gate": phase, "result": result, "provenance": "attested",
+             "ts": _now_iso(), "run_folder": _rel_run_folder(run_folder, sidecar), "reason": reason}
+    if until and kind == "defer":
+        event["until"] = until
+    if not append_event(sidecar, event, manifest):
+        return 2, ["gate --%s: failed to write %s event to %s — NOTHING RECORDED"
+                   % (kind, result, os.path.basename(sidecar))]
+    note = " — record a blind-spot line in the Audit Invocation Log" if result == "skipped" else ""
+    return 0, ["gate --%s %s: recorded %s in %s (reason: %s)%s"
+               % (kind, phase, result, os.path.basename(sidecar), reason, note)]
 
 
 # ---------------------------------------------------------------- gate-state check
@@ -539,6 +564,13 @@ def check_state(sidecar, manifest, strict=False):
     gate_event_schema = art.load_schema("apodictic.gate_event.v1") if art else None
     prefix = _prefix_len(events)
     seen_migrated_gates = set()
+
+    # A migration prefix must be followed by real work — the engine seeds the baseline atomically
+    # with the first real v2 event. A migrated-only log is a forged clearing baseline, not an
+    # upgrade (Review fix — Codex #28 P1).
+    if prefix and prefix == len(events):
+        errs.append("migration prefix of %d migrated event(s) is not followed by any real event "
+                    "— a migrated-only log is not a valid upgrade baseline" % prefix)
 
     for i, e in enumerate(events):
         where = "gate_events[%d]" % i
@@ -586,22 +618,33 @@ def check_state(sidecar, manifest, strict=False):
             elif not (_attested_items(e) >= set(e.get("attested_contract") or [])):
                 errs.append("%s: attested_items do not cover attested_contract %s"
                             % (where, e.get("attested_contract")))
-            # freshness: a MECHANICAL-provenance clearing pass must carry green checks[] (the
-            # --attest re-run guarantees this operationally). Attested-provenance (degrade) and
-            # grandfathered seeds are exempt — the model did the checks inline / they are legacy.
+            # freshness: a MECHANICAL-provenance clearing pass must carry green checks[]. This is the
+            # ENFORCED freshness invariant: `gate --attest` re-runs the checks and writes the clearing
+            # pass only if they are still clean, so green checks[] proves the mechanical half was fresh
+            # at clear time. (artifact_digests are an INFORMATIONAL audit breadcrumb only — NOT a
+            # gate-state-enforced equality: a clean --attest re-run on legitimately-edited files
+            # produces new digests, so a mechanical-passed -> passed digest *mismatch* is not an error.
+            # Review fix — Codex #28 P2: the spec/PR over-claimed digest binding; it is now informational.)
+            # Attested-provenance (degrade) and grandfathered seeds are exempt.
             if e.get("provenance") == "mechanical":
                 cks = e.get("checks") or []
                 if not cks or any(isinstance(c, dict) and c.get("result") == "error" for c in cks):
                     errs.append("%s: mechanical clearing passed must carry green checks[] (freshness)" % where)
 
     # pointer == fold (the index must match the canonical log)
+    # pointer == fold (compare ABSENCE as well as value, for every pointer field — /start treats
+    # this block as the recomputable pointer, so a stale value the fold no longer supports is drift;
+    # Review fix — Codex #28 P2: phase was skipped when the fold was None, and finding_states was
+    # never compared at all). "" / absent normalize to None for phase.
     ptr = fold_pointer(events, manifest)
-    if ptr["phase"] is not None and ex.get("phase") != ptr["phase"]:
+    if (ex.get("phase") or None) != ptr["phase"]:
         errs.append("pointer drift: execution.phase=%r but fold=%r" % (ex.get("phase"), ptr["phase"]))
     if ex.get("allowed_next", []) != ptr["allowed_next"]:
         errs.append("pointer drift: execution.allowed_next=%r but fold=%r" % (ex.get("allowed_next"), ptr["allowed_next"]))
     if ex.get("pending_gate") != ptr["pending_gate"]:
         errs.append("pointer drift: execution.pending_gate=%r but fold=%r" % (ex.get("pending_gate"), ptr["pending_gate"]))
+    if (ex.get("finding_states") or {}) != ptr["finding_states"]:
+        errs.append("pointer drift: execution.finding_states=%r but fold=%r" % (ex.get("finding_states"), ptr["finding_states"]))
 
     open_gates = sorted(g for g in {e.get("gate") for e in events if isinstance(e, dict)}
                         if g is not None
@@ -777,14 +820,58 @@ def run_self_test():
     check("degrade_attested_pass_exempt_from_checks",
           check_state(os.path.join(ddeg, "Diagnostic_State.meta.json"), manifest)[0] == 0)
 
-    # --- pointer-drift detection
+    # --- pointer-drift detection (stale phase while the fold cleared run_synthesis)
     drift = {"project": "Proj", "execution": {"state_version": 2, "gate_events": [
         {"gate": "run_synthesis", "result": "passed", "provenance": "mechanical", "ts": "t0",
-         "attested_contract": ["syn-a1", "syn-a2", "syn-a3"], "attested_items": ["syn-a1", "syn-a2", "syn-a3"]},
-    ], "phase": "run_spot_check", "allowed_next": []}}
+         "attested_contract": ["syn-a1", "syn-a2", "syn-a3"], "attested_items": ["syn-a1", "syn-a2", "syn-a3"],
+         "checks": [{"validator": "ledger-check", "result": "ok"}]},
+    ], "phase": "run_spot_check", "allowed_next": ["run_spot_check"]}}
     dd = folder(ledger_ok, sidecar=drift)
     code, lines = check_state(os.path.join(dd, "Diagnostic_State.meta.json"), manifest)
     check("pointer_drift_detected", code == 1 and any("pointer drift" in ln for ln in lines))
+
+    # --- (Codex #28 P1) a migrated-ONLY log (no real event) is a forged baseline -> rejected,
+    # and its migrated `passed` is not grandfathered (so it cannot clear the frontier)
+    migonly = {"project": "Proj", "execution": {"state_version": 2, "gate_events": [
+        {"gate": "run_synthesis", "result": "passed", "provenance": "attested", "ts": "t0", "migrated": True},
+    ]}}
+    dmo = folder(ledger_ok, sidecar=migonly)
+    code, lines = check_state(os.path.join(dmo, "Diagnostic_State.meta.json"), manifest)
+    check("migrated_only_log_rejected",
+          code == 1 and any("not followed by any real event" in ln for ln in lines))
+    check("migrated_only_does_not_clear",
+          fold_pointer(migonly["execution"]["gate_events"], manifest)["phase"] is None)
+
+    # --- (Codex #28 P2) stale execution.phase accepted when the fold cleared nothing
+    stalephase = {"project": "Proj", "execution": {"state_version": 2, "gate_events": [
+        {"gate": "run_synthesis", "result": "mechanical-passed", "provenance": "mechanical", "ts": "t0",
+         "checks": [{"validator": "x", "result": "ok"}]},
+    ], "phase": "run_synthesis", "allowed_next": []}}
+    dsp = folder(ledger_ok, sidecar=stalephase)
+    code, lines = check_state(os.path.join(dsp, "Diagnostic_State.meta.json"), manifest)
+    check("stale_phase_with_empty_fold_drift",
+          code == 1 and any("execution.phase" in ln and "drift" in ln for ln in lines))
+
+    # --- (Codex #28 P2) finding_states never compared: clearing deltas vs ex finding_states {}
+    fsdrift = {"project": "Proj", "execution": {"state_version": 2, "gate_events": [
+        {"gate": "run_synthesis", "result": "passed", "provenance": "mechanical", "ts": "t0",
+         "attested_contract": ["syn-a1", "syn-a2", "syn-a3"], "attested_items": ["syn-a1", "syn-a2", "syn-a3"],
+         "checks": [{"validator": "x", "result": "ok"}], "finding_deltas": {"F-P5-01": "locked"}},
+    ], "phase": "run_synthesis", "allowed_next": ["run_spot_check"], "finding_states": {}}}
+    dfs = folder(ledger_ok, sidecar=fsdrift)
+    code, lines = check_state(os.path.join(dfs, "Diagnostic_State.meta.json"), manifest)
+    check("finding_states_drift_detected",
+          code == 1 and any("finding_states" in ln and "drift" in ln for ln in lines))
+
+    # --- (Codex #28 P2) --skip/--defer never report success without writing
+    check("skip_nonexistent_folder_errors",
+          cmd_exception("run_synthesis", "/nonexistent/xyz", manifest, "skip", "r", write=True)[0] == 2)
+    nosc = tempfile.mkdtemp()
+    made.append(nosc)
+    with open(os.path.join(nosc, "Proj_Findings_Ledger_run.md"), "w") as fh:
+        fh.write(ledger_ok)  # ledger present but NO Diagnostic_State.meta.json
+    check("skip_no_sidecar_errors",
+          cmd_exception("run_synthesis", nosc, manifest, "skip", "r", write=True)[0] == 2)
 
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
