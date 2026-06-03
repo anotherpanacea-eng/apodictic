@@ -277,6 +277,8 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
 
 The synthesis is structured as a letter with scannable reference material. Prose carries the argument; headings, bold thesis statements, and a revision table provide scannability. Framework shorthand (severity labels, pass numbers, protocol stamps) stays out of the main text — it belongs in the appendices only.
 
+**Operator mode — Editor Scaffolding (`operator:editor`).** If the router set `operator:editor` ("I'm editing someone else's work"), build the letter in **Editor Scaffolding** mode per `references/editor-scaffolding.md`: a superset overlay that re-aims the same diagnosis at a human developmental editor. Add the `<!-- mode: editor-scaffolding -->` marker near the title block; replace "The Short Version" with an **Editor Brief** (addressee = the editor; name where their read and yours most likely diverge); add a **What You Might Have Missed** blind-spot section; reframe the Revision Checklist as an **Intervention Menu (editor's discretion)**. Keep every mandatory section below (Protected Elements, Author Decisions, Control Questions, Appendices A/B/C) and all severity honesty intact — scaffolding changes the addressee, never the severity. At Step 10, run `scripts/validate.sh editor-scaffolding <editorial_letter>` alongside `decision-layer-check` / `severity-floor` / `softness-check`. Absent the flag, build the standard author-facing letter below.
+
 **Required sections, in order:**
 
 **1. Title Block**
