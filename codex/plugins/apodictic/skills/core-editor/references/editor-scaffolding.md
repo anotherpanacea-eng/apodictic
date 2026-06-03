@@ -67,7 +67,7 @@ Worked example: `references/example-editorial-letter-scaffolded.md`.
 
 `scripts/validate.sh editor-scaffolding <editorial_letter>` enforces the operator-mode contract **only when the letter declares the mode marker** (a letter without it is an ordinary author-facing letter and passes as a no-op):
 
-- **E1** mode marker + a non-empty Editor Brief; **E2** a non-empty "What You Might Have Missed"; **E3** an "Intervention Menu" heading (override `<!-- override: scaffolding-checklist — … -->`); **E4** at least one canonical severity token survives in the body.
-- **W1** (advisory; ERROR under `--strict`) author-directed prescriptive imperatives in the body (override `<!-- override: scaffolding-prescription — … -->`).
+- **E1** mode marker + a non-empty Editor Brief; **E2** a non-empty "What You Might Have Missed"; **E3** an "Intervention Menu" heading (override `<!-- override: scaffolding-checklist — … -->`); **E4** at least one canonical severity token survives. All four are evaluated over the **body** (before Appendix A), so an appendix heading can't satisfy a required scaffold section.
+- **W1** (advisory; ERROR under `--strict`) author-directed prescription in the body — modal ("you should rewrite") or a bare line-start imperative ("Add a scene…", "Cut the prologue"); intervention classes and Keep/Cut/Unsure labels are exempt (override `<!-- override: scaffolding-prescription — … -->`).
 
 Run it alongside `decision-layer-check`, `severity-floor`, and `softness-check` — they all still apply to a scaffolded letter. Design + ownership boundary: [`docs/editor-scaffolding.md`](../../../docs/editor-scaffolding.md).

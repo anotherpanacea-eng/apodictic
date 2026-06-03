@@ -54,6 +54,16 @@ _PRESCRIPTION_RE = re.compile(
     r"\byou\s+(?:should|must|need to|have to|ought to)\s+"
     r"(?:rewrite|revise|add|cut|delete|remove|expand|trim|reorder|restructure|insert)\b",
     re.IGNORECASE)
+# W1 also catches a BARE imperative mutation directive at a line / list-item start ("Add a scene
+# where ...", "Cut the prologue", "Rewrite the climax") — author-facing revision-checklist phrasing
+# the modal form above misses. Anchored to a line start (after an optional list marker / emphasis)
+# so it can't fire on a random mid-sentence substring. The Keep/Cut/Unsure Author-Decisions labels
+# and intervention CLASSES (Restore / Redistribute / Compress / Source ...) are deliberately NOT in
+# the verb set — only direct manuscript-mutation verbs that read as an author-facing checklist item.
+_BARE_PRESCRIPTION_RE = re.compile(
+    r"^[ \t>]*(?:[-*+]|\d+[.)])?[ \t]*(?:\*\*|\*|_|`)?[ \t]*"
+    r"(?:rewrite|revise|add|cut|delete|remove|expand|trim|reorder|restructure|insert)\b",
+    re.IGNORECASE | re.MULTILINE)
 
 
 def _read(path):
@@ -127,10 +137,13 @@ def check(letter_text, strict=False):
 
     out.append("editor-scaffolding: mode declared — enforcing the operator:editor contract.")
     body = _body(letter_text)
+    # The scaffold sections (E1/E2/E3) are BODY-level by contract — discover them in the body
+    # only, so a section under Appendix A/C can't satisfy a required body section.
+    body_lines = _lines(body)
     errors, warns = [], []
 
     # E1 — mode marker (already true) + a non-empty Editor Brief addressee section.
-    brief = _section_nonempty(lines, _EDITOR_BRIEF_PAT)
+    brief = _section_nonempty(body_lines, _EDITOR_BRIEF_PAT)
     if brief is None:
         errors.append("E1: missing the '%s' section (the editor addressee). The marker is "
                       "present but the letter still opens to the author." % _EDITOR_BRIEF_PAT)
@@ -140,7 +153,7 @@ def check(letter_text, strict=False):
         out.append("  E1 mode+addressee: OK")
 
     # E2 — non-empty blind-spot section.
-    blind = _section_nonempty(lines, _BLIND_SPOT_PAT)
+    blind = _section_nonempty(body_lines, _BLIND_SPOT_PAT)
     if blind is None:
         errors.append("E2: missing the '%s' blind-spot section (the scaffolding value-add)."
                       % _BLIND_SPOT_PAT)
@@ -150,7 +163,7 @@ def check(letter_text, strict=False):
         out.append("  E2 blind-spot: OK")
 
     # E3 — Intervention Menu (prescription deferred), or an explicit override.
-    if _has_heading(lines, _INTERVENTION_PAT):
+    if _has_heading(body_lines, _INTERVENTION_PAT):
         out.append("  E3 prescription-deferral: OK")
     elif has_override(body, "scaffolding-checklist"):
         warns.append("E3: no '%s' heading, but an override marker is present "
@@ -169,13 +182,20 @@ def check(letter_text, strict=False):
         errors.append("E4: no canonical severity token (Must-Fix/Should-Fix/Could-Fix) in the "
                       "body. Scaffolding reframes the addressee, it does not strip severity.")
 
-    # W1 — author-directed prescription leak (advisory; ERROR under --strict).
-    m = _PRESCRIPTION_RE.search(_strip_comments(body))
+    # W1 — author-directed prescription leak (advisory; ERROR under --strict). Two forms: the
+    # modal second-person ("you should rewrite ...") and a bare line-start imperative ("Add a
+    # scene where ...", "Cut the prologue").
+    body_prose = _strip_comments(body)
+    m = _PRESCRIPTION_RE.search(body_prose) or _BARE_PRESCRIPTION_RE.search(body_prose)
     if m and not has_override(body, "scaffolding-prescription"):
-        warns.append("W1: author-directed prescription '%s' in the body — in scaffolding mode "
-                     "the prescription belongs to the human editor. Override: "
-                     "<!-- override: scaffolding-prescription — <rationale> -->."
-                     % m.group(0).strip())
+        ls = body_prose.rfind("\n", 0, m.start()) + 1
+        le = body_prose.find("\n", m.start())
+        snippet = body_prose[ls:(le if le != -1 else len(body_prose))].strip()
+        if len(snippet) > 80:
+            snippet = snippet[:77] + "..."
+        warns.append("W1: author-directed prescription leak — '%s' in the body. In scaffolding "
+                     "mode the prescription belongs to the human editor. Override: "
+                     "<!-- override: scaffolding-prescription — <rationale> -->." % snippet)
 
     for e in errors:
         out.append("  ERROR: " + e)
@@ -224,9 +244,9 @@ def run_self_test():
 
     marker = "<!-- mode: editor-scaffolding -->"
 
-    def letter(brief=True, blind=True, menu=True, severity=True, prescription=False,
+    def letter(brief=True, blind=True, menu=True, severity=True, prescription=False, bare=False,
                brief_empty=False, blind_empty=False, mode=True,
-               menu_override=False, presc_override=False):
+               menu_override=False, presc_override=False, sections_in_appendix=False):
         s = ["# Development Edit: Test\n"]
         if mode:
             s.append(marker + "\n")
@@ -244,9 +264,16 @@ def run_self_test():
             s.append("" if blind_empty else "The prose polish in Part I masks a missing causal link (Ch. 3).\n")
         if menu:
             s.append("## Intervention Menu — editor's discretion\n- Option: compress the aftermath beats.\n")
-        if prescription:
+        if bare:  # author-facing checklist leak — bare imperative at a list start, in the body
+            s.append("- Add a scene where the consequence lands.\n")
+        if prescription:  # modal second-person leak, in the body
             s.append("\nYou should rewrite the climax to raise the stakes.\n")
-        s.append("## Appendix A — Diagnostic Detail\nYou should add a scene here (appendix prose, not scanned).\n")
+        s.append("## Appendix A — Diagnostic Detail\n")
+        # Appendix prose carries both leak forms AND a scaffold heading; the body scan stops at
+        # Appendix A, so none of this should satisfy a body section or trip W1.
+        s.append("You should add a scene here, then cut the prologue (appendix prose, not scanned).\n")
+        if sections_in_appendix:
+            s.append("### What You Might Have Missed\nblind-spot text smuggled into the appendix.\n")
         return "".join(s)
 
     # No marker -> no-op pass.
@@ -302,6 +329,35 @@ def run_self_test():
                            "You should flag the pacing to the author and suggest options.")
     code, lines = check(edl)
     chk("w1_ignores_editor_acts", code == 0 and not any("W1" in l for l in lines))
+
+    # W1 BARE imperative leak (PR #34 review P2): "Add a scene where ..." at a list start in the
+    # body — the modal form misses it, but the bare-imperative pattern catches it.
+    code, lines = check(letter(bare=True))
+    chk("w1_bare_imperative_warn",
+        code == 0 and any("WARN: W1" in l for l in lines)
+        and any("Add a scene" in l for l in lines))
+    code_s, _ls = check(letter(bare=True), strict=True)
+    chk("w1_bare_imperative_strict_errors", code_s == 1)
+    # "Cut the prologue ..." at a list start also leaks.
+    code, lines = check(letter().replace("- Option: compress the aftermath beats.",
+                                         "- Cut the prologue."))
+    chk("w1_bare_cut_flagged", any("WARN: W1" in l for l in lines))
+    # Bare imperative confined to the appendix must NOT fire (body scan stops at Appendix A).
+    code, lines = check(letter(bare=False))
+    chk("w1_bare_ignores_appendix", code == 0 and not any("W1" in l for l in lines))
+    # Intervention CLASSES and Keep/Unsure decision labels are not in the verb set -> no leak.
+    code, lines = check(letter().replace(
+        "- Option: compress the aftermath beats.",
+        "- Restore the causal beat on-page.\n- Redistribute the aftermath across the span."))
+    chk("w1_intervention_classes_clean", code == 0 and not any("W1" in l for l in lines))
+
+    # Fix B (PR #34 review P2): a required body section satisfied only from an appendix must FAIL.
+    # blind-spot present only as '### What You Might Have Missed' under '## Appendix A'.
+    code, lines = check(letter(blind=False, sections_in_appendix=True))
+    chk("e2_appendix_section_does_not_satisfy",
+        code == 1 and any("E2: missing" in l for l in lines))
+    code_s, _ls = check(letter(blind=False, sections_in_appendix=True), strict=True)
+    chk("e2_appendix_section_strict_fails", code_s == 1)
 
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
