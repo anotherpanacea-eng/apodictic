@@ -166,7 +166,7 @@ set -euo pipefail
 usage() {
   echo "Usage: $0 <command> [args...]"
   echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, argument-groundtruth-check"
-  echo "Aggregate: --self-test-all (runs --self-test on all 18 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --self-test-all (runs --self-test on all 19 self-testable validators; exit 0 only if every validator's self-test passes)"
   echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, and the ported letter/timeline validators vs the canonical worked examples)"
   exit 2
 }
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # pure utilities that do not carry self-tests; only the 11 model-
 # capability-review validators do.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state argument-groundtruth-check"
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace argument-groundtruth-check"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 18 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 19 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/18 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/19 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/18 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/19 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -4025,6 +4025,28 @@ EOF
       exit $?
     fi
     echo "WARN: python3 unavailable — gate-state skipped; the gate_events[] contract is documented in docs/runner-governed-execution.md. Install python3 for the mechanical check."
+    exit 0
+    ;;
+
+  finding-trace)
+    # Finding Lifecycle IDs cross-artifact trace (docs/finding-lifecycle-ids.md): referential
+    # integrity + sidecar lifecycle coherence by Finding Lifecycle ID — E1 dangling letter
+    # reference, E2 phantom sidecar finding_states key, E3 invalid state, W1 lifecycle coverage
+    # (advisory; ERROR under --strict). Complements softness-check (severity fidelity) and
+    # structured-findings (intra-ledger ID hygiene) — raises only classes neither owns.
+    # Takes a run folder (globs ledger/letter, walks up for the sidecar) or explicit files.
+    # Delegates to scripts/finding_trace.py; degrades to an advisory WARN without python3.
+    FT_DIR=$(cd "$(dirname "$0")" && pwd)
+    FT_HELPER="$FT_DIR/finding_trace.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$FT_HELPER" ]; then python3 "$FT_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; finding-trace is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$FT_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 finding-trace <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$FT_HELPER" finding-trace "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — finding-trace skipped; perform the cross-artifact ID trace inline (every cited F-... ID resolves to a ledger finding; finding_states keys are ledger IDs). See docs/finding-lifecycle-ids.md."
     exit 0
     ;;
 
