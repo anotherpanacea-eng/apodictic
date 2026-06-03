@@ -166,7 +166,7 @@ set -euo pipefail
 usage() {
   echo "Usage: $0 <command> [args...]"
   echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, argument-groundtruth-check"
-  echo "Aggregate: --self-test-all (runs --self-test on all 21 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --self-test-all (runs --self-test on all 22 self-testable validators; exit 0 only if every validator's self-test passes)"
   echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples, finding-trace + softness-check vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, and editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter)"
   exit 2
 }
