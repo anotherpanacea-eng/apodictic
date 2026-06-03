@@ -22,6 +22,14 @@
     "could_fix": 0
   },
 
+  "$comment_complexity": "Adaptive Mid-Run Mode Escalation (docs/adaptive-mode-escalation.md): Tier-1 signals Pass 0/1 record so `validate.sh escalation-check` can recommend a mode escalation before Tier 2. Omit fields not yet discovered (escalation-check reports them unevaluable, never firing). tier1_finding_count is computed from the ledger, not stored.",
+  "complexity_signals": {
+    "pov_count": 0,
+    "nonlinear_timeline": false,
+    "belief_failures": 0,
+    "orientation_failures": 0
+  },
+
   "$comment_structured": "Phase 3 — optional machine-readable arrays mirroring the embedded apodictic:* blocks in ledger/letter artifacts. Validated by scripts/structured_findings.py (validate.sh structured-findings). When findings[] is populated, its severities must tally to triage_summary; omit any array to keep older sidecars valid.",
   "findings": [],
   "audit_triggers": [],

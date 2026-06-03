@@ -16,6 +16,16 @@
         "could_fix": {"type": "integer"}
       }
     },
+    "complexity_signals": {
+      "type": "object",
+      "$comment": "Adaptive Mid-Run Mode Escalation (docs/adaptive-mode-escalation.md): Tier-1 complexity signals Pass 0/1 record so `validate.sh escalation-check` can decide whether to recommend escalating the execution mode before Tier 2. tier1_finding_count is NOT stored — escalation-check computes it from the ledger's F-P0-/F-P1- blocks.",
+      "properties": {
+        "pov_count": {"type": "integer"},
+        "nonlinear_timeline": {"type": "boolean"},
+        "belief_failures": {"type": "integer"},
+        "orientation_failures": {"type": "integer"}
+      }
+    },
     "execution": {
       "type": "object",
       "$comment": "Runner-Governed Execution state. Increment 5 (state_version 2): gate_events[] is the canonical append-only gate-decision log; phase/allowed_next/pending_gate/finding_states are a recomputable resume pointer (== fold(gate_events), asserted by run_gate.py --check-state). gates (per-phase result map) is DEPRECATED — read only when state_version < 2 (legacy fallback).",
