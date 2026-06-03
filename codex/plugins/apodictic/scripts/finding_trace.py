@@ -11,9 +11,12 @@ dimension: cross-artifact REFERENTIAL INTEGRITY + sidecar lifecycle COHERENCE.
                           F-... ID that is not in the ledger (typo / phantom).
   E2 phantom sidecar      execution.finding_states key that is not a ledger ID.
   E3 invalid state        finding_states value not in {locked, delivered, revised}.
+  E4 dangling revision    a revision-plan / coaching artifact cites an F-... ID not in the ledger.
   W1 lifecycle coverage   once synthesis has cleared (sidecar phase >= run_synthesis),
                           a Must-Fix/Should-Fix ledger ID with no finding_states entry
                           (advisory; ERROR under --strict).
+  W2 revision coverage    a Must-Fix ledger ID not referenced in any revision plan, when one
+                          is present (advisory; ERROR under --strict).
 
 Each artifact is optional; a missing one skips its dimension (no false failure).
 Reuses apodictic_artifacts.parse_blocks (one block grammar). See docs/finding-lifecycle-ids.md.
@@ -47,6 +50,8 @@ _COMMENT_RE = re.compile(r"<!--(.*?)-->", re.DOTALL)
 # Editorial-letter filename globs (output-structure.md naming).
 _LETTER_GLOBS = ("*_Core_DE_Synthesis_*.md", "*_Full_DE_*.md", "*_Editorial_Letter_*.md")
 _LEDGER_GLOB = "*_Findings_Ledger_*.md"
+# Revision-plan / coaching artifact globs (the lifecycle stage after the letter).
+_REVISION_GLOBS = ("*_Session_Plan_*.md", "*_Revision_*.md")
 
 
 def _read(path):
@@ -80,6 +85,12 @@ def letter_cited_ids(letter_text):
     return cited
 
 
+def revision_cited_ids(text):
+    """F-... IDs referenced in a revision-plan / coaching artifact. These are working documents,
+    so IDs are matched ANYWHERE in the text (inline prose references count) — not comment-only."""
+    return set(_ID_RE.findall(text)) if text else set()
+
+
 def sidecar_state(sidecar_text):
     """(finding_states dict, phase, parse_ok) from a Diagnostic_State.meta.json.
     parse_ok is False when a *discovered* sidecar is present but not valid JSON — the
@@ -93,7 +104,7 @@ def sidecar_state(sidecar_text):
     return (fs if isinstance(fs, dict) else {}), ex.get("phase"), True
 
 
-def trace(ledger_text, letter_text, sidecar_text, strict=False):
+def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, strict=False):
     """Run the cross-artifact trace. Returns (code, lines)."""
     lines, errs, warns = [], [], []
 
@@ -103,7 +114,12 @@ def trace(ledger_text, letter_text, sidecar_text, strict=False):
 
     have_letter = letter_text is not None
     have_sidecar = sidecar_text is not None
+    revision_texts = revision_texts or []
+    have_revision = bool(revision_texts)
     cited = letter_cited_ids(letter_text) if have_letter else set()
+    rev_cited = set()
+    for rt in revision_texts:
+        rev_cited |= revision_cited_ids(rt)
     finding_states, phase, sc_ok = sidecar_state(sidecar_text) if have_sidecar else ({}, None, True)
 
     # E1 — dangling reference (letter cites an ID not in the ledger)
@@ -111,6 +127,11 @@ def trace(ledger_text, letter_text, sidecar_text, strict=False):
         for cid in sorted(cited):
             if cid not in inv:
                 errs.append("E1 dangling reference: letter cites %s — not in the ledger" % cid)
+    # E4 — dangling revision reference (revision plan cites an ID not in the ledger)
+    if have_revision:
+        for cid in sorted(rev_cited):
+            if cid not in inv:
+                errs.append("E4 dangling reference: revision plan cites %s — not in the ledger" % cid)
     # E0 — a discovered sidecar that cannot be parsed is an ERROR, not a clean empty lifecycle:
     # otherwise E2/E3/W1 are silently bypassed on the artifact that is supposed to carry the state.
     if have_sidecar and not sc_ok:
@@ -131,6 +152,11 @@ def trace(ledger_text, letter_text, sidecar_text, strict=False):
             if inv[fid] in _SYNTH_BOUND and fid not in finding_states:
                 warns.append("W1 coverage: %s (%s) locked but has no finding_states entry"
                              % (fid, inv[fid]))
+    # W2 — revision follow-through coverage (a Must-Fix not picked up by any revision plan)
+    if have_revision:
+        for fid in sorted(inv):
+            if inv[fid] == "Must-Fix" and fid not in rev_cited:
+                warns.append("W2 follow-through: Must-Fix %s not referenced in any revision plan" % fid)
 
     # Per-ID trace report
     if not have_sidecar:
@@ -139,14 +165,16 @@ def trace(ledger_text, letter_text, sidecar_text, strict=False):
         sc_note = " (sidecar UNPARSEABLE — see E0)"
     else:
         sc_note = ""
-    lines.append("finding-trace: %d ledger finding(s)%s%s"
+    lines.append("finding-trace: %d ledger finding(s)%s%s%s"
                  % (len(inv),
                     "" if have_letter else " (no letter — letter trace skipped)",
-                    sc_note))
+                    sc_note,
+                    "" if have_revision else " (no revision plan — follow-through skipped)"))
     for fid in sorted(inv):
         state = ((finding_states.get(fid, "—") if sc_ok else "?") if have_sidecar else "n/a")
         mark = ("cited" if fid in cited else "UNCITED") if have_letter else "n/a"
-        lines.append("  %-12s sev=%-10s state=%-10s letter=%s" % (fid, inv[fid], state, mark))
+        rev_mark = ("cited" if fid in rev_cited else "—") if have_revision else "n/a"
+        lines.append("  %-12s sev=%-9s state=%-9s letter=%-7s rev=%s" % (fid, inv[fid], state, mark, rev_mark))
 
     for e in errs:
         lines.append("  ERROR: %s" % e)
@@ -181,7 +209,7 @@ def _newest(paths):
 
 
 def resolve_run_folder(folder):
-    """(ledger_path, letter_path, sidecar_path) — newest match per artifact, any may be None."""
+    """(ledger, letter, sidecar, [revisions]) — newest match per artifact (revisions: all matches)."""
     ledger = _newest(glob.glob(os.path.join(folder, _LEDGER_GLOB)))
     letter = None
     for g in _LETTER_GLOBS:
@@ -189,29 +217,34 @@ def resolve_run_folder(folder):
         if letter:
             break
     sidecar = _walk_up_sidecar(folder)
-    return ledger, letter, sidecar
+    revisions = []
+    for g in _REVISION_GLOBS:
+        revisions += glob.glob(os.path.join(folder, g))
+    return ledger, letter, sidecar, revisions
 
 
 def classify_files(paths):
-    """Classify explicit file args into (ledger, letter, sidecar) by content/extension."""
+    """Classify explicit file args into (ledger, letter, sidecar, [revisions])."""
     ledger = letter = sidecar = None
+    revisions = []
     for p in paths:
+        base = os.path.basename(p)
         if p.endswith(".json"):
             sidecar = p
-            continue
-        text = _read(p) or ""
-        if "apodictic:finding" in text:
+        elif "apodictic:finding" in (_read(p) or ""):
             ledger = p
+        elif "_Session_Plan_" in base or "_Revision_" in base:
+            revisions.append(p)
         else:
             letter = p
-    return ledger, letter, sidecar
+    return ledger, letter, sidecar, revisions
 
 
 def run(paths, strict=False):
     if len(paths) == 1 and os.path.isdir(paths[0]):
-        ledger, letter, sidecar = resolve_run_folder(paths[0])
+        ledger, letter, sidecar, revisions = resolve_run_folder(paths[0])
     else:
-        ledger, letter, sidecar = classify_files(paths)
+        ledger, letter, sidecar, revisions = classify_files(paths)
     if not ledger:
         return 2, ["finding-trace: no Findings Ledger found (need a *_Findings_Ledger_*.md or a "
                    "file with apodictic:finding blocks)"]
@@ -220,7 +253,9 @@ def run(paths, strict=False):
         sidecar_text = _read(sidecar)
         if sidecar_text is None:
             sidecar_text = ""
-    return trace(_read(ledger), _read(letter) if letter else None, sidecar_text, strict=strict)
+    revision_texts = [t for t in (_read(r) for r in revisions) if t is not None]
+    return trace(_read(ledger), _read(letter) if letter else None, sidecar_text,
+                 revision_texts=revision_texts, strict=strict)
 
 
 # ---------------------------------------------------------------- self-test
@@ -288,6 +323,21 @@ def run_self_test():
     code, lines = trace(ledger, letter_clean, "{ not valid json")
     check("malformed_sidecar_errors", code == 1 and any("E0 unparseable" in ln for ln in lines))
 
+    # E4 — dangling revision reference (revision plan cites an ID not in the ledger)
+    code, lines = trace(ledger, letter_clean, sc_ok, revision_texts=["Plan: address F-P5-99 next."])
+    check("e4_dangling_revision", code == 1 and any("E4 dangling" in ln and "F-P5-99" in ln for ln in lines))
+
+    # revision plan references the Must-Fix -> clean (no W2)
+    code, _ = trace(ledger, letter_clean, sc_ok, revision_texts=["Session 1: fix F-P5-01 (the pacing)."])
+    check("revision_covers_mustfix", code == 0)
+
+    # W2 follow-through: revision plan present but the Must-Fix not referenced -> advisory, strict ERROR
+    code_w, lines_w = trace(ledger, letter_clean, sc_ok, revision_texts=["Session 1: polish only."])
+    check("w2_followthrough_advisory",
+          code_w == 0 and any("W2 follow-through" in ln and "F-P5-01" in ln for ln in lines_w))
+    code_s, _ = trace(ledger, letter_clean, sc_ok, revision_texts=["Session 1: polish only."], strict=True)
+    check("w2_followthrough_strict_fails", code_s == 1)
+
     # graceful: ledger-only run skips letter + sidecar dimensions
     code, lines = trace(ledger, None, None)
     check("ledger_only_graceful", code == 0 and any("letter trace skipped" in ln for ln in lines))
@@ -311,7 +361,11 @@ def run_self_test():
         fh.write(letter_clean)
     with open(os.path.join(d, "Diagnostic_State.meta.json"), "w") as fh:
         fh.write(sc_ok)
-    check("run_folder_resolution", run([d])[0] == 0)
+    with open(os.path.join(d, "Proj_Session_Plan_run.md"), "w") as fh:
+        fh.write("# Session 1\nAddress F-P5-01 (pacing) and F-P5-02 (stakes).\n")
+    rc_code, rc_lines = run([d])
+    check("run_folder_resolution", rc_code == 0)
+    check("run_folder_traces_revision", any("rev=cited" in ln for ln in rc_lines))
     check("explicit_files_classify",
           run([os.path.join(d, "Proj_Findings_Ledger_run.md"),
                os.path.join(d, "Proj_Core_DE_Synthesis_run.md"),
