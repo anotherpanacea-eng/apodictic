@@ -509,6 +509,7 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
     "plugins/apodictic/scripts/finding_trace.py",
     "plugins/apodictic/scripts/escalation_check.py",
     "plugins/apodictic/scripts/feedback_triage.py",
+    "plugins/apodictic/scripts/editor_scaffolding.py",
     "plugins/apodictic/schemas/apodictic.finding.v1.schema.json",
     "plugins/apodictic/schemas/apodictic.severity_calibration.v1.schema.json",
     "plugins/apodictic/schemas/apodictic.audit_trigger.v1.schema.json",
