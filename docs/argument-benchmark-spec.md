@@ -131,7 +131,7 @@ specificity — it cannot catch an engine that "finds" failures everywhere.
 **Every bucket must include at least one positive control**: a
 structurally sound (or soundly unconventional) piece whose correct diagnosis
 is PASS or UNCONVENTIONAL-BUT-EFFECTIVE. The Q7 dimension is scored
-*primarily* on these controls. *Federalist* No. 10 and the unconventional
+*primarily* on these controls. Swift's *A Modest Proposal* and the unconventional
 personal essay are the slice's positive controls.
 
 ---
@@ -337,7 +337,7 @@ For each fixture:
 
 ---
 
-## Mechanical validator (specced; implementation deferred)
+## Mechanical validator (built 2026-06-04)
 
 A self-testable `validate.sh argument-groundtruth-check <groundtruth_file>`
 validator is the natural mechanical-honesty layer for this benchmark,
@@ -346,7 +346,7 @@ matching the existing 11 self-testable validators. It would check:
 - All seven GT sections (GT1–GT7) are present and non-empty.
 - Every code referenced resolves to the Dialectical Clarity namespace
   (`AT / CL / SM / WR / BP / OB / DI / NE / AC`) or a valid `FM-Ax` pattern
-  (x ∈ 1–19).
+  (x ∈ 1–20).
 - GT2's primary failure layer is one of the enumerated values and is
   consistent with its expected codes (e.g., a WARRANT locus carries a `WR*`
   code, not an `SM*` code).
@@ -395,11 +395,27 @@ Fill buckets 3, 5, 6, 7 and add the remaining public-domain exemplars
 fixture per bucket (gitignored manifest) for external validity. Each new
 bucket needs ≥1 positive control.
 
+**Status (2026-06-04):** Buckets 1, 2, 5, 6, 7 are covered by the referenced
+real corpus (`evals/fixtures/argument-benchmark/CORPUS.md`, 10 pieces). Still
+to build for the **shippable, zero-fetch public-domain core**: Douglass
+(bucket 3 / testimony) and *Federalist* No. 10 (bucket 5 positive control) —
+these are the in-repo substitute for the copyrighted contemporary pieces,
+which travel only as a fetch-list (URL + anchor + SHA-256), not as text.
+
 ### Increment 3 — Mechanical validator + convergence runs
 
 Build `argument-groundtruth-check`, wire it into `--self-test-all`,
 regenerate host workspaces. Run the two-independent-runs convergence protocol
 across the full corpus; record results in the review log.
+
+**Status (2026-06-04):** Convergence runs **done** — Opus + Sonnet across the
+full corpus, plus a cross-vendor GPT-4 pass; recorded in
+`evals/results/*/SCORECARD.md`. The runs surfaced and fixed a Step-6
+decoy-resistance gap (6a two-test procedure + FM-A20). The
+`argument-groundtruth-check` validator (17/17 self-test, both host workspaces)
+and the `run.sh --fetch` reconstitution mode are now **built** (2026-06-04);
+`federalist-10` added as the first fetchable public-domain control. Remaining:
+the Douglass testimony control and second-editor confirmation of GT4–GT7.
 
 ---
 

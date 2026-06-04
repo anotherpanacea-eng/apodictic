@@ -109,6 +109,17 @@ sources_anchor() {           # $1 = slug, $2 = field label (BODY_START | BODY_EN
   ' "$SOURCES"
 }
 
+# --- read the retrieval URL for a slug from SOURCES.md (for --fetch) -------
+sources_url() {              # $1 = slug
+  awk -v slug="$1" '
+    $0=="### " slug {inblk=1; next}
+    /^### / {inblk=0}
+    inblk && index($0,"**URL:**")>0 {
+      line=$0; sub(/.*\*\*URL:\*\*[[:space:]]*/,"",line); sub(/[[:space:]]*$/,"",line); print line; exit
+    }
+  ' "$SOURCES"
+}
+
 # --- strip the provenance header AND article masthead to get the argument body
 # Removes three layers of identifying metadata so the blind runner sees only the
 # argument prose: (1) the `---`-fenced provenance header (SLUG/SOURCE_URL/...),
@@ -168,7 +179,7 @@ argument-shaped nonfiction. Diagnose ONLY from the text inside <submission>.
 Produce a structural diagnosis; never rewrite or invent content (the Editor's
 Firewall). Apply the audit reference inside <audit_reference>: run all 9 steps;
 use its code families (AT, AC, CL, SM, WR, BP, OB, DI, NE) and named patterns
-(FM-A1..FM-A19); end with Step 9 (Distinguish: SOUND / UNCONVENTIONAL-BUT-
+(FM-A1..FM-A20); end with Step 9 (Distinguish: SOUND / UNCONVENTIONAL-BUT-
 EFFECTIVE / UNSOUND) and a priority diagnosis (primary structural break, FM-A
 pattern(s), severity ranking, first repair target). Do not open any files; the
 text is all here. Finish with a line beginning "RECOGNITION:" stating yes/no
@@ -179,6 +190,8 @@ EOF
 # --- main -----------------------------------------------------------------
 VERIFY_ONLY=0
 [ "${1:-}" = "--verify" ] && { VERIFY_ONLY=1; shift; }
+FETCH_ONLY=0
+[ "${1:-}" = "--fetch" ] && { FETCH_ONLY=1; shift; }
 
 # slug -> recorded sha256, kept as TAB-separated lines. Bash 3.2 compatible:
 # macOS ships bash 3.2, which lacks `declare -A`, and the blind runs happen on
@@ -189,6 +202,33 @@ want_for() { printf '%s\n' "$PAIRS" | awk -F'\t' -v s="$1" '$1==s{print $2; exit
 
 # fixtures to process: CLI args, else all parsed slugs
 if [ "$#" -gt 0 ]; then SLUGS=("$@"); else SLUGS=($(printf '%s\n' "$PAIRS" | awk -F'\t' '{print $1}')); fi
+
+# --- --fetch: reconstitute referenced texts from their pinned URLs ----------
+# Fetches each slug's source from its SOURCES.md URL, carves the analyzed body
+# by the same anchors a run uses, writes it to $SRC/<slug>.md, and verifies the
+# recorded SHA-256. This is the "ship a fetch-list, reconstitute locally" path:
+# copyrighted/public-domain text is never stored in the repo, only fetched here.
+if [ "$FETCH_ONLY" -eq 1 ]; then
+  command -v curl >/dev/null 2>&1 || die "curl not found (needed for --fetch)"
+  echo "mode=fetch"; echo "src=$SRC"; echo
+  ffail=0
+  for s in "${SLUGS[@]}"; do
+    url="$(sources_url "$s")"
+    [ -n "$url" ] || { echo "SKIP  $s  (no URL in SOURCES.md — stored fixture or manual source)"; continue; }
+    want="$(want_for "$s")"
+    tmp="$(mktemp)"
+    if ! curl -fsSL --max-time 90 "$url" -o "$tmp"; then echo "FAIL  $s  (fetch error: $url)"; rm -f "$tmp"; ffail=1; continue; fi
+    body="$(extract_body "$tmp" "$s")"; rm -f "$tmp"
+    [ -n "$body" ] || { echo "FAIL  $s  (empty after extract — check anchors)"; ffail=1; continue; }
+    dest="$SRC/$s.md"; printf '%s\n' "$body" > "$dest"
+    got="$(sha < "$dest")"
+    if   [ -z "$want" ];          then echo "GOT   $s  (sha256: $got; no recorded hash to check) -> ${dest#$SRC/}"
+    elif [ "$got" = "$want" ];    then echo "OK    $s  (hash matches recorded) -> ${dest#$SRC/}"
+    else echo "HASH? $s  (got $got != recorded $want — reconcile anchors/source)"; ffail=1; fi
+  done
+  echo; echo "Fetch complete. Texts in: $SRC"
+  exit $ffail
+fi
 
 [ "$VERIFY_ONLY" -eq 1 ] || mkdir -p "$OUT"
 echo "repo=$REPO"
