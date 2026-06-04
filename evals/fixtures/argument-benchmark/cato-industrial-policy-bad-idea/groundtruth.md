@@ -25,8 +25,12 @@
 
 ## GT3 — Strongest real objection *(Q3)*
 
-- **Objection zone (authority):** some strategic sectors may involve **real coordination failures or national-security externalities** — genuine exceptions that the universal rejection over-reaches past.
-- **Provisional codes:** OB3 (the exception-that-breaks-the-universal is the central unengaged objection); cross-ref BP2.
+- **Objection zone (authority) — acceptable set (any ONE central + correctly coded = GT3 hit):**
+  1. **Security / coordination exception:** some strategic sectors involve real coordination failures or national-security externalities — genuine exceptions the universal rejection over-reaches past (OB3; cross-ref BP2). *Attacks the scope of the universal claim.*
+  2. **Definitional narrowing / selecting on the dependent variable:** the essay defines "industrial policy" to exclude its successes (e.g. DARPA-lineage innovation), so "IP fails" is partly true by construction and the empirical case is circular (DI0 / SM + definitional FM-A; cross-ref BP2/GT2). *Attacks the evidentiary engine itself — arguably the most structurally prior.*
+- **Accepted-adjacent (credit, slightly lower):** **reformed-IP / "ask how, not why"** — the failures are implementation/design failures, not proof of conceptual impossibility; well-designed IP could succeed (OB3/DI0).
+- **Decoy (rank below — per GT5):** disputes over a single failed (or successful) program example. Genre-generic, not structurally prior.
+- **Amended 2026-06-04 (ratified, post-run):** original single objection (security/coordination) preserved as set member #1; member #2 + adjacent + decoy line added per [../PROPOSAL-gt-sets-20260604.md](../PROPOSAL-gt-sets-20260604.md).
 
 ## GT4 — Audience calibration *(Q4 — PROVISIONAL)*
 

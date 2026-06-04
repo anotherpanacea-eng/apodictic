@@ -96,7 +96,13 @@ Validate that the engine works on real argument-shaped nonfiction, not just in t
 
 **Status:** Spec landed at [`docs/argument-benchmark-spec.md`](docs/argument-benchmark-spec.md). Vertical slice (Increment 1) built: rubric ([`evals/rubrics/argument-benchmark.md`](evals/rubrics/argument-benchmark.md)), ground-truth answer-key template ([`evals/argument-groundtruth-template.md`](evals/argument-groundtruth-template.md)), and four pre-registered fixtures under [`evals/fixtures/argument-benchmark/`](evals/fixtures/argument-benchmark/) — two broken (op-ed warrant leap; uncompared policy brief) for sensitivity, two positive controls (narrative-argumentation personal essay; Swift's *A Modest Proposal*, referenced) for specificity. Corpus is synthetic + public-domain (provenance policy blocks shipping copyrighted op-eds/testimony in-repo); real modern fixtures are added by gitignored manifest.
 
-**Remaining (Increment 2–3):** fill buckets 3, 5, 6, 7 with positive controls; add public-domain exemplars (Douglass, *Federalist* No. 10) and private/permission-cleared real fixtures; build the specced `validate.sh argument-groundtruth-check` validator (deferred — touching `validate.sh` requires host-workspace regeneration, so it lands once the GT schema is corpus-proven); run the two-independent-runs convergence protocol across the full corpus.
+**Status (Increment 2–3):** The **two-independent-runs convergence protocol has been run across the full corpus** (Opus + Sonnet on all referenced + synthetic + public-domain fixtures, plus a cross-vendor GPT-4 pass), scored, and recorded in `evals/results/*/SCORECARD.md`; buckets 1, 2, 5, 6, 7 are covered by the referenced corpus (`CORPUS.md`). The run drove a Dialectical Clarity calibration fix (the severity floor, PR #22) and a Step-6 decoy-resistance fix (6a two-test procedure + FM-A20).
+
+**Direction — shippable kit (the distribution model).** The copyrighted source *bytes* are the only thing that can't ship; the keys, harness, protocol, and method all can. So the benchmark ships as a kit and reconstitutes copyrighted texts locally (URL + extraction anchor + SHA-256; never the bytes). Remaining toward that:
+1. **Public-domain core** (fetchable, not stored — text reconstituted by URL+anchor+hash): ✓ *Federalist* No. 10 added (bucket 5 positive control). **Remaining: Douglass**, *What to the Slave Is the Fourth of July?* (bucket 3 / testimony) — needs a stable pinned public-domain source.
+2. ✓ **`run.sh --fetch`** reconstitution mode — built; verified on `federalist-10` (hash matches).
+3. ✓ **`validate.sh argument-groundtruth-check`** key-conformance validator — built; 17/17 self-test, wired into `--self-test-all` and both host workspaces.
+4. **Second-editor confirmation of GT4–GT7** (GT1–GT3 authoritative; GT4–GT7 provisional).
 
 **Corpus buckets:**
 1. Op-eds

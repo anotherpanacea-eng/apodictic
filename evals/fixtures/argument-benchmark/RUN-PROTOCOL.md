@@ -55,7 +55,7 @@ Done by the **preparer**, in a session separate from the runner.
 > **Procedure:** read and faithfully apply
 > `plugins/apodictic/skills/specialized-audits/references/craft/dialectical-clarity.md`.
 > Run all 9 steps; use its code families (AT, AC, CL, SM, WR, BP, OB, DI, NE)
-> and named patterns (FM-A1..FM-A19); end with Step 9 (Distinguish) and the
+> and named patterns (FM-A1..FM-A20); end with Step 9 (Distinguish) and the
 > audit's Output Format. You may also read `docs/argument-state-schema.md`.
 >
 > **Blindness constraint:** diagnose ONLY from the submission text below. Do NOT
@@ -137,6 +137,38 @@ test: same causal-warrant family, opposite correct severity.
   locus or the objection zone, or fires the soft spot as Must-Fix, **fails** the
   fixture even if the two runs agree with each other —
   agreement on a wrong diagnosis is not convergence.
+
+### Reporting the verdict: two axes, not one binary
+
+"Converged?" collapses two orthogonal questions. Report them separately — the
+binary hides *which* failure you have:
+
+- **Accuracy (per run, vs the key):** how many of the fixture's required anchors
+  does *that one run* hit? A run is *accurate* when it hits all of them.
+  Accuracy is run-vs-key.
+- **Reliability (run vs run):** on how many anchors do the two runs make the
+  *same* call — both hit, or both miss — regardless of whether they match the
+  key? Reliability is run-vs-run.
+
+The old "converged" = **reliable AND accurate** (both runs hit every anchor, so
+they necessarily agree with the key *and* each other). Decomposed, the quadrants
+are diagnostic:
+
+| | Accurate (both runs hit the key) | Inaccurate (a run misses the key) |
+|---|---|---|
+| **Reliable** (runs agree) | **Converged** — trustworthy. | **Shared blind spot** — both runs make the *same wrong* call (e.g. both take a registered decoy). High agreement, both wrong → **engine fault; freeze the key.** |
+| **Unreliable** (runs differ) | *(impossible — two all-anchor hits agree)* | **Variance / key-ambiguity** — runs disagree. If they disagree with the key but the *interesting* agreement is on a locus the key never registered, suspect the **key**, not the engine. |
+
+Two cautions on the axes:
+
+- **Reliability via two same-vendor configs is a weak signal.** Models from one
+  lab share training data, so they share recognition (apparent agreement that is
+  really shared *recall*) and share blind spots (a *shared-blind-spot* cell that
+  reads as reliability). Treat config-pair reliability as a floor; genuine
+  independence needs a different vendor or a second human editor.
+- **"Accurate" can be recall, not diagnosis.** A run that recognized the piece
+  and recited the canonical critique can hit the anchors without diagnosing.
+  Flag recall-susceptible runs (Step 2b) and read their accuracy as provisional.
 
 ## Step 5 — Record
 

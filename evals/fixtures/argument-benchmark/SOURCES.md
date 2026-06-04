@@ -153,6 +153,19 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **RECORDED:** `retrieved 2026-05-30 | corrected re-extraction (coates-case-for-reparations-corrected.md) | 100281 bytes | sha256: d4407650b3ceafcc5853418e158fa00a1d32aac7979e5d190bd7a27032f987d2`
 - **Provenance note:** supersedes a 2026-05-30 extraction (`sha256: 2cce74f1…f457a07`, 98516 bytes) that had two ordering artifacts — an out-of-sequence predatory-lending block at the end and interleaved photo captions / "Auschwitz All Around Us" sidebar. The corrected copy restores the predatory-lending block (Rugh & Massey; Wells Fargo / Beth Jacobson; Bank of America) to sequence and removes the interleaved captions/sidebar. Sections I–X intact; section epigraphs preserved. Caveat lifted — Coates is now a load-bearing fixture.
 
+## Public-domain controls (referenced; bucket positive controls)
+
+### federalist-10
+- **Cite:** *The Federalist* No. 10 (James Madison as Publius, 1787) — bucket 5 academic/policy positive control.
+- **URL:** https://www.gutenberg.org/cache/epub/1404/pg1404.txt
+- **START:** the line `FEDERALIST No. 10` (Madison's essay; skip the Gutenberg license header and all preceding papers).
+- **BODY_START:** `FEDERALIST No. 10`
+- **END:** the line immediately before `FEDERALIST No. 11`.
+- **BODY_END:** `FEDERALIST No. 11`
+- **EXCLUDE:** the Project Gutenberg license header/footer and every other paper in eBook #1404.
+- **RECORDED:** `retrieved 2026-06-04 | curl (gutenberg.org) | 18421 bytes | sha256: 7f5d50ff9fe27747c4e88e42b268b6d9642708ba44d4b3d7bfd686964290dd5c`
+- **Note:** public-domain; the analyzed text is the No. 10 body carved by the anchors above. `run.sh --fetch federalist-10` reconstitutes it from the URL.
+
 ---
 
 *Adding a referenced fixture: add a metadata block here (never a diagnosis), and

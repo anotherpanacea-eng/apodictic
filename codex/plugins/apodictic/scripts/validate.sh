@@ -165,8 +165,8 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate"
-  echo "Aggregate: --self-test-all (runs --self-test on all 16 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, argument-groundtruth-check"
+  echo "Aggregate: --self-test-all (runs --self-test on all 17 self-testable validators; exit 0 only if every validator's self-test passes)"
   echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry and structured-findings on the shipped templates)"
   exit 2
 }
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # pure utilities that do not carry self-tests; only the 11 model-
 # capability-review validators do.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate"
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate argument-groundtruth-check"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 16 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 17 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/16 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/17 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/16 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/17 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -3912,6 +3912,73 @@ EOF
     fi
     echo "WARN: python3 unavailable — gate engine skipped; perform the phase's manifest checks inline and record the result in the sidecar (execution.gates)."
     exit 0
+    ;;
+
+  argument-groundtruth-check)
+    set +e +o pipefail   # self-contained branch; always ends in an explicit exit
+    # Key-conformance validator for argument-benchmark groundtruth.md files
+    # (docs/argument-benchmark-spec.md §Mechanical validator). Checks:
+    #  (1) GT1-GT3 present + non-empty; GT7 present (range-aware: GT7 may be
+    #      folded into a heading such as "## GT4-GT7"); GT4-6 advisory.
+    #  (2) every code token resolves to AT/AC/CL/SM/WR/BP/OB/DI/NE or FM-A1..20.
+    #  (3) GT2 layer/code consistency (advisory — hybrid layers are legitimate).
+    #  (4) GT7 carries a valid Distinguish classification; an asserted
+    #      UNCONVENTIONAL-BUT-EFFECTIVE classification must name >=1 downgraded
+    #      form-dependent code.
+    _agc_sec() { awk -v n="$1" '
+        $0 ~ ("^#{1,4}[[:space:]]*GT" n "([^0-9]|$)") {cap=1; next}
+        cap && /^#{1,4}[[:space:]]*GT[0-9]/ {cap=0}
+        cap {print}' "$AGC_GT"; }
+    _agc_heading_has() { awk -v n="$1" '
+        /^#{1,4}/ {
+          if ($0 ~ ("GT" n "([^0-9]|$)")) {found=1}
+          while (match($0, /GT[0-9]+[[:space:]]*[-–][[:space:]]*(GT)?[0-9]+/)) {
+            seg=substr($0,RSTART,RLENGTH); gsub(/GT|[[:space:]]/,"",seg)
+            split(seg,r,/[-–]/); if (n>=r[1] && n<=r[2]) found=1
+            $0=substr($0,RSTART+RLENGTH) } }
+        END{exit found?0:1}' "$AGC_GT"; }
+    _agc_check() {
+      AGC_GT="$1"; local E=0 N=0 n b w layer exp code
+      for n in 1 2 3; do
+        if ! _agc_heading_has "$n"; then echo "ERROR: missing required section GT${n}"; E=$((E+1)); continue; fi
+        b="$(_agc_sec "$n" | grep -vE '^[[:space:]]*$' | grep -vE '^[[:space:]]*[-*][[:space:]]*$')"
+        [ -n "$b" ] || { echo "ERROR: section GT${n} is empty"; E=$((E+1)); }
+      done
+      _agc_heading_has 7 || { echo "ERROR: missing required section GT7"; E=$((E+1)); }
+      for n in 4 5 6; do _agc_heading_has "$n" || { echo "NOTE: GT${n} not in any heading (ok if folded)"; N=$((N+1)); }; done
+      for code in $(grep -oE '\b[A-Z]{2}[0-9]\b|\bFM-A[0-9]+\b' "$AGC_GT" | grep -vE '^GT[0-9]$' | sort -u); do
+        printf '%s' "$code" | grep -qE '^FM-A([1-9]|1[0-9]|20)$' && continue
+        printf '%s' "$code" | grep -qE '^(AT|AC|CL|SM|WR|BP|OB|DI|NE)[0-9]$' && continue
+        echo "ERROR: unknown code token '${code}' (not AT/AC/CL/SM/WR/BP/OB/DI/NE[0-9] or FM-A1..20)"; E=$((E+1))
+      done
+      layer="$(_agc_sec 2 | grep -ioE 'WARRANT|SUPPORT|SCOPE|CLAIM|OBJECTION|AUDIENCE' | head -1 | tr '[:lower:]' '[:upper:]')"
+      if [ -n "$layer" ]; then
+        case "$layer" in WARRANT) w='WR';; SUPPORT) w='SM';; SCOPE|CLAIM) w='BP|CL';; OBJECTION) w='OB|DI';; AUDIENCE) w='AC';; *) w='';; esac
+        if [ -n "$w" ] && _agc_sec 2 | grep -qE '\b(AT|AC|CL|SM|WR|BP|OB|DI|NE)[0-9]\b' && ! _agc_sec 2 | grep -qE "\b(${w})[0-9]\b"; then
+          echo "NOTE: GT2 layer '${layer}' lacks a ${w}* code (hybrid/provisional? review)"; N=$((N+1))
+        fi
+      fi
+      grep -qiE 'SOUND|UNSOUND|UNCONVENTIONAL[- ]BUT[- ]EFFECTIVE' "$AGC_GT" || { echo "ERROR: GT7 lacks a valid Distinguish classification"; E=$((E+1)); }
+      exp="$(grep -ioE 'expected classification[^A-Za-z0-9]*(UNCONVENTIONAL[- ]BUT[- ]EFFECTIVE|SOUND|UNSOUND)' "$AGC_GT" | grep -ioE 'UNCONVENTIONAL[- ]BUT[- ]EFFECTIVE|SOUND|UNSOUND' | head -1)"
+      if printf '%s' "$exp" | grep -qiE 'UNCONVENTIONAL' && ! grep -qiE 'downgrad|suspend|form-dependent' "$AGC_GT"; then
+        echo "ERROR: GT7 UNCONVENTIONAL-BUT-EFFECTIVE classification must name >=1 downgraded form-dependent code"; E=$((E+1))
+      fi
+      [ "$E" -eq 0 ]
+    }
+    if [ "${1:-}" = "--self-test" ]; then
+      _agc_d="$(mktemp -d)"
+      printf '## GT1 — Main claim\n- C0: x\n## GT2 — Failure locus\n- Primary failure layer: WARRANT\n- Codes: WR1\n## GT3 — Strongest real objection\n- OB3\n## GT4-GT7\n- GT7 Distinguish: SOUND\n' > "$_agc_d/good.md"
+      printf '## GT1\n- C0\n## GT2\n- layer WARRANT\n- ZZ9\n## GT3\n- OB3\n' > "$_agc_d/bad.md"
+      _agc_check "$_agc_d/good.md" >/dev/null 2>&1; g=$?
+      _agc_check "$_agc_d/bad.md"  >/dev/null 2>&1; b=$?
+      rm -rf "$_agc_d"
+      if [ "$g" -eq 0 ] && [ "$b" -ne 0 ]; then echo "argument-groundtruth-check self-test: PASS"; exit 0; fi
+      echo "argument-groundtruth-check self-test: FAIL (good=$g bad=$b)"; exit 1
+    fi
+    if [ $# -lt 1 ]; then echo "Usage: $0 argument-groundtruth-check <groundtruth_file> | --self-test"; exit 2; fi
+    if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
+    if _agc_check "$1"; then echo "OK: $(basename "$(dirname "$1")")/$(basename "$1") conforms to the GT key schema"; exit 0
+    else echo "FAILED: groundtruth-conformance error(s) in $1"; exit 1; fi
     ;;
 
   *)

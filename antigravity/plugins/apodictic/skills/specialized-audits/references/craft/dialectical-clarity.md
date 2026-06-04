@@ -385,7 +385,12 @@ Identify 2–4 objections the piece implicitly anticipates or conspicuously igno
 
 **Run on:** full draft — look for concessive moves ("to be sure," "one might argue," "critics say"), anticipated counterarguments, and structural gaps where an obvious objection goes unaddressed.
 
-**6a. Name the single strongest objection first.** Before inventorying objections, identify the one objection a well-informed adversary raises *first*: the load-bearing one. Prefer **text-internal** objections (those that turn the argument's own central warrant, evidence, or target against it) over **canonical imported** objections (the standard counter from the surrounding debate, which often applies equally to many arguments in the genre). Then check what the strongest objection attacks: an objection to the proposed *alternative*, or to a *secondary* claim, is not a substitute for an objection to **C0 as actually argued**. Record this as `STRONGEST OBJECTION` even if the piece never raises it, and let it anchor the inventory below. If the inventory leads with a merely plausible objection while a sharper text-internal one goes unnamed, fire **OB5**.
+**6a. Find the single strongest objection — by procedure, not preference.** The strongest objection is almost always **text-internal** (it turns the argument's own warrant, evidence, cure, or target against it), not the **canonical imported** counter from the surrounding debate. Do not just *prefer* the text-internal one — *derive* it, with two tests run in order:
+
+- **Test B — Self-undermining derivation (run FIRST, to generate the candidate).** Take the argument's own central diagnosis, value, or proposed cure and ask: (i) does the proposed *remedy recreate* the very problem the argument diagnoses? (ii) is the standard *cure* for the harm the argument decries exactly the mechanism the argument *opposes*? (iii) does the conclusion *depend on* the thing it condemns? If any holds, that self-undermining objection is the strongest text-internal one — name it. (See FM-A20.)
+- **Test A — Genre-genericity (decoy) filter (run on whatever you are tempted to call strongest).** Ask: *would this same objection apply, almost verbatim, to most arguments in this genre or on this topic?* (e.g., "but public safety" → any decarceration argument; "but cost / inefficiency / delay" → any pro-regulation or pro-labor argument; "but government failure" → any pro-intervention argument.) If yes, it is a **canonical-imported / decoy** objection: a hostile reader may raise it first, but it is **not** the text-internal strongest one. **Downrank it** (keep it in the inventory below, never as the strongest) — *unless Test B yielded nothing*, i.e. only when no text-internal objection exists may a genre-generic objection hold the strongest slot.
+
+Then check scope: an objection to the proposed *alternative*, or to a *secondary* claim, is not a substitute for an objection to **C0 as actually argued**. Record the result as `STRONGEST OBJECTION` even if the piece never raises it, and let it anchor the inventory below. If a genre-generic objection occupies the strongest slot while Test B yielded a sharper text-internal one, fire **OB5**.
 
 ```
 OBJECTION 1: [what the strongest objection would be]
@@ -417,7 +422,7 @@ OBJECTION 2: [...]
 | **OB2** | Evasion | Objection named but not answered; text acknowledges disagreement then moves on without engaging |
 | **OB3** | Central objection unaddressed | The hardest counterargument — the one a well-informed skeptic would raise first — is missing entirely |
 | **OB4** | Concession without cost | The piece performs concession language but the concession changes nothing; the argument proceeds exactly as if the objection were never raised |
-| **OB5** | Decoy strongest objection | The inventory engages a plausible objection, but the genuinely strongest, most load-bearing objection (the one that turns the argument's own central warrant, evidence, or target against it) is neither named nor engaged. Distinct from OB3: OB3 = the strongest objection is identified but unaddressed; OB5 = it is *misidentified*, a weaker or merely canonical objection having taken its place |
+| **OB5** | Decoy strongest objection | The inventory engages a plausible objection, but the genuinely strongest, most load-bearing objection (the one that turns the argument's own central warrant, evidence, or target against it) is neither named nor engaged. Distinct from OB3: OB3 = the strongest objection is identified but unaddressed; OB5 = it is *misidentified*, a weaker or merely canonical objection having taken its place. OB5 is a finding about **the piece's** objection handling, not about your own analysis. **Engine self-guard (process, not a code about the piece):** if the objection *you* named as strongest passes the genre-genericity test (6a Test A) and you skipped the self-undermining derivation (6a Test B), you are about to hand back a decoy — re-run Test B first. Having correctly identified the strongest (text-internal) objection, code the *piece's* handling of it: **OB3** if the piece leaves that objection unaddressed, **OB5** only if the piece itself engages a weaker/canonical objection in its place |
 
 **Note on AT1:** For explanatory arguments, OB0 is not automatically a failure. If the explanation is accurate and clear, absence of objection handling is acceptable. For all other argument types, OB0 is diagnostic.
 
@@ -608,6 +613,10 @@ The argument proves that intervention A affects mediator variable B, then assume
 Signature: BP6 + WR0 or BP1.
 The gap between "I saw this" and "this is how it works" is treated as self-evident. The anecdote is true, the principle may be true, but the text supplies no bridge between them. The experience is asked to carry representative or explanatory weight it cannot structurally support. Common in advocacy journalism and legislative testimony. Cross-reference: NE1 when the anecdote is the *only* support for a subclaim.
 
+**FM-A20: Self-Undermining Remedy**
+Signature: OB3/OB5 + DI (often DI2), in an otherwise competent argument.
+The proposed remedy reintroduces, or structurally depends on, the very condition the argument diagnoses as the problem; or the standard cure for the harm the argument decries is exactly the mechanism it opposes. The strongest objection is therefore text-internal — the argument defeats itself on its own terms. Two templates: (a) *the remedy recreates the diagnosed problem* — participatory safeguards proposed against procedural veto points themselves reintroduce veto points; (b) *the cure is the condemned mechanism* — a brief that decries discretionary, arbitrary enforcement proposes individualized treatment that requires more of exactly that discretion, when standardization is the classic constraint on it. Distinct from FM-A10 (Uncompared Proposal — whether *alternatives* are weighed) and FM-A13 (Structural Motte-and-Bailey — *claim oscillation*). Surfacing it is the job of Step 6's 6a self-undermining derivation (Test B).
+
 ### Quality Failures
 
 A code fires as present/pass, but the pass threshold is wrong. Evidence exists but is laundered. Concessions happen but are costless. Authority is cited but overreaches. These require the audit to test *quality* of passes, not just presence.
@@ -660,12 +669,12 @@ The proposal proves the problem exists and argues the principle compellingly. Bu
 
 ## Failure Cluster Taxonomy
 
-The 19 patterns cluster into four diagnostic types that tell the reviewer *how* to find them:
+The 20 patterns cluster into four diagnostic types that tell the reviewer *how* to find them:
 
 | Cluster | What It Means | Detection Method | Patterns |
 |---------|--------------|-----------------|----------|
 | **Architectural** | The basic argument structure is absent or disguised | Detectable in Steps 1–2; often the audit can stop here | FM-A1, FM-A3, FM-A5 |
-| **Relational** | The failure lives between codes, not within them | Compare findings across steps; look for disconnects between what individual steps return | FM-A6, FM-A7, FM-A12, FM-A13, FM-A15, FM-A17 |
+| **Relational** | The failure lives between codes, not within them | Compare findings across steps; look for disconnects between what individual steps return | FM-A6, FM-A7, FM-A12, FM-A13, FM-A15, FM-A17, FM-A20 |
 | **Quality** | A code fires as pass but the pass quality is inadequate | Re-examine passes with higher resolution; test not just presence but adequacy | FM-A8, FM-A9, FM-A11, FM-A14, FM-A19 |
 | **Dynamic** | The failure accumulates across sections and is invisible locally | Step 8 cross-section tracking; compare beginning against end | FM-A2, FM-A4, FM-A10, FM-A16, FM-A18 |
 
