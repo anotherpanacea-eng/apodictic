@@ -163,6 +163,21 @@ The coach operates in four modes. Select based on context:
 
 **Output:** `[Project]_Feedback_Triage_[runlabel].md`
 
+### 6. Retcon Planning
+
+**When:** The writer has committed to a **late structural decision** (a new ending, a reframed controlling idea, a relocated reveal — Door A), or has draft elements that feel like bugs they suspect could be features (Door B). They need to plan the retroactive-continuity revision the decision owes the earlier draft.
+
+**Required input:** The retcon target(s) the writer has decided on (or the elements to reinterpret). The diagnosis / `Diagnostic_State.md` and Reveal Economy (Pass 8) findings if they exist.
+
+**Process** (full protocol in `references/retcon-planning.md`):
+1. Build a **State Card** (active promises, unresolved tensions, forbidden contradictions, controlling-idea hypothesis)
+2. Capture each commitment as an `apodictic.retcon_item.v1` block — tag its `mutability` (locked/costly/free, the commitment budget) and `retcon_type` (dramatic/evidential, the fair-play axis)
+3. **Fair-play gate:** never plan an *evidential* retcon of *locked* canon (changing a clue the reader has reasoned from); name each costly/locked item's `blast_radius`
+4. **Firewall:** plan the intervention *class*, never the prose — the author writes the tissue
+5. Gate with `scripts/validate.sh retcon-plan <run_folder>` (`--strict` for CI), then sequence the arc
+
+**Output:** `[Project]_Retcon_Plan_[runlabel].md`
+
 ---
 
 ## Argument Revision Mode (v1.0)
