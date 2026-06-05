@@ -414,8 +414,9 @@ full corpus, plus a cross-vendor GPT-4 pass; recorded in
 decoy-resistance gap (6a two-test procedure + FM-A20). The
 `argument-groundtruth-check` validator (17/17 self-test, both host workspaces)
 and the `run.sh --fetch` reconstitution mode are now **built** (2026-06-04);
-`federalist-10` added as the first fetchable public-domain control. Remaining:
-the Douglass testimony control and second-editor confirmation of GT4–GT7.
+`federalist-10` and `douglass-fourth-of-july` added as fetchable public-domain
+controls (bucket 5 + bucket 3 / Q7). Remaining: second-editor confirmation of
+GT4–GT7.
 
 ---
 
