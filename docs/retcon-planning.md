@@ -106,4 +106,36 @@ A canonical worked example (`references/example-retcon-plan.md`) is gated by `va
 
 **Increment 1 (this):** the coaching-track contract, the State Card + Retcon Plan artifacts, the `apodictic.retcon_item.v1` block + schema, the `retcon-plan` validator (R1–R4 + W1–W2), the worked example, the `--check-all` gate, and revision-coach wiring.
 
-**Future:** Door-B abduction depth (ranked latent readings with a "non-insane-coincidence" score, à la Gwern's selection); State Card as a true cross-revision rolling artifact diff'd across rounds; integration with Reveal Economy (Pass 8) so the setup-debt ledger is auto-seeded from payoff findings; and the more speculative interactive-fiction / game-narrative diagnostic the essay points at (an *unseeded* genre candidate on the roadmap).
+**Future:** the increments below.
+
+## Future increments
+
+Each is additive on Increment 1 and keeps the Firewall (plan the class, never write the prose). Listed roughly by leverage.
+
+### F1 — Ranked Door-B abduction (the Selection step)
+
+**What.** Door B currently surfaces latent "bug-or-feature" readings as a flat, unranked list. Add the scoring step from Gwern's loop: rank candidate readings by a small rubric — coherence with the canon, payoff density, character-agency preservation, genre fit, and a **non-insane-coincidence rate** (penalize a reading that only "works" by treating every incidental detail as load-bearing). Return the top 1–3, each with its score profile and the setup-debt + commitment cost that committing to it would imply.
+**Why.** This is the structural guard against "rubber reality" / paranoid over-fitting — the failure mode the essay names — and it gives the author a principled, costed shortlist instead of a flat menu.
+**Shape.** A `## Candidate Readings` section (a scored table), optionally an `apodictic.retcon_reading.v1` block per candidate (id, score dimensions, implied `target_id`s). Validator extension: a W-level check that any surfaced reading carries a coincidence-rate note. Firewall unchanged — still options, never prose.
+**Dependency.** None hard; pairs naturally with the State Card.
+
+### F2 — State Card as a standalone cross-revision rolling artifact
+
+**What.** Promote the `## State Card` section to a first-class rolling artifact — `[Project]_State_Card_[runlabel].md` at the project root, diff'd across revision rounds (the Pass-10-class rolling-structured-artifact pattern).
+**Why.** A retcon's whole value is *cross-round* coherence, and a per-run section can't show drift. A rolling, diff'd card surfaces movement like "the controlling-idea hypothesis shifted between round 2 and round 3," or "a Round-1 active promise is now a forbidden contradiction" — exactly the cross-revision coherence the Pass-10 pattern exists for.
+**Shape.** An `apodictic.state_card.v1` schema; a `state-card-diff` validator arm (modeled on `timeline-diff`) comparing the prior card against the current; registration in `output-structure.md` as a project-root rolling-state file.
+**Dependency.** Builds directly on the Increment-1 State Card section.
+
+### F3 — Reveal-Economy (Pass 8) auto-seeding of the setup-debt ledger
+
+**What.** Door A enumerates setup debt by hand. Pass 8 (Reveal Economy) already maps setup→payoff and runs a fairness test; given a retcon target (a new or relocated payoff), derive the required setups from the Pass-8 map and propose `retcon_item` candidates the author curates — each carrying a Pass-8 cross-reference.
+**Why.** Closes the loop between the diagnostic (Pass 8) and the coaching (Retcon Planning), cuts manual enumeration, and grounds each setup-debt item in reveal-economy evidence — including the fairness check that keeps a seeded clue honest (so an auto-seeded item can't quietly become an evidential retcon).
+**Shape.** A Pass-8 → Retcon-Plan handoff; setup-debt items gain a `source` cross-reference to the originating Pass-8 finding. Firewall: still classes, derived from existing findings.
+**Dependency.** A completed Pass 8 / reveal-economy run.
+
+### F4 — Interactive-fiction / game-narrative diagnostic (speculative, demand-gated)
+
+**What.** Extend the retcon frame to *interactive* fiction / game narrative — the essay's native habitat. Diagnose branching and agency: does the hidden world-state harden too early? are player-observed canon and the commitment budget respected across branches? Kept **diagnostic** (evaluate a branching narrative's retcon-safety), never generative (the engine does not write the branches).
+**Why.** Interactive fiction / game narrative is an *unseeded* genre candidate on the roadmap (§Genre & Audit Expansion), and the retcon frame is its native analytical lens.
+**Shape.** A genre-module-style diagnostic built per the genre-expansion protocol (level-setting research → structural spec → multi-model QA). Larger and demand-gated — build only if IF / game manuscripts actually materialize.
+**Dependency.** The genre-expansion protocol; real demand.
