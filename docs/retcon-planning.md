@@ -79,10 +79,10 @@ A compression of what the draft has committed to: **active promises**, **unresol
 |---|---|---|
 | **R1 — invalid item** | ERROR | A `retcon_item` block fails its schema (bad `kind`/`mutability`/`retcon_type` enum, malformed `RX-NN` id, missing required field, broken JSON). |
 | **R2 — duplicate id** | ERROR | Two items share an `RX-NN` id. |
-| **R3 — evidential retcon of locked canon** | ERROR | An item with `retcon_type: evidential` **and** `mutability: locked` — changing a clue the reader has already reasoned from. Gwern's "evidential retconning destroys fair play," made mechanical. Override: `<!-- override: retcon-evidential — <rationale> -->` (e.g. the "clue" was never actually load-bearing). |
+| **R3 — evidential retcon of locked canon** | ERROR | An item with `retcon_type: evidential` **and** `mutability: locked` — changing a clue the reader has already reasoned from. Gwern's "evidential retconning destroys fair play," made mechanical. Override (per item): `<!-- override: retcon-evidential RX-NN — <rationale> -->` (e.g. the "clue" was never actually load-bearing). |
 | **R4 — dangling target** | ERROR | An item's `target_id` does not resolve to a target declared in the plan's `## Retcon Targets` list (a `- T1: …` entry) — a typo or a deleted target leaves an orphan commitment. |
 | **W1 — unaccounted blast radius** | WARN (ERROR `--strict`) | A `locked`/`costly` item with an empty `blast_radius` — a costly retcon planned without naming what it endangers (the Protected-Elements guard). |
-| **W2 — firewall drift** | WARN (ERROR `--strict`) | `intervention_class`/`disposition` reads like *invented content* rather than a class — quoted invented dialogue, or "add a scene where <specific events>". A facilitator plans the class; the author writes the prose. Override: `<!-- override: retcon-firewall — <rationale> -->`. |
+| **W2 — firewall drift** | WARN (ERROR `--strict`) | `intervention_class`/`disposition` reads like *invented content* rather than a class — quoted invented dialogue, or "add a scene where <specific events>". A facilitator plans the class; the author writes the prose. Override (per item): `<!-- override: retcon-firewall RX-NN — <rationale> -->`. |
 
 **The signature checks are R3 and W2** — they mechanize the two disciplines both sources insist on: *you may not retcon the evidence the reader has already used* (fair play) and *you may not cross into ghostwriting* (the Firewall). No other validator raises either.
 
