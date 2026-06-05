@@ -73,6 +73,8 @@ OUT="$REPO/evals/results/run-$(date +%Y%m%d-%H%M%S)"
 die() { echo "ERROR: $*" >&2; exit 1; }
 [ -f "$AUDIT" ]   || die "audit reference not found: $AUDIT"
 [ -f "$SOURCES" ] || die "SOURCES.md not found: $SOURCES"
+# --fetch may bootstrap a fresh cache; --verify and model-run modes require it to exist.
+[ "${1:-}" = "--fetch" ] && mkdir -p "$SRC" 2>/dev/null
 [ -d "$SRC" ]     || die "source cache dir not found: $SRC  (set SRC=...)"
 
 # --- parse slug -> recorded sha256 from SOURCES.md ------------------------
@@ -110,13 +112,17 @@ sources_anchor() {           # $1 = slug, $2 = field label (BODY_START | BODY_EN
 }
 
 # --- read the retrieval URL for a slug from SOURCES.md (for --fetch) -------
-sources_url() {              # $1 = slug
+sources_url() {              # $1 = slug; prefers SOURCE_PDF, else any **URL...:** field
   awk -v slug="$1" '
     $0=="### " slug {inblk=1; next}
     /^### / {inblk=0}
-    inblk && index($0,"**URL:**")>0 {
-      line=$0; sub(/.*\*\*URL:\*\*[[:space:]]*/,"",line); sub(/[[:space:]]*$/,"",line); print line; exit
+    inblk && index($0,"**SOURCE_PDF")>0 {
+      line=$0; sub(/.*\*\*SOURCE_PDF[^:]*:\*\*[[:space:]]*/,"",line); sub(/[[:space:]].*/,"",line); pdf=line
     }
+    inblk && index($0,"**URL")>0 && url=="" {
+      line=$0; sub(/.*\*\*URL[^:]*:\*\*[[:space:]]*/,"",line); sub(/[[:space:]].*/,"",line); url=line
+    }
+    END { if (pdf!="") print pdf; else print url }
   ' "$SOURCES"
 }
 
@@ -214,8 +220,16 @@ if [ "$FETCH_ONLY" -eq 1 ]; then
   ffail=0
   for s in "${SLUGS[@]}"; do
     url="$(sources_url "$s")"
-    [ -n "$url" ] || { echo "SKIP  $s  (no URL in SOURCES.md — stored fixture or manual source)"; continue; }
     want="$(want_for "$s")"
+    if [ -z "$url" ]; then
+      # A recorded-hash source with no fetchable URL is a real failure, not a skip.
+      if [ -n "$want" ]; then echo "FAIL  $s  (recorded-hash source, but no fetchable URL parsed from SOURCES.md)"; ffail=1
+      else echo "SKIP  $s  (no URL in SOURCES.md — stored/manual fixture)"; fi
+      continue
+    fi
+    case "$url" in
+      *.pdf|*.PDF) echo "FAIL  $s  (analyzed text is a PDF: $url — --fetch's plain-text pipeline can't reconstitute it; fetch + convert (e.g. pdftotext) and place the body at \$SRC/$s.md manually)"; ffail=1; continue;;
+    esac
     tmp="$(mktemp)"
     if ! curl -fsSL --max-time 90 "$url" -o "$tmp"; then echo "FAIL  $s  (fetch error: $url)"; rm -f "$tmp"; ffail=1; continue; fi
     body="$(extract_body "$tmp" "$s")"; rm -f "$tmp"
