@@ -415,7 +415,7 @@ STRONGEST OBJECTION: The claim that no alternatives are workable
   absentees," "landlords to have at least one degree of mercy")
   and their dismissal as "vain, idle, visionary" performs the
   defeat of alternatives without arguing it.
-  
+
   Engaged: Y (the persona addresses this — but evasively)
   Quality: EVASION — the text acknowledges the alternatives exist,
     names them, then dismisses them by asserting hopelessness
@@ -809,7 +809,7 @@ Priority diagnosis:
   Primary structural break: None that defeats evaluability.
     The essay is UNCONVENTIONAL-BUT-EFFECTIVE. The argument is
     recoverable, testable, and evaluable by a careful reader.
-  
+
   Surviving structural soft spots (Should-Fix):
     1. CL4 (definition drift on "publick good") — Should-Fix
        The satire's moral force depends on the reader detecting
@@ -836,13 +836,13 @@ Priority diagnosis:
        the genuine remedies are sufficient. A policy opponent could
        accept the satire's force while rejecting the implied
        recommendation (enact real reforms) on practical grounds.
-  
+
   Failure cluster: RELATIONAL (the soft spots live between the
     satirical form and its recovery, not within any single section)
-  
+
   Blast radius: LOCAL — the soft spots affect the actual argument's
     persuasive completeness, not its structural evaluability.
-  
+
   Primary structural pattern: FM-A5 (Hidden Argument — argument
     embedded in satirical performance rather than stated as thesis).
     CHARITY DOWNGRADED: this is the form, not a defect. The form

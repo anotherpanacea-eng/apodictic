@@ -144,7 +144,7 @@ C3 (cascade of collateral benefits + superiority to alternatives):
 ```
 C1 (surplus exists):
   Warrant: "A population unable to employ or feed its children constitutes a
-           solvable national liability." 
+           solvable national liability."
   Warrant status: RECOVERABLE (the political-arithmetic frame supplies it)
   Backing: PRESENT (the computation)
   Qualifier: MATCHED to the burden claim
@@ -247,10 +247,10 @@ OBJECTION 1 (THE STRONGEST, above): The proposal assumes the dehumanization it
    is conceded in name and the argument proceeds exactly as if unraised.
    Operative-as-device.
 
-OBJECTION 2: "This will depopulate the kingdom." 
+OBJECTION 2: "This will depopulate the kingdom."
   Engaged: Y — explicitly: "unless it should be urged, that the number of people
    will be thereby much lessened in the kingdom. This I freely own, and was indeed
-   one principal design in offering it." 
+   one principal design in offering it."
   Quality: SUBSTANTIVE in form (named and answered) — but the "answer" embraces
    the horror, which is the satire turning the objection into further indictment.
   Code: PASS on engagement form; DI-note: the embrace is the device.
