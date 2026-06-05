@@ -1,0 +1,48 @@
+Dialectical Clarity v2.0:
+  Argument type: AT3 (propositional – a policy brief recommending that Rivermont eliminate fares on its public transit system)
+  Audience calibration: AC2 (the brief targets municipal decision‑makers and a mixed public but assumes agreement on environmental and equity goals, under‑defending its case against skeptical readers)
+  Distinguish outcome: Structurally Sound (the proposal is clear and evaluable, but its support chain is incomplete and objection handling is absent)
+  Severity summary: CL2 subclaim gap (no subclaim or evidence about cost and revenue replacement); SM0 missing support for emissions and boarding‑speed benefits; WR1 missing backing for price→ridership causal warrant and the normative leap; BP5 missing alternatives and comparative analysis; OB3 central objection unaddressed; DI0 starting‑point smuggling of normative values
+  Pattern matches: FM‑A6 (Warrant Leap – the brief leaps from descriptive benefits to a normative conclusion without earning the inferential bridge); FM‑A10 (The Uncompared Proposal – proposal argued only against the status quo, no second‑best options); FM‑A18 (Implementation Blindspot – the brief proves the problem but ignores cost, funding and operational feasibility)
+
+Claim Ladder:
+  C0: Rivermont should eliminate all fares on the Metro Transit bus and light‑rail system in the next fiscal year.
+  C1: Fare‑free transit will substantially raise ridership because lower cost reduces barriers to riding.
+  C2: Fare‑free transit will cut transportation emissions by shifting trips from private cars to public transit.
+  C3: Transit fares constitute a flat, regressive charge that falls hardest on low‑income residents; removing them constitutes a progressive transfer and speeds boarding.
+  Stakes: Consequential and moral – the policy promises to improve climate outcomes, increase access for low‑income residents and reverse declining ridership; failure to act will perpetuate environmental harm and inequity.
+  Key terms: “fare‑free transit” = the complete elimination of fares on buses and light‑rail; “regressive cost” = a flat fee that represents a larger share of income for low‑income riders; “ridership” = the number of trips taken on the Metro system.
+  Codes: CL2 (subclaim gap – the argument never supplies a necessary premise that the city can afford to forgo fare revenue or that lost revenue will not harm service)
+
+Support / Warrant:
+  C1 → Support: The brief cites peer transit systems that saw 20–60 % ridership gains after reducing or removing fares and asserts that lower cost lowers barriers to riding. Support type: Data (aggregate reports) with causal reasoning. Warrant: The implicit principle that price elasticity drives transit demand; recoverable for a general audience but contested for a policy audience. Backing: Absent – no economic analysis or methodological source is offered. Qualifier: Overconfident – the brief treats upper‑bound anecdotal gains as decisive. Code: WR1 (missing backing for a contested warrant – assumes cost is the main barrier without proving it).
+  C2 → Support: It claims that shifting trips from cars to transit reduces per‑capita emissions and speculates that a 30 % ridership gain would advance Rivermont toward its 2030 climate target. Support type: Reason (causal) with a thin data gesture. Warrant: That each trip displaced from a private car reduces net emissions; recoverable but contested (depends on power source, system capacity and induced travel). Backing: Absent; the brief provides no emissions data. Qualifier: Overconfident. Code: SM0 on C2 (missing concrete support for the emissions reduction claim) and WR1 (missing backing for the causal warrant).
+  C3 → Support: Metro ridership has fallen 19 % since 2019; transportation accounts for 38 % of city emissions; in the lowest income quintile, residents spend 16 % of household income on transportation versus 4 % in the highest; fares are a flat charge. Support type: Data and reason. Warrant: That fare‑collection costs and flat pricing impose a regressive burden; recoverable for the intended audience. Backing: Thin – the brief does not compare fare burden with other transportation costs or show how removal redistributes benefits. Qualifier: Unhedged. Code: PASS (support exists but is thin).
+  C3 (boarding‑speed claim) → Support: The brief asserts that eliminating fares speeds boarding and improves on‑time performance. Support type: None given (assertion). Warrant: That fare transactions slow boarding; recoverable. Backing: Absent. Code: SM0 (missing support) and WR0 (warrant gap – the connection is assumed without evidence).
+  C0 normative leap → The brief moves from C1–C3 to the conclusion that Rivermont should eliminate fares. Warrant: That increasing ridership, cutting emissions and advancing equity are sufficient reasons to eliminate fare revenue. This principle is missing; the brief never addresses cost, trade‑offs or alternative measures. Backing: Absent. Qualifier: Certain (“we urge the committee to advance the policy”). Code: WR0 (warrant gap) and WR3 (qualifier mismatch – certainty exceeds the support chain).
+
+Burden / Objections:
+  Scope match: N – the claim is a local normative recommendation; the evidence provides anecdotal data from other systems and general reasoning but omits fiscal analyses and cost–benefit comparisons. Evidence does not travel the full distance to justify a citywide policy.
+  Alternatives considered: N – the brief compares fare‑free transit only to the status quo. It does not consider reduced fares, targeted subsidies for low‑income riders, improvements in service quality, or other revenue structures. Code: BP5 (missing alternatives).
+  Precision justified: N – ridership gains and emissions reductions are stated in broad ranges without sources or methodological clarity.
+  Strongest objection: Eliminating fares will eliminate a revenue stream and strain the transit budget, potentially reducing service quality or requiring tax increases; cost could outweigh benefits. Engaged: N – the brief never mentions revenue replacement or financial sustainability. Severity: Central. Code: OB3 (central objection unaddressed); DI0 (starting‑point smuggling – the brief treats fiscal feasibility as if it were uncontroversial).
+  Objection 2: Increased ridership could overcrowd vehicles or require costly capacity expansions that negate environmental and equity gains. Engaged: N – no discussion. Severity: Significant. Code: OB3; DI2 (pseudo‑resolution – the brief declares the case “decisive” without facing trade‑offs).
+  Objection 3: A targeted discount for low‑income riders might achieve equity goals without universal fare elimination. Engaged: N – no alternatives are discussed. Severity: Significant. Code: OB3.
+  Dialectical integrity: The brief avoids dissent entirely and presents benefits as unchallenged. This smuggles in shared values about climate and equity (DI0) and performs pseudo‑resolution (DI2) by declaring the case “decisive” without resolving cost objections.
+
+Narrative as Evidence:
+  No vignettes or personal anecdotes are included. The brief is wholly expository. No NE‑codes fired.
+
+Cross‑Section Integrity:
+  Claim drift: Stable – the proposal to eliminate fares is consistent from summary through recommendation. The problem section identifies declining ridership and emissions, and the case section reiterates the same benefits.
+  Qualification erosion: The brief uses tentative language in the case section (“peer systems have reported gains,” “would move Rivermont toward its target”) but ends with absolute urgency (“make transit fare‑free… the evidence… is clear”). This shift triggers WR3 for qualifier mismatch.
+  Scope accumulation: The evidence is drawn from peer systems and general reasoning, but the conclusion asserts local inevitability without exploring fiscal or operational context. This represents BP2 (scope creep) when the conclusion outruns the local and probabilistic evidence.
+  Definition stability: Key terms remain stable throughout.
+  Alternatives gap: Across sections, no alternatives or mitigation strategies are presented, reinforcing BP5.
+
+Priority diagnosis:
+  Structural break: The inferential bridge from descriptive benefits (ridership gains, emissions reductions, equity) to the normative recommendation is missing. The brief assumes that these benefits suffice to justify fare elimination without earning that warrant or addressing fiscal feasibility and alternatives. This is a Warrant Leap (FM‑A6) coupled with The Uncompared Proposal (FM‑A10) and an Implementation Blindspot (FM‑A18).
+  Why it matters: Without articulating how the benefits outweigh costs and comparing the proposal to competing interventions, decision‑makers cannot evaluate whether fare‑free transit is the best path to the stated goals. The missing subclaim about revenue replacement and the absence of objection handling leave the brief vulnerable to immediate practical counterarguments. These gaps do not render the brief unevaluable, but they mark the highest‑priority repairs.
+  First repair target: Supply fiscal analysis showing how fare revenue will be replaced or why it is negligible, explicitly state the normative principle linking the benefits to the recommendation, and engage the strongest objections and plausible alternatives.
+
+RECOGNITION: no – I did not recognize the author, title or any specific published critique.

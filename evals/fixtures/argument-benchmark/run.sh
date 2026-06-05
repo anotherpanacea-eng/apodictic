@@ -73,6 +73,8 @@ OUT="$REPO/evals/results/run-$(date +%Y%m%d-%H%M%S)"
 die() { echo "ERROR: $*" >&2; exit 1; }
 [ -f "$AUDIT" ]   || die "audit reference not found: $AUDIT"
 [ -f "$SOURCES" ] || die "SOURCES.md not found: $SOURCES"
+# --fetch may bootstrap a fresh cache; --verify and model-run modes require it to exist.
+[ "${1:-}" = "--fetch" ] && mkdir -p "$SRC" 2>/dev/null
 [ -d "$SRC" ]     || die "source cache dir not found: $SRC  (set SRC=...)"
 
 # --- parse slug -> recorded sha256 from SOURCES.md ------------------------
@@ -106,6 +108,21 @@ sources_anchor() {           # $1 = slug, $2 = field label (BODY_START | BODY_EN
       i=index($0,"`"); rest=substr($0,i+1); j=index(rest,"`")
       if (i>0 && j>0) { print substr(rest,1,j-1); exit }
     }
+  ' "$SOURCES"
+}
+
+# --- read the retrieval URL for a slug from SOURCES.md (for --fetch) -------
+sources_url() {              # $1 = slug; prefers SOURCE_PDF, else any **URL...:** field
+  awk -v slug="$1" '
+    $0=="### " slug {inblk=1; next}
+    /^### / {inblk=0}
+    inblk && index($0,"**SOURCE_PDF")>0 {
+      line=$0; sub(/.*\*\*SOURCE_PDF[^:]*:\*\*[[:space:]]*/,"",line); sub(/[[:space:]].*/,"",line); pdf=line
+    }
+    inblk && index($0,"**URL")>0 && url=="" {
+      line=$0; sub(/.*\*\*URL[^:]*:\*\*[[:space:]]*/,"",line); sub(/[[:space:]].*/,"",line); url=line
+    }
+    END { if (pdf!="") print pdf; else print url }
   ' "$SOURCES"
 }
 
@@ -168,7 +185,7 @@ argument-shaped nonfiction. Diagnose ONLY from the text inside <submission>.
 Produce a structural diagnosis; never rewrite or invent content (the Editor's
 Firewall). Apply the audit reference inside <audit_reference>: run all 9 steps;
 use its code families (AT, AC, CL, SM, WR, BP, OB, DI, NE) and named patterns
-(FM-A1..FM-A19); end with Step 9 (Distinguish: SOUND / UNCONVENTIONAL-BUT-
+(FM-A1..FM-A20); end with Step 9 (Distinguish: SOUND / UNCONVENTIONAL-BUT-
 EFFECTIVE / UNSOUND) and a priority diagnosis (primary structural break, FM-A
 pattern(s), severity ranking, first repair target). Do not open any files; the
 text is all here. Finish with a line beginning "RECOGNITION:" stating yes/no
@@ -179,6 +196,8 @@ EOF
 # --- main -----------------------------------------------------------------
 VERIFY_ONLY=0
 [ "${1:-}" = "--verify" ] && { VERIFY_ONLY=1; shift; }
+FETCH_ONLY=0
+[ "${1:-}" = "--fetch" ] && { FETCH_ONLY=1; shift; }
 
 # slug -> recorded sha256, kept as TAB-separated lines. Bash 3.2 compatible:
 # macOS ships bash 3.2, which lacks `declare -A`, and the blind runs happen on
@@ -189,6 +208,41 @@ want_for() { printf '%s\n' "$PAIRS" | awk -F'\t' -v s="$1" '$1==s{print $2; exit
 
 # fixtures to process: CLI args, else all parsed slugs
 if [ "$#" -gt 0 ]; then SLUGS=("$@"); else SLUGS=($(printf '%s\n' "$PAIRS" | awk -F'\t' '{print $1}')); fi
+
+# --- --fetch: reconstitute referenced texts from their pinned URLs ----------
+# Fetches each slug's source from its SOURCES.md URL, carves the analyzed body
+# by the same anchors a run uses, writes it to $SRC/<slug>.md, and verifies the
+# recorded SHA-256. This is the "ship a fetch-list, reconstitute locally" path:
+# copyrighted/public-domain text is never stored in the repo, only fetched here.
+if [ "$FETCH_ONLY" -eq 1 ]; then
+  command -v curl >/dev/null 2>&1 || die "curl not found (needed for --fetch)"
+  echo "mode=fetch"; echo "src=$SRC"; echo
+  ffail=0
+  for s in "${SLUGS[@]}"; do
+    url="$(sources_url "$s")"
+    want="$(want_for "$s")"
+    if [ -z "$url" ]; then
+      # A recorded-hash source with no fetchable URL is a real failure, not a skip.
+      if [ -n "$want" ]; then echo "FAIL  $s  (recorded-hash source, but no fetchable URL parsed from SOURCES.md)"; ffail=1
+      else echo "SKIP  $s  (no URL in SOURCES.md — stored/manual fixture)"; fi
+      continue
+    fi
+    case "$url" in
+      *.pdf|*.PDF) echo "FAIL  $s  (analyzed text is a PDF: $url — --fetch's plain-text pipeline can't reconstitute it; fetch + convert (e.g. pdftotext) and place the body at \$SRC/$s.md manually)"; ffail=1; continue;;
+    esac
+    tmp="$(mktemp)"
+    if ! curl -fsSL --max-time 90 "$url" -o "$tmp"; then echo "FAIL  $s  (fetch error: $url)"; rm -f "$tmp"; ffail=1; continue; fi
+    body="$(extract_body "$tmp" "$s")"; rm -f "$tmp"
+    [ -n "$body" ] || { echo "FAIL  $s  (empty after extract — check anchors)"; ffail=1; continue; }
+    dest="$SRC/$s.md"; printf '%s\n' "$body" > "$dest"
+    got="$(sha < "$dest")"
+    if   [ -z "$want" ];          then echo "GOT   $s  (sha256: $got; no recorded hash to check) -> ${dest#$SRC/}"
+    elif [ "$got" = "$want" ];    then echo "OK    $s  (hash matches recorded) -> ${dest#$SRC/}"
+    else echo "HASH? $s  (got $got != recorded $want — reconcile anchors/source)"; ffail=1; fi
+  done
+  echo; echo "Fetch complete. Texts in: $SRC"
+  exit $ffail
+fi
 
 [ "$VERIFY_ONLY" -eq 1 ] || mkdir -p "$OUT"
 echo "repo=$REPO"

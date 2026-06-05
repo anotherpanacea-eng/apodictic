@@ -18,10 +18,14 @@
 
 ## GT2 — Failure locus *(Q2)*
 
-- **Main structural problem (authority):** an internal **tension** — the piece tries to preserve democratic participation *and* speed delivery at once.
-- **Primary failure layer:** WARRANT — the load-bearing, contested link is the principle reconciling "more participation" with "faster delivery"; it is asserted more than earned.
-- **Provisional codes:** WR1 (contested warrant, thin backing) / WR0; watch for DI4 (motte-and-bailey between the modest "more democratic" claim and the ambitious "and still fast" claim).
-- **Provisional FM-A:** FM-A13 (Structural Motte-and-Bailey) candidate, Relational.
+- **Main structural problem (authority):** an unearned warrant that **organized labor as it actually is** can deliver *democratic abundance* (democratic participation + speed/scale + worker power) at once. The load-bearing bridge from "center labor" to "get abundance" is asserted more than earned.
+- **Primary failure layer:** WARRANT.
+- **Acceptable locus set (any ONE is a GT2 hit — facets of the one unearned warrant):**
+  1. **Participation ↔ speed reconciliation:** the principle reconciling "more participation" with "faster delivery" is asserted, not earned.
+  2. **Current ↔ reformed labor (motte-and-bailey):** the support describes an idealized/reformed, internally-democratic labor movement, while the conclusion must hold for labor as it is (which carries the cost/veto behavior the abundance critique targets). Bailey: "organized labor delivers abundance"; motte: "a reformed labor movement could."
+- **Provisional codes:** WR1 (contested warrant, thin backing) / WR0; DI4 where the current/reformed oscillation is named; FM-A13 (Structural Motte-and-Bailey) candidate, Relational.
+- **Boundary (NOT a GT2 hit):** routing the primary structural break to the objection/burden layer — e.g. "the moderate alternative is uncompared" (BP/OB) — locates a real but downstream issue, not the warrant gap. The locus must be the WARRANT bridge from labor to abundance-outcomes.
+- **Amended 2026-06-04 (ratified, post-run):** original single-answer registration (participation↔speed) preserved as set member #1; member #2 + boundary added per [../PROPOSAL-gt-sets-20260604.md](../PROPOSAL-gt-sets-20260604.md).
 
 ## GT3 — Strongest real objection *(Q3)*
 

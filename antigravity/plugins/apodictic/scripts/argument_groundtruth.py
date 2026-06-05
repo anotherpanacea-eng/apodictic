@@ -7,7 +7,7 @@ Backs `validate.sh argument-groundtruth-check <groundtruth_file>` (docs/argument
 
   1. GT1-GT7 sections are present and non-empty.
   2. Every referenced code resolves to the Dialectical Clarity namespace
-     (AT / CL / SM / WR / BP / OB / DI / NE / AC) or a valid FM-A<x> pattern (x in 1-19).
+     (AT / CL / SM / WR / BP / OB / DI / NE / AC) or a valid FM-A<x> pattern (x in 1-20).
   3. GT2's failure locus is consistent with its codes: a WARRANT locus carries a WR* code, a
      SUPPORT locus an SM*, a BURDEN locus a BP*, an OBJECTION locus an OB*/DI* (the spec's
      example error — diagnosing a warrant break as a support break). Positive-control GT2s
@@ -34,7 +34,7 @@ import sys
 _NAMESPACE = {"AT", "CL", "SM", "WR", "BP", "OB", "DI", "NE", "AC"}
 # 2-letter prefixes that are NOT codes (ground-truth section labels GT1..GT7).
 _NON_CODE_PREFIXES = {"GT"}
-_FM_A_MAX = 19
+_FM_A_MAX = 20  # FM-A20 = Self-Undermining Remedy (Step-6 decoy-resistance pattern)
 
 # Canonical failure loci -> the code family GT2 must carry for that locus.
 _LOCUS_FAMILY = {"SUPPORT": ("SM",), "WARRANT": ("WR",), "BURDEN": ("BP",),
@@ -121,7 +121,7 @@ def argument_groundtruth_check(text):
         elif not sec["body"].strip():
             errors.append("Check 1 (sections) — GT%d section is empty." % n)
 
-    # Check 2: every code resolves to the namespace or FM-A<1..19>.
+    # Check 2: every code resolves to the namespace or FM-A<1..20>.
     for prefix, digits in _CODE_RE.findall(text):
         if prefix in _NON_CODE_PREFIXES:
             continue

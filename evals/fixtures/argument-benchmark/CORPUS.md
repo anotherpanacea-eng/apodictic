@@ -78,6 +78,16 @@ codes: …") and **all of GT4–GT7** are provisional benchmark-author scaffoldi
 pending a run or a second editor. **Score Q2 on the failure locus/layer, not the
 exact code** for these fixtures (see RUN-PROTOCOL Step 3).
 
+**GT-as-a-set convention (2026-06-04).** Where a competent argument has more than
+one genuinely *structurally-prior* objection or locus, GT2/GT3 may register an
+**acceptable set** (any one member, correctly coded, is a hit) rather than a
+single answer — under a strict discipline: members must be structurally prior (not
+merely salient), **decoys stay registered as misses**, inclusion is earned by a
+written structural reason (not by a run finding it), and an expansion is rejected
+if it flips a non-converging fixture to "pass" only by blessing a run's error.
+Currently applied to roosevelt-GT2, cato-GT3, ppi-GT3 (clarification) — see
+[PROPOSAL-gt-sets-20260604.md](PROPOSAL-gt-sets-20260604.md).
+
 ## Why these are mostly calibration tests, not failure-detection tests
 
 Unlike the synthetic fixtures (which plant a catastrophic, unambiguous
