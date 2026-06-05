@@ -1,6 +1,6 @@
 # Proposal — GT2/GT3 as a *set* (for ratification)
 
-**Status:** DRAFT proposal. Nothing in `*/groundtruth.md` is changed yet.
+**Status:** RATIFIED + APPLIED in `4d350ec` (roosevelt GT2, cato GT3, ppi GT3 keys amended; CORPUS.md GT-as-a-set convention added). Retained as the design record. *(Original status: DRAFT proposal.)*
 **Author:** benchmark run (2026-06-04), for **Joshua A. Miller** to ratify — GT1–GT3
 are your authoritative pre-registered diagnosis; only you change them.
 **Trigger:** `run-20260603-210120` (abundance + Cato + PPI) + the prior
