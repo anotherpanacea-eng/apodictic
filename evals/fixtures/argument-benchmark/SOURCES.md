@@ -177,6 +177,17 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **RECORDED:** `retrieved 2026-06-04 | curl (archive.org) | 62326 bytes | sha256: 56191e5ee2eff46d38d5e3a18f8c8cf46dd8d48098468b2c39368bfc37185308`
 - **Note:** public-domain; source is the archive.org item `Douglass_July_Oration` (stable identifier) `_djvu.txt` (OCR of the Emory pamphlet scan — prose is clean, the closing Garrison poem carries mild OCR artifacts, immaterial to argument structure). `run.sh --fetch douglass-fourth-of-july` reconstitutes it. Less canonical-immutable than a Gutenberg eBook ID; the recorded SHA-256 pins reproducibility.
 
+### modest-proposal-satire
+- **Cite:** Jonathan Swift, *A Modest Proposal* (1729) — bucket 6 satire / Q7 unconventional-form control (the hardest Q7 trap: sustained irony).
+- **URL:** https://www.gutenberg.org/cache/epub/1080/pg1080.txt
+- **START:** the essay's opening sentence (`It is a melancholy object`); skip the title page + Gutenberg license header.
+- **BODY_START:** `It is a melancholy object`
+- **END:** the essay's true final sentence — Swift's ironic disclaimer ending `my wife past child-bearing.`; the carve stops at the Gutenberg END marker, so the full closing paragraph is included.
+- **BODY_END:** `*** END OF THE PROJECT GUTENBERG EBOOK A MODEST PROPOSAL ***`
+- **EXCLUDE:** the Project Gutenberg license header/footer and the title/subtitle/byline block.
+- **RECORDED:** `retrieved 2026-06-04 | curl (gutenberg.org) | 19640 bytes | sha256: f836711ac289c36f99d4ec5ddb41d137d95d55a829c57a6b054a32f5b4ace948`
+- **Note:** public-domain (Gutenberg eBook #1080). **Supersedes** the earlier groundtruth END anchor `giving some pleasure to the rich`, which truncated Swift's closing disclaimer ("I have no children… my wife past child-bearing") — a load-bearing part of the satire (see synthetic-controls SCORECARD §END-anchor nuance). `run.sh --fetch modest-proposal-satire` reconstitutes it.
+
 ---
 
 *Adding a referenced fixture: add a metadata block here (never a diagnosis), and
