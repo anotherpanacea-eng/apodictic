@@ -177,6 +177,7 @@ The model tag is **required**, not optional. It identifies which model generated
 **Revision Coach (when active):**
 - `[Project]_Session_Plan_[runlabel].md`
 - `[Project]_Revision_Calendar_[runlabel].md` (deadline mode only)
+- `[Project]_Retcon_Plan_[runlabel].md` (Retcon Planning mode — setup-debt ledger + commitment budget; see `revision-coach/references/retcon-planning.md`)
 
 **Rolling state files** (live at project root, not inside run folders):
 - `Diagnostic_State.md` — per-volume diagnostic state at the project root. If missing, initialize from `references/diagnostic-state-template.md`.
