@@ -168,6 +168,9 @@ The model tag is **required**, not optional. It identifies which model generated
 - `[Project]_Contract_[runlabel].md` (marked as provisional)
 - `[Project]_Recommended_Spine_[runlabel].md`
 
+**Diagnostic Vocabulary (when `operator:facilitator`):**
+- `[Project]_Vocabulary_Guide_[runlabel].md` — facilitator teaching aid (glossary + discussion prompts), produced alongside the editorial letter (see `references/diagnostic-vocabulary.md`)
+
 **Series Continuity (when active):**
 - `[Project]_Series_Continuity_Audit_[runlabel].md`
 

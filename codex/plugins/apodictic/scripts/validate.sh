@@ -165,9 +165,9 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, argument-groundtruth-check"
-  echo "Aggregate: --self-test-all (runs --self-test on all 17 self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry and structured-findings on the shipped templates)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, argument-groundtruth-check"
+  echo "Aggregate: --self-test-all (runs --self-test on all 23 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples, finding-trace + softness-check vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, and diagnostic-vocabulary vs the canonical Vocabulary Guide)"
   exit 2
 }
 
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # pure utilities that do not carry self-tests; only the 11 model-
 # capability-review validators do.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate argument-groundtruth-check"
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary argument-groundtruth-check"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 17 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 23 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/17 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/23 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/17 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/23 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -233,6 +233,92 @@ if [ "$1" = "--check-all" ]; then
   done
   [ "$CA_DONE" -eq 0 ] && { echo "ERROR: could not locate reference templates for structured-findings — --check-all cannot verify the real-file invariant"; CA_FAIL=1; }
   echo ""
+
+  # Canonical-framework validator runs (Inc.6 / Track B). Resolve the references dir once,
+  # then run the ported validators against the actual shipped framework files and the
+  # canonical worked examples, so a drift in pass-dependencies.md tiers, the letter contracts,
+  # or the Timeline schema is caught at release time (not only against synthetic fixtures).
+  CA_BASE=""
+  for base in "$CA_SCRIPT_DIR/../skills/core-editor/references" "$CA_SCRIPT_DIR/../plugins/apodictic/skills/core-editor/references"; do
+    if [ -d "$base" ]; then CA_BASE="$base"; break; fi
+  done
+  if [ -z "$CA_BASE" ]; then
+    echo "ERROR: could not locate core-editor/references for canonical validator runs"; CA_FAIL=1
+  else
+    echo "== audit-tier-criterion (real pass-dependencies.md) =="
+    if [ -f "$CA_BASE/pass-dependencies.md" ]; then
+      "$0" audit-tier-criterion "$CA_BASE/pass-dependencies.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/pass-dependencies.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical editorial letter (decision-layer-check, audit-signal-propagation, severity-floor, structured-findings) =="
+    if [ -f "$CA_BASE/example-editorial-letter.md" ]; then
+      "$0" decision-layer-check "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
+      "$0" audit-signal-propagation "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
+      "$0" severity-floor "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
+      "$0" structured-findings "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-editorial-letter.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical scaffolded letter (editor-scaffolding + decision-layer-check + severity-floor compose) =="
+    if [ -f "$CA_BASE/example-editorial-letter-scaffolded.md" ]; then
+      "$0" editor-scaffolding "$CA_BASE/example-editorial-letter-scaffolded.md" || CA_FAIL=1
+      "$0" decision-layer-check "$CA_BASE/example-editorial-letter-scaffolded.md" || CA_FAIL=1
+      "$0" severity-floor "$CA_BASE/example-editorial-letter-scaffolded.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-editorial-letter-scaffolded.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Vocabulary Guide (diagnostic-vocabulary: glossary grounding + question framing) =="
+    if [ -f "$CA_BASE/example-vocabulary-guide.md" ]; then
+      "$0" diagnostic-vocabulary "$CA_BASE/example-vocabulary-guide.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-vocabulary-guide.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical example ledger <-> letter (both directions: finding-trace forward refs + softness-check reverse delivery) =="
+    if [ -f "$CA_BASE/example-findings-ledger.md" ]; then
+      "$0" finding-trace "$CA_BASE/example-findings-ledger.md" "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
+      "$0" softness-check "$CA_BASE/example-editorial-letter.md" "$CA_BASE/example-findings-ledger.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-findings-ledger.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Feedback Triage (feedback-triage: contract + conflict integrity) =="
+    if [ -f "$CA_BASE/example-feedback-triage.md" ]; then
+      "$0" feedback-triage "$CA_BASE/example-feedback-triage.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-feedback-triage.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Timeline (timeline-arithmetic, timeline-anchor-conflict, timeline-diff self) =="
+    if [ -f "$CA_BASE/example-timeline.md" ]; then
+      "$0" timeline-arithmetic "$CA_BASE/example-timeline.md" || CA_FAIL=1
+      "$0" timeline-anchor-conflict "$CA_BASE/example-timeline.md" || CA_FAIL=1
+      "$0" timeline-diff "$CA_BASE/example-timeline.md" "$CA_BASE/example-timeline.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-timeline.md not found"; CA_FAIL=1
+    fi
+    echo ""
+  fi
+
+  # Argument Benchmark ground-truth corpus — only present in the repo (evals/ is not shipped to
+  # the generated host workspaces), so resolve-and-skip when absent rather than fail.
+  CA_EVALS=""
+  for cand in "$CA_SCRIPT_DIR/../../../evals/fixtures/argument-benchmark" "$CA_SCRIPT_DIR/../evals/fixtures/argument-benchmark"; do
+    if [ -d "$cand" ]; then CA_EVALS="$cand"; break; fi
+  done
+  if [ -n "$CA_EVALS" ]; then
+    echo "== argument-groundtruth-check (registered GT corpus) =="
+    for gt in "$CA_EVALS"/*/groundtruth.md; do
+      [ -f "$gt" ] || continue
+      "$0" argument-groundtruth-check "$gt" >/dev/null 2>&1 && echo "  ok $(basename "$(dirname "$gt")")" || { echo "  FAIL $(basename "$(dirname "$gt")")"; "$0" argument-groundtruth-check "$gt"; CA_FAIL=1; }
+    done
+    echo ""
+  fi
+
   if [ "$CA_FAIL" -eq 0 ]; then
     echo "check-all: PASS (self-tests + real-file invariants)"
     exit 0
@@ -2458,8 +2544,13 @@ EOF
   # ----------------------------------------------------------------------
   quality-risk-triggers)
     if [ $# -lt 1 ]; then echo "Usage: $0 quality-risk-triggers <contract_file> [<diagnostic_state_meta_file>] | --self-test"; exit 2; fi
+    # Primary path: real parser in scripts/config_checks.py (Validator Architecture
+    # Hardening Inc.5). Degrades to the bash implementation below when python3 is absent.
+    CFG_DIR=$(cd "$(dirname "$0")" && pwd)
+    CFG_HELPER="$CFG_DIR/config_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$CFG_HELPER" ]; then python3 "$CFG_HELPER" --self-test quality-risk-triggers; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       # Positive: clean fiction contract, no triggers fire.
@@ -2542,6 +2633,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$CFG_HELPER" ]; then
+      python3 "$CFG_HELPER" quality-risk-triggers "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash regex implementation.
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     CONTRACT="$1"
     META="${2:-}"
@@ -3410,8 +3507,12 @@ EOF
   # ----------------------------------------------------------------------
   audit-tier-criterion)
     if [ $# -lt 1 ]; then echo "Usage: $0 audit-tier-criterion <pass_dependencies_file> [<audits_root_dir>] | --self-test"; exit 2; fi
+    # Primary path: real parser in scripts/config_checks.py (Inc.5). Degrades to bash below.
+    CFG_DIR=$(cd "$(dirname "$0")" && pwd)
+    CFG_HELPER="$CFG_DIR/config_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$CFG_HELPER" ]; then python3 "$CFG_HELPER" --self-test audit-tier-criterion; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
       mkdir -p "$TMPDIR/audits"
@@ -3531,6 +3632,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-file invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$CFG_HELPER" ]; then
+      python3 "$CFG_HELPER" audit-tier-criterion "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash regex implementation.
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     PD_FILE="$1"
     AUDIT_ROOT="${2:-}"
@@ -3666,8 +3773,12 @@ EOF
   # ----------------------------------------------------------------------
   argument-recon-prerequisite)
     if [ $# -lt 1 ]; then echo "Usage: $0 argument-recon-prerequisite <run_folder> [<editorial_letter_file>] | --self-test"; exit 2; fi
+    # Primary path: real parser in scripts/config_checks.py (Inc.5). Degrades to bash below.
+    CFG_DIR=$(cd "$(dirname "$0")" && pwd)
+    CFG_HELPER="$CFG_DIR/config_checks.py"
 
     if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$CFG_HELPER" ]; then python3 "$CFG_HELPER" --self-test argument-recon-prerequisite; exit $?; fi
       TMPDIR=$(mktemp -d)
       trap 'rm -rf "$TMPDIR"' EXIT
 
@@ -3736,6 +3847,12 @@ EOF
       [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
     fi
 
+    # Real-folder invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$CFG_HELPER" ]; then
+      python3 "$CFG_HELPER" argument-recon-prerequisite "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash regex implementation.
     if [ ! -d "$1" ]; then echo "Error: Run folder not found: $1" >&2; exit 2; fi
     RUN_FOLDER="$1"
     LETTER="${2:-}"
@@ -3895,10 +4012,16 @@ EOF
     ;;
 
   gate)
-    # Runner-Governed Execution (increment 1): run the execution-gate engine for a
+    # Runner-Governed Execution (increments 1-5): run the execution-gate engine for a
     # phase against a run folder — checks the manifest's required artifacts + mechanical
-    # validators and prints the attested checklist. Delegates to scripts/run_gate.py;
-    # degrades without python3 (model performs the manifest's checks inline).
+    # validators, prints the attested checklist, and records the decision as an append-only
+    # event in execution.gate_events[]. Subcommands (passed through to run_gate.py):
+    #   gate <phase> <run_folder> [--strict-warnings]   mechanical run (-> mechanical-passed
+    #                                                    for a gate with attested items)
+    #   gate --attest <phase> <run_folder>              re-run checks + record clearing pass
+    #   gate --skip/--defer <phase> <run_folder> --reason ...   record an exception
+    # Degrades without python3 (model performs the manifest's checks inline and hand-authors
+    # the gate_events[] entry — see docs/runner-governed-execution.md §Degradation).
     GT_DIR=$(cd "$(dirname "$0")" && pwd)
     GT_HELPER="$GT_DIR/run_gate.py"
     if [ "${1:-}" = "--self-test" ]; then
@@ -3906,79 +4029,164 @@ EOF
       echo "Self-test: PASS (degraded — python3 unavailable)"; exit 0
     fi
     if command -v python3 >/dev/null 2>&1 && [ -f "$GT_HELPER" ]; then
-      if [ $# -lt 2 ]; then echo "Usage: $0 gate <phase> <run_folder> [--strict-warnings]"; exit 2; fi
+      if [ $# -lt 2 ]; then echo "Usage: $0 gate <phase> <run_folder> [--strict-warnings] | gate --attest <phase> <run_folder> | gate --skip/--defer <phase> <run_folder> --reason ..."; exit 2; fi
       python3 "$GT_HELPER" "$@"
       exit $?
     fi
-    echo "WARN: python3 unavailable — gate engine skipped; perform the phase's manifest checks inline and record the result in the sidecar (execution.gates)."
+    echo "WARN: python3 unavailable — gate engine skipped; perform the phase's manifest checks inline and append the result as an event in the sidecar (execution.gate_events)."
+    exit 0
+    ;;
+
+  gate-state)
+    # Runner-Governed Execution (increment 5): gate-state validator — validate a sidecar's
+    # execution.gate_events[] log (structural + the semantic invariants the stdlib subset
+    # checker cannot express: attestation coverage, migration-prefix integrity, finding_deltas
+    # clearing-only, pointer==fold) and assert pointer==fold. --strict is nonzero while any
+    # open exception (non-clearing latest event) remains. Delegates to scripts/run_gate.py
+    # --check-state; degrades to advisory without python3.
+    GS_DIR=$(cd "$(dirname "$0")" && pwd)
+    GS_HELPER="$GS_DIR/run_gate.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$GS_HELPER" ]; then python3 "$GS_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; gate-state is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$GS_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 gate-state <Diagnostic_State.meta.json> [--strict]"; exit 2; fi
+      python3 "$GS_HELPER" --check-state "$@"
+      exit $?
+    fi
+    echo "WARN: python3 unavailable — gate-state skipped; the gate_events[] contract is documented in docs/runner-governed-execution.md. Install python3 for the mechanical check."
+    exit 0
+    ;;
+
+  finding-trace)
+    # Finding Lifecycle IDs cross-artifact trace (docs/finding-lifecycle-ids.md): referential
+    # integrity + sidecar lifecycle coherence by Finding Lifecycle ID — E1 dangling letter
+    # reference, E2 phantom sidecar finding_states key, E3 invalid state, E4 dangling revision
+    # reference, E5 phantom completion (an in-scope report mentions a `revised` finding but carries
+    # no `<!-- resolved: ID -->` marker for it); W1 lifecycle coverage, W2 revision-plan follow-
+    # through, W3 completion follow-through (all advisory; ERROR under --strict). Completion keys on
+    # the explicit resolved marker, not a bare mention. Complements softness-check (severity fidelity) and
+    # structured-findings (intra-ledger ID hygiene) — raises only classes neither owns.
+    # Takes a run folder (globs ledger/letter/revisions, walks up for the sidecar) or explicit files.
+    # Delegates to scripts/finding_trace.py; degrades to an advisory WARN without python3.
+    FT_DIR=$(cd "$(dirname "$0")" && pwd)
+    FT_HELPER="$FT_DIR/finding_trace.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$FT_HELPER" ]; then python3 "$FT_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; finding-trace is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$FT_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 finding-trace <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$FT_HELPER" finding-trace "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — finding-trace skipped; perform the cross-artifact ID trace inline (every cited F-... ID resolves to a ledger finding; finding_states keys are ledger IDs). See docs/finding-lifecycle-ids.md."
+    exit 0
+    ;;
+
+  feedback-triage)
+    # Feedback Triage workflow integrity (docs/feedback-triage.md): structural checks over the
+    # apodictic.feedback_item.v1 blocks in a Feedback Triage artifact — E1 invalid item, E2
+    # duplicate id, E3 dangling conflict reference, E4 self conflict, W1 unresolved conflict (both
+    # sides still actionable), W2 acting now on an unvalidated claim (W1/W2 advisory; ERROR under
+    # --strict). Owns conflict referential integrity + the "contradiction kept live" coherence gap.
+    # Takes a run folder (globs *_Feedback_Triage_*.md) or explicit files. Delegates to
+    # scripts/feedback_triage.py; degrades to an advisory WARN without python3.
+    FBT_DIR=$(cd "$(dirname "$0")" && pwd)
+    FBT_HELPER="$FBT_DIR/feedback_triage.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$FBT_HELPER" ]; then python3 "$FBT_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; feedback-triage is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$FBT_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 feedback-triage <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$FBT_HELPER" feedback-triage "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — feedback-triage skipped; check inline that every conflicts_with id resolves to a real feedback item and no contradiction is left actionable on both sides. See docs/feedback-triage.md."
+    exit 0
+    ;;
+
+  escalation-check)
+    # Adaptive Mid-Run Mode Escalation detector (docs/adaptive-mode-escalation.md): a
+    # CONDITION-TRIGGERED checkpoint after Tier 1 that compares revealed complexity (POV count,
+    # nonlinear timeline, belief/orientation density, Tier-1 finding count from the ledger) against
+    # the preflight estimate and recommends escalating the execution mode before Tier 2. Advisory
+    # by default (escalation is a recommendation, never automatic); --strict exits 1 when an
+    # escalation is recommended. Delegates to scripts/escalation_check.py; degrades to advisory WARN.
+    EC_DIR=$(cd "$(dirname "$0")" && pwd)
+    EC_HELPER="$EC_DIR/escalation_check.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$EC_HELPER" ]; then python3 "$EC_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; escalation-check is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$EC_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 escalation-check <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$EC_HELPER" escalation-check "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — escalation-check skipped; evaluate the escalation triggers inline (pov_count>3, nonlinear timeline, belief>5/orientation>3, Tier-1 findings>20). See docs/adaptive-mode-escalation.md."
     exit 0
     ;;
 
   argument-groundtruth-check)
-    set +e +o pipefail   # self-contained branch; always ends in an explicit exit
-    # Key-conformance validator for argument-benchmark groundtruth.md files
-    # (docs/argument-benchmark-spec.md §Mechanical validator). Checks:
-    #  (1) GT1-GT3 present + non-empty; GT7 present (range-aware: GT7 may be
-    #      folded into a heading such as "## GT4-GT7"); GT4-6 advisory.
-    #  (2) every code token resolves to AT/AC/CL/SM/WR/BP/OB/DI/NE or FM-A1..20.
-    #  (3) GT2 layer/code consistency (advisory — hybrid layers are legitimate).
-    #  (4) GT7 carries a valid Distinguish classification; an asserted
-    #      UNCONVENTIONAL-BUT-EFFECTIVE classification must name >=1 downgraded
-    #      form-dependent code.
-    _agc_sec() { awk -v n="$1" '
-        $0 ~ ("^#{1,4}[[:space:]]*GT" n "([^0-9]|$)") {cap=1; next}
-        cap && /^#{1,4}[[:space:]]*GT[0-9]/ {cap=0}
-        cap {print}' "$AGC_GT"; }
-    _agc_heading_has() { awk -v n="$1" '
-        /^#{1,4}/ {
-          if ($0 ~ ("GT" n "([^0-9]|$)")) {found=1}
-          while (match($0, /GT[0-9]+[[:space:]]*[-–][[:space:]]*(GT)?[0-9]+/)) {
-            seg=substr($0,RSTART,RLENGTH); gsub(/GT|[[:space:]]/,"",seg)
-            split(seg,r,/[-–]/); if (n>=r[1] && n<=r[2]) found=1
-            $0=substr($0,RSTART+RLENGTH) } }
-        END{exit found?0:1}' "$AGC_GT"; }
-    _agc_check() {
-      AGC_GT="$1"; local E=0 N=0 n b w layer exp code
-      for n in 1 2 3; do
-        if ! _agc_heading_has "$n"; then echo "ERROR: missing required section GT${n}"; E=$((E+1)); continue; fi
-        b="$(_agc_sec "$n" | grep -vE '^[[:space:]]*$' | grep -vE '^[[:space:]]*[-*][[:space:]]*$')"
-        [ -n "$b" ] || { echo "ERROR: section GT${n} is empty"; E=$((E+1)); }
-      done
-      _agc_heading_has 7 || { echo "ERROR: missing required section GT7"; E=$((E+1)); }
-      for n in 4 5 6; do _agc_heading_has "$n" || { echo "NOTE: GT${n} not in any heading (ok if folded)"; N=$((N+1)); }; done
-      for code in $(grep -oE '\b[A-Z]{2}[0-9]\b|\bFM-A[0-9]+\b' "$AGC_GT" | grep -vE '^GT[0-9]$' | sort -u); do
-        printf '%s' "$code" | grep -qE '^FM-A([1-9]|1[0-9]|20)$' && continue
-        printf '%s' "$code" | grep -qE '^(AT|AC|CL|SM|WR|BP|OB|DI|NE)[0-9]$' && continue
-        echo "ERROR: unknown code token '${code}' (not AT/AC/CL/SM/WR/BP/OB/DI/NE[0-9] or FM-A1..20)"; E=$((E+1))
-      done
-      layer="$(_agc_sec 2 | grep -ioE 'WARRANT|SUPPORT|SCOPE|CLAIM|OBJECTION|AUDIENCE' | head -1 | tr '[:lower:]' '[:upper:]')"
-      if [ -n "$layer" ]; then
-        case "$layer" in WARRANT) w='WR';; SUPPORT) w='SM';; SCOPE|CLAIM) w='BP|CL';; OBJECTION) w='OB|DI';; AUDIENCE) w='AC';; *) w='';; esac
-        if [ -n "$w" ] && _agc_sec 2 | grep -qE '\b(AT|AC|CL|SM|WR|BP|OB|DI|NE)[0-9]\b' && ! _agc_sec 2 | grep -qE "\b(${w})[0-9]\b"; then
-          echo "NOTE: GT2 layer '${layer}' lacks a ${w}* code (hybrid/provisional? review)"; N=$((N+1))
-        fi
-      fi
-      grep -qiE 'SOUND|UNSOUND|UNCONVENTIONAL[- ]BUT[- ]EFFECTIVE' "$AGC_GT" || { echo "ERROR: GT7 lacks a valid Distinguish classification"; E=$((E+1)); }
-      exp="$(grep -ioE 'expected classification[^A-Za-z0-9]*(UNCONVENTIONAL[- ]BUT[- ]EFFECTIVE|SOUND|UNSOUND)' "$AGC_GT" | grep -ioE 'UNCONVENTIONAL[- ]BUT[- ]EFFECTIVE|SOUND|UNSOUND' | head -1)"
-      if printf '%s' "$exp" | grep -qiE 'UNCONVENTIONAL' && ! grep -qiE 'downgrad|suspend|form-dependent' "$AGC_GT"; then
-        echo "ERROR: GT7 UNCONVENTIONAL-BUT-EFFECTIVE classification must name >=1 downgraded form-dependent code"; E=$((E+1))
-      fi
-      [ "$E" -eq 0 ]
-    }
+    # Argument Benchmark ground-truth answer-key validator (docs/argument-benchmark-spec.md
+    # §Mechanical validator): GT1-GT7 presence; DC code-namespace resolution; GT2 locus<->code
+    # consistency; GT7 Distinguish classification. Delegates to scripts/argument_groundtruth.py;
+    # degrades to an advisory WARN without python3 (the GT contract is prose in the template + spec).
+    AGT_DIR=$(cd "$(dirname "$0")" && pwd)
+    AGT_HELPER="$AGT_DIR/argument_groundtruth.py"
     if [ "${1:-}" = "--self-test" ]; then
-      _agc_d="$(mktemp -d)"
-      printf '## GT1 — Main claim\n- C0: x\n## GT2 — Failure locus\n- Primary failure layer: WARRANT\n- Codes: WR1\n## GT3 — Strongest real objection\n- OB3\n## GT4-GT7\n- GT7 Distinguish: SOUND\n' > "$_agc_d/good.md"
-      printf '## GT1\n- C0\n## GT2\n- layer WARRANT\n- ZZ9\n## GT3\n- OB3\n' > "$_agc_d/bad.md"
-      _agc_check "$_agc_d/good.md" >/dev/null 2>&1; g=$?
-      _agc_check "$_agc_d/bad.md"  >/dev/null 2>&1; b=$?
-      rm -rf "$_agc_d"
-      if [ "$g" -eq 0 ] && [ "$b" -ne 0 ]; then echo "argument-groundtruth-check self-test: PASS"; exit 0; fi
-      echo "argument-groundtruth-check self-test: FAIL (good=$g bad=$b)"; exit 1
+      if command -v python3 >/dev/null 2>&1 && [ -f "$AGT_HELPER" ]; then python3 "$AGT_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; argument-groundtruth-check is advisory without it)"; exit 0
     fi
-    if [ $# -lt 1 ]; then echo "Usage: $0 argument-groundtruth-check <groundtruth_file> | --self-test"; exit 2; fi
-    if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
-    if _agc_check "$1"; then echo "OK: $(basename "$(dirname "$1")")/$(basename "$1") conforms to the GT key schema"; exit 0
-    else echo "FAILED: groundtruth-conformance error(s) in $1"; exit 1; fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$AGT_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 argument-groundtruth-check <groundtruth_file> | --self-test"; exit 2; fi
+      python3 "$AGT_HELPER" argument-groundtruth-check "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — argument-groundtruth-check skipped; the GT template + spec define the contract. Install python3 for the mechanical check."
+    exit 0
+    ;;
+
+  diagnostic-vocabulary)
+    # Diagnostic Vocabulary Mode teaching-aid contract (docs/diagnostic-vocabulary.md): when the
+    # Vocabulary Guide declares `<!-- mode: diagnostic-vocabulary -->` (operator:facilitator),
+    # enforce V1 Glossary present (>=3 entries), V2 entries defined, V3 >=3 entries grounded in the
+    # manuscript, V4 Discussion Prompts (>=3, all questions); W1 author-directed prescription leak is
+    # advisory (ERROR under --strict). A file WITHOUT the marker is a no-op pass, so this is safe over
+    # any file. Delegates to scripts/diagnostic_vocabulary.py; degrades to an advisory WARN without python3.
+    DV_DIR=$(cd "$(dirname "$0")" && pwd)
+    DV_HELPER="$DV_DIR/diagnostic_vocabulary.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$DV_HELPER" ]; then python3 "$DV_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; diagnostic-vocabulary is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$DV_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 diagnostic-vocabulary <vocab_guide|run_folder> [--strict] | --self-test"; exit 2; fi
+      python3 "$DV_HELPER" diagnostic-vocabulary "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — diagnostic-vocabulary skipped; if the file declares diagnostic-vocabulary mode, verify inline that it carries a grounded Glossary (>=3 entries) and a Discussion Prompts section (>=3 questions). See docs/diagnostic-vocabulary.md."
+    exit 0
+    ;;
+
+  editor-scaffolding)
+    # Editor Scaffolding operator-mode presentation contract (docs/editor-scaffolding.md): when
+    # the editorial letter declares `<!-- mode: editor-scaffolding -->` (operator:editor),
+    # enforce the editor-facing reframe — E1 Editor Brief addressee, E2 What-You-Might-Have-Missed
+    # blind-spot section, E3 Intervention Menu (prescription deferred to the human editor),
+    # E4 severity vocabulary preserved; W1 author-directed prescription leak is advisory (ERROR
+    # under --strict). A letter WITHOUT the marker is a no-op pass, so this is safe over any
+    # letter. Delegates to scripts/editor_scaffolding.py; degrades to an advisory WARN without python3.
+    ES_DIR=$(cd "$(dirname "$0")" && pwd)
+    ES_HELPER="$ES_DIR/editor_scaffolding.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$ES_HELPER" ]; then python3 "$ES_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; editor-scaffolding is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$ES_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 editor-scaffolding <editorial_letter|run_folder> [--strict] | --self-test"; exit 2; fi
+      python3 "$ES_HELPER" editor-scaffolding "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — editor-scaffolding skipped; if the letter declares editor-scaffolding mode, verify inline that it carries an Editor Brief, a 'What You Might Have Missed' section, an Intervention Menu, and that severity tokens survive. See docs/editor-scaffolding.md."
+    exit 0
     ;;
 
   *)

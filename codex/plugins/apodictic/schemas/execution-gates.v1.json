@@ -1,6 +1,6 @@
 {
   "$id": "apodictic.execution-gates.v1",
-  "$comment": "Declarative execution-gate manifest (DATA, not a JSON-Schema document — hence no .schema. in the name). Consumed by scripts/run_gate.py via `validate.sh gate <phase> <run_folder>`. Each phase's entry_requires lists: artifacts that must resolve to a file; mechanical checks (validator + target artifact keys) the gate runs; and attested preconditions (contract-driven / judgment, no validator) the model must confirm. Source of truth for execution gating — run-core.md / run-synthesis.md reference it instead of restating the mechanical checklist. See docs/runner-governed-execution.md.",
+  "$comment": "Declarative execution-gate manifest (DATA, not a JSON-Schema document — hence no .schema. in the name). Consumed by scripts/run_gate.py via `validate.sh gate <phase> <run_folder>`. Each phase's entry_requires lists: artifacts that must resolve to a file; mechanical checks (validator + target artifact keys) the gate runs; and attested preconditions (contract-driven / judgment, no validator) the model must confirm — each {id, text} with a STABLE id (Increment 5): a clearing pass records the confirmed ids in gate_events[].attested_items and snapshots the required-id set in attested_contract. Source of truth for execution gating — run-core.md / run-synthesis.md reference it instead of restating the mechanical checklist. See docs/runner-governed-execution.md.",
   "artifact_keys": {
     "contract":             "*_Contract_*.md",
     "findings_ledger":      "*_Findings_Ledger_*.md",
@@ -20,9 +20,9 @@
           {"validator": "artifact-names",        "targets": ["run_folder", "$project", "$runlabel"]}
         ],
         "attested": [
-          "all selected Tier-2 passes are complete and appended to the ledger",
-          "all auto-run audits (per contract + constraint flags) are complete and in the ledger",
-          "every deferred/declined high-risk audit is recorded as an explicit blind spot"
+          {"id": "syn-a1", "text": "all selected Tier-2 passes are complete and appended to the ledger"},
+          {"id": "syn-a2", "text": "all auto-run audits (per contract + constraint flags) are complete and in the ledger"},
+          {"id": "syn-a3", "text": "every deferred/declined high-risk audit is recorded as an explicit blind spot"}
         ]
       },
       "allowed_next": ["run_spot_check"]
@@ -36,13 +36,14 @@
           {"validator": "decision-layer-check",      "targets": ["editorial_letter"]},
           {"validator": "audit-signal-propagation",  "targets": ["editorial_letter"]},
           {"validator": "underdiagnosis-triggers",   "targets": ["editorial_letter"]},
+          {"validator": "structured-findings",       "targets": ["editorial_letter"]},
           {"validator": "softness-check",            "targets": ["editorial_letter", "findings_ledger"]},
           {"validator": "tone-check",                "targets": ["editorial_letter"]}
         ],
         "attested": [
-          "each root cause cites >= 1 specific ledger finding (findings integration)",
-          "root-cause / revision-checklist / must-fix caps are within limits (cap compliance)",
-          "every deferred/declined high-risk audit is named where it limits confidence or readiness (blind-spot disclosure)"
+          {"id": "spot-a1", "text": "each root cause cites >= 1 specific ledger finding (findings integration)"},
+          {"id": "spot-a2", "text": "root-cause / revision-checklist / must-fix caps are within limits (cap compliance)"},
+          {"id": "spot-a3", "text": "every deferred/declined high-risk audit is named where it limits confidence or readiness (blind-spot disclosure)"}
         ]
       },
       "allowed_next": ["deliver"]
