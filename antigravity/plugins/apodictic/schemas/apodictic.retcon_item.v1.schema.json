@@ -1,0 +1,19 @@
+{
+  "$id": "apodictic.retcon_item.v1",
+  "$comment": "Source of truth for the apodictic:retcon_item block (Retcon Planning coaching track). Validated by scripts/apodictic_artifacts.py (stdlib subset checker) via scripts/retcon_plan.py. `mutability` is Gwern's commitment budget (locked=observed canon the reader has used; costly=exposed downstream consequences; free=unused latent), kept orthogonal to `retcon_type`, the fair-play axis (dramatic=recontextualize for meaning, allowed; evidential=change the evidence/clues the reader reasoned from). An evidential retcon of locked canon is the forbidden move (validator R3). `intervention_class` is a CLASS of fix, never invented prose (the Firewall). See docs/retcon-planning.md.",
+  "title": "APODICTIC retcon item (apodictic.retcon_item.v1)",
+  "type": "object",
+  "required": ["schema", "id", "target_id", "kind", "mutability", "retcon_type", "intervention_class", "disposition"],
+  "properties": {
+    "schema": {"const": "apodictic.retcon_item.v1"},
+    "id": {"type": "string", "pattern": "^RX-[0-9]{2,}$"},
+    "target_id": {"type": "string", "pattern": "^T[0-9]+$"},
+    "kind": {"enum": ["setup-debt", "contradiction", "reinterpretation"]},
+    "mutability": {"enum": ["locked", "costly", "free"]},
+    "retcon_type": {"enum": ["dramatic", "evidential"]},
+    "intervention_class": {"type": "string"},
+    "locations": {"type": "array", "items": {"type": "string"}},
+    "blast_radius": {"type": "array", "items": {"type": "string"}},
+    "disposition": {"type": "string"}
+  }
+}
