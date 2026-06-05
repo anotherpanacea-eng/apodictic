@@ -20,8 +20,12 @@ import re
 import sys
 from pathlib import Path
 
-# One grammar for the embedded block carrier, shared by every validator.
-BLOCK_RE = re.compile(r"<!--\s*apodictic:([A-Za-z_]+)\s*(\{.*?\})\s*-->", re.DOTALL)
+# One grammar for the embedded block carrier, shared by every validator. We match the
+# CARRIER (`<!-- apodictic:<type> ... -->`) first and capture the whole payload up to the
+# closing `-->`, rather than only comments that already contain a complete `{...}`. A broken
+# payload (e.g. a missing closing brace) is then surfaced as a JSON error by parse_blocks
+# instead of disappearing before validation.
+BLOCK_RE = re.compile(r"<!--\s*apodictic:([A-Za-z_]+)\s*(.*?)\s*-->", re.DOTALL)
 
 # Canonical severity ORDER (semantic; the SET is cross-checked against the
 # finding schema's `severity` enum by load_severity_values()).
@@ -173,6 +177,12 @@ def run_self_test():
           [] if set(load_severity_values()) == set(SEVERITY_RANK) else ["mismatch"], True)
     blocks = parse_blocks('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1"}\n-->')
     check("parse_blocks", [] if (len(blocks) == 1 and blocks[0][0] == "finding" and blocks[0][1]) else ["bad"], True)
+    # A broken carrier (no closing brace before -->) must be detected as a malformed block
+    # (json error), not silently disappear before validation.
+    broken = parse_blocks('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1"\n-->')
+    check("parse_blocks_broken_carrier",
+          [] if (len(broken) == 1 and broken[0][0] == "finding" and broken[0][1] is None
+                 and broken[0][2]) else ["bad"], True)
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 

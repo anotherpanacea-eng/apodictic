@@ -8,24 +8,22 @@
 
 | In Progress | Planned | Done | Backlog |
 |-------------|---------|------|---------|
-| | | [**v2.0.0**](#v200--editorial-honesty--structural-integrity) | |
-| | [Harness Contracts v2](#harness-contracts-v2) | | [Validator Architecture Hardening](#validator-architecture-hardening) |
-| | [Runner-Governed Execution](#runner-governed-execution) | | [Model-Capacity Exploitation](#model-capacity-exploitation) |
-| | [Finding Lifecycle IDs](#finding-lifecycle-ids) | | [Research / API Reliability Layer](#research--api-reliability-layer) |
-| [Argument Benchmark Suite](#benchmark-suite) | [Adaptive Mode Escalation](#adaptive-mid-run-mode-escalation) | [v1.9.0](#v190--ai-prose-calibration-v20) | [Feedback Triage](#feedback-triage) |
-| [Genre Audit Expansion](#genre--audit-expansion) | | [v1.7.0](#v170--harness-engineering) | |
-| [Coaching Deepening](#coaching-deepening) | [Editor Scaffolding](#editor-scaffolding) | [v1.4.0](#v140--surface-hardening--writers-block) | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) |
-| | [Diagnostic Vocabulary](#diagnostic-vocabulary-mode) | [v1.3.0](#v130--nonfiction-argument-engine--genre-audits) | [Legal Risk Register](#legal-risk-register) |
-| | | [v1.2.1](#v121--audit-sequencing--model-tags) | [Multi-Party Intake](#multi-party-intake) |
-| | | [v1.2.0](#v120--artifact-coverage) | [Episode Cadence](#episode-cadence) |
-| | | [v1.1.3](#v113--coaching-deepening) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
-| | | [v1.1.2](#v112--revision-coach) | [Framework Overview Dashboard](#framework-overview-dashboard) |
-| | | [v1.1.1](#v111--series-continuity--pass-9) | [Pre-Skill Context Compaction](#pre-skill-context-compaction) |
+| [Argument Benchmark Suite](#benchmark-suite) | [Harness Contracts v2](#harness-contracts-v2) | [**v2.2.0**](#v220--operator-modes-feedback-triage--revision-follow-through) | [Model-Capacity Exploitation](#model-capacity-exploitation) |
+| | [Multi-Party Intake](#multi-party-intake) | [**v2.1.0**](#v210--runner-governed-execution--finding-lifecycle-ids) | [Research / API Reliability Layer](#research--api-reliability-layer) |
+| | [Legal Risk Register](#legal-risk-register) | [**v2.0.0**](#v200--editorial-honesty--structural-integrity) | [Episode Cadence](#episode-cadence) |
+| | [Coaching Deepening](#coaching-deepening) | [v1.9.0](#v190--ai-prose-calibration-v20) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
+| | [Genre Audit Expansion](#genre--audit-expansion) | [v1.7.0](#v170--harness-engineering) | [Framework Overview Dashboard](#framework-overview-dashboard) |
+| | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) | [v1.4.0](#v140--surface-hardening--writers-block) | [Corpus-Expansion Fixtures](#deferred-corpus-expansion-candidates) |
+| | | [v1.3.0](#v130--nonfiction-argument-engine--genre-audits) | |
+| | | [v1.2.1](#v121--audit-sequencing--model-tags) | |
+| | | [v1.2.0](#v120--artifact-coverage) | |
+| | | [v1.1.3](#v113--coaching-deepening) | |
+| | | [v1.1.2](#v112--revision-coach) | |
+| | | [v1.1.1](#v111--series-continuity--pass-9) | |
 | | | [v1.1.0](#v110--token-aware-agent-usage) | |
-| | | [v1.0.9](#v109) | |
-| | | [v1.0.8](#v108) | |
-| | | [v1.0.4](#v104) | |
-| | | [v1.0](#v10--public-release) | |
+| | | [v1.0.9](#v109) · [v1.0.8](#v108) · [v1.0.4](#v104) · [v1.0](#v10--public-release) | |
+
+**Recently shipped (v2.2.0):** Editor Scaffolding + Diagnostic Vocabulary operators, Feedback Triage, Adaptive Mid-Run Mode Escalation, and Finding Lifecycle IDs increments 2–3. **Done and folded into shipped releases:** Runner-Governed Execution (incr 1–3 + 5; incr 4 future), Finding Lifecycle IDs (incr 1–3; incr 4 future), Validator Architecture Hardening, Adaptive Mode Escalation, Editor Scaffolding, Diagnostic Vocabulary, Feedback Triage. Pre-Skill Context Compaction is resolved by platform (see below).
 
 ---
 
@@ -96,13 +94,13 @@ Validate that the engine works on real argument-shaped nonfiction, not just in t
 
 **Status:** Spec landed at [`docs/argument-benchmark-spec.md`](docs/argument-benchmark-spec.md). Vertical slice (Increment 1) built: rubric ([`evals/rubrics/argument-benchmark.md`](evals/rubrics/argument-benchmark.md)), ground-truth answer-key template ([`evals/argument-groundtruth-template.md`](evals/argument-groundtruth-template.md)), and four pre-registered fixtures under [`evals/fixtures/argument-benchmark/`](evals/fixtures/argument-benchmark/) — two broken (op-ed warrant leap; uncompared policy brief) for sensitivity, two positive controls (narrative-argumentation personal essay; Swift's *A Modest Proposal*, referenced) for specificity. Corpus is synthetic + public-domain (provenance policy blocks shipping copyrighted op-eds/testimony in-repo); real modern fixtures are added by gitignored manifest.
 
-**Status (Increment 2–3):** The **two-independent-runs convergence protocol has been run across the full corpus** (Opus + Sonnet on all referenced + synthetic + public-domain fixtures, plus a cross-vendor GPT-4 pass), scored, and recorded in `evals/results/*/SCORECARD.md`; buckets 1, 2, 5, 6, 7 are covered by the referenced corpus (`CORPUS.md`). The run drove a Dialectical Clarity calibration fix (the severity floor, PR #22) and a Step-6 decoy-resistance fix (6a two-test procedure + FM-A20).
+**Status (Increment 2–3):** The **two-independent-runs convergence protocol has been run across the full corpus** (Opus + Sonnet on all referenced + synthetic + public-domain fixtures, plus a cross-vendor GPT-4 pass), scored, and recorded in `evals/results/*/SCORECARD.md`; buckets 1, 2, 5, 6, 7 are covered by the referenced corpus (`CORPUS.md`). The runs drove a Dialectical Clarity calibration fix (the severity floor) and a **Step-6 decoy-resistance fix** (6a two-test procedure + FM-A20).
 
-**Direction — shippable kit (the distribution model).** The copyrighted source *bytes* are the only thing that can't ship; the keys, harness, protocol, and method all can. So the benchmark ships as a kit and reconstitutes copyrighted texts locally (URL + extraction anchor + SHA-256; never the bytes). Remaining toward that:
-1. ✓ **Public-domain core** (fetchable, not stored — reconstituted by URL+anchor+hash): *Federalist* No. 10 (bucket 5 positive control, Gutenberg) and Douglass, *What to the Slave Is the Fourth of July?* (bucket 3 / testimony + Q7 unconventional-form control, archive.org pinned). Both verified via `run.sh --fetch`.
-2. ✓ **`run.sh --fetch`** reconstitution mode — built; verified on `federalist-10` (hash matches).
-3. ✓ **`validate.sh argument-groundtruth-check`** key-conformance validator — built; 17/17 self-test, wired into `--self-test-all` and both host workspaces.
-4. **Second-editor confirmation of GT4–GT7** (GT1–GT3 authoritative; GT4–GT7 provisional).
+**Direction — shippable kit (the distribution model).** The copyrighted source *bytes* are the only thing that can't ship; the keys, harness, protocol, and method all can. So the benchmark ships as a kit and reconstitutes copyrighted texts locally (URL + extraction anchor + SHA-256; never the bytes).
+- ✓ **Public-domain core** (fetchable, not stored): *Federalist* No. 10 (bucket 5 positive control, Gutenberg) and Douglass, *What to the Slave Is the Fourth of July?* (bucket 3 / testimony + Q7 unconventional-form control, archive.org pinned). Both verified via `run.sh --fetch`.
+- ✓ **`run.sh --fetch`** reconstitution mode — pulls each referenced source from its pinned URL and verifies the recorded hash.
+- ✓ **`validate.sh argument-groundtruth-check`** key-conformance validator (`scripts/argument_groundtruth.py`, shipped v2.1/2.2): GT1–GT7 coverage, DC code-namespace resolution, GT2 locus↔code consistency, GT7 Distinguish classification — **extended to FM-A20** for the decoy-resistance pattern.
+- **Remaining:** second-editor confirmation of GT4–GT7 (GT1–GT3 authoritative; GT4–GT7 provisional).
 
 **Corpus buckets:**
 1. Op-eds
@@ -154,13 +152,17 @@ Over multiple revision cycles, surface patterns: "You tend to defer character-ag
 
 ## Operators
 
-### Editor Scaffolding
+### Editor Scaffolding — **Built (Increment 1)**
 
 For human developmental editors using the framework as analytical assist. Output framing shifts to "here's what I found that you might have missed." Suppress prescriptive language, add blind-spot emphasis.
 
-### Diagnostic Vocabulary Mode
+**Built.** The `operator:editor` routing gap is closed (intake router → `references/editor-scaffolding.md`). The mode is a superset overlay on the Core DE editorial letter: an **Editor Brief** addressee reorientation, a required **What You Might Have Missed** blind-spot section, and an **Intervention Menu (editor's discretion)** that defers the author-facing prescription to the human editor — while severity honesty, the Firewall, and the decision layer are preserved unchanged. Enforced by the `editor-scaffolding` validator (E1–E4 + advisory W1), conditional on a `<!-- mode: editor-scaffolding -->` marker, with a canonical `--check-all` gate proving it composes with `decision-layer-check` / `severity-floor`. Spec + ownership boundary: [`docs/editor-scaffolding.md`](docs/editor-scaffolding.md). Validators 21 → 22. **Future increments:** per-pass scaffolding, blind-spot ranking by severity-vs-salience gap, editor↔author dual output. The sibling operators (Diagnostic Vocabulary Mode, Multi-Party Intake) remain separate gaps.
+
+### Diagnostic Vocabulary Mode — **Built (Increment 1)**
 
 For writing group facilitators who want to teach structural feedback vocabulary. Glossary/cheat sheet output, discussion prompts tied to structural concepts.
+
+**Built.** The `operator:facilitator` routing gap is closed (intake router → `references/diagnostic-vocabulary.md`). Facilitator mode produces a `[Project]_Vocabulary_Guide_[runlabel].md` teaching aid alongside the editorial letter: a **Glossary** of the structural concepts the diagnosis used (each grounded in a specific manuscript spot) and a **Discussion Prompts** section that frames issues as questions for the group. The author-facing letter keeps its severity record — the Guide is a teaching companion, not a softer letter. Enforced by the `diagnostic-vocabulary` validator (V1 glossary present, V2 entries defined, V3 ≥3 grounded, V4 ≥3 prompts all questions; W1 prescription-leak advisory), conditional on a `<!-- mode: diagnostic-vocabulary -->` marker, with a canonical `--check-all` gate. Spec: [`docs/diagnostic-vocabulary.md`](docs/diagnostic-vocabulary.md). Validators 22 → 23. This completes the **operator pair** with [Editor Scaffolding](#editor-scaffolding); the remaining operator, **Multi-Party Intake** (`operator:team`), stays a gap. (Rule-of-three: if it lands, extract the shared operator-mode prose helpers into one module then.)
 
 ### Multi-Party Intake
 
@@ -170,9 +172,11 @@ For co-authoring teams. Priority conflict resolution, sign-off workflow, change 
 
 ## Workflows
 
-### Feedback Triage
+### Feedback Triage — **Built (Increment 1, v2.2.0)**
 
 Writers returning with beta reader or critique group feedback. Sort, validate, and prioritize external feedback. Targeted pass execution to test specific claims, conflict resolution when feedback contradicts itself.
+
+**Built.** Lives in the revision-coach skill (`/triage-feedback`, `revision-coach/references/feedback-triage.md`). Each note is a real-JSON `apodictic.feedback_item.v1` block (orthogonal `assessment` truth axis × `triage` disposition axis) in a `[Project]_Feedback_Triage_[runlabel].md` artifact, checked by the `feedback-triage` validator (contract hygiene + conflict referential integrity + the contradiction-coherence gap). Design: [`docs/feedback-triage.md`](docs/feedback-triage.md). Future increments: targeted-validation automation; deeper coaching handoff.
 
 ### Nonfiction Pre-Draft Pathway
 
@@ -204,15 +208,19 @@ Make JSON Schema the source of truth for every structured artifact — findings 
 
 A lightweight runner that owns execution state — current phase, required artifacts, sidecar state, pending gates, fired retry triggers, allowed next actions — and enforces the ordering the model currently self-polices (*"you cannot synthesize until the Findings Ledger exists and the Deficit Lock / underdiagnosis gates pass"*). The model still does all the reasoning; the runner makes the gates non-optional. This is the most ambitious remaining step of the original prompt-governed → runner-governed direction, and the successor to the *condition-triggered vs. model-emergent gates* discipline (§Future Work): condition-triggering made the *triggers* detectable; the runner makes the *enforcement* external.
 
+**Built (increments 1–3 + 5; shipped v2.1.0). Increment 4 (external host orchestrator) remains future.** Spec + increment plan at [`docs/runner-governed-execution.md`](docs/runner-governed-execution.md). Increments 1–3 (cooperative gate manifest + engine + sidecar state + finding-ID lifecycle) **and increment 5 — structured gate-event records** are **built, shipped in v2.1.0**: history-only append-only `execution.gate_events[]` as the canonical record (the v1 per-phase `gates` map dropped as derivable), a stored-event-vs-derived-label lifecycle vocabulary, a recomputable resume pointer (`== fold(gate_events)`), the `mechanical-passed`→`--attest` attestation handshake with durable per-event contracts, safe grandfathered migration, and the `gate-state` validator that enforces it. Increment 4 (external host orchestrator) remains future.
+
 ### Finding Lifecycle IDs
 
 Give every material finding a durable ID that follows it across the whole pipeline: pass output → Findings Ledger → Deficit Lock → editorial letter → revision plan / coaching. With stable IDs, softness, downgrade, omission, and revision follow-through become directly auditable — the Deficit Lock and `softness-check` could match by ID instead of today's token/mechanism/evidence-ref heuristics — and cross-artifact traceability stops depending on prose matching. Pairs with Harness Contracts v2 (the ID is a contract field) and Runner-Governed Execution (the runner tracks findings by ID).
+
+**Built (increments 1–3). Increment 4 remains future.** The ID itself already ships (`apodictic.finding.v1.id`, `F-<ORIGIN>-<NN>`); `structured-findings` owns intra-ledger hygiene and `softness-check` owns severity fidelity (locked→delivered) by ID. **Increment 1** (spec + `finding-trace` validator, [`docs/finding-lifecycle-ids.md`](docs/finding-lifecycle-ids.md), shipped v2.1.0) traces the ID *across* artifacts — cross-artifact **referential integrity + sidecar lifecycle coherence** (E1 dangling letter reference, E2 phantom `finding_states` key, E3 invalid state, W1 coverage). **Increments 2–3** (shipped v2.2.0) extend `finding-trace` into the revision loop: E4 dangling revision-plan reference, W2 revision coverage, E5 phantom completion (a `revised` finding lacking an explicit `<!-- resolved: F-… -->` marker), W3 completion coverage — plus canonical `--check-all` gating of the example ledger↔letter pair in both directions. Increment 4 (runner tracks findings by ID end-to-end, pairing with Runner-Governed Execution increment 4) remains future.
 
 ### Validator Architecture Hardening
 
 `validate.sh` has done heroic work, but the external reviews kept surfacing regex-shaped edge cases (severity-label forms, prefix evidence-ref matches, calibration-line downgrades). Roadmap a gradual migration toward small Python validators with shared parsers, fixture-driven negative tests, and one thin shell dispatcher — extending the v2.0.0 precedent (`structured_findings.py`, `honesty_check.py`) to the rest of the suite. This is mechanical contract enforcement, not an eval harness. Subsumes the deferred *Canonical-framework validator runs as release gate* (§Deferred), which v2.0.0 began closing by wiring `validate.sh --check-all` into `release-verify`.
 
-**In progress.** Spec + increment plan at [`docs/validator-hardening.md`](docs/validator-hardening.md), bundled with the two adjacent loose ends it closes (release-gate canonical runs; Harness Contracts v2 completion). Increments 1–4 landed: shared `scripts/letter_checks.py` prose-parser module with the **whole editorial-letter / ledger validator family** ported off shell regex — `severity-floor`, `decision-layer-check`, `audit-signal-propagation` (incl. `--check-registry`), `underdiagnosis-triggers`, `ledger-consolidation` — using token-boundary matching, body/appendix split, and fixture-driven negatives. Increment 4 adds `scripts/timeline_checks.py`, a structured Timeline parser backing the three `timeline-*` arms: `timeline-diff` (faithful port) plus `timeline-arithmetic` and `timeline-anchor-conflict` upgraded from marker-hygiene to **true** span-overrun arithmetic and same-scene anchor-drift detection (the capability `pass-10.md` §Phase 7 explicitly deferred). Each letter-family port is verified by oracle-diff against the pre-port bash arm (identical exit codes on fixtures + the shipped sample letters); the timeline ports are oracle-identical except the two `silent_*` cases bash false-passed, which now fail. The bash implementations are retained as the no-`python3` degrade path. Remaining: the contract/config/run-folder validators, the release-gate canonical runs, and Contracts v2 completion.
+**Built (shipped across v2.0.0–v2.1.0; the bundle is complete).** Spec + increment plan at [`docs/validator-hardening.md`](docs/validator-hardening.md), bundled with the two adjacent loose ends it closes (release-gate canonical runs; Harness Contracts v2 completion). Increments 1–4 landed: shared `scripts/letter_checks.py` prose-parser module with the **whole editorial-letter / ledger validator family** ported off shell regex — `severity-floor`, `decision-layer-check`, `audit-signal-propagation` (incl. `--check-registry`), `underdiagnosis-triggers`, `ledger-consolidation` — using token-boundary matching, body/appendix split, and fixture-driven negatives. Increment 4 adds `scripts/timeline_checks.py`, a structured Timeline parser backing the three `timeline-*` arms: `timeline-diff` (faithful port) plus `timeline-arithmetic` and `timeline-anchor-conflict` upgraded from marker-hygiene to **true** span-overrun arithmetic and same-scene anchor-drift detection (the capability `pass-10.md` §Phase 7 explicitly deferred). Increment 5 adds `scripts/config_checks.py`, backing the three non-letter arms that validate different artifact types — `quality-risk-triggers` (a contract + optional `Diagnostic_State.meta.json` sidecar), `audit-tier-criterion` (`pass-dependencies.md` §4a/§4b + an audits directory tree), and `argument-recon-prerequisite` (a run-folder scan). Each letter-family port is verified by oracle-diff against the pre-port bash arm (identical exit codes on fixtures + the shipped sample letters); the timeline ports are oracle-identical except the two `silent_*` cases bash false-passed, which now fail; the config ports are oracle-identical including byte-identical output on the real `pass-dependencies.md`. The bash implementations are retained as the no-`python3` degrade path. Increment 6 (Track B — release gate) extends `validate.sh --check-all` to run the ported validators against the *actual* canonical files: `audit-tier-criterion` vs the real `pass-dependencies.md`, plus `decision-layer-check`/`audit-signal-propagation`/`severity-floor` and the `timeline-*` arms against two new canonical worked examples shipped under `core-editor/references/` (`example-editorial-letter.md`, `example-timeline.md`) — so a drift in pass-dependencies tiers, the letter contracts, or the Timeline schema is caught at release time (gate verified to have teeth). Increment 7 (Track C — Contracts v2) ships `apodictic.severity_calibration.v1`, a structured Appendix-B Severity Calibration entry, and makes `softness-check` read `delivered` keyed by finding ID from embedded blocks instead of parsing prose (prose fallback retained) — closing the loop with the Track A honesty gates; the canonical example letter carries a worked-example block gated by `--check-all`. The other half of the original Track C line — structured **gate-event records** — is deliberately deferred to the still-evolving **Runner-Governed Execution** track (which owns that contract) rather than enum-tightened or bolted on here; it is re-homed as a future "option 2, after design" increment in [`docs/runner-governed-execution.md`](docs/runner-governed-execution.md) §Later increments. With that, the validator-hardening bundle is complete.
 
 ### Model-Capacity Exploitation
 
@@ -226,7 +234,9 @@ v2.0.0 Phase 5 handled the first real plumbing (exponential backoff with `Retry-
 
 ## Infrastructure
 
-### Adaptive Mid-Run Mode Escalation
+### Adaptive Mid-Run Mode Escalation — **Built (v2.2.0)**
+
+**Built.** Shipped as the `escalation-check` validator + `run-core.md` integration: a condition-triggered checkpoint after Tier 1 that reads the Tier-1 finding count from the ledger and the complexity signals from the sidecar, and recommends escalating the execution mode before Tier 2. Advisory by default; `--strict` halts on a recommendation. Design: [`docs/adaptive-mode-escalation.md`](docs/adaptive-mode-escalation.md). De-escalation (swarm → sequential) remains a future option. The original proposal follows.
 
 After Tier 1 passes complete, the system has significantly more information about the manuscript than it had at preflight — multiple POV characters discovered, timeline complexity detected, genre hybridization identified. The execution mode selected at intake may no longer be optimal.
 
@@ -424,6 +434,12 @@ The fixtures in place (F1-F4) are reusable for future model-capability reviews. 
 ---
 
 ## Done
+
+### v2.2.0 — Operator Modes, Feedback Triage & Revision Follow-Through
+Additive on top of v2.1.0; no command/API break. **Operators:** two output-presentation modes close the intake-router operator gaps — **Editor Scaffolding** (`operator:editor`, a superset overlay re-aiming the editorial letter at a human developmental editor: Editor Brief, What-You-Might-Have-Missed, Intervention Menu) and **Diagnostic Vocabulary** (`operator:facilitator`, a Vocabulary Guide teaching aid: grounded glossary + question-framed discussion prompts). **Workflows:** **Feedback Triage** increment 1 (sort/validate/prioritize external feedback; `apodictic.feedback_item.v1`, `/triage-feedback`). **Infrastructure:** **Adaptive Mid-Run Mode Escalation** (condition-triggered post-Tier-1 checkpoint that recommends escalating execution mode). **Harness:** **Finding Lifecycle IDs** increments 2–3 extend `finding-trace` into the revision loop (revision-plan follow-through E4/W2; revision-completion E5/W3 on an explicit `<!-- resolved: F-… -->` marker). Validators **19 → 23** (`escalation-check`, `feedback-triage`, `editor-scaffolding`, `diagnostic-vocabulary`); `--self-test-all` 23/23, `--check-all` + `release-verify` green.
+
+### v2.1.0 — Runner-Governed Execution & Finding Lifecycle IDs
+Harness Engineering: the prompt-governed → runner-governed step. **Runner-Governed Execution** lands the cooperative gate engine (increments 1–3: declarative manifest `execution-gates.v1.json` + `scripts/run_gate.py` behind `validate.sh gate <phase> <run_folder>`; sidecar `execution` state; finding-ID lifecycle) and **structured gate-event records** (increment 5): the per-phase `gates` map is replaced by an append-only `execution.gate_events[]` log (`apodictic.gate_event.v1`) with `phase`/`allowed_next`/`pending_gate`/`finding_states` as a recomputable resume pointer, a `mechanical-passed`→`--attest` attestation handshake (a `passed` clears only with `attested_items` covering its own snapshotted `attested_contract`), durable history, and safe grandfathered migration — all enforced by a new `gate-state` validator. **Finding Lifecycle IDs** increment 1 adds `finding-trace` (cross-artifact referential integrity + sidecar lifecycle coherence by `apodictic.finding.v1.id`). The **Argument Benchmark** ground-truth validator `argument-groundtruth-check` (GT1–GT7) also landed. Validators **14 → 19** (`gate`, `gate-state`, `finding-trace`, `argument-groundtruth-check`, `artifacts-schema`); `--self-test-all` 19/19. Still cooperative — external host orchestration (RGE increment 4) and revision-plan follow-through (FLI increment 2) remain future.
 
 ### v2.0.0 — Editorial Honesty & Structural Integrity
 Five-phase subtraction-and-hardening pass. **Subtract:** bookkeeping moved out of the always-loaded judgment files into on-demand references (instruction floor −9.5%); `.gitattributes` collapses the generated mirrors in review. **Normalize severity:** one canonical Must-Fix/Should-Fix/Could-Fix scale with the orthogonal axes (confidence, prose tier, readiness, lens verdicts) named as not-severity, plus a 42-audit Signal-Emitting Registry enforced by `audit-signal-propagation --check-registry`. **Structured state:** real-JSON `apodictic.finding.v1` blocks + Python validator (`structured_findings.py`), required for synthesis-bound findings and mirrored into the sidecar under a triage-tally invariant. **Harden honesty (behavior change):** the Deficit Lock generation-order rule locks severities at Triage before any charity reframing, with the Distinguish / literary-exception / Stillness hatches gated so charity is legible; `honesty_check.py` drives `softness-check` (delivered-vs-locked, read from the Severity Calibration appendix) and `deficit-lock`. **Plumbing:** API exponential backoff honoring Retry-After, no-sticky-error caching, response-cache disk persistence, and full decoupling of the public release path from the private Gemini sibling; `release-verify` runs `validate.sh --check-all`. Validators 11 → 14.

@@ -5,6 +5,64 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.2.0 - 2026-06-03
+
+Operator modes, a returning-author workflow, mid-run infrastructure, and finding-lifecycle revision follow-through — all additive on top of v2.1.0, no command/API break. **19 → 23 self-testable validators.**
+
+### Operators — Editor Scaffolding (`operator:editor`) + Diagnostic Vocabulary (`operator:facilitator`)
+
+Two output-presentation operator modes close the two long-standing intake-router operator gaps.
+
+**Editor Scaffolding** re-aims the Core DE editorial letter at a human developmental editor using APODICTIC as analytical assist. A superset overlay on the standard letter — every mandatory section is preserved, so `decision-layer-check` / `severity-floor` / `softness-check` / `finding-trace` still apply — adding an **Editor Brief** addressee reorientation, a required **What You Might Have Missed** blind-spot section, and an **Intervention Menu (editor's discretion)** that defers the author-facing prescription to the human editor. Severity honesty and the Firewall are untouched. New `editor-scaffolding` validator (E1–E4 + advisory W1), conditional on a `<!-- mode: editor-scaffolding -->` marker, body-scoped, with modal + bare-imperative prescription detection; a canonical `--check-all` gate proves the overlay composes with the standard letter gates. Design: [`docs/editor-scaffolding.md`](../../../docs/editor-scaffolding.md).
+
+**Diagnostic Vocabulary Mode** produces a `[Project]_Vocabulary_Guide_[runlabel].md` teaching aid for a writing-group facilitator — a Glossary of the structural concepts the diagnosis used (each grounded in a specific manuscript spot) plus Discussion Prompts framed as questions for the group. The author-facing letter keeps its full severity record; the Guide is a teaching companion, not a softer letter. New `diagnostic-vocabulary` validator (V0 marker-required-on-a-named-guide, V1–V4 + advisory W1), body-scoped and wrapped-markdown-aware; canonical `--check-all` gate. Design: [`docs/diagnostic-vocabulary.md`](../../../docs/diagnostic-vocabulary.md).
+
+### Workflows — Feedback Triage (increment 1)
+
+A returning-author workflow in the revision-coach skill: sort, validate, and prioritize external (beta-reader / critique-group) feedback before any revision time is spent. Each note is a real-JSON `apodictic.feedback_item.v1` block — an `assessment` truth axis (did our own analysis confirm it?) kept orthogonal to a `triage` disposition axis — in a `[Project]_Feedback_Triage_[runlabel].md` artifact. New `/triage-feedback` command and `feedback-triage` validator: E1 invalid item, E2 duplicate id, E3 dangling conflict, E4 self conflict, W1 unresolved contradiction (both sides still actionable), W2 act-on-unvalidated; `--strict` gates the warnings. Makes "conflict resolution when feedback contradicts itself" mechanically checkable. Design: [`docs/feedback-triage.md`](../../../docs/feedback-triage.md).
+
+### Infrastructure — Adaptive Mid-Run Mode Escalation
+
+A condition-triggered checkpoint after Tier 1 passes that compares revealed manuscript complexity against the preflight estimate and recommends escalating the execution mode before Tier 2 commits tokens. New `escalation-check` validator reads the Tier-1 finding count from the ledger and the complexity signals from the sidecar (POV count > 3; non-linear timeline; belief > 5 / orientation > 3; Tier-1 findings > 20); advisory by default, `--strict` halts on a recommendation. Integrated into `run-core.md` between Tier 1 and Tier 2. Every trigger is a count or boolean read from a named field, so it fires identically across models (the condition-triggered, not model-emergent, discipline). Type-hardened against model-authored sidecar shapes. Design: [`docs/adaptive-mode-escalation.md`](../../../docs/adaptive-mode-escalation.md).
+
+### Finding Lifecycle IDs — revision follow-through & completion (increments 2–3)
+
+`finding-trace` extends from cross-artifact referential integrity (increment 1, v2.1.0) into the revision loop: **E4** a revision-plan / coaching artifact cites an `F-…` ID not in the ledger; **W2** a Must-Fix ledger ID not referenced in any revision plan; **E5** a completed-revision artifact mentions a `revised` finding without an explicit `<!-- resolved: F-… -->` marker; **W3** completion coverage. Completion keys on the explicit `resolved` marker (not on any `F-…` token in prose) and is scoped to the current revision report, so earlier-round resolutions are left alone. Closes FLI increment 2 (revision-plan follow-through) + increment 3 (revision-completion lifecycle) and the canonical `--check-all` gating of the example ledger↔letter pair in both directions; increment 4 (external host orchestrator) remains future. Design: [`docs/finding-lifecycle-ids.md`](../../../docs/finding-lifecycle-ids.md).
+
+### Validators
+
+19 → **23** self-testable validators. Added since v2.1.0: `escalation-check`, `feedback-triage`, `editor-scaffolding`, `diagnostic-vocabulary` (the Finding-Lifecycle work extends the existing `finding-trace` rather than adding a validator). `validate.sh --self-test-all`: **23/23**; `--check-all` (real-file invariants, including the new canonical scaffolded-letter and Vocabulary-Guide gates) and `release-verify` green; `codex/` + `antigravity/` mirrors regenerated.
+
+## v2.1.0 - 2026-06-03
+
+Harness Engineering: the prompt-governed → runner-governed step lands, plus cross-artifact finding-lifecycle auditing and the Argument Benchmark ground-truth gate. Additive throughout — no command/API change. **14 → 19 self-testable validators.**
+
+### Runner-Governed Execution — cooperative gate engine (increments 1–3)
+
+Execution gates move out of scattered prose into one declarative manifest, `schemas/execution-gates.v1.json`, consolidated behind a single command the model must pass: **`validate.sh gate <phase> <run_folder>`** (`scripts/run_gate.py`). The manifest names each phase's required artifacts, mechanical checks (validator + target artifacts), and the contract/judgment **attested** preconditions the gate prints as a required checklist — so the gate can't silently narrow the pre-synthesis / pre-delivery gates to their mechanical subset. The two load-bearing gates are `run_synthesis` (pre-synthesis lock) and `run_spot_check` (consolidated letter-delivery, subsuming the scattered Step 10/12/13 checks). Results record into the `Diagnostic_State.meta.json` `execution` block; `apodictic-start` resumes from it. A passing gate advances each ledger finding's **lifecycle state** (`locked` → `delivered`), keyed by `apodictic.finding.v1.id`. Adds the `gate` validator; the shared schema engine `scripts/apodictic_artifacts.py` is exposed as the `artifacts-schema` self-test. Still cooperative (the model invokes the gate) — external host enforcement is a future increment. Design: [`docs/runner-governed-execution.md`](../../../docs/runner-governed-execution.md).
+
+### Runner-Governed Execution — structured gate-event records (increment 5)
+
+Replaces the lossy per-phase `execution.gates` map with an **append-only `execution.gate_events[]` log** (`apodictic.gate_event.v1`) as the canonical record of gate decisions; `phase` / `allowed_next` / `pending_gate` / `finding_states` become a recomputable **resume pointer (`== fold(gate_events)`)**, asserted by a new **`gate-state`** validator (`validate.sh gate-state` / `run_gate.py --check-state`). Properties hardened across review:
+
+- **Attestation is part of a clean pass** — a `passed` clears a gate only if its `attested_items` cover its own `attested_contract` (snapshotted manifest IDs); the engine never auto-emits a clearing pass on mechanical success — `gate --attest` re-runs the checks (freshness) and records the clearing pass only if still clean. Manifest `attested` entries gain stable `{id, text}` IDs.
+- **Durable history** — coverage is validated against each event's *recorded* contract, never the live manifest, so a later rename/retire can't retroactively un-clear history.
+- **Safe migration** — upgrading a legacy sidecar seeds a grandfathered baseline in manifest phase order so the prior frontier survives; `migrated` is legal only as a contiguous prefix followed by real work (so it can't be reused as a clearing bypass), and `gate-state` tolerates malformed entries with a clean validation failure rather than a traceback.
+
+Adds the `gate-state` validator. The lifecycle vocabulary, degrade-path event authoring, and `--strict` CI mode are in [`docs/runner-governed-execution.md`](../../../docs/runner-governed-execution.md) §Increment 5.
+
+### Finding Lifecycle IDs — cross-artifact trace (increment 1)
+
+New **`finding-trace`** validator (`validate.sh finding-trace <run_folder>`, `scripts/finding_trace.py`) audits the un-owned dimension of the Finding Lifecycle ID: cross-artifact **referential integrity + sidecar lifecycle coherence** — complementary to `structured-findings` (intra-ledger ID hygiene) and `softness-check` (severity fidelity, locked→delivered). E1 dangling letter/calibration reference (a cited `F-…` ID not in the ledger), E2 phantom `execution.finding_states` key, E3 invalid lifecycle state, W1 lifecycle coverage (advisory; ERROR under `--strict`). Graceful — each artifact optional, but a present-but-malformed sidecar is an error, not a silent skip. Design + ownership-boundary table: [`docs/finding-lifecycle-ids.md`](../../../docs/finding-lifecycle-ids.md).
+
+### Argument Benchmark — ground-truth answer-key validator
+
+New **`argument-groundtruth-check`** validator (`scripts/argument_groundtruth.py`): GT1–GT7 coverage, Dialectical-Clarity code-namespace resolution, GT2 locus↔code consistency, and GT7 Distinguish classification for the Argument Engine Benchmark answer keys; tuned against the registered corpus and run over it by `--check-all`. See [`docs/argument-benchmark-spec.md`](../../../docs/argument-benchmark-spec.md).
+
+### Validators
+
+14 → **19** self-testable validators. Added since v2.0.0: `gate`, `gate-state`, `finding-trace`, `argument-groundtruth-check`, `artifacts-schema`. `validate.sh --self-test-all`: **19/19**; `--check-all` (real-file invariants) and `release-verify` green; `codex/` + `antigravity/` mirrors regenerated.
+
 ## v2.0.0 - 2026-06-01
 
 A milestone release that hardens APODICTIC's editorial honesty and structural integrity, delivered as five sequenced phases. The strategy was **subtraction + honesty hardening, not added plumbing**: shrink the always-loaded instruction floor, normalize the severity vocabulary, make findings machine-checkable, and close the silent-softening leak — then fix the surrounding ops. The plugin's command/API surface is unchanged; the major bump headlines the behavior-changing honesty work (the Deficit Lock) and the severity-model normalization.

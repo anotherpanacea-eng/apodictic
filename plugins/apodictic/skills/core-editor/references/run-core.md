@@ -292,6 +292,22 @@ For full architecture details, cost analysis, and risk discussion: see `docs/sub
 
 ---
 
+### Mid-Run Escalation Check (Required, runs once after Tier 1)
+
+The execution mode is chosen at preflight from coarse heuristics (word count, a pronoun-frequency POV guess). After **Tier 1** (Pass 0 Structure Map + Pass 1 Reader Orientation) the manuscript's actual complexity is known and may exceed that estimate. Run this checkpoint **once, after Tier 1 completes and before dispatching the first Tier 2 pass** — the only safe point to switch (never re-run completed passes; the Tier-1 Findings Ledger entries carry forward unchanged, only the Tier-2 dispatch method changes).
+
+1. **Detect.** Run `scripts/validate.sh escalation-check <run_folder>` (or, on a no-shell host, evaluate the triggers inline). It reads the sidecar's current `last_session.execution_mode` and `complexity_signals`, and computes the Tier-1 finding count directly from the ledger (`F-P0-…` / `F-P1-…` blocks). The triggers are **condition-triggered, not model-emergent** — each is a count or a boolean, so the check fires identically across models:
+   - `pov_count > 3` (preflight's pronoun heuristic underestimated)
+   - `nonlinear_timeline` (non-linear or nested-frame structure)
+   - `belief_failures > 5` **or** `orientation_failures > 3` (higher-than-expected analytical density)
+   - `tier1_finding_count > 20` (a complex synthesis ahead)
+   A signal the sidecar doesn't carry is reported **unevaluable** (never fires) — assess that dimension by hand. Record the signals you discovered into the sidecar's `complexity_signals` so the check is mechanical (see the Pass 0/1 output note).
+2. **Recommend (never automatic).** If `escalation-check` recommends a switch (single-agent → sequential; sequential → hybrid/swarm), present the author a brief summary — *"Tier 1 found [fired triggers]. I'd recommend switching from [current] to [recommended] for the remaining passes (cost difference ~[N]K tokens). Proceed?"* — and switch **only on confirmation**, writing the new `execution_mode` to the sidecar. De-escalation (to a cheaper mode) is out of scope; a more expensive mode only wastes tokens, never analysis.
+
+See `docs/adaptive-mode-escalation.md` for the trigger / recommendation matrix and the `complexity_signals` contract.
+
+---
+
 ### Pre-Pass Re-Grounding (Required, Mode-Conditional)
 
 Before beginning each evaluative pass (Passes 1, 2, 5, 8, and any Full DE passes), re-ground on the contract and Findings Ledger. The protocol has three named blocks: Block A is universal (mechanical invariant), Blocks B and C are mode-conditional (model-compensation behavior). The original failure mode — context salience decay across passes — is real on standard-context models but negligible in single-agent large-context runs; the mode-conditional structure preserves the compensation where it is needed and lightens it where the underlying failure does not occur. The contract-drift check in Block A is mode-independent: it is a Tool-invocable mechanical check, not model compensation, and must fire in all modes.
@@ -402,6 +418,8 @@ At the end of Pass 0, measure and report:
 
 **Output:** `Reverse_Outline.md` with verified word counts
 
+**Mid-run escalation signals (record to the sidecar):** Write the discovered POV-character count and whether the timeline is non-linear / nested-frame into `complexity_signals.pov_count` and `complexity_signals.nonlinear_timeline` in `Diagnostic_State.meta.json`. The §Mid-Run Escalation Check reads these (plus Pass 1's failure counts and the Tier-1 finding count) after Tier 1 to recommend a mode escalation before Tier 2.
+
 **Hybrid mode additional output:** When running in hybrid mode, Pass 0+1 (combined triage subagent) also produces `[Project]_Focus_Map_[runlabel].md` — a targeting document that directs later passes to specific scenes for deep reading. See `references/hybrid-mode.md` for the focus map specification, targeting grammar, and confidence tiers.
 
 ### Pass 1: Reader Experience
@@ -420,6 +438,8 @@ Read as a naive reader. Track emotional and cognitive response only.
 
 **Belief Failures:** "I don't believe this decision / reaction / coincidence."
 → Maps to motivation/pressure/cost fixes
+
+**Mid-run escalation signals (record to the sidecar):** Record the **counts** of Orientation Failures and Belief Failures into `complexity_signals.orientation_failures` and `complexity_signals.belief_failures` in `Diagnostic_State.meta.json` — the §Mid-Run Escalation Check reads them after Tier 1 (a high analytical density argues for a higher execution mode for the remaining passes).
 
 **Promise Tracking (from page 1):**
 - What questions does the reader believe the book will answer?

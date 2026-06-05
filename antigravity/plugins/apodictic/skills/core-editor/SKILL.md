@@ -7,7 +7,7 @@ description: >
   "run the passes," "do a revision round," or any request involving manuscript
   analysis, structural diagnosis, or editorial feedback. Also triggers on
   "APODICTIC," "APDE," or "development editor."
-version: 2.0.0
+version: 2.2.0
 ---
 
 # APODICTIC Development Editor — Core Orchestrator
@@ -326,7 +326,7 @@ During intake, identify the manuscript's genre and load the corresponding module
 
 Compact routing map below. Full index — templates, deprecated files, and per-file descriptions — in `references/reference-index.md`.
 
-**Execution:** `run-core.md` (every run: intake, pass execution, ledger protocol) · `run-synthesis.md` (after passes: audit integration, synthesis, deliverables, evidence spot-check) · `pass-dependencies.md` (concern → scoped pass set + order) · `run-full.md` (advanced passes 3/4/6/7/9/10) · `output-policy.md` (before writing output) · `output-structure.md` (folders, naming, lifecycle, sidecar — at write time) · `adversarial-stress-test.md` (letter §7) · `state-lifecycle.md` (revision rounds, state gardening) · situational: `partial-manuscript.md`, `fragment-synthesis.md`, `handoff-protocol.md`, `character-architecture.md`, `pass-11.md`.
+**Execution:** `run-core.md` (every run: intake, pass execution, ledger protocol) · `run-synthesis.md` (after passes: audit integration, synthesis, deliverables, evidence spot-check) · `pass-dependencies.md` (concern → scoped pass set + order) · `run-full.md` (advanced passes 3/4/6/7/9/10) · `output-policy.md` (before writing output) · `output-structure.md` (folders, naming, lifecycle, sidecar — at write time) · `adversarial-stress-test.md` (letter §7) · `state-lifecycle.md` (revision rounds, state gardening) · situational: `partial-manuscript.md`, `editor-scaffolding.md` (`operator:editor`), `diagnostic-vocabulary.md` (`operator:facilitator`), `fragment-synthesis.md`, `handoff-protocol.md`, `character-architecture.md`, `pass-11.md`.
 
 **Genre modules** (load by detected genre, primary or secondary): `genre-literary.md` · `genre-horror.md` · `genre-sff.md` · `genre-romance.md` · `genre-mystery.md` · `genre-thriller.md`.
 

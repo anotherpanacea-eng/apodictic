@@ -15,7 +15,7 @@ description: >
   "choice paralysis," "execution gap," "too much feedback,"
   "overmediated," "I don't know what I think anymore,"
   "structural experiment," or "I need an exercise."
-version: 2.0.0
+version: 2.2.0
 ---
 
 # APODICTIC Revision Coach
@@ -148,6 +148,20 @@ The coach operates in four modes. Select based on context:
 5. Produce revision calendar using `references/session-plan-template.md` (calendar format)
 
 **Output:** `[Project]_Revision_Calendar_[runlabel].md`
+
+### 5. Feedback Triage
+
+**When:** Writer returns with external feedback (beta readers, critique group, agent/editor) — often contradictory, uneven, and unvalidated. Also entered via `/triage-feedback`.
+
+**Required input:** The feedback (pasted or pointed to). The Findings Ledger / `Diagnostic_State.md` if a diagnosis exists.
+
+**Process** (full protocol in `references/feedback-triage.md`):
+1. Capture each note as an `apodictic.feedback_item.v1` block (`source`, `claim`; `assessment: pending`, `triage: monitor`)
+2. **Validate** each claim by routing to a targeted Core Editor pass — never re-diagnose in the coach; a confirmed claim becomes a candidate ledger finding
+3. Resolve every `conflicts_with` pair (never leave both sides actionable); set `triage`
+4. Gate with `scripts/validate.sh feedback-triage <run_folder>` (`--strict` for CI), then hand the act-now set to Session Planning
+
+**Output:** `[Project]_Feedback_Triage_[runlabel].md`
 
 ---
 

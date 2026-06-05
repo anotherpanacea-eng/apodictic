@@ -17,6 +17,8 @@
 | `references/output-structure.md` | At write/persist time — folder architecture, output naming, lifecycle, rolling-state and sidecar updates |
 | `references/adversarial-stress-test.md` | During every editorial letter synthesis (§7 of letter) |
 | `references/partial-manuscript.md` | When `artifact=partial` — modifies pass behavior for incomplete drafts |
+| `references/editor-scaffolding.md` | When `operator:editor` — reframes the synthesis letter for a human developmental editor (editor-facing overlay) |
+| `references/diagnostic-vocabulary.md` | When `operator:facilitator` — produces a Vocabulary Guide (glossary + discussion prompts) for a writing-group facilitator |
 | `references/fragment-synthesis.md` | When `artifact=fragments` and goal=`draft` — pre-diagnostic clustering |
 | `references/handoff-protocol.md` | When offering/entering/exiting scene-level execution mode |
 | `references/character-architecture.md` | When detailed character analysis needed beyond Pass 5 basics |

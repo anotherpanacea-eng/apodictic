@@ -16,16 +16,29 @@
         "could_fix": {"type": "integer"}
       }
     },
+    "complexity_signals": {
+      "type": "object",
+      "$comment": "Adaptive Mid-Run Mode Escalation (docs/adaptive-mode-escalation.md): Tier-1 complexity signals Pass 0/1 record so `validate.sh escalation-check` can decide whether to recommend escalating the execution mode before Tier 2. tier1_finding_count is NOT stored — escalation-check computes it from the ledger's F-P0-/F-P1- blocks.",
+      "properties": {
+        "pov_count": {"type": "integer"},
+        "nonlinear_timeline": {"type": "boolean"},
+        "belief_failures": {"type": "integer"},
+        "orientation_failures": {"type": "integer"}
+      }
+    },
     "execution": {
       "type": "object",
-      "$comment": "Runner-Governed Execution state. phase = current next_action.key-aligned phase; gates = per-phase gate result; allowed_next = legal transitions (from execution-gates.v1.json).",
+      "$comment": "Runner-Governed Execution state. Increment 5 (state_version 2): gate_events[] is the canonical append-only gate-decision log; phase/allowed_next/pending_gate/finding_states are a recomputable resume pointer (== fold(gate_events), asserted by run_gate.py --check-state). gates (per-phase result map) is DEPRECATED — read only when state_version < 2 (legacy fallback).",
       "properties": {
         "phase": {"type": "string"},
         "run_folder": {"type": "string"},
-        "gates": {"type": "object"},
+        "state_version": {"type": "integer", "$comment": "2 = gate_events model; absent/1 = legacy gates-map sidecar. Readers branch on this."},
+        "gate_events": {"type": "array", "items": {"$schema_ref": "apodictic.gate_event.v1"}, "$comment": "append-only gate-decision log. Nested under execution, so validate_sidecar_obj's top-level walker does not reach it; gate-state (run_gate.py --check-state) iterates and validates per item."},
+        "pending_gate": {"type": "string", "$comment": "the gate /start must resolve next (earliest open exception); OMITTED when none (never null)."},
+        "gates": {"type": "object", "$comment": "DEPRECATED by gate_events; read only when state_version < 2."},
         "allowed_next": {"type": "array", "items": {"type": "string"}},
         "finding_states": {"type": "object", "$comment": "finding_id -> lifecycle state (locked | delivered | revised); advanced forward-only by the gate."},
-        "attested": {"type": "object", "$comment": "phase -> list of confirmed attested items (model-written; the gate preserves it, never overwrites it)."}
+        "attested": {"type": "object", "$comment": "DEPRECATED by gate_events[].attested_items; legacy phase -> confirmed-items map."}
       }
     }
   }
