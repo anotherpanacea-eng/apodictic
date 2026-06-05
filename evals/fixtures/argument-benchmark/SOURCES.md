@@ -153,6 +153,41 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **RECORDED:** `retrieved 2026-05-30 | corrected re-extraction (coates-case-for-reparations-corrected.md) | 100281 bytes | sha256: d4407650b3ceafcc5853418e158fa00a1d32aac7979e5d190bd7a27032f987d2`
 - **Provenance note:** supersedes a 2026-05-30 extraction (`sha256: 2cce74f1…f457a07`, 98516 bytes) that had two ordering artifacts — an out-of-sequence predatory-lending block at the end and interleaved photo captions / "Auschwitz All Around Us" sidebar. The corrected copy restores the predatory-lending block (Rugh & Massey; Wells Fargo / Beth Jacobson; Bank of America) to sequence and removes the interleaved captions/sidebar. Sections I–X intact; section epigraphs preserved. Caveat lifted — Coates is now a load-bearing fixture.
 
+## Public-domain controls (referenced; bucket positive controls)
+
+### federalist-10
+- **Cite:** *The Federalist* No. 10 (James Madison as Publius, 1787) — bucket 5 academic/policy positive control.
+- **URL:** https://www.gutenberg.org/cache/epub/1404/pg1404.txt
+- **START:** the line `FEDERALIST No. 10` (Madison's essay; skip the Gutenberg license header and all preceding papers).
+- **BODY_START:** `FEDERALIST No. 10`
+- **END:** the line immediately before `FEDERALIST No. 11`.
+- **BODY_END:** `FEDERALIST No. 11`
+- **EXCLUDE:** the Project Gutenberg license header/footer and every other paper in eBook #1404.
+- **RECORDED:** `retrieved 2026-06-04 | curl (gutenberg.org) | 18421 bytes | sha256: 7f5d50ff9fe27747c4e88e42b268b6d9642708ba44d4b3d7bfd686964290dd5c`
+- **Note:** public-domain; the analyzed text is the No. 10 body carved by the anchors above. `run.sh --fetch federalist-10` reconstitutes it from the URL.
+
+### douglass-fourth-of-july
+- **Cite:** Frederick Douglass, "Oration, Delivered in Corinthian Hall, Rochester, July 5th, 1852" — widely known as *"What to the Slave Is the Fourth of July?"* — bucket 3 testimony/oratory.
+- **URL:** https://archive.org/download/Douglass_July_Oration/ocm30553533_V_0_djvu.txt
+- **START:** the salutation that opens the oration (`Mr. President , Friends and Fellow Citizens`); skip the pamphlet title page and the anti-slavery society meeting proceedings before it.
+- **BODY_START:** `Friends and Fellow Citizens`
+- **END:** the close of the oration — Douglass's quotation of W. L. Garrison's "God speed the year of jubilee," ending at `Be driven.` (no trailing matter in the scan).
+- **BODY_END:** *(none — carve to end of file; trailing blank lines are stripped)*
+- **EXCLUDE:** the title page, printer colophon, and the Rochester Ladies' Anti-Slavery Society meeting record that precede the salutation.
+- **RECORDED:** `retrieved 2026-06-04 | curl (archive.org) | 62326 bytes | sha256: 56191e5ee2eff46d38d5e3a18f8c8cf46dd8d48098468b2c39368bfc37185308`
+- **Note:** public-domain; source is the archive.org item `Douglass_July_Oration` (stable identifier) `_djvu.txt` (OCR of the Emory pamphlet scan — prose is clean, the closing Garrison poem carries mild OCR artifacts, immaterial to argument structure). `run.sh --fetch douglass-fourth-of-july` reconstitutes it. Less canonical-immutable than a Gutenberg eBook ID; the recorded SHA-256 pins reproducibility.
+
+### modest-proposal-satire
+- **Cite:** Jonathan Swift, *A Modest Proposal* (1729) — bucket 6 satire / Q7 unconventional-form control (the hardest Q7 trap: sustained irony).
+- **URL:** https://www.gutenberg.org/cache/epub/1080/pg1080.txt
+- **START:** the essay's opening sentence (`It is a melancholy object`); skip the title page + Gutenberg license header.
+- **BODY_START:** `It is a melancholy object`
+- **END:** the essay's true final sentence — Swift's ironic disclaimer ending `my wife past child-bearing.`; the carve stops at the Gutenberg END marker, so the full closing paragraph is included.
+- **BODY_END:** `*** END OF THE PROJECT GUTENBERG EBOOK A MODEST PROPOSAL ***`
+- **EXCLUDE:** the Project Gutenberg license header/footer and the title/subtitle/byline block.
+- **RECORDED:** `retrieved 2026-06-04 | curl (gutenberg.org) | 19640 bytes | sha256: f836711ac289c36f99d4ec5ddb41d137d95d55a829c57a6b054a32f5b4ace948`
+- **Note:** public-domain (Gutenberg eBook #1080). **Supersedes** the earlier groundtruth END anchor `giving some pleasure to the rich`, which truncated Swift's closing disclaimer ("I have no children… my wife past child-bearing") — a load-bearing part of the satire (see synthetic-controls SCORECARD §END-anchor nuance). `run.sh --fetch modest-proposal-satire` reconstitutes it.
+
 ---
 
 *Adding a referenced fixture: add a metadata block here (never a diagnosis), and

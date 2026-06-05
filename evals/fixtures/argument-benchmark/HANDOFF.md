@@ -101,10 +101,16 @@ calibration fix landed in **PR #22**. See `evals/results/*/SCORECARD.md` plus th
 3. **Recognition re-test.** With the masthead + trailing-bio leaks closed,
    re-confirm the recognition picture (ppi already flipped to "not recognized");
    the lower-recognition fixtures now carry the construct validity.
-4. **Deferred (Increment 3):** build the `validate.sh argument-groundtruth-check`
-   validator (specced in `docs/argument-benchmark-spec.md`; it touches
-   `validate.sh` → host-workspace regeneration). Also: GT4–GT7 second-editor
-   confirmation.
+4. **GT4–GT7 second-editor confirmation (the one human-gated item).** GT1–GT3 are
+   editor-pre-registered (temporally independent); GT4–GT7 are provisional and want
+   a *second* human editor diagnosing blind for personal independence. A ready-to-hand
+   **blind packet is built** at Dropbox `…/Development Editor/argument-benchmark-second-editor-packet/`
+   (5 load-bearing pieces, stripped + neutral-labeled, README + registration form;
+   the de-anon map + scoring steps in its `TODO.md`). Gitignored — the packet holds
+   third-party text, so it lives in Dropbox, never the repo. Recruit one editor and
+   hand them `packet/`.
+   *(The `validate.sh argument-groundtruth-check` validator is DONE — shipped in main
+   v2.1/2.2 as `scripts/argument_groundtruth.py`, extended to FM-A20 here.)*
 
 ---
 
