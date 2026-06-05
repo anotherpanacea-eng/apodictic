@@ -100,7 +100,22 @@ Validate that the engine works on real argument-shaped nonfiction, not just in t
 - ✓ **Public-domain core** (fetchable, not stored): *Federalist* No. 10 (bucket 5 positive control, Gutenberg) and Douglass, *What to the Slave Is the Fourth of July?* (bucket 3 / testimony + Q7 unconventional-form control, archive.org pinned). Both verified via `run.sh --fetch`.
 - ✓ **`run.sh --fetch`** reconstitution mode — pulls each referenced source from its pinned URL and verifies the recorded hash.
 - ✓ **`validate.sh argument-groundtruth-check`** key-conformance validator (`scripts/argument_groundtruth.py`, shipped v2.1/2.2): GT1–GT7 coverage, DC code-namespace resolution, GT2 locus↔code consistency, GT7 Distinguish classification — **extended to FM-A20** for the decoy-resistance pattern.
-- **Remaining:** second-editor confirmation of GT4–GT7 (GT1–GT3 authoritative; GT4–GT7 provisional).
+- **Remaining:** second-editor confirmation of GT4–GT7 (GT1–GT3 authoritative; GT4–GT7 provisional) — see **Next round** below.
+
+**Next round (after the convergence runs, PR #37).** Grouped by what each needs:
+
+*Substantive (engine / key — the next calibration round):*
+1. **Strengthen Test A** (the genre-genericity decoy filter). `ppi` only partially closed cross-vendor — blind GPT-4 ran Test B but its self-undermining objection stayed on the public-safety **decoy** axis; the filter must recognize "but public safety" as the genre-generic counter and downrank it.
+2. **`policy-brief-uncompared` under-fire fix.** An AT3 recommendation with no comparative defense and no funding mechanism should drive **Must-Fix → UNSOUND**, but it reads SOUND (the Step-9 default-to-SOUND overrides the Severity Floor). The natural pair with #1 for the next round.
+
+*Human-gated (ready — just needs people):*
+3. **Recruit one second editor** — the GT4–GT7 / personal-independence upgrade. The blind packet is built and waiting in Dropbox (`argument-benchmark-second-editor-packet/`, with its own `TODO.md`); pointer in `evals/fixtures/argument-benchmark/HANDOFF.md`.
+4. **`current-affairs` GT2** (flagged recall-suspect on a cross-vendor split) — resolves via #3, or via a second vendor.
+
+*Minor / optional:*
+5. **PDF `--fetch` (AECF)** — currently fails loudly with a manual path; add a `pdftotext` branch if PDF fixtures multiply (flagged in PR #37, non-blocking).
+6. **Cross-vendor n=1** — `roosevelt`'s clean GPT flip is strong but single-run; a second GPT pass would kill any "it was variance" objection. Optional hardening.
+7. **Housekeeping** — the merged `claude/benchmark-corpus-round2` branch can be deleted (nothing depends on it; the Dropbox artifacts are independent).
 
 **Corpus buckets:**
 1. Op-eds
