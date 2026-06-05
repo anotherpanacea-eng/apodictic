@@ -55,6 +55,13 @@ _GHOSTWRITE_RE = re.compile(
     r"\b(?:write|draft|ghost-?write|pen)\s+(?:the|a|an|some|her|his|their)\s+"
     r"(?:line|sentence|paragraph|dialogue|prose|passage|scene)\b",
     re.IGNORECASE)
+# Content-invention by specifying what happens in a NEW unit: "add/insert a scene where <events>".
+# The "where <events>" clause is the tell (it names the content); a content-ADDING verb is required,
+# so "remove/cut the scene where …" (legitimate classes) do not match.
+_INVENTED_SCENE_RE = re.compile(
+    r"\b(?:add|create|insert|write|draft|put\s+in)\s+(?:a|an|the|another|some)\s+"
+    r"(?:scene|beat|moment|flashback|line|exchange|chapter|passage|paragraph)\s+where\b",
+    re.IGNORECASE)
 
 
 def _read(path):
@@ -156,7 +163,8 @@ def plan(text, strict=False):
                          "retcon endanger?" % (rid, obj.get("mutability")))
         # W2 — firewall drift (invented prose where a class belongs)
         blob = "%s %s" % (obj.get("intervention_class") or "", obj.get("disposition") or "")
-        if (_INVENTED_QUOTE_RE.search(blob) or _GHOSTWRITE_RE.search(blob)) and rid not in fw_overrides:
+        if ((_INVENTED_QUOTE_RE.search(blob) or _GHOSTWRITE_RE.search(blob)
+             or _INVENTED_SCENE_RE.search(blob)) and rid not in fw_overrides):
             warns.append("W2 firewall drift: %s reads like invented prose, not an intervention "
                          "class — plan the class; the author writes the tissue" % rid)
 
@@ -293,6 +301,15 @@ def run_self_test():
     # "draft"/"scene" as revision NOUNS must not false-trigger W2 (verb must govern the object)
     code_w, lines_w = plan(TARGETS + item("RX-01", iclass="recontextualize the draft's opening scene"))
     chk("w2_noun_no_falsetrigger", code_w == 0 and not any("W2 firewall drift" in ln for ln in lines_w))
+    # "add a scene where <events>" — the documented content-invention form (PR #38 review P2)
+    code_w, lines_w = plan(TARGETS + item("RX-01", iclass="add a scene where Maya confesses to hiding the letter"))
+    chk("w2_add_scene_where", code_w == 0 and any("W2 firewall drift" in ln for ln in lines_w))
+    chk("w2_add_scene_strict_fails",
+        plan(TARGETS + item("RX-01", iclass="insert a beat where she admits it"), strict=True)[0] == 1)
+    # removing/cutting an existing scene is a legit class — must NOT trigger
+    code_w, lines_w = plan(TARGETS + item("RX-02", target="T2", iclass="cut the scene where she lies"))
+    chk("w2_remove_scene_no_falsetrigger",
+        code_w == 0 and not any("W2 firewall drift" in ln for ln in lines_w))
 
     # no blocks -> no-op
     chk("no_items_noop", plan("# Retcon Plan\nNothing structured yet.\n")[0] == 0)
