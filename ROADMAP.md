@@ -126,9 +126,13 @@ Treat Dialectical Clarity as the kernel, not the whole operating system. Compani
 
 The core Revision Coach shipped in v1.1.2 with four modes (Session Planning, Stuck-Point Coaching, Momentum Tracking, Deadline Coaching) and was deepened in v1.1.3 (Guidance Without Specification stance, block diagnosis, exercise library) and v1.2.0 (partial manuscript coaching). Further deepening based on real usage:
 
+### Retcon Planning — **Built (Increment 1)**
+
+A revision-coaching track for the retroactive-continuity work a late structural decision owes the earlier draft. Two entry doors — a committed late decision → **setup-debt ledger** (run reveal economy backward), and a latent **"bug-or-feature" reinterpretation** — unified by a **commitment budget** (locked/costly/free) and a **fair-play rule** (dramatic retcon for meaning allowed; evidential retcon of canon the reader has reasoned from forbidden). Firewall-bound: the coach plans the retcon and budgets the commitments; the author writes the tissue. Lineage: Gwern's *Better Fiction via Retcon Planning* (latent-world + commitment budget) merged with this project's setup-debt framing. Enforced by the `retcon-plan` validator (R1–R4 + advisory W1/W2; the signature checks are R3 no-evidential-retcon-of-locked-canon and W2 firewall-drift) over `apodictic.retcon_item.v1` blocks, with a canonical `--check-all` gate. Validators 23 → 24. Spec: [`docs/retcon-planning.md`](docs/retcon-planning.md). **Future:** ranked Door-B abduction; the State Card as a standalone cross-revision rolling artifact; auto-seeding the setup-debt ledger from Reveal Economy (Pass 8); the interactive-fiction/game-narrative diagnostic the essay points at.
+
 ### Multi-Session Revision Arc Planning
 
-Session Planning currently operates one session at a time. Arc Planning would produce a multi-week revision strategy: phase 1 tackles structural root causes, phase 2 handles downstream consequences, phase 3 addresses polish. The arc adapts as earlier phases reveal new issues.
+Session Planning currently operates one session at a time. Arc Planning would produce a multi-week revision strategy: phase 1 tackles structural root causes, phase 2 handles downstream consequences, phase 3 addresses polish. The arc adapts as earlier phases reveal new issues. (Retcon Planning above is a concrete first slice — a dependency-ordered arc rooted in one late decision.)
 
 ### Genre-Specific Coaching Calibration
 
