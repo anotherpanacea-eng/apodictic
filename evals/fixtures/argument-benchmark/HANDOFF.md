@@ -85,6 +85,18 @@ based on current `main`); land it after its dependencies #20 and #21.
   dimensions, and surfaced two ground-truth refinements (see RUN-PROTOCOL
   "Worked example"). That proves the loop end-to-end.
 
+## Next round (current — after PR #37 merge)
+
+The full convergence runs + the decoy-resistance engine fix landed in **PR #37** (merged to
+`main`). The current next-round list (with rationale) is tracked in `ROADMAP.md` → §Benchmark
+Suite → **Next round**:
+
+- **Substantive (engine/key — next calibration round):** (1) strengthen **Test A** (genre-genericity decoy filter) — `ppi` partial cross-vendor, GPT's objection stayed on the public-safety decoy; (2) **`policy-brief-uncompared` under-fire** — AT3 + no comparative defense should drive Must-Fix → UNSOUND (Step-9 default overrides the floor). #1 + #2 pair.
+- **Human-gated (ready, needs people):** (3) recruit one **second editor** (GT4–GT7 personal independence) — blind packet ready in Dropbox `argument-benchmark-second-editor-packet/` (see below); (4) **`current-affairs` GT2** recall-suspect — resolves via #3 or a second vendor.
+- **Minor / optional:** (5) PDF `--fetch` (AECF) → add a `pdftotext` branch if PDFs multiply; (6) a second cross-vendor GPT pass on `roosevelt` (kills the n=1 "variance" objection); (7) housekeeping — the merged `claude/benchmark-corpus-round2` branch can be deleted.
+
+The list below predates the PR #37 merge and is kept for historical context.
+
 ## What's NOT done (the actual remaining work)
 
 The first full cycle is **done**: the blind runs executed (abundance cluster +
