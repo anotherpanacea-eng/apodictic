@@ -166,6 +166,17 @@ of an argument's support apparatus). `EXCLUDE` still governs nav/CTA/chrome.
 - **RECORDED:** `retrieved 2026-06-04 | curl (gutenberg.org) | 18421 bytes | sha256: 7f5d50ff9fe27747c4e88e42b268b6d9642708ba44d4b3d7bfd686964290dd5c`
 - **Note:** public-domain; the analyzed text is the No. 10 body carved by the anchors above. `run.sh --fetch federalist-10` reconstitutes it from the URL.
 
+### douglass-fourth-of-july
+- **Cite:** Frederick Douglass, "Oration, Delivered in Corinthian Hall, Rochester, July 5th, 1852" — widely known as *"What to the Slave Is the Fourth of July?"* — bucket 3 testimony/oratory.
+- **URL:** https://archive.org/download/Douglass_July_Oration/ocm30553533_V_0_djvu.txt
+- **START:** the salutation that opens the oration (`Mr. President , Friends and Fellow Citizens`); skip the pamphlet title page and the anti-slavery society meeting proceedings before it.
+- **BODY_START:** `Friends and Fellow Citizens`
+- **END:** the close of the oration — Douglass's quotation of W. L. Garrison's "God speed the year of jubilee," ending at `Be driven.` (no trailing matter in the scan).
+- **BODY_END:** *(none — carve to end of file; trailing blank lines are stripped)*
+- **EXCLUDE:** the title page, printer colophon, and the Rochester Ladies' Anti-Slavery Society meeting record that precede the salutation.
+- **RECORDED:** `retrieved 2026-06-04 | curl (archive.org) | 62326 bytes | sha256: 56191e5ee2eff46d38d5e3a18f8c8cf46dd8d48098468b2c39368bfc37185308`
+- **Note:** public-domain; source is the archive.org item `Douglass_July_Oration` (stable identifier) `_djvu.txt` (OCR of the Emory pamphlet scan — prose is clean, the closing Garrison poem carries mild OCR artifacts, immaterial to argument structure). `run.sh --fetch douglass-fourth-of-july` reconstitutes it. Less canonical-immutable than a Gutenberg eBook ID; the recorded SHA-256 pins reproducibility.
+
 ---
 
 *Adding a referenced fixture: add a metadata block here (never a diagnosis), and
