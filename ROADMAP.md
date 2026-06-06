@@ -261,7 +261,7 @@ v2.0.0 Phase 5 handled the first real plumbing (exponential backoff with `Retry-
 
 ### Adaptive Mid-Run Mode Escalation — **Built (v2.2.0)**
 
-**Built.** Shipped as the `escalation-check` validator + `run-core.md` integration: a condition-triggered checkpoint after Tier 1 that reads the Tier-1 finding count from the ledger and the complexity signals from the sidecar, and recommends escalating the execution mode before Tier 2. Advisory by default; `--strict` halts on a recommendation. Design: [`docs/adaptive-mode-escalation.md`](docs/adaptive-mode-escalation.md). De-escalation (swarm → sequential) remains a future option. The original proposal follows.
+**Built.** Shipped as the `escalation-check` validator + `run-core.md` integration: a condition-triggered checkpoint after Tier 1 that reads the Tier-1 finding count from the ledger and the complexity signals from the sidecar, and recommends escalating the execution mode before Tier 2. Advisory by default; `--strict` halts on a recommendation. Design: [`docs/adaptive-mode-escalation.md`](docs/adaptive-mode-escalation.md). **De-escalation (swarm/hybrid → sequential) is now also built** — the symmetric case: when no trigger fires and *every* complexity signal sits in a clearly-simple band (set below the escalation thresholds, with a neutral zone between), an over-provisioned mode is recommended down to `sequential`. It is strictly conservative (a missing/malformed signal blocks it; never de-escalates below `sequential`), because wrongly stripping isolation off a complex manuscript risks wrong analysis, worse than the wasted tokens of over-provisioning. The original proposal follows.
 
 After Tier 1 passes complete, the system has significantly more information about the manuscript than it had at preflight — multiple POV characters discovered, timeline complexity detected, genre hybridization identified. The execution mode selected at intake may no longer be optimal.
 
@@ -288,7 +288,7 @@ After Tier 1 passes complete, the system has significantly more information abou
 **Where to implement:** Add a §Mid-Run Escalation Check section to `run-core.md` between the Execution Protocol and Pre-Pass Re-Grounding sections. The check runs once, after Tier 1, before the first Tier 2 pass is dispatched.
 
 **Open questions:**
-- Should the system also support *de-escalation* (swarm → sequential) if Tier 1 reveals the manuscript is simpler than expected? Lower priority — the cost of running a more expensive mode is wasted tokens, not wrong analysis.
+- ~~Should the system also support *de-escalation* (swarm → sequential) if Tier 1 reveals the manuscript is simpler than expected?~~ **Built** (conservatively: only on affirmatively-confirmed simplicity, never below `sequential`). The reasoning that made it lower-priority — a more expensive mode wastes tokens, not correctness — is exactly why the de-escalation guard is asymmetric: it blocks on any unconfirmed signal so it can never trade correctness for tokens.
 - What's the UX for presenting the escalation recommendation? Probably a brief summary: "Tier 1 found [X complexity signals]. I'd recommend switching from [current] to [recommended] mode for the remaining passes. Cost difference: ~[N]K tokens. Proceed?"
 
 ### Framework Overview Dashboard

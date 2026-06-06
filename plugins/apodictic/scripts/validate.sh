@@ -4178,9 +4178,12 @@ EOF
     # Adaptive Mid-Run Mode Escalation detector (docs/adaptive-mode-escalation.md): a
     # CONDITION-TRIGGERED checkpoint after Tier 1 that compares revealed complexity (POV count,
     # nonlinear timeline, belief/orientation density, Tier-1 finding count from the ledger) against
-    # the preflight estimate and recommends escalating the execution mode before Tier 2. Advisory
-    # by default (escalation is a recommendation, never automatic); --strict exits 1 when an
-    # escalation is recommended. Delegates to scripts/escalation_check.py; degrades to advisory WARN.
+    # the preflight estimate and recommends escalating the execution mode before Tier 2. The
+    # symmetric case: when no trigger fires and every signal is in a 'clearly simple' band, it
+    # recommends DE-escalating an over-provisioned expensive mode (hybrid/swarm) down to sequential
+    # (conservatively — a missing/malformed signal blocks it). Advisory by default (a recommendation,
+    # never automatic); --strict exits 1 on either recommendation. Delegates to
+    # scripts/escalation_check.py; degrades to advisory WARN.
     EC_DIR=$(cd "$(dirname "$0")" && pwd)
     EC_HELPER="$EC_DIR/escalation_check.py"
     if [ "${1:-}" = "--self-test" ]; then
