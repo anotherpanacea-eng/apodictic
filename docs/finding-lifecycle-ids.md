@@ -114,6 +114,10 @@ E4 (dangling) and W2 (plan coverage) keep treating **both** globs as "a revision
 - *W3 vs W2 overlap* — distinct artifacts, distinct questions: W2 reads any revision artifact for *plan* coverage; W3 reads only completion artifacts for *lifecycle advancement*. A finding can be W2-clean (planned) yet W3-warn (worked but state not advanced).
 - *monotonic ordering not asserted* — `finding-trace` holds no event history, so it does not assert that `revised` implies a prior `delivered` (the letter may be absent from scope). Ordering is the runner/gate's job; this increment audits completion reconciliation only.
 
+## Cross-track addition — Retcon Planning F3 source provenance (E6)
+
+`finding-trace` is the project's owner of cross-artifact `F-…` referential integrity, so the Retcon Planning **F3** increment homes its provenance check here rather than rebuilding ledger access in `retcon-plan`. **E6 — dangling retcon source** (ERROR): a Retcon Plan (`*_Retcon_Plan_*.md`) `apodictic.retcon_item.v1` block with an optional `source` finding-ref (primarily a Pass-8 Reveal-Economy finding, e.g. `F-P8-03`) whose `source` does **not** resolve to a ledger finding. Only schema-shaped `F-…` refs are checked — a malformed `source` is the `retcon-plan` schema's job (R1), not E6's, so the two validators don't double-report a format error. The run-folder resolver picks up Retcon Plans alongside the ledger/letter/revision artifacts; the report header notes how many retcon sources were traced. See [`docs/retcon-planning.md`](retcon-planning.md) §F3.
+
 ## Out of scope (later increments)
 
 - **`deficit-lock` / `softness-check` by-ID consolidation.** Folding their residual prose heuristics fully onto IDs is a separate hardening pass.
