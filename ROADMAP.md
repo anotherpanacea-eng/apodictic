@@ -207,9 +207,11 @@ Writers returning with beta reader or critique group feedback. Sort, validate, a
 
 Argument spine + source/evidence map + scene ethics plan. Separate from fiction pre-writing because nonfiction structure is thesis-driven, not character-driven.
 
-### Legal Risk Register
+### Legal Risk Register — **Built (Increment 1)**
 
 Defamation concerns in memoir/autofiction, privacy issues for identifiable individuals, rights clearance flags. Produces a legal risk register with severity levels and escalation triggers. "I'm flagging areas that may need legal review. I am not a lawyer."
+
+**Built (Increment 1).** A workflow that **flags** a manuscript's legal-exposure areas — `defamation` / `privacy` / `rights-clearance` / `other` — each as an `apodictic.legal_risk.v1` block with a **legal-escalation severity** (`monitor` / `review-recommended` / `review-now`, kept orthogonal to the editorial Must/Should/Could scale) and an escalation trigger, in a `[Project]_Legal_Risk_Register_[runlabel].md` artifact. The module firewall is **flag, don't practice law**: it never adjudicates. Enforced by the `legal-risk` validator (L1 schema, L2 unique ids, **L3 not-a-lawyer disclaimer present**; **W1 legal-advice drift** — a legal conclusion where a flag belongs, overridable — and W2 a `review-now` item not routed to counsel), with a canonical `--check-all` gate. Validators 24 → 25. Homed in core-editor; spec: [`docs/legal-risk-register.md`](docs/legal-risk-register.md). **Future increments:** a `/legal-risk` command + intake routing; per-class detection guidance; a standard escalation-trigger taxonomy.
 
 ### Episode Cadence
 
