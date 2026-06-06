@@ -1,0 +1,5 @@
+# Blank issues stay enabled: freeform notes, research questions, and
+# horizon ideas (the kind that become ROADMAP entries) don't need the
+# task-brief contract. Use the Task brief when work is close enough to
+# implement.
+blank_issues_enabled: true
