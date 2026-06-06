@@ -15,7 +15,7 @@
 | | [Genre Audit Expansion](#genre--audit-expansion) | [v1.7.0](#v170--harness-engineering) | [Framework Overview Dashboard](#framework-overview-dashboard) |
 | | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) | [v1.4.0](#v140--surface-hardening--writers-block) | [Corpus-Expansion Fixtures](#deferred-corpus-expansion-candidates) |
 | | | [v1.3.0](#v130--nonfiction-argument-engine--genre-audits) | |
-| | | [v1.2.1](#v121--audit-sequencing--model-tags) | |
+| | | [v1.2.1](#v121--audit-sequencing--model-tags) | [Horizon Capacities](#horizon-capacities) |
 | | | [v1.2.0](#v120--artifact-coverage) | |
 | | | [v1.1.3](#v113--coaching-deepening) | |
 | | | [v1.1.2](#v112--revision-coach) | |
@@ -339,6 +339,68 @@ Continuing the v0.5 vision: the plugin should be organized around writer questio
 - **Filename renames.** Keep pass-numbered filenames on disk. The Results Guide is the primary macro-block organizer. Bulk renames deferred unless usage shows writers navigate by detail files.
 - **Skill merges or renames.** Five-skill architecture stays. Skill loading is invisible to users. Evaluate only if handoff pain surfaces.
 - **Editorial Letter renaming.** `Core_DE_Synthesis` and `Full_DE_Synthesis` work. Don't alias.
+
+---
+
+## Horizon Capacities
+
+*Surfaced by a 2026-06 design scan; unplanned.*
+
+A deliberate sweep for capacities a developmental-editing tool of this shape **could** have that are absent from both the codebase and the plan above. Each is judged against the five load-bearing commitments — the **Firewall** (diagnose structure and *classes* of fix, never invent content), **severity honesty** (the Deficit Lock; severity cannot be softened), **listens-before-diagnosing** (the contract is inferred from the text), **non-commercial / local / no-telemetry**, and **mechanical validators over eval harnesses**. Sorted by how cleanly each fits. These are candidates, not commitments — the framework default is to build none until a forcing function appears. Numbering is stable for cross-reference; speccing order follows fit (Tier 1 first).
+
+Cross-field calibration: the visualization and annotated-manuscript gaps are validated against the structural-editing field (Fictionary ships 15+ automated story visualizations; the standard human-DE deliverable set is editorial letter **+ in-manuscript margin comments + book map + style sheet**), and the deliberate exclusions (marketability guarantees, copyediting) are confirmed against [§Not Planned](#not-planned).
+
+### Tier 1 — Clean whitespace (fits the philosophy)
+
+These invent nothing — they render, export, or extract what the engine already produces — and sit in gaps the plan does not touch.
+
+1. **Manuscript-Structure Visualizations.** A *manuscript-specific* visual report — tension/pacing curve, POV-time distribution, character co-presence network, scene-function heatmap, reveal-economy timeline, beat-map against the chosen spine. **Distinct from** the planned [Framework Overview Dashboard](#framework-overview-dashboard), which visualizes the *plugin's* capabilities, not a book. Highest externally-validated gap (Fictionary's signature). Builds a new single-file SVG renderer in the static-HTML house pattern (no editorial-letter render pipeline exists to reuse); the data already lives, machine-readable, in the Findings Ledger (`apodictic.finding.v1` blocks) and `Timeline.md` (the Event Ledger's per-scene word-count/POV). Firewall-safe (it renders diagnosis, invents nothing). *Effort: low–medium.* Spec: [`docs/manuscript-visualizations.md`](docs/manuscript-visualizations.md).
+
+2. **Annotated-Manuscript Deliverable.** Locus-anchored margin notes exported as an annotated copy (or Word / Google Docs / Obsidian / CriticMarkup comments) — the #1 human-DE deliverable, which APODICTIC does not produce (it emits a letter that only *references* loci). Findings already carry stable loci **and** durable IDs ([Finding Lifecycle IDs](#finding-lifecycle-ids)), so this is an export/anchor problem, not a reasoning one. Comments only, never tracked prose changes → firewall-clean. Synergistic with the FLI track. *Effort: low–medium.* Spec: [`docs/annotated-manuscript.md`](docs/annotated-manuscript.md).
+
+3. **Beta-Reader Instrument Generation.** The upstream complement to [Feedback Triage](#feedback-triage--built-increment-1-v220) (which *ingests* reader feedback): turn the diagnosis's open, low-confidence questions into a targeted reader questionnaire. Exploits the confidence axis the engine already tracks. Firewall-safe. *Effort: low.* Spec: [`docs/beta-reader-instrument.md`](docs/beta-reader-instrument.md).
+
+4. **Promise-vs-Contract Audit (author's own marketing copy).** Diagnose a query letter / synopsis / jacket blurb against the *inferred manuscript contract* — does the pitch match the book? **Distinct from** shelf-positioning (comps) and submission-readiness (is it ready). It is APODICTIC's core contract-mismatch move pointed at the pitch instead of the prose. Firewall caveat: diagnose the author's copy; never *write* the query. *Effort: medium.* (See also #14.) Spec: [`docs/promise-contract-audit.md`](docs/promise-contract-audit.md).
+
+5. **Reader-Persona / Audience-Segmented Experience Simulation.** Run the reader-experience map through distinct persona lenses and surface *divergence*. Reception Risk covers harm/offense; the experience pass runs one composite reader. Neither models how the same beats land across audience segments. Firewall-safe (it predicts structurally and never fabricates reader testimony — the line against item 17). *Effort: medium.* Spec: [`docs/reader-persona-simulation.md`](docs/reader-persona-simulation.md).
+
+6. **Draft-over-Draft Structural Regression Testing.** `finding-trace` tracks revision *follow-through* (was `F-…` addressed?); it does not detect *regressions* — structure the fix broke ("tightening Act 2 severed the Act 1 setup that paid off in Act 3"). A "no new structural breakage" gate built on the Pass-10 rolling-artifact + `state-card-diff` patterns. *Effort: medium.* Spec: [`docs/draft-regression-testing.md`](docs/draft-regression-testing.md).
+
+7. **Auto-Derived Continuity Bible.** The narrative half of a DE "style sheet": canonical names, ages, timeline facts, world rules, extracted into a reference artifact. `Series_State.md` does this cross-volume; there is no *single-manuscript* equivalent. The copyedit half (spelling/hyphenation) stays out of scope ([§Not Planned](#not-planned)). Pure extraction → firewall-clean. *Effort: medium.* Spec: [`docs/continuity-bible.md`](docs/continuity-bible.md).
+
+8. **Content-Advisory / Sensitivity-Surface Derivation.** A structured map of where intense content occurs, at what intensity, on- vs off-page. Reception-Risk / Consent-Complexity / Erotic-Content audits assess *craft/risk*; none emit a reader- or marketing-facing advisory artifact. Extraction → firewall-safe. Optional by design (some authors decline content warnings on principle). *Effort: medium.* Spec: [`docs/content-advisory.md`](docs/content-advisory.md).
+
+9. **Cross-Manuscript Author Voice/Craft Fingerprint.** A persistent author profile across *unrelated* works — voice drift, growth, unconscious self-imitation. Today's voice-distinctiveness is *within-manuscript*; Series Continuity tracks *story facts*. **Distinct from** the planned cross-session pattern recognition under [Coaching Deepening](#coaching-deepening). Privacy-sensitive (observations, not judgments). Consumes the existing stylometry (POV Voice Profile centroids + AI-prose personal-baseline z-scores) — it persists/diagnoses across works, it does not recompute. *Effort: medium.* Spec: [`docs/author-voice-fingerprint.md`](docs/author-voice-fingerprint.md).
+
+### Tier 2 — Adjacent disciplines / input modalities
+
+Bigger lifts, still philosophy-compatible.
+
+10. **Dramatic-Writing Structural Module (screenplay / stage play / audio drama).** The genre-expansion list names interactive fiction, game narrative, and comics but **not** screen or stage — which have their own structure (sequence/act architecture, shown-vs-told, subtext-on-the-page, white-space pacing) and formats (Fountain, Final Draft). The contract-inference engine ports. *Effort: large.*
+
+11. **Argument-Engine Extension to Grant Proposals / Academic Papers / Pitch Decks.** The Dialectical Clarity kernel already handles argument-shaped nonfiction; these add genre-specific argument structures (Specific Aims / Significance / Innovation; contribution + related-work positioning) and reviewer-anticipation. Calibration on an existing engine, not new architecture. *Effort: medium–large.*
+
+12. **Songwriting / Lyrics / Spoken-Word Lens.** Poetry is already a genre candidate; lyrics are a different problem (hook economy, refrain function, prosody-against-meter, the verse/chorus contract). Demand-gated. *Effort: small–medium.*
+
+13. **Standalone Worldbuilding-Bible Coherence Tool.** SFF-Worldbuilding audits a *manuscript*; a standalone bible-coherence checker (rules consistency, magic-system cost accounting, geography/timeline contradiction) is usable before or alongside drafting, in the pre-writing pathway's spirit. *Effort: medium.*
+
+### Reconsidered from the boundary
+
+Two capacities first scanned as boundary-pushing are, on reflection, **closer to buildable** than the non-viable set below — each has prior art in the framework and a firewall-safe diagnostic form.
+
+14. **Positioning-Risk Lens (the diagnostic sibling of marketability).** **Resolved: will not build — covered by existing surfaces.** Pass 11C (Market Reality Check + Shelf Positioning Gate), Pass 11D (Abandonment Risk Rating), and the Shelf & Positioning audit already surface positioning risk in three deliverable sections, so a consolidation register would be redundant. The one net-new idea — a "risk-not-forecast" boundary guard — is non-viable: [§Not Planned](#not-planned) excludes commercial-viability *guarantees*, **not predictions**, yet the guard would police predictions and so would flag the framework's *own* canonical Pass-11 output (which deliberately produces acquisition-style predictions like "agents will reject because…"). The only real boundary (outright guarantees) folds, if wanted, into [Promise-Contract Fidelity](#horizon-capacities)'s W2 phrase set rather than a standalone capability. Reopen only if a cross-manuscript *portfolio* view is demanded (a different artifact). Decision record: [`docs/positioning-risk-lens.md`](docs/positioning-risk-lens.md).
+
+18. **Uncertainty-Resolution Intake Interview.** A narrow loop, *on top of* the existing draft-then-validate intake, that asks the author to **disambiguate a specific structural ambiguity the framework detected but cannot settle from the text** ("is the non-linear ordering in Ch 4–6 a deliberate braid, or drift?"). **Prior art:** the `/start` router already runs a two-to-three-question intake, and `run-core.md`'s intake already shows the inferred contract and asks the author to correct it — so contract/audience/scope capture is *already owned*; this adds the one thing nothing covers. The apparent tension with *listens-before-diagnosing* dissolves because the loop is confined to detected-ambiguity disambiguation (every question a flavor of *intentional-vs-accidental*), never re-asking the genre/reader-promise/controlling-idea the intake already captures, and answers may direct *how* a feature is assessed but never *suppress* a finding (the Deficit-Lock guard). *Effort: medium.* Spec: [`docs/uncertainty-intake-interview.md`](docs/uncertainty-intake-interview.md).
+
+### Surfaced but not viable (and why)
+
+These three were surfaced by the same scan but **collide with a load-bearing commitment**, and are recorded here so the boundary is explicit and durable. They are not [§Not Planned](#not-planned) scope-exclusions; they are capacities a similar tool *could* have that *this* tool's principles forbid.
+
+15. **Cross-User Telemetry / Aggregate Severity Calibration.** Learning severity calibration from many real runs would be powerful, but it collides with the **no-instrumentation-while-private** stance ([§Writer-Question Surface Hardening](#writer-question-surface-hardening) → "What not to build (yet)") and the local-tool ethos. The only principle-preserving form is opt-in, privacy-preserving aggregation — out of scope until external users exist and ask for it.
+
+16. **Author-Editor Negotiation / Concession Loop.** A workflow where the author contests a finding and the editor **downgrades** it. This directly contradicts the **Deficit Lock**: severity is locked at Triage *before* charity reframing, precisely so it cannot be softened. The disciplined form already exists — the structured override-marker pattern records dissent *without changing the verdict*. Building a concession loop would dismantle severity honesty, the framework's central value.
+
+17. **Simulated Reader Focus Group (generated reactions).** Fabricated reader reactions are invented data — the **Firewall's** spirit applied to evidence. Reception Risk and persona simulation (#5) are the disciplined alternatives: reason about reader experience without manufacturing testimony.
 
 ---
 
