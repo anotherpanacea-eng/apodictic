@@ -1,6 +1,6 @@
 # Nonfiction Pre-Draft Pathway — a workflow
 
-**Status:** Increments 1 (**argument spine**) + 2 (**source/evidence map**) + 3 (**warrant pre-check**) built. Roadmap: `ROADMAP.md` → Workflows → Nonfiction Pre-Draft. Home: **pre-writing-pathway** (thesis-driven mode), reference `pre-writing-pathway/references/nonfiction-pre-draft.md`. Seeds: `Argument_State.md` (`docs/argument-state-schema.md`). Validator: `validate.sh argument-spine`.
+**Status:** Increments 1 (**argument spine**) + 2 (**source/evidence map**) + 3 (**warrant pre-check**) + 4 (**scene-ethics plan**) built. Roadmap: `ROADMAP.md` → Workflows → Nonfiction Pre-Draft. Home: **pre-writing-pathway** (thesis-driven mode), reference `pre-writing-pathway/references/nonfiction-pre-draft.md`. Seeds: `Argument_State.md` (`docs/argument-state-schema.md`). Validator: `validate.sh argument-spine`.
 
 ## Purpose
 
@@ -102,6 +102,40 @@ The check is **audience-calibrated** (per the spine's `audience_receptivity`): f
 
 **A2 and A3 are the signature checks** — together they mechanize the *seed-Argument_State* integration (the chosen design over a standalone artifact); A6 extends that discipline to §3 and **W2** is the source/evidence map's signature (surfacing bare assertions before drafting). **Ownership boundary.** `argument-spine` owns the pre-draft contract and the seeding integrity; it does not diagnose the argument (that is the Dialectical Clarity audit, once a draft exists), judge severity, or fill the draft-dependent sections.
 
+## The scene-ethics plan (Increment 4) — a distinct artifact
+
+Narrative nonfiction and memoir depict **identifiable real people**, which raises ethical questions the argument structure doesn't: consent, fairness to the subject, anonymization vs. composite vs. omission. The scene-ethics plan is the writer's **pre-draft ethical plan** — a *distinct* artifact (`[Project]_Scene_Ethics_Plan_[runlabel].md`), not a section of `Argument_State`, because it is about the writer's ethical commitments rather than the argument's structure. It **coexists with and cross-references the Legal Risk Register**: scene-ethics owns the *ethical* plan; the [Legal Risk Register](legal-risk-register.md) owns *legal* exposure (defamation / privacy / rights). The `legal_ref` field links a depiction to its Legal Risk item.
+
+One `apodictic.scene_ethics.v1` block per depicted person:
+
+```json
+{
+  "schema": "apodictic.scene_ethics.v1",
+  "id": "EP-01",
+  "subject": "the narrator's former manager (named, identifiable)",
+  "depiction": "portrayed making a dismissive remark in a meeting",
+  "consent_status": "not-sought",     // obtained / sought-pending / not-sought / not-applicable
+  "handling": "anonymize",            // as-is / anonymize / composite / seek-consent / omit
+  "fairness_check": "role and remark kept; identifying details changed",
+  "legal_ref": "LR-01"                // optional cross-reference to a Legal Risk Register item
+}
+```
+
+`EP-NN` ids (distinct from the State Card's `SE-NN`). The Firewall holds: the writer makes the ethical decisions; the plan surfaces what needs one. It is not ethical adjudication and not legal advice.
+
+### The `scene-ethics` validator
+
+`validate.sh scene-ethics <run_folder|files>` (a **separate** validator from `argument-spine`, since the artifact and concern are distinct). Degrades to an advisory `WARN` without `python3`.
+
+| ID | Severity | Rule |
+|---|---|---|
+| **E1 — invalid item** | ERROR | A `scene_ethics` block fails its schema (bad `consent_status`/`handling` enum, malformed `EP-NN` id or `legal_ref`, missing required field, broken JSON). |
+| **E2 — duplicate id** | ERROR | Two items share an `EP-NN` id. |
+| **W1 — unresolved depiction** | WARN (ERROR `--strict`) | `handling: as-is` **and** `consent_status: not-sought` **and** no `fairness_check` — an identifiable person depicted as-is with neither consent sought nor a fairness rationale. **The signature ethics check.** Override: `<!-- override: scene-ethics-unresolved EP-NN — <rationale> -->`. |
+| **W2 — no legal cross-check** | WARN (ERROR `--strict`) | An `as-is` depiction (consent not `not-applicable`) with no `legal_ref` — check it against the Legal Risk Register. Realizes the ethics↔legal cross-reference. Override: `<!-- override: scene-ethics-legalcheck EP-NN — <rationale> -->`. |
+
+**Ownership boundary.** `scene-ethics` owns the ethics-plan contract and the unresolved-depiction surfacing; it does not adjudicate ethics, judge legal exposure (that's the Legal Risk Register), or touch the argument structure.
+
 ## Workflow
 
 1. **Classify** the piece: form, goal, argument type (AT0–AT4), burden level, audience.
@@ -120,5 +154,6 @@ The check is **audience-calibrated** (per the spine's `audience_receptivity`): f
 
 **Increment 3:** the warrant pre-check — `apodictic.warrant_plan.v1` block + schema (one per subclaim, seeding §4 Warrant and Inference Map), the `argument-spine` validator extended with A7–A9 + W3 (the **audience-calibrated** implicit-warrant flag for a HOSTILE audience being the signature), and the worked example extended with §4. Same validator (no count change). With Increments 1–3, the pre-draft seeds the Toulmin core of the argument — claims (§2), grounds (§3), and warrants (§4).
 
-**Future increments:**
-- **Scene-ethics plan** — for narrative nonfiction / memoir with real people: a pre-draft consent/disclosure plan (pairs with the **Legal Risk Register**). *Needs a design pass — taxonomy and the boundary with Legal Risk.*
+**Increment 4:** the scene-ethics plan — a *distinct* artifact `[Project]_Scene_Ethics_Plan_[runlabel].md` (`apodictic.scene_ethics.v1` block + schema), with its own `scene-ethics` validator (E1–E2 + W1–W2; the **unresolved-depiction** surfacing being the signature, W2 realizing the cross-reference to the Legal Risk Register). A new validator (25 → 26). Designed per the maintainer's decision that scene-ethics is a distinct ethical-planning artifact coexisting with the Legal Risk Register, not folded into it.
+
+**Future increments:** none currently scoped — the pre-draft pathway covers the argument's Toulmin core (Increments 1–3) and the real-people ethics plan (Increment 4). Candidates if demand surfaces: mechanical resolution of `legal_ref` against a present Legal Risk Register (once both ship), and a §5 burden/scope pre-check.

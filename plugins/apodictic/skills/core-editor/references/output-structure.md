@@ -172,7 +172,8 @@ The model tag is **required**, not optional. It identifies which model generated
 - `[Project]_Vocabulary_Guide_[runlabel].md` — facilitator teaching aid (glossary + discussion prompts), produced alongside the editorial letter (see `references/diagnostic-vocabulary.md`)
 
 **Nonfiction Argument Engine (when argument-shaped):**
-- `Argument_State.md` — shared argument artifact at the project root (§§1–10; see `docs/argument-state-schema.md`). The Dialectical Clarity audit populates it from a draft; the **Nonfiction Pre-Draft Pathway** seeds §1/§2 (+ §6 Objection 1) from an `apodictic.argument_spine.v1` block *before* a draft exists (see `pre-writing-pathway/references/nonfiction-pre-draft.md`). Re-runs archive the prior state as `Argument_State_v[N].md`.
+- `Argument_State.md` — shared argument artifact at the project root (§§1–10; see `docs/argument-state-schema.md`). The Dialectical Clarity audit populates it from a draft; the **Nonfiction Pre-Draft Pathway** seeds §1/§2/§3/§4 (+ §6 Objection 1) from `apodictic.argument_spine.v1` / `support_plan.v1` / `warrant_plan.v1` blocks *before* a draft exists (see `pre-writing-pathway/references/nonfiction-pre-draft.md`). Re-runs archive the prior state as `Argument_State_v[N].md`.
+- `[Project]_Scene_Ethics_Plan_[runlabel].md` — Nonfiction Pre-Draft scene-ethics plan (Increment 4): the writer's pre-draft ethical plan for each identifiable real person depicted (`apodictic.scene_ethics.v1` — consent, handling, fairness), distinct from and cross-referencing the Legal Risk Register. See `pre-writing-pathway/references/nonfiction-pre-draft.md`.
 
 **Series Continuity (when active):**
 - `[Project]_Series_Continuity_Audit_[runlabel].md`
