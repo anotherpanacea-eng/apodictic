@@ -171,19 +171,27 @@ The model tag is **required**, not optional. It identifies which model generated
 **Diagnostic Vocabulary (when `operator:facilitator`):**
 - `[Project]_Vocabulary_Guide_[runlabel].md` — facilitator teaching aid (glossary + discussion prompts), produced alongside the editorial letter (see `references/diagnostic-vocabulary.md`)
 
+**Nonfiction Argument Engine (when argument-shaped):**
+- `Argument_State.md` — shared argument artifact at the project root (§§1–10; see `docs/argument-state-schema.md`). The Dialectical Clarity audit populates it from a draft; the **Nonfiction Pre-Draft Pathway** seeds §1/§2/§3/§4 (+ §6 Objection 1) from `apodictic.argument_spine.v1` / `support_plan.v1` / `warrant_plan.v1` blocks *before* a draft exists (see `pre-writing-pathway/references/nonfiction-pre-draft.md`). Re-runs archive the prior state as `Argument_State_v[N].md`.
+- `[Project]_Scene_Ethics_Plan_[runlabel].md` — Nonfiction Pre-Draft scene-ethics plan (Increment 4): the writer's pre-draft ethical plan for each identifiable real person depicted (`apodictic.scene_ethics.v1` — consent, handling, fairness), distinct from and cross-referencing the Legal Risk Register. See `pre-writing-pathway/references/nonfiction-pre-draft.md`.
+
+**Legal Risk Register (when memoir / autofiction / nonfiction portrays identifiable real people):**
+- `[Project]_Legal_Risk_Register_[runlabel].md` — flags legal-exposure areas (defamation / privacy / rights-clearance) with a legal-escalation severity and escalation triggers; not legal advice (see `references/legal-risk-register.md`)
+
 **Series Continuity (when active):**
 - `[Project]_Series_Continuity_Audit_[runlabel].md`
 
 **Revision Coach (when active):**
 - `[Project]_Session_Plan_[runlabel].md`
 - `[Project]_Revision_Calendar_[runlabel].md` (deadline mode only)
-- `[Project]_Retcon_Plan_[runlabel].md` (Retcon Planning mode — setup-debt ledger + commitment budget; see `revision-coach/references/retcon-planning.md`)
+- `[Project]_Retcon_Plan_[runlabel].md` (Retcon Planning mode — ranked Door-B candidate readings + setup-debt ledger + commitment budget; see `revision-coach/references/retcon-planning.md`)
 
 **Rolling state files** (live at project root, not inside run folders):
 - `Diagnostic_State.md` — per-volume diagnostic state at the project root. If missing, initialize from `references/diagnostic-state-template.md`.
 - `Diagnostic_State.meta.json` — machine-readable sidecar at the project root. If missing, initialize from `references/diagnostic-state-meta-template.json`.
 - `SYNTHESIS.md` — master revision plan at the project root. Created from the first run's synthesis; updated by subsequent runs with a methodology note listing contributing runs.
 - `Series_State.md` — cross-volume series state at the series root (not inside each volume's project root). If missing, initialize from `references/series-state-template.md`. Persists across volumes; updated after each volume is analyzed.
+- `[Project]_State_Card_[runlabel].md` — Retcon Planning State Card (F2), a rolling structured artifact (`apodictic.state_card.v1`, one block per round) at the project root. Diff'd across revision rounds by `validate.sh state-card-diff <prior> <current>` (Pass-10-class rolling-structured-artifact pattern). See `revision-coach/references/retcon-planning.md`.
 
 ### Results Guide
 

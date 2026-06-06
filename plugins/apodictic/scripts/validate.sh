@@ -165,9 +165,9 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, argument-groundtruth-check"
-  echo "Aggregate: --self-test-all (runs --self-test on all 24 self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check"
+  echo "Aggregate: --self-test-all (runs --self-test on all 35 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder)"
   exit 2
 }
 
@@ -178,16 +178,16 @@ if [ $# -lt 1 ]; then usage; fi
 # self-test exits 0. Added per Codex P2 finding: the E1 final report
 # referred to an aggregate command that did not exist; this closes the
 # documentation-vs-implementation mismatch and simplifies CI invocation.
-# The first seven commands (contract-hash, contract-check, ledger-check,
-# artifact-names, synthesis-sections, tone-check, state-lines) are
-# pure utilities that do not carry self-tests; only the 11 model-
-# capability-review validators do.
+# The seven pure-utility commands (contract-hash, contract-check, ledger-check,
+# artifact-names, synthesis-sections, tone-check, state-lines) now carry
+# fixture-driven self-tests too (Validator Architecture Hardening — they
+# previously had none), so every command in the suite is exercised here.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan argument-groundtruth-check"
+  AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 24 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 35 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/24 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/35 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/24 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/35 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -296,11 +296,44 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-feedback-triage.md not found"; CA_FAIL=1
     fi
     echo ""
-    echo "== canonical Retcon Plan (retcon-plan: commitment-budget + fair-play + target integrity) =="
+    echo "== canonical Retcon Plan (retcon-plan: commitment-budget + fair-play + target integrity + ranked selection) =="
     if [ -f "$CA_BASE/example-retcon-plan.md" ]; then
       "$0" retcon-plan "$CA_BASE/example-retcon-plan.md" || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-retcon-plan.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Legal Risk Register (legal-risk: contract + disclaimer gate + flag-don't-adjudicate) =="
+    if [ -f "$CA_BASE/example-legal-risk-register.md" ]; then
+      "$0" legal-risk "$CA_BASE/example-legal-risk-register.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-legal-risk-register.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical State Card (state-card-diff: cross-round coherence; self-diff + round-2 diff) =="
+    if [ -f "$CA_BASE/example-state-card.md" ]; then
+      "$0" state-card-diff "$CA_BASE/example-state-card.md" || CA_FAIL=1
+      if [ -f "$CA_BASE/example-state-card-round2.md" ]; then
+        "$0" state-card-diff "$CA_BASE/example-state-card.md" "$CA_BASE/example-state-card-round2.md" || CA_FAIL=1
+      else
+        echo "ERROR: $CA_BASE/example-state-card-round2.md not found"; CA_FAIL=1
+      fi
+    else
+      echo "ERROR: $CA_BASE/example-state-card.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical pre-draft Argument_State (argument-spine: spine + support + warrant maps seed §1-§4) =="
+    if [ -f "$CA_BASE/example-argument-state-predraft.md" ]; then
+      "$0" argument-spine "$CA_BASE/example-argument-state-predraft.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-argument-state-predraft.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Scene-Ethics Plan (scene-ethics: ethics-plan contract + resolved depictions) =="
+    if [ -f "$CA_BASE/example-scene-ethics-plan.md" ]; then
+      "$0" scene-ethics "$CA_BASE/example-scene-ethics-plan.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-scene-ethics-plan.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical Timeline (timeline-arithmetic, timeline-anchor-conflict, timeline-diff self) =="
@@ -363,15 +396,129 @@ fi
 COMMAND="$1"
 shift
 
+# ----------------------------------------------------------------------
+# Pure-utility self-tests (Validator Architecture Hardening). The seven
+# count/format utilities below (contract-hash, contract-check, ledger-check,
+# artifact-names, synthesis-sections, tone-check, state-lines) previously
+# carried no self-tests. These fixture-driven functions give each one
+# regression coverage and let them join --self-test-all. Each prints
+# per-case OK/FAIL, sets PU_FAIL on any failure, and the caller exits PU_FAIL.
+# Invoked as `validate.sh <utility> --self-test`.
+# ----------------------------------------------------------------------
+_pu_rc() {  # _pu_rc <name> <want_rc> -- <cmd...>   asserts the command's exit code
+  local name="$1" want="$2"; shift 3
+  local rc=0
+  "$@" >/dev/null 2>&1 || rc=$?   # `|| ` keeps errexit from firing on the tested non-zero exit
+  if [ "$rc" -eq "$want" ]; then echo "  $name: OK"; else echo "  $name: FAIL (rc=$rc want $want)"; PU_FAIL=1; fi
+}
+_pu_eq() {  # _pu_eq <name> <actual> <expected>     asserts string equality
+  if [ "$2" = "$3" ]; then echo "  $1: OK"; else echo "  $1: FAIL ('$2' != '$3')"; PU_FAIL=1; fi
+}
+
+_selftest_contract_hash() {
+  PU_FAIL=0; local d; d=$(mktemp -d); printf 'controlling idea\n' > "$d/c.md"
+  local h; h=$("$0" contract-hash "$d/c.md")
+  if printf '%s' "$h" | grep -qE '^[0-9a-f]{64}$'; then echo "  hash_is_64hex: OK"; else echo "  hash_is_64hex: FAIL ($h)"; PU_FAIL=1; fi
+  _pu_eq deterministic "$h" "$("$0" contract-hash "$d/c.md")"
+  _pu_rc missing_file_exit2 2 -- "$0" contract-hash "$d/nope.md"
+  _pu_rc no_arg_exit2 2 -- "$0" contract-hash
+  rm -rf "$d"; [ "$PU_FAIL" -eq 0 ] && echo "Self-test: PASS" || echo "Self-test: FAIL"; return "$PU_FAIL"
+}
+
+_selftest_contract_check() {
+  PU_FAIL=0; local d; d=$(mktemp -d); printf 'contract body\n' > "$d/c.md"
+  local h; h=$("$0" contract-hash "$d/c.md")
+  _pu_rc match_exit0 0 -- "$0" contract-check "$d/c.md" "$h"
+  _pu_rc mismatch_exit1 1 -- "$0" contract-check "$d/c.md" "0000000000000000000000000000000000000000000000000000000000000000"
+  _pu_rc missing_file_exit2 2 -- "$0" contract-check "$d/nope.md" "$h"
+  _pu_rc missing_arg_exit2 2 -- "$0" contract-check "$d/c.md"
+  rm -rf "$d"; [ "$PU_FAIL" -eq 0 ] && echo "Self-test: PASS" || echo "Self-test: FAIL"; return "$PU_FAIL"
+}
+
+_selftest_ledger_check() {
+  PU_FAIL=0; local d; d=$(mktemp -d)
+  local SECT='### Notable Findings
+x
+### Data Artifacts for Letter Reference
+x
+### Cross-Pass Connections
+x
+### Unresolved Questions
+x
+### Audit Triggers
+x'
+  printf '## Pass 5 — Character\n%s\n' "$SECT" > "$d/ok.md"
+  _pu_rc complete_pass_exit0 0 -- "$0" ledger-check "$d/ok.md"
+  # Pass 5 missing one required section -> ERROR
+  printf '## Pass 5 — Character\n### Notable Findings\nx\n### Cross-Pass Connections\nx\n### Unresolved Questions\nx\n### Audit Triggers\nx\n' > "$d/missing.md"
+  _pu_rc missing_section_exit1 1 -- "$0" ledger-check "$d/missing.md"
+  # Pass 0 missing a section -> NOTE (acceptable), not error
+  printf '## Pass 0 — Structure\n### Notable Findings\nx\n' > "$d/p0.md"
+  _pu_rc pass0_lenient_exit0 0 -- "$0" ledger-check "$d/p0.md"
+  # No pass entries -> WARNING exit 1
+  printf '# Ledger\nno passes here\n' > "$d/empty.md"
+  _pu_rc no_passes_exit1 1 -- "$0" ledger-check "$d/empty.md"
+  _pu_rc missing_file_exit2 2 -- "$0" ledger-check "$d/nope.md"
+  rm -rf "$d"; [ "$PU_FAIL" -eq 0 ] && echo "Self-test: PASS" || echo "Self-test: FAIL"; return "$PU_FAIL"
+}
+
+_selftest_artifact_names() {
+  PU_FAIL=0; local d; d=$(mktemp -d)
+  : > "$d/Proj_Pass1_Reader_Experience_r1.md"
+  : > "$d/Proj_Pass5_Character_r1.md"
+  _pu_rc conforming_exit0 0 -- "$0" artifact-names "$d" Proj r1
+  : > "$d/Proj_Pass2_Structure_WRONGLABEL.md"   # wrong runlabel
+  _pu_rc nonconforming_exit1 1 -- "$0" artifact-names "$d" Proj r1
+  local e; e=$(mktemp -d)   # no Pass artifacts -> vacuously OK
+  _pu_rc no_artifacts_exit0 0 -- "$0" artifact-names "$e" Proj r1
+  _pu_rc missing_dir_exit2 2 -- "$0" artifact-names "$d/nope" Proj r1
+  rm -rf "$d" "$e"; [ "$PU_FAIL" -eq 0 ] && echo "Self-test: PASS" || echo "Self-test: FAIL"; return "$PU_FAIL"
+}
+
+_selftest_synthesis_sections() {
+  PU_FAIL=0; local d; d=$(mktemp -d)
+  local H="Development Edit|The Short Version|What the Book Does Best|What Needs Work|Additional Observations|Revision Checklist|Protected Elements|Author Decisions|Control Questions|The Strongest Case Against|Stress Test|Appendix A|Appendix B|Appendix C"
+  : > "$d/full.md"; local IFS='|'; for h in $H; do printf '## %s\n\nbody\n\n' "$h" >> "$d/full.md"; done; unset IFS
+  _pu_rc all_headings_exit0 0 -- "$0" synthesis-sections "$d/full.md"
+  grep -v '^## Stress Test$' "$d/full.md" > "$d/partial.md"   # drop one required heading
+  _pu_rc missing_heading_exit1 1 -- "$0" synthesis-sections "$d/partial.md"
+  _pu_rc missing_file_exit2 2 -- "$0" synthesis-sections "$d/nope.md"
+  rm -rf "$d"; [ "$PU_FAIL" -eq 0 ] && echo "Self-test: PASS" || echo "Self-test: FAIL"; return "$PU_FAIL"
+}
+
+_selftest_tone_check() {
+  PU_FAIL=0; local d; d=$(mktemp -d)
+  printf '# Edit\nThe pacing needs work; the voice is distinctive.\n' > "$d/clean.md"
+  _pu_rc clean_exit0 0 -- "$0" tone-check "$d/clean.md"
+  printf '# Edit\nThis is a flawless masterpiece.\n' > "$d/super.md"
+  _pu_rc superlative_exit1 1 -- "$0" tone-check "$d/super.md"
+  _pu_rc missing_file_exit2 2 -- "$0" tone-check "$d/nope.md"
+  rm -rf "$d"; [ "$PU_FAIL" -eq 0 ] && echo "Self-test: PASS" || echo "Self-test: FAIL"; return "$PU_FAIL"
+}
+
+_selftest_state_lines() {
+  PU_FAIL=0; local d; d=$(mktemp -d)
+  seq 1 5 > "$d/five.md";  _pu_eq counts_five "$("$0" state-lines "$d/five.md" | tr -d '[:space:]')" "5"
+  # state-lifecycle gardening-threshold fixtures (corpus-expansion candidate): the count the
+  # 300 (warning) / 500 (forced gardening) gardening triggers in state-lifecycle.md read.
+  seq 1 300 > "$d/w.md"; _pu_eq counts_300_warn_threshold "$("$0" state-lines "$d/w.md" | tr -d '[:space:]')" "300"
+  seq 1 500 > "$d/g.md"; _pu_eq counts_500_forced_threshold "$("$0" state-lines "$d/g.md" | tr -d '[:space:]')" "500"
+  _pu_rc missing_file_exit2 2 -- "$0" state-lines "$d/nope.md"
+  _pu_rc no_arg_exit2 2 -- "$0" state-lines
+  rm -rf "$d"; [ "$PU_FAIL" -eq 0 ] && echo "Self-test: PASS" || echo "Self-test: FAIL"; return "$PU_FAIL"
+}
+
 case "$COMMAND" in
 
   contract-hash)
+    if [ "${1:-}" = "--self-test" ]; then _selftest_contract_hash; exit $?; fi
     if [ $# -lt 1 ]; then echo "Usage: $0 contract-hash <contract_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     shasum -a 256 "$1" | awk '{print $1}'
     ;;
 
   contract-check)
+    if [ "${1:-}" = "--self-test" ]; then _selftest_contract_check; exit $?; fi
     if [ $# -lt 2 ]; then echo "Usage: $0 contract-check <contract_file> <expected_hash>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     ACTUAL=$(shasum -a 256 "$1" | awk '{print $1}')
@@ -389,6 +536,7 @@ case "$COMMAND" in
     ;;
 
   ledger-check)
+    if [ "${1:-}" = "--self-test" ]; then _selftest_ledger_check; exit $?; fi
     if [ $# -lt 1 ]; then echo "Usage: $0 ledger-check <ledger_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     LEDGER="$1"
@@ -444,6 +592,7 @@ case "$COMMAND" in
     ;;
 
   artifact-names)
+    if [ "${1:-}" = "--self-test" ]; then _selftest_artifact_names; exit $?; fi
     if [ $# -lt 3 ]; then echo "Usage: $0 artifact-names <output_dir> <project_name> <runlabel>"; exit 2; fi
     if [ ! -d "$1" ]; then echo "Error: Directory not found: $1" >&2; exit 2; fi
     OUTPUT_DIR="$1"
@@ -474,6 +623,7 @@ case "$COMMAND" in
     ;;
 
   synthesis-sections)
+    if [ "${1:-}" = "--self-test" ]; then _selftest_synthesis_sections; exit $?; fi
     if [ $# -lt 1 ]; then echo "Usage: $0 synthesis-sections <editorial_letter_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     LETTER="$1"
@@ -520,6 +670,7 @@ case "$COMMAND" in
     ;;
 
   tone-check)
+    if [ "${1:-}" = "--self-test" ]; then _selftest_tone_check; exit $?; fi
     if [ $# -lt 1 ]; then echo "Usage: $0 tone-check <editorial_letter_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     LETTER="$1"
@@ -555,6 +706,7 @@ case "$COMMAND" in
     ;;
 
   state-lines)
+    if [ "${1:-}" = "--self-test" ]; then _selftest_state_lines; exit $?; fi
     if [ $# -lt 1 ]; then echo "Usage: $0 state-lines <diagnostic_state_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     wc -l < "$1"
@@ -4096,11 +4248,12 @@ EOF
     # integrity + sidecar lifecycle coherence by Finding Lifecycle ID — E1 dangling letter
     # reference, E2 phantom sidecar finding_states key, E3 invalid state, E4 dangling revision
     # reference, E5 phantom completion (an in-scope report mentions a `revised` finding but carries
-    # no `<!-- resolved: ID -->` marker for it); W1 lifecycle coverage, W2 revision-plan follow-
-    # through, W3 completion follow-through (all advisory; ERROR under --strict). Completion keys on
-    # the explicit resolved marker, not a bare mention. Complements softness-check (severity fidelity) and
-    # structured-findings (intra-ledger ID hygiene) — raises only classes neither owns.
-    # Takes a run folder (globs ledger/letter/revisions, walks up for the sidecar) or explicit files.
+    # no `<!-- resolved: ID -->` marker for it), E6 dangling retcon source (a Retcon Plan retcon_item
+    # `source` finding-ref that is not in the ledger — Retcon Planning F3); W1 lifecycle coverage,
+    # W2 revision-plan follow-through, W3 completion follow-through (all advisory; ERROR under --strict).
+    # Completion keys on the explicit resolved marker, not a bare mention. Complements softness-check
+    # (severity fidelity) and structured-findings (intra-ledger ID hygiene) — raises only classes neither owns.
+    # Takes a run folder (globs ledger/letter/revisions/retcon-plans, walks up for the sidecar) or explicit files.
     # Delegates to scripts/finding_trace.py; degrades to an advisory WARN without python3.
     FT_DIR=$(cd "$(dirname "$0")" && pwd)
     FT_HELPER="$FT_DIR/finding_trace.py"
@@ -4143,9 +4296,12 @@ EOF
     # apodictic.retcon_item.v1 blocks in a Retcon Plan — R1 invalid item, R2 duplicate id,
     # R3 evidential retcon of locked canon (fair-play violation; the signature gate), R4 dangling
     # target_id; W1 unaccounted blast radius on a locked/costly item, W2 firewall drift (invented
-    # prose where a class belongs) — W1/W2 advisory, ERROR under --strict. Takes a run folder
-    # (globs *_Retcon_Plan_*.md) or explicit files. Delegates to scripts/retcon_plan.py; degrades
-    # to an advisory WARN without python3.
+    # prose where a class belongs). The Door-B Selection step (F1) also checks apodictic.retcon_reading.v1
+    # blocks — R5 invalid reading (schema + 1-5 score rubric), R6 duplicate reading id, R7 dangling
+    # implied_target; W3 missing coincidence_note (over-fitting guard; the signature F1 check), W4
+    # more than 3 candidate readings (top-1-3 shortlist). W1-W4 advisory, ERROR under --strict. Takes
+    # a run folder (globs *_Retcon_Plan_*.md) or explicit files. Delegates to scripts/retcon_plan.py;
+    # degrades to an advisory WARN without python3.
     RCP_DIR=$(cd "$(dirname "$0")" && pwd)
     RCP_HELPER="$RCP_DIR/retcon_plan.py"
     if [ "${1:-}" = "--self-test" ]; then
@@ -4156,7 +4312,104 @@ EOF
       if [ $# -lt 1 ]; then echo "Usage: $0 retcon-plan <run_folder|files...> [--strict] | --self-test"; exit 2; fi
       python3 "$RCP_HELPER" retcon-plan "$@"; exit $?
     fi
-    echo "WARN: python3 unavailable — retcon-plan skipped; check inline that no evidential retcon touches locked canon, every target_id is declared, and intervention classes aren't invented prose. See docs/retcon-planning.md."
+    echo "WARN: python3 unavailable — retcon-plan skipped; check inline that no evidential retcon touches locked canon, every target_id/implied_target is declared, intervention classes aren't invented prose, and each candidate reading is scored 1-5 with a coincidence_note. See docs/retcon-planning.md."
+    exit 0
+    ;;
+
+  state-card-diff)
+    # Retcon Planning State Card cross-revision diff (docs/retcon-planning.md, F2): the State Card
+    # promoted to a standalone rolling artifact (apodictic.state_card.v1), diff'd across revision
+    # rounds (Pass-10-class pattern, modeled on timeline-diff). One file = single-card validate
+    # (S1 invalid card / id-prefix, S2 duplicate SE-NN id). Two files = <prior> <current> cross-round
+    # diff adding S3 round-backwards, S4 promise->contradiction (the signature transition; override
+    # <!-- override: state-card-transition SE-NN — … -->), W1 dropped promise, W2 controlling-idea
+    # shift, W3 same-round edit. W1-W3 advisory, ERROR under --strict. Delegates to
+    # scripts/state_card_diff.py; degrades to an advisory WARN without python3.
+    SCD_DIR=$(cd "$(dirname "$0")" && pwd)
+    SCD_HELPER="$SCD_DIR/state_card_diff.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$SCD_HELPER" ]; then python3 "$SCD_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; state-card-diff is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$SCD_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 state-card-diff <current> | <prior> <current> [--strict] | --self-test"; exit 2; fi
+      python3 "$SCD_HELPER" state-card-diff "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — state-card-diff skipped; check inline that every tracked element carries a unique SE-NN id, no active promise has become a forbidden contradiction across rounds, and a shifted controlling idea is intentional. See docs/retcon-planning.md."
+    exit 0
+    ;;
+
+  legal-risk)
+    # Legal Risk Register workflow (docs/legal-risk-register.md): structural checks over the
+    # apodictic.legal_risk.v1 blocks in a register — L1 invalid item, L2 duplicate id, L3 missing
+    # not-a-lawyer disclaimer (the signature gate; the register must never read as legal advice);
+    # W1 legal-advice drift (a legal CONCLUSION where a flag belongs — the module firewall; override
+    # <!-- override: legal-advice-drift LR-NN — … -->), W2 a review-now item not routed to legal
+    # counsel. W1/W2 advisory, ERROR under --strict. The register FLAGS areas for legal review; it
+    # does not give legal advice. Takes a run folder (globs *_Legal_Risk_Register_*.md) or explicit
+    # files. Delegates to scripts/legal_risk.py; degrades to an advisory WARN without python3.
+    LRK_DIR=$(cd "$(dirname "$0")" && pwd)
+    LRK_HELPER="$LRK_DIR/legal_risk.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LRK_HELPER" ]; then python3 "$LRK_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; legal-risk is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LRK_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 legal-risk <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$LRK_HELPER" legal-risk "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — legal-risk skipped; check inline that the register carries a not-a-lawyer disclaimer, every item flags (not adjudicates) the exposure, and each review-now item routes to counsel. See docs/legal-risk-register.md."
+    exit 0
+    ;;
+
+  argument-spine)
+    # Nonfiction Pre-Draft Pathway, Increments 1-3 (docs/nonfiction-pre-draft.md): structural checks
+    # over the apodictic.argument_spine.v1 block (the pre-draft argument plan that SEEDS the shared
+    # Argument_State.md), the apodictic.support_plan.v1 blocks (source/evidence map, §3), and the
+    # apodictic.warrant_plan.v1 blocks (warrant pre-check, §4). A1 invalid spine; A2 unseeded (spine
+    # must populate §1/§2 — signature); A3 thesis/C0 drift. Inc 2: A4 invalid support plan; A5 dangling
+    # subclaim_id; A6 support unseeded (no §3 heading). Inc 3: A7 invalid warrant plan; A8 dangling
+    # subclaim_id; A9 warrant unseeded (no §4 heading). Advisory (ERROR --strict): W1 anti-thesis echo
+    # (override argument-spine-antithesis), W2 bare assertion (a subclaim with no planned support), W3
+    # implicit warrant for a HOSTILE audience (non-EXPLICIT / ABSENT-backed; override
+    # argument-spine-warrant). Takes a run folder (globs Argument_State*.md) or explicit files.
+    # Delegates to scripts/argument_spine.py; degrades to an advisory WARN without python3.
+    AS_DIR=$(cd "$(dirname "$0")" && pwd)
+    AS_HELPER="$AS_DIR/argument_spine.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$AS_HELPER" ]; then python3 "$AS_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; argument-spine is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$AS_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 argument-spine <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$AS_HELPER" argument-spine "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — argument-spine skipped; check inline that the spine seeds Argument_State §1/§2, the C0 main claim carries the thesis, and the anti-thesis names a genuine opposing view. See docs/nonfiction-pre-draft.md."
+    exit 0
+    ;;
+
+  scene-ethics)
+    # Scene-Ethics Plan (Nonfiction Pre-Draft, Increment 4; docs/nonfiction-pre-draft.md): structural
+    # checks over the apodictic.scene_ethics.v1 blocks — the writer's pre-draft ETHICAL plan for each
+    # identifiable real person depicted (consent_status, handling, fairness_check), distinct from the
+    # Legal Risk Register (legal exposure) and cross-referencing it via legal_ref. E1 invalid item,
+    # E2 duplicate id; W1 unresolved depiction (as-is + consent not-sought + no fairness rationale —
+    # the signature; override scene-ethics-unresolved EP-NN), W2 no legal cross-check (an as-is
+    # identifiable depiction with no legal_ref — check it against the Legal Risk Register; override
+    # scene-ethics-legalcheck EP-NN). W1/W2 advisory, ERROR under --strict. Takes a run folder
+    # (globs *_Scene_Ethics_Plan_*.md) or explicit files. Delegates to scripts/scene_ethics.py;
+    # degrades to an advisory WARN without python3.
+    SCE_DIR=$(cd "$(dirname "$0")" && pwd)
+    SCE_HELPER="$SCE_DIR/scene_ethics.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$SCE_HELPER" ]; then python3 "$SCE_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; scene-ethics is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$SCE_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 scene-ethics <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$SCE_HELPER" scene-ethics "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — scene-ethics skipped; check inline that no identifiable person is depicted as-is without consent and without a fairness rationale, and that as-is depictions cross-check the Legal Risk Register. See docs/nonfiction-pre-draft.md."
     exit 0
     ;;
 
@@ -4164,9 +4417,12 @@ EOF
     # Adaptive Mid-Run Mode Escalation detector (docs/adaptive-mode-escalation.md): a
     # CONDITION-TRIGGERED checkpoint after Tier 1 that compares revealed complexity (POV count,
     # nonlinear timeline, belief/orientation density, Tier-1 finding count from the ledger) against
-    # the preflight estimate and recommends escalating the execution mode before Tier 2. Advisory
-    # by default (escalation is a recommendation, never automatic); --strict exits 1 when an
-    # escalation is recommended. Delegates to scripts/escalation_check.py; degrades to advisory WARN.
+    # the preflight estimate and recommends escalating the execution mode before Tier 2. The
+    # symmetric case: when no trigger fires and every signal is in a 'clearly simple' band, it
+    # recommends DE-escalating an over-provisioned expensive mode (hybrid/swarm) down to sequential
+    # (conservatively — a missing/malformed signal blocks it). Advisory by default (a recommendation,
+    # never automatic); --strict exits 1 on either recommendation. Delegates to
+    # scripts/escalation_check.py; degrades to advisory WARN.
     EC_DIR=$(cd "$(dirname "$0")" && pwd)
     EC_HELPER="$EC_DIR/escalation_check.py"
     if [ "${1:-}" = "--self-test" ]; then

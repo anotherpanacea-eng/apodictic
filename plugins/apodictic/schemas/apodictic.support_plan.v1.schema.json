@@ -1,0 +1,15 @@
+{
+  "$id": "apodictic.support_plan.v1",
+  "$comment": "Source of truth for the apodictic:support_plan block (Nonfiction Pre-Draft Pathway, Increment 2 — the source/evidence map). One block per planned support unit, linking a spine subclaim (subclaim_id, a Cn declared in the argument_spine ladder) to the support the writer intends to bring. SEEDS Argument_State §3 Support Map (docs/argument-state-schema.md): support_type is the §3 five-type set (REASON/EXAMPLE/DATA/AUTHORITY/EXPERIENCE); scheme_hint is the §3 eight-scheme set (optional). `status` distinguishes in-hand support from support still to-acquire; a subclaim with NO support_plan block at all is a BARE ASSERTION (validator W2, once support planning has started). The Firewall holds: the writer plans which evidence to bring; the engine does not invent or fabricate evidence. Validated by scripts/argument_spine.py (A4/A5/A6/W2). See docs/nonfiction-pre-draft.md.",
+  "title": "APODICTIC support plan (apodictic.support_plan.v1)",
+  "type": "object",
+  "required": ["schema", "subclaim_id", "support_type", "planned_support", "status"],
+  "properties": {
+    "schema": {"const": "apodictic.support_plan.v1"},
+    "subclaim_id": {"type": "string", "pattern": "^C[0-9]+$"},
+    "support_type": {"enum": ["REASON", "EXAMPLE", "DATA", "AUTHORITY", "EXPERIENCE"]},
+    "planned_support": {"type": "string"},
+    "scheme_hint": {"enum": ["AUTHORITY", "CONSEQUENCE", "CAUSAL", "ANALOGY", "EXAMPLE", "TESTIMONY", "PRACTICAL REASONING", "SIGN"]},
+    "status": {"enum": ["in-hand", "to-acquire"]}
+  }
+}
