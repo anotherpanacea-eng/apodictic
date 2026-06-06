@@ -166,7 +166,7 @@ set -euo pipefail
 usage() {
   echo "Usage: $0 <command> [args...]"
   echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-groundtruth-check"
-  echo "Aggregate: --self-test-all (runs --self-test on all 26 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --self-test-all (runs --self-test on all 33 self-testable validators; exit 0 only if every validator's self-test passes)"
   echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples, finding-trace + softness-check vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, and legal-risk vs the canonical Legal Risk Register)"
   exit 2
 }
@@ -178,16 +178,16 @@ if [ $# -lt 1 ]; then usage; fi
 # self-test exits 0. Added per Codex P2 finding: the E1 final report
 # referred to an aggregate command that did not exist; this closes the
 # documentation-vs-implementation mismatch and simplifies CI invocation.
-# The first seven commands (contract-hash, contract-check, ledger-check,
-# artifact-names, synthesis-sections, tone-check, state-lines) are
-# pure utilities that do not carry self-tests; only the 11 model-
-# capability-review validators do.
+# The seven pure-utility commands (contract-hash, contract-check, ledger-check,
+# artifact-names, synthesis-sections, tone-check, state-lines) now carry
+# fixture-driven self-tests too (Validator Architecture Hardening — they
+# previously had none), so every command in the suite is exercised here.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-groundtruth-check"
+  AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-groundtruth-check"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 26 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 33 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/26 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/33 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/26 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/33 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -357,15 +357,129 @@ fi
 COMMAND="$1"
 shift
 
+# ----------------------------------------------------------------------
+# Pure-utility self-tests (Validator Architecture Hardening). The seven
+# count/format utilities below (contract-hash, contract-check, ledger-check,
+# artifact-names, synthesis-sections, tone-check, state-lines) previously
+# carried no self-tests. These fixture-driven functions give each one
+# regression coverage and let them join --self-test-all. Each prints
+# per-case OK/FAIL, sets PU_FAIL on any failure, and the caller exits PU_FAIL.
+# Invoked as `validate.sh <utility> --self-test`.
+# ----------------------------------------------------------------------
+_pu_rc() {  # _pu_rc <name> <want_rc> -- <cmd...>   asserts the command's exit code
+  local name="$1" want="$2"; shift 3
+  local rc=0
+  "$@" >/dev/null 2>&1 || rc=$?   # `|| ` keeps errexit from firing on the tested non-zero exit
+  if [ "$rc" -eq "$want" ]; then echo "  $name: OK"; else echo "  $name: FAIL (rc=$rc want $want)"; PU_FAIL=1; fi
+}
+_pu_eq() {  # _pu_eq <name> <actual> <expected>     asserts string equality
+  if [ "$2" = "$3" ]; then echo "  $1: OK"; else echo "  $1: FAIL ('$2' != '$3')"; PU_FAIL=1; fi
+}
+
+_selftest_contract_hash() {
+  PU_FAIL=0; local d; d=$(mktemp -d); printf 'controlling idea\n' > "$d/c.md"
+  local h; h=$("$0" contract-hash "$d/c.md")
+  if printf '%s' "$h" | grep -qE '^[0-9a-f]{64}$'; then echo "  hash_is_64hex: OK"; else echo "  hash_is_64hex: FAIL ($h)"; PU_FAIL=1; fi
+  _pu_eq deterministic "$h" "$("$0" contract-hash "$d/c.md")"
+  _pu_rc missing_file_exit2 2 -- "$0" contract-hash "$d/nope.md"
+  _pu_rc no_arg_exit2 2 -- "$0" contract-hash
+  rm -rf "$d"; [ "$PU_FAIL" -eq 0 ] && echo "Self-test: PASS" || echo "Self-test: FAIL"; return "$PU_FAIL"
+}
+
+_selftest_contract_check() {
+  PU_FAIL=0; local d; d=$(mktemp -d); printf 'contract body\n' > "$d/c.md"
+  local h; h=$("$0" contract-hash "$d/c.md")
+  _pu_rc match_exit0 0 -- "$0" contract-check "$d/c.md" "$h"
+  _pu_rc mismatch_exit1 1 -- "$0" contract-check "$d/c.md" "0000000000000000000000000000000000000000000000000000000000000000"
+  _pu_rc missing_file_exit2 2 -- "$0" contract-check "$d/nope.md" "$h"
+  _pu_rc missing_arg_exit2 2 -- "$0" contract-check "$d/c.md"
+  rm -rf "$d"; [ "$PU_FAIL" -eq 0 ] && echo "Self-test: PASS" || echo "Self-test: FAIL"; return "$PU_FAIL"
+}
+
+_selftest_ledger_check() {
+  PU_FAIL=0; local d; d=$(mktemp -d)
+  local SECT='### Notable Findings
+x
+### Data Artifacts for Letter Reference
+x
+### Cross-Pass Connections
+x
+### Unresolved Questions
+x
+### Audit Triggers
+x'
+  printf '## Pass 5 — Character\n%s\n' "$SECT" > "$d/ok.md"
+  _pu_rc complete_pass_exit0 0 -- "$0" ledger-check "$d/ok.md"
+  # Pass 5 missing one required section -> ERROR
+  printf '## Pass 5 — Character\n### Notable Findings\nx\n### Cross-Pass Connections\nx\n### Unresolved Questions\nx\n### Audit Triggers\nx\n' > "$d/missing.md"
+  _pu_rc missing_section_exit1 1 -- "$0" ledger-check "$d/missing.md"
+  # Pass 0 missing a section -> NOTE (acceptable), not error
+  printf '## Pass 0 — Structure\n### Notable Findings\nx\n' > "$d/p0.md"
+  _pu_rc pass0_lenient_exit0 0 -- "$0" ledger-check "$d/p0.md"
+  # No pass entries -> WARNING exit 1
+  printf '# Ledger\nno passes here\n' > "$d/empty.md"
+  _pu_rc no_passes_exit1 1 -- "$0" ledger-check "$d/empty.md"
+  _pu_rc missing_file_exit2 2 -- "$0" ledger-check "$d/nope.md"
+  rm -rf "$d"; [ "$PU_FAIL" -eq 0 ] && echo "Self-test: PASS" || echo "Self-test: FAIL"; return "$PU_FAIL"
+}
+
+_selftest_artifact_names() {
+  PU_FAIL=0; local d; d=$(mktemp -d)
+  : > "$d/Proj_Pass1_Reader_Experience_r1.md"
+  : > "$d/Proj_Pass5_Character_r1.md"
+  _pu_rc conforming_exit0 0 -- "$0" artifact-names "$d" Proj r1
+  : > "$d/Proj_Pass2_Structure_WRONGLABEL.md"   # wrong runlabel
+  _pu_rc nonconforming_exit1 1 -- "$0" artifact-names "$d" Proj r1
+  local e; e=$(mktemp -d)   # no Pass artifacts -> vacuously OK
+  _pu_rc no_artifacts_exit0 0 -- "$0" artifact-names "$e" Proj r1
+  _pu_rc missing_dir_exit2 2 -- "$0" artifact-names "$d/nope" Proj r1
+  rm -rf "$d" "$e"; [ "$PU_FAIL" -eq 0 ] && echo "Self-test: PASS" || echo "Self-test: FAIL"; return "$PU_FAIL"
+}
+
+_selftest_synthesis_sections() {
+  PU_FAIL=0; local d; d=$(mktemp -d)
+  local H="Development Edit|The Short Version|What the Book Does Best|What Needs Work|Additional Observations|Revision Checklist|Protected Elements|Author Decisions|Control Questions|The Strongest Case Against|Stress Test|Appendix A|Appendix B|Appendix C"
+  : > "$d/full.md"; local IFS='|'; for h in $H; do printf '## %s\n\nbody\n\n' "$h" >> "$d/full.md"; done; unset IFS
+  _pu_rc all_headings_exit0 0 -- "$0" synthesis-sections "$d/full.md"
+  grep -v '^## Stress Test$' "$d/full.md" > "$d/partial.md"   # drop one required heading
+  _pu_rc missing_heading_exit1 1 -- "$0" synthesis-sections "$d/partial.md"
+  _pu_rc missing_file_exit2 2 -- "$0" synthesis-sections "$d/nope.md"
+  rm -rf "$d"; [ "$PU_FAIL" -eq 0 ] && echo "Self-test: PASS" || echo "Self-test: FAIL"; return "$PU_FAIL"
+}
+
+_selftest_tone_check() {
+  PU_FAIL=0; local d; d=$(mktemp -d)
+  printf '# Edit\nThe pacing needs work; the voice is distinctive.\n' > "$d/clean.md"
+  _pu_rc clean_exit0 0 -- "$0" tone-check "$d/clean.md"
+  printf '# Edit\nThis is a flawless masterpiece.\n' > "$d/super.md"
+  _pu_rc superlative_exit1 1 -- "$0" tone-check "$d/super.md"
+  _pu_rc missing_file_exit2 2 -- "$0" tone-check "$d/nope.md"
+  rm -rf "$d"; [ "$PU_FAIL" -eq 0 ] && echo "Self-test: PASS" || echo "Self-test: FAIL"; return "$PU_FAIL"
+}
+
+_selftest_state_lines() {
+  PU_FAIL=0; local d; d=$(mktemp -d)
+  seq 1 5 > "$d/five.md";  _pu_eq counts_five "$("$0" state-lines "$d/five.md" | tr -d '[:space:]')" "5"
+  # state-lifecycle gardening-threshold fixtures (corpus-expansion candidate): the count the
+  # 300 (warning) / 500 (forced gardening) gardening triggers in state-lifecycle.md read.
+  seq 1 300 > "$d/w.md"; _pu_eq counts_300_warn_threshold "$("$0" state-lines "$d/w.md" | tr -d '[:space:]')" "300"
+  seq 1 500 > "$d/g.md"; _pu_eq counts_500_forced_threshold "$("$0" state-lines "$d/g.md" | tr -d '[:space:]')" "500"
+  _pu_rc missing_file_exit2 2 -- "$0" state-lines "$d/nope.md"
+  _pu_rc no_arg_exit2 2 -- "$0" state-lines
+  rm -rf "$d"; [ "$PU_FAIL" -eq 0 ] && echo "Self-test: PASS" || echo "Self-test: FAIL"; return "$PU_FAIL"
+}
+
 case "$COMMAND" in
 
   contract-hash)
+    if [ "${1:-}" = "--self-test" ]; then _selftest_contract_hash; exit $?; fi
     if [ $# -lt 1 ]; then echo "Usage: $0 contract-hash <contract_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     shasum -a 256 "$1" | awk '{print $1}'
     ;;
 
   contract-check)
+    if [ "${1:-}" = "--self-test" ]; then _selftest_contract_check; exit $?; fi
     if [ $# -lt 2 ]; then echo "Usage: $0 contract-check <contract_file> <expected_hash>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     ACTUAL=$(shasum -a 256 "$1" | awk '{print $1}')
@@ -383,6 +497,7 @@ case "$COMMAND" in
     ;;
 
   ledger-check)
+    if [ "${1:-}" = "--self-test" ]; then _selftest_ledger_check; exit $?; fi
     if [ $# -lt 1 ]; then echo "Usage: $0 ledger-check <ledger_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     LEDGER="$1"
@@ -438,6 +553,7 @@ case "$COMMAND" in
     ;;
 
   artifact-names)
+    if [ "${1:-}" = "--self-test" ]; then _selftest_artifact_names; exit $?; fi
     if [ $# -lt 3 ]; then echo "Usage: $0 artifact-names <output_dir> <project_name> <runlabel>"; exit 2; fi
     if [ ! -d "$1" ]; then echo "Error: Directory not found: $1" >&2; exit 2; fi
     OUTPUT_DIR="$1"
@@ -468,6 +584,7 @@ case "$COMMAND" in
     ;;
 
   synthesis-sections)
+    if [ "${1:-}" = "--self-test" ]; then _selftest_synthesis_sections; exit $?; fi
     if [ $# -lt 1 ]; then echo "Usage: $0 synthesis-sections <editorial_letter_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     LETTER="$1"
@@ -514,6 +631,7 @@ case "$COMMAND" in
     ;;
 
   tone-check)
+    if [ "${1:-}" = "--self-test" ]; then _selftest_tone_check; exit $?; fi
     if [ $# -lt 1 ]; then echo "Usage: $0 tone-check <editorial_letter_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     LETTER="$1"
@@ -549,6 +667,7 @@ case "$COMMAND" in
     ;;
 
   state-lines)
+    if [ "${1:-}" = "--self-test" ]; then _selftest_state_lines; exit $?; fi
     if [ $# -lt 1 ]; then echo "Usage: $0 state-lines <diagnostic_state_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     wc -l < "$1"
