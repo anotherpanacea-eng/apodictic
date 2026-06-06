@@ -1,6 +1,6 @@
 # Adaptive Mid-Run Mode Escalation
 
-**Status:** spec + `escalation-check` validator + run-core integration — **built**. Roadmap: `ROADMAP.md` → Infrastructure → Adaptive Mid-Run Mode Escalation. Implementation: `scripts/escalation_check.py`, `validate.sh escalation-check`, `run-core.md §Mid-Run Escalation Check`.
+**Status:** spec + `escalation-check` validator + run-core integration — **built**, now including **de-escalation** (the symmetric case). Roadmap: `ROADMAP.md` → Infrastructure → Adaptive Mid-Run Mode Escalation. Implementation: `scripts/escalation_check.py`, `validate.sh escalation-check`, `run-core.md §Mid-Run Escalation Check`.
 
 ## Problem
 
@@ -39,6 +39,13 @@ A signal absent from the sidecar makes its trigger **unevaluable** (not fired), 
 
 The hybrid-vs-swarm boundary is a documented heuristic, tunable in one place.
 
+**De-escalation (the symmetric case).** When **no** trigger fires *and* every complexity dimension is measured and in a **"clearly simple" band**, an over-provisioned expensive mode is recommended **down** to `sequential`:
+
+- `swarm` / `hybrid` + *all* of `pov_count ≤ 2`, `¬nonlinear_timeline`, `belief_failures ≤ 2`, `orientation_failures ≤ 1`, `tier1_finding_count ≤ 8` ⇒ **sequential** (the preflight mode is over-provisioned; Tier-2 tokens are wasted).
+- `single-agent` / `sequential` ⇒ no de-escalation (already cheap; `sequential → single-agent` is withheld because that is where salience-decay risk lives).
+
+The simple band sits **well below** the escalation thresholds, leaving a **neutral zone** between them (e.g. `pov_count = 3`, or `9 ≤ tier1_finding_count ≤ 20`) where neither direction fires — so the checkpoint never thrashes near a boundary. De-escalation is **strictly more conservative** than escalation: *every* dimension must be present and well-typed; a single absent or malformed signal blocks the recommendation. The asymmetry is deliberate — wrongly de-escalating a genuinely complex manuscript risks cross-pass anchoring (**wrong analysis**), which is worse than the wasted tokens of over-provisioning. Like escalation, it is advisory (exit 0) and author-confirmed; `--strict` exits 1.
+
 **Exit codes.** `0` always by default — escalation is a recommendation, not a gate (mirrors the roadmap constraint "not automatic"). `--strict` returns `1` when escalation is recommended, for an orchestrator/CI that wants the checkpoint to *halt* until the author decides. `--self-test` exercises the trigger + recommendation matrix. Degrades to an advisory `WARN` without `python3` (the model evaluates the triggers inline from the same signals).
 
 ### Sidecar contract
@@ -61,13 +68,12 @@ Pass 0 records `pov_count` (refining preflight's guess from the Structure Map) a
 A new section between **§Execution Protocol** and **§Pre-Pass Re-Grounding** (where the roadmap specifies), plus a one-line instruction in the Pass 0/1 output spec to record `complexity_signals`. The check runs **once**, after Tier 1, before the first Tier 2 dispatch:
 
 1. Run `escalation-check <run_folder>` (or evaluate the triggers inline on a no-shell host).
-2. If escalation is recommended, present the author a brief summary — *"Tier 1 found [fired triggers]. I'd recommend switching from [current] to [recommended] for the remaining passes (cost difference ~[N]K tokens). Proceed?"* — and switch only on confirmation, writing the new `execution_mode` to the sidecar.
+2. If escalation **or de-escalation** is recommended, present the author a brief summary — *"Tier 1 found [fired triggers / no triggers and all signals simple]. I'd recommend switching from [current] to [recommended] for the remaining passes (cost difference ~[N]K tokens). Proceed?"* — and switch only on confirmation, writing the new `execution_mode` to the sidecar.
 
 **Constraints** (enforced by where it runs, not by the validator): escalation is safe **only between Tier 1 and Tier 2** — never retroactively re-run completed passes; the existing Tier-1 Findings Ledger entries carry forward unchanged (only the Tier-2 dispatch method changes); the recommendation is never automatic.
 
 ## Out of scope
 
-- **De-escalation** (swarm → sequential when Tier 1 reveals *less* complexity than predicted). The roadmap rates it lower priority — running a more expensive mode wastes tokens, not correctness. The detector's structure (compare signals to thresholds) extends to it later.
 - **Genre-hybridization trigger.** The roadmap names it narratively but gives no threshold; deferred until it has a detectable condition.
 - **Automatic switching.** Out of scope by design — the author always confirms.
 
@@ -78,3 +84,4 @@ A new section between **§Execution Protocol** and **§Pre-Pass Re-Grounding** (
 - *Condition-triggered discipline.* Every trigger is a count or a boolean read from a named field — no "the model should notice." This is exactly the CR-6 lesson (a model-emergent gate that fired for Opus and not Codex) applied to mode selection.
 - *No retroactive work.* The validator only reads state; the prose constrains the switch to the Tier-1→Tier-2 boundary, so completed passes are never re-run.
 - *Hybrid-vs-swarm heuristic.* A judgment call encoded as one condition (`pov>3 ∧ (findings>20 ∨ nonlinear)`); documented and tunable. Worst case it recommends hybrid where swarm was marginally better — still an escalation, still author-confirmed.
+- *De-escalation conservatism.* The simple band is set below the escalation thresholds with a neutral zone between, and de-escalation requires *every* signal present, well-typed, and simple (a missing/malformed signal blocks it) — so the failure mode is "we keep an over-provisioned mode" (wasted tokens), never "we strip architectural isolation off a complex manuscript" (wrong analysis). De-escalation targets only `sequential`, never `single-agent`, keeping a salience-safe floor. Author-confirmed like escalation.

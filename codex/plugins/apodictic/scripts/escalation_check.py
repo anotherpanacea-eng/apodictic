@@ -17,8 +17,15 @@ A signal absent from the sidecar is reported UNEVALUABLE (not fired) — conserv
 under-trigger, never over-trigger. T4 is always computed. The recommendation follows the
 escalation paths (single-agent->sequential; sequential->hybrid/swarm). Advisory by default
 (exit 0 — escalation is a recommendation, never automatic); --strict exits 1 when an
-escalation is recommended, for a host that wants the checkpoint to halt. See
-docs/adaptive-mode-escalation.md.
+escalation is recommended, for a host that wants the checkpoint to halt.
+
+De-escalation (the symmetric case): when NO trigger fires and EVERY complexity dimension is
+measured and in a 'clearly simple' band (set well below the escalation thresholds, with a neutral
+zone between), an over-provisioned expensive mode (hybrid/swarm) is recommended down to sequential
+to save Tier-2 tokens. It is strictly more conservative than escalation — a missing/malformed signal
+blocks it — because wrongly de-escalating a complex manuscript risks cross-pass anchoring (wrong
+analysis), worse than the wasted tokens of over-provisioning. Also advisory; --strict exits 1.
+See docs/adaptive-mode-escalation.md.
 
   escalation_check.py escalation-check <run_folder|files...> [--strict]
   escalation_check.py --self-test
@@ -40,6 +47,16 @@ _MODES = ("single-agent", "sequential", "hybrid", "swarm")
 # Finding-ID origin for the Tier-1 passes (Pass 0 Structure Map, Pass 1 Reader Orientation).
 _TIER1_ID_RE = re.compile(r"^F-P[01]-")
 _LEDGER_GLOB = "*_Findings_Ledger_*.md"
+
+# De-escalation "clearly simple" band — set well BELOW the escalation thresholds so a neutral
+# zone separates the two (no thrash near a boundary). De-escalation is recommended only when EVERY
+# dimension is measured and in this band; a missing/malformed signal blocks it. The asymmetry is
+# deliberate: wrongly de-escalating a complex manuscript risks cross-pass anchoring (WRONG analysis),
+# worse than the wasted tokens of over-provisioning — so the safe direction is conservative.
+_SIMPLE_POV = 2          # escalation fires at pov>3; 3 is the neutral zone
+_SIMPLE_BELIEF = 2       # escalation fires at belief_failures>5
+_SIMPLE_ORIENT = 1       # escalation fires at orientation_failures>3
+_SIMPLE_FINDINGS = 8     # escalation fires at tier1_finding_count>20
 
 
 def _read(path):
@@ -149,6 +166,26 @@ def evaluate(mode, signals, t1count):
     return fired, uneval, rec
 
 
+def deescalation_rec(mode, signals, t1count):
+    """Conservative reverse of evaluate(): recommend a CHEAPER mode only when no escalation trigger
+    fired AND every complexity dimension is measured, well-typed, and in the 'clearly simple' band.
+    A missing/malformed signal blocks the recommendation (we will not de-escalate on the strength of
+    an absent signal). Only the expensive modes de-escalate, and only to sequential — the roadmap's
+    named `swarm -> sequential` case generalized to hybrid; single-agent/sequential are left alone
+    (that is where salience-decay risk lives). Returns (current_mode, cheaper_mode) or None."""
+    if mode not in ("hybrid", "swarm"):
+        return None
+    pov, pst = _int_signal(signals, "pov_count")
+    nl, nst = _bool_signal(signals, "nonlinear_timeline")
+    bf, bst = _int_signal(signals, "belief_failures")
+    of, ost = _int_signal(signals, "orientation_failures")
+    if not (pst == nst == bst == ost == "ok"):   # every dimension must be present and well-typed
+        return None
+    simple = (pov <= _SIMPLE_POV and nl is False and bf <= _SIMPLE_BELIEF
+              and of <= _SIMPLE_ORIENT and t1count <= _SIMPLE_FINDINGS)
+    return (mode, "sequential") if simple else None
+
+
 def check(ledger_text, sidecar_text, strict=False):
     """Run the escalation check. Returns (code, lines)."""
     lines = []
@@ -179,6 +216,13 @@ def check(ledger_text, sidecar_text, strict=False):
         lines.append("escalation-check: %d trigger(s) fired but current mode is unknown — set "
                      "last_session.execution_mode in the sidecar for a recommendation" % len(fired))
         return 0, lines
+    # No escalation triggers — consider DE-escalation (only on affirmatively-confirmed simplicity).
+    derec = deescalation_rec(mode, signals, t1count)
+    if derec:
+        lines.append("escalation-check: RECOMMEND de-escalate %s -> %s (no triggers fired and every "
+                     "complexity signal is in the simple band — the preflight mode is over-provisioned); "
+                     "present to the author, switch only on confirmation" % (derec[0], derec[1]))
+        return (1 if strict else 0), lines
     lines.append("escalation-check: no escalation — revealed complexity is within the preflight estimate")
     return 0, lines
 
@@ -313,6 +357,48 @@ def run_self_test():
     code, lines = check(ledger(25), '{"last_session": "single-agent"}')
     chk("nondict_last_session_no_crash",
         any("current mode=unknown" in ln for ln in lines) and any("TRIGGER T4" in ln for ln in lines))
+
+    # ---- de-escalation (the symmetric case) ----
+    SIMPLE = dict(pov_count=1, nonlinear_timeline=False, belief_failures=0, orientation_failures=0)
+    # swarm + every signal clearly simple + few findings -> de-escalate to sequential
+    code, lines = check(ledger(3), sidecar("swarm", **SIMPLE))
+    chk("deescalate_swarm_to_sequential",
+        code == 0 and any("de-escalate swarm -> sequential" in ln for ln in lines))
+    # hybrid + clearly simple -> de-escalate to sequential
+    code, lines = check(ledger(3), sidecar("hybrid", **SIMPLE))
+    chk("deescalate_hybrid_to_sequential",
+        any("de-escalate hybrid -> sequential" in ln for ln in lines))
+    # --strict: a de-escalation recommendation exits 1 (symmetric with escalation)
+    chk("deescalate_strict_exit_1", check(ledger(3), sidecar("swarm", **SIMPLE), strict=True)[0] == 1)
+    # already cheap: sequential/single-agent never de-escalate (nothing cheaper that is safe)
+    chk("sequential_no_deescalation",
+        not any("de-escalate" in ln for ln in check(ledger(3), sidecar("sequential", **SIMPLE))[1]))
+    chk("single_agent_no_deescalation",
+        not any("de-escalate" in ln for ln in check(ledger(3), sidecar("single-agent", **SIMPLE))[1]))
+    # a MISSING signal blocks de-escalation (cannot confirm simplicity) — conservative
+    code, lines = check(ledger(3), sidecar("swarm", pov_count=1, nonlinear_timeline=False,
+                                           belief_failures=0))  # orientation_failures absent
+    chk("missing_signal_blocks_deescalation",
+        code == 0 and not any("de-escalate" in ln for ln in lines)
+        and any("no escalation" in ln for ln in lines))
+    # a malformed signal blocks de-escalation
+    code, lines = check(ledger(3), sidecar("swarm", pov_count="1", nonlinear_timeline=False,
+                                           belief_failures=0, orientation_failures=0))
+    chk("malformed_signal_blocks_deescalation", not any("de-escalate" in ln for ln in lines))
+    # the NEUTRAL zone (pov=3: neither >3 nor <=2) -> no escalation AND no de-escalation
+    code, lines = check(ledger(3), sidecar("swarm", pov_count=3, nonlinear_timeline=False,
+                                           belief_failures=0, orientation_failures=0))
+    chk("neutral_zone_no_action",
+        code == 0 and not any("de-escalate" in ln for ln in lines)
+        and not any("RECOMMEND escalate" in ln for ln in lines))
+    # too many Tier-1 findings (above the simple band) blocks de-escalation even if other signals simple
+    chk("findings_above_simple_block_deescalation",
+        not any("de-escalate" in ln for ln in check(ledger(12), sidecar("swarm", **SIMPLE))[1]))
+    # a fired trigger takes precedence over de-escalation (swarm at ceiling, not de-escalated)
+    code, lines = check(ledger(3), sidecar("swarm", pov_count=5, nonlinear_timeline=False,
+                                           belief_failures=0, orientation_failures=0))
+    chk("trigger_precedence_over_deescalation",
+        not any("de-escalate" in ln for ln in lines) and any("ceiling" in ln for ln in lines))
 
     # run-folder resolution
     d = tempfile.mkdtemp()
