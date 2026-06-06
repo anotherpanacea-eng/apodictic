@@ -165,9 +165,9 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, argument-groundtruth-check"
-  echo "Aggregate: --self-test-all (runs --self-test on all 24 self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples, finding-trace + softness-check vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, and retcon-plan vs the canonical Retcon Plan)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, argument-spine, argument-groundtruth-check"
+  echo "Aggregate: --self-test-all (runs --self-test on all 25 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples, finding-trace + softness-check vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, and argument-spine vs the canonical pre-draft Argument_State)"
   exit 2
 }
 
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # pure utilities that do not carry self-tests; only the 11 model-
 # capability-review validators do.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan argument-groundtruth-check"
+  AGG_VALIDATORS="severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan argument-spine argument-groundtruth-check"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 24 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 25 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/24 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/25 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/24 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/25 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -298,6 +298,13 @@ if [ "$1" = "--check-all" ]; then
       "$0" retcon-plan "$CA_BASE/example-retcon-plan.md" || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-retcon-plan.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical pre-draft Argument_State (argument-spine: contract + seeds Argument_State + anti-thesis) =="
+    if [ -f "$CA_BASE/example-argument-state-predraft.md" ]; then
+      "$0" argument-spine "$CA_BASE/example-argument-state-predraft.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-argument-state-predraft.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical Timeline (timeline-arithmetic, timeline-anchor-conflict, timeline-diff self) =="
@@ -4132,6 +4139,30 @@ EOF
       python3 "$RCP_HELPER" retcon-plan "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — retcon-plan skipped; check inline that no evidential retcon touches locked canon, every target_id is declared, and intervention classes aren't invented prose. See docs/retcon-planning.md."
+    exit 0
+    ;;
+
+  argument-spine)
+    # Nonfiction Pre-Draft Pathway, Increment 1 (docs/nonfiction-pre-draft.md): structural checks
+    # over the apodictic.argument_spine.v1 block — the pre-draft argument plan that SEEDS the shared
+    # Argument_State.md. A1 invalid spine (schema / enum / <1 subclaim / JSON), A2 unseeded (the
+    # spine must populate Argument_State §1/§2, not float free — the signature integration check),
+    # A3 thesis/C0 drift (the seeded §2 C0 main-claim line must carry the spine's thesis); W1
+    # anti-thesis echo (the anti_thesis must name a genuine opposing view, not restate the thesis;
+    # advisory, ERROR under --strict; override <!-- override: argument-spine-antithesis — … -->).
+    # Takes a run folder (globs Argument_State*.md) or explicit files. Delegates to
+    # scripts/argument_spine.py; degrades to an advisory WARN without python3.
+    AS_DIR=$(cd "$(dirname "$0")" && pwd)
+    AS_HELPER="$AS_DIR/argument_spine.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$AS_HELPER" ]; then python3 "$AS_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; argument-spine is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$AS_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 argument-spine <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$AS_HELPER" argument-spine "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — argument-spine skipped; check inline that the spine seeds Argument_State §1/§2, the C0 main claim carries the thesis, and the anti-thesis names a genuine opposing view. See docs/nonfiction-pre-draft.md."
     exit 0
     ;;
 

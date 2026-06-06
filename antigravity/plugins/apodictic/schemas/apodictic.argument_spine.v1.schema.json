@@ -1,0 +1,23 @@
+{
+  "$id": "apodictic.argument_spine.v1",
+  "$comment": "Source of truth for the apodictic:argument_spine block (Nonfiction Pre-Draft Pathway, Increment 1). The PRE-writing plan of an argument — produced before a draft exists — that SEEDS the shared Argument_State.md artifact (docs/argument-state-schema.md): `thesis` -> §2 C0 (main claim); `subclaims` -> §2 claim ladder; `anti_thesis` -> §6 Objection 1 (the opposing view the argument must defeat); the §1 classification fields (form, goal, argument_type, burden_level, audience_*). The draft-dependent sections (§§3-5, 7-9) are NOT planned here — the Dialectical Clarity audit fills them once a draft exists. Enums mirror Argument_State §1/§2: argument_type AT0-AT4; burden_level LOW/MEDIUM/HIGH; audience_expertise GENERAL/MIXED/EXPERT; audience_receptivity SYMPATHETIC/MIXED/HOSTILE; stakes_type CONSEQUENTIAL/MORAL/EPISTEMIC/PRACTICAL. The Firewall holds: the spine plans argument STRUCTURE; it does not invent claims or write prose. Validated by scripts/argument_spine.py, which also checks the spine actually seeded Argument_State (A2/A3). See docs/nonfiction-pre-draft.md.",
+  "title": "APODICTIC argument spine (apodictic.argument_spine.v1)",
+  "type": "object",
+  "required": ["schema", "form", "goal", "argument_type", "burden_level", "audience_expertise", "audience_receptivity", "thesis", "subclaims", "anti_thesis"],
+  "properties": {
+    "schema": {"const": "apodictic.argument_spine.v1"},
+    "form": {"type": "string"},
+    "goal": {"type": "string"},
+    "argument_type": {"enum": ["AT0", "AT1", "AT2", "AT3", "AT4"]},
+    "burden_level": {"enum": ["LOW", "MEDIUM", "HIGH"]},
+    "audience_expertise": {"enum": ["GENERAL", "MIXED", "EXPERT"]},
+    "audience_receptivity": {"enum": ["SYMPATHETIC", "MIXED", "HOSTILE"]},
+    "thesis": {"type": "string"},
+    "subclaims": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "anti_thesis": {"type": "string"},
+    "stakes": {"type": "string"},
+    "stakes_type": {"enum": ["CONSEQUENTIAL", "MORAL", "EPISTEMIC", "PRACTICAL"]},
+    "consequence_context": {"enum": ["LOW", "MEDIUM", "HIGH"]},
+    "key_terms": {"type": "array", "items": {"type": "string"}}
+  }
+}
