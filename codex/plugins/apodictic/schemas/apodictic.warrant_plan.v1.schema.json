@@ -1,0 +1,15 @@
+{
+  "$id": "apodictic.warrant_plan.v1",
+  "$comment": "Source of truth for the apodictic:warrant_plan block (Nonfiction Pre-Draft Pathway, Increment 3 — the warrant pre-check). One block per subclaim, planning the WARRANT (the principle that connects the support to the claim) the argument will rely on. Links a spine subclaim (subclaim_id, a Cn in the argument_spine ladder) and SEEDS Argument_State §4 Warrant and Inference Map (docs/argument-state-schema.md): warrant_status EXPLICIT/RECOVERABLE/MISSING/CONTESTED; backing PRESENT/THIN/ABSENT; qualifier MATCHED/OVERCONFIDENT/UNDERCLAIMED. The point of pre-checking warrants: for a HOSTILE audience an implicit (non-EXPLICIT) or unbacked (ABSENT) warrant must be made explicit and backed before drafting (validator W3, audience-calibrated against the spine's audience_receptivity). The Firewall holds: the writer plans the connecting principle; the engine does not invent the argument. Validated by scripts/argument_spine.py (A7/A8/A9/W3). See docs/nonfiction-pre-draft.md.",
+  "title": "APODICTIC warrant plan (apodictic.warrant_plan.v1)",
+  "type": "object",
+  "required": ["schema", "subclaim_id", "warrant", "warrant_status", "backing", "qualifier"],
+  "properties": {
+    "schema": {"const": "apodictic.warrant_plan.v1"},
+    "subclaim_id": {"type": "string", "pattern": "^C[0-9]+$"},
+    "warrant": {"type": "string"},
+    "warrant_status": {"enum": ["EXPLICIT", "RECOVERABLE", "MISSING", "CONTESTED"]},
+    "backing": {"enum": ["PRESENT", "THIN", "ABSENT"]},
+    "qualifier": {"enum": ["MATCHED", "OVERCONFIDENT", "UNDERCLAIMED"]}
+  }
+}
