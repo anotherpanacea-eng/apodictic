@@ -1,6 +1,6 @@
 # Retcon Planning (coaching track)
 
-**Status:** v1 (Increment 1)
+**Status:** v1 (Increment 1 + F1 ranked Door-B Selection)
 **Trigger:** `apodictic-coach` → Retcon Planning mode. Use when a returning author has either (a) **committed to a late structural decision** — a new ending, a reframed controlling idea, a relocated reveal, a different antagonist (Door A); or (b) a draft with **weak / "glitch" / off-trajectory elements** they suspect could be meaningful (Door B).
 **Inherits:** the Coaching Firewall (`revision-coach/SKILL.md §The Coaching Firewall`) + the core Firewall (`core-editor/SKILL.md §The Firewall`).
 
@@ -17,7 +17,7 @@ A large share of revision is **retroactive**: once a writer discovers what the b
 ## Two doors
 
 - **Door A — targeted retcon.** The author names a **retcon target** they've decided on. Run **reveal economy backward**: given the payoff, derive the **setup debt** — the setups the draft now owes, where they belong, and the contradictions the decision creates.
-- **Door B — latent reinterpretation.** The author points at elements that feel like bugs. Run the abductive **"bug-or-feature"** move — "is there a reading in which the story was always about this?" — and present the candidate readings as **options** (never executed). A chosen reading becomes a Door-A target.
+- **Door B — latent reinterpretation.** The author points at elements that feel like bugs. Run the abductive **"bug-or-feature"** move — "is there a reading in which the story was always about this?" — then **score and rank** the candidate readings and present the top 1–3 as **options** (never executed). A chosen reading becomes a Door-A target. See *The Selection step* below.
 
 ---
 
@@ -42,6 +42,48 @@ Sections: a **State Card** (active promises, unresolved tensions, forbidden cont
 
 ---
 
+## The Selection step (Door B, F1)
+
+Don't hand the author a flat menu of latent readings — **rank** them and return the top 1–3, the costed shortlist. Each candidate is an `apodictic.retcon_reading.v1` block in a `## Candidate Readings` section, scored 1–5 (higher is better) across five dimensions:
+
+```markdown
+<!-- apodictic:retcon_reading
+{"schema":"apodictic.retcon_reading.v1","id":"CR-01",
+ "reading":"the sister was complicit all along",
+ "scores":{"canon_coherence":5,"payoff_density":4,"agency_preservation":5,
+           "genre_fit":4,"coincidence_resistance":4},
+ "coincidence_note":"needs only the locket and the Ch.7 silence load-bearing; the rest stands",
+ "implied_targets":["T1"]}
+-->
+```
+
+- **canon_coherence · payoff_density · agency_preservation · genre_fit** — the usual fit signals.
+- **coincidence_resistance** — the structural guard against **rubber reality**: a reading that only "works" by treating every incidental detail as load-bearing scores low (5 = no forced coincidences; 1 = paranoid over-fit). Show the rate's work in `coincidence_note`.
+- **implied_targets** — the declared Retcon Target(s) this reading becomes once committed (the Door-B → Door-A handoff). Leave empty for a candidate you haven't committed to.
+
+`reading` is a **class/label**, never invented prose (the Firewall). The validator ranks by score total and flags an uncosted reading (no note) or an unpruned shortlist (>3).
+
+---
+
+## The rolling State Card (F2)
+
+The State Card isn't only a section of the Retcon Plan — it's also a standalone, **rolling** artifact, `[Project]_State_Card_[runlabel].md` at the project root, carrying one `apodictic.state_card.v1` block per revision round and **diff'd across rounds** (the Pass-10-class rolling-structured-artifact pattern). Its value is *cross-round* coherence: it shows when "a Round-1 active promise is now a forbidden contradiction" or when the controlling idea has drifted.
+
+```markdown
+<!-- apodictic:state_card
+{"schema":"apodictic.state_card.v1","round":2,
+ "controlling_idea":"the cost of the silences we keep to protect those we love",
+ "active_promises":["SE-01: the dual-POV converges","SE-02: the sister-arc pays off"],
+ "unresolved_tensions":["SE-04: the locket's significance (Ch. 2)"],
+ "forbidden_contradictions":["SE-05: keep the sisters' warmth earned"],
+ "likely_next_pressures":["the new ending re-weights every sister scene"]}
+-->
+```
+
+Tracked elements (promises / tensions / contradictions) carry a stable, **kind-agnostic `SE-NN` id**, so the same element is followed across rounds even when it changes kind — that identity is what lets the diff catch a promise that has quietly become a forbidden contradiction. Bump `round` each revision. Diff with `scripts/validate.sh state-card-diff <prior_card> <current_card>`.
+
+---
+
 ## The fair-play rule (non-negotiable)
 
 You may retcon for **meaning** freely (recontextualize what the reader has seen). You may **never** retcon the **evidence** the reader has already reasoned from — a mystery's culprit, an inspected clue, a planted fact. *Dramatic retcon improves meaning; evidential retcon destroys fair play.* If the new direction requires altering an inspected clue, that is not a retcon to plan — it is a reveal-economy problem to solve (Pass 8). And beware **rubber reality**: if a "retcon" is patching over a real structural hole rather than adding connective tissue, name the hole instead.
@@ -51,11 +93,15 @@ You may retcon for **meaning** freely (recontextualize what the reader has seen)
 ## Protocol
 
 1. **Build / refresh the State Card** from the diagnosis (or the manuscript).
-2. **Choose the door** (capture the committed target, or run the bug-or-feature abduction and let a chosen reading become a target).
-3. **Account the setup debt** as `retcon_item` blocks (Door A: reveal economy run backward).
+2. **Choose the door** (capture the committed target, or run the bug-or-feature abduction, **rank** the candidate readings to the top 1–3, and let a chosen reading become a target).
+3. **Account the setup debt** as `retcon_item` blocks (Door A: reveal economy run backward). When an item is seeded from a **Pass 8 (Reveal Economy)** finding, record that finding's id in the item's optional **`source`** field (F3, e.g. `"source":"F-P8-03"`) — provenance the coach derives, the author curates. `finding-trace` (E6) checks each `source` resolves to a ledger finding.
 4. **Budget the commitments:** tag each item's `mutability` and `retcon_type`; the fair-play gate blocks evidential retcon of locked canon; name each costly/locked item's `blast_radius` (the Protected Elements it endangers).
 5. **Sequence** the arc (decision → backward seeding → forward consequence propagation) and hand off — no prose written by the coach.
 
 ## Mechanical check
 
-`scripts/validate.sh retcon-plan <run_folder>`: R1 schema, R2 unique ids, **R3 no evidential retcon of locked canon** (the signature gate; override `<!-- override: retcon-evidential RX-NN — … -->`), R4 target referential integrity; W1 blast-radius accounting on locked/costly items, W2 firewall drift (invented prose where a class belongs; override `retcon-firewall RX-NN`). W1/W2 advisory, ERROR under `--strict`. Ownership boundary + lineage: [`docs/retcon-planning.md`](../../../docs/retcon-planning.md).
+`scripts/validate.sh retcon-plan <run_folder>`: R1 schema, R2 unique ids, **R3 no evidential retcon of locked canon** (the signature gate; override `<!-- override: retcon-evidential RX-NN — … -->`), R4 target referential integrity; W1 blast-radius accounting on locked/costly items, W2 firewall drift (invented prose where a class belongs; override `retcon-firewall RX-NN`). Door-B Selection (F1): R5 reading schema + 1–5 score rubric, R6 unique reading ids, R7 reading-target referential integrity; **W3 coincidence-note over-fitting guard** (the signature F1 check), W4 top-1–3 shortlist. W1–W4 advisory, ERROR under `--strict`.
+
+The rolling State Card (F2) has its own validator: `scripts/validate.sh state-card-diff <prior> <current>` — S1 schema + `SE-NN` id-prefix, S2 unique ids, S3 round order, **S4 promise→contradiction** (the signature cross-round coherence-break check; override `<!-- override: state-card-transition SE-NN — … -->`), W1 dropped promise, W2 controlling-idea shift, W3 same-round edit.
+
+Pass-8 source provenance (F3): a `retcon_item`'s optional `source` finding-ref is resolved against the Findings Ledger by `scripts/validate.sh finding-trace <run_folder>` — **E6** flags a `source` that isn't in the ledger. Ownership boundary + lineage: [`docs/retcon-planning.md`](../../../docs/retcon-planning.md).
