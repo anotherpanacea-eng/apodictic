@@ -293,7 +293,7 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-feedback-triage.md not found"; CA_FAIL=1
     fi
     echo ""
-    echo "== canonical Retcon Plan (retcon-plan: commitment-budget + fair-play + target integrity) =="
+    echo "== canonical Retcon Plan (retcon-plan: commitment-budget + fair-play + target integrity + ranked selection) =="
     if [ -f "$CA_BASE/example-retcon-plan.md" ]; then
       "$0" retcon-plan "$CA_BASE/example-retcon-plan.md" || CA_FAIL=1
     else
@@ -4118,9 +4118,12 @@ EOF
     # apodictic.retcon_item.v1 blocks in a Retcon Plan — R1 invalid item, R2 duplicate id,
     # R3 evidential retcon of locked canon (fair-play violation; the signature gate), R4 dangling
     # target_id; W1 unaccounted blast radius on a locked/costly item, W2 firewall drift (invented
-    # prose where a class belongs) — W1/W2 advisory, ERROR under --strict. Takes a run folder
-    # (globs *_Retcon_Plan_*.md) or explicit files. Delegates to scripts/retcon_plan.py; degrades
-    # to an advisory WARN without python3.
+    # prose where a class belongs). The Door-B Selection step (F1) also checks apodictic.retcon_reading.v1
+    # blocks — R5 invalid reading (schema + 1-5 score rubric), R6 duplicate reading id, R7 dangling
+    # implied_target; W3 missing coincidence_note (over-fitting guard; the signature F1 check), W4
+    # more than 3 candidate readings (top-1-3 shortlist). W1-W4 advisory, ERROR under --strict. Takes
+    # a run folder (globs *_Retcon_Plan_*.md) or explicit files. Delegates to scripts/retcon_plan.py;
+    # degrades to an advisory WARN without python3.
     RCP_DIR=$(cd "$(dirname "$0")" && pwd)
     RCP_HELPER="$RCP_DIR/retcon_plan.py"
     if [ "${1:-}" = "--self-test" ]; then
@@ -4131,7 +4134,7 @@ EOF
       if [ $# -lt 1 ]; then echo "Usage: $0 retcon-plan <run_folder|files...> [--strict] | --self-test"; exit 2; fi
       python3 "$RCP_HELPER" retcon-plan "$@"; exit $?
     fi
-    echo "WARN: python3 unavailable — retcon-plan skipped; check inline that no evidential retcon touches locked canon, every target_id is declared, and intervention classes aren't invented prose. See docs/retcon-planning.md."
+    echo "WARN: python3 unavailable — retcon-plan skipped; check inline that no evidential retcon touches locked canon, every target_id/implied_target is declared, intervention classes aren't invented prose, and each candidate reading is scored 1-5 with a coincidence_note. See docs/retcon-planning.md."
     exit 0
     ;;
 

@@ -1,6 +1,6 @@
 # Retcon Planning (coaching track)
 
-**Status:** v1 (Increment 1)
+**Status:** v1 (Increment 1 + F1 ranked Door-B Selection)
 **Trigger:** `apodictic-coach` → Retcon Planning mode. Use when a returning author has either (a) **committed to a late structural decision** — a new ending, a reframed controlling idea, a relocated reveal, a different antagonist (Door A); or (b) a draft with **weak / "glitch" / off-trajectory elements** they suspect could be meaningful (Door B).
 **Inherits:** the Coaching Firewall (`revision-coach/SKILL.md §The Coaching Firewall`) + the core Firewall (`core-editor/SKILL.md §The Firewall`).
 
@@ -17,7 +17,7 @@ A large share of revision is **retroactive**: once a writer discovers what the b
 ## Two doors
 
 - **Door A — targeted retcon.** The author names a **retcon target** they've decided on. Run **reveal economy backward**: given the payoff, derive the **setup debt** — the setups the draft now owes, where they belong, and the contradictions the decision creates.
-- **Door B — latent reinterpretation.** The author points at elements that feel like bugs. Run the abductive **"bug-or-feature"** move — "is there a reading in which the story was always about this?" — and present the candidate readings as **options** (never executed). A chosen reading becomes a Door-A target.
+- **Door B — latent reinterpretation.** The author points at elements that feel like bugs. Run the abductive **"bug-or-feature"** move — "is there a reading in which the story was always about this?" — then **score and rank** the candidate readings and present the top 1–3 as **options** (never executed). A chosen reading becomes a Door-A target. See *The Selection step* below.
 
 ---
 
@@ -42,6 +42,29 @@ Sections: a **State Card** (active promises, unresolved tensions, forbidden cont
 
 ---
 
+## The Selection step (Door B, F1)
+
+Don't hand the author a flat menu of latent readings — **rank** them and return the top 1–3, the costed shortlist. Each candidate is an `apodictic.retcon_reading.v1` block in a `## Candidate Readings` section, scored 1–5 (higher is better) across five dimensions:
+
+```markdown
+<!-- apodictic:retcon_reading
+{"schema":"apodictic.retcon_reading.v1","id":"CR-01",
+ "reading":"the sister was complicit all along",
+ "scores":{"canon_coherence":5,"payoff_density":4,"agency_preservation":5,
+           "genre_fit":4,"coincidence_resistance":4},
+ "coincidence_note":"needs only the locket and the Ch.7 silence load-bearing; the rest stands",
+ "implied_targets":["T1"]}
+-->
+```
+
+- **canon_coherence · payoff_density · agency_preservation · genre_fit** — the usual fit signals.
+- **coincidence_resistance** — the structural guard against **rubber reality**: a reading that only "works" by treating every incidental detail as load-bearing scores low (5 = no forced coincidences; 1 = paranoid over-fit). Show the rate's work in `coincidence_note`.
+- **implied_targets** — the declared Retcon Target(s) this reading becomes once committed (the Door-B → Door-A handoff). Leave empty for a candidate you haven't committed to.
+
+`reading` is a **class/label**, never invented prose (the Firewall). The validator ranks by score total and flags an uncosted reading (no note) or an unpruned shortlist (>3).
+
+---
+
 ## The fair-play rule (non-negotiable)
 
 You may retcon for **meaning** freely (recontextualize what the reader has seen). You may **never** retcon the **evidence** the reader has already reasoned from — a mystery's culprit, an inspected clue, a planted fact. *Dramatic retcon improves meaning; evidential retcon destroys fair play.* If the new direction requires altering an inspected clue, that is not a retcon to plan — it is a reveal-economy problem to solve (Pass 8). And beware **rubber reality**: if a "retcon" is patching over a real structural hole rather than adding connective tissue, name the hole instead.
@@ -51,11 +74,11 @@ You may retcon for **meaning** freely (recontextualize what the reader has seen)
 ## Protocol
 
 1. **Build / refresh the State Card** from the diagnosis (or the manuscript).
-2. **Choose the door** (capture the committed target, or run the bug-or-feature abduction and let a chosen reading become a target).
+2. **Choose the door** (capture the committed target, or run the bug-or-feature abduction, **rank** the candidate readings to the top 1–3, and let a chosen reading become a target).
 3. **Account the setup debt** as `retcon_item` blocks (Door A: reveal economy run backward).
 4. **Budget the commitments:** tag each item's `mutability` and `retcon_type`; the fair-play gate blocks evidential retcon of locked canon; name each costly/locked item's `blast_radius` (the Protected Elements it endangers).
 5. **Sequence** the arc (decision → backward seeding → forward consequence propagation) and hand off — no prose written by the coach.
 
 ## Mechanical check
 
-`scripts/validate.sh retcon-plan <run_folder>`: R1 schema, R2 unique ids, **R3 no evidential retcon of locked canon** (the signature gate; override `<!-- override: retcon-evidential RX-NN — … -->`), R4 target referential integrity; W1 blast-radius accounting on locked/costly items, W2 firewall drift (invented prose where a class belongs; override `retcon-firewall RX-NN`). W1/W2 advisory, ERROR under `--strict`. Ownership boundary + lineage: [`docs/retcon-planning.md`](../../../docs/retcon-planning.md).
+`scripts/validate.sh retcon-plan <run_folder>`: R1 schema, R2 unique ids, **R3 no evidential retcon of locked canon** (the signature gate; override `<!-- override: retcon-evidential RX-NN — … -->`), R4 target referential integrity; W1 blast-radius accounting on locked/costly items, W2 firewall drift (invented prose where a class belongs; override `retcon-firewall RX-NN`). Door-B Selection (F1): R5 reading schema + 1–5 score rubric, R6 unique reading ids, R7 reading-target referential integrity; **W3 coincidence-note over-fitting guard** (the signature F1 check), W4 top-1–3 shortlist. W1–W4 advisory, ERROR under `--strict`. Ownership boundary + lineage: [`docs/retcon-planning.md`](../../../docs/retcon-planning.md).
