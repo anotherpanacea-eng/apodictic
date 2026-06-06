@@ -17,7 +17,9 @@ Single-card checks (one file):
   S2 duplicate id     two tracked elements in one card share an SE-NN id (one namespace across
                       promises / tensions / contradictions).
 
-Cross-round checks (prior + current):
+Cross-round checks (prior + current — pair mode requires a parseable card on BOTH sides):
+  S0 missing card     in a two-file pair diff, either side has no parseable state_card block — a hard
+                      ERROR, so a wrong/misnamed file can never silently bypass the cross-round checks.
   S3 round backwards  current.round < prior.round (a stale or misordered diff).
   S4 promise->contradiction   an SE-NN that was an active_promise in prior is a
                       forbidden_contradiction in current — the draft has reasoned past a coherence
@@ -169,10 +171,19 @@ def diff_cards(prior_text, current_text, strict=False):
     if p_obj is None and c_obj is None and not errs:
         return 0, ["state-card-diff: no state_card blocks found — nothing to check"]
 
+    # Pair mode (two explicit files): BOTH sides must carry a parseable state_card. A missing card on
+    # either side is an ERROR (S0), not a silent single-card pass — otherwise a wrong/misnamed file
+    # would bypass the cross-round checks (S3/S4/W1-W3) entirely. (PR #41 review.)
+    if p_obj is None and not p_errs:
+        errs.append("[prior] S0 missing card: no parseable state_card block — a pair diff needs a "
+                    "card on both sides")
+    if c_obj is None and not c_errs:
+        errs.append("[current] S0 missing card: no parseable state_card block — a pair diff needs a "
+                    "card on both sides")
     if p_obj is None or c_obj is None:
-        # One side has no parseable card — only the single-card checks apply.
-        lines.append("state-card-diff: one card missing/invalid — single-card checks only")
-        return _finish(lines, errs, warns, strict, ok_msg="schema + id integrity (one side only)")
+        lines.append("state-card-diff: pair diff requires a parseable state_card on both sides — "
+                     "cross-round checks cannot run")
+        return _finish(lines, errs, warns, strict, ok_msg="")
 
     pr, cr = p_obj.get("round"), c_obj.get("round")
     rounds_known = isinstance(pr, int) and isinstance(cr, int)
@@ -315,6 +326,17 @@ def run_self_test():
     # --- identical self-diff is clean (the --check-all gate shape) ---
     c = card()
     chk("self_diff_clean", diff_cards(c, c)[0] == 0)
+
+    # --- pair mode requires a parseable card on BOTH sides (PR #41 review) ---
+    # a wrong/missing current file must FAIL (not silently single-card pass), so cross-round
+    # checks can never be bypassed
+    code, lines = diff_cards(card(), "# not a card\njust prose\n")
+    chk("pair_missing_current_fails", code == 1 and any("S0 missing card" in ln for ln in lines))
+    code, lines = diff_cards("# not a card\n", card())
+    chk("pair_missing_prior_fails", code == 1 and any("S0 missing card" in ln for ln in lines))
+    # a JSON-broken card on one side also fails (S1), never a single-card pass
+    chk("pair_broken_card_fails",
+        diff_cards(card(), '<!-- apodictic:state_card\n{"schema":"apodictic.state_card.v1"\n-->')[0] == 1)
 
     # --- cross-round ---
     # S3 round backwards
