@@ -1,6 +1,6 @@
 # Nonfiction Pre-Draft Pathway — a workflow
 
-**Status:** Increment 1 (**argument spine**) built. Roadmap: `ROADMAP.md` → Workflows → Nonfiction Pre-Draft. Home: **pre-writing-pathway** (thesis-driven mode), reference `pre-writing-pathway/references/nonfiction-pre-draft.md`. Seeds: `Argument_State.md` (`docs/argument-state-schema.md`). Validator: `validate.sh argument-spine`.
+**Status:** Increments 1 (**argument spine**) + 2 (**source/evidence map**) built. Roadmap: `ROADMAP.md` → Workflows → Nonfiction Pre-Draft. Home: **pre-writing-pathway** (thesis-driven mode), reference `pre-writing-pathway/references/nonfiction-pre-draft.md`. Seeds: `Argument_State.md` (`docs/argument-state-schema.md`). Validator: `validate.sh argument-spine`.
 
 ## Purpose
 
@@ -47,6 +47,23 @@ A pre-draft `Argument_State.md` carries an `apodictic.argument_spine.v1` block p
 
 Enums mirror Argument_State §1/§2. `thesis`/`anti_thesis`/`form`/`goal` are strings; `subclaims` is an array (≥1). Field set canonical in `schemas/apodictic.argument_spine.v1.schema.json`.
 
+### The source/evidence map (Increment 2) — seeds §3
+
+Per subclaim, the writer plans the **intended support** — and the validator surfaces which subclaims are still **bare assertions** (no support planned). Each planned support unit is an `apodictic.support_plan.v1` block that seeds §3 Support Map:
+
+```json
+{
+  "schema": "apodictic.support_plan.v1",
+  "subclaim_id": "C1",                    // a Cn declared in the spine's claim ladder
+  "support_type": "DATA",                 // REASON / EXAMPLE / DATA / AUTHORITY / EXPERIENCE (§3's five)
+  "planned_support": "the city accessibility audit's count of non-compliant corners",
+  "scheme_hint": "SIGN",                  // optional: one of §3's eight argument schemes
+  "status": "to-acquire"                  // in-hand (already have it) / to-acquire (plan to get it)
+}
+```
+
+A subclaim with **no** `support_plan` block is a **bare assertion** — once support planning has started, the validator flags it (W2) so unsupported claims surface *before* drafting. The Firewall holds: the writer plans which evidence to bring; the engine never invents or fabricates evidence. Field set canonical in `schemas/apodictic.support_plan.v1.schema.json`.
+
 ## The `argument-spine` validator
 
 `validate.sh argument-spine <run_folder|files>` (parses the `argument_spine` block via the shared `apodictic_artifacts` engine). Degrades to an advisory `WARN` without `python3`.
@@ -57,22 +74,28 @@ Enums mirror Argument_State §1/§2. `thesis`/`anti_thesis`/`form`/`goal` are st
 | **A2 — unseeded** | ERROR | A spine block is present but the artifact is **not** a seeded `Argument_State` — it lacks the canonical `## 1. Context and Classification` / `## 2. Claim Architecture` headings. **Signature check:** the spine must seed the shared artifact, not float free. |
 | **A3 — thesis/C0 drift** | ERROR | The seeded §2 `C0 (main claim):` line does not carry the spine's `thesis`. **Signature check:** the structured spine and the human-readable Argument_State must agree. |
 | **W1 — anti-thesis echo** | WARN (ERROR `--strict`) | The `anti_thesis` is empty or a normalized echo of the `thesis` — a pre-draft plan must name a **genuine** opposing view, not a restatement (the nonfiction analogue of fiction's anti-idea). Override: `<!-- override: argument-spine-antithesis — <rationale> -->`. |
+| **A4 — invalid support plan** | ERROR | A `support_plan` block fails its schema (bad `support_type`/`scheme_hint`/`status` enum, malformed `subclaim_id`, missing required field, broken JSON). *(Increment 2)* |
+| **A5 — dangling subclaim_id** | ERROR | A `support_plan`'s `subclaim_id` is not a `Cn` declared in the spine's claim ladder. *(Increment 2)* |
+| **A6 — support unseeded** | ERROR | `support_plan` blocks are present but the artifact has no `## 3. Support Map` heading — the support map must seed §3 (parallel to A2). *(Increment 2)* |
+| **W2 — bare assertion** | WARN (ERROR `--strict`) | Once support planning has started (≥1 `support_plan`), a declared subclaim with **no** planned support — a bare assertion to address before drafting. **Staged**, so a spine-only (Increment 1) artifact is never flagged. *(Increment 2)* |
 
-**A2 and A3 are the signature checks** — together they mechanize the *seed-Argument_State* integration (the chosen design over a standalone artifact). **Ownership boundary.** `argument-spine` owns the pre-draft contract and the seeding integrity; it does not diagnose the argument (that is the Dialectical Clarity audit, once a draft exists), judge severity, or fill the draft-dependent sections.
+**A2 and A3 are the signature checks** — together they mechanize the *seed-Argument_State* integration (the chosen design over a standalone artifact); A6 extends that discipline to §3 and **W2** is the source/evidence map's signature (surfacing bare assertions before drafting). **Ownership boundary.** `argument-spine` owns the pre-draft contract and the seeding integrity; it does not diagnose the argument (that is the Dialectical Clarity audit, once a draft exists), judge severity, or fill the draft-dependent sections.
 
 ## Workflow
 
 1. **Classify** the piece: form, goal, argument type (AT0–AT4), burden level, audience.
 2. **State the thesis** (C0) and the **claim ladder** (the necessary subclaims that build to it).
 3. **Name the anti-thesis** — the strongest opposing view the argument must defeat.
-4. **Seed `Argument_State.md`** — write the spine block and the §1/§2 (+ §6 Objection 1) it populates; leave the draft-dependent sections pending.
-5. Validate with `validate.sh argument-spine` (`--strict` in CI). A canonical worked example (`core-editor/references/example-argument-state-predraft.md`) is gated by `validate.sh --check-all`.
+4. **Map the support (Increment 2)** — per subclaim, add a `support_plan` block naming the intended support and its type (seeds §3). A subclaim with none is a bare assertion to resolve before drafting.
+5. **Seed `Argument_State.md`** — write the spine block, the support plans, and the §1/§2/§3 (+ §6 Objection 1) they populate; leave the remaining draft-dependent sections pending.
+6. Validate with `validate.sh argument-spine` (`--strict` in CI). A canonical worked example (`core-editor/references/example-argument-state-predraft.md`) is gated by `validate.sh --check-all`.
 
 ## Increment boundaries
 
-**Increment 1 (this):** the argument spine — `apodictic.argument_spine.v1` block + schema, the seed-into-`Argument_State` integration, the `argument-spine` validator (A1–A3 + W1), the worked example, the `--check-all` gate, and the pre-writing-pathway nonfiction mode.
+**Increment 1:** the argument spine — `apodictic.argument_spine.v1` block + schema, the seed-into-`Argument_State` integration, the `argument-spine` validator (A1–A3 + W1), the worked example, the `--check-all` gate, and the pre-writing-pathway nonfiction mode.
+
+**Increment 2:** the source/evidence map — `apodictic.support_plan.v1` block + schema (one per planned support unit, linked to a spine subclaim, seeding §3 Support Map), the `argument-spine` validator extended with A4–A6 + W2 (the **bare-assertion** surfacing being the signature), and the worked example extended with §3. Same validator (no count change).
 
 **Future increments:**
-- **Source/evidence map** — plan, per subclaim, the intended support and which claims are still bare assertions (seeds §3 Support Map). The user-chosen scope deferred this from Increment 1.
 - **Scene-ethics plan** — for narrative nonfiction / memoir with real people: a pre-draft consent/disclosure plan (pairs with the **Legal Risk Register**).
 - **Warrant pre-check** — surface the load-bearing warrants the draft will need to make explicit for a HOSTILE audience (seeds §4).

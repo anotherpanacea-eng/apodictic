@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""argument-spine — structural integrity for the Nonfiction Pre-Draft Pathway (Increment 1).
+"""argument-spine — structural integrity for the Nonfiction Pre-Draft Pathway (Increments 1–2).
 
 `validate.sh argument-spine <run_folder|files>` shells out here. Before a draft exists, a writer
 plans the argument: the thesis, the claim ladder, and the opposing view the argument must defeat.
@@ -20,9 +20,20 @@ seed-Argument_State integration.
                       ERROR --strict). A pre-draft plan must name a GENUINE opposing view, not a
                       restatement. Override: <!-- override: argument-spine-antithesis — <reason> -->.
 
-A2 and A3 are the signature checks: they verify the spine actually populated Argument_State (the
-chosen integration). Reuses apodictic_artifacts (block grammar + schema engine). An artifact with
-no spine block is a no-op. See docs/nonfiction-pre-draft.md.
+Increment 2 — the source/evidence map, planned per subclaim as apodictic.support_plan.v1 blocks
+that SEED §3 Support Map:
+  A4 invalid support  a support_plan block fails its schema (bad support_type / scheme_hint / status
+                      enum, malformed subclaim_id, missing field, bad JSON).
+  A5 dangling subclaim a support_plan's subclaim_id is not a Cn declared in the spine's ladder.
+  A6 support unseeded  support_plan blocks are present but the artifact has no '## 3. Support Map'
+                      heading (the support map must seed §3 — parallel to A2).
+  W2 bare assertion   once support planning has started (>=1 support_plan), a declared subclaim with
+                      NO planned support (advisory; ERROR --strict). Staged, so a spine-only
+                      (Increment 1) artifact is never nagged.
+
+A2/A3 (spine) and the seeding checks verify the plan actually populated Argument_State (the chosen
+integration). Reuses apodictic_artifacts (block grammar + schema engine). An artifact with no spine
+or support_plan block is a no-op. See docs/nonfiction-pre-draft.md.
 
   argument_spine.py argument-spine <run_folder|files...> [--strict]
   argument_spine.py --self-test
@@ -40,13 +51,17 @@ except ImportError:
     art = None
 
 _SCHEMA_ID = "apodictic.argument_spine.v1"
+_SUPPORT_SCHEMA_ID = "apodictic.support_plan.v1"   # Increment 2: source/evidence map (seeds §3)
 _STATE_GLOB = "Argument_State*.md"
 _SCORE_ENUMS = ("argument_type", "burden_level", "audience_expertise", "audience_receptivity")
-# Canonical Argument_State headings the spine must seed (docs/argument-state-schema.md §1/§2).
+# Canonical Argument_State headings the spine must seed (docs/argument-state-schema.md §1/§2/§3).
 _SEC1_RE = re.compile(r"^##\s+1\.\s+Context and Classification", re.IGNORECASE | re.MULTILINE)
 _SEC2_RE = re.compile(r"^##\s+2\.\s+Claim Architecture", re.IGNORECASE | re.MULTILINE)
+_SEC3_RE = re.compile(r"^##\s+3\.\s+Support Map", re.IGNORECASE | re.MULTILINE)
 # The §2 main-claim line: "C0 (main claim): <thesis>".
 _C0_RE = re.compile(r"^\s*C0\s*\(main claim\)\s*:\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
+# A subclaim string carries a leading Cn id ("C1: …") — the link target for a support plan.
+_SUBCLAIM_ID_RE = re.compile(r"^\s*(C[0-9]+)\b")
 _ANTITHESIS_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*argument-spine-antithesis\b", re.IGNORECASE)
 
 
@@ -82,12 +97,45 @@ def parse_spine(text):
     return None, []
 
 
+def spine_subclaim_ids(obj):
+    """Set of Cn ids declared in the spine's subclaim ladder ('C1: …' -> 'C1'). The link targets a
+    support plan resolves against (Increment 2)."""
+    ids = set()
+    if isinstance(obj, dict):
+        for s in (obj.get("subclaims") or []):
+            if isinstance(s, str):
+                m = _SUBCLAIM_ID_RE.match(s)
+                if m:
+                    ids.add(m.group(1))
+    return ids
+
+
+def parse_support_plans(text):
+    """[(obj_or_None, schema_errs, index), ...] for each apodictic:support_plan block (Increment 2)."""
+    plans = []
+    if not text or art is None:
+        return plans
+    schema = art.load_schema(_SUPPORT_SCHEMA_ID)
+    idx = 0
+    for btype, obj, jerr in art.parse_blocks(text):
+        if btype != "support_plan":
+            continue
+        idx += 1
+        where = "support_plan #%d" % idx
+        if jerr:
+            plans.append((None, ["%s: invalid JSON — %s" % (where, jerr)], idx))
+            continue
+        plans.append((obj, art.validate_obj(obj, schema, where), idx))
+    return plans
+
+
 def check(text, strict=False):
     """Run the argument-spine integrity checks. Returns (code, lines)."""
     lines, errs, warns = [], [], []
     obj, schema_errs = parse_spine(text)
-    if obj is None and not schema_errs:
-        return 0, ["argument-spine: no argument_spine block found — nothing to check"]
+    supports = parse_support_plans(text)
+    if obj is None and not schema_errs and not supports:
+        return 0, ["argument-spine: no argument_spine or support_plan blocks found — nothing to check"]
 
     # A1 — schema / JSON validity
     for e in schema_errs:
@@ -119,12 +167,41 @@ def check(text, strict=False):
             warns.append("W1 anti-thesis echo: the anti_thesis is empty or restates the thesis — "
                          "name the genuine opposing view the argument must defeat")
 
+    # ---- Increment 2: source/evidence map (seeds §3 Support Map) ----
+    # A4 — schema validity per support_plan
+    for _o, serrs, _i in supports:
+        for e in serrs:
+            errs.append("A4 invalid support plan: %s" % e)
+    valid_supports = [o for o, serrs, _i in supports if o is not None and not serrs]
+    if valid_supports:
+        # A6 — support plans must seed §3 Support Map (parallel to A2's seeding discipline)
+        if not _SEC3_RE.search(text):
+            errs.append("A6 support not seeded: support_plan blocks present but no '## 3. Support "
+                        "Map' heading — the support map must seed Argument_State §3")
+        declared = spine_subclaim_ids(obj) if (obj is not None and not schema_errs) else set()
+        planned_ids = set()
+        # A5 — dangling subclaim_id (a support plan that doesn't attach to a declared spine subclaim)
+        for o in valid_supports:
+            sid = o.get("subclaim_id")
+            planned_ids.add(sid)
+            if sid not in declared:
+                errs.append("A5 dangling subclaim_id: support_plan references %s — not a declared "
+                            "spine subclaim (declared: %s)" % (sid, ", ".join(sorted(declared)) or "none"))
+        # W2 — bare assertion: a declared subclaim with no planned support. Staged — only once support
+        # planning has started (>=1 plan), so a spine-only (Increment 1) artifact is never nagged.
+        for sid in sorted(declared - planned_ids):
+            warns.append("W2 bare assertion: %s has no planned support — name the intended support, "
+                         "or mark it a known gap, before drafting" % sid)
+
     # Report
     if obj is not None and not schema_errs:
         lines.append("argument-spine: %s / burden=%s / audience=%s,%s; %d subclaim(s)"
                      % (obj.get("argument_type"), obj.get("burden_level"),
                         obj.get("audience_expertise"), obj.get("audience_receptivity"),
                         len(obj.get("subclaims") or [])))
+    if valid_supports:
+        lines.append("argument-spine: %d support plan(s) over %d declared subclaim(s)"
+                     % (len(valid_supports), len(spine_subclaim_ids(obj))))
     for e in errs:
         lines.append("  ERROR: %s" % e)
     for w in warns:
@@ -135,9 +212,11 @@ def check(text, strict=False):
                      % (len(errs), ", %d strict warn(s)" % len(warns) if (strict and warns) else ""))
         return 1, lines
     if warns:
-        lines.append("WARN: argument-spine: %d advisory gap(s) — see W1 above" % len(warns))
+        lines.append("WARN: argument-spine: %d advisory gap(s) — see W1/W2 above" % len(warns))
     else:
-        lines.append("argument-spine: PASS (contract + seeds Argument_State §1/§2 + anti-thesis)")
+        suffix = " + support map" if valid_supports else ""
+        lines.append("argument-spine: PASS (contract + seeds Argument_State §1/§2%s + anti-thesis)"
+                     % ("/§3" + suffix if valid_supports else ""))
     return 0, lines
 
 
@@ -195,6 +274,20 @@ def run_self_test():
                 "Dialectical Integrity Map\n\nObjection 1: ramps are a low priority\n\n%s\n"
                 % (thesis, block if block is not None else spine(thesis=thesis)))
 
+    def support(sub="C1", stype="DATA", planned="city accessibility audit counts",
+                status="to-acquire", **over):
+        o = {"schema": _SUPPORT_SCHEMA_ID, "subclaim_id": sub, "support_type": stype,
+             "planned_support": planned, "status": status}
+        o.update(over)
+        return "<!-- apodictic:support_plan\n%s\n-->" % _j.dumps(o)
+
+    def seeded3(subclaims, supports, thesis="the city should fund curb-cut ramps citywide"):
+        # a seeded Argument_State with §1/§2/§3, a spine whose ladder = subclaims, + support blocks
+        return ("# Argument State\n## 1. Context and Classification\nForm: op-ed\n"
+                "## 2. Claim Architecture\nC0 (main claim): %s\n## 3. Support Map\n%s\n"
+                "## 6. Objection and Dialectical Integrity Map\nObjection 1: low priority\n%s\n"
+                % (thesis, supports, spine(thesis=thesis, subclaims=subclaims)))
+
     # clean: a well-formed spine that seeds Argument_State §1/§2 with a matching C0
     chk("clean", check(seeded())[0] == 0)
     # no block -> no-op
@@ -238,6 +331,30 @@ def run_self_test():
     chk("w1_override", code == 0 and not any("WARN" in ln and "anti-thesis" in ln for ln in lines))
     # a genuine (non-echo) anti-thesis does not trip W1
     chk("w1_genuine_clean", not any("W1" in ln for ln in check(seeded())[1]))
+
+    # ---- Increment 2: source/evidence map (support plans seed §3) ----
+    TWO = ("C1: ramps remove a documented mobility barrier", "C2: the phased cost fits the budget")
+    # clean: both subclaims have a support plan, §3 present
+    chk("inc2_clean", check(seeded3(TWO, support("C1") + "\n" + support("C2")))[0] == 0)
+    # A4 — bad support_type / status / subclaim_id format
+    chk("a4_bad_support_type", check(seeded3(TWO, support("C1", stype="VIBES") + support("C2")))[0] == 1)
+    chk("a4_bad_status", check(seeded3(TWO, support("C1", status="someday") + support("C2")))[0] == 1)
+    chk("a4_bad_subclaim_fmt", check(seeded3(TWO, support("C1x") + support("C2")))[0] == 1)
+    code, lines = check(seeded3(TWO, '<!-- apodictic:support_plan\n{"schema":"apodictic.support_plan.v1"\n-->'))
+    chk("a4_bad_json", code == 1 and any("A4 invalid support plan" in ln for ln in lines))
+    # A5 — dangling subclaim_id (C9 not declared in the spine ladder)
+    code, lines = check(seeded3(TWO, support("C9")))
+    chk("a5_dangling_subclaim", code == 1 and any("A5 dangling subclaim_id" in ln and "C9" in ln for ln in lines))
+    # A6 — support plans present but no §3 heading (inject a support block into the §3-less seeded())
+    code, lines = check(seeded().replace("## 6.", support("C1") + "\n## 6.", 1))
+    chk("a6_support_unseeded", code == 1 and any("A6 support not seeded" in ln for ln in lines))
+    # W2 — bare assertion: C2 has no support plan (staged ON; advisory; ERROR --strict)
+    code, lines = check(seeded3(TWO, support("C1")))
+    chk("w2_bare_assertion", code == 0 and any("W2 bare assertion" in ln and "C2" in ln for ln in lines))
+    chk("w2_bare_strict_fails", check(seeded3(TWO, support("C1")), strict=True)[0] == 1)
+    # W2 staged OFF: a spine with two subclaims but NO support plans -> no W2 (don't nag Increment 1)
+    code, lines = check(seeded(block=spine(subclaims=TWO)))
+    chk("w2_staged_off", code == 0 and not any("W2" in ln for ln in lines))
 
     # resolution: run-folder (Argument_State*.md) + explicit file
     import tempfile
