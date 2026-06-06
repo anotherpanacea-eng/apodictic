@@ -300,7 +300,7 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-retcon-plan.md not found"; CA_FAIL=1
     fi
     echo ""
-    echo "== canonical pre-draft Argument_State (argument-spine: contract + seeds Argument_State + anti-thesis) =="
+    echo "== canonical pre-draft Argument_State (argument-spine: spine + source/evidence map seed §1/§2/§3) =="
     if [ -f "$CA_BASE/example-argument-state-predraft.md" ]; then
       "$0" argument-spine "$CA_BASE/example-argument-state-predraft.md" || CA_FAIL=1
     else
@@ -4143,13 +4143,15 @@ EOF
     ;;
 
   argument-spine)
-    # Nonfiction Pre-Draft Pathway, Increment 1 (docs/nonfiction-pre-draft.md): structural checks
-    # over the apodictic.argument_spine.v1 block — the pre-draft argument plan that SEEDS the shared
-    # Argument_State.md. A1 invalid spine (schema / enum / <1 subclaim / JSON), A2 unseeded (the
-    # spine must populate Argument_State §1/§2, not float free — the signature integration check),
-    # A3 thesis/C0 drift (the seeded §2 C0 main-claim line must carry the spine's thesis); W1
-    # anti-thesis echo (the anti_thesis must name a genuine opposing view, not restate the thesis;
-    # advisory, ERROR under --strict; override <!-- override: argument-spine-antithesis — … -->).
+    # Nonfiction Pre-Draft Pathway, Increments 1-2 (docs/nonfiction-pre-draft.md): structural checks
+    # over the apodictic.argument_spine.v1 block (the pre-draft argument plan that SEEDS the shared
+    # Argument_State.md) and the apodictic.support_plan.v1 blocks (the source/evidence map). A1
+    # invalid spine; A2 unseeded (spine must populate §1/§2, not float free — signature); A3 thesis/C0
+    # drift (the seeded §2 C0 must carry the thesis). Increment 2: A4 invalid support plan; A5 dangling
+    # subclaim_id (a support plan not attached to a declared spine subclaim); A6 support unseeded
+    # (support plans present but no §3 Support Map heading). Advisory: W1 anti-thesis echo
+    # (override <!-- override: argument-spine-antithesis — … -->), W2 bare assertion (a declared
+    # subclaim with no planned support, once support planning has started); both ERROR under --strict.
     # Takes a run folder (globs Argument_State*.md) or explicit files. Delegates to
     # scripts/argument_spine.py; degrades to an advisory WARN without python3.
     AS_DIR=$(cd "$(dirname "$0")" && pwd)

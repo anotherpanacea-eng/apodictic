@@ -1,6 +1,6 @@
 # Nonfiction Pre-Draft (pre-writing mode)
 
-**Status:** v1 (Increment 1 — argument spine)
+**Status:** v1 (Increments 1–2 — argument spine + source/evidence map)
 **When:** the writer has an argument-shaped idea (op-ed, policy brief, essay, white paper, testimony, open letter) but no draft — and the structure is **thesis-driven**, not character-driven. Route here instead of the fiction pre-writing flow when intake/`Franklin` classifies the idea as nonfiction / argument-shaped.
 **Inherits:** the Pre-Writing Firewall (`pre-writing-pathway/SKILL.md`) — help the writer plan structure; never invent claims, fabricate evidence, or write prose.
 
@@ -35,6 +35,20 @@ Plan the spine as one `apodictic.argument_spine.v1` block, then write the §1/§
 
 Field set canonical in `schemas/apodictic.argument_spine.v1.schema.json`. Worked example: `core-editor/references/example-argument-state-predraft.md`.
 
+### The source/evidence map (Increment 2) — seeds §3
+
+Per subclaim, plan the **intended support** as an `apodictic.support_plan.v1` block (under a `## 3. Support Map` heading). A subclaim with none is a **bare assertion** the validator surfaces (W2) before drafting.
+
+```markdown
+<!-- apodictic:support_plan
+{"schema":"apodictic.support_plan.v1","subclaim_id":"C1","support_type":"DATA",
+ "planned_support":"the city accessibility audit's count of non-compliant corners",
+ "scheme_hint":"SIGN","status":"to-acquire"}
+-->
+```
+
+- **`subclaim_id`** — a `Cn` declared in the spine's ladder. **`support_type`** — REASON/EXAMPLE/DATA/AUTHORITY/EXPERIENCE (§3's five). **`status`** — in-hand / to-acquire. **`scheme_hint`** (optional) — one of §3's eight schemes. The Firewall holds: plan which evidence to bring; never invent or fabricate it.
+
 ---
 
 ## Protocol
@@ -47,4 +61,4 @@ Field set canonical in `schemas/apodictic.argument_spine.v1.schema.json`. Worked
 
 ## Mechanical check
 
-`scripts/validate.sh argument-spine <run_folder>`: A1 schema, **A2 seeds Argument_State §1/§2**, **A3 the C0 main claim carries the thesis** (A2/A3 are the signature seed-integration checks); W1 anti-thesis echo (name a genuine opposing view; override `<!-- override: argument-spine-antithesis — … -->`). W1 advisory, ERROR under `--strict`. Ownership boundary + lineage: [`docs/nonfiction-pre-draft.md`](../../../../docs/nonfiction-pre-draft.md).
+`scripts/validate.sh argument-spine <run_folder>`: A1 schema, **A2 seeds Argument_State §1/§2**, **A3 the C0 main claim carries the thesis** (A2/A3 are the signature seed-integration checks); W1 anti-thesis echo (name a genuine opposing view; override `<!-- override: argument-spine-antithesis — … -->`). Increment 2: A4 support-plan schema, A5 each support plan attaches to a declared subclaim, A6 the support map seeds §3; **W2 bare assertion** (a declared subclaim with no planned support, once planning has started). W1/W2 advisory, ERROR under `--strict`. Ownership boundary + lineage: [`docs/nonfiction-pre-draft.md`](../../../../docs/nonfiction-pre-draft.md).
