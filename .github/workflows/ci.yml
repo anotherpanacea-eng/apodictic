@@ -1,9 +1,11 @@
 name: ci
 
-# APODICTIC is a prompt/skill plugin: there is no pytest suite. CI is a
-# cheap correctness gate — byte-compile the canonical Python and confirm
-# every plugin/marketplace manifest is valid JSON. The eval fixtures under
-# evals/ are the behavioral ground-truth track, run separately.
+# APODICTIC is a prompt/skill plugin: there is no pytest suite, but it does
+# carry a validator self-test harness (scripts/validate.sh). CI is a correctness
+# gate — byte-compile the canonical Python, confirm every plugin/marketplace
+# manifest is valid JSON, and run the validator self-tests plus the real-file
+# canonical-framework invariants (validate.sh --check-all). The eval fixtures
+# under evals/ are the behavioral ground-truth track, run separately.
 
 on:
   pull_request:
@@ -41,3 +43,10 @@ jobs:
             python -m json.tool "$f" > /dev/null
           done
           echo "all ${#files[@]} manifests parse"
+
+      # --check-all subsumes --self-test-all (the 35 validator self-tests) and
+      # adds the real-file invariants: the validators are run against the actual
+      # canonical framework files (pass-dependencies.md, the shipped templates,
+      # the canonical worked examples + run folder), not just their own fixtures.
+      - name: Validator self-tests + canonical-framework gate
+        run: bash scripts/validate.sh --check-all
