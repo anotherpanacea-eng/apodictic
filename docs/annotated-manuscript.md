@@ -82,7 +82,7 @@ Two worked fixtures, so the gate exercises more than the coarsest rung:
 
 ## Increment plan
 
-**Increment 1 (this spec):** the snapshot step, `apodictic.annotation.v1` schema (added to `schemas/`, registered in `apodictic_artifacts.known_schema_ids()`), `scripts/annotation_manifest.py` (anchor resolver + reverse-transform diff + validator), `validate.sh annotated-manuscript`, the CriticMarkup renderer (fixed comment template), both worked fixtures, and the `--check-all` gate. Anchor granularity = line-range / section / chapter / document; no character-precise anchoring.
+**Increment 1 (this spec):** the snapshot step, `apodictic.annotation.v1` schema (added to `schemas/`, auto-discovered by `apodictic_artifacts.known_schema_ids()`, which globs the directory), `scripts/annotation_manifest.py` (anchor resolver + reverse-transform diff + validator), `validate.sh annotated-manuscript`, the CriticMarkup renderer (fixed comment template), both worked fixtures, and the `--check-all` gate. Anchor granularity = line-range / section / chapter / document; no character-precise anchoring.
 
 **Future increments (not built):**
 - **DOCX / Google Docs / Obsidian comment export** — render targets over the same manifest; each must preserve `A2` semantics in its native comment model (and define its own reverse transform).
