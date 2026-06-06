@@ -197,9 +197,11 @@ Writers returning with beta reader or critique group feedback. Sort, validate, a
 
 **Built.** Lives in the revision-coach skill (`/triage-feedback`, `revision-coach/references/feedback-triage.md`). Each note is a real-JSON `apodictic.feedback_item.v1` block (orthogonal `assessment` truth axis × `triage` disposition axis) in a `[Project]_Feedback_Triage_[runlabel].md` artifact, checked by the `feedback-triage` validator (contract hygiene + conflict referential integrity + the contradiction-coherence gap). Design: [`docs/feedback-triage.md`](docs/feedback-triage.md). Future increments: targeted-validation automation; deeper coaching handoff.
 
-### Nonfiction Pre-Draft Pathway
+### Nonfiction Pre-Draft Pathway — **Built (Increment 1: argument spine)**
 
 Argument spine + source/evidence map + scene ethics plan. Separate from fiction pre-writing because nonfiction structure is thesis-driven, not character-driven.
+
+**Built (Increment 1 — argument spine).** A thesis-driven pre-writing mode (homed in `pre-writing-pathway`) that captures the **argument spine** before a draft exists — thesis, claim ladder, and the **anti-thesis** (the opposing view the argument must defeat) — as an `apodictic.argument_spine.v1` block, and **seeds the shared `Argument_State.md`** (§1/§2 + §6 Objection 1) so the Dialectical Clarity audit and companion modules consume one contract (no parallel schema, no conversion step). Enforced by the `argument-spine` validator: A1 schema (AT0–AT4 / burden / audience enums, ≥1 subclaim), **A2 unseeded** + **A3 thesis/C0 drift** (the signature seed-`Argument_State` integration checks), W1 anti-thesis echo (name a genuine opposing view, not a restatement; overridable). Canonical `--check-all` gate over a worked pre-draft `Argument_State.md`. Validators 24 → 25. Spec: [`docs/nonfiction-pre-draft.md`](docs/nonfiction-pre-draft.md). **Future increments:** the source/evidence map (seeds §3); the scene-ethics / consent plan (pairs with Legal Risk Register); a warrant pre-check (seeds §4).
 
 ### Legal Risk Register
 

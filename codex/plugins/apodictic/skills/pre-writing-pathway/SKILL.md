@@ -50,6 +50,10 @@ Use prefilled values to skip redundant intake prompts:
 
 Do not re-ask "what do you have?" when router already answered it unless the user indicates the classification is wrong.
 
+### Nonfiction (thesis-driven) mode
+
+The phases below are **story-driven** (premise, characters, scenes). When the idea is **argument-shaped** nonfiction — an op-ed, policy brief, essay, white paper, testimony, or open letter — the structure is thesis-driven, not character-driven, so route to the dedicated pre-draft flow: **`references/nonfiction-pre-draft.md`**. It captures the **argument spine** (thesis + claim ladder + the opposing view to defeat) and seeds the shared `Argument_State.md` so the Dialectical Clarity audit consumes it once a draft exists. The Firewall is unchanged — plan the argument's structure; never invent claims or write prose.
+
 ---
 
 ## Phase 0: Writer Mode Calibration

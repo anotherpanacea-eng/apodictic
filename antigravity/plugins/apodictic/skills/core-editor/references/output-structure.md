@@ -171,6 +171,9 @@ The model tag is **required**, not optional. It identifies which model generated
 **Diagnostic Vocabulary (when `operator:facilitator`):**
 - `[Project]_Vocabulary_Guide_[runlabel].md` — facilitator teaching aid (glossary + discussion prompts), produced alongside the editorial letter (see `references/diagnostic-vocabulary.md`)
 
+**Nonfiction Argument Engine (when argument-shaped):**
+- `Argument_State.md` — shared argument artifact at the project root (§§1–10; see `docs/argument-state-schema.md`). The Dialectical Clarity audit populates it from a draft; the **Nonfiction Pre-Draft Pathway** seeds §1/§2 (+ §6 Objection 1) from an `apodictic.argument_spine.v1` block *before* a draft exists (see `pre-writing-pathway/references/nonfiction-pre-draft.md`). Re-runs archive the prior state as `Argument_State_v[N].md`.
+
 **Series Continuity (when active):**
 - `[Project]_Series_Continuity_Audit_[runlabel].md`
 

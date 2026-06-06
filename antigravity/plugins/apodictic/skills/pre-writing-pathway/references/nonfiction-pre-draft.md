@@ -1,0 +1,50 @@
+# Nonfiction Pre-Draft (pre-writing mode)
+
+**Status:** v1 (Increment 1 — argument spine)
+**When:** the writer has an argument-shaped idea (op-ed, policy brief, essay, white paper, testimony, open letter) but no draft — and the structure is **thesis-driven**, not character-driven. Route here instead of the fiction pre-writing flow when intake/`Franklin` classifies the idea as nonfiction / argument-shaped.
+**Inherits:** the Pre-Writing Firewall (`pre-writing-pathway/SKILL.md`) — help the writer plan structure; never invent claims, fabricate evidence, or write prose.
+
+---
+
+## Purpose
+
+Capture the **argument spine** before drafting — the thesis, the claim ladder that builds to it, and the strongest opposing view it must defeat — and **seed the shared `Argument_State.md`** so the Dialectical Clarity audit and the companion modules later consume one contract. Design + lineage: [`docs/nonfiction-pre-draft.md`](../../../../docs/nonfiction-pre-draft.md).
+
+---
+
+## The artifact: a pre-draft `Argument_State.md`, seeded from the spine
+
+Plan the spine as one `apodictic.argument_spine.v1` block, then write the §1/§2 (+ §6 Objection 1) markdown it seeds:
+
+```markdown
+<!-- apodictic:argument_spine
+{"schema":"apodictic.argument_spine.v1","form":"op-ed",
+ "goal":"persuade the council to fund curb-cut ramps citywide",
+ "argument_type":"AT3","burden_level":"HIGH",
+ "audience_expertise":"MIXED","audience_receptivity":"HOSTILE",
+ "thesis":"the city should fund curb-cut ramps on every downtown corner",
+ "subclaims":["C1: missing curb cuts are a daily mobility barrier",
+              "C2: the phased cost fits the existing budget"],
+ "anti_thesis":"limited dollars are better spent on road resurfacing"}
+-->
+```
+
+- **`thesis`** → §2 **C0 (main claim)**; **`subclaims`** → §2 claim ladder; **`anti_thesis`** → §6 **Objection 1**.
+- **`argument_type`** AT0–AT4 · **`burden_level`** LOW/MEDIUM/HIGH · **`audience_expertise`** GENERAL/MIXED/EXPERT · **`audience_receptivity`** SYMPATHETIC/MIXED/HOSTILE → §1.
+- Leave the **draft-dependent** sections (§§3–5, 7–9) pending — the Dialectical Clarity audit fills them once a draft exists.
+
+Field set canonical in `schemas/apodictic.argument_spine.v1.schema.json`. Worked example: `core-editor/references/example-argument-state-predraft.md`.
+
+---
+
+## Protocol
+
+1. **Classify** — form, goal, argument type, burden level, audience (the §1 fields).
+2. **Thesis + ladder** — state C0 and the *necessary* subclaims that build to it (≥1).
+3. **Anti-thesis** — name the strongest opposing view the argument must defeat (a genuine one, not a restatement of the thesis). This is the nonfiction analogue of fiction's anti-idea.
+4. **Seed** — write the spine block and the §1/§2 (+ §6 Objection 1) markdown into `Argument_State.md`; mark the rest pending.
+5. **Hand off** — when a draft exists, the Dialectical Clarity audit populates the remaining sections from this seed.
+
+## Mechanical check
+
+`scripts/validate.sh argument-spine <run_folder>`: A1 schema, **A2 seeds Argument_State §1/§2**, **A3 the C0 main claim carries the thesis** (A2/A3 are the signature seed-integration checks); W1 anti-thesis echo (name a genuine opposing view; override `<!-- override: argument-spine-antithesis — … -->`). W1 advisory, ERROR under `--strict`. Ownership boundary + lineage: [`docs/nonfiction-pre-draft.md`](../../../../docs/nonfiction-pre-draft.md).
