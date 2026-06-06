@@ -1,6 +1,6 @@
 # Nonfiction Pre-Draft Pathway — a workflow
 
-**Status:** Increments 1 (**argument spine**) + 2 (**source/evidence map**) built. Roadmap: `ROADMAP.md` → Workflows → Nonfiction Pre-Draft. Home: **pre-writing-pathway** (thesis-driven mode), reference `pre-writing-pathway/references/nonfiction-pre-draft.md`. Seeds: `Argument_State.md` (`docs/argument-state-schema.md`). Validator: `validate.sh argument-spine`.
+**Status:** Increments 1 (**argument spine**) + 2 (**source/evidence map**) + 3 (**warrant pre-check**) built. Roadmap: `ROADMAP.md` → Workflows → Nonfiction Pre-Draft. Home: **pre-writing-pathway** (thesis-driven mode), reference `pre-writing-pathway/references/nonfiction-pre-draft.md`. Seeds: `Argument_State.md` (`docs/argument-state-schema.md`). Validator: `validate.sh argument-spine`.
 
 ## Purpose
 
@@ -64,6 +64,23 @@ Per subclaim, the writer plans the **intended support** — and the validator su
 
 A subclaim with **no** `support_plan` block is a **bare assertion** — once support planning has started, the validator flags it (W2) so unsupported claims surface *before* drafting. The Firewall holds: the writer plans which evidence to bring; the engine never invents or fabricates evidence. Field set canonical in `schemas/apodictic.support_plan.v1.schema.json`.
 
+### The warrant pre-check (Increment 3) — seeds §4
+
+Per subclaim, the writer plans the **warrant** — the principle that connects the support to the claim — as an `apodictic.warrant_plan.v1` block that seeds §4 Warrant and Inference Map:
+
+```json
+{
+  "schema": "apodictic.warrant_plan.v1",
+  "subclaim_id": "C1",
+  "warrant": "removing a documented barrier is a legitimate use of public funds",
+  "warrant_status": "EXPLICIT",     // EXPLICIT / RECOVERABLE / MISSING / CONTESTED
+  "backing": "PRESENT",             // PRESENT / THIN / ABSENT
+  "qualifier": "MATCHED"            // MATCHED / OVERCONFIDENT / UNDERCLAIMED
+}
+```
+
+The check is **audience-calibrated** (per the spine's `audience_receptivity`): for a **HOSTILE** audience, a warrant that is not `EXPLICIT` or has `ABSENT` backing must be made explicit and backed before drafting (validator W3) — a hostile reader won't grant an implicit or unsupported connecting principle. Field set canonical in `schemas/apodictic.warrant_plan.v1.schema.json`.
+
 ## The `argument-spine` validator
 
 `validate.sh argument-spine <run_folder|files>` (parses the `argument_spine` block via the shared `apodictic_artifacts` engine). Degrades to an advisory `WARN` without `python3`.
@@ -78,6 +95,10 @@ A subclaim with **no** `support_plan` block is a **bare assertion** — once sup
 | **A5 — dangling subclaim_id** | ERROR | A `support_plan`'s `subclaim_id` is not a `Cn` declared in the spine's claim ladder. *(Increment 2)* |
 | **A6 — support unseeded** | ERROR | `support_plan` blocks are present but the artifact has no `## 3. Support Map` heading — the support map must seed §3 (parallel to A2). *(Increment 2)* |
 | **W2 — bare assertion** | WARN (ERROR `--strict`) | Once support planning has started (≥1 `support_plan`), a declared subclaim with **no** planned support — a bare assertion to address before drafting. **Staged**, so a spine-only (Increment 1) artifact is never flagged. *(Increment 2)* |
+| **A7 — invalid warrant plan** | ERROR | A `warrant_plan` block fails its schema (bad `warrant_status`/`backing`/`qualifier` enum, malformed `subclaim_id`, missing field, broken JSON). *(Increment 3)* |
+| **A8 — dangling subclaim_id** | ERROR | A `warrant_plan`'s `subclaim_id` is not a `Cn` declared in the spine's ladder. *(Increment 3)* |
+| **A9 — warrant unseeded** | ERROR | `warrant_plan` blocks present but no `## 4. Warrant and Inference Map` heading (parallel to A2/A6). *(Increment 3)* |
+| **W3 — implicit warrant (hostile)** | WARN (ERROR `--strict`) | For a `HOSTILE` audience, a warrant that is not `EXPLICIT` or has `ABSENT` backing — make it explicit and back it before drafting. **Audience-calibrated** (no-op for non-hostile audiences). Override: `<!-- override: argument-spine-warrant — <rationale> -->`. *(Increment 3)* |
 
 **A2 and A3 are the signature checks** — together they mechanize the *seed-Argument_State* integration (the chosen design over a standalone artifact); A6 extends that discipline to §3 and **W2** is the source/evidence map's signature (surfacing bare assertions before drafting). **Ownership boundary.** `argument-spine` owns the pre-draft contract and the seeding integrity; it does not diagnose the argument (that is the Dialectical Clarity audit, once a draft exists), judge severity, or fill the draft-dependent sections.
 
@@ -87,8 +108,9 @@ A subclaim with **no** `support_plan` block is a **bare assertion** — once sup
 2. **State the thesis** (C0) and the **claim ladder** (the necessary subclaims that build to it).
 3. **Name the anti-thesis** — the strongest opposing view the argument must defeat.
 4. **Map the support (Increment 2)** — per subclaim, add a `support_plan` block naming the intended support and its type (seeds §3). A subclaim with none is a bare assertion to resolve before drafting.
-5. **Seed `Argument_State.md`** — write the spine block, the support plans, and the §1/§2/§3 (+ §6 Objection 1) they populate; leave the remaining draft-dependent sections pending.
-6. Validate with `validate.sh argument-spine` (`--strict` in CI). A canonical worked example (`core-editor/references/example-argument-state-predraft.md`) is gated by `validate.sh --check-all`.
+5. **Pre-check the warrants (Increment 3)** — per subclaim, add a `warrant_plan` block naming the connecting principle and its status/backing (seeds §4). For a HOSTILE audience, make implicit or unbacked warrants explicit.
+6. **Seed `Argument_State.md`** — write the spine, support, and warrant blocks and the §1–§4 (+ §6 Objection 1) they populate; leave the remaining draft-dependent sections pending.
+7. Validate with `validate.sh argument-spine` (`--strict` in CI). A canonical worked example (`core-editor/references/example-argument-state-predraft.md`) is gated by `validate.sh --check-all`.
 
 ## Increment boundaries
 
@@ -96,6 +118,7 @@ A subclaim with **no** `support_plan` block is a **bare assertion** — once sup
 
 **Increment 2:** the source/evidence map — `apodictic.support_plan.v1` block + schema (one per planned support unit, linked to a spine subclaim, seeding §3 Support Map), the `argument-spine` validator extended with A4–A6 + W2 (the **bare-assertion** surfacing being the signature), and the worked example extended with §3. Same validator (no count change).
 
+**Increment 3:** the warrant pre-check — `apodictic.warrant_plan.v1` block + schema (one per subclaim, seeding §4 Warrant and Inference Map), the `argument-spine` validator extended with A7–A9 + W3 (the **audience-calibrated** implicit-warrant flag for a HOSTILE audience being the signature), and the worked example extended with §4. Same validator (no count change). With Increments 1–3, the pre-draft seeds the Toulmin core of the argument — claims (§2), grounds (§3), and warrants (§4).
+
 **Future increments:**
-- **Scene-ethics plan** — for narrative nonfiction / memoir with real people: a pre-draft consent/disclosure plan (pairs with the **Legal Risk Register**).
-- **Warrant pre-check** — surface the load-bearing warrants the draft will need to make explicit for a HOSTILE audience (seeds §4).
+- **Scene-ethics plan** — for narrative nonfiction / memoir with real people: a pre-draft consent/disclosure plan (pairs with the **Legal Risk Register**). *Needs a design pass — taxonomy and the boundary with Legal Risk.*

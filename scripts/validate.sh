@@ -300,7 +300,7 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-retcon-plan.md not found"; CA_FAIL=1
     fi
     echo ""
-    echo "== canonical pre-draft Argument_State (argument-spine: spine + source/evidence map seed §1/§2/§3) =="
+    echo "== canonical pre-draft Argument_State (argument-spine: spine + support + warrant maps seed §1-§4) =="
     if [ -f "$CA_BASE/example-argument-state-predraft.md" ]; then
       "$0" argument-spine "$CA_BASE/example-argument-state-predraft.md" || CA_FAIL=1
     else
@@ -4143,17 +4143,17 @@ EOF
     ;;
 
   argument-spine)
-    # Nonfiction Pre-Draft Pathway, Increments 1-2 (docs/nonfiction-pre-draft.md): structural checks
+    # Nonfiction Pre-Draft Pathway, Increments 1-3 (docs/nonfiction-pre-draft.md): structural checks
     # over the apodictic.argument_spine.v1 block (the pre-draft argument plan that SEEDS the shared
-    # Argument_State.md) and the apodictic.support_plan.v1 blocks (the source/evidence map). A1
-    # invalid spine; A2 unseeded (spine must populate §1/§2, not float free — signature); A3 thesis/C0
-    # drift (the seeded §2 C0 must carry the thesis). Increment 2: A4 invalid support plan; A5 dangling
-    # subclaim_id (a support plan not attached to a declared spine subclaim); A6 support unseeded
-    # (support plans present but no §3 Support Map heading). Advisory: W1 anti-thesis echo
-    # (override <!-- override: argument-spine-antithesis — … -->), W2 bare assertion (a declared
-    # subclaim with no planned support, once support planning has started); both ERROR under --strict.
-    # Takes a run folder (globs Argument_State*.md) or explicit files. Delegates to
-    # scripts/argument_spine.py; degrades to an advisory WARN without python3.
+    # Argument_State.md), the apodictic.support_plan.v1 blocks (source/evidence map, §3), and the
+    # apodictic.warrant_plan.v1 blocks (warrant pre-check, §4). A1 invalid spine; A2 unseeded (spine
+    # must populate §1/§2 — signature); A3 thesis/C0 drift. Inc 2: A4 invalid support plan; A5 dangling
+    # subclaim_id; A6 support unseeded (no §3 heading). Inc 3: A7 invalid warrant plan; A8 dangling
+    # subclaim_id; A9 warrant unseeded (no §4 heading). Advisory (ERROR --strict): W1 anti-thesis echo
+    # (override argument-spine-antithesis), W2 bare assertion (a subclaim with no planned support), W3
+    # implicit warrant for a HOSTILE audience (non-EXPLICIT / ABSENT-backed; override
+    # argument-spine-warrant). Takes a run folder (globs Argument_State*.md) or explicit files.
+    # Delegates to scripts/argument_spine.py; degrades to an advisory WARN without python3.
     AS_DIR=$(cd "$(dirname "$0")" && pwd)
     AS_HELPER="$AS_DIR/argument_spine.py"
     if [ "${1:-}" = "--self-test" ]; then

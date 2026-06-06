@@ -31,9 +31,20 @@ that SEED §3 Support Map:
                       NO planned support (advisory; ERROR --strict). Staged, so a spine-only
                       (Increment 1) artifact is never nagged.
 
+Increment 3 — the warrant pre-check, planned per subclaim as apodictic.warrant_plan.v1 blocks that
+SEED §4 Warrant and Inference Map:
+  A7 invalid warrant  a warrant_plan block fails its schema (bad warrant_status / backing / qualifier
+                      enum, malformed subclaim_id, missing field, bad JSON).
+  A8 dangling subclaim a warrant_plan's subclaim_id is not a Cn declared in the spine's ladder.
+  A9 warrant unseeded warrant_plan blocks present but no '## 4. Warrant and Inference Map' heading.
+  W3 implicit warrant for a HOSTILE audience (per the spine's audience_receptivity), a warrant that
+                      is not EXPLICIT or has ABSENT backing — make it explicit and back it before
+                      drafting (advisory; ERROR --strict). Audience-calibrated. Override:
+                      <!-- override: argument-spine-warrant — <reason> -->.
+
 A2/A3 (spine) and the seeding checks verify the plan actually populated Argument_State (the chosen
 integration). Reuses apodictic_artifacts (block grammar + schema engine). An artifact with no spine
-or support_plan block is a no-op. See docs/nonfiction-pre-draft.md.
+/ support_plan / warrant_plan block is a no-op. See docs/nonfiction-pre-draft.md.
 
   argument_spine.py argument-spine <run_folder|files...> [--strict]
   argument_spine.py --self-test
@@ -52,17 +63,20 @@ except ImportError:
 
 _SCHEMA_ID = "apodictic.argument_spine.v1"
 _SUPPORT_SCHEMA_ID = "apodictic.support_plan.v1"   # Increment 2: source/evidence map (seeds §3)
+_WARRANT_SCHEMA_ID = "apodictic.warrant_plan.v1"   # Increment 3: warrant pre-check (seeds §4)
 _STATE_GLOB = "Argument_State*.md"
 _SCORE_ENUMS = ("argument_type", "burden_level", "audience_expertise", "audience_receptivity")
-# Canonical Argument_State headings the spine must seed (docs/argument-state-schema.md §1/§2/§3).
+# Canonical Argument_State headings the spine must seed (docs/argument-state-schema.md §1–§4).
 _SEC1_RE = re.compile(r"^##\s+1\.\s+Context and Classification", re.IGNORECASE | re.MULTILINE)
 _SEC2_RE = re.compile(r"^##\s+2\.\s+Claim Architecture", re.IGNORECASE | re.MULTILINE)
 _SEC3_RE = re.compile(r"^##\s+3\.\s+Support Map", re.IGNORECASE | re.MULTILINE)
+_SEC4_RE = re.compile(r"^##\s+4\.\s+Warrant and Inference Map", re.IGNORECASE | re.MULTILINE)
 # The §2 main-claim line: "C0 (main claim): <thesis>".
 _C0_RE = re.compile(r"^\s*C0\s*\(main claim\)\s*:\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 # A subclaim string carries a leading Cn id ("C1: …") — the link target for a support plan.
 _SUBCLAIM_ID_RE = re.compile(r"^\s*(C[0-9]+)\b")
 _ANTITHESIS_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*argument-spine-antithesis\b", re.IGNORECASE)
+_WARRANT_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*argument-spine-warrant\b", re.IGNORECASE)
 
 
 def _read(path):
@@ -129,13 +143,34 @@ def parse_support_plans(text):
     return plans
 
 
+def parse_warrant_plans(text):
+    """[(obj_or_None, schema_errs, index), ...] for each apodictic:warrant_plan block (Increment 3)."""
+    plans = []
+    if not text or art is None:
+        return plans
+    schema = art.load_schema(_WARRANT_SCHEMA_ID)
+    idx = 0
+    for btype, obj, jerr in art.parse_blocks(text):
+        if btype != "warrant_plan":
+            continue
+        idx += 1
+        where = "warrant_plan #%d" % idx
+        if jerr:
+            plans.append((None, ["%s: invalid JSON — %s" % (where, jerr)], idx))
+            continue
+        plans.append((obj, art.validate_obj(obj, schema, where), idx))
+    return plans
+
+
 def check(text, strict=False):
     """Run the argument-spine integrity checks. Returns (code, lines)."""
     lines, errs, warns = [], [], []
     obj, schema_errs = parse_spine(text)
     supports = parse_support_plans(text)
-    if obj is None and not schema_errs and not supports:
-        return 0, ["argument-spine: no argument_spine or support_plan blocks found — nothing to check"]
+    warrants = parse_warrant_plans(text)
+    if obj is None and not schema_errs and not supports and not warrants:
+        return 0, ["argument-spine: no argument_spine / support_plan / warrant_plan blocks found — "
+                   "nothing to check"]
 
     # A1 — schema / JSON validity
     for e in schema_errs:
@@ -193,6 +228,37 @@ def check(text, strict=False):
             warns.append("W2 bare assertion: %s has no planned support — name the intended support, "
                          "or mark it a known gap, before drafting" % sid)
 
+    # ---- Increment 3: warrant pre-check (seeds §4 Warrant and Inference Map) ----
+    # A7 — schema validity per warrant_plan
+    for _o, werrs, _i in warrants:
+        for e in werrs:
+            errs.append("A7 invalid warrant plan: %s" % e)
+    valid_warrants = [o for o, werrs, _i in warrants if o is not None and not werrs]
+    if valid_warrants:
+        # A9 — warrant plans must seed §4 Warrant and Inference Map (parallel to A2/A6)
+        if not _SEC4_RE.search(text):
+            errs.append("A9 warrant unseeded: warrant_plan blocks present but no '## 4. Warrant and "
+                        "Inference Map' heading — the warrant map must seed Argument_State §4")
+        declared = spine_subclaim_ids(obj) if (obj is not None and not schema_errs) else set()
+        hostile = (obj.get("audience_receptivity") == "HOSTILE") if (obj is not None and not schema_errs) else False
+        # A8 — dangling subclaim_id
+        for o in valid_warrants:
+            if o.get("subclaim_id") not in declared:
+                errs.append("A8 dangling subclaim_id: warrant_plan references %s — not a declared "
+                            "spine subclaim (declared: %s)"
+                            % (o.get("subclaim_id"), ", ".join(sorted(declared)) or "none"))
+        # W3 — for a HOSTILE audience, an implicit (non-EXPLICIT) or unbacked (ABSENT) warrant must be
+        # made explicit and backed before drafting. Audience-calibrated against the spine. Override.
+        if hostile and not _WARRANT_OVERRIDE_RE.search(text):
+            for o in valid_warrants:
+                ws, bk = o.get("warrant_status"), o.get("backing")
+                if ws != "EXPLICIT" or bk == "ABSENT":
+                    reason = ("status=%s" % ws if ws != "EXPLICIT" else "") + (
+                        (", " if ws != "EXPLICIT" else "") + "backing=ABSENT" if bk == "ABSENT" else "")
+                    warns.append("W3 implicit warrant for hostile audience: %s (%s) — a HOSTILE "
+                                 "audience won't grant it; make the warrant explicit and back it before "
+                                 "drafting" % (o.get("subclaim_id"), reason))
+
     # Report
     if obj is not None and not schema_errs:
         lines.append("argument-spine: %s / burden=%s / audience=%s,%s; %d subclaim(s)"
@@ -202,6 +268,8 @@ def check(text, strict=False):
     if valid_supports:
         lines.append("argument-spine: %d support plan(s) over %d declared subclaim(s)"
                      % (len(valid_supports), len(spine_subclaim_ids(obj))))
+    if valid_warrants:
+        lines.append("argument-spine: %d warrant plan(s)" % len(valid_warrants))
     for e in errs:
         lines.append("  ERROR: %s" % e)
     for w in warns:
@@ -212,11 +280,10 @@ def check(text, strict=False):
                      % (len(errs), ", %d strict warn(s)" % len(warns) if (strict and warns) else ""))
         return 1, lines
     if warns:
-        lines.append("WARN: argument-spine: %d advisory gap(s) — see W1/W2 above" % len(warns))
+        lines.append("WARN: argument-spine: %d advisory gap(s) — see W1/W2/W3 above" % len(warns))
     else:
-        suffix = " + support map" if valid_supports else ""
-        lines.append("argument-spine: PASS (contract + seeds Argument_State §1/§2%s + anti-thesis)"
-                     % ("/§3" + suffix if valid_supports else ""))
+        seeded = "§1/§2" + ("/§3" if valid_supports else "") + ("/§4" if valid_warrants else "")
+        lines.append("argument-spine: PASS (contract + seeds Argument_State %s + anti-thesis)" % seeded)
     return 0, lines
 
 
@@ -288,6 +355,23 @@ def run_self_test():
                 "## 6. Objection and Dialectical Integrity Map\nObjection 1: low priority\n%s\n"
                 % (thesis, supports, spine(thesis=thesis, subclaims=subclaims)))
 
+    def warrant(sub="C1", ws="EXPLICIT", bk="PRESENT", q="MATCHED",
+                w="removing a documented barrier is a legitimate use of public funds", **over):
+        o = {"schema": _WARRANT_SCHEMA_ID, "subclaim_id": sub, "warrant": w,
+             "warrant_status": ws, "backing": bk, "qualifier": q}
+        o.update(over)
+        return "<!-- apodictic:warrant_plan\n%s\n-->" % _j.dumps(o)
+
+    def seeded4(subclaims, warrants, receptivity="HOSTILE",
+                thesis="the city should fund curb-cut ramps citywide"):
+        # a seeded Argument_State with §1/§2/§4 + a spine whose ladder = subclaims, + warrant blocks
+        return ("# Argument State\n## 1. Context and Classification\nForm: op-ed\n"
+                "## 2. Claim Architecture\nC0 (main claim): %s\n"
+                "## 4. Warrant and Inference Map\n%s\n"
+                "## 6. Objection and Dialectical Integrity Map\nObjection 1: low priority\n%s\n"
+                % (thesis, warrants, spine(thesis=thesis, subclaims=subclaims,
+                                          audience_receptivity=receptivity)))
+
     # clean: a well-formed spine that seeds Argument_State §1/§2 with a matching C0
     chk("clean", check(seeded())[0] == 0)
     # no block -> no-op
@@ -355,6 +439,36 @@ def run_self_test():
     # W2 staged OFF: a spine with two subclaims but NO support plans -> no W2 (don't nag Increment 1)
     code, lines = check(seeded(block=spine(subclaims=TWO)))
     chk("w2_staged_off", code == 0 and not any("W2" in ln for ln in lines))
+
+    # ---- Increment 3: warrant pre-check (warrant plans seed §4) ----
+    ONE = ("C1: ramps remove a documented mobility barrier",)
+    # clean: an explicit, backed warrant is fine even for a HOSTILE audience -> no W3
+    chk("inc3_clean", check(seeded4(ONE, warrant("C1", ws="EXPLICIT", bk="PRESENT")))[0] == 0)
+    # A7 — bad enum
+    chk("a7_bad_status", check(seeded4(ONE, warrant("C1", ws="VAGUE")))[0] == 1)
+    chk("a7_bad_backing", check(seeded4(ONE, warrant("C1", bk="SOME")))[0] == 1)
+    # A8 — dangling subclaim_id
+    code, lines = check(seeded4(ONE, warrant("C9")))
+    chk("a8_dangling", code == 1 and any("A8 dangling subclaim_id" in ln and "C9" in ln for ln in lines))
+    # A9 — warrants present but no §4 heading (inject into the §4-less seeded())
+    code, lines = check(seeded().replace("## 6.", warrant("C1") + "\n## 6.", 1))
+    chk("a9_warrant_unseeded", code == 1 and any("A9 warrant unseeded" in ln for ln in lines))
+    # W3 — HOSTILE audience + implicit (RECOVERABLE) warrant -> advisory; ERROR --strict
+    code, lines = check(seeded4(ONE, warrant("C1", ws="RECOVERABLE"), receptivity="HOSTILE"))
+    chk("w3_implicit_hostile", code == 0 and any("W3 implicit warrant" in ln and "C1" in ln for ln in lines))
+    chk("w3_implicit_strict_fails",
+        check(seeded4(ONE, warrant("C1", ws="RECOVERABLE"), receptivity="HOSTILE"), strict=True)[0] == 1)
+    # W3 — ABSENT backing also fires for HOSTILE (even when EXPLICIT)
+    chk("w3_absent_backing_hostile",
+        any("W3 implicit warrant" in ln
+            for ln in check(seeded4(ONE, warrant("C1", ws="EXPLICIT", bk="ABSENT")))[1]))
+    # W3 audience-calibrated OFF: same implicit warrant for a SYMPATHETIC audience -> no W3
+    code, lines = check(seeded4(ONE, warrant("C1", ws="RECOVERABLE"), receptivity="SYMPATHETIC"))
+    chk("w3_sympathetic_no_warn", code == 0 and not any("W3" in ln for ln in lines))
+    # W3 override silences
+    ovw = "<!-- override: argument-spine-warrant — the implicit warrant is shared ground here -->\n"
+    code, lines = check(seeded4(ONE, ovw + warrant("C1", ws="RECOVERABLE"), receptivity="HOSTILE"))
+    chk("w3_override", code == 0 and not any("W3" in ln for ln in lines))
 
     # resolution: run-folder (Argument_State*.md) + explicit file
     import tempfile

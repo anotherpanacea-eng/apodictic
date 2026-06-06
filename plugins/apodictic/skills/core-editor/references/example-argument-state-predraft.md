@@ -10,10 +10,12 @@ modules consume one contract. The Firewall holds: the spine plans STRUCTURE, nev
 
 This file is exercised by `validate.sh --check-all` as a canonical release-gate target for
 `argument-spine` (A1 schema, A2 seeds §1/§2, A3 the C0 main-claim carries the thesis; W1 the
-anti-thesis names a genuine opposing view) AND Increment 2 (A4 support-plan schema, A5 each support
-plan attaches to a declared subclaim, A6 the support map seeds §3; W2 no bare assertions). The
-remaining draft-dependent sections (§§4–5, 7–9) are left PENDING on purpose — they are populated by
-the Dialectical Clarity audit once a draft exists.
+anti-thesis names a genuine opposing view), Increment 2 (A4 support-plan schema, A5 each support
+plan attaches to a declared subclaim, A6 the support map seeds §3; W2 no bare assertions), and
+Increment 3 (A7 warrant-plan schema, A8 each warrant attaches to a declared subclaim, A9 the warrant
+map seeds §4; W3 for a HOSTILE audience, warrants are explicit and backed). The remaining
+draft-dependent sections (§§5, 7–9) are left PENDING on purpose — they are populated by the
+Dialectical Clarity audit once a draft exists.
 -->
 
 <!-- apodictic:argument_spine
@@ -65,6 +67,24 @@ are covered, so the spine carries no bare assertions into drafting.
 {"schema":"apodictic.support_plan.v1","subclaim_id":"C3","support_type":"DATA","planned_support":"a decade of 311 complaint-log resolution times for curb-cut requests","scheme_hint":"CAUSAL","status":"to-acquire"}
 -->
 
+## 4. Warrant and Inference Map
+
+The warrant pre-check (Increment 3): per subclaim, the principle connecting the support to the claim.
+The audience is HOSTILE, so each warrant is planned **EXPLICIT** and backed — an implicit or unbacked
+warrant would be flagged (validator W3) as something to make explicit before drafting.
+
+<!-- apodictic:warrant_plan
+{"schema":"apodictic.warrant_plan.v1","subclaim_id":"C1","warrant":"removing a documented, daily barrier to public space is a legitimate first-order use of public funds","warrant_status":"EXPLICIT","backing":"PRESENT","qualifier":"MATCHED"}
+-->
+
+<!-- apodictic:warrant_plan
+{"schema":"apodictic.warrant_plan.v1","subclaim_id":"C2","warrant":"a cost that fits the existing budget without new taxes clears the usual fiscal objection to a new program","warrant_status":"EXPLICIT","backing":"PRESENT","qualifier":"MATCHED"}
+-->
+
+<!-- apodictic:warrant_plan
+{"schema":"apodictic.warrant_plan.v1","subclaim_id":"C3","warrant":"a decade of failure under the status quo is grounds to change the method, not to keep waiting","warrant_status":"EXPLICIT","backing":"THIN","qualifier":"MATCHED"}
+-->
+
 ## 6. Objection and Dialectical Integrity Map
 
 Objection 1 (the anti-thesis the argument must defeat): limited capital dollars are better spent on road resurfacing that benefits far more residents
@@ -72,6 +92,6 @@ Objection 1 (the anti-thesis the argument must defeat): limited capital dollars 
 
 ## Pending (populated by the Dialectical Clarity audit once a draft exists)
 
-§4 Warrant and Inference Map · §5 Burden, Scope, and Comparative Assessment ·
-§7 Narrative-as-Evidence Inventory · §8 Cross-Section Tracking · §9 Diagnostic Summary.
-This is a pre-draft spine + source/evidence map — these sections are intentionally not yet filled.
+§5 Burden, Scope, and Comparative Assessment · §7 Narrative-as-Evidence Inventory ·
+§8 Cross-Section Tracking · §9 Diagnostic Summary.
+This is a pre-draft spine + source/evidence map + warrant map — these sections are not yet filled.

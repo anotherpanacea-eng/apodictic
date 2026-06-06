@@ -1,6 +1,6 @@
 # Nonfiction Pre-Draft (pre-writing mode)
 
-**Status:** v1 (Increments 1–2 — argument spine + source/evidence map)
+**Status:** v1 (Increments 1–3 — argument spine + source/evidence map + warrant pre-check)
 **When:** the writer has an argument-shaped idea (op-ed, policy brief, essay, white paper, testimony, open letter) but no draft — and the structure is **thesis-driven**, not character-driven. Route here instead of the fiction pre-writing flow when intake/`Franklin` classifies the idea as nonfiction / argument-shaped.
 **Inherits:** the Pre-Writing Firewall (`pre-writing-pathway/SKILL.md`) — help the writer plan structure; never invent claims, fabricate evidence, or write prose.
 
@@ -49,6 +49,20 @@ Per subclaim, plan the **intended support** as an `apodictic.support_plan.v1` bl
 
 - **`subclaim_id`** — a `Cn` declared in the spine's ladder. **`support_type`** — REASON/EXAMPLE/DATA/AUTHORITY/EXPERIENCE (§3's five). **`status`** — in-hand / to-acquire. **`scheme_hint`** (optional) — one of §3's eight schemes. The Firewall holds: plan which evidence to bring; never invent or fabricate it.
 
+### The warrant pre-check (Increment 3) — seeds §4
+
+Per subclaim, plan the **warrant** (the principle connecting support to claim) as an `apodictic.warrant_plan.v1` block (under a `## 4. Warrant and Inference Map` heading):
+
+```markdown
+<!-- apodictic:warrant_plan
+{"schema":"apodictic.warrant_plan.v1","subclaim_id":"C1",
+ "warrant":"removing a documented barrier is a legitimate use of public funds",
+ "warrant_status":"EXPLICIT","backing":"PRESENT","qualifier":"MATCHED"}
+-->
+```
+
+- **`warrant_status`** EXPLICIT/RECOVERABLE/MISSING/CONTESTED · **`backing`** PRESENT/THIN/ABSENT · **`qualifier`** MATCHED/OVERCONFIDENT/UNDERCLAIMED. For a **HOSTILE** audience (per the spine), a non-EXPLICIT or ABSENT-backed warrant is flagged (W3) to make explicit before drafting.
+
 ---
 
 ## Protocol
@@ -61,4 +75,4 @@ Per subclaim, plan the **intended support** as an `apodictic.support_plan.v1` bl
 
 ## Mechanical check
 
-`scripts/validate.sh argument-spine <run_folder>`: A1 schema, **A2 seeds Argument_State §1/§2**, **A3 the C0 main claim carries the thesis** (A2/A3 are the signature seed-integration checks); W1 anti-thesis echo (name a genuine opposing view; override `<!-- override: argument-spine-antithesis — … -->`). Increment 2: A4 support-plan schema, A5 each support plan attaches to a declared subclaim, A6 the support map seeds §3; **W2 bare assertion** (a declared subclaim with no planned support, once planning has started). W1/W2 advisory, ERROR under `--strict`. Ownership boundary + lineage: [`docs/nonfiction-pre-draft.md`](../../../../docs/nonfiction-pre-draft.md).
+`scripts/validate.sh argument-spine <run_folder>`: A1 schema, **A2 seeds Argument_State §1/§2**, **A3 the C0 main claim carries the thesis** (A2/A3 are the signature seed-integration checks); W1 anti-thesis echo (name a genuine opposing view; override `<!-- override: argument-spine-antithesis — … -->`). Increment 2: A4 support-plan schema, A5 each support plan attaches to a declared subclaim, A6 the support map seeds §3; **W2 bare assertion** (a declared subclaim with no planned support, once planning has started). Increment 3: A7 warrant-plan schema, A8 each warrant attaches to a declared subclaim, A9 the warrant map seeds §4; **W3 implicit warrant** (for a HOSTILE audience, a non-EXPLICIT or unbacked warrant; override `<!-- override: argument-spine-warrant — … -->`). W1/W2/W3 advisory, ERROR under `--strict`. Ownership boundary + lineage: [`docs/nonfiction-pre-draft.md`](../../../../docs/nonfiction-pre-draft.md).
