@@ -84,7 +84,7 @@ A worked example — `references/example-structure-map-manifest.md` (the manifes
 
 ## Increment plan
 
-**Increment 1 (this spec):** the `apodictic.viz_manifest.v1` schema (added to `schemas/` and registered in `apodictic_artifacts.known_schema_ids()` so `structured-findings` recognizes the block, exactly as the finding/feedback schemas are), `scripts/viz_manifest.py` (extractor + validator), `validate.sh manuscript-viz`, the new single-file SVG renderer for charts 1–3, the worked example, and the `--check-all` gate.
+**Increment 1 (this spec):** the `apodictic.viz_manifest.v1` schema (added to `schemas/`, auto-discovered by `apodictic_artifacts.known_schema_ids()` — which globs the directory — so `structured-findings` recognizes the block, exactly as the finding/feedback schemas are), `scripts/viz_manifest.py` (extractor + validator), `validate.sh manuscript-viz`, the new single-file SVG renderer for charts 1–3, the worked example, and the `--check-all` gate.
 
 **Future increments (not built):**
 - Charts 4–6 (reveal/tension timeline, character co-presence network, scene-function heatmap) — each gated on its upstream artifact becoming machine-readable, plus a validated `evidence_ref → scene_id` resolution for scene-precise finding placement.
