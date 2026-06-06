@@ -9,9 +9,12 @@ tissue (the Firewall).
 
 This file is exercised by `validate.sh --check-all` as a canonical release-gate target for
 `retcon-plan` (R1 schema, R2 unique ids, R3 no evidential retcon of locked canon, R4 target
-referential integrity; W1 blast-radius accounting, W2 firewall drift). It is illustrative, not a
-run artifact; keep it passing when the contract or the validator changes. Keep `intervention_class`
-fields as CLASSES, never invented prose ("plant a detail", not "write the line where …").
+referential integrity; W1 blast-radius accounting, W2 firewall drift). The Door-B Selection step
+(F1) adds the `## Candidate Readings` section below: R5 reading schema + score rubric, R6 unique
+reading ids, R7 reading-target referential integrity; W3 coincidence-note (over-fitting) guard,
+W4 top-1-3 shortlist. It is illustrative, not a run artifact; keep it passing when the contract or
+the validator changes. Keep `intervention_class` / `reading` fields as CLASSES, never invented prose
+("plant a detail", not "write the line where …").
 -->
 
 ## State Card
@@ -21,6 +24,32 @@ fields as CLASSES, never invented prose ("plant a detail", not "write the line w
 - **Unresolved tensions:** what Maya did not say in Chapter 7; the locket's significance (Ch. 2).
 - **Forbidden contradictions:** the close must keep the sisters' warmth *earned*, not retconned cold.
 - **Likely next pressures:** the new ending re-weights every sister scene; the prologue's status.
+
+## Candidate Readings
+
+Before committing to T1, the author ran the Door-B "bug-or-feature" abduction on the draft's
+off-trajectory elements (the locket, Maya's Chapter-7 silence, the timeline gaps) and **ranked** the
+latent readings rather than working from a flat menu. Each is scored 1–5 across the Selection rubric
+(higher is better; `coincidence_resistance` penalizes a reading that only "works" by treating every
+incidental detail as load-bearing — the "rubber reality" failure mode). The top reading became T1.
+
+| Reading | coh | pay | agy | gen | coin | total |
+|---|---|---|---|---|---|---|
+| CR-01 the sister was complicit all along | 5 | 4 | 5 | 4 | 4 | 22 |
+| CR-02 the timeline is unreliable; Maya is the narrator's blind spot | 4 | 3 | 3 | 4 | 3 | 17 |
+| CR-03 the locket is a literal cursed object (supernatural turn) | 2 | 3 | 2 | 1 | 1 | 9 |
+
+<!-- apodictic:retcon_reading
+{"schema":"apodictic.retcon_reading.v1","id":"CR-01","reading":"the sister was complicit in the disappearance all along","scores":{"canon_coherence":5,"payoff_density":4,"agency_preservation":5,"genre_fit":4,"coincidence_resistance":4},"coincidence_note":"needs only two details load-bearing — the Ch.2 locket and the Ch.7 silence; the rest of the draft stands unchanged","implied_targets":["T1"]}
+-->
+
+<!-- apodictic:retcon_reading
+{"schema":"apodictic.retcon_reading.v1","id":"CR-02","reading":"the timeline is unreliable; Maya is the narrator's blind spot","scores":{"canon_coherence":4,"payoff_density":3,"agency_preservation":3,"genre_fit":4,"coincidence_resistance":3},"coincidence_note":"requires re-reading three time-stamps as deliberate misdirection rather than continuity slips — a moderate coincidence load"}
+-->
+
+<!-- apodictic:retcon_reading
+{"schema":"apodictic.retcon_reading.v1","id":"CR-03","reading":"the locket is a literal cursed object (supernatural turn)","scores":{"canon_coherence":2,"payoff_density":3,"agency_preservation":2,"genre_fit":1,"coincidence_resistance":1},"coincidence_note":"only coheres if half a dozen incidental images (the cold kitchen, the stopped clock, the gull) are read as portents — high rubber-reality risk; rejected"}
+-->
 
 ## Retcon Targets
 

@@ -1,6 +1,6 @@
 {
   "$id": "apodictic.retcon_item.v1",
-  "$comment": "Source of truth for the apodictic:retcon_item block (Retcon Planning coaching track). Validated by scripts/apodictic_artifacts.py (stdlib subset checker) via scripts/retcon_plan.py. `mutability` is Gwern's commitment budget (locked=observed canon the reader has used; costly=exposed downstream consequences; free=unused latent), kept orthogonal to `retcon_type`, the fair-play axis (dramatic=recontextualize for meaning, allowed; evidential=change the evidence/clues the reader reasoned from). An evidential retcon of locked canon is the forbidden move (validator R3). `intervention_class` is a CLASS of fix, never invented prose (the Firewall). See docs/retcon-planning.md.",
+  "$comment": "Source of truth for the apodictic:retcon_item block (Retcon Planning coaching track). Validated by scripts/apodictic_artifacts.py (stdlib subset checker) via scripts/retcon_plan.py. `mutability` is Gwern's commitment budget (locked=observed canon the reader has used; costly=exposed downstream consequences; free=unused latent), kept orthogonal to `retcon_type`, the fair-play axis (dramatic=recontextualize for meaning, allowed; evidential=change the evidence/clues the reader reasoned from). An evidential retcon of locked canon is the forbidden move (validator R3). `intervention_class` is a CLASS of fix, never invented prose (the Firewall). `source` (F3, optional) is a cross-reference to the originating finding the item was seeded from — primarily a Pass-8 (Reveal Economy) finding, e.g. F-P8-03 — so a seeded setup-debt item's provenance is auditable; its format is validated here, and finding-trace E6 checks it resolves to a ledger finding. See docs/retcon-planning.md.",
   "title": "APODICTIC retcon item (apodictic.retcon_item.v1)",
   "type": "object",
   "required": ["schema", "id", "target_id", "kind", "mutability", "retcon_type", "intervention_class", "disposition"],
@@ -14,6 +14,7 @@
     "intervention_class": {"type": "string"},
     "locations": {"type": "array", "items": {"type": "string"}},
     "blast_radius": {"type": "array", "items": {"type": "string"}},
-    "disposition": {"type": "string"}
+    "disposition": {"type": "string"},
+    "source": {"type": "string", "pattern": "^F-[A-Za-z0-9]+-[0-9]{2,}$"}
   }
 }
