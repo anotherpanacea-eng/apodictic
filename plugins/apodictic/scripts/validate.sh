@@ -167,7 +167,7 @@ usage() {
   echo "Usage: $0 <command> [args...]"
   echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, argument-groundtruth-check"
   echo "Aggregate: --self-test-all (runs --self-test on all 24 self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples, finding-trace + softness-check vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, and retcon-plan vs the canonical Retcon Plan)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, and retcon-plan vs the canonical Retcon Plan)"
   exit 2
 }
 
@@ -252,12 +252,14 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/pass-dependencies.md not found"; CA_FAIL=1
     fi
     echo ""
-    echo "== canonical editorial letter (decision-layer-check, audit-signal-propagation, severity-floor, structured-findings) =="
+    echo "== canonical editorial letter (decision-layer-check, audit-signal-propagation, severity-floor, structured-findings, underdiagnosis-triggers, ledger-consolidation) =="
     if [ -f "$CA_BASE/example-editorial-letter.md" ]; then
       "$0" decision-layer-check "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
       "$0" audit-signal-propagation "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
       "$0" severity-floor "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
       "$0" structured-findings "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
+      "$0" underdiagnosis-triggers "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
+      "$0" ledger-consolidation "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-editorial-letter.md not found"; CA_FAIL=1
     fi
@@ -278,10 +280,11 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-vocabulary-guide.md not found"; CA_FAIL=1
     fi
     echo ""
-    echo "== canonical example ledger <-> letter (both directions: finding-trace forward refs + softness-check reverse delivery) =="
+    echo "== canonical example ledger <-> letter (both directions: finding-trace forward refs + softness-check reverse delivery; deficit-lock structured locks) =="
     if [ -f "$CA_BASE/example-findings-ledger.md" ]; then
       "$0" finding-trace "$CA_BASE/example-findings-ledger.md" "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
       "$0" softness-check "$CA_BASE/example-editorial-letter.md" "$CA_BASE/example-findings-ledger.md" || CA_FAIL=1
+      "$0" deficit-lock "$CA_BASE/example-findings-ledger.md" || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-findings-ledger.md not found"; CA_FAIL=1
     fi
