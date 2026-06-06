@@ -165,9 +165,9 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-groundtruth-check"
-  echo "Aggregate: --self-test-all (runs --self-test on all 33 self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples, finding-trace + softness-check vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, and legal-risk vs the canonical Legal Risk Register)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check"
+  echo "Aggregate: --self-test-all (runs --self-test on all 35 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples, finding-trace + softness-check vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, and scene-ethics vs the canonical Scene-Ethics Plan)"
   exit 2
 }
 
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # fixture-driven self-tests too (Validator Architecture Hardening — they
 # previously had none), so every command in the suite is exercised here.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-groundtruth-check"
+  AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 33 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 35 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/33 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/35 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/33 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/35 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -317,6 +317,20 @@ if [ "$1" = "--check-all" ]; then
       fi
     else
       echo "ERROR: $CA_BASE/example-state-card.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical pre-draft Argument_State (argument-spine: spine + support + warrant maps seed §1-§4) =="
+    if [ -f "$CA_BASE/example-argument-state-predraft.md" ]; then
+      "$0" argument-spine "$CA_BASE/example-argument-state-predraft.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-argument-state-predraft.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Scene-Ethics Plan (scene-ethics: ethics-plan contract + resolved depictions) =="
+    if [ -f "$CA_BASE/example-scene-ethics-plan.md" ]; then
+      "$0" scene-ethics "$CA_BASE/example-scene-ethics-plan.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-scene-ethics-plan.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical Timeline (timeline-arithmetic, timeline-anchor-conflict, timeline-diff self) =="
@@ -4320,6 +4334,57 @@ EOF
       python3 "$LRK_HELPER" legal-risk "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — legal-risk skipped; check inline that the register carries a not-a-lawyer disclaimer, every item flags (not adjudicates) the exposure, and each review-now item routes to counsel. See docs/legal-risk-register.md."
+    exit 0
+    ;;
+
+  argument-spine)
+    # Nonfiction Pre-Draft Pathway, Increments 1-3 (docs/nonfiction-pre-draft.md): structural checks
+    # over the apodictic.argument_spine.v1 block (the pre-draft argument plan that SEEDS the shared
+    # Argument_State.md), the apodictic.support_plan.v1 blocks (source/evidence map, §3), and the
+    # apodictic.warrant_plan.v1 blocks (warrant pre-check, §4). A1 invalid spine; A2 unseeded (spine
+    # must populate §1/§2 — signature); A3 thesis/C0 drift. Inc 2: A4 invalid support plan; A5 dangling
+    # subclaim_id; A6 support unseeded (no §3 heading). Inc 3: A7 invalid warrant plan; A8 dangling
+    # subclaim_id; A9 warrant unseeded (no §4 heading). Advisory (ERROR --strict): W1 anti-thesis echo
+    # (override argument-spine-antithesis), W2 bare assertion (a subclaim with no planned support), W3
+    # implicit warrant for a HOSTILE audience (non-EXPLICIT / ABSENT-backed; override
+    # argument-spine-warrant). Takes a run folder (globs Argument_State*.md) or explicit files.
+    # Delegates to scripts/argument_spine.py; degrades to an advisory WARN without python3.
+    AS_DIR=$(cd "$(dirname "$0")" && pwd)
+    AS_HELPER="$AS_DIR/argument_spine.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$AS_HELPER" ]; then python3 "$AS_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; argument-spine is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$AS_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 argument-spine <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$AS_HELPER" argument-spine "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — argument-spine skipped; check inline that the spine seeds Argument_State §1/§2, the C0 main claim carries the thesis, and the anti-thesis names a genuine opposing view. See docs/nonfiction-pre-draft.md."
+    exit 0
+    ;;
+
+  scene-ethics)
+    # Scene-Ethics Plan (Nonfiction Pre-Draft, Increment 4; docs/nonfiction-pre-draft.md): structural
+    # checks over the apodictic.scene_ethics.v1 blocks — the writer's pre-draft ETHICAL plan for each
+    # identifiable real person depicted (consent_status, handling, fairness_check), distinct from the
+    # Legal Risk Register (legal exposure) and cross-referencing it via legal_ref. E1 invalid item,
+    # E2 duplicate id; W1 unresolved depiction (as-is + consent not-sought + no fairness rationale —
+    # the signature; override scene-ethics-unresolved EP-NN), W2 no legal cross-check (an as-is
+    # identifiable depiction with no legal_ref — check it against the Legal Risk Register; override
+    # scene-ethics-legalcheck EP-NN). W1/W2 advisory, ERROR under --strict. Takes a run folder
+    # (globs *_Scene_Ethics_Plan_*.md) or explicit files. Delegates to scripts/scene_ethics.py;
+    # degrades to an advisory WARN without python3.
+    SCE_DIR=$(cd "$(dirname "$0")" && pwd)
+    SCE_HELPER="$SCE_DIR/scene_ethics.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$SCE_HELPER" ]; then python3 "$SCE_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; scene-ethics is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$SCE_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 scene-ethics <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$SCE_HELPER" scene-ethics "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — scene-ethics skipped; check inline that no identifiable person is depicted as-is without consent and without a fairness rationale, and that as-is depictions cross-check the Legal Risk Register. See docs/nonfiction-pre-draft.md."
     exit 0
     ;;
 
