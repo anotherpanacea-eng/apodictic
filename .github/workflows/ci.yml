@@ -1,0 +1,43 @@
+name: ci
+
+# APODICTIC is a prompt/skill plugin: there is no pytest suite. CI is a
+# cheap correctness gate — byte-compile the canonical Python and confirm
+# every plugin/marketplace manifest is valid JSON. The eval fixtures under
+# evals/ are the behavioral ground-truth track, run separately.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Byte-compile canonical Python (syntax gate)
+        run: python -m compileall -q plugins scripts
+
+      - name: Validate plugin + marketplace manifests parse as JSON
+        run: |
+          set -e
+          mapfile -t files < <(git ls-files '*.json' | grep -E '(plugin|marketplace|release-registry)\.json$')
+          if [ ${#files[@]} -eq 0 ]; then echo "no manifests found"; exit 1; fi
+          for f in "${files[@]}"; do
+            echo "checking $f"
+            python -m json.tool "$f" > /dev/null
+          done
+          echo "all ${#files[@]} manifests parse"
