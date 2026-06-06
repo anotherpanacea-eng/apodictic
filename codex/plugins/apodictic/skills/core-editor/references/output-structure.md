@@ -171,6 +171,9 @@ The model tag is **required**, not optional. It identifies which model generated
 **Diagnostic Vocabulary (when `operator:facilitator`):**
 - `[Project]_Vocabulary_Guide_[runlabel].md` — facilitator teaching aid (glossary + discussion prompts), produced alongside the editorial letter (see `references/diagnostic-vocabulary.md`)
 
+**Legal Risk Register (when memoir / autofiction / nonfiction portrays identifiable real people):**
+- `[Project]_Legal_Risk_Register_[runlabel].md` — flags legal-exposure areas (defamation / privacy / rights-clearance) with a legal-escalation severity and escalation triggers; not legal advice (see `references/legal-risk-register.md`)
+
 **Series Continuity (when active):**
 - `[Project]_Series_Continuity_Audit_[runlabel].md`
 
