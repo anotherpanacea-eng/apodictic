@@ -131,7 +131,7 @@ One `apodictic.scene_ethics.v1` block per depicted person:
 |---|---|---|
 | **E1 — invalid item** | ERROR | A `scene_ethics` block fails its schema (bad `consent_status`/`handling` enum, malformed `EP-NN` id or `legal_ref`, missing required field, broken JSON). |
 | **E2 — duplicate id** | ERROR | Two items share an `EP-NN` id. |
-| **W1 — unresolved depiction** | WARN (ERROR `--strict`) | `handling: as-is` **and** `consent_status: not-sought` **and** no `fairness_check` — an identifiable person depicted as-is with neither consent sought nor a fairness rationale. **The signature ethics check.** Override: `<!-- override: scene-ethics-unresolved EP-NN — <rationale> -->`. |
+| **W1 — unresolved depiction** | WARN (ERROR `--strict`) | `handling: as-is` **and** consent not yet obtained (`not-sought` **or** `sought-pending`) **and** no `fairness_check` — an identifiable person depicted as-is with neither consent in hand nor a fairness rationale (pending consent can still be refused, with no fallback). **The signature ethics check.** Override: `<!-- override: scene-ethics-unresolved EP-NN — <rationale> -->`. |
 | **W2 — no legal cross-check** | WARN (ERROR `--strict`) | An `as-is` depiction (consent not `not-applicable`) with no `legal_ref` — check it against the Legal Risk Register. Realizes the ethics↔legal cross-reference. Override: `<!-- override: scene-ethics-legalcheck EP-NN — <rationale> -->`. |
 
 **Ownership boundary.** `scene-ethics` owns the ethics-plan contract and the unresolved-depiction surfacing; it does not adjudicate ethics, judge legal exposure (that's the Legal Risk Register), or touch the argument structure.

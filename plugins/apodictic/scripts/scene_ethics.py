@@ -12,10 +12,11 @@ surfaces unresolved depictions.
   E1 invalid item     a scene_ethics block fails its schema (bad consent_status / handling enum,
                       malformed EP-NN id or legal_ref, missing required field, broken JSON).
   E2 duplicate id     two items share an EP-NN id.
-  W1 unresolved depiction  handling=as-is AND consent_status=not-sought AND no fairness_check — an
-                      identifiable person depicted as-is, with neither consent sought nor a fairness
-                      rationale (advisory; ERROR --strict). The signature ethics check. Override (per
-                      id): <!-- override: scene-ethics-unresolved EP-NN — <rationale> -->.
+  W1 unresolved depiction  handling=as-is AND consent not yet OBTAINED (not-sought OR sought-pending)
+                      AND no fairness_check — an identifiable person depicted as-is with neither
+                      consent in hand nor a fairness rationale (pending consent can still be refused,
+                      with no fallback) (advisory; ERROR --strict). The signature ethics check.
+                      Override (per id): <!-- override: scene-ethics-unresolved EP-NN — <rationale> -->.
   W2 no legal cross-check  an as-is depiction of an identifiable person (consent not not-applicable)
                       with no legal_ref — check it against the Legal Risk Register (advisory; ERROR
                       --strict). Realizes the ethics<->legal cross-reference.
@@ -104,11 +105,15 @@ def plan(text, strict=False):
         as_is = obj.get("handling") == "as-is"
         consent = obj.get("consent_status")
         has_fairness = bool((obj.get("fairness_check") or "").strip())
-        # W1 — unresolved depiction (the ethics signature)
-        if as_is and consent == "not-sought" and not has_fairness and eid not in unresolved_overrides:
-            warns.append("W1 unresolved depiction: %s is depicted as-is with consent not sought and "
-                         "no fairness rationale — resolve the depiction (consent, anonymize, "
-                         "composite, or omit) before drafting" % eid)
+        # W1 — unresolved depiction (the ethics signature). An as-is depiction is unresolved while
+        # consent is not yet OBTAINED — both not-sought AND sought-pending count (pending can still be
+        # refused, with no fallback), unless a fairness rationale is given. (PR #45 review.)
+        if (as_is and consent in ("not-sought", "sought-pending") and not has_fairness
+                and eid not in unresolved_overrides):
+            warns.append("W1 unresolved depiction: %s is depicted as-is with consent %s (not obtained) "
+                         "and no fairness rationale — resolve it (obtain consent, add a fairness "
+                         "rationale, or choose a fallback: anonymize / composite / seek-consent / "
+                         "omit) before drafting" % (eid, consent))
         # W2 — no legal cross-check on an as-is identifiable depiction
         if (as_is and consent != "not-applicable" and not obj.get("legal_ref")
                 and eid not in legalcheck_overrides):
@@ -215,6 +220,16 @@ def run_self_test():
     # consent obtained resolves W1
     chk("w1_consent_resolves",
         not any("W1" in ln for ln in plan(item("EP-01", handling="as-is", consent="obtained", legal="LR-02"))[1]))
+    # sought-pending is NOT resolved for an as-is depiction (PR #45 review) — even with a legal_ref
+    # clearing W2, W1 must still fire (consent can be refused, with no fallback)
+    code, lines = plan(item("EP-01", handling="as-is", consent="sought-pending", legal="LR-01"))
+    chk("w1_pending_unresolved", code == 0 and any("W1 unresolved depiction" in ln for ln in lines))
+    chk("w1_pending_strict_fails",
+        plan(item("EP-01", handling="as-is", consent="sought-pending", legal="LR-01"), strict=True)[0] == 1)
+    # a fairness rationale resolves a pending as-is depiction
+    chk("w1_pending_fairness_resolves",
+        not any("W1" in ln for ln in plan(item("EP-01", handling="as-is", consent="sought-pending",
+                                               fairness="context + the subject's rationale shown", legal="LR-02"))[1]))
     ov = "<!-- override: scene-ethics-unresolved EP-01 — public-record quote, fairness in the draft -->\n"
     chk("w1_override",
         not any("W1" in ln for ln in plan(ov + item("EP-01", handling="as-is", consent="not-sought", legal="LR-03"))[1]))
