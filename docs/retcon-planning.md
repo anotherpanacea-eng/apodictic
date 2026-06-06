@@ -1,6 +1,6 @@
 # Retcon Planning — a revision-coaching track
 
-**Status:** Increment 1 + **F1 (Ranked Door-B abduction)** built. Roadmap: `ROADMAP.md` → Coaching Deepening (a concrete shape for Multi-Session Revision Arc Planning). Skill home: **revision-coach** (post-diagnostic, returning-author; inherits the Coaching Firewall). Reached via `/coach` (Retcon Planning mode).
+**Status:** Increment 1 + **F1 (Ranked Door-B abduction)** + **F2 (State Card rolling artifact)** built. Roadmap: `ROADMAP.md` → Coaching Deepening (a concrete shape for Multi-Session Revision Arc Planning). Skill home: **revision-coach** (post-diagnostic, returning-author; inherits the Coaching Firewall). Reached via `/coach` (Retcon Planning mode).
 
 **Lineage (recorded honestly).** Two sources, deliberately merged:
 - **Door B — latent reinterpretation + commitment budget.** Gwern, *Better Fiction via Retcon Planning* (gwern.net/blog/2023/llm-retcon): treat hidden world-state as temporary; at checkpoints re-infer the latent story that best explains the canon, compress it to a small state card, and govern rewrites with a **commitment budget** (observed canon fixed > exposed consequences costly > unused latent cheap; **dramatic** retcon improves meaning, **evidential** retcon destroys fair play).
@@ -44,7 +44,21 @@ Both doors converge on one **Retcon Plan** and are governed by one **commitment 
 ## Artifacts
 
 ### The Manuscript State Card (compression)
-A compression of what the draft has committed to: **active promises**, **unresolved tensions**, **forbidden contradictions**, **likely next pressures**, and the current **controlling-idea hypothesis**. It is the diagnostic form of Gwern's "world-state card," and it generalizes the partial-manuscript *setup inventory*. **In Increment 1 it is a `## State Card` section of the Retcon Plan**; promoting it to a standalone cross-revision rolling artifact (`[Project]_State_Card_[runlabel].md`, diff'd across rounds, Pass-10-class) is a future increment.
+A compression of what the draft has committed to: **active promises**, **unresolved tensions**, **forbidden contradictions**, **likely next pressures**, and the current **controlling-idea hypothesis**. It is the diagnostic form of Gwern's "world-state card," and it generalizes the partial-manuscript *setup inventory*. It appears two ways: as a human-readable `## State Card` section inside the Retcon Plan (Increment 1), and — **as of F2** — as a standalone, structured, **rolling** artifact `[Project]_State_Card_[runlabel].md` at the project root, carrying one `apodictic.state_card.v1` block per round and **diff'd across revision rounds** (the Pass-10-class rolling-structured-artifact pattern). See §The `state-card-diff` validator.
+
+```json
+{
+  "schema": "apodictic.state_card.v1",
+  "round": 2,
+  "controlling_idea": "the cost of the silences we keep to protect those we love",
+  "active_promises": ["SE-01: the dual-POV converges", "SE-02: the sister-arc pays off"],
+  "unresolved_tensions": ["SE-04: the locket's significance (Ch. 2)"],
+  "forbidden_contradictions": ["SE-05: keep the sisters' warmth earned"],
+  "likely_next_pressures": ["the new ending re-weights every sister scene"]
+}
+```
+
+The three tracked lists (promises / tensions / contradictions) hold `"SE-NN: <text>"` strings sharing **one kind-agnostic `SE-NN` id namespace**, so the *same* element keeps its id when it changes kind across rounds — the cross-revision-traceability lesson (don't depend on prose matching). The `SE-NN:` prefix and within-card uniqueness are enforced in code (S1/S2), since the subset schema checker can't express them. Field set canonical in `schemas/apodictic.state_card.v1.schema.json`.
 
 ### The Retcon Plan
 `[Project]_Retcon_Plan_[runlabel].md` — the coaching deliverable. Sections: a **State Card**; a `## Retcon Targets` list (each target declared with an id, `T1`, `T2`, …); the **setup-debt ledger** (Door A); the **commitment ledger** (the budget); the **blast radius** (Protected Elements + continuity collisions); and a **dependency-ordered sequence** (decision → backward seeding → forward consequence propagation). The machine-checkable spine is a set of structured items:
@@ -125,6 +139,24 @@ The validator prints the readings sorted by score total (max 25), so the ranking
 
 ---
 
+## The `state-card-diff` validator (F2)
+
+`validate.sh state-card-diff <current>` validates one card; `validate.sh state-card-diff <prior> <current>` diffs two rounds (modeled on `timeline-diff`). Degrades to an advisory `WARN` without `python3`.
+
+| ID | Severity | Rule |
+|---|---|---|
+| **S1 — invalid card** | ERROR | A `state_card` block fails its schema, or a tracked-list element lacks a well-formed `SE-NN: <text>` id prefix (format enforced in code). |
+| **S2 — duplicate id** | ERROR | Two tracked elements in one card share an `SE-NN` id (one namespace across promises / tensions / contradictions). |
+| **S3 — round backwards** | ERROR | `current.round < prior.round` — a stale or misordered diff. |
+| **S4 — promise→contradiction** | ERROR | An `SE-NN` that was an `active_promise` in prior is a `forbidden_contradiction` in current — the draft has reasoned past a coherence break. **The signature F2 check.** Override: `<!-- override: state-card-transition SE-NN — <reason> -->`. |
+| **W1 — dropped promise** | WARN (ERROR `--strict`) | An `SE-NN` `active_promise` in prior is gone from current entirely (silently dropped, not resolved). Override: `<!-- override: state-card-drop SE-NN — <reason> -->`. |
+| **W2 — idea shift** | WARN (ERROR `--strict`) | `controlling_idea` changed between rounds (reframing is legitimate but worth surfacing). Override: `<!-- override: state-card-idea-shift — <reason> -->`. |
+| **W3 — same-round edit** | WARN (ERROR `--strict`) | `current.round == prior.round` but the content differs — bump the round when the card changes. |
+
+The diff prints a one-line summary (kept / added / resolved-tension). **S4 is the signature check** — it mechanizes the coherence break F2 exists to catch ("a Round-1 active promise is now a forbidden contradiction"). Because elements are matched by `SE-NN` id, S4 survives rewording. **Ownership boundary.** `state-card-diff` owns cross-round State Card coherence; it does not re-diagnose, judge severity, or duplicate the `retcon-plan` contract.
+
+---
+
 ## Workflow (revision-coach, Retcon Planning mode)
 
 1. **Build / refresh the State Card** from the diagnosis (or the manuscript): active promises, unresolved tensions, forbidden contradictions, controlling-idea hypothesis.
@@ -143,7 +175,9 @@ A canonical worked example (`references/example-retcon-plan.md`) is gated by `va
 
 **F1 (built):** the Door-B Selection step — the `apodictic.retcon_reading.v1` block + schema, the ranked `## Candidate Readings` section, the `retcon-plan` validator's reading checks (R5–R7 + W3–W4) with the over-fitting guard, the ranked display, the worked-example readings under the `--check-all` gate, and the revision-coach Door-B protocol update. Same validator (no new validator entry; count stays 24).
 
-**Future:** the increments below (F1 now built; F2–F4 remain).
+**F2 (built):** the State Card promoted to a standalone rolling artifact — the `apodictic.state_card.v1` block + schema, the new `state-card-diff` validator (S1–S4 + W1–W3, modeled on `timeline-diff`), the canonical Round-1 / Round-2 worked examples under the `--check-all` gate, and registration of `[Project]_State_Card_[runlabel].md` as a project-root rolling-state file. New validator (24 → 25).
+
+**Future:** the increments below (F1, F2 now built; F3–F4 remain).
 
 ## Future increments
 
@@ -155,12 +189,11 @@ Each is additive on Increment 1 and keeps the Firewall (plan the class, never wr
 **Why.** This is the structural guard against "rubber reality" / paranoid over-fitting — the failure mode the essay names — and it gives the author a principled, costed shortlist instead of a flat menu.
 **Built as.** A `## Candidate Readings` section with an `apodictic.retcon_reading.v1` block per candidate (`id`, the five `scores` dimensions, optional `coincidence_note`, optional declared `implied_targets`). The `retcon-plan` validator gained R5 (schema + 1–5 score rubric), R6 (unique reading ids), R7 (reading-target referential integrity), **W3** (the coincidence-note over-fitting guard — the signature F1 check), and W4 (top-1–3 shortlist), plus a ranked-by-total display. Firewall unchanged — still options, never prose. See §The `retcon-plan` validator and `schemas/apodictic.retcon_reading.v1.schema.json`.
 
-### F2 — State Card as a standalone cross-revision rolling artifact
+### F2 — State Card as a standalone cross-revision rolling artifact — **Built**
 
-**What.** Promote the `## State Card` section to a first-class rolling artifact — `[Project]_State_Card_[runlabel].md` at the project root, diff'd across revision rounds (the Pass-10-class rolling-structured-artifact pattern).
+**What.** The `## State Card` section is now also a first-class rolling artifact — `[Project]_State_Card_[runlabel].md` at the project root, diff'd across revision rounds (the Pass-10-class rolling-structured-artifact pattern).
 **Why.** A retcon's whole value is *cross-round* coherence, and a per-run section can't show drift. A rolling, diff'd card surfaces movement like "the controlling-idea hypothesis shifted between round 2 and round 3," or "a Round-1 active promise is now a forbidden contradiction" — exactly the cross-revision coherence the Pass-10 pattern exists for.
-**Shape.** An `apodictic.state_card.v1` schema; a `state-card-diff` validator arm (modeled on `timeline-diff`) comparing the prior card against the current; registration in `output-structure.md` as a project-root rolling-state file.
-**Dependency.** Builds directly on the Increment-1 State Card section.
+**Built as.** The `apodictic.state_card.v1` schema (one block per round; tracked elements carry a kind-agnostic `SE-NN` id); the `state-card-diff` validator (modeled on `timeline-diff`) — single-card S1/S2 and cross-round S3/S4 + W1–W3, with **S4 (promise→contradiction)** the signature coherence-break check; canonical Round-1 / Round-2 worked examples gated by `--check-all`; and registration in `output-structure.md` as a project-root rolling-state file. See §The `state-card-diff` validator and `schemas/apodictic.state_card.v1.schema.json`.
 
 ### F3 — Reveal-Economy (Pass 8) auto-seeding of the setup-debt ledger
 
