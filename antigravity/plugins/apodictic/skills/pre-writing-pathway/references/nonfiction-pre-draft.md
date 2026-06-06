@@ -63,6 +63,22 @@ Per subclaim, plan the **warrant** (the principle connecting support to claim) a
 
 - **`warrant_status`** EXPLICIT/RECOVERABLE/MISSING/CONTESTED · **`backing`** PRESENT/THIN/ABSENT · **`qualifier`** MATCHED/OVERCONFIDENT/UNDERCLAIMED. For a **HOSTILE** audience (per the spine), a non-EXPLICIT or ABSENT-backed warrant is flagged (W3) to make explicit before drafting.
 
+### The scene-ethics plan (Increment 4) — a distinct artifact
+
+For narrative nonfiction / memoir depicting **identifiable real people**, plan each depiction's ethics in a *separate* artifact, `[Project]_Scene_Ethics_Plan_[runlabel].md` (not in `Argument_State`). One `apodictic.scene_ethics.v1` block per person — the writer's **ethical** plan, cross-referencing the **Legal Risk Register** (which owns *legal* exposure) via `legal_ref`:
+
+```markdown
+<!-- apodictic:scene_ethics
+{"schema":"apodictic.scene_ethics.v1","id":"EP-01",
+ "subject":"the narrator's former manager (named, identifiable)",
+ "depiction":"portrayed making a dismissive remark in a meeting",
+ "consent_status":"not-sought","handling":"anonymize",
+ "fairness_check":"role and remark kept; identifying details changed"}
+-->
+```
+
+- **`consent_status`** obtained/sought-pending/not-sought/not-applicable · **`handling`** as-is/anonymize/composite/seek-consent/omit · optional `fairness_check`, `legal_ref` (an `LR-NN`). The Firewall holds: the writer makes the ethical calls; the plan surfaces unresolved depictions. Not ethical adjudication, not legal advice. Validated by a **separate** validator: `scripts/validate.sh scene-ethics <run_folder>` — E1 schema, E2 unique `EP-NN` ids; **W1 unresolved depiction** (as-is + consent not-sought + no fairness rationale; override `scene-ethics-unresolved EP-NN`), W2 no legal cross-check (as-is + no `legal_ref`; override `scene-ethics-legalcheck EP-NN`). W1/W2 advisory, ERROR `--strict`.
+
 ---
 
 ## Protocol
