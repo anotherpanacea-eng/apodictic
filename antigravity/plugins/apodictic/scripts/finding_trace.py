@@ -23,6 +23,8 @@ dimension: cross-artifact REFERENTIAL INTEGRITY + sidecar lifecycle COHERENCE.
                           are out of scope — a finding resolved in an earlier round is left alone).
   W3 completion coverage  a ledger ID marked resolved in a completed-revision artifact whose
                           finding_states entry is not "revised" (advisory; ERROR under --strict).
+  E6 dangling retcon src  a Retcon Plan retcon_item `source` finding-ref (Retcon Planning F3,
+                          primarily a Pass-8 seed) that is not in the ledger.
 
 Each artifact is optional; a missing one skips its dimension (no false failure).
 Reuses apodictic_artifacts.parse_blocks (one block grammar). See docs/finding-lifecycle-ids.md.
@@ -66,6 +68,10 @@ _REVISION_GLOBS = ("*_Session_Plan_*.md", "*_Revision_*.md")
 # finding's lifecycle advances to `revised` (state-lifecycle.md §Revision Round Output). Session
 # plans express intent (plan coverage, W2); completed-revision artifacts express done work (E5/W3).
 _COMPLETION_GLOBS = ("*_Revision_*.md",)
+# Retcon Plan artifacts (Retcon Planning, F3): retcon_item blocks may carry a `source` finding-ref
+# (primarily a Pass-8 Reveal-Economy finding) recording what the item was seeded from — E6 checks it
+# resolves to a ledger finding.
+_RETCON_GLOB = "*_Retcon_Plan_*.md"
 
 
 def _read(path):
@@ -118,6 +124,22 @@ def resolved_cited_ids(text):
     return ids
 
 
+def retcon_source_ids(text):
+    """Well-formed F-... `source` refs declared on the retcon_item blocks of a Retcon Plan (F3).
+    Only schema-shaped F-refs are returned; a malformed `source` is the retcon-plan schema's job
+    (R1), not E6's, so this filters by the ID pattern to avoid double-reporting a format error."""
+    ids = set()
+    if not text or art is None:
+        return ids
+    for bt, obj, _err in art.parse_blocks(text):
+        if bt != "retcon_item" or not isinstance(obj, dict):
+            continue
+        src = obj.get("source")
+        if isinstance(src, str) and _ID_RE.fullmatch(src):
+            ids.add(src)
+    return ids
+
+
 def sidecar_state(sidecar_text):
     """(finding_states dict, phase, parse_ok) from a Diagnostic_State.meta.json.
     parse_ok is False when a *discovered* sidecar is present but not valid JSON — the
@@ -132,7 +154,7 @@ def sidecar_state(sidecar_text):
 
 
 def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completion_texts=None,
-          strict=False):
+          retcon_texts=None, strict=False):
     """Run the cross-artifact trace. Returns (code, lines).
 
     revision_texts   = ALL revision-stage artifacts (session plans + completed revisions) — the
@@ -140,6 +162,8 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completio
     completion_texts = the completed-revision (*_Revision_*.md) SUBSET — the surface for E5
                        (phantom completion) and W3 (completion follow-through). Callers keep the
                        invariant completion_texts ⊆ revision_texts.
+    retcon_texts     = Retcon Plan artifacts (F3) — the surface for E6 (a retcon_item `source`
+                       finding-ref that is not in the ledger).
     """
     lines, errs, warns = [], [], []
 
@@ -162,6 +186,11 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completio
     for ct in completion_texts:
         resolved_ids |= resolved_cited_ids(ct)
         comp_mentioned |= revision_cited_ids(ct)
+    retcon_texts = retcon_texts or []
+    have_retcon = bool(retcon_texts)
+    retcon_sources = set()  # F-... `source` refs declared on retcon_item blocks (F3)
+    for rt in retcon_texts:
+        retcon_sources |= retcon_source_ids(rt)
     finding_states, phase, sc_ok = sidecar_state(sidecar_text) if have_sidecar else ({}, None, True)
 
     # E1 — dangling reference (letter cites an ID not in the ledger)
@@ -174,6 +203,12 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completio
         for cid in sorted(rev_cited):
             if cid not in inv:
                 errs.append("E4 dangling reference: revision plan cites %s — not in the ledger" % cid)
+    # E6 — dangling retcon source (a retcon_item `source` finding-ref not in the ledger, F3)
+    if have_retcon:
+        for sid in sorted(retcon_sources):
+            if sid not in inv:
+                errs.append("E6 dangling retcon source: retcon plan seeds an item from %s — "
+                            "not in the ledger" % sid)
     # E0 — a discovered sidecar that cannot be parsed is an ERROR, not a clean empty lifecycle:
     # otherwise E2/E3/W1 are silently bypassed on the artifact that is supposed to carry the state.
     if have_sidecar and not sc_ok:
@@ -228,11 +263,12 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completio
         sc_note = " (sidecar UNPARSEABLE — see E0)"
     else:
         sc_note = ""
-    lines.append("finding-trace: %d ledger finding(s)%s%s%s"
+    lines.append("finding-trace: %d ledger finding(s)%s%s%s%s"
                  % (len(inv),
                     "" if have_letter else " (no letter — letter trace skipped)",
                     sc_note,
-                    "" if have_revision else " (no revision plan — follow-through skipped)"))
+                    "" if have_revision else " (no revision plan — follow-through skipped)",
+                    "; %d retcon source(s) traced" % len(retcon_sources) if have_retcon else ""))
     for fid in sorted(inv):
         state = ((finding_states.get(fid, "—") if sc_ok else "?") if have_sidecar else "n/a")
         mark = ("cited" if fid in cited else "UNCITED") if have_letter else "n/a"
@@ -279,8 +315,9 @@ def _newest(paths):
 
 
 def resolve_run_folder(folder):
-    """(ledger, letter, sidecar, [revisions], [completions]) — newest per single artifact;
-    revisions = all session-plan + revision matches; completions = the *_Revision_*.md subset."""
+    """(ledger, letter, sidecar, [revisions], [completions], [retcons]) — newest per single
+    artifact; revisions = all session-plan + revision matches; completions = the *_Revision_*.md
+    subset; retcons = all Retcon Plan matches (F3)."""
     ledger = _newest(glob.glob(os.path.join(folder, _LEDGER_GLOB)))
     letter = None
     for g in _LETTER_GLOBS:
@@ -294,17 +331,21 @@ def resolve_run_folder(folder):
     completions = []
     for g in _COMPLETION_GLOBS:
         completions += glob.glob(os.path.join(folder, g))
-    return ledger, letter, sidecar, revisions, completions
+    retcons = glob.glob(os.path.join(folder, _RETCON_GLOB))
+    return ledger, letter, sidecar, revisions, completions, retcons
 
 
 def classify_files(paths):
-    """Classify explicit file args into (ledger, letter, sidecar, [revisions], [completions])."""
+    """Classify explicit file args into (ledger, letter, sidecar, [revisions], [completions],
+    [retcons])."""
     ledger = letter = sidecar = None
-    revisions, completions = [], []
+    revisions, completions, retcons = [], [], []
     for p in paths:
         base = os.path.basename(p)
         if p.endswith(".json"):
             sidecar = p
+        elif "_Retcon_Plan_" in base:
+            retcons.append(p)
         elif "apodictic:finding" in (_read(p) or ""):
             ledger = p
         elif "_Session_Plan_" in base or "_Revision_" in base:
@@ -313,14 +354,14 @@ def classify_files(paths):
                 completions.append(p)
         else:
             letter = p
-    return ledger, letter, sidecar, revisions, completions
+    return ledger, letter, sidecar, revisions, completions, retcons
 
 
 def run(paths, strict=False):
     if len(paths) == 1 and os.path.isdir(paths[0]):
-        ledger, letter, sidecar, revisions, completions = resolve_run_folder(paths[0])
+        ledger, letter, sidecar, revisions, completions, retcons = resolve_run_folder(paths[0])
     else:
-        ledger, letter, sidecar, revisions, completions = classify_files(paths)
+        ledger, letter, sidecar, revisions, completions, retcons = classify_files(paths)
     if not ledger:
         return 2, ["finding-trace: no Findings Ledger found (need a *_Findings_Ledger_*.md or a "
                    "file with apodictic:finding blocks)"]
@@ -331,8 +372,10 @@ def run(paths, strict=False):
             sidecar_text = ""
     revision_texts = [t for t in (_read(r) for r in revisions) if t is not None]
     completion_texts = [t for t in (_read(c) for c in completions) if t is not None]
+    retcon_texts = [t for t in (_read(r) for r in retcons) if t is not None]
     return trace(_read(ledger), _read(letter) if letter else None, sidecar_text,
-                 revision_texts=revision_texts, completion_texts=completion_texts, strict=strict)
+                 revision_texts=revision_texts, completion_texts=completion_texts,
+                 retcon_texts=retcon_texts, strict=strict)
 
 
 # ---------------------------------------------------------------- self-test
@@ -491,6 +534,24 @@ def run_self_test():
     code, lines = trace(led1, let1, None)
     check("exact_boundary_ids", code == 1 and any("F-P5-01" in ln and "E1" in ln for ln in lines))
 
+    # E6 — dangling retcon source (Retcon Planning F3): a retcon_item `source` finding-ref must
+    # resolve to a ledger finding. Matched by id; a malformed source is retcon-plan's R1, not E6.
+    def retcon(source):
+        return ('# Proj Retcon Plan\n## Retcon Targets\n- T1: x\n'
+                '<!-- apodictic:retcon_item\n{"schema":"apodictic.retcon_item.v1","id":"RX-01",'
+                '"target_id":"T1","kind":"setup-debt","mutability":"free","retcon_type":"dramatic",'
+                '"intervention_class":"plant a detail","disposition":"author seeds it","source":"%s"}\n-->\n'
+                % source)
+    code, lines = trace(ledger, None, None, retcon_texts=[retcon("F-P5-01")])
+    check("e6_source_resolves_clean", code == 0 and any("retcon source(s) traced" in ln for ln in lines))
+    code, lines = trace(ledger, None, None, retcon_texts=[retcon("F-P8-77")])
+    check("e6_dangling_source",
+          code == 1 and any("E6 dangling retcon source" in ln and "F-P8-77" in ln for ln in lines))
+    code, lines = trace(ledger, None, None, retcon_texts=[retcon("F-P8-7")])   # one-digit suffix
+    check("e6_malformed_not_flagged", code == 0 and not any("E6" in ln for ln in lines))
+    code, _ = trace(ledger, None, None, retcon_texts=["# plan\nno retcon blocks\n"])
+    check("e6_no_source_noop", code == 0)
+
     # run-folder resolution + explicit-file classification
     d = tempfile.mkdtemp()
     made.append(d)
@@ -504,10 +565,13 @@ def run_self_test():
         fh.write("# Session 1\nAddress F-P5-01 (pacing) and F-P5-02 (stakes).\n")
     with open(os.path.join(d, "Proj_Revision_run.md"), "w") as fh:
         fh.write("# Revision Report\n## Flags resolved\nPacing now lands. <!-- resolved: F-P5-01 -->\n")
+    with open(os.path.join(d, "Proj_Retcon_Plan_run.md"), "w") as fh:
+        fh.write(retcon("F-P5-02"))   # F3: source resolves to the ledger -> no E6
     rc_code, rc_lines = run([d])
     check("run_folder_resolution", rc_code == 0)
     check("run_folder_rev_done", any("rev=done" in ln for ln in rc_lines))       # F-P5-01 resolved marker
     check("run_folder_rev_planned", any("rev=planned" in ln for ln in rc_lines))  # F-P5-02 in plan only
+    check("run_folder_retcon_traced", any("retcon source(s) traced" in ln for ln in rc_lines))
     check("explicit_files_classify",
           run([os.path.join(d, "Proj_Findings_Ledger_run.md"),
                os.path.join(d, "Proj_Core_DE_Synthesis_run.md"),
