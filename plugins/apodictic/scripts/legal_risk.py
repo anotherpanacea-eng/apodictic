@@ -12,7 +12,9 @@ mechanizes the firewall.
                       LR-NN id, missing required field, broken JSON).
   L2 duplicate id     two items share an LR-NN id.
   L3 missing disclaimer  the register carries legal_risk items but no not-a-lawyer / not-legal-advice
-                      disclaimer. The signature gate — the register must never read as legal advice.
+                      disclaimer in READER-FACING prose (HTML comments and the legal_risk blocks are
+                      stripped first, so an impl note can't satisfy it). The signature gate — the
+                      register must never read as legal advice.
   W1 legal-advice drift  a `concern`/`disposition` states a legal CONCLUSION ("not defamatory",
                       "protected by", "is fair use", "no liability", "can't be sued", "is legal")
                       rather than flagging for review (advisory; ERROR --strict). The module firewall.
@@ -42,8 +44,11 @@ except ImportError:
 _SCHEMA_ID = "apodictic.legal_risk.v1"
 _REGISTER_GLOB = "*_Legal_Risk_Register_*.md"
 
-# L3 — the register must carry a not-a-lawyer / not-legal-advice disclaimer.
+# L3 — the register must carry a not-a-lawyer / not-legal-advice disclaimer in READER-FACING prose.
 _DISCLAIMER_RE = re.compile(r"not\s+a\s+lawyer|not\s+legal\s+advice", re.IGNORECASE)
+# HTML comments (incl. the apodictic:legal_risk blocks, which ARE <!-- … --> comments) are stripped
+# before the L3 search, so an implementation note or block text cannot satisfy the disclaimer gate.
+_HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 # Override markers naming an item id: "<!-- override: legal-advice-drift LR-01 — ... -->".
 _OVERRIDE_RE = re.compile(r"<!--\s*override:\s*([a-z-]+)\s+(LR-[0-9]+)\b", re.IGNORECASE)
 # W1 — legal CONCLUSION language (the module flags; it does not adjudicate). Kept specific so an
@@ -116,10 +121,13 @@ def register(text, strict=False):
             errs.append("L2 duplicate id: %s appears %d times (ids must be unique)" % (lid, len(where)))
         by_id[lid] = next(o for o, _ in valid if o.get("id") == lid)
 
-    # L3 — the register must carry a not-a-lawyer disclaimer (the signature gate)
-    if not _DISCLAIMER_RE.search(text or ""):
-        errs.append("L3 missing disclaimer: the register has legal_risk items but no not-a-lawyer / "
-                    "not-legal-advice disclaimer — it must never read as legal advice")
+    # L3 — the register must carry a not-a-lawyer disclaimer in VISIBLE prose (the signature gate).
+    # Strip HTML comments + the legal_risk blocks first, so an impl note / block text can't satisfy it.
+    visible = _HTML_COMMENT_RE.sub("", text or "")
+    if not _DISCLAIMER_RE.search(visible):
+        errs.append("L3 missing disclaimer: the register has legal_risk items but no reader-facing "
+                    "not-a-lawyer / not-legal-advice disclaimer (HTML comments don't count) — it must "
+                    "never read as legal advice")
 
     advice_overrides = _overrides(text, "legal-advice-drift")
     for lid, obj in sorted(by_id.items()):
@@ -225,6 +233,12 @@ def run_self_test():
     # the disclaimer is also satisfied by the "not legal advice" phrasing alone
     chk("l3_alt_phrasing_ok",
         register("This register is not legal advice.\n\n" + item("LR-01"))[0] == 0)
+    # a disclaimer ONLY inside an HTML comment does NOT satisfy L3 — it must be visible prose (PR #43)
+    code, lines = register("<!-- impl note: this register is NOT legal advice -->\n" + item("LR-01"))
+    chk("l3_comment_only_fails", code == 1 and any("L3 missing disclaimer" in ln for ln in lines))
+    # the legal_risk block text alone (which is an HTML comment) cannot satisfy L3 either
+    code, lines = register(item("LR-01", disp="flag for legal review; not legal advice as such"))
+    chk("l3_block_text_fails", code == 1 and any("L3 missing disclaimer" in ln for ln in lines))
 
     # W1 — legal-advice drift (a conclusion) => advisory; ERROR --strict; override silences
     code, lines = register(DISCLAIMER + item("LR-01", disp="this passage is not defamatory; no action needed"))

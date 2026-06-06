@@ -42,7 +42,7 @@ A not-a-lawyer disclaimer plus a set of `apodictic.legal_risk.v1` blocks — one
 |---|---|---|
 | **L1 — invalid item** | ERROR | A `legal_risk` block fails its schema (bad `risk_class`/`severity` enum, malformed `LR-NN` id, missing required field, broken JSON). |
 | **L2 — duplicate id** | ERROR | Two items share an `LR-NN` id. |
-| **L3 — missing disclaimer** | ERROR | The register has `legal_risk` items but no not-a-lawyer / not-legal-advice disclaimer. **The signature gate** — the register must never read as legal advice. |
+| **L3 — missing disclaimer** | ERROR | The register has `legal_risk` items but no not-a-lawyer / not-legal-advice disclaimer **in reader-facing prose** (HTML comments and the `legal_risk` blocks are stripped before the check, so an implementation note can't satisfy it). **The signature gate** — the register must never read as legal advice. |
 | **W1 — legal-advice drift** | WARN (ERROR `--strict`) | A `concern`/`disposition` states a legal **conclusion** ("not defamatory", "protected by", "is fair use", "no liability", "can't be sued", "is legal") rather than flagging for review. **The module firewall.** Override (per id): `<!-- override: legal-advice-drift LR-NN — <rationale> -->`. |
 | **W2 — unrouted high risk** | WARN (ERROR `--strict`) | A `review-now` item whose `disposition` does not route to legal review / counsel — a top-tier flag must point to a lawyer. |
 
