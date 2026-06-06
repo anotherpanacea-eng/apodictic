@@ -65,6 +65,25 @@ Don't hand the author a flat menu of latent readings — **rank** them and retur
 
 ---
 
+## The rolling State Card (F2)
+
+The State Card isn't only a section of the Retcon Plan — it's also a standalone, **rolling** artifact, `[Project]_State_Card_[runlabel].md` at the project root, carrying one `apodictic.state_card.v1` block per revision round and **diff'd across rounds** (the Pass-10-class rolling-structured-artifact pattern). Its value is *cross-round* coherence: it shows when "a Round-1 active promise is now a forbidden contradiction" or when the controlling idea has drifted.
+
+```markdown
+<!-- apodictic:state_card
+{"schema":"apodictic.state_card.v1","round":2,
+ "controlling_idea":"the cost of the silences we keep to protect those we love",
+ "active_promises":["SE-01: the dual-POV converges","SE-02: the sister-arc pays off"],
+ "unresolved_tensions":["SE-04: the locket's significance (Ch. 2)"],
+ "forbidden_contradictions":["SE-05: keep the sisters' warmth earned"],
+ "likely_next_pressures":["the new ending re-weights every sister scene"]}
+-->
+```
+
+Tracked elements (promises / tensions / contradictions) carry a stable, **kind-agnostic `SE-NN` id**, so the same element is followed across rounds even when it changes kind — that identity is what lets the diff catch a promise that has quietly become a forbidden contradiction. Bump `round` each revision. Diff with `scripts/validate.sh state-card-diff <prior_card> <current_card>`.
+
+---
+
 ## The fair-play rule (non-negotiable)
 
 You may retcon for **meaning** freely (recontextualize what the reader has seen). You may **never** retcon the **evidence** the reader has already reasoned from — a mystery's culprit, an inspected clue, a planted fact. *Dramatic retcon improves meaning; evidential retcon destroys fair play.* If the new direction requires altering an inspected clue, that is not a retcon to plan — it is a reveal-economy problem to solve (Pass 8). And beware **rubber reality**: if a "retcon" is patching over a real structural hole rather than adding connective tissue, name the hole instead.
@@ -81,4 +100,6 @@ You may retcon for **meaning** freely (recontextualize what the reader has seen)
 
 ## Mechanical check
 
-`scripts/validate.sh retcon-plan <run_folder>`: R1 schema, R2 unique ids, **R3 no evidential retcon of locked canon** (the signature gate; override `<!-- override: retcon-evidential RX-NN — … -->`), R4 target referential integrity; W1 blast-radius accounting on locked/costly items, W2 firewall drift (invented prose where a class belongs; override `retcon-firewall RX-NN`). Door-B Selection (F1): R5 reading schema + 1–5 score rubric, R6 unique reading ids, R7 reading-target referential integrity; **W3 coincidence-note over-fitting guard** (the signature F1 check), W4 top-1–3 shortlist. W1–W4 advisory, ERROR under `--strict`. Ownership boundary + lineage: [`docs/retcon-planning.md`](../../../docs/retcon-planning.md).
+`scripts/validate.sh retcon-plan <run_folder>`: R1 schema, R2 unique ids, **R3 no evidential retcon of locked canon** (the signature gate; override `<!-- override: retcon-evidential RX-NN — … -->`), R4 target referential integrity; W1 blast-radius accounting on locked/costly items, W2 firewall drift (invented prose where a class belongs; override `retcon-firewall RX-NN`). Door-B Selection (F1): R5 reading schema + 1–5 score rubric, R6 unique reading ids, R7 reading-target referential integrity; **W3 coincidence-note over-fitting guard** (the signature F1 check), W4 top-1–3 shortlist. W1–W4 advisory, ERROR under `--strict`.
+
+The rolling State Card (F2) has its own validator: `scripts/validate.sh state-card-diff <prior> <current>` — S1 schema + `SE-NN` id-prefix, S2 unique ids, S3 round order, **S4 promise→contradiction** (the signature cross-round coherence-break check; override `<!-- override: state-card-transition SE-NN — … -->`), W1 dropped promise, W2 controlling-idea shift, W3 same-round edit. Ownership boundary + lineage: [`docs/retcon-planning.md`](../../../docs/retcon-planning.md).

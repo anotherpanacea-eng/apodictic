@@ -184,6 +184,7 @@ The model tag is **required**, not optional. It identifies which model generated
 - `Diagnostic_State.meta.json` — machine-readable sidecar at the project root. If missing, initialize from `references/diagnostic-state-meta-template.json`.
 - `SYNTHESIS.md` — master revision plan at the project root. Created from the first run's synthesis; updated by subsequent runs with a methodology note listing contributing runs.
 - `Series_State.md` — cross-volume series state at the series root (not inside each volume's project root). If missing, initialize from `references/series-state-template.md`. Persists across volumes; updated after each volume is analyzed.
+- `[Project]_State_Card_[runlabel].md` — Retcon Planning State Card (F2), a rolling structured artifact (`apodictic.state_card.v1`, one block per round) at the project root. Diff'd across revision rounds by `validate.sh state-card-diff <prior> <current>` (Pass-10-class rolling-structured-artifact pattern). See `revision-coach/references/retcon-planning.md`.
 
 ### Results Guide
 
