@@ -1,6 +1,6 @@
 # Retcon Planning — a revision-coaching track
 
-**Status:** Increment 1 **spec**. Roadmap: `ROADMAP.md` → Coaching Deepening (a concrete shape for Multi-Session Revision Arc Planning). Skill home: **revision-coach** (post-diagnostic, returning-author; inherits the Coaching Firewall). Reached via `/coach` (Retcon Planning mode).
+**Status:** Increment 1 + **F1 (Ranked Door-B abduction)** + **F2 (State Card rolling artifact)** + **F3 (Pass-8 source provenance)** built. Roadmap: `ROADMAP.md` → Coaching Deepening (a concrete shape for Multi-Session Revision Arc Planning). Skill home: **revision-coach** (post-diagnostic, returning-author; inherits the Coaching Firewall). Reached via `/coach` (Retcon Planning mode).
 
 **Lineage (recorded honestly).** Two sources, deliberately merged:
 - **Door B — latent reinterpretation + commitment budget.** Gwern, *Better Fiction via Retcon Planning* (gwern.net/blog/2023/llm-retcon): treat hidden world-state as temporary; at checkpoints re-infer the latent story that best explains the canon, compress it to a small state card, and govern rewrites with a **commitment budget** (observed canon fixed > exposed consequences costly > unused latent cheap; **dramatic** retcon improves meaning, **evidential** retcon destroys fair play).
@@ -35,6 +35,8 @@ Trigger: the author names a **retcon target** they have decided on — "the endi
 ### Door B — Latent reinterpretation (you have a draft with weak / "glitch" / off-trajectory elements)
 Trigger: the author points at elements that feel like bugs. The coach runs the **abductive "bug-or-feature" move**: is there a latent reading in which these become load-bearing — "the story was always about this"? It surfaces the candidate readings as **options** (never executed), each with the setup debt and commitment cost that *committing* to it would imply. Door B's output feeds Door A: a chosen reinterpretation becomes a retcon target.
 
+**The Selection step (F1).** Candidate readings are not a flat menu — they are **ranked** (Gwern's selection step) by a small rubric and pruned to the top 1–3, the costed shortlist. Each candidate is an `apodictic.retcon_reading.v1` block scored 1–5 (higher is better) on five dimensions: **canon coherence**, **payoff density**, **agency preservation**, **genre fit**, and **coincidence resistance** — the last is the structural guard against *rubber reality* (a reading that only "works" by treating every incidental detail as load-bearing scores low). A `coincidence_note` shows the rate's work (which details the reading makes load-bearing). The chosen reading's `implied_targets` then names the declared Retcon Target it becomes — the Door-B → Door-A handoff, made referentially checkable.
+
 Both doors converge on one **Retcon Plan** and are governed by one **commitment budget**.
 
 ---
@@ -42,7 +44,21 @@ Both doors converge on one **Retcon Plan** and are governed by one **commitment 
 ## Artifacts
 
 ### The Manuscript State Card (compression)
-A compression of what the draft has committed to: **active promises**, **unresolved tensions**, **forbidden contradictions**, **likely next pressures**, and the current **controlling-idea hypothesis**. It is the diagnostic form of Gwern's "world-state card," and it generalizes the partial-manuscript *setup inventory*. **In Increment 1 it is a `## State Card` section of the Retcon Plan**; promoting it to a standalone cross-revision rolling artifact (`[Project]_State_Card_[runlabel].md`, diff'd across rounds, Pass-10-class) is a future increment.
+A compression of what the draft has committed to: **active promises**, **unresolved tensions**, **forbidden contradictions**, **likely next pressures**, and the current **controlling-idea hypothesis**. It is the diagnostic form of Gwern's "world-state card," and it generalizes the partial-manuscript *setup inventory*. It appears two ways: as a human-readable `## State Card` section inside the Retcon Plan (Increment 1), and — **as of F2** — as a standalone, structured, **rolling** artifact `[Project]_State_Card_[runlabel].md` at the project root, carrying one `apodictic.state_card.v1` block per round and **diff'd across revision rounds** (the Pass-10-class rolling-structured-artifact pattern). See §The `state-card-diff` validator.
+
+```json
+{
+  "schema": "apodictic.state_card.v1",
+  "round": 2,
+  "controlling_idea": "the cost of the silences we keep to protect those we love",
+  "active_promises": ["SE-01: the dual-POV converges", "SE-02: the sister-arc pays off"],
+  "unresolved_tensions": ["SE-04: the locket's significance (Ch. 2)"],
+  "forbidden_contradictions": ["SE-05: keep the sisters' warmth earned"],
+  "likely_next_pressures": ["the new ending re-weights every sister scene"]
+}
+```
+
+The three tracked lists (promises / tensions / contradictions) hold `"SE-NN: <text>"` strings sharing **one kind-agnostic `SE-NN` id namespace**, so the *same* element keeps its id when it changes kind across rounds — the cross-revision-traceability lesson (don't depend on prose matching). The `SE-NN:` prefix and within-card uniqueness are enforced in code (S1/S2), since the subset schema checker can't express them. Field set canonical in `schemas/apodictic.state_card.v1.schema.json`.
 
 ### The Retcon Plan
 `[Project]_Retcon_Plan_[runlabel].md` — the coaching deliverable. Sections: a **State Card**; a `## Retcon Targets` list (each target declared with an id, `T1`, `T2`, …); the **setup-debt ledger** (Door A); the **commitment ledger** (the budget); the **blast radius** (Protected Elements + continuity collisions); and a **dependency-ordered sequence** (decision → backward seeding → forward consequence propagation). The machine-checkable spine is a set of structured items:
@@ -59,7 +75,8 @@ A compression of what the draft has committed to: **active promises**, **unresol
   "intervention_class": "plant a recontextualizable detail in the Ch.3 kitchen scene",
   "locations": ["Ch. 3", "Ch. 9 (line 220)"],
   "blast_radius": ["Protected: the sister-relationship arc (Ch.12 close)"],
-  "disposition": "Author seeds one ambiguous gesture; do not state complicity."
+  "disposition": "Author seeds one ambiguous gesture; do not state complicity.",
+  "source": "F-P8-03"                  // F3 (optional): the finding this item was seeded from
 }
 ```
 
@@ -67,7 +84,28 @@ A compression of what the draft has committed to: **active promises**, **unresol
 - **`mutability`** — Gwern's commitment budget. `locked` = the reader has already seen/used it (observed canon); `costly` = it has exposed downstream consequences; `free` = unused latent the author may still shape.
 - **`retcon_type`** — the fair-play axis. `dramatic` = recontextualizes for *meaning* (allowed). `evidential` = changes the *evidence/clues the reader has reasoned from* (a mystery's culprit, a planted fact). **An `evidential` retcon of `locked` canon is the forbidden move** — it cheats the reader who already reasoned from it.
 
-`intervention_class` is a *class*, never prose. The field set is canonical in `schemas/apodictic.retcon_item.v1.schema.json`.
+`intervention_class` is a *class*, never prose. **`source`** (F3, optional) records the originating finding an item was seeded from — primarily a Pass-8 (Reveal Economy) finding, e.g. `F-P8-03` — so a seeded setup-debt item's provenance is auditable. Its `F-<ORIGIN>-<NN>` format is validated by the schema (R1) and shown in the validator's item line; `finding-trace` **E6** checks it resolves to a ledger finding (cross-artifact). The field set is canonical in `schemas/apodictic.retcon_item.v1.schema.json`.
+
+### `apodictic.retcon_reading.v1` (one per ranked Door-B candidate reading) — F1
+
+```json
+{
+  "schema": "apodictic.retcon_reading.v1",
+  "id": "CR-01",
+  "reading": "the sister was complicit all along",   // a CLASS/label of the latent reading, never prose
+  "scores": {                                          // the Selection rubric — integers 1-5, higher is better
+    "canon_coherence": 5,
+    "payoff_density": 4,
+    "agency_preservation": 5,
+    "genre_fit": 4,
+    "coincidence_resistance": 4                         // 5 = no forced coincidences; 1 = rubber-reality over-fit
+  },
+  "coincidence_note": "needs only the locket and the Ch.7 silence load-bearing; the rest stands",
+  "implied_targets": ["T1"]                             // declared Retcon Target(s) this reading becomes if committed
+}
+```
+
+The five `scores` dimensions and the 1–5 range are required, but the subset schema checker can't express nested required keys or numeric bounds, so they are enforced in `scripts/retcon_plan.py` (R5) — the same place the R3 fair-play gate lives. `coincidence_note` is optional in the schema; a surfaced reading lacking it raises the **W3** over-fitting-guard advisory. `implied_targets` is optional, but every id present must resolve to a declared target (**R7**). Field set canonical in `schemas/apodictic.retcon_reading.v1.schema.json`.
 
 ---
 
@@ -84,16 +122,46 @@ A compression of what the draft has committed to: **active promises**, **unresol
 | **W1 — unaccounted blast radius** | WARN (ERROR `--strict`) | A `locked`/`costly` item with an empty `blast_radius` — a costly retcon planned without naming what it endangers (the Protected-Elements guard). |
 | **W2 — firewall drift** | WARN (ERROR `--strict`) | `intervention_class`/`disposition` reads like *invented content* rather than a class — quoted invented dialogue, or "add a scene where <specific events>". A facilitator plans the class; the author writes the prose. Override (per item): `<!-- override: retcon-firewall RX-NN — <rationale> -->`. |
 
-**The signature checks are R3 and W2** — they mechanize the two disciplines both sources insist on: *you may not retcon the evidence the reader has already used* (fair play) and *you may not cross into ghostwriting* (the Firewall). No other validator raises either.
+**Door-B Selection step (F1)** — checks over the `apodictic.retcon_reading.v1` blocks:
+
+| ID | Severity | Rule |
+|---|---|---|
+| **R5 — invalid reading** | ERROR | A `retcon_reading` block fails its schema (malformed `CR-NN` id, missing required field, broken JSON), or its `scores` object is missing one of the five named dimensions / carries a value outside 1–5. |
+| **R6 — duplicate reading id** | ERROR | Two readings share a `CR-NN` id. |
+| **R7 — dangling reading target** | ERROR | A reading's `implied_targets` entry does not resolve to a declared target in `## Retcon Targets` (the Door-B → Door-A handoff broke — a typo or deleted target). Mirrors R4. |
+| **W3 — uncosted reading** | WARN (ERROR `--strict`) | A surfaced candidate reading carries no `coincidence_note` — the non-insane-coincidence-rate over-fitting guard isn't shown its work. **The signature F1 check.** |
+| **W4 — unpruned shortlist** | WARN (ERROR `--strict`) | More than 3 candidate readings are surfaced — the Selection step returns the top 1–3, not a flat menu. |
+
+The validator prints the readings sorted by score total (max 25), so the ranking is mechanically visible.
+
+**The signature checks are R3 and W2** — they mechanize the two disciplines both sources insist on: *you may not retcon the evidence the reader has already used* (fair play) and *you may not cross into ghostwriting* (the Firewall). No other validator raises either. F1 adds the **Selection** discipline: rank the readings, and **W3** keeps the coincidence rate honest (the guard against rubber reality).
 
 **Ownership boundary.** `retcon-plan` owns the retcon-planning contract — commitment-budget coherence, the fair-play gate, target referential integrity, and firewall-drift surfacing. It does **not** judge severity (a retcon that maps to a real defect is governed by the finding/severity validators once it enters a ledger), re-diagnose (deriving the latent reading is coaching, not this validator's job), or check reveal-economy fairness in the *manuscript* (that stays with Pass 8).
+
+---
+
+## The `state-card-diff` validator (F2)
+
+`validate.sh state-card-diff <current>` validates one card; `validate.sh state-card-diff <prior> <current>` diffs two rounds (modeled on `timeline-diff`). Degrades to an advisory `WARN` without `python3`.
+
+| ID | Severity | Rule |
+|---|---|---|
+| **S1 — invalid card** | ERROR | A `state_card` block fails its schema, or a tracked-list element lacks a well-formed `SE-NN: <text>` id prefix (format enforced in code). |
+| **S2 — duplicate id** | ERROR | Two tracked elements in one card share an `SE-NN` id (one namespace across promises / tensions / contradictions). |
+| **S3 — round backwards** | ERROR | `current.round < prior.round` — a stale or misordered diff. |
+| **S4 — promise→contradiction** | ERROR | An `SE-NN` that was an `active_promise` in prior is a `forbidden_contradiction` in current — the draft has reasoned past a coherence break. **The signature F2 check.** Override: `<!-- override: state-card-transition SE-NN — <reason> -->`. |
+| **W1 — dropped promise** | WARN (ERROR `--strict`) | An `SE-NN` `active_promise` in prior is gone from current entirely (silently dropped, not resolved). Override: `<!-- override: state-card-drop SE-NN — <reason> -->`. |
+| **W2 — idea shift** | WARN (ERROR `--strict`) | `controlling_idea` changed between rounds (reframing is legitimate but worth surfacing). Override: `<!-- override: state-card-idea-shift — <reason> -->`. |
+| **W3 — same-round edit** | WARN (ERROR `--strict`) | `current.round == prior.round` but the content differs — bump the round when the card changes. |
+
+The diff prints a one-line summary (kept / added / resolved-tension). **S4 is the signature check** — it mechanizes the coherence break F2 exists to catch ("a Round-1 active promise is now a forbidden contradiction"). Because elements are matched by `SE-NN` id, S4 survives rewording. **Ownership boundary.** `state-card-diff` owns cross-round State Card coherence; it does not re-diagnose, judge severity, or duplicate the `retcon-plan` contract.
 
 ---
 
 ## Workflow (revision-coach, Retcon Planning mode)
 
 1. **Build / refresh the State Card** from the diagnosis (or the manuscript): active promises, unresolved tensions, forbidden contradictions, controlling-idea hypothesis.
-2. **Choose the door.** Door A: capture the author's committed retcon target. Door B: run the bug-or-feature abduction and present latent readings as options; a chosen one becomes a target.
+2. **Choose the door.** Door A: capture the author's committed retcon target. Door B: run the bug-or-feature abduction, **score and rank** the latent readings (the `## Candidate Readings` table — top 1–3, each with a coincidence-rate note), present them as options; a chosen one's `implied_targets` becomes a declared target.
 3. **Account the setup debt** (Door A, reveal-economy backward): per target, the required setups, locations, and contradictions to clear — as `retcon_item` blocks.
 4. **Budget the commitments.** Tag each item's `mutability` and `retcon_type`; the fair-play gate (R3) blocks evidential retcon of locked canon; name the `blast_radius`.
 5. **Sequence** the retcon as a dependency-ordered arc and hand off (no prose written by the coach). Validate with `validate.sh retcon-plan`.
@@ -104,34 +172,38 @@ A canonical worked example (`references/example-retcon-plan.md`) is gated by `va
 
 ## Increment boundaries
 
-**Increment 1 (this):** the coaching-track contract, the State Card + Retcon Plan artifacts, the `apodictic.retcon_item.v1` block + schema, the `retcon-plan` validator (R1–R4 + W1–W2), the worked example, the `--check-all` gate, and revision-coach wiring.
+**Increment 1:** the coaching-track contract, the State Card + Retcon Plan artifacts, the `apodictic.retcon_item.v1` block + schema, the `retcon-plan` validator (R1–R4 + W1–W2), the worked example, the `--check-all` gate, and revision-coach wiring.
 
-**Future:** the increments below.
+**F1 (built):** the Door-B Selection step — the `apodictic.retcon_reading.v1` block + schema, the ranked `## Candidate Readings` section, the `retcon-plan` validator's reading checks (R5–R7 + W3–W4) with the over-fitting guard, the ranked display, the worked-example readings under the `--check-all` gate, and the revision-coach Door-B protocol update. Same validator (no new validator entry; count stays 24).
+
+**F2 (built):** the State Card promoted to a standalone rolling artifact — the `apodictic.state_card.v1` block + schema, the new `state-card-diff` validator (S1–S4 + W1–W3, modeled on `timeline-diff`), the canonical Round-1 / Round-2 worked examples under the `--check-all` gate, and registration of `[Project]_State_Card_[runlabel].md` as a project-root rolling-state file. New validator (24 → 25).
+
+**F3 (built):** Pass-8 source provenance — an optional `source` finding-ref on `apodictic.retcon_item.v1` (format-validated by the schema; shown in the `retcon-plan` item line) plus `finding-trace` **E6** (a retcon `source` that doesn't resolve to a ledger finding). Closes the Pass-8 (Reveal Economy) → Retcon-Plan loop with auditable provenance. No new validator (the check lands in `finding-trace`, the cross-artifact `F-…` owner); count stays 25.
+
+**Future:** the increments below (F1, F2, F3 now built; only F4 — speculative / demand-gated — remains).
 
 ## Future increments
 
 Each is additive on Increment 1 and keeps the Firewall (plan the class, never write the prose). Listed roughly by leverage.
 
-### F1 — Ranked Door-B abduction (the Selection step)
+### F1 — Ranked Door-B abduction (the Selection step) — **Built**
 
-**What.** Door B currently surfaces latent "bug-or-feature" readings as a flat, unranked list. Add the scoring step from Gwern's loop: rank candidate readings by a small rubric — coherence with the canon, payoff density, character-agency preservation, genre fit, and a **non-insane-coincidence rate** (penalize a reading that only "works" by treating every incidental detail as load-bearing). Return the top 1–3, each with its score profile and the setup-debt + commitment cost that committing to it would imply.
+**What.** Door B used to surface latent "bug-or-feature" readings as a flat, unranked list. F1 adds the scoring step from Gwern's loop: candidate readings are ranked by a small rubric — coherence with the canon, payoff density, character-agency preservation, genre fit, and a **non-insane-coincidence rate** (penalize a reading that only "works" by treating every incidental detail as load-bearing) — and pruned to the top 1–3, each with its score profile and the target it becomes if committed.
 **Why.** This is the structural guard against "rubber reality" / paranoid over-fitting — the failure mode the essay names — and it gives the author a principled, costed shortlist instead of a flat menu.
-**Shape.** A `## Candidate Readings` section (a scored table), optionally an `apodictic.retcon_reading.v1` block per candidate (id, score dimensions, implied `target_id`s). Validator extension: a W-level check that any surfaced reading carries a coincidence-rate note. Firewall unchanged — still options, never prose.
-**Dependency.** None hard; pairs naturally with the State Card.
+**Built as.** A `## Candidate Readings` section with an `apodictic.retcon_reading.v1` block per candidate (`id`, the five `scores` dimensions, optional `coincidence_note`, optional declared `implied_targets`). The `retcon-plan` validator gained R5 (schema + 1–5 score rubric), R6 (unique reading ids), R7 (reading-target referential integrity), **W3** (the coincidence-note over-fitting guard — the signature F1 check), and W4 (top-1–3 shortlist), plus a ranked-by-total display. Firewall unchanged — still options, never prose. See §The `retcon-plan` validator and `schemas/apodictic.retcon_reading.v1.schema.json`.
 
-### F2 — State Card as a standalone cross-revision rolling artifact
+### F2 — State Card as a standalone cross-revision rolling artifact — **Built**
 
-**What.** Promote the `## State Card` section to a first-class rolling artifact — `[Project]_State_Card_[runlabel].md` at the project root, diff'd across revision rounds (the Pass-10-class rolling-structured-artifact pattern).
+**What.** The `## State Card` section is now also a first-class rolling artifact — `[Project]_State_Card_[runlabel].md` at the project root, diff'd across revision rounds (the Pass-10-class rolling-structured-artifact pattern).
 **Why.** A retcon's whole value is *cross-round* coherence, and a per-run section can't show drift. A rolling, diff'd card surfaces movement like "the controlling-idea hypothesis shifted between round 2 and round 3," or "a Round-1 active promise is now a forbidden contradiction" — exactly the cross-revision coherence the Pass-10 pattern exists for.
-**Shape.** An `apodictic.state_card.v1` schema; a `state-card-diff` validator arm (modeled on `timeline-diff`) comparing the prior card against the current; registration in `output-structure.md` as a project-root rolling-state file.
-**Dependency.** Builds directly on the Increment-1 State Card section.
+**Built as.** The `apodictic.state_card.v1` schema (one block per round; tracked elements carry a kind-agnostic `SE-NN` id); the `state-card-diff` validator (modeled on `timeline-diff`) — single-card S1/S2 and cross-round S3/S4 + W1–W3, with **S4 (promise→contradiction)** the signature coherence-break check; canonical Round-1 / Round-2 worked examples gated by `--check-all`; and registration in `output-structure.md` as a project-root rolling-state file. See §The `state-card-diff` validator and `schemas/apodictic.state_card.v1.schema.json`.
 
-### F3 — Reveal-Economy (Pass 8) auto-seeding of the setup-debt ledger
+### F3 — Reveal-Economy (Pass 8) auto-seeding of the setup-debt ledger — **Built**
 
-**What.** Door A enumerates setup debt by hand. Pass 8 (Reveal Economy) already maps setup→payoff and runs a fairness test; given a retcon target (a new or relocated payoff), derive the required setups from the Pass-8 map and propose `retcon_item` candidates the author curates — each carrying a Pass-8 cross-reference.
-**Why.** Closes the loop between the diagnostic (Pass 8) and the coaching (Retcon Planning), cuts manual enumeration, and grounds each setup-debt item in reveal-economy evidence — including the fairness check that keeps a seeded clue honest (so an auto-seeded item can't quietly become an evidential retcon).
-**Shape.** A Pass-8 → Retcon-Plan handoff; setup-debt items gain a `source` cross-reference to the originating Pass-8 finding. Firewall: still classes, derived from existing findings.
-**Dependency.** A completed Pass 8 / reveal-economy run.
+**What.** Door A enumerates setup debt by hand. Pass 8 (Reveal Economy) already maps setup→payoff and runs a fairness test; given a retcon target (a new or relocated payoff), the coach derives the required setups from the Pass-8 map and proposes `retcon_item` candidates the author curates — each carrying a Pass-8 cross-reference.
+**Why.** Closes the loop between the diagnostic (Pass 8) and the coaching (Retcon Planning), cuts manual enumeration, and grounds each setup-debt item in reveal-economy evidence — including the fairness check that keeps a seeded clue honest (so an auto-seeded item can't quietly become an evidential retcon, still gated by R3).
+**Built as.** The mechanical half: an optional **`source`** field on `apodictic.retcon_item.v1` (an `F-<ORIGIN>-<NN>` finding-ref, primarily a Pass-8 finding) — format-validated by the schema (R1), shown in the `retcon-plan` item line, and resolved against the ledger by `finding-trace` **E6** (a dangling source is an error). The *derivation* of candidates from the Pass-8 map stays coaching (the model proposes; the author curates), and the Firewall is unchanged (still classes, derived from existing findings). The handoff is documented in the protocol below and in `revision-coach/references/retcon-planning.md`.
+**Dependency.** A completed Pass 8 / reveal-economy run (for the source findings).
 
 ### F4 — Interactive-fiction / game-narrative diagnostic (speculative, demand-gated)
 
