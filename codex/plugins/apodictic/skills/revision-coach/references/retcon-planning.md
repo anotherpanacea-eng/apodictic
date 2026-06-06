@@ -94,7 +94,7 @@ You may retcon for **meaning** freely (recontextualize what the reader has seen)
 
 1. **Build / refresh the State Card** from the diagnosis (or the manuscript).
 2. **Choose the door** (capture the committed target, or run the bug-or-feature abduction, **rank** the candidate readings to the top 1–3, and let a chosen reading become a target).
-3. **Account the setup debt** as `retcon_item` blocks (Door A: reveal economy run backward).
+3. **Account the setup debt** as `retcon_item` blocks (Door A: reveal economy run backward). When an item is seeded from a **Pass 8 (Reveal Economy)** finding, record that finding's id in the item's optional **`source`** field (F3, e.g. `"source":"F-P8-03"`) — provenance the coach derives, the author curates. `finding-trace` (E6) checks each `source` resolves to a ledger finding.
 4. **Budget the commitments:** tag each item's `mutability` and `retcon_type`; the fair-play gate blocks evidential retcon of locked canon; name each costly/locked item's `blast_radius` (the Protected Elements it endangers).
 5. **Sequence** the arc (decision → backward seeding → forward consequence propagation) and hand off — no prose written by the coach.
 
@@ -102,4 +102,6 @@ You may retcon for **meaning** freely (recontextualize what the reader has seen)
 
 `scripts/validate.sh retcon-plan <run_folder>`: R1 schema, R2 unique ids, **R3 no evidential retcon of locked canon** (the signature gate; override `<!-- override: retcon-evidential RX-NN — … -->`), R4 target referential integrity; W1 blast-radius accounting on locked/costly items, W2 firewall drift (invented prose where a class belongs; override `retcon-firewall RX-NN`). Door-B Selection (F1): R5 reading schema + 1–5 score rubric, R6 unique reading ids, R7 reading-target referential integrity; **W3 coincidence-note over-fitting guard** (the signature F1 check), W4 top-1–3 shortlist. W1–W4 advisory, ERROR under `--strict`.
 
-The rolling State Card (F2) has its own validator: `scripts/validate.sh state-card-diff <prior> <current>` — S1 schema + `SE-NN` id-prefix, S2 unique ids, S3 round order, **S4 promise→contradiction** (the signature cross-round coherence-break check; override `<!-- override: state-card-transition SE-NN — … -->`), W1 dropped promise, W2 controlling-idea shift, W3 same-round edit. Ownership boundary + lineage: [`docs/retcon-planning.md`](../../../docs/retcon-planning.md).
+The rolling State Card (F2) has its own validator: `scripts/validate.sh state-card-diff <prior> <current>` — S1 schema + `SE-NN` id-prefix, S2 unique ids, S3 round order, **S4 promise→contradiction** (the signature cross-round coherence-break check; override `<!-- override: state-card-transition SE-NN — … -->`), W1 dropped promise, W2 controlling-idea shift, W3 same-round edit.
+
+Pass-8 source provenance (F3): a `retcon_item`'s optional `source` finding-ref is resolved against the Findings Ledger by `scripts/validate.sh finding-trace <run_folder>` — **E6** flags a `source` that isn't in the ledger. Ownership boundary + lineage: [`docs/retcon-planning.md`](../../../docs/retcon-planning.md).

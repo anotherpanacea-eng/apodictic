@@ -30,6 +30,11 @@ Door-B Selection step (F1) — ranked candidate latent readings as apodictic.ret
                       over-fitting guard (advisory; ERROR --strict). The signature F1 check.
   W4 unpruned shortlist  more than 3 candidate readings (the Selection step returns the top 1-3).
 
+F3 (Pass-8 auto-seeding): a retcon_item may carry an optional `source` finding-ref (F-<ORIGIN>-<NN>,
+primarily a Pass-8 Reveal-Economy finding) recording what it was seeded from. Its format is checked
+here (R1, via the schema), shown in the item line, and resolved against the ledger by finding-trace
+(E6 dangling retcon source) — the cross-artifact provenance check.
+
 Reuses apodictic_artifacts (one block grammar + the schema engine). Each artifact is optional; an
 empty/absent one is a no-op. See docs/retcon-planning.md.
 
@@ -281,9 +286,10 @@ def plan(text, strict=False):
             "" if len(valid_readings) == len(readings) else " (%d well-formed)" % len(valid_readings))
     lines.append(head)
     for obj, _idx in valid:
-        lines.append("  %-7s target=%-3s kind=%-14s mut=%-6s type=%s"
+        lines.append("  %-7s target=%-3s kind=%-14s mut=%-6s type=%s%s"
                      % (obj.get("id"), obj.get("target_id"), obj.get("kind"),
-                        obj.get("mutability"), obj.get("retcon_type")))
+                        obj.get("mutability"), obj.get("retcon_type"),
+                        "  source=%s" % obj.get("source") if obj.get("source") else ""))
     # Ranked candidate readings: highest score total first (the Selection step, made visible)
     for obj, _idx in sorted(valid_readings, key=lambda t: (-_score_total(t[0]), t[0].get("id"))):
         s = obj["scores"]
@@ -351,7 +357,7 @@ def run_self_test():
 
     def item(rid, target="T1", kind="setup-debt", mut="free", rtype="dramatic",
              iclass="plant a recontextualizable detail", disp="author seeds it",
-             blast=None, locations=None):
+             blast=None, locations=None, source=None):
         obj = {"schema": _SCHEMA_ID, "id": rid, "target_id": target, "kind": kind,
                "mutability": mut, "retcon_type": rtype, "intervention_class": iclass,
                "disposition": disp}
@@ -359,6 +365,8 @@ def run_self_test():
             obj["blast_radius"] = blast
         if locations is not None:
             obj["locations"] = locations
+        if source is not None:
+            obj["source"] = source
         return "<!-- apodictic:retcon_item\n%s\n-->" % _j.dumps(obj)
 
     def reading(crid, scores=None, note="treats one incidental detail as load-bearing",
@@ -494,6 +502,13 @@ def run_self_test():
     # items + readings compose cleanly in one plan
     chk("items_and_readings_clean",
         plan(TARGETS + item("RX-01") + reading("CR-01", implied=["T1"]))[0] == 0)
+
+    # ---- F3: Pass-8 source provenance on a retcon item ----
+    # a well-formed source is clean and shown in the item line
+    code, lines = plan(TARGETS + item("RX-01", source="F-P8-03"))
+    chk("f3_source_clean", code == 0 and any("source=F-P8-03" in ln for ln in lines))
+    # a malformed source (one-digit suffix) fails its schema pattern -> R1
+    chk("f3_source_malformed_r1", plan(TARGETS + item("RX-01", source="F-P8-3"))[0] == 1)
 
     # no blocks -> no-op
     chk("no_items_noop", plan("# Retcon Plan\nNothing structured yet.\n")[0] == 0)

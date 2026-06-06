@@ -1,6 +1,6 @@
 # Retcon Planning — a revision-coaching track
 
-**Status:** Increment 1 + **F1 (Ranked Door-B abduction)** + **F2 (State Card rolling artifact)** built. Roadmap: `ROADMAP.md` → Coaching Deepening (a concrete shape for Multi-Session Revision Arc Planning). Skill home: **revision-coach** (post-diagnostic, returning-author; inherits the Coaching Firewall). Reached via `/coach` (Retcon Planning mode).
+**Status:** Increment 1 + **F1 (Ranked Door-B abduction)** + **F2 (State Card rolling artifact)** + **F3 (Pass-8 source provenance)** built. Roadmap: `ROADMAP.md` → Coaching Deepening (a concrete shape for Multi-Session Revision Arc Planning). Skill home: **revision-coach** (post-diagnostic, returning-author; inherits the Coaching Firewall). Reached via `/coach` (Retcon Planning mode).
 
 **Lineage (recorded honestly).** Two sources, deliberately merged:
 - **Door B — latent reinterpretation + commitment budget.** Gwern, *Better Fiction via Retcon Planning* (gwern.net/blog/2023/llm-retcon): treat hidden world-state as temporary; at checkpoints re-infer the latent story that best explains the canon, compress it to a small state card, and govern rewrites with a **commitment budget** (observed canon fixed > exposed consequences costly > unused latent cheap; **dramatic** retcon improves meaning, **evidential** retcon destroys fair play).
@@ -75,7 +75,8 @@ The three tracked lists (promises / tensions / contradictions) hold `"SE-NN: <te
   "intervention_class": "plant a recontextualizable detail in the Ch.3 kitchen scene",
   "locations": ["Ch. 3", "Ch. 9 (line 220)"],
   "blast_radius": ["Protected: the sister-relationship arc (Ch.12 close)"],
-  "disposition": "Author seeds one ambiguous gesture; do not state complicity."
+  "disposition": "Author seeds one ambiguous gesture; do not state complicity.",
+  "source": "F-P8-03"                  // F3 (optional): the finding this item was seeded from
 }
 ```
 
@@ -83,7 +84,7 @@ The three tracked lists (promises / tensions / contradictions) hold `"SE-NN: <te
 - **`mutability`** — Gwern's commitment budget. `locked` = the reader has already seen/used it (observed canon); `costly` = it has exposed downstream consequences; `free` = unused latent the author may still shape.
 - **`retcon_type`** — the fair-play axis. `dramatic` = recontextualizes for *meaning* (allowed). `evidential` = changes the *evidence/clues the reader has reasoned from* (a mystery's culprit, a planted fact). **An `evidential` retcon of `locked` canon is the forbidden move** — it cheats the reader who already reasoned from it.
 
-`intervention_class` is a *class*, never prose. The field set is canonical in `schemas/apodictic.retcon_item.v1.schema.json`.
+`intervention_class` is a *class*, never prose. **`source`** (F3, optional) records the originating finding an item was seeded from — primarily a Pass-8 (Reveal Economy) finding, e.g. `F-P8-03` — so a seeded setup-debt item's provenance is auditable. Its `F-<ORIGIN>-<NN>` format is validated by the schema (R1) and shown in the validator's item line; `finding-trace` **E6** checks it resolves to a ledger finding (cross-artifact). The field set is canonical in `schemas/apodictic.retcon_item.v1.schema.json`.
 
 ### `apodictic.retcon_reading.v1` (one per ranked Door-B candidate reading) — F1
 
@@ -177,7 +178,9 @@ A canonical worked example (`references/example-retcon-plan.md`) is gated by `va
 
 **F2 (built):** the State Card promoted to a standalone rolling artifact — the `apodictic.state_card.v1` block + schema, the new `state-card-diff` validator (S1–S4 + W1–W3, modeled on `timeline-diff`), the canonical Round-1 / Round-2 worked examples under the `--check-all` gate, and registration of `[Project]_State_Card_[runlabel].md` as a project-root rolling-state file. New validator (24 → 25).
 
-**Future:** the increments below (F1, F2 now built; F3–F4 remain).
+**F3 (built):** Pass-8 source provenance — an optional `source` finding-ref on `apodictic.retcon_item.v1` (format-validated by the schema; shown in the `retcon-plan` item line) plus `finding-trace` **E6** (a retcon `source` that doesn't resolve to a ledger finding). Closes the Pass-8 (Reveal Economy) → Retcon-Plan loop with auditable provenance. No new validator (the check lands in `finding-trace`, the cross-artifact `F-…` owner); count stays 25.
+
+**Future:** the increments below (F1, F2, F3 now built; only F4 — speculative / demand-gated — remains).
 
 ## Future increments
 
@@ -195,12 +198,12 @@ Each is additive on Increment 1 and keeps the Firewall (plan the class, never wr
 **Why.** A retcon's whole value is *cross-round* coherence, and a per-run section can't show drift. A rolling, diff'd card surfaces movement like "the controlling-idea hypothesis shifted between round 2 and round 3," or "a Round-1 active promise is now a forbidden contradiction" — exactly the cross-revision coherence the Pass-10 pattern exists for.
 **Built as.** The `apodictic.state_card.v1` schema (one block per round; tracked elements carry a kind-agnostic `SE-NN` id); the `state-card-diff` validator (modeled on `timeline-diff`) — single-card S1/S2 and cross-round S3/S4 + W1–W3, with **S4 (promise→contradiction)** the signature coherence-break check; canonical Round-1 / Round-2 worked examples gated by `--check-all`; and registration in `output-structure.md` as a project-root rolling-state file. See §The `state-card-diff` validator and `schemas/apodictic.state_card.v1.schema.json`.
 
-### F3 — Reveal-Economy (Pass 8) auto-seeding of the setup-debt ledger
+### F3 — Reveal-Economy (Pass 8) auto-seeding of the setup-debt ledger — **Built**
 
-**What.** Door A enumerates setup debt by hand. Pass 8 (Reveal Economy) already maps setup→payoff and runs a fairness test; given a retcon target (a new or relocated payoff), derive the required setups from the Pass-8 map and propose `retcon_item` candidates the author curates — each carrying a Pass-8 cross-reference.
-**Why.** Closes the loop between the diagnostic (Pass 8) and the coaching (Retcon Planning), cuts manual enumeration, and grounds each setup-debt item in reveal-economy evidence — including the fairness check that keeps a seeded clue honest (so an auto-seeded item can't quietly become an evidential retcon).
-**Shape.** A Pass-8 → Retcon-Plan handoff; setup-debt items gain a `source` cross-reference to the originating Pass-8 finding. Firewall: still classes, derived from existing findings.
-**Dependency.** A completed Pass 8 / reveal-economy run.
+**What.** Door A enumerates setup debt by hand. Pass 8 (Reveal Economy) already maps setup→payoff and runs a fairness test; given a retcon target (a new or relocated payoff), the coach derives the required setups from the Pass-8 map and proposes `retcon_item` candidates the author curates — each carrying a Pass-8 cross-reference.
+**Why.** Closes the loop between the diagnostic (Pass 8) and the coaching (Retcon Planning), cuts manual enumeration, and grounds each setup-debt item in reveal-economy evidence — including the fairness check that keeps a seeded clue honest (so an auto-seeded item can't quietly become an evidential retcon, still gated by R3).
+**Built as.** The mechanical half: an optional **`source`** field on `apodictic.retcon_item.v1` (an `F-<ORIGIN>-<NN>` finding-ref, primarily a Pass-8 finding) — format-validated by the schema (R1), shown in the `retcon-plan` item line, and resolved against the ledger by `finding-trace` **E6** (a dangling source is an error). The *derivation* of candidates from the Pass-8 map stays coaching (the model proposes; the author curates), and the Firewall is unchanged (still classes, derived from existing findings). The handoff is documented in the protocol below and in `revision-coach/references/retcon-planning.md`.
+**Dependency.** A completed Pass 8 / reveal-economy run (for the source findings).
 
 ### F4 — Interactive-fiction / game-narrative diagnostic (speculative, demand-gated)
 

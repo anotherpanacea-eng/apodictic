@@ -4083,11 +4083,12 @@ EOF
     # integrity + sidecar lifecycle coherence by Finding Lifecycle ID — E1 dangling letter
     # reference, E2 phantom sidecar finding_states key, E3 invalid state, E4 dangling revision
     # reference, E5 phantom completion (an in-scope report mentions a `revised` finding but carries
-    # no `<!-- resolved: ID -->` marker for it); W1 lifecycle coverage, W2 revision-plan follow-
-    # through, W3 completion follow-through (all advisory; ERROR under --strict). Completion keys on
-    # the explicit resolved marker, not a bare mention. Complements softness-check (severity fidelity) and
-    # structured-findings (intra-ledger ID hygiene) — raises only classes neither owns.
-    # Takes a run folder (globs ledger/letter/revisions, walks up for the sidecar) or explicit files.
+    # no `<!-- resolved: ID -->` marker for it), E6 dangling retcon source (a Retcon Plan retcon_item
+    # `source` finding-ref that is not in the ledger — Retcon Planning F3); W1 lifecycle coverage,
+    # W2 revision-plan follow-through, W3 completion follow-through (all advisory; ERROR under --strict).
+    # Completion keys on the explicit resolved marker, not a bare mention. Complements softness-check
+    # (severity fidelity) and structured-findings (intra-ledger ID hygiene) — raises only classes neither owns.
+    # Takes a run folder (globs ledger/letter/revisions/retcon-plans, walks up for the sidecar) or explicit files.
     # Delegates to scripts/finding_trace.py; degrades to an advisory WARN without python3.
     FT_DIR=$(cd "$(dirname "$0")" && pwd)
     FT_HELPER="$FT_DIR/finding_trace.py"

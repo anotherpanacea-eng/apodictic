@@ -172,7 +172,7 @@ The coach operates in four modes. Select based on context:
 **Process** (full protocol in `references/retcon-planning.md`):
 1. Build a **State Card** (active promises, unresolved tensions, forbidden contradictions, controlling-idea hypothesis) — record it as a rolling `apodictic.state_card.v1` artifact (`[Project]_State_Card_[runlabel].md`); on a later round, diff it against the prior round with `state-card-diff` to surface cross-round drift (a promise that became a forbidden contradiction; a shifted controlling idea)
 2. **Door B (if reinterpreting):** score and **rank** the candidate latent readings as `apodictic.retcon_reading.v1` blocks (five 1–5 dimensions incl. `coincidence_resistance`, the rubber-reality guard); return the top 1–3; a chosen reading's `implied_targets` becomes a Door-A target
-3. Capture each commitment as an `apodictic.retcon_item.v1` block — tag its `mutability` (locked/costly/free, the commitment budget) and `retcon_type` (dramatic/evidential, the fair-play axis)
+3. Capture each commitment as an `apodictic.retcon_item.v1` block — tag its `mutability` (locked/costly/free, the commitment budget) and `retcon_type` (dramatic/evidential, the fair-play axis); when seeded from a Pass 8 (Reveal Economy) finding, record it in the item's `source` field (F3 — provenance checked by `finding-trace` E6)
 4. **Fair-play gate:** never plan an *evidential* retcon of *locked* canon (changing a clue the reader has reasoned from); name each costly/locked item's `blast_radius`
 5. **Firewall:** plan the intervention *class*, never the prose — the author writes the tissue
 6. Gate with `scripts/validate.sh retcon-plan <run_folder>` (`--strict` for CI), then sequence the arc
