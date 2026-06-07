@@ -269,8 +269,10 @@
     ]
   },
   "researchModes": [
+    { "name": "Citation Verification", "files": ["craft/research-citation-verifier.md"], "description": "Verify source existence, accuracy, and fit against claims" },
     { "name": "Comp Validation", "files": ["craft/research-comp-validation.md"], "description": "Verify comps are current, positioned, and query-ready" },
     { "name": "Factual Verification", "files": ["craft/research-factual-verification.md"], "description": "Spot-check real-world claims" },
+    { "name": "Field Reconnaissance", "files": ["craft/research-field-recon.md"], "description": "Scout for counterevidence, literature gaps, and source ecosystem health" },
     { "name": "Genre Currency", "files": ["craft/research-genre-currency.md"], "description": "Verify genre expectations reflect current market" },
     { "name": "Representation Context", "files": ["craft/research-representation-context.md"], "description": "Surface community discourse for writing outside experience" }
   ],
