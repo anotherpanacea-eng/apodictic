@@ -41,24 +41,16 @@ APODICTIC supports two modes of execution in Antigravity: Workspace Isolation (r
 #### Method 1: Workspace Isolation (Recommended)
 This method keeps APODICTIC isolated to its own project context, safely containing manuscript analysis.
 
-1. Clone this repo.
-2. From the repo root, run the native builder:
+1. Download **`apodictic-antigravity.zip`** from the [latest release](https://github.com/anotherpanacea-eng/apodictic/releases/latest) and unzip it. (No clone or build step — the workspace is prebuilt.)
+2. Open the unzipped `antigravity/` folder as your **workspace root**.
+3. Start a fresh thread and type `/start`.
 
-```bash
-node scripts/build-antigravity.mjs
-```
-
-3. Open the newly generated `antigravity/` folder as your **workspace root**.
-4. Start a fresh thread and type `/start`.
+Prefer to build from source? Clone the repo, run `node scripts/build-antigravity.mjs`, and open the generated `antigravity/` folder instead.
 
 #### Method 2: Global Installation
 If you want APODICTIC available globally across all of your Antigravity workspaces.
 
-1. Clone this repo and build the native target:
-
-```bash
-node scripts/build-antigravity.mjs
-```
+1. Download and unzip **`apodictic-antigravity.zip`** from the [latest release](https://github.com/anotherpanacea-eng/apodictic/releases/latest) (or clone the repo and run `node scripts/build-antigravity.mjs`).
 
 2. Symlink the generated plugin into your global Antigravity data directory:
 
@@ -74,20 +66,16 @@ cp -r antigravity/.agents/workflows/* /path/to/your/workspace/.agents/workflows/
 ```
 4. Start a fresh thread and type `/start`.
 
-### Codex (legacy build path)
+### Codex
 
-1. Clone this repo.
-2. From the repo root, run:
-
-```bash
-node scripts/build-codex.mjs
-```
-
-3. Open the generated `codex/` folder as your Codex workspace root.
-4. In Codex, open the Plugins view and install `APODICTIC` from the local marketplace.
-5. Start a fresh thread and run `apodictic-start`.
+1. Download **`apodictic-codex-marketplace.zip`** from the [latest release](https://github.com/anotherpanacea-eng/apodictic/releases/latest) and unzip it. (No clone or build step — the workspace is prebuilt.)
+2. Open the unzipped `codex/` folder as your Codex workspace root.
+3. In Codex, open the Plugins view and install `APODICTIC` from the local marketplace.
+4. Start a fresh thread and run `apodictic-start`.
 
 If APODICTIC does not appear, the usual cause is opening the wrong folder. Codex must be opened on the generated `codex/` directory, not the repo root.
+
+Prefer to build from source? Clone the repo, run `node scripts/build-codex.mjs`, and open the generated `codex/` folder instead.
 
 ### Claude Code / Cowork (legacy host flow)
 

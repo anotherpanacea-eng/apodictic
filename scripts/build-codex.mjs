@@ -9,6 +9,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
 const checkOnly = process.argv.includes("--check");
+// --self-check builds + validates in a temp dir (incl. the archive) without
+// persisting or diffing against a committed tree (the host trees are no longer
+// committed; CI publishes them as release assets — GitHub #52).
+const selfCheck = process.argv.includes("--self-check");
 
 const registryPath = path.join(repoRoot, "release-registry.json");
 if (!fs.existsSync(registryPath)) {
@@ -591,6 +595,13 @@ function main() {
       canonicalVersion,
       tempArchivePath
     );
+
+    if (selfCheck) {
+      // validateGeneratedWorkspace already built + verified the workspace and
+      // archive in temp; nothing to persist or compare.
+      console.log("build-codex self-check passed.");
+      return;
+    }
 
     if (checkOnly) {
       if (!fs.existsSync(workspaceDir)) {

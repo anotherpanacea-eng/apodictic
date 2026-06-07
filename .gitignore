@@ -2,8 +2,15 @@
 *.bak
 *.tmp
 .codex-build-tmp*/
+.antigravity-build-tmp*/
 dist/
 /apodictic.plugin
+
+# Generated host workspaces — built from plugins/ and published as release
+# assets by .github/workflows/release.yml (decision: GitHub #52, Option B).
+# Regenerate locally with: node scripts/build-codex.mjs / build-antigravity.mjs
+/codex/
+/antigravity/
 Outputs/
 issues/
 **/.apodictic_run/
