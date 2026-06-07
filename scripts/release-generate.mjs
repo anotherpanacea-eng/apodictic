@@ -53,10 +53,6 @@ function updateJsonFile(filePath, mutator, changedFiles) {
   writeIfChanged(filePath, next, changedFiles);
 }
 
-function q(value) {
-  return `'${value.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
-}
-
 function buildAuditStats() {
   const byName = new Map(categories.map((category) => [category.name, category]));
   const universal = byName.get("Universal")?.items.length ?? 0;
@@ -136,97 +132,6 @@ function buildPluginDescription(stats) {
   ].join(" ");
 }
 
-function buildSpecializedAuditsTs() {
-  const lines = [];
-  lines.push("const SPECIALIZED_AUDITS = [");
-  categories.forEach((category, categoryIndex) => {
-    lines.push("  {");
-    lines.push(`    category: ${q(category.name)},`);
-    lines.push("    items: [");
-    category.items.forEach((item, itemIndex) => {
-      lines.push("      {");
-      lines.push(`        name: ${q(item.name)},`);
-      const filesLiteral = item.files.map((file) => q(file)).join(", ");
-      lines.push(`        files: [${filesLiteral}]`);
-      lines.push(itemIndex === category.items.length - 1 ? "      }" : "      },");
-    });
-    lines.push("    ]");
-    lines.push(categoryIndex === categories.length - 1 ? "  }" : "  },");
-  });
-  lines.push("];");
-  return lines.join("\n");
-}
-
-function buildPassArrayTs(constName, items) {
-  if (!items || items.length === 0) return `const ${constName} = [];`;
-  const lines = [`const ${constName} = [`];
-  items.forEach((item, i) => {
-    const filesLiteral = item.files.map((f) => q(f)).join(", ");
-    const comma = i < items.length - 1 ? "," : "";
-    lines.push(`  { name: ${q(item.name)}, files: [${filesLiteral}] }${comma}`);
-  });
-  lines.push("];");
-  return lines.join("\n");
-}
-
-function buildAllPassConstantsTs() {
-  if (!passes) return null;
-  const blocks = [];
-  const mapping = [
-    ["BASE_PASSES", passes.base],
-    ["CORE_DE_PASSES", passes.coreDe],
-    ["FULL_DE_PASSES", passes.fullDe],
-    ["FULL_ONLY_SYNTHESIS_PASSES", passes.fullOnlySynthesis],
-    ["COMMON_SYNTHESIS_PASSES", passes.commonSynthesis],
-    ["SUBMISSION_TRIAGE_PASSES", passes.submissionTriage],
-    ["SUBMISSION_READINESS_ANALYTICAL_PASSES", passes.submissionReadinessAnalytical],
-    ["SUBMISSION_READINESS_SYNTHESIS_PASSES", passes.submissionReadinessSynthesis],
-    ["SUBMISSION_READINESS_VERDICT_PASSES", passes.submissionReadinessVerdict],
-  ];
-  for (const [name, items] of mapping) {
-    if (items) {
-      blocks.push(buildPassArrayTs(name, items));
-    }
-  }
-  return blocks.join("\n\n");
-}
-
-function buildMacroBlocksTs() {
-  if (!macroBlocks) return null;
-  const lines = ["const MACRO_BLOCKS = ["];
-  macroBlocks.forEach((block, i) => {
-    const passesLiteral = block.passes.map((p) => q(p)).join(", ");
-    const comma = i < macroBlocks.length - 1 ? "," : "";
-    lines.push(`  { question: ${q(block.question)}, passes: [${passesLiteral}] }${comma}`);
-  });
-  lines.push("] as const;");
-  return lines.join("\n");
-}
-
-function buildResearchModesTs() {
-  if (!researchModes) return null;
-  const lines = ["const RESEARCH_MODES = ["];
-  researchModes.forEach((mode, i) => {
-    const filesLiteral = mode.files.map((f) => q(f)).join(", ");
-    const comma = i < researchModes.length - 1 ? "," : "";
-    lines.push(`  { name: ${q(mode.name)}, files: [${filesLiteral}], description: ${q(mode.description)} }${comma}`);
-  });
-  lines.push("];");
-  return lines.join("\n");
-}
-
-function buildArgumentCompanionsTs() {
-  if (!argumentCompanions) return null;
-  const lines = ["const ARGUMENT_COMPANIONS = ["];
-  argumentCompanions.forEach((comp, i) => {
-    const filesLiteral = comp.files.map((f) => q(f)).join(", ");
-    const comma = i < argumentCompanions.length - 1 ? "," : "";
-    lines.push(`  { name: ${q(comp.name)}, files: [${filesLiteral}], description: ${q(comp.description)} }${comma}`);
-  });
-  lines.push("];");
-  return lines.join("\n");
-}
-
 function buildCommandAuditList() {
   return categories
     .map((category) => {
@@ -261,10 +166,6 @@ function buildRootReadmePlotLine() {
 
 function buildRootReadmeAuditsLine(stats) {
   return `- **${stats.available} available audits** (${stats.universal} universal, ${stats.craft} craft, ${stats.genre} genre, ${stats.tag} tag) including scene function, shelf positioning, emotional craft, AI-prose detection, worldbuilding integration, force architecture, reception risk, and intimacy/consent coverage`;
-}
-
-function buildLandingPageSpecializedAuditBody(stats) {
-  return `${stats.available} audits across universal, craft, genre, and tag categories. Emotional arc, tension mechanics, genre conventions, worldbuilding, force architecture, compression, reception risk, and more.`;
 }
 
 function buildGroupedCommandList() {
@@ -308,7 +209,6 @@ function main() {
   validateRegistry(auditStats);
 
   const pluginJsonPath = abs(paths.pluginJson);
-  const pluginVersion = JSON.parse(mustRead(pluginJsonPath)).version;
   const pluginDescription = buildPluginDescription(auditStats);
 
   updateJsonFile(pluginJsonPath, (data) => {
@@ -386,69 +286,9 @@ function main() {
     writeIfChanged(auditCommandPath, content, changedFiles);
   }
 
-  {
-    const appTsxPath = abs(paths.appTsx);
-    if (!fs.existsSync(appTsxPath)) {
-      console.warn(`WARN: ${paths.appTsx} absent (APODICTIC-Gemini sibling not checked out) — skipping App.tsx generation. The public release path is not coupled to the private sibling.`);
-    } else {
-    let content = mustRead(appTsxPath);
-    content = replaceOrThrow(
-      content,
-      /const SPECIALIZED_AUDITS = \[[\s\S]*?\n\];/,
-      buildSpecializedAuditsTs(),
-      "App.tsx SPECIALIZED_AUDITS"
-    );
-    content = replaceOrThrow(
-      content,
-      /Based on APODICTIC plugin v\d+\.\d+\.\d+/,
-      `Based on APODICTIC plugin v${pluginVersion}`,
-      "App.tsx About version"
-    );
-
-    // Pass arrays (all 9 constants in one block)
-    if (passes) {
-      const passConstants = buildAllPassConstantsTs();
-      content = replaceOrThrow(
-        content,
-        /const BASE_PASSES = \[[\s\S]*?\nconst SUBMISSION_READINESS_VERDICT_PASSES = \[[\s\S]*?\n\];/,
-        passConstants,
-        "App.tsx pass constants"
-      );
-    }
-
-    // Macro blocks
-    if (macroBlocks) {
-      content = replaceOrThrow(
-        content,
-        /const MACRO_BLOCKS = \[[\s\S]*?\n\] as const;/,
-        buildMacroBlocksTs(),
-        "App.tsx MACRO_BLOCKS"
-      );
-    }
-
-    // Research modes
-    if (researchModes) {
-      content = replaceOrThrow(
-        content,
-        /const RESEARCH_MODES = \[[\s\S]*?\n\];/,
-        buildResearchModesTs(),
-        "App.tsx RESEARCH_MODES"
-      );
-    }
-
-    // Argument companions
-    if (argumentCompanions) {
-      content = replaceOrThrow(
-        content,
-        /const ARGUMENT_COMPANIONS = \[[\s\S]*?\n\];/,
-        buildArgumentCompanionsTs(),
-        "App.tsx ARGUMENT_COMPANIONS"
-      );
-    }
-
-    writeIfChanged(appTsxPath, content, changedFiles);
-    }
-  }
+  // NOTE: App.tsx / LandingPage.tsx generation moved to APODICTIC-Gemini, which
+  // now PULLS this registry (vendored as apodictic-registry.json) and runs its own
+  // scripts/generate-ui.mjs. apodictic no longer reaches into the private sibling.
 
   if (commands && Array.isArray(commands)) {
     const groupedCommandList = buildGroupedCommandList();
@@ -478,18 +318,6 @@ function main() {
         writeIfChanged(pluginReadmePath, content, changedFiles);
       }
     }
-  }
-
-  if (paths.landingPageTsx && fs.existsSync(abs(paths.landingPageTsx))) {
-    const landingPagePath = abs(paths.landingPageTsx);
-    let content = mustRead(landingPagePath);
-    content = replaceOrThrow(
-      content,
-      /\d+ audits across universal, craft, genre, and tag categories\. Emotional arc, tension mechanics, genre conventions, worldbuilding, force architecture, compression, reception risk, and more\./,
-      buildLandingPageSpecializedAuditBody(auditStats),
-      "LandingPage specialized audits card"
-    );
-    writeIfChanged(landingPagePath, content, changedFiles);
   }
 
   if (checkOnly) {
