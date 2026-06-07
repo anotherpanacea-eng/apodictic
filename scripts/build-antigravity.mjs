@@ -9,6 +9,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
 const checkOnly = process.argv.includes("--check");
+// --self-check builds + validates in a temp dir without persisting or diffing
+// against a committed tree (the host trees are no longer committed; CI publishes
+// them as release assets — GitHub #52). Used by release-verify and CI.
+const selfCheck = process.argv.includes("--self-check");
 
 const registryPath = path.join(repoRoot, "release-registry.json");
 if (!fs.existsSync(registryPath)) {
@@ -54,6 +58,16 @@ function writeFile(filePath, content) {
 
 function removePath(targetPath) {
   fs.rmSync(targetPath, { recursive: true, force: true });
+}
+
+function createArchive(workspaceRoot, archivePath) {
+  ensureDir(path.dirname(archivePath));
+  removePath(archivePath); // zip appends to an existing archive otherwise
+  execFileSync(
+    "zip",
+    ["-X", "-rq", archivePath, "README.md", "NON_PARITY_NOTES.md", ".agents", "plugins", "-x", "*/.DS_Store"],
+    { cwd: workspaceRoot }
+  );
 }
 
 function walkFiles(dirPath) {
@@ -222,6 +236,7 @@ function main() {
   const canonicalVersion = canonicalManifest.version;
   
   const workspaceDir = abs(antigravity.workspaceDir);
+  const archivePath = antigravity.distArchive ? abs(antigravity.distArchive) : null;
   const tempRoot = fs.mkdtempSync(path.join(repoRoot, ".antigravity-build-tmp-"));
   const tempWorkspace = path.join(tempRoot, "antigravity");
   const tempPluginDir = path.join(tempWorkspace, "plugins", "apodictic");
@@ -287,6 +302,18 @@ This file tracks the architectural alignment between the original APODICTIC fram
 `;
     writeFile(path.join(tempWorkspace, "NON_PARITY_NOTES.md"), parityNotes);
 
+    if (selfCheck) {
+      // Validate the build (and the archive step) in temp; do not persist or
+      // compare against a committed tree.
+      if (archivePath) {
+        const tempArchive = path.join(tempRoot, path.basename(archivePath));
+        createArchive(tempWorkspace, tempArchive);
+        mustExist(tempArchive);
+      }
+      console.log("build-antigravity self-check passed.");
+      return;
+    }
+
     if (checkOnly) {
       if (!fs.existsSync(workspaceDir)) {
         throw new Error("Generated antigravity workspace is missing. Run scripts/build-antigravity.mjs.");
@@ -306,6 +333,11 @@ This file tracks the architectural alignment between the original APODICTIC fram
     removePath(workspaceDir);
     fs.renameSync(tempWorkspace, workspaceDir);
     console.log(`Generated workspace: ${path.relative(repoRoot, workspaceDir)}`);
+
+    if (archivePath) {
+      createArchive(workspaceDir, archivePath);
+      console.log(`Created archive: ${path.relative(repoRoot, archivePath)}`);
+    }
 
   } finally {
     removePath(tempRoot);

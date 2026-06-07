@@ -32,9 +32,11 @@ The copyright holder (Joshua A. Miller, PhD) retains the right to use contributi
 
 ## Changelog Policy
 
-All changes that alter diagnostic behavior, output format, thresholds, flag definitions, pass logic, or the user-facing contract must be documented in `changelog.md`. Bug fixes, typo corrections, and internal refactoring that don't change behavior are encouraged but not required.
+All changes that alter diagnostic behavior, output format, thresholds, flag definitions, pass logic, or the user-facing contract must be documented. Bug fixes, typo corrections, and internal refactoring that don't change behavior are encouraged but not required.
 
-**Entry format:** `## vX.Y.Z - YYYY-MM-DD` with `### Changed`, `### Added`, or `### Fixed` subcategories. Entries should be specific enough to grep — name the file, flag, pass, or threshold that changed.
+**Don't edit `changelog.md` directly.** Maintainer-agent changes add one fragment per change under `changelog.d/<slug>.md` (see `changelog.d/README.md`); the release pipeline assembles the fragments into a dated `## vX.Y.Z` section. This keeps parallel branches from colliding on the shared changelog.
+
+**Fragment format:** a single freeform thematic `### ` header (the house style — e.g. `### Validators`, `### Workflows — Retcon Planning`, not bare `### Added/Changed/Fixed`) followed by prose. Entries should be specific enough to grep — name the file, flag, pass, or threshold that changed.
 
 **Framing:** The changelog is a public document. Entries should describe what changed and how it affects users, not why changes were made.
 

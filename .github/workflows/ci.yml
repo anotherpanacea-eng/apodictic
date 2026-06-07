@@ -30,6 +30,10 @@ jobs:
         with:
           python-version: "3.12"
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
       - name: Byte-compile canonical Python (syntax gate)
         run: python -m compileall -q plugins scripts
 
@@ -50,3 +54,17 @@ jobs:
       # the canonical worked examples + run folder), not just their own fixtures.
       - name: Validator self-tests + canonical-framework gate
         run: bash scripts/validate.sh --check-all
+
+      # Generator + parity gates. The host trees are no longer committed
+      # (GitHub #52), so parity is verified by regenerating fresh and
+      # self-checking rather than diffing against committed copies.
+      - name: Changelog fragments parse
+        run: node scripts/assemble-changelog.mjs --check
+
+      - name: Registry-derived docs are up to date
+        run: node scripts/release-generate.mjs --check
+
+      - name: Codex + Antigravity builds self-check
+        run: |
+          node scripts/build-codex.mjs --self-check
+          node scripts/build-antigravity.mjs --self-check
