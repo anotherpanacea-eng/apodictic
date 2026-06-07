@@ -5,6 +5,38 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.3.0 - 2026-06-07
+
+A revision-planning track, two new workflows, a thesis-driven pre-draft pathway, and mid-run de-escalation — all additive on top of v2.2.0, no command/API break. **23 → 35 self-testable validators** (5 new + self-test coverage for 7 pre-existing pure-utility validators).
+
+### Workflows — Retcon Planning (revision-coaching track)
+
+A post-diagnostic, returning-author track in the revision-coach skill (reached via `apodictic-coach`, Retcon Planning mode) for writers who *discover* a late structural decision — a new ending, a reframed controlling idea, a relocated reveal — and must account for the **setup debt** it incurs against the earlier draft. Two doors into one machine: Door B (latent reinterpretation governed by a **commitment budget** — observed canon fixed > exposed consequences costly > unused latent cheap; **dramatic** retcon improves meaning, **evidential** retcon destroys fair play) and Door A (run reveal-economy *backward*, payoff → required setup). Strictly the **planning** half (the Firewall): the model produces a retcon plan — where setup must go, what it would cost, what it must not break — and the author writes the connective tissue; it never inserts foreshadowing or drafts a recontextualizing beat. Increment 1 + **F1** ranked Door-B abduction (the Selection step), **F2** the State Card as a standalone cross-revision rolling artifact, **F3** Reveal-Economy (Pass 8) source provenance. New `retcon-plan` and `state-card-diff` validators. Design: [`docs/retcon-planning.md`](../../../docs/retcon-planning.md).
+
+### Workflows — Legal Risk Register
+
+A core-editor content-analysis register for memoir, autofiction, and nonfiction that portrays **identifiable real people**: flags **defamation**, **privacy / disclosure**, and **rights-clearance** exposure with a severity and an escalation trigger, in a `[Project]_Legal_Risk_Register_[runlabel].md` artifact of `apodictic.legal_risk.v1` blocks. Firewall — **flag, don't practice law**: it names the *exposure* and the *trigger* and routes high-severity items to counsel; it never adjudicates ("not defamatory," "fair use," "no liability"). Two checks mechanize it — a required not-a-lawyer disclaimer (`legal-risk` L3) and **legal-advice drift** detection when a concern/disposition reads like a legal conclusion (W1); a companion `scene-ethics` validator covers consent/depiction handling (pending consent treated as unresolved for as-is depictions). New `legal-risk` and `scene-ethics` validators. Design: [`docs/legal-risk-register.md`](../../../docs/legal-risk-register.md).
+
+### Workflows — Nonfiction Pre-Draft Pathway
+
+A thesis-driven pre-writing track (pre-writing-pathway skill) for argument-shaped writers: plan the **spine** of the argument before a draft exists and **seed the shared `Argument_State.md`** so the Nonfiction Argument Engine (Dialectical Clarity + companions) consumes one contract instead of rebuilding the argument once a draft arrives. Increment 1 (argument spine — thesis, claim ladder, strongest opposing view), 2 (source/evidence map, seeds §3), 3 (warrant pre-check, seeds §4), 4 (scene-ethics plan). Inherits the pre-writing Firewall: structures the writer's argument through questions; never invents claims, fabricates evidence, or writes prose. New `argument-spine` validator. Design: [`docs/nonfiction-pre-draft.md`](../../../docs/nonfiction-pre-draft.md).
+
+### Infrastructure — Adaptive Mid-Run Mode Escalation: de-escalation
+
+Closes the roadmap open question left by the v2.2.0 escalation check: `escalation-check` now also **de-escalates** (expensive → cheap mode) when Tier 1 reveals the manuscript is simpler than the preflight estimate, saving Tier-2 tokens on an over-provisioned mode. Strictly conservative — the "clearly simple" band (POV ≤ 2, linear, belief ≤ 2, orientation ≤ 1, Tier-1 findings ≤ 8) sits below the escalation thresholds with a neutral no-thrash zone, a single absent/malformed signal blocks de-escalation, and it never drops below `sequential` (the salience floor). The asymmetry is deliberate: wrongly de-escalating a complex manuscript risks cross-pass anchoring, worse than wasted tokens. Advisory by default; `--strict` exits non-zero (symmetric with escalation). Extends `escalation-check` (no new validator). Design: [`docs/adaptive-mode-escalation.md`](../../../docs/adaptive-mode-escalation.md).
+
+### Validators
+
+23 → **35** self-testable validators. Five new — `retcon-plan`, `state-card-diff`, `legal-risk`, `scene-ethics`, `argument-spine` — plus self-test coverage closing the long-standing gap for seven pre-existing pure-utility validators (`contract-hash`, `contract-check`, `ledger-check`, `artifact-names`, `synthesis-sections`, `tone-check`, `state-lines`). `--check-all` extended to gate the run-folder and letter/ledger validator families against canonical fixtures. `validate.sh --self-test-all`: **35/35**; `--check-all` and `release-verify` green; `codex/` + `antigravity/` mirrors regenerated.
+
+### Planning — Horizon Capacities scan
+
+A roadmap scan of unplanned capabilities with reviewed design specs for the viable candidates (Manuscript-Structure Visualizations, Annotated-Manuscript Deliverable, Beta-Reader Instrument Generation, Promise-Contract Fidelity, Reader-Persona Simulation, Draft-over-Draft Structural Regression, Auto-Derived Continuity Bible, Content-Advisory Derivation, Cross-Manuscript Author Voice Fingerprint, Uncertainty-Resolution Intake Interview) plus one reviewed-and-declined (Positioning-Risk Lens). **Design specs only — none built this release**; see `ROADMAP.md` → Horizon Capacities and `docs/`.
+
+### Repository
+
+Workflow standardization kit (AGENTS.md, CI workflow running `validate.sh --check-all`, issue + PR templates) and an Argument Benchmark ground-truth corpus expansion (round 2).
+
 ## v2.2.0 - 2026-06-03
 
 Operator modes, a returning-author workflow, mid-run infrastructure, and finding-lifecycle revision follow-through — all additive on top of v2.1.0, no command/API break. **19 → 23 self-testable validators.**
