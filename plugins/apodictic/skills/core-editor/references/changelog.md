@@ -5,6 +5,45 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.3.1 - 2026-06-07
+
+### Tooling — decoupled web-app UI generation
+
+`release-generate.mjs` no longer reaches into the private APODICTIC-Gemini sibling
+to write its `App.tsx` / `LandingPage.tsx`. That generation now lives in the app,
+which **pulls** this repo's `release-registry.json` (vendored alongside the plugin)
+and runs its own generator. apodictic's generator produces only its own docs;
+removed the now-dead TS-emit helpers (−175 lines). Fixes the silent drift that
+occurred whenever the sibling wasn't checked out during a release.
+
+### Distribution & changelog tooling
+
+The generated `codex/` and `antigravity/` workspaces are **no longer committed** to
+the repo. They are built from the canonical `plugins/` source and published as
+**release assets** by a new `.github/workflows/release.yml` (triggered on `v*`
+tags): `apodictic-codex-marketplace.zip`, the new `apodictic-antigravity.zip`, and
+`apodictic.plugin`. Install is now download-and-open — no clone, no Node — with
+build-from-source still available. This removes the ×3 parity-churn multiplier
+that every release-touching change otherwise paid. (Decision: GitHub #52, Option B.)
+
+`release-verify.mjs` and CI now `--self-check` the host builds (regenerate in a temp
+dir and validate internal consistency) instead of diffing against committed trees,
+and CI gained generator/parity gates (`release-generate --check`, both build
+`--self-check`s, `assemble-changelog --check`).
+
+The changelog moves to a **`changelog.d/` fragment directory** at the repo root:
+each change drops one `### `-headed fragment instead of editing the shared
+changelog, and `scripts/assemble-changelog.mjs` cuts them into a dated section at
+release time (wired into `release.sh` after the version bump). (GitHub #51.)
+
+### Registry — research modes 4 → 6
+
+`release-registry.json`'s `researchModes` array was missing two of the six modes it
+claims in `counts.researchModes` and lists in `commands/research.md`: **Citation
+Verification** (`citation-verifier`) and **Field Reconnaissance** (`field-recon`).
+Added both (their backing reference docs already shipped), so the array matches the
+count and the registry-derived web-app UI surfaces all six research modes.
+
 ## v2.3.0 - 2026-06-07
 
 A revision-planning track, two new workflows, a thesis-driven pre-draft pathway, and mid-run de-escalation — all additive on top of v2.2.0, no command/API break. **23 → 35 self-testable validators** (5 new + self-test coverage for 7 pre-existing pure-utility validators).
