@@ -93,7 +93,7 @@ description: >
   or any request for a focused manuscript audit beyond the core development
   edit passes. Also triggers on "list audits," "what audits are available,"
   or "help audits."
-version: 2.3.0
+version: 2.3.1
 ---
 
 # Specialized Audits & Research Modes
