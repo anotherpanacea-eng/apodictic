@@ -21,9 +21,11 @@ spec  →  review  →  write  →  review  →  fix  →  merge
    creep before writing starts.
 3. **Write.** One agent implements against the canonical source in `plugins/`
    (the Claude plugin). Never hand-edit `codex/` or `antigravity/` — those are
-   generated (see "Platform parity").
+   generated and no longer committed (see "Platform parity"). Don't edit the
+   changelog directly either — add a `changelog.d/<slug>.md` fragment (see
+   "Changelog").
 4. **Code review.** The other agent reads the diff and flags issues.
-5. **Fix.** The writing agent applies fixes and regenerates parity.
+5. **Fix.** The writing agent applies fixes.
 6. **Merge.** Via PR + merge commit (see "PRs and merges").
 
 ## Where work comes from: roadmap, briefs, and Issues
@@ -50,10 +52,25 @@ them, not only in a comment the review might skim past.
 ## Platform parity
 
 `plugins/` is canonical (the Claude plugin). `codex/` and `antigravity/` are
-**generated** by `node scripts/build-codex.mjs` — do not edit them by hand.
-After any change to `plugins/`, regenerate parity and commit the result in the
-same PR so all three platforms stay in sync. CI does not yet verify parity;
-until it does, regeneration is a reviewer checklist item (see the PR template).
+**generated** by `node scripts/build-codex.mjs` / `build-antigravity.mjs` — do not
+edit them by hand. As of GitHub #52 (Option B) the generated trees are **no longer
+committed**: they are `.gitignore`d and published as release assets
+(`apodictic-codex-marketplace.zip`, `apodictic-antigravity.zip`, `apodictic.plugin`)
+by `.github/workflows/release.yml` on each `v*` tag. So feature PRs touch only
+`plugins/` (and `changelog.d/`) — there is no parity tree to regenerate and commit.
+
+CI verifies the generators instead of committed copies: `release-generate.mjs
+--check` (registry-derived docs) and `build-codex.mjs --self-check` /
+`build-antigravity.mjs --self-check` (regenerate in temp + validate). `release.sh`
+runs the same self-checks via `release-verify.mjs`.
+
+## Changelog
+
+Don't edit `changelog.md` directly. Add one `changelog.d/<slug>.md` fragment per
+change — a single freeform thematic `### ` section. `scripts/release.sh` assembles
+the fragments into a dated `## vX.Y.Z` section at release time (and deletes them);
+`scripts/assemble-changelog.mjs --check` gates fragment validity in CI. See
+`changelog.d/README.md`.
 
 ## PRs and merges
 
@@ -80,11 +97,14 @@ PR.
 
 ## CI
 
-`.github/workflows/ci.yml` byte-compiles `plugins/` + `scripts/` (syntax gate)
-and validates that the plugin / marketplace / release-registry manifests parse.
-There is no pytest suite — the plugin is prompt/skill-based; the `evals/`
-fixtures are the behavioral ground-truth track. Adding a smoke test is a roadmap
-follow-up.
+`.github/workflows/ci.yml` byte-compiles `plugins/` + `scripts/` (syntax gate),
+validates that the plugin / marketplace / release-registry manifests parse, runs
+the validator self-tests + canonical-framework gate (`validate.sh --check-all`),
+and runs the generator/parity gates (`assemble-changelog.mjs --check`,
+`release-generate.mjs --check`, both build `--self-check`s). There is no pytest
+suite — the plugin is prompt/skill-based; the `evals/` fixtures are the behavioral
+ground-truth track. `.github/workflows/release.yml` builds + publishes the per-host
+bundles on `v*` tags.
 
 ## Co-authorship
 

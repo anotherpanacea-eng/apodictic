@@ -16,7 +16,9 @@ the reviewer checks this diff against.
 Proof of correctness a reviewer can read against the diff:
 - `python -m compileall plugins scripts` → clean
 - manifests parse (CI does this)
-- `node scripts/build-codex.mjs` re-run + parity committed (if `plugins/` changed)
+- changelog entry added as a `changelog.d/<slug>.md` fragment (not a changelog edit)
+- `node scripts/build-codex.mjs --self-check` + `build-antigravity.mjs --self-check`
+  pass if `plugins/` changed (the generated trees are not committed — GitHub #52)
 - `git diff --check` clean
 -->
 

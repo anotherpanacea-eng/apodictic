@@ -77,6 +77,7 @@
   },
   "antigravity": {
     "workspaceDir": "antigravity",
+    "distArchive": "dist/apodictic-antigravity.zip",
     "displayName": "APODICTIC",
     "category": "Productivity",
     "wrapperPrefix": "apodictic",

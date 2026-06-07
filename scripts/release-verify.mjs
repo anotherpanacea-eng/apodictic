@@ -95,24 +95,27 @@ function main() {
     errors.push("Generated files are stale. Run scripts/release-generate.mjs.");
   }
 
+  // Host trees are no longer committed (GitHub #52) — regenerate fresh and
+  // validate internal consistency (incl. the release archive) instead of
+  // diffing against a committed copy.
   try {
     execFileSync(
       process.execPath,
-      [path.join(repoRoot, "scripts/build-codex.mjs"), "--check"],
+      [path.join(repoRoot, "scripts/build-codex.mjs"), "--self-check"],
       { stdio: "inherit" }
     );
   } catch {
-    errors.push("Codex workspace or package inputs are stale. Run scripts/build-codex.mjs.");
+    errors.push("Codex workspace failed self-check. Run scripts/build-codex.mjs.");
   }
 
   try {
     execFileSync(
       process.execPath,
-      [path.join(repoRoot, "scripts/build-antigravity.mjs"), "--check"],
+      [path.join(repoRoot, "scripts/build-antigravity.mjs"), "--self-check"],
       { stdio: "inherit" }
     );
   } catch {
-    errors.push("Antigravity workspace is stale. Run scripts/build-antigravity.mjs.");
+    errors.push("Antigravity workspace failed self-check. Run scripts/build-antigravity.mjs.");
   }
 
   // 1.5) Aggregate real-file gate: self-tests + registry-vs-§4e + structured-findings
