@@ -427,9 +427,17 @@
       <div class="card-passes">
         <span class="pass-badge tier2">Pass 5: Character Audit</span>
         <span class="pass-badge tier2">Pass 7: POV & Voice</span>
-        <span class="pass-badge tier2" style="opacity:0.6;">+Pass 4 if emotionally driven</span>
       </div>
       <div class="macro-detail">Psychology engine (Wound→Lie→Want→Need→Fear), agency quotient, arc tracking, voice distinctiveness, POV distribution.</div>
+    </div>
+
+    <div class="macro-card" onclick="toggleMacro(this)">
+      <div class="card-title">Emotional Dynamics</div>
+      <div class="card-question">"Does it land emotionally?"</div>
+      <div class="card-passes">
+        <span class="pass-badge tier2">Pass 4: Emotional Value</span>
+      </div>
+      <div class="macro-detail">Emotional value charge per scene, earned vs. unearned beats, sentiment trajectory, and modulation of intensity across the arc.</div>
     </div>
 
     <div class="macro-card" onclick="toggleMacro(this)">
@@ -598,11 +606,11 @@
 
 <!-- PLOT ARCHITECTURE -->
 <section>
-  <h2>Plot Architecture — 48 Spines</h2>
+  <h2>Plot Architecture — 50 Spines</h2>
   <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:1rem;">Spine diagnosis, selection coaching, and structural triage. Available via <code>/plot-coach</code> or recommended during diagnosis.</p>
 
   <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:0.5rem; font-size:0.8rem;">
-    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Linear/Teleological</strong> (5): Save the Cat, Three-Act, Fichtean, Freytag, Hero's Journey</div>
+    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Linear/Teleological</strong> (6): Save the Cat, Three-Act, Fichtean Curve, Freytag, Hero's Journey, Kishōtenketsu</div>
     <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Circular/Recursive</strong> (4): Spiral, Fugue, Loop, Braided</div>
     <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Information/Knowledge</strong> (5): Mystery, Howcatchem, Revelatory, Conspiracy, Puzzle Box</div>
     <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Relationship/Erotic</strong> (5): Courtship, Seduction, Captivity, Training, Betrayal-of-Self</div>
@@ -611,14 +619,14 @@
     <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Time/Causality</strong> (3): Nonlinear, Reverse Chronology, Two-Handed</div>
     <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Existential/Identity</strong> (5): Bildungsroman, Doppelgänger, Transformation, Aftermath, Prophecy</div>
     <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Tonal/Hybrid</strong> (4): Thriller, Psych Horror, Faustian, Rashomon</div>
-    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Rhythm/Intensity</strong> (3): Wave/Pulse, Lullaby, Pressure Cooker</div>
+    <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Rhythm/Intensity</strong> (4): Wave/Pulse, Lullaby, Pressure Cooker, Jo-ha-kyū</div>
     <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Format/Frame</strong> (4): Episodic, Clinical Case File, Nested Dolls, Talisman</div>
     <div style="padding:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:4px;"><strong>Transformation Extended</strong> (2): Heroine's Journey, Seven-Point</div>
   </div>
 </section>
 
 <footer>
-  <p><a href="https://github.com/anotherpanacea-eng/apodictic" style="color:inherit;">APODICTIC</a> Development Editor v1.0.2</p>
+  <p><a href="https://github.com/anotherpanacea-eng/apodictic" style="color:inherit;">APODICTIC</a> Development Editor v2.3.1</p>
   <p style="margin-top:0.25rem;">The author invents content. The system identifies structural problems and classes of solution.</p>
 </footer>
 
@@ -636,6 +644,15 @@ function toggleMacro(card) {
   document.querySelectorAll('.macro-detail').forEach(d => d.classList.remove('active'));
   if (!wasActive) detail.classList.add('active');
 }
+
+// Accessibility: make the click-to-expand cards keyboard-operable.
+document.querySelectorAll('.router-step[onclick], .macro-card[onclick]').forEach(el => {
+  el.setAttribute('role', 'button');
+  el.setAttribute('tabindex', '0');
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+  });
+});
 </script>
 
 </body>
