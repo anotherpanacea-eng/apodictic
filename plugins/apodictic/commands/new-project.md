@@ -24,7 +24,7 @@ Load `../skills/core-editor/SKILL.md`. Create the project scaffolding per `../sk
 
 7. **Register the project** so it is addressable by `/start <project>` and `/projects`:
    - Locate the **workspace root** — the nearest ancestor of the project root containing a `.apodictic/` directory (walk up, like locating `.git`). If none exists, create `.apodictic/registry.json` at a sensible workspace root (typically the project root's parent), initialized as `{"schema": "apodictic.project_registry.v1", "updated": "<date>", "projects": []}`. Never create it inside the plugin repo or plugin cache.
-   - Append an `apodictic.project_entry.v1`: a kebab-case `id` from the title, the `title`, the `root` (relative to the workspace root), `volume` (1 unless part of a series), and the denormalized `mode` / `next_action` copied from the new sidecar.
+   - Append an `apodictic.project_entry.v1`. Derive the `id` from the title by **slugifying**: lowercase, replace every run of non-`[a-z0-9]` characters with a single hyphen, then trim leading/trailing hyphens — so `id` always matches `^[a-z0-9][a-z0-9-]*$` (e.g. "My Novel!" → `my-novel`, "The Wolves (Vol. 2)" → `the-wolves-vol-2`). If the slug collides with an existing `id`, append `-2`, `-3`, … Then add the `title`, the `root` (relative to the workspace root), `volume` (1 unless part of a series), and the denormalized `mode` / `next_action` copied from the new sidecar.
    - Validate with `../scripts/validate.sh registry-check <workspace_root>`.
 
 8. **Report** what was created, where the project root lives, the folder structure, and what the next step is (typically: run `/develop-edit` or specific passes).

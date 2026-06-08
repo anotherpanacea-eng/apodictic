@@ -62,6 +62,7 @@ The sidecar's `next_action` field uses an enumerated dispatch key (not free text
 
 | `next_action` value | Loads | When set |
 |---|---|---|
+| `pre_writing` | `../skills/pre-writing-pathway/SKILL.md` | Pre-writing project (minimal sidecar); no diagnostic run yet — resume the pathway |
 | `run_passes` | `run-core.md` | After intake, before passes begin |
 | `run_synthesis` | `run-synthesis.md` | After all passes complete, before synthesis |
 | `run_spot_check` | `run-synthesis.md` | After synthesis, before evidence spot-check |

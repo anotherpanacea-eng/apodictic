@@ -9,7 +9,7 @@
 | In Progress | Planned | Done | Backlog |
 |-------------|---------|------|---------|
 | [Argument Benchmark Suite](#benchmark-suite) | [Harness Contracts v2](#harness-contracts-v2) | [**v2.2.0**](#v220--operator-modes-feedback-triage--revision-follow-through) | [Model-Capacity Exploitation](#model-capacity-exploitation) |
-| | [Project Addressability & State-Driven Routing](#project-addressability--state-driven-routing) | | |
+| [Project Addressability & State-Driven Routing](#project-addressability--state-driven-routing) | | | |
 | | [Multi-Party Intake](#multi-party-intake) | [**v2.1.0**](#v210--runner-governed-execution--finding-lifecycle-ids) | [Research / API Reliability Layer](#research--api-reliability-layer) |
 | | [Legal Risk Register](#legal-risk-register) | [**v2.0.0**](#v200--editorial-honesty--structural-integrity) | [Episode Cadence](#episode-cadence) |
 | | [Coaching Deepening](#coaching-deepening) | [v1.9.0](#v190--ai-prose-calibration-v20) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
@@ -246,7 +246,7 @@ The increments form a dependency graph (not a single line): **{1, 2} → 3 → 4
 
 **Increment 4 — Revision-loop-as-spine.** With a bound project and state-driven dispatch, the diagnose⇄coach⇄execute⇄verify loop becomes the resumable spine: a "what now?" dispatcher that reads `execution.finding_states` (locked→delivered→revised), the gate frontier, and `revision_progress`, then proposes the next leverage action instead of waiting for the writer to recall the right command. **Prerequisite:** the `revised` finding-state has no writer yet — it awaits a gated `revision_round` phase (`runner-governed-execution.md:141`), which must land before this loop ladder is reliable. This is the substrate the [Coaching Deepening](#coaching-deepening) items (Multi-Session Revision Arc Planning, Coaching History and Pattern Recognition) and [Collaborative Revision Coaching](#collaborative-revision-coaching) currently lack — none has a home for project identity or loop position.
 
-**Status:** Planned. Increment 1 has a written proposal; Increments 2–4 specced in [`docs/project-addressability.md`](docs/project-addressability.md).
+**Status:** In progress. Increments 1–2 **built** (router fork/overlay split; project registry + binding); Increments 3–4 specced in [`docs/project-addressability.md`](docs/project-addressability.md).
 
 ---
 
