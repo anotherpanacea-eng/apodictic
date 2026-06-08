@@ -16,6 +16,21 @@ It runs 11 analytical passes: reverse outline, reader experience mapping, struct
 
 **The Firewall:** APODICTIC diagnoses problems and identifies classes of solution. It never invents content — no new plot events, characters, dialogue, or imagery. You're the writer. It's the analyst.
 
+## See It in Action
+
+You don't have to install anything to see what APODICTIC produces. These open as live, rendered pages:
+
+- **[A sample editorial letter →](https://anotherpanacea-eng.github.io/apodictic/sample-editorial-letter.html)** — the main deliverable: a structural diagnosis with severity-ranked findings and classes of solution, prose left untouched. ([a second example](https://anotherpanacea-eng.github.io/apodictic/sample-editorial-letter-2.html))
+- **[A targeted audit letter →](https://anotherpanacea-eng.github.io/apodictic/sample-targeted-audit-letter.html)** — a focused single-audit deep dive.
+- **[Pre-writing output →](https://anotherpanacea-eng.github.io/apodictic/sample-pre-writing-output.html)** — what you get starting from an idea instead of a draft.
+
+Two interactive maps of the tool itself:
+
+- **[Overview dashboard →](https://anotherpanacea-eng.github.io/apodictic/plugins/apodictic/overview-dashboard.html)** — the whole system at a glance: the router, what each pass analyzes, genre modules, audits, and the 50 plot spines.
+- **[Route explorer →](https://anotherpanacea-eng.github.io/apodictic/plugins/apodictic/route-explorer.html)** — answer the same three questions `/start` asks and watch where it routes you.
+
+*(Tip: these are rendered links. Opening the raw `.html` files directly in the GitHub file browser shows source code, not the page.)*
+
 ## Beyond Full Edits
 
 APODICTIC isn't just for finished drafts.
@@ -106,7 +121,15 @@ Or `/plugin marketplace update apodictic` from inside Claude Code (CLI). For Cow
 
 ---
 
-Then type `/start` — it asks you three questions to figure out what you need.
+## Your First Five Minutes
+
+1. **Install** APODICTIC for your host (see above), then start a fresh session.
+2. **Type `/start`.** It asks three plain-language questions — what you have (an idea, fragments, a partial draft, a complete draft, or a series), what you want, and anything that should change how it works.
+3. **Give it your manuscript** when it asks — paste it, or point it at the file.
+4. **Read the editorial letter.** You get a structural diagnosis like the [samples above](#see-it-in-action): what's working, what isn't, ranked by severity, each with a class of solution. It never rewrites your prose.
+5. **Decide what's next.** The letter ends by pointing you onward — a focused `/audit`, revision planning with `/coach`, or a submission-readiness check with `/ready`.
+
+Not sure where to begin? Just `/start`. When in doubt, that's the front door.
 
 ## Commands
 
