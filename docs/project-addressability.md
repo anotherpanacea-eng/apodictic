@@ -4,12 +4,17 @@
 
 ## What exists, and the one thing that doesn't
 
-The durable half is already built and mature. Every project carries, at its root (`references/output-structure.md` §Folder Architecture):
+The durable half is already built and mature. A **Core-DE project** carries, at its root (`references/output-structure.md` §Folder Architecture):
 
 - `Diagnostic_State.md` + `Diagnostic_State.meta.json` (the machine-readable sidecar)
 - `SYNTHESIS.md`, `README.md` run-archive manifest, and the Pass-10-class rolling artifacts (`Timeline.md`, `Argument_State.md`, `Series_State.md`, `State_Card`)
 
-The sidecar already carries nearly everything routing needs: `project`, `mode`, `next_action.key` (an **enumerated dispatch key**), `execution.phase` (gate frontier) / `allowed_next` / `pending_gate` / `finding_states`, `revision_progress`, `triage_summary`, `control_questions`. And `commands/start.md` §Resume Target already maps `next_action` → workflow-to-load.
+The sidecar *schema* carries most of what routing needs: `project`, `mode`, `next_action.key` (an **enumerated dispatch key**), `execution.phase` (gate frontier) / `allowed_next` / `pending_gate` / `finding_states`, `revision_progress`, `triage_summary`, `control_questions`. And `commands/start.md` §Resume Target (`start.md:50-60`) already maps `next_action` → workflow-to-load.
+
+Two grounding caveats this spec must respect (both surfaced in review against the codebase):
+
+1. **Schema ≠ populated state.** `execution.phase`/`allowed_next`/`finding_states` are empty (`""`/`{}`) until a gate runs, and `execution.pending_gate` is omitted from the template entirely (it appears only in the schema, written once a gate is pending). So routing signal from the `execution` block is *absent* for any project that hasn't reached `run_synthesis` — the router must treat empty execution state as "pre-diagnosis," not as a bug.
+2. **Not every project has a sidecar.** `/new-project` and the sidecar machinery are Core-DE-centric. A **pre-writing-only project** (the pre-writing pathway writes `[Project]_Structural_Plan_[runlabel].md` and an MVP but does *not* initialize `Diagnostic_State.meta.json`) has no sidecar to derive a node from. Increment 2 must extend `/new-project` (or the pre-writing pathway) to drop a **minimal sidecar** (`project`, `mode`, `next_action: pre_writing`) at the project root so pre-writing projects are registrable and addressable. This is a named prerequisite, not a free derivation.
 
 The missing thing is **addressability**. `output-structure.md:24` defines `{project-root}` as "the active project output context" — but *active* is **ambient**: it is whatever folder the host process is sitting in. There is no name, no index, no selector. A writer with three books cannot say "work on *Wolves of November*"; the resume gate only sees the state that happens to be underfoot. This spec adds the pointer, then promotes the sidecar from resume-fallback to primary routing input.
 
@@ -31,11 +36,10 @@ The design mirrors Runner-Governed Execution's discipline: **the per-project sid
     {
       "id": "wolves-of-november",
       "title": "Wolves of November",
-      "root": "/abs/path/to/Wolves_Of_November",
+      "root": "Wolves_Of_November",
       "volume": 1,
-      "lifecycle_node": "revising",
       "mode": "diagnostic",
-      "next_action": "revision_round",
+      "next_action": { "key": "revision_round", "description": "" },
       "last_touched": "2026-06-07",
       "series_root": null
     }
@@ -43,11 +47,13 @@ The design mirrors Runner-Governed Execution's discipline: **the per-project sid
 }
 ```
 
-Every field except `id`/`title`/`root` is a denormalized copy of the project's sidecar — present for fast listing, authoritative only in the sidecar. `root` is the only registry-native fact (the pointer the ambient model can't otherwise recover).
+`id`/`title`/`root`/`series_root` are registry-native (the pointer + identity the ambient model can't otherwise recover). `mode`/`next_action`/`last_touched` are denormalized copies of the sidecar — present for fast listing, authoritative only in the sidecar, and copied in the sidecar's *shape* (`next_action` is the `{key, description}` object, not a bare string). The derived `lifecycle_node` (Increment 3) is **not** stored here — it is computed on read, so the validator has no stored copy to drift-check it against.
 
-### Where the registry lives (decision needed — see Open Questions)
+### Where the registry lives (decided)
 
-Project roots live outside the plugin repo, and the framework must **never** write to the plugin repo or installed plugin cache (`output-structure.md`, `SKILL.md §Project Integration`). The registry therefore needs a stable, user-owned home. Spec'd default: `$APODICTIC_HOME/registry.json`, `$APODICTIC_HOME` defaulting to `~/.apodictic/`. Rebuild path: scan a configured workspace root (or the parents of known roots) for `Diagnostic_State.meta.json` and fold each into the registry. The home-dir default is host-dependent; alternatives in Open Questions.
+Project roots live outside the plugin repo, and the framework must **never** write to the plugin repo or installed plugin cache (`output-structure.md:28`, `SKILL.md §Project Integration`). A `~/.apodictic/` home is rejected: in a sandboxed host `~` can resolve *into* the plugin sandbox the framework forbids writing to, so it is not a safe default. **Canonical home: a workspace-relative `.apodictic/registry.json`, discovered by walking up from the cwd** (the same way tools locate `.git`), with the workspace root — the nearest ancestor containing `.apodictic/` — as the well-defined **scan domain**. This is portable, shareable, survives host changes, and gives the rebuild a concrete place to look.
+
+Rebuild path (well-defined): scan the workspace root recursively for `Diagnostic_State.meta.json` **and** for `[Project]_Structural_Plan_*.md` (so pre-writing-only projects, which per the caveat above carry a minimal sidecar, are found), fold each into the registry. If no `.apodictic/` ancestor exists, the session is unbound and only cold-start intake is available until `/new-project` or an explicit `/start <path>` establishes a workspace.
 
 ### Binding verbs
 
@@ -65,30 +71,37 @@ Binding is the explicit act that converts the *ambient* "active project output c
 
 ## Increment 3 — State-driven dispatch
 
-### Lifecycle node: a derived enum, not a new stored field
+### Lifecycle node: derived, but not all from the sidecar alone
 
-The router's destination for a bound project is a **lifecycle node** *derived* from existing sidecar fields — nothing new is persisted:
+The router's destination for a bound project is a **lifecycle node**. The honest accounting (corrected in review): three nodes derive cleanly from sidecar fields, two lean on a filesystem check, and two need signal the sidecar does not store today and so carry a **named prerequisite**. The `Source` column makes this explicit.
 
-| Node | Derived when | Primary next action |
-|---|---|---|
-| `cold` | no bound project / fresh `/new-project` | run intake questionnaire |
-| `pre_writing` | Structural_Plan exists, no editorial letter / Findings Ledger | continue pre-writing pathway |
-| `diagnosed` | editorial letter exists, `revision_progress.steps_complete == 0` | offer `/coach` |
-| `revising` | `revision_progress.steps_complete > 0` OR `finding_states` has `delivered`/`revised` | resume revision loop (Increment 4) |
-| `execution` | `mode == "execution"` (active `active_scene_scope`) | re-entry delta check / keep working |
-| `submission` | goal=submit in scope OR Pass 11 in resolved set | submission-readiness / triage |
-| `blocked_gate` | `execution.pending_gate` present | resolve the pending gate first |
+| Node | Derived when | Source | Prerequisite |
+|---|---|---|---|
+| `cold` | no bound project / no sidecar | trivial | — |
+| `blocked_gate` | `execution.pending_gate` present | sidecar | — (precedence over all others, per `start.md:42`) |
+| `execution` | `mode == "execution"`, `active_scene_scope` set | sidecar | — |
+| `diagnosed` | `revision_progress.steps_complete == 0` AND an editorial letter exists in `runs/` | sidecar + **fs glob** | letter-existence is a glob, not a field |
+| `revising` | `revision_progress.steps_complete > 0` | sidecar | the `finding_states` half is **dropped** — see below |
+| `pre_writing` | minimal sidecar `next_action == "pre_writing"` | sidecar | **requires the minimal-sidecar prerequisite** (Increment 2 caveat); without it, pre-writing projects can't reach this node |
+| `submission` | a submission signal is live | **new signal** | `goal` is router input, never persisted, and there is no `submission` mode (`handoff-protocol.md:23`). Needs either a persisted `readiness[]` signal (the array exists in the template but is unused) or a Pass-11-artifact glob. **Open decision (OQ5).** |
 
-`blocked_gate` takes precedence over all others (it already does, per `start.md` §Resume Target "Resolve a pending gate first").
+Two corrections folded in from review:
+
+- **`revising` no longer keys on `finding_states: revised`.** That state is currently **unreachable** — `revised` "is reached at a revision round (no gated phase yet)" (`run_gate.py:48`; `runner-governed-execution.md:141`). So the loop ladder cannot rely on it until a gated `revision_round` phase exists; see Increment 4's prerequisite. `revising` derives from `revision_progress.steps_complete > 0` alone.
+- **`blocked_gate` takes precedence** over all others (it already does, per `start.md:42` "Resolve a pending gate first").
+
+The headline is therefore weaker than the first draft claimed: the enum is *mostly* derived, but `pre_writing` and `submission` each carry a real prerequisite, and `diagnosed`/`revising` touch the filesystem. This is glue work, not free derivation.
 
 ### Promote `next_action` from exception to primary
 
 Today `start.md` runs the questionnaire and treats the sidecar resume as a special pre-Q1 branch. Invert the priority for a **bound** project:
 
-1. Bound + sidecar present → derive lifecycle node → dispatch via the existing `next_action` table (and `execution.phase`/`allowed_next` for runner-governed projects). **Artifact and Goal are read from the contract + sidecar, not re-asked.** The 2–3 questions collapse to zero; the router confirms ("Resuming *Wolves of November* — you're mid-revision with 2 Must-Fixes open. Pick up there?") rather than interrogates.
+1. Bound + sidecar present → **run the contract-drift check first** → derive lifecycle node → dispatch via the existing `next_action` table (and `execution.phase`/`allowed_next` for runner-governed projects). **Artifact and Goal are read from the contract + sidecar, not re-asked.** The 2–3 questions collapse to zero; the router confirms ("Resuming *Wolves of November* — you're mid-revision with 2 Must-Fixes open. Pick up there?") rather than interrogates.
 2. Cold-start (no bound project, or `cold` node) → the existing questionnaire runs unchanged.
 
-This is additive: the questionnaire stays the cold-start path; the sidecar dispatch table already exists; Increment 3 only changes which path is primary when a project is bound.
+**Contract-hash is a precondition of bind→dispatch (review fix S3).** Today the resume path reaches the contract-integrity check (`contract_hash` compared against the live contract, `run-core.md:319-328`) at pre-pass re-grounding. Promoting `next_action` to primary must *not* short-circuit that gate: a stale sidecar (e.g., the manuscript or contract was edited out-of-band) is exactly the case `run-core.md:326` exists to catch. So bind→dispatch runs the `contract_hash` check before any zero-question dispatch; on mismatch it falls back to a confirming re-ground (or cold intake), never silent resume.
+
+**Honest scope (review fix S4).** This is additive in that the questionnaire stays the cold-start path and the existing `next_action` table is reused — but it is *not* free. New glue is required: the node→action mapping (the 8 `next_action` keys don't include `pre_writing` or a submission key), the minimal-sidecar write for pre-writing projects, and the registry schema + `registry-check` validator. "No schema change" holds only for the existing sidecar, not for the system.
 
 ### Route map as transition graph
 
@@ -98,9 +111,11 @@ With Increment 1's fork/overlay split in place, `intake-router-runtime.md` §6 i
 
 ## Increment 4 — Revision-loop-as-spine
 
+**Hard prerequisite (review fix B1): a gated `revision_round` phase must exist first.** Increment 4's ladder keys on the `locked → delivered → revised` finding lifecycle, but `revised` is currently **unreachable** — it "is reached at a revision round (no gated phase yet)" (`run_gate.py:48`; `runner-governed-execution.md:141`). Until a `revision_round` gate writes the `revised` state, the dispatcher can only see `locked`/`delivered`. So Increment 4 is blocked on defining and gating `revision_round` — an unacknowledged prerequisite in the first draft, now named and scheduled ahead of the loop work. (This dovetails with the existing Runner-Governed Execution "increment 4 future" item.)
+
 For a project at the `revising` node, dispatch is not a single workflow load but a **"what now?" leverage decision**. Inputs, all already in the sidecar:
 
-- `execution.finding_states` — per-finding lifecycle (`locked` → `delivered` → `revised`)
+- `execution.finding_states` — per-finding lifecycle (`locked` → `delivered` → `revised`; the `revised` writer is the prerequisite above)
 - `execution.phase` / `allowed_next` — gate frontier
 - `revision_progress` — `steps_complete` / `current_step`
 - `triage_summary` / `control_questions.open`
@@ -109,7 +124,7 @@ Selection (highest-leverage first):
 
 1. `pending_gate` present → resolve it (blocking).
 2. Any `locked`-but-not-`delivered` Must-Fix → that finding's diagnosis isn't in the letter yet → return to synthesis/diagnosis.
-3. `delivered`-but-not-`revised` Must-Fix → the highest-leverage open fix → offer `/coach` session planning scoped to it, or an execution-mode handoff.
+3. `delivered`-but-not-`revised` Must-Fix → the highest-leverage open fix → offer `/coach` session planning scoped to it, or an execution-mode handoff. *(Step 3 is the loop's core, and it is exactly the step the `revised` prerequisite gates.)*
 4. All Must-Fix `revised`, Should-Fix open → next-tier coaching.
 5. All findings `revised`, `control_questions.open == 0` → offer submission-readiness (`submission` node).
 
@@ -121,15 +136,28 @@ The dispatcher proposes; the writer disposes. It replaces "remember whether to t
 
 - The registry is the **only** new persistent artifact, and it lives in `$APODICTIC_HOME` — never the plugin repo or plugin cache (same rule as all rolling state).
 - Binding never mutates a project's state; it only sets the active context and reads.
-- Drift between registry and sidecar always resolves to the sidecar (the cache is recomputable). A lost registry is a no-op recoverable by scan — no project is ever orphaned by registry loss.
+- Drift between registry and sidecar always resolves to the sidecar (the cache is recomputable). A lost registry is recoverable by scanning the workspace root for sidecars **and** Structural-Plan artifacts; a project is orphaned only if it lives outside any `.apodictic/` workspace — in which case `/start <path>` re-establishes it.
 - The Firewall is untouched: this is routing/setup infrastructure, not content generation.
+
+## Dependency chain — corrected (review fix N1)
+
+The first draft framed Increments 1→2→3→4 as a single forced line. It isn't. The real graph:
+
+- **Increment 1 (fork/overlay split) → Increment 3** only — the split is what lets §6 become a transition graph. It does **not** gate Increment 2.
+- **Increment 2 (registry & binding) → Increment 3** — dispatch needs a bound project.
+- **Increment 3 → Increment 4.**
+- **Increments 1 and 2 are independent** and can be built in parallel or either order.
+- **Increment 4 additionally requires a gated `revision_round` phase** (the `revised`-state writer, B1) — a prerequisite outside this chain entirely.
+
+So: `{1, 2} → 3 → 4`, with 4 also waiting on `revision_round`. The ROADMAP entry's "forced dependency chain" wording is corrected to match.
 
 ## Open questions (for review)
 
-1. **Registry home.** `~/.apodictic/registry.json` is host-dependent (the LLM may run where `~` is the plugin sandbox, not the user's home). Alternatives: (a) a workspace-relative `.apodictic/registry.json` discovered by walking up from cwd (portable, shareable, survives host changes); (b) pure scan-on-demand with no persisted registry (slower listing, zero new artifact, zero drift). Recommendation: **(a)** as canonical with scan as rebuild — but this is the maintainer's call.
+1. ~~Registry home~~ **Decided:** workspace-relative `.apodictic/registry.json` (see §Where the registry lives). `~/.apodictic` rejected (sandbox-unsafe).
 2. **`/projects` vs. overloading `/start`.** Is a dedicated listing verb worth it, or should `/start` with no argument list-and-bind? Recommendation: keep both; `/start` no-arg lists when >1 project is registered.
 3. **Series.** A `series_root` project groups volumes (`Series_State.md` already exists at the series root). Should `/projects` show series as a parent with volume children, or flat with a series tag? Deferred to Increment 2 detailed design.
-4. **Lifecycle-node derivation ownership.** Derive on read (router computes from sidecar each session) vs. persist `lifecycle_node` in the sidecar (write-time). Spec assumes derive-on-read (no schema change); persisting would be faster listing but adds a write path and a drift surface.
+4. **Lifecycle-node derivation ownership.** Derive on read (router computes each session) vs. persist `lifecycle_node` at write time. Spec assumes derive-on-read (no schema change); persisting would speed listing but adds a write path and a drift surface. The registry deliberately does **not** store `lifecycle_node` (so `registry-check` R3 has nothing spurious to drift-check).
+5. **Submission signal (new, from B3).** The `submission` node needs a persisted signal. Options: (a) populate the existing-but-unused `readiness[]` sidecar array at synthesis/Pass-11 time and derive from it; (b) glob for a Pass-11 artifact in `runs/`; (c) persist `goal` in the sidecar. Recommendation: **(a)** — the array already exists; populating it is the smallest write.
 
 ---
 
