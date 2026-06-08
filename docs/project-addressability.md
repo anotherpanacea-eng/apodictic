@@ -153,7 +153,7 @@ Selection (highest-leverage first):
 4. All Must-Fix `revised`, Should-Fix open → next-tier coaching.
 5. All findings `revised`, `control_questions.open == 0` → offer submission-readiness (`submission` node).
 
-**Stalled-revision off-ramp.** If a `delivered` Must-Fix has seen no progress across multiple sessions (Coaching Log) and still carries no resolved marker, step 3 must not re-offer the same `/coach` step indefinitely — surface "this finding has stalled: consider an execution-mode handoff, or *decline* it (recorded, not re-flagged)" so the loop has a terminal move.
+**Stalled-revision off-ramp.** If a `delivered` Must-Fix has seen no progress across multiple sessions (Coaching Log) and still carries no resolved marker, step 3 must not re-offer the same `/coach` step indefinitely — surface "this finding has stalled: consider an execution-mode handoff, or set it aside, recording the decision in the Coaching Log" so the loop has a terminal move. (There is no engine-level "declined" finding state today — `finding_states` is `locked`/`delivered`/`revised` only — so the Coaching Log note is the durable record, not an auto-suppression of re-flagging.)
 
 The dispatcher proposes; the writer disposes. It replaces "remember whether to type `/coach`, `/diagnose`, or `/ready`" with "the tool already knows where you are and what's worth doing next." This is the loop position and project identity that [Coaching Deepening](../ROADMAP.md#coaching-deepening) (Multi-Session Revision Arc Planning, Coaching History and Pattern Recognition) and [Collaborative Revision Coaching](../ROADMAP.md#collaborative-revision-coaching) build on but currently have no substrate for.
 

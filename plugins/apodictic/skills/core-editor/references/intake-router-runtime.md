@@ -308,7 +308,7 @@ The destination for a *bound* project is its **lifecycle node**, derived from th
 | `execution` | execution-mode resume (Check the fix / Keep working) — `handoff-protocol.md` |
 | `pre_writing` | `pre-writing-pathway/SKILL.md` |
 | `submission` | Submission Readiness (`references/submission-readiness.md`) / triage |
-| `revising` | stored `next_action`: `revision_round` → `state-lifecycle.md`, or `coaching` → `revision-coach/SKILL.md` |
+| `revising` | revision-loop dispatcher (`revision-coach/SKILL.md` §Loop Dispatch) proposes the next leverage action; the stored `next_action` (`revision_round` → `state-lifecycle.md`, or `coaching` → `revision-coach`) is its default |
 | `diagnosed` | offer `/coach` |
 | `diagnosing` | stored `next_action`: `run_passes` / `run_synthesis` / `run_audits` |
 | `cold` | no bound project → cold-start entry map (Table A) |
