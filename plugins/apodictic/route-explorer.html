@@ -486,6 +486,7 @@ const GOALS = {
     { key: 'B', value: 'submit',    label: "Check if it's ready to submit" },
     { key: 'C', value: 'ai_clean',  label: 'Clean up AI-generated or AI-assisted prose' },
     { key: 'D', value: 'feedback',  label: 'I have beta reader feedback — help me sort through it' },
+    { key: 'E', value: 'coach',     label: 'I have a diagnosis — help me plan revision' },
   ],
   series: [
     { key: 'A', value: 'single_vol',  label: 'Work on one book (the current volume)' },
@@ -525,6 +526,7 @@ const ROUTES = {
   'full_draft|submit|*':      { workflow: 'Submission Readiness Workflow', status: 'built', flow: ['Core DE', 'All Passes', 'Pass 11', 'Submission Package'], passes: ['0','1','2','3','4','5','6','7','8','9','10','11'], desc: 'Full diagnostic plus submission-readiness assessment: hard truths, revision economics, three-lens verdict, market reality check. For manuscripts heading to agents, editors, or self-publication. Available directly via /ready.', outputs: ['Editorial_Letter.md', 'Pass11_Critical_Quality.md'] },
   'full_draft|ai_clean|*':    { workflow: 'Core DE + AI-Prose Calibration', status: 'built', flow: ['Core DE', 'AI-Prose Calibration Overlay'], passes: ['0','1','2','5','8'], desc: 'Standard diagnostic plus AI-prose calibration overlay. Identifies and addresses the characteristic patterns of AI-assisted writing: smoothed registers, false hedging, decorative imagery, rhythmic monotony.', outputs: ['Editorial_Letter.md', 'AI_Prose_Calibration_Report.md'] },
   'full_draft|feedback|*':    { workflow: 'Feedback Triage → Core DE', status: 'built', flow: ['Feedback Intake', 'Conflict Resolution', 'Core DE'], passes: ['0','1','2','5','8'], desc: 'Structured intake for beta reader or critique-partner feedback: sorts and validates each note, surfaces conflicts, and prioritizes them, then runs the diagnostic with feedback as additional evidence. Available directly via /triage-feedback.', outputs: ['Feedback_Triage.md', 'Editorial_Letter.md'] },
+  'full_draft|coach|*':       { workflow: 'Revision Coach', status: 'built', flow: ['Diagnosis', 'Revision Coach', 'Session Plan'], passes: [], desc: 'Post-diagnostic coaching that helps you plan revision without doing the revision for you: leverage-ranked session planning, stuck-point coaching, momentum tracking, and deadline triage. Available directly via /coach.', outputs: ['Revision_Plan.md'] },
 
   // full_draft — constraint variants
   'full_draft|repair|time':        { workflow: 'Submission Triage', status: 'built', flow: ['Pass 1', 'SR Codes', 'Go/No-Go Memo'], passes: ['1'], desc: 'Deadline mode: Pass 1 reader experience plus the detectable subset of submission-readiness codes, producing a go/no-go memo with named blind spots. For writers who need direction today, not a comprehensive diagnostic.', outputs: ['Triage_Memo.md'] },
