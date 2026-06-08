@@ -326,7 +326,7 @@ All commands work as direct entry points. `/start` is recommended for new users;
 | full_draft | coach | deadline | Revision Coach (deadline mode) | **Built** (v1.1.2) |
 | full_draft | repair | editor | Core DE (editor scaffolding) | **Built** (`references/editor-scaffolding.md`) |
 | full_draft | repair | facilitator | Core DE (diagnostic vocabulary) | **Built** (`references/diagnostic-vocabulary.md`) |
-| full_draft | repair (feedback) | — | Feedback Triage → Core DE | Gap |
+| full_draft | repair (feedback) | — | Feedback Triage → Core DE | **Built** (v2.2.0, direct via `/triage-feedback`) |
 | series | repair (single vol) | — | Core DE (series context) | Partially built |
 | series | repair (continuity) | — | Series Continuity Audit (`craft/series-continuity.md`) | **Built** (v1.2) |
 | series | draft (plan next) | — | Pre-Writing Pathway (series-aware) | Partially built |
