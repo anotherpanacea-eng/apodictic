@@ -182,20 +182,29 @@ Always asked after routing, before work begins. Multiple selections allowed.
 
 "Before we start — anything I should know?"
 
-| Option | Label | Internal flag | Effect on workflow |
-|--------|-------|--------------|-------------------|
-| A | I'm on a deadline | `constraint:time` | Route to Submission Triage: Pass 1 → SR codes (detectable subset) → go/no-go memo with blind spots. See `references/submission-triage.md`. |
-| B | Parts of this were written with AI | `constraint:ai` | Add AI-Prose Calibration overlay. |
-| C | This is nonfiction | `constraint:nonfiction` | Run nonfiction triage. Route argument-shaped work to the Nonfiction Argument Engine, scene-led nonfiction to Narrative Nonfiction Craft, and memoir / witness-led work to Memoir & CNF. Idea-stage Nonfiction Pre-Draft remains a gap. |
-| D | There's sensitive or legally risky content | `constraint:risk` | Add risk register output. **Gap: risk register not yet built.** |
-| E | I'm editing someone else's work | `operator:editor` | Shift output to editor scaffolding (editor-facing reframe of the synthesis letter). **Built** — see `references/editor-scaffolding.md`. |
-| F | I'm facilitating a writing group | `operator:facilitator` | Shift to diagnostic vocabulary mode (produce a teaching Vocabulary Guide: glossary + discussion prompts). **Built** — see `references/diagnostic-vocabulary.md`. |
-| G | We're co-authoring (multiple writers) | `operator:team` | Note conflicting-vision risk. **Gap: multi-party intake not yet built.** |
-| H | Use hybrid mode (better analysis, moderate token cost) | `execution:hybrid` | Pass 0+1 reads full manuscript and builds a focus map; later passes read the outline + targeted excerpts as independent subagents. ~2–3x token cost. See `run-core.md` §Execution Mode. |
-| I | Use swarm mode (deepest analysis, highest token cost) | `execution:swarm` | Each pass runs as an independent subagent with full manuscript. ~2x findings, ~5x token cost. See `run-core.md` §Execution Mode. |
-| J | No constraints — let's go | (none) | Proceed with standard workflow. |
+| Option | Label | Internal flag | Kind | Effect on workflow |
+|--------|-------|--------------|------|-------------------|
+| A | I'm on a deadline | `constraint:time` | **Fork** (workflow) | Route to Submission Triage: Pass 1 → SR codes (detectable subset) → go/no-go memo with blind spots. See `references/submission-triage.md`. |
+| B | Parts of this were written with AI | `constraint:ai` | **Overlay** (lens) | Add AI-Prose Calibration overlay. |
+| C | This is nonfiction | `constraint:nonfiction` | **Fork** (engine) | Run nonfiction triage. Route argument-shaped work to the Nonfiction Argument Engine, scene-led nonfiction to Narrative Nonfiction Craft, and memoir / witness-led work to Memoir & CNF. Idea-stage Nonfiction Pre-Draft remains a gap. |
+| D | There's sensitive or legally risky content | `constraint:risk` | **Overlay** (output) | Add Legal Risk Register output. Module **built** (`references/legal-risk-register.md`); router auto-wiring pending — offer it, attach on accept. |
+| E | I'm editing someone else's work | `operator:editor` | **Overlay** (output) | Shift output to editor scaffolding (editor-facing reframe of the synthesis letter). **Built** — see `references/editor-scaffolding.md`. |
+| F | I'm facilitating a writing group | `operator:facilitator` | **Overlay** (output) | Shift to diagnostic vocabulary mode (produce a teaching Vocabulary Guide: glossary + discussion prompts). **Built** — see `references/diagnostic-vocabulary.md`. |
+| G | We're co-authoring (multiple writers) | `operator:team` | **Fork** (intake) | Note conflicting-vision risk. **Gap: multi-party intake not yet built.** |
+| H | Use hybrid mode (better analysis, moderate token cost) | `execution:hybrid` | **Overlay** (execution) | Pass 0+1 reads full manuscript and builds a focus map; later passes read the outline + targeted excerpts as independent subagents. ~2–3x token cost. See `run-core.md` §Execution Mode. |
+| I | Use swarm mode (deepest analysis, highest token cost) | `execution:swarm` | **Overlay** (execution) | Each pass runs as an independent subagent with full manuscript. ~2x findings, ~5x token cost. See `run-core.md` §Execution Mode. |
+| J | No constraints — let's go | (none) | — | Proceed with standard workflow. |
 
 **Execution mode note:** For manuscripts over 40k words, §2b handles the execution mode question before §3. Options H and I below remain as a safety net — if the user didn't get §2b (shorter manuscript, direct command entry) but knows to ask for hybrid or swarm, these options catch it.
+
+### §3a. Fork vs. Overlay — routing algebra
+
+The Q3 options are two different kinds of thing, and the router composes them differently (design rationale: `intake-router-design.md` §Modifiers: forks vs. overlays):
+
+- A **Fork** *selects* the workflow — it changes which engine runs or the terminal artifact. Forks reconcile with the Q1/Q2 base route and are **mutually exclusive within a class** (you run Submission Triage *or* full Core DE, never both). A fork is a route-map decision (§6 Table A).
+- An **Overlay** *modifies* a selected workflow — it reskins the output, adds a diagnostic lens, or changes execution depth, leaving the engine and workflow shape intact. Overlays **compose**: any number stack on the base route and on each other. An overlay is never a route-map row (§6 Table B).
+
+**Composition order.** Resolve the base route from Q1/Q2 → apply any **fork** (reconcile against the base; if forks of different classes are both selected, e.g. `time` + `nonfiction`, fork to the workflow first, then run it under the engine) → **stack** all selected overlays. Worked case: "I'm on a deadline" (`time` → fork to Submission Triage) + "I'm editing someone else's work" (`editor` → overlay) = fork to Submission Triage, then apply the editor-scaffolding overlay to the Triage output.
 
 ---
 

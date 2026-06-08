@@ -154,10 +154,10 @@ So: `{1, 2} → 3 → 4`, with 4 also waiting on `revision_round`. The ROADMAP e
 ## Open questions (for review)
 
 1. ~~Registry home~~ **Decided:** workspace-relative `.apodictic/registry.json` (see §Where the registry lives). `~/.apodictic` rejected (sandbox-unsafe).
-2. **`/projects` vs. overloading `/start`.** Is a dedicated listing verb worth it, or should `/start` with no argument list-and-bind? Recommendation: keep both; `/start` no-arg lists when >1 project is registered.
+2. ~~`/projects` vs. overloading `/start`~~ **Decided:** keep both, split by role. `/start` is the router and branches on registry size (0 → cold intake; 1 → bind+resume; >1 → list-and-pick); `/projects` is a *management-only* surface (list with lifecycle nodes, rename, drop stale entries) and is never required for the core flow. No mandatory second verb; routing on `/start`, housekeeping on `/projects`.
 3. **Series.** A `series_root` project groups volumes (`Series_State.md` already exists at the series root). Should `/projects` show series as a parent with volume children, or flat with a series tag? Deferred to Increment 2 detailed design.
 4. **Lifecycle-node derivation ownership.** Derive on read (router computes each session) vs. persist `lifecycle_node` at write time. Spec assumes derive-on-read (no schema change); persisting would speed listing but adds a write path and a drift surface. The registry deliberately does **not** store `lifecycle_node` (so `registry-check` R3 has nothing spurious to drift-check).
-5. **Submission signal (new, from B3).** The `submission` node needs a persisted signal. Options: (a) populate the existing-but-unused `readiness[]` sidecar array at synthesis/Pass-11 time and derive from it; (b) glob for a Pass-11 artifact in `runs/`; (c) persist `goal` in the sidecar. Recommendation: **(a)** — the array already exists; populating it is the smallest write.
+5. ~~Submission signal~~ **Decided (a):** populate the existing-but-unused `readiness[]` sidecar array when submission readiness enters scope (Pass 11 / `/ready` / submission-readiness workflow) — the smallest write, no schema change, no invented `submission` mode. The `submission` node derives when `readiness[]` is non-empty and its latest entry is not "delivered." Globbing for Pass-11 artifacts (b) and persisting `goal` (c) rejected as brittle / drift-prone respectively.
 
 ---
 
