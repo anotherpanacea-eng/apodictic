@@ -294,42 +294,52 @@ All commands work as direct entry points. `/start` is recommended for new users;
 
 ---
 
-## §6. Complete Route Map
+## §6. Route Map
 
-| Artifact | Goal | Constraint/Operator | Workflow | Status |
-|----------|------|-------------------|----------|--------|
+Routing resolves in two stages (see §3a): pick **one base route** from Table A (applying any fork from the Artifact/Goal answers + Q3), then **stack any compatible overlays** from Table B. Overlays never appear as base-route rows — their applicability and status live once, in Table B, and compose onto whatever base route the forks selected.
+
+### §6 Table A — Base routes (Artifact × Goal, forks resolved)
+
+The genuine workflow-selection decisions. The `Fork` column names a workflow-selecting modifier when one applies (engine = which diagnostic engine; workflow = which workflow shape; intake = which intake). Forks are mutually exclusive within a class.
+
+| Artifact | Goal | Fork | Workflow | Status |
+|----------|------|------|----------|--------|
 | idea | draft | — | Pre-Writing Pathway | **Built** |
 | idea | draft (fast-track) | — | Pre-Writing Pathway (skip to Phase 4) | **Built** |
-| idea | draft | nonfiction | Nonfiction Pre-Writing | Gap |
+| idea | draft | engine=nonfiction | Nonfiction Pre-Writing | Gap |
 | fragments | draft | — | Fragment Synthesis → Pre-Writing | **Built** (v1.2.0) |
-| fragments | draft | ai | Fragment Synthesis → Pre-Writing + AI-Prose Calibration | **Built** (v1.2.0, calibration deferred to post-synthesis) |
 | fragments | repair | — | Core DE (partial flag) | **Built** (v1.2.0) |
 | partial | repair (diagnostic) | — | Core DE (partial flag) | **Built** (v1.2.0) |
 | partial | repair (targeted) | — | Core DE (partial flag, targeted) | **Built** (v1.2.0) |
-| partial | repair | nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) on available sections | **Built** (v1.0) |
+| partial | repair | engine=nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) on available sections | **Built** (v1.0) |
 | partial | draft (rethink) | — | Pre-Writing Pathway (re-entry) | **Built** |
-| partial | repair | time | Submission Triage | Gap: triage requires complete manuscript. Offer targeted `/diagnose`. |
+| partial | repair | workflow=time | Submission Triage | Gap: triage requires complete manuscript. Offer targeted `/diagnose`. |
 | full_draft | repair | — | Core DE | **Built** |
-| full_draft | repair | hybrid | Core DE (hybrid mode) | **Built** |
-| full_draft | repair | swarm | Core DE (swarm mode) | **Built** |
-| full_draft | repair | time | Submission Triage | **Built** (v1.1) |
-| full_draft | repair | ai | Core DE + AI-Prose Calibration | **Built** |
-| full_draft | repair | nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) | **Built** (v1.0) |
-| full_draft | repair | nonfiction (scene-led) | Narrative Nonfiction Craft | **Built** |
-| full_draft | repair | nonfiction (memoir / witness-led) | Memoir & CNF | **Built** |
-| full_draft | repair | risk | Core DE + Risk Register | Gap |
+| full_draft | repair | engine=nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) | **Built** (v1.0) |
+| full_draft | repair | engine=nonfiction (scene-led) | Narrative Nonfiction Craft | **Built** |
+| full_draft | repair | engine=nonfiction (memoir / witness-led) | Memoir & CNF | **Built** |
+| full_draft | repair | workflow=time | Submission Triage | **Built** (v1.1) |
+| full_draft | repair | workflow=feedback | Feedback Triage → Core DE | **Built** (v2.2.0, direct via `/triage-feedback`) |
 | full_draft | submit | — | Submission Readiness Workflow (`references/submission-readiness.md`) | **Built** (v1.1) |
-| full_draft | submit | hybrid | Core DE → Pass 11 (hybrid mode) | **Built** |
-| full_draft | submit | swarm | Core DE → Pass 11 (swarm mode) | **Built** |
-| full_draft | submit | time | Submission Triage | **Built** (v1.1) |
+| full_draft | submit | workflow=time | Submission Triage | **Built** (v1.1) |
 | full_draft | coach | — | Revision Coach (`revision-coach/SKILL.md`) | **Built** (v1.1.2) |
-| full_draft | coach | deadline | Revision Coach (deadline mode) | **Built** (v1.1.2) |
-| full_draft | repair | editor | Core DE (editor scaffolding) | **Built** (`references/editor-scaffolding.md`) |
-| full_draft | repair | facilitator | Core DE (diagnostic vocabulary) | **Built** (`references/diagnostic-vocabulary.md`) |
-| full_draft | repair (feedback) | — | Feedback Triage → Core DE | **Built** (v2.2.0, direct via `/triage-feedback`) |
+| full_draft | coach (deadline) | — | Revision Coach (deadline mode) | **Built** (v1.1.2) |
 | series | repair (single vol) | — | Core DE (series context) | Partially built |
 | series | repair (continuity) | — | Series Continuity Audit (`craft/series-continuity.md`) | **Built** (v1.2) |
 | series | draft (plan next) | — | Pre-Writing Pathway (series-aware) | Partially built |
+
+### §6 Table B — Overlays (orthogonal; compose onto any compatible base route)
+
+Workflow-*modifying* modifiers. Each composes onto any compatible Table A base route; multiple overlays stack. Status lives here once — it is **not** re-asserted per base route (this is what kept the old single table's `ai` / `hybrid` / `swarm` / `editor` / `facilitator` / `risk` rows in sync drift). The nine former `base × overlay` rows are computed from this table, not enumerated.
+
+| Overlay | Flag | Effect | Composes onto | Status |
+|---------|------|--------|---------------|--------|
+| AI-Prose Calibration | `constraint:ai` | Adds AI-prose lens + findings (`craft/ai-prose-calibration.md`) | Any prose-bearing repair/submit base route (on `fragments \| draft`, calibration deferred to post-synthesis) | **Built** |
+| Editor Scaffolding | `operator:editor` | Re-aims the editorial letter at a human editor | Any Core DE letter (`references/editor-scaffolding.md`) | **Built** |
+| Diagnostic Vocabulary | `operator:facilitator` | Adds a teaching Vocabulary Guide alongside the letter | Any Core DE letter (`references/diagnostic-vocabulary.md`) | **Built** |
+| Legal Risk Register | `constraint:risk` | Adds a Legal Risk Register output | Any repair/submit base route (`references/legal-risk-register.md`) | **Built** (module); router auto-wiring pending |
+| Hybrid execution | `execution:hybrid` | Focus-map depth; ~2–3x token cost; content-invariant | Any pass-based run >40k words (`run-core.md` §Execution Mode) | **Built** |
+| Swarm execution | `execution:swarm` | Independent-lens depth; ~5x token cost; content-invariant | Any pass-based run (`run-core.md` §Execution Mode) | **Built** |
 
 ## §7. Gap Handling Protocol
 

@@ -1,6 +1,6 @@
 # Router Fork/Overlay Split — separating workflow selectors from workflow modifiers
 
-**Status:** Proposal (not yet built). Origin: QoL routing discussion. Touches `skills/core-editor/references/intake-router-runtime.md` (§3, §6), `intake-router-design.md` (Four-Axis Model), and the router output contract. No pass-engine or synthesis change.
+**Status:** **Built** — Increment 1 of [Project Addressability & State-Driven Routing](../ROADMAP.md#project-addressability--state-driven-routing). Implemented in `intake-router-runtime.md` (§3 fork/overlay tagging, new §3a routing algebra, §6 split into Table A base routes + Table B overlays) and `intake-router-design.md` (axis-model correction + revised router output contract). No pass-engine or synthesis change; `validate.sh --check-all` green. This doc remains the design rationale.
 
 The intake router's design notes assert a clean principle: *"Constraints modify workflows; they don't select them. A deadline doesn't change whether you need Core DE — it changes how Core DE runs"* (`intake-router-design.md` §Why Constraint is post-routing). The runtime router does not honor it. `constraint:time` routes to a **different** workflow (Submission Triage — a compressed go/no-go with its own terminal artifact, not Core DE). `constraint:nonfiction` routes to a **different** engine (the Argument Engine, Narrative NF, or Memoir machinery — not the fiction passes). The model says "modifiers don't select"; the route map shows three of them doing nothing but selecting.
 
