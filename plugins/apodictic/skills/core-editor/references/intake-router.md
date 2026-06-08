@@ -161,6 +161,8 @@ These three map cleanly to the Goal axis:
 
 ## Complete Route Map
 
+> **Archival — do not use for routing or status.** This single-table map is superseded by the fork/overlay split in `intake-router-runtime.md` §6 (Table A base routes + Table B overlays). Statuses below are frozen at v0.4.19 and are known to be stale (e.g. risk/feedback/editor/facilitator). The runtime file is authoritative.
+
 | Artifact | Goal | Constraint/Operator | Workflow | Status |
 |----------|------|-------------------|----------|--------|
 | idea | draft | — | Pre-Writing Pathway | **Built (v0.4.5.0)** |

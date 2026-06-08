@@ -77,7 +77,7 @@ The `next_action` field also accepts a human-readable `description` subfield for
    - Audit route -> load `../skills/specialized-audits/SKILL.md`
    - Plot coaching route -> load `../skills/plot-architecture/SKILL.md`
 10. If route target is a gap, execute the runtime gap-handling protocol (acknowledge, offer closest, name missing coverage).
-11. Pass router output (`artifact`, `goal`, `concern`, `constraints`, `operator`, `gap_flags`) to the routed workflow intake and skip redundant questions.
+11. Pass router output (`artifact`, `goal`, `concern`, `base_route`, `forks`, `overlays`, `gap_flags`) to the routed workflow intake and skip redundant questions. (Output contract: `../skills/core-editor/references/intake-router-design.md` §Router output format.)
 
 ## Output location
 

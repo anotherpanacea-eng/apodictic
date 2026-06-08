@@ -176,8 +176,8 @@ Activated by intake answers before passes run. When a router-triggered audit is 
 | Representation or reception sensitivity disclosed at intake | Reception Risk | Auto-recommend before synthesis | `craft/reception-risk.md` |
 | Queer romance / queer identity central | Queer Romance/Erotica | Auto-recommend | `tag/queer-romance-erotica.md` |
 | Submission readiness goal | Shelf Positioning | Auto-recommend with Pass 11 | `craft/shelf-positioning.md` |
-| Constraint = risk | (Risk Register — not yet built) | Note gap; proceed without | — |
-| Constraint = nonfiction | (Nonfiction Pre-Draft Pathway — not yet built) | Note gap; offer closest | — |
+| Constraint = risk | Legal Risk Register | Module built (`references/legal-risk-register.md`); router auto-attach wiring pending — offer it, attach on accept (overlay per `intake-router-runtime.md` §6 Table B) | `references/legal-risk-register.md` |
+| Constraint = nonfiction (idea-stage) | (Nonfiction Pre-Draft Pathway — idea-stage gap) | Note gap; offer closest. Prose-stage nonfiction engines (argument / narrative / memoir) are built — see `intake-router-runtime.md` §6 Table A | — |
 | Argument-shaped run (constraint=nonfiction + intake hint at white paper / policy brief / testimony / op-ed / academic article / regulatory comment / expert affidavit) | Field Reconnaissance | **Hard Prerequisite** when high-stakes signal present (testimony, expert affidavit, regulatory comment, peer-reviewed publication, or `constraint=high-stakes` flag); otherwise **Auto-recommend before synthesis** | `craft/research-field-recon.md` |
 | Argument-shaped run (constraint=nonfiction + high-stakes intake hint: testimony / expert affidavit / regulatory comment / peer-reviewed publication) | Citation Verifier | **Pre-DE Prerequisite** (runs before passes; not a DE-internal audit — see audit reference) | `craft/research-citation-verifier.md` |
 

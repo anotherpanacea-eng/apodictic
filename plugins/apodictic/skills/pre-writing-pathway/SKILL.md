@@ -34,12 +34,15 @@ The Firewall still applies: the pathway helps the writer discover what they want
 When entered via `/start`, accept router output as pre-filled context:
 
 ```
-artifact: [idea | fragments | partial | full_draft | series]
-goal: [draft | repair | submit]
-concern: [specific concern or general]
-constraints: [list]
-operator: [author | editor | facilitator | team]
+artifact:   [idea | fragments | partial | full_draft | series]
+goal:        [draft | repair | submit | coach]
+concern:     [specific concern or general]
+base_route:  [workflow name from intake-router §6 Table A]
+forks:       { engine?: nonfiction-argument | nonfiction-narrative | nonfiction-memoir, workflow?, intake? }
+overlays:    [ai, editor, facilitator, risk, hybrid, swarm]   # 0..n, composable
 ```
+
+(Contract shape per `../core-editor/references/intake-router-design.md` §Router output format. Pre-writing consumes the relevant subset — chiefly `forks.engine` for nonfiction pre-draft; output overlays like `editor`/`facilitator` don't apply pre-draft.)
 
 Use prefilled values to skip redundant intake prompts:
 

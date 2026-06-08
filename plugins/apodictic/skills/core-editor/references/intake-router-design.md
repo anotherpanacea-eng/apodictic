@@ -39,7 +39,7 @@ The original principle was: *constraints modify workflows; they don't select the
 
 ### Modifiers: forks vs. overlays
 
-The Q3 "Constraint/Operator" options split into two kinds with different routing algebra. Full proposal and worked migration: [`../../../../docs/router-fork-overlay-split.md`](../../../../docs/router-fork-overlay-split.md).
+The Q3 "Constraint/Operator" options split into two kinds with different routing algebra. Full proposal and worked migration: [`docs/router-fork-overlay-split.md`](../../../../../docs/router-fork-overlay-split.md).
 
 - **Fork** — *selects* the workflow. Changes which engine runs or the terminal artifact. Belongs in the route map (runtime §6 Table A), mutually exclusive within a class, may be conditional or sub-resolve. Forks: `time` (workflow), `nonfiction` (engine, sub-resolves to argument / narrative / memoir), `feedback` (workflow, prepends Feedback Triage), `team` (intake — gap).
 - **Overlay** — *modifies* a selected workflow. Reskins output, adds a lens, or changes execution depth; leaves engine and workflow shape intact. Never a route-map row (runtime §6 Table B); composes freely. Overlays: `ai` (lens), `editor` / `facilitator` / `risk` (output), `hybrid` / `swarm` (execution).
@@ -54,25 +54,15 @@ The payoff: overlays stop appearing as route-map rows (the old single table enum
 
 Routes marked "Gap" in the route map represent workflows that don't yet exist. The gap-handling protocol requires honest acknowledgment, nearest-available substitution, and explicit naming of what won't be covered.
 
-### Current gap inventory (v0.5)
+### Current gap inventory
 
-| Gap | Closest available | What's lost |
-|-----|-------------------|-------------|
-| Fragment Synthesis | Pre-Writing Pathway (user self-organizes fragments) | Automated fragment clustering and candidate contract generation |
-| Partial Manuscript Diagnostic | Core DE (runs on available material, penalizes missing structure) | Truncated-analysis mode that doesn't flag incompleteness as a problem |
-| Fast Triage | Core DE (user can ask for abbreviated output) | Hard caps on output length, forced prioritization |
-| Unified Submission Workflow | Core DE + manually requesting Pass 11 | Single-command flow, query/synopsis diagnostic |
-| Feedback Triage | Core DE (user provides feedback context manually) | Structured feedback intake, conflict resolution |
-| Nonfiction Pre-Draft Pathway | Pre-Writing Pathway (fiction-oriented) | Argument spine, evidence map, scene ethics |
-| Risk Register | Core DE + manual flagging | Structured risk output, escalation triggers |
-| Editor Scaffolding Mode | Core DE (author-facing output) | Editor-facing framing, blind-spot emphasis |
-| Facilitator/Vocabulary Mode | Core DE (full diagnostic) | Workshop-ready language, discussion prompts |
-| Multi-Party Intake | Core DE (single-author) | Conflict surfacing, sign-off workflow |
-| Series Continuity Audit | Core DE per volume (no cross-volume state) | Persistent character/world/thread tracking across books |
+**Superseded — see the live status columns in `intake-router-runtime.md` §6 Table A (base routes) / Table B (overlays) and the `ROADMAP.md` Done column.** The historical v0.5 inventory once listed Fragment Synthesis, Partial Manuscript, Fast/Submission Triage, Feedback Triage, Editor Scaffolding, Diagnostic Vocabulary, Series Continuity, and the Legal Risk Register module as gaps; all have since shipped (v1.1–v2.2.0). Maintaining a parallel gap list here only invites the drift this section is meant to avoid, so the route-map status columns are now the single source of truth.
 
-### Gap prioritization
+Genuinely remaining gaps:
 
-Gaps are addressed in the roadmap: Fast Triage and Submission Readiness in v1.1; Partial Manuscript and Fragment Synthesis in v1.2; Feedback Triage and Nonfiction Pre-Draft in v1.3; Editor/Facilitator modes in v1.4.
+- **Multi-Party Intake** (`operator:team`, fork=intake) — co-authoring intake; conflict surfacing / sign-off. Closest: single-author Core DE.
+- **Nonfiction Pre-Draft, idea-stage** (`engine=nonfiction` at `artifact:idea`) — the prose-stage nonfiction engines (argument / narrative / memoir) are built; only the idea-stage pre-draft pathway entry remains a router gap. (The Nonfiction Pre-Draft *module* itself is built per `ROADMAP.md`; the open item is its router wiring.)
+- **Legal Risk Register router wiring** — the module is built (`references/legal-risk-register.md`); auto-attaching it as an overlay from `constraint:risk` is the pending increment.
 
 ---
 
