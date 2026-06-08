@@ -47,7 +47,7 @@ For a **bound** project, routing is driven by the project's state, not by re-ask
    | `execution` | the execution-mode resume gate below (Check the fix / Keep working) |
    | `pre_writing` | load `../skills/pre-writing-pathway/SKILL.md` |
    | `submission` | submission-readiness (`../skills/core-editor/references/submission-readiness.md`) / triage |
-   | `revising` | the stored `next_action` (`revision_round` → `state-lifecycle.md`, or `coaching` → `revision-coach/SKILL.md`) |
+   | `revising` | the revision-loop dispatcher — `../skills/revision-coach/SKILL.md` §Loop Dispatch ("What now?") proposes the next leverage action from the finding lifecycle; the stored `next_action` (`revision_round`/`coaching`) is its default |
    | `diagnosed` | offer `/coach` |
    | `diagnosing` | the stored `next_action` (`run_passes` / `run_synthesis` / `run_audits`) |
    | `cold` | no bound project — run the resume gate / full intake below |
