@@ -1,11 +1,11 @@
 ---
-description: Recommended entry point — routes to the right workflow in 2-3 questions
+description: Recommended entry point — routes to the right workflow in 2-3 questions (zero for a resumed project)
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob, WebSearch, WebFetch
 ---
 
 # /start — Intake Router + Resume Gate
 
-The recommended entry point for APODICTIC. Routes users in 2-3 questions using the four-axis model (Artifact x Goal x Operator x Constraint), with a mode-aware resume check before routing.
+The recommended entry point for APODICTIC. On a **cold start** it routes users in 2-3 questions using the four-axis model (Artifact x Goal x Operator x Constraint). For a **bound project** (`/start <project>`) it is state-driven (Step 0.5): it derives the project's lifecycle node and resumes via a two-option prompt — zero intake questions. A mode-aware resume check runs before routing.
 
 ## Required skills
 

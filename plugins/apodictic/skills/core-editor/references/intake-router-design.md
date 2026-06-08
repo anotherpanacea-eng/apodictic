@@ -122,7 +122,12 @@ This router is a specification executed by the LLM, not application code. The LL
 
 ### Router output format
 
-The router produces a structured classification that downstream workflows consume:
+The router has **two entry modes** (Project Addressability, Increment 3 — `docs/project-addressability.md`):
+
+- **Bound project** (`/start <project>`): routing is *state-driven*. The router derives a **lifecycle node** from the project's sidecar (`scripts/validate.sh lifecycle-node`) and dispatches via the `§6` Lifecycle transition table + the sidecar `next_action` — the Artifact/Goal classification below is *not* recomputed (it is known from the contract + sidecar). Overlays still come from the Q3 / Table B layer. Output in this mode is effectively `{ lifecycle_node, next_action, overlays }`.
+- **Cold start** (no bound project): the router produces the full Artifact×Goal classification below.
+
+The cold-start classification downstream workflows consume:
 
 ```
 artifact:   [idea | fragments | partial | full_draft | series]

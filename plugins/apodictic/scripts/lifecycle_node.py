@@ -62,26 +62,32 @@ def _letter_exists(project_root, run_folder=None):
 
 
 def derive_node(sidecar, project_root=None, run_folder=None):
-    """Return (node, reason) by first-match precedence. sidecar is the parsed dict or None."""
-    if sidecar is None:
-        return "cold", "no readable sidecar (no bound project)"
-    execution = sidecar.get("execution") or {}
-    if execution.get("pending_gate"):
+    """Return (node, reason) by first-match precedence. TOTAL: any input resolves to a known node.
+
+    Defensive against malformed-but-readable sidecars (a non-dict top level, or fields with the
+    wrong type — e.g. `next_action` as a bare string, which docs/project-addressability.md notes
+    the denormalized copy can be). Anything that isn't a usable JSON object is `cold`."""
+    if not isinstance(sidecar, dict):
+        return "cold", "no sidecar / not a JSON object (no usable bound state)"
+    execution = sidecar.get("execution")
+    if isinstance(execution, dict) and execution.get("pending_gate"):
         return "blocked_gate", "execution.pending_gate=%r" % execution.get("pending_gate")
     if sidecar.get("mode") == "execution":
         return "execution", "mode == execution"
-    na_key = (sidecar.get("next_action") or {}).get("key")
+    na = sidecar.get("next_action")
+    na_key = na.get("key") if isinstance(na, dict) else na  # tolerate the bare-string form
     if na_key == "pre_writing":
-        return "pre_writing", "next_action.key == pre_writing"
-    readiness = sidecar.get("readiness") or []
+        return "pre_writing", "next_action key == pre_writing"
+    readiness = sidecar.get("readiness")
     if isinstance(readiness, list) and readiness:
         return "submission", "readiness[] has %d entr(y/ies)" % len(readiness)
-    steps = (sidecar.get("revision_progress") or {}).get("steps_complete", 0)
+    rp = sidecar.get("revision_progress")
+    steps = rp.get("steps_complete", 0) if isinstance(rp, dict) else 0
     if isinstance(steps, int) and steps > 0:
         return "revising", "revision_progress.steps_complete == %d" % steps
     if _letter_exists(project_root, run_folder):
         return "diagnosed", "synthesis/editorial letter present"
-    return "diagnosing", "mode == diagnostic, no letter yet (default)"
+    return "diagnosing", "no higher-precedence signal; no letter yet (default)"
 
 
 def run(paths):
@@ -161,6 +167,15 @@ def run_self_test():
         shutil.rmtree(d3, ignore_errors=True)
     finally:
         shutil.rmtree(d, ignore_errors=True)
+
+    # B1 (build review) — malformed-but-readable inputs must NOT crash and must resolve to a node
+    chk("malformed_next_action_string", node({"next_action": "pre_writing"}) == "pre_writing")
+    chk("malformed_toplevel_list", node([]) == "cold")
+    chk("malformed_toplevel_scalar", node(42) == "cold")
+    chk("malformed_empty_dict", node({}) == "diagnosing")
+    chk("malformed_execution_nondict", node({"execution": "oops", "mode": "diagnostic"}) == "diagnosing")
+    chk("malformed_revprog_nondict", node({"revision_progress": "oops"}) == "diagnosing")
+    chk("malformed_steps_string", node({"revision_progress": {"steps_complete": "3"}}) == "diagnosing")
 
     # totality — a wide range of sidecars all resolve to a known node
     import itertools
