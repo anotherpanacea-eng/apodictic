@@ -1,0 +1,12 @@
+{
+  "$id": "apodictic.project_registry.v1",
+  "$comment": "The project registry — a recomputable index that makes APODICTIC projects addressable (Project Addressability & State-Driven Routing, Increment 2; docs/project-addressability.md). Homed at a workspace-relative .apodictic/registry.json (NOT in the plugin repo/cache; ~ is sandbox-unsafe). Each per-project Diagnostic_State.meta.json sidecar is canonical; this registry is a denormalized cache, rebuildable by scanning the workspace root for sidecars and *_Structural_Plan_*.md artifacts. `projects` holds one apodictic.project_entry.v1 per known project. `id`/`title`/`root`/`series_root` are registry-native; `mode`/`next_action`/`last_touched` are denormalized copies of the sidecar (authoritative only there). Validated by scripts/registry_check.py (R1-R4); drift resolves to the sidecar.",
+  "title": "APODICTIC project registry (apodictic.project_registry.v1)",
+  "type": "object",
+  "required": ["schema", "projects"],
+  "properties": {
+    "schema": {"const": "apodictic.project_registry.v1"},
+    "updated": {"type": "string"},
+    "projects": {"type": "array", "items": {"$schema_ref": "apodictic.project_entry.v1"}}
+  }
+}

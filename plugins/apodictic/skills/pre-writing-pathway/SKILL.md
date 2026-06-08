@@ -470,6 +470,8 @@ The pre-writing pathway follows Core DE's existing naming convention: `[Project]
 
 The `[runlabel]` follows the same convention as Core DE outputs: date-based (`YYYY-MM-DD`), optionally with agent tag (e.g., `opus46_2026-02-20`).
 
+**Minimal sidecar (project addressability).** A pre-writing project does not run Core DE, so it would otherwise have no `Diagnostic_State.meta.json` — which would make it invisible to the project registry and to `/start` resume. When writing the Structural Plan or MVP, also drop a **minimal sidecar** at the project root: `Diagnostic_State.meta.json` with `project` (the title), `mode: "diagnostic"`, and `next_action: {"key": "pre_writing", "description": "pre-writing pathway in progress"}`. This is the smallest write that makes a pre-writing project registrable and addressable (per `core-editor/references/output-structure.md` §Project Registry and `docs/project-addressability.md`); Core DE later enriches the same sidecar in place. The full `Diagnostic_State.md` is not created until a diagnostic run exists.
+
 When a writer returns with a draft and Core DE runs intake:
 1. The structural plan / MVP file is read as context, not overwritten.
 2. Core DE generates its own `[Project]_Contract_[runlabel].md` from the manuscript via standard intake.

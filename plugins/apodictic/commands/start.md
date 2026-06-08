@@ -18,6 +18,19 @@ Load `../skills/core-editor/SKILL.md` first (thin orchestrator). Do NOT preload 
 
 ## Procedure
 
+### Step 0 — Project binding (runs before the resume gate)
+
+`/start` is project-aware. Binding sets the **active project output context** (per `../skills/core-editor/references/output-structure.md`) to a specific project's root and loads its `Diagnostic_State.md` + `Diagnostic_State.meta.json`, so the resume gate below operates on a *chosen* book rather than whatever folder is underfoot. The registry is the workspace-relative `.apodictic/registry.json` (see `/projects` and `docs/project-addressability.md`).
+
+- **`/start <project>`** — resolve `<project>` against the registry by `id` or title (fuzzy match). If it resolves, bind it. If `<project>` is a filesystem path to a project root, register-then-bind it. If nothing resolves, say so and fall through to cold-start intake.
+- **`/start` (no argument)** — locate the workspace registry by walking up from cwd for a `.apodictic/` dir, then branch on registry size:
+  - **0 projects** (or no workspace) → cold start: proceed to the resume gate / intake exactly as today.
+  - **exactly 1 project** → bind it, then continue to the resume gate.
+  - **more than 1** → list projects (title, where each stands, last-touched — the `/projects` view) and ask which to bind; then continue.
+- **Cold start is unchanged.** When no project is bound, the resume gate and the full intake router run exactly as before — binding only *adds* the ability to select an existing book; it never gates a new one.
+
+After binding (or on cold start), continue to the resume gate (step 1), which now reads the bound project's state.
+
 1. **Resume gate (runs before Q1):**
    - Check for existing state in the active project output context. The active project output context is the project root folder (see `../skills/core-editor/references/output-structure.md` §Folder Architecture), not the plugin repo. Reuse an existing project root when one is already in use. For legacy projects that used an `Outputs/` sibling, treat that folder as the project root.
    - **State detection priority:** Check for `Diagnostic_State.meta.json` first (machine-readable sidecar). If it exists, read it for fast structured routing. If only `Diagnostic_State.md` exists (no sidecar — expected for projects created before v1.7), fall back to parsing the markdown directly: read the Mode section, scan Session History for session count, and check whether Root Causes or Control Questions are populated. This fallback path does not require `state_lines`, `revision_progress`, or `next_action` — present what's available and skip what isn't.

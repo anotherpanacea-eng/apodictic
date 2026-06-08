@@ -1,6 +1,6 @@
 # Project Addressability & State-Driven Routing — spec
 
-**Status:** Spec (not yet built). Roadmap: `ROADMAP.md` → [Project Addressability & State-Driven Routing](../ROADMAP.md#project-addressability--state-driven-routing). Covers Increments 2–4; Increment 1 (router fork/overlay split) is specced separately in [`router-fork-overlay-split.md`](router-fork-overlay-split.md). Touches `commands/start.md`, `commands/new-project.md`, a new registry artifact + schema, `references/output-structure.md`, and `references/intake-router-runtime.md`. No pass-engine or synthesis change.
+**Status:** Increment 1 **built** (router fork/overlay split — see [`router-fork-overlay-split.md`](router-fork-overlay-split.md)). Increment 2 **built** (project registry + binding — schemas, `registry-check` validator, `/projects`, `/start` binding, `/new-project` registration, pre-writing minimal sidecar). Increments 3–4 remain specced below. Roadmap: `ROADMAP.md` → [Project Addressability & State-Driven Routing](../ROADMAP.md#project-addressability--state-driven-routing). No pass-engine or synthesis change.
 
 ## What exists, and the one thing that doesn't
 
@@ -20,7 +20,9 @@ The missing thing is **addressability**. `output-structure.md:24` defines `{proj
 
 ---
 
-## Increment 2 — Project registry & session binding
+## Increment 2 — Project registry & session binding — **Built**
+
+**Built:** schemas `apodictic.project_registry.v1` + `apodictic.project_entry.v1`; validator `scripts/registry_check.py` wired as `validate.sh registry-check` (R1 schema / R2 root+sidecar / R3 drift / R4 dup; 36/36 self-tests); commands `/projects` (new), `/start` Step 0 binding, `/new-project` registration; pre-writing minimal sidecar (`next_action: pre_writing`); `output-structure.md` §Project Registry. The decided registry home (workspace-relative `.apodictic/`) and the `readiness[]` submission signal (OQ5) are reflected below.
 
 ### Registry as a recomputable cache over canonical sidecars
 
