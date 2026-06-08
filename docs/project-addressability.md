@@ -1,6 +1,6 @@
 # Project Addressability & State-Driven Routing — spec
 
-**Status:** Increment 1 **built** (router fork/overlay split — see [`router-fork-overlay-split.md`](router-fork-overlay-split.md)). Increment 2 **built** (project registry + binding — schemas, `registry-check` validator, `/projects`, `/start` binding, `/new-project` registration, pre-writing minimal sidecar). Increments 3–4 remain specced below. Roadmap: `ROADMAP.md` → [Project Addressability & State-Driven Routing](../ROADMAP.md#project-addressability--state-driven-routing). No pass-engine or synthesis change.
+**Status:** Increments 1–3 **built**. Increment 1 (router fork/overlay split — see [`router-fork-overlay-split.md`](router-fork-overlay-split.md)). Increment 2 (project registry + binding — schemas, `registry-check`, `/projects`, `/start` binding, `/new-project` registration, pre-writing minimal sidecar). Increment 3 (state-driven dispatch — `lifecycle-node` validator, `start.md` Step 0.5 `next_action`-as-primary + scoped contract-hash precondition, `§6` lifecycle transition table, `readiness[]` population). Increment 4 remains specced below. Roadmap: `ROADMAP.md` → [Project Addressability & State-Driven Routing](../ROADMAP.md#project-addressability--state-driven-routing). No pass-engine or synthesis change.
 
 ## What exists, and the one thing that doesn't
 
@@ -71,7 +71,9 @@ Binding is the explicit act that converts the *ambient* "active project output c
 
 ---
 
-## Increment 3 — State-driven dispatch
+## Increment 3 — State-driven dispatch — **Built**
+
+**Built:** `lifecycle-node` validator (`scripts/lifecycle_node.py` + `validate.sh lifecycle-node`, 36 → 37, mirrored to root `scripts/`, self-tests including the B1 fresh-project case); `start.md` Step 0.5 promoting `next_action` to primary dispatch with the scoped contract-hash precondition and the two-option Resume/Start-fresh prompt; `intake-router-runtime.md` §6 lifecycle transition table + Table A reframed as the cold-start entry map; `submission-readiness.md` `readiness[]` sidecar mirror for the `submission` node.
 
 ### Lifecycle node: a total derivation by precedence
 
@@ -85,9 +87,9 @@ The router's destination for a bound project is a **lifecycle node**, derived fr
 | `blocked_gate` | `execution.pending_gate` present | sidecar | resolve the pending gate first (`start.md:42`) |
 | `execution` | `mode == "execution"` (with `active_scene_scope`) | sidecar | re-entry delta check / keep working (`handoff-protocol.md`) |
 | `pre_writing` | `next_action.key == "pre_writing"` | sidecar | `pre-writing-pathway/SKILL.md` (Increment 2 dispatch row) |
-| `submission` | `readiness[]` non-empty AND latest entry ≠ `delivered` | sidecar | submission-readiness / triage |
+| `submission` | `readiness[]` non-empty (a submission-readiness assessment has been recorded; entries are `apodictic.readiness.v1` = dimension/verdict/rationale — there is no status field, so presence is the signal) | sidecar | submission-readiness / triage |
 | `revising` | `revision_progress.steps_complete > 0` | sidecar | the stored `next_action` (`revision_round`→`state-lifecycle.md` or `coaching`→`revision-coach`); Increment 4 enriches the *choice* among sub-steps |
-| `diagnosed` | editorial letter exists in `runs/` (and not `revising`) | sidecar + **fs glob** | offer `/coach` |
+| `diagnosed` | a synthesis/editorial letter exists for the project — `SYNTHESIS.md` at the project root OR `runs/*/*_Synthesis_*.md` | sidecar + **fs glob** | offer `/coach` |
 | `diagnosing` | **default** — `mode == "diagnostic"`, nothing above matched (intake done, passes/synthesis in progress, no letter yet) | sidecar | the stored `next_action` (`run_passes`/`run_synthesis`/`run_audits`) |
 
 Three corrections folded in from the Increment-3 spec review:
@@ -115,7 +117,7 @@ With Increment 1's fork/overlay split in place, `intake-router-runtime.md` §6 i
 
 ### Increment 3 — build plan
 
-**New: `lifecycle-node` validator.** A Python validator `lifecycle-node <sidecar> [run_folder]` that computes the derived node by the authoritative precedence above (`cold → blocked_gate → execution → pre_writing → submission → revising → diagnosed → diagnosing`) and self-tests every row — including the fresh/mid-pass case (B1) that must resolve to `diagnosing`, not undefined. It is the *tested primitive* `/start`, `/projects` ("where it stands"), and Increment 4's dispatcher all read from, rather than re-deriving in prose. When `run_folder` is absent it cannot confirm the `diagnosed` letter glob, so it returns `diagnosing` (the safe pre-letter default) with a note — registry-check's WARN-not-ERROR posture (S4). Wired into `validate.sh` (case + command list + AGG_VALIDATORS + count 36 → 37) **and the root `scripts/` mirror** (the Increment-2 lesson — CI runs the root copy). No new schema: it reads the existing sidecar.
+**New: `lifecycle-node` validator.** A Python validator `lifecycle-node <sidecar> [run_folder]` that computes the derived node by the authoritative precedence above (`cold → blocked_gate → execution → pre_writing → submission → revising → diagnosed → diagnosing`) and self-tests every row — including the fresh/mid-pass case (B1) that must resolve to `diagnosing`, not undefined. It is the *tested primitive* `/start`, `/projects` ("where it stands"), and Increment 4's dispatcher all read from, rather than re-deriving in prose. The `diagnosed` letter is detected relative to the sidecar's own project root (`SYNTHESIS.md`, or `runs/*/*_Synthesis_*.md`); an optional `run_folder` arg is an extra search location. When no synthesis is found anywhere, derivation falls through to `diagnosing` — the safe pre-letter default (S4). Wired into `validate.sh` (case + command list + AGG_VALIDATORS + count 36 → 37) **and the root `scripts/` mirror** (the Increment-2 lesson — CI runs the root copy). No new schema: it reads the existing sidecar.
 
 **`start.md` (the core change).** Promote `next_action` from the resume *exception* to the *primary* dispatch for a bound project: Step 0 binds (Increment 2) → scoped contract-hash precondition (locate the contract via the newest `runs/*/[Project]_Contract_*.md` glob; skip when no hash) → derive lifecycle node → dispatch via the `next_action` table. Bound, in-progress projects collapse Q1/Q2 to a **two-option** prompt — **"Resume here / Start fresh (full intake)"** — reusing the existing resume-gate choices (`start.md:40-41,48`), never a bare yes/no that traps a writer whose intent changed (S5). Cold start runs the questionnaire unchanged; `blocked_gate` keeps precedence.
 

@@ -165,8 +165,8 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check"
-  echo "Aggregate: --self-test-all (runs --self-test on all 36 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node"
+  echo "Aggregate: --self-test-all (runs --self-test on all 37 self-testable validators; exit 0 only if every validator's self-test passes)"
   echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder)"
   exit 2
 }
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # fixture-driven self-tests too (Validator Architecture Hardening — they
 # previously had none), so every command in the suite is exercised here.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check"
+  AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 36 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 37 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/36 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/37 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/36 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/37 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -4381,6 +4381,29 @@ EOF
       python3 "$RGC_HELPER" registry-check "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — registry-check skipped; check inline that .apodictic/registry.json is valid apodictic.project_registry.v1, ids are unique, every root resolves, and denormalized mode/next_action match each project's sidecar (sidecar wins). See docs/project-addressability.md."
+    exit 0
+    ;;
+
+  lifecycle-node)
+    # State-driven dispatch (Project Addressability, Increment 3; docs/project-addressability.md):
+    # derive a bound project's lifecycle node from its Diagnostic_State.meta.json sidecar by a single
+    # first-match precedence (cold -> blocked_gate -> execution -> pre_writing -> submission ->
+    # revising -> diagnosed -> diagnosing). Total: every readable sidecar resolves to exactly one node,
+    # with `diagnosing` the catch-all default. A tested primitive for /start, /projects, and the
+    # Increment-4 loop dispatcher — no new stored state. `diagnosed` checks for a synthesis/editorial
+    # letter relative to the sidecar's project root (optional run_folder = extra search location);
+    # no letter -> diagnosing. Pure derivation (no FAIL verdict). Delegates to scripts/lifecycle_node.py.
+    LCN_DIR=$(cd "$(dirname "$0")" && pwd)
+    LCN_HELPER="$LCN_DIR/lifecycle_node.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LCN_HELPER" ]; then python3 "$LCN_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; lifecycle-node is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LCN_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 lifecycle-node <sidecar> [run_folder] | --self-test"; exit 2; fi
+      python3 "$LCN_HELPER" lifecycle-node "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — lifecycle-node skipped; derive the node inline by the precedence in docs/project-addressability.md (cold -> blocked_gate -> execution -> pre_writing -> submission -> revising -> diagnosed -> diagnosing)."
     exit 0
     ;;
 

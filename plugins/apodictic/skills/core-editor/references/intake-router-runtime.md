@@ -296,11 +296,28 @@ All commands work as direct entry points. `/start` is recommended for new users;
 
 ## §6. Route Map
 
-Routing resolves in two stages (see §3a): pick **one base route** from Table A (applying any fork from the Artifact/Goal answers + Q3), then **stack any compatible overlays** from Table B. Overlays never appear as base-route rows — their applicability and status live once, in Table B, and compose onto whatever base route the forks selected.
+Routing has two entry modes. **Bound project** (a known book selected via `/start <project>` — Project Addressability): routing is *state-driven* — derive the lifecycle node from the sidecar and dispatch via the Lifecycle transition table below, skipping the intake questions (`commands/start.md` Step 0.5). **Cold start** (no bound project): pick **one base route** from Table A (applying any fork from the Artifact/Goal answers + Q3), then **stack any compatible overlays** from Table B. Overlays never appear as base-route rows — their applicability and status live once, in Table B, and compose onto whatever base route the forks (cold) or node (bound) selected.
 
-### §6 Table A — Base routes (Artifact × Goal, forks resolved)
+### §6 Lifecycle transition table (bound projects — state-driven dispatch)
 
-The genuine workflow-selection decisions. The `Fork` column names a workflow-selecting modifier when one applies (engine = which diagnostic engine; workflow = which workflow shape; intake = which intake). Forks are mutually exclusive within a class.
+The destination for a *bound* project is its **lifecycle node**, derived from the sidecar by a single first-match precedence (`cold → blocked_gate → execution → pre_writing → submission → revising → diagnosed → diagnosing`; total, with `diagnosing` the default). Mechanized + tested by `scripts/validate.sh lifecycle-node`. Full derivation table and rationale: `docs/project-addressability.md` §Increment 3.
+
+| Lifecycle node | Primary next action → workflow |
+|---|---|
+| `blocked_gate` | resolve the pending gate first (§Resume Target) |
+| `execution` | execution-mode resume (Check the fix / Keep working) — `handoff-protocol.md` |
+| `pre_writing` | `pre-writing-pathway/SKILL.md` |
+| `submission` | Submission Readiness (`references/submission-readiness.md`) / triage |
+| `revising` | stored `next_action`: `revision_round` → `state-lifecycle.md`, or `coaching` → `revision-coach/SKILL.md` |
+| `diagnosed` | offer `/coach` |
+| `diagnosing` | stored `next_action`: `run_passes` / `run_synthesis` / `run_audits` |
+| `cold` | no bound project → cold-start entry map (Table A) |
+
+Overlays for a bound project still come from Table B (not re-derived per node).
+
+### §6 Table A — Base routes (cold-start entry map: Artifact × Goal, forks resolved)
+
+The **cold-start** workflow-selection decisions — the path for a project with no lifecycle node yet (a bound, in-progress project routes via the Lifecycle transition table above instead). The `Fork` column names a workflow-selecting modifier when one applies (engine = which diagnostic engine; workflow = which workflow shape; intake = which intake). Forks are mutually exclusive within a class.
 
 | Artifact | Goal | Fork | Workflow | Status |
 |----------|------|------|----------|--------|

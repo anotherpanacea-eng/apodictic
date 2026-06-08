@@ -112,6 +112,8 @@ Produce the combined output per the template below. This is the primary delivera
 
 **Confidence and ceiling rule:** If a high-risk blind spot remains unresolved at the end of the run, confidence cannot exceed `MEDIUM`. If the blind spot materially affects ethics/governance legibility, category/reception exposure, or cross-volume consequence coherence, the verdict cannot exceed `CONDITIONALLY VIABLE` without an explicit rationale.
 
+**Sidecar readiness mirror (state-driven dispatch).** When the readiness assessment completes, mirror its per-dimension verdicts into the `Diagnostic_State.meta.json` sidecar's `readiness[]` array as `apodictic.readiness.v1` entries (`dimension` / `verdict` / `rationale`). This is the signal the `submission` lifecycle node derives from (`docs/project-addressability.md` §Increment 3): a non-empty `readiness[]` marks the project as having a recorded submission-readiness assessment, so a later `/start` resumes it at the `submission` node. Append, don't overwrite, across re-assessments.
+
 ---
 
 ## SR Code Integration

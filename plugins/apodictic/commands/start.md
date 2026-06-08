@@ -29,7 +29,32 @@ Load `../skills/core-editor/SKILL.md` first (thin orchestrator). Do NOT preload 
   - **more than 1** → list projects (title, where each stands, last-touched — the `/projects` view) and ask which to bind; then continue.
 - **Cold start is unchanged.** When no project is bound, the resume gate and the full intake router run exactly as before — binding only *adds* the ability to select an existing book; it never gates a new one.
 
-After binding (or on cold start), continue to the resume gate (step 1), which now reads the bound project's state.
+After binding, continue to **Step 0.5** (state-driven dispatch). On cold start, skip to the resume gate (step 1) / full intake.
+
+### Step 0.5 — State-driven dispatch (bound projects; before the resume gate)
+
+For a **bound** project, routing is driven by the project's state, not by re-asking intake. This promotes the `next_action` dispatch (see §Resume Target) from a resume *exception* to the *primary* path:
+
+1. **Contract-hash precondition (scoped).** If the sidecar carries a non-empty `contract_hash`, verify it before any zero-question dispatch: locate the contract via the newest `runs/*/[Project]_Contract_*.md` and run `../scripts/validate.sh contract-check <contract_file> <contract_hash>`. On mismatch (manuscript/contract changed out-of-band), do **not** silently resume — fall to a confirming re-ground or full intake. A pre-contract sidecar (`pre_writing`, or a fresh `diagnosing` with `contract_hash: ""`) has no hash and **skips** this check.
+2. **Derive the lifecycle node.** Run `../scripts/validate.sh lifecycle-node <project-root>/Diagnostic_State.meta.json [run_folder]`, or derive inline by the precedence (first match wins): `cold → blocked_gate → execution → pre_writing → submission → revising → diagnosed → diagnosing`.
+3. **Dispatch by node** — present a **two-option** prompt, never a bare yes/no:
+   - **Resume here** → load the workflow for the node (via §Resume Target / the `next_action` table); artifact and goal are read from the contract + sidecar, so Q1/Q2 are skipped.
+   - **Start fresh (full intake)** → drop to the intake router (step 2+), for when the writer's intent changed (a new task on an old book).
+
+   | Node | Resume-here dispatch |
+   |---|---|
+   | `blocked_gate` | resolve the pending gate first (§Resume Target "Resolve a pending gate first") |
+   | `execution` | the execution-mode resume gate below (Check the fix / Keep working) |
+   | `pre_writing` | load `../skills/pre-writing-pathway/SKILL.md` |
+   | `submission` | submission-readiness (`../skills/core-editor/references/submission-readiness.md`) / triage |
+   | `revising` | the stored `next_action` (`revision_round` → `state-lifecycle.md`, or `coaching` → `revision-coach/SKILL.md`) |
+   | `diagnosed` | offer `/coach` |
+   | `diagnosing` | the stored `next_action` (`run_passes` / `run_synthesis` / `run_audits`) |
+   | `cold` | no bound project — run the resume gate / full intake below |
+
+4. A bound project's **overlays** (`ai`, `editor`, …) still come from the Q3 / §6 Table B layer, not from the node.
+
+The execution-mode resume gate (step 1) remains the detailed handler for the `execution` node; cold start runs the full router unchanged.
 
 1. **Resume gate (runs before Q1):**
    - Check for existing state in the active project output context. The active project output context is the project root folder (see `../skills/core-editor/references/output-structure.md` §Folder Architecture), not the plugin repo. Reuse an existing project root when one is already in use. For legacy projects that used an `Outputs/` sibling, treat that folder as the project root.
