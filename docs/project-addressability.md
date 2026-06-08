@@ -84,15 +84,15 @@ The router's destination for a bound project is a **lifecycle node**. The honest
 | `execution` | `mode == "execution"`, `active_scene_scope` set | sidecar | — |
 | `diagnosed` | `revision_progress.steps_complete == 0` AND an editorial letter exists in `runs/` | sidecar + **fs glob** | letter-existence is a glob, not a field |
 | `revising` | `revision_progress.steps_complete > 0` | sidecar | the `finding_states` half is **dropped** — see below |
-| `pre_writing` | minimal sidecar `next_action == "pre_writing"` | sidecar | **requires the minimal-sidecar prerequisite** (Increment 2 caveat); without it, pre-writing projects can't reach this node |
-| `submission` | a submission signal is live | **new signal** | `goal` is router input, never persisted, and there is no `submission` mode (`handoff-protocol.md:23`). Needs either a persisted `readiness[]` signal (the array exists in the template but is unused) or a Pass-11-artifact glob. **Open decision (OQ5).** |
+| `pre_writing` | minimal sidecar `next_action == "pre_writing"` | sidecar | **satisfied (Increment 2):** pre-writing drops the minimal sidecar and `start.md` carries the `pre_writing` dispatch row |
+| `submission` | `readiness[]` non-empty AND its latest entry is not `delivered` | sidecar | **decided (OQ5(a)):** the existing-but-unused `readiness[]` array is populated when Pass 11 / `/ready` enters scope; no `submission` mode invented |
 
 Two corrections folded in from review:
 
 - **`revising` no longer keys on `finding_states: revised`.** That state is currently **unreachable** — `revised` "is reached at a revision round (no gated phase yet)" (`run_gate.py:48`; `runner-governed-execution.md:141`). So the loop ladder cannot rely on it until a gated `revision_round` phase exists; see Increment 4's prerequisite. `revising` derives from `revision_progress.steps_complete > 0` alone.
 - **`blocked_gate` takes precedence** over all others (it already does, per `start.md:42` "Resolve a pending gate first").
 
-The headline is therefore weaker than the first draft claimed: the enum is *mostly* derived, but `pre_writing` and `submission` each carry a real prerequisite, and `diagnosed`/`revising` touch the filesystem. This is glue work, not free derivation.
+Net (post-Increment-2): the `pre_writing` and `submission` prerequisites are resolved (minimal sidecar + dispatch row; `readiness[]` population). The enum is now derivable, with `diagnosed` the only node needing a filesystem check (editorial-letter glob in `runs/`). Increment 3 mechanizes the derivation in a `lifecycle-node` validator so the table is *tested*, not just described.
 
 ### Promote `next_action` from exception to primary
 
@@ -108,6 +108,20 @@ Today `start.md` runs the questionnaire and treats the sidecar resume as a speci
 ### Route map as transition graph
 
 With Increment 1's fork/overlay split in place, `intake-router-runtime.md` §6 is re-expressed as a transition graph keyed on lifecycle node: nodes are lifecycle positions, edges are forks (workflow selections), overlays decorate edges (and never appear as nodes or rows). The Artifact×Goal lookup table survives only as the **cold-start** entry map — the path for projects that have no node yet.
+
+### Increment 3 — build plan
+
+**New: `lifecycle-node` validator.** A Python validator `lifecycle-node <sidecar> [run_folder]` that computes the derived node from the table above and self-tests every row — making the derivation a *tested primitive* that `/start`, `/projects` ("where it stands"), and Increment 4's loop dispatcher all read from one source of truth rather than re-deriving in prose. Precedence order baked in: `cold` → `blocked_gate` → `execution` → `submission` → `revising` → `diagnosed` → `pre_writing`. Wired into `validate.sh` (case + command list + AGG_VALIDATORS + count 36 → 37) **and the root `scripts/` mirror** (the Increment-2 lesson — CI runs the root copy). No new schema: it reads the existing sidecar; `diagnosed` takes the optional `run_folder` for the editorial-letter glob.
+
+**`start.md` (the core change).** Promote `next_action` from the resume *exception* to the *primary* dispatch for a bound project: Step 0 binds (Increment 2) → **contract-hash precondition** (S3) → derive lifecycle node → dispatch via the `next_action` table. Bound, in-progress projects collapse Q1/Q2 to a confirm prompt ("Resuming X — you're at <node>; pick up there?"); cold start runs the questionnaire unchanged. `blocked_gate` keeps precedence (resolve the pending gate first).
+
+**`intake-router-runtime.md` §6.** Add a **lifecycle transition table** (node → primary next action → workflow loaded) above Table A, and reframe Table A explicitly as the *cold-start entry map* (the path for projects with no node yet). Table B overlays decorate edges, unchanged.
+
+**`readiness[]` population (submission node).** `submission-readiness.md` / `pass-11.md` append a `readiness` entry to the sidecar when the readiness workflow runs, so the `submission` node derives from real state (OQ5(a)). Small and additive.
+
+**Status/docs.** Spec Increment 3 → Built; ROADMAP; changelog fragment (37 validators).
+
+**Not in scope:** the `revising` loop *ladder* and the `revised` finding-state — those are Increment 4 and its `revision_round` prerequisite.
 
 ---
 
