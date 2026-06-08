@@ -49,6 +49,19 @@ APODICTIC isn't just for finished drafts.
 
 APODICTIC works best on strong frontier models with enough context for large-manuscript analysis. 
 
+### Which install do I need?
+
+Pick the row for the app you'll actually run APODICTIC in — that's the only thing that decides your path:
+
+| You're using… | Go to | Fastest path |
+|---|---|---|
+| **Antigravity** | [Antigravity (Native)](#antigravity-native) | Workspace Isolation — download the zip, open the folder, `/start` |
+| **Codex** | [Codex](#codex) | Download the zip, open the `codex/` folder, install from the local marketplace |
+| **Claude Code (CLI / terminal)** | [Claude Code (CLI)](#claude-code-cli) | Two `/plugin` commands |
+| **Cowork (desktop app)** | [Cowork (Desktop App)](#cowork-desktop-app) | Add the marketplace from GitHub, then install |
+
+Whichever path you take, it ends the same way: start a fresh session and type `/start`.
+
 ### Antigravity (Native)
 
 APODICTIC supports two modes of execution in Antigravity: Workspace Isolation (recommended) and Global Installation.
@@ -152,6 +165,22 @@ Not sure where to begin? Just `/start`. When in doubt, that's the front door.
 - `/new-project` — Set up a new editing project.
 
 `/revision-plan` is a compatibility alias for `/coach`.
+
+## Key Terms
+
+A few words you'll meet in the README and in your first editorial letter:
+
+- **Contract** — what APODICTIC infers your manuscript is *trying to be*: its genre, the promise it makes to readers, and its controlling idea. It predicts this from the text alone, then measures the book against it. When the inferred contract doesn't match what you intended, that mismatch is the core diagnostic signal.
+- **Controlling idea** — the central meaning or argument the story makes through its events. Part of the contract.
+- **The Firewall** — the rule that APODICTIC diagnoses structure and names *classes* of solution but never writes content (no plot, characters, dialogue, or prose). You're the writer; it's the analyst.
+- **Pass** — one analytical lens over the manuscript (reverse outline, reader experience, reveal economy, and so on). A development edit runs the passes your question requires.
+- **Macro block** — a group of passes organized around a writer question (e.g. "Structure Map," "Reader Dynamics"). Eight blocks in all.
+- **Audit** — a specialized deep-dive beyond the core passes (genre, craft, or tag), run via `/audit`.
+- **Genre module** — recalibrates what counts as a problem for your genre. A slow opening is a feature in literary fiction, a defect in a thriller.
+- **Editorial letter** — the main deliverable: a structural diagnosis with severity-ranked findings, each paired with a class of solution.
+- **Severity tiers** — every finding is ranked **Must-Fix**, **Should-Fix**, or **Could-Fix**. Severity is locked before any charity reframing, so it can't be quietly softened (the "Deficit Lock").
+- **Spine** — a plot-structure paradigm (Hero's Journey, Mystery, Spiral, …). APODICTIC works with 50 spines across 12 families, not just three-act.
+- **Reverse outline** — reconstructing what each scene *actually* does, as opposed to what you intended — the starting point for structural diagnosis.
 
 ## Project Docs
 
