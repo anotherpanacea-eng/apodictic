@@ -9,6 +9,7 @@
 | In Progress | Planned | Done | Backlog |
 |-------------|---------|------|---------|
 | [Argument Benchmark Suite](#benchmark-suite) | [Harness Contracts v2](#harness-contracts-v2) | [**v2.2.0**](#v220--operator-modes-feedback-triage--revision-follow-through) | [Model-Capacity Exploitation](#model-capacity-exploitation) |
+| | [Project Addressability & State-Driven Routing](#project-addressability--state-driven-routing) | | |
 | | [Multi-Party Intake](#multi-party-intake) | [**v2.1.0**](#v210--runner-governed-execution--finding-lifecycle-ids) | [Research / API Reliability Layer](#research--api-reliability-layer) |
 | | [Legal Risk Register](#legal-risk-register) | [**v2.0.0**](#v200--editorial-honesty--structural-integrity) | [Episode Cadence](#episode-cadence) |
 | | [Coaching Deepening](#coaching-deepening) | [v1.9.0](#v190--ai-prose-calibration-v20) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
@@ -228,6 +229,24 @@ For web serial and newsletter fiction writers. Hook debt tracking, recap burden 
 ### Collaborative Revision Coaching
 
 For co-authoring teams or author-editor pairs working through a diagnostic together. Priority conflict resolution, sign-off workflow, change ledger. Build only if demand materializes.
+
+---
+
+## Project Addressability & State-Driven Routing
+
+APODICTIC already persists durable per-project state — `Diagnostic_State.md` + the `Diagnostic_State.meta.json` sidecar, `SYNTHESIS.md`, and the README run-archive manifest, all at a project root initialized by `/new-project` (`references/output-structure.md` §Folder Architecture). What it lacks is **addressability**: the "active project output context" is *ambient* (whatever folder the host happens to be in), so a writer carrying several books cannot point the tool at one by name and resume where they left off. This capability makes a project a named, selectable entity and promotes the sidecar from a resume-time fallback to the *primary* routing input — `/start` reads *where you are* instead of re-interviewing you, and the intake router's route map becomes a lifecycle transition graph rather than an Artifact×Goal lookup grid.
+
+The increments are a forced dependency chain — each unlocks the next.
+
+**Increment 1 — Router fork/overlay split (prerequisite).** Separate workflow-*selecting* modifiers (forks: `time`, `nonfiction`, `feedback`, `team`) from workflow-*modifying* ones (overlays: `ai`, `editor`, `facilitator`, `risk`, `hybrid`, `swarm`), so overlays compose orthogonally instead of multiplying route-map rows. Required first: a transition graph cannot carry the full modifier cross-product at every node. Proposal: [`docs/router-fork-overlay-split.md`](docs/router-fork-overlay-split.md).
+
+**Increment 2 — Project registry & session binding.** A canonical project registry (name → root path → lifecycle node → last-touched) homed outside the plugin repo, with each project root's sidecar as the canonical self-description and the registry as a recomputable cache (the same canonical-log / recomputable-pointer discipline as [Runner-Governed Execution](#runner-governed-execution)). `/start <project>` (and a `/projects` listing) binds the session to a chosen book and loads its state. Spec: [`docs/project-addressability.md`](docs/project-addressability.md).
+
+**Increment 3 — State-driven dispatch.** Promote the sidecar `next_action` dispatch table (today the `/start` resume *exception* — `commands/start.md` §Resume Target) to the *primary* routing path. For a bound, in-progress project the artifact and goal axes are already known from the contract and sidecar, so the 2–3 intake questions collapse to zero; cold-start still runs the questionnaire. The route map is re-expressed as a transition graph keyed on lifecycle node + `execution.phase` gate frontier.
+
+**Increment 4 — Revision-loop-as-spine.** With a bound project and state-driven dispatch, the diagnose⇄coach⇄execute⇄verify loop becomes the resumable spine: a "what now?" dispatcher that reads `execution.finding_states` (locked→delivered→revised), the gate frontier, and `revision_progress`, then proposes the next leverage action instead of waiting for the writer to recall the right command. This is the substrate the [Coaching Deepening](#coaching-deepening) items (Multi-Session Revision Arc Planning, Coaching History and Pattern Recognition) and [Collaborative Revision Coaching](#collaborative-revision-coaching) currently lack — none has a home for project identity or loop position.
+
+**Status:** Planned. Increment 1 has a written proposal; Increments 2–4 specced in [`docs/project-addressability.md`](docs/project-addressability.md).
 
 ---
 
