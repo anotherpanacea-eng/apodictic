@@ -2,6 +2,22 @@
 
 Developmental editing that listens before diagnosing.
 
+```mermaid
+flowchart TD
+    S(["Type /start"]) --> Q1{"1 · What do you have?"}
+    Q1 -->|An idea| Q2
+    Q1 -->|Scattered fragments| Q2
+    Q1 -->|A partial draft| Q2
+    Q1 -->|A complete draft| Q2
+    Q1 -->|A series| Q2
+    Q2{"2 · What do you want?<br/>(your options depend on what you have)"} --> Q3{"3 · Anything that changes how we work?<br/>deadline · nonfiction · sensitive content · editing for someone else · writing group"}
+    Q3 --> L["Your workflow<br/>→ editorial letter or structural plan"]
+    L -. the Firewall:<br/>never .-> X["rewrite your prose"]
+    style X stroke-dasharray: 5 5,color:#9ca3af
+```
+
+*Every edit starts at `/start`: three plain-language questions — the second's options depend on the first — route you to the right workflow. ([Walk the specific routes in the interactive route explorer](https://anotherpanacea-eng.github.io/apodictic/plugins/apodictic/route-explorer.html).)*
+
 ## Why This Exists
 
 Every AI writing tool I tried wanted to rewrite my prose. I didn't need a co-writer. I needed what a good developmental editor does — read my manuscript, figure out what it's trying to be, and tell me where it's working and where it isn't. Structurally. Without touching my sentences.
