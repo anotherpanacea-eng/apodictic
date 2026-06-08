@@ -133,7 +133,7 @@ With Increment 1's fork/overlay split in place, `intake-router-runtime.md` §6 i
 
 ## Increment 4 — Revision-loop-as-spine
 
-**Hard prerequisite (review fix B1): a gated `revision_round` phase must exist first.** Increment 4's ladder keys on the `locked → delivered → revised` finding lifecycle, but `revised` is currently **unreachable** — it "is reached at a revision round (no gated phase yet)" (`run_gate.py:48`; `runner-governed-execution.md:141`). Until a `revision_round` gate writes the `revised` state, the dispatcher can only see `locked`/`delivered`. So Increment 4 is blocked on defining and gating `revision_round` — an unacknowledged prerequisite in the first draft, now named and scheduled ahead of the loop work. (This dovetails with the existing Runner-Governed Execution "increment 4 future" item.)
+**The `revised` finding-state and how Increment 4 handles it.** The ladder below references the `locked → delivered → revised` lifecycle, but `revised` is currently **unreachable** as a *sidecar field* — it "is reached at a revision round (no gated phase yet)" (`run_gate.py:48`; `runner-governed-execution.md:141`). The first draft called a gated `revision_round` phase a hard prerequisite. On closer scoping that's only true if the dispatcher insists on reading `revised` from the sidecar. The **canonical source** of "which findings were revised" is the `<!-- resolved: F-… -->` markers in the revision report (what `finding-trace` already parses, and what a future gate would *fold* into the sidecar). So the dispatcher can read those markers directly today; the gate is a *hardening*, not a precondition. This motivates the build split below.
 
 For a project at the `revising` node, dispatch is not a single workflow load but a **"what now?" leverage decision**. Inputs, all already in the sidecar:
 
@@ -151,6 +151,14 @@ Selection (highest-leverage first):
 5. All findings `revised`, `control_questions.open == 0` → offer submission-readiness (`submission` node).
 
 The dispatcher proposes; the writer disposes. It replaces "remember whether to type `/coach`, `/diagnose`, or `/ready`" with "the tool already knows where you are and what's worth doing next." This is the loop position and project identity that [Coaching Deepening](../ROADMAP.md#coaching-deepening) (Multi-Session Revision Arc Planning, Coaching History and Pattern Recognition) and [Collaborative Revision Coaching](../ROADMAP.md#collaborative-revision-coaching) build on but currently have no substrate for.
+
+### Increment 4 — build plan (split by risk)
+
+**Layer 4b — the "what now?" loop dispatcher (build now).** The increment's user-facing value. At the `revising` node, `/start` (Step 0.5) and `/coach` propose the next leverage action by the ladder above, reading: `finding_states` (`locked`/`delivered`, written today), the **`<!-- resolved: F-… -->` markers in the latest revision report** (the canonical "which findings were revised" — read directly), `revision_progress`, `triage_summary`, and `control_questions.open`. This is prose/logic in `start.md` (the `revising` dispatch) and `revision-coach/SKILL.md` (the ladder); no gate-engine change. The ladder's `delivered`-but-not-`revised` step (step 3) keys on the resolved markers, so it works without 4a.
+
+**Layer 4a — gated `revision_round` phase (the canonical `revised` writer; follow-up).** Adds a third phase to `execution-gates.v1.json` (`revision_round`, `allowed_next: ["run_synthesis"]`, a revision-report artifact_key + attestations + a `finding-trace` check), maps `_PHASE_FINDING_STATE["revision_round"] = "revised"` in `run_gate.py`, and — the delicate part — marks **only the resolved subset** of findings `revised` (the report's `<!-- resolved: F-… -->` ids), unlike the existing phases that mark *all* ledger findings. That is real surgery on the runner-governed-execution fold (selective per-finding state, new manifest phase + artifact_key, `run_gate.py` self-tests, the `--check-all` gate-state canonical run-folder, the degradation path). When it lands, 4b reads `revised` from the sidecar instead of re-parsing markers — a hardening, not a behavior change.
+
+**Recommendation:** build **4b** in this branch; give **4a** its own spec→review→build→review cycle. 4a balloons into the most sophisticated machinery in the repo and deserves isolated review; 4b is the spine's actual value and fits cleanly here. (This is the "flag if it balloons" call.)
 
 ---
 
