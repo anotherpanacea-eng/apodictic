@@ -165,9 +165,9 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node"
-  echo "Aggregate: --self-test-all (runs --self-test on all 37 self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument"
+  echo "Aggregate: --self-test-all (runs --self-test on all 38 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder)"
   exit 2
 }
 
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # fixture-driven self-tests too (Validator Architecture Hardening — they
 # previously had none), so every command in the suite is exercised here.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node"
+  AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 37 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 38 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/37 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/38 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/37 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/38 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -334,6 +334,13 @@ if [ "$1" = "--check-all" ]; then
       "$0" scene-ethics "$CA_BASE/example-scene-ethics-plan.md" || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-scene-ethics-plan.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Beta-Reader Instrument (reader-instrument: question-contract + provenance + firewall + anti-relitigation) =="
+    if [ -f "$CA_BASE/example-beta-reader-instrument.md" ] && [ -f "$CA_BASE/example-uncertainty-ledger.md" ]; then
+      "$0" reader-instrument "$CA_BASE/example-beta-reader-instrument.md" "$CA_BASE/example-uncertainty-ledger.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-beta-reader-instrument.md / example-uncertainty-ledger.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical Timeline (timeline-arithmetic, timeline-anchor-conflict, timeline-diff self) =="
@@ -4455,6 +4462,32 @@ EOF
       python3 "$SCE_HELPER" scene-ethics "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — scene-ethics skipped; check inline that no identifiable person is depicted as-is without consent and without a fairness rationale, and that as-is depictions cross-check the Legal Risk Register. See docs/nonfiction-pre-draft.md."
+    exit 0
+    ;;
+
+  reader-instrument)
+    # Beta-Reader Instrument (Workflows / revision-coach; docs/beta-reader-instrument.md): the upstream
+    # complement to feedback-triage. Structural checks over apodictic.reader_question.v1 blocks — reader
+    # questions seeded from the diagnosis's OPEN uncertainties (LOW/UNCERTAIN findings, Unresolved-Questions
+    # bullets, risk_if_fixed tradeoffs), read together with the Findings Ledger they target. B1 invalid
+    # item; B2 duplicate id; B3 provenance integrity (finding source -> a `targets` resolving to a real
+    # ledger finding; unresolved-question -> a `source_note` and no targets); B4 leading/invented content
+    # (firewall scan — override reader-instrument leading-question RQ-NN); B5 relitigating a LOCKED verdict
+    # (severity in {Must-Fix,Should-Fix} AND confidence in {HIGH,MEDIUM} — override how-to-fix RQ-NN); W1
+    # coverage. B4/B5/W1 advisory, ERROR under --strict. Takes a run folder (globs the instrument +
+    # *_Findings_Ledger_*.md) or explicit files. Delegates to scripts/reader_instrument.py; degrades to an
+    # advisory WARN without python3.
+    RDI_DIR=$(cd "$(dirname "$0")" && pwd)
+    RDI_HELPER="$RDI_DIR/reader_instrument.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$RDI_HELPER" ]; then python3 "$RDI_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; reader-instrument is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$RDI_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 reader-instrument <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$RDI_HELPER" reader-instrument "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — reader-instrument skipped; check inline that each reader question is non-leading, content-neutral, sourced from a LOW/UNCERTAIN finding or an Unresolved Question (not a locked verdict), and carries an expected_signal. See docs/beta-reader-instrument.md."
     exit 0
     ;;
 
