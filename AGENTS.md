@@ -76,8 +76,12 @@ runs the same self-checks via `release-verify.mjs`.
 and every Python validator exist in **two committed copies**: `plugins/apodictic/scripts/`
 (canonical) and root `scripts/` (**what CI runs**, per `.github/workflows/ci.yml`). These
 are *not* generated like `codex/` — they must be mirrored **by hand, byte-identical**, or
-a validator/engine change passes locally while CI runs the stale copy blind to it. Verify
-with `diff -q scripts/<f> plugins/apodictic/scripts/<f>`. (Schemas/manifests in
+a validator/engine change passes locally while CI runs the stale copy blind to it. Sync the
+copies by hand (`cp`), then verify with **`validate.sh check-mirror`** — it asserts the shared
+mirrored set (`validate.sh`, `preflight.sh`, every `*.py`) is byte-identical and is wired into
+`--check-all`, so drift is now CI-blocking. (It only *detects* drift; it never auto-syncs — the
+by-hand `cp` stays deliberate. Sync as the **last** step before `--check-all`, else its own
+`validate.sh` edit shows as `DIFFER: validate.sh` until both copies match.) (Schemas/manifests in
 `plugins/apodictic/schemas/` are single-sourced — resolved from either script dir — so they
 don't need mirroring.)
 
