@@ -18,7 +18,7 @@ Cross-model deep-research elicitation: one prompt (below) run through multiple m
 ## Synthesis (complete — all 4 sources)
 
 ### Convergence → high-confidence backbone
-- **US core, identical across all three:** defamation (Sullivan actual-malice; Gertz private-figure); fair use as a non-mechanical four-factor test (§107) with *no safe word count*; strong (fact-specific) protection for truthful public-record info (Cox; Florida Star); GDPR Art 9 / Art 85 for EU; lyrics/poetry/unpublished material as the perennial copyright trap.
+- **US core, identical across the first three sources (Gemini corroborates — see below):** defamation (Sullivan actual-malice; Gertz private-figure); fair use as a non-mechanical four-factor test (§107) with *no safe word count*; strong (fact-specific) protection for truthful public-record info (Cox; Florida Star); GDPR Art 9 / Art 85 for EU; lyrics/poetry/unpublished material as the perennial copyright trap.
 - **Severity model converges:** Claude's *tier-raising modifiers* and GPT's *"tier is a default, raised/lowered only through documented answers"* are the same computational shape — **base-class tier + documented modifiers**. Adopt this as the `severity` mechanism (maps cleanly to monitor / review-recommended / review-now).
 
 ### Corrections surfaced by triangulation
