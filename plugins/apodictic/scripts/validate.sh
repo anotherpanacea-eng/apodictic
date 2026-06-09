@@ -165,9 +165,9 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, manuscript-viz"
-  echo "Aggregate: --self-test-all (runs --self-test on all 38 self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, check-mirror"
+  echo "Aggregate: --self-test-all (runs --self-test on all 40 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # fixture-driven self-tests too (Validator Architecture Hardening — they
 # previously had none), so every command in the suite is exercised here.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node manuscript-viz"
+  AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz check-mirror"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 38 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 40 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/38 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/40 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/38 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/40 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -336,9 +336,16 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-scene-ethics-plan.md not found"; CA_FAIL=1
     fi
     echo ""
+    echo "== canonical Beta-Reader Instrument (reader-instrument: question-contract + provenance + firewall + anti-relitigation) =="
+    if [ -f "$CA_BASE/example-beta-reader-instrument.md" ] && [ -f "$CA_BASE/example-uncertainty-ledger.md" ]; then
+      "$0" reader-instrument "$CA_BASE/example-beta-reader-instrument.md" "$CA_BASE/example-uncertainty-ledger.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-beta-reader-instrument.md / example-uncertainty-ledger.md not found"; CA_FAIL=1
+    fi
+    echo ""
     echo "== canonical Structure Map manifest (manuscript-viz: manifest<->source provenance vs Timeline + Ledger) =="
     if [ -f "$CA_BASE/example-structure-map-manifest.md" ] && [ -f "$CA_BASE/example-timeline.md" ] && [ -f "$CA_BASE/example-findings-ledger.md" ]; then
-      "$0" manuscript-viz "$CA_BASE/example-structure-map-manifest.md" "$CA_BASE/example-timeline.md" "$CA_BASE/example-findings-ledger.md" || CA_FAIL=1
+      "$0" manuscript-viz "$CA_BASE/example-structure-map-manifest.md" "$CA_BASE/example-timeline.md" "$CA_BASE/example-findings-ledger.md" --require-block || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-structure-map-manifest.md / example-timeline.md / example-findings-ledger.md not found"; CA_FAIL=1
     fi
@@ -390,6 +397,13 @@ if [ "$1" = "--check-all" ]; then
     done
     echo ""
   fi
+
+  # Dual-script-mirror invariant: the root scripts/ copy (what CI runs) and the canonical
+  # plugins/apodictic/scripts/ copy must be byte-identical for the shared mirrored set, or a
+  # validator change passes against one copy while CI runs the stale other (AGENTS.md § parity).
+  echo "== check-mirror (scripts/ <-> plugins/apodictic/scripts/ byte-identical) =="
+  "$0" check-mirror >/dev/null 2>&1 && echo "  ok (mirrored set identical)" || { echo "  FAIL"; "$0" check-mirror || true; CA_FAIL=1; }
+  echo ""
 
   if [ "$CA_FAIL" -eq 0 ]; then
     echo "check-all: PASS (self-tests + real-file invariants)"
@@ -4465,6 +4479,32 @@ EOF
     exit 0
     ;;
 
+  reader-instrument)
+    # Beta-Reader Instrument (Workflows / revision-coach; docs/beta-reader-instrument.md): the upstream
+    # complement to feedback-triage. Structural checks over apodictic.reader_question.v1 blocks — reader
+    # questions seeded from the diagnosis's OPEN uncertainties (LOW/UNCERTAIN findings, Unresolved-Questions
+    # bullets, risk_if_fixed tradeoffs), read together with the Findings Ledger they target. B1 invalid
+    # item; B2 duplicate id; B3 provenance integrity (finding source -> a `targets` resolving to a real
+    # ledger finding; unresolved-question -> a `source_note` and no targets); B4 leading/invented content
+    # (firewall scan — override reader-instrument leading-question RQ-NN); B5 relitigating a LOCKED verdict
+    # (severity in {Must-Fix,Should-Fix} AND confidence in {HIGH,MEDIUM} — override how-to-fix RQ-NN); W1
+    # coverage. B4/B5/W1 advisory, ERROR under --strict. Takes a run folder (globs the instrument +
+    # *_Findings_Ledger_*.md) or explicit files. Delegates to scripts/reader_instrument.py; degrades to an
+    # advisory WARN without python3.
+    RDI_DIR=$(cd "$(dirname "$0")" && pwd)
+    RDI_HELPER="$RDI_DIR/reader_instrument.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$RDI_HELPER" ]; then python3 "$RDI_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; reader-instrument is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$RDI_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 reader-instrument <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$RDI_HELPER" reader-instrument "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — reader-instrument skipped; check inline that each reader question is non-leading, content-neutral, sourced from a LOW/UNCERTAIN finding or an Unresolved Question (not a locked verdict), and carries an expected_signal. See docs/beta-reader-instrument.md."
+    exit 0
+    ;;
+
   manuscript-viz)
     # Manuscript-Structure Visualizations (Horizon Tier 1; docs/manuscript-visualizations.md): a
     # presentation layer that adds no analysis. Validates the apodictic.viz_manifest.v1 block (data
@@ -4472,10 +4512,12 @@ EOF
     # E1 schema + no-visual-style allowlist, E2 provenance closure (scene_id -> Timeline row; finding id
     # -> ledger; finding chapter == the conservative Chapter-N/Ch-N evidence_refs parse, else 'unplaced'),
     # E3 every body Must-Fix appears, E4 byte-equal copy fidelity (no compute/embellish). W1 coverage
-    # advisory, ERROR under --strict. The severity->encoding map is hardcoded in the render-only SVG layer
-    # (charts 1-3), not the manifest, so a run cannot recolor a Must-Fix. Takes a run folder (globs the
-    # manifest + Timeline + Findings Ledger) or explicit files. Delegates to scripts/viz_manifest.py;
-    # degrades to an advisory WARN without python3. (`viz_manifest.py render ...` emits the HTML.)
+    # advisory, ERROR under --strict. --require-block makes a missing/invalid manifest a hard failure (the
+    # canonical-example gate uses it so it can't pass vacuously). The severity->encoding map is hardcoded
+    # in the render-only SVG layer (charts 1-3), not the manifest, so a run cannot recolor a Must-Fix.
+    # Takes a run folder (globs the manifest + Timeline + Findings Ledger) or explicit files. Delegates to
+    # scripts/viz_manifest.py; degrades to an advisory WARN without python3. (`viz_manifest.py render ...`
+    # emits the HTML.)
     MVZ_DIR=$(cd "$(dirname "$0")" && pwd)
     MVZ_HELPER="$MVZ_DIR/viz_manifest.py"
     if [ "${1:-}" = "--self-test" ]; then
@@ -4483,7 +4525,7 @@ EOF
       echo "Self-test: PASS (degraded — python3 unavailable; manuscript-viz is advisory without it)"; exit 0
     fi
     if command -v python3 >/dev/null 2>&1 && [ -f "$MVZ_HELPER" ]; then
-      if [ $# -lt 1 ]; then echo "Usage: $0 manuscript-viz <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      if [ $# -lt 1 ]; then echo "Usage: $0 manuscript-viz <run_folder|files...> [--strict] [--require-block] | --self-test"; exit 2; fi
       python3 "$MVZ_HELPER" manuscript-viz "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — manuscript-viz skipped; check inline that the viz_manifest copies Timeline/finding values verbatim, carries no visual-style fields, places findings only by the Chapter-N evidence_refs parse (else 'unplaced'), and includes every Must-Fix. See docs/manuscript-visualizations.md."
@@ -4574,6 +4616,67 @@ EOF
     fi
     echo "WARN: python3 unavailable — editor-scaffolding skipped; if the letter declares editor-scaffolding mode, verify inline that it carries an Editor Brief, a 'What You Might Have Missed' section, an Intervention Menu, and that severity tokens survive. See docs/editor-scaffolding.md."
     exit 0
+    ;;
+
+  check-mirror)
+    # Mirror-parity gate (QoL infra; docs/mirror-parity-check.md): mechanizes the AGENTS.md
+    # dual-script-mirror invariant. validate.sh, preflight.sh, and every *.py exist in TWO committed
+    # copies — root scripts/ (what CI runs) and plugins/apodictic/scripts/ (canonical) — that must be
+    # kept byte-identical BY HAND; a stale copy passes locally while CI runs the other blind. This
+    # asserts the shared mirrored set matches. Root-only build/release scripts (*.mjs, release.sh,
+    # bump-version.sh) and the plugin-only test_fixtures/ are NOT mirrored; schemas are single-sourced.
+    # Detection only — never auto-syncs (mirroring stays a deliberate cp). Pure shell; needs no python3.
+    if [ "${1:-}" = "--self-test" ]; then
+      CM_T=$(mktemp -d); CM_R=0
+      mkdir -p "$CM_T/a" "$CM_T/b"
+      printf 'x\n' > "$CM_T/a/validate.sh"; printf 'x\n' > "$CM_T/b/validate.sh"
+      printf 'p\n' > "$CM_T/a/m.py";        printf 'p\n' > "$CM_T/b/m.py"
+      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && echo "  identical: OK" || { echo "  identical: FAIL (expected PASS)"; CM_R=1; }
+      printf 'p2\n' > "$CM_T/b/m.py"
+      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && { echo "  content_drift: FAIL (one-byte diff not caught)"; CM_R=1; } || echo "  content_drift: OK (caught)"
+      printf 'p\n' > "$CM_T/b/m.py"; printf 'q\n' > "$CM_T/a/only.py"
+      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && { echo "  missing_file_a: FAIL (one-sided file in dirA not caught)"; CM_R=1; } || echo "  missing_file_a: OK (caught)"
+      rm -f "$CM_T/a/only.py"; printf 'q\n' > "$CM_T/b/only.py"
+      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && { echo "  missing_file_b: FAIL (one-sided file in dirB not caught)"; CM_R=1; } || echo "  missing_file_b: OK (caught)"
+      rm -f "$CM_T/b/only.py"
+      printf 's\n' > "$CM_T/a/sync_setec.py"   # a root-only util present in one dir only must NOT fail
+      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && echo "  root_only_excluded: OK (one-sided root-only file ignored)" || { echo "  root_only_excluded: FAIL (root-only exclusion not honored)"; CM_R=1; }
+      rm -rf "$CM_T"
+      if [ "$CM_R" -eq 0 ]; then echo "Self-test: PASS"; exit 0; else echo "Self-test: FAIL"; exit 1; fi
+    fi
+    CM_DIR=$(cd "$(dirname "$0")" && pwd)
+    if [ $# -ge 2 ]; then
+      CM_A="$1"; CM_B="$2"
+    elif [ $# -eq 1 ]; then
+      echo "Usage: $0 check-mirror [<dirA> <dirB>]  (no args = auto-detect the script-dir pair; two args = compare them). A single dir argument is ambiguous." >&2
+      exit 2
+    else
+      CM_A="$CM_DIR"; CM_B=""
+      for cand in "$CM_DIR/../plugins/apodictic/scripts" "$CM_DIR/../../../scripts"; do
+        if [ -d "$cand" ]; then rp=$(cd "$cand" && pwd); [ "$rp" != "$CM_DIR" ] && { CM_B="$rp"; break; }; fi
+      done
+      if [ -z "$CM_B" ]; then echo "WARN: mirror sibling not found from $CM_DIR — single-copy workspace, nothing to mirror; skipped."; exit 0; fi
+    fi
+    CM_FAIL=0
+    # Root-only utilities live ONLY in root scripts/ (release-engineering, like the *.mjs scripts) and
+    # are intentionally NOT mirrored to the plugin copy — exclude them or check-mirror false-positives.
+    # Space-padded for whole-word matching. (sync_setec.py: the SETEC vendoring/sync utility.)
+    CM_ROOT_ONLY=" sync_setec.py "
+    # Mirrored set = validate.sh, preflight.sh, and every *.py present in EITHER dir (sorted, deduped).
+    # `|| true`: a no-match grep exits 1, which would abort under `set -e`.
+    CM_NAMES=$( { ls -1 "$CM_A" 2>/dev/null; ls -1 "$CM_B" 2>/dev/null; } | grep -E '\.py$|^validate\.sh$|^preflight\.sh$' | sort -u || true )
+    for name in $CM_NAMES; do
+      case "$CM_ROOT_ONLY" in *" $name "*) continue ;; esac   # intentionally root-only; not mirrored
+      fa="$CM_A/$name"; fb="$CM_B/$name"
+      if [ ! -f "$fa" ]; then echo "  MISSING in $CM_A: $name"; CM_FAIL=1; continue; fi
+      if [ ! -f "$fb" ]; then echo "  MISSING in $CM_B: $name"; CM_FAIL=1; continue; fi
+      cmp -s "$fa" "$fb" || { echo "  DIFFER: $name"; CM_FAIL=1; }
+    done
+    if [ "$CM_FAIL" -eq 0 ]; then
+      echo "check-mirror: PASS (root scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"; exit 0
+    fi
+    echo "check-mirror: FAIL — sync the two copies by hand (cp the intended-canonical file between scripts/ and plugins/apodictic/scripts/), then re-run. A 'DIFFER: validate.sh' on first run of a new check means the copies aren't synced yet, not a logic bug."
+    exit 1
     ;;
 
   *)

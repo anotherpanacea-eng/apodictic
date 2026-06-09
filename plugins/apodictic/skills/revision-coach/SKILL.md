@@ -202,6 +202,20 @@ The coach operates in several modes (Loop Dispatch above can select among them).
 
 **Output:** `[Project]_Retcon_Plan_[runlabel].md` (+ the rolling `[Project]_State_Card_[runlabel].md`)
 
+### 7. Beta-Reader Instrument
+
+**When:** The writer has a diagnosis and is about to circulate the draft to beta readers. The **upstream** complement to Feedback Triage (mode 5): generate the right questions *before* readers read, so the feedback that comes back is worth triaging. Also entered via `/reader-questions`.
+
+**Required input:** The Findings Ledger (for `LOW`/`UNCERTAIN` findings, `### Unresolved Questions`, and `risk_if_fixed` tradeoffs). A diagnosis must exist — this mode harvests its uncertainty; it never diagnoses.
+
+**Process** (full protocol in `references/beta-reader-instrument.md`):
+1. **Harvest uncertainties** — scan the Ledger for `LOW`/`UNCERTAIN` findings, Unresolved Questions, and tradeoffs (**not** the editorial letter's Control Questions — those are author-facing)
+2. Draft one `apodictic.reader_question.v1` block per uncertainty: `source_kind` + provenance (`targets` a finding id, or `source_note` for a UQ), a **non-leading, content-neutral** `question`, and an `expected_signal`
+3. **Severity honesty:** never test a *locked* verdict (Must-Fix/Should-Fix at HIGH/MEDIUM) — that softens by survey; testing *how* to fix is an explicit `how-to-fix` override
+4. Gate with `scripts/validate.sh reader-instrument <run_folder>` (`--strict` for CI); returned answers re-enter through Feedback Triage (mode 5), where APODICTIC's own re-analysis — not reader vote — sets the assessment
+
+**Output:** `[Project]_Beta_Reader_Instrument_[runlabel].md`
+
 ---
 
 ## Argument Revision Mode (v1.0)
