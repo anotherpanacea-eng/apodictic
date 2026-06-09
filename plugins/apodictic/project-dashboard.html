@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<!--
+  APODICTIC Project Dashboard — a SNAPSHOT viewer + launcher, not a live monitor.
+
+  This is a sandboxed standalone page (no filesystem, no network). It renders a project-registry
+  payload that Claude pastes in (or the embedded sample). Crucially it is RENDER-ONLY: it does NOT
+  derive the lifecycle node. The node + next_action are PRE-COMPUTED by Claude (via
+  scripts/lifecycle_node.py + the revision-coach §Loop Dispatch ladder) and carried in the payload —
+  because `diagnosed` requires a filesystem read this sandbox can't do, and so the node order stays
+  a single source of truth in lifecycle_node.py, never re-derived here.
+
+  Node set/order mirrors lifecycle_node.py:9 (precedence, first-match): cold, blocked_gate,
+  execution, pre_writing, submission, revising, diagnosed, diagnosing (catch-all default).
+
+  Note: the host (codex) build auto-rewrites "/start" -> "apodictic-start" in the generated copy.
+  That is expected — do not "fix" the rewritten command in a generated tree.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APODICTIC — Project Dashboard</title>
+<style>
+  :root {
+    --bg: #fafaf9; --surface: #ffffff; --border: #e7e5e4; --text: #1c1917;
+    --text-2: #57534e; --accent: #b45309; --accent-soft: #fef3c7; --gap: #f5f5f4;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         background: var(--bg); color: var(--text); line-height: 1.5; }
+  header { padding: 1.4rem 1.6rem 0.8rem; border-bottom: 1px solid var(--border); background: var(--surface); }
+  h1 { font-size: 1.25rem; margin: 0 0 0.2rem; }
+  .scope { color: var(--text-2); font-size: 0.85rem; margin: 0; }
+  .scope strong { color: var(--accent); }
+  main { max-width: 1000px; margin: 0 auto; padding: 1.2rem 1.6rem 3rem; }
+  details.data { margin-bottom: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.9rem; }
+  details.data summary { cursor: pointer; font-size: 0.85rem; color: var(--text-2); }
+  textarea { width: 100%; min-height: 8rem; margin-top: 0.6rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+             font-size: 0.78rem; border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; resize: vertical; }
+  button { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 0.4rem 0.9rem;
+           font-size: 0.85rem; cursor: pointer; margin-top: 0.5rem; }
+  .controls { display: flex; gap: 0.8rem; align-items: center; margin: 0.4rem 0 1rem; flex-wrap: wrap; }
+  .controls label { font-size: 0.8rem; color: var(--text-2); }
+  select { font-size: 0.82rem; padding: 0.25rem 0.4rem; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); color: var(--text); }
+  .snap { margin-left: auto; font-size: 0.78rem; color: var(--text-2); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.9rem 1.1rem; margin-bottom: 0.8rem; }
+  .card h2 { font-size: 1.02rem; margin: 0 0 0.1rem; }
+  .card .id { font-size: 0.75rem; color: var(--text-2); font-family: ui-monospace, monospace; }
+  .rail { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.6rem 0; }
+  .node { font-size: 0.68rem; padding: 0.15rem 0.5rem; border-radius: 999px; border: 1px solid var(--border);
+          color: var(--text-2); background: var(--gap); white-space: nowrap; }
+  .node.here { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  .whatnow { margin: 0.4rem 0 0.2rem; }
+  .whatnow .k { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent); }
+  .whatnow .v { font-size: 0.92rem; }
+  .asof { font-size: 0.72rem; color: var(--text-2); }
+  details.more summary { cursor: pointer; font-size: 0.8rem; color: var(--text-2); margin-top: 0.4rem; }
+  .kv { font-size: 0.82rem; margin: 0.35rem 0 0; }
+  .kv code { background: var(--gap); padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.8rem; }
+  .launch { font-family: ui-monospace, monospace; }
+  footer { max-width: 1000px; margin: 0 auto; padding: 0 1.6rem 2rem; color: var(--text-2); font-size: 0.78rem; }
+  .err { color: #b91c1c; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>APODICTIC — Project Dashboard</h1>
+  <p class="scope"><strong>Snapshot</strong>, not live. Shows where each project stands and the launch command — it can't read your disk or run <code>/start</code> itself. Refresh = ask Claude to regenerate the payload.</p>
+</header>
+<main>
+  <details class="data">
+    <summary>Registry payload (paste the <strong>extended</strong> <code>apodictic.project_registry.v1</code> payload — node + next_action + snapshot_ts pre-computed by <code>/projects</code>, not the raw <code>.apodictic/registry.json</code> — or use the sample below)</summary>
+    <textarea id="payload" spellcheck="false"></textarea>
+    <button id="render">Render</button>
+    <span id="err" class="err"></span>
+  </details>
+
+  <div class="controls">
+    <label>Filter: <select id="filter"></select></label>
+    <label>Sort: <select id="sort">
+      <option value="touched-desc">Last touched (newest)</option>
+      <option value="touched-asc">Last touched (oldest)</option>
+      <option value="title">Title (A–Z)</option>
+    </select></label>
+    <span class="snap" id="snap"></span>
+  </div>
+
+  <div id="cards"></div>
+</main>
+<footer>
+  Lifecycle nodes (precedence order, per <code>lifecycle_node.py</code>): cold · blocked_gate · execution · pre_writing · submission · revising · diagnosed · diagnosing. The highlighted chip is this project's current node, carried in the payload (not re-derived here). The "what now?" line is a snapshot — the live leverage ladder reads current finding state.
+</footer>
+
+<script>
+"use strict";
+// Node order = lifecycle_node.py precedence (first-match). Display labels only; no derivation here.
+const NODES = ["cold","blocked_gate","execution","pre_writing","submission","revising","diagnosed","diagnosing"];
+
+const SAMPLE = {
+  "schema": "apodictic.project_registry.v1",
+  "snapshot_ts": "2026-06-09T10:00:00Z",
+  "projects": [
+    {"id":"wolves-of-november","title":"Wolves of November","root":"Wolves_Of_November","volume":1,"mode":"diagnostic","node":"revising","next_action":"Resume revision — 2 Must-Fixes delivered-not-revised; /coach the highest-leverage one","last_touched":"2026-06-07"},
+    {"id":"tidewrack","title":"Tidewrack","root":"Tidewrack","mode":"diagnostic","node":"diagnosing","next_action":"Passes underway, no editorial letter yet — run_synthesis next","last_touched":"2026-06-08"},
+    {"id":"the-cartographer","title":"The Cartographer","root":"The_Cartographer","mode":"execution","node":"execution","next_action":"In execution mode on an active scene — say \"back to editor\" to delta-check the fix","last_touched":"2026-06-05"},
+    {"id":"abundance-oped","title":"Abundance (op-ed)","root":"Abundance_OpEd","mode":"diagnostic","node":"submission","next_action":"Readiness assessed — review the go/no-go memo","last_touched":"2026-06-02"},
+    {"id":"untitled-idea","title":"Untitled (idea)","root":"Untitled_Idea","mode":"diagnostic","node":"pre_writing","next_action":"Pre-writing — continue the pathway to a structural plan","last_touched":"2026-06-01"}
+  ]
+};
+
+const $ = (id) => document.getElementById(id);
+let projects = [], snapTs = "";
+
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+
+// next_action is a pre-computed display string in the extended payload, but tolerate a raw
+// registry entry (where it is an apodictic.project_entry.v1 object {key, ...}) so a pasted
+// .apodictic/registry.json renders the key instead of "[object Object]".
+function naLabel(na){ return typeof na === "string" ? na : (na && (na.label || na.key)) || "—"; }
+
+// localStorage throws in a sandboxed iframe without allow-same-origin; degrade silently.
+function lsGet(k){ try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v){ try { localStorage.setItem(k, v); } catch (e) { /* sandboxed: ignore */ } }
+
+function load(text){
+  $("err").textContent = "";
+  let data;
+  try { data = JSON.parse(text); }
+  catch (e) { $("err").textContent = "Invalid JSON: " + e.message; return; }
+  if (!data || !Array.isArray(data.projects)) { $("err").textContent = "Payload needs a \"projects\" array."; return; }
+  projects = data.projects;
+  snapTs = data.snapshot_ts || "";
+  $("snap").textContent = snapTs ? ("snapshot: " + snapTs) : "";
+  buildFilter();
+  render();
+}
+
+function buildFilter(){
+  const present = NODES.filter(n => projects.some(p => p.node === n));
+  const saved = lsGet("apod-dash-filter") || "all";
+  $("filter").innerHTML = "<option value=\"all\">All nodes</option>" +
+    present.map(n => `<option value="${n}">${n}</option>`).join("");
+  $("filter").value = [...$("filter").options].some(o => o.value === saved) ? saved : "all";
+}
+
+function render(){
+  const f = $("filter").value, s = $("sort").value;
+  let list = projects.filter(p => f === "all" || p.node === f);
+  list.sort((a,b) => {
+    if (s === "title") return String(a.title).localeCompare(String(b.title));
+    const d = String(a.last_touched||"").localeCompare(String(b.last_touched||""));
+    return s === "touched-asc" ? d : -d;
+  });
+  $("cards").innerHTML = list.map(card).join("") ||
+    "<p class=\"scope\">No projects match this filter.</p>";
+}
+
+function card(p){
+  const rail = NODES.map(n =>
+    `<span class="node${n === p.node ? " here" : ""}">${n}</span>`).join("");
+  const asof = snapTs ? `<span class="asof"> (as of ${esc(snapTs)})</span>` : "";
+  return `<div class="card">
+    <h2>${esc(p.title || p.id)}</h2>
+    <div class="id">${esc(p.id)}${p.volume ? " · vol " + esc(p.volume) : ""}${p.last_touched ? " · touched " + esc(p.last_touched) : ""}</div>
+    <div class="rail">${rail}</div>
+    <div class="whatnow"><span class="k">what now?${asof}</span><br><span class="v">${esc(naLabel(p.next_action))}</span></div>
+    <details class="more"><summary>details &amp; launch</summary>
+      <p class="kv">Mode: <code>${esc(p.mode || "diagnostic")}</code> · Root: <code>${esc(p.root || "?")}</code></p>
+      <p class="kv">Resume: <code class="launch">/start ${esc(p.id)}</code></p>
+    </details>
+  </div>`;
+}
+
+$("render").addEventListener("click", () => load($("payload").value));
+$("filter").addEventListener("change", () => { lsSet("apod-dash-filter", $("filter").value); render(); });
+$("sort").addEventListener("change", render);
+
+// Boot with the embedded sample.
+$("payload").value = JSON.stringify(SAMPLE, null, 2);
+load($("payload").value);
+</script>
+</body>
+</html>
