@@ -1,0 +1,54 @@
+# Mirror-parity check — `validate.sh check-mirror` (spec)
+
+**Status:** Spec → review → build → review. QoL infrastructure; no behavior change to any existing validator.
+
+## The problem
+
+Per `AGENTS.md` § Platform parity, `validate.sh` and every Python validator exist in **two committed copies** — `plugins/apodictic/scripts/` (canonical) and root `scripts/` (**what CI runs**) — that must be kept **byte-identical by hand**. Build/release scripts (`*.mjs`, `release.sh`, `bump-version.sh`) live only at root; `test_fixtures/` lives only in the plugin copy. Those are *not* mirrored.
+
+The failure mode is silent and has bitten us (Project Addressability Increment 2): edit the plugin copy of a validator, pass `--check-all` locally against *that* copy, push — and CI runs the **stale root copy**, green but blind to the change. The only current defense is remembering to run `diff -q` by hand on every touched file. That is exactly the kind of invariant the harness should mechanize.
+
+## The check
+
+A new `check-mirror` validator in `validate.sh`, dispatched like any other:
+
+- **`validate.sh check-mirror`** — locates the repo's two script dirs (from whichever copy is invoked) and asserts every **shared mirrored file** is byte-identical. Reports each drift as `DIFFER: <name>` / `MISSING in <dir>: <name>` and exits non-zero if any. PASS prints a one-line summary.
+- **`validate.sh check-mirror <dirA> <dirB>`** — compare two arbitrary dirs (the seam the self-test drives).
+- **`validate.sh check-mirror --self-test`** — hermetic temp-dir test: identical pair → PASS; a content drift → caught; a file present in one dir only → caught.
+
+### The mirrored set (what must match)
+
+`validate.sh`, `preflight.sh`, and every `*.py`. Concretely: the files that exist in **both** dirs, restricted to `{validate.sh, preflight.sh, *.py}`. Explicitly **excluded**: `__pycache__/`, `test_fixtures/`, and the root-only build/release scripts (`*.mjs`, `release.sh`, `bump-version.sh`) — a naive `diff -rq` of the two trees would false-positive on those, so the check enumerates the mirrored set rather than diffing whole trees.
+
+A `.py` (or `validate.sh`/`preflight.sh`) present in **one** dir but not the other is a drift (e.g. a new validator added to the canonical copy but not synced to root) — flagged as `MISSING`.
+
+### Directory location
+
+`check-mirror` resolves its own dir via `$(cd "$(dirname "$0")" && pwd)` (the established pattern) and probes for the *other* copy at both candidate locations — `$DIR/../plugins/apodictic/scripts` (invoked from root) and `$DIR/../../../scripts` (invoked from the plugin copy) — taking whichever exists and differs from `$DIR`. If the sibling copy can't be located, it WARNs and exits 0 (degraded, like the python3-absent validators), never a false failure.
+
+## Wiring (the standard validator-addition surfaces)
+
+1. The `check-mirror)` case block + its `--self-test`, in `validate.sh`.
+2. **Real-file invariant in `--check-all`**: invoke `check-mirror` (real dirs) alongside the other real-file invariants. This is the gate that actually protects CI.
+3. **`AGG_VALIDATORS`**: register `check-mirror` so its `--self-test` runs under `--self-test-all`; bump the hard-coded count `37 → 38` at every surface (`--self-test-all` banner + result lines, the `--check-all` help text count, the `ci.yml` comment).
+4. **Command list** (line ~168) + the top-of-file usage comment: add `check-mirror`.
+5. **`--check-all` description** (line ~170): note the new mirror invariant.
+6. **Mirror the edited `validate.sh` to both copies, byte-identical** — the check that enforces mirroring is itself subject to it; the new `--check-all` invocation will fail until both copies match (the design proving itself).
+7. **`AGENTS.md`** § Platform parity: replace the manual `diff -q` instruction with `validate.sh check-mirror` as the automated verification (keep the by-hand sync rule; the check only *detects* drift, it does not fix it).
+8. Changelog fragment.
+
+## Scope / non-goals
+
+- **Detection only — never auto-syncs.** Mirroring stays a deliberate by-hand `cp`; the check just makes drift loud and CI-blocking. (Auto-sync would hide which copy is intended canonical and could paper over a bad edit.)
+- No change to any existing validator's behavior, schema, or output.
+- Does not police schemas/manifests (single-sourced, correctly un-mirrored).
+
+## Self-test cases (must catch, proving the check isn't vacuous)
+
+| Case | Setup | Expect |
+|---|---|---|
+| identical | two temp dirs, same `validate.sh` + `a.py` | PASS |
+| content drift | `a.py` differs by one byte | caught (non-zero) |
+| missing file | `b.py` only in dirA | caught (non-zero) |
+
+A hostile reviewer should confirm the self-test would **fail if the comparison were stubbed to always-pass** — i.e. the negative cases are real.
