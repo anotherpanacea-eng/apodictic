@@ -165,9 +165,9 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, check-mirror"
-  echo "Aggregate: --self-test-all (runs --self-test on all 39 self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, check-mirror"
+  echo "Aggregate: --self-test-all (runs --self-test on all 40 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # fixture-driven self-tests too (Validator Architecture Hardening — they
 # previously had none), so every command in the suite is exercised here.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument check-mirror"
+  AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz check-mirror"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 39 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 40 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/39 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/40 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/39 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/40 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -341,6 +341,13 @@ if [ "$1" = "--check-all" ]; then
       "$0" reader-instrument "$CA_BASE/example-beta-reader-instrument.md" "$CA_BASE/example-uncertainty-ledger.md" || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-beta-reader-instrument.md / example-uncertainty-ledger.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Structure Map manifest (manuscript-viz: manifest<->source provenance vs Timeline + Ledger) =="
+    if [ -f "$CA_BASE/example-structure-map-manifest.md" ] && [ -f "$CA_BASE/example-timeline.md" ] && [ -f "$CA_BASE/example-findings-ledger.md" ]; then
+      "$0" manuscript-viz "$CA_BASE/example-structure-map-manifest.md" "$CA_BASE/example-timeline.md" "$CA_BASE/example-findings-ledger.md" --require-block || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-structure-map-manifest.md / example-timeline.md / example-findings-ledger.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical Timeline (timeline-arithmetic, timeline-anchor-conflict, timeline-diff self) =="
@@ -4495,6 +4502,33 @@ EOF
       python3 "$RDI_HELPER" reader-instrument "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — reader-instrument skipped; check inline that each reader question is non-leading, content-neutral, sourced from a LOW/UNCERTAIN finding or an Unresolved Question (not a locked verdict), and carries an expected_signal. See docs/beta-reader-instrument.md."
+    exit 0
+    ;;
+
+  manuscript-viz)
+    # Manuscript-Structure Visualizations (Horizon Tier 1; docs/manuscript-visualizations.md): a
+    # presentation layer that adds no analysis. Validates the apodictic.viz_manifest.v1 block (data
+    # copied verbatim from the Timeline Event-Ledger + apodictic.finding.v1 blocks) against its sources:
+    # E1 schema + no-visual-style allowlist, E2 provenance closure (scene_id -> Timeline row; finding id
+    # -> ledger; finding chapter == the conservative Chapter-N/Ch-N evidence_refs parse, else 'unplaced'),
+    # E3 every body Must-Fix appears, E4 byte-equal copy fidelity (no compute/embellish). W1 coverage
+    # advisory, ERROR under --strict. --require-block makes a missing/invalid manifest a hard failure (the
+    # canonical-example gate uses it so it can't pass vacuously). The severity->encoding map is hardcoded
+    # in the render-only SVG layer (charts 1-3), not the manifest, so a run cannot recolor a Must-Fix.
+    # Takes a run folder (globs the manifest + Timeline + Findings Ledger) or explicit files. Delegates to
+    # scripts/viz_manifest.py; degrades to an advisory WARN without python3. (`viz_manifest.py render ...`
+    # emits the HTML.)
+    MVZ_DIR=$(cd "$(dirname "$0")" && pwd)
+    MVZ_HELPER="$MVZ_DIR/viz_manifest.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$MVZ_HELPER" ]; then python3 "$MVZ_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; manuscript-viz is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$MVZ_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 manuscript-viz <run_folder|files...> [--strict] [--require-block] | --self-test"; exit 2; fi
+      python3 "$MVZ_HELPER" manuscript-viz "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — manuscript-viz skipped; check inline that the viz_manifest copies Timeline/finding values verbatim, carries no visual-style fields, places findings only by the Chapter-N evidence_refs parse (else 'unplaced'), and includes every Must-Fix. See docs/manuscript-visualizations.md."
     exit 0
     ;;
 
