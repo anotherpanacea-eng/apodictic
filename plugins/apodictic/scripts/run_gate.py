@@ -433,20 +433,18 @@ def _finding_deltas(phase, run_folder, manifest, resolved):
         return {}
     keys = manifest.get("artifact_keys", {})
     if phase == "revision_round":
-        # revised marks ONLY the resolved subset — the <!-- resolved: F-… --> ids in the run
-        # folder's completion artifacts — not every ledger finding. Reuse finding_trace's
-        # resolution (folder aggregation, finding_trace.py:186-188); lazy import keeps run_gate
-        # free of a hard finding_trace dependency (degrades to no-op if unavailable).
+        # revised marks ONLY the resolved subset — the <!-- resolved: F-… --> ids in the gate's
+        # required revision_report artifact (a narrow *_Revision_Report_*.md, so a Revision
+        # Calendar or other *_Revision_*.md can't satisfy the gate or contribute deltas), never
+        # every ledger finding. Lazy import keeps run_gate free of a hard finding_trace dependency.
         try:
             import finding_trace as _ft
         except ImportError:
             return {}
-        completions = _ft.resolve_run_folder(run_folder)[4]
-        resolved_ids = set()
-        for c in completions:
-            text = _ft._read(c)
-            if text:
-                resolved_ids |= _ft.resolved_cited_ids(text)
+        report = resolved.get("revision_report") or _resolve(run_folder, keys.get("revision_report", ""), _runlabel(run_folder))
+        if not report:
+            return {}
+        resolved_ids = _ft.resolved_cited_ids(_ft._read(report) or "")
         # Intersect with the ledger inventory so a typo'd/stale marker can't write a phantom
         # finding_states key — the same self-consistency every other phase has (it only ever
         # marks _ledger_finding_ids). finding-trace E2 is the post-hoc backstop; this is the
@@ -1026,6 +1024,15 @@ def run_self_test():
     cmd_attest("revision_round", drevp, manifest, write=True, validate_sh=vs)
     fsp = read_ex(drevp).get("finding_states", {})
     check("rev_phantom_id_filtered", fsp.get("F-P5-01") == "revised" and "F-ZZ-99" not in fsp)
+
+    # (P1) a Revision *Calendar* (not a Report) does NOT satisfy the revision_report artifact —
+    # even one carrying a resolved marker — so the gate blocks rather than clearing with empty deltas
+    drevc = folder(ledger2, sidecar=prior)
+    with open(os.path.join(drevc, "Proj_Revision_Calendar_run.md"), "w") as fh:
+        fh.write("# Revision Calendar\n<!-- resolved: F-P5-01 -->\n")
+    code, _ = cmd_gate("revision_round", drevc, manifest, write=True, validate_sh=vs)
+    check("rev_calendar_not_report_blocks",
+          code == 1 and read_ex(drevc)["gate_events"][-1]["result"] == "blocked")
 
     for d in made:
         shutil.rmtree(d, ignore_errors=True)

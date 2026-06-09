@@ -110,7 +110,7 @@ Before running passes, gather:
 
 ### Revision Round Output
 
-**Revision Report** (not full diagnostic):
+**Revision Report** (not full diagnostic) — save as `[Project]_Revision_Report_[runlabel].md` at the run folder (the `revision_round` gate's `revision_report` artifact; the distinct name keeps it from colliding with the deadline-coaching `[Project]_Revision_Calendar_[runlabel].md`):
 - Flags resolved: [list with verification notes]
 - Flags still present: [list with updated evidence]
 - New issues introduced: [list with locations]

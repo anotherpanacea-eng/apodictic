@@ -33,9 +33,9 @@ The fold raises a finding's state only when the new delta's rank ≥ current (`r
 
 **1. Manifest (`execution-gates.v1.json`).** Add a `revision_round` phase:
 - `allowed_next: ["run_synthesis"]` — a cleared round authorizes re-diagnosing the revised draft (round 2). Non-empty is required (an empty `allowed_next` co-occurs with a `pending_gate` in the fold). The "earlier-phase target" is already an established pattern (`run_spot_check.allowed_next: ["deliver"]`), so the fold handles it (spec-review §4).
-- `entry_requires.artifacts: ["findings_ledger", "revision_report"]` — add a `revision_report` artifact_key (`*_Revision_*.md`) so the gate's `finding-trace` check and the resolved-id scan have a concrete target.
+- `entry_requires.artifacts: ["findings_ledger", "revision_report"]` — add a `revision_report` artifact_key `*_Revision_Report_*.md` (narrow, so a deadline-coaching `*_Revision_Calendar_*.md` can't satisfy the gate). It is the concrete target for the resolved-id scan.
 - `entry_requires.attested`: `rev-a1` delta scan complete (resolved / still-present / new); `rev-a2` every confirmed-resolved finding carries a `<!-- resolved: <id> -->` marker; `rev-a3` declined items are not silently re-flagged.
-- `entry_requires.checks: [{validator: "finding-trace", targets: ["run_folder"]}]` — mechanizes report↔sidecar consistency (W3/E5) at the gate.
+- `entry_requires.checks: [{validator: "ledger-check", targets: ["findings_ledger"]}]` — a *precondition* check (see the build-time correction above; `finding-trace` would audit the post-condition the gate establishes and block its own clear). `finding-trace`'s W3/E5 report↔sidecar audit runs *after* the fold writes `revised`.
 
 **2. `run_gate.py` (+ root `scripts/` mirror — the Increment-2 lesson).**
 - `_PHASE_FINDING_STATE["revision_round"] = "revised"` (`_STATE_RANK` already ranks `revised: 3`).
@@ -52,7 +52,7 @@ The fold raises a finding's state only when the new delta's rank ≥ current (`r
 
 **6. `--check-all` gate fixture (spec-review §5 — three coupled edits, all mandatory).** To exercise `revision_round` via the read-only `gate-state` check on the committed `example-run-folder`: (i) add a `revision_round` clearing event to the sidecar `gate_events`; (ii) add a `*_Revision_*.md` artifact carrying `<!-- resolved: F-P5-01 -->`; (iii) update the fixture's **pointer block** (`phase`, `allowed_next`, `finding_states.F-P5-01 → revised`) to the new fold — otherwise `gate-state` fails `pointer == fold`. Confirm `--check-all` green.
 
-**7. Docs.** Mark Increment 4a built in `docs/project-addressability.md` + ROADMAP; simplify 4b's source-of-truth note (governed projects now read a gate-folded `finding_states.revised`). Changelog fragment. **No validator count change** — `revision_round` is a gate phase, `finding-trace` is its check (spec-review §6 confirmed).
+**7. Docs.** Mark Increment 4a built in `docs/project-addressability.md` + ROADMAP; simplify 4b's source-of-truth note (governed projects now read a gate-folded `finding_states.revised`). Changelog fragment. **No validator count change** — `revision_round` is a gate phase reusing `ledger-check` (entry) + `finding-trace` (post-hoc audit), not a new validator (spec-review §6 confirmed).
 
 ## Decisions locked by review
 

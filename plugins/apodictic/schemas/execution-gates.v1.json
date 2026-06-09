@@ -6,7 +6,7 @@
     "findings_ledger":      "*_Findings_Ledger_*.md",
     "audit_invocation_log": "*_Audit_Invocation_Log_*.md",
     "editorial_letter":     ["*_Core_DE_Synthesis_*.md", "*_Full_DE_*.md", "*_Editorial_Letter_*.md"],
-    "revision_report":      "*_Revision_*.md",
+    "revision_report":      "*_Revision_Report_*.md",
     "sidecar":              "Diagnostic_State.meta.json"
   },
   "phases": {
