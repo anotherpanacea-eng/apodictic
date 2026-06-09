@@ -63,6 +63,6 @@ A not-a-lawyer disclaimer plus a set of `apodictic.legal_risk.v1` blocks — one
 **Increment 1 (this):** the workflow contract, the `[Project]_Legal_Risk_Register_[runlabel].md` artifact, the `apodictic.legal_risk.v1` block + schema, the `legal-risk` validator (L1–L3 + W1–W2), the worked example, the `--check-all` gate, and the core-editor reference.
 
 **Future increments:**
-- **Intake routing + a first-class entry point** — a `/legal-risk` command and/or an intake-router branch (memoir/autofiction with real people → recommend the register). Increment 1 homes the contract in core-editor without a dedicated command.
+- **Intake routing + a first-class entry point — built (explicit-flag path).** The `/legal-risk` command (`commands/legal-risk.md`) and the `constraint:risk` synthesis hook (offer-then-attach, `run-synthesis.md §Constraint mode`) are wired. *Still future:* a content-detection branch that auto-recommends the register for memoir/autofiction portraying identifiable real people *without* the explicit `constraint:risk` flag.
 - **Per-class detection guidance** — named detection patterns per `risk_class` (e.g. fact-vs-opinion framing for defamation; public-vs-private and newsworthiness for privacy; substantiality/permission heuristics for rights-clearance), so the flag is grounded in a specific, citable manuscript signal.
 - **Escalation-trigger taxonomy** — a small library of standard triggers per class the author can adopt rather than re-author.

@@ -187,7 +187,7 @@ Always asked after routing, before work begins. Multiple selections allowed.
 | A | I'm on a deadline | `constraint:time` | **Fork** (workflow) | Route to Submission Triage: Pass 1 → SR codes (detectable subset) → go/no-go memo with blind spots. See `references/submission-triage.md`. |
 | B | Parts of this were written with AI | `constraint:ai` | **Overlay** (lens) | Add AI-Prose Calibration overlay. |
 | C | This is nonfiction | `constraint:nonfiction` | **Fork** (engine) | Run nonfiction triage. Route argument-shaped work to the Nonfiction Argument Engine, scene-led nonfiction to Narrative Nonfiction Craft, and memoir / witness-led work to Memoir & CNF. Idea-stage Nonfiction Pre-Draft remains a gap. |
-| D | There's sensitive or legally risky content | `constraint:risk` | **Overlay** (output) | Add Legal Risk Register output. Module **built** (`references/legal-risk-register.md`); router auto-wiring pending — offer it, attach on accept. |
+| D | There's sensitive or legally risky content | `constraint:risk` | **Overlay** (output) | **Built.** Offer the Legal Risk Register; on accept, attach `[Project]_Legal_Risk_Register_[runlabel].md` (`references/legal-risk-register.md`; synthesis hook in `run-synthesis.md §Constraint mode`). Direct entry: `/legal-risk`. |
 | E | I'm editing someone else's work | `operator:editor` | **Overlay** (output) | Shift output to editor scaffolding (editor-facing reframe of the synthesis letter). **Built** — see `references/editor-scaffolding.md`. |
 | F | I'm facilitating a writing group | `operator:facilitator` | **Overlay** (output) | Shift to diagnostic vocabulary mode (produce a teaching Vocabulary Guide: glossary + discussion prompts). **Built** — see `references/diagnostic-vocabulary.md`. |
 | G | We're co-authoring (multiple writers) | `operator:team` | **Fork** (intake) | Note conflicting-vision risk. **Gap: multi-party intake not yet built.** |
@@ -354,7 +354,7 @@ Workflow-*modifying* modifiers. Each composes onto any compatible Table A base r
 | AI-Prose Calibration | `constraint:ai` | Adds AI-prose lens + findings (`craft/ai-prose-calibration.md`) | Any prose-bearing repair/submit base route (on `fragments \| draft`, calibration deferred to post-synthesis) | **Built** |
 | Editor Scaffolding | `operator:editor` | Re-aims the editorial letter at a human editor | Any Core DE letter (`references/editor-scaffolding.md`) | **Built** |
 | Diagnostic Vocabulary | `operator:facilitator` | Adds a teaching Vocabulary Guide alongside the letter | Any Core DE letter (`references/diagnostic-vocabulary.md`) | **Built** |
-| Legal Risk Register | `constraint:risk` | Adds a Legal Risk Register output | Any repair/submit base route (`references/legal-risk-register.md`) | **Built** (module); router auto-wiring pending |
+| Legal Risk Register | `constraint:risk` | Adds a Legal Risk Register output (offer-then-attach) | Any repair/submit base route (`references/legal-risk-register.md`) | **Built** |
 | Hybrid execution | `execution:hybrid` | Focus-map depth; ~2–3x token cost; content-invariant | Any pass-based run >40k words (`run-core.md` §Execution Mode) | **Built** |
 | Swarm execution | `execution:swarm` | Independent-lens depth; ~5x token cost; content-invariant | Any pass-based run (`run-core.md` §Execution Mode) | **Built** |
 

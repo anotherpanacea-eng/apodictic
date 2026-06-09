@@ -64,10 +64,13 @@ _LETTER_GLOBS = ("*_Core_DE_Synthesis_*.md", "*_Full_DE_*.md", "*_Editorial_Lett
 _LEDGER_GLOB = "*_Findings_Ledger_*.md"
 # Revision-plan / coaching artifact globs (the lifecycle stage after the letter).
 _REVISION_GLOBS = ("*_Session_Plan_*.md", "*_Revision_*.md")
-# Completed-revision artifacts — a SUBSET of _REVISION_GLOBS: the Revision Report stage where a
-# finding's lifecycle advances to `revised` (state-lifecycle.md §Revision Round Output). Session
-# plans express intent (plan coverage, W2); completed-revision artifacts express done work (E5/W3).
-_COMPLETION_GLOBS = ("*_Revision_*.md",)
+# Completed-revision artifacts — a SUBSET of _REVISION_GLOBS: the Revision REPORT specifically
+# (`*_Revision_Report_*.md`, state-lifecycle.md §Revision Round Output), where a finding's lifecycle
+# advances to `revised`. Narrowed from `*_Revision_*.md` so a deadline-coaching `*_Revision_Calendar_*.md`
+# (a revision-stage artifact, but not a completion) is excluded — matching the Increment-4a gate's
+# `revision_report` key. Session plans express intent (plan coverage, W2); completion artifacts
+# express done work (E5/W3).
+_COMPLETION_GLOBS = ("*_Revision_Report_*.md",)
 # Retcon Plan artifacts (Retcon Planning, F3): retcon_item blocks may carry a `source` finding-ref
 # (primarily a Pass-8 Reveal-Economy finding) recording what the item was seeded from — E6 checks it
 # resolves to a ledger finding.
@@ -159,7 +162,7 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completio
 
     revision_texts   = ALL revision-stage artifacts (session plans + completed revisions) — the
                        surface for E4 (dangling) and W2 (plan coverage).
-    completion_texts = the completed-revision (*_Revision_*.md) SUBSET — the surface for E5
+    completion_texts = the completed-revision (*_Revision_Report_*.md) SUBSET — the surface for E5
                        (phantom completion) and W3 (completion follow-through). Callers keep the
                        invariant completion_texts ⊆ revision_texts.
     retcon_texts     = Retcon Plan artifacts (F3) — the surface for E6 (a retcon_item `source`
@@ -350,7 +353,7 @@ def classify_files(paths):
             ledger = p
         elif "_Session_Plan_" in base or "_Revision_" in base:
             revisions.append(p)
-            if "_Revision_" in base:
+            if "_Revision_Report_" in base:   # completion ⊂ revision-stage; calendars stay non-completion
                 completions.append(p)
         else:
             letter = p
@@ -563,7 +566,7 @@ def run_self_test():
         fh.write(sc_ok)
     with open(os.path.join(d, "Proj_Session_Plan_run.md"), "w") as fh:
         fh.write("# Session 1\nAddress F-P5-01 (pacing) and F-P5-02 (stakes).\n")
-    with open(os.path.join(d, "Proj_Revision_run.md"), "w") as fh:
+    with open(os.path.join(d, "Proj_Revision_Report_run.md"), "w") as fh:
         fh.write("# Revision Report\n## Flags resolved\nPacing now lands. <!-- resolved: F-P5-01 -->\n")
     with open(os.path.join(d, "Proj_Retcon_Plan_run.md"), "w") as fh:
         fh.write(retcon("F-P5-02"))   # F3: source resolves to the ledger -> no E6
@@ -578,7 +581,15 @@ def run_self_test():
                os.path.join(d, "Diagnostic_State.meta.json")])[0] == 0)
     check("explicit_files_completion",
           any("rev=done" in ln for ln in run([os.path.join(d, "Proj_Findings_Ledger_run.md"),
-                                              os.path.join(d, "Proj_Revision_run.md")])[1]))
+                                              os.path.join(d, "Proj_Revision_Report_run.md")])[1]))
+    # (glob narrowing) a Revision *Calendar* carrying a resolved marker is NOT a completion —
+    # so its marker must not advance any finding to rev=done. Genuine regression guard: pre-fix
+    # the broad *_Revision_*.md glob classified a calendar as a completion.
+    with open(os.path.join(d, "Proj_Revision_Calendar_run.md"), "w") as fh:
+        fh.write("# Revision Calendar\n<!-- resolved: F-P5-01 -->\n")
+    check("calendar_not_completion",
+          not any("rev=done" in ln for ln in run([os.path.join(d, "Proj_Findings_Ledger_run.md"),
+                                                  os.path.join(d, "Proj_Revision_Calendar_run.md")])[1]))
     check("missing_ledger_usage_error", run([os.path.join(d, "Diagnostic_State.meta.json")])[0] == 2)
 
     for d in made:
