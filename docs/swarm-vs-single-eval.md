@@ -1,10 +1,10 @@
 # Execution-Mode Eval — swarm vs. single long-context (spec)
 
-**Status:** Spec, **revised after an adversarial methodology review failed the first draft.** The first version claimed a clean, no-code measurement on the existing eval harness. The review showed that was false on three load-bearing points (below). This revision is honest about what the eval can and can't be — and its headline finding is that **the framework's "swarm is deeper" claim is currently *unmeasurable* on existing infrastructure** without real new build.
+**Status:** Spec, **revised after an adversarial methodology review failed the first draft.** The first version claimed a clean, no-code measurement on the existing eval harness. The review showed that was false on three load-bearing points (below). This is a **re-test**: swarm-vs-single was validated in extensive earlier testing (the basis for the §2b guidance), but *not* on the current in-repo `evals/` harness — and the headline finding is that **the current harness can't re-run it without dedicated new build**.
 
 ## The claim under test
 
-`run-core.md` / §2b assert swarm yields *"~2× findings, deepest, least-biased analysis"* at *"~5× cost,"* reserved for "final submission prep." Unmeasured anywhere in the repo. The framework's own default already hedges it — §2b makes **single-agent the default** for ≥1M context when the manuscript fits — so the burden is on swarm.
+`run-core.md` / §2b assert swarm yields *"~2× findings, deepest, least-biased analysis"* at *"~5× cost,"* reserved for "final submission prep." The claim is **not folklore — it rests on earlier testing** and the §2b default already hedges it (single-agent is the default for ≥1M context when the manuscript fits). What's open is whether that result still holds with **current models** and is reproducible on the **in-repo harness** — i.e., a periodic re-validation, not a first measurement.
 
 ## Why the obvious design fails (review findings, kept visible on purpose)
 
@@ -45,9 +45,9 @@ Assign the threshold a real, reachable number **before** running, and partition 
 - **Single-agent default everywhere** iff single ties-or-wins on the long-fiction arm cost-adjusted.
   (These three branches are exhaustive: the first requires both conditions, the second is its negation, the third is the cost-adjusted tie/win — no result escapes.)
 
-## The cheap deliverable (if the full eval isn't worth it)
+## The cheap deliverable (if the full re-test isn't worth it)
 
-If the build cost (orchestration + token capture + fiction GT) isn't justified, the honest one-liner is itself worth shipping into §2b: *"swarm's 'deeper analysis' advantage is asserted, unmeasured, and not currently measurable without dedicated eval infrastructure; single-agent is the default and the evidence-backed use of independent agents is **verification isolation** (the spot-check), not breadth of reading."* That replaces a confident-but-unsupported claim with a calibrated one, at zero build cost.
+The §2b claim **stands on the earlier testing** — do not downgrade it. If the build cost of an in-repo re-test (orchestration + token capture + fiction GT) isn't justified now, the zero-cost improvement is provenance, not weakening: add a one-line pointer in §2b / `run-core.md` to *where* the swarm-vs-single result came from (the earlier validation), and a `last re-validated:` date, so the claim is locatable and its freshness is visible. Re-run this eval when models change enough to suspect the earlier result has drifted.
 
 ## Threats to validity (named)
 

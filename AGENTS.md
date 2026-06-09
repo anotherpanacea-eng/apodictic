@@ -28,6 +28,14 @@ spec  →  review  →  write  →  review  →  fix  →  merge
 5. **Fix.** The writing agent applies fixes.
 6. **Merge.** Via PR + merge commit (see "PRs and merges").
 
+### Review practices
+
+The spec/code reviews (steps 2, 4) earn their keep when the reviewer does more than read for plausibility. Three passes that have caught real bugs reasoning-about-the-code missed:
+
+- **Hostile fixtures.** Construct inputs the spec and self-tests *don't* cover — wrong-shaped sidecars, colliding/lookalike filenames (a `*_Revision_Calendar_*` satisfying a `*_Revision_*` glob meant for the Report), empty/partial state, malformed-but-valid JSON, a field in a shape the spec merely documents (a bare-string `next_action`). Self-tests only test what the author already thought of; the worst bugs live in the inputs they didn't.
+- **Run the real CI command first.** Step one of a code review is `bash scripts/validate.sh --check-all` — what CI actually runs — not a proxy. A change applied to only one script copy (see "Platform parity") is green locally and CI-blind.
+- **Distrust count-shaped claims.** "2× findings," "nine rows removed," "total/exhaustive," "all N covered" — re-enumerate from scratch; never accept the number.
+
 ## Where work comes from: roadmap, briefs, and Issues
 
 Every change implements from a written contract, never from an unscoped
@@ -63,6 +71,15 @@ CI verifies the generators instead of committed copies: `release-generate.mjs
 --check` (registry-derived docs) and `build-codex.mjs --self-check` /
 `build-antigravity.mjs --self-check` (regenerate in temp + validate). `release.sh`
 runs the same self-checks via `release-verify.mjs`.
+
+**Separate gotcha — the dual script mirror (committed, not generated).** `validate.sh`
+and every Python validator exist in **two committed copies**: `plugins/apodictic/scripts/`
+(canonical) and root `scripts/` (**what CI runs**, per `.github/workflows/ci.yml`). These
+are *not* generated like `codex/` — they must be mirrored **by hand, byte-identical**, or
+a validator/engine change passes locally while CI runs the stale copy blind to it. Verify
+with `diff -q scripts/<f> plugins/apodictic/scripts/<f>`. (Schemas/manifests in
+`plugins/apodictic/schemas/` are single-sourced — resolved from either script dir — so they
+don't need mirroring.)
 
 ## Changelog
 
