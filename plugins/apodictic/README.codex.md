@@ -109,6 +109,7 @@ In this Codex build, the legacy workflows are exposed as namespaced compatibilit
 
 - See `AUDIT_SELECTION_MATRIX.md` for a practical routing chart of core passes, full passes, Pass 11 sub-passes, specialized audits, tag audits, and research modes.
 - See `overview-dashboard.html` for a visual map of workflows, pass blocks, and audit families.
+- See `project-dashboard.html` for an at-a-glance **snapshot** of your projects — paste the registry payload `apodictic-projects` produces and see where each project stands on the lifecycle rail plus its launch command. Render-only (a viewer/launcher, not a live monitor).
 
 ## Usage
 
