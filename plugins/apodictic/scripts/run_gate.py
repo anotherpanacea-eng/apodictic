@@ -433,7 +433,13 @@ def _finding_deltas(phase, run_folder, manifest, resolved):
             text = _ft._read(c)
             if text:
                 resolved_ids |= _ft.resolved_cited_ids(text)
-        return {fid: "revised" for fid in resolved_ids}
+        # Intersect with the ledger inventory so a typo'd/stale marker can't write a phantom
+        # finding_states key — the same self-consistency every other phase has (it only ever
+        # marks _ledger_finding_ids). finding-trace E2 is the post-hoc backstop; this is the
+        # write-time guard so the gate clear itself never emits an off-ledger id.
+        led = resolved.get("findings_ledger") or _resolve(run_folder, keys.get("findings_ledger", ""), _runlabel(run_folder))
+        ledger_ids = set(_ledger_finding_ids(led))
+        return {fid: "revised" for fid in resolved_ids & ledger_ids}
     led = resolved.get("findings_ledger") or _resolve(run_folder, keys.get("findings_ledger", ""), _runlabel(run_folder))
     return {fid: _PHASE_FINDING_STATE[phase] for fid in _ledger_finding_ids(led)}
 
@@ -996,6 +1002,16 @@ def run_self_test():
     cmd_attest("revision_round", drev0, manifest, write=True, validate_sh=vs)
     check("rev_zero_resolved_noop",
           read_ex(drev0).get("finding_states", {}) == {"F-P5-01": "delivered", "F-P5-02": "delivered"})
+
+    # (S1) an off-ledger resolved marker is filtered at write time — no phantom finding_states key
+    drevp = folder(ledger2, sidecar=prior)
+    with open(os.path.join(drevp, "Proj_Revision_Report_run.md"), "w") as fh:
+        fh.write("# Revision Report\n- Flags resolved: F-P5-01, F-ZZ-99\n"
+                 "<!-- resolved: F-P5-01 -->\n<!-- resolved: F-ZZ-99 -->\n")
+    cmd_gate("revision_round", drevp, manifest, write=True, validate_sh=vs)
+    cmd_attest("revision_round", drevp, manifest, write=True, validate_sh=vs)
+    fsp = read_ex(drevp).get("finding_states", {})
+    check("rev_phantom_id_filtered", fsp.get("F-P5-01") == "revised" and "F-ZZ-99" not in fsp)
 
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
