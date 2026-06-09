@@ -76,6 +76,10 @@ def check_registry(reg_obj, workspace_root, strict=False):
     # R1 — envelope
     for e in art.validate_obj(reg_obj, envelope_schema, "registry"):
         errs.append("R1 invalid entry: %s" % e)
+    if not isinstance(reg_obj, dict):
+        # valid JSON but not an object (e.g. a list/string) — validate_obj flagged it; stop before
+        # any .get() field access so a malformed-but-readable registry reports R1, never crashes.
+        return _report(lines, errs, warns, 0, strict)
     projects = reg_obj.get("projects")
     if not isinstance(projects, list):
         # envelope R1 already flagged it; nothing more to do
@@ -124,9 +128,13 @@ def check_registry(reg_obj, workspace_root, strict=False):
         if "mode" in entry and entry.get("mode") != sidecar.get("mode"):
             warns.append("R3 drift: %s mode=%r but sidecar=%r (sidecar wins; rebuild the cache)"
                          % (pid, entry.get("mode"), sidecar.get("mode")))
-        reg_key = (entry.get("next_action") or {}).get("key")
-        side_key = (sidecar.get("next_action") or {}).get("key")
-        if entry.get("next_action") is not None and reg_key != side_key:
+        # tolerate next_action as either the {key, description} object or a bare string (the
+        # denormalized form), the same normalization lifecycle_node.py uses.
+        reg_na = entry.get("next_action")
+        side_na = sidecar.get("next_action")
+        reg_key = reg_na.get("key") if isinstance(reg_na, dict) else reg_na
+        side_key = side_na.get("key") if isinstance(side_na, dict) else side_na
+        if reg_na is not None and reg_key != side_key:
             warns.append("R3 drift: %s next_action.key=%r but sidecar=%r (sidecar wins)"
                          % (pid, reg_key, side_key))
 
@@ -281,6 +289,18 @@ def run_self_test():
         # R3 drift: next_action.key disagrees
         d = ws([entry(na_key="deliver")], {"Wolves_Of_November": sidecar(na_key="run_passes")})
         chk("r3_next_action_drift", any("R3 drift" in ln and "next_action" in ln for ln in run([d])[1]))
+
+        # PR review P1 — must NOT crash on malformed-but-readable inputs:
+        # (a) registry is valid JSON but not an object -> R1 failure, not a traceback
+        chk("r1_nondict_list", check_registry([], "/tmp", False)[0] == 1)
+        chk("r1_nondict_string", check_registry("nope", "/tmp", False)[0] == 1)
+        # (b) a sidecar with a bare-string next_action (the form lifecycle_node tolerates) -> no crash;
+        #     normalized so a matching bare string is not spurious drift
+        bare_sc = '{"schema":"apodictic.diagnostic-state.v1","mode":"diagnostic","next_action":"run_passes"}'
+        d = ws([entry(na_key="run_passes")], {"Wolves_Of_November": bare_sc})
+        chk("r3_bare_string_next_action_no_crash", run([d])[0] == 0)
+        d = ws([entry(na_key="deliver")], {"Wolves_Of_November": bare_sc})
+        chk("r3_bare_string_next_action_drift", any("R3 drift" in ln and "next_action" in ln for ln in run([d])[1]))
 
         # empty registry -> no-op
         chk("empty_noop", run([ws([], {})])[0] == 0)
