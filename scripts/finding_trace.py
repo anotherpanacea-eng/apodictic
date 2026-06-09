@@ -319,8 +319,8 @@ def _newest(paths):
 
 def resolve_run_folder(folder):
     """(ledger, letter, sidecar, [revisions], [completions], [retcons]) — newest per single
-    artifact; revisions = all session-plan + revision matches; completions = the *_Revision_*.md
-    subset; retcons = all Retcon Plan matches (F3)."""
+    artifact; revisions = all session-plan + revision-stage matches; completions = the
+    *_Revision_Report_*.md subset; retcons = all Retcon Plan matches (F3)."""
     ledger = _newest(glob.glob(os.path.join(folder, _LEDGER_GLOB)))
     letter = None
     for g in _LETTER_GLOBS:

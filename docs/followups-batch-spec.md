@@ -67,3 +67,5 @@
 - **PR 2 (C):** the dashboard artifact.
 
 No hidden coupling between A/B/C (only shared surfaces — the dual mirror (A) and the generators (C) — are confirmed safe).
+
+**As shipped:** landed as a single PR (#66) after the build review confirmed no coupling and the merge-commit (not-squash) convention keeps the three changes individually attributable in history.
