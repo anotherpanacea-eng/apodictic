@@ -169,7 +169,7 @@ The dispatcher proposes; the writer disposes. It replaces "remember whether to t
 
 ## Safety & write-location discipline
 
-- The registry is the **only** new persistent artifact, and it lives in `$APODICTIC_HOME` — never the plugin repo or plugin cache (same rule as all rolling state).
+- The registry is the **only** new persistent artifact, and it lives in the workspace-relative `.apodictic/registry.json` (see §Where the registry lives) — never `~`/`$APODICTIC_HOME` (sandbox-unsafe), and never the plugin repo or plugin cache (same rule as all rolling state).
 - Binding never mutates a project's state; it only sets the active context and reads.
 - Drift between registry and sidecar always resolves to the sidecar (the cache is recomputable). A lost registry is recoverable by scanning the workspace root for sidecars **and** Structural-Plan artifacts; a project is orphaned only if it lives outside any `.apodictic/` workspace — in which case `/start <path>` re-establishes it.
 - The Firewall is untouched: this is routing/setup infrastructure, not content generation.
