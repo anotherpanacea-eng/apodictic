@@ -246,7 +246,14 @@ The increments form a dependency graph (not a single line): **{1, 2} → 3 → 4
 
 **Increment 4 — Revision-loop-as-spine. — Built.** With a bound project and state-driven dispatch, the diagnose⇄coach⇄execute⇄verify loop becomes the resumable spine: a "what now?" dispatcher that reads `execution.finding_states` (locked→delivered→revised), resolved markers, and `revision_progress`, then proposes the next leverage action instead of waiting for the writer to recall the right command. **Built (4b):** the leverage ladder in `revision-coach/SKILL.md` §Loop Dispatch + `start.md`'s `revising` dispatch. **Built (4a):** a gated `revision_round` phase that folds `revised` into the sidecar `finding_states` for runner-governed projects (marking only the resolved subset), with the revision round's direct write *scoped* to non-governed projects so the `pointer == fold` invariant holds. Spec: [`docs/revision-round-gate.md`](docs/revision-round-gate.md), [`docs/project-addressability.md`](docs/project-addressability.md). This is the substrate the [Coaching Deepening](#coaching-deepening) items (Multi-Session Revision Arc Planning, Coaching History and Pattern Recognition) and [Collaborative Revision Coaching](#collaborative-revision-coaching) currently lack — none has a home for project identity or loop position.
 
-**Status:** In progress. Increments 1–2 **built** (router fork/overlay split; project registry + binding); Increments 3–4 specced in [`docs/project-addressability.md`](docs/project-addressability.md).
+### Follow-ups (post-Increment-4)
+
+Small, independent items surfaced during the Increment 1–4 build + reviews. Neither blocks anything; each is a clean standalone change.
+
+- **Legal Risk Register router wiring.** The Legal Risk Register module is built (`references/legal-risk-register.md`), and the fork/overlay split classifies it as an output **overlay** (`intake-router-runtime.md` §6 Table B) — but `constraint:risk` does not yet *auto-attach* it; the route map says "module built; router auto-wiring pending." Wire `constraint:risk` to offer + attach the overlay (and add the `/legal-risk` direct command), per the [Legal Risk Register](#legal-risk-register) future-increments note.
+- **`finding-trace` completion-glob narrowing.** `finding_trace.py`'s `_COMPLETION_GLOBS = ("*_Revision_*.md",)` is over-broad — a deadline-coaching `*_Revision_Calendar_*.md` matches it. Benign today (a calendar carries no `<!-- resolved: F-… -->` markers, so it contributes nothing), but the `revision_round` gate (Increment 4a) narrowed its own `revision_report` artifact_key to `*_Revision_Report_*.md` for exactly this reason. Narrow `_COMPLETION_GLOBS` to match, for consistency.
+
+**Status:** Increments 1–4 **built** (router fork/overlay split; project registry + binding; state-driven dispatch; revision-loop spine incl. the gated `revision_round` phase). Two follow-ups above remain open.
 
 ---
 
