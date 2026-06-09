@@ -1,0 +1,86 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": null,
+  "claim_license": {
+    "additional_caveats": [
+      "Pattern matching is regex over English orthography; non-standard mark conventions (e.g. typewriter dashes vs. em-dashes vs. en-dashes) collapse into the same category. Foreign-language quotation marks are approximated, not exact.",
+      "Heuristic thresholds (band call) are calibration-pending; treat the band as a cue, not a verdict.",
+      "Punctuation is genre-bound: a heavily-regularized punctuation cadence can be entirely correct for memo / brief / press-release prose. Read alongside register match."
+    ],
+    "comparison_set": {
+      "band": "Lightly regularized",
+      "n_words": 2500
+    },
+    "confidence_interval_95": null,
+    "does_not_license": "An AI-provenance verdict. Heavy regularization is characteristic of professional copyediting, institutional house style, AI-edited drafts, and writers in low-interruption-grammar genres alike. The differential diagnosis of cause is the confounder audit's job.",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "Punctuation cadence and interruption-grammar profile of the input: per-mark density, sentence-final distribution, parenthetical / em-dash / appositive interruption rates, punctuation bigram inventory. Surfaces *what kind* of punctuation rhythm the writer uses, including patterns that often regularize before lexical-diversity signals fire.",
+    "references": [],
+    "register_match": [],
+    "task_surface": "voice_coherence"
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** voice-coherence comparison\n\n**Reports:** Punctuation cadence and interruption-grammar profile of the input: per-mark density, sentence-final distribution, parenthetical / em-dash / appositive interruption rates, punctuation bigram inventory. Surfaces *what kind* of punctuation rhythm the writer uses, including patterns that often regularize before lexical-diversity signals fire.\n\n**Does NOT report:** An AI-provenance verdict. Heavy regularization is characteristic of professional copyediting, institutional house style, AI-edited drafts, and writers in low-interruption-grammar genres alike. The differential diagnosis of cause is the confounder audit's job.\n\n### Comparison context\n\n- **band:** Lightly regularized\n- **n words:** 2500\n\n### Caveats\n\n- Pattern matching is regex over English orthography; non-standard mark conventions (e.g. typewriter dashes vs. em-dashes vs. en-dashes) collapse into the same category. Foreign-language quotation marks are approximated, not exact.\n- Heuristic thresholds (band call) are calibration-pending; treat the band as a cue, not a verdict.\n- Punctuation is genre-bound: a heavily-regularized punctuation cadence can be entirely correct for memo / brief / press-release prose. Read alongside register match.",
+  "results": {
+    "comma_period_share": 0.86,
+    "compression": {
+      "band": "Lightly regularized",
+      "compression_fraction": 0.167,
+      "flagged_signals": [
+        "low_semicolon_density"
+      ],
+      "n_flagged": 1,
+      "n_signals": 6
+    },
+    "densities_per_1k": {
+      "bracket_per_1k": 0.0,
+      "colon_per_1k": 2.0,
+      "comma_per_1k": 72.0,
+      "ellipsis_per_1k": 0.8,
+      "em_dash_per_1k": 4.8,
+      "en_dash_per_1k": 0.0,
+      "parenthesis_per_1k": 2.4,
+      "semicolon_per_1k": 1.2
+    },
+    "interruption_grammar": {
+      "comma_appositive_per_1k": 6.0,
+      "em_dash_aside_per_1k": 4.8,
+      "parenthetical_per_1k": 2.4,
+      "total_interruption_per_1k": 13.2
+    },
+    "n_sentence_final": 120,
+    "punctuation_bigrams": {
+      ",—": 4,
+      "—,": 2
+    },
+    "raw_counts": {
+      "bracket": 0,
+      "colon": 5,
+      "comma": 180,
+      "ellipsis": 2,
+      "em_dash": 12,
+      "en_dash": 0,
+      "parenthesis": 6,
+      "semicolon": 3
+    },
+    "sentence_final_distribution": {
+      "exclamation": 0.04,
+      "period": 0.9,
+      "question": 0.06
+    }
+  },
+  "schema_version": "1.0",
+  "target": {
+    "path": "<fixture>",
+    "preprocessing": {
+      "applied": false
+    },
+    "words": 2500
+  },
+  "task_surface": "voice_coherence",
+  "tool": "punctuation_cadence_audit",
+  "version": "<fixture>",
+  "warnings": []
+}

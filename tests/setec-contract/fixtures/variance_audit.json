@@ -1,0 +1,119 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": null,
+  "claim_license": {
+    "additional_caveats": [
+      "Tier 1-3 signals carry mixed calibration status; see references/signals-glossary.md for per-signal status (heuristic / literature_anchored / empirically_oriented). Calibrated thresholds are not shipped as load-bearing defaults per the Stylometry-to-the-people policy.",
+      "Without a personal baseline, signals fire against general-prose heuristic thresholds that may not generalize to the writer's register. Always run with --baseline-dir when a register-matched baseline is available.",
+      "Sliding-window mode localizes compression but inherits the same heuristic-tier thresholds at the window level; interpret window bands as cues, not verdicts."
+    ],
+    "comparison_set": {
+      "band": "Within typical range",
+      "has_baseline": false,
+      "n_sentences": 124,
+      "n_words": 2480,
+      "windowed": false
+    },
+    "confidence_interval_95": null,
+    "does_not_license": "An authorship verdict. Distributional smoothing has many causes — RLHF mode collapse is ONE of them, but so are genre conventions, professional copyediting, register shift, ESL writing, translation cleanup, intentional voice imitation, time drift, and POV collapse. Bands are heuristic-tier with empirically-oriented anchors on six Tier 1 signals (2026-05-10 EditLens findings); thresholds do not generalize across corpora (see ROADMAP.md cross-corpus polarity inversion). The audit does NOT license a claim that a draft is AI-generated based on compression alone.",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "Layer A distributional diagnostic. Reports per-tier stylometric signals (Tier 1 variance: sentence-length SD / MATTR / MTLD / Yule's K / Shannon entropy / FKGL SD / connective density / function-word ratio; Tier 2 syntax: POS-bigram entropy + KL / MDD SD; Tier 3 trajectory: adjacent-sentence cosine mean and SD; Tier 4 surprisal when --tier4 is supplied) plus a compression-band classification. When --baseline-dir is supplied, also reports per-signal z-scores and distributional divergences. Sliding-window mode (--window-size) localizes compression within a long document.",
+    "references": [],
+    "register_match": [],
+    "task_surface": "smoothing_diagnosis"
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** AI-prose smoothing diagnosis\n\n**Reports:** Layer A distributional diagnostic. Reports per-tier stylometric signals (Tier 1 variance: sentence-length SD / MATTR / MTLD / Yule's K / Shannon entropy / FKGL SD / connective density / function-word ratio; Tier 2 syntax: POS-bigram entropy + KL / MDD SD; Tier 3 trajectory: adjacent-sentence cosine mean and SD; Tier 4 surprisal when --tier4 is supplied) plus a compression-band classification. When --baseline-dir is supplied, also reports per-signal z-scores and distributional divergences. Sliding-window mode (--window-size) localizes compression within a long document.\n\n**Does NOT report:** An authorship verdict. Distributional smoothing has many causes — RLHF mode collapse is ONE of them, but so are genre conventions, professional copyediting, register shift, ESL writing, translation cleanup, intentional voice imitation, time drift, and POV collapse. Bands are heuristic-tier with empirically-oriented anchors on six Tier 1 signals (2026-05-10 EditLens findings); thresholds do not generalize across corpora (see ROADMAP.md cross-corpus polarity inversion). The audit does NOT license a claim that a draft is AI-generated based on compression alone.\n\n### Comparison context\n\n- **band:** Within typical range\n- **has baseline:** False\n- **n sentences:** 124\n- **n words:** 2480\n- **windowed:** False\n\n### Caveats\n\n- Tier 1-3 signals carry mixed calibration status; see references/signals-glossary.md for per-signal status (heuristic / literature_anchored / empirically_oriented). Calibrated thresholds are not shipped as load-bearing defaults per the Stylometry-to-the-people policy.\n- Without a personal baseline, signals fire against general-prose heuristic thresholds that may not generalize to the writer's register. Always run with --baseline-dir when a register-matched baseline is available.\n- Sliding-window mode localizes compression but inherits the same heuristic-tier thresholds at the window level; interpret window bands as cues, not verdicts.",
+  "results": {
+    "audit": {
+      "preprocessing": {
+        "applied": false,
+        "rules_active": []
+      },
+      "summary": {
+        "n_sentences": 124,
+        "n_words": 2480,
+        "n_words_original": 2480,
+        "preprocessing_applied": false,
+        "reliable": true
+      },
+      "tier1": {
+        "connective_density": {
+          "count": 77,
+          "per_1000_tokens": 31.0
+        },
+        "fkgl": {
+          "mean": 9.2,
+          "sd": 2.6
+        },
+        "function_words": {
+          "function_word_ratio": 0.46
+        },
+        "mattr": {
+          "value": 0.78,
+          "window": 50
+        },
+        "mtld": 92.5,
+        "sentence_length": {
+          "max": 41,
+          "mean": 20.0,
+          "min": 4,
+          "n": 124,
+          "sd": 7.4
+        },
+        "shannon_entropy_bits": 9.81,
+        "yules_k": 96.3
+      },
+      "tier2": {
+        "available": false,
+        "mdd": null,
+        "pos_bigrams": null
+      },
+      "tier3": {
+        "adjacent_cosine": null,
+        "available": false
+      }
+    },
+    "compression": {
+      "available_signals": [
+        "sentence_length_sd",
+        "mattr",
+        "mtld"
+      ],
+      "available_weight": 6.0,
+      "band": "Within typical range",
+      "calibration_status": {
+        "calibrated_signals": [],
+        "n_calibrated": 0,
+        "n_provisional": 6,
+        "n_total": 6,
+        "provisional_signals": [
+          "mattr",
+          "mtld"
+        ]
+      },
+      "compression_fraction": 0.2,
+      "flagged_signals": [],
+      "n_flagged": 0,
+      "notes": {},
+      "skipped_signals": [],
+      "thresholds_used": {},
+      "weighted_score": 1.2
+    }
+  },
+  "schema_version": "1.0",
+  "target": {
+    "path": "<fixture>",
+    "preprocessing": {
+      "applied": false,
+      "rules_active": []
+    },
+    "words": 2480
+  },
+  "task_surface": "smoothing_diagnosis",
+  "tool": "variance_audit",
+  "version": "<fixture>",
+  "warnings": []
+}

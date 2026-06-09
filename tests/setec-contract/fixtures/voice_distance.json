@@ -1,0 +1,112 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": {
+    "files": [
+      {
+        "id": "prior_a",
+        "n_words": 8000,
+        "path": "<fixture>"
+      }
+    ],
+    "max_words": 12000,
+    "mean_words": 8000.0,
+    "min_words": 5000,
+    "n_files": 6,
+    "personas": [],
+    "privacy_values": [],
+    "registers": [
+      "literary_fiction"
+    ],
+    "words": 48000
+  },
+  "claim_license": {
+    "additional_caveats": [
+      "Voice distance is sensitive to baseline size. Below ~20K baseline words the variance bands widen and the comparison becomes less stable; pair small-baseline runs with `--bootstrap` to surface the uncertainty.",
+      "Register match is a heuristic indicator, not a validation. The register classifier is itself a heuristic; a register mismatch warning means the comparison is suspect, not that the score is wrong.",
+      "Per-family distances can disagree. When the function-word and character-n-gram families point opposite directions, the differential diagnosis matters more than the weighted overall."
+    ],
+    "comparison_set": {
+      "band": "Moderate drift",
+      "baseline_words": 48000,
+      "n_baseline_files": 6,
+      "register_match": "match",
+      "target_words": 2500,
+      "weighted_delta": 1.31
+    },
+    "confidence_interval_95": null,
+    "does_not_license": "An AI-provenance verdict. High distance can come from register shift, audience shift, time drift, deliberate stylistic experiment, AI editing, or any combination. Bands are heuristic; the literature reference values for Burrows Delta and per-feature cosine apply to specific corpora and may not generalize to the user's comparison. The differential diagnosis of cause is the confounder audit's job.",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "Stylometric distance from a target text to a writer / register baseline. Reports per-family distances (function words, character n-grams, POS trigrams, dependency n-grams) plus a weighted overall distance and a verbal drift band. The point of the audit is voice-coherence comparison: does this draft look like prior work from the same writer or the same register?",
+    "references": [],
+    "register_match": [],
+    "task_surface": "voice_coherence"
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** voice-coherence comparison\n\n**Reports:** Stylometric distance from a target text to a writer / register baseline. Reports per-family distances (function words, character n-grams, POS trigrams, dependency n-grams) plus a weighted overall distance and a verbal drift band. The point of the audit is voice-coherence comparison: does this draft look like prior work from the same writer or the same register?\n\n**Does NOT report:** An AI-provenance verdict. High distance can come from register shift, audience shift, time drift, deliberate stylistic experiment, AI editing, or any combination. Bands are heuristic; the literature reference values for Burrows Delta and per-feature cosine apply to specific corpora and may not generalize to the user's comparison. The differential diagnosis of cause is the confounder audit's job.\n\n### Comparison context\n\n- **band:** Moderate drift\n- **baseline words:** 48000\n- **n baseline files:** 6\n- **register match:** match\n- **target words:** 2500\n- **weighted delta:** 1.31\n\n### Caveats\n\n- Voice distance is sensitive to baseline size. Below ~20K baseline words the variance bands widen and the comparison becomes less stable; pair small-baseline runs with `--bootstrap` to surface the uncertainty.\n- Register match is a heuristic indicator, not a validation. The register classifier is itself a heuristic; a register mismatch warning means the comparison is suspect, not that the score is wrong.\n- Per-family distances can disagree. When the function-word and character-n-gram families point opposite directions, the differential diagnosis matters more than the weighted overall.",
+  "results": {
+    "families": {
+      "function_words": {
+        "burrows_delta": 1.42,
+        "capped_in_overall": false,
+        "cosine_distance_to_baseline_mean": 0.21,
+        "cosine_distance_to_baseline_min": 0.09,
+        "cosine_distance_to_centroid": 0.18,
+        "n_features": 50,
+        "overall_delta_contribution_cap": 3.0,
+        "top_deviations": [
+          {
+            "abs_z": 2.25,
+            "baseline_mean": 0.052,
+            "baseline_sd": 0.004,
+            "feature": "the",
+            "value": 0.061,
+            "z": 2.25
+          }
+        ]
+      }
+    },
+    "overall": {
+      "band": "Moderate drift",
+      "interpretation": "Target sits a moderate distance from the baseline voice.",
+      "threshold_note": "Provisional bands; calibration pending.",
+      "weighted_delta": 1.31
+    },
+    "register_match": {
+      "match": {
+        "baseline_registers": [
+          "literary_fiction"
+        ],
+        "verdict": "match"
+      },
+      "target_classification": {
+        "confidence": 0.71,
+        "primary": "literary_fiction",
+        "secondary": "blog_essay"
+      }
+    },
+    "selected_features": {
+      "char_ngrams": 100,
+      "function_words": 50
+    }
+  },
+  "schema_version": "1.0",
+  "target": {
+    "n_sentences": 120,
+    "path": "<fixture>",
+    "preprocessing": {
+      "baseline": {
+        "applied": false
+      },
+      "target": {
+        "applied": false
+      }
+    },
+    "words": 2500
+  },
+  "task_surface": "voice_coherence",
+  "tool": "voice_distance",
+  "version": "<fixture>",
+  "warnings": []
+}

@@ -44,10 +44,12 @@ Two consequences fall out of the table:
 
 ## Decision 2 — Version floors are a property of the **surface**, discovered, not hardcoded per shim
 
-Today each shim hardcodes its floor (texture surfaces 1.86.0; `narrative_decision_audit` 1.107.0), and `run_supplement` accepts a `min_version`. This works but duplicates per-surface knowledge across shims, docs, and the runner — the exact thing that drifted on PR #6.
+Historically each shim hardcoded its floor (texture surfaces 1.86.0; `narrative_decision_audit` 1.107.0), and `run_supplement` accepted a `min_version`. This duplicated per-surface knowledge across shims, docs, and the runner — the exact thing that drifted on PR #6.
 
-- **Target state:** APODICTIC reads each surface's `{ min SETEC version, schema_version, JSON delivery mode, calibration status, handoff posture }` from a **SETEC capabilities query** (SETEC already maintains a capabilities manifest), and asserts floors from that data. Adding a surface then costs zero hardcoded constants.
-- **Interim state (current):** per-shim floor constants + `run_supplement(min_version=...)`. Acceptable until the capabilities query lands; new surfaces must still set their floor explicitly and surface a clean upgrade message (`setec_discovery._install_instructions` is floor-aware).
+> **Note on `1.107.0`.** That is the SETEC *plugin-version* at which the `narrative_decision_audit` surface shipped (and the value its `min_setec_version` carries in the capabilities manifest). It is **not a release tag** — no `v1.107.0` tag exists; the first release tag carrying the surface is `v1.112.0`. The floor lives in the manifest as a plugin-version, and the consumer asserts the discovered `setec_version` against it.
+
+- **Target state (now implemented — Increment 2 / R1 adoption):** APODICTIC reads each surface's `{ min SETEC version, JSON delivery mode, handoff posture, inputs }` from a **SETEC capabilities query** (`capabilities.py emit --json`, via `setec_capabilities.resolve_floor`) and asserts floors from that data. Adding a surface costs zero hardcoded constants. The retired `MIN_SETEC_VERSION = (1, 86, 0)` per-surface authority and the narrative shim's `(1, 107, 0)` constant are gone; the only remaining constant is the bootstrap floor (`setec_discovery.BOOTSTRAP_SETEC_VERSION` — the version at which `capabilities emit` + the R1 field bundle first exist).
+- **Failure path:** a SETEC below a surface's manifest floor fails with a floor-aware upgrade message naming the surface's required minimum (`setec_discovery._install_instructions`); computational surfaces never silently fall back.
 
 ---
 

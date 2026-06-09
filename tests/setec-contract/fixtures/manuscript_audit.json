@@ -1,0 +1,72 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": null,
+  "claim_license": {
+    "additional_caveats": [
+      "Inherits variance_audit's heuristic-tier calibration. Band labels are operator cues, not load-bearing verdicts.",
+      "Cross-chapter aggregation uses medians (not means) so a single outlier chapter does not dominate the dashboard summary; the chapters list preserves per-chapter detail for drill-down."
+    ],
+    "comparison_set": {
+      "n_baseline_files": 0,
+      "n_chapters": 1
+    },
+    "confidence_interval_95": null,
+    "does_not_license": "An authorship verdict. The dashboard surfaces chapter-level distributional patterns within a manuscript; explaining the patterns (genre conventions, deliberate craft choices, register drift, AI involvement) is the writer's call. Pair with the confounder audit and Layer C source triage before drawing conclusions.",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "Cross-chapter manuscript-level Layer A dashboard. Per chapter, runs variance_audit signals against an optional external baseline; aggregates into a manuscript-wide view with per-signal medians, per-chapter band labels, and outlier flagging.",
+    "references": [],
+    "register_match": [],
+    "task_surface": "smoothing_diagnosis"
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** AI-prose smoothing diagnosis\n\n**Reports:** Cross-chapter manuscript-level Layer A dashboard. Per chapter, runs variance_audit signals against an optional external baseline; aggregates into a manuscript-wide view with per-signal medians, per-chapter band labels, and outlier flagging.\n\n**Does NOT report:** An authorship verdict. The dashboard surfaces chapter-level distributional patterns within a manuscript; explaining the patterns (genre conventions, deliberate craft choices, register drift, AI involvement) is the writer's call. Pair with the confounder audit and Layer C source triage before drawing conclusions.\n\n### Comparison context\n\n- **n baseline files:** 0\n- **n chapters:** 1\n\n### Caveats\n\n- Inherits variance_audit's heuristic-tier calibration. Band labels are operator cues, not load-bearing verdicts.\n- Cross-chapter aggregation uses medians (not means) so a single outlier chapter does not dominate the dashboard summary; the chapters list preserves per-chapter detail for drill-down.",
+  "results": {
+    "baseline_stats": {},
+    "chapters": [
+      {
+        "audit": {
+          "preprocessing": {
+            "applied": false
+          },
+          "summary": {
+            "n_sentences": 62,
+            "n_words": 1240,
+            "reliable": true
+          },
+          "tier1": {
+            "mattr": {
+              "value": 0.79,
+              "window": 50
+            },
+            "mtld": 88.0,
+            "yules_k": 99.1
+          }
+        },
+        "compression": {
+          "band": "Within typical range",
+          "compression_fraction": 0.17,
+          "flagged_signals": [],
+          "n_flagged": 0
+        },
+        "label": "Chapter 1",
+        "n_words": 1240,
+        "text_hash": "<fixture-hash>"
+      }
+    ]
+  },
+  "schema_version": "1.0",
+  "target": {
+    "n_chapters": 1,
+    "path": "<fixture>",
+    "preprocessing": {
+      "applied": false
+    },
+    "words": 1240
+  },
+  "task_surface": "smoothing_diagnosis",
+  "tool": "manuscript_audit",
+  "version": "<fixture>",
+  "warnings": []
+}

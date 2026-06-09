@@ -42,6 +42,8 @@ The surfaces APODICTIC consumes today (via shims that forward to SETEC scripts):
 
 The inconsistencies above (one surface on `--json-out`, one floor at 1.107.0) are exactly the per-surface knowledge that should move into a discoverable manifest + a uniform invocation.
 
+> **`1.107.0` is a plugin-version floor, not a release tag.** It is the SETEC plugin-version at which `narrative_decision_audit` shipped, and the value its `min_setec_version` carries in the capabilities manifest — there is no `v1.107.0` release tag (the first tag carrying the surface is `v1.112.0`). The consumer asserts the discovered `setec_version` against the manifest floor; it never assumes a tag.
+
 ---
 
 ## What APODICTIC needs

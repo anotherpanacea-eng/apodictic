@@ -195,14 +195,17 @@ def run_supplement(
     warnings array per spec §6.4 and returns the result for the caller to
     consume.
 
-    ``min_version`` enforces a per-script SETEC version floor higher
-    than the framework-wide default in setec_discovery. Surface 6
-    (``narrative_decision_audit.py``) shipped in SETEC 1.107.0, above the
-    1.86.0 floor the texture-level surfaces use; callers consuming it
-    pass ``min_version=(1, 107, 0)`` so an older SETEC fails discovery
-    with the intended upgrade message rather than reaching the script and
-    failing "script not found". When ``location`` is supplied the caller
-    has already resolved discovery, so ``min_version`` is ignored.
+    ``min_version`` is a low-level escape hatch that forces a discovery
+    floor; it is retained for backward compatibility but is NO LONGER the
+    recommended way to enforce a per-surface floor. Per the R1 acceptance
+    criterion and docs/setec-dependency-posture.md Decision 2, floors are a
+    property of the surface and are read from SETEC's capabilities manifest
+    — resolve a surface's floor with ``setec_capabilities.resolve_floor(
+    surface)`` (which validates the discovered ``setec_version`` against the
+    manifest ``min_setec_version``) and pass the validated
+    ``location=manifest.location`` here, rather than hardcoding a tuple.
+    When ``location`` is supplied the caller has already resolved discovery,
+    so ``min_version`` is ignored.
 
     ``json_out`` selects the file-based JSON strategy for SETEC scripts
     whose ``--json`` surface writes the envelope to a path rather than to
