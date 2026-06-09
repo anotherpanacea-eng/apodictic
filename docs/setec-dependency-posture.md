@@ -75,7 +75,7 @@ Requiring SETEC does **not** fix drift; narrowing the contract does. The roadmap
 ## How a new SETEC-backed audit declares its posture (checklist)
 
 1. Classify it: **computational** (required) or **judgment** (independent / optional supplement)?
-2. If computational: set the surface's **version floor** in its shim, route through `run_supplement(min_version=...)`, ensure the failure path gives an install/upgrade message (not a silent skip, not an LLM estimate), and confirm the surface **self-validates its output against plausibility bounds** — failing cleanly rather than emitting an out-of-bounds number.
+2. If computational: route through the surface's shim / `run_supplement("<surface>", args)` (R2 — the normalized dispatcher resolves the surface, ENFORCES its manifest version floor + dependencies, and returns an R3 `version_floor` / `missing_dependency` error envelope on failure; no consumer-side floor pre-check). Ensure the failure path gives an install/upgrade message (not a silent skip, not an LLM estimate) — the dispatcher's R3 `reason`/`reason_category` carry it, and `run_supplement` tiers `version_floor`/`missing_dependency` as blocking. Confirm the surface **self-validates its output against plausibility bounds** (SETEC's R4 gate; an out-of-bounds value becomes an R3 `internal_error`) — failing cleanly rather than emitting an out-of-bounds number.
 3. If judgment: keep it SETEC-independent; if it *optionally* consumes a SETEC signal, treat the signal as reliability-tier supplementation that degrades per `setec_runner`'s three-tier rule.
 4. Record the audit's row in the Decision 1 table above.
 5. When the capabilities query (Decision 2 target) lands, drop the hardcoded floor in favor of the manifest value.

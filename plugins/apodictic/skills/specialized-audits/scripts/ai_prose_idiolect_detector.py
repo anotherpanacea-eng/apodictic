@@ -21,30 +21,20 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from setec_discovery import SetecDiscoveryError, run_setec_script  # noqa: E402
-from setec_capabilities import (  # noqa: E402
-    SetecCapabilitiesError,
-    resolve_floor,
-)
+from setec_runner import run_surface_cli  # noqa: E402
 
 SURFACE = "idiolect_detector"
 
 
 def main(argv: list[str]) -> int:
-    try:
-        # Floor is data-driven from SETEC's capabilities manifest (R1),
-        # not hardcoded. resolve_floor asserts the discovered
-        # setec_version satisfies this surface's manifest
-        # min_setec_version; the validated location is reused so the
-        # script is not re-discovered at the bootstrap floor.
-        _cap, manifest = resolve_floor(SURFACE)
-        result = run_setec_script(
-            "idiolect_detector.py", argv, location=manifest.location
-        )
-    except (SetecDiscoveryError, SetecCapabilitiesError) as e:
-        print(str(e), file=sys.stderr)
-        return 2
-    return result.returncode
+    # Route the surface through SETEC's normalized dispatcher (R2): the
+    # dispatcher resolves the surface from its capabilities manifest, enforces
+    # the per-surface version floor + dependencies (returning R3 errors), runs
+    # the script, and guarantees a schema_version 1.0 envelope on stdout. No
+    # consumer-side floor pre-check: the dispatcher is the single runtime
+    # authority (resolve_floor / the vendored manifest stay for the offline
+    # drift gate + capability introspection, not a redundant runtime check).
+    return run_surface_cli(SURFACE, argv)
 
 
 if __name__ == "__main__":
