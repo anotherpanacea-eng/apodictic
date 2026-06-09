@@ -1,6 +1,6 @@
 # Legal Risk Register — a workflow
 
-**Status:** Increment 1 **built**. Roadmap: `ROADMAP.md` → Workflows → Legal Risk Register. Home: **core-editor** (manuscript-content analysis), reference `core-editor/references/legal-risk-register.md`. Artifact: `[Project]_Legal_Risk_Register_[runlabel].md`. Validator: `validate.sh legal-risk`.
+**Status:** Increment 1 **built**; **detection layer built** — per-class detection guidance + a standard escalation-trigger taxonomy in `core-editor/references/legal-risk-register.md` §Detection guidance / §Escalation-trigger taxonomy, synthesized from the cross-model research in [`docs/legal-risk-detection-level-setting.md`](legal-risk-detection-level-setting.md). Roadmap: `ROADMAP.md` → Workflows → Legal Risk Register. Home: **core-editor** (manuscript-content analysis), reference `core-editor/references/legal-risk-register.md`. Artifact: `[Project]_Legal_Risk_Register_[runlabel].md`. Validator: `validate.sh legal-risk`.
 
 ## Purpose
 

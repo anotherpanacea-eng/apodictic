@@ -1,6 +1,6 @@
 # Legal-Risk Detection Playbook — level-setting research
 
-**Status:** Level-setting research — **all 4 sources in; synthesis complete, ready to feed the detection increment.** Feeds two deferred Legal Risk Register increments — **per-class detection guidance** and the **standardized escalation-trigger taxonomy** (`docs/legal-risk-register.md` future increments; `intake-router-design.md` § remaining gaps). **Firewall: flag, don't practice law.** Everything here informs *detection* heuristics only; nothing is legal advice, and a qualified human lawyer is the final gate.
+**Status:** Level-setting research — **all 4 sources in; synthesis complete and built** into `core-editor/references/legal-risk-register.md` §Detection guidance / §Escalation-trigger taxonomy (lean runtime layer; citations stay here, not in the runtime module). Fed two deferred Legal Risk Register increments — **per-class detection guidance** and the **standardized escalation-trigger taxonomy** (`docs/legal-risk-register.md` future increments; `intake-router-design.md` § remaining gaps). **Firewall: flag, don't practice law.** Everything here informs *detection* heuristics only; nothing is legal advice, and a qualified human lawyer is the final gate.
 
 ## Method
 
