@@ -62,7 +62,7 @@ Genuinely remaining gaps:
 
 - **Multi-Party Intake** (`operator:team`, fork=intake) — co-authoring intake; conflict surfacing / sign-off. Closest: single-author Core DE.
 - **Nonfiction Pre-Draft, idea-stage** (`engine=nonfiction` at `artifact:idea`) — the prose-stage nonfiction engines (argument / narrative / memoir) are built; only the idea-stage pre-draft pathway entry remains a router gap. (The Nonfiction Pre-Draft *module* itself is built per `ROADMAP.md`; the open item is its router wiring.)
-- **Legal Risk Register router wiring** — the module is built (`references/legal-risk-register.md`); auto-attaching it as an overlay from `constraint:risk` is the pending increment.
+- **Legal Risk Register content-detection auto-recommend** — the explicit-flag path is **built** (`constraint:risk` offers + attaches the overlay; `/legal-risk` direct command). The remaining gap is *content* detection: auto-recommending the register for memoir/autofiction portraying identifiable real people *without* an explicit `constraint:risk` flag.
 
 ---
 
