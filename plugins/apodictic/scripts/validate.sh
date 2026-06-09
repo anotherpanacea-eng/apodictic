@@ -165,9 +165,9 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node"
-  echo "Aggregate: --self-test-all (runs --self-test on all 37 self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder)"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, check-mirror"
+  echo "Aggregate: --self-test-all (runs --self-test on all 38 self-testable validators; exit 0 only if every validator's self-test passes)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -183,11 +183,11 @@ if [ $# -lt 1 ]; then usage; fi
 # fixture-driven self-tests too (Validator Architecture Hardening — they
 # previously had none), so every command in the suite is exercised here.
 if [ "$1" = "--self-test-all" ]; then
-  AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node"
+  AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node check-mirror"
   AGG_FAIL=0
   AGG_PASS_COUNT=0
   AGG_FAIL_COUNT=0
-  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 37 validators:"
+  echo "Aggregate self-test dispatcher (v1.8.4) — running --self-test on all 38 validators:"
   for v in $AGG_VALIDATORS; do
     if "$0" "$v" --self-test >/dev/null 2>&1; then
       echo "  $v: PASS"
@@ -200,10 +200,10 @@ if [ "$1" = "--self-test-all" ]; then
   done
   echo ""
   if [ "$AGG_FAIL" -eq 0 ]; then
-    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/37 validators)"
+    echo "Aggregate self-test: PASS ($AGG_PASS_COUNT/38 validators)"
     exit 0
   else
-    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/37 validators failed; rerun individually with --self-test for details)"
+    echo "Aggregate self-test: FAIL ($AGG_FAIL_COUNT/38 validators failed; rerun individually with --self-test for details)"
     exit 1
   fi
 fi
@@ -383,6 +383,13 @@ if [ "$1" = "--check-all" ]; then
     done
     echo ""
   fi
+
+  # Dual-script-mirror invariant: the root scripts/ copy (what CI runs) and the canonical
+  # plugins/apodictic/scripts/ copy must be byte-identical for the shared mirrored set, or a
+  # validator change passes against one copy while CI runs the stale other (AGENTS.md § parity).
+  echo "== check-mirror (scripts/ <-> plugins/apodictic/scripts/ byte-identical) =="
+  "$0" check-mirror >/dev/null 2>&1 && echo "  ok (mirrored set identical)" || { echo "  FAIL"; "$0" check-mirror || true; CA_FAIL=1; }
+  echo ""
 
   if [ "$CA_FAIL" -eq 0 ]; then
     echo "check-all: PASS (self-tests + real-file invariants)"
@@ -4542,6 +4549,67 @@ EOF
     fi
     echo "WARN: python3 unavailable — editor-scaffolding skipped; if the letter declares editor-scaffolding mode, verify inline that it carries an Editor Brief, a 'What You Might Have Missed' section, an Intervention Menu, and that severity tokens survive. See docs/editor-scaffolding.md."
     exit 0
+    ;;
+
+  check-mirror)
+    # Mirror-parity gate (QoL infra; docs/mirror-parity-check.md): mechanizes the AGENTS.md
+    # dual-script-mirror invariant. validate.sh, preflight.sh, and every *.py exist in TWO committed
+    # copies — root scripts/ (what CI runs) and plugins/apodictic/scripts/ (canonical) — that must be
+    # kept byte-identical BY HAND; a stale copy passes locally while CI runs the other blind. This
+    # asserts the shared mirrored set matches. Root-only build/release scripts (*.mjs, release.sh,
+    # bump-version.sh) and the plugin-only test_fixtures/ are NOT mirrored; schemas are single-sourced.
+    # Detection only — never auto-syncs (mirroring stays a deliberate cp). Pure shell; needs no python3.
+    if [ "${1:-}" = "--self-test" ]; then
+      CM_T=$(mktemp -d); CM_R=0
+      mkdir -p "$CM_T/a" "$CM_T/b"
+      printf 'x\n' > "$CM_T/a/validate.sh"; printf 'x\n' > "$CM_T/b/validate.sh"
+      printf 'p\n' > "$CM_T/a/m.py";        printf 'p\n' > "$CM_T/b/m.py"
+      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && echo "  identical: OK" || { echo "  identical: FAIL (expected PASS)"; CM_R=1; }
+      printf 'p2\n' > "$CM_T/b/m.py"
+      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && { echo "  content_drift: FAIL (one-byte diff not caught)"; CM_R=1; } || echo "  content_drift: OK (caught)"
+      printf 'p\n' > "$CM_T/b/m.py"; printf 'q\n' > "$CM_T/a/only.py"
+      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && { echo "  missing_file_a: FAIL (one-sided file in dirA not caught)"; CM_R=1; } || echo "  missing_file_a: OK (caught)"
+      rm -f "$CM_T/a/only.py"; printf 'q\n' > "$CM_T/b/only.py"
+      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && { echo "  missing_file_b: FAIL (one-sided file in dirB not caught)"; CM_R=1; } || echo "  missing_file_b: OK (caught)"
+      rm -f "$CM_T/b/only.py"
+      printf 's\n' > "$CM_T/a/sync_setec.py"   # a root-only util present in one dir only must NOT fail
+      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && echo "  root_only_excluded: OK (one-sided root-only file ignored)" || { echo "  root_only_excluded: FAIL (root-only exclusion not honored)"; CM_R=1; }
+      rm -rf "$CM_T"
+      if [ "$CM_R" -eq 0 ]; then echo "Self-test: PASS"; exit 0; else echo "Self-test: FAIL"; exit 1; fi
+    fi
+    CM_DIR=$(cd "$(dirname "$0")" && pwd)
+    if [ $# -ge 2 ]; then
+      CM_A="$1"; CM_B="$2"
+    elif [ $# -eq 1 ]; then
+      echo "Usage: $0 check-mirror [<dirA> <dirB>]  (no args = auto-detect the script-dir pair; two args = compare them). A single dir argument is ambiguous." >&2
+      exit 2
+    else
+      CM_A="$CM_DIR"; CM_B=""
+      for cand in "$CM_DIR/../plugins/apodictic/scripts" "$CM_DIR/../../../scripts"; do
+        if [ -d "$cand" ]; then rp=$(cd "$cand" && pwd); [ "$rp" != "$CM_DIR" ] && { CM_B="$rp"; break; }; fi
+      done
+      if [ -z "$CM_B" ]; then echo "WARN: mirror sibling not found from $CM_DIR — single-copy workspace, nothing to mirror; skipped."; exit 0; fi
+    fi
+    CM_FAIL=0
+    # Root-only utilities live ONLY in root scripts/ (release-engineering, like the *.mjs scripts) and
+    # are intentionally NOT mirrored to the plugin copy — exclude them or check-mirror false-positives.
+    # Space-padded for whole-word matching. (sync_setec.py: the SETEC vendoring/sync utility.)
+    CM_ROOT_ONLY=" sync_setec.py "
+    # Mirrored set = validate.sh, preflight.sh, and every *.py present in EITHER dir (sorted, deduped).
+    # `|| true`: a no-match grep exits 1, which would abort under `set -e`.
+    CM_NAMES=$( { ls -1 "$CM_A" 2>/dev/null; ls -1 "$CM_B" 2>/dev/null; } | grep -E '\.py$|^validate\.sh$|^preflight\.sh$' | sort -u || true )
+    for name in $CM_NAMES; do
+      case "$CM_ROOT_ONLY" in *" $name "*) continue ;; esac   # intentionally root-only; not mirrored
+      fa="$CM_A/$name"; fb="$CM_B/$name"
+      if [ ! -f "$fa" ]; then echo "  MISSING in $CM_A: $name"; CM_FAIL=1; continue; fi
+      if [ ! -f "$fb" ]; then echo "  MISSING in $CM_B: $name"; CM_FAIL=1; continue; fi
+      cmp -s "$fa" "$fb" || { echo "  DIFFER: $name"; CM_FAIL=1; }
+    done
+    if [ "$CM_FAIL" -eq 0 ]; then
+      echo "check-mirror: PASS (root scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"; exit 0
+    fi
+    echo "check-mirror: FAIL — sync the two copies by hand (cp the intended-canonical file between scripts/ and plugins/apodictic/scripts/), then re-run. A 'DIFFER: validate.sh' on first run of a new check means the copies aren't synced yet, not a logic bug."
+    exit 1
     ;;
 
   *)
