@@ -1,6 +1,10 @@
 # Gated `revision_round` phase — spec (Increment 4a)
 
-**Status:** Spec (not yet built). Follow-up to Project Addressability Increment 4 (`docs/project-addressability.md` §Increment 4 build split). Adds a gated `revision_round` phase so the runner-governed gate engine writes `revised` **fold-consistently** for governed projects, while the existing direct write is retained as the fallback for non-governed projects. Touches `schemas/execution-gates.v1.json`, `scripts/run_gate.py` (+ root mirror), `references/state-lifecycle.md`, `revision-coach/SKILL.md`, `docs/project-addressability.md`, `docs/finding-lifecycle-ids.md`, and the `--check-all` gate fixture. No new validator; reuses the gate engine + `finding-trace`.
+**Status:** **Built** (Increment 4a). Completes Project Addressability Increment 4. The runner-governed gate engine now writes `revised` **fold-consistently** for governed projects via a gated `revision_round` phase; the direct write is retained as the fallback for non-governed projects. Built in `execution-gates.v1.json`, `run_gate.py` (+ root mirror), `references/state-lifecycle.md`, `revision-coach/SKILL.md`, `docs/project-addressability.md`, `docs/finding-lifecycle-ids.md`. No new validator. `validate.sh gate --self-test` (9 new `rev_*` cases) + `--check-all` green.
+
+**Two build-time corrections (found while building):**
+- **Gate entry check is `ledger-check`, not `finding-trace`.** `run_checks` treats any `WARN` in a validator's output as a gate-WARN (`run_gate.py:223`), and `finding-trace`'s W3 (resolved-but-not-yet-`revised`) is exactly the post-condition the gate *establishes* — so `finding-trace` as the entry check would block its own clear. The gate's entry check must be a *precondition* (`ledger-check`); `finding-trace` audits report↔sidecar consistency *after* the fold writes `revised`.
+- **The committed `--check-all` `example-run-folder` fixture is left untouched.** `--check-all` already runs `--self-test-all`, so the 9 `rev_*` gate self-tests exercise `revision_round` under `--check-all`. The committed fixture is a read-only `gate-state` example whose existing `run_synthesis` log is already valid; hand-building a multi-event `revision_round` log (digests + `pointer == fold`) would add real risk for coverage the self-test already provides.
 
 ## The contradiction — and its true scope (spec-review Blocker 1)
 

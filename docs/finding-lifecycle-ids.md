@@ -121,7 +121,7 @@ E4 (dangling) and W2 (plan coverage) keep treating **both** globs as "a revision
 ## Out of scope (later increments)
 
 - **`deficit-lock` / `softness-check` by-ID consolidation.** Folding their residual prose heuristics fully onto IDs is a separate hardening pass.
-- **Runner-advanced `revised` writes.** Increment 3 *audits* the `revised` state; having the execution gate itself write `finding_states[id] = revised` on a verified revision round (rather than the coach updating the sidecar) is a Runner-Governed Execution concern, deferred to that track.
+- **Runner-advanced `revised` writes — built (Increment 4a).** The execution gate now writes `finding_states[id] = revised` on a verified revision round via the gated `revision_round` phase (marking only the resolved subset), for runner-governed projects; non-governed projects keep the coach's direct write. See `docs/revision-round-gate.md`.
 
 ## Self-review (pre-build)
 

@@ -1,6 +1,6 @@
 # Project Addressability & State-Driven Routing — spec
 
-**Status:** Increments 1–3 **built**. Increment 1 (router fork/overlay split — see [`router-fork-overlay-split.md`](router-fork-overlay-split.md)). Increment 2 (project registry + binding — schemas, `registry-check`, `/projects`, `/start` binding, `/new-project` registration, pre-writing minimal sidecar). Increment 3 (state-driven dispatch — `lifecycle-node` validator, `start.md` Step 0.5 `next_action`-as-primary + scoped contract-hash precondition, `§6` lifecycle transition table, `readiness[]` population). Increment 4 **partially built** — 4b (the "what now?" loop dispatcher) is built; 4a (the gated `revision_round` phase) is deferred to its own cycle (see the build split below). Roadmap: `ROADMAP.md` → [Project Addressability & State-Driven Routing](../ROADMAP.md#project-addressability--state-driven-routing). No pass-engine or synthesis change.
+**Status:** Increments 1–3 **built**. Increment 1 (router fork/overlay split — see [`router-fork-overlay-split.md`](router-fork-overlay-split.md)). Increment 2 (project registry + binding — schemas, `registry-check`, `/projects`, `/start` binding, `/new-project` registration, pre-writing minimal sidecar). Increment 3 (state-driven dispatch — `lifecycle-node` validator, `start.md` Step 0.5 `next_action`-as-primary + scoped contract-hash precondition, `§6` lifecycle transition table, `readiness[]` population). Increment 4 **built** — 4b (the "what now?" loop dispatcher) and 4a (the gated `revision_round` phase, `docs/revision-round-gate.md`) are both built. Roadmap: `ROADMAP.md` → [Project Addressability & State-Driven Routing](../ROADMAP.md#project-addressability--state-driven-routing). No pass-engine or synthesis change.
 
 ## What exists, and the one thing that doesn't
 
@@ -131,9 +131,9 @@ With Increment 1's fork/overlay split in place, `intake-router-runtime.md` §6 i
 
 ---
 
-## Increment 4 — Revision-loop-as-spine — **Partially built (4b)**
+## Increment 4 — Revision-loop-as-spine — **Built**
 
-**Built (4b):** the "what now?" loop dispatcher — `revision-coach/SKILL.md` §Loop Dispatch (the leverage ladder reading `finding_states` + resolved markers + `revision_progress`/`control_questions`, with the stalled off-ramp and the source-of-truth rule) and `start.md`'s `revising` dispatch wired to it. **Deferred (4a):** the gated `revision_round` phase (folds `revised` into the sidecar; requires reconciling the direct-write-vs-fold contradiction — its own cycle).
+**Built (4b):** the "what now?" loop dispatcher — `revision-coach/SKILL.md` §Loop Dispatch (the leverage ladder reading `finding_states` + resolved markers + `revision_progress`/`control_questions`, with the stalled off-ramp and the source-of-truth rule) and `start.md`'s `revising` dispatch wired to it. **Built (4a):** the gated `revision_round` phase that folds `revised` into the sidecar for runner-governed projects, marking only the resolved subset, with the direct write retained for non-governed projects — `docs/revision-round-gate.md`.
 
 **The `revised` finding-state and how Increment 4 handles it.** The ladder below references the `locked → delivered → revised` lifecycle. `revised` is **not written by the gate fold** — `_PHASE_FINDING_STATE` (`run_gate.py:49`) stops at `delivered`. But it is *not* unreachable: the revision-round protocol writes `execution.finding_states[<id>] = "revised"` **directly** into the sidecar today (`state-lifecycle.md:120`), and `finding-trace` E5 reads it (`finding_trace.py:245`). The **canonical source** of "which findings were revised" is the `<!-- resolved: F-… -->` markers in the revision report (what `finding-trace` parses, and what `state-lifecycle.md` uses to set the field). So the dispatcher reads `finding_states.revised` (present today) or those markers — no gate needed. A gated `revision_round` phase would make the gate *engine* the writer (folding the markers into the sidecar) — a *hardening*, not a precondition. This is the build split below.
 
@@ -143,7 +143,7 @@ For a project at the `revising` node, dispatch is not a single workflow load but
 - the `<!-- resolved: F-… -->` markers in the latest revision report
 - `execution.phase` / `allowed_next` — gate frontier; `revision_progress` (`steps_complete` / `current_step`); `triage_summary`; `control_questions.open`; the Coaching Log (for stall detection)
 
-**Source of truth for "revised" (one rule).** Read `finding_states[<id>] == "revised"` when present (written by `state-lifecycle.md:120`); otherwise fall back to the report's resolved markers. The two should agree — `finding-trace` E5/W3 reconciles them — so prefer the sidecar field and treat a marker-without-field as "revised, sidecar not yet updated."
+**Source of truth for "revised" (one rule).** Read `finding_states[<id>] == "revised"` when present — written by the `revision_round` gate for runner-governed projects (Increment 4a, `docs/revision-round-gate.md`) or directly by the revision round for non-governed projects (`state-lifecycle.md`); otherwise fall back to the report's resolved markers. The two should agree — `finding-trace` E5/W3 reconciles them — so prefer the sidecar field and treat a marker-without-field as "revised, sidecar not yet updated."
 
 Selection (highest-leverage first):
 

@@ -84,7 +84,7 @@ Before picking a mode, the coach can answer **"what's the highest-leverage thing
 
 **Inputs (all already on disk):** `Diagnostic_State.meta.json` — `execution.finding_states` (`locked`/`delivered`/`revised`), `execution.pending_gate` / `phase` / `allowed_next` (the gate frontier, for step 1), `revision_progress`, `triage_summary`, `control_questions.open`, the Coaching Log — and the `<!-- resolved: F-… -->` markers in the latest revision report.
 
-**Source of truth for "revised":** read `finding_states[<id>] == "revised"` when present (the revision round writes it directly per `../core-editor/references/state-lifecycle.md`); else fall back to the report's resolved markers (`finding-trace` E5/W3 reconciles the two).
+**Source of truth for "revised":** read `finding_states[<id>] == "revised"` when present — written by the `revision_round` gate (runner-governed projects) or directly by the revision round (non-governed projects), per `../core-editor/references/state-lifecycle.md`; else fall back to the report's resolved markers (`finding-trace` E5/W3 reconciles the two).
 
 **Leverage ladder (first match wins) — the dispatcher proposes; the writer disposes:**
 
