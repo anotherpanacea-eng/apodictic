@@ -37,6 +37,6 @@ A confirming vs. refuting answer re-enters the loop through Feedback Triage as a
   "uncertainty": "A pass surfaced the open question of how the closing image lands, but could not settle it from the text.",
   "probe_type": "experiential",
   "question": "When you finished, what feeling did the last scene leave you with? Say it in your own words before reading on.",
-  "expected_signal": "A spread clustering toward 'hopeful' vs. 'resigned' shows which reading dominates on a first pass; a near-even split confirms the image is genuinely holding both."
+  "expected_signal": "A spread clustering toward 'hopeful' vs. 'resigned' shows which reading dominates on a first pass; a near-even split suggests the image is genuinely holding both."
 }
 -->

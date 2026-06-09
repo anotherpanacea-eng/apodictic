@@ -217,6 +217,7 @@ def check(instrument_text, ledger_text, strict=False):
     fix_ovr = _overrides(instrument_text, "how-to-fix")
     targeted_findings = set()
     sourced_uqs = []
+    uqs = unresolved_questions(ledger_text)   # the Ledger's Unresolved-Questions bullets (for B3 + W1)
 
     for obj, _idx in valid:
         rid = obj.get("id")
@@ -233,6 +234,12 @@ def check(instrument_text, ledger_text, strict=False):
                             % (rid, targets))
             else:
                 targeted_findings.add(targets)
+                # B3 advisory: a low-confidence-finding probe should target an actually-open finding.
+                # (A tradeoff legitimately rides any finding — its uncertainty is in `risk_if_fixed`.)
+                if kind == "low-confidence-finding" and index[targets].get("confidence") not in _OPEN_CONFIDENCE:
+                    warns.append("B3 source mismatch: %s is low-confidence-finding but targets %s "
+                                 "(confidence %s, not LOW/UNCERTAIN) — the kind label should match the Ledger"
+                                 % (rid, targets, index[targets].get("confidence")))
         elif kind == "unresolved-question":
             if not note:
                 errs.append("B3 provenance integrity: %s is unresolved-question but has no `source_note`" % rid)
@@ -241,6 +248,12 @@ def check(instrument_text, ledger_text, strict=False):
                             "(unresolved questions have no finding id)" % (rid, targets))
             if note:
                 sourced_uqs.append(note)
+                # B3 advisory: the source_note should correspond to a real `### Unresolved Questions`
+                # bullet. Coarse word-overlap (same heuristic as W1's coverage match), not an id match.
+                if uqs and not any(_uq_covered(uqb, [note]) for uqb in uqs):
+                    warns.append("B3 unsourced question: %s cites a source_note matching no Unresolved "
+                                 "Questions bullet in the Ledger (coarse word-overlap — verify it is real): %s"
+                                 % (rid, note[:60]))
 
         question = obj.get("question") or ""
         # B4 — leading construction (sound blocklist) + invented content (coarse heuristic)
@@ -269,7 +282,7 @@ def check(instrument_text, ledger_text, strict=False):
     for fid in sorted(open_finding_ids(index) - targeted_findings):
         warns.append("W1 coverage: finding %s is %s but no reader question tests it"
                      % (fid, index[fid].get("confidence")))
-    for uq in unresolved_questions(ledger_text):
+    for uq in uqs:
         if not _uq_covered(uq, sourced_uqs):
             warns.append("W1 coverage: unresolved question is untested — %s" % (uq[:72]))
 
@@ -401,6 +414,20 @@ def run_self_test():
     # clean unresolved-question (note only, no targets)
     chk("uq_clean", check(rq(kind="unresolved-question", targets="", note="does the ending land?"),
                           ledger(finding(), uqs=("does the ending land?",)))[0] == 0)
+    # B3 advisory — a low-confidence-finding probe pointed at a non-open (HIGH) finding (Could-Fix so B5
+    # doesn't also fire): kind label disagrees with the Ledger → advisory WARN, not an error.
+    code, ls = check(rq(targets="F-HI-01"),
+                     ledger(finding(fid="F-HI-01", severity="Could-Fix", confidence="HIGH")))
+    chk("b3_source_mismatch", code == 0 and any("B3 source mismatch" in x for x in ls))
+    # ...but a tradeoff legitimately rides a HIGH finding — no mismatch flag.
+    chk("b3_tradeoff_high_ok",
+        not any("B3 source mismatch" in x for x in
+                check(rq(kind="tradeoff", targets="F-HI-01"),
+                      ledger(finding(fid="F-HI-01", severity="Could-Fix", confidence="HIGH")))[1]))
+    # B3 advisory — an unresolved-question whose source_note matches no UQ bullet → fabrication WARN.
+    code, ls = check(rq(kind="unresolved-question", targets="", note="something totally unrelated zebra"),
+                     ledger(finding(), uqs=("does the ending land?",)))
+    chk("b3_unsourced_uq", code == 0 and any("B3 unsourced question" in x for x in ls))
 
     # B4 — leading construction (advisory, ERROR --strict), and override clears it
     lead = rq(question="Don't you think the midpoint reversal lands?")
@@ -416,19 +443,23 @@ def run_self_test():
     code, ls = check(rq(question="When Donut leaves the scene, what did you expect to change?"), led_low)
     chk("b4_no_sentence_initial_fp", code == 0 and not any("B4 invented" in x for x in ls))
 
-    # B5 — relitigating a locked verdict (Must-Fix/HIGH), advisory + override
+    # B5 — relitigating a locked verdict (Must-Fix/HIGH), advisory + override. Use a `tradeoff` probe:
+    # the fix-approach of a locked verdict is a tradeoff question, not a low-confidence one — and a
+    # tradeoff legitimately rides a non-LOW finding (so B3 source-mismatch does not also fire here).
     led_locked = ledger(finding(severity="Must-Fix", confidence="HIGH"))
-    code, ls = check(rq(), led_locked)
+    code, ls = check(rq(kind="tradeoff"), led_locked)
     chk("b5_locked_advisory", code == 0 and any("B5 relitigating" in x for x in ls))
-    chk("b5_locked_strict_fails", check(rq(), led_locked, strict=True)[0] == 1)
+    chk("b5_locked_strict_fails", check(rq(kind="tradeoff"), led_locked, strict=True)[0] == 1)
     # MEDIUM Must-Fix is still locked (the closed hole)
     chk("b5_medium_mustfix_locked",
-        any("B5" in x for x in check(rq(), ledger(finding(severity="Must-Fix", confidence="MEDIUM")))[1]))
-    ovr5 = rq() + "\n<!-- override: how-to-fix RQ-01 — testing the fix approach, not the verdict -->"
+        any("B5" in x for x in check(rq(kind="tradeoff"),
+                                     ledger(finding(severity="Must-Fix", confidence="MEDIUM")))[1]))
+    ovr5 = rq(kind="tradeoff") + "\n<!-- override: how-to-fix RQ-01 — testing the fix approach, not the verdict -->"
     chk("b5_how_to_fix_override", check(ovr5, led_locked, strict=True)[0] == 0)
     # a Could-Fix HIGH finding is NOT locked (severity gate)
     chk("b5_couldfix_not_locked",
-        not any("B5" in x for x in check(rq(), ledger(finding(severity="Could-Fix", confidence="HIGH")))[1]))
+        not any("B5" in x for x in check(rq(kind="tradeoff"),
+                                         ledger(finding(severity="Could-Fix", confidence="HIGH")))[1]))
 
     # W1 — an untested LOW finding (advisory)
     code, ls = check(rq(kind="unresolved-question", targets="", note="x"),
