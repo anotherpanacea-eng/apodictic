@@ -26,10 +26,7 @@ Scoring: YES = 1.0, PARTIAL = 0.5, NO = 0. Denominator = 8 GT issues.
 **Review A:** YES ×2 (GT-01, GT-05); PARTIAL ×3 (GT-02, GT-03, GT-14); NO ×3 (GT-04, GT-06, GT-07).
 Recall = (2 + 0.5·3) / 8 = **3.5 / 8 = 0.44**.
 
-**Review B:** YES ×1 (GT-03); PARTIAL ×5 (GT-01, GT-02, GT-04, GT-06, GT-07, GT-14 → that is 6 PARTIALs). Recount:
-- YES ×1: GT-03
-- PARTIAL ×6: GT-01, GT-02, GT-04, GT-06, GT-07, GT-14
-- NO ×1: GT-05
+**Review B:** YES ×1 (GT-03); PARTIAL ×6 (GT-01, GT-02, GT-04, GT-06, GT-07, GT-14); NO ×1 (GT-05).
 Recall = (1 + 0.5·6) / 8 = **4.0 / 8 = 0.50**.
 
 **Tie/near-tie note:** The two are close (A 0.44 vs B 0.50). They genuinely tie on GT-14 (both PARTIAL) and trade complementary catches: A is stronger and cleaner (full YES) on GT-01 and GT-05; B is broader but shallower, converting several of A's misses (GT-04, GT-06, GT-07) into PARTIALs while landing the clean YES on GT-03 that A inverts.
@@ -92,7 +89,7 @@ GT bands: Should-Fix = band 2, Could-Fix = band 1.
 | GT-05 (b2) | Should-Fix | A3 Should-Fix | ✅ match |
 | GT-14 (b1) | Could-Fix | A8/A5 (A8 Could-Fix; A5 Should-Fix) | ⚠️ mixed — A8 matches, A5 off-by-one high |
 
-Review A band-match on clean catches: **3/3 matched** (GT-01, GT-02, GT-05); GT-14 touch via A8 matches, via A5 off-by-one.
+Review A band-match: **3/4** on its caught-and-banded set (GT-01, GT-02, GT-05 clean; GT-14 mixed — A8 matches, A5 off-by-one high). GT-03 excluded from the denominator as a valence flip (not banded).
 
 **Review B:**
 | GT id | GT band | B severity | match? |
@@ -105,9 +102,9 @@ Review A band-match on clean catches: **3/3 matched** (GT-01, GT-02, GT-05); GT-
 | GT-07 (b1) | Could-Fix | B1/B2 Should-Fix | ⚠️ off-by-one (high) |
 | GT-14 (b1) | Could-Fix | B7 Could-Fix | ✅ match |
 
-Review B band-match on caught issues: **3/7 clean matches** (GT-01, GT-03, GT-14); 3 off-by-one (GT-04 low, GT-06 high, GT-07 high). B's broader net brings more band-mismatch.
+Review B band-match: **3/6 clean matches** on its caught-and-banded set (GT-01, GT-03, GT-14 clean; GT-04 low, GT-06 high, GT-07 high off-by-one). GT-02 excluded from the denominator as a valence flip — the same treatment applied to A's GT-03, so the two ratios are comparable. B's broader net brings more band-mismatch.
 
-**Summary:** A's caught issues match GT band cleanly where caught (3/3 on its YES/clean-PARTIAL set). B catches more but mis-bands more (3 of 7 off-by-one). On severity calibration, A is tighter; B is wider but noisier.
+**Summary:** A's caught issues match GT band cleanly where caught (3/4 on its caught-and-banded set). B catches more but mis-bands more (3 of 6 caught off-by-one). On severity calibration, A is tighter; B is wider but noisier. *(Denominators count only caught issues carrying a comparable band; each review's single valence-flip row is excluded from both, so 3/4 vs 3/6 is apples-to-apples.)*
 
 ---
 
@@ -157,7 +154,7 @@ Review B extras: **(a) plausible ≈ 6** (B5, B6, B8, B9, B12, B13); **(b)/borde
 | Must-Fix over-fire | 0 | 0 | **TIE** |
 | Stat-math control | hedged but Should-Fix (borderline) | hedged, Could-Fix, "reads correct" | B (cleaner) |
 | Contested-valence flags | 2 (GT-03, GT-04) | 3 (GT-02, GT-03/BS2, GT-04/BS9) | A (fewer) |
-| Severity-band match | 3/3 clean on caught | 3/7 clean (3 off-by-one) | A (tighter) |
+| Severity-band match (caught-and-banded set) | 3/4 clean | 3/6 clean (3 off-by-one) | A (tighter) |
 | Extra plausible findings | ~5–6 | ~6 | TIE |
 
 **Pattern:** B has marginally higher raw recall (0.50 vs 0.44) by casting a wider, shallower net — it converts three of A's misses (GT-04, GT-06, GT-07) into PARTIALs but mis-bands several and inverts GT-02 to praise. A catches fewer issues but catches them more cleanly (two full YES, tighter severity calibration, fewer valence flips) and contributes higher-value GT-omitted findings. Both correctly return 0 Must-Fix and tie on strength recall; B handles the stat-math control slightly better, A handles severity and valence slightly better.

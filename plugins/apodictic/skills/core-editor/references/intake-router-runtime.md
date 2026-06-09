@@ -152,7 +152,7 @@ Options change based on the Artifact answer.
 |-----------|---------------|
 | 40k–80k words, goal = `repair` | Mention option B exists; don't push it. Sequential handles this range adequately. |
 | 80k+ words, goal = `repair` | Recommend B. "For a manuscript this length, the targeted read catches things the standard read misses." |
-| Any length, goal = `submit` | Recommend B or C. "Since you're checking submission readiness, the deeper read is worth the cost." |
+| Any length, goal = `submit` | Recommend B or C. "Since you're checking submission readiness, the independent-lens verification read is worth the cost." |
 | User selects B or C | Confirm: "That adds to the token cost — just making sure you're good with that." |
 | User selects A or skips | Proceed with sequential. No friction. |
 

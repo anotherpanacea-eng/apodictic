@@ -14,7 +14,7 @@
 | — clean full catches (YES) | 2 | 1 | Swarm |
 | — partial catches | 3 | 6 | Single (breadth) |
 | **Must-Fix over-firing** (on the near-sound control; GT = 0 Must-Fix) | **0** | **0** | Tie |
-| **Severity-band calibration** (caught issues landing in GT's band) | 3/3 clean | 3/7 (3 off-by-one) | Swarm |
+| **Severity-band calibration** (clean band on the caught-and-banded set; each review's lone valence-flip row excluded from both denominators) | 3/4 clean | 3/6 (3 off-by-one) | Swarm |
 | **Contested-valence flips** (named a GT issue as a strength) | 2 | 3 | Swarm (fewer) |
 | **Stat-math control** (GT = clean) | Should-Fix, hedged "verify" (borderline) | Could-Fix, "reads correct" | Single (cleaner) |
 | **Strength recall** (of 4 GT strengths) | 4/4 | 4/4 | Tie |
@@ -39,14 +39,14 @@ Let **R** = real-issue recall, **C** = Must-Fix over-fire count, **T** = tokens.
 
 The headline (single 0.50 vs swarm 0.44) is real but **partial**, and it is *noise-level at N=1*. Three corrections keep it honest:
 
-1. **Swarm is more *precise*, not just lower-recall.** Its catches are cleaner (2 full YES vs 1) and its severities land in the GT band 3/3 of the time vs single's 3/7 (single ran three off-by-one). Single's higher recall comes from a *wider, shallower net* — six partial touches, several mis-banded. So "single wins recall / swarm wins calibration" is the truthful shape — closer to a **tie with different failure modes** than a single-agent win.
+1. **Swarm's catches are *cleaner*, not just fewer.** Its catches are cleaner (2 full YES vs 1) and its severities land in the GT band on 3/4 of its caught-and-banded set vs single's 3/6 (single ran three off-by-one). Single's higher recall comes from a *wider, shallower net* — six partial touches, several mis-banded. So "single wins recall / swarm wins calibration" is the truthful shape — closer to a **tie with different failure modes** than a single-agent win.
 2. **Swarm's distinctive depth includes its most contestable claim.** Swarm's #1 root cause — "the satire engine is back-loaded for the first half" — is treated by both the blind GT (GT-12) and the single-agent read as a *strength* ("the satire is stable and sharpens"). The scorer classed it a defensible-but-GT-unregistered onset/pacing read, not a hard error. Still: the place swarm went "deeper" than single is exactly the place an independent key disagrees with it. Depth bought contestability, not confirmed truth.
 3. **Both modes correctly returned 0 Must-Fix on a near-sound text**, matching the GT control-fact — a win for *both*, and evidence neither over-fires on a strong manuscript. Notably, swarm's separately-run evidence spot-check had already self-corrected its one borderline over-call (the INT-stat finding, downgraded HIGH→"verify"); the GT confirms the math is clean. That is the verification-isolation value the spec endorses — operating as designed.
 
 ## 4. Did this reproduce the §2b claim ("~2× findings, deepest, least-biased")?
 
 **No, not on this fixture.**
-- **Not "2× findings":** single produced *more* raw findings (16 vs the ~10 the swarm letter surfaced) — though raw count is a not-scored diagnostic per the spec, so this cuts against the folklore without being decisive.
+- **Not "2× findings":** single produced *more* raw findings (B1–B14 scored, vs the ~10 the swarm letter surfaced) — though raw count is a not-scored diagnostic per the spec, so this cuts against the folklore without being decisive.
 - **Not "deeper" by recall:** single edged swarm against an independent key.
 - **"Least-biased":** unmeasurable here (bundle confound; same-model GT). Swarm's architectural isolation is real, but on this text it did not convert to higher recovery of the independent issue set.
 
@@ -63,6 +63,6 @@ This is **consistent with what §2b already does** — it defaults to single-age
 
 ## 6. Bottom line
 
-On one long-fiction fixture, **the swarm did not buy more real-issue recall than a single-agent read, at ~8.5× the token cost.** It bought *tighter severity calibration and cleaner precision*; the single-agent read bought *breadth and a cleaner read of the near-sound stat-math control*, far cheaper. Both correctly returned zero book-breaking findings. Per the pre-registered rule this is a **"verification-insurance / single-default (cost-adjusted)"** outcome — which matches §2b's existing default and the spec's recommended cheap deliverable (provenance + drop the everyday "deeper" rationale), and does **not**, from N=1, justify retiring swarm for its separately-evidenced uses (writer/verifier isolation in the spot-check; final submission prep).
+On one long-fiction fixture, **the swarm did not buy more real-issue recall than a single-agent read, at ~8.5× the token cost.** It bought *tighter severity calibration and more full-credit catches*; the single-agent read bought *breadth and a cleaner read of the near-sound stat-math control*, far cheaper. Both correctly returned zero book-breaking findings. Per the pre-registered rule this is a **"verification-insurance / single-default (cost-adjusted)"** outcome — which matches §2b's existing default and the spec's recommended cheap deliverable (provenance + drop the everyday "deeper" rationale), and does **not**, from N=1, justify retiring swarm for its separately-evidenced uses (writer/verifier isolation in the spot-check; final submission prep).
 
 *Replicate on the powered multi-fiction corpus before treating any of this as more than a single honest data point.*
