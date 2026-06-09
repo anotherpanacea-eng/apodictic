@@ -164,12 +164,17 @@ def _content_offenders(question, finding_text):
     offenders = []
     for m in _QUOTED_RE.finditer(question):
         phrase = (m.group(1) or m.group(2) or "").strip()
-        if phrase and phrase.lower() not in hay:
+        if phrase and phrase.lower() not in hay and ('"%s"' % phrase) not in offenders:
             offenders.append('"%s"' % phrase)
-    for m in _CAPRUN_RE.finditer(question):
-        phrase = m.group(1).strip()
-        if phrase.lower() not in hay:
-            offenders.append(phrase)
+    # Cap-run scan, per sentence with the sentence-initial word dropped: its capital is positional,
+    # not a proper noun, so "When Sarah…" / "In Chapter 9…" don't fuse into a false proper-noun run.
+    # A genuinely invented multi-word run mid-sentence ("…the Ice Dragon's breath…") still fires.
+    for sent in re.split(r"(?<=[.?!])\s+", question):
+        sent = re.sub(r"^\s*[A-Za-z][\w']*\s+", "", sent, count=1)
+        for m in _CAPRUN_RE.finditer(sent):
+            phrase = m.group(1).strip()
+            if phrase.lower() not in hay and phrase not in offenders:
+                offenders.append(phrase)
     return offenders
 
 
@@ -407,6 +412,9 @@ def run_self_test():
     # B4 — invented content (capitalized phrase absent from finding)
     code, ls = check(rq(question="Did the Ice Dragon's breath feel powerful at the turn?"), led_low)
     chk("b4_invented_advisory", code == 0 and any("B4 invented" in x for x in ls))
+    # B4 — sentence-initial capital + a name is NOT a false invented-content flag (P3-1 fix)
+    code, ls = check(rq(question="When Donut leaves the scene, what did you expect to change?"), led_low)
+    chk("b4_no_sentence_initial_fp", code == 0 and not any("B4 invented" in x for x in ls))
 
     # B5 — relitigating a locked verdict (Must-Fix/HIGH), advisory + override
     led_locked = ledger(finding(severity="Must-Fix", confidence="HIGH"))
