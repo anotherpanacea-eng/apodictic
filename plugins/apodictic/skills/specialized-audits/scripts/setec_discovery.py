@@ -60,13 +60,16 @@ BOOTSTRAP_SETEC_VERSION = (1, 112, 0)
 # floor is now the bootstrap floor, not the retired per-surface (1, 86, 0).
 # Surfaces never read this for their own floor — that comes from the manifest.
 MIN_SETEC_VERSION = BOOTSTRAP_SETEC_VERSION
+
+
 def _install_instructions(min_version: tuple[int, ...] = MIN_SETEC_VERSION) -> str:
     """Render the install/upgrade message for a given required floor.
 
-    The floor is parameterized so per-script shims that enforce a higher
-    version than the framework-wide MIN_SETEC_VERSION (e.g. Surface 6 /
-    narrative_decision_audit at 1.107.0) surface the correct minimum
-    rather than the default 1.86.0."""
+    The floor is parameterized so a caller can surface a *specific surface's*
+    manifest floor (resolved via ``setec_capabilities.resolve_floor``) in the
+    upgrade message, rather than always showing the bootstrap floor. Per-surface
+    floors now come from SETEC's capabilities manifest (R1), not hardcoded
+    constants."""
     return """\
 SETEC Voiceprint is required for this APODICTIC AI-prose audit.
 
