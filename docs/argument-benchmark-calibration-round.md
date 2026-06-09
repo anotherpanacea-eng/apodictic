@@ -26,7 +26,7 @@ So there is **no missing mechanism and no engine edit proposed for #1.** The roa
 
 **The principled fix (staged in this branch):** add a **bounded carve-out, rule 2a**, in `dialectical-clarity.md`:
 
-> For an argument whose C0 is a **recommendation to act (AT3)**, the comparative dimension is *constitutive of the claim, not peripheral to it* — a reader cannot evaluate "do Y" without "rather than the alternatives that target the same goal." So when an AT3 recommendation discharges *none* of its comparative burden (BP5 primary + OB3, no funding mechanism), the recommendation is **not evaluable as a recommendation** — a defeat under decision test one — and the verdict is **Structurally Unsound** (FM-A10).
+> For an argument whose C0 is a **recommendation to act (AT3)**, the comparative dimension is *constitutive of the claim, not peripheral to it* — a reader cannot evaluate "do Y" without "rather than the alternatives that target the same goal." So when an AT3 recommendation discharges *none* of its comparative burden (BP5 primary + OB3, no funding mechanism), the recommendation is **not evaluable as a recommendation** — a defeat under **decision test two (Evidence-evaluability)**, since the comparative case *is* the support a reader must assess (the claim stays statable, so it is *not* a Claim-accessibility / test-one failure) — and the verdict is **Structurally Unsound** (FM-A10).
 
 Why this is a carve-out and not an override of the default-to-SOUND discipline:
 
@@ -39,10 +39,14 @@ This aligns the engine with the fixture's pre-registered key; it changes verdict
 
 ## Validation gate — DO NOT MERGE until this passes
 
-The deterministic gates pass (`argument-groundtruth-check` on both fixtures, `--check-all`, `argument-spine --self-test`, `build-codex --self-check`), but they validate *contract hygiene*, not the behavioral change. Before merge, run the benchmark (`evals/fixtures/argument-benchmark/run.sh` + scoring per `RUN-PROTOCOL.md`), ideally multi-model per the convergence protocol, and confirm **all** of:
+The deterministic gates pass (`argument-groundtruth-check` on both fixtures, `--check-all`, `argument-spine --self-test`, `build-codex --self-check`), but they validate *contract hygiene*, not the behavioral change. Before merge, run the benchmark and score per `RUN-PROTOCOL.md`, ideally multi-model per the convergence protocol, and confirm **all** of the criteria below.
+
+> **Harness note (do not skip).** `policy-brief-uncompared` (criterion 1) and `op-ed-warrant-leap` / `personal-essay-narrative-arg` (criterion 3) are **stored synthetic fixtures** with no `SOURCES.md` recorded hash, so `evals/fixtures/argument-benchmark/run.sh` **SKIPs** them (`SKIP … no recorded hash in SOURCES.md`). Run those through **RUN-PROTOCOL Step 1's stored-fixture path** — feed each fixture's `fixture.md` verbatim to the blind runner — rather than expecting `run.sh` to cover them. `run.sh` covers only the cached-corpus fixtures. A runner who only invokes `run.sh` will get green output while never exercising the fixture this round exists to fix.
+>
+> **On pass, record provenance.** `run.sh` writes model outputs to the gitignored `evals/results/`, so a pass leaves no durable artifact. On a passing run, amend this doc's **Status** (and ROADMAP "Next round") with the run date, the model configs used, and the per-fixture verdicts/scores — the house never-fabricate-calibration-status discipline cuts both ways: a "validated" claim at merge time must be auditable later.
 
 1. **`policy-brief-uncompared` flips SOUND → UNSOUND** (matches GT7), with BP5 primary + OB3 named and the comparative-burden discriminator.
-2. **`ppi-one-size-fits-none` does NOT regress:** GT3 strongest = the fairness/discretion text-internal objection (public-safety scored as decoy / OB5 if mis-picked), and the verdict **stays SOUND** — the rule-2a carve-out must **not** fire here (ppi's C0 is a *critique*, not an AT3 recommendation; and it engages the standardization alternative, so even read charitably its comparative burden is *partially discharged*). A run that flips `ppi` to UNSOUND means the carve-out is over-scoped — fix before merge.
+2. **`ppi-one-size-fits-none` does NOT regress:** GT3 strongest = the fairness/discretion text-internal objection (public-safety scored as decoy / OB5 if mis-picked), and the verdict **stays SOUND** — the rule-2a carve-out must **not** fire here (ppi's C0 is a *critique*, not an AT3 recommendation; and it engages the standardization alternative, so even read charitably its comparative burden is *partially discharged*). A run that flips `ppi` to UNSOUND means the carve-out is over-scoped — fix before merge. *(Note: the GT3 decoy/OB5 half is authoritative; the "stays SOUND" half rests on GT7, which `ppi`'s `groundtruth.md` still marks **PROVISIONAL** pending second-editor confirmation — treat it as the expected direction, not a hard oracle, and confirm the key is ratified at scoring time.)*
 3. **No verdict regression across the other ~14 fixtures** — especially: competent recommendations that *do* weigh alternatives stay SOUND; sound non-recommendation arguments (`federalist-10`, `douglass-fourth-of-july`, `coates-case-for-reparations`, `modest-proposal-satire`, the unconventional-but-effective set) are unaffected; `op-ed-warrant-leap` keeps its Should-Fix/Must-Fix calibration (it is a causal-warrant case, not an uncompared recommendation).
 4. **Severity-floor / Step-9 interaction is coherent** — the carve-out reaches UNSOUND *through* rule 2a's evaluability defeat, not by letting any Must-Fix force UNSOUND (which would re-introduce over-firing).
 
@@ -51,5 +55,6 @@ If 1 passes but 2 or 3 regress, narrow the carve-out's trigger (tighten "wholly 
 ## Files
 
 - `dialectical-clarity.md` — rule **2a** (the AT3 uncompared-recommendation carve-out) + the Step-9 evaluability-test note. (Engine edit; gated.)
+- `changelog.d/argument-engine-uncompared-recommendation.md` — the fragment for the rule-2a behavior change (in the PR, not deferred to the merge commit).
 - Ground truth unchanged — `policy-brief-uncompared` GT7 already says UNSOUND and `ppi` GT3 already names the decoy; the keys encode the targets, the engine is being brought into line with them.
 - No validator/schema change; no count bump (this round touches engine guidance, not the validator set).
