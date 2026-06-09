@@ -35,7 +35,7 @@ jobs:
           node-version: "22"
 
       - name: Byte-compile canonical Python (syntax gate)
-        run: python -m compileall -q plugins scripts
+        run: python -m compileall -q plugins scripts tools tests
 
       - name: Validate plugin + marketplace manifests parse as JSON
         run: |
@@ -68,3 +68,15 @@ jobs:
         run: |
           node scripts/build-codex.mjs --self-check
           node scripts/build-antigravity.mjs --self-check
+
+      # SETEC contract gate (Increment 2 / R1 adoption). CHECK 1 (offline
+      # self-consistency: every ai_prose_*.py shim surface appears in the
+      # vendored manifest with a floor) runs here with no SETEC installed —
+      # the analog of Gemini's validateRegistry. CHECK 2 (live drift vs
+      # `capabilities emit`) is SKIPPED in CI (no SETEC checkout); the weekly
+      # sync-setec workflow enforces it against a real SETEC release.
+      - name: SETEC contract drift gate (self-consistency)
+        run: python tools/check_setec_contract.py
+
+      - name: SETEC contract tests (floors + vendored-golden parse)
+        run: python tests/setec-contract/test_setec_contract.py

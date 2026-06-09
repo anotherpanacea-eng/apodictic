@@ -1,0 +1,98 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": null,
+  "claim_license": {
+    "additional_caveats": [
+      "Voice profiles are durable inputs for impersonation. If the profile is shared, the author's voiceprint is shared — the same way a fingerprint database is shared. Default policy: keep under ai-prose-baselines-private/, sibling to the SETEC repo, not inside it.",
+      "Feature stability (CV) varies sharply across families. Function-word ratios are usually the most stable; character-n-gram inventories the least. Read most-stable feature lists alongside topic-and-register consistency in the corpus.",
+      "POS and dependency families require spaCy + en_core_web_sm. Profile built with `--no-spacy` carries fewer feature families."
+    ],
+    "comparison_set": {
+      "features_retained": {
+        "char_ngrams": 100,
+        "function_words": 50
+      },
+      "mean_words": 8000.0,
+      "n_files": 6,
+      "total_words": 48000
+    },
+    "confidence_interval_95": null,
+    "does_not_license": "An authorship verdict. The profile is descriptive, not diagnostic. CRITICAL: the profile is voice-cloning-grade input. Treat it as private to the author / workspace; do not share outside the author's control. The script enforces this by refusing public output paths unless `--allow-public-output` is explicitly passed (see is_private_output_path).",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "A private stylometric profile of the supplied baseline corpus: per-family feature inventory (function words, character n-grams, POS trigrams, dependency n-grams), with each feature's baseline mean, standard deviation, and coefficient of variation. The profile is intended as a within-author reference for downstream voice-coherence work (voice_distance, idiolect_detector, mimicry_cosplay_audit).",
+    "references": [],
+    "register_match": [],
+    "task_surface": "voice_coherence"
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** voice-coherence comparison\n\n**Reports:** A private stylometric profile of the supplied baseline corpus: per-family feature inventory (function words, character n-grams, POS trigrams, dependency n-grams), with each feature's baseline mean, standard deviation, and coefficient of variation. The profile is intended as a within-author reference for downstream voice-coherence work (voice_distance, idiolect_detector, mimicry_cosplay_audit).\n\n**Does NOT report:** An authorship verdict. The profile is descriptive, not diagnostic. CRITICAL: the profile is voice-cloning-grade input. Treat it as private to the author / workspace; do not share outside the author's control. The script enforces this by refusing public output paths unless `--allow-public-output` is explicitly passed (see is_private_output_path).\n\n### Comparison context\n\n- **features retained:** {'function_words': 50, 'char_ngrams': 100}\n- **mean words:** 8000.0\n- **n files:** 6\n- **total words:** 48000\n\n### Caveats\n\n- Voice profiles are durable inputs for impersonation. If the profile is shared, the author's voiceprint is shared — the same way a fingerprint database is shared. Default policy: keep under ai-prose-baselines-private/, sibling to the SETEC repo, not inside it.\n- Feature stability (CV) varies sharply across families. Function-word ratios are usually the most stable; character-n-gram inventories the least. Read most-stable feature lists alongside topic-and-register consistency in the corpus.\n- POS and dependency families require spaCy + en_core_web_sm. Profile built with `--no-spacy` carries fewer feature families.",
+  "results": {
+    "baseline_summary": {
+      "files": [
+        {
+          "id": "prior_a",
+          "n_words": 8000,
+          "path": "<fixture>"
+        }
+      ],
+      "max_words": 12000,
+      "mean_words": 8000.0,
+      "min_words": 5000,
+      "n_files": 6,
+      "personas": [],
+      "privacy_values": [],
+      "registers": [
+        "literary_fiction"
+      ],
+      "total_words": 48000
+    },
+    "families": {
+      "function_words": {
+        "most_stable_features": [
+          {
+            "cv": 0.077,
+            "feature": "the",
+            "mean": 0.052,
+            "sd": 0.004
+          }
+        ],
+        "n_features": 50,
+        "top_features": [
+          {
+            "cv": 0.077,
+            "feature": "the",
+            "mean": 0.052,
+            "sd": 0.004
+          },
+          {
+            "cv": 0.097,
+            "feature": "and",
+            "mean": 0.031,
+            "sd": 0.003
+          }
+        ]
+      }
+    },
+    "selected_features": {
+      "char_ngrams": 100,
+      "function_words": 50
+    },
+    "warnings": []
+  },
+  "schema_version": "1.0",
+  "target": {
+    "n_files": 6,
+    "path": "<fixture>",
+    "preprocessing": {
+      "applied": false
+    },
+    "privacy": "PRIVATE - DO NOT SHARE. A voice profile is a voice-cloning input.",
+    "words": 48000
+  },
+  "task_surface": "voice_coherence",
+  "tool": "voice_profile",
+  "version": "<fixture>",
+  "warnings": []
+}

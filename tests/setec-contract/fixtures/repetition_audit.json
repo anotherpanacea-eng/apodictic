@@ -1,0 +1,65 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": {
+    "files_loaded": [
+      "<fixture>/baseline_a.md",
+      "<fixture>/baseline_b.md"
+    ],
+    "files_skipped": [],
+    "n_files": 2,
+    "words": 42000
+  },
+  "claim_license": {
+    "additional_caveats": [
+      "Baseline coverage matters. A small or topic-mismatched baseline inflates the target's ratios; a register-matched baseline is the right comparison set.",
+      "Skipped baseline files mean their tokens are absent — inflates ratios. The script logs skipped files to stderr; the warnings field carries the count."
+    ],
+    "comparison_set": {
+      "baseline_tokens": 42000,
+      "n_candidates": 2,
+      "target_words": 2500
+    },
+    "confidence_interval_95": null,
+    "does_not_license": "An authorship verdict. Habit-vocabulary and over-representation can come from topic, register, genre convention, character names, setting props, or deliberate craft choice. The audit makes habit-words visible; the writer decides whether each is earned.",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "Vocabulary over-representation report against an external baseline corpus. Names words whose density in the target exceeds the baseline by the configured ratio, filtered for minimum count and cluster-window evidence.",
+    "references": [],
+    "register_match": [],
+    "task_surface": "smoothing_diagnosis"
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** AI-prose smoothing diagnosis\n\n**Reports:** Vocabulary over-representation report against an external baseline corpus. Names words whose density in the target exceeds the baseline by the configured ratio, filtered for minimum count and cluster-window evidence.\n\n**Does NOT report:** An authorship verdict. Habit-vocabulary and over-representation can come from topic, register, genre convention, character names, setting props, or deliberate craft choice. The audit makes habit-words visible; the writer decides whether each is earned.\n\n### Comparison context\n\n- **baseline tokens:** 42000\n- **n candidates:** 2\n- **target words:** 2500\n\n### Caveats\n\n- Baseline coverage matters. A small or topic-mismatched baseline inflates the target's ratios; a register-matched baseline is the right comparison set.\n- Skipped baseline files mean their tokens are absent — inflates ratios. The script logs skipped files to stderr; the warnings field carries the count.",
+  "results": {
+    "candidates": [
+      {
+        "baseline_per_1000": 0.3,
+        "cluster_max": 4,
+        "cluster_window": 500,
+        "count": 11,
+        "per_1000": 4.4,
+        "ratio": 14.7,
+        "word": "liminal"
+      },
+      {
+        "baseline_per_1000": 0.4,
+        "cluster_max": 2,
+        "cluster_window": 500,
+        "count": 7,
+        "per_1000": 2.8,
+        "ratio": 7.0,
+        "word": "tapestry"
+      }
+    ]
+  },
+  "schema_version": "1.0",
+  "target": {
+    "path": "<fixture>",
+    "words": 2500
+  },
+  "task_surface": "smoothing_diagnosis",
+  "tool": "repetition_audit",
+  "version": "<fixture>",
+  "warnings": []
+}
