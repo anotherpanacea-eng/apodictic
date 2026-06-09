@@ -84,4 +84,4 @@ Per class: the 7 numbered fields. Then **"Escalation-trigger taxonomy"** (consol
 
 ---
 
-*Level-setting research scaffold. Synthesis finalizes once Gemini lands; the resulting per-class playbook + escalation-trigger taxonomy then go through the normal spec→review→build→review loop as the Legal Risk Register detection increment. A human lawyer remains the final gate — the tool flags, tiers, and routes; it never clears.*
+*Level-setting research, complete. All four sources synthesized and built into `core-editor/references/legal-risk-register.md` (§Detection guidance / §Escalation-trigger taxonomy) as the Legal Risk Register detection layer — through the normal spec→review→build→review loop. Citations stay here, not at runtime. A human lawyer remains the final gate — the tool flags, tiers, and routes; it never clears.*
