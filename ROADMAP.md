@@ -253,7 +253,7 @@ Small, independent items surfaced during the Increment 1–4 build + reviews. Ne
 - **Legal Risk Register router wiring — Built.** `constraint:risk` now offers + attaches the Legal Risk Register overlay (synthesis constraint hook, `run-synthesis.md §Constraint mode`), plus a `/legal-risk` direct command. Route-map status flipped to Built (§3 D / §6 Table B / §4a). *(Remaining future, separate: content-detection auto-recommend for memoir-with-real-people without the explicit flag.)*
 - **`finding-trace` completion-glob narrowing — Built.** `_COMPLETION_GLOBS` narrowed to `*_Revision_Report_*.md` (was `*_Revision_*.md`), so a deadline-coaching `*_Revision_Calendar_*.md` is no longer mis-classified a completion — aligned with the Increment-4a gate. Negative-test guarded.
 
-**Status:** Increments 1–4 **built** (router fork/overlay split; project registry + binding; state-driven dispatch; revision-loop spine incl. the gated `revision_round` phase). Both post-Increment-4 follow-ups above now built; the **project-dashboard artifact** (snapshot + launcher) is the remaining open item from this batch.
+**Status:** Increments 1–4 **built** (router fork/overlay split; project registry + binding; state-driven dispatch; revision-loop spine incl. the gated `revision_round` phase). Both post-Increment-4 follow-ups above built, plus the **project-dashboard artifact** (`plugins/apodictic/project-dashboard.html` — snapshot viewer + launcher). The remaining Legal Risk Register increment is *content-detection auto-recommend* (flag-driven attach is done); see `intake-router-design.md` § remaining gaps.
 
 ---
 
