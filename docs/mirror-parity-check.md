@@ -30,10 +30,10 @@ A `.py` (or `validate.sh`/`preflight.sh`) present in **one** dir but not the oth
 
 1. The `check-mirror)` case block + its `--self-test`, in `validate.sh`.
 2. **Real-file invariant in `--check-all`**: invoke `check-mirror` (real dirs) alongside the other real-file invariants. This is the gate that actually protects CI.
-3. **`AGG_VALIDATORS`**: register `check-mirror` so its `--self-test` runs under `--self-test-all`; bump the hard-coded count `37 → 38` at every surface (`--self-test-all` banner + result lines, the `--check-all` help text count, the `ci.yml` comment).
-4. **Command list** (line ~168) + the top-of-file usage comment: add `check-mirror`.
-5. **`--check-all` description** (line ~170): note the new mirror invariant.
-6. **Mirror the edited `validate.sh` to both copies, byte-identical** — the check that enforces mirroring is itself subject to it; the new `--check-all` invocation will fail until both copies match (the design proving itself).
+3. **`AGG_VALIDATORS`**: register `check-mirror` so its `--self-test` runs under `--self-test-all`; bump the hard-coded count `37 → 38` at its **exact** surfaces — `validate.sh:169` (`--self-test-all` help banner), `:190` (dispatcher echo), `:203` (PASS line), `:206` (FAIL line), and `.github/workflows/ci.yml:51` (the "37 validator self-tests" comment). **Line ~170 has no count** — it's the prose enumeration; don't look for a number there. Each `validate.sh` occurrence changes in **both** copies (so 4 count edits × 2 copies = 8 validate.sh line edits).
+4. **Command list** (line ~168): add `check-mirror`. **Do not** touch the top-of-file `#  <cmd>` usage comment — that convention is abandoned; the recent validators (`registry-check`, `lifecycle-node`, `finding-trace`, …) have zero entries there, so adding one would make `check-mirror` *inconsistent*.
+5. **`--check-all` description** (line ~170, prose): add a clause naming the new mirror invariant (no count).
+6. **Mirror the edited `validate.sh` to both copies, byte-identical — as the LAST action before running `--check-all`.** The check that enforces mirroring is itself subject to it: between editing root `validate.sh` and syncing the plugin copy, the two `validate.sh` files differ, so the new real-dir `check-mirror` invariant will report `DIFFER: validate.sh` and `--check-all` will be red. That is **expected, not a logic bug** — sync both copies, then re-run. (This is the one bootstrapping gotcha; surface it so the implementer doesn't chase a phantom failure.)
 7. **`AGENTS.md`** § Platform parity: replace the manual `diff -q` instruction with `validate.sh check-mirror` as the automated verification (keep the by-hand sync rule; the check only *detects* drift, it does not fix it).
 8. Changelog fragment.
 
