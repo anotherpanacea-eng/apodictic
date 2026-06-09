@@ -27,6 +27,26 @@ All APODICTIC work for a manuscript lives under a single **project root**. The `
 
 Never write project artifacts or rolling state files to the plugin repo, installed plugin cache, or any other APODICTIC framework directory.
 
+### Project Registry (workspace-level)
+
+Project roots are made **addressable** — selectable by name rather than only by being the ambient folder — through a workspace-level registry (Project Addressability, Increment 2; `docs/project-addressability.md`).
+
+```
+{workspace-root}/
+├── .apodictic/
+│   └── registry.json           # apodictic.project_registry.v1 (one entry per project)
+├── My_Novel/                   # a project root (sidecar canonical)
+│   ├── Diagnostic_State.meta.json
+│   └── ...
+└── Policy_Brief_Draft/         # another project root
+    └── ...
+```
+
+- **Location.** `.apodictic/registry.json` in the **workspace root** — the nearest ancestor of the cwd that contains a `.apodictic/` directory (discovered by walking up, like `.git`). Not in the plugin repo/cache; `~` is not used (sandbox-unsafe).
+- **Canonical vs. cache.** Each project's `Diagnostic_State.meta.json` is canonical; the registry is a *recomputable cache* of `{id, title, root, volume, denormalized mode/next_action, last_touched, series_root}`. On drift, the sidecar wins; a lost registry is rebuilt by scanning the workspace for sidecars and `*_Structural_Plan_*.md` artifacts.
+- **Writers.** `/new-project` appends an entry; `/projects` lists/rebuilds/tidies; `/start <project>` binds a session to one entry's root. Pre-writing projects carry a **minimal sidecar** (`mode: diagnostic`, `next_action: pre_writing`) so they register before any Core DE run.
+- **Validator.** `scripts/validate.sh registry-check <registry.json | workspace_dir>` (R1 schema, R2 root/sidecar resolution, R3 drift, R4 duplicate id).
+
 ### Rolling State Files
 
 These files live at the project root and are updated in place:

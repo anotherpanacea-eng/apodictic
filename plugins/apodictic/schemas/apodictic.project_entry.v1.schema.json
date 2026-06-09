@@ -1,0 +1,17 @@
+{
+  "$id": "apodictic.project_entry.v1",
+  "$comment": "One project in the apodictic.project_registry.v1 index. `id` is the stable registry handle (kebab-case); `title` is the human working title; `root` is the project root path relative to the workspace root (the directory containing .apodictic/) — the only fact the ambient model cannot otherwise recover. `volume` (default 1) and `series_root` support series. `mode` and `next_action` are denormalized copies of the project's Diagnostic_State.meta.json sidecar, present for fast listing but authoritative only in the sidecar (registry_check.py R3 surfaces drift, sidecar wins); `last_touched` is the registry's own bookkeeping and is not drift-checked. `lifecycle_node` is deliberately NOT stored here — it is derived on read (Increment 3). See docs/project-addressability.md.",
+  "title": "APODICTIC project registry entry (apodictic.project_entry.v1)",
+  "type": "object",
+  "required": ["id", "title", "root"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "title": {"type": "string"},
+    "root": {"type": "string"},
+    "volume": {"type": "integer"},
+    "mode": {"enum": ["diagnostic", "execution"]},
+    "next_action": {"type": "object"},
+    "last_touched": {"type": "string"},
+    "series_root": {}
+  }
+}

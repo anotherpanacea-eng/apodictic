@@ -1,0 +1,3 @@
+### Validators
+
+35 → 37 self-testable validators. Added `registry-check` (project-registry integrity over a workspace-relative `.apodictic/registry.json`: R1 envelope + per-entry schema, R2 root + sidecar resolution, R3 cache-vs-sidecar drift with the sidecar canonical, R4 duplicate id), backed by the new `apodictic.project_registry.v1` + `apodictic.project_entry.v1` schemas; and `lifecycle-node` (derives a bound project's lifecycle node from its sidecar by a single total first-match precedence — the tested primitive state-driven dispatch reads from). Both mirrored into the root `scripts/` harness that CI runs.
