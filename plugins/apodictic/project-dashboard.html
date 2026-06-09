@@ -69,7 +69,7 @@
 </header>
 <main>
   <details class="data">
-    <summary>Registry payload (paste an <code>apodictic.project_registry.v1</code> snapshot, or use the sample below)</summary>
+    <summary>Registry payload (paste the <strong>extended</strong> <code>apodictic.project_registry.v1</code> payload — node + next_action + snapshot_ts pre-computed by <code>/projects</code>, not the raw <code>.apodictic/registry.json</code> — or use the sample below)</summary>
     <textarea id="payload" spellcheck="false"></textarea>
     <button id="render">Render</button>
     <span id="err" class="err"></span>
@@ -113,6 +113,15 @@ let projects = [], snapTs = "";
 
 function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
 
+// next_action is a pre-computed display string in the extended payload, but tolerate a raw
+// registry entry (where it is an apodictic.project_entry.v1 object {key, ...}) so a pasted
+// .apodictic/registry.json renders the key instead of "[object Object]".
+function naLabel(na){ return typeof na === "string" ? na : (na && (na.label || na.key)) || "—"; }
+
+// localStorage throws in a sandboxed iframe without allow-same-origin; degrade silently.
+function lsGet(k){ try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v){ try { localStorage.setItem(k, v); } catch (e) { /* sandboxed: ignore */ } }
+
 function load(text){
   $("err").textContent = "";
   let data;
@@ -128,7 +137,7 @@ function load(text){
 
 function buildFilter(){
   const present = NODES.filter(n => projects.some(p => p.node === n));
-  const saved = localStorage.getItem("apod-dash-filter") || "all";
+  const saved = lsGet("apod-dash-filter") || "all";
   $("filter").innerHTML = "<option value=\"all\">All nodes</option>" +
     present.map(n => `<option value="${n}">${n}</option>`).join("");
   $("filter").value = [...$("filter").options].some(o => o.value === saved) ? saved : "all";
@@ -154,7 +163,7 @@ function card(p){
     <h2>${esc(p.title || p.id)}</h2>
     <div class="id">${esc(p.id)}${p.volume ? " · vol " + esc(p.volume) : ""}${p.last_touched ? " · touched " + esc(p.last_touched) : ""}</div>
     <div class="rail">${rail}</div>
-    <div class="whatnow"><span class="k">what now?${asof}</span><br><span class="v">${esc(p.next_action || "—")}</span></div>
+    <div class="whatnow"><span class="k">what now?${asof}</span><br><span class="v">${esc(naLabel(p.next_action))}</span></div>
     <details class="more"><summary>details &amp; launch</summary>
       <p class="kv">Mode: <code>${esc(p.mode || "diagnostic")}</code> · Root: <code>${esc(p.root || "?")}</code></p>
       <p class="kv">Resume: <code class="launch">/start ${esc(p.id)}</code></p>
@@ -163,7 +172,7 @@ function card(p){
 }
 
 $("render").addEventListener("click", () => load($("payload").value));
-$("filter").addEventListener("change", () => { localStorage.setItem("apod-dash-filter", $("filter").value); render(); });
+$("filter").addEventListener("change", () => { lsSet("apod-dash-filter", $("filter").value); render(); });
 $("sort").addEventListener("change", render);
 
 // Boot with the embedded sample.
