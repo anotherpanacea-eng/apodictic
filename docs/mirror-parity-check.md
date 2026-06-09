@@ -14,13 +14,15 @@ A new `check-mirror` validator in `validate.sh`, dispatched like any other:
 
 - **`validate.sh check-mirror`** — locates the repo's two script dirs (from whichever copy is invoked) and asserts every **shared mirrored file** is byte-identical. Reports each drift as `DIFFER: <name>` / `MISSING in <dir>: <name>` and exits non-zero if any. PASS prints a one-line summary.
 - **`validate.sh check-mirror <dirA> <dirB>`** — compare two arbitrary dirs (the seam the self-test drives).
-- **`validate.sh check-mirror --self-test`** — hermetic temp-dir test: identical pair → PASS; a content drift → caught; a file present in one dir only → caught.
+- **`validate.sh check-mirror --self-test`** — hermetic temp-dir test: identical pair → PASS; a content drift → caught; a file present in one dir only (either direction) → caught; a root-only-allowlisted file present in one dir only → ignored (PASS).
 
 ### The mirrored set (what must match)
 
 `validate.sh`, `preflight.sh`, and every `*.py`. Concretely: the files that exist in **both** dirs, restricted to `{validate.sh, preflight.sh, *.py}`. Explicitly **excluded**: `__pycache__/`, `test_fixtures/`, and the root-only build/release scripts (`*.mjs`, `release.sh`, `bump-version.sh`) — a naive `diff -rq` of the two trees would false-positive on those, so the check enumerates the mirrored set rather than diffing whole trees.
 
 A `.py` (or `validate.sh`/`preflight.sh`) present in **one** dir but not the other is a drift (e.g. a new validator added to the canonical copy but not synced to root) — flagged as `MISSING`.
+
+**Root-only `*.py` utilities — the `CM_ROOT_ONLY` allowlist.** Not every root `*.py` is a mirrored validator: some are repo-infrastructure utilities that live **only** in root `scripts/` (release-engineering, like the `*.mjs` scripts), e.g. `sync_setec.py` (the SETEC vendoring/sync tool). Listing them in `CM_ROOT_ONLY` excludes them from the mirrored set so a deliberately root-only utility is not reported as `MISSING in plugins/apodictic/scripts`. Without this, an unrelated PR that adds such a utility would turn main CI red on its next merge with no git conflict to warn anyone. Keep the list tight — it is an allowlist of *intentional* asymmetry, not a way to skip a validator that genuinely should be mirrored.
 
 ### Directory location
 

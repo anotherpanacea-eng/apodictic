@@ -388,7 +388,7 @@ if [ "$1" = "--check-all" ]; then
   # plugins/apodictic/scripts/ copy must be byte-identical for the shared mirrored set, or a
   # validator change passes against one copy while CI runs the stale other (AGENTS.md § parity).
   echo "== check-mirror (scripts/ <-> plugins/apodictic/scripts/ byte-identical) =="
-  "$0" check-mirror >/dev/null 2>&1 && echo "  ok (mirrored set identical)" || { echo "  FAIL"; "$0" check-mirror; CA_FAIL=1; }
+  "$0" check-mirror >/dev/null 2>&1 && echo "  ok (mirrored set identical)" || { echo "  FAIL"; "$0" check-mirror || true; CA_FAIL=1; }
   echo ""
 
   if [ "$CA_FAIL" -eq 0 ]; then
@@ -4568,13 +4568,21 @@ EOF
       printf 'p2\n' > "$CM_T/b/m.py"
       "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && { echo "  content_drift: FAIL (one-byte diff not caught)"; CM_R=1; } || echo "  content_drift: OK (caught)"
       printf 'p\n' > "$CM_T/b/m.py"; printf 'q\n' > "$CM_T/a/only.py"
-      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && { echo "  missing_file: FAIL (one-sided file not caught)"; CM_R=1; } || echo "  missing_file: OK (caught)"
+      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && { echo "  missing_file_a: FAIL (one-sided file in dirA not caught)"; CM_R=1; } || echo "  missing_file_a: OK (caught)"
+      rm -f "$CM_T/a/only.py"; printf 'q\n' > "$CM_T/b/only.py"
+      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && { echo "  missing_file_b: FAIL (one-sided file in dirB not caught)"; CM_R=1; } || echo "  missing_file_b: OK (caught)"
+      rm -f "$CM_T/b/only.py"
+      printf 's\n' > "$CM_T/a/sync_setec.py"   # a root-only util present in one dir only must NOT fail
+      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && echo "  root_only_excluded: OK (one-sided root-only file ignored)" || { echo "  root_only_excluded: FAIL (root-only exclusion not honored)"; CM_R=1; }
       rm -rf "$CM_T"
       if [ "$CM_R" -eq 0 ]; then echo "Self-test: PASS"; exit 0; else echo "Self-test: FAIL"; exit 1; fi
     fi
     CM_DIR=$(cd "$(dirname "$0")" && pwd)
     if [ $# -ge 2 ]; then
       CM_A="$1"; CM_B="$2"
+    elif [ $# -eq 1 ]; then
+      echo "Usage: $0 check-mirror [<dirA> <dirB>]  (no args = auto-detect the script-dir pair; two args = compare them). A single dir argument is ambiguous." >&2
+      exit 2
     else
       CM_A="$CM_DIR"; CM_B=""
       for cand in "$CM_DIR/../plugins/apodictic/scripts" "$CM_DIR/../../../scripts"; do
@@ -4583,9 +4591,15 @@ EOF
       if [ -z "$CM_B" ]; then echo "WARN: mirror sibling not found from $CM_DIR — single-copy workspace, nothing to mirror; skipped."; exit 0; fi
     fi
     CM_FAIL=0
+    # Root-only utilities live ONLY in root scripts/ (release-engineering, like the *.mjs scripts) and
+    # are intentionally NOT mirrored to the plugin copy — exclude them or check-mirror false-positives.
+    # Space-padded for whole-word matching. (sync_setec.py: the SETEC vendoring/sync utility.)
+    CM_ROOT_ONLY=" sync_setec.py "
     # Mirrored set = validate.sh, preflight.sh, and every *.py present in EITHER dir (sorted, deduped).
-    CM_NAMES=$( { ls -1 "$CM_A" 2>/dev/null; ls -1 "$CM_B" 2>/dev/null; } | grep -E '\.py$|^validate\.sh$|^preflight\.sh$' | sort -u )
+    # `|| true`: a no-match grep exits 1, which would abort under `set -e`.
+    CM_NAMES=$( { ls -1 "$CM_A" 2>/dev/null; ls -1 "$CM_B" 2>/dev/null; } | grep -E '\.py$|^validate\.sh$|^preflight\.sh$' | sort -u || true )
     for name in $CM_NAMES; do
+      case "$CM_ROOT_ONLY" in *" $name "*) continue ;; esac   # intentionally root-only; not mirrored
       fa="$CM_A/$name"; fb="$CM_B/$name"
       if [ ! -f "$fa" ]; then echo "  MISSING in $CM_A: $name"; CM_FAIL=1; continue; fi
       if [ ! -f "$fb" ]; then echo "  MISSING in $CM_B: $name"; CM_FAIL=1; continue; fi
