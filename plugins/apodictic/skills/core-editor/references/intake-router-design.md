@@ -33,9 +33,20 @@ Offering "check submission readiness" to someone with only an idea wastes their 
 
 Most users are authors. Asking "who are you?" first front-loads a question that 80%+ of users will find trivially obvious. Folding Operator into the modifier question lets editors and facilitators self-identify without burdening the majority.
 
-### Why Constraint is post-routing
+### Why Constraint is post-routing — and the fork/overlay correction
 
-Constraints modify workflows; they don't select them. A deadline doesn't change whether you need Core DE — it changes how Core DE runs. Asking constraints after routing keeps the routing logic clean and the constraint logic modular.
+The original principle was: *constraints modify workflows; they don't select them. A deadline doesn't change whether you need Core DE — it changes how Core DE runs.* That holds for **overlays** (`ai`, `editor`, `facilitator`, `risk`, `hybrid`, `swarm`) but was never true of the whole modifier axis: `constraint:time` routes to Submission Triage and `constraint:nonfiction` routes to a different engine — both *select* a workflow outright. The Q3 axis carries two different kinds of modifier (see §Modifiers: forks vs. overlays). Q3 is still asked post-routing because most users are authors with no modifier — but a **fork** answer reconciles back against the Q1/Q2 base route, while an **overlay** answer simply stacks.
+
+### Modifiers: forks vs. overlays
+
+The Q3 "Constraint/Operator" options split into two kinds with different routing algebra. Full proposal and worked migration: [`docs/router-fork-overlay-split.md`](../../../../../docs/router-fork-overlay-split.md).
+
+- **Fork** — *selects* the workflow. Changes which engine runs or the terminal artifact. Belongs in the route map (runtime §6 Table A), mutually exclusive within a class, may be conditional or sub-resolve. Forks: `time` (workflow), `nonfiction` (engine, sub-resolves to argument / narrative / memoir), `feedback` (workflow, prepends Feedback Triage), `team` (intake — gap).
+- **Overlay** — *modifies* a selected workflow. Reskins output, adds a lens, or changes execution depth; leaves engine and workflow shape intact. Never a route-map row (runtime §6 Table B); composes freely. Overlays: `ai` (lens), `editor` / `facilitator` / `risk` (output), `hybrid` / `swarm` (execution).
+
+**Classification test.** Does the modifier replace the primary diagnostic engine or change the workflow's terminal artifact? → Fork. Does it leave the pass/engine selection intact and only reskin output, add a lens, or change depth/cost? → Overlay.
+
+The payoff: overlays stop appearing as route-map rows (the old single table enumerated the `base × overlay` cross-product, which is why a capability like the Legal Risk Register drifted to "Gap" in some cells while its module was built). Status now lives once per overlay (§6 Table B).
 
 ---
 
@@ -43,25 +54,15 @@ Constraints modify workflows; they don't select them. A deadline doesn't change 
 
 Routes marked "Gap" in the route map represent workflows that don't yet exist. The gap-handling protocol requires honest acknowledgment, nearest-available substitution, and explicit naming of what won't be covered.
 
-### Current gap inventory (v0.5)
+### Current gap inventory
 
-| Gap | Closest available | What's lost |
-|-----|-------------------|-------------|
-| Fragment Synthesis | Pre-Writing Pathway (user self-organizes fragments) | Automated fragment clustering and candidate contract generation |
-| Partial Manuscript Diagnostic | Core DE (runs on available material, penalizes missing structure) | Truncated-analysis mode that doesn't flag incompleteness as a problem |
-| Fast Triage | Core DE (user can ask for abbreviated output) | Hard caps on output length, forced prioritization |
-| Unified Submission Workflow | Core DE + manually requesting Pass 11 | Single-command flow, query/synopsis diagnostic |
-| Feedback Triage | Core DE (user provides feedback context manually) | Structured feedback intake, conflict resolution |
-| Nonfiction Pre-Draft Pathway | Pre-Writing Pathway (fiction-oriented) | Argument spine, evidence map, scene ethics |
-| Risk Register | Core DE + manual flagging | Structured risk output, escalation triggers |
-| Editor Scaffolding Mode | Core DE (author-facing output) | Editor-facing framing, blind-spot emphasis |
-| Facilitator/Vocabulary Mode | Core DE (full diagnostic) | Workshop-ready language, discussion prompts |
-| Multi-Party Intake | Core DE (single-author) | Conflict surfacing, sign-off workflow |
-| Series Continuity Audit | Core DE per volume (no cross-volume state) | Persistent character/world/thread tracking across books |
+**Superseded — see the live status columns in `intake-router-runtime.md` §6 Table A (base routes) / Table B (overlays) and the `ROADMAP.md` Done column.** The historical v0.5 inventory once listed Fragment Synthesis, Partial Manuscript, Fast/Submission Triage, Feedback Triage, Editor Scaffolding, Diagnostic Vocabulary, Series Continuity, and the Legal Risk Register module as gaps; all have since shipped (v1.1–v2.2.0). Maintaining a parallel gap list here only invites the drift this section is meant to avoid, so the route-map status columns are now the single source of truth.
 
-### Gap prioritization
+Genuinely remaining gaps:
 
-Gaps are addressed in the roadmap: Fast Triage and Submission Readiness in v1.1; Partial Manuscript and Fragment Synthesis in v1.2; Feedback Triage and Nonfiction Pre-Draft in v1.3; Editor/Facilitator modes in v1.4.
+- **Multi-Party Intake** (`operator:team`, fork=intake) — co-authoring intake; conflict surfacing / sign-off. Closest: single-author Core DE.
+- **Nonfiction Pre-Draft, idea-stage** (`engine=nonfiction` at `artifact:idea`) — the prose-stage nonfiction engines (argument / narrative / memoir) are built; only the idea-stage pre-draft pathway entry remains a router gap. (The Nonfiction Pre-Draft *module* itself is built per `ROADMAP.md`; the open item is its router wiring.)
+- **Legal Risk Register router wiring** — the module is built (`references/legal-risk-register.md`); auto-attaching it as an overlay from `constraint:risk` is the pending increment.
 
 ---
 
@@ -121,20 +122,26 @@ This router is a specification executed by the LLM, not application code. The LL
 
 ### Router output format
 
-The router produces a structured classification that downstream workflows consume:
+The router has **two entry modes** (Project Addressability, Increment 3 — `docs/project-addressability.md`):
+
+- **Bound project** (`/start <project>`): routing is *state-driven*. The router derives a **lifecycle node** from the project's sidecar (`scripts/validate.sh lifecycle-node`) and dispatches via the `§6` Lifecycle transition table + the sidecar `next_action` — the Artifact/Goal classification below is *not* recomputed (it is known from the contract + sidecar). Overlays still come from the Q3 / Table B layer. Output in this mode is effectively `{ lifecycle_node, next_action, overlays }`.
+- **Cold start** (no bound project): the router produces the full Artifact×Goal classification below.
+
+The cold-start classification downstream workflows consume:
 
 ```
-artifact: [idea | fragments | partial | full_draft | series]
-goal: [draft | repair | submit | coach]
-concern: [specific concern if targeted, else "general"]
-constraints: [list of active constraint flags]
-operator: [author | editor | facilitator | team]
-route: [workflow name from route map]
-nonfiction_route: [argument_engine | narrative_nonfiction | memoir_cnf | none]
-gap_flags: [any gaps acknowledged]
+artifact:   [idea | fragments | partial | full_draft | series]
+goal:       [draft | repair | submit | coach]
+concern:    [specific concern if targeted, else "general"]
+base_route: [workflow name from §6 Table A]
+forks:      { engine?:   nonfiction-argument | nonfiction-narrative | nonfiction-memoir,
+              workflow?: time | feedback,
+              intake?:   team }
+overlays:   [ai, editor, facilitator, risk, hybrid, swarm]   # 0..n, composable
+gap_flags:  [any forks/overlays acknowledged as gaps]
 ```
 
-Downstream workflows (run-core.md, pre-writing-pathway) should accept this output and skip redundant intake questions.
+The shape mirrors the fork/overlay algebra: `base_route` is the resolved Table A selection, `forks` carries the workflow/engine/intake selectors, and `overlays` is the composable list from Table B. This replaces the prior flat `constraints: [...]` + `operator: [...]` lists (whose elements had incompatible routing semantics) and folds the bespoke `nonfiction_route` field into `forks.engine`. Downstream workflows (run-core.md, pre-writing-pathway) accept this output and skip redundant intake questions.
 
 ---
 
