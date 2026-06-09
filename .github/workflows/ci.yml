@@ -48,7 +48,7 @@ jobs:
           done
           echo "all ${#files[@]} manifests parse"
 
-      # --check-all subsumes --self-test-all (the 35 validator self-tests) and
+      # --check-all subsumes --self-test-all (the 37 validator self-tests) and
       # adds the real-file invariants: the validators are run against the actual
       # canonical framework files (pass-dependencies.md, the shipped templates,
       # the canonical worked examples + run folder), not just their own fixtures.

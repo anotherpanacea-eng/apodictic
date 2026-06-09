@@ -78,9 +78,32 @@ If the former, redirect to the latter. When a writer asks "like what?" or "give 
 
 ---
 
+## Loop Dispatch — "What now?" (state-driven)
+
+Before picking a mode, the coach can answer **"what's the highest-leverage thing to do next?"** from the project's loop position — the resumable spine `/start` dispatches to at the `revising` lifecycle node (Project Addressability, Increment 4b; `docs/project-addressability.md`). This replaces "remember whether to run Session Planning, an execution handoff, or `/ready`" with one computed recommendation.
+
+**Inputs (all already on disk):** `Diagnostic_State.meta.json` — `execution.finding_states` (`locked`/`delivered`/`revised`), `execution.pending_gate` / `phase` / `allowed_next` (the gate frontier, for step 1), `revision_progress`, `triage_summary`, `control_questions.open`, the Coaching Log — and the `<!-- resolved: F-… -->` markers in the latest revision report.
+
+**Source of truth for "revised":** read `finding_states[<id>] == "revised"` when present — written by the `revision_round` gate (runner-governed projects) or directly by the revision round (non-governed projects), per `../core-editor/references/state-lifecycle.md`; else fall back to the report's resolved markers (`finding-trace` E5/W3 reconciles the two).
+
+**Leverage ladder (first match wins) — the dispatcher proposes; the writer disposes:**
+
+1. A gate is pending (`execution.pending_gate`) → resolve it first; it blocks everything downstream.
+2. A Must-Fix is `locked` but not `delivered` → its diagnosis isn't in the editorial letter yet → finish synthesis/diagnosis, not revision.
+3. A Must-Fix is `delivered` but not `revised` → the highest-leverage open fix → **Session Planning** scoped to it, or an execution-mode handoff for scene-level work. *(The loop's core.)*
+   - **Stalled off-ramp:** if that finding has seen no progress across multiple sessions (Coaching Log) and still has no resolved marker, don't re-offer the same plan — surface "this finding has stalled: try an execution-mode handoff, or set it aside, recording the decision in the Coaching Log so a later session sees it was a deliberate pass, not an oversight." (There is no engine-level "declined" finding state today; the Coaching Log note is the durable record.)
+4. All Must-Fix `revised`, Should-Fix still open → **Session Planning** at the next severity tier.
+5. All findings `revised` and `control_questions.open == 0` → offer **submission readiness** (`/ready`).
+
+**Precedence with the lifecycle node (Increment 3).** At the `revising` node `/start` dispatches here; this ladder is the *decider* of the next action, and the sidecar's stored `next_action` is its default/output (used when the ladder is indeterminate), not a competing authority.
+
+The dispatcher reads only existing signals. For **runner-governed** projects the `revision_round` gate (Increment 4a) folds the resolved markers into `finding_states.revised`, so the ladder reads the sidecar field directly; for **non-governed** projects the revision round writes the field directly and the ladder falls back to the markers. Behavior is identical either way.
+
+---
+
 ## Mode Selection
 
-The coach operates in four modes. Select based on context:
+The coach operates in several modes (Loop Dispatch above can select among them). Select based on context:
 
 ### 1. Session Planning (default)
 

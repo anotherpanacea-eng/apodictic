@@ -110,14 +110,19 @@ Before running passes, gather:
 
 ### Revision Round Output
 
-**Revision Report** (not full diagnostic):
+**Revision Report** (not full diagnostic) — save as `[Project]_Revision_Report_[runlabel].md` at the run folder (the `revision_round` gate's `revision_report` artifact; the distinct name keeps it from colliding with the deadline-coaching `[Project]_Revision_Calendar_[runlabel].md`):
 - Flags resolved: [list with verification notes]
 - Flags still present: [list with updated evidence]
 - New issues introduced: [list with locations]
 - Ripple effects detected: [list with severity]
 - Next priority: [single most important remaining issue]
 
-**Lifecycle advance.** For each finding the round confirms **resolved** (the *Flags resolved* list — **not** *Flags still present*), mark it resolved in the Revision Report with an explicit marker `<!-- resolved: <id> -->` and advance its **Finding Lifecycle ID** in the sidecar: `execution.finding_states[<id>] = "revised"` (the third lifecycle state, `locked → delivered → revised`). A finding under *Flags still present* / *New issues introduced* is named (bare) but carries **no** resolved marker, so it correctly stays `delivered`. `scripts/validate.sh finding-trace <run_folder>` then audits completion by ID — a finding marked resolved but left below `revised` in the sidecar is W3 (advisory; ERROR under `--strict`), and a finding the report **mentions as unresolved** while the sidecar marks it `revised` is E5 (the report and the sidecar disagree). See `docs/finding-lifecycle-ids.md` §Increment 3.
+**Lifecycle advance.** For each finding the round confirms **resolved** (the *Flags resolved* list — **not** *Flags still present*), mark it resolved in the Revision Report with an explicit marker `<!-- resolved: <id> -->`, then advance its **Finding Lifecycle ID** to `revised` (the third lifecycle state, `locked → delivered → revised`) by **one of two writers**, depending on whether the project is runner-governed:
+
+- **Runner-governed project** (the sidecar carries an `execution.gate_events` log): clear the round through the gate — `scripts/validate.sh gate revision_round <run_folder>` then `scripts/validate.sh gate --attest revision_round <run_folder>`. The gate folds the resolved-marker ids into `execution.finding_states[<id>] = "revised"`. Writing the field by hand is **forbidden** for these projects — it would drift from the gate fold and fail `gate --check-state`'s `pointer == fold` invariant.
+- **Non-runner-governed project** (no `gate_events`): write `execution.finding_states[<id>] = "revised"` **directly**, as before — there is no gate log to fold and no `pointer == fold` invariant, so the direct write is correct and remains the path for the common case.
+
+A finding under *Flags still present* / *New issues introduced* is named (bare) but carries **no** resolved marker, so it correctly stays `delivered`. A finding that **regresses** in a later round is **not** demoted in place (`revised` is terminal per ledger id; the fold is forward-only) — re-diagnosis (the `revision_round` gate's `allowed_next` is `run_synthesis`) gives it a fresh `F-…` id. `scripts/validate.sh finding-trace <run_folder>` then audits completion by ID — a finding marked resolved but left below `revised` in the sidecar is W3 (advisory; ERROR under `--strict`), and a finding the report **mentions as unresolved** while the sidecar marks it `revised` is E5. See `docs/finding-lifecycle-ids.md` §Increment 3 and `docs/revision-round-gate.md`.
 
 ### When to Reset to Full Analysis
 

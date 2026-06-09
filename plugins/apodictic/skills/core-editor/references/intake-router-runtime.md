@@ -182,20 +182,29 @@ Always asked after routing, before work begins. Multiple selections allowed.
 
 "Before we start — anything I should know?"
 
-| Option | Label | Internal flag | Effect on workflow |
-|--------|-------|--------------|-------------------|
-| A | I'm on a deadline | `constraint:time` | Route to Submission Triage: Pass 1 → SR codes (detectable subset) → go/no-go memo with blind spots. See `references/submission-triage.md`. |
-| B | Parts of this were written with AI | `constraint:ai` | Add AI-Prose Calibration overlay. |
-| C | This is nonfiction | `constraint:nonfiction` | Run nonfiction triage. Route argument-shaped work to the Nonfiction Argument Engine, scene-led nonfiction to Narrative Nonfiction Craft, and memoir / witness-led work to Memoir & CNF. Idea-stage Nonfiction Pre-Draft remains a gap. |
-| D | There's sensitive or legally risky content | `constraint:risk` | Add risk register output. **Gap: risk register not yet built.** |
-| E | I'm editing someone else's work | `operator:editor` | Shift output to editor scaffolding (editor-facing reframe of the synthesis letter). **Built** — see `references/editor-scaffolding.md`. |
-| F | I'm facilitating a writing group | `operator:facilitator` | Shift to diagnostic vocabulary mode (produce a teaching Vocabulary Guide: glossary + discussion prompts). **Built** — see `references/diagnostic-vocabulary.md`. |
-| G | We're co-authoring (multiple writers) | `operator:team` | Note conflicting-vision risk. **Gap: multi-party intake not yet built.** |
-| H | Use hybrid mode (better analysis, moderate token cost) | `execution:hybrid` | Pass 0+1 reads full manuscript and builds a focus map; later passes read the outline + targeted excerpts as independent subagents. ~2–3x token cost. See `run-core.md` §Execution Mode. |
-| I | Use swarm mode (deepest analysis, highest token cost) | `execution:swarm` | Each pass runs as an independent subagent with full manuscript. ~2x findings, ~5x token cost. See `run-core.md` §Execution Mode. |
-| J | No constraints — let's go | (none) | Proceed with standard workflow. |
+| Option | Label | Internal flag | Kind | Effect on workflow |
+|--------|-------|--------------|------|-------------------|
+| A | I'm on a deadline | `constraint:time` | **Fork** (workflow) | Route to Submission Triage: Pass 1 → SR codes (detectable subset) → go/no-go memo with blind spots. See `references/submission-triage.md`. |
+| B | Parts of this were written with AI | `constraint:ai` | **Overlay** (lens) | Add AI-Prose Calibration overlay. |
+| C | This is nonfiction | `constraint:nonfiction` | **Fork** (engine) | Run nonfiction triage. Route argument-shaped work to the Nonfiction Argument Engine, scene-led nonfiction to Narrative Nonfiction Craft, and memoir / witness-led work to Memoir & CNF. Idea-stage Nonfiction Pre-Draft remains a gap. |
+| D | There's sensitive or legally risky content | `constraint:risk` | **Overlay** (output) | Add Legal Risk Register output. Module **built** (`references/legal-risk-register.md`); router auto-wiring pending — offer it, attach on accept. |
+| E | I'm editing someone else's work | `operator:editor` | **Overlay** (output) | Shift output to editor scaffolding (editor-facing reframe of the synthesis letter). **Built** — see `references/editor-scaffolding.md`. |
+| F | I'm facilitating a writing group | `operator:facilitator` | **Overlay** (output) | Shift to diagnostic vocabulary mode (produce a teaching Vocabulary Guide: glossary + discussion prompts). **Built** — see `references/diagnostic-vocabulary.md`. |
+| G | We're co-authoring (multiple writers) | `operator:team` | **Fork** (intake) | Note conflicting-vision risk. **Gap: multi-party intake not yet built.** |
+| H | Use hybrid mode (better analysis, moderate token cost) | `execution:hybrid` | **Overlay** (execution) | Pass 0+1 reads full manuscript and builds a focus map; later passes read the outline + targeted excerpts as independent subagents. ~2–3x token cost. See `run-core.md` §Execution Mode. |
+| I | Use swarm mode (deepest analysis, highest token cost) | `execution:swarm` | **Overlay** (execution) | Each pass runs as an independent subagent with full manuscript. ~2x findings, ~5x token cost. See `run-core.md` §Execution Mode. |
+| J | No constraints — let's go | (none) | — | Proceed with standard workflow. |
 
 **Execution mode note:** For manuscripts over 40k words, §2b handles the execution mode question before §3. Options H and I below remain as a safety net — if the user didn't get §2b (shorter manuscript, direct command entry) but knows to ask for hybrid or swarm, these options catch it.
+
+### §3a. Fork vs. Overlay — routing algebra
+
+The Q3 options are two different kinds of thing, and the router composes them differently (design rationale: `intake-router-design.md` §Modifiers: forks vs. overlays):
+
+- A **Fork** *selects* the workflow — it changes which engine runs or the terminal artifact. Forks reconcile with the Q1/Q2 base route and are **mutually exclusive within a class** (you run Submission Triage *or* full Core DE, never both). A fork is a route-map decision (§6 Table A).
+- An **Overlay** *modifies* a selected workflow — it reskins the output, adds a diagnostic lens, or changes execution depth, leaving the engine and workflow shape intact. Overlays **compose**: any number stack on the base route and on each other. An overlay is never a route-map row (§6 Table B).
+
+**Composition order.** Resolve the base route from Q1/Q2 → apply any **fork** (reconcile against the base; if forks of different classes are both selected, e.g. `time` + `nonfiction`, fork to the workflow first, then run it under the engine) → **stack** all selected overlays. Worked case: "I'm on a deadline" (`time` → fork to Submission Triage) + "I'm editing someone else's work" (`editor` → overlay) = fork to Submission Triage, then apply the editor-scaffolding overlay to the Triage output.
 
 ---
 
@@ -285,42 +294,69 @@ All commands work as direct entry points. `/start` is recommended for new users;
 
 ---
 
-## §6. Complete Route Map
+## §6. Route Map
 
-| Artifact | Goal | Constraint/Operator | Workflow | Status |
-|----------|------|-------------------|----------|--------|
+Routing has two entry modes. **Bound project** (a known book selected via `/start <project>` — Project Addressability): routing is *state-driven* — derive the lifecycle node from the sidecar and dispatch via the Lifecycle transition table below, skipping the intake questions (`commands/start.md` Step 0.5). **Cold start** (no bound project): pick **one base route** from Table A (applying any fork from the Artifact/Goal answers + Q3), then **stack any compatible overlays** from Table B. Overlays never appear as base-route rows — their applicability and status live once, in Table B, and compose onto whatever base route the forks (cold) or node (bound) selected.
+
+### §6 Lifecycle transition table (bound projects — state-driven dispatch)
+
+The destination for a *bound* project is its **lifecycle node**, derived from the sidecar by a single first-match precedence (`cold → blocked_gate → execution → pre_writing → submission → revising → diagnosed → diagnosing`; total, with `diagnosing` the default). Mechanized + tested by `scripts/validate.sh lifecycle-node`. Full derivation table and rationale: `docs/project-addressability.md` §Increment 3.
+
+| Lifecycle node | Primary next action → workflow |
+|---|---|
+| `blocked_gate` | resolve the pending gate first (§Resume Target) |
+| `execution` | execution-mode resume (Check the fix / Keep working) — `handoff-protocol.md` |
+| `pre_writing` | `pre-writing-pathway/SKILL.md` |
+| `submission` | Submission Readiness (`references/submission-readiness.md`) / triage |
+| `revising` | revision-loop dispatcher (`revision-coach/SKILL.md` §Loop Dispatch) proposes the next leverage action; the stored `next_action` (`revision_round` → `state-lifecycle.md`, or `coaching` → `revision-coach`) is its default |
+| `diagnosed` | offer `/coach` |
+| `diagnosing` | stored `next_action`: `run_passes` / `run_synthesis` / `run_audits` |
+| `cold` | no bound project → cold-start entry map (Table A) |
+
+Overlays for a bound project still come from Table B (not re-derived per node).
+
+### §6 Table A — Base routes (cold-start entry map: Artifact × Goal, forks resolved)
+
+The **cold-start** workflow-selection decisions — the path for a project with no lifecycle node yet (a bound, in-progress project routes via the Lifecycle transition table above instead). The `Fork` column names a workflow-selecting modifier when one applies (engine = which diagnostic engine; workflow = which workflow shape; intake = which intake). Forks are mutually exclusive within a class.
+
+| Artifact | Goal | Fork | Workflow | Status |
+|----------|------|------|----------|--------|
 | idea | draft | — | Pre-Writing Pathway | **Built** |
 | idea | draft (fast-track) | — | Pre-Writing Pathway (skip to Phase 4) | **Built** |
-| idea | draft | nonfiction | Nonfiction Pre-Writing | Gap |
+| idea | draft | engine=nonfiction | Nonfiction Pre-Writing | Gap |
 | fragments | draft | — | Fragment Synthesis → Pre-Writing | **Built** (v1.2.0) |
-| fragments | draft | ai | Fragment Synthesis → Pre-Writing + AI-Prose Calibration | **Built** (v1.2.0, calibration deferred to post-synthesis) |
 | fragments | repair | — | Core DE (partial flag) | **Built** (v1.2.0) |
 | partial | repair (diagnostic) | — | Core DE (partial flag) | **Built** (v1.2.0) |
 | partial | repair (targeted) | — | Core DE (partial flag, targeted) | **Built** (v1.2.0) |
-| partial | repair | nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) on available sections | **Built** (v1.0) |
+| partial | repair | engine=nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) on available sections | **Built** (v1.0) |
 | partial | draft (rethink) | — | Pre-Writing Pathway (re-entry) | **Built** |
-| partial | repair | time | Submission Triage | Gap: triage requires complete manuscript. Offer targeted `/diagnose`. |
+| partial | repair | workflow=time | Submission Triage | Gap: triage requires complete manuscript. Offer targeted `/diagnose`. |
 | full_draft | repair | — | Core DE | **Built** |
-| full_draft | repair | hybrid | Core DE (hybrid mode) | **Built** |
-| full_draft | repair | swarm | Core DE (swarm mode) | **Built** |
-| full_draft | repair | time | Submission Triage | **Built** (v1.1) |
-| full_draft | repair | ai | Core DE + AI-Prose Calibration | **Built** |
-| full_draft | repair | nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) | **Built** (v1.0) |
-| full_draft | repair | nonfiction (scene-led) | Narrative Nonfiction Craft | **Built** |
-| full_draft | repair | nonfiction (memoir / witness-led) | Memoir & CNF | **Built** |
-| full_draft | repair | risk | Core DE + Risk Register | Gap |
+| full_draft | repair | engine=nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) | **Built** (v1.0) |
+| full_draft | repair | engine=nonfiction (scene-led) | Narrative Nonfiction Craft | **Built** |
+| full_draft | repair | engine=nonfiction (memoir / witness-led) | Memoir & CNF | **Built** |
+| full_draft | repair | workflow=time | Submission Triage | **Built** (v1.1) |
+| full_draft | repair | workflow=feedback | Feedback Triage → Core DE | **Built** (v2.2.0, direct via `/triage-feedback`) |
 | full_draft | submit | — | Submission Readiness Workflow (`references/submission-readiness.md`) | **Built** (v1.1) |
-| full_draft | submit | hybrid | Core DE → Pass 11 (hybrid mode) | **Built** |
-| full_draft | submit | swarm | Core DE → Pass 11 (swarm mode) | **Built** |
-| full_draft | submit | time | Submission Triage | **Built** (v1.1) |
+| full_draft | submit | workflow=time | Submission Triage | **Built** (v1.1) |
 | full_draft | coach | — | Revision Coach (`revision-coach/SKILL.md`) | **Built** (v1.1.2) |
-| full_draft | coach | deadline | Revision Coach (deadline mode) | **Built** (v1.1.2) |
-| full_draft | repair | editor | Core DE (editor scaffolding) | **Built** (`references/editor-scaffolding.md`) |
-| full_draft | repair | facilitator | Core DE (diagnostic vocabulary) | **Built** (`references/diagnostic-vocabulary.md`) |
-| full_draft | repair (feedback) | — | Feedback Triage → Core DE | Gap |
+| full_draft | coach (deadline) | — | Revision Coach (deadline mode) | **Built** (v1.1.2) |
 | series | repair (single vol) | — | Core DE (series context) | Partially built |
 | series | repair (continuity) | — | Series Continuity Audit (`craft/series-continuity.md`) | **Built** (v1.2) |
 | series | draft (plan next) | — | Pre-Writing Pathway (series-aware) | Partially built |
+
+### §6 Table B — Overlays (orthogonal; compose onto any compatible base route)
+
+Workflow-*modifying* modifiers. Each composes onto any compatible Table A base route; multiple overlays stack. Status lives here once — it is **not** re-asserted per base route (this is what kept the old single table's `ai` / `hybrid` / `swarm` / `editor` / `facilitator` / `risk` rows in sync drift). The nine former `base × overlay` rows are computed from this table, not enumerated.
+
+| Overlay | Flag | Effect | Composes onto | Status |
+|---------|------|--------|---------------|--------|
+| AI-Prose Calibration | `constraint:ai` | Adds AI-prose lens + findings (`craft/ai-prose-calibration.md`) | Any prose-bearing repair/submit base route (on `fragments \| draft`, calibration deferred to post-synthesis) | **Built** |
+| Editor Scaffolding | `operator:editor` | Re-aims the editorial letter at a human editor | Any Core DE letter (`references/editor-scaffolding.md`) | **Built** |
+| Diagnostic Vocabulary | `operator:facilitator` | Adds a teaching Vocabulary Guide alongside the letter | Any Core DE letter (`references/diagnostic-vocabulary.md`) | **Built** |
+| Legal Risk Register | `constraint:risk` | Adds a Legal Risk Register output | Any repair/submit base route (`references/legal-risk-register.md`) | **Built** (module); router auto-wiring pending |
+| Hybrid execution | `execution:hybrid` | Focus-map depth; ~2–3x token cost; content-invariant | Any pass-based run >40k words (`run-core.md` §Execution Mode) | **Built** |
+| Swarm execution | `execution:swarm` | Independent-lens depth; ~5x token cost; content-invariant | Any pass-based run (`run-core.md` §Execution Mode) | **Built** |
 
 ## §7. Gap Handling Protocol
 

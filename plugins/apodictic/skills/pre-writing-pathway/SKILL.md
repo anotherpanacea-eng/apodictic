@@ -34,12 +34,15 @@ The Firewall still applies: the pathway helps the writer discover what they want
 When entered via `/start`, accept router output as pre-filled context:
 
 ```
-artifact: [idea | fragments | partial | full_draft | series]
-goal: [draft | repair | submit]
-concern: [specific concern or general]
-constraints: [list]
-operator: [author | editor | facilitator | team]
+artifact:   [idea | fragments | partial | full_draft | series]
+goal:        [draft | repair | submit | coach]
+concern:     [specific concern or general]
+base_route:  [workflow name from intake-router §6 Table A]
+forks:       { engine?: nonfiction-argument | nonfiction-narrative | nonfiction-memoir, workflow?, intake? }
+overlays:    [ai, editor, facilitator, risk, hybrid, swarm]   # 0..n, composable
 ```
+
+(Contract shape per `../core-editor/references/intake-router-design.md` §Router output format. Pre-writing consumes the relevant subset — chiefly `forks.engine` for nonfiction pre-draft; output overlays like `editor`/`facilitator` don't apply pre-draft.)
 
 Use prefilled values to skip redundant intake prompts:
 
@@ -466,6 +469,8 @@ The pre-writing pathway follows Core DE's existing naming convention: `[Project]
 | Re-Entry Diff | `[Project]_Reentry_Diff_[runlabel].md` | Generated only when a full Structural Plan exists; MVP returns skip the diff and run standard intake |
 
 The `[runlabel]` follows the same convention as Core DE outputs: date-based (`YYYY-MM-DD`), optionally with agent tag (e.g., `opus46_2026-02-20`).
+
+**Minimal sidecar (project addressability).** A pre-writing project does not run Core DE, so it would otherwise have no `Diagnostic_State.meta.json` — which would make it invisible to the project registry and to `/start` resume. When writing the Structural Plan or MVP, also drop a **minimal sidecar** at the project root: `Diagnostic_State.meta.json` with `project` (the title), `mode: "diagnostic"`, and `next_action: {"key": "pre_writing", "description": "pre-writing pathway in progress"}`. This is the smallest write that makes a pre-writing project registrable and addressable (per `core-editor/references/output-structure.md` §Project Registry and `docs/project-addressability.md`); Core DE later enriches the same sidecar in place. The full `Diagnostic_State.md` is not created until a diagnostic run exists.
 
 When a writer returns with a draft and Core DE runs intake:
 1. The structural plan / MVP file is read as context, not overwritten.
