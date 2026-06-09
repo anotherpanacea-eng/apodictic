@@ -18,16 +18,18 @@ stance, temporal arrangement. It is a structure-level complement to
 AI-Prose Calibration, not a substitute. See narrative-decision-audit.md
 for the audit-level contract and the framing note.
 
-Version floor: NOT hardcoded here. Per the R1 acceptance criterion and
-docs/setec-dependency-posture.md Decision 2, this surface's floor is read
-from SETEC's capabilities manifest (`narrative_decision_audit`'s
-`min_setec_version`, currently 1.107.0 — the plugin-version at which
-Surface 6 / StoryScope shipped, PRs #128/#129/#130). The shim resolves the
-floor via setec_capabilities.resolve_floor, which asserts the discovered
-setec_version satisfies the manifest floor, then passes the validated
-location to run_setec_script (which would otherwise re-discover at the
-bootstrap floor), so an out-of-floor SETEC fails with an upgrade message
-naming the surface's required minimum rather than a missing-script error.
+Version floor: NOT hardcoded here, and NOT pre-checked consumer-side. Per
+the R1 acceptance criterion and docs/setec-dependency-posture.md Decision 2,
+this surface's floor is a property of the surface in SETEC's capabilities
+manifest (`narrative_decision_audit`'s `min_setec_version`, currently 1.107.0
+— the plugin-version at which Surface 6 / StoryScope shipped, PRs
+#128/#129/#130). With R2 adoption, the normalized dispatcher ENFORCES that
+floor at runtime: an out-of-floor SETEC comes back as an R3 `version_floor`
+error envelope (available=False, naming both the required floor and the
+observed version) rather than a missing-script error. The consumer no longer
+runs resolve_floor as a redundant runtime pre-check; resolve_floor + the
+vendored manifest remain the authority for the offline drift gate and
+capability introspection only.
 
 Handoff posture: the surface carries `handoff: experimental` in SETEC's
 capabilities manifest. The envelope shape and the
@@ -46,32 +48,20 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from setec_discovery import SetecDiscoveryError, run_setec_script  # noqa: E402
-from setec_capabilities import (  # noqa: E402
-    SetecCapabilitiesError,
-    resolve_floor,
-)
+from setec_runner import run_surface_cli  # noqa: E402
 
 SURFACE = "narrative_decision_audit"
 
 
 def main(argv: list[str]) -> int:
-    try:
-        # Floor is data-driven from SETEC's capabilities manifest, not
-        # hardcoded. resolve_floor() discovers SETEC at the bootstrap floor,
-        # queries `capabilities emit --json`, and asserts the discovered
-        # setec_version >= this surface's manifest min_setec_version (raising
-        # a floor-aware upgrade message otherwise). The validated location is
-        # reused so run_setec_script does not re-discover at the bootstrap
-        # floor.
-        _cap, manifest = resolve_floor(SURFACE)
-        result = run_setec_script(
-            "narrative_decision_audit.py", argv, location=manifest.location
-        )
-    except (SetecDiscoveryError, SetecCapabilitiesError) as e:
-        print(str(e), file=sys.stderr)
-        return 2
-    return result.returncode
+    # Route the surface through SETEC's normalized dispatcher (R2): the
+    # dispatcher resolves the surface from its capabilities manifest, enforces
+    # the per-surface version floor + dependencies (returning R3 errors), runs
+    # the script, and guarantees a schema_version 1.0 envelope on stdout. No
+    # consumer-side floor pre-check: the dispatcher is the single runtime
+    # authority (resolve_floor / the vendored manifest stay for the offline
+    # drift gate + capability introspection, not a redundant runtime check).
+    return run_surface_cli(SURFACE, argv)
 
 
 if __name__ == "__main__":

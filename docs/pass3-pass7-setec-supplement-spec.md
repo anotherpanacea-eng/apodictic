@@ -205,25 +205,25 @@ Contradictions are real diagnostic findings. The writer wants to know when the r
 
 ### 6.6 Implementation helper to bundle the plumbing
 
-The decisions above imply a per-call wrapper that does: discover SETEC → invoke the right script → parse the envelope → classify warnings → return a structured result the pass can read. Rather than reimplementing that flow in each pass, build a small `setec_runner.py` in `plugins/apodictic/skills/specialized-audits/scripts/` that exposes (suggested API):
+The decisions above imply a per-call wrapper that does: discover SETEC → invoke the right surface → parse the envelope → classify warnings → return a structured result the pass can read. Rather than reimplementing that flow in each pass, a small `setec_runner.py` in `plugins/apodictic/skills/specialized-audits/scripts/` bundles it. As implemented (R2/R3 adoption), it takes the SETEC **surface name** and routes through SETEC's normalized dispatcher (`setec_run.py <surface> --json`), which guarantees a stdout envelope for every surface and enforces the per-surface floor/dependencies:
 
 ```python
 result = run_supplement(
-    script="variance_audit",
-    target=manuscript_path,
-    baseline_dir=contract_state.baseline_dir,  # None when absent
-    window_size=2000,                          # None when aggregate-only
-    extra_args=["--no-tier2"],                 # script-specific passthrough
+    "variance_audit",                                   # SETEC surface NAME (not a script filename)
+    [manuscript_path, "--baseline-dir", baseline_dir,   # the SETEC arg list the caller builds;
+     "--window-size", "2000", "--no-tier2"],            #   --json is added by the dispatcher
 )
-# result.envelope    — schema_version 1.0 dict
-# result.results     — the script-specific payload
-# result.blocking    — bool (any tier-1 warning)
-# result.reliability — list[str] (tier-2 warnings, ready to render)
-# result.claim_license — structured dict
-# result.rendered    — claim_license_rendered Markdown string
+# result.envelope            — schema_version 1.0 dict
+# result.results             — the surface-specific payload
+# result.available           — False on an R3 error envelope
+# result.reason_category     — R3 enum on error (version_floor / missing_dependency / …)
+# result.blocking_warnings   — list[str] (blocking tier — incl. the R3 reason on a hard error)
+# result.reliability_warnings — list[str] (reliability tier, ready to render inline)
+# result.claim_license       — structured dict
+# result.claim_license_rendered — claim_license_rendered Markdown string
 ```
 
-The runner does not invent functionality; it bundles the existing `setec_discovery` + `run_setec_script` calls plus the warnings classifier and a thin parse layer. It removes the boilerplate from each pass and keeps the supplementation contract in one place. Recommended but not strictly required.
+The runner does not invent functionality; it bundles `setec_discovery` + the dispatcher call plus the warnings classifier, the R3 `reason_category` → tier mapping, and a thin parse layer. It removes the boilerplate from each pass and keeps the supplementation contract in one place. Recommended but not strictly required.
 
 ---
 
