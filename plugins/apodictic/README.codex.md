@@ -167,7 +167,7 @@ Internet-enabled research to validate comps, check facts, verify genre currency,
 
 APODICTIC selects its execution mode based on the available context window. On large-context frontier models, the default is **single-agent mode**: one subagent runs all passes sequentially in a single context, with the full manuscript in view throughout. This is the fastest and most token-efficient option, viable for manuscripts up to roughly 200,000 words.
 
-For maximum analytical depth, request **swarm mode**: each pass runs as an independent subagent loading the full manuscript. Swarm produces roughly **twice as many findings** with more specific cross-pass connections and more consistent counterevidence — at approximately **5x the token cost**. The quality gain comes from architectural isolation: each pass genuinely cannot see prior analysis until reconciliation, which eliminates anchoring bias.
+For a **final-round verification pass**, request **swarm mode**: each pass runs as an independent subagent loading the full manuscript. The gain is **architectural isolation** — each pass genuinely cannot see prior analysis until reconciliation, which eliminates anchoring bias — at approximately **5x the token cost**. Best reserved for final submission prep: an earlier validation reported ~2× findings, but a 2026-06 N=1 re-test on long fiction did not reproduce a depth advantage, so swarm's dependable value is verification isolation, not everyday yield.
 
 On standard-context models, APODICTIC falls back to per-pass subagent dispatch with three tiers: **sequential** (each pass gets the full manuscript), **hybrid** (later passes get targeted excerpts via a focus map, ~2–3x cost), and **swarm** (parallel independent subagents, ~5x cost).
 
