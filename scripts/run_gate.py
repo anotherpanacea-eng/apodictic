@@ -36,6 +36,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 
 try:
     import apodictic_artifacts as art
@@ -45,8 +46,11 @@ except ImportError:
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # Finding-ID lifecycle: a CLEARING gate advances each ledger finding's state
-# (forward-only). revised is reached at a revision round (no gated phase yet).
-_PHASE_FINDING_STATE = {"run_synthesis": "locked", "run_spot_check": "delivered"}
+# (forward-only). run_synthesis -> locked and run_spot_check -> delivered mark
+# ALL ledger findings; revision_round -> revised marks ONLY the resolved subset
+# (the <!-- resolved: F-… --> ids in the run folder) — see _finding_deltas.
+_PHASE_FINDING_STATE = {"run_synthesis": "locked", "run_spot_check": "delivered",
+                        "revision_round": "revised"}
 _STATE_RANK = {"locked": 1, "delivered": 2, "revised": 3}
 
 _RESULTS = ("passed", "mechanical-passed", "pass-with-warn", "blocked", "skipped", "deferred")
@@ -395,10 +399,23 @@ def append_event(sidecar, event, manifest):
     if event.get("run_folder"):
         ex["run_folder"] = event["run_folder"]
 
+    # Atomic write: serialize to a temp file in the same directory, then os.replace() — so an
+    # interrupted write can never leave a half-written / corrupt Diagnostic_State.meta.json
+    # (the rolling state a project can't afford to lose). os.replace is atomic on the same fs.
     try:
-        with open(sidecar, "w", encoding="utf-8") as fh:
-            json.dump(meta, fh, indent=2)
-            fh.write("\n")
+        d = os.path.dirname(sidecar) or "."
+        fd, tmp = tempfile.mkstemp(dir=d, prefix=".Diagnostic_State.meta.", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                json.dump(meta, fh, indent=2)
+                fh.write("\n")
+            os.replace(tmp, sidecar)
+        except Exception:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
         return True
     except OSError:
         return False
@@ -415,6 +432,26 @@ def _finding_deltas(phase, run_folder, manifest, resolved):
     if phase not in _PHASE_FINDING_STATE:
         return {}
     keys = manifest.get("artifact_keys", {})
+    if phase == "revision_round":
+        # revised marks ONLY the resolved subset — the <!-- resolved: F-… --> ids in the gate's
+        # required revision_report artifact (a narrow *_Revision_Report_*.md, so a Revision
+        # Calendar or other *_Revision_*.md can't satisfy the gate or contribute deltas), never
+        # every ledger finding. Lazy import keeps run_gate free of a hard finding_trace dependency.
+        try:
+            import finding_trace as _ft
+        except ImportError:
+            return {}
+        report = resolved.get("revision_report") or _resolve(run_folder, keys.get("revision_report", ""), _runlabel(run_folder))
+        if not report:
+            return {}
+        resolved_ids = _ft.resolved_cited_ids(_ft._read(report) or "")
+        # Intersect with the ledger inventory so a typo'd/stale marker can't write a phantom
+        # finding_states key — the same self-consistency every other phase has (it only ever
+        # marks _ledger_finding_ids). finding-trace E2 is the post-hoc backstop; this is the
+        # write-time guard so the gate clear itself never emits an off-ledger id.
+        led = resolved.get("findings_ledger") or _resolve(run_folder, keys.get("findings_ledger", ""), _runlabel(run_folder))
+        ledger_ids = set(_ledger_finding_ids(led))
+        return {fid: "revised" for fid in resolved_ids & ledger_ids}
     led = resolved.get("findings_ledger") or _resolve(run_folder, keys.get("findings_ledger", ""), _runlabel(run_folder))
     return {fid: _PHASE_FINDING_STATE[phase] for fid in _ledger_finding_ids(led)}
 
@@ -911,6 +948,91 @@ def run_self_test():
         fh.write(ledger_ok)  # ledger present but NO Diagnostic_State.meta.json
     check("skip_no_sidecar_errors",
           cmd_exception("run_synthesis", nosc, manifest, "skip", "r", write=True)[0] == 2)
+
+    # --- revision_round (Increment 4a): folds ONLY the resolved subset to "revised" ---
+    rev_block2 = ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"F-P5-02",'
+                  '"mechanism":"stakes stay abstract","severity":"Should-Fix","confidence":"HIGH",'
+                  '"evidence_refs":["Ch. 3"],"fix_class":"x","risk_if_fixed":"y"}\n-->')
+    ledger2 = ("## Pass 5 — Ledger Entry\n### Notable Findings\n"
+               "1. **Agency collapse.** Severity: Must-Fix.\n" + valid_block + "\n"
+               "2. **Abstract stakes.** Severity: Should-Fix.\n" + rev_block2 + "\n\n"
+               "### Data Artifacts for Letter Reference\n- none\n\n"
+               "### Cross-Pass Connections\n- none\n\n### Unresolved Questions\n- none\n\n"
+               "### Audit Triggers\n| Trigger | Evidence | Recommendation |\n|---|---|---|\n")
+
+    def _ev_passed(gate, deltas):
+        return {"gate": gate, "result": "passed", "provenance": "mechanical", "ts": "t",
+                "attested_contract": [], "attested_items": [],
+                "checks": [{"validator": "x", "result": "ok"}], "finding_deltas": deltas}
+
+    # prior gate log: synthesis + spot_check cleared -> both findings at "delivered"
+    prior = {"project": "Proj", "execution": {"state_version": 2, "gate_events": [
+        _ev_passed("run_synthesis", {"F-P5-01": "locked", "F-P5-02": "locked"}),
+        _ev_passed("run_spot_check", {"F-P5-01": "delivered", "F-P5-02": "delivered"}),
+    ]}}
+    drev = folder(ledger2, sidecar=prior)
+    # sanity: the prior log folds to both findings at delivered (materialized only by append_event,
+    # so check the fold directly here, not the as-written sidecar)
+    check("rev_prior_delivered",
+          fold_pointer(prior["execution"]["gate_events"], manifest)["finding_states"]
+          == {"F-P5-01": "delivered", "F-P5-02": "delivered"})
+    # revision report resolves ONLY F-P5-01 (F-P5-02 stays present, no marker)
+    with open(os.path.join(drev, "Proj_Revision_Report_run.md"), "w") as fh:
+        fh.write("# Revision Report\n- Flags resolved: F-P5-01\n<!-- resolved: F-P5-01 -->\n"
+                 "- Flags still present: F-P5-02\n")
+    code, _ = cmd_gate("revision_round", drev, manifest, write=True, validate_sh=vs)
+    check("rev_mechanical_passed",
+          code == 0 and read_ex(drev)["gate_events"][-1]["result"] == "mechanical-passed")
+    code, _ = cmd_attest("revision_round", drev, manifest, write=True, validate_sh=vs)
+    exr = read_ex(drev)
+    check("rev_clears", code == 0 and exr["gate_events"][-1]["result"] == "passed")
+    # (a) ONLY the resolved subset advances to revised; still-present finding stays delivered
+    check("rev_subset_only",
+          exr.get("finding_states", {}) == {"F-P5-01": "revised", "F-P5-02": "delivered"})
+    # (b) pointer == fold holds with a revised delta present
+    check("rev_check_state_clean",
+          check_state(os.path.join(drev, "Diagnostic_State.meta.json"), manifest)[0] == 0)
+    check("rev_frontier",
+          exr.get("phase") == "revision_round" and exr.get("allowed_next") == ["run_synthesis"])
+
+    # (d) backward frontier + terminal-revised (spec-review §4 / Blocker 2): a fresh run_synthesis
+    # clearing after revision_round regresses the frontier (last-clearing wins) yet F-P5-01 stays
+    # revised (monotonic — a re-locked delta can't lower it). Tested at the fold (pure function).
+    back_events = exr["gate_events"] + [_ev_passed("run_synthesis", {"F-P5-01": "locked", "F-P5-02": "locked"})]
+    ptr = fold_pointer(back_events, manifest)
+    check("rev_backward_frontier",
+          ptr["phase"] == "run_synthesis" and ptr["allowed_next"] == ["run_spot_check"]
+          and ptr["pending_gate"] is None)
+    check("rev_revised_terminal",
+          ptr["finding_states"].get("F-P5-01") == "revised" and ptr["finding_states"].get("F-P5-02") == "delivered")
+
+    # (c) zero resolved markers -> no-op on finding_states (empty subset)
+    drev0 = folder(ledger2, sidecar=prior)
+    with open(os.path.join(drev0, "Proj_Revision_Report_run.md"), "w") as fh:
+        fh.write("# Revision Report\n- Flags still present: F-P5-01, F-P5-02\n")  # no resolved markers
+    cmd_gate("revision_round", drev0, manifest, write=True, validate_sh=vs)
+    cmd_attest("revision_round", drev0, manifest, write=True, validate_sh=vs)
+    check("rev_zero_resolved_noop",
+          read_ex(drev0).get("finding_states", {}) == {"F-P5-01": "delivered", "F-P5-02": "delivered"})
+
+    # (S1) an off-ledger resolved marker is filtered at write time — no phantom finding_states key
+    drevp = folder(ledger2, sidecar=prior)
+    with open(os.path.join(drevp, "Proj_Revision_Report_run.md"), "w") as fh:
+        fh.write("# Revision Report\n- Flags resolved: F-P5-01, F-ZZ-99\n"
+                 "<!-- resolved: F-P5-01 -->\n<!-- resolved: F-ZZ-99 -->\n")
+    cmd_gate("revision_round", drevp, manifest, write=True, validate_sh=vs)
+    cmd_attest("revision_round", drevp, manifest, write=True, validate_sh=vs)
+    fsp = read_ex(drevp).get("finding_states", {})
+    check("rev_phantom_id_filtered", fsp.get("F-P5-01") == "revised" and "F-ZZ-99" not in fsp)
+
+    # (P1) a Revision *Calendar* (not a Report) does NOT satisfy the revision_report artifact —
+    # even one carrying a resolved marker — so the gate blocks rather than clearing with empty deltas
+    drevc = folder(ledger2, sidecar=prior)
+    with open(os.path.join(drevc, "Proj_Revision_Calendar_run.md"), "w") as fh:
+        fh.write("# Revision Calendar\n<!-- resolved: F-P5-01 -->\n")
+    code, _ = cmd_gate("revision_round", drevc, manifest, write=True, validate_sh=vs)
+    check("rev_calendar_not_report_blocks",
+          code == 1 and read_ex(drevc)["gate_events"][-1]["result"] == "blocked")
 
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
