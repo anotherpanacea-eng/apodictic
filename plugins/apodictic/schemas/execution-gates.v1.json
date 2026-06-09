@@ -6,6 +6,7 @@
     "findings_ledger":      "*_Findings_Ledger_*.md",
     "audit_invocation_log": "*_Audit_Invocation_Log_*.md",
     "editorial_letter":     ["*_Core_DE_Synthesis_*.md", "*_Full_DE_*.md", "*_Editorial_Letter_*.md"],
+    "revision_report":      "*_Revision_Report_*.md",
     "sidecar":              "Diagnostic_State.meta.json"
   },
   "phases": {
@@ -47,6 +48,21 @@
         ]
       },
       "allowed_next": ["deliver"]
+    },
+    "revision_round": {
+      "entry_requires": {
+        "artifacts": ["findings_ledger", "revision_report"],
+        "$comment_check": "A revision_round ENTRY check must be a precondition, not the post-condition the gate establishes. finding-trace W3 (resolved-but-not-yet-revised) would fire here — the gate is what advances revised — so run_checks (WARN-in-output => pass-with-warn) would block the clear. ledger-check is a safe precondition; report<->sidecar consistency is audited by finding-trace AFTER the fold writes revised.",
+        "checks": [
+          {"validator": "ledger-check", "targets": ["findings_ledger"]}
+        ],
+        "attested": [
+          {"id": "rev-a1", "text": "delta scan complete — each prior finding sorted into resolved / still-present / new"},
+          {"id": "rev-a2", "text": "every confirmed-resolved finding carries an explicit <!-- resolved: <id> --> marker in the revision report"},
+          {"id": "rev-a3", "text": "declined items are recorded, not silently re-flagged"}
+        ]
+      },
+      "allowed_next": ["run_synthesis"]
     }
   }
 }

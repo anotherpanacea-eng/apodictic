@@ -84,7 +84,7 @@ Before picking a mode, the coach can answer **"what's the highest-leverage thing
 
 **Inputs (all already on disk):** `Diagnostic_State.meta.json` — `execution.finding_states` (`locked`/`delivered`/`revised`), `execution.pending_gate` / `phase` / `allowed_next` (the gate frontier, for step 1), `revision_progress`, `triage_summary`, `control_questions.open`, the Coaching Log — and the `<!-- resolved: F-… -->` markers in the latest revision report.
 
-**Source of truth for "revised":** read `finding_states[<id>] == "revised"` when present (the revision round writes it directly per `../core-editor/references/state-lifecycle.md`); else fall back to the report's resolved markers (`finding-trace` E5/W3 reconciles the two).
+**Source of truth for "revised":** read `finding_states[<id>] == "revised"` when present — written by the `revision_round` gate (runner-governed projects) or directly by the revision round (non-governed projects), per `../core-editor/references/state-lifecycle.md`; else fall back to the report's resolved markers (`finding-trace` E5/W3 reconciles the two).
 
 **Leverage ladder (first match wins) — the dispatcher proposes; the writer disposes:**
 
@@ -97,7 +97,7 @@ Before picking a mode, the coach can answer **"what's the highest-leverage thing
 
 **Precedence with the lifecycle node (Increment 3).** At the `revising` node `/start` dispatches here; this ladder is the *decider* of the next action, and the sidecar's stored `next_action` is its default/output (used when the ladder is indeterminate), not a competing authority.
 
-The dispatcher reads only existing signals — no gate-engine change. The forthcoming gated `revision_round` phase (Increment 4a) will fold the resolved markers into `finding_states.revised` so the ladder reads the sidecar field directly; until then it reads the markers. Behavior is identical either way.
+The dispatcher reads only existing signals. For **runner-governed** projects the `revision_round` gate (Increment 4a) folds the resolved markers into `finding_states.revised`, so the ladder reads the sidecar field directly; for **non-governed** projects the revision round writes the field directly and the ladder falls back to the markers. Behavior is identical either way.
 
 ---
 
