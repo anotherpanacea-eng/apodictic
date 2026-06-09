@@ -19,14 +19,18 @@ draws it. The validator owns manifest<->source provenance:
   E4 no orphan data      every scenes[] cell is byte-equal to the Timeline cell; every findings[]
                          severity/confidence is byte-equal to its source block. The manifest copied,
                          it did not compute or embellish.
+  W2 scene order         scenes[] order diverges from the Timeline's document order (the pacing
+                         curve's x-axis is scene order — a reordered manifest draws a false shape).
+                         Advisory.
   W1 coverage            a Timeline row not represented in scenes[] (silent under-render). Advisory.
 
 The severity->encoding map is HARDCODED in the renderer, never read from the manifest, so a run
-cannot recolor a Must-Fix to comfort; confidence modulates only a non-suppressing channel (border
-style), never marker size. Reuses timeline_checks._parse_event_ledger (the Timeline column parser)
-and apodictic_artifacts (block grammar + schema engine). See docs/manuscript-visualizations.md.
+cannot recolor a Must-Fix to comfort, and a Must-Fix marker is always drawn at full salience (its
+size never shrinks for low confidence). Reuses timeline_checks._parse_event_ledger (the Timeline
+column parser) and apodictic_artifacts (block grammar + schema engine). See
+docs/manuscript-visualizations.md.
 
-  viz_manifest.py manuscript-viz <run_folder|files...> [--strict]
+  viz_manifest.py manuscript-viz <run_folder|files...> [--strict] [--require-block]
   viz_manifest.py render <manifest> <timeline> <ledger> [-o out.html]
   viz_manifest.py --self-test
 
@@ -155,11 +159,21 @@ def _check_objects(items, kind, allowed, required):
     return errs
 
 
-def check(manifest_text, timeline_text, ledger_text, strict=False):
+def check(manifest_text, timeline_text, ledger_text, strict=False, require_block=False):
     """Run the manifest<->source provenance checks. Returns (code, lines)."""
     lines, errs, warns = [], [], []
     obj, schema_errs = parse_manifest(manifest_text)
     if obj is None:
+        # A present-but-unparseable block is an E1 failure, NOT a no-op — otherwise corrupt JSON
+        # passes silently (and the --check-all gate would pass vacuously if the example broke).
+        if any("invalid JSON" in e for e in schema_errs):
+            return 1, ["manuscript-viz: %s" % schema_errs[0], "manuscript-viz: FAIL (E1 manifest schema)"]
+        # A genuinely-absent block is a no-op for a run folder, but --require-block (the canonical-
+        # example gate) makes it a hard failure so the gate cannot pass with no manifest to validate.
+        if require_block:
+            return 1, ["manuscript-viz: no viz_manifest block found, but --require-block is set "
+                       "(a gated manifest must be present and valid)",
+                       "manuscript-viz: FAIL (E1 — required manifest block missing)"]
         return 0, ["manuscript-viz: no viz_manifest block found — nothing to validate"]
 
     # E1 — wrapper schema + nested-object allowlist
@@ -220,6 +234,17 @@ def check(manifest_text, timeline_text, ledger_text, strict=False):
     for sid in sorted(rows):
         if sid not in scene_ids:
             warns.append("W1 coverage: Timeline scene %s is not in scenes[] (silent under-render)" % sid)
+
+    # W2 — scene order: the manifest scenes[] order should follow the Timeline's document order. The
+    # pacing curve's x-axis is raw scenes[] order, so a reordered manifest draws a false pacing shape
+    # while passing every per-id check (order is a data channel the set-based checks don't close).
+    mf_order = [sc.get("scene_id") for sc in scenes
+                if isinstance(sc, dict) and sc.get("scene_id") in rows]
+    tl_subset = [sid for sid in rows if sid in set(mf_order)]   # rows preserves Timeline document order
+    if mf_order != tl_subset:
+        warns.append("W2 scene order: scenes[] order diverges from the Timeline document order "
+                     "(%s vs %s) — the pacing curve's shape must come from the Timeline, not the manifest"
+                     % (" ".join(map(str, mf_order)), " ".join(map(str, tl_subset))))
 
     # Report
     lines.append("manuscript-viz: %s — %d scene(s), %d finding(s)%s"
@@ -298,8 +323,14 @@ def render_html(manifest_text, timeline_text, ledger_text):
     for f in findings:
         ch = f.get("chapter", "unplaced")
         by_ch.setdefault(ch, []).append(f.get("severity", "Could-Fix"))
+    # Numeric-aware chapter order: "Ch 2" before "Ch 10" (lexicographic would put 10 first), with
+    # any non-numeric bin (e.g. the literal "unplaced") sorted last.
+    def _ch_key(item):
+        ch = item[0]
+        m = _CHAPTER_RE.search(str(ch))
+        return (0, int(m.group(1))) if m else (1, str(ch))
     sev_bars = []
-    for ch, sevs in sorted(by_ch.items()):
+    for ch, sevs in sorted(by_ch.items(), key=_ch_key):
         dom = max(sevs, key=lambda s: _SEV_ENCODING.get(s, {"rank": 0})["rank"])
         color = _SEV_ENCODING.get(dom, {"color": "#7A7560"})["color"]
         sev_bars.append((ch, len(sevs), color))
@@ -363,7 +394,7 @@ def resolve(paths):
     return man, tlp, led
 
 
-def run(paths, strict=False):
+def run(paths, strict=False, require_block=False):
     man, tlp, led = resolve(paths)
     if not man:
         return 2, ["manuscript-viz: no Structure Map manifest found (need a *_Structure_Map_*.md "
@@ -371,7 +402,8 @@ def run(paths, strict=False):
     mtext = _read(man)
     if mtext is None:
         return 2, ["manuscript-viz: cannot read %s" % man]
-    return check(mtext, _read(tlp) if tlp else None, _read(led) if led else None, strict=strict)
+    return check(mtext, _read(tlp) if tlp else None, _read(led) if led else None,
+                 strict=strict, require_block=require_block)
 
 
 # ---------------------------------------------------------------- self-test
@@ -468,11 +500,33 @@ def run_self_test():
     chk("w1_coverage_advisory", code == 0 and any("W1 coverage" in x for x in ls))
     chk("w1_coverage_strict_fails", check(manifest(scenes=one_scene), timeline, ledger, strict=True)[0] == 1)
 
+    # E1 — a present-but-broken manifest block is a FAIL, not a vacuous no-op
+    broken = "# Map\n<!-- apodictic:viz_manifest\n{ \"schema\": \"apodictic.viz_manifest.v1\",, }\n-->"
+    code, ls = check(broken, timeline, ledger)
+    chk("e1_invalid_json_fails", code == 1 and any("invalid JSON" in x for x in ls))
+    # a genuinely-absent block is a no-op (code 0) for a run folder, BUT --require-block makes it a FAIL
+    chk("noop_missing_block", check("# Map\n(no manifest here)\n", timeline, ledger)[0] == 0)
+    chk("require_block_missing_fails",
+        check("# Map\n(no manifest here)\n", timeline, ledger, require_block=True)[0] == 1)
+
+    # W2 — scenes[] in non-Timeline order (still per-id valid) → advisory, ERROR under --strict
+    rev_scenes = [scene("Ch 2 §1", "Ch 2", "241-372", "1610", "Jon", "1 hour", "16 hours"),
+                  scene("Ch 1 §1", "Ch 1", "1-118", "1480", "Mara", "3 hours", "n/a"),
+                  scene("Ch 1 §2", "Ch 1", "119-240", "1390", "Mara", "2 hours", "3 hours")]
+    code, ls = check(manifest(scenes=rev_scenes), timeline, ledger)
+    chk("w2_scene_order_advisory", code == 0 and any("W2 scene order" in x for x in ls))
+    chk("w2_scene_order_strict_fails", check(manifest(scenes=rev_scenes), timeline, ledger, strict=True)[0] == 1)
+
     # render — pure function, self-contained, draws the three charts
     h = render_html(manifest(), timeline, ledger)
     chk("render_selfcontained", "<svg" in h and "http://" not in h and "https://" not in h)
     chk("render_has_charts", h.count("<svg") >= 3 and "Mara" in h and "Ch 9" in h)
     chk("render_record_note", "artifact of record" in h)
+    # Chart 3 — chapters sort numerically (Ch 2 before Ch 10), not lexicographically
+    h_ord = render_html(manifest(scenes=[], findings=[
+        {"id": "F-A", "severity": "Must-Fix", "confidence": "HIGH", "chapter": "Ch 2"},
+        {"id": "F-B", "severity": "Must-Fix", "confidence": "HIGH", "chapter": "Ch 10"}]), timeline, ledger)
+    chk("chart3_numeric_order", h_ord.index("Ch 2") < h_ord.index("Ch 10"))
 
     # resolution
     d = tempfile.mkdtemp()
@@ -502,16 +556,30 @@ def main(argv):
     if len(argv) > 1 and argv[1] == "render":
         rest = argv[2:]
         out = None
+        force = "--force" in rest
+        rest = [a for a in rest if a != "--force"]
         if "-o" in rest:
             i = rest.index("-o")
             out = rest[i + 1] if i + 1 < len(rest) else None
             rest = rest[:i] + rest[i + 2:]
         if len(rest) < 1:
-            print("Usage: viz_manifest.py render <manifest> [timeline] [ledger] [-o out.html]")
+            print("Usage: viz_manifest.py render <manifest> [timeline] [ledger] [-o out.html] [--force]")
             return 2
         man, tlp, led = resolve(rest) if len(rest) == 1 and os.path.isdir(rest[0]) else (
             rest[0], rest[1] if len(rest) > 1 else None, rest[2] if len(rest) > 2 else None)
-        h = render_html(_read(man), _read(tlp) if tlp else None, _read(led) if led else None)
+        mtext = _read(man)
+        tltext = _read(tlp) if tlp else None
+        ledtext = _read(led) if led else None
+        # Gate before rendering: rendering un-provenanced data is exactly the firewall hole the
+        # validator exists to prevent. Refuse on an ERROR-level gate failure unless --force.
+        gcode, glines = check(mtext, tltext, ledtext, require_block=True)
+        if gcode != 0 and not force:
+            for ln in glines:
+                print(ln, file=sys.stderr)
+            print("manuscript-viz: refusing to render — the manifest does not pass the provenance gate "
+                  "(pass --force to render anyway). See errors above.", file=sys.stderr)
+            return 1
+        h = render_html(mtext, tltext, ledtext)
         if out:
             with open(out, "w", encoding="utf-8") as fh:
                 fh.write(h)
@@ -521,11 +589,13 @@ def main(argv):
         return 0
     args = [a for a in argv[1:] if a != "manuscript-viz"]
     strict = "--strict" in args
+    require_block = "--require-block" in args
     paths = [a for a in args if not a.startswith("--")]
     if not paths:
-        print("Usage: viz_manifest.py manuscript-viz <run_folder|files...> [--strict] | render ... | --self-test")
+        print("Usage: viz_manifest.py manuscript-viz <run_folder|files...> [--strict] [--require-block] "
+              "| render ... | --self-test")
         return 2
-    code, lines = run(paths, strict=strict)
+    code, lines = run(paths, strict=strict, require_block=require_block)
     for ln in lines:
         print(ln)
     return code
