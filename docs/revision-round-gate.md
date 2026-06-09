@@ -1,50 +1,61 @@
 # Gated `revision_round` phase — spec (Increment 4a)
 
-**Status:** Spec (not yet built). Follow-up to Project Addressability Increment 4 (`docs/project-addressability.md` §Increment 4 build split). Makes the runner-governed gate engine the canonical writer of the `revised` finding-state, resolving a direct-write-vs-fold contradiction. Touches `schemas/execution-gates.v1.json`, `scripts/run_gate.py` (+ root mirror), `references/state-lifecycle.md`, and the `--check-all` gate fixture. No new validator; reuses the gate engine + `finding-trace`.
+**Status:** Spec (not yet built). Follow-up to Project Addressability Increment 4 (`docs/project-addressability.md` §Increment 4 build split). Adds a gated `revision_round` phase so the runner-governed gate engine writes `revised` **fold-consistently** for governed projects, while the existing direct write is retained as the fallback for non-governed projects. Touches `schemas/execution-gates.v1.json`, `scripts/run_gate.py` (+ root mirror), `references/state-lifecycle.md`, `revision-coach/SKILL.md`, `docs/project-addressability.md`, `docs/finding-lifecycle-ids.md`, and the `--check-all` gate fixture. No new validator; reuses the gate engine + `finding-trace`.
 
-## The contradiction this resolves
+## The contradiction — and its true scope (spec-review Blocker 1)
 
-Today the revision-round protocol writes the third finding-lifecycle state **directly** into the sidecar: `execution.finding_states[<id>] = "revised"` (`state-lifecycle.md:120`). The runner-governed gate engine, meanwhile, derives `finding_states` purely by *folding* the append-only `gate_events[]` log (`run_gate.py:328-332`), and `_PHASE_FINDING_STATE` stops at `delivered` (`run_gate.py:49`) — no phase emits `revised`.
+The revision-round protocol writes the third finding-lifecycle state **directly** into the sidecar: `execution.finding_states[<id>] = "revised"` (`state-lifecycle.md:120`). The gate engine, separately, derives `finding_states` *only* by folding the append-only `gate_events[]` log (`run_gate.py:328-332`), and `_PHASE_FINDING_STATE` stops at `delivered` (`run_gate.py:49`).
 
-These coexist only because a revision-stage project usually has **no** `gate_events`, so `gate --check-state` early-returns ("nothing to check"). The moment a project *is* runner-governed, the two disagree: the fold won't reproduce the direct write, and `check-state`'s `pointer == fold` invariant (`run_gate.py:662`) fails (exit 1) — the regression the `finding_states_drift_detected` self-test guards.
+These collide **only for runner-governed projects.** `check_state` early-returns ("nothing to check") unless the sidecar has `gate_events` (`run_gate.py:562-563`). So:
 
-4a makes the **gate** the single writer of `revised`, and **removes** the direct write — so `finding_states.revised` is always fold-consistent. 4b's loop dispatcher then reads `finding_states.revised` as a first-class field (it already prefers it, falling back to markers).
+- **Non-governed project (the common case — no `gate_events`):** the direct write is the *only* mechanism that records `revised`, and `check_state` never runs, so there is no `pointer == fold` invariant to violate. **This path must keep the direct write** — removing it would silently strip the ability to record `revised` from the majority of projects. (This was the original spec's mistake.)
+- **Runner-governed project (has `gate_events`):** a direct `revised` write the fold can't reproduce *is* drift → `check_state` exits 1 (`run_gate.py:662-663`; the `finding_states_drift_detected` self-test guards it). These projects must route `revised` **through the gate**.
+
+So 4a does not remove the direct write — it **scopes** it. The gate becomes the `revised` writer when (and only when) the project is already runner-governed; otherwise the direct write stands. Both produce the same sidecar field; 4b's dispatcher reads `finding_states.revised` either way.
 
 ## The delicate part: selective per-finding marking
 
-Every existing phase marks **all** ledger findings with one state (`_finding_deltas`, `run_gate.py:414-419`: `{fid: _PHASE_FINDING_STATE[phase] for fid in _ledger_finding_ids(led)}`). `run_synthesis` → every finding `locked`; `run_spot_check` → every finding `delivered`.
+Every existing phase marks **all** ledger findings with one state (`_finding_deltas`, `run_gate.py:414-419`). `revision_round` must mark **only the resolved subset** — the ids carrying a `<!-- resolved: F-… -->` marker in the run folder — leaving still-present findings `delivered`. This is the one genuinely new code path in the fold.
 
-`revision_round` is different: a round resolves **only a subset** of findings (the *Flags resolved* list). So its deltas must mark **only the ids carrying a `<!-- resolved: F-… -->` marker** in the run folder — the rest correctly stay `delivered`. This is the one genuinely new code path in the fold.
+The reusable surface is **`finding_trace`'s run-folder aggregation** (`finding_trace.py:186-188`): resolve the run folder's completion artifacts, then union `resolved_cited_ids(text)` across them. (Not the leaf `resolved_cited_ids`, which takes a single text — spec-review nit 7.) `run_gate.py` can `import finding_trace` directly — it's a sibling module on the same `sys.path` as the existing `import apodictic_artifacts`, and `finding_trace` imports only `apodictic_artifacts`, so there is no circular-import risk (spec-review §2, confirmed).
 
-`finding-trace` already computes exactly this set: `resolved_cited_ids(text)` (`finding_trace.py:114`), aggregated across run-folder artifacts (`finding_trace.py:187`). So `revision_round`'s `_finding_deltas` **reuses that resolution** rather than inventing a revision-report glob.
+## Re-revision is terminal-by-id (spec-review Blocker 2 — normative, not open)
+
+The fold raises a finding's state only when the new delta's rank ≥ current (`run_gate.py:331`, `_STATE_RANK`). So once `revised`, a finding **cannot** fold back to `delivered`. This is correct and must stay — `check_state` and the forward-only lifecycle depend on that monotonicity.
+
+**Contract (normative):** `revised` is **terminal for a given ledger id.** A finding that regresses in a later round is handled as a **new finding** — re-diagnosis (round 2 re-runs `run_synthesis`, per `allowed_next` below) produces a fresh `F-…` id with its own `locked` delta. There is **no** lower-ranked delta and no in-place demotion (either would break the monotonicity invariant). This is a documented v1 behavior, not an open question.
 
 ## Build
 
 **1. Manifest (`execution-gates.v1.json`).** Add a `revision_round` phase:
-- `allowed_next: ["run_synthesis"]` — a cleared round authorizes re-diagnosing the revised draft. (Not `[]`: an empty `allowed_next` co-occurs with a `pending_gate` in the fold's semantics, so it must be non-empty for a cleared frontier.)
-- `entry_requires.artifacts: ["findings_ledger"]` (the ledger the resolved ids are checked against; the revision report is located via `finding-trace`'s run-folder scan, so no new artifact_key is strictly required — add an optional `revision_report` key only if a stable `*_Revision_Report_*.md` convention is confirmed).
-- `entry_requires.attested`: e.g. `rev-a1` delta scan complete (resolved vs. still-present vs. new), `rev-a2` every confirmed-resolved finding carries a `<!-- resolved: <id> -->` marker, `rev-a3` declined items are not silently re-flagged.
+- `allowed_next: ["run_synthesis"]` — a cleared round authorizes re-diagnosing the revised draft (round 2). Non-empty is required (an empty `allowed_next` co-occurs with a `pending_gate` in the fold). The "earlier-phase target" is already an established pattern (`run_spot_check.allowed_next: ["deliver"]`), so the fold handles it (spec-review §4).
+- `entry_requires.artifacts: ["findings_ledger", "revision_report"]` — add a `revision_report` artifact_key (`*_Revision_*.md`) so the gate's `finding-trace` check and the resolved-id scan have a concrete target.
+- `entry_requires.attested`: `rev-a1` delta scan complete (resolved / still-present / new); `rev-a2` every confirmed-resolved finding carries a `<!-- resolved: <id> -->` marker; `rev-a3` declined items are not silently re-flagged.
 - `entry_requires.checks: [{validator: "finding-trace", targets: ["run_folder"]}]` — mechanizes report↔sidecar consistency (W3/E5) at the gate.
 
 **2. `run_gate.py` (+ root `scripts/` mirror — the Increment-2 lesson).**
 - `_PHASE_FINDING_STATE["revision_round"] = "revised"` (`_STATE_RANK` already ranks `revised: 3`).
-- `_finding_deltas`: branch `if phase == "revision_round"` → resolve the run-folder resolved ids via `finding_trace.resolved_cited_ids` (aggregated as in `finding_trace.py:187`) → `{fid: "revised" for fid in resolved_ids}`. All other phases unchanged.
-- Both call sites already pass through this helper: `cmd_gate` (no-attest path, `:456`) and `cmd_attest` (attested clearing, `:510`). `revision_round` has attested items, so it clears via `--attest` — deltas land at `:510`.
+- `_finding_deltas`: branch `if phase == "revision_round"` → aggregate the run folder's resolved ids (the `finding_trace.py:186-188` path) → `{fid: "revised" for fid in resolved_ids}`. Other phases unchanged. `revision_round` has attested items, so the delta lands via `cmd_attest`'s clearing event (`run_gate.py:510`).
 
-**3. `state-lifecycle.md` (remove the direct write).** Replace the "advance its Finding Lifecycle ID in the sidecar: `execution.finding_states[<id>] = "revised"`" instruction (`:120`) with: keep writing the `<!-- resolved: <id> -->` markers (now the gate's *input*), then **clear the round through the gate** — `validate.sh gate revision_round <run_folder>` then `gate --attest revision_round <run_folder>` — which folds the resolved-marker ids into `finding_states.revised`. The `finding-trace` W3/E5 audit still applies (now as the gate's check). This is the behavioral half of the contradiction fix and must land in the same change.
+**3. `state-lifecycle.md` (scope the direct write — do NOT remove it).** Reframe `:120`: keep writing the `<!-- resolved: <id> -->` markers; then — **if the project is runner-governed (the sidecar has `gate_events`)** — clear the round through the gate (`validate.sh gate revision_round <run_folder>` then `gate --attest …`), which folds the resolved-marker ids into `finding_states.revised`. **Otherwise** (non-governed) write `finding_states[<id>] = "revised"` directly, as today. `finding-trace` W3/E5 audits consistency in both cases.
 
-**4. Self-tests (`run_gate.py`).** Add: (a) clearing `revision_round` advances **only** the resolved-subset ids to `revised`, leaving still-present findings `delivered`; (b) the pointer the engine writes equals the fold (the `pointer == fold` invariant holds with a `revised` delta present); (c) a round with zero resolved markers is a no-op on `finding_states`. Existing two-phase self-tests (e.g. the `len(seeds) == 2` migration assertion, `:809-811`) must be updated to expect the third phase.
+**4. Reconcile the now-conditional contract elsewhere (spec-review §6 — touch list was incomplete).**
+- `revision-coach/SKILL.md:87` ("written directly per state-lifecycle.md") → "written directly (non-governed) or folded by the `revision_round` gate (runner-governed)."
+- `docs/project-addressability.md:146` (the 4b source-of-truth rule, same phrasing) → same conditional.
+- `docs/finding-lifecycle-ids.md:124` (runner-advanced `revised` "deferred to that track") → mark built in this increment.
 
-**5. `--check-all` gate fixture.** Add a `revision_round` clearing event to the canonical `references/example-run-folder` sidecar (or a sibling fixture) so `gate-state` exercises the new phase and proves `pointer == fold` with a folded `revised` state. Confirm `--check-all` stays green.
+**5. Self-tests (`run_gate.py`) — additive only (spec-review §5 correction).** The existing two-phase tests do **not** need editing: `_seed_migration` only seeds gates present in the legacy `gates` map, so the `len(seeds) == 2` assertion (`:809-811`) stays green — do **not** touch it. Add new tests: (a) clearing `revision_round` advances **only** the resolved-subset ids to `revised`, still-present findings stay `delivered`; (b) the written pointer equals the fold with a `revised` delta present (`pointer == fold`); (c) zero resolved markers → no-op on `finding_states`; (d) **a backward-moving frontier** — round 2's `run_synthesis` re-clear becomes the last-clearing, so `phase` regresses `revision_round → run_synthesis` and `allowed_next → ["run_spot_check"]` (spec-review §4 trap). Confirm 4b's dispatcher tolerates this oscillation (it reads `phase`/`pending_gate`; the regression is correct loop behavior).
 
-**6. Docs.** Mark Increment 4a built in `docs/project-addressability.md` + ROADMAP; simplify 4b's "source of truth" note (now `finding_states.revised` is canonical, markers are the gate's input). Changelog fragment.
+**6. `--check-all` gate fixture (spec-review §5 — three coupled edits, all mandatory).** To exercise `revision_round` via the read-only `gate-state` check on the committed `example-run-folder`: (i) add a `revision_round` clearing event to the sidecar `gate_events`; (ii) add a `*_Revision_*.md` artifact carrying `<!-- resolved: F-P5-01 -->`; (iii) update the fixture's **pointer block** (`phase`, `allowed_next`, `finding_states.F-P5-01 → revised`) to the new fold — otherwise `gate-state` fails `pointer == fold`. Confirm `--check-all` green.
 
-## Out of scope / open questions
+**7. Docs.** Mark Increment 4a built in `docs/project-addressability.md` + ROADMAP; simplify 4b's source-of-truth note (governed projects now read a gate-folded `finding_states.revised`). Changelog fragment. **No validator count change** — `revision_round` is a gate phase, `finding-trace` is its check (spec-review §6 confirmed).
 
-1. **Revision-report artifact_key.** Whether to add a `revision_report` glob to `artifact_keys` or rely solely on `finding-trace`'s run-folder scan for resolved ids. Recommendation: reuse `finding-trace` (no new key) unless a stable filename convention already exists — confirm during build.
-2. **Re-revision rounds.** A finding resolved in round 1, regressed and re-flagged in round 2: the fold is monotonic by `_STATE_RANK` (`:331`), so once `revised` it can't drop back to `delivered` via the fold. If round 2 must demote a finding, that needs an explicit lower-ranked delta or a documented "new finding id" convention — flag for the build review.
-3. **No validator count change.** `revision_round` is a gate phase, not a new validator; `finding-trace` is its check. Confirm the `gate`/`gate-state` self-tests cover it without a 37→38 bump.
+## Decisions locked by review
+
+- The direct write is **retained, scoped to non-governed projects** (Blocker 1) — not removed.
+- `revised` is **terminal per ledger id**; regression → new id via re-`run_synthesis` (Blocker 2) — no lower-ranked delta.
+- Existing self-tests are **not** edited; only additive tests (incl. the backward-frontier case).
 
 ---
 
-*Design spec. If adopted, the runtime changes land in `execution-gates.v1.json`, `run_gate.py` (+ root mirror), `state-lifecycle.md`, and the `--check-all` gate fixture.*
+*Design spec. If adopted, the runtime changes land in `execution-gates.v1.json`, `run_gate.py` (+ root mirror), `state-lifecycle.md`, the three reconciled docs, and the `--check-all` gate fixture.*
