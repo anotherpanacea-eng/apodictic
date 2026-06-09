@@ -36,6 +36,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 
 try:
     import apodictic_artifacts as art
@@ -398,10 +399,23 @@ def append_event(sidecar, event, manifest):
     if event.get("run_folder"):
         ex["run_folder"] = event["run_folder"]
 
+    # Atomic write: serialize to a temp file in the same directory, then os.replace() — so an
+    # interrupted write can never leave a half-written / corrupt Diagnostic_State.meta.json
+    # (the rolling state a project can't afford to lose). os.replace is atomic on the same fs.
     try:
-        with open(sidecar, "w", encoding="utf-8") as fh:
-            json.dump(meta, fh, indent=2)
-            fh.write("\n")
+        d = os.path.dirname(sidecar) or "."
+        fd, tmp = tempfile.mkstemp(dir=d, prefix=".Diagnostic_State.meta.", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                json.dump(meta, fh, indent=2)
+                fh.write("\n")
+            os.replace(tmp, sidecar)
+        except Exception:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
         return True
     except OSError:
         return False
