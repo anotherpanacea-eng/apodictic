@@ -19,6 +19,8 @@ draws it. The validator owns manifest<->source provenance:
   E4 no orphan data      every scenes[] cell is byte-equal to the Timeline cell; every findings[]
                          severity/confidence is byte-equal to its source block. The manifest copied,
                          it did not compute or embellish.
+  E5 no duplicate entry  a scene_id or finding id appears at most once — a repeat double-draws a bar
+                         (a value the sources did not contain); the per-id E2/E4 checks pass on dups.
   W2 scene order         scenes[] order diverges from the Timeline's document order (the pacing
                          curve's x-axis is scene order — a reordered manifest draws a false shape).
                          Advisory.
@@ -159,6 +161,19 @@ def _check_objects(items, kind, allowed, required):
     return errs
 
 
+def _dup_errs(items, key, label):
+    """E5 — flag a key value that appears more than once across `items` (each maps to one bar)."""
+    counts = {}
+    for it in items:
+        if isinstance(it, dict) and it.get(key) is not None:
+            counts[it[key]] = counts.get(it[key], 0) + 1
+    errs = []
+    for val, n in sorted(((v, c) for v, c in counts.items() if c > 1), key=lambda vc: str(vc[0])):
+        errs.append("E5 duplicate entry: %s %r appears %d times in the manifest "
+                    "(each maps to exactly one chart element)" % (label, val, n))
+    return errs
+
+
 def check(manifest_text, timeline_text, ledger_text, strict=False, require_block=False):
     """Run the manifest<->source provenance checks. Returns (code, lines)."""
     lines, errs, warns = [], [], []
@@ -186,6 +201,13 @@ def check(manifest_text, timeline_text, ledger_text, strict=False, require_block
     findings = obj.get("findings") if isinstance(obj.get("findings"), list) else []
     errs += _check_objects(obj.get("scenes"), "scenes", _SCENE_KEYS, _SCENE_KEYS)
     errs += _check_objects(obj.get("findings"), "findings", _FINDING_KEYS, _FINDING_KEYS)
+
+    # E5 — no duplicate manifest entries. A repeated scene_id double-draws the pacing bar and inflates
+    # the POV time-share; a repeated finding id double-counts a chapter's severity bar — a chart showing
+    # a value the sources did NOT contain. The per-id E2/E4 checks pass on duplicates (each copy resolves
+    # and byte-matches), so uniqueness needs its own gate.
+    errs += _dup_errs(scenes, "scene_id", "scene_id")
+    errs += _dup_errs(findings, "id", "finding id")
 
     rows = timeline_rows(timeline_text)
     led = ledger_findings(ledger_text)
@@ -242,9 +264,10 @@ def check(manifest_text, timeline_text, ledger_text, strict=False, require_block
                 if isinstance(sc, dict) and sc.get("scene_id") in rows]
     tl_subset = [sid for sid in rows if sid in set(mf_order)]   # rows preserves Timeline document order
     if mf_order != tl_subset:
-        warns.append("W2 scene order: scenes[] order diverges from the Timeline document order "
-                     "(%s vs %s) — the pacing curve's shape must come from the Timeline, not the manifest"
-                     % (" ".join(map(str, mf_order)), " ".join(map(str, tl_subset))))
+        _fmt = lambda seq: ", ".join("'%s'" % s for s in seq)   # scene ids contain spaces — quote them
+        warns.append("W2 scene order: scenes[] order [%s] diverges from the Timeline document order "
+                     "[%s] — the pacing curve's shape must come from the Timeline, not the manifest"
+                     % (_fmt(mf_order), _fmt(tl_subset)))
 
     # Report
     lines.append("manuscript-viz: %s — %d scene(s), %d finding(s)%s"
@@ -262,7 +285,7 @@ def check(manifest_text, timeline_text, ledger_text, strict=False, require_block
     if warns:
         lines.append("WARN: manuscript-viz: %d coverage gap(s) — see W1 above" % len(warns))
     else:
-        lines.append("manuscript-viz: PASS (manifest<->source provenance: schema + closure + Must-Fix + verbatim copy)")
+        lines.append("manuscript-viz: PASS (manifest<->source provenance: schema + closure + Must-Fix + verbatim copy + uniqueness)")
     return 0, lines
 
 
@@ -494,6 +517,17 @@ def run_self_test():
     led_could = "# Ledger\n" + finding(fid="F-A-01", severity="Could-Fix", confidence="LOW") + "\n"
     chk("e3_couldfix_optional", check(manifest(findings=[]), timeline, led_could)[0] == 0)
 
+    # E5 — a duplicated scene_id (double-draws the pacing bar) / a duplicated finding id (double-counts)
+    dup_scenes = [scene("Ch 1 §1", "Ch 1", "1-118", "1480", "Mara", "3 hours", "n/a"),
+                  scene("Ch 1 §1", "Ch 1", "1-118", "1480", "Mara", "3 hours", "n/a"),
+                  scene("Ch 2 §1", "Ch 2", "241-372", "1610", "Jon", "1 hour", "16 hours")]
+    code, ls = check(manifest(scenes=dup_scenes), timeline, ledger)
+    chk("e5_dup_scene", code == 1 and any("E5 duplicate entry" in x and "scene_id" in x for x in ls))
+    code, ls = check(manifest(findings=[{"id": "F-RR-01", "severity": "Must-Fix", "confidence": "HIGH", "chapter": "Ch 9"},
+                                        {"id": "F-RR-01", "severity": "Must-Fix", "confidence": "HIGH", "chapter": "Ch 9"}]),
+                     timeline, ledger)
+    chk("e5_dup_finding", code == 1 and any("E5 duplicate entry" in x and "finding id" in x for x in ls))
+
     # W1 — a Timeline row omitted from scenes[] (advisory, ERROR --strict)
     one_scene = [scene("Ch 1 §1", "Ch 1", "1-118", "1480", "Mara", "3 hours", "n/a")]
     code, ls = check(manifest(scenes=one_scene), timeline, ledger)
@@ -563,7 +597,12 @@ def main(argv):
             out = rest[i + 1] if i + 1 < len(rest) else None
             rest = rest[:i] + rest[i + 2:]
         if len(rest) < 1:
-            print("Usage: viz_manifest.py render <manifest> [timeline] [ledger] [-o out.html] [--force]")
+            # The Timeline + Ledger are required for a normal (gated) render: provenance can't be
+            # checked without the sources, so a manifest with scenes/findings would refuse. `--force`
+            # is the manifest-only escape hatch (an un-provenanced preview).
+            print("Usage: viz_manifest.py render <manifest> <timeline> <ledger> [-o out.html]\n"
+                  "       viz_manifest.py render <run_folder> [-o out.html]\n"
+                  "       viz_manifest.py render <manifest> --force        # manifest-only, skips the provenance gate")
             return 2
         man, tlp, led = resolve(rest) if len(rest) == 1 and os.path.isdir(rest[0]) else (
             rest[0], rest[1] if len(rest) > 1 else None, rest[2] if len(rest) > 2 else None)
@@ -576,6 +615,11 @@ def main(argv):
         if gcode != 0 and not force:
             for ln in glines:
                 print(ln, file=sys.stderr)
+            missing = [n for n, t in (("timeline", tltext), ("ledger", ledtext)) if t is None]
+            if missing:
+                print("manuscript-viz: no %s supplied — provenance (E2/E4) cannot be checked without the "
+                      "source(s); pass them, or --force for an un-provenanced manifest-only preview."
+                      % " or ".join(missing), file=sys.stderr)
             print("manuscript-viz: refusing to render — the manifest does not pass the provenance gate "
                   "(pass --force to render anyway). See errors above.", file=sys.stderr)
             return 1

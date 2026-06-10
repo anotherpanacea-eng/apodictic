@@ -4639,8 +4639,13 @@ EOF
       rm -f "$CM_T/a/only.py"; printf 'q\n' > "$CM_T/b/only.py"
       "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && { echo "  missing_file_b: FAIL (one-sided file in dirB not caught)"; CM_R=1; } || echo "  missing_file_b: OK (caught)"
       rm -f "$CM_T/b/only.py"
-      printf 's\n' > "$CM_T/a/sync_setec.py"   # a root-only util present in one dir only must NOT fail
-      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && echo "  root_only_excluded: OK (one-sided root-only file ignored)" || { echo "  root_only_excluded: FAIL (root-only exclusion not honored)"; CM_R=1; }
+      printf 's\n' > "$CM_T/a/sync_setec.py"   # a root-only util present on the (non-plugin) root side only must NOT fail
+      "$0" check-mirror "$CM_T/a" "$CM_T/b" >/dev/null 2>&1 && echo "  root_only_excluded: OK (root-side-only root-only file ignored)" || { echo "  root_only_excluded: FAIL (root-only exclusion not honored)"; CM_R=1; }
+      rm -f "$CM_T/a/sync_setec.py"
+      # a root-only util that STRAYED to the plugin side (path ends in plugins/apodictic/scripts) must FAIL
+      CM_PG="$CM_T/plugins/apodictic/scripts"; mkdir -p "$CM_PG"
+      printf 'x\n' > "$CM_PG/validate.sh"; printf 's\n' > "$CM_PG/sync_setec.py"
+      "$0" check-mirror "$CM_T/a" "$CM_PG" >/dev/null 2>&1 && { echo "  root_only_stray: FAIL (plugin-side root-only copy not caught)"; CM_R=1; } || echo "  root_only_stray: OK (caught)"
       rm -rf "$CM_T"
       if [ "$CM_R" -eq 0 ]; then echo "Self-test: PASS"; exit 0; else echo "Self-test: FAIL"; exit 1; fi
     fi
@@ -4662,11 +4667,27 @@ EOF
     # are intentionally NOT mirrored to the plugin copy — exclude them or check-mirror false-positives.
     # Space-padded for whole-word matching. (sync_setec.py: the SETEC vendoring/sync utility.)
     CM_ROOT_ONLY=" sync_setec.py "
+    # Identify the PLUGIN-side dir (root-only utilities must NOT appear there). Path-based; in the
+    # synthetic two-arg/self-test case neither matches and CM_PLUGIN stays empty (fallback below).
+    CM_PLUGIN=""
+    case "$CM_A" in */plugins/apodictic/scripts) CM_PLUGIN="$CM_A" ;; esac
+    case "$CM_B" in */plugins/apodictic/scripts) CM_PLUGIN="$CM_B" ;; esac
     # Mirrored set = validate.sh, preflight.sh, and every *.py present in EITHER dir (sorted, deduped).
     # `|| true`: a no-match grep exits 1, which would abort under `set -e`.
     CM_NAMES=$( { ls -1 "$CM_A" 2>/dev/null; ls -1 "$CM_B" 2>/dev/null; } | grep -E '\.py$|^validate\.sh$|^preflight\.sh$' | sort -u || true )
     for name in $CM_NAMES; do
-      case "$CM_ROOT_ONLY" in *" $name "*) continue ;; esac   # intentionally root-only; not mirrored
+      case "$CM_ROOT_ONLY" in *" $name "*)
+        # A root-only utility is legitimate ONLY as root-present / plugin-absent. Don't silently skip a
+        # plugin-side copy (wrong side, or accidentally mirrored then divergent) — that is exactly the
+        # drift this gate exists to catch. Flag it if it's on the plugin side; when the plugin side
+        # isn't identifiable (synthetic dirs), still catch a both-copies divergence via cmp.
+        if [ -n "$CM_PLUGIN" ] && [ -f "$CM_PLUGIN/$name" ]; then
+          echo "  STRAY: $name is root-only (CM_ROOT_ONLY) but a copy exists in $CM_PLUGIN — remove it; root-only files must not be mirrored"; CM_FAIL=1
+        elif [ -z "$CM_PLUGIN" ] && [ -f "$CM_A/$name" ] && [ -f "$CM_B/$name" ]; then
+          cmp -s "$CM_A/$name" "$CM_B/$name" || { echo "  DIFFER: $name (root-only utility present in both copies and divergent)"; CM_FAIL=1; }
+        fi
+        continue ;;
+      esac
       fa="$CM_A/$name"; fb="$CM_B/$name"
       if [ ! -f "$fa" ]; then echo "  MISSING in $CM_A: $name"; CM_FAIL=1; continue; fi
       if [ ! -f "$fb" ]; then echo "  MISSING in $CM_B: $name"; CM_FAIL=1; continue; fi

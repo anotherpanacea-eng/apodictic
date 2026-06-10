@@ -1,6 +1,6 @@
 # Mirror-parity check — `validate.sh check-mirror` (spec)
 
-**Status:** Spec → review → build → review. QoL infrastructure; no behavior change to any existing validator.
+**Status:** **Built** (`validate.sh check-mirror`, wired into `--check-all`). QoL infrastructure; no behavior change to any existing validator.
 
 ## The problem
 
