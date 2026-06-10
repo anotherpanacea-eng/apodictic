@@ -283,7 +283,7 @@ def check(manifest_text, timeline_text, ledger_text, strict=False, require_block
                      % (len(errs), ", %d strict warn(s)" % len(warns) if (strict and warns) else ""))
         return 1, lines
     if warns:
-        lines.append("WARN: manuscript-viz: %d coverage gap(s) — see W1 above" % len(warns))
+        lines.append("WARN: manuscript-viz: %d advisory flag(s) — see W1/W2 above" % len(warns))
     else:
         lines.append("manuscript-viz: PASS (manifest<->source provenance: schema + closure + Must-Fix + verbatim copy + uniqueness)")
     return 0, lines
