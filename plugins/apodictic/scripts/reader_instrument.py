@@ -14,6 +14,10 @@ exist), the non-leading/content-neutral firewall scan, and the anti-relitigation
   B3 provenance integrity provenance matches source_kind: low-confidence-finding/tradeoff carry a
                           `targets` that resolves to a real finding id in the Ledger and no source_note
                           dependency; unresolved-question carries a non-empty `source_note` and no targets.
+                          Two advisories (WARN; ERROR under --strict): a low-confidence-finding probe
+                          pointed at a non-LOW/UNCERTAIN finding (kind label disagrees with the Ledger —
+                          tradeoff is exempt, it rides any finding); an unresolved-question whose
+                          `source_note` matches no `### Unresolved Questions` bullet (fabricated provenance).
   B4 leading / invented   the question matches a leading construction (finite blocklist) OR introduces a
                           quoted/multi-word-capitalized phrase absent from the target finding's text
                           (coarse content-neutrality heuristic). Advisory; ERROR under --strict.
@@ -303,7 +307,7 @@ def check(instrument_text, ledger_text, strict=False):
                      % (len(errs), ", %d strict warn(s)" % len(warns) if (strict and warns) else ""))
         return 1, lines
     if warns:
-        lines.append("WARN: reader-instrument: %d advisory flag(s) — see B4/B5/W1 above" % len(warns))
+        lines.append("WARN: reader-instrument: %d advisory flag(s) — see B3/B4/B5/W1 above" % len(warns))
     else:
         lines.append("reader-instrument: PASS (contract + provenance + firewall + anti-relitigation)")
     return 0, lines
