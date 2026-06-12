@@ -125,7 +125,7 @@ Options change based on the Artifact answer.
 | Option | Label | Plain-language description | Internal value |
 |--------|-------|---------------------------|----------------|
 | A | Standard read (recommended) | I run all my analysis in one continuous session, keeping the full manuscript in view the whole time. Fast and thorough for most drafts. | `execution:single-agent` |
-| B | Full independent read (final-round insurance) | Every analytical lens reads the entire manuscript independently, so they can't influence each other — an independent-lens verification pass. Roughly 5x the cost. Best for final submission prep, not everyday depth. | `execution:swarm` |
+| B | Full independent read (final-round insurance) | Every analytical lens reads the entire manuscript independently, so they can't influence each other — an independent-lens verification pass. Roughly 5x the cost (a 2026-06 re-test measured ~8.5×+ on long fiction). Best for final submission prep, not everyday depth. | `execution:swarm` |
 
 **Large-context recommendation by context:**
 
@@ -144,7 +144,7 @@ Options change based on the Artifact answer.
 |--------|-------|---------------------------|----------------|
 | A | Standard read (fastest) | I read the whole manuscript once, then run all my analysis in sequence. Good for most drafts. Some findings may be thinner on very long novels because earlier analysis fades as I work. | `execution:sequential` |
 | B | Targeted deep read (recommended for novels) | I read the whole manuscript once to map it, then send each analytical lens to the specific scenes that need it most. Each lens works independently, so they can't parrot each other. Costs roughly 2–3x as much as a standard read. | `execution:hybrid` |
-| C | Full independent read (final-round insurance) | Every analytical lens reads the entire manuscript independently — an independent-lens verification pass. Roughly 5x the cost of a standard read. Best for final submission prep, not everyday depth. | `execution:swarm` |
+| C | Full independent read (final-round insurance) | Every analytical lens reads the entire manuscript independently — an independent-lens verification pass. Roughly 5x the cost of a standard read (a 2026-06 re-test measured ~8.5×+ on long fiction). Best for final submission prep, not everyday depth. | `execution:swarm` |
 
 **Standard-context recommendation by context:**
 
@@ -192,7 +192,7 @@ Always asked after routing, before work begins. Multiple selections allowed.
 | F | I'm facilitating a writing group | `operator:facilitator` | **Overlay** (output) | Shift to diagnostic vocabulary mode (produce a teaching Vocabulary Guide: glossary + discussion prompts). **Built** — see `references/diagnostic-vocabulary.md`. |
 | G | We're co-authoring (multiple writers) | `operator:team` | **Fork** (intake) | Note conflicting-vision risk. **Gap: multi-party intake not yet built.** |
 | H | Use hybrid mode (better analysis, moderate token cost) | `execution:hybrid` | **Overlay** (execution) | Pass 0+1 reads full manuscript and builds a focus map; later passes read the outline + targeted excerpts as independent subagents. ~2–3x token cost. See `run-core.md` §Execution Mode. |
-| I | Use swarm mode (final-round verification, highest token cost) | `execution:swarm` | **Overlay** (execution) | Each pass runs as an independent subagent with full manuscript — architectural isolation for a verification pass. ~5x token cost; reserve for final submission prep (a 2026-06 N=1 re-test did not reproduce a depth advantage). See `run-core.md` §Execution Mode. |
+| I | Use swarm mode (final-round verification, highest token cost) | `execution:swarm` | **Overlay** (execution) | Each pass runs as an independent subagent with full manuscript — architectural isolation for a verification pass. ~5x token cost (a 2026-06 N=1 re-test measured ~8.5×+ on long fiction and did not reproduce a depth advantage); reserve for final submission prep. See `run-core.md` §Execution Mode. |
 | J | No constraints — let's go | (none) | — | Proceed with standard workflow. |
 
 **Execution mode note:** For manuscripts over 40k words, §2b handles the execution mode question before §3. Options H and I below remain as a safety net — if the user didn't get §2b (shorter manuscript, direct command entry) but knows to ask for hybrid or swarm, these options catch it.
