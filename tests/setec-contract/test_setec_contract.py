@@ -131,8 +131,8 @@ def t2_vendored_golden_through_runner() -> None:
         loc = setec_discovery.SetecLocation(
             plugin_root=Path(tmp),
             scripts_dir=Path(tmp),
-            version=(1, 112, 0),
-            version_str="1.112.0",
+            version=(1, 113, 0),
+            version_str="1.113.0",
             source="env",
         )
         result = setec_runner.run_supplement(
@@ -154,8 +154,8 @@ def t2_vendored_golden_through_runner() -> None:
         loc = setec_discovery.SetecLocation(
             plugin_root=Path(tmp),
             scripts_dir=Path(tmp),
-            version=(1, 112, 0),
-            version_str="1.112.0",
+            version=(1, 113, 0),
+            version_str="1.113.0",
             source="env",
         )
         result = setec_runner.run_supplement(
@@ -194,7 +194,7 @@ def t3_discovery_still_works_without_hardcoded_floors() -> None:
         (root / ".claude-plugin").mkdir(parents=True)
         (root / "scripts").mkdir()
         (root / ".claude-plugin" / "plugin.json").write_text(
-            json.dumps({"name": "setec-voiceprint", "version": "1.112.0"}),
+            json.dumps({"name": "setec-voiceprint", "version": "1.113.0"}),
             encoding="utf-8",
         )
         import os
@@ -208,7 +208,7 @@ def t3_discovery_still_works_without_hardcoded_floors() -> None:
                 os.environ.pop("SETEC_VOICEPRINT_DIR", None)
             else:
                 os.environ["SETEC_VOICEPRINT_DIR"] = old
-        check(loc.version == (1, 112, 0), "synthetic SETEC root discovered at 1.112.0")
+        check(loc.version == (1, 113, 0), "synthetic SETEC root discovered at 1.113.0")
 
 
 # --------------------------------------------------------------------------
@@ -268,6 +268,44 @@ def t5_drift_gate_self_test() -> None:
         print(proc.stderr, file=sys.stderr)
 
 
+# --------------------------------------------------------------------------
+# T6 — required_groups read from the R1 manifest + group validation.
+# --------------------------------------------------------------------------
+def t6_required_groups_validation() -> None:
+    print("T6: required_groups parsed + idiolect group validation")
+    payload = json.loads(VENDORED_MANIFEST.read_text(encoding="utf-8"))
+    manifest = setec_capabilities.parse_manifest_payload(payload, location=_Loc())
+    idio = manifest.require("idiolect_detector")
+    check(
+        idio.required_groups == ["target", "reference"],
+        "idiolect required_groups parsed as [target, reference]",
+    )
+    # Neither group supplied -> both reported missing (the consumer errors).
+    check(
+        idio.missing_required_groups([]) == ["target", "reference"],
+        "empty argv: both required groups missing",
+    )
+    # A target source only -> the reference group is still missing.
+    check(
+        idio.missing_required_groups(["--target-dir", "base/"]) == ["reference"],
+        "target supplied, reference group still missing",
+    )
+    # One source from each group satisfies all groups (also covers --flag=value).
+    check(
+        idio.missing_required_groups(
+            ["--manifest=corpus.jsonl", "--reference-corpus", "brown"]
+        )
+        == [],
+        "one target + one reference (incl. = form) satisfies all groups",
+    )
+    # A surface that declares no required_groups never reports a missing group.
+    va = manifest.require("variance_audit")
+    check(
+        not va.required_groups and va.missing_required_groups([]) == [],
+        "variance_audit (no required_groups) reports nothing missing",
+    )
+
+
 def main() -> int:
     for fn in (
         t1_floor_resolution_from_vendored_manifest,
@@ -275,6 +313,7 @@ def main() -> int:
         t3_discovery_still_works_without_hardcoded_floors,
         t4_below_surface_floor_fails_with_surface_floor,
         t5_drift_gate_self_test,
+        t6_required_groups_validation,
     ):
         fn()
         setec_capabilities.clear_cache()

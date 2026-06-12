@@ -80,6 +80,9 @@ jobs:
           # sync_setec.py resolves SETEC via SETEC_VOICEPRINT_DIR (the plugin
           # root inside the checked-out SETEC source).
           SETEC_VOICEPRINT_DIR: ${{ github.workspace }}/.setec-src/plugins/setec-voiceprint
+          # SETEC_RELEASE_TAG makes build_lock emit a FINALIZED (non-provisional)
+          # pin to the resolved release tag instead of the branch fallback.
+          SETEC_RELEASE_TAG: ${{ steps.setec.outputs.ref }}
         run: |
           python scripts/sync_setec.py
           # Live drift gate must be green after a fresh sync.

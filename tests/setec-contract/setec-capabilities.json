@@ -1,5 +1,5 @@
 {
-  "setec_version": "1.112.0",
+  "setec_version": "1.113.0",
   "manifest_schema_version": "0.3.0",
   "entries": [
     {
@@ -90,31 +90,40 @@
         "The baseline is mixed-genre (idiolect signals cross-contaminate across registers)",
         "The baseline is under ~20K words (sparse n-grams produce false positives)"
       ],
+      "required_groups": [
+        "target",
+        "reference"
+      ],
       "inputs": [
         {
           "flag": "--target-dir",
           "type": "path",
-          "required": false
+          "required": false,
+          "group": "target"
         },
         {
           "flag": "--manifest",
           "type": "path",
-          "required": false
+          "required": false,
+          "group": "target"
         },
         {
           "flag": "--reference-dir",
           "type": "path",
-          "required": false
+          "required": false,
+          "group": "reference"
         },
         {
           "flag": "--reference-manifest",
           "type": "path",
-          "required": false
+          "required": false,
+          "group": "reference"
         },
         {
           "flag": "--reference-corpus",
           "type": "enum",
           "required": false,
+          "group": "reference",
           "values": [
             "brown"
           ]
@@ -880,7 +889,7 @@
         "apodictic"
       ],
       "min_setec_version": "1.86.0",
-      "json_delivery": "stdout",
+      "json_delivery": "file",
       "family": "voice-distance",
       "purpose": "Produce a private, human-readable stylometric profile from a writer/register baseline corpus: per-family feature inventory (function words, character n-grams, POS trigrams, dependency n-grams) with each feature's baseline mean, SD, and coefficient of variation. This is the within-author reference (the aggregation voice_distance / idiolect_detector / mimicry_cosplay_audit build on), not a diagnostic verdict.\n",
       "use_when": [
