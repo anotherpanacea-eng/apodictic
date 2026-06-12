@@ -411,7 +411,7 @@
       <li><strong>On a deadline</strong> → Fast Triage (Pass 1 only, 3 interventions max)</li>
       <li><strong>Parts written with AI</strong> → adds AI-Prose Calibration overlay</li>
       <li><strong>Nonfiction</strong> → nonfiction-specific workflow adjustments</li>
-      <li><strong>Sensitive/risky content</strong> → adds risk flagging</li>
+      <li><strong>Sensitive/risky content</strong> → adds the Legal Risk Register: flags defamation, privacy, and rights-clearance exposure and routes serious items to counsel (not legal advice)</li>
       <li><strong>Editing someone else's work</strong> → editor-facing output framing</li>
     </ul>
   </div>
@@ -568,9 +568,23 @@
     <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">AI-Prose Calibration</div><div class="chip-desc">Voice singularity, echo stacks, register seams</div></div>
     <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Force Architecture</div><div class="chip-desc">25 flags, force-delivery integration, consequence</div></div>
     <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Short Fiction</div><div class="chip-desc">Compression, single-effect design, ending resonance</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Stakes System</div><div class="chip-desc">Escalation and consequence architecture (universal)</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Decision Pressure</div><div class="chip-desc">Choice plausibility under pressure (universal)</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Compression</div><div class="chip-desc">16 flags, 4 hard gates; expendable material across 5 channels</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Reception Risk</div><div class="chip-desc">Cultural/political/ideological reception flags for sensitivity review</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Narrative-Decision (StoryScope)</div><div class="chip-desc">How decisions propagate consequences through the narrative</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">POV Voice Profile</div><div class="chip-desc">Per-POV voice signatures and distance discipline (opt-in)</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Idiolect Preservation</div><div class="chip-desc">Advisory: protect the author's distinctive voice markers</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Punctuation Cadence</div><div class="chip-desc">Advisory: punctuation rhythm and breath as prosody</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Adversarial Evidence Review</div><div class="chip-desc">ACH, cross-exam, severe testing for evidence defensibility</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Argument Evidence</div><div class="chip-desc">Audits the evidence base under the claim ladder</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Argument Persuasion</div><div class="chip-desc">Audience fit, rhetorical force, concession discipline</div></div>
+    <div class="component-chip craft"><div class="chip-type craft">Craft</div><div class="chip-name">Argument Red Team</div><div class="chip-desc">Stress-tests the argument against its strongest opposition</div></div>
 
     <!-- Genre audits -->
     <div class="component-chip genre-audit"><div class="chip-type genre-audit">Genre</div><div class="chip-name">Horror Craft Integration</div><div class="chip-desc">23 flags, dread architecture, 9 subgenre calibrations</div></div>
+    <div class="component-chip genre-audit"><div class="chip-type genre-audit">Genre</div><div class="chip-name">Supernatural Horror</div><div class="chip-desc">Violated-reality dread vs. supernatural-coded set dressing</div></div>
+    <div class="component-chip genre-audit"><div class="chip-type genre-audit">Genre</div><div class="chip-name">Grimdark / Dark Fantasy</div><div class="chip-desc">Productive darkness vs. grimdark-coded atmosphere</div></div>
     <div class="component-chip genre-audit"><div class="chip-type genre-audit">Genre</div><div class="chip-name">Mystery/Thriller Architecture</div><div class="chip-desc">28 flags, information pressure, clue/herring/clock</div></div>
     <div class="component-chip genre-audit"><div class="chip-type genre-audit">Genre</div><div class="chip-name">SFF Worldbuilding Integration</div><div class="chip-desc">20 flags, five-dimension framework, load-bearing</div></div>
     <div class="component-chip genre-audit"><div class="chip-type genre-audit">Genre</div><div class="chip-name">Comedy & Satire</div><div class="chip-desc">Comedic timing, landing rate, tonal integration</div></div>
@@ -587,6 +601,8 @@
     <div class="component-chip tag"><div class="chip-type tag">Tag</div><div class="chip-name">Consent Complexity</div><div class="chip-desc">Consent timeline, boundary tracking, power dynamics</div></div>
 
     <!-- Research modes -->
+    <div class="component-chip research"><div class="chip-type research">Research</div><div class="chip-name">Citation Verifier</div><div class="chip-desc">Verify source existence, accuracy, and fit against claims</div></div>
+    <div class="component-chip research"><div class="chip-type research">Research</div><div class="chip-name">Field Reconnaissance</div><div class="chip-desc">Scout counterevidence, literature gaps, source-ecosystem health</div></div>
     <div class="component-chip research"><div class="chip-type research">Research</div><div class="chip-name">Comp Validation</div><div class="chip-desc">Verify comps are current and query-ready</div></div>
     <div class="component-chip research"><div class="chip-type research">Research</div><div class="chip-name">Genre Contract Currency</div><div class="chip-desc">Current market expectations for your subgenre</div></div>
     <div class="component-chip research"><div class="chip-type research">Research</div><div class="chip-name">Factual Verification</div><div class="chip-desc">Spot-check real-world claims</div></div>
@@ -622,6 +638,26 @@
     <div class="workflow-item">
       <div class="wf-scenario">I used AI to draft and need to fix the voice</div>
       <div class="wf-path"><span>/start</span> → full_draft → repair → constraint: AI → Core DE + AI-Prose Calibration</div>
+    </div>
+    <div class="workflow-item">
+      <div class="wf-scenario">I have beta reader / critique feedback to sort through</div>
+      <div class="wf-path"><span>/start</span> → full_draft → feedback → Feedback Triage (sort, validate &amp; prioritize each note) → Core DE with feedback as evidence</div>
+    </div>
+    <div class="workflow-item">
+      <div class="wf-scenario">My content is sensitive or legally exposed</div>
+      <div class="wf-path"><span>/start</span> → full_draft → repair → constraint: risk → Core DE + Legal Risk Register (flags exposure, routes to counsel — not legal advice)</div>
+    </div>
+    <div class="workflow-item">
+      <div class="wf-scenario">I want a beta read that actually returns useful feedback</div>
+      <div class="wf-path">Beta-Reader Instrument → turns the diagnosis's open uncertainties into a focused, non-leading reader questionnaire</div>
+    </div>
+    <div class="workflow-item">
+      <div class="wf-scenario">I'm coming back to a project I started earlier</div>
+      <div class="wf-path"><span>/start &lt;id&gt;</span> → state-driven resume (zero intake questions) from the project registry</div>
+    </div>
+    <div class="workflow-item">
+      <div class="wf-scenario">My nonfiction is an argument that has to hold up</div>
+      <div class="wf-path"><span>/start</span> → full_draft → repair → constraint: nonfiction → Nonfiction Argument Engine (Dialectical Clarity + Argument companions)</div>
     </div>
   </div>
 </section>

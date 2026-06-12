@@ -49,8 +49,6 @@
     ],
     "overrides": {
       "plugins/apodictic/README.codex.md": "plugins/apodictic/README.md",
-      "plugins/apodictic/AUDIT_SELECTION_MATRIX.codex.md": "plugins/apodictic/AUDIT_SELECTION_MATRIX.md",
-      "plugins/apodictic/overview-dashboard.codex.html": "plugins/apodictic/overview-dashboard.html",
       "plugins/apodictic/route-explorer.codex.html": "plugins/apodictic/route-explorer.html",
       "plugins/apodictic/NON_PARITY_NOTES.codex.md": "NON_PARITY_NOTES.md"
     },
