@@ -1,0 +1,126 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": null,
+  "claim_license": {
+    "additional_caveats": [
+      "POV voice-collapse is a heuristic flag, not a craft verdict. Close-third narration with deliberately limited POV differentiation will register as collapsed; the writer's intent matters more than the score.",
+      "Per-POV voiceprints are voice-cloning-grade input. The script enforces a privacy ratchet by refusing public output paths unless `--allow-public-output` is set.",
+      "Burrows Delta between POVs is sensitive to per-POV corpus size. Below ~5K words per POV the comparison becomes noisy; the `--min-words-per-pov` gate is the right place to tune this."
+    ],
+    "comparison_set": {
+      "manifest_path": "<fixture>",
+      "n_collapse_flags": 1,
+      "n_docs_per_pov": {
+        "Ada": 3,
+        "Jordan": 3
+      },
+      "n_povs": 2,
+      "n_words_per_pov": {
+        "Ada": 9000,
+        "Jordan": 8200
+      },
+      "pov_labels": [
+        "Ada",
+        "Jordan"
+      ]
+    },
+    "confidence_interval_95": null,
+    "does_not_license": "AI provenance, authorship attribution across writers, or a claim that the writer's POVs are 'good' or 'bad.' The voice-collapse verdict is a diagnostic flag, not a craft judgment — collapsed POVs may be intentional (close third with limited POV differentiation) or symptomatic (writer's neutral default leaking into multiple characters); the writer's local read decides.",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "Per-POV voiceprint summary, pairwise POV voice-distance matrix, POV-vs-corpus-mean distance, top distinguishing features per POV, and a heuristic voice-collapse verdict flagging pairs of POVs whose pairwise Burrows-Delta falls below the configured threshold.",
+    "references": [],
+    "register_match": [],
+    "task_surface": "voice_coherence"
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** voice-coherence comparison\n\n**Reports:** Per-POV voiceprint summary, pairwise POV voice-distance matrix, POV-vs-corpus-mean distance, top distinguishing features per POV, and a heuristic voice-collapse verdict flagging pairs of POVs whose pairwise Burrows-Delta falls below the configured threshold.\n\n**Does NOT report:** AI provenance, authorship attribution across writers, or a claim that the writer's POVs are 'good' or 'bad.' The voice-collapse verdict is a diagnostic flag, not a craft judgment — collapsed POVs may be intentional (close third with limited POV differentiation) or symptomatic (writer's neutral default leaking into multiple characters); the writer's local read decides.\n\n### Comparison context\n\n- **manifest path:** <fixture>\n- **n collapse flags:** 1\n- **n docs per pov:** {'Ada': 3, 'Jordan': 3}\n- **n povs:** 2\n- **n words per pov:** {'Ada': 9000, 'Jordan': 8200}\n- **pov labels:** ['Ada', 'Jordan']\n\n### Caveats\n\n- POV voice-collapse is a heuristic flag, not a craft verdict. Close-third narration with deliberately limited POV differentiation will register as collapsed; the writer's intent matters more than the score.\n- Per-POV voiceprints are voice-cloning-grade input. The script enforces a privacy ratchet by refusing public output paths unless `--allow-public-output` is set.\n- Burrows Delta between POVs is sensitive to per-POV corpus size. Below ~5K words per POV the comparison becomes noisy; the `--min-words-per-pov` gate is the right place to tune this.",
+  "results": {
+    "cross_pov_distances_per_family": {
+      "function_words": [
+        {
+          "burrows_delta": 1.05,
+          "cosine_distance": 0.14,
+          "pov_a": "Ada",
+          "pov_b": "Jordan"
+        }
+      ]
+    },
+    "cross_pov_distances_weighted": [
+      {
+        "burrows_delta": 0.92,
+        "cosine_distance": 0.12,
+        "pov_a": "Ada",
+        "pov_b": "Jordan"
+      }
+    ],
+    "distinguishing_features": {
+      "Ada": {
+        "function_words": [
+          {
+            "feature": "but",
+            "z": 1.9
+          }
+        ]
+      },
+      "Jordan": {
+        "function_words": [
+          {
+            "feature": "and",
+            "z": 1.7
+          }
+        ]
+      }
+    },
+    "dropped_povs": [],
+    "inputs": {
+      "collapse_threshold": 1.0,
+      "manifest": "<fixture>",
+      "min_docs_per_pov": 2,
+      "use": null
+    },
+    "n_povs": 2,
+    "pov_vs_corpus_mean": {
+      "Ada": {
+        "burrows_delta": 0.61,
+        "cosine_distance": 0.08
+      },
+      "Jordan": {
+        "burrows_delta": 0.58,
+        "cosine_distance": 0.07
+      }
+    },
+    "povs": [
+      {
+        "label": "Ada",
+        "n_docs": 3,
+        "n_words": 9000
+      },
+      {
+        "label": "Jordan",
+        "n_docs": 3,
+        "n_words": 8200
+      }
+    ],
+    "voice_collapse_verdict": [
+      {
+        "burrows_delta": 0.92,
+        "cosine_distance": 0.12,
+        "pov_a": "Ada",
+        "pov_b": "Jordan",
+        "threshold": 1.0,
+        "verdict": "potentially_collapsed"
+      }
+    ]
+  },
+  "schema_version": "1.0",
+  "target": {
+    "path": "<fixture>",
+    "words": 17200
+  },
+  "task_surface": "voice_coherence",
+  "tool": "pov_voice_profile",
+  "version": "<fixture>",
+  "warnings": []
+}

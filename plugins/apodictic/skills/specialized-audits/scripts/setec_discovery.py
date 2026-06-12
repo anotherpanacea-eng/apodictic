@@ -15,13 +15,23 @@ Discovery order:
   2. Standard marketplace install: ~/.claude/plugins/marketplaces/*/plugins/setec-voiceprint
   3. Hard error with install instructions.
 
-Min version: 1.86.0 — the SETEC release in which schema_version 1.0 JSON
-envelope coverage completed across every script APODICTIC delegates to
-(variance_audit, manuscript_audit, repetition_audit, voice_distance,
-voice_profile). The four-tier ThresholdSpec calibration taxonomy that
-APODICTIC's audit-interpretation logic also depends on was in place
-earlier (1.66.0); the 1.86.0 floor exists because below it the consumed
-JSON shape differs across entry points and downstream parsing breaks.
+Version floors are NO LONGER hardcoded per surface here. Per
+docs/setec-dependency-posture.md Decision 2 and the R1 acceptance
+criterion, each surface's floor is a property of the surface, read from
+SETEC's capabilities manifest (`capabilities.py emit --json`) by
+setec_capabilities.resolve_floor — not from a constant in this module or
+in a shim. The historical framework-wide `MIN_SETEC_VERSION = (1, 86, 0)`
+constant and the narrative-decision shim's `(1, 107, 0)` constant are
+gone; floor decisions route through the manifest.
+
+What remains here is a single BOOTSTRAP floor: the minimal version that
+guarantees the `capabilities emit` command + the R1 field bundle
+(per-entry min_setec_version/json_delivery/inputs) exist, so the consumer
+can run the query at all. A SETEC older than the bootstrap floor predates
+R1 and fails discovery with an upgrade message (computational surfaces
+hard-require SETEC — never a silent fallback). The bootstrap value lives
+in setec_capabilities.BOOTSTRAP_SETEC_VERSION and is re-exported here as
+the default floor for `discover_setec` / `run_setec_script`.
 """
 
 from __future__ import annotations
@@ -33,14 +43,31 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-MIN_SETEC_VERSION = (1, 86, 0)
+# BOOTSTRAP_SETEC_VERSION is the single source of truth for the discovery
+# floor — "the version where `capabilities emit` + the R1 field bundle
+# (per-entry min_setec_version/json_delivery/inputs) first exist", NOT the
+# floor of any individual surface (those come from the manifest, via
+# setec_capabilities). FINALIZED: pinned to the v1.113.0 SETEC release, the
+# first release carrying R1 (capabilities emit) + R5 (contract fixtures); see
+# setec-plugin.lock (provisional: false). It lives here (not in
+# setec_capabilities) so this module has no import-time dependency on
+# setec_capabilities, which imports from this module.
+BOOTSTRAP_SETEC_VERSION = (1, 113, 0)
+
+# Backward-compatible module constant: the framework-wide default discovery
+# floor is now the bootstrap floor, not the retired per-surface (1, 86, 0).
+# Surfaces never read this for their own floor — that comes from the manifest.
+MIN_SETEC_VERSION = BOOTSTRAP_SETEC_VERSION
+
+
 def _install_instructions(min_version: tuple[int, ...] = MIN_SETEC_VERSION) -> str:
     """Render the install/upgrade message for a given required floor.
 
-    The floor is parameterized so per-script shims that enforce a higher
-    version than the framework-wide MIN_SETEC_VERSION (e.g. Surface 6 /
-    narrative_decision_audit at 1.107.0) surface the correct minimum
-    rather than the default 1.86.0."""
+    The floor is parameterized so a caller can surface a *specific surface's*
+    manifest floor (resolved via ``setec_capabilities.resolve_floor``) in the
+    upgrade message, rather than always showing the bootstrap floor. Per-surface
+    floors now come from SETEC's capabilities manifest (R1), not hardcoded
+    constants."""
     return """\
 SETEC Voiceprint is required for this APODICTIC AI-prose audit.
 
