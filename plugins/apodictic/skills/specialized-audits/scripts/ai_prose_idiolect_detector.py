@@ -21,11 +21,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from setec_discovery import SetecDiscoveryError, run_setec_script  # noqa: E402
+from setec_runner import run_surface_cli  # noqa: E402
 from setec_capabilities import (  # noqa: E402
     SetecCapabilitiesError,
-    resolve_floor,
+    query_capabilities,
 )
+from setec_discovery import SetecDiscoveryError  # noqa: E402
 
 SURFACE = "idiolect_detector"
 
@@ -43,38 +44,32 @@ def _enforce_required_groups(argv: list[str]) -> bool:
 
 
 def main(argv: list[str]) -> int:
-    try:
-        # Floor is data-driven from SETEC's capabilities manifest (R1),
-        # not hardcoded. resolve_floor asserts the discovered
-        # setec_version satisfies this surface's manifest
-        # min_setec_version; the validated location is reused so the
-        # script is not re-discovered at the bootstrap floor.
-        cap, manifest = resolve_floor(SURFACE)
-        # R1 required_groups: the manifest declares idiolect needs one source
-        # from each named group (one `target`, one `reference`). Validate the
-        # forwarded argv satisfies them — except for help/usage requests, which
-        # pass through so `--help` shows SETEC's real help, not a group error —
-        # giving a clear, manifest-driven error rather than a confusing
-        # downstream failure.
-        if _enforce_required_groups(argv):
-            missing = cap.missing_required_groups(argv)
-            if missing:
-                print(
-                    f"idiolect_detector: missing a required input group: "
-                    f"{', '.join(missing)}. Per SETEC's R1 manifest this "
-                    f"surface requires one flag from each of "
-                    f"{', '.join(cap.required_groups)} (e.g. one --target-* "
-                    f"source and one --reference-* source).",
-                    file=sys.stderr,
-                )
-                return 2
-        result = run_setec_script(
-            "idiolect_detector.py", argv, location=manifest.location
-        )
-    except (SetecDiscoveryError, SetecCapabilitiesError) as e:
-        print(str(e), file=sys.stderr)
-        return 2
-    return result.returncode
+    # The R2 dispatcher (run_surface_cli) is the single runtime authority for
+    # the version floor, dependencies, and the schema_version 1.0 envelope. It
+    # does NOT enforce R1 `required_groups`, so the consumer pre-checks those
+    # here — manifest-driven (flag->group from `inputs[]`), skipping help/usage
+    # requests — to give a clear error before handoff rather than a confusing
+    # downstream failure. This is capability introspection, not a redundant
+    # floor check (the dispatcher owns the floor).
+    if _enforce_required_groups(argv):
+        try:
+            cap = query_capabilities().require(SURFACE)
+        except (SetecDiscoveryError, SetecCapabilitiesError) as e:
+            print(str(e), file=sys.stderr)
+            return 2
+        missing = cap.missing_required_groups(argv)
+        if missing:
+            print(
+                f"idiolect_detector: missing a required input group: "
+                f"{', '.join(missing)}. Per SETEC's R1 manifest this surface "
+                f"requires one flag from each of "
+                f"{', '.join(cap.required_groups)} (e.g. one --target-* source "
+                f"and one --reference-* source).",
+                file=sys.stderr,
+            )
+            return 2
+    # Route through SETEC's normalized dispatcher (R2).
+    return run_surface_cli(SURFACE, argv)
 
 
 if __name__ == "__main__":

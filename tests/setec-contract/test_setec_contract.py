@@ -10,9 +10,19 @@ Covers (per the Increment-2 brief's MANDATORY test list):
   T1  Floor resolution from the VENDORED manifest — offline, no SETEC. Uses
       setec_capabilities.parse_manifest_payload on the committed vendored
       manifest and checks each shim surface's floor matches.
-  T2  A vendored golden parses cleanly through setec_runner's envelope path,
-      with NO SETEC installed: a fake SETEC scripts dir prints the vendored
-      golden to stdout, and run_supplement parses + classifies it.
+  T2  A vendored golden parses cleanly through setec_runner's dispatcher
+      path, with NO SETEC installed: a fake SETEC scripts dir provides a
+      stand-in `setec_run.py` dispatcher that prints the vendored golden to
+      stdout, and run_supplement(surface, ...) parses + classifies it.
+  T2b R3 structured-error tiering, driven by the REAL SETEC dispatcher. When
+      SETEC is resolvable (SETEC_VOICEPRINT_DIR or a marketplace install, and
+      it carries setec_run.py + build_error_output), drive the real dispatcher
+      to PRODUCE error envelopes — an unknown surface (bad_input) and a forced
+      below-floor case (version_floor) — and assert run_supplement turns each
+      REAL envelope into a blocking SupplementResult with the right
+      reason_category. No hand-rolled JSON: if build_error_output drifts, the
+      real envelope changes and this test sees it. SKIPS cleanly when SETEC is
+      absent (offline CI), exactly as the drift gate's CHECK 2 skips.
   T3  Deleting the hardcoded floors did not break discovery: setec_discovery
       no longer carries a per-surface (1,86,0)/(1,107,0) authority; its
       default floor is the bootstrap floor, and discover_setec still resolves
@@ -59,6 +69,7 @@ class _Loc:
 
 
 _FAILURES: list[str] = []
+_SKIPS: list[str] = []
 
 
 def check(cond: bool, msg: str) -> None:
@@ -66,6 +77,37 @@ def check(cond: bool, msg: str) -> None:
     print(f"  [{label}] {msg}")
     if not cond:
         _FAILURES.append(msg)
+
+
+def note_skip(msg: str) -> None:
+    """Record a clean skip (offline CI without SETEC), mirroring the drift
+    gate's CHECK 2 skip: not a failure, just a notice."""
+    print(f"  [SKIP] {msg}")
+    _SKIPS.append(msg)
+
+
+def _resolve_real_setec() -> "setec_discovery.SetecLocation | None":
+    """Resolve a real SETEC checkout for the real-dispatcher path, or return
+    None to skip cleanly when SETEC is absent (offline CI) — exactly as the
+    drift gate's CHECK 2 skips when SETEC is not resolvable.
+
+    Resolution goes through the consumer's own `discover_setec` (which reads
+    SETEC_VOICEPRINT_DIR or a marketplace install). A resolved SETEC must
+    additionally carry the R2 dispatcher (`setec_run.py`) AND its real
+    `build_error_output` builder for the real-envelope test to mean anything;
+    if either is missing the SETEC predates this contract and we skip."""
+    try:
+        loc = setec_discovery.discover_setec()
+    except setec_discovery.SetecDiscoveryError:
+        return None
+    if not (loc.scripts_dir / setec_runner.DISPATCHER_SCRIPT).is_file():
+        return None
+    output_schema = loc.scripts_dir / "output_schema.py"
+    if not output_schema.is_file():
+        return None
+    if "def build_error_output" not in output_schema.read_text(encoding="utf-8"):
+        return None
+    return loc
 
 
 # --------------------------------------------------------------------------
@@ -107,36 +149,54 @@ def t1_floor_resolution_from_vendored_manifest() -> None:
 
 
 # --------------------------------------------------------------------------
-# T2 — a vendored golden parses through setec_runner with NO SETEC installed.
+# T2 — a vendored golden parses through setec_runner's DISPATCHER path with
+#      NO SETEC installed.
 # --------------------------------------------------------------------------
-def _fake_scripts_dir(surface_script: str, golden_name: str) -> tempfile.TemporaryDirectory:
-    """Build a temp SETEC scripts dir whose `surface_script` prints the
-    vendored golden to stdout (mimicking a real stdout `--json` surface),
-    so run_supplement's envelope path runs without SETEC's heavy deps."""
-    tmp = tempfile.TemporaryDirectory(prefix="fake_setec_scripts_")
+def _fake_dispatcher_dir(emits: str) -> tempfile.TemporaryDirectory:
+    """Build a temp SETEC scripts dir holding a stand-in `setec_run.py`
+    dispatcher whose body is exactly `emits` (a Python program that writes an
+    envelope to stdout). R2 routes every surface through this dispatcher, so
+    the fake dispatcher is the whole substrate run_supplement needs — no SETEC
+    heavy deps, no per-surface scripts."""
+    tmp = tempfile.TemporaryDirectory(prefix="fake_setec_dispatcher_")
+    (Path(tmp.name) / setec_runner.DISPATCHER_SCRIPT).write_text(
+        emits, encoding="utf-8"
+    )
+    return tmp
+
+
+def _golden_dispatcher_body(golden_name: str) -> str:
+    """A `setec_run.py` stand-in that prints the named vendored golden to
+    stdout verbatim (mimicking the dispatcher re-emitting a surface's success
+    envelope)."""
     golden_path = VENDORED_FIXTURES / golden_name
-    script_body = (
+    return (
         "#!/usr/bin/env python3\n"
         "import sys\n"
         f"sys.stdout.write(open({str(golden_path)!r}, encoding='utf-8').read())\n"
     )
-    (Path(tmp.name) / surface_script).write_text(script_body, encoding="utf-8")
-    return tmp
+
+
+def _loc(tmp_path: str) -> "setec_discovery.SetecLocation":
+    """Build a SetecLocation for a temp dir path. `tmp_path` is the directory
+    string yielded by `with _fake_dispatcher_dir(...) as tmp` (TemporaryDirectory's
+    context manager returns its `.name`)."""
+    return setec_discovery.SetecLocation(
+        plugin_root=Path(tmp_path),
+        scripts_dir=Path(tmp_path),
+        version=(1, 114, 0),
+        version_str="1.114.0",
+        source="env",
+    )
 
 
 def t2_vendored_golden_through_runner() -> None:
-    print("T2: vendored golden parses through setec_runner (no SETEC installed)")
-    # variance_audit golden: a stdout-delivery surface.
-    with _fake_scripts_dir("variance_audit.py", "variance_audit.json") as tmp:
-        loc = setec_discovery.SetecLocation(
-            plugin_root=Path(tmp),
-            scripts_dir=Path(tmp),
-            version=(1, 113, 0),
-            version_str="1.113.0",
-            source="env",
-        )
+    print("T2: vendored golden parses through setec_runner dispatcher path "
+          "(no SETEC installed)")
+    # variance_audit golden, routed through the stand-in dispatcher by SURFACE.
+    with _fake_dispatcher_dir(_golden_dispatcher_body("variance_audit.json")) as tmp:
         result = setec_runner.run_supplement(
-            "variance_audit.py", ["dummy.md"], location=loc
+            "variance_audit", ["dummy.md"], location=_loc(tmp)
         )
     check(result.schema_version == "1.0", "envelope schema_version == 1.0")
     check(result.task_surface == "smoothing_diagnosis", "task_surface parsed from golden")
@@ -148,22 +208,172 @@ def t2_vendored_golden_through_runner() -> None:
     check(True, "warning classification ran without error")
 
     # narrative_decision_audit golden too (the experimental surface).
-    with _fake_scripts_dir(
-        "narrative_decision_audit.py", "narrative_decision_audit.json"
+    with _fake_dispatcher_dir(
+        _golden_dispatcher_body("narrative_decision_audit.json")
     ) as tmp:
-        loc = setec_discovery.SetecLocation(
-            plugin_root=Path(tmp),
-            scripts_dir=Path(tmp),
-            version=(1, 113, 0),
-            version_str="1.113.0",
-            source="env",
-        )
         result = setec_runner.run_supplement(
-            "narrative_decision_audit.py", ["story.md"], location=loc
+            "narrative_decision_audit", ["story.md"], location=_loc(tmp)
         )
     check(
         result.task_surface == "narrative_decision_audit",
         "narrative_decision golden task_surface parsed",
+    )
+
+    # A SETEC without the dispatcher (pre-R2) fails cleanly with an upgrade
+    # message, not a crash.
+    with tempfile.TemporaryDirectory(prefix="no_dispatcher_") as td:
+        loc = setec_discovery.SetecLocation(
+            plugin_root=Path(td), scripts_dir=Path(td),
+            version=(1, 114, 0), version_str="1.114.0", source="env",
+        )
+        raised = False
+        try:
+            setec_runner.run_supplement("variance_audit", ["x.md"], location=loc)
+        except setec_discovery.SetecDiscoveryError as exc:
+            raised = setec_runner.DISPATCHER_SCRIPT in str(exc)
+        check(raised, "pre-R2 SETEC (no setec_run.py) raises a clean upgrade error")
+
+
+# --------------------------------------------------------------------------
+# T2b — R3 structured-error tiering, driven by the REAL SETEC dispatcher.
+#
+# SHOULD-FIX (review follow-up): this test used to HAND-ROLL the R3 error
+# envelope, so if SETEC's build_error_output drifted (dropped/renamed a key)
+# the test stayed green while production broke. It now drives the REAL
+# dispatcher (setec_run.py) to PRODUCE the error envelopes — no hand-rolled
+# JSON — and asserts the consumer's run_supplement parse path turns the REAL
+# envelope into a blocking SupplementResult with the right reason_category.
+# When SETEC is absent (offline CI) it SKIPS cleanly, exactly as the drift
+# gate's CHECK 2 skips.
+#
+# Two REAL error categories are drivable from a real SETEC offline (no heavy
+# deps, deterministic):
+#   * bad_input    — an unknown surface; the dispatcher fails surface
+#                    resolution and emits build_error_output(bad_input) BEFORE
+#                    running any script. Driven via the REAL subprocess path
+#                    run_supplement uses (run_setec_script -> setec_run.py).
+#   * version_floor — a known surface whose manifest floor exceeds the running
+#                    SETEC version. The running version is fixed at the
+#                    plugin's plugin.json, so we drive the REAL dispatcher
+#                    in-process (setec_run.dispatch with an injected low
+#                    observed_version) to FORCE the below-floor case, capture
+#                    the REAL envelope it emits, and route those REAL bytes
+#                    through the consumer's run_supplement parse path. The
+#                    envelope (incl. the machine-readable version_floor pair)
+#                    is build_error_output's real output, not hand-rolled.
+# --------------------------------------------------------------------------
+def _import_real_setec(loc: "setec_discovery.SetecLocation"):
+    """Import the REAL SETEC dispatcher + capabilities from the resolved
+    checkout's scripts dir. Returns (setec_run_module, capabilities_module).
+    Heavy deps are not touched (the bad_input / version_floor paths fail
+    before any audit script runs)."""
+    scripts = str(loc.scripts_dir)
+    if scripts not in sys.path:
+        sys.path.insert(0, scripts)
+    import importlib
+
+    real_setec_run = importlib.import_module("setec_run")
+    real_capabilities = importlib.import_module("capabilities")
+    return real_setec_run, real_capabilities
+
+
+def t2b_r3_error_tiering() -> None:
+    print("T2b: R3 reason_category -> tier mapping (REAL dispatcher envelopes)")
+    loc = _resolve_real_setec()
+    if loc is None:
+        note_skip(
+            "SETEC not resolvable (set SETEC_VOICEPRINT_DIR to a SETEC "
+            "checkout carrying setec_run.py + build_error_output to drive the "
+            "real-dispatcher error path); mirrors the drift gate CHECK 2 skip."
+        )
+        return
+
+    # --- bad_input: the REAL dispatcher subprocess, end to end -------------
+    # An unknown surface drives the real dispatcher's surface-resolution
+    # failure -> build_error_output(bad_input). This is the exact subprocess
+    # path run_supplement uses in production (run_setec_script -> setec_run.py).
+    result = setec_runner.run_supplement(
+        "no_such_surface_contract_test", [], location=loc
+    )
+    check(result.available is False, "bad_input (real): available is False")
+    check(
+        result.reason_category == "bad_input",
+        f"bad_input (real): reason_category parsed (got {result.reason_category!r})",
+    )
+    check(
+        bool(result.blocking_warnings) and not result.reliability_warnings,
+        "bad_input (real): tiered BLOCKING (reason in blocking_warnings)",
+    )
+    check(
+        bool(result.reason) and "unknown surface" in (result.reason or ""),
+        "bad_input (real): structured reason from build_error_output preserved",
+    )
+    # The REAL envelope conforms to the schema_version 1.0 error shape the
+    # consumer pins (build_error_output's output, not hand-rolled). If
+    # build_error_output drops/renames a required key, _coerce_envelope in
+    # run_supplement would have raised before we got here.
+    check(
+        result.envelope.get("schema_version") == "1.0",
+        "bad_input (real): envelope is schema_version 1.0",
+    )
+
+    # --- version_floor: the REAL dispatcher, forced below floor ------------
+    real_setec_run, real_capabilities = _import_real_setec(loc)
+    manifest = real_capabilities.load_manifest()
+    # narrative_decision_audit floors at 1.107.0 in SETEC's manifest; force the
+    # running version below it. dispatch() emits the REAL version_floor
+    # envelope (build_error_output) to stdout; capture it.
+    import io
+    import contextlib
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        rc = real_setec_run.dispatch(
+            "narrative_decision_audit",
+            ["x.md"],
+            manifest=manifest,
+            observed_version="1.0.0",
+        )
+    real_envelope_bytes = buf.getvalue()
+    check(
+        rc == real_setec_run.EXIT_DISCOVERY,
+        f"version_floor (real): dispatch exits discovery code (got {rc})",
+    )
+    parsed = json.loads(real_envelope_bytes)
+    check(
+        parsed.get("reason_category") == "version_floor",
+        "version_floor (real): real dispatcher emitted reason_category "
+        "version_floor",
+    )
+    # Route the REAL envelope bytes through the consumer's run_supplement parse
+    # path via a stand-in dispatcher that re-emits them verbatim (the dispatcher
+    # already produced the real envelope; this exercises the consumer parse +
+    # tiering on real bytes).
+    body = (
+        "#!/usr/bin/env python3\n"
+        "import sys\n"
+        f"sys.stdout.write({real_envelope_bytes!r})\n"
+    )
+    with _fake_dispatcher_dir(body) as tmp:
+        result = setec_runner.run_supplement(
+            "narrative_decision_audit", ["x.md"], location=_loc(tmp)
+        )
+    check(result.available is False, "version_floor (real): available is False")
+    check(
+        result.reason_category == "version_floor",
+        "version_floor (real): consumer parsed reason_category",
+    )
+    check(
+        bool(result.blocking_warnings) and not result.reliability_warnings,
+        "version_floor (real): tiered BLOCKING",
+    )
+    # The machine-readable floor/observed pair from build_error_output's extra
+    # survives the round trip (the consumer never re-derives it from prose).
+    check(
+        result.envelope.get("version_floor")
+        == {"required": "1.107.0", "observed": "1.0.0"},
+        "version_floor (real): machine-readable {required, observed} pair "
+        "preserved",
     )
 
 
@@ -194,7 +404,7 @@ def t3_discovery_still_works_without_hardcoded_floors() -> None:
         (root / ".claude-plugin").mkdir(parents=True)
         (root / "scripts").mkdir()
         (root / ".claude-plugin" / "plugin.json").write_text(
-            json.dumps({"name": "setec-voiceprint", "version": "1.113.0"}),
+            json.dumps({"name": "setec-voiceprint", "version": "1.114.0"}),
             encoding="utf-8",
         )
         import os
@@ -208,7 +418,7 @@ def t3_discovery_still_works_without_hardcoded_floors() -> None:
                 os.environ.pop("SETEC_VOICEPRINT_DIR", None)
             else:
                 os.environ["SETEC_VOICEPRINT_DIR"] = old
-        check(loc.version == (1, 113, 0), "synthetic SETEC root discovered at 1.113.0")
+        check(loc.version == (1, 114, 0), "synthetic SETEC root discovered at 1.114.0")
 
 
 # --------------------------------------------------------------------------
@@ -335,15 +545,57 @@ def t7_idiolect_help_bypasses_required_groups() -> None:
     )
 
 
+# --------------------------------------------------------------------------
+# T8 — run_surface_cli preserves the dispatcher's exit code (no re-derivation).
+# --------------------------------------------------------------------------
+def t8_run_surface_cli_preserves_dispatcher_exit_code() -> None:
+    print("T8: run_surface_cli preserves the dispatcher's exit code")
+    import contextlib
+    import io
+
+    def _err_result(returncode: int):
+        env = {
+            "schema_version": "1.0", "available": False,
+            "reason_category": "bad_input", "reason": "unrecognized --bogus",
+        }
+        return setec_runner.SupplementResult(
+            schema_version="1.0", task_surface=None, tool="idiolect_detector",
+            version="1.114.0", available=False, target={}, baseline=None,
+            results={}, claim_license=None, claim_license_rendered=None,
+            reason="unrecognized --bogus", reason_category="bad_input",
+            envelope=env, returncode=returncode,
+        )
+
+    orig = setec_runner.run_supplement
+    try:
+        # SAME reason_category (bad_input), DIFFERENT dispatcher exit codes: a
+        # known-surface contract failure is 3, an unknown-surface discovery
+        # failure is 2. run_surface_cli must preserve each — a category->code
+        # map cannot, since both are `bad_input`.
+        setec_runner.run_supplement = lambda surface, argv: _err_result(3)
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc3 = setec_runner.run_surface_cli("idiolect_detector", ["--bogus"])
+        check(rc3 == 3, f"known-surface bad_input preserves dispatcher exit 3 (got {rc3})")
+
+        setec_runner.run_supplement = lambda surface, argv: _err_result(2)
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc2 = setec_runner.run_surface_cli("nope", [])
+        check(rc2 == 2, f"unknown-surface bad_input preserves dispatcher exit 2 (got {rc2})")
+    finally:
+        setec_runner.run_supplement = orig
+
+
 def main() -> int:
     for fn in (
         t1_floor_resolution_from_vendored_manifest,
         t2_vendored_golden_through_runner,
+        t2b_r3_error_tiering,
         t3_discovery_still_works_without_hardcoded_floors,
         t4_below_surface_floor_fails_with_surface_floor,
         t5_drift_gate_self_test,
         t6_required_groups_validation,
         t7_idiolect_help_bypasses_required_groups,
+        t8_run_surface_cli_preserves_dispatcher_exit_code,
     ):
         fn()
         setec_capabilities.clear_cache()
@@ -353,7 +605,12 @@ def main() -> int:
         for f in _FAILURES:
             print(f"  - {f}", file=sys.stderr)
         return 1
-    print("test_setec_contract: PASS")
+    if _SKIPS:
+        print(f"test_setec_contract: PASS ({len(_SKIPS)} skip(s))")
+        for s in _SKIPS:
+            print(f"  - SKIPPED: {s}")
+    else:
+        print("test_setec_contract: PASS")
     return 0
 
 
