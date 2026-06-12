@@ -106,8 +106,8 @@ Validate that the engine works on real argument-shaped nonfiction, not just in t
 **Next round (after the convergence runs, PR #37).** Grouped by what each needs:
 
 *Substantive (engine / key — the next calibration round):*
-1. **Strengthen Test A** (the genre-genericity decoy filter). `ppi` only partially closed cross-vendor — blind GPT-4 ran Test B but its self-undermining objection stayed on the public-safety **decoy** axis; the filter must recognize "but public safety" as the genre-generic counter and downrank it.
-2. **`policy-brief-uncompared` under-fire fix.** An AT3 recommendation with no comparative defense and no funding mechanism should drive **Must-Fix → UNSOUND**, but it reads SOUND (the Step-9 default-to-SOUND overrides the Severity Floor). The natural pair with #1 for the next round.
+1. ~~**Strengthen Test A** (the genre-genericity decoy filter).~~ **Run-confirmed 2026-06-11 (PR #72):** mechanism was already complete; the benchmark run had both models downrank "but public safety" as the decoy (**OB5**) on `ppi`. No edit needed.
+2. ~~**`policy-brief-uncompared` under-fire fix.**~~ **DONE / benchmark-validated 2026-06-11 (PR #72):** added classification **rule 2a** (an AT3 recommendation with wholly-undischarged comparative burden → Structurally Unsound, FM-A10), then narrowed it post-benchmark so a strawman foil counts as partial discharge (soft spot), not a defeat. See `docs/argument-benchmark-calibration-round.md` → Status.
 
 *Human-gated (ready — just needs people):*
 3. **Recruit one second editor** — the GT4–GT7 / personal-independence upgrade. The blind packet is built and waiting in Dropbox (`argument-benchmark-second-editor-packet/`, with its own `TODO.md`); pointer in `evals/fixtures/argument-benchmark/HANDOFF.md`.
