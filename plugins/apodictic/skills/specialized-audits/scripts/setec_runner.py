@@ -408,23 +408,24 @@ def run_surface_cli(surface: str, argv: list[str]) -> int:
     Routes ``surface`` through the dispatcher via ``run_supplement`` and emits
     the schema_version 1.0 envelope (success OR R3 error) to STDOUT, so a CLI
     caller / the LLM reading a shim's output always gets the same envelope the
-    pass-side ``run_supplement`` parses. Exit codes mirror the dispatcher's
-    contract:
+    pass-side ``run_supplement`` parses. The exit code is the DISPATCHER's own
+    (``result.returncode``), preserved rather than re-derived from
+    reason_category — only the dispatcher can tell a known-surface contract
+    failure (3) from an unknown-surface discovery failure (2), since both carry
+    reason_category ``bad_input``. The dispatcher's contract:
 
       * 0  — available=True success envelope on stdout.
-      * 2  — discovery / bootstrap failure (SETEC absent, too old, or no
-             dispatcher) printed to stderr; OR an R3 error envelope whose
-             reason_category is a discovery/version failure
-             (``version_floor`` / ``bad_input``).
-      * 3  — runner/contract error (unparseable envelope), or an R3 error
-             envelope whose reason_category is a contract/usage failure
-             (``missing_dependency`` / ``text_too_short`` / ``policy_refused``).
-      * 1  — an R3 ``internal_error`` envelope.
+      * 2  — discovery / version-floor failure (unknown surface, too-old SETEC).
+      * 3  — contract / usage failure (bad input on a known surface, missing
+             dependency, text too short, policy refusal).
+      * 1  — internal error.
 
     The envelope is still printed on the error exits (the dispatcher already
-    put it on stdout), so a consumer never has to scrape stderr. Discovery /
-    bootstrap failures that never reach the dispatcher (no envelope) print the
-    upgrade message to stderr and exit 2.
+    put it on stdout), so a consumer never has to scrape stderr. Two failures
+    happen BEFORE/AROUND the dispatcher and carry no envelope: a
+    discovery/bootstrap failure (SETEC absent or too old) prints the upgrade
+    message to stderr and exits 2; an unparseable dispatcher envelope
+    (``SetecRunnerError``) exits 3.
     """
     try:
         result = run_supplement(surface, argv)
@@ -438,16 +439,13 @@ def run_surface_cli(surface: str, argv: list[str]) -> int:
     print(json.dumps(result.envelope, indent=2, default=str))
     if result.available:
         return 0
-    # Map the R3 reason_category to the dispatcher's exit-code contract so a
-    # shim's exit code matches what the dispatcher itself would have returned.
-    return {
-        REASON_CATEGORY_VERSION_FLOOR: 2,
-        REASON_CATEGORY_BAD_INPUT: 2,
-        REASON_CATEGORY_MISSING_DEPENDENCY: 3,
-        REASON_CATEGORY_TEXT_TOO_SHORT: 3,
-        REASON_CATEGORY_POLICY_REFUSED: 3,
-        REASON_CATEGORY_INTERNAL_ERROR: 1,
-    }.get(result.reason_category or "", 1)
+    # Preserve the dispatcher's own exit code (run_supplement captured the real
+    # subprocess returncode) rather than re-deriving it from reason_category:
+    # the dispatcher alone distinguishes a known-surface contract failure (3)
+    # from an unknown-surface discovery failure (2) — both carry reason_category
+    # `bad_input`, so a category->code map gets `bad_input` wrong. Matches
+    # _cli_main, which already returns result.returncode.
+    return result.returncode
 
 
 def _cli_main() -> int:
