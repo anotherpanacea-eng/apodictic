@@ -222,16 +222,39 @@ def _copy_fixtures(setec_root: Path, dest: Path) -> list[str]:
 
 
 def build_lock(setec_root: Path, manifest: dict) -> dict:
-    """Construct the provisional pin record (mirrors apodictic-plugin.lock)."""
+    """Construct the pin record (mirrors apodictic-plugin.lock).
+
+    FINALIZED path: when ``SETEC_RELEASE_TAG`` is set to a real release tag
+    (e.g. ``v1.113.0``), emit a non-provisional pin to that release — ``tag``
+    is the release tag and ``source`` the release URL. The weekly
+    ``sync-setec.yml`` resolves the release ref and passes it through this env
+    var; a local finalization run sets it explicitly.
+
+    Provisional fallback (no release tag): pin to the branch + local worktree,
+    ``provisional: true`` — the pre-release bootstrap posture."""
     commit = _git_commit(setec_root)
+    release_tag = os.environ.get("SETEC_RELEASE_TAG")
+    if release_tag:
+        return {
+            "repo": "anotherpanacea-eng/setec-voiceprint",
+            "subdir": "plugins/setec-voiceprint",
+            "tag": release_tag,
+            "commit": commit or "(uncommitted)",
+            "plugin_version": _read_plugin_version(setec_root),
+            "setec_version": manifest.get("setec_version"),
+            "manifest_schema_version": manifest.get("manifest_schema_version"),
+            "source": (
+                "https://github.com/anotherpanacea-eng/setec-voiceprint/"
+                f"releases/tag/{release_tag}"
+            ),
+            "provisional": False,
+        }
     branch = _git_branch(setec_root)
     return {
         "repo": "anotherpanacea-eng/setec-voiceprint",
         "subdir": "plugins/setec-voiceprint",
-        # FINALIZATION: `tag` is provisional — there is no R1 release tag yet.
-        # The R1+R5 work lives on the branch named below. On the real release,
-        # set tag to the release tag (e.g. v1.113.0) and source to the release
-        # URL, and switch sync_setec.py's resolution to tarball download.
+        # Provisional: no SETEC_RELEASE_TAG given. The R1+R5 work also lives on
+        # the branch named below; set SETEC_RELEASE_TAG on the real release.
         "tag": branch or "feat/normalized-entrypoint-r1-r5",
         "commit": commit or "(uncommitted)",
         "plugin_version": _read_plugin_version(setec_root),
@@ -269,7 +292,9 @@ def cmd_write() -> int:
         f"({len(json.loads(manifest_str)['entries'])} consumer surfaces)\n"
         f"  fixtures -> {VENDORED_FIXTURES.relative_to(REPO_ROOT)} "
         f"({len(copied)} files)\n"
-        f"  lock     -> {LOCK_PATH.relative_to(REPO_ROOT)} (provisional pin)"
+        f"  lock     -> {LOCK_PATH.relative_to(REPO_ROOT)} "
+        f"({'provisional' if lock['provisional'] else 'release'} pin: "
+        f"{lock['tag']})"
     )
     return 0
 

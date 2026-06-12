@@ -37,7 +37,22 @@ def main(argv: list[str]) -> int:
         # setec_version satisfies this surface's manifest
         # min_setec_version; the validated location is reused so the
         # script is not re-discovered at the bootstrap floor.
-        _cap, manifest = resolve_floor(SURFACE)
+        cap, manifest = resolve_floor(SURFACE)
+        # R1 required_groups: the manifest declares idiolect needs one source
+        # from each named group (one `target`, one `reference`). Validate the
+        # forwarded argv satisfies them, so the consumer emits a clear,
+        # manifest-driven error rather than a confusing downstream failure.
+        missing = cap.missing_required_groups(argv)
+        if missing:
+            print(
+                f"idiolect_detector: missing a required input group: "
+                f"{', '.join(missing)}. Per SETEC's R1 manifest this surface "
+                f"requires one flag from each of "
+                f"{', '.join(cap.required_groups)} (e.g. one --target-* source "
+                f"and one --reference-* source).",
+                file=sys.stderr,
+            )
+            return 2
         result = run_setec_script(
             "idiolect_detector.py", argv, location=manifest.location
         )
