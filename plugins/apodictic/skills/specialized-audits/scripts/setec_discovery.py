@@ -52,7 +52,7 @@ from pathlib import Path
 # setec-plugin.lock (provisional: false). It lives here (not in
 # setec_capabilities) so this module has no import-time dependency on
 # setec_capabilities, which imports from this module.
-BOOTSTRAP_SETEC_VERSION = (1, 113, 0)
+BOOTSTRAP_SETEC_VERSION = (1, 114, 0)
 
 # Backward-compatible module constant: the framework-wide default discovery
 # floor is now the bootstrap floor, not the retired per-surface (1, 86, 0).
