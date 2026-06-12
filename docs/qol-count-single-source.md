@@ -1,6 +1,6 @@
 # QoL refactor spec: derive the self-testable-validator count from `AGG_VALIDATORS`
 
-**Status:** spec (not yet implemented)
+**Status:** ✅ **Shipped — PR #76 (merged), "single-source the validator count."** Implemented exactly as specced: `AGG_VALIDATORS` is the single source of truth and the count is derived via `AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)` in `scripts/validate.sh` (and its mirror). No more hard-coded literal.
 **Scope:** `scripts/validate.sh`, `plugins/apodictic/scripts/validate.sh`, `.github/workflows/ci.yml`
 
 ## Problem
