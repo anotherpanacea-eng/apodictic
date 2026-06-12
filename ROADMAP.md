@@ -13,7 +13,7 @@
 | | [Multi-Party Intake](#multi-party-intake) | [**v2.1.0**](#v210--runner-governed-execution--finding-lifecycle-ids) | [Research / API Reliability Layer](#research--api-reliability-layer) |
 | | [Legal Risk Register](#legal-risk-register) | [**v2.0.0**](#v200--editorial-honesty--structural-integrity) | [Episode Cadence](#episode-cadence) |
 | | [Coaching Deepening](#coaching-deepening) | [v1.9.0](#v190--ai-prose-calibration-v20) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
-| | [Genre Audit Expansion](#genre--audit-expansion) | [v1.7.0](#v170--harness-engineering) | [Framework Overview Dashboard](#framework-overview-dashboard) |
+| | [Genre Audit Expansion](#genre--audit-expansion) | [v1.7.0](#v170--harness-engineering) | |
 | | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) | [v1.4.0](#v140--surface-hardening--writers-block) | [Corpus-Expansion Fixtures](#deferred-corpus-expansion-candidates) |
 | | | [v1.3.0](#v130--nonfiction-argument-engine--genre-audits) | |
 | | | [v1.2.1](#v121--audit-sequencing--model-tags) | [Horizon Capacities](#horizon-capacities) |
@@ -331,7 +331,9 @@ After Tier 1 passes complete, the system has significantly more information abou
 
 ### Framework Overview Dashboard
 
-Static, single-file HTML overview of the plugin's capabilities. System-at-a-glance visual layout, highlighted workflow paths, the Firewall in user-facing language. Build after command restructuring is settled.
+**Status:** ✅ **Built / shipped.** `plugins/apodictic/overview-dashboard.html` and `route-explorer.html` ship the static single-file overview; content refreshed to v2.3.1 reality in #81, and the inventory-parity check (#82) guards them against re-drift.
+
+Static, single-file HTML overview of the plugin's capabilities. System-at-a-glance visual layout, highlighted workflow paths, the Firewall in user-facing language. ~~Build after command restructuring is settled.~~
 
 ### Pre-Skill Context Compaction
 
@@ -347,7 +349,7 @@ Continuing the v0.5 vision: the plugin should be organized around writer questio
 
 1. **Command taxonomy in release-registry.** Each command gets `category`, `status` (`primary` / `first_class_shortcut` / `compat_alias`), `router_equivalent`, and a plain-language writer question it answers. `/revision-plan` is the only true compat alias (→ `/coach`). All others stay first-class.
 
-2. **Doc sync across all public surfaces.** Every public doc, README, help surface, and marketplace entry uses the same grouped command presentation generated from the registry. No more hand-maintained command lists.
+2. **Doc sync across all public surfaces.** ✅ **Shipped (#80).** Every public doc, README, help surface, and marketplace entry uses the same grouped command presentation generated from the registry — the 5 previously-unregistered commands are registered and both READMEs' command lists are registry-generated. No more hand-maintained command lists; the inventory-parity check (#82) keeps the dashboard/matrix inventories from drifting again.
 
 3. **Canonical 8-block macro map.** Resolve Pass 4 ambiguity by giving Emotional Dynamics its own block permanently. The 8 blocks: Structure Map, Reader Dynamics, Character Architecture, Emotional Dynamics, Scene Delivery, Reveal Economy, Theme & Continuity, Submission Readiness. Source of truth in pass-dependencies.md.
 
