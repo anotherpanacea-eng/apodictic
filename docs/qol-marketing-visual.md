@@ -1,6 +1,6 @@
 # PR B — Marketing-parity: visual + matrix surfaces (spec)
 
-**Status:** spec → build (Opus) → review (Fable). Docs/HTML/matrix only; **no diagnostic behavior, schema, or validator change.** Second of two marketing-parity PRs (PR A = #80, the README/registry core). Depends on nothing in PR A (different files); can merge in any order.
+**Status:** ✅ **Shipped — PR #81 (merged 2026-06-12).** Docs/HTML/matrix only; **no diagnostic behavior, schema, or validator change.** Second of two marketing-parity PRs (PR A = #80, the README/registry core). **Merge-order correction (review):** turned out to depend on #80 after all — the refreshed Codex route explorer advertises `apodictic-*` entrypoints that only #80's `commandBaseSkills` registrations build, so #81 was merged *after* #80 (the matrix was additionally made order-safe with descriptive names).
 
 ## Goal
 Refresh the visual + matrix surfaces to v2.3.1 reality, AND remove two redundant codex overrides so future edits stop being double-edits. Three surfaces + their codex twins are in scope: `AUDIT_SELECTION_MATRIX.md`(+`.codex.md`), `overview-dashboard.html`(+`.codex.html`), `route-explorer.html`(+`.codex.html`).

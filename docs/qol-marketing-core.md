@@ -1,6 +1,6 @@
 # PR A — Marketing-parity core (spec)
 
-**Status:** spec → build (Opus) → review (Fable). Documentation/manifest only; **no diagnostic behavior, schema, or validator change.** The single root cause is that promotional prose is hand-maintained and 5 commands are unregistered, so the registry-generated command lists undersell.
+**Status:** ✅ **Shipped — PR #80 (merged 2026-06-12).** Documentation/manifest only; **no diagnostic behavior, schema, or validator change.** The single root cause is that promotional prose is hand-maintained and 5 commands are unregistered, so the registry-generated command lists undersell.
 
 ## Goal
 Bring the plugin's self-description in line with what it is at v2.3.1: register the 5 missing commands (so both READMEs' generated command lists fill in), refresh the hand-maintained framing/capability prose, back-port one already-fixed line, qualify the privacy claim, and reword one stale CONTRIBUTING reason. **Out of scope (PR B):** AUDIT_SELECTION_MATRIX, the dashboards, route-explorer, and their codex twins.
