@@ -209,9 +209,9 @@ Use these as default combinations.
 | Queer romance | Core DE + Queer Romance/Erotica + Emotional Craft + Interiority Preservation |
 | Stuck draft / structural confusion | Plot Selection & Coaching (triage) + Plot Architecture (diagnosis) |
 | Nonfiction without narrative shape | Franklin Pathway → then Core DE if material is classified as storyable |
-| Sensitive / legally exposed content (`constraint:risk`) | Core DE + Legal Risk Register (`/legal-risk`) — flags defamation, privacy, and rights-clearance exposure and routes serious items to counsel; not legal advice |
-| Returning with beta-reader / critique feedback | Feedback Triage (`/triage-feedback`) → Core DE — sort, validate, and prioritize notes before spending revision time |
-| Designing a beta read worth running | Beta-Reader Instrument (`/reader-questions`) — turn the diagnosis's open uncertainties into a focused, non-leading reader questionnaire |
+| Sensitive / legally exposed content (`constraint:risk`) | Core DE + Legal Risk Register — flags defamation, privacy, and rights-clearance exposure and routes serious items to counsel; not legal advice |
+| Returning with beta-reader / critique feedback | Feedback Triage → Core DE — sort, validate, and prioritize notes before spending revision time |
+| Designing a beta read worth running | Beta-Reader Instrument — turn the diagnosis's open uncertainties into a focused, non-leading reader questionnaire |
 | Nonfiction argument that must hold up | Nonfiction Argument Engine (Dialectical Clarity + Argument companions) + Citation Verifier + Field Reconnaissance |
 
 ---
