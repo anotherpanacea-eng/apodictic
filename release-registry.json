@@ -65,7 +65,12 @@
       "plot-coach": "plot-architecture",
       "pre-writing": "pre-writing-pathway",
       "new-project": "core-editor",
-      "revision-plan": "revision-coach"
+      "revision-plan": "revision-coach",
+      "apodictic": "core-editor",
+      "projects": "core-editor",
+      "legal-risk": "core-editor",
+      "triage-feedback": "revision-coach",
+      "reader-questions": "revision-coach"
     },
     "requiredAssets": [
       "plugins/apodictic/assets/apodictic-composer.svg",
@@ -98,7 +103,12 @@
       "plot-coach": "plot-architecture",
       "pre-writing": "pre-writing-pathway",
       "new-project": "core-editor",
-      "revision-plan": "revision-coach"
+      "revision-plan": "revision-coach",
+      "apodictic": "core-editor",
+      "projects": "core-editor",
+      "legal-risk": "core-editor",
+      "triage-feedback": "revision-coach",
+      "reader-questions": "revision-coach"
     }
   },
   "folderArchitecture": {
@@ -137,6 +147,14 @@
       "routerEquivalent": null,
       "writerQuestion": "I have a manuscript — what should I do with it?",
       "description": "Recommended entry point. Routes to the right workflow in 2–3 questions."
+    },
+    {
+      "command": "/apodictic",
+      "category": "entry",
+      "status": "first_class_shortcut",
+      "routerEquivalent": null,
+      "writerQuestion": "What can this plugin do? Where do I start?",
+      "description": "Capability index and orientation — what the plugin does and where to begin."
     },
     {
       "command": "/develop-edit",
@@ -195,6 +213,30 @@
       "description": "Plot structure diagnosis, selection, and coaching."
     },
     {
+      "command": "/legal-risk",
+      "category": "focused",
+      "status": "first_class_shortcut",
+      "routerEquivalent": null,
+      "writerQuestion": "Flag legal exposure (defamation, privacy, rights) for a lawyer's review.",
+      "description": "Flag potential legal exposure for counsel — flags, never adjudicates."
+    },
+    {
+      "command": "/triage-feedback",
+      "category": "focused",
+      "status": "first_class_shortcut",
+      "routerEquivalent": null,
+      "writerQuestion": "Sort and prioritize beta-reader / editor feedback.",
+      "description": "Sort, cluster, and prioritize beta-reader and editor feedback."
+    },
+    {
+      "command": "/reader-questions",
+      "category": "focused",
+      "status": "first_class_shortcut",
+      "routerEquivalent": null,
+      "writerQuestion": "Turn my diagnosis into targeted beta-reader questions.",
+      "description": "Generate targeted beta-reader questions from a diagnosis."
+    },
+    {
       "command": "/pre-writing",
       "category": "setup",
       "status": "first_class_shortcut",
@@ -209,6 +251,14 @@
       "routerEquivalent": null,
       "writerQuestion": "Set up a new editing project.",
       "description": "Initialize a new project with contract and diagnostic state."
+    },
+    {
+      "command": "/projects",
+      "category": "setup",
+      "status": "first_class_shortcut",
+      "routerEquivalent": null,
+      "writerQuestion": "List, resume, and tidy my editing projects.",
+      "description": "List, resume, and tidy editing projects from saved diagnostic state."
     },
     {
       "command": "/revision-plan",
