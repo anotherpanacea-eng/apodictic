@@ -54,7 +54,6 @@ The plugin assumes its user is an adult working on a creative project. Its outpu
 
 **Start here:**
 - `/start` — I have a manuscript — what should I do with it?
-- `/apodictic` — What can this plugin do? Where do I start?
 
 **Diagnostic workflows:**
 - `/develop-edit` — What's wrong with my manuscript?
