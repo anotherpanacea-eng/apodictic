@@ -1,6 +1,6 @@
 # Three follow-ups — spec (finding-trace glob · legal-risk wiring · project dashboard)
 
-**Status:** Spec, **revised after an Opus spec review.** Three independent roadmap follow-ups through one spec→review→build→review loop; split into **A+B** (validator/router/command) and **C** (artifact) at merge. Conventions per `AGENTS.md` (dual-script mirror; merge commit; full-relative reference paths in command docs). Review verdicts: A buildable + safe; B buildable as doc/command (no executable plumbing) but novel framing + a stale-doc trap; C buildable, generator confirmed **safe**, but must be render-only.
+**Status:** **Built** — all three follow-ups shipped in the #66/#74 train (finding-trace glob, legal-risk wiring, project dashboard). Originally three independent roadmap follow-ups through one review loop; split into **A+B** (validator/router/command) and **C** (artifact) at merge. Conventions per `AGENTS.md` (dual-script mirror; merge commit; full-relative reference paths in command docs). Review verdicts: A buildable + safe; B buildable as doc/command (no executable plumbing) but novel framing + a stale-doc trap; C buildable, generator confirmed **safe**, but must be render-only.
 
 ---
 

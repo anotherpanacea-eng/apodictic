@@ -1,6 +1,6 @@
 # Status-drift lint — `scripts/check-status-drift.mjs` (spec)
 
-**Status:** Proposed (unbuilt). QoL infrastructure; no behavior change to any existing validator, no validator-count change, no schema change. Spec → review → build → review.
+**Status:** **Built** (`scripts/check-status-drift.mjs`, wired into CI after the changelog gate). QoL infrastructure; no behavior change to any existing validator, no validator-count change, no schema change.
 <!-- built-when: scripts/check-status-drift.mjs -->
 
 > The HTML comment above is a **live** `built-when` marker (see §Marker syntax). When this lint is built, the builder must flip this doc's Status line to **Built** in the same PR — or the lint will flag its own spec. That is intentional: this document is the first production fixture.

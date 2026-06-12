@@ -1,6 +1,7 @@
 # Auto-Derived Continuity Bible — the manuscript's canonical facts, consolidated
 
 **Status:** Proposed (unbuilt). Roadmap: `ROADMAP.md` → [Horizon Capacities](../ROADMAP.md#horizon-capacities) Tier 1, item 7. Proposed implementation surface: a `core-editor/references/continuity-bible.md` module, `apodictic.canon_fact.v1` blocks, a `scripts/continuity_bible.py` extractor/validator, `validate.sh continuity-bible`, a `[Project]_Continuity_Bible_[runlabel].md` artifact, and a worked example.
+<!-- built-when: scripts/continuity_bible.py -->
 
 A human developmental (and copy) editor often returns a **style sheet**: the canonical record of who's who and what's true — character names and spellings, ages, eye colors, the geography, the rules of the world, the order of events. APODICTIC scatters these facts across several artifacts (the Timeline, the SFF Rule Ledger, the Pass-5 character portraits) and never consolidates the *narrative* half into one place a writer can hold. The Continuity Bible is that consolidation: a single, locus-anchored reference of the facts the manuscript has committed to — and, as a side effect, a detector of the places it has committed to two facts at once.
 
