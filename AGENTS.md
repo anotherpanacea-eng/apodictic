@@ -30,11 +30,12 @@ spec  →  review  →  write  →  review  →  fix  →  merge
 
 ### Review practices
 
-The spec/code reviews (steps 2, 4) earn their keep when the reviewer does more than read for plausibility. Three passes that have caught real bugs reasoning-about-the-code missed:
+The spec/code reviews (steps 2, 4) earn their keep when the reviewer does more than read for plausibility. These passes have caught real bugs that reasoning-about-the-code missed, plus one doc-hygiene discipline:
 
 - **Hostile fixtures.** Construct inputs the spec and self-tests *don't* cover — wrong-shaped sidecars, colliding/lookalike filenames (a `*_Revision_Calendar_*` satisfying a `*_Revision_*` glob meant for the Report), empty/partial state, malformed-but-valid JSON, a field in a shape the spec merely documents (a bare-string `next_action`). Self-tests only test what the author already thought of; the worst bugs live in the inputs they didn't.
-- **Run the real CI command first.** Step one of a code review is `bash scripts/validate.sh --check-all` — what CI actually runs — not a proxy. A change applied to only one script copy (see "Platform parity") is green locally and CI-blind.
+- **Run the real CI command first.** Step one of a code review is `bash scripts/validate.sh --check-all` — what CI actually runs — not a proxy. A change applied to only one script copy (see "Platform parity") is green locally and CI-blind. (The full CI gate set is broader — also `release-generate.mjs --check`, `build-codex`/`build-antigravity --self-check`, `assemble-changelog --check`, `check-status-drift.mjs`; run them when you touch generated/paired docs.)
 - **Distrust count-shaped claims.** "2× findings," "nine rows removed," "total/exhaustive," "all N covered" — re-enumerate from scratch; never accept the number.
+- **Flip the status when you build.** A build PR flips its spec doc's `**Status:**` line (and its ROADMAP entry) in the same PR — status drift recurred across #66/#70/#74. New specs declare their deliverable with a `built-when` marker (syntax in `docs/qol-status-drift-lint.md` §Marker syntax) so `scripts/check-status-drift.mjs` catches the miss mechanically. (Keep any literal `built-when` comment *example* inside `docs/**` fenced, or it parses as a real marker.)
 - **Re-sync the inventory surfaces when the registry moves.** When you change the signal-emitting audit registry (`audit-routing-table.md`) or the research modes (`commands/research.md`), re-sync the dashboards/matrix inventory and bump their `inventory-synced` marker to the new signature (`check-inventory-parity` reports it). The check enforces the *signal* (registry changed since last sync), not the surface content — bumping the marker without actually re-syncing the inventory defeats it, so do both.
 
 ## Where work comes from: roadmap, briefs, and Issues
