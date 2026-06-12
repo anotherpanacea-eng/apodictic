@@ -250,7 +250,11 @@ def check(instrument_text, ledger_text, strict=False):
                 sourced_uqs.append(note)
                 # B3 advisory: the source_note should correspond to a real `### Unresolved Questions`
                 # bullet. Coarse word-overlap (same heuristic as W1's coverage match), not an id match.
-                if uqs and not any(_uq_covered(uqb, [note]) for uqb in uqs):
+                if not uqs:
+                    warns.append("B3 unsourced question: %s cites an Unresolved Question but the Ledger "
+                                 "has no `### Unresolved Questions` bullets (verify the source is real): %s"
+                                 % (rid, note[:60]))
+                elif not any(_uq_covered(uqb, [note]) for uqb in uqs):
                     warns.append("B3 unsourced question: %s cites a source_note matching no Unresolved "
                                  "Questions bullet in the Ledger (coarse word-overlap — verify it is real): %s"
                                  % (rid, note[:60]))
@@ -428,6 +432,15 @@ def run_self_test():
     code, ls = check(rq(kind="unresolved-question", targets="", note="something totally unrelated zebra"),
                      ledger(finding(), uqs=("does the ending land?",)))
     chk("b3_unsourced_uq", code == 0 and any("B3 unsourced question" in x for x in ls))
+    # B3 advisory — an unresolved-question when the Ledger has NO UQ bullets at all → fabrication WARN.
+    code, ls = check(rq(kind="unresolved-question", targets="", note="does the ending land?"),
+                     ledger(finding(), uqs=("none",)))
+    chk("b3_unsourced_uq_no_bullets", code == 0 and any("B3 unsourced question" in x and "no `###" in x for x in ls))
+    # ...but a covered UQ with bullets present stays clean (no false fabrication WARN).
+    chk("b3_sourced_uq_clean",
+        not any("B3 unsourced" in x for x in
+                check(rq(kind="unresolved-question", targets="", note="does the ending land?"),
+                      ledger(finding(), uqs=("does the ending land?",)))[1]))
 
     # B4 — leading construction (advisory, ERROR --strict), and override clears it
     lead = rq(question="Don't you think the midpoint reversal lands?")
