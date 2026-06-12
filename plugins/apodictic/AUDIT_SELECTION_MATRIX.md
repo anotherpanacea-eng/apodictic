@@ -1,5 +1,7 @@
 # APODICTIC Audit Selection Matrix
 
+<!-- inventory-synced: audits=42:301f5072 research=6:a1b9dfc4 -->
+
 This guide helps route a manuscript to the right APODICTIC passes and specialized audits.
 
 ---
