@@ -29,6 +29,18 @@ from setec_capabilities import (  # noqa: E402
 
 SURFACE = "idiolect_detector"
 
+# Help/usage requests must reach SETEC's own argparse so `--help`/`-h` render
+# idiolect_detector's real help — never the consumer's required-group error.
+_HELP_FLAGS = frozenset({"-h", "--help"})
+
+
+def _enforce_required_groups(argv: list[str]) -> bool:
+    """Whether to enforce required_groups for this invocation. A help/usage
+    request (``-h`` / ``--help`` anywhere in argv) passes straight through to
+    SETEC instead of being blocked by the group check — required_groups only
+    gates an actual detection run."""
+    return _HELP_FLAGS.isdisjoint(argv)
+
 
 def main(argv: list[str]) -> int:
     try:
@@ -40,19 +52,22 @@ def main(argv: list[str]) -> int:
         cap, manifest = resolve_floor(SURFACE)
         # R1 required_groups: the manifest declares idiolect needs one source
         # from each named group (one `target`, one `reference`). Validate the
-        # forwarded argv satisfies them, so the consumer emits a clear,
-        # manifest-driven error rather than a confusing downstream failure.
-        missing = cap.missing_required_groups(argv)
-        if missing:
-            print(
-                f"idiolect_detector: missing a required input group: "
-                f"{', '.join(missing)}. Per SETEC's R1 manifest this surface "
-                f"requires one flag from each of "
-                f"{', '.join(cap.required_groups)} (e.g. one --target-* source "
-                f"and one --reference-* source).",
-                file=sys.stderr,
-            )
-            return 2
+        # forwarded argv satisfies them — except for help/usage requests, which
+        # pass through so `--help` shows SETEC's real help, not a group error —
+        # giving a clear, manifest-driven error rather than a confusing
+        # downstream failure.
+        if _enforce_required_groups(argv):
+            missing = cap.missing_required_groups(argv)
+            if missing:
+                print(
+                    f"idiolect_detector: missing a required input group: "
+                    f"{', '.join(missing)}. Per SETEC's R1 manifest this "
+                    f"surface requires one flag from each of "
+                    f"{', '.join(cap.required_groups)} (e.g. one --target-* "
+                    f"source and one --reference-* source).",
+                    file=sys.stderr,
+                )
+                return 2
         result = run_setec_script(
             "idiolect_detector.py", argv, location=manifest.location
         )
