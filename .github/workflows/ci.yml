@@ -61,6 +61,15 @@ jobs:
       - name: Changelog fragments parse
         run: node scripts/assemble-changelog.mjs --check
 
+      # Guards that the display surfaces (overview-dashboard.html,
+      # AUDIT_SELECTION_MATRIX.md) stay synced with the canonical audit/research
+      # inventory: a sync-marker + changed-since signal (the #79 status-drift
+      # pattern applied to inventory). Self-test proves it's non-vacuous.
+      - name: Inventory-parity sync-marker check
+        run: |
+          node scripts/check-inventory-parity.mjs --self-test
+          node scripts/check-inventory-parity.mjs
+
       - name: Registry-derived docs are up to date
         run: node scripts/release-generate.mjs --check
 
