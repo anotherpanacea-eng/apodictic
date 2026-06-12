@@ -1,6 +1,7 @@
 # Draft-over-Draft Structural Regression Testing — did the fix break something else?
 
 **Status:** Proposed (unbuilt). Roadmap: `ROADMAP.md` → [Horizon Capacities](../ROADMAP.md#horizon-capacities) Tier 1, item 6. Proposed implementation surface: a `scripts/regression_diff.py` cross-round diff (modeled on `timeline-diff` / `state-card-diff`), `validate.sh regression-diff`, a `[Project]_Regression_Report_[runlabel].md` artifact, round-close integration in `state-lifecycle.md`, and a paired two-round worked example.
+<!-- built-when: scripts/regression_diff.py -->
 
 A writer addresses the Act 2 sag the diagnosis flagged — and severs the Act 1 setup that paid off in Act 3. The next diagnostic run will *find* the new break, but it will present it as a fresh finding with no memory that the fix caused it, and no signal that a Must-Fix the writer thought they'd resolved has quietly come back. Software calls this **regression testing**, and APODICTIC has the rolling-diff *pattern* for it (`timeline-diff`, `state-card-diff`). What it does not yet have is a diff of the **whole Findings Ledger across revision rounds**: *did this revision resolve what it claimed, and did it break anything that was working?*
 
