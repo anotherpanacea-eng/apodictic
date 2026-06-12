@@ -14,6 +14,10 @@ exist), the non-leading/content-neutral firewall scan, and the anti-relitigation
   B3 provenance integrity provenance matches source_kind: low-confidence-finding/tradeoff carry a
                           `targets` that resolves to a real finding id in the Ledger and no source_note
                           dependency; unresolved-question carries a non-empty `source_note` and no targets.
+                          Two advisories (WARN; ERROR under --strict): a low-confidence-finding probe
+                          pointed at a non-LOW/UNCERTAIN finding (kind label disagrees with the Ledger —
+                          tradeoff is exempt, it rides any finding); an unresolved-question whose
+                          `source_note` matches no `### Unresolved Questions` bullet (fabricated provenance).
   B4 leading / invented   the question matches a leading construction (finite blocklist) OR introduces a
                           quoted/multi-word-capitalized phrase absent from the target finding's text
                           (coarse content-neutrality heuristic). Advisory; ERROR under --strict.
@@ -250,7 +254,11 @@ def check(instrument_text, ledger_text, strict=False):
                 sourced_uqs.append(note)
                 # B3 advisory: the source_note should correspond to a real `### Unresolved Questions`
                 # bullet. Coarse word-overlap (same heuristic as W1's coverage match), not an id match.
-                if uqs and not any(_uq_covered(uqb, [note]) for uqb in uqs):
+                if not uqs:
+                    warns.append("B3 unsourced question: %s cites an Unresolved Question but the Ledger "
+                                 "has no `### Unresolved Questions` bullets (verify the source is real): %s"
+                                 % (rid, note[:60]))
+                elif not any(_uq_covered(uqb, [note]) for uqb in uqs):
                     warns.append("B3 unsourced question: %s cites a source_note matching no Unresolved "
                                  "Questions bullet in the Ledger (coarse word-overlap — verify it is real): %s"
                                  % (rid, note[:60]))
@@ -303,7 +311,7 @@ def check(instrument_text, ledger_text, strict=False):
                      % (len(errs), ", %d strict warn(s)" % len(warns) if (strict and warns) else ""))
         return 1, lines
     if warns:
-        lines.append("WARN: reader-instrument: %d advisory flag(s) — see B4/B5/W1 above" % len(warns))
+        lines.append("WARN: reader-instrument: %d advisory flag(s) — see B3/B4/B5/W1 above" % len(warns))
     else:
         lines.append("reader-instrument: PASS (contract + provenance + firewall + anti-relitigation)")
     return 0, lines
@@ -428,6 +436,15 @@ def run_self_test():
     code, ls = check(rq(kind="unresolved-question", targets="", note="something totally unrelated zebra"),
                      ledger(finding(), uqs=("does the ending land?",)))
     chk("b3_unsourced_uq", code == 0 and any("B3 unsourced question" in x for x in ls))
+    # B3 advisory — an unresolved-question when the Ledger has NO UQ bullets at all → fabrication WARN.
+    code, ls = check(rq(kind="unresolved-question", targets="", note="does the ending land?"),
+                     ledger(finding(), uqs=("none",)))
+    chk("b3_unsourced_uq_no_bullets", code == 0 and any("B3 unsourced question" in x and "no `###" in x for x in ls))
+    # ...but a covered UQ with bullets present stays clean (no false fabrication WARN).
+    chk("b3_sourced_uq_clean",
+        not any("B3 unsourced" in x for x in
+                check(rq(kind="unresolved-question", targets="", note="does the ending land?"),
+                      ledger(finding(), uqs=("does the ending land?",)))[1]))
 
     # B4 — leading construction (advisory, ERROR --strict), and override clears it
     lead = rq(question="Don't you think the midpoint reversal lands?")
