@@ -23,6 +23,8 @@ The registry lives at `.apodictic/registry.json` in the **workspace root** — t
 
 5. **Manage (only when asked).** Rename a project's `title`, drop a stale entry whose `root` no longer resolves, or correct an `id`. `/projects` edits the registry **index** only.
 
+6. **Visual snapshot (only when asked).** To populate `plugins/apodictic/project-dashboard.html`, emit an **extended registry payload**: the `apodictic.project_registry.v1` object with, per project, the **pre-computed** `node` (run `../scripts/lifecycle_node.py` per project — the dashboard does not re-derive it, since `diagnosed` needs a disk read the sandbox can't do) and `next_action` (the leverage-ladder string), plus a top-level `snapshot_ts`. The user pastes that payload into the dashboard's textarea; it renders the lifecycle rail + "what now?" + the `/start <id>` launch line. It is a **snapshot** — the dashboard cannot read the disk or run `/start` itself.
+
 ## Firewall & write discipline
 
 `/projects` reads and tidies the registry index. It never mutates a project's `Diagnostic_State.md`, manuscript, or run artifacts, never deletes project files, and never writes outside the workspace `.apodictic/` directory or into the plugin repo / cache.
