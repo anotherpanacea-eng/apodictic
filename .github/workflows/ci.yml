@@ -61,6 +61,11 @@ jobs:
       - name: Changelog fragments parse
         run: node scripts/assemble-changelog.mjs --check
 
+      - name: Status-drift lint (spec Status vs shipped deliverables)
+        run: |
+          node scripts/check-status-drift.mjs --self-test
+          node scripts/check-status-drift.mjs
+
       - name: Registry-derived docs are up to date
         run: node scripts/release-generate.mjs --check
 
