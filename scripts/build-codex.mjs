@@ -97,6 +97,10 @@ function titleCaseSlug(slug) {
     .join(" ");
 }
 
+// Wrapper-name overrides: a few slugs would otherwise derive an awkward
+// `${wrapperPrefix}-${slug}` (e.g. `/apodictic` → `apodictic-apodictic`).
+const WRAPPER_OVERRIDES = { apodictic: "apodictic-index" };
+
 function buildCommandMappings() {
   return commands.map((command) => {
     const slug = command.command.replace(/^\//, "");
@@ -109,7 +113,7 @@ function buildCommandMappings() {
       command,
       slug,
       baseSkill,
-      wrapperName: `${codex.wrapperPrefix}-${slug}`
+      wrapperName: WRAPPER_OVERRIDES[slug] || `${codex.wrapperPrefix}-${slug}`
     };
   });
 }
