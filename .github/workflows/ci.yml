@@ -48,7 +48,7 @@ jobs:
           done
           echo "all ${#files[@]} manifests parse"
 
-      # --check-all subsumes --self-test-all (the 37 validator self-tests) and
+      # --check-all subsumes --self-test-all (the validator self-tests) and
       # adds the real-file invariants: the validators are run against the actual
       # canonical framework files (pass-dependencies.md, the shipped templates,
       # the canonical worked examples + run folder), not just their own fixtures.
@@ -60,6 +60,20 @@ jobs:
       # self-checking rather than diffing against committed copies.
       - name: Changelog fragments parse
         run: node scripts/assemble-changelog.mjs --check
+
+      - name: Status-drift lint (spec Status vs shipped deliverables)
+        run: |
+          node scripts/check-status-drift.mjs --self-test
+          node scripts/check-status-drift.mjs
+
+      # Guards that the display surfaces (overview-dashboard.html,
+      # AUDIT_SELECTION_MATRIX.md) stay synced with the canonical audit/research
+      # inventory: a sync-marker + changed-since signal (the #79 status-drift
+      # pattern applied to inventory). Self-test proves it's non-vacuous.
+      - name: Inventory-parity sync-marker check
+        run: |
+          node scripts/check-inventory-parity.mjs --self-test
+          node scripts/check-inventory-parity.mjs
 
       - name: Registry-derived docs are up to date
         run: node scripts/release-generate.mjs --check

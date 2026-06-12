@@ -1,6 +1,6 @@
 # Legal Risk Register — a workflow
 
-**Status:** Increment 1 **built**. Roadmap: `ROADMAP.md` → Workflows → Legal Risk Register. Home: **core-editor** (manuscript-content analysis), reference `core-editor/references/legal-risk-register.md`. Artifact: `[Project]_Legal_Risk_Register_[runlabel].md`. Validator: `validate.sh legal-risk`.
+**Status:** Increment 1 **built**; **detection layer built** — per-class detection guidance + a standard escalation-trigger taxonomy in `core-editor/references/legal-risk-register.md` §Detection guidance / §Escalation-trigger taxonomy, synthesized from the cross-model research in [`docs/legal-risk-detection-level-setting.md`](legal-risk-detection-level-setting.md). Roadmap: `ROADMAP.md` → Workflows → Legal Risk Register. Home: **core-editor** (manuscript-content analysis), reference `core-editor/references/legal-risk-register.md`. Artifact: `[Project]_Legal_Risk_Register_[runlabel].md`. Validator: `validate.sh legal-risk`.
 
 ## Purpose
 
@@ -62,7 +62,10 @@ A not-a-lawyer disclaimer plus a set of `apodictic.legal_risk.v1` blocks — one
 
 **Increment 1 (this):** the workflow contract, the `[Project]_Legal_Risk_Register_[runlabel].md` artifact, the `apodictic.legal_risk.v1` block + schema, the `legal-risk` validator (L1–L3 + W1–W2), the worked example, the `--check-all` gate, and the core-editor reference.
 
+**Built since Increment 1:**
+- **Intake routing + a first-class entry point (explicit-flag path).** The `/legal-risk` command (`commands/legal-risk.md`) and the `constraint:risk` synthesis hook (offer-then-attach, `run-synthesis.md §Constraint mode`) are wired.
+- **Per-class detection guidance.** Named detection patterns per `risk_class` (fact-vs-opinion framing for defamation; public-vs-private and newsworthiness for privacy; substantiality/permission heuristics for rights-clearance), grounding each flag in a specific manuscript signal — `core-editor/references/legal-risk-register.md` §Detection guidance.
+- **Escalation-trigger taxonomy.** A controlled-vocabulary library of ~20 standard triggers (per class, each with a default tier) the author adopts rather than re-authors — `core-editor/references/legal-risk-register.md` §Escalation-trigger taxonomy.
+
 **Future increments:**
-- **Intake routing + a first-class entry point** — a `/legal-risk` command and/or an intake-router branch (memoir/autofiction with real people → recommend the register). Increment 1 homes the contract in core-editor without a dedicated command.
-- **Per-class detection guidance** — named detection patterns per `risk_class` (e.g. fact-vs-opinion framing for defamation; public-vs-private and newsworthiness for privacy; substantiality/permission heuristics for rights-clearance), so the flag is grounded in a specific, citable manuscript signal.
-- **Escalation-trigger taxonomy** — a small library of standard triggers per class the author can adopt rather than re-author.
+- **Content-detection auto-recommend.** A branch that auto-recommends the register for memoir/autofiction portraying identifiable real people *without* the explicit `constraint:risk` flag.

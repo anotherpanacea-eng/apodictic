@@ -1,6 +1,7 @@
 # Reader-Persona Simulation — where the book lands differently by audience
 
 **Status:** Proposed (unbuilt). Roadmap: `ROADMAP.md` → [Horizon Capacities](../ROADMAP.md#horizon-capacities) Tier 1, item 5. Proposed implementation surface: a `specialized-audits/references/craft/persona-divergence.md` overlay on Pass 1 (Reader Dynamics), `apodictic.persona.v1` + `apodictic.divergence.v1` structured blocks, a `scripts/persona_divergence.py` validator, `validate.sh persona-divergence`, and a worked example.
+<!-- built-when: scripts/persona_divergence.py -->
 
 Pass 1 (Reader Dynamics — "does the pacing hold?") maps the experience of **one composite reader**. But a manuscript does not meet one reader; it meets an audience with different tolerances. The Chapter-3 lull a literary reader savors is the lull an impatient thriller reader abandons. A reveal that lands for a genre newcomer is one a genre-savvy reader saw coming in Chapter 1. The single composite map averages these into invisibility. **Persona simulation runs the reader-experience lens through several declared reading dispositions and surfaces where the predicted experience *diverges*** — and divergence is the diagnostic signal, exactly as contract-mismatch is.
 

@@ -1,7 +1,8 @@
 ---
 name: core-editor
 description: >
-  AI developmental editing framework for fiction and narrative nonfiction.
+  AI developmental editing framework for fiction, narrative nonfiction, and
+  argument-shaped nonfiction; owns the Nonfiction Argument Engine.
   Use when the user asks to "run a development edit," "analyze my manuscript,"
   "diagnose structural issues," "start a new project," "generate a contract,"
   "run the passes," "do a revision round," or any request involving manuscript
@@ -11,7 +12,6 @@ version: 2.3.1
 ---
 
 # APODICTIC Development Editor — Core Orchestrator
-*Last Updated: February 2026*
 
 ---
 
@@ -103,7 +103,7 @@ When diagnosis is complete for a scoped scene and the writer wants execution hel
 
 **Execution details:** Load `references/run-core.md` for intake, pass execution, and Findings Ledger protocol. Load `references/run-synthesis.md` after passes complete for audit integration, synthesis, and deliverables. Load `references/state-lifecycle.md` for revision rounds and state gardening. Use `references/pass-dependencies.md` for pass resolution. For full expansion: load `references/run-full.md`.
 
-**Execution mode:** The system supports context-aware execution. **Single-agent** (default when ≥1M context tokens and manuscript fits): one subagent runs all passes sequentially in a single context, with the Findings Ledger persisted to disk after each pass. **Sequential** (default for standard-context or very large manuscripts): each pass runs as an independent subagent with the full manuscript. **Hybrid** (optional): Pass 0+1 produces a focus map; later passes run as independent subagents with targeted excerpts (~2–3x token cost). **Swarm** (optional): independent subagents with parallel execution (~5x token cost, ~2x findings, architectural isolation). Mode selection is automatic based on context window size and manuscript token load; the user can override at intake. See `references/run-core.md` §Execution Mode for protocol details; `references/hybrid-mode.md` for the focus map specification.
+**Execution mode:** The system supports context-aware execution. **Single-agent** (default when ≥1M context tokens and manuscript fits): one subagent runs all passes sequentially in a single context, with the Findings Ledger persisted to disk after each pass. **Sequential** (default for standard-context or very large manuscripts): each pass runs as an independent subagent with the full manuscript. **Hybrid** (optional): Pass 0+1 produces a focus map; later passes run as independent subagents with targeted excerpts (~2–3x token cost). **Swarm** (optional): independent subagents with parallel execution (~5x token cost; architectural isolation for a final-round verification pass — reserve for submission prep, not everyday depth). Mode selection is automatic based on context window size and manuscript token load; the user can override at intake. See `references/run-core.md` §Execution Mode for protocol details; `references/hybrid-mode.md` for the focus map specification.
 
 ---
 

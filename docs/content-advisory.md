@@ -1,6 +1,7 @@
 # Content-Advisory / Sensitivity-Surface Derivation — what's depicted, where, how intensely
 
 **Status:** Proposed (unbuilt). Roadmap: `ROADMAP.md` → [Horizon Capacities](../ROADMAP.md#horizon-capacities) Tier 1, item 8. Proposed implementation surface: a `specialized-audits/references/content-advisory.md` module (homed in **specialized-audits**, alongside the Reception-Risk / Consent / Erotic audits it consolidates — it is sensitivity-surface work, not core manuscript-content analysis, so it does not sit with Legal Risk in core-editor), `apodictic.content_note.v1` blocks, a `scripts/content_advisory.py` extractor/validator, `validate.sh content-advisory`, a `[Project]_Content_Advisory_[runlabel].md` artifact, and a worked example.
+<!-- built-when: scripts/content_advisory.py -->
 
 A writer preparing to publish often needs a **content advisory** — a map of where the manuscript depicts intense material (violence, sexual content, self-harm, abuse), at what intensity, on- or off-page — for front-matter notes, marketing metadata, sensitivity-reader handoff, or their own awareness. APODICTIC's existing audits *assess* such content for craft and harm risk, but none **derives a reader/marketing-facing advisory artifact**. This capability is pure extraction over depicted content, anchored to loci.
 

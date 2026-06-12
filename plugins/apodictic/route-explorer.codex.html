@@ -390,7 +390,7 @@
   <header>
     <h1><a href="https://github.com/anotherpanacea-eng/apodictic" style="color:inherit; text-decoration:none;">APODICTIC</a></h1>
     <div class="tagline">Developmental editing that listens before diagnosing.</div>
-    <div class="version">Route Explorer</div>
+    <div class="version">Route Explorer &middot; v2.3.1</div>
   </header>
 
   <div class="intro">
@@ -452,7 +452,18 @@
       <div class="shortcut-item"><span class="shortcut-cmd">apodictic-audit</span><span class="shortcut-desc">Specialized audit</span></div>
       <div class="shortcut-item"><span class="shortcut-cmd">apodictic-research</span><span class="shortcut-desc">Research mode</span></div>
       <div class="shortcut-item"><span class="shortcut-cmd">apodictic-revision-plan</span><span class="shortcut-desc">Post-diagnostic plan</span></div>
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-legal-risk</span><span class="shortcut-desc">Legal Risk Register</span></div>
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-triage-feedback</span><span class="shortcut-desc">Sort beta feedback</span></div>
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-reader-questions</span><span class="shortcut-desc">Beta-reader instrument</span></div>
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-projects</span><span class="shortcut-desc">List &amp; manage projects</span></div>
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-start &lt;id&gt;</span><span class="shortcut-desc">Resume a project (zero-question)</span></div>
     </div>
+    <p style="font-size:0.82rem; color:var(--text-dim); margin-top:0.8rem;">
+      <strong>Projects &amp; resume.</strong> Runs are registered as projects. Come back later and <span class="shortcut-cmd">apodictic-start &lt;id&gt;</span> resumes from the project's lifecycle state with zero intake questions; <span class="shortcut-cmd">apodictic-projects</span> lists, inspects, and tidies what you have registered.
+    </p>
+    <p style="font-size:0.82rem; color:var(--text-dim); margin-top:0.8rem;">
+      <strong>Execution mode.</strong> Any route can run single-agent (default) or, for final submission prep, in <em>swarm</em> mode — passes run in architectural isolation as verification insurance, not a higher raw yield. Swarm costs roughly 5x the tokens (measured up to ~8.5x on long fiction); reserve it for the final round and the writer/verifier spot-check.
+    </p>
   </div>
 
   <footer><a href="https://github.com/anotherpanacea-eng/apodictic" style="color:inherit;">APODICTIC</a> Development Editor &middot; anotherpanacea</footer>
@@ -531,7 +542,7 @@ const ROUTES = {
   // full_draft — constraint variants
   'full_draft|repair|time':        { workflow: 'Submission Triage', status: 'built', flow: ['Pass 1', 'SR Codes', 'Go/No-Go Memo'], passes: ['1'], desc: 'Deadline mode: Pass 1 reader experience plus the detectable subset of submission-readiness codes, producing a go/no-go memo with named blind spots. For writers who need direction today, not a comprehensive diagnostic.', outputs: ['Triage_Memo.md'] },
   'full_draft|repair|ai':         { workflow: 'Core DE + AI-Prose Calibration', status: 'built', flow: ['Core DE', 'AI-Prose Calibration Overlay'], passes: ['0','1','2','5','8'], desc: 'Same as the AI cleanup route. The constraint flag triggers the overlay automatically.', outputs: ['Editorial_Letter.md', 'AI_Prose_Calibration_Report.md'] },
-  'full_draft|repair|risk':       { workflow: 'Core DE + Legal Risk Register', status: 'partial', flow: ['Core DE', 'Legal Risk Register'], passes: ['0','1','2','5','8'], desc: 'Standard diagnostic plus a legal risk register that flags defamation, privacy, and rights-clearance exposure with escalation triggers. It flags areas that may need legal review — it does not give legal advice.', gap: 'The Legal Risk Register module is built, but automatic intake routing (and a dedicated command) are not yet wired up. Fallback: request the register explicitly during a Core DE run.', outputs: ['Editorial_Letter.md', 'Legal_Risk_Register.md'] },
+  'full_draft|repair|risk':       { workflow: 'Core DE + Legal Risk Register', status: 'built', flow: ['Core DE', 'Legal Risk Register'], passes: ['0','1','2','5','8'], desc: 'Standard diagnostic plus a Legal Risk Register that flags defamation, privacy, and rights-clearance exposure with escalation triggers and routes serious items to counsel. Reached via constraint:risk (offered, attached on accept) or the apodictic-legal-risk command. It flags areas that may need legal review — it does not give legal advice.', outputs: ['Editorial_Letter.md', 'Legal_Risk_Register.md'] },
   'full_draft|repair|nonfiction': { workflow: 'Nonfiction Argument Engine', status: 'built', flow: ['Nonfiction Triage', 'Dialectical Clarity', 'Companion Audits'], passes: [], desc: 'Argument-shaped nonfiction routes to the Nonfiction Argument Engine (Dialectical Clarity + a shared Argument_State.md); scene-led work routes to Narrative Nonfiction Craft; memoir and witness-led work to Memoir & CNF.', outputs: ['Argument_State.md', 'Editorial_Letter.md'] },
   'full_draft|repair|editor':     { workflow: 'Core DE (editor scaffolding)', status: 'built', flow: ['Core DE', 'Editor Output Mode'], passes: ['0','1','2','5','8'], desc: 'Same diagnostic, output re-aimed at a human developmental editor working on someone else\'s manuscript: an Editor Brief, a What-You-Might-Have-Missed blind-spot section, and an intervention menu left to the editor\'s discretion.', outputs: ['Editorial_Letter.md'] },
   'full_draft|repair|facilitator':{ workflow: 'Core DE (diagnostic vocabulary)', status: 'built', flow: ['Core DE', 'Vocabulary Guide'], passes: ['0','1','2','5','8'], desc: 'Diagnostic vocabulary mode for writing-group facilitation: produces a teaching Vocabulary Guide (a grounded glossary plus question-framed discussion prompts) alongside the editorial letter, which keeps its severity record.', outputs: ['Editorial_Letter.md', 'Vocabulary_Guide.md'] },

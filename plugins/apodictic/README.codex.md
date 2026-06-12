@@ -2,7 +2,7 @@
 
 Developmental editing that listens before diagnosing.
 
-AI-powered developmental editing framework for fiction and narrative nonfiction. Diagnoses structural issues in manuscripts through systematic passes, genre-calibrated analysis, and specialized audits.
+AI-powered developmental editing framework for fiction, narrative nonfiction, and persuasive/argument-shaped nonfiction (policy briefs, op-eds, testimony — via the Nonfiction Argument Engine). Diagnoses structural issues in manuscripts through systematic passes, genre-calibrated analysis, and specialized audits.
 
 ## Installation
 
@@ -51,6 +51,11 @@ The Development Editor works like a human developmental editor: it reads a manus
 - Provide genre-calibrated analysis across literary fiction, horror, mystery, thriller, science fiction, fantasy, romance, and cross-genre hybrids
 - Track continuity, pacing, character arcs, reveal economy, emotional dynamics, and thematic coherence across 11 systematic passes
 - Run specialized audits for specific craft concerns (scene function, shelf positioning, AI-prose detection, worldbuilding integration, force delivery, and more)
+- Diagnose argument-shaped nonfiction with the **Nonfiction Argument Engine** — argument spine, support, and warrant, plus Red-Team, Persuasion, and Evidence companions
+- Maintain a **Legal Risk Register** that flags possible defamation, privacy, and rights exposure for a lawyer's review — it flags, never adjudicates, and is never legal advice
+- **Triage feedback** and build a **beta-reader instrument** — sort and prioritize beta-reader/editor notes, and turn a diagnosis into targeted reader questions
+- Render **manuscript-structure visualizations** and offer **Diagnostic-Vocabulary** and **Editor-Scaffolding** operator modes
+- Keep projects addressable and resumable (`apodictic-projects`, state-driven resume), including **Retcon Planning** and **State Cards**
 - Generate editorial letters, revision checklists, and diagnostic state that persists across revision rounds
 - Guide pre-draft writers from idea to draftable structure
 
@@ -59,13 +64,13 @@ The Development Editor works like a human developmental editor: it reads a manus
 - Line edit, copyedit, or proofread
 - Replace a human developmental editor's judgment — it provides analytical scaffolding, not verdicts
 - Guarantee commercial viability, publication readiness, or literary merit
-- Access, store, or transmit manuscript text beyond the active session
+- Add telemetry or network calls of its own — the plugin transmits nothing on its own, and stores diagnostic state only on your local disk; the optional `apodictic-research` modes make web searches you invoke explicitly
 
 The system diagnoses structure. The author creates content. After diagnosis, you can either stay inside APODICTIC's coaching/editor workflows or switch to a general writing session outside the diagnostic firewall.
 
 ## Intended Audience
 
-**Primary audience:** Fiction writers working on novels, novellas, and story collections. The plugin also supports narrative nonfiction, memoir, and creative nonfiction with genre-appropriate calibrations.
+**Primary audience:** Fiction writers working on novels, novellas, and story collections. The plugin also supports narrative nonfiction, memoir, and creative nonfiction with genre-appropriate calibrations. Writers of persuasive, argument-shaped nonfiction — policy briefs, op-eds, and testimony — are a real audience too: the revision-coaching layer triggers on those forms and the Nonfiction Argument Engine diagnoses their argument structure.
 
 **Secondary audience:** Human developmental editors seeking analytical scaffolding, and writing groups using diagnostic vocabulary for structured feedback.
 
@@ -79,7 +84,12 @@ The plugin assumes its user is an adult working on a creative project. Its outpu
 - **Pre-Writing Pathway** — Guides writers from idea to draftable structure (no manuscript required). Writer mode calibration, seed inventory, readiness gates, option architecture, complexity budget, prospective contract, re-entry diff protocol.
 - **Plot Coaching** — Plot structure diagnosis (50 spines across 12 families), selection coaching, fantasy & series architecture
 - **Specialized Audits** — 34 available audits (3 universal, 16 craft, 10 genre, 5 tag), including 3 primary tags (cozy, philosophical, erotic content) and 2 companion intimacy audits; plus 6 internet-enabled research modes
+- **Nonfiction Argument Engine** — Diagnoses argument-shaped nonfiction: argument spine, support, and warrant, with Red-Team, Persuasion, and Evidence companions
+- **Legal Risk Register** — Flags possible defamation, privacy, and rights exposure for counsel to review. It flags, never adjudicates — not legal advice
+- **Feedback Triage & Beta-Reader Instrument** — Sort, cluster, and prioritize beta-reader/editor feedback, and turn a diagnosis into targeted beta-reader questions
+- **Projects** — Addressable, resumable editing projects (`apodictic-projects`, state-driven resume), with Retcon Planning and State Cards
 - **Revision Coaching** — Post-diagnostic coaching: session planning, stuck-point help, momentum tracking, deadline management
+- **Manuscript-structure visualizations** and **Diagnostic-Vocabulary / Editor-Scaffolding** operator modes
 
 ### Entrypoints
 
@@ -87,6 +97,7 @@ In this Codex build, the legacy workflows are exposed as namespaced compatibilit
 
 **Start here:**
 - `apodictic-start` — I have a manuscript — what should I do with it?
+- `apodictic-index` — What can this plugin do? Where do I start?
 
 **Diagnostic workflows:**
 - `apodictic-develop-edit` — What's wrong with my manuscript?
@@ -98,10 +109,14 @@ In this Codex build, the legacy workflows are exposed as namespaced compatibilit
 - `apodictic-research` — I need internet-assisted verification.
 - `apodictic-coach` — I have a diagnosis — how do I revise?
 - `apodictic-plot-coach` — Is my plot structure working?
+- `apodictic-legal-risk` — Flag legal exposure (defamation, privacy, rights) for a lawyer's review.
+- `apodictic-triage-feedback` — Sort and prioritize beta-reader / editor feedback.
+- `apodictic-reader-questions` — Turn my diagnosis into targeted beta-reader questions.
 
 **Setup:**
 - `apodictic-pre-writing` — I have an idea but no manuscript yet.
 - `apodictic-new-project` — Set up a new editing project.
+- `apodictic-projects` — List, resume, and tidy my editing projects.
 
 `apodictic-revision-plan` is a compatibility alias for `apodictic-coach`.
 
@@ -109,6 +124,7 @@ In this Codex build, the legacy workflows are exposed as namespaced compatibilit
 
 - See `AUDIT_SELECTION_MATRIX.md` for a practical routing chart of core passes, full passes, Pass 11 sub-passes, specialized audits, tag audits, and research modes.
 - See `overview-dashboard.html` for a visual map of workflows, pass blocks, and audit families.
+- See `project-dashboard.html` for an at-a-glance **snapshot** of your projects — paste the registry payload `apodictic-projects` produces and see where each project stands on the lifecycle rail plus its launch command. Render-only (a viewer/launcher, not a live monitor).
 
 ## Usage
 
@@ -167,7 +183,7 @@ Internet-enabled research to validate comps, check facts, verify genre currency,
 
 APODICTIC selects its execution mode based on the available context window. On large-context frontier models, the default is **single-agent mode**: one subagent runs all passes sequentially in a single context, with the full manuscript in view throughout. This is the fastest and most token-efficient option, viable for manuscripts up to roughly 200,000 words.
 
-For maximum analytical depth, request **swarm mode**: each pass runs as an independent subagent loading the full manuscript. Swarm produces roughly **twice as many findings** with more specific cross-pass connections and more consistent counterevidence — at approximately **5x the token cost**. The quality gain comes from architectural isolation: each pass genuinely cannot see prior analysis until reconciliation, which eliminates anchoring bias.
+For a **final-round verification pass**, request **swarm mode**: each pass runs as an independent subagent loading the full manuscript. The gain is **architectural isolation** — each pass genuinely cannot see prior analysis until reconciliation, which eliminates anchoring bias — at approximately **5x the token cost**. Best reserved for final submission prep: an earlier validation reported ~2× findings, but a 2026-06 N=1 re-test on long fiction did not reproduce a depth advantage, so swarm's dependable value is verification isolation, not everyday yield.
 
 On standard-context models, APODICTIC falls back to per-pass subagent dispatch with three tiers: **sequential** (each pass gets the full manuscript), **hybrid** (later passes get targeted excerpts via a focus map, ~2–3x cost), and **swarm** (parallel independent subagents, ~5x cost).
 

@@ -12,7 +12,7 @@ Thank you for your interest in improving this plugin. Contributions are welcome 
 
 ## What We're Not Looking For
 
-- Pull requests (this is a plugin, not a repository with PR infrastructure)
+- External code pull requests — the project is solo-maintained and contributions are handled over email (see above), so external PRs aren't accepted
 - Rewrites of core architecture without prior discussion
 - Contributions that include copyrighted manuscript text
 

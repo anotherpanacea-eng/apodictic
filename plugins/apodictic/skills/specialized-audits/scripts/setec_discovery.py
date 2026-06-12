@@ -43,18 +43,16 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-# FINALIZATION: BOOTSTRAP_SETEC_VERSION is the PROVISIONAL single source of
-# truth for the discovery floor. It is pinned to the unreleased R1+R5 branch
-# of setec-voiceprint (worktree feat/normalized-entrypoint-r1-r5,
-# plugin-version 1.112.0). When SETEC cuts the real R1 release (target
-# ~1.113.0 per docs/setec-normalized-entrypoint-requirements.md), set this to
-# that release's version. The bootstrap floor only needs to be "the version
-# where `capabilities emit` + the R1 field bundle (per-entry
-# min_setec_version/json_delivery/inputs) first exist" — NOT the floor of any
-# individual surface (those come from the manifest, via setec_capabilities).
-# It lives here (not in setec_capabilities) so this module has no import-time
-# dependency on setec_capabilities, which imports from this module.
-BOOTSTRAP_SETEC_VERSION = (1, 112, 0)
+# BOOTSTRAP_SETEC_VERSION is the single source of truth for the discovery
+# floor — "the version where `capabilities emit` + the R1 field bundle
+# (per-entry min_setec_version/json_delivery/inputs) first exist", NOT the
+# floor of any individual surface (those come from the manifest, via
+# setec_capabilities). FINALIZED: pinned to the v1.113.0 SETEC release, the
+# first release carrying R1 (capabilities emit) + R5 (contract fixtures); see
+# setec-plugin.lock (provisional: false). It lives here (not in
+# setec_capabilities) so this module has no import-time dependency on
+# setec_capabilities, which imports from this module.
+BOOTSTRAP_SETEC_VERSION = (1, 113, 0)
 
 # Backward-compatible module constant: the framework-wide default discovery
 # floor is now the bootstrap floor, not the retired per-surface (1, 86, 0).
