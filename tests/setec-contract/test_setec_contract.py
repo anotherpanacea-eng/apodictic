@@ -184,8 +184,8 @@ def _loc(tmp_path: str) -> "setec_discovery.SetecLocation":
     return setec_discovery.SetecLocation(
         plugin_root=Path(tmp_path),
         scripts_dir=Path(tmp_path),
-        version=(1, 112, 0),
-        version_str="1.112.0",
+        version=(1, 114, 0),
+        version_str="1.114.0",
         source="env",
     )
 
@@ -224,7 +224,7 @@ def t2_vendored_golden_through_runner() -> None:
     with tempfile.TemporaryDirectory(prefix="no_dispatcher_") as td:
         loc = setec_discovery.SetecLocation(
             plugin_root=Path(td), scripts_dir=Path(td),
-            version=(1, 112, 0), version_str="1.112.0", source="env",
+            version=(1, 114, 0), version_str="1.114.0", source="env",
         )
         raised = False
         try:
@@ -404,7 +404,7 @@ def t3_discovery_still_works_without_hardcoded_floors() -> None:
         (root / ".claude-plugin").mkdir(parents=True)
         (root / "scripts").mkdir()
         (root / ".claude-plugin" / "plugin.json").write_text(
-            json.dumps({"name": "setec-voiceprint", "version": "1.113.0"}),
+            json.dumps({"name": "setec-voiceprint", "version": "1.114.0"}),
             encoding="utf-8",
         )
         import os
@@ -418,7 +418,7 @@ def t3_discovery_still_works_without_hardcoded_floors() -> None:
                 os.environ.pop("SETEC_VOICEPRINT_DIR", None)
             else:
                 os.environ["SETEC_VOICEPRINT_DIR"] = old
-        check(loc.version == (1, 113, 0), "synthetic SETEC root discovered at 1.113.0")
+        check(loc.version == (1, 114, 0), "synthetic SETEC root discovered at 1.114.0")
 
 
 # --------------------------------------------------------------------------
