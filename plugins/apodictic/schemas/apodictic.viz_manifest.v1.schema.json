@@ -1,0 +1,14 @@
+{
+  "$id": "apodictic.viz_manifest.v1",
+  "$comment": "Source of truth for the apodictic:viz_manifest block (Manuscript-Structure Visualizations). Validated by scripts/apodictic_artifacts.py (stdlib subset checker) via scripts/viz_manifest.py. The manifest holds ONLY traceable data copied verbatim from existing artifacts (Timeline Event-Ledger rows + apodictic.finding.v1 blocks); it carries NO visual-style fields — the severity->encoding map is hardcoded in the renderer. The subset engine validates only this wrapper; viz_manifest.py validates the nested scenes[]/findings[] objects, enforces the no-style allowlist (E1), and byte-checks provenance against the sources (E2/E4). See docs/manuscript-visualizations.md.",
+  "title": "APODICTIC manuscript-structure visualization manifest (apodictic.viz_manifest.v1)",
+  "type": "object",
+  "required": ["schema", "project", "scenes", "findings"],
+  "properties": {
+    "schema": {"const": "apodictic.viz_manifest.v1"},
+    "project": {"type": "string"},
+    "partial": {"type": "boolean"},
+    "scenes": {"type": "array"},
+    "findings": {"type": "array"}
+  }
+}
