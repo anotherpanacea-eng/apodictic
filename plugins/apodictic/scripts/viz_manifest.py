@@ -578,6 +578,20 @@ def run_self_test():
              os.path.join(d, "Proj_Findings_Ledger_run.md")])[0] == 0)
     chk("missing_artifact_usage", run([d + "/nope.md"])[0] in (2,))
 
+    # render gate: a reordered manifest draws a false pacing curve, so `render` refuses without --force
+    rd = tempfile.mkdtemp()
+    made.append(rd)
+    tlp = os.path.join(rd, "tl.md"); ldp = os.path.join(rd, "ld.md")
+    rev_man = os.path.join(rd, "rev_Structure_Map.md"); ok_man = os.path.join(rd, "ok_Structure_Map.md")
+    out = os.path.join(rd, "out.html")
+    with open(tlp, "w") as fh: fh.write(timeline)
+    with open(ldp, "w") as fh: fh.write(ledger)
+    with open(rev_man, "w") as fh: fh.write(manifest(scenes=rev_scenes))
+    with open(ok_man, "w") as fh: fh.write(manifest())
+    chk("render_refuses_reordered", main(["x", "render", rev_man, tlp, ldp, "-o", out]) == 1)
+    chk("render_force_reordered", main(["x", "render", rev_man, tlp, ldp, "-o", out, "--force"]) == 0)
+    chk("render_in_order_ok", main(["x", "render", ok_man, tlp, ldp, "-o", out]) == 0)
+
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
@@ -610,9 +624,13 @@ def main(argv):
         tltext = _read(tlp) if tlp else None
         ledtext = _read(led) if led else None
         # Gate before rendering: rendering un-provenanced data is exactly the firewall hole the
-        # validator exists to prevent. Refuse on an ERROR-level gate failure unless --force.
+        # validator exists to prevent. Refuse on an ERROR-level gate failure, OR on a scene-order
+        # divergence — W2 is advisory in general, but a reordered manifest draws a FALSE pacing curve
+        # (the one warning that corrupts the render's core output), so it blocks the render too.
+        # W1 coverage stays advisory: a legitimate partial map still renders.
         gcode, glines = check(mtext, tltext, ledtext, require_block=True)
-        if gcode != 0 and not force:
+        scene_order_broken = any("W2 scene order" in ln for ln in glines)
+        if (gcode != 0 or scene_order_broken) and not force:
             for ln in glines:
                 print(ln, file=sys.stderr)
             missing = [n for n, t in (("timeline", tltext), ("ledger", ledtext)) if t is None]
@@ -620,8 +638,9 @@ def main(argv):
                 print("manuscript-viz: no %s supplied — provenance (E2/E4) cannot be checked without the "
                       "source(s); pass them, or --force for an un-provenanced manifest-only preview."
                       % " or ".join(missing), file=sys.stderr)
-            print("manuscript-viz: refusing to render — the manifest does not pass the provenance gate "
-                  "(pass --force to render anyway). See errors above.", file=sys.stderr)
+            print("manuscript-viz: refusing to render — the manifest fails the provenance gate or reorders "
+                  "scenes vs the Timeline (a false pacing curve). Pass --force to override. See above.",
+                  file=sys.stderr)
             return 1
         h = render_html(mtext, tltext, ledtext)
         if out:
