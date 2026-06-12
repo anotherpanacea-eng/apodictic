@@ -28,6 +28,16 @@ if (!antigravity) {
   process.exit(1);
 }
 
+// Wrapper/workflow-name overrides: a few slugs would otherwise derive an
+// awkward name (e.g. `/apodictic` → `apodictic-apodictic` once prefixed, or a
+// bare `apodictic` workflow that collides with the plugin name). Keep this in
+// sync with the same map in build-codex.mjs.
+const WRAPPER_OVERRIDES = { apodictic: "apodictic-index" };
+
+function wrapperNameForSlug(slug) {
+  return WRAPPER_OVERRIDES[slug] || slug;
+}
+
 function abs(relPath) {
   return path.resolve(repoRoot, relPath);
 }
@@ -271,8 +281,9 @@ function main() {
     // Write Native Workflows
     for (const commandMeta of commands) {
       const slug = commandMeta.command.replace(/^\//, "");
+      const wrapperName = wrapperNameForSlug(slug);
       writeFile(
-        path.join(tempWorkspace, ".agents", "workflows", `${slug}.md`),
+        path.join(tempWorkspace, ".agents", "workflows", `${wrapperName}.md`),
         buildNativeWorkflow(commandMeta)
       );
     }

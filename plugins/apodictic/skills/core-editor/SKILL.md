@@ -1,7 +1,8 @@
 ---
 name: core-editor
 description: >
-  AI developmental editing framework for fiction and narrative nonfiction.
+  AI developmental editing framework for fiction, narrative nonfiction, and
+  argument-shaped nonfiction; owns the Nonfiction Argument Engine.
   Use when the user asks to "run a development edit," "analyze my manuscript,"
   "diagnose structural issues," "start a new project," "generate a contract,"
   "run the passes," "do a revision round," or any request involving manuscript
@@ -11,7 +12,6 @@ version: 2.3.1
 ---
 
 # APODICTIC Development Editor — Core Orchestrator
-*Last Updated: February 2026*
 
 ---
 

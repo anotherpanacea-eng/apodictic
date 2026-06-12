@@ -59,6 +59,11 @@ APODICTIC isn't just for finished drafts.
 - **Plot coach** with 50 structural spines across 12 families (not just three-act)
 - **34 available audits** (3 universal, 16 craft, 10 genre, 5 tag) including scene function, shelf positioning, emotional craft, AI-prose detection, worldbuilding integration, force architecture, reception risk, and intimacy/consent coverage
 - **6 internet-enabled research modes** for citation verification, comp validation, fact-checking, field reconnaissance (counterevidence + literature gaps), genre currency, and representation context
+- **Nonfiction Argument Engine** for persuasive, argument-shaped nonfiction (policy briefs, op-eds, testimony) — argument spine, support, and warrant, with Red-Team, Persuasion, and Evidence companions
+- **Legal Risk Register** (`/legal-risk`) — flags possible defamation, privacy, and rights exposure for a lawyer's review. It flags, never adjudicates — not legal advice
+- **Feedback triage and beta-reader instrument** (`/triage-feedback`, `/reader-questions`) — sort and prioritize beta-reader/editor feedback, and turn a diagnosis into targeted reader questions
+- **Project addressability** (`/projects`) — list, resume, and tidy editing projects from saved diagnostic state, with Retcon Planning and State Cards
+- **Manuscript-structure visualizations** plus **Diagnostic-Vocabulary** and **Editor-Scaffolding** operator modes
 - **Genre calibration** across literary fiction, horror, mystery, thriller, SF/F, romance, and hybrids
 
 ## Install
@@ -164,6 +169,7 @@ Not sure where to begin? Just `/start`. When in doubt, that's the front door.
 
 **Start here:**
 - `/start` — I have a manuscript — what should I do with it?
+- `/apodictic` — What can this plugin do? Where do I start?
 
 **Diagnostic workflows:**
 - `/develop-edit` — What's wrong with my manuscript?
@@ -175,10 +181,14 @@ Not sure where to begin? Just `/start`. When in doubt, that's the front door.
 - `/research` — I need internet-assisted verification.
 - `/coach` — I have a diagnosis — how do I revise?
 - `/plot-coach` — Is my plot structure working?
+- `/legal-risk` — Flag legal exposure (defamation, privacy, rights) for a lawyer's review.
+- `/triage-feedback` — Sort and prioritize beta-reader / editor feedback.
+- `/reader-questions` — Turn my diagnosis into targeted beta-reader questions.
 
 **Setup:**
 - `/pre-writing` — I have an idea but no manuscript yet.
 - `/new-project` — Set up a new editing project.
+- `/projects` — List, resume, and tidy my editing projects.
 
 `/revision-plan` is a compatibility alias for `/coach`.
 
