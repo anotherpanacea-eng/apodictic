@@ -1,0 +1,131 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": {
+    "files": [
+      {
+        "id": "ref_a",
+        "metadata": {},
+        "path": "<fixture>"
+      }
+    ],
+    "label": "reference",
+    "n_files": 8,
+    "path": "<fixture>",
+    "preprocessing": {
+      "applied": false
+    },
+    "words": 120000
+  },
+  "claim_license": {
+    "additional_caveats": [
+      "Keyness is sensitive to the choice of reference corpus. A reference corpus that under-represents the target's register / topic / writer-baseline-influence will produce inflated keyness scores; a tightly register-matched reference will produce conservative scores. Read keyness alongside the reference-corpus provenance.",
+      "Collocation filters (LR / PMI) drop phrases that fail the chosen association measure, including some that are real idiolect tokens with low marginal counts. The default thresholds favor precision over recall.",
+      "Preservation quotas are heuristic. The default split across n-values may over-favor unigrams when the writer's actual idiolect lives in 2- and 3-grams; review the per-n rankings, not just the merged preservation list."
+    ],
+    "comparison_set": {
+      "keyness_method": "log_likelihood",
+      "n_preservation_entries": 1,
+      "n_values": [
+        1,
+        2,
+        3
+      ],
+      "reference_n_files": 8,
+      "reference_n_tokens": 120000,
+      "target_n_files": 4,
+      "target_n_tokens": 52000
+    },
+    "confidence_interval_95": null,
+    "does_not_license": "An authorship verdict. The output is a corpus-relative keyness ranking, not provenance certification. Highly characteristic phrases may simply be the writer's personal lexicon, topic vocabulary, register markers, or domain terminology. CRITICAL: the preservation list is voice-cloning-grade input by design. Treat the rendered list as private to the writer and workspace.",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "A ranked keyness list and a preservation list of phrases unusually characteristic of the target corpus against the reference corpus. Output names the phrases a writer should consider preserving through revision so their voice survives the editing pass.",
+    "references": [],
+    "register_match": [],
+    "task_surface": "voice_coherence"
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** voice-coherence comparison\n\n**Reports:** A ranked keyness list and a preservation list of phrases unusually characteristic of the target corpus against the reference corpus. Output names the phrases a writer should consider preserving through revision so their voice survives the editing pass.\n\n**Does NOT report:** An authorship verdict. The output is a corpus-relative keyness ranking, not provenance certification. Highly characteristic phrases may simply be the writer's personal lexicon, topic vocabulary, register markers, or domain terminology. CRITICAL: the preservation list is voice-cloning-grade input by design. Treat the rendered list as private to the writer and workspace.\n\n### Comparison context\n\n- **keyness method:** log_likelihood\n- **n preservation entries:** 1\n- **n values:** [1, 2, 3]\n- **reference n files:** 8\n- **reference n tokens:** 120000\n- **target n files:** 4\n- **target n tokens:** 52000\n\n### Caveats\n\n- Keyness is sensitive to the choice of reference corpus. A reference corpus that under-represents the target's register / topic / writer-baseline-influence will produce inflated keyness scores; a tightly register-matched reference will produce conservative scores. Read keyness alongside the reference-corpus provenance.\n- Collocation filters (LR / PMI) drop phrases that fail the chosen association measure, including some that are real idiolect tokens with low marginal counts. The default thresholds favor precision over recall.\n- Preservation quotas are heuristic. The default split across n-values may over-favor unigrams when the writer's actual idiolect lives in 2- and 3-grams; review the per-n rankings, not just the merged preservation list.",
+  "results": {
+    "method": {
+      "collocation_filter": true,
+      "include_function_words": false,
+      "keyness": "log_likelihood",
+      "min_collocation_lr": 2.0,
+      "min_collocation_pmi": 1.0,
+      "min_reference_count": 0,
+      "min_target_count": 3,
+      "min_total_count": 3,
+      "n_values": [
+        1,
+        2,
+        3
+      ],
+      "smoothing_alpha": 0.5
+    },
+    "preservation_list": [
+      {
+        "collocation_lr": 5.1,
+        "collocation_method": "log_ratio",
+        "collocation_pmi": 3.8,
+        "display": "the liminal hush",
+        "log2_ratio": 4.2,
+        "n": 3,
+        "p_value": 0.0001,
+        "phrase": "the liminal hush",
+        "reference_count": 0,
+        "reference_per_1000": 0.0,
+        "score": 18.7,
+        "score_name": "log_likelihood_g2",
+        "target_count": 6,
+        "target_per_1000": 0.24
+      }
+    ],
+    "rankings": {
+      "3": {
+        "anti_idiolectic": [],
+        "idiolectic": [
+          {
+            "collocation_lr": 5.1,
+            "collocation_method": "log_ratio",
+            "collocation_pmi": 3.8,
+            "display": "the liminal hush",
+            "log2_ratio": 4.2,
+            "n": 3,
+            "p_value": 0.0001,
+            "phrase": "the liminal hush",
+            "reference_count": 0,
+            "reference_per_1000": 0.0,
+            "score": 18.7,
+            "score_name": "log_likelihood_g2",
+            "target_count": 6,
+            "target_per_1000": 0.24
+          }
+        ]
+      }
+    }
+  },
+  "schema_version": "1.0",
+  "target": {
+    "files": [
+      {
+        "id": "draft_a",
+        "metadata": {},
+        "path": "<fixture>/draft_a.md"
+      }
+    ],
+    "label": "target",
+    "n_files": 4,
+    "path": "<fixture>",
+    "preprocessing": {
+      "applied": false
+    },
+    "privacy": "PRIVATE - DO NOT SHARE. A preservation list is a voice-cloning input.",
+    "words": 52000
+  },
+  "task_surface": "voice_coherence",
+  "tool": "idiolect_detector",
+  "version": "<fixture>",
+  "warnings": []
+}

@@ -1,0 +1,128 @@
+name: Sync SETEC contract
+
+# Keeps APODICTIC's VENDORED SETEC contract (the projected capabilities
+# manifest + the R5 contract fixtures) current with the latest *released*
+# SETEC, re-derives via scripts/sync_setec.py, runs the drift gate, and opens
+# a bump PR. Python port of APODICTIC-Gemini's sync-apodictic-plugin.yml.
+#
+# Pure pull: SETEC publishes the manifest + fixtures; APODICTIC vendors a
+# pinned copy. APODICTIC does NOT serve SETEC's plugin — it invokes SETEC as a
+# subprocess discovered at runtime — so only the CONTRACT is vendored, never
+# the whole plugin (see scripts/sync_setec.py).
+#
+# FINALIZATION: this workflow targets a real SETEC release and will not run
+# usefully until the R1 release exists. Today the contract is pinned
+# provisionally to the unreleased R1+R5 branch via a local worktree (see
+# setec-plugin.lock). On the real release:
+#   1. Confirm SETEC_RELEASE resolution below points at the release tag.
+#   2. Re-pin setec-plugin.lock by running sync_setec.py against the release.
+#   3. Set BOOTSTRAP_SETEC_VERSION in setec_discovery.py to the release version.
+
+on:
+  schedule:
+    - cron: "0 15 * * 1" # Mondays 15:00 UTC (offset from the Gemini sync)
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "SETEC ref to sync (release tag, or 'latest' for newest release)"
+        required: false
+        default: "latest"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  SETEC_REPO: anotherpanacea-eng/setec-voiceprint
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout APODICTIC
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # FINALIZATION: resolve the SETEC release ref. Until the R1 release tag
+      # exists, `latest` resolves to nothing and this step (and the job) will
+      # no-op/fail — that is expected and intended; the provisional pin is
+      # carried by setec-plugin.lock + the local-worktree sync.
+      #
+      # REQUESTED_REF is the only user-controllable input; it is routed through
+      # an env var (never interpolated into the shell) per the Actions
+      # injection guidance.
+      - name: Resolve SETEC release
+        id: setec
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REQUESTED_REF: ${{ github.event.inputs.ref || 'latest' }}
+        run: |
+          set -euo pipefail
+          if [ "$REQUESTED_REF" = "latest" ]; then
+            REF="$(gh release view --repo "$SETEC_REPO" --json tagName -q .tagName)"
+          else
+            REF="$REQUESTED_REF"
+          fi
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout SETEC at release
+        uses: actions/checkout@v4
+        with:
+          repository: anotherpanacea-eng/setec-voiceprint
+          ref: ${{ steps.setec.outputs.ref }}
+          path: .setec-src
+
+      - name: Sync vendored contract + re-pin lock
+        env:
+          # sync_setec.py resolves SETEC via SETEC_VOICEPRINT_DIR (the plugin
+          # root inside the checked-out SETEC source).
+          SETEC_VOICEPRINT_DIR: ${{ github.workspace }}/.setec-src/plugins/setec-voiceprint
+          # SETEC_RELEASE_TAG makes build_lock emit a FINALIZED (non-provisional)
+          # pin to the resolved release tag instead of the branch fallback.
+          SETEC_RELEASE_TAG: ${{ steps.setec.outputs.ref }}
+        run: |
+          python scripts/sync_setec.py
+          # Live drift gate must be green after a fresh sync.
+          python scripts/sync_setec.py --check
+          python tools/check_setec_contract.py --require-live
+          # Consumer-side contract tests (floors + vendored-golden parse).
+          python tests/setec-contract/test_setec_contract.py
+
+      - name: Read pinned release
+        id: lock
+        run: |
+          set -euo pipefail
+          echo "setec_version=$(python -c "import json;print(json.load(open('setec-plugin.lock'))['setec_version'])")" >> "$GITHUB_OUTPUT"
+          echo "plugin_version=$(python -c "import json;print(json.load(open('setec-plugin.lock'))['plugin_version'])")" >> "$GITHUB_OUTPUT"
+
+      - name: Open bump PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/sync-setec-contract
+          commit-message: "Sync vendored SETEC contract to setec ${{ steps.lock.outputs.setec_version }} (release ${{ steps.setec.outputs.ref }})"
+          title: "Sync SETEC contract to ${{ steps.lock.outputs.setec_version }} (${{ steps.setec.outputs.ref }})"
+          body: |
+            Automated sync of the vendored SETEC contract to the latest SETEC
+            release. APODICTIC vendors only the CONTRACT (the projected
+            capabilities manifest + the R5 contract fixtures), not the plugin —
+            it invokes SETEC as a runtime subprocess.
+
+            - SETEC release: ${{ steps.setec.outputs.ref }}
+            - setec_version: ${{ steps.lock.outputs.setec_version }} (plugin v${{ steps.lock.outputs.plugin_version }})
+            - Re-derived `tests/setec-contract/setec-capabilities.json` + `fixtures/`; re-pinned `setec-plugin.lock`.
+
+            The drift gate (`check_setec_contract.py --require-live`) and the
+            consumer contract tests passed before this PR. Review the manifest
+            diff (especially any `min_setec_version` changes or dropped consumer
+            surfaces) and merge.
+
+            FINALIZATION reminder: confirm `setec-plugin.lock.provisional` is
+            now `false` and `BOOTSTRAP_SETEC_VERSION` is re-pinned if this is
+            the first real R1 release.
+          delete-branch: true
+          add-paths: |
+            tests/setec-contract/**
+            setec-plugin.lock
