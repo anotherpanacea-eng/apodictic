@@ -1,6 +1,7 @@
 # Cross-Manuscript Author Voice/Craft Fingerprint — the writer's signature, tracked over a career
 
 **Status:** Proposed (unbuilt). Roadmap: `ROADMAP.md` → [Horizon Capacities](../ROADMAP.md#horizon-capacities) Tier 1, item 9. Proposed implementation surface: a `specialized-audits/references/author-voice-fingerprint.md` module, `apodictic.voice_fingerprint.v1` blocks, a persistent **author-root** `Author_Voice_Profile.md` (operator-curated, see §Persistence), a `scripts/author_fingerprint.py` aggregator/validator, `validate.sh author-fingerprint`, and a worked example.
+<!-- built-when: scripts/author_fingerprint.py -->
 
 A writer's voice changes over a career — sometimes by growth, sometimes by drift, sometimes by an unconscious settling into the same cadence book after book. APODICTIC can already measure voice *within* a manuscript, but it has no memory *across* a writer's body of work. This capability is that memory: a persistent fingerprint that accumulates across the works an author **collects into one profile** and surfaces movement.
 

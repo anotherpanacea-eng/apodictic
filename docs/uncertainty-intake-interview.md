@@ -1,6 +1,7 @@
 # Uncertainty-Resolution Intake Interview — disambiguate what the text leaves open
 
 **Status:** Proposed (unbuilt). Roadmap: `ROADMAP.md` → [Horizon Capacities](../ROADMAP.md#horizon-capacities) "Reconsidered from the boundary," item 18. Proposed implementation surface: an extension at the existing after-Pass-0/1 checkpoint (`run-core.md §Mid-Run Escalation Check`), `apodictic.intake_query.v1` blocks, a `scripts/intake_interview.py` validator, `validate.sh intake-interview`, and a worked example.
+<!-- built-when: scripts/intake_interview.py -->
 
 APODICTIC already opens with a substantial intake. It is **not** a blank questionnaire: `run-core.md §Intake Protocol` runs a **draft-then-validate** loop — the framework presents its *inferred* contract ("this is what I infer from the text; please correct any misalignments") and the author confirms or corrects the genre, controlling-idea hypothesis, anti-idea, reader promise, comps, and constraints. The Shelf & Positioning audit separately captures the author's *Intended Shelf* and lane/format gates. So the inferred-vs-intended **contract** is already captured, with the inference shown first.
 

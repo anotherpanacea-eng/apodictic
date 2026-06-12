@@ -1,6 +1,7 @@
 # Promise-Contract Fidelity — does the pitch keep the promise the book makes?
 
 **Status:** Proposed (unbuilt). Roadmap: `ROADMAP.md` → [Horizon Capacities](../ROADMAP.md#horizon-capacities) Tier 1, item 4. Proposed implementation surface: a **core-editor workflow module** (homed like [Legal Risk Register](legal-risk-register.md) / Editor Scaffolding — *not* a craft audit), `core-editor/references/promise-contract.md`, an `apodictic.pitch_copy.v1` persisted input + `apodictic.finding.v1` findings with origin `PCF`, `scripts/promise_contract.py`, `validate.sh promise-contract`, and a worked example.
+<!-- built-when: scripts/promise_contract.py -->
 
 APODICTIC's foundational move is contract inference: read the manuscript, predict its **contract** (genre, reader promise, controlling idea, ending type), and treat the gap between inferred and intended as the signal. The same move applies to the author's **marketing copy**. A query foregrounds a subplot the book treats as minor; a back-cover blurb discloses a reveal the manuscript protects; the controlling idea the book is built on never appears in the pitch at all. Each is a **promise the copy makes — or fails to make — that the contract does not keep.** The writer usually can't see it, because they know what they meant.
 

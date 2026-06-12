@@ -61,6 +61,11 @@ jobs:
       - name: Changelog fragments parse
         run: node scripts/assemble-changelog.mjs --check
 
+      - name: Status-drift lint (spec Status vs shipped deliverables)
+        run: |
+          node scripts/check-status-drift.mjs --self-test
+          node scripts/check-status-drift.mjs
+
       # Guards that the display surfaces (overview-dashboard.html,
       # AUDIT_SELECTION_MATRIX.md) stay synced with the canonical audit/research
       # inventory: a sync-marker + changed-since signal (the #79 status-drift
