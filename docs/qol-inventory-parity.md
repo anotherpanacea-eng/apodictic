@@ -1,6 +1,6 @@
 # QoL — inventory-parity check (spec)
 
-**Status:** spec → build (Opus) → review (Fable). Standalone meta-check; **no diagnostic behavior, schema, or validator change; no validator-count bump** (a `.mjs` like `assemble-changelog`/`check-status-drift`). Branches from PR B (`claude/marketing-visual`) because it needs the *refreshed* dashboards/matrix to be green; merges after #81.
+**Status:** ✅ **Shipped — PR #82 (merged 2026-06-12, after #80 → #81).** Standalone meta-check; **no diagnostic behavior, schema, or validator change; no validator-count bump** (a `.mjs` like `assemble-changelog`/`check-status-drift`). Branched from PR B (`claude/marketing-visual`) because it needed the *refreshed* dashboards/matrix to be green; merged last in the chain.
 
 ## Problem
 The display surfaces (`overview-dashboard.html`, `AUDIT_SELECTION_MATRIX.md`) hand-list the audit/research inventory and drift behind the canonical registry — the exact rot PR B (#81) just hand-fixed. We want a mechanical guard so it can't silently recur.
