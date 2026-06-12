@@ -1,0 +1,3 @@
+### Onboarding — project dashboard (snapshot viewer)
+
+A new `plugins/apodictic/project-dashboard.html` — a self-contained, sandbox-safe **snapshot** view of your projects: select/filter by lifecycle node, see where each stands ("what now?"), and get the `/start <project>` launch command per project. It renders an `apodictic.project_registry.v1` payload (with the node + next action pre-computed by the tool and embedded), so it is render-only — a viewer and launch-pad, not a live monitor or controller. Complements `/projects` (text) with an at-a-glance visual, in the style of the existing route-explorer / overview dashboards.

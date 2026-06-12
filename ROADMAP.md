@@ -13,7 +13,7 @@
 | | [Multi-Party Intake](#multi-party-intake) | [**v2.1.0**](#v210--runner-governed-execution--finding-lifecycle-ids) | [Research / API Reliability Layer](#research--api-reliability-layer) |
 | | [Legal Risk Register](#legal-risk-register) | [**v2.0.0**](#v200--editorial-honesty--structural-integrity) | [Episode Cadence](#episode-cadence) |
 | | [Coaching Deepening](#coaching-deepening) | [v1.9.0](#v190--ai-prose-calibration-v20) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
-| | [Genre Audit Expansion](#genre--audit-expansion) | [v1.7.0](#v170--harness-engineering) | [Framework Overview Dashboard](#framework-overview-dashboard) |
+| | [Genre Audit Expansion](#genre--audit-expansion) | [v1.7.0](#v170--harness-engineering) | |
 | | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) | [v1.4.0](#v140--surface-hardening--writers-block) | [Corpus-Expansion Fixtures](#deferred-corpus-expansion-candidates) |
 | | | [v1.3.0](#v130--nonfiction-argument-engine--genre-audits) | |
 | | | [v1.2.1](#v121--audit-sequencing--model-tags) | [Horizon Capacities](#horizon-capacities) |
@@ -106,8 +106,8 @@ Validate that the engine works on real argument-shaped nonfiction, not just in t
 **Next round (after the convergence runs, PR #37).** Grouped by what each needs:
 
 *Substantive (engine / key — the next calibration round):*
-1. **Strengthen Test A** (the genre-genericity decoy filter). `ppi` only partially closed cross-vendor — blind GPT-4 ran Test B but its self-undermining objection stayed on the public-safety **decoy** axis; the filter must recognize "but public safety" as the genre-generic counter and downrank it.
-2. **`policy-brief-uncompared` under-fire fix.** An AT3 recommendation with no comparative defense and no funding mechanism should drive **Must-Fix → UNSOUND**, but it reads SOUND (the Step-9 default-to-SOUND overrides the Severity Floor). The natural pair with #1 for the next round.
+1. ~~**Strengthen Test A** (the genre-genericity decoy filter).~~ **Run-confirmed 2026-06-11 (PR #72):** mechanism was already complete; the benchmark run had both models downrank "but public safety" as the decoy (**OB5**) on `ppi`. No edit needed.
+2. ~~**`policy-brief-uncompared` under-fire fix.**~~ **DONE / benchmark-validated 2026-06-11 (PR #72):** added classification **rule 2a** (an AT3 recommendation with wholly-undischarged comparative burden → Structurally Unsound, FM-A10), then narrowed it post-benchmark so a strawman foil counts as partial discharge (soft spot), not a defeat. See `docs/argument-benchmark-calibration-round.md` → Status.
 
 *Human-gated (ready — just needs people):*
 3. **Recruit one second editor** — the GT4–GT7 / personal-independence upgrade. The blind packet is built and waiting in Dropbox (`argument-benchmark-second-editor-packet/`, with its own `TODO.md`); pointer in `evals/fixtures/argument-benchmark/HANDOFF.md`.
@@ -220,7 +220,7 @@ Argument spine + source/evidence map + scene ethics plan. Separate from fiction 
 
 Defamation concerns in memoir/autofiction, privacy issues for identifiable individuals, rights clearance flags. Produces a legal risk register with severity levels and escalation triggers. "I'm flagging areas that may need legal review. I am not a lawyer."
 
-**Built (Increment 1).** A workflow that **flags** a manuscript's legal-exposure areas — `defamation` / `privacy` / `rights-clearance` / `other` — each as an `apodictic.legal_risk.v1` block with a **legal-escalation severity** (`monitor` / `review-recommended` / `review-now`, kept orthogonal to the editorial Must/Should/Could scale) and an escalation trigger, in a `[Project]_Legal_Risk_Register_[runlabel].md` artifact. The module firewall is **flag, don't practice law**: it never adjudicates. Enforced by the `legal-risk` validator (L1 schema, L2 unique ids, **L3 not-a-lawyer disclaimer present**; **W1 legal-advice drift** — a legal conclusion where a flag belongs, overridable — and W2 a `review-now` item not routed to counsel), with a canonical `--check-all` gate. Validators 24 → 25. Homed in core-editor; spec: [`docs/legal-risk-register.md`](docs/legal-risk-register.md). **Future increments:** a `/legal-risk` command + intake routing; per-class detection guidance; a standard escalation-trigger taxonomy.
+**Built (Increment 1).** A workflow that **flags** a manuscript's legal-exposure areas — `defamation` / `privacy` / `rights-clearance` / `other` — each as an `apodictic.legal_risk.v1` block with a **legal-escalation severity** (`monitor` / `review-recommended` / `review-now`, kept orthogonal to the editorial Must/Should/Could scale) and an escalation trigger, in a `[Project]_Legal_Risk_Register_[runlabel].md` artifact. The module firewall is **flag, don't practice law**: it never adjudicates. Enforced by the `legal-risk` validator (L1 schema, L2 unique ids, **L3 not-a-lawyer disclaimer present**; **W1 legal-advice drift** — a legal conclusion where a flag belongs, overridable — and W2 a `review-now` item not routed to counsel), with a canonical `--check-all` gate. Validators 24 → 25. Homed in core-editor; spec: [`docs/legal-risk-register.md`](docs/legal-risk-register.md). **Built since:** the `/legal-risk` command + `constraint:risk` intake routing (offer-then-attach); the **detection layer** — per-class detection guidance + a standard escalation-trigger taxonomy (`references/legal-risk-register.md` §Detection guidance / §Escalation-trigger taxonomy), synthesized from cross-model research ([`docs/legal-risk-detection-level-setting.md`](docs/legal-risk-detection-level-setting.md)). **Future increments:** content-detection auto-recommend (flag the register for memoir/real-people *without* an explicit `constraint:risk`).
 
 ### Episode Cadence
 
@@ -250,10 +250,10 @@ The increments form a dependency graph (not a single line): **{1, 2} → 3 → 4
 
 Small, independent items surfaced during the Increment 1–4 build + reviews. Neither blocks anything; each is a clean standalone change.
 
-- **Legal Risk Register router wiring.** The Legal Risk Register module is built (`references/legal-risk-register.md`), and the fork/overlay split classifies it as an output **overlay** (`intake-router-runtime.md` §6 Table B) — but `constraint:risk` does not yet *auto-attach* it; the route map says "module built; router auto-wiring pending." Wire `constraint:risk` to offer + attach the overlay (and add the `/legal-risk` direct command), per the [Legal Risk Register](#legal-risk-register) future-increments note.
-- **`finding-trace` completion-glob narrowing.** `finding_trace.py`'s `_COMPLETION_GLOBS = ("*_Revision_*.md",)` is over-broad — a deadline-coaching `*_Revision_Calendar_*.md` matches it. Benign today (a calendar carries no `<!-- resolved: F-… -->` markers, so it contributes nothing), but the `revision_round` gate (Increment 4a) narrowed its own `revision_report` artifact_key to `*_Revision_Report_*.md` for exactly this reason. Narrow `_COMPLETION_GLOBS` to match, for consistency.
+- **Legal Risk Register router wiring — Built.** `constraint:risk` now offers + attaches the Legal Risk Register overlay (synthesis constraint hook, `run-synthesis.md §Constraint mode`), plus a `/legal-risk` direct command. Route-map status flipped to Built (§3 D / §6 Table B / §4a). *(Remaining future, separate: content-detection auto-recommend for memoir-with-real-people without the explicit flag.)*
+- **`finding-trace` completion-glob narrowing — Built.** `_COMPLETION_GLOBS` narrowed to `*_Revision_Report_*.md` (was `*_Revision_*.md`), so a deadline-coaching `*_Revision_Calendar_*.md` is no longer mis-classified a completion — aligned with the Increment-4a gate. Negative-test guarded.
 
-**Status:** Increments 1–4 **built** (router fork/overlay split; project registry + binding; state-driven dispatch; revision-loop spine incl. the gated `revision_round` phase). Two follow-ups above remain open.
+**Status:** Increments 1–4 **built** (router fork/overlay split; project registry + binding; state-driven dispatch; revision-loop spine incl. the gated `revision_round` phase). Both post-Increment-4 follow-ups above built, plus the **project-dashboard artifact** (`plugins/apodictic/project-dashboard.html` — snapshot viewer + launcher). The remaining Legal Risk Register increment is *content-detection auto-recommend* (flag-driven attach is done); see `intake-router-design.md` § remaining gaps.
 
 ---
 
@@ -331,7 +331,9 @@ After Tier 1 passes complete, the system has significantly more information abou
 
 ### Framework Overview Dashboard
 
-Static, single-file HTML overview of the plugin's capabilities. System-at-a-glance visual layout, highlighted workflow paths, the Firewall in user-facing language. Build after command restructuring is settled.
+**Status:** ✅ **Built / shipped.** `plugins/apodictic/overview-dashboard.html` and `route-explorer.html` ship the static single-file overview; content refreshed to v2.3.1 reality in #81, and the inventory-parity check (#82) guards them against re-drift.
+
+Static, single-file HTML overview of the plugin's capabilities. System-at-a-glance visual layout, highlighted workflow paths, the Firewall in user-facing language. ~~Build after command restructuring is settled.~~
 
 ### Pre-Skill Context Compaction
 
@@ -347,7 +349,7 @@ Continuing the v0.5 vision: the plugin should be organized around writer questio
 
 1. **Command taxonomy in release-registry.** Each command gets `category`, `status` (`primary` / `first_class_shortcut` / `compat_alias`), `router_equivalent`, and a plain-language writer question it answers. `/revision-plan` is the only true compat alias (→ `/coach`). All others stay first-class.
 
-2. **Doc sync across all public surfaces.** Every public doc, README, help surface, and marketplace entry uses the same grouped command presentation generated from the registry. No more hand-maintained command lists.
+2. **Doc sync across all public surfaces.** ✅ **Shipped (#80).** Every public doc, README, help surface, and marketplace entry uses the same grouped command presentation generated from the registry — the 5 previously-unregistered commands are registered and both READMEs' command lists are registry-generated. No more hand-maintained command lists; the inventory-parity check (#82) keeps the dashboard/matrix inventories from drifting again.
 
 3. **Canonical 8-block macro map.** Resolve Pass 4 ambiguity by giving Emotional Dynamics its own block permanently. The 8 blocks: Structure Map, Reader Dynamics, Character Architecture, Emotional Dynamics, Scene Delivery, Reveal Economy, Theme & Continuity, Submission Readiness. Source of truth in pass-dependencies.md.
 
@@ -380,11 +382,11 @@ Cross-field calibration: the visualization and annotated-manuscript gaps are val
 
 These invent nothing — they render, export, or extract what the engine already produces — and sit in gaps the plan does not touch.
 
-1. **Manuscript-Structure Visualizations.** A *manuscript-specific* visual report — tension/pacing curve, POV-time distribution, character co-presence network, scene-function heatmap, reveal-economy timeline, beat-map against the chosen spine. **Distinct from** the planned [Framework Overview Dashboard](#framework-overview-dashboard), which visualizes the *plugin's* capabilities, not a book. Highest externally-validated gap (Fictionary's signature). Builds a new single-file SVG renderer in the static-HTML house pattern (no editorial-letter render pipeline exists to reuse); the data already lives, machine-readable, in the Findings Ledger (`apodictic.finding.v1` blocks) and `Timeline.md` (the Event Ledger's per-scene word-count/POV). Firewall-safe (it renders diagnosis, invents nothing). *Effort: low–medium.* Spec: [`docs/manuscript-visualizations.md`](docs/manuscript-visualizations.md).
+1. **Manuscript-Structure Visualizations — Increment 1 built (charts 1–3).** A *manuscript-specific* visual report. **Built:** the pacing/word-count curve, POV-time distribution, and finding-severity-by-chapter charts, as a render-only single-file SVG companion (`viz_manifest.py render`) over a provenance-closed `apodictic.viz_manifest.v1` manifest. **Future:** the character co-presence network, scene-function heatmap, reveal-economy timeline, and beat-map against the chosen spine (each gated on its upstream artifact becoming machine-readable). **Distinct from** the planned [Framework Overview Dashboard](#framework-overview-dashboard), which visualizes the *plugin's* capabilities, not a book. Highest externally-validated gap (Fictionary's signature). Builds a new single-file SVG renderer in the static-HTML house pattern (no editorial-letter render pipeline exists to reuse); the data already lives, machine-readable, in the Findings Ledger (`apodictic.finding.v1` blocks) and `Timeline.md` (the Event Ledger's per-scene word-count/POV). Firewall-safe (it renders diagnosis, invents nothing). Spec: [`docs/manuscript-visualizations.md`](docs/manuscript-visualizations.md).
 
 2. **Annotated-Manuscript Deliverable.** Locus-anchored margin notes exported as an annotated copy (or Word / Google Docs / Obsidian / CriticMarkup comments) — the #1 human-DE deliverable, which APODICTIC does not produce (it emits a letter that only *references* loci). Findings already carry stable loci **and** durable IDs ([Finding Lifecycle IDs](#finding-lifecycle-ids)), so this is an export/anchor problem, not a reasoning one. Comments only, never tracked prose changes → firewall-clean. Synergistic with the FLI track. *Effort: low–medium.* Spec: [`docs/annotated-manuscript.md`](docs/annotated-manuscript.md).
 
-3. **Beta-Reader Instrument Generation.** The upstream complement to [Feedback Triage](#feedback-triage--built-increment-1-v220) (which *ingests* reader feedback): turn the diagnosis's open, low-confidence questions into a targeted reader questionnaire. Exploits the confidence axis the engine already tracks. Firewall-safe. *Effort: low.* Spec: [`docs/beta-reader-instrument.md`](docs/beta-reader-instrument.md).
+3. **Beta-Reader Instrument Generation — built.** The upstream complement to [Feedback Triage](#feedback-triage--built-increment-1-v220) (which *ingests* reader feedback): turns the diagnosis's open, low-confidence questions into a targeted reader questionnaire. Exploits the confidence axis the engine already tracks. Firewall-safe. Built as the `/reader-questions` command + revision-coach mode + the `reader-instrument` validator. Spec/docs: [`docs/beta-reader-instrument.md`](docs/beta-reader-instrument.md).
 
 4. **Promise-vs-Contract Audit (author's own marketing copy).** Diagnose a query letter / synopsis / jacket blurb against the *inferred manuscript contract* — does the pitch match the book? **Distinct from** shelf-positioning (comps) and submission-readiness (is it ready). It is APODICTIC's core contract-mismatch move pointed at the pitch instead of the prose. Firewall caveat: diagnose the author's copy; never *write* the query. *Effort: medium.* (See also #14.) Spec: [`docs/promise-contract-audit.md`](docs/promise-contract-audit.md).
 

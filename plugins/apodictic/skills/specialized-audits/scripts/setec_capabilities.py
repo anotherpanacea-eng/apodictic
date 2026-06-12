@@ -77,7 +77,30 @@ class SurfaceCapability:
     json_delivery: str | None
     handoff: str | None
     inputs: list[dict[str, Any]]
+    required_groups: list[str]
     raw: dict[str, Any]
+
+    def missing_required_groups(self, argv: list[str]) -> list[str]:
+        """Required input groups (R1 ``required_groups``) for which NONE of the
+        group's member flags appear in ``argv``. Each named group requires
+        exactly one of its members (e.g. ``idiolect_detector`` needs one
+        ``target`` source and one ``reference`` source). Fully manifest-driven:
+        the flag->group map comes from this surface's structured ``inputs[]``,
+        so the consumer hardcodes no surface's flags. Returns [] when every
+        required group is satisfied (also [] when the surface declares none)."""
+        if not self.required_groups:
+            return []
+        flag_to_group: dict[str, str] = {
+            item["flag"]: item["group"]
+            for item in self.inputs
+            if isinstance(item, dict) and item.get("flag") and item.get("group")
+        }
+        present: set[str] = set()
+        for tok in argv:
+            group = flag_to_group.get(tok.split("=", 1)[0])
+            if group:
+                present.add(group)
+        return [g for g in self.required_groups if g not in present]
 
 
 @dataclass(frozen=True)
@@ -162,6 +185,7 @@ def parse_manifest_payload(
         if not floor:
             continue
         inputs = entry.get("inputs")
+        required_groups = entry.get("required_groups")
         surfaces[surface] = SurfaceCapability(
             surface=surface,
             min_setec_version=floor,
@@ -169,6 +193,11 @@ def parse_manifest_payload(
             json_delivery=entry.get("json_delivery"),
             handoff=entry.get("handoff"),
             inputs=list(inputs) if isinstance(inputs, list) else [],
+            required_groups=(
+                list(required_groups)
+                if isinstance(required_groups, list)
+                else []
+            ),
             raw=entry,
         )
     return SetecManifest(
@@ -289,6 +318,7 @@ def _cli_main(argv: list[str]) -> int:
                 "min_setec_version": cap.min_setec_version_str,
                 "json_delivery": cap.json_delivery,
                 "handoff": cap.handoff,
+                "required_groups": cap.required_groups,
                 "floor_satisfied": True,
             }
         else:

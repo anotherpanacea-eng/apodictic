@@ -125,7 +125,7 @@ Options change based on the Artifact answer.
 | Option | Label | Plain-language description | Internal value |
 |--------|-------|---------------------------|----------------|
 | A | Standard read (recommended) | I run all my analysis in one continuous session, keeping the full manuscript in view the whole time. Fast and thorough for most drafts. | `execution:single-agent` |
-| B | Full independent read (most thorough) | Every analytical lens reads the entire manuscript independently, so they can't influence each other. Roughly 5x the cost, but produces the deepest, least biased analysis. Best for final submission prep. | `execution:swarm` |
+| B | Full independent read (final-round insurance) | Every analytical lens reads the entire manuscript independently, so they can't influence each other — an independent-lens verification pass. Roughly 5x the cost (a 2026-06 re-test measured ~8.5×+ on long fiction). Best for final submission prep, not everyday depth. | `execution:swarm` |
 
 **Large-context recommendation by context:**
 
@@ -144,7 +144,7 @@ Options change based on the Artifact answer.
 |--------|-------|---------------------------|----------------|
 | A | Standard read (fastest) | I read the whole manuscript once, then run all my analysis in sequence. Good for most drafts. Some findings may be thinner on very long novels because earlier analysis fades as I work. | `execution:sequential` |
 | B | Targeted deep read (recommended for novels) | I read the whole manuscript once to map it, then send each analytical lens to the specific scenes that need it most. Each lens works independently, so they can't parrot each other. Costs roughly 2–3x as much as a standard read. | `execution:hybrid` |
-| C | Full independent read (most thorough) | Every analytical lens reads the entire manuscript independently. The most findings, the deepest analysis, but roughly 5x the cost of a standard read. Best for final submission prep. | `execution:swarm` |
+| C | Full independent read (final-round insurance) | Every analytical lens reads the entire manuscript independently — an independent-lens verification pass. Roughly 5x the cost of a standard read (a 2026-06 re-test measured ~8.5×+ on long fiction). Best for final submission prep, not everyday depth. | `execution:swarm` |
 
 **Standard-context recommendation by context:**
 
@@ -152,7 +152,7 @@ Options change based on the Artifact answer.
 |-----------|---------------|
 | 40k–80k words, goal = `repair` | Mention option B exists; don't push it. Sequential handles this range adequately. |
 | 80k+ words, goal = `repair` | Recommend B. "For a manuscript this length, the targeted read catches things the standard read misses." |
-| Any length, goal = `submit` | Recommend B or C. "Since you're checking submission readiness, the deeper read is worth the cost." |
+| Any length, goal = `submit` | Recommend B or C. "Since you're checking submission readiness, the independent-lens verification read is worth the cost." |
 | User selects B or C | Confirm: "That adds to the token cost — just making sure you're good with that." |
 | User selects A or skips | Proceed with sequential. No friction. |
 
@@ -187,12 +187,12 @@ Always asked after routing, before work begins. Multiple selections allowed.
 | A | I'm on a deadline | `constraint:time` | **Fork** (workflow) | Route to Submission Triage: Pass 1 → SR codes (detectable subset) → go/no-go memo with blind spots. See `references/submission-triage.md`. |
 | B | Parts of this were written with AI | `constraint:ai` | **Overlay** (lens) | Add AI-Prose Calibration overlay. |
 | C | This is nonfiction | `constraint:nonfiction` | **Fork** (engine) | Run nonfiction triage. Route argument-shaped work to the Nonfiction Argument Engine, scene-led nonfiction to Narrative Nonfiction Craft, and memoir / witness-led work to Memoir & CNF. Idea-stage Nonfiction Pre-Draft remains a gap. |
-| D | There's sensitive or legally risky content | `constraint:risk` | **Overlay** (output) | Add Legal Risk Register output. Module **built** (`references/legal-risk-register.md`); router auto-wiring pending — offer it, attach on accept. |
+| D | There's sensitive or legally risky content | `constraint:risk` | **Overlay** (output) | **Built.** Offer the Legal Risk Register; on accept, attach `[Project]_Legal_Risk_Register_[runlabel].md` (`references/legal-risk-register.md`; synthesis hook in `run-synthesis.md §Constraint mode`). Direct entry: `/legal-risk`. |
 | E | I'm editing someone else's work | `operator:editor` | **Overlay** (output) | Shift output to editor scaffolding (editor-facing reframe of the synthesis letter). **Built** — see `references/editor-scaffolding.md`. |
 | F | I'm facilitating a writing group | `operator:facilitator` | **Overlay** (output) | Shift to diagnostic vocabulary mode (produce a teaching Vocabulary Guide: glossary + discussion prompts). **Built** — see `references/diagnostic-vocabulary.md`. |
 | G | We're co-authoring (multiple writers) | `operator:team` | **Fork** (intake) | Note conflicting-vision risk. **Gap: multi-party intake not yet built.** |
 | H | Use hybrid mode (better analysis, moderate token cost) | `execution:hybrid` | **Overlay** (execution) | Pass 0+1 reads full manuscript and builds a focus map; later passes read the outline + targeted excerpts as independent subagents. ~2–3x token cost. See `run-core.md` §Execution Mode. |
-| I | Use swarm mode (deepest analysis, highest token cost) | `execution:swarm` | **Overlay** (execution) | Each pass runs as an independent subagent with full manuscript. ~2x findings, ~5x token cost. See `run-core.md` §Execution Mode. |
+| I | Use swarm mode (final-round verification, highest token cost) | `execution:swarm` | **Overlay** (execution) | Each pass runs as an independent subagent with full manuscript — architectural isolation for a verification pass. ~5x token cost (a 2026-06 N=1 re-test measured ~8.5×+ on long fiction and did not reproduce a depth advantage); reserve for final submission prep. See `run-core.md` §Execution Mode. |
 | J | No constraints — let's go | (none) | — | Proceed with standard workflow. |
 
 **Execution mode note:** For manuscripts over 40k words, §2b handles the execution mode question before §3. Options H and I below remain as a safety net — if the user didn't get §2b (shorter manuscript, direct command entry) but knows to ask for hybrid or swarm, these options catch it.
@@ -354,7 +354,7 @@ Workflow-*modifying* modifiers. Each composes onto any compatible Table A base r
 | AI-Prose Calibration | `constraint:ai` | Adds AI-prose lens + findings (`craft/ai-prose-calibration.md`) | Any prose-bearing repair/submit base route (on `fragments \| draft`, calibration deferred to post-synthesis) | **Built** |
 | Editor Scaffolding | `operator:editor` | Re-aims the editorial letter at a human editor | Any Core DE letter (`references/editor-scaffolding.md`) | **Built** |
 | Diagnostic Vocabulary | `operator:facilitator` | Adds a teaching Vocabulary Guide alongside the letter | Any Core DE letter (`references/diagnostic-vocabulary.md`) | **Built** |
-| Legal Risk Register | `constraint:risk` | Adds a Legal Risk Register output | Any repair/submit base route (`references/legal-risk-register.md`) | **Built** (module); router auto-wiring pending |
+| Legal Risk Register | `constraint:risk` | Adds a Legal Risk Register output (offer-then-attach) | Any repair/submit base route (`references/legal-risk-register.md`) | **Built** |
 | Hybrid execution | `execution:hybrid` | Focus-map depth; ~2–3x token cost; content-invariant | Any pass-based run >40k words (`run-core.md` §Execution Mode) | **Built** |
 | Swarm execution | `execution:swarm` | Independent-lens depth; ~5x token cost; content-invariant | Any pass-based run (`run-core.md` §Execution Mode) | **Built** |
 

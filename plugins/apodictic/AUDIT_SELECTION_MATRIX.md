@@ -1,5 +1,6 @@
 # APODICTIC Audit Selection Matrix
-*Last Updated: February 2026*
+
+<!-- inventory-synced: audits=42:301f5072 research=6:a1b9dfc4 -->
 
 This guide helps route a manuscript to the right APODICTIC passes and specialized audits.
 
@@ -105,13 +106,26 @@ Use these when one craft system needs deeper diagnosis than core passes provide.
 | Force Architecture | Tests legibility, causality, cost, and meaning in physical conflict | Fights/action read as spectacle loops |
 | AI-Prose Calibration | Diagnoses AI-patterned prose failure modes | Manuscript is AI-assisted or "sounds AI" |
 | Dialectical Clarity | Tests argument structure and fairness | Idea-heavy or philosophical manuscripts |
-| Adversarial Evidence Review | Pressure-tests evidence under formal adversarial protocols (ACH, cross-exam, severe testing) | After Citation Verifier & Field Recon when evidence defensibility is critical for publication, testimony, or legislative advocacy |
 | Banister (Epistemic Humility) | Tests rhetorical humility and anti-strawman integrity | Moral certainty or authorial overreach concerns |
 | Shelf Positioning | Tests market shelf fit and signal clarity | Positioning, pitching, or comp selection stage |
 | Series & Composite Novel | Tests multi-part coherence and standalone function | Series entries or linked-story books |
 | Short Fiction | Tests compression, effect unity, ending force | Short stories, flash, novella-length compression |
 | Compression | Diagnoses expendable material across 5 channels (16 flags, 4 hard gates) | Manuscript runs long, scenes feel padded, or proportional imbalance detected |
 | Reception Risk | Flags cultural, political, and ideological reception risk for human sensitivity review | Author requests sensitivity pre-read, manuscript handles identity/power/trauma, or "how will this land?" questions |
+| Narrative-Decision (StoryScope) | Tracks how decisions propagate consequences through the narrative (consumer of SETEC Surface 6) | Choice-and-consequence wiring across scenes needs a dedicated lens |
+| POV Voice Profile | Profiles per-POV voice signatures and distance discipline (opt-in) | Multi-POV works where voices blur or distance drifts |
+| Idiolect Preservation | Advisory: surfaces the author's idiosyncratic voice markers so revision preserves them | Author worries edits will sand off their distinctive voice |
+| Punctuation Cadence | Advisory: maps punctuation rhythm and breath as a deliberate prosody signal | Line-level rhythm or pointing feels off, mechanical, or homogenized |
+
+**Nonfiction Argument companions** (load with the Argument Engine, not the core fiction passes):
+
+| Companion | What it does | Use it when |
+|---|---|---|
+| Dialectical Clarity | Tests argument structure, thesis-antithesis balance, and fairness | Idea-heavy or argument-shaped nonfiction |
+| Argument Evidence | Audits the evidence base under the claim ladder | Claims outrun their support or sourcing is thin |
+| Argument Persuasion | Tests audience fit, rhetorical force, and concession discipline | The argument is sound but not landing for its readers |
+| Argument Red Team | Stress-tests the argument against its strongest opposition | Before publication/testimony where the case will be attacked |
+| Adversarial Evidence Review | Pressure-tests evidence under formal adversarial protocols (ACH, cross-exam, severe testing) | After Citation Verifier & Field Recon when evidence defensibility is critical |
 
 ---
 
@@ -136,6 +150,8 @@ Use when genre-specific architecture is central.
 |---|---|---|
 | Mystery/Thriller Architecture | Tests clue economy, red herrings, clocks, fairness | Mystery or thriller projects |
 | Horror Craft Integration | Tests dread production, destabilization, consequence embodiment | Horror or horror-hybrid projects |
+| Supernatural Horror | Tests whether the supernatural apparatus produces violated-reality dread vs. supernatural-coded set dressing | Ghosts, demons, curses, hauntings, or occult systems are load-bearing |
+| Grimdark / Dark Fantasy | Tests whether the grimdark apparatus produces productive darkness (moral pressure, consequential violence) vs. grimdark-coded atmosphere | Grimdark or dark-fantasy positioning, tone, or bleakness as argument |
 | SFF Worldbuilding Integration | Tests whether worldbuilding carries narrative load | Science fiction or fantasy projects |
 | Memoir & Creative Nonfiction | Tests truth-craft, narrator stance, ethical framing | Memoir or personal narrative projects |
 | Narrative Nonfiction Craft | Tests scene/reporting integration and narrative pressure | Reported nonfiction with narrative goals |
@@ -165,9 +181,11 @@ Use when external validation is required.
 
 | Mode | What it does | Use it when |
 |---|---|---|
+| Citation Verifier | Verifies source existence, accuracy, and fit against attached claims (produces `Citation_Ledger.md`) | Nonfiction or sourced fiction headed for publication |
 | Comp Validation | Checks comp recency, category fit, and viability | Querying or submission prep |
-| Genre Contract Currency | Checks whether genre expectations are current | Fast-moving subgenre uncertainty |
 | Factual Verification | Spot-checks external claims for accuracy | Real-world facts affect trust or risk |
+| Field Reconnaissance | Scouts for counterevidence, literature gaps, and source-ecosystem health (produces `Field_Reconnaissance_Report.md`) | Argument-shaped work that must survive adversarial scrutiny |
+| Genre Contract Currency | Checks whether genre expectations are current | Fast-moving subgenre uncertainty |
 | Representation Context | Surfaces current discourse for outside-experience writing | Sensitivity/context checks are needed |
 
 ---
@@ -193,6 +211,10 @@ Use these as default combinations.
 | Queer romance | Core DE + Queer Romance/Erotica + Emotional Craft + Interiority Preservation |
 | Stuck draft / structural confusion | Plot Selection & Coaching (triage) + Plot Architecture (diagnosis) |
 | Nonfiction without narrative shape | Franklin Pathway → then Core DE if material is classified as storyable |
+| Sensitive / legally exposed content (`constraint:risk`) | Core DE + Legal Risk Register — flags defamation, privacy, and rights-clearance exposure and routes serious items to counsel; not legal advice |
+| Returning with beta-reader / critique feedback | Feedback Triage → Core DE — sort, validate, and prioritize notes before spending revision time |
+| Designing a beta read worth running | Beta-Reader Instrument — turn the diagnosis's open uncertainties into a focused, non-leading reader questionnaire |
+| Nonfiction argument that must hold up | Nonfiction Argument Engine (Dialectical Clarity + Argument companions) + Citation Verifier + Field Reconnaissance |
 
 ---
 
