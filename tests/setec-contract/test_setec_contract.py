@@ -545,6 +545,46 @@ def t7_idiolect_help_bypasses_required_groups() -> None:
     )
 
 
+# --------------------------------------------------------------------------
+# T8 — run_surface_cli preserves the dispatcher's exit code (no re-derivation).
+# --------------------------------------------------------------------------
+def t8_run_surface_cli_preserves_dispatcher_exit_code() -> None:
+    print("T8: run_surface_cli preserves the dispatcher's exit code")
+    import contextlib
+    import io
+
+    def _err_result(returncode: int):
+        env = {
+            "schema_version": "1.0", "available": False,
+            "reason_category": "bad_input", "reason": "unrecognized --bogus",
+        }
+        return setec_runner.SupplementResult(
+            schema_version="1.0", task_surface=None, tool="idiolect_detector",
+            version="1.114.0", available=False, target={}, baseline=None,
+            results={}, claim_license=None, claim_license_rendered=None,
+            reason="unrecognized --bogus", reason_category="bad_input",
+            envelope=env, returncode=returncode,
+        )
+
+    orig = setec_runner.run_supplement
+    try:
+        # SAME reason_category (bad_input), DIFFERENT dispatcher exit codes: a
+        # known-surface contract failure is 3, an unknown-surface discovery
+        # failure is 2. run_surface_cli must preserve each — a category->code
+        # map cannot, since both are `bad_input`.
+        setec_runner.run_supplement = lambda surface, argv: _err_result(3)
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc3 = setec_runner.run_surface_cli("idiolect_detector", ["--bogus"])
+        check(rc3 == 3, f"known-surface bad_input preserves dispatcher exit 3 (got {rc3})")
+
+        setec_runner.run_supplement = lambda surface, argv: _err_result(2)
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc2 = setec_runner.run_surface_cli("nope", [])
+        check(rc2 == 2, f"unknown-surface bad_input preserves dispatcher exit 2 (got {rc2})")
+    finally:
+        setec_runner.run_supplement = orig
+
+
 def main() -> int:
     for fn in (
         t1_floor_resolution_from_vendored_manifest,
@@ -555,6 +595,7 @@ def main() -> int:
         t5_drift_gate_self_test,
         t6_required_groups_validation,
         t7_idiolect_help_bypasses_required_groups,
+        t8_run_surface_cli_preserves_dispatcher_exit_code,
     ):
         fn()
         setec_capabilities.clear_cache()
