@@ -67,13 +67,19 @@ function listMarkdown(dir) {
 // code blocks — including this lint's own spec — are never parsed.
 function unfencedLines(text) {
   const out = [];
-  let inFence = false;
+  let fenceChar = null; // '`' or '~' while inside a fence, else null
   for (const line of text.split("\n")) {
-    if (line.trim().startsWith("```")) {
-      inFence = !inFence;
-      continue;
+    const t = line.trim();
+    if (fenceChar === null) {
+      if (t.startsWith("```") || t.startsWith("~~~")) {
+        fenceChar = t[0];
+        continue;
+      }
+      out.push(line);
+    } else {
+      // inside a fence: skip everything until a close line of the SAME fence char
+      if (t.startsWith(fenceChar.repeat(3))) fenceChar = null;
     }
-    if (!inFence) out.push(line);
   }
   return out;
 }
@@ -177,7 +183,8 @@ function scan(root) {
     const hit = markers.find((m) => markerTrue(m, root));
     if (hit) {
       const cond = hit.literal === undefined ? hit.path : `${hit.path} contains "${hit.literal}"`;
-      stale.push(`${rel}: Status says "${statusLine.slice(0, 80)}" but deliverable exists: ${cond}`);
+      const excerpt = statusLine.replace(/\*/g, "").slice(0, 80);
+      stale.push(`${rel}: Status says "${excerpt}" but deliverable exists: ${cond}`);
     }
   }
   return { stale, errors, markerCount, scanned: files.length };
@@ -266,6 +273,13 @@ function selfTest() {
     "scripts/g.py": "x\n",
   }));
   check("fence_immunity", r.stale.length === 0 && r.markerCount === 0);
+
+  // 7b. marker inside a ~~~ fenced block → also ignored (tilde fences)
+  r = run(mk({
+    "docs/g2.md": "**Status:** Proposed (unbuilt)\n~~~\n<!-- built-when: scripts/g2.py -->\n~~~\n",
+    "scripts/g2.py": "x\n",
+  }));
+  check("fence_immunity_tilde", r.stale.length === 0 && r.markerCount === 0);
 
   // 8. malformed markers → ERROR (glob / .. / absolute / unparseable tail)
   for (const [label, body] of [
