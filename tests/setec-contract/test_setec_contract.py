@@ -306,6 +306,35 @@ def t6_required_groups_validation() -> None:
     )
 
 
+# --------------------------------------------------------------------------
+# T7 — help/usage requests bypass the idiolect required_groups gate.
+# --------------------------------------------------------------------------
+def t7_idiolect_help_bypasses_required_groups() -> None:
+    print("T7: --help/-h bypass the idiolect required_groups gate")
+    import ai_prose_idiolect_detector as idio_shim  # noqa: E402
+
+    # Help/usage requests must pass through to SETEC's own --help, not be
+    # blocked by the consumer's missing-group error.
+    check(
+        idio_shim._enforce_required_groups(["--help"]) is False,
+        "--help bypasses the required_groups gate",
+    )
+    check(
+        idio_shim._enforce_required_groups(["-h"]) is False,
+        "-h bypasses the required_groups gate",
+    )
+    check(
+        idio_shim._enforce_required_groups(["--target-dir", "x", "--help"])
+        is False,
+        "--help bypasses even alongside other flags",
+    )
+    # A real detection run (no help flag) is still gated.
+    check(
+        idio_shim._enforce_required_groups(["--target-dir", "x"]) is True,
+        "a non-help invocation still enforces required_groups",
+    )
+
+
 def main() -> int:
     for fn in (
         t1_floor_resolution_from_vendored_manifest,
@@ -314,6 +343,7 @@ def main() -> int:
         t4_below_surface_floor_fails_with_surface_floor,
         t5_drift_gate_self_test,
         t6_required_groups_validation,
+        t7_idiolect_help_bypasses_required_groups,
     ):
         fn()
         setec_capabilities.clear_cache()
