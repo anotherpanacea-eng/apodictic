@@ -1,6 +1,6 @@
 # Runner-Governed Execution — Design Spec
 
-**Status:** increments **1–3 built** (cooperative gate manifest + engine + sidecar state + finding-ID lifecycle); increment **4** (external host orchestrator) remains future; increment **5** (structured gate-event records) is **designed (§Increment 5 below), not yet built**. Roadmap: `ROADMAP.md` → Harness Engineering → Runner-Governed Execution. Implementation: `plugins/apodictic/schemas/execution-gates.v1.json`, `scripts/run_gate.py`, `validate.sh gate`.
+**Status:** increments **1–3 + 5 built** (shipped v2.1.0) — cooperative gate manifest + engine + sidecar state + finding-ID lifecycle (1–3), plus **structured gate-event records** (append-only `execution.gate_events[]` as the canonical record, the `== fold(gate_events)` resume pointer, the `--attest` handshake, and the `gate-state` validator that enforces it) (increment 5; §Increment 5 below is its design record). Increment **4** (external host orchestrator) remains future. Roadmap: `ROADMAP.md` → Harness Engineering → Runner-Governed Execution. Implementation: `plugins/apodictic/schemas/execution-gates.v1.json`, `scripts/run_gate.py`, `validate.sh gate`.
 
 ## Problem
 
@@ -144,7 +144,7 @@ When shell/python is unavailable, `gate` cannot run. The prose instructs the mod
 
 ## Increment 5 — Structured gate-event records (design spec)
 
-> **Status:** designed, not built. Scope this round is the spec; the build plan is at the end of this section. Track C of Validator Architecture Hardening deliberately left `execution.gates` unschema'd "until this track takes it up with a real design" — this is that design.
+> **Status:** **built — shipped in v2.1.0** (`execution.gate_events[]` in `scripts/run_gate.py`, enforced by `gate-state`). This section is the design record it was built from. Track C of Validator Architecture Hardening deliberately left `execution.gates` unschema'd "until this track takes it up with a real design" — this was that design.
 
 ### Problem with the v1 shape
 
