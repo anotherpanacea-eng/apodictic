@@ -1,6 +1,14 @@
 # Argument Benchmark — calibration round (proposal, GATED on a real run)
 
-**Status:** Proposal. The engine edits below are staged in this branch **but must not merge until a benchmark convergence run validates them** (see §Validation gate). This is calibration of the *live* argument engine's verdict logic; unlike the deterministic validators, its correctness is established only by running the benchmark and scoring — there is no mechanical `--check-all` gate for the behavioral change. Roadmap: `ROADMAP.md` → Nonfiction Argument Engine → Benchmark Suite, "Next round" items 1–2.
+**Status:** ✅ **VALIDATED 2026-06-11 — gate satisfied; ready to merge.** *(Was: Proposal, gated on a benchmark convergence run — the behavioral change has no mechanical `--check-all` gate, so correctness is established by running the benchmark and scoring.)*
+
+Run complete: Opus + Sonnet blind runs, scored in a separate pass (outputs in gitignored `evals/results/run-20260611-*`).
+- **Criteria 1 / 2 / 4 — PASS (converged).** `policy-brief-uncompared` flips SOUND→UNSOUND via the rule-2a evaluability defeat (BP5+OB3, FM-A10). `ppi-one-size-fits-none` stays SOUND with public-safety scored **OB5** and the carve-out correctly **not** firing. UNSOUND is reached *through* rule 2a, not a forced Must-Fix — proven by `ppi` staying SOUND despite a Must-Fix code firing.
+- **Criterion 3 — 12/13 sweep fixtures clean.** The sweep surfaced rule 2a **over-firing** on `andreessen-techno-optimist-manifesto` (a strawman "the only alternative is Communism" foil misread as *zero* comparison). **Fixed in this branch** by tightening the scope guard — naming *any* alternative, even a strawman/weak foil, = partial discharge → soft spot; only *wholly-absent* comparison defeats — plus an anti-gaming clause (a merely decorative foil can still be Unsound via the general evaluability test, not the AT3 auto-trigger). Re-validated under the narrowed engine: andreessen's rule-2a auto-defeat is now blocked, while `policy-brief-uncompared` and `op-ed-warrant-leap` stay UNSOUND.
+- **andreessen caveat:** its residual UNSOUND(opus)/UBE(sonnet) is recall on a **high-recognition, corroborate-only** fixture (per CORPUS.md); its GT4–GT7 stay **provisional**. Not a gate blocker.
+- The narrowing was **cross-vendor adjudicated** (Gemini + GPT-5.5 both ratified the diagnosis and the fix).
+
+Roadmap: `ROADMAP.md` → Nonfiction Argument Engine → Benchmark Suite, "Next round" item 2 (done; item 1 run-confirmed).
 
 ## The two roadmap items
 
