@@ -198,7 +198,7 @@ The coaching skill (`/coach`) can read this flag and adjust session planning acc
 
 - **Revision Coach:** Available — and actively recommended — after partial manuscript diagnostic. Sessions focus on forward-writing momentum rather than systematic revision. The coaching protocol includes stall-cause-specific interventions matched to the six stall causes diagnosed in §3 of the Partial Diagnostic Letter. Post-synthesis offer: *"Diagnostic complete. Run `/coach` to plan your next writing session and work through what's stalling."*
 - **Pre-Writing Pathway (re-entry):** If the diagnostic reveals fundamental structural uncertainty, recommend stepping back to Pre-Writing Pathway with re-entry mode (imports existing decisions from the contract).
-- **Submission Triage:** Not available for partial manuscripts. If the writer selects `constraint:time`, offer a targeted `/start` instead.
+- **Submission Triage:** Not available for partial manuscripts. If the writer selects `constraint:time`, offer a targeted `/start` (goal=repair) instead.
 - **Full DE:** Not available until the draft is complete. When the writer returns with a finished draft, run a Revision Round (if the partial diagnostic is recent) or a fresh full analysis.
 
 ---

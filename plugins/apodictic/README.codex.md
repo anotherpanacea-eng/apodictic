@@ -144,8 +144,9 @@ The full "is this ready?" workflow. Runs Core DE → Synthesis → Pass 11 → C
 ### Quick Diagnosis
 ```
 apodictic-start
+# then answer: diagnose/fix → name one concern, e.g. "pacing in Act II"
 ```
-Answer "diagnose/fix" and name a single concern (e.g. "pacing in Act II") for a focused check on that concern without the full pass sequence.
+A focused check on that one concern, without the full pass sequence.
 
 ### Pre-Writing Pathway
 ```

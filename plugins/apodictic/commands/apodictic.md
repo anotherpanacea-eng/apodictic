@@ -31,8 +31,7 @@ A developmental editor that **listens before diagnosing**: it infers the manuscr
 - `/plot-coach` — choose or repair a plot structure (pre-draft, or a stuck draft), drawing on the spine library.
 - `/new-project` — set up project scaffolding, the contract, and diagnostic state.
 
-**Diagnose a draft**
-- `/start` — routes a draft to a full or targeted development edit in two or three questions.
+**Diagnose a draft** — full or targeted diagnosis routes through `/start`.
 - `/audit` — run a named specialized audit (no argument lists the full set).
 - `/research` — internet-enabled verification modes (no argument lists them all).
 

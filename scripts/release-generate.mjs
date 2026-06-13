@@ -294,6 +294,13 @@ function main() {
     const groupedCommandList = buildGroupedCommandList();
 
     if (groupedCommandList) {
+      // Each regex below replaces the WHOLE command block — from the "Start
+      // here:" group up to the next section heading (## Key Terms / ### Selection
+      // Guide). Consequences for future edits: prose inserted between the command
+      // list and that heading is overwritten on regen, and renaming the heading
+      // breaks replaceOrThrow. Keep added prose after the heading. (The end anchor
+      // is the heading because the previous terminator — the `/revision-plan`
+      // compatibility-alias sentence — no longer renders once that alias was retired.)
       {
         const rootReadmePath = abs(paths.rootReadme);
         let content = mustRead(rootReadmePath);

@@ -319,7 +319,7 @@ The full Submission Readiness Workflow has access to all 15 SR codes (unlike Sub
 - The editorial letter identifies root causes. Start there.
 - [If structural:] The issues are architectural, not surface-level. Budget for a substantial revision pass.
 - [If prose:] The structural foundation is sound, but prose quality needs development. This is fixable.
-- When you've revised, run `/ready` again or a targeted `/start` on the specific concerns.
+- When you've revised, run `/ready` again or a targeted `/start` (goal=repair) on the specific concerns.
 
 ---
 
@@ -373,4 +373,4 @@ All artifacts go to the active project output context beside the manuscript:
 If the writer revises and returns, they can:
 - Run `/ready` again for a full re-assessment
 - Run Submission Triage for a quick re-check
-- Run a targeted `/start` on specific concerns from the non-negotiables
+- Run a targeted `/start` (goal=repair) on specific concerns from the non-negotiables

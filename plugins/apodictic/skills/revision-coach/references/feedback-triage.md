@@ -16,7 +16,7 @@ The goal is **not to obey the feedback**. It is to sort it, check each claim, pr
 
 ## Firewall (inherited, restated)
 
-The coach **structures and prioritizes**; it does **not** validate claims by re-diagnosing. Validating "does the midpoint actually sag?" is a **targeted Core Editor pass**, not a coaching act. When a claim needs checking, run or recommend the specific pass (a targeted `/start`) and read its result back into the triage. A claim the diagnosis confirms is a **candidate finding** — it enters the Findings Ledger, where its severity is governed normally. This keeps Guidance Without Specification intact: the coach never invents the diagnosis behind a piece of feedback.
+The coach **structures and prioritizes**; it does **not** validate claims by re-diagnosing. Validating "does the midpoint actually sag?" is a **targeted Core Editor pass**, not a coaching act. When a claim needs checking, run or recommend the specific pass (a targeted `/start`, goal=repair) and read its result back into the triage. A claim the diagnosis confirms is a **candidate finding** — it enters the Findings Ledger, where its severity is governed normally. This keeps Guidance Without Specification intact: the coach never invents the diagnosis behind a piece of feedback.
 
 ## The structured record
 
