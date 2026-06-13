@@ -120,7 +120,7 @@ def t1_floor_resolution_from_vendored_manifest() -> None:
 
     # Every shim surface resolves to a floor, and the known floors match.
     shim_surfaces = discover_shim_surfaces(SHIM_DIR)
-    check(len(shim_surfaces) == 9, f"9 shim surfaces discovered (got {len(shim_surfaces)})")
+    check(len(shim_surfaces) == 10, f"10 shim surfaces discovered (got {len(shim_surfaces)})")
     expected = {
         "variance_audit": "1.86.0",
         "manuscript_audit": "1.86.0",
@@ -131,6 +131,7 @@ def t1_floor_resolution_from_vendored_manifest() -> None:
         "punctuation_cadence_audit": "1.86.0",
         "idiolect_detector": "1.86.0",
         "narrative_decision_audit": "1.107.0",
+        "argument_decision_audit": "1.116.0",
     }
     for surface in shim_surfaces:
         cap = manifest.surfaces.get(surface)

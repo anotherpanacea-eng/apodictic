@@ -1,25 +1,30 @@
 # Contract fixtures (R5 — golden envelopes + reference fake)
 
-Producer-owned golden `schema_version: 1.0` envelopes, one per APODICTIC
-consumer surface, plus a stdlib-only reference fake. Implements R5 of
+Producer-owned golden `schema_version: 1.0` envelopes, one per consumer
+surface, plus a stdlib-only reference fake. Implements R5 of
 [`../setec-normalized-entrypoint-spec.md`](../setec-normalized-entrypoint-spec.md) §6.
 
 ## What's here
 
 | File | Purpose |
 |---|---|
-| `<surface>.json` × 9 | One canonical envelope per consumer surface — the pinned contract. |
+| `<surface>.json` × 13 | One canonical envelope per consumer surface — the pinned contract. |
 | `fake_setec.py` | Stdlib-only CLI that prints a surface's golden envelope. The consumer vendors a pinned copy to test its parser without SETEC's heavy deps. |
 | `README.md` | This file. |
 
-The nine surfaces (the `capabilities.d/` fragments carrying
-`min_setec_version` + `consumers: [apodictic]`):
+The thirteen surfaces (the `capabilities.d/` fragments carrying
+`min_setec_version` + a non-empty `consumers:` list — nine consumed by
+apodictic, four added for setec-voicewright; `voice_distance` and
+`idiolect_detector` serve both):
 
 ```
 variance_audit  manuscript_audit  repetition_audit       (task_surface: smoothing_diagnosis)
 voice_distance  voice_profile  pov_voice_profile
-punctuation_cadence_audit  idiolect_detector             (task_surface: voice_coherence)
+punctuation_cadence_audit  idiolect_detector
+mimicry_cosplay_audit  general_imposters                 (task_surface: voice_coherence)
 narrative_decision_audit                                 (task_surface: narrative_decision_audit)
+voice_fingerprint                                        (task_surface: authorship_embedding)
+binoculars_audit                                         (task_surface: binoculars_discrimination)
 ```
 
 > The golden filename is the **surface id** (the `capabilities.d/<id>.yaml`
@@ -94,8 +99,9 @@ golden in the same change.
 ## Consumer use (OQ5 — fixture ownership)
 
 Per spec §6 OQ5, the contract's author is its fixture's author: these fixtures
-are **producer-owned** here, and **APODICTIC vendors a pinned copy** (pinned
-copy / git-subtree, refreshed on `schema_version` or manifest bumps). Neither
+are **producer-owned** here, and **each consumer (apodictic, setec-voicewright)
+vendors a pinned copy** (pinned copy / git-subtree, refreshed on
+`schema_version` or manifest bumps). Neither
 repo imports the other; both compare against the same JSON, avoiding a
 circular build dependency. The consumer runs `fake_setec.py <surface>` (or
 reads `<surface>.json` directly) to exercise its parser with no SETEC deps:
