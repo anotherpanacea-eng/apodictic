@@ -57,7 +57,7 @@ APODICTIC isn't just for finished drafts.
 - **Series Continuity** (`/audit series-continuity`) — cross-volume consequence tracking for multi-book series. Five diagnostic channels: character state, world rules, unresolved threads, hope calibration, and intentional discontinuities. Rolling `Series_State.md` persists across volumes
 - **Pre-writing pathway** for writers who have an idea but no manuscript — takes you from seed to draftable structure
 - **Plot coach** with 50 structural spines across 12 families (not just three-act)
-- **34 available audits** (3 universal, 16 craft, 10 genre, 5 tag) including scene function, shelf positioning, emotional craft, AI-prose detection, worldbuilding integration, force architecture, reception risk, and intimacy/consent coverage
+- **35 available audits** (3 universal, 17 craft, 10 genre, 5 tag) including scene function, shelf positioning, emotional craft, AI-prose detection, worldbuilding integration, force architecture, reception risk, and intimacy/consent coverage
 - **6 internet-enabled research modes** for citation verification, comp validation, fact-checking, field reconnaissance (counterevidence + literature gaps), genre currency, and representation context
 - **Nonfiction Argument Engine** for persuasive, argument-shaped nonfiction (policy briefs, op-eds, testimony) — argument spine, support, and warrant, with Red-Team, Persuasion, and Evidence companions
 - **Legal Risk Register** (`/legal-risk`) — flags possible defamation, privacy, and rights exposure for a lawyer's review. It flags, never adjudicates — not legal advice

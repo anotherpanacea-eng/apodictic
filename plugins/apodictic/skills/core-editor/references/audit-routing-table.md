@@ -64,6 +64,7 @@ Intentionally **excluded** (no severity signals — they need no §4e row): pure
 - Shelf Positioning
 - Short Fiction
 - Narrative-Decision (StoryScope)
+- Argument-Decision (ArgScope)
 - POV Voice Profile
 - Comedy & Satire
 - Historical Fiction

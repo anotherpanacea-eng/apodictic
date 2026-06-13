@@ -1,0 +1,3 @@
+### Audits — Argument-Decision (ArgScope) registered in the canonical inventory
+
+Registered the `argument_decision_audit` SETEC consumer surface (adopted in #87) in the audit registry so it's discoverable like its `narrative_decision_audit` sibling — previously it lived only in the skill/reference/contract layer and was absent from the listing surfaces. Adds a Craft entry to `release-registry.json` (available audits 34 → 35; craft 16 → 17), which regenerates the `/audit` list, the README audit counts, and the plugin description; adds it to the signal-emitting audit registry (`audit-routing-table.md`); and re-syncs the inventory-parity surfaces (`AUDIT_SELECTION_MATRIX.md`, `overview-dashboard.html`) to the new signature `audits=43:1202e80a`.
