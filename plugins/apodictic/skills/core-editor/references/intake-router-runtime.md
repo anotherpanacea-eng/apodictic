@@ -327,7 +327,7 @@ The **cold-start** workflow-selection decisions — the path for a project with 
 | partial | repair (targeted) | — | Core DE (partial flag, targeted) | **Built** (v1.2.0) |
 | partial | repair | engine=nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) on available sections | **Built** (v1.0) |
 | partial | draft (rethink) | — | Pre-Writing Pathway (re-entry) | **Built** |
-| partial | repair | workflow=time | Submission Triage | Gap: triage requires complete manuscript. Offer a targeted `/start` (goal=repair). |
+| partial | repair | workflow=time | Submission Triage | Gap: triage requires complete manuscript. Re-route to a targeted repair pass (goal=repair). |
 | full_draft | repair | — | Core DE | **Built** |
 | full_draft | repair | engine=nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) | **Built** (v1.0) |
 | full_draft | repair | engine=nonfiction (scene-led) | Narrative Nonfiction Craft | **Built** |
