@@ -299,7 +299,7 @@ function main() {
         let content = mustRead(rootReadmePath);
         content = replaceOrThrow(
           content,
-          /## Commands\n\n\*\*Start here:\*\*[\s\S]*?`\/revision-plan` is a compatibility alias for `\/coach`\./,
+          /## Commands\n\n\*\*Start here:\*\*[\s\S]*?(?=\n\n## Key Terms)/,
           `## Commands\n\n${groupedCommandList}`,
           "root README grouped command list"
         );
@@ -311,7 +311,7 @@ function main() {
         let content = mustRead(pluginReadmePath);
         content = replaceOrThrow(
           content,
-          /### Commands\n\n\*\*Start here:\*\*[\s\S]*?`\/revision-plan` is a compatibility alias for `\/coach`\./,
+          /### Commands\n\n\*\*Start here:\*\*[\s\S]*?(?=\n\n### Selection Guide)/,
           `### Commands\n\n${groupedCommandList}`,
           "plugin README grouped command list"
         );

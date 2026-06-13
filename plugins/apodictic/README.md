@@ -67,8 +67,6 @@ The plugin assumes its user is an adult working on a creative project. Its outpu
 - `/apodictic` — What can this plugin do? Where do I start?
 
 **Diagnostic workflows:**
-- `/develop-edit` — What's wrong with my manuscript?
-- `/diagnose` — I have a specific concern — is it a real problem?
 - `/ready` — Is this ready to submit?
 
 **Focused tools:**
@@ -84,8 +82,6 @@ The plugin assumes its user is an adult working on a creative project. Its outpu
 - `/pre-writing` — I have an idea but no manuscript yet.
 - `/new-project` — Set up a new editing project.
 - `/projects` — List, resume, and tidy my editing projects.
-
-`/revision-plan` is a compatibility alias for `/coach`.
 
 ### Selection Guide
 
@@ -104,9 +100,9 @@ The intake router asks what you have (idea, fragments, partial draft, complete d
 
 ### Full Development Edit
 ```
-/develop-edit path/to/manuscript.md
+/start path/to/manuscript.md
 ```
-Runs intake, core passes (reverse outline, reader experience, structural mapping, character audit, reveal economy), and synthesis. Outputs an editorial letter, revision checklist, and diagnostic state.
+Answer "complete draft" + "diagnose/fix" and the router runs intake, core passes (reverse outline, reader experience, structural mapping, character audit, reveal economy), and synthesis. Outputs an editorial letter, revision checklist, and diagnostic state.
 
 ### Submission Readiness
 ```
@@ -116,9 +112,9 @@ The full "is this ready?" workflow. Runs Core DE → Synthesis → Pass 11 → C
 
 ### Quick Diagnosis
 ```
-/diagnose pacing in Act II
+/start
 ```
-Focused check on a specific concern without the full pass sequence.
+Answer "diagnose/fix" and name a single concern (e.g. "pacing in Act II") for a focused check on that concern without the full pass sequence.
 
 ### Pre-Writing Pathway
 ```
