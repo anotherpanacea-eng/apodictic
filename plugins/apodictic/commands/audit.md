@@ -28,6 +28,7 @@ Display the complete list of available audits with brief descriptions:
 - **banister** — Banister (Epistemic Humility): rhetorical fairness, straw opposition
 - **ai-prose** — AI-Prose Calibration: voice singularity, lexical genericism, echo stacks, register seams
 - **narrative-decision** — Narrative-Decision (StoryScope): structure-level AI tells, 33 narrative-decision signals, per-signal contributions
+- **argument-decision** — Argument-Decision (ArgScope): structure-level argument AI tells, B1 paragraph-role arc + B2 discourse-mode mix, per-signal contributions
 - **force** — Force Architecture: force delivery, consequence/escalation tracking, inert force diagnosis
 - **short** — Short Fiction: compression, single-effect, ending resonance
 - **compression** — Compression: expendable material, cut list, word-savings map
