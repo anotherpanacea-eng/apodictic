@@ -1,0 +1,64 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": null,
+  "claim_license": {
+    "additional_caveats": [
+      "Scores in the [0.2, 0.8] range are the framework's refusal zone — the evidence is mixed and the harness explicitly declines to emit an attribution claim. Per Kestemont et al. 2016, scores near the extremes (<0.05 or >0.95) are trustworthy; the middle is mixed."
+    ],
+    "comparison_set": {},
+    "confidence_interval_95": null,
+    "does_not_license": "Authorship attribution in the legal or philosophical sense. Stylometric consistency is not authorship; the harness's score is consistent with the writer being someone other than the candidate (e.g., another writer in matched register whose voice happens to share enough surface features). Adversarial paraphrase, humanizer-tool output, and AI-edited drafts are not adjudicated by this surface — those are the AI-prose-detection harness's job, run separately.",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "Stylometric consistency between the target and the named candidate writer's identity baseline, expressed as a frequentist proportion of bootstrap iterations in which the target fell closer to the candidate baseline than to any impostor writer in matched register.",
+    "references": [],
+    "register_match": [],
+    "task_surface": "voice_coherence"
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** voice-coherence comparison\n\n**Reports:** Stylometric consistency between the target and the named candidate writer's identity baseline, expressed as a frequentist proportion of bootstrap iterations in which the target fell closer to the candidate baseline than to any impostor writer in matched register.\n\n**Does NOT report:** Authorship attribution in the legal or philosophical sense. Stylometric consistency is not authorship; the harness's score is consistent with the writer being someone other than the candidate (e.g., another writer in matched register whose voice happens to share enough surface features). Adversarial paraphrase, humanizer-tool output, and AI-edited drafts are not adjudicated by this surface — those are the AI-prose-detection harness's job, run separately.\n\n### Caveats\n\n- Scores in the [0.2, 0.8] range are the framework's refusal zone — the evidence is mixed and the harness explicitly declines to emit an attribution claim. Per Kestemont et al. 2016, scores near the extremes (<0.05 or >0.95) are trustworthy; the middle is mixed.",
+  "results": {
+    "candidate_n_docs": 6,
+    "candidate_persona": "blog",
+    "claim_license": {
+      "does_not_license": "Authorship attribution in the legal or philosophical sense. Stylometric consistency is not authorship; the harness's score is consistent with the writer being someone other than the candidate (e.g., another writer in matched register whose voice happens to share enough surface features). Adversarial paraphrase, humanizer-tool output, and AI-edited drafts are not adjudicated by this surface — those are the AI-prose-detection harness's job, run separately.",
+      "gray_zone": "Scores in the [0.2, 0.8] range are the framework's refusal zone — the evidence is mixed and the harness explicitly declines to emit an attribution claim. Per Kestemont et al. 2016, scores near the extremes (<0.05 or >0.95) are trustworthy; the middle is mixed.",
+      "licenses": "Stylometric consistency between the target and the named candidate writer's identity baseline, expressed as a frequentist proportion of bootstrap iterations in which the target fell closer to the candidate baseline than to any impostor writer in matched register."
+    },
+    "decision": "consistent",
+    "feature_fraction": 0.5,
+    "impostor_personas": [
+      "imp_essayist_a",
+      "imp_essayist_b",
+      "imp_critic_a",
+      "imp_critic_b",
+      "imp_blogger_a",
+      "imp_blogger_b",
+      "imp_novelist_a",
+      "imp_novelist_b"
+    ],
+    "iterations": 100,
+    "losses": 13,
+    "n_impostors": 8,
+    "proportion": 0.87,
+    "proportion_ci_95": [
+      0.79,
+      0.93
+    ],
+    "refusal_reason": "",
+    "refused": false,
+    "target_id": "<fixture>",
+    "top_n_features": 50,
+    "wins": 87
+  },
+  "schema_version": "1.0",
+  "target": {
+    "path": "<fixture>",
+    "words": 0
+  },
+  "task_surface": "voice_coherence",
+  "tool": "general_imposters",
+  "version": "<fixture>",
+  "warnings": []
+}

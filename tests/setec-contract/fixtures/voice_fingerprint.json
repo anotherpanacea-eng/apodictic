@@ -1,0 +1,66 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": null,
+  "claim_license": {
+    "additional_caveats": [
+      "Content control: LUAR (`rrivera1849/LUAR-MUD`) is trained on Reddit / social-media authorship data, so its style manifold carries REGISTER SKEW — cosines between two registers (e.g., literary fiction vs. an email) may read as 'divergent' on topic/register grounds rather than authorship. The Wegmann (`AnnaWegmann/Style-Embedding`) cross-check is more content-controlled but, per its own STEL analysis, captures mostly punctuation / casing / contraction style — a narrower notion of voice.",
+      "Short-text fragility: style embeddings are unstable on short windows. Treat per-window cosines from <~100-token windows as noisy; prefer the distribution over any single window's value.",
+      "Cross-model incomparability: cosines from LUAR and Wegmann (or any two models) are NOT directly comparable. Compare like model to like model."
+    ],
+    "comparison_set": {
+      "calibration_status": "PROVISIONAL — cosine distances are absolute measurements; any consistent/divergent banding is illustrative and uncalibrated. Calibration (a per-register impostor-pool study giving an empirical same-author cosine distribution) is future work.",
+      "mode": "single",
+      "model_id": "rrivera1849/LUAR-MUD"
+    },
+    "confidence_interval_95": null,
+    "does_not_license": "That these passages are by the SAME PERSON. That they are by a DIFFERENT AUTHOR. That the text is AI-generated or human-written. The surface emits no binary call and no threshold: a high cosine is consistency evidence on this model's manifold, not an identity verdict; a low cosine is divergence evidence, not a different-author verdict. The n-way mode reports distributions, NOT a general-imposters win/loss proportion — it is the embedding analogue, not a GI replacement.",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "These passages are stylistically consistent / divergent at the reported cosine distance D under model `rrivera1849/LUAR-MUD`'s learned style manifold. Reports the cosine-similarity DISTRIBUTION (mean, sd, min, p10, p50, p90) across windows — internal consistency (single), consistency with a baseline voice centroid (two-corpus), or where the target's candidate-similarity falls relative to an impostor pool (n-way, descriptive only).",
+    "references": [
+      "specs/02-voice-fingerprint-embedding.md",
+      "LUAR — Rivera-Soto et al., EMNLP 2021 (https://aclanthology.org/2021.emnlp-main.70/); weights rrivera1849/LUAR-MUD (Apache-2.0).",
+      "Wegmann et al. 2022, 'Same Author or Just Same Topic?' (https://aclanthology.org/2022.repl4nlp-1.26/); weights AnnaWegmann/Style-Embedding."
+    ],
+    "register_match": [],
+    "task_surface": "authorship_embedding"
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** style-embedding voice fingerprint (LUAR / Wegmann learned style manifold; cosine-similarity distribution, no verdict)\n\n**Reports:** These passages are stylistically consistent / divergent at the reported cosine distance D under model `rrivera1849/LUAR-MUD`'s learned style manifold. Reports the cosine-similarity DISTRIBUTION (mean, sd, min, p10, p50, p90) across windows — internal consistency (single), consistency with a baseline voice centroid (two-corpus), or where the target's candidate-similarity falls relative to an impostor pool (n-way, descriptive only).\n\n**Does NOT report:** That these passages are by the SAME PERSON. That they are by a DIFFERENT AUTHOR. That the text is AI-generated or human-written. The surface emits no binary call and no threshold: a high cosine is consistency evidence on this model's manifold, not an identity verdict; a low cosine is divergence evidence, not a different-author verdict. The n-way mode reports distributions, NOT a general-imposters win/loss proportion — it is the embedding analogue, not a GI replacement.\n\n### Comparison context\n\n- **calibration status:** PROVISIONAL — cosine distances are absolute measurements; any consistent/divergent banding is illustrative and uncalibrated. Calibration (a per-register impostor-pool study giving an empirical same-author cosine distribution) is future work.\n- **mode:** single\n- **model id:** rrivera1849/LUAR-MUD\n\n### Caveats\n\n- Content control: LUAR (`rrivera1849/LUAR-MUD`) is trained on Reddit / social-media authorship data, so its style manifold carries REGISTER SKEW — cosines between two registers (e.g., literary fiction vs. an email) may read as 'divergent' on topic/register grounds rather than authorship. The Wegmann (`AnnaWegmann/Style-Embedding`) cross-check is more content-controlled but, per its own STEL analysis, captures mostly punctuation / casing / contraction style — a narrower notion of voice.\n- Short-text fragility: style embeddings are unstable on short windows. Treat per-window cosines from <~100-token windows as noisy; prefer the distribution over any single window's value.\n- Cross-model incomparability: cosines from LUAR and Wegmann (or any two models) are NOT directly comparable. Compare like model to like model.\n\n### References\n\n- specs/02-voice-fingerprint-embedding.md\n- LUAR — Rivera-Soto et al., EMNLP 2021 (https://aclanthology.org/2021.emnlp-main.70/); weights rrivera1849/LUAR-MUD (Apache-2.0).\n- Wegmann et al. 2022, 'Same Author or Just Same Topic?' (https://aclanthology.org/2022.repl4nlp-1.26/); weights AnnaWegmann/Style-Embedding.",
+  "results": {
+    "cosine_distribution": {
+      "mean": 0.84,
+      "min": 0.74,
+      "n": 6,
+      "p10": 0.76,
+      "p50": 0.85,
+      "p90": 0.9,
+      "sd": 0.05
+    },
+    "mode": "single",
+    "model_id": "rrivera1849/LUAR-MUD",
+    "n_windows": 4,
+    "per_window": [
+      0.84,
+      0.81,
+      0.9,
+      0.74,
+      0.88,
+      0.86
+    ],
+    "windowing": {
+      "strategy": "paragraph",
+      "window_size": null
+    }
+  },
+  "schema_version": "1.0",
+  "target": {
+    "path": "<fixture>",
+    "words": 1800
+  },
+  "task_surface": "authorship_embedding",
+  "tool": "voice_fingerprint",
+  "version": "<fixture>",
+  "warnings": []
+}

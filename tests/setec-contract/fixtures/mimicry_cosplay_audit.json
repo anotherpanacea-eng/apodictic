@@ -1,0 +1,87 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": null,
+  "claim_license": {
+    "additional_caveats": [
+      "Cosplay shapes are heuristic and calibration-pending. The default thresholds (0.6 survival rate, 1.25 weighted_delta — voice_distance_band's \"Light drift\" cutoff, 5.0 baseline density per 1k, 2.0× over-preservation factor) are documented defaults, not labeled-corpus-validated values.",
+      "Idiolect-phrase survival is computed by case-insensitive substring match, mirroring the convention `confounder_audit` uses. Phrase preservation does not require sentence-level structural equivalence; a cosplay revision that preserves the phrase but breaks the surrounding syntax will read as preserved here.",
+      "The audit composes with `before_after_restoration` (metric-gaming detection), `surface_disagreement_resolver` (cross-surface meta-interpretation), and `semantic_preservation_check` (semantic guardrails) — all four catch related but distinct failure modes. A draft can pass `before_after_restoration` AND fail cosplay; the two audits do not aggregate."
+    ],
+    "comparison_set": {
+      "n_idiolect_phrases": 4,
+      "n_matched_phrases": 3,
+      "shape1_fired": true,
+      "shape2_fired": true,
+      "survival_rate": 0.75,
+      "target_words": 54,
+      "verdict": "cosplay_suspected"
+    },
+    "confidence_interval_95": null,
+    "does_not_license": "An authorship verdict. A `cosplay_suspected` verdict is evidence the target is NOT a normal authorial sample of this writer; it does NOT commit to whether the sample is AI-generated, human imitation of the writer, an over-targeted voice-restoration pass, or the writer self-consciously imitating themselves. The framework's discipline of \"differential diagnosis, not verdict\" applies in full. Pair this audit with the confounder audit and the evidentiary-conditions gate before drawing conclusions.",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "A cosplay-shape detection report. Tells the reader whether the cross-checked pattern of (high idiolect-phrase survival + high syntactic Delta) or (unnaturally high phrase density) is present in the target, AND surfaces the per-shape evidence that drove the verdict. The audit's value is in **not aggregating** these signals — it reports the dissociation between lexical and syntactic axes that aggregate scores would hide.",
+    "references": [],
+    "register_match": [],
+    "task_surface": "voice_coherence"
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** voice-coherence comparison\n\n**Reports:** A cosplay-shape detection report. Tells the reader whether the cross-checked pattern of (high idiolect-phrase survival + high syntactic Delta) or (unnaturally high phrase density) is present in the target, AND surfaces the per-shape evidence that drove the verdict. The audit's value is in **not aggregating** these signals — it reports the dissociation between lexical and syntactic axes that aggregate scores would hide.\n\n**Does NOT report:** An authorship verdict. A `cosplay_suspected` verdict is evidence the target is NOT a normal authorial sample of this writer; it does NOT commit to whether the sample is AI-generated, human imitation of the writer, an over-targeted voice-restoration pass, or the writer self-consciously imitating themselves. The framework's discipline of \"differential diagnosis, not verdict\" applies in full. Pair this audit with the confounder audit and the evidentiary-conditions gate before drawing conclusions.\n\n### Comparison context\n\n- **n idiolect phrases:** 4\n- **n matched phrases:** 3\n- **shape1 fired:** True\n- **shape2 fired:** True\n- **survival rate:** 0.75\n- **target words:** 54\n- **verdict:** cosplay_suspected\n\n### Caveats\n\n- Cosplay shapes are heuristic and calibration-pending. The default thresholds (0.6 survival rate, 1.25 weighted_delta — voice_distance_band's \"Light drift\" cutoff, 5.0 baseline density per 1k, 2.0× over-preservation factor) are documented defaults, not labeled-corpus-validated values.\n- Idiolect-phrase survival is computed by case-insensitive substring match, mirroring the convention `confounder_audit` uses. Phrase preservation does not require sentence-level structural equivalence; a cosplay revision that preserves the phrase but breaks the surrounding syntax will read as preserved here.\n- The audit composes with `before_after_restoration` (metric-gaming detection), `surface_disagreement_resolver` (cross-surface meta-interpretation), and `semantic_preservation_check` (semantic guardrails) — all four catch related but distinct failure modes. A draft can pass `before_after_restoration` AND fail cosplay; the two audits do not aggregate.",
+  "results": {
+    "idiolect_survival": {
+      "matched_phrases": [
+        "as it happens",
+        "the harbor light",
+        "nobody said a word"
+      ],
+      "missing_phrases": [
+        "the long wet street"
+      ],
+      "n_matched": 3,
+      "n_phrases": 4,
+      "n_total_occurrences": 6,
+      "survival_rate": 0.75,
+      "target_density_per_1k": 111.1111111111111,
+      "target_words": 54,
+      "unique_phrase_density_per_1k": 55.55555555555555
+    },
+    "pos_bigram_kl": {
+      "available": false
+    },
+    "shapes": {
+      "density_anomaly": {
+        "baseline_density_per_1k": 5.0,
+        "fired": true,
+        "over_preservation_factor": 2.0,
+        "target_density_per_1k": 111.1111111111111
+      },
+      "lexical_without_syntactic": {
+        "delta_high": true,
+        "fired": true,
+        "pos_bigram_kl_compressed": false,
+        "survival_high": true
+      }
+    },
+    "thresholds_used": {
+      "baseline_density_per_1k": 5.0,
+      "high_delta_threshold": 1.25,
+      "high_survival_threshold": 0.6,
+      "over_preservation_factor": 2.0
+    },
+    "verdict": "cosplay_suspected",
+    "voice_distance": {
+      "available": true,
+      "weighted_delta": 1.62
+    }
+  },
+  "schema_version": "1.0",
+  "target": {
+    "path": "<fixture>",
+    "words": 54
+  },
+  "task_surface": "voice_coherence",
+  "tool": "mimicry_cosplay_audit",
+  "version": "<fixture>",
+  "warnings": []
+}
