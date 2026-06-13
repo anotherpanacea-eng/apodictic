@@ -323,7 +323,7 @@ If `/coach` is invoked without a `Diagnostic_State.md` and without an `Argument_
 
 > I don't have a diagnostic to coach from. The Revision Coach works from the findings of a development edit or the nonfiction engine's `Argument_State.md`.
 >
-> Run `/start` or `/diagnose` first to generate a diagnostic, then come back to `/coach` to plan your revision.
+> Run `/start` first to generate a diagnostic, then come back to `/coach` to plan your revision.
 
 Do not improvise findings. Do not attempt to diagnose from scratch. The coach is not a diagnostic tool.
 

@@ -29,7 +29,6 @@ If you're new to the plugin, start with a plain-language request:
 If you already know the entrypoint you want, invoke the namespaced workflow directly:
 
 - `apodictic-start`
-- `apodictic-develop-edit`
 - `apodictic-audit shelf`
 - `apodictic-coach`
 
@@ -100,8 +99,6 @@ In this Codex build, the legacy workflows are exposed as namespaced compatibilit
 - `apodictic-index` — What can this plugin do? Where do I start?
 
 **Diagnostic workflows:**
-- `apodictic-develop-edit` — What's wrong with my manuscript?
-- `apodictic-diagnose` — I have a specific concern — is it a real problem?
 - `apodictic-ready` — Is this ready to submit?
 
 **Focused tools:**
@@ -117,8 +114,6 @@ In this Codex build, the legacy workflows are exposed as namespaced compatibilit
 - `apodictic-pre-writing` — I have an idea but no manuscript yet.
 - `apodictic-new-project` — Set up a new editing project.
 - `apodictic-projects` — List, resume, and tidy my editing projects.
-
-`apodictic-revision-plan` is a compatibility alias for `apodictic-coach`.
 
 ### Selection Guide
 
@@ -136,9 +131,9 @@ The intake router asks what you have (idea, fragments, partial draft, complete d
 
 ### Full Development Edit
 ```
-apodictic-develop-edit path/to/manuscript.md
+apodictic-start path/to/manuscript.md
 ```
-Runs intake, core passes (reverse outline, reader experience, structural mapping, character audit, reveal economy), and synthesis. Outputs an editorial letter, revision checklist, and diagnostic state.
+Answer "complete draft" + "diagnose/fix" and the router runs intake, core passes (reverse outline, reader experience, structural mapping, character audit, reveal economy), and synthesis. Outputs an editorial letter, revision checklist, and diagnostic state.
 
 ### Submission Readiness
 ```
@@ -148,9 +143,10 @@ The full "is this ready?" workflow. Runs Core DE → Synthesis → Pass 11 → C
 
 ### Quick Diagnosis
 ```
-apodictic-diagnose pacing in Act II
+apodictic-start
+# then answer: diagnose/fix → name one concern, e.g. "pacing in Act II"
 ```
-Focused check on a specific concern without the full pass sequence.
+A focused check on that one concern, without the full pass sequence.
 
 ### Pre-Writing Pathway
 ```

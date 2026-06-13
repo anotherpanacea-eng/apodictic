@@ -182,7 +182,7 @@ A GO verdict with blind spots means: "Nothing stopped me on first read, but I co
 ### Router wiring
 - `constraint:time` + artifact `full_draft` + goal `submit` → Submission Triage
 - `constraint:time` + artifact `full_draft` + goal `repair` → Submission Triage (same tool; if they're on a deadline and want a repair assessment, triage is what they get)
-- `constraint:time` + artifact `partial` → Gap: triage requires complete manuscript. Acknowledge; offer targeted `/diagnose` as fallback.
+- `constraint:time` + artifact `partial` → Gap: triage requires complete manuscript. Acknowledge; offer a targeted `/start` (goal=repair) as fallback.
 
 ### Command shortcut
 No dedicated command. Triage is accessed via `constraint:time` in the router or by stating "I'm on a deadline" during intake. Power users who know the framework can say "run triage" or "just Pass 1."

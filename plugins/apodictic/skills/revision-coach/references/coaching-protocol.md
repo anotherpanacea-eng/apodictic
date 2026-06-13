@@ -157,7 +157,7 @@ If no `Diagnostic_State.md` exists:
 - Do not improvise findings
 - Do not attempt diagnosis
 - Do not offer coaching based on impressions of the manuscript
-- Route the writer to `/start` or `/diagnose`
+- Route the writer to `/start`
 
 If `Diagnostic_State.md` exists but is empty or incomplete:
 - Coach from whatever state exists

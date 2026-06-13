@@ -280,9 +280,7 @@ All commands work as direct entry points. `/start` is recommended for new users;
 
 | Command | What it does | Router equivalent |
 |---------|-------------|-------------------|
-| `/start` | Routes to the right workflow in 2–3 questions | The router itself |
-| `/develop-edit` | Run a full development edit | artifact=`full_draft`, goal=`repair` |
-| `/diagnose` | Quick targeted diagnostic | Any artifact, goal=`repair` (targeted) |
+| `/start` | Routes to the right workflow in 2–3 questions (including a full edit on a `full_draft` and a targeted diagnostic via `goal=repair`) | The router itself |
 | `/ready` | Submission readiness check | artifact=`full_draft`, goal=`submit` |
 | `/audit [name]` | Run a specific deep-dive analysis | Callable from within workflows |
 | `/research [mode]` | Internet-assisted verification | Callable from within workflows |
@@ -290,7 +288,6 @@ All commands work as direct entry points. `/start` is recommended for new users;
 | `/plot-coach` | Plot structure coaching | Callable from within workflows |
 | `/pre-writing` | Idea to draftable structure | artifact=`idea`, goal=`draft` |
 | `/new-project` | Initialize a new project | Initialize project, then run router |
-| `/revision-plan` | *(compatibility alias for `/coach`)* | — |
 
 ---
 
@@ -330,7 +327,7 @@ The **cold-start** workflow-selection decisions — the path for a project with 
 | partial | repair (targeted) | — | Core DE (partial flag, targeted) | **Built** (v1.2.0) |
 | partial | repair | engine=nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) on available sections | **Built** (v1.0) |
 | partial | draft (rethink) | — | Pre-Writing Pathway (re-entry) | **Built** |
-| partial | repair | workflow=time | Submission Triage | Gap: triage requires complete manuscript. Offer targeted `/diagnose`. |
+| partial | repair | workflow=time | Submission Triage | Gap: triage requires complete manuscript. Re-route to a targeted repair pass (goal=repair). |
 | full_draft | repair | — | Core DE | **Built** |
 | full_draft | repair | engine=nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) | **Built** (v1.0) |
 | full_draft | repair | engine=nonfiction (scene-led) | Narrative Nonfiction Craft | **Built** |

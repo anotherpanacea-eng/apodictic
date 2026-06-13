@@ -15,7 +15,7 @@
 
 ## Purpose
 
-Replace the current command-selection model (`/develop-edit`, `/new-project`, `/pre-writing`, etc.) with a single entry point that routes users to the right workflow in 2–3 questions. Users should never need to know framework internals.
+Replace the current command-selection model (`/new-project`, `/pre-writing`, etc.) with a single entry point that routes users to the right workflow in 2–3 questions. Users should never need to know framework internals.
 
 The router implements the four-axis classification model (Artifact × Goal × Operator × Constraint) from the Publication Requirements. It asks about Artifact first, then Goal (conditional on Artifact), then Constraint/Operator modifiers.
 
@@ -201,12 +201,9 @@ Existing commands become direct-access shortcuts. The router is the recommended 
 
 | Current command | Router equivalent | Kept as shortcut? |
 |----------------|-------------------|-------------------|
-| `/start` | The router itself | Yes (primary entry) |
-| `/develop-edit` | full_draft + repair | Yes |
+| `/start` | The router itself (full edit via full_draft + repair; targeted diagnostic via repair) | Yes (primary entry) |
 | `/new-project` | Initializes project workspace, then runs router | Yes (infrastructure) |
 | `/pre-writing` | idea + draft | Yes |
-| `/diagnose` | Any artifact + repair (targeted) | Yes |
-| `/revision-plan` | Post-diagnostic; not an intake question | Yes |
 | `/plot-coach` | Callable from within Pre-Writing or Core DE | Yes |
 | `/audit [name]` | Callable from within any workflow | Yes |
 | `/research [mode]` | Callable from within any workflow | Yes |

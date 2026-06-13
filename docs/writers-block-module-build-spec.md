@@ -318,7 +318,7 @@ These states explicitly suppress prompt generation. The module must recognize th
 | Factual or continuity error | Issue is correction, not invention | Fix directly |
 | Accumulated-feedback saturation | Another layer of mediation worsens the state | Strip back support, reread, outside reader |
 | Locked Keep/Cut decision writer has not reopened | Prompting would quietly relitigate a settled choice | Respect the lock |
-| State file missing or empty | No diagnostic basis for structural prompts | Route to `/start` or `/diagnose` |
+| State file missing or empty | No diagnostic basis for structural prompts | Route to `/start` |
 
 ---
 

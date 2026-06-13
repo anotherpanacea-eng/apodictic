@@ -10,7 +10,7 @@ Load `../skills/revision-coach/SKILL.md`. Follow the coaching protocol in `../sk
 
 **Mode selection:**
 
-1. **No `Diagnostic_State.md` found at the project root** → No-diagnostic fallback. Do not improvise. Route to `/start` or `/diagnose`.
+1. **No `Diagnostic_State.md` found at the project root** → No-diagnostic fallback. Do not improvise. Route to `/start`.
 
 2. **Argument includes "deadline" or a date** → Deadline Coaching. Ask for available hours/week if not provided. Produce revision calendar.
 
