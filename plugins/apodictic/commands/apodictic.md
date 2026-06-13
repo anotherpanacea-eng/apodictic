@@ -32,14 +32,12 @@ A developmental editor that **listens before diagnosing**: it infers the manuscr
 - `/new-project` — set up project scaffolding, the contract, and diagnostic state.
 
 **Diagnose a draft**
-- `/develop-edit` — a full development edit.
-- `/diagnose` — a quick, targeted diagnostic on one concern.
+- `/start` — routes a draft to a full or targeted development edit in two or three questions.
 - `/audit` — run a named specialized audit (no argument lists the full set).
 - `/research` — internet-enabled verification modes (no argument lists them all).
 
 **Revise after a diagnosis**
 - `/coach` — session planning, stuck-point coaching, momentum tracking, deadline calendars.
-- `/revision-plan` — a compatibility alias for `/coach`.
 - `/triage-feedback` — sort, validate, and prioritize external (beta-reader / critique / editor) feedback.
 - `/reader-questions` — turn the diagnosis's open uncertainties into a targeted, non-leading beta-reader questionnaire.
 

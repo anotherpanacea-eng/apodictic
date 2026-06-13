@@ -172,8 +172,6 @@ Not sure where to begin? Just `/start`. When in doubt, that's the front door.
 - `/apodictic` — What can this plugin do? Where do I start?
 
 **Diagnostic workflows:**
-- `/develop-edit` — What's wrong with my manuscript?
-- `/diagnose` — I have a specific concern — is it a real problem?
 - `/ready` — Is this ready to submit?
 
 **Focused tools:**
@@ -189,8 +187,6 @@ Not sure where to begin? Just `/start`. When in doubt, that's the front door.
 - `/pre-writing` — I have an idea but no manuscript yet.
 - `/new-project` — Set up a new editing project.
 - `/projects` — List, resume, and tidy my editing projects.
-
-`/revision-plan` is a compatibility alias for `/coach`.
 
 ## Key Terms
 

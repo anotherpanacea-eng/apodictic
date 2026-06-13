@@ -222,7 +222,7 @@ Per-run artifact, not a rolling file. Lives inside its run folder alongside the 
 | Workflow | Creates Run Folder | Updates Rolling State |
 |----------|-------------------|----------------------|
 | `/new-project` | No (initializes project root) | Creates `Diagnostic_State.md`, `README.md` |
-| `/develop-edit` | `runs/YYYY-MM-DD_{model}_{type}/` | Updates `Diagnostic_State.md`, `SYNTHESIS.md`, `README.md` |
+| `/start` (full edit) | `runs/YYYY-MM-DD_{model}_{type}/` | Updates `Diagnostic_State.md`, `SYNTHESIS.md`, `README.md` |
 | `/audit` | `runs/YYYY-MM-DD_{model}_audit/` | Updates `Diagnostic_State.md`, `SYNTHESIS.md` (if findings alter plan), `README.md` |
 | `/coach` | `runs/YYYY-MM-DD_{model}_coaching/` (on session completion) | Updates `Diagnostic_State.md` coaching log, `README.md` |
 | Consolidation | `runs/YYYY-MM-DD_{model}_consolidated/` | Updates `SYNTHESIS.md` (typically the most significant update), `Diagnostic_State.md`, `README.md` |

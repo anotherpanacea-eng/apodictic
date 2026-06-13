@@ -238,7 +238,7 @@ Before generating any structural prompt, verify the state is not in a no-prompt 
 | Factual or continuity error | No prompt. Fix directly. |
 | Accumulated-feedback saturation | Usually no prompt. Strip back support. |
 | Locked Keep/Cut decision (not reopened by writer) | No prompt. Respect the lock. |
-| State file missing or empty | No prompt. Route to `/start` or `/diagnose`. |
+| State file missing or empty | No prompt. Route to `/start`. |
 
 ---
 
