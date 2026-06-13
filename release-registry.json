@@ -54,8 +54,6 @@
     },
     "commandBaseSkills": {
       "start": "core-editor",
-      "develop-edit": "core-editor",
-      "diagnose": "core-editor",
       "ready": "core-editor",
       "audit": "specialized-audits",
       "research": "specialized-audits",
@@ -63,7 +61,6 @@
       "plot-coach": "plot-architecture",
       "pre-writing": "pre-writing-pathway",
       "new-project": "core-editor",
-      "revision-plan": "revision-coach",
       "apodictic": "core-editor",
       "projects": "core-editor",
       "legal-risk": "core-editor",
@@ -92,8 +89,6 @@
     "overrides": {},
     "commandBaseSkills": {
       "start": "core-editor",
-      "develop-edit": "core-editor",
-      "diagnose": "core-editor",
       "ready": "core-editor",
       "audit": "specialized-audits",
       "research": "specialized-audits",
@@ -101,7 +96,6 @@
       "plot-coach": "plot-architecture",
       "pre-writing": "pre-writing-pathway",
       "new-project": "core-editor",
-      "revision-plan": "revision-coach",
       "apodictic": "core-editor",
       "projects": "core-editor",
       "legal-risk": "core-editor",
@@ -153,22 +147,6 @@
       "routerEquivalent": null,
       "writerQuestion": "What can this plugin do? Where do I start?",
       "description": "Capability index and orientation — what the plugin does and where to begin."
-    },
-    {
-      "command": "/develop-edit",
-      "category": "diagnostic",
-      "status": "first_class_shortcut",
-      "routerEquivalent": "/start → full_draft + repair",
-      "writerQuestion": "What's wrong with my manuscript?",
-      "description": "Run a full development edit on a manuscript."
-    },
-    {
-      "command": "/diagnose",
-      "category": "diagnostic",
-      "status": "first_class_shortcut",
-      "routerEquivalent": "/start → any artifact + repair (targeted)",
-      "writerQuestion": "I have a specific concern — is it a real problem?",
-      "description": "Quick targeted diagnostic on a specific concern."
     },
     {
       "command": "/ready",
@@ -257,14 +235,6 @@
       "routerEquivalent": null,
       "writerQuestion": "List, resume, and tidy my editing projects.",
       "description": "List, resume, and tidy editing projects from saved diagnostic state."
-    },
-    {
-      "command": "/revision-plan",
-      "category": "focused",
-      "status": "compat_alias",
-      "routerEquivalent": "/coach",
-      "writerQuestion": null,
-      "description": "Compatibility alias for /coach."
     }
   ],
   "passes": {

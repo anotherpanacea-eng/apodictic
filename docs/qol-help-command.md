@@ -1,6 +1,6 @@
 # QoL: `/apodictic` — Capability Index Command (spec)
 
-**Status:** spec for review → build. Do not implement until reviewed.
+**Status:** Shipped — built as `plugins/apodictic/commands/apodictic.md`. This is the original design record. The **live command inventory is `plugins/apodictic/commands/` + `release-registry.json`** (the index self-heals via the glob drift check in §4); the command table and counts in this spec are as-of-authoring (2026-05, **before** the command-surface trim that retired `/develop-edit`, `/diagnose`, `/revision-plan`) and are **not maintained**. Do not reconcile the live command against the numbers here.
 **Problem:** APODICTIC ships 15 slash commands and 5 skills but no non-interactive "what can I do / where do I start / what's my current state" reference. `/start` is an interactive *router* (it asks 2–3 questions and sends you somewhere); the README command list covers only the 11 registry-listed commands (it omits `/projects`, `/legal-risk`, `/triage-feedback`, `/reader-questions`). There is no single surface a user can glance at.
 **Goal:** one new command that *prints* a concise, grouped capability index — every command with a one-line "when to use," the Firewall in plain language, how to find your current project state, and pointers to the existing HTML maps. Reference, not router.
 
@@ -38,7 +38,7 @@ allowed-tools: Read, Glob, Bash
 - `Bash` — optionally run `../scripts/validate.sh lifecycle-node <project-root>/Diagnostic_State.meta.json` to report each project's node (same call `/start` Step 0.5 makes).
 - **Degrade rule (must be stated in the body):** if no `.apodictic/` workspace is found, or python3/validate.sh is unavailable, print the static index unchanged and say "No registered projects found — `/new-project` creates one, `/start` routes you." Never fail, never block on tools.
 
-### Body — section-by-section (draft text; builder may tighten prose but must keep section order, the never-routes rule, and all 15 commands)
+### Body — section-by-section (draft text; builder may tighten prose but must keep section order, the never-routes rule, and one entry per command in `commands/`)
 
 **Header + contract (top of body):**
 
@@ -50,14 +50,14 @@ allowed-tools: Read, Glob, Bash
 
 > **The Firewall — diagnose, don't rewrite.** APODICTIC identifies problems and classes of solution; it never invents content — no new plot events, characters, dialogue, or imagery. The author creates; the system analyzes. (Canonical: `../skills/core-editor/SKILL.md` §The Firewall.) Variants: the revision coach gives **guidance without specification** — it names the architectural weakness, you choose the words (`../skills/revision-coach/SKILL.md` §The Coaching Firewall); `/legal-risk` **flags, doesn't practice law** — it names exposure areas and routes serious items to counsel, never renders legal conclusions.
 
-**(b) Commands grouped by workflow stage** — all 15 + this one, each with a one-liner reusing the file's `description:`/the registry `writerQuestion`. Proposed grouping (every command appears exactly once):
+**(b) Commands grouped by workflow stage** — one entry per command in `commands/`, each with a one-liner reusing the file's `description:`/the registry `writerQuestion`. Proposed grouping (every command appears exactly once):
 
 | Group | Commands |
 |---|---|
 | **Start here** | `/start` — recommended entry point; routes you in 2–3 questions (zero for a resumed project). `/apodictic` — this index. |
 | **Before a draft exists** | `/pre-writing` — idea → draftable structure, no manuscript required. `/plot-coach` — choose or fix a plot structure (pre-draft or stuck draft). `/new-project` — set up project scaffolding + contract + diagnostic state. |
-| **Diagnose a draft** | `/develop-edit` — full development edit. `/diagnose` — quick targeted diagnostic on one concern. `/audit` — run a named specialized audit (no argument lists all 34). `/research` — internet-enabled verification modes (no argument lists all 6). |
-| **Revise after diagnosis** | `/coach` — session planning, stuck points, momentum, deadlines. `/revision-plan` — compatibility alias for `/coach`. `/triage-feedback` — sort/validate/prioritize external feedback. `/reader-questions` — turn the diagnosis's open uncertainties into a beta-reader questionnaire. |
+| **Diagnose a draft** | Full or targeted diagnosis routes through `/start`. `/audit` — run a named specialized audit (no argument lists all 34). `/research` — internet-enabled verification modes (no argument lists all 6). |
+| **Revise after diagnosis** | `/coach` — session planning, stuck points, momentum, deadlines. `/triage-feedback` — sort/validate/prioritize external feedback. `/reader-questions` — turn the diagnosis's open uncertainties into a beta-reader questionnaire. |
 | **Risk & submission** | `/legal-risk` — flag defamation/privacy/rights-clearance exposure for legal review. `/ready` — full "is this ready to submit?" workflow with verdict. |
 | **Projects** | `/projects` — list and tidy registered projects (the registry surface). |
 
@@ -108,7 +108,7 @@ A hand-maintained command list *will* drift — the README's already has (4 of 1
 2. `node scripts/build-codex.mjs --self-check` — proves the unregistered-command path holds and the body passes the shorthand-path / legacy-wording / host-neutrality scans.
 3. `node scripts/build-antigravity.mjs --self-check`.
 4. `node scripts/assemble-changelog.mjs --check` — fragment format.
-5. Manual review: all 15 existing commands (+ `/apodictic` itself) appear exactly once; one-liners match each file's `description:` in substance; firewall statements match the canonical sources (core-editor SKILL.md §The Firewall, revision-coach SKILL.md §The Coaching Firewall, commands/legal-risk.md); the index is scannable in one screenful-ish; invoking it with no workspace prints the static index without errors or questions.
+5. Manual review: every command in `commands/` appears exactly once; one-liners match each file's `description:` in substance; firewall statements match the canonical sources (core-editor SKILL.md §The Firewall, revision-coach SKILL.md §The Coaching Firewall, commands/legal-risk.md); the index is scannable in one screenful-ish; invoking it with no workspace prints the static index without errors or questions.
 6. Manual behavior check: the command never asks a question, never writes a file, and the "your projects" table appears only when a registry exists.
 
 ## 6. Non-goals

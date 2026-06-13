@@ -14,7 +14,7 @@ Load `../skills/revision-coach/SKILL.md` and follow `../skills/revision-coach/re
 
 **Mode selection:**
 
-1. **No Findings Ledger / `Diagnostic_State.md` at the project root** → run `/diagnose` first; the instrument needs a diagnosis to harvest uncertainty from.
+1. **No Findings Ledger / `Diagnostic_State.md` at the project root** → run `/start` first; the instrument needs a diagnosis to harvest uncertainty from.
 
 2. **Harvest uncertainties** → scan the Findings Ledger for `LOW`/`UNCERTAIN` `apodictic.finding.v1` blocks, the `### Unresolved Questions` bullets, and `risk_if_fixed` tradeoffs. (Not the editorial letter's Control Questions — those are author/editor-facing, not reader questions.)
 

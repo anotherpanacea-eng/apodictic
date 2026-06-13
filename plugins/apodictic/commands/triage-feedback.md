@@ -12,7 +12,7 @@ Load `../skills/revision-coach/SKILL.md` and follow `../skills/revision-coach/re
 
 **Mode selection:**
 
-1. **No `Diagnostic_State.md` at the project root** → run the validation passes you need via `/diagnose` first, or proceed in "structure-only" triage (capture + conflict-resolve now; mark every item `assessment: pending` until a pass confirms it).
+1. **No `Diagnostic_State.md` at the project root** → run the validation passes you need via `/start` first, or proceed in "structure-only" triage (capture + conflict-resolve now; mark every item `assessment: pending` until a pass confirms it).
 
 2. **Feedback provided or pointed to** → Intake. Capture each note as an `apodictic.feedback_item.v1` block (`source`, `claim`; `assessment: pending`, `triage: monitor`) in `[Project]_Feedback_Triage_[runlabel].md`.
 

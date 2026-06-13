@@ -11,7 +11,7 @@
 
 If the user arrived via the `/start` intake router, the router has already classified: `artifact`, `goal`, `concern`, `constraints`, and `operator`. Treat these as pre-filled intake values, skip redundant questions, and calibrate the intake below. See `references/intake-router-runtime.md` for runtime routing behavior.
 
-If the user arrived via `/develop-edit` or direct request, run intake from scratch as described below.
+If the user arrived via a direct request (without the router's prefill), run intake from scratch as described below.
 
 ### Draft-Then-Validate Workflow
 
