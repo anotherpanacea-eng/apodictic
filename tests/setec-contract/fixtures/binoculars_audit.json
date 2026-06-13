@@ -1,0 +1,69 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": null,
+  "claim_license": {
+    "additional_caveats": [
+      "no_calibrated_thresholds_supplied"
+    ],
+    "comparison_set": {
+      "observer_model": "gpt2",
+      "score_version": "v1",
+      "scorer_model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+      "threshold_high": null,
+      "threshold_low": null
+    },
+    "confidence_interval_95": null,
+    "does_not_license": "Does not license a binary AI/human authorship verdict. The score is one measurement against one model pair; operator judgment remains the load-bearing decision step. Ships without framework-calibrated thresholds by default: the verdict band is 'uncalibrated' and the audit reports the raw ratio only. Operators who supply --threshold-low / --threshold-high explicitly take responsibility for those thresholds being appropriate for their model pair, corpus, and register (and for the score version — true Binoculars cross-perplexity v2 and the perplexity-ratio v1 baseline have different numerical scales, so thresholds calibrated for one don't transfer). Does not control for memorization (if the target is in the training set of either model, the score will be biased). Does not generalize across genres without operator-validated calibration. v2 computes true Hans et al. 2024 cross-perplexity when scorer and observer share a tokenizer; falls back to the v1 perplexity-ratio baseline with a caveat otherwise. Does not substitute for stylometric, embedding-based, or other framework audits — it complements them.",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "Reports the perplexity ratio of the target text under a scorer language model relative to an observer language model. Lower scores indicate the target is more predictable under the scorer than the observer — a known signal for AI-generated text in the Hans et al. 2024 framework. The score is a numeric measurement against the chosen model pair; it is not a verdict.",
+    "references": [
+      "Hans et al. 2024, 'Spotting LLMs With Binoculars: Zero-Shot Detection of Machine-Generated Text'"
+    ],
+    "register_match": [],
+    "task_surface": "binoculars_discrimination"
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** Binoculars-style perplexity-ratio discrimination\n\n**Reports:** Reports the perplexity ratio of the target text under a scorer language model relative to an observer language model. Lower scores indicate the target is more predictable under the scorer than the observer — a known signal for AI-generated text in the Hans et al. 2024 framework. The score is a numeric measurement against the chosen model pair; it is not a verdict.\n\n**Does NOT report:** Does not license a binary AI/human authorship verdict. The score is one measurement against one model pair; operator judgment remains the load-bearing decision step. Ships without framework-calibrated thresholds by default: the verdict band is 'uncalibrated' and the audit reports the raw ratio only. Operators who supply --threshold-low / --threshold-high explicitly take responsibility for those thresholds being appropriate for their model pair, corpus, and register (and for the score version — true Binoculars cross-perplexity v2 and the perplexity-ratio v1 baseline have different numerical scales, so thresholds calibrated for one don't transfer). Does not control for memorization (if the target is in the training set of either model, the score will be biased). Does not generalize across genres without operator-validated calibration. v2 computes true Hans et al. 2024 cross-perplexity when scorer and observer share a tokenizer; falls back to the v1 perplexity-ratio baseline with a caveat otherwise. Does not substitute for stylometric, embedding-based, or other framework audits — it complements them.\n\n### Comparison context\n\n- **observer model:** gpt2\n- **score version:** v1\n- **scorer model:** TinyLlama/TinyLlama-1.1B-Chat-v1.0\n- **threshold high:** None\n- **threshold low:** None\n\n### Caveats\n\n- no_calibrated_thresholds_supplied\n\n### References\n\n- Hans et al. 2024, 'Spotting LLMs With Binoculars: Zero-Shot Detection of Machine-Generated Text'",
+  "results": {
+    "caveats": [
+      "no_calibrated_thresholds_supplied"
+    ],
+    "cross_perplexity_log_nats": null,
+    "observer": {
+      "identifier_block": "<fixture-identifier>",
+      "model_id": "gpt2",
+      "revision": "<fixture>"
+    },
+    "observer_log_perplexity_bits": 4.87,
+    "observer_series_length": 512,
+    "perplexity_ratio": 0.864476,
+    "score_version": "v1",
+    "scorer": {
+      "identifier_block": "<fixture-identifier>",
+      "model_id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+      "revision": "<fixture>"
+    },
+    "scorer_log_perplexity_bits": 4.21,
+    "scorer_log_perplexity_nats": 2.918,
+    "scorer_series_length": 512,
+    "thresholds": {
+      "high": null,
+      "low": null
+    },
+    "tokenizers_compatible": false,
+    "verdict_band": "uncalibrated"
+  },
+  "schema_version": "1.0",
+  "target": {
+    "path": "<fixture>",
+    "words": 850
+  },
+  "task_surface": "binoculars_discrimination",
+  "tool": "binoculars_audit",
+  "version": "<fixture>",
+  "warnings": [
+    "no_calibrated_thresholds_supplied"
+  ]
+}

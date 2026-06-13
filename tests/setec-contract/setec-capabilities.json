@@ -1,5 +1,5 @@
 {
-  "setec_version": "1.114.0",
+  "setec_version": "1.116.0",
   "manifest_schema_version": "0.3.0",
   "entries": [
     {
@@ -69,13 +69,110 @@
       "calibration_status": "heuristic"
     },
     {
+      "id": "argument_decision_audit",
+      "script_path": "plugins/setec-voiceprint/scripts/argument_decision_audit.py",
+      "surface": "argument_decision_audit",
+      "status": "literature_anchored",
+      "handoff": "experimental",
+      "consumers": [
+        "apodictic"
+      ],
+      "min_setec_version": "1.116.0",
+      "json_delivery": "stdout",
+      "family": "argument-decision",
+      "purpose": "Score how a public-debate essay's argument is BUILT against Kim et al. 2026's human / LLM anchors — the B1 structural arc (paragraph-role transition rates: support→proposal, support→support, thesis-opening) + the B2 discourse-mode mix (argumentation share). The argument-domain sibling of narrative_decision_audit; measures argumentative DIVERSITY, not quality or provenance.\n",
+      "use_when": [
+        "Target is a public-debate / op-ed-register argumentative essay (≥ ~300 words, multi-paragraph)",
+        "You want structural collapse-tells that survive sentence-level rewriting",
+        "You want a descriptive pre-flag for whether a dialectical-clarity run is informative"
+      ],
+      "do_not_use_when": [
+        "You need an AI-vs-human provenance verdict or a quality judgment (the surface refuses both — diversity ≠ quality, no \"human = better\")",
+        "Target is research / legal / policy writing (the paper's anchors are register-bound to public-debate forums — the consumer's `distant` tier; structural signals only)",
+        "You don't have an LLM judge or a pre-computed label manifest"
+      ],
+      "inputs": [
+        {
+          "flag": "target",
+          "type": "path",
+          "required": true
+        },
+        {
+          "flag": "--judge",
+          "type": "enum",
+          "required": false,
+          "values": [
+            "manifest",
+            "mock",
+            "anthropic",
+            "openai",
+            "gemini"
+          ]
+        },
+        {
+          "flag": "--judge-manifest",
+          "type": "path",
+          "required": false
+        },
+        {
+          "flag": "--judge-model",
+          "type": "string",
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "type": "bool",
+          "required": false
+        }
+      ],
+      "outputs": {
+        "schema_version": "1.0",
+        "artifacts": [
+          ".argument.json",
+          ".argument.md"
+        ]
+      },
+      "compute": {
+        "tier": "api_llm",
+        "cost_note": "$0.03–0.20 per doc via Anthropic / OpenAI / Gemini (per-paragraph labeling); free with --judge manifest",
+        "length_floor_words": 300
+      },
+      "registers": [
+        "op-ed"
+      ],
+      "dependencies": {
+        "python": [],
+        "python_optional": [],
+        "sdks_optional": [
+          "anthropic",
+          "openai",
+          "google-genai"
+        ]
+      },
+      "examples": [
+        {
+          "description": "Single-doc audit with pre-computed per-paragraph labels",
+          "cmd": "python3 plugins/setec-voiceprint/scripts/argument_decision_audit.py essay.txt --judge manifest --judge-manifest labels.json"
+        },
+        {
+          "description": "Direct API spot-check",
+          "cmd": "python3 plugins/setec-voiceprint/scripts/argument_decision_audit.py essay.txt --judge anthropic --judge-model claude-sonnet-4-6"
+        }
+      ],
+      "references": [
+        "plugins/setec-voiceprint/references/signals-glossary.md"
+      ],
+      "calibration_status": "literature_anchored"
+    },
+    {
       "id": "idiolect_detector",
       "script_path": "plugins/setec-voiceprint/scripts/idiolect_detector.py",
       "surface": "voice_coherence",
       "status": "empirically_oriented",
       "handoff": "stable",
       "consumers": [
-        "apodictic"
+        "apodictic",
+        "setec-voicewright"
       ],
       "min_setec_version": "1.86.0",
       "json_delivery": "stdout",
@@ -802,7 +899,8 @@
       "status": "empirically_oriented",
       "handoff": "stable",
       "consumers": [
-        "apodictic"
+        "apodictic",
+        "setec-voicewright"
       ],
       "min_setec_version": "1.86.0",
       "json_delivery": "stdout",
