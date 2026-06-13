@@ -19,8 +19,8 @@
     "geminiPublicPlugin": "../APODICTIC-Gemini/public/apodictic-plugin"
   },
   "counts": {
-    "availableAudits": 34,
-    "specializedAudits": 31,
+    "availableAudits": 35,
+    "specializedAudits": 32,
     "universalAudits": 3,
     "tagAudits": 5,
     "primaryTagAudits": 3,
@@ -470,6 +470,14 @@
           "summary": "structure-level AI tells, 33 narrative-decision signals, per-signal contributions",
           "files": [
             "craft/narrative-decision-audit.md"
+          ]
+        },
+        {
+          "slug": "argument-decision",
+          "name": "Argument-Decision (ArgScope)",
+          "summary": "structure-level argument AI tells, B1 paragraph-role arc + B2 discourse-mode mix, per-signal contributions",
+          "files": [
+            "craft/argument-decision-audit.md"
           ]
         },
         {
