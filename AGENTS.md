@@ -129,6 +129,20 @@ the fragments into a dated `## vX.Y.Z` section at release time (and deletes them
 - **Bump the version at merge, not in the PR** — open PRs merge in unknown
   order. Version + `changelog.md` follow the patch/minor/major rules in
   `CONTRIBUTING.md`.
+- **Codex 5.5 is the standing PR reviewer; don't merge out from under it.** It
+  routinely catches P1/P2s a self-review misses — make the obvious fixes, then let
+  its pass run. **Auto-merge on dual agreement:** when both reviewing agents
+  (Claude and Codex) agree a PR is ready — CI green, threads resolved — merge it
+  (merge commit) without waiting for a further human prompt (maintainer's standing
+  approval, 2026-06-06). If only one agent has reviewed, or a comment is unresolved,
+  hold for the second opinion rather than self-merging.
+- **`gh` OAuth workflow-scope merge block (public repo).** A PR that touches
+  `.github/workflows/` can't be merged with the `gh` OAuth token (403 "refusing to
+  allow an OAuth App to create or update workflow") — this has bitten this repo. The
+  *git* credential keeps the scope (it pushed the branch fine), so the fallback is a
+  local `git merge --no-ff origin/<branch>` into a `main` worktree →
+  `git push origin HEAD:main` (needs explicit OK for the direct-to-main push), or
+  merge via the GitHub web UI. PRs that don't touch workflows merge via `gh` fine.
 
 ### Branch naming
 
