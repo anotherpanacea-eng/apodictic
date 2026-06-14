@@ -1,3 +1,0 @@
-### Onboarding — overview dashboard front door
-
-The overview dashboard header now opens with a "New here?" getting-started callout — a one-line plain-language orientation ("this page is a map; you don't need to memorize it") plus the first action (`/start`) — so a brand-new user landing on the page sees what to do before scrolling into the technical sections. Additive only (one `<div>` + two CSS rules; no redesign, no new sections, no network/deps). Applied to both the canonical `overview-dashboard.html` and its authored `.codex.html` twin (which keeps the `apodictic-start` wrapper naming per the codex override convention).
