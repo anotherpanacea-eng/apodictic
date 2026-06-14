@@ -6,6 +6,32 @@ internal workflow they follow. External contributions are email-based — see
 `CONTRIBUTING.md`; this file governs the maintainer's own agent sessions, not
 outside PRs.
 
+## Fleet / cross-repo context
+
+This repo is one of four maintained together (all `github.com/anotherpanacea-eng`):
+`setec-voiceprint` (producer · public · Python), `apodictic` (consumer + producer ·
+public · Python — **this repo**), `setec-voicewright` (consumer · private · Python),
+`APODICTIC-Gemini` (consumer · private · TS app).
+
+**This repo's dependency contract (both directions):**
+- **Consumes** `setec-voiceprint` via its normalized-entrypoint dispatcher
+  (`setec run <surface> --json`), pinned in `setec-plugin.lock`, drift-gated offline
+  in `tests/setec-contract/` (the weekly `.github/workflows/sync-setec.yml` auto-PRs
+  the version bump). **Don't hand-edit the lock or the vendored fixtures — run
+  `scripts/sync_setec.py`.**
+- **Produces** `release-registry.json`, which `APODICTIC-Gemini` *pulls* (it vendors
+  the registry and regenerates its UI from it); changing the capability catalog
+  ripples to that app on its next weekly pull.
+
+**Shared workflow:** spec→review→write→review→fix→merge; merge commits, never
+squash; Codex 5.5 is the PR review step (don't merge out from under it); version
+bumps at merge. (Full detail below.)
+
+**Fuller cross-repo context** (backlog, topology, deep lessons) lives in the
+maintainer's local `Cowork/repo-fleet/` hub — **not reachable from cloud
+containers** (which hold only this one git repo). If you're a cloud session and
+need cross-repo context beyond this section, flag it rather than guessing.
+
 ## The flow
 
 ```
