@@ -10,13 +10,11 @@ name: Sync SETEC contract
 # subprocess discovered at runtime — so only the CONTRACT is vendored, never
 # the whole plugin (see scripts/sync_setec.py).
 #
-# FINALIZATION: this workflow targets a real SETEC release and will not run
-# usefully until the R1 release exists. Today the contract is pinned
-# provisionally to the unreleased R1+R5 branch via a local worktree (see
-# setec-plugin.lock). On the real release:
-#   1. Confirm SETEC_RELEASE resolution below points at the release tag.
-#   2. Re-pin setec-plugin.lock by running sync_setec.py against the release.
-#   3. Set BOOTSTRAP_SETEC_VERSION in setec_discovery.py to the release version.
+# This workflow tracks the latest *released* SETEC: it resolves the newest
+# release tag, checks it out, re-derives the vendored contract via
+# scripts/sync_setec.py, runs the drift gate, and opens a bump PR. The contract
+# is release-pinned in setec-plugin.lock; the provisional/local-worktree posture
+# is retired in normal operation.
 
 on:
   schedule:
@@ -46,10 +44,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      # FINALIZATION: resolve the SETEC release ref. Until the R1 release tag
-      # exists, `latest` resolves to nothing and this step (and the job) will
-      # no-op/fail — that is expected and intended; the provisional pin is
-      # carried by setec-plugin.lock + the local-worktree sync.
+      # Resolve the SETEC release ref (`latest` → the newest release tag).
       #
       # REQUESTED_REF is the only user-controllable input; it is routed through
       # an env var (never interpolated into the shell) per the Actions
@@ -119,9 +114,8 @@ jobs:
             diff (especially any `min_setec_version` changes or dropped consumer
             surfaces) and merge.
 
-            FINALIZATION reminder: confirm `setec-plugin.lock.provisional` is
-            now `false` and `BOOTSTRAP_SETEC_VERSION` is re-pinned if this is
-            the first real R1 release.
+            Reminder: if a newly-consumed surface raises the runtime floor,
+            re-pin `BOOTSTRAP_SETEC_VERSION` in `setec_discovery.py` to match.
           delete-branch: true
           add-paths: |
             tests/setec-contract/**
