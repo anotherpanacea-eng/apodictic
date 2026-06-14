@@ -9,8 +9,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
 
-const checkSync = process.argv.includes("--check-sync");
-
 const registryPath = path.join(repoRoot, "release-registry.json");
 if (!fs.existsSync(registryPath)) {
   console.error(`Missing registry: ${registryPath}`);
@@ -52,33 +50,6 @@ function readMarketplaceMetadataVersion(data) {
     return data.metadata.version;
   }
   return null;
-}
-
-function checkRsyncParity(sourceDir, targetDir) {
-  const raw = execFileSync(
-    "rsync",
-    [
-      "-ain",
-      "--delete",
-      "--exclude",
-      ".git/",
-      "--exclude",
-      ".DS_Store",
-      `${sourceDir}/`,
-      `${targetDir}/`
-    ],
-    { encoding: "utf8" }
-  );
-
-  const lines = raw
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .filter((line) => !line.startsWith("sending incremental file list"))
-    .filter((line) => !line.startsWith("sent "))
-    .filter((line) => !line.startsWith("total size is"));
-
-  return lines;
 }
 
 function main() {
@@ -179,42 +150,6 @@ function main() {
     }
     if (skillVersion !== expected) {
       errors.push(`Version mismatch: ${skillRelPath} has ${skillVersion}, expected ${expected}.`);
-    }
-  }
-
-  const appTsxPath = abs(paths.appTsx);
-  if (!fs.existsSync(appTsxPath)) {
-    console.warn(`WARN: ${paths.appTsx} absent (APODICTIC-Gemini sibling not checked out) — skipping App.tsx version parity. The public release path is not coupled to the private sibling.`);
-  } else {
-    const appTsx = read(appTsxPath);
-    const aboutMatch = appTsx.match(/Based on APODICTIC plugin v(\d+\.\d+\.\d+)/);
-    if (!aboutMatch) {
-      errors.push("Could not find About version string in src/App.tsx.");
-    } else if (aboutMatch[1] !== expected) {
-      errors.push(`Version mismatch: App.tsx About string is ${aboutMatch[1]}, expected ${expected}.`);
-    }
-  }
-
-  // 3) Optional: verify plugin/public mirror parity.
-  if (checkSync) {
-    const pluginDir = abs("plugins/apodictic");
-    const geminiPublicDir = abs(paths.geminiPublicPlugin);
-    mustExist(pluginDir);
-    if (!fs.existsSync(geminiPublicDir)) {
-      console.warn(`WARN: ${paths.geminiPublicPlugin} absent — skipping mirror parity (--check-sync).`);
-    } else {
-      const rsyncDiff = checkRsyncParity(pluginDir, geminiPublicDir);
-      if (rsyncDiff.length > 0) {
-        errors.push(
-          [
-            "Gemini public plugin mirror is out of sync with plugins/apodictic.",
-            "Run release sync step or: rsync -a --delete --exclude '.git/' plugins/apodictic/ ../APODICTIC-Gemini/public/apodictic-plugin/",
-            "Diff:",
-            ...rsyncDiff.slice(0, 40).map((line) => `  ${line}`),
-            rsyncDiff.length > 40 ? `  ... (${rsyncDiff.length - 40} more)` : ""
-          ].join("\n")
-        );
-      }
     }
   }
 

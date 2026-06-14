@@ -13,10 +13,7 @@
       "plugins/apodictic/skills/revision-coach/SKILL.md"
     ],
     "pluginReadme": "plugins/apodictic/README.md",
-    "auditCommand": "plugins/apodictic/commands/audit.md",
-    "appTsx": "../APODICTIC-Gemini/src/App.tsx",
-    "landingPageTsx": "../APODICTIC-Gemini/src/LandingPage.tsx",
-    "geminiPublicPlugin": "../APODICTIC-Gemini/public/apodictic-plugin"
+    "auditCommand": "plugins/apodictic/commands/audit.md"
   },
   "counts": {
     "availableAudits": 35,
