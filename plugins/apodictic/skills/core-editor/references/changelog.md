@@ -5,6 +5,226 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.4.0 - 2026-06-14
+
+### Nonfiction Argument Engine — uncompared-recommendation carve-out
+
+`dialectical-clarity.md` gains **classification rule 2a**: for an argument whose controlling claim is a *recommendation to act* (AT3 — "X should do Y"), the comparative dimension is constitutive of the claim, so an AT3 recommendation that discharges **none** of its comparative burden (BP5 primary + OB3, no funding mechanism) is **not evaluable as a recommendation** — a defeat under decision test two (Evidence-evaluability) — and the verdict is **Structurally Unsound** (FM-A10, The Uncompared Proposal), with a matching note at the Step-9 Final Diagnostic Question. This is a bounded exception to rule 2's default-to-SOUND discipline, scoped to AT3 recommendations only (descriptive/explanatory/interpretive theses are untouched) and guarded by a *wholly-absent vs. partially-discharged* line — a recommendation that engages even one alternative thinly stays a Should-Fix soft spot in a sound argument. **Calibration update (post-benchmark):** the guard is tightened so that naming *any* alternative — even a weak or strawmanned foil — counts as partially-discharged (soft spot); only the total absence of any comparison triggers Unsound. (A benchmark run had `andreessen-techno-optimist-manifesto` regress SOUND→UNSOUND because a strawman "the only alternative is Communism" framing was misread as zero comparison.) Two independent cross-vendor reviewers (Gemini + GPT-5.5) ratified the narrowing and both flagged a token-foil gaming risk, so an **anti-gaming clause** was added: a named foil disables only the *automatic* FM-A10 defeat; a merely decorative foil (no mechanism/criteria/costs/tradeoff) can still be Unsound via the general evaluability test (rule 2), not the AT3 auto-trigger. It brings the engine into line with the `policy-brief-uncompared` ground-truth key (GT7 = UNSOUND), which the engine previously read SOUND. Verdict-behavior change for argument-shaped runs; **gated on a benchmark convergence run** (no `--check-all` gate covers behavioral calibration). No validator/schema change. See `docs/argument-benchmark-calibration-round.md`.
+
+### Command Surface — trimmed to 13
+
+Retired three redundant command entry points, all reachable through `/start`: `/revision-plan` (a compatibility alias for `/coach`), `/develop-edit` (the default `full_draft` + `repair` router path), and `/diagnose` (a targeted `repair`). A writer with a draft lands on the `/start` router first anyway, so these added surface without adding capability. The distinct doors stay first-class (`/ready`, `/pre-writing`, `/coach`, `/audit`, `/research`, `/plot-coach`, `/legal-risk`, `/triage-feedback`, `/reader-questions`, `/new-project`, `/projects`). The registry command taxonomy (`category` / `status` / `routerEquivalent` / `writerQuestion`) is the single source the grouped README lists generate from. Routing references that pointed at the retired commands now point at `/start`.
+
+### Validators — finding-trace completion glob narrowed
+
+`finding-trace`'s `_COMPLETION_GLOBS` narrowed from `*_Revision_*.md` to `*_Revision_Report_*.md`, so a deadline-coaching `*_Revision_Calendar_*.md` is no longer mis-classified as a completion artifact (which would let its mentions advance a finding toward `revised`). Aligns finding-trace with the Increment-4a `revision_round` gate, which already narrowed its `revision_report` key. Negative-test guarded (`calendar_not_completion`); the revision-*stage* glob (`_REVISION_GLOBS`, for plan-coverage) stays broad.
+
+### Workflows — Legal Risk Register detection layer
+
+The Legal Risk Register gains a **detection layer** (`core-editor/references/legal-risk-register.md` §Detection guidance / §Escalation-trigger taxonomy): per-class textual signals for what to flag under each `risk_class` (defamation / privacy / rights-clearance / other, with the finer categories — intrusion, false light, trade secrets, incitement, … — as sub-signals), a **severity model** (base tier raised by documented modifiers: `+identifiable-living-private-person`, `+serious-allegation`, `+weak-or-no-documentation`, `+international-distribution`, `+author-signed-agreement`, `+marketing/cover/merchandise-use`, `+minor-or-vulnerable-subject`), route-to-counsel bright lines, a *flag-don't-resolve* posture for jurisdiction divergence, and a compact controlled-vocabulary **escalation-trigger taxonomy** (~20 codes → default tiers) for the `escalation_trigger` field. Lean by design — the runtime module carries the heuristics; the cross-model research + citations live in `docs/legal-risk-detection-level-setting.md`. Firewall unchanged: detection only; a qualified lawyer is the final gate. No schema or validator change.
+
+### Workflows — Legal Risk Register router wiring
+
+The built Legal Risk Register module is now reachable from the router and a command, not just internally. `constraint:risk` ("sensitive or legally risky content") **offers** the register and, on accept, attaches `[Project]_Legal_Risk_Register_[runlabel].md` as a companion artifact (synthesis constraint hook in `run-synthesis.md` — the first `constraint:`-keyed presentation overlay, and the first offer-then-attach one, since the not-a-lawyer framing warrants a confirm). New `/legal-risk` command as a direct entry point. The route map flips to **Built** (§3 option D, §6 Table B, §4a). The firewall is unchanged — flag, don't practice law. (Still future: auto-recommending the register for memoir/autofiction with identifiable real people *without* the explicit flag.)
+
+### Onboarding — install decision-aid and glossary
+
+The README install section now opens with a **Which install do I need?** table that maps each host (Antigravity, Codex, Claude Code CLI, Cowork) to its path and fastest route, so a newcomer doesn't have to read all five install flows to find theirs. A new **Key Terms** section defines the load-bearing vocabulary a first-timer meets cold — contract, controlling idea, the Firewall, pass, macro block, audit, genre module, editorial letter, the Must/Should/Could severity tiers (and the Deficit Lock), spine, and reverse outline.
+
+### Onboarding — visual surfaces brought current
+
+The README now opens with a **See It in Action** section linking the rendered sample editorial letters, the targeted-audit and pre-writing samples, and the two interactive maps (overview dashboard, route explorer) so newcomers can see real output before installing, plus a **Your First Five Minutes** walkthrough.
+
+The `overview-dashboard.html` and `route-explorer.html` visuals (and their `.codex.html` twins) were stale at a v1.0.2 snapshot and have been brought current: the route explorer no longer reports shipped workflows (Fragment Synthesis, partial-manuscript mode, Submission Readiness, Submission Triage, Feedback Triage, the Nonfiction Argument Engine, editor scaffolding, diagnostic vocabulary, Series Continuity) as "not yet built"; the Legal Risk Register is shown as built-but-not-yet-routed; only multi-party/team intake remains a true gap. The overview dashboard now shows the canonical 8-block macro map (Emotional Dynamics restored as its own block), the full 50 spines / 12 families (adding Kishōtenketsu and Jo-ha-kyū), and the current version. The dashboard's click-to-expand cards are now keyboard-operable (`role="button"`, `tabindex`, Enter/Space handlers).
+
+### Onboarding — overview dashboard front door
+
+The overview dashboard header now opens with a "New here?" getting-started callout — a one-line plain-language orientation ("this page is a map; you don't need to memorize it") plus the first action (`/start`) — so a brand-new user landing on the page sees what to do before scrolling into the technical sections. Additive only (one `<div>` + two CSS rules; no redesign, no new sections, no network/deps). Applied to both the canonical `overview-dashboard.html` and its authored `.codex.html` twin (which keeps the `apodictic-start` wrapper naming per the codex override convention).
+
+### Validators — post-merge review nits
+
+Three small fixes from a review of the merged batch (no new validators; count unchanged at 38→40 baseline):
+
+- **`reader-instrument` B3 (fabrication smell-test).** The "unsourced question" advisory was gated on the Ledger *having* `### Unresolved Questions` bullets, so an `unresolved-question` reader-question with an invented `source_note` passed unflagged when the Ledger had **none** (the more suspicious case — citing a UQ that can't exist). The advisory now also fires when the Ledger has zero UQ bullets. Stays a WARN: UQ provenance is non-referential by design, so this is a fabrication smell-test, not a hard gate.
+- **`manuscript-viz` render gate (false pacing curve).** `W2 scene order` is advisory, but a reordered manifest draws a *false* pacing curve — the one warning that corrupts the render's core output. The `render` subcommand now refuses on a scene-order divergence too (not just ERROR-level gate failures), overridable with `--force`; `W1 coverage` stays advisory so a legitimate partial map still renders.
+- **Swarm cost copy.** The intake-router execution-mode menu rows (B/C/I) said a bare "roughly 5x" while `run-core.md` notes the 2026-06 re-test measured ~8.5×+ on long fiction — understating cost at the decision point. The menu rows now carry the measured figure.
+
+### Validators — manuscript-viz E5 + check-mirror hardening
+
+Follow-ups from an independent post-merge review of the Horizon-Tier-1 validator train. **manuscript-viz** gains **E5 (no duplicate entry)**: a `scenes[].scene_id` or `findings[].id` repeated in the manifest is now an ERROR — a duplicate double-draws a pacing bar / double-counts a chapter's severity bar (a chart element showing a value the sources did not contain), which the per-id E2/E4 checks pass on. **check-mirror** now flags a `CM_ROOT_ONLY` utility (e.g. `sync_setec.py`) that has **strayed to the plugin side** or diverged across both copies, instead of skipping it by name in every mode (it was only ever meant to excuse a *root-only* file). `viz_manifest.py render`'s usage + refusal now state that the Timeline and Ledger are required for a gated render (with `--force` as the manifest-only escape) and name any missing source. Docs trued up: the manuscript-visualizations and mirror-parity specs + ROADMAP Horizon item 1 flipped from "Proposed/Spec" to built (manuscript-viz Increment 1 = charts 1–3; the network/heatmap/timeline/beat-map charts remain future); the `reader-instrument` module docstring now lists its two B3 advisories and the advisory summary reads B3/B4/B5/W1. No validator-count change; no schema change.
+
+### Routing — fork/overlay split + project addressability (Increments 1–4)
+
+The intake router now distinguishes **forks** (modifiers that *select* a workflow — `time` → Submission Triage, `nonfiction` → the argument / narrative / memoir engines, `feedback`, `team`) from **overlays** (modifiers that only *modify* a selected run — `ai`, `editor`, `facilitator`, `risk`, `hybrid`, `swarm`). The §6 route map splits into a base-route table (Table A) plus an orthogonal overlay table (Table B), removing nine `base × overlay` rows and giving each overlay a single authoritative status; the router output contract becomes `base_route` + typed `forks{}` + composable `overlays[]` (the bespoke `nonfiction_route` folds into `forks.engine`). Projects are now **addressable**: a workspace-relative `.apodictic/registry.json` (`apodictic.project_registry.v1`) makes each book selectable by name, with `/start <project>` binding a session to its state and a new `/projects` command listing/rebuilding/tidying the registry — each project's `Diagnostic_State.meta.json` sidecar stays canonical, the registry is a rebuildable cache. `/new-project` registers on creation; pre-writing projects drop a minimal sidecar (`next_action: pre_writing`) so they register before any diagnostic run. **State-driven dispatch (Increment 3):** for a bound project, `/start` derives a **lifecycle node** from the sidecar by a single total precedence (`cold → blocked_gate → execution → pre_writing → submission → revising → diagnosed → diagnosing`) and dispatches via `next_action` — collapsing the intake questions to a two-option Resume/Start-fresh prompt (cold start runs the full questionnaire unchanged), behind a scoped contract-hash precondition. The §6 route map gains a lifecycle transition table, with the Artifact×Goal table reframed as the cold-start entry map. **Revision-loop spine (Increment 4b):** at the `revising` node the coach answers "what now?" with a leverage ladder (`revision-coach/SKILL.md` §Loop Dispatch) — reading the finding lifecycle (`locked`/`delivered`/`revised`) and the revision report's resolved markers to propose the next highest-leverage action, with a stalled-revision off-ramp. **Increment 4a** then makes the runner-governed gate engine the fold-consistent writer of `revised`: a gated `revision_round` phase advances **only the resolved subset** of findings (the report's `<!-- resolved: F-… -->` ids) to `revised`, with the revision round's pre-existing direct sidecar write *scoped* to non-governed projects so `gate --check-state`'s `pointer == fold` invariant holds. Design: `docs/router-fork-overlay-split.md`, `docs/project-addressability.md`, `docs/revision-round-gate.md`.
+
+### Onboarding — project dashboard (snapshot viewer)
+
+A new `plugins/apodictic/project-dashboard.html` — a self-contained, sandbox-safe **snapshot** view of your projects: select/filter by lifecycle node, see where each stands ("what now?"), and get the `/start <project>` launch command per project. It renders an `apodictic.project_registry.v1` payload (with the node + next action pre-computed by the tool and embedded), so it is render-only — a viewer and launch-pad, not a live monitor or controller. Complements `/projects` (text) with an at-a-glance visual, in the style of the existing route-explorer / overview dashboards.
+
+### Commands — Capability Index
+
+New **`/apodictic`** command: a non-interactive capability index for discoverability. APODICTIC had 15 slash commands and 5 skills but no flat "what can I do / where do I start / what's my current state" reference — `/start` is an interactive *router*, not an index, and the README's command list had drifted (missing 4 of 15). `/apodictic` prints a curated, scannable index: the Firewall in plain language, every command grouped by workflow stage (Start → Pre-writing → Diagnose → Revise → Risk/Submit → Projects) with a one-line "when to use," how to find your current project state (the registry + lifecycle rail), and pointers to the existing HTML maps. It never routes (that's `/start`) and never writes state. Named `/apodictic` to avoid colliding with Claude Code's built-in `/help`. Drift-resistant by design: before printing it globs `commands/*.md` and appends any command not yet in the index, so additions self-heal (only grouping needs a human). Ships as a command file only (no registry entry, per the existing `/projects`/`/legal-risk` precedent); host-neutral wording so the codex/antigravity generators pass.
+
+### Tooling / DX
+
+Single-sourced the self-testable validator **count**. It was hard-coded as the literal "40" in five places (`validate.sh` ×4 + a `ci.yml` comment); every validator-adding PR had to hand-edit all five, which repeatedly produced merge conflicts when concurrent PRs each bumped the number independently (and a stale denominator would fail `--self-test-all`). Now `AGG_VALIDATORS` is hoisted to a single top-level constant with a derived `AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)`, and every displayed count (`--self-test-all` header + `PASS/FAIL (N/N)` tally + the usage banner) reads from it; the `ci.yml` comment is de-numbered. A PR adding a validator now edits only the `AGG_VALIDATORS` line — the count can no longer go stale or collide. No behavior change; mirrored byte-identical across both `validate.sh` copies (`check-mirror` green).
+
+### QoL — inventory-parity sync-marker check
+
+New meta-check `scripts/check-inventory-parity.mjs` (stdlib Node only) guards that the display surfaces (`overview-dashboard.html`, `AUDIT_SELECTION_MATRIX.md`) stay synced with the canonical audit/research inventory — the rot PR #81 hand-fixed. It computes a `<count>:<short-hash>` signature for the signal-emitting audit registry (between the `registry:signal-emitting-audits` markers in `audit-routing-table.md`) and the research modes (`commands/research.md`), and flags any opted-in surface whose embedded `<!-- inventory-synced: audits=… research=… -->` marker drifts from current (exit 1). This is the #79 status-drift pattern applied to inventory: a sync-marker + changed-since signal — robust, near-zero false positives, and no brittle name-by-name matching. **Honest limitation:** like #79's status flip, it verifies the *signal is consistent*, not that the surface content is actually correct — a maintainer who bumps the marker without re-syncing defeats it; that's a transparent trade vs. brittle name-matching, and strictly better than nothing. Vacuity-guarded (zero markers → error), fence-aware (markers inside ``` / ~~~ are ignored), malformed-marker-loud, and `--self-test` covers the 7 hermetic cases plus an integrity check proving the negatives fail only because the compare is real. Both surfaces seeded with the current signature; wired into CI. No validator-count bump.
+
+### Docs — Marketing-parity refresh
+
+Brought the plugin's self-description in line with what it ships at v2.3.1. Registered the 5 previously-unlisted commands (`/apodictic`, `/projects`, `/legal-risk`, `/triage-feedback`, `/reader-questions`) in `release-registry.json`, so both READMEs' registry-generated command lists now fill in all 16 commands grouped correctly (`/apodictic` joins `/start` under "Start here:"). Added an `apodictic-index` wrapper-name special-case to the Codex and Antigravity generators so `/apodictic` no longer derives an awkward `apodictic-apodictic`. Refreshed the hand-maintained framing and capability prose in both READMEs (and the Codex twin): added persuasive/argument-shaped nonfiction (policy briefs, op-eds, testimony) to the tagline and Intended Audience, and surfaced the shipped capabilities — Legal Risk Register (flags, never adjudicates), Feedback Triage, Beta-Reader Instrument, manuscript-structure visualizations, the Nonfiction Argument Engine, project addressability/resume, Retcon Planning / State Cards, and the Diagnostic-Vocabulary & Editor-Scaffolding operator modes. Back-ported the revision-coach-aware post-diagnosis wording (removing the contradictory "work with Claude directly" line), qualified the privacy claim honestly (no telemetry of its own; diagnostic state persists on local disk by design; `/research` makes explicit web searches), and fixed the false CONTRIBUTING reason for the no-external-PR policy (solo-maintained + email-based, not "no PR infrastructure"). No diagnostic-behavior, schema, or validator change.
+
+### Marketing-parity — visual + matrix surfaces refreshed; two codex twins de-duplicated
+
+Brought the three onboarding surfaces up to v2.3.1 reality and removed two redundant Codex overrides so future edits stop being double-edits. `overview-dashboard.html` and `AUDIT_SELECTION_MATRIX.md` gained the audit/research inventory that had drifted out of date — the missing genre audits (**Supernatural Horror**, **Grimdark / Dark Fantasy**), **Narrative-Decision (StoryScope)**, **POV Voice Profile**, the advisory **Idiolect Preservation** / **Punctuation Cadence**, the **Compression** / **Stakes System** / **Decision Pressure** / **Reception Risk** craft chips, the **Adversarial Evidence Review** + **Argument Evidence / Persuasion / Red Team** companions, and the two missing research modes (**Citation Verifier**, **Field Reconnaissance** → all 6) — all re-derived from `core-editor/references/audit-routing-table.md` §Signal-Emitting Audit Registry and `commands/research.md`. The dashboard and matrix also document the shipped **Legal Risk Register** (`/legal-risk`, named on the Q3 sensitive-content branch), **Feedback Triage** (`/triage-feedback`), **Beta-Reader Instrument** (`/reader-questions`), project **resume** (`/start <id>`, `/projects`), and the **Nonfiction Argument** path. `route-explorer.html` (and its surviving Codex twin) picked up a version stamp, the projects/resume path, an execution-mode note (swarm = verification insurance for final submission prep; ~5x, measured up to ~8.5x on long fiction), and base/twin parity on the legal-risk route. Because `rewriteGeneratedDocs` already swaps `/cmd` → `apodictic-cmd` across `.md`/`.html`, the `overview-dashboard.codex.html` and `AUDIT_SELECTION_MATRIX.codex.md` overrides were byte-for-byte reproducible from the base + rewrite (proven empirically), so both were deleted along with their `release-registry.json` `codex.overrides` keys. Docs/HTML/matrix only — no diagnostic-behavior, schema, or validator change.
+
+### Tooling / DX
+
+New **status-drift lint** (`scripts/check-status-drift.mjs`, wired into CI): catches spec docs whose `**Status:**` line still says "unbuilt" after the deliverable shipped — drift that recurred across the #66/#70/#74 trains and invites duplicate builds (agents implement *from* specs). Opt-in by design to avoid crying wolf: a spec declares its deliverable in a `<!-- built-when: <path> -->` (or `… contains "<literal>"`) HTML-comment marker, and the lint flags a doc **only** when its marker's deliverable now exists *and* the Status line still reads unbuilt — un-marked docs are never flagged (zero false positives by construction; most "Proposed (unbuilt)" specs are *correctly* unbuilt). Standalone Node, stdlib-only (no validator-count bump, no dual-script-mirror burden — same class as `assemble-changelog`); fenced-code-immune; a conservative built-guard skips multi-increment statuses; 10-case hermetic `--self-test`. Seeded with markers on 11 specs (3 built → green, 8 future → the tripwires for the next build train) plus its own. Companion discipline in `AGENTS.md` § Review practices ("flip the status when you build"). Surfaced and fixed two live drifts while building — `docs/followups-batch-spec.md` and `docs/runner-governed-execution.md` increment 5 (structured gate-event records, shipped v2.1.0) both flipped to Built. (A third candidate — the ROADMAP "Framework Overview Dashboard" Backlog entry — is left for maintainer adjudication, since `overview-dashboard.html` exists but the entry may intend a redesign.) Detection only — the status flip stays a deliberate edit.
+
+### Onboarding — router diagram in the README
+
+The README now opens with a GitHub-rendered Mermaid flowchart of the `/start` router: the three intake questions (what you have → what you want → anything that changes how we work) routing every starting point to its workflow, with the Firewall shown as the one thing the tool never does — rewrite your prose. It renders inline on github.com and links out to the interactive route explorer, whose full-draft goal list now includes the Revision Coach path, for parity with `intake-router-runtime.md`.
+
+### Audits — Argument-Decision (ArgScope) registered in the canonical inventory
+
+Registered the `argument_decision_audit` SETEC consumer surface (adopted in #87) in the audit registry so it's discoverable like its `narrative_decision_audit` sibling — previously it lived only in the skill/reference/contract layer and was absent from the listing surfaces. Adds a Craft entry to `release-registry.json` (available audits 34 → 35; craft 16 → 17), which regenerates the `/audit` list, the README audit counts, and the plugin description; adds it to the signal-emitting audit registry (`audit-routing-table.md`); and re-syncs the inventory-parity surfaces (`AUDIT_SELECTION_MATRIX.md`, `overview-dashboard.html`) to the new signature `audits=43:1202e80a`.
+
+### Release — self-contained, decoupled from the APODICTIC-Gemini sibling
+
+apodictic's release flow no longer reaches into an APODICTIC-Gemini sibling checkout. The legacy **push** reach-ins are removed: `release.sh` no longer rsyncs `plugins/apodictic/` into the sibling's public mirror or runs `release-verify.mjs --check-sync` (steps 7–8 dropped; banners renumbered to 7 steps), `release-verify.mjs` drops the App.tsx "Based on APODICTIC plugin vX.Y.Z" version-parity arm, the `--check-sync` mirror-parity arm, and the `checkRsyncParity` helper, and `release-registry.json` drops the three Gemini-pointing path keys (`appTsx`, `landingPageTsx`, `geminiPublicPlugin`). The canonical, drift-gated **pull** chain is unchanged and remains the sole coupling: APODICTIC-Gemini's `sync-plugin.mjs` vendors apodictic's released tag + registry, `generate-ui.mjs` regenerates `App.tsx`/`LandingPage` from the vendored registry, and Gemini CI's weekly + dispatch drift gate (`generate:ui:check`) owns mirror/version parity. apodictic's release is now self-contained and builds entirely from its own `plugins/` tree with no sibling dependency.
+
+### Docs / Samples
+
+Refreshed the *Dungeon Crawler Carl* sample editorial letter (`sample-editorial-letter.html`) to the current framework version (v1.0.1 → v2.3.1, June 2026 run). Content revisions only — same template and styling: re-proportions the structural read (Floor 1 measured at ~52% of word count, not estimated ~60%; the genuine idle stretch relocated to the top of Floor 2), adds the Carl/Donut two-hander and the individuation-gate framing to "What the Book Does Best," reframes the callout around the satire going load-bearing twice (Death Watch + fighting-pit mercy), and reworks the "What Needs Work" items (Floor-2 re-tutorialization, the under-felt mass-death beat, Donut-as-prop at the climaxes, competence-outruns-change) with a matching revision checklist. No plugin behavior change.
+
+### SETEC integration — adopt the ArgScope `argument_decision_audit` surface
+
+APODICTIC now consumes SETEC Voiceprint's `argument_decision_audit` task surface
+(ArgScope) — the argument-domain sibling of the narrative-decision (StoryScope)
+audit. A new thin shim `ai_prose_argument_decision_audit.py` routes the surface
+through SETEC's normalized dispatcher (R2) via `run_surface_cli`, like the other
+`ai_prose_*` shims; the dispatcher enforces the per-surface version floor at
+runtime (R3 `version_floor` on an out-of-floor SETEC), so the shim hardcodes no
+version. The surface scores a public-debate / op-ed essay's argumentative
+STRUCTURE — the B1 paragraph-role transition arc (support→proposal,
+support→support, thesis-opening) + the B2 discourse-mode share — against Kim et
+al. 2026's ("Argument Collapse", arXiv:2606.01736) human/LLM group means. It
+measures argumentative *diversity*, not quality, soundness, or provenance, ships
+`uncalibrated`, and is register-bound to public-debate forums (research / legal /
+policy = the consumer's `distant` tier, structural-signals-only).
+
+- **Bumped the vendored SETEC contract pin v1.114.0 → v1.116.0** (`setec-plugin.lock`,
+  release pin to the tag carrying the surface). Re-synced the consumer-projected
+  manifest (`tests/setec-contract/setec-capabilities.json`, now 13 apodictic
+  surfaces incl. `argument_decision_audit` at floor 1.116.0) and the R5 contract
+  fixtures via `scripts/sync_setec.py`. Per the script's documented design the
+  manifest is consumer-projected while the golden fixtures are copied whole, so
+  the bump also vendors the 1.115.0 voicewright-bundle goldens (binoculars /
+  general_imposters / mimicry_cosplay / voice_fingerprint) as parser-test data.
+- **New audit-level contract** `references/craft/argument-decision-audit.md` (v0.1):
+  the envelope shape (4 contributions, B1/B2 bundles, heuristic `reused_signals`,
+  the `pre_flag`), the 3-tier register map, the claim-license fields to surface,
+  the aggregate posture (pin per-signal `contributions`, NOT the aggregate score),
+  judge provenance, and the anti-verdict / framing note. It may PRE-FLAG whether a
+  dialectical-clarity (soundness) run is informative; it never adjudicates
+  soundness, warrant, or fairness.
+- **Registered in the specialized-audits SKILL.md** (triggers, the surfaces table
+  row, and the references list).
+- **Offline contract test** (`tests/setec-contract/test_setec_contract.py`) now
+  expects 10 shim surfaces and pins `argument_decision_audit`'s floor at 1.116.0;
+  the drift gate re-derives the shim set, so the new shim joins automatically.
+- Pins only the parts SETEC has committed (envelope shape, per-signal
+  `contributions`, `claim_license`); the aggregate math, B3/B4 `reused_signals`
+  (heuristic, no numeric anchor by design), and the deferred dynamic signals
+  remain provisional under the surface's `handoff: experimental` posture.
+
+### SETEC integration — R1 capabilities query + vendor/pin/drift-gate
+
+APODICTIC now data-drives each SETEC surface's version floor from SETEC's
+capabilities manifest (`capabilities.py emit --json`) instead of hardcoding it.
+New `setec_capabilities.resolve_floor()` discovers SETEC at a single bootstrap
+floor, queries the manifest, and asserts the discovered `setec_version` against
+each surface's `min_setec_version`. The retired `MIN_SETEC_VERSION = (1, 86, 0)`
+per-surface authority and the narrative-decision shim's `(1, 107, 0)` constant
+are deleted; all nine `ai_prose_*` shims resolve their floor through the manifest.
+
+Added a vendor/pin/drift-gate apparatus (ported from APODICTIC-Gemini's pull
+pattern, in Python): a pinned copy of SETEC's consumer-projected manifest +
+R5 contract fixtures under `tests/setec-contract/`, a `setec-plugin.lock` pin,
+`scripts/sync_setec.py` (`--check`-able re-derivation), and a drift gate
+(`tools/check_setec_contract.py`) whose self-consistency guard fails if any
+shim surface is missing from the vendored manifest or lacks a floor. Wired into
+CI plus a weekly `sync-setec` workflow. (Provisional pin against the unreleased
+SETEC R1+R5 branch; finalization re-pins to the release tag.)
+
+### SETEC integration — adopt the R2 normalized dispatcher + R3 structured errors
+
+`setec_runner.run_supplement` now routes EVERY SETEC surface through SETEC's
+normalized dispatcher (`setec_run.py <surface> [args] --json`, R2) and parses
+the `schema_version` 1.0 envelope from **stdout** — including
+`pov_voice_profile`, whose private file artifact the dispatcher projects to
+stdout. One delivery path. The signature changed from a script filename to a
+surface NAME: `run_supplement("variance_audit", args)`, not
+`run_supplement("variance_audit.py", args)`.
+
+- **Deleted from `run_supplement`:** the `json_out` parameter, the
+  `_caller_json_out_path` helper, the `--json-out` injection + `--json-out=`
+  /split-form recovery, the ephemeral `ai-prose-baselines-private/` tempdir +
+  `rmtree`, and the `min_version` escape hatch. The dispatcher owns delivery
+  and floor/dependency enforcement now.
+- **R3 structured errors.** On `available: false`, `run_supplement` branches on
+  the envelope's `reason_category` (not stderr scraping): `version_floor` /
+  `missing_dependency` → blocking (surface the upgrade/install message);
+  `text_too_short` → reliability (preserving the §6.4 reliability-vs-blocking
+  semantics); `policy_refused` / `bad_input` / `internal_error` (and any
+  unknown category) → blocking with the reason text. New `SupplementResult`
+  fields `reason` / `reason_category` carry the structured error.
+- **The 9 `ai_prose_*.py` shims are thinned** to a single
+  `run_surface_cli(SURFACE, argv)` call (via the shared helper in
+  `setec_runner`): they drop the per-shim `resolve_floor` runtime pre-check and
+  the `pov` `json_out=True` special-case, route through the dispatcher, emit the
+  envelope to stdout, and exit with the dispatcher's exit-code contract.
+- **Floor reconciliation.** The dispatcher is the single RUNTIME authority for
+  per-surface floor/dependency failures (it returns R3 `version_floor` /
+  `missing_dependency`). `setec_capabilities.resolve_floor` + the vendored
+  manifest are retained ONLY for the offline drift gate and capability
+  introspection (Increment 2's contract role), not a redundant runtime
+  pre-check that could drift from the dispatcher.
+- **Bootstrap/dispatcher floor.** `run_supplement` fails cleanly with an
+  upgrade message if the discovered SETEC predates the R2 dispatcher
+  (`setec_run.py` absent) rather than crashing. A `# FINALIZATION:` marker in
+  `setec_runner.py` flags raising `BOOTSTRAP_SETEC_VERSION` to the real R2
+  release (target ~1.114) once SETEC cuts it.
+- **Docs updated:** `run-full.md` Pass 3 + Pass 7 wiring (surface-name calls;
+  Pass 7 multi-POV drops `json_out`; POV read keys corrected to the dispatcher's
+  projected names `cross_pov_distances_weighted` / `pov_vs_corpus_mean` /
+  `voice_collapse_verdict`); `narrative-decision-audit.md`; the contract test
+  gains the dispatcher path (T2) + R3 tiering (T2b).
+
+### Docs / Calibration
+
+Ran the swarm-vs-single execution-mode eval as an **N=1 pilot** on one long-fiction fixture (*Dungeon Crawler Carl* Book 1, 130K words) and recorded it under `docs/swarm-vs-single-eval-pilot/` (pre-registration, blind ground-truth key, label-blind scoring, comparison report). Directional, not a verdict. On that fixture single-agent tied-or-edged swarm on real-issue recall (0.50 vs 0.44, noise-level) at ~8.5× less token cost; swarm bought tighter severity calibration (3/4 vs 3/6 band-clean on the caught-and-banded set) and more full-credit catches, not more recall, and both correctly returned zero Must-Fix on the near-sound control. Per the pre-registered rule this is a "verification-insurance / single-default (cost-adjusted)" outcome — matching the existing §2b default. Applied the pilot's recommended cheap deliverable: `run-core.md` §Execution Mode (which carries the `last re-validated: 2026-06` provenance note), the intake-router swarm menu rows, `core-editor/SKILL.md`, and both READMEs now keep swarm but reframe its everyday rationale from "deeper analysis / ~2× findings" to **verification isolation for final submission prep**. The historical changelog entry for the original swarm A/B claim is left intact as a record. No validator or routing-logic change (the user-facing §2b execution-mode menu copy is reworded).
+
+### Validators
+
+37 → 38 self-testable validators. Added `check-mirror`, a QoL gate that mechanizes the dual-script-mirror invariant (`AGENTS.md` § Platform parity): `validate.sh`, `preflight.sh`, and every `*.py` exist in two committed copies — root `scripts/` (what CI runs) and `plugins/apodictic/scripts/` (canonical) — that must be byte-identical by hand, or a validator change passes against one copy while CI runs the stale other blind. `check-mirror` asserts the shared mirrored set matches (root-only build/release scripts, plus root-only `*.py` infra utilities listed in `CM_ROOT_ONLY` — e.g. `sync_setec.py` — and the plugin-only `test_fixtures/` correctly excluded; schemas are single-sourced) and is wired into `--check-all`, so drift is now CI-blocking instead of a silent footgun. Detection only — it never auto-syncs; the by-hand `cp` stays deliberate. Pure shell (no `python3` dependency).
+
+### Workflows — Manuscript-Structure Visualizations
+
+New **Manuscript-Structure Visualizations** capability (Horizon Tier 1): a presentation layer that adds *no analysis* — a deterministic render of data the passes already produced. An `apodictic.viz_manifest.v1` block copies, **verbatim**, the Timeline Event-Ledger rows (scenes) and `apodictic.finding.v1` blocks (findings); the new render-only SVG layer (`scripts/viz_manifest.py render`) draws charts 1–3 — pacing/word-count curve, POV time-share, finding-severity-by-chapter (chapters sorted numerically, Ch 2 before Ch 10) — into a single self-contained offline HTML (no network, no deps, no telemetry). The `manuscript-viz` validator owns manifest↔source provenance: **E1** schema + a *no-visual-style* field allowlist (style is the renderer's, not the run's; a present-but-unparseable block is an E1 failure, not a silent no-op, and `--require-block` fails an absent one — the `--check-all` gate uses it so it can't pass vacuously), **E2** provenance closure (scene_id → Timeline row; finding id → ledger; finding `chapter` == the conservative `Chapter N`/`Ch N` `evidence_refs` parse, else the literal `unplaced` — no guessed placement), **E3** every body Must-Fix appears, **E4** byte-equal copy fidelity (the manifest copied, it did not compute), **W1** coverage, and **W2** scene order (scenes[] must follow the Timeline's document order, since the pacing curve's x-axis is scene order). `render` runs the gate first and refuses on an ERROR (`--force` to override). Firewall-safe by construction: render-only, provenance-closed, severity encoding hardcoded so a Must-Fix can't be recolored and a LOW-confidence Must-Fix is never shrunk. Reuses `timeline_checks._parse_event_ledger` (the Timeline column parser) and the shared block/schema engine; the subset engine can't validate arrays-of-objects or reject extra fields, so the nested-object validation + no-style allowlist live in Python. Backed by a worked-example manifest paired with the existing `example-timeline.md` + `example-findings-ledger.md`, gated by `validate.sh --check-all`. Mirrored into the root `scripts/` harness CI runs. Spec: `docs/manuscript-visualizations.md`.
+
+### Workflows — Beta-Reader Instrument Generation
+
+New **Beta-Reader Instrument** mode in the revision-coach skill (`/reader-questions`), the **upstream complement to Feedback Triage**: it turns the diagnosis's *own* open uncertainties — `LOW`/`UNCERTAIN` findings, the Findings Ledger's `### Unresolved Questions`, and `risk_if_fixed` tradeoffs — into a targeted, non-leading reader questionnaire, so the feedback that comes back is worth triaging. Closes the reader loop end to end: diagnose → ask the right questions → collect → triage → revise. Each question is an `apodictic.reader_question.v1` block; the new `reader-instrument` validator (`scripts/reader_instrument.py`) owns the question-contract — B1 schema, B2 unique ids, **B3 provenance integrity** (a finding-sourced question's `targets` resolves to a real ledger finding, with an advisory flag when a `low-confidence-finding` probe points at a non-LOW finding; an unresolved-question carries a `source_note` matching a real Unresolved-Questions bullet, and no targets), **B4 leading/invented-content firewall** (a sound finite blocklist of leading constructions + a coarse content-neutrality heuristic; advisory, ERROR under `--strict`, overridable), **B5 anti-relitigation** (never poll readers on a *locked* verdict — severity ∈ {Must-Fix, Should-Fix} and confidence ∈ {HIGH, MEDIUM} — overridable for "how to fix"), and W1 coverage. The severity-honesty boundary is the point: it tests uncertainty, never certainty. Backed by a new worked example + paired uncertainty-fixture ledger, gated by `validate.sh --check-all`. Mirrored into the root `scripts/` harness CI runs. Spec: `docs/beta-reader-instrument.md`.
+
+### Validators
+
+35 → 37 self-testable validators. Added `registry-check` (project-registry integrity over a workspace-relative `.apodictic/registry.json`: R1 envelope + per-entry schema, R2 root + sidecar resolution, R3 cache-vs-sidecar drift with the sidecar canonical, R4 duplicate id), backed by the new `apodictic.project_registry.v1` + `apodictic.project_entry.v1` schemas; and `lifecycle-node` (derives a bound project's lifecycle node from its sidecar by a single total first-match precedence — the tested primitive state-driven dispatch reads from). Both mirrored into the root `scripts/` harness that CI runs.
+
 ## v2.3.1 - 2026-06-07
 
 ### Tooling — decoupled web-app UI generation
