@@ -29,17 +29,19 @@ Usage:
   python3 scripts/sync_setec.py            # re-derive from the resolved SETEC, write vendored copy + lock
   python3 scripts/sync_setec.py --check    # re-derive and exit nonzero if the vendored copy is stale
 
-SETEC resolution (provisional): set SETEC_VOICEPRINT_DIR to a SETEC plugin
-root. # FINALIZATION: when SETEC cuts the real R1 release, this script's
-resolution should pin to that release tag (download the tagged tarball,
-like sync-plugin.mjs does for apodictic) instead of reading a local worktree
-via SETEC_VOICEPRINT_DIR. The lock's `tag`/`commit`/`source` fields are
-provisional until then (see setec-plugin.lock).
+SETEC resolution: set SETEC_VOICEPRINT_DIR to a SETEC plugin root. The weekly
+sync-setec.yml `actions/checkout`s the pinned SETEC release tag and points
+SETEC_VOICEPRINT_DIR at it; a local run points it at a SETEC checkout. Set
+SETEC_RELEASE_TAG to emit a non-provisional release pin (build_lock then records
+the tag + release URL); without it the pin falls back to the branch + local
+worktree (the pre-release bootstrap posture, retired in normal operation).
 
 Env:
   SETEC_VOICEPRINT_DIR — path to the SETEC plugin root (the dir with
-    .claude-plugin/plugin.json and scripts/). Required (provisional pin
-    source). Falls back to the marketplace install if unset.
+    .claude-plugin/plugin.json and scripts/). Required. Falls back to the
+    marketplace install if unset.
+  SETEC_RELEASE_TAG — optional; when set, build_lock emits a non-provisional
+    pin to that release tag (the weekly workflow passes the resolved release).
 """
 
 from __future__ import annotations
@@ -76,8 +78,10 @@ class SyncError(RuntimeError):
 
 
 def _resolve_setec_root() -> Path:
-    """Resolve the SETEC plugin root. Provisional: SETEC_VOICEPRINT_DIR, then
-    the marketplace install. # FINALIZATION: replace with release-tag pinning."""
+    """Resolve the SETEC plugin root from SETEC_VOICEPRINT_DIR, else the
+    marketplace install. The weekly workflow points SETEC_VOICEPRINT_DIR at a
+    checked-out release tag; release pinning is carried by SETEC_RELEASE_TAG in
+    build_lock, not by this resolver."""
     env = os.environ.get("SETEC_VOICEPRINT_DIR")
     if env:
         root = Path(env).expanduser().resolve()
@@ -192,9 +196,31 @@ def _is_junk(rel: str) -> bool:
     return any(p in JUNK for p in parts) or rel.endswith(".pyc")
 
 
-def _copy_fixtures(setec_root: Path, dest: Path) -> list[str]:
+def _consumed_shim_surfaces() -> set[str]:
+    """The SETEC surfaces APODICTIC actually dispatches — its ai_prose_*.py
+    shims, the single source of truth for "what we consume". Reused from the
+    drift gate (tools/check_setec_contract.discover_shim_surfaces) so the two
+    never diverge. Deferred import avoids a module-load cycle."""
+    tools_dir = REPO_ROOT / "tools"
+    if str(tools_dir) not in sys.path:
+        sys.path.insert(0, str(tools_dir))
+    from check_setec_contract import discover_shim_surfaces  # noqa: WPS433
+
+    return set(discover_shim_surfaces())
+
+
+def _copy_fixtures(
+    setec_root: Path, dest: Path, expected_surfaces: set[str] | None = None
+) -> list[str]:
     """Copy SETEC's references/contract_fixtures/ (goldens + fake_setec.py +
-    README) into dest. Returns the sorted list of copied relative paths."""
+    README) into dest. Returns the sorted list of copied relative paths.
+
+    Guard: every surface APODICTIC consumes (``expected_surfaces``; defaults to
+    the ai_prose_*.py shim set) must have a ``<surface>.json`` golden in the
+    copied set. This self-updating subset check replaces a hardcoded count — a
+    newly-consumed surface (e.g. ``argument_decision_audit``) whose golden is
+    missing fails the sync loudly instead of slipping under a fixed ``>=N``
+    threshold."""
     src = setec_root / CONTRACT_FIXTURES_SUBDIR
     if not src.is_dir():
         raise SyncError(f"SETEC has no {CONTRACT_FIXTURES_SUBDIR} at {setec_root}.")
@@ -209,12 +235,22 @@ def _copy_fixtures(setec_root: Path, dest: Path) -> list[str]:
         if item.is_file():
             shutil.copy2(item, dest / rel)
             copied.append(rel)
-    # The contract requires at least the 9 goldens + fake_setec.py.
-    goldens = [c for c in copied if c.endswith(".json")]
-    if len(goldens) < 9:
+    # Self-updating guard: every consumed surface must have a golden.
+    golden_stems = {c[: -len(".json")] for c in copied if c.endswith(".json")}
+    expected = (
+        expected_surfaces
+        if expected_surfaces is not None
+        else _consumed_shim_surfaces()
+    )
+    missing = sorted(expected - golden_stems)
+    if missing:
         raise SyncError(
-            f"expected >=9 golden envelopes in contract_fixtures, found "
-            f"{len(goldens)}: {goldens!r}"
+            f"contract_fixtures is missing a golden for consumed surface(s) "
+            f"{missing!r} (goldens present: {sorted(golden_stems)!r})."
+        )
+    if not golden_stems:
+        raise SyncError(
+            f"no golden envelopes found in {CONTRACT_FIXTURES_SUBDIR} at {setec_root}."
         )
     if "fake_setec.py" not in copied:
         raise SyncError("contract_fixtures is missing fake_setec.py.")
