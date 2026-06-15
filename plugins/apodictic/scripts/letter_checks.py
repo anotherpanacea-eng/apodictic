@@ -753,11 +753,12 @@ def ledger_consolidation(text, raw_text=None):
 # <!-- override: author-facing-lint -->.
 #
 # Patterns are the framework's real code families (not hand-rolled guesses):
-#   pass numbers (Pass 11F), confidence tags ([HIGH CONFIDENCE]), finding /
-#   quality codes (QF-7, CR-8, CR-01, FM-A10), and prose tier labels (P0-P5).
+#   pass numbers (Pass 11F), confidence tags ([HIGH CONFIDENCE], [UNCERTAIN]),
+#   finding / quality codes (QF-7, CR-8, CR-01, FM-A10), prose tier labels (P0-P5).
 _AFL_CODE_RE = re.compile(
     r"\bPass\s+\d+[A-Z]?\b"
     r"|\[(?:HIGH|MEDIUM|MODERATE|LOW)\s+CONFIDENCE\]"
+    r"|\[UNCERTAIN\]"
     r"|\b(?:QF|CR|FM)-[A-Z]?\d+\b"
     r"|\bP[0-5]\b"
 )
@@ -786,7 +787,16 @@ def author_facing_lint(text):
             seen.add(key)
             before = line[:m.start()].rstrip()
             after = line[m.end():].lstrip()
-            if before.endswith("(") or after.startswith("("):
+            # Exempt a code only when it carries an ACTUAL inline definition, in one
+            # of output-policy.md's forms — not on bare parenthesis adjacency:
+            #   "CODE (plain-language gloss)"   — defined by a following parenthetical
+            #   "CODE — plain-language gloss"   — defined by a dash-led inline phrase
+            #   "plain-language version (CODE)" — parenthesized AFTER a real phrase
+            #     (a bare "(CODE)" with nothing before the paren is NOT a definition)
+            if (after.startswith("(")
+                    or re.match(r"[—–]\s*\S", after)          # em / en dash gloss
+                    or re.match(r"-\s+\S", after)                       # spaced-hyphen gloss
+                    or (before.endswith("(") and re.search(r"\w", before[:-1]))):  # phrase ( CODE )
                 continue  # glossed inline on first use → legitimate
             warnings.append(
                 "WARN: author-facing-lint — framework code %r used without inline "
@@ -942,6 +952,14 @@ def run_self_test(which=None):
                     "<!-- override: author-facing-lint -->\n"
                     "## What Needs Work\nA Pass 11F / QF-7 note.\n")
         warns("afl_override_quiets", author_facing_lint(override)[1], False)  # body override suppresses
+        # Codex PR #97 hardening: recognize real inline-definition forms + the [UNCERTAIN] tag.
+        emdash = ("# Development Edit\n## What Needs Work\n"
+                  "Prose Tier: P1 — strong foundation, weak spine.\n")
+        warns("afl_emdash_gloss_quiet", author_facing_lint(emdash)[1], False)  # dash-led gloss -> quiet
+        bare_paren = ("# Development Edit\n## What Needs Work\n(Pass 11F) is unresolved.\n")
+        warns("afl_bare_paren_warns", author_facing_lint(bare_paren)[1], True)  # bare "(CODE)" not a gloss -> warns
+        uncertain = ("# Development Edit\n## What Needs Work\nThe genre signal is [UNCERTAIN].\n")
+        warns("afl_uncertain_tag_warns", author_facing_lint(uncertain)[1], True)  # [UNCERTAIN] -> warns
 
     # Data-driven fixtures: lc.<pass|fail>.<check>.<name>.md in test_fixtures/.
     fdir = _fixture_dir()
