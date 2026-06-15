@@ -489,15 +489,9 @@ Pre-Pass Re-Grounding and Staged Visibility instructions are mode-conditional. T
 
 Items deferred from the Phase 7 closeout per scope-control. Each has a documented rationale; each is a candidate for a future cycle if a forcing function justifies the investment.
 
-### Python helpers for true Timeline parsing (A3)
+### Python helpers for true Timeline parsing (A3) — **Delivered (v2.0.0–v2.1.0)**
 
-Phase 7 plan §A3 specified four Python modules (`timeline_parser.py`, `timeline_arithmetic.py`, `timeline_anchor.py`, `timeline_diff.py`) that would lift the documented bash-validator capability ceiling for Pass 10 Timeline verification. Recommended out of scope for this cycle because:
-
-1. Substantial new tooling (4 modules + new test harness, ~870 lines)
-2. No Phase 4-6 finding requires it as blocking; v1.7.9 honestly reframed bash validators as marker-hygiene / pre-labeled-surfacing checks
-3. Pass 10 model judgment still does the primary verification; bash validators surface candidates for model judgment
-
-Best-fit follow-on: a "Python tooling" minor cycle, contingent on a forcing function (e.g., recurring real-world false-pass case on novella-length manuscripts with complex chronologies).
+Originally deferred from the Phase 7 closeout: Phase 7 plan §A3 specified four Python modules (`timeline_parser.py`, `timeline_arithmetic.py`, `timeline_anchor.py`, `timeline_diff.py`) to lift the bash-validator capability ceiling for Pass 10 Timeline verification. **Subsequently delivered** under §Validator Architecture Hardening (Increment 4): a single `scripts/timeline_checks.py` structured Timeline parser backs the three `timeline-*` arms, upgrading `timeline-arithmetic` and `timeline-anchor-conflict` from marker-hygiene to **true** span-overrun arithmetic and same-scene anchor-drift detection (the capability `pass-10.md` §Phase 7 explicitly deferred). The four originally-specified modules were collapsed into the one parser module; the bash implementations are retained as the no-`python3` degrade path.
 
 ### audit-signal-propagation §4e context-modifier extension
 
