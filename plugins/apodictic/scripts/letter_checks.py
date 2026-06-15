@@ -738,6 +738,95 @@ def ledger_consolidation(text, raw_text=None):
          "Contract." % len(errors))
 
 
+# ----------------------------------------------------------------------
+# author-facing-lint (#16) — advisory, warn-only.
+# Enforces output-policy.md §Author-Facing Language: framework shorthand must be
+# translated on first use and "never as the primary label." Surfaces framework
+# codes used as an un-glossed primary label in the author-facing synthesis BODY
+# (appendices are exempt — the policy explicitly allows codes there). A code is
+# exempt when glossed inline on first use, in either legitimate form:
+#   "plain language (CODE)"   (code in parens after the words), or
+#   "CODE (plain-language gloss)"   (code defined by a following parenthetical).
+# Only the FIRST use of each distinct code is judged (the policy's "on first
+# use"). This check NEVER errors — every hit is a warning, so it cannot fail the
+# build; promote to blocking once it is proven quiet. Body override marker:
+# <!-- override: author-facing-lint -->.
+#
+# Patterns are the framework's real code families (not hand-rolled guesses):
+#   pass numbers (Pass 11F), confidence tags ([HIGH CONFIDENCE], [UNCERTAIN]),
+#   finding / quality codes (QF-7, CR-8, CR-01, FM-A10), prose tier labels (P0-P5).
+_AFL_CODE_RE = re.compile(
+    r"\bPass\s+\d+[A-Z]?\b"
+    r"|\[(?:HIGH|MEDIUM|MODERATE|LOW)\s+CONFIDENCE\]"
+    r"|\[UNCERTAIN\]"
+    r"|\b(?:QF|CR|FM)-[A-Z]?\d+\b"
+    r"|\bP[0-5]\b"
+)
+
+
+def _afl_has_plain_language(s):
+    """True if `s` carries descriptive words beyond framework codes — tells a real
+    inline gloss ('weak motivation') from codes glossing codes ('QF-7')."""
+    return bool(re.search(r"[A-Za-z]{2,}", _AFL_CODE_RE.sub(" ", s)))
+
+
+def _afl_phrase_before_paren(before):
+    """True when `before` (rstripped, ending in '(') is a real plain-language phrase
+    right up to the paren — i.e. descriptive words follow any trailing framework code,
+    so 'weak motivation (' qualifies but a code-only 'Pass 11F (' does not."""
+    if not before.endswith("("):
+        return False
+    pre = before[:-1]
+    tail = pre
+    for cm in _AFL_CODE_RE.finditer(pre):
+        tail = pre[cm.end():]
+    return bool(re.search(r"[A-Za-z]{2,}", tail))
+
+
+def author_facing_lint(text):
+    """Advisory lint (warn-only): framework codes used as un-glossed primary
+    labels in the author-facing letter body. Returns (errors, warnings, ok,
+    failed); `errors` is ALWAYS empty so the build is never gated."""
+    body = split_body(text)
+    ok = ("OK: author-facing-lint — no un-translated framework codes used as "
+          "primary labels in the synthesis body (advisory).")
+    failed = ""  # unused: this check never errors
+    if has_override(body, "author-facing-lint"):
+        return [], [], ok, failed
+    warnings = []
+    seen = set()
+    for i, line in enumerate(body.split("\n"), start=1):
+        if line.lstrip().startswith("<!--"):
+            continue  # HTML-comment / marker lines are not author-facing prose
+        for m in _AFL_CODE_RE.finditer(line):
+            code = m.group(0)
+            key = code.upper()
+            if key in seen:
+                continue  # judge only the first use of each distinct code
+            seen.add(key)
+            before = line[:m.start()].rstrip()
+            after = line[m.end():].lstrip()
+            # Exempt a code only when it carries an ACTUAL inline definition whose text
+            # is real descriptive words, not just more codes ("Pass 11F (QF-7)" defines
+            # nothing). Accepted output-policy.md forms:
+            #   "CODE (plain-language gloss)"   — a following parenthetical with real text
+            #   "CODE — plain-language gloss"   — a dash-led inline phrase with real text
+            #   "plain-language version (CODE)" — real words right before the opening paren
+            paren_after = re.match(r"\(([^)]*)\)", after)         # CODE (...)
+            dash_after = re.match(r"(?:[—–]|-\s)\s*(.+)", after)  # CODE — ... / CODE - ...
+            if ((paren_after and _afl_has_plain_language(paren_after.group(1)))
+                    or (dash_after and _afl_has_plain_language(dash_after.group(1)))
+                    or _afl_phrase_before_paren(before)):
+                continue  # glossed inline on first use with real text → legitimate
+            warnings.append(
+                "WARN: author-facing-lint — framework code %r used without inline "
+                "translation at line %d (first use). Define it in plain language "
+                "on first use, gloss it as 'plain language (%s)', or move it to an "
+                "appendix (output-policy.md §Author-Facing Language)."
+                % (code, i, code))
+    return [], warnings, ok, failed
+
+
 # Registry of file-driven checks: name -> function(text) -> (errors, warnings, ok, failed).
 CHECKS = {
     "severity-floor": severity_floor,
@@ -745,6 +834,7 @@ CHECKS = {
     "audit-signal-propagation": audit_signal_propagation,
     "underdiagnosis-triggers": underdiagnosis_triggers,
     "ledger-consolidation": ledger_consolidation,
+    "author-facing-lint": author_facing_lint,
 }
 
 # Checks that accept an optional second file (raw ledger for ledger-consolidation).
@@ -862,6 +952,36 @@ def run_self_test(which=None):
             rp_bad = os.path.join(td, "reg_bad.md"); open(rp_bad, "w").write(reg_missing)
             expect_rc("registry_ok", check_registry(rp_ok, dp), 0)
             expect_rc("registry_missing", check_registry(rp_bad, dp), 1)
+
+    if which in (None, "author-facing-lint"):
+        # Advisory / warn-only: errors must ALWAYS be empty (never gates); warnings
+        # flag un-glossed first use of a framework code in the author-facing body.
+        bare = ("# Development Edit\n## What Needs Work\n"
+                "This is a Pass 11F problem and a QF-7 issue.\n")
+        e, w = author_facing_lint(bare)[:2]
+        check("afl_never_errors", e, True)             # errors empty -> cannot fail the build
+        warns("afl_bare_codes_warn", w, True)          # bare primary-label codes -> warnings
+        glossed = ("# Development Edit\n## What Needs Work\n"
+                   "The consent-and-reception pass (Pass 11F) flagged weak "
+                   "motivation (QF-7).\n")
+        warns("afl_glossed_quiet", author_facing_lint(glossed)[1], False)   # glossed first use -> quiet
+        appendix_only = ("# Development Edit\n## What Needs Work\nClean prose.\n"
+                         "## Appendix B\nMust-Fix QF-7 / Pass 11F tracking.\n")
+        warns("afl_appendix_exempt", author_facing_lint(appendix_only)[1], False)  # appendix exempt
+        override = ("# Development Edit\n"
+                    "<!-- override: author-facing-lint -->\n"
+                    "## What Needs Work\nA Pass 11F / QF-7 note.\n")
+        warns("afl_override_quiets", author_facing_lint(override)[1], False)  # body override suppresses
+        # Codex PR #97 hardening: recognize real inline-definition forms + the [UNCERTAIN] tag.
+        emdash = ("# Development Edit\n## What Needs Work\n"
+                  "Prose Tier: P1 — strong foundation, weak spine.\n")
+        warns("afl_emdash_gloss_quiet", author_facing_lint(emdash)[1], False)  # dash-led gloss -> quiet
+        bare_paren = ("# Development Edit\n## What Needs Work\n(Pass 11F) is unresolved.\n")
+        warns("afl_bare_paren_warns", author_facing_lint(bare_paren)[1], True)  # bare "(CODE)" not a gloss -> warns
+        uncertain = ("# Development Edit\n## What Needs Work\nThe genre signal is [UNCERTAIN].\n")
+        warns("afl_uncertain_tag_warns", author_facing_lint(uncertain)[1], True)  # [UNCERTAIN] -> warns
+        codes_gloss = ("# Development Edit\n## What Needs Work\nPass 11F (QF-7) is unresolved.\n")
+        warns("afl_codes_gloss_codes_warn", author_facing_lint(codes_gloss)[1], True)  # codes glossing codes -> warns
 
     # Data-driven fixtures: lc.<pass|fail>.<check>.<name>.md in test_fixtures/.
     fdir = _fixture_dir()

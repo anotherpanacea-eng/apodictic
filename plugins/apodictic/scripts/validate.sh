@@ -64,6 +64,18 @@
 #       A/B/C present, and per-Must-Fix evidence density (≥2 references).
 #       Pass --self-test for built-in cases.
 #
+#   author-facing-lint <editorial_letter_file>
+#       ADVISORY (warn-only) lint of author-facing language per
+#       core-editor/references/output-policy.md §Author-Facing Language.
+#       Surfaces framework shorthand — pass codes (Pass 11F), [.. CONFIDENCE]
+#       tags, QF-/CR-/FM- finding codes, P0-P5 tier labels — used as an
+#       un-glossed PRIMARY LABEL in the synthesis body. Appendices are exempt;
+#       a code glossed inline on first use ("plain language (CODE)" or
+#       "CODE (gloss)") is exempt; only the first use of each code is judged.
+#       Every hit is a WARN — the arm NEVER fails the build (exit 0); promote to
+#       a gate once proven quiet. Body override marker:
+#       <!-- override: author-facing-lint -->. Pass --self-test for built-in cases.
+#
 #   quality-risk-triggers <contract_file> [<diagnostic_state_meta_file>]
 #       Detect the five enumerated quality-risk mode-selection triggers
 #       canonical in core-editor/references/run-core.md
@@ -166,13 +178,13 @@ set -euo pipefail
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).
-AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz check-mirror"
+AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz check-mirror"
 # shellcheck disable=SC2086  # intentional word-splitting to count list entries
 AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, check-mirror"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
   echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
@@ -762,6 +774,46 @@ case "$COMMAND" in
   #
   # Self-test: pass --self-test as the only argument to run built-in cases.
   # ----------------------------------------------------------------------
+  author-facing-lint)
+    # #16 — advisory, warn-only. Surfaces framework shorthand (pass codes,
+    # confidence tags, QF-/CR-/FM- codes, P0-P5 tier labels) used as an
+    # un-glossed PRIMARY LABEL in the author-facing letter body. Appendices are
+    # exempt, and a code glossed inline on first use ("plain language (CODE)" or
+    # "CODE (gloss)") is exempt. NEVER fails the build — every hit is a WARN and
+    # the arm exits 0 (promote to blocking once proven quiet). Enforces
+    # output-policy.md §Author-Facing Language. Body override marker:
+    # <!-- override: author-facing-lint -->.
+    if [ $# -lt 1 ]; then echo "Usage: $0 author-facing-lint <editorial_letter_file> | --self-test"; exit 2; fi
+    AFL_DIR=$(cd "$(dirname "$0")" && pwd)
+    LC_HELPER="$AFL_DIR/letter_checks.py"
+
+    if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then python3 "$LC_HELPER" --self-test author-facing-lint; exit $?; fi
+      # Degraded self-test (no python3): the bash fallback below is advisory and
+      # always exits 0; assert it runs clean on a trivial input.
+      AFL_TMP=$(mktemp -d); trap 'rm -rf "$AFL_TMP"' EXIT
+      printf '# Development Edit\nClean prose.\n' > "$AFL_TMP/clean.md"
+      if "$0" author-facing-lint "$AFL_TMP/clean.md" >/dev/null 2>&1; then echo "  afl_bash_fallback: OK"; echo "Self-test: PASS"; exit 0; else echo "  afl_bash_fallback: FAIL"; echo "Self-test: FAIL"; exit 1; fi
+    fi
+
+    # Real-file invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+      python3 "$LC_HELPER" author-facing-lint "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): coarser body-only grep, advisory, always exit 0
+    # (no first-use / gloss exemption — the python parser is the precise path).
+    if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
+    AFL_APPX=$(grep -niE "^#{1,4}.*Appendix [A-Za-z]" "$1" 2>/dev/null | head -1 | cut -d: -f1 || true)
+    if [ -n "$AFL_APPX" ]; then AFL_BODY=$(sed -n "1,$((AFL_APPX - 1))p" "$1"); else AFL_BODY=$(cat "$1"); fi
+    AFL_HITS=$(printf '%s\n' "$AFL_BODY" | grep -nE "\bPass [0-9]+[A-Z]?\b|\[(HIGH|MEDIUM|MODERATE|LOW) CONFIDENCE\]|\[UNCERTAIN\]|\b(QF|CR|FM)-[A-Z]?[0-9]+\b|\bP[0-5]\b" 2>/dev/null || true)
+    if [ -n "$AFL_HITS" ]; then
+      printf '%s\n' "$AFL_HITS" | while IFS= read -r ln; do echo "WARN: author-facing-lint — framework code in body (advisory, coarse): $ln"; done
+    fi
+    echo "OK: author-facing-lint complete (advisory; warnings do not fail the build)."
+    exit 0
+    ;;
+
   severity-floor)
     if [ $# -lt 1 ]; then echo "Usage: $0 severity-floor <editorial_letter_file> [<ledger_file>] | --self-test"; exit 2; fi
     # Primary path: real parser in scripts/letter_checks.py (Validator Architecture
