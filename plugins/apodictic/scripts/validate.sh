@@ -806,7 +806,7 @@ case "$COMMAND" in
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
     AFL_APPX=$(grep -niE "^#{1,4}.*Appendix [A-Za-z]" "$1" 2>/dev/null | head -1 | cut -d: -f1 || true)
     if [ -n "$AFL_APPX" ]; then AFL_BODY=$(sed -n "1,$((AFL_APPX - 1))p" "$1"); else AFL_BODY=$(cat "$1"); fi
-    AFL_HITS=$(printf '%s\n' "$AFL_BODY" | grep -nE "\bPass [0-9]+[A-Z]?\b|\[(HIGH|MEDIUM|MODERATE|LOW) CONFIDENCE\]|\b(QF|CR|FM)-[A-Z]?[0-9]+\b|\bP[0-5]\b" 2>/dev/null || true)
+    AFL_HITS=$(printf '%s\n' "$AFL_BODY" | grep -nE "\bPass [0-9]+[A-Z]?\b|\[(HIGH|MEDIUM|MODERATE|LOW) CONFIDENCE\]|\[UNCERTAIN\]|\b(QF|CR|FM)-[A-Z]?[0-9]+\b|\bP[0-5]\b" 2>/dev/null || true)
     if [ -n "$AFL_HITS" ]; then
       printf '%s\n' "$AFL_HITS" | while IFS= read -r ln; do echo "WARN: author-facing-lint — framework code in body (advisory, coarse): $ln"; done
     fi
