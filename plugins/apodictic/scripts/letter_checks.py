@@ -764,6 +764,25 @@ _AFL_CODE_RE = re.compile(
 )
 
 
+def _afl_has_plain_language(s):
+    """True if `s` carries descriptive words beyond framework codes — tells a real
+    inline gloss ('weak motivation') from codes glossing codes ('QF-7')."""
+    return bool(re.search(r"[A-Za-z]{2,}", _AFL_CODE_RE.sub(" ", s)))
+
+
+def _afl_phrase_before_paren(before):
+    """True when `before` (rstripped, ending in '(') is a real plain-language phrase
+    right up to the paren — i.e. descriptive words follow any trailing framework code,
+    so 'weak motivation (' qualifies but a code-only 'Pass 11F (' does not."""
+    if not before.endswith("("):
+        return False
+    pre = before[:-1]
+    tail = pre
+    for cm in _AFL_CODE_RE.finditer(pre):
+        tail = pre[cm.end():]
+    return bool(re.search(r"[A-Za-z]{2,}", tail))
+
+
 def author_facing_lint(text):
     """Advisory lint (warn-only): framework codes used as un-glossed primary
     labels in the author-facing letter body. Returns (errors, warnings, ok,
@@ -787,17 +806,18 @@ def author_facing_lint(text):
             seen.add(key)
             before = line[:m.start()].rstrip()
             after = line[m.end():].lstrip()
-            # Exempt a code only when it carries an ACTUAL inline definition, in one
-            # of output-policy.md's forms — not on bare parenthesis adjacency:
-            #   "CODE (plain-language gloss)"   — defined by a following parenthetical
-            #   "CODE — plain-language gloss"   — defined by a dash-led inline phrase
-            #   "plain-language version (CODE)" — parenthesized AFTER a real phrase
-            #     (a bare "(CODE)" with nothing before the paren is NOT a definition)
-            if (after.startswith("(")
-                    or re.match(r"[—–]\s*\S", after)          # em / en dash gloss
-                    or re.match(r"-\s+\S", after)                       # spaced-hyphen gloss
-                    or (before.endswith("(") and re.search(r"\w", before[:-1]))):  # phrase ( CODE )
-                continue  # glossed inline on first use → legitimate
+            # Exempt a code only when it carries an ACTUAL inline definition whose text
+            # is real descriptive words, not just more codes ("Pass 11F (QF-7)" defines
+            # nothing). Accepted output-policy.md forms:
+            #   "CODE (plain-language gloss)"   — a following parenthetical with real text
+            #   "CODE — plain-language gloss"   — a dash-led inline phrase with real text
+            #   "plain-language version (CODE)" — real words right before the opening paren
+            paren_after = re.match(r"\(([^)]*)\)", after)         # CODE (...)
+            dash_after = re.match(r"(?:[—–]|-\s)\s*(.+)", after)  # CODE — ... / CODE - ...
+            if ((paren_after and _afl_has_plain_language(paren_after.group(1)))
+                    or (dash_after and _afl_has_plain_language(dash_after.group(1)))
+                    or _afl_phrase_before_paren(before)):
+                continue  # glossed inline on first use with real text → legitimate
             warnings.append(
                 "WARN: author-facing-lint — framework code %r used without inline "
                 "translation at line %d (first use). Define it in plain language "
@@ -960,6 +980,8 @@ def run_self_test(which=None):
         warns("afl_bare_paren_warns", author_facing_lint(bare_paren)[1], True)  # bare "(CODE)" not a gloss -> warns
         uncertain = ("# Development Edit\n## What Needs Work\nThe genre signal is [UNCERTAIN].\n")
         warns("afl_uncertain_tag_warns", author_facing_lint(uncertain)[1], True)  # [UNCERTAIN] -> warns
+        codes_gloss = ("# Development Edit\n## What Needs Work\nPass 11F (QF-7) is unresolved.\n")
+        warns("afl_codes_gloss_codes_warn", author_facing_lint(codes_gloss)[1], True)  # codes glossing codes -> warns
 
     # Data-driven fixtures: lc.<pass|fail>.<check>.<name>.md in test_fixtures/.
     fdir = _fixture_dir()
