@@ -399,7 +399,7 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
     scene_ranges = timeline_scene_ranges(timeline_text)
 
     # A3 — anchor integrity (honest `document` is fine; an unresolved finer anchor is an error)
-    for i, an in enumerate(annotations):
+    for an in annotations:
         if not isinstance(an, dict):
             continue
         anc = an.get("anchor") or {}
@@ -419,29 +419,40 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
                 errs.append("A3 anchor integrity: %s section anchor %r matches %d snapshot heading(s) "
                             "(need exactly 1)" % (an.get("finding_id"), val, sec_n.get(str(val).strip().lower(), 0)))
 
-    # A5 — verbatim + renderable projection (needs the ledger to compare against)
-    inv = ft.ledger_inventory(ledger_text) if (ft and ledger_text) else {}
+    # A4/A5 need the ledger. A wholly-absent ledger is reported ONCE (not once per annotation): the
+    # run-folder resolver supplies it when present, so a None ledger means it is genuinely missing and
+    # comment provenance is unverifiable. A per-annotation `src is None` below then means a manifest
+    # entry referencing a finding ABSENT from a ledger that IS present (a dangling reference — a
+    # different, real bug worth surfacing per id).
+    have_ledger = ledger_text is not None
+    inv = ft.ledger_inventory(ledger_text) if (ft and have_ledger) else {}
     led_obj = {}
-    if ledger_text and art is not None:
+    if have_ledger and art is not None:
         for bt, o, _e in art.parse_blocks(ledger_text):
             if bt == "finding" and isinstance(o, dict) and o.get("id"):
                 led_obj[o["id"]] = o
-    for an in annotations:
-        if not isinstance(an, dict):
-            continue
-        fid = an.get("finding_id")
-        src = led_obj.get(fid)
-        if src is None:
-            errs.append("A5 projection: %s is not an apodictic.finding.v1 in the ledger "
-                        "(cannot verify the comment is a verbatim projection)" % fid)
-            continue
-        bad = unsafe_fields(src)
-        if bad:
-            errs.append("A5 projection: %s projects non-inline-safe field(s) %s into the margin "
-                        "(no \\r \\n {>> <<} | allowed)" % (fid, bad))
-        elif an.get("comment") != comment_for(src):
-            errs.append("A5 projection: %s comment is not the verbatim field projection "
-                        "(the renderer must project, not author)" % fid)
+    if not have_ledger and annotations:
+        errs.append("A4/A5: no Findings Ledger resolved — comment provenance (verbatim projection + "
+                    "Must-Fix completeness) is unverifiable for %d annotation(s); supply the ledger"
+                    % len(annotations))
+    # A5 — verbatim + renderable projection (only when the ledger is present to compare against)
+    if have_ledger:
+        for an in annotations:
+            if not isinstance(an, dict):
+                continue
+            fid = an.get("finding_id")
+            src = led_obj.get(fid)
+            if src is None:
+                errs.append("A5 projection: %s is not an apodictic.finding.v1 in the ledger "
+                            "(dangling manifest reference; cannot verify the comment)" % fid)
+                continue
+            bad = unsafe_fields(src)
+            if bad:
+                errs.append("A5 projection: %s projects non-inline-safe field(s) %s into the margin "
+                            "(no \\r \\n {>> <<} | allowed)" % (fid, bad))
+            elif an.get("comment") != comment_for(src):
+                errs.append("A5 projection: %s comment is not the verbatim field projection "
+                            "(the renderer must project, not author)" % fid)
 
     # A4 — ledger Must-Fix -> manifest entry -> RENDERED span (one-to-one)
     span_contents = [s[len(_CM_OPEN):-len(_CM_CLOSE)] for s in _CM_SPAN_RE.findall(annotated_text)]
@@ -678,6 +689,12 @@ def run_self_test():
     # clean validate
     code, ls = check(snapshot, manifest_md(obj), annotated, ledger, timeline)
     chk("clean_validate", code == 0)
+
+    # a wholly-absent ledger -> ONE clear A4/A5 message, not per-annotation "not in the ledger" noise
+    code, ls = check(snapshot, manifest_md(obj), annotated, None, timeline)
+    chk("no_ledger_single_message",
+        code == 1 and sum("A4/A5: no Findings Ledger" in x for x in ls) == 1
+        and not any("A5 projection" in x for x in ls))
 
     # A2 — mutate one prose char in the annotated copy -> reverse transform diverges
     mutated = annotated.replace("Three days passed.", "Three days passed!!")
