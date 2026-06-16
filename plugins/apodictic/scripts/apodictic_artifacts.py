@@ -83,6 +83,22 @@ def load_severity_values():
     return list(enum) if enum else list(SEVERITY_RANK.keys())
 
 
+# Chapter-reference normalizer — SHARED so viz_manifest (chapter binning) and
+# annotation_manifest (the anchor ladder's chapter rung) cannot drift. Recognizes the
+# four canonical evidence-ref forms — "Chapter N" / "Ch. N" / "Ch.N" / "Ch N"
+# (case-insensitive) — and returns the canonical token "Ch N", else None. A trailing
+# page suffix (the "p.40" in "Ch.3 p.40") is ignored, never promoted to precision.
+_CHAPTER_TOKEN_RE = re.compile(r"\bch(?:apter)?\.?\s*(\d+)\b", re.IGNORECASE)
+
+
+def chapter_token(ref):
+    """Canonical chapter token ('Ch N') from a reference string, or None if it names no chapter."""
+    if ref is None:
+        return None
+    m = _CHAPTER_TOKEN_RE.search(str(ref))
+    return ("Ch %s" % m.group(1)) if m else None
+
+
 def array_item_schemas(container_schema):
     """field -> referenced schema id, from each array property's items.$schema_ref."""
     out = {}
@@ -183,6 +199,12 @@ def run_self_test():
     check("parse_blocks_broken_carrier",
           [] if (len(broken) == 1 and broken[0][0] == "finding" and broken[0][1] is None
                  and broken[0][2]) else ["bad"], True)
+    # chapter_token — the shared chapter-ref normalizer (all four canonical forms; page suffix ignored)
+    ct_ok = (chapter_token("Chapter 9") == "Ch 9" and chapter_token("Ch. 12") == "Ch 12"
+             and chapter_token("Ch.3 p.40") == "Ch 3" and chapter_token("Ch 7") == "Ch 7"
+             and chapter_token("Pass 1 §Orientation") is None and chapter_token("§Scene Turns") is None
+             and chapter_token(None) is None)
+    check("chapter_token", [] if ct_ok else ["chapter_token mismatch"], True)
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 
