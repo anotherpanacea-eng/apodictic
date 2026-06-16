@@ -1,0 +1,9 @@
+{>>[Could-Fix · F-DOC-01] the orientation pass flags a soft genre signal with no single manuscript locus — fix class: sharpen the opening promise. (See letter §F-DOC-01.)<<}# Chapter 1{>>[Should-Fix · F-NEG-01] the chapter's POV discipline wavers in one paragraph — fix class: hold the POV or mark the break. (See letter §F-NEG-01.)<<}
+
+The morning began without incident.{>>[Must-Fix · F-LR-01] the opening scene states the want but never shows a cost, so the stakes stay abstract — fix class: give the want a price the reader can see. (See letter §F-LR-01.)<<}
+She counted the hours until the train would carry her north.
+
+# Chapter 9{>>[Must-Fix · F-RR-01] the middle third's pacing collapses — three days pass in two sentences at Chapter 9, reading as a continuity break — fix class: restore a transit beat or an explicit time marker. (See letter §F-RR-01.)<<}
+
+Three days collapsed into a single paragraph here.
+No one tracked where the cast had been, and the seam shows.
