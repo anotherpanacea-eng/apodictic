@@ -463,6 +463,13 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
             errs.append("A4 Must-Fix completeness: ledger Must-Fix %s has no annotation "
                         "(a locked Must-Fix cannot fail to reach the marked-up copy)" % fid)
 
+    # W1 — snapshot normalization (the harness owns it; the validator never rewrites the snapshot, so
+    # this is advisory). A non-LF / no-trailing-newline snapshot is still A2-self-consistent, but it
+    # violates §Prerequisite's normalization contract.
+    if snapshot != normalize_snapshot(snapshot):
+        warns.append("W1 normalization: the snapshot is not LF-normalized with a trailing newline "
+                     "(the run harness should normalize on snapshot creation, per §Prerequisite)")
+
     # W1 — coverage (a locatable Should/Could left as `document`) + Timeline boundary drift
     overrides = set(_OVERRIDE_RE.findall(manifest_text or ""))
     for an in annotations:
@@ -552,6 +559,19 @@ def classify_files(paths):
 def run(paths, strict=False):
     if len(paths) == 1 and os.path.isdir(paths[0]):
         snap, man, ann, led, tlp = resolve_run_folder(paths[0])
+        # Honor the manifest's snapshot BINDING: resolve the snapshot the manifest was rendered against
+        # by its `snapshot_path`, NOT by a "newest" glob — so an r1 manifest sitting beside a newer r2
+        # snapshot is still checked against its own (r1) pair, never mis-paired with r2 (the rerun-in-
+        # progress case the spec calls out). basename() keeps the binding inside the run folder (no
+        # traversal); falls back to the glob only if the bound file is absent (then A2's sha check fails
+        # loudly rather than degrading).
+        if man:
+            mobj, _merr = parse_manifest(_read(man))
+            bound = mobj.get("snapshot_path") if isinstance(mobj, dict) else None
+            if bound:
+                cand = os.path.join(paths[0], os.path.basename(str(bound)))
+                if os.path.isfile(cand):
+                    snap = cand
     else:
         snap, man, ann, led, tlp = classify_files(paths)
     if not man:
@@ -747,6 +767,34 @@ def run_self_test():
     chk("build_writes_artifacts", build(d) == 0)
     chk("run_folder_validates", run([d])[0] == 0)
     chk("missing_manifest_usage", run([d + "/nope"])[0] == 2)
+
+    # binding resolution: an r1 deliverable must keep validating when a NEWER, DIFFERENT r2 snapshot
+    # lands in the same folder (rerun in progress) — resolution honors the manifest's snapshot_path,
+    # never the newest file by mtime. (Without the binding, A2 would falsely fail on the wrong pair.)
+    d2 = tempfile.mkdtemp()
+    made.append(d2)
+    for nm, body in (("P_Manuscript_Snapshot_r1.md", snapshot), ("P_Findings_Ledger_r1.md", ledger),
+                     ("P_Timeline_r1.md", timeline)):
+        with open(os.path.join(d2, nm), "w") as fh:
+            fh.write(body)
+    build(d2)   # binds r1 (the only snapshot present at build time)
+    r2 = os.path.join(d2, "P_Manuscript_Snapshot_r2.md")
+    with open(r2, "w") as fh:
+        fh.write(snapshot + "# Chapter 10\nNew material.\n")
+    future = os.path.getmtime(os.path.join(d2, "P_Manuscript_Snapshot_r1.md")) + 1000
+    os.utime(r2, (future, future))   # force r2 strictly newest, so a newest-glob would mis-pick it
+    chk("binding_resolves_bound_not_newest", run([d2])[0] == 0)
+    # ...and the sha backstop still catches a genuinely tampered bound snapshot (no silent wrong pass)
+    with open(os.path.join(d2, "P_Manuscript_Snapshot_r1.md"), "a") as fh:
+        fh.write("tampered\n")
+    chk("binding_sha_mismatch_fails", run([d2])[0] == 1)
+
+    # W1 normalization: a CRLF (non-LF) snapshot is A2-self-consistent but trips the advisory
+    snap_crlf = "# Chapter 1\r\nText.\r\n"
+    obj_crlf, _ = build_manifest(snap_crlf, "# Ledger\n", None)
+    ann_crlf = render(snap_crlf, obj_crlf)
+    code, ls = check(snap_crlf, manifest_md(obj_crlf), ann_crlf, "# Ledger\n", None)
+    chk("w1_crlf_normalization", code == 0 and any("W1 normalization" in x for x in ls))
 
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
