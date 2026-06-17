@@ -518,7 +518,7 @@ def check_html(manifest_obj, snapshot, html_text):
 # (the same exact `& < >` 3-entity pair). The model assembles fixed boilerplate around copied bytes.
 
 _W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-_DOCX_DATE = "2026-01-01T00:00:00Z"   # fixed literal (determinism)
+_DOCX_DATE_FALLBACK = "2026-01-01T12:00:00Z"   # only when the runlabel carries no YYYY-MM-DD date
 _XMLDECL = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
 
 _DOCX_CT = (_XMLDECL +
@@ -641,6 +641,16 @@ def _deterministic_zip(parts):
     return buf.getvalue()
 
 
+def _docx_date(manifest_obj):
+    """The comment `w:date` — the run's OWN date (the manifest runlabel's `YYYY-MM-DD`), at **noon UTC** so
+    it never rolls back a day in a western timezone (a midnight-UTC stamp displays as the day before). It is a
+    deterministic function of the gated manifest, NOT the wall clock, so the committed .docx stays byte-stable
+    (the `--check-all` byte-identity gate still holds). Falls back to a fixed literal if the runlabel carries
+    no date (real DE runs label snapshots with a date, so the fallback is an edge case)."""
+    m = re.match(r"(\d{4}-\d{2}-\d{2})", str(manifest_obj.get("runlabel") or ""))
+    return (m.group(1) + "T12:00:00Z") if m else _DOCX_DATE_FALLBACK
+
+
 def build_docx(manifest_obj, snapshot):
     """-> (docx_bytes_or_None, errs). Pure projection: the snapshot in <w:p>/<w:t> with each finding's
     span wrapped as an anchored comment carrying the verbatim comment. errs is the single-line precondition."""
@@ -662,10 +672,11 @@ def build_docx(manifest_obj, snapshot):
 
     document_xml = '%s<w:document xmlns:w="%s"><w:body>%s</w:body></w:document>' % (
         _XMLDECL, _W_NS, _docx_body(snapshot, spans))
+    docx_date = _docx_date(manifest_obj)
     comments = "".join(
         '<w:comment w:id="%d" w:author="APODICTIC" w:date="%s" w:initials="AP">'
         '<w:p><w:r><w:t xml:space="preserve">%s</w:t></w:r></w:p></w:comment>'
-        % (idmap[a.get("finding_id")], _DOCX_DATE, _html_escape(a.get("comment"))) for a in ordered)
+        % (idmap[a.get("finding_id")], docx_date, _html_escape(a.get("comment"))) for a in ordered)
     comments_xml = '%s<w:comments xmlns:w="%s">%s</w:comments>' % (_XMLDECL, _W_NS, comments)
 
     parts = [("[Content_Types].xml", _DOCX_CT), ("_rels/.rels", _DOCX_ROOT_RELS),
@@ -1245,6 +1256,16 @@ def run_self_test():
     _crossing = ('<w:commentRangeEnd w:id="1"/><w:r><w:commentReference w:id="1"/></w:r>'
                  '<w:commentRangeEnd w:id="2"/>') in docxml
     chk("docx_colocated_ranges_nest_not_cross", _nested and not _crossing)
+    # Comment w:date is the run's OWN date (manifest runlabel) at noon UTC — deterministic (not wall-clock)
+    # and no timezone day-rollback. The main obj's runlabel "r" has no date -> fixed fallback; a YYYY-MM-DD
+    # runlabel -> that date at noon.
+    chk("docx_date_fallback", ('w:date="%s"' % _DOCX_DATE_FALLBACK) in cxml)
+    _dated = build_docx({"runlabel": "2026-01-01", "annotations": obj["annotations"]}, snap)[0]
+    _dated_c = zipfile.ZipFile(io.BytesIO(_dated)).read("word/comments.xml").decode("utf-8")
+    chk("docx_date_from_runlabel",
+        'w:date="2026-01-01T12:00:00Z"' in _dated_c and 'w:date="2026-01-01T00:00:00Z"' not in _dated_c)
+    chk("docx_date_deterministic",
+        build_docx({"runlabel": "2026-01-01", "annotations": obj["annotations"]}, snap)[0] == _dated)
 
     def _rezip_with(override):
         return _deterministic_zip([(n, override.get(n, z.read(n).decode("utf-8"))) for n in z.namelist()])
