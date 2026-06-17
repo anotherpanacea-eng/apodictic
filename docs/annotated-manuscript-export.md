@@ -1,6 +1,7 @@
 # Annotated-Manuscript Export — Obsidian (native footnotes, no plugin)
 
-**Status:** Proposed (unbuilt). Spec-reviewed 2026-06-17 (web-verified; build-ready after the fixes below were folded in). Obsidian-only this increment ("footnotes, no plugin"; "Obsidian only for now"). Depends on the gated **annotation manifest** + the crosslinked letter (deliverable Increments 1–3, in `main`) and the [producer](annotated-manuscript-producer.md) that generates them (#104/#105).
+**Status:** **Increment 1 Built (2026-06-17)** — the annotated copy → native-footnote Obsidian projection; Increment 2 (the letter cross-links) deferred. Shipped surface: `scripts/annotation_export.py` (`obsidian` generate + `obsidian-export` validate, `--self-test`), the `validate.sh obsidian-export <run_folder>` validator (O1–O3; +1 → 46 validators, mirrored), and the canonical `example-annotated-manuscript/obsidian/` fixture wired into `--check-all` (byte-identical to a fresh export). Web-verified spec-review 2026-06-17. Obsidian-only ("footnotes, no plugin"; "Obsidian only for now"). Depends on the gated **annotation manifest** + snapshot (deliverable Increments 1–3, in `main`) and the [producer](annotated-manuscript-producer.md) that generates them (#104/#105).
+<!-- built-when: scripts/annotation_export.py -->
 
 ## The framing that unlocks it
 
