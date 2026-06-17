@@ -63,8 +63,9 @@ newline, a `{>>`/`<<}` sigil, or a `|` is **not** inline-CriticMarkup-safe — `
 - **A2** no prose mutation: reverse transform == the bound snapshot; a CriticMarkup sigil on *either* side
   (snapshot or a projected field) is a loud failure before render.
 - **A3** anchor integrity: line-range in bounds; chapter/section a unique ATX heading; honest `document` ok.
-- **A4** every body Must-Fix → a manifest entry → a **rendered** span (one-to-one); a Must-Fix that never
-  reaches the copy fails.
+- **A4** the rendered comment-span multiset equals the manifest comment multiset (each manifest comment
+  renders once; **no** un-manifested/authored span), then every body Must-Fix is present — a Must-Fix that
+  never reaches the copy *and* an extra authored note both fail.
 - **A5** each comment is a verbatim, inline-safe field projection.
 - **W1** (advisory) a locatable Should/Could parked at `document`, or a Timeline line-range that overruns
   the snapshot; override `<!-- override: annotation-coverage F-… -->`.
