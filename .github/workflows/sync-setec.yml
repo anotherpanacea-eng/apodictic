@@ -44,6 +44,14 @@ jobs:
         with:
           python-version: "3.12"
 
+      # SETEC's `capabilities.py emit` (invoked by sync_setec.py) reads the
+      # capabilities.d/*.yaml drop-in fragments, so it needs PyYAML. Without it the
+      # sync dies with `ModuleNotFoundError: No module named 'yaml'` — which had
+      # silently broken every run since SETEC moved capabilities to YAML fragments
+      # (the weekly sync failed; the consumer pin stalled at v1.116.0).
+      - name: Install sync dependencies
+        run: pip install pyyaml
+
       # Resolve the SETEC release ref (`latest` → the newest release tag).
       #
       # REQUESTED_REF is the only user-controllable input; it is routed through
