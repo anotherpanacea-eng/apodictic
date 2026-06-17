@@ -74,16 +74,18 @@ Increment 1 produces the annotated copy, but the **`quote` rung stays dark** unt
 
 ### 2a. The pilot pass
 
-**Pass 5 (Character Audit)** is the cleanest first adopter — its findings frequently point at a specific beat/exchange, the most sentence-precise of the baseline passes (`run-core.md` §Pass 5). The pilot adds to Pass 5's spec: *when a finding cites a specific sentence or exchange, attach it verbatim as `evidence_quote` — a single-line substring **copied** from the manuscript snapshot, never composed; omit it for a chapter/arc-level finding.* No other pass adopts in the pilot.
+**Pass 5 (Character Audit)** is the cleanest first adopter — its findings frequently point at a specific beat/exchange (a flat-affect line, a puppet-moment decision, a voice-drift sentence), the most sentence-precise of the baseline Core passes (`run-core.md` §Pass 5). The pilot adds to Pass 5's spec a short instruction: *when a finding is about a specific sentence or exchange, attach that span verbatim as `evidence_quote` — a single-line substring **copied** from the manuscript snapshot, never composed; omit it for a chapter/arc-level finding.* **No other pass adopts in the pilot** — this is deliberately demand-gated, one pass at a time, so the discipline is proven where findings are reliably line-precise before it spreads. The other natural future adopters (Pass 8 reveal lines, the AI-prose line flags, citation-bearing nonfiction findings) are explicitly **out** of this increment.
 
 ### 2b. The discipline (where it's written)
 
-`findings-ledger-format.md` gains a **"When to populate `evidence_quote`"** subsection:
-- the **sentence-precision criterion** — populate only when the finding is about a specific line, not a chapter/arc;
-- the **firewall** — copy the cited span **verbatim**; never author one. A6 enforces this *by identity* downstream: a non-verbatim or non-unique quote fails A6 and the anchor degrades to the line/chapter rung — so a pass physically cannot smuggle authored text;
-- a worked example (a Pass-5 character beat).
+`findings-ledger-format.md` gains a **"When to populate `evidence_quote`"** subsection under the Structured Findings Block, stating:
 
-The schema field already exists (`apodictic.finding.v1.evidence_quote`, optional); no schema change.
+- the **sentence-precision criterion** — populate `evidence_quote` *only* when the finding is about a specific line/exchange; a finding about a whole chapter or arc **omits** it (the anchor then degrades to the line/chapter/document rung, exactly as today — no finding is forced to carry one);
+- the **firewall** — the value is **manuscript bytes, copied verbatim** from the span the finding already cites, **never authored**. **A6 enforces this by identity downstream:** the quote must occur in the snapshot verbatim and exactly once, so a non-verbatim, non-unique, or fabricated quote fails A6 and the anchor simply degrades — a pass physically cannot smuggle authored prose into the margin;
+- the **single-line constraint** — `evidence_quote` is one line: no `\n` or `\r`. (`annotation_manifest build` already degrades a multi-line or empty `evidence_quote` to the non-quote ladder rather than emitting a quote anchor — the discipline states the constraint so a pass doesn't waste the field on a multi-line span.)
+- a **worked example** — a Pass-5 character beat: a flat-dialogue line a finding flags, copied verbatim as `evidence_quote`, contrasted with an arc-level motivation finding that correctly omits it.
+
+The schema field already exists (`apodictic.finding.v1.evidence_quote`, optional; in `apodictic.finding.v1.schema.json`); **no schema change**. Increment-1 findings and every pass that doesn't adopt are unaffected (the field is optional and absent by default).
 
 ### 2c. Gate
 
