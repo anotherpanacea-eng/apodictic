@@ -394,20 +394,31 @@ if [ "$1" = "--check-all" ]; then
       CA_PC_SRC="$CA_BASE/example-annotated-manuscript"
       CA_PC=$(mktemp -d)
       cp "$CA_PC_SRC"/*_Manuscript_Snapshot_*.md "$CA_PC_SRC"/*_Findings_Ledger_*.md \
-         "$CA_PC_SRC"/*_Editorial_Letter_*.md "$CA_PC_SRC"/*_Timeline_*.md "$CA_PC"/ 2>/dev/null
+         "$CA_PC_SRC"/*_Timeline_*.md "$CA_PC"/ 2>/dev/null
+      # Stage the editorial letter under the PRODUCTION filename (*_Core_DE_Synthesis_*, what a real
+      # Core/Full run writes), not the fixture's *_Editorial_Letter_* — so the chain exercises the first,
+      # production branch of crosslink._LETTER_GLOBS in both render and the crosslink gate. The crosslinked
+      # output's name + content derive from the letter body + runlabel (not the letter's infix), so the
+      # byte-identity assertion below still holds against the committed *_Crosslinked_Letter_* fixture.
+      CA_PC_LETTER=$(basename "$(ls "$CA_PC_SRC"/*_Editorial_Letter_*.md 2>/dev/null | head -1)")
+      cp "$CA_PC_SRC/$CA_PC_LETTER" "$CA_PC/${CA_PC_LETTER/_Editorial_Letter_/_Core_DE_Synthesis_}" 2>/dev/null
       CA_PC_OK=1
       python3 "$CA_SCRIPT_DIR/annotation_manifest.py" build "$CA_PC" >/dev/null 2>&1 || CA_PC_OK=0
       "$0" annotated-manuscript "$CA_PC" >/dev/null 2>&1 || CA_PC_OK=0
       python3 "$CA_SCRIPT_DIR/crosslink.py" render "$CA_PC" >/dev/null 2>&1 || CA_PC_OK=0
       "$0" crosslink "$CA_PC" >/dev/null 2>&1 || CA_PC_OK=0
-      # fresh build == committed fixture, byte-for-byte, for each generated artifact
+      # fresh build == committed fixture, byte-for-byte, for each generated artifact; the count guard
+      # keeps the assertion non-vacuous even if a future global `nullglob` made an unmatched glob vanish.
+      CA_PC_N=0
       for CA_PC_F in "$CA_PC"/*_Annotation_Manifest_*.md "$CA_PC"/*_Annotated_Manuscript_*.md "$CA_PC"/*_Crosslinked_Letter_*.md; do
         if [ -f "$CA_PC_F" ]; then
+          CA_PC_N=$((CA_PC_N + 1))
           cmp -s "$CA_PC_F" "$CA_PC_SRC/$(basename "$CA_PC_F")" || CA_PC_OK=0
         else
           CA_PC_OK=0
         fi
       done
+      [ "$CA_PC_N" -eq 3 ] || CA_PC_OK=0
       if [ "$CA_PC_OK" -eq 1 ]; then
         echo "producer chain (temp copy): PASS"
       else
