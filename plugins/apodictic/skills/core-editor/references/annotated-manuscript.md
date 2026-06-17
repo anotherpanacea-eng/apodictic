@@ -24,7 +24,9 @@ Spec + rule detail: [`docs/annotated-manuscript.md`](../../../../docs/annotated-
 
 ```
 scripts/annotation_manifest.py build <run_folder>     # resolves anchors + projects comments + renders
-scripts/validate.sh annotated-manuscript <run_folder> # gates A1–A5 + W1
+scripts/validate.sh annotated-manuscript <run_folder> # gates A1–A6 + W1
+scripts/crosslink.py render <run_folder>              # back-links the letter to the margins
+scripts/validate.sh crosslink <run_folder>            # gates X1–X4 (+ W1)
 ```
 
 `build` reads the snapshot, the Findings Ledger, and (optionally) `Timeline.md`, resolves each finding's
@@ -32,10 +34,24 @@ anchor, projects its comment, and writes the manifest + annotated copy. It is th
 path: the model never authors a margin comment. `render <manifest> <snapshot>` re-renders the copy from a
 manifest.
 
+## When it is produced (the run-flow wiring)
+
+The generators above are **wired into the run flow** so a real edit produces the deliverable — not just the
+validators on a fixture (the producer, `docs/annotated-manuscript-producer.md`):
+
+- **Intake** persists the snapshot for core-de / full-de runs (`run-core.md` §Intake Protocol → Step 1).
+- **Run-end** offers the marked-up copy + crosslinked letter whenever the run wrote a full editorial letter
+  (`*_…_DE_Synthesis_*`), **asks the author**, and on *yes* runs build → A1–A6 → render → X1–X4 **staged in a
+  temp copy**, moving only verified artifacts into the run folder (`run-synthesis.md` §Annotated Manuscript +
+  Crosslinked Letter).
+- **Re-generation** for an existing un-annotated run folder is offered through `/start`'s `diagnosed`-node
+  dispatch (`commands/start.md` §Step 0.5) — no separate command.
+
 ## The anchor ladder (per `evidence_refs` token; finest rung any *manuscript-scoped* token supports)
 
 | Rung | When |
 |---|---|
+| `quote` | a finding's `evidence_quote` found **verbatim and uniquely** in the snapshot (Increment 2) — the finest rung, outranking line-range; gated by **A6** (verbatim + unique + offset) |
 | `line-range` | a token that **exactly equals** a `Timeline` Section-1 scene-id with an in-bounds line range |
 | `section` | a non-chapter manuscript heading name matched **uniquely** in the snapshot |
 | `chapter` | a chapter token (`Chapter N` / `Ch. N` / `Ch.N` / `Ch N`, via the shared `chapter_token`) with a **unique** matching heading; a page suffix (`p.40`) is ignored |
@@ -67,15 +83,25 @@ newline, a `{>>`/`<<}` sigil, or a `|` is **not** inline-CriticMarkup-safe — `
   renders once; **no** un-manifested/authored span), then every body Must-Fix is present — a Must-Fix that
   never reaches the copy *and* an extra authored note both fail.
 - **A5** each comment is a verbatim, inline-safe field projection.
+- **A6** quote integrity: a `quote`-rung anchor's text occurs **verbatim, exactly once**, at the stated
+  offsets in the snapshot (and matches the finding's `evidence_quote`) — a fabricated, non-unique, or
+  mis-offset quote fails rather than smuggling authored text into the margin.
 - **W1** (advisory) a locatable Should/Could parked at `document`, or a Timeline line-range that overruns
   the snapshot; override `<!-- override: annotation-coverage F-… -->`.
+
+The **crosslink** validator (`scripts/validate.sh crosslink`) gates the back-linked letter: **X1** every
+`<!-- finding: F-… -->` marker resolves to a manifest anchor, **X2** reverse consistency, **X3** every
+CriticMarkup span in the letter is a back-link (no un-manifested spans), **X4** no letter mutation.
 
 The editorial letter remains the artifact of record — the synthesis, the decision layer, and the
 appendices live there; the annotated copy carries the per-locus findings, reached by ID.
 
-## Increment boundary
+## Increment status
 
-Increment 1 ships comment-only CriticMarkup at line-range / section / chapter / document granularity.
-**Not** in Increment 1: character-precise (sentence/quote) anchoring (a future increment with its own
-integrity gate), DOCX / Google Docs / Obsidian export, letter↔margin cross-links, and round-trip
-re-anchoring across revisions.
+- **Increment 1 (shipped):** comment-only CriticMarkup at line-range / section / chapter / document granularity.
+- **Increment 2 (shipped):** character-precise quote anchoring (the `quote` rung), gated by A6.
+- **Increment 3 (shipped):** letter↔margin cross-links (the `crosslink` validator, X1–X4).
+- **Producer (this wiring):** intake snapshot + run-end offer + `diagnosed`-node re-gen, so a real run
+  produces the deliverable (`docs/annotated-manuscript-producer.md`).
+- **Not yet:** render-target export (Obsidian → read-only HTML → Google Docs; DOCX on the horizon),
+  draft-over-draft structural regression, and round-trip re-anchoring across revisions.

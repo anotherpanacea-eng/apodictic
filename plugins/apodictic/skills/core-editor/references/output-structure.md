@@ -141,6 +141,7 @@ Use these filenames within run folders:
 
 **Core DE:**
 - `[Project]_Contract_[runlabel].md`
+- `[Project]_Manuscript_Snapshot_[runlabel].md` (frozen LF-normalized copy, written at intake; the Annotated-Manuscript deliverable's immutable reference — see `run-core.md` §Intake Protocol → Step 1)
 - `[Project]_Pass0_Reverse_Outline_[runlabel].md`
 - `[Project]_Pass1_Reader_Experience_[runlabel].md`
 - `[Project]_Pass2_Structural_Mapping_[runlabel].md`
@@ -148,6 +149,9 @@ Use these filenames within run folders:
 - `[Project]_Pass8_Reveal_Economy_[runlabel].md`
 - `[Project]_Findings_Ledger_[runlabel].md`
 - `[Project]_Core_DE_Synthesis_[runlabel].md`
+- `[Project]_Annotation_Manifest_[runlabel].md` — Annotated-Manuscript deliverable, **offered at run-end** (only when a `*_DE_Synthesis_*` letter was written; see `run-synthesis.md §Annotated Manuscript + Crosslinked Letter`)
+- `[Project]_Annotated_Manuscript_[runlabel].md` — the snapshot with CriticMarkup margin comments (one per finding)
+- `[Project]_Crosslinked_Letter_[runlabel].md` — the editorial letter back-linked to the margin comments
 
 **Full DE (additional):**
 - `[Project]_Pass3_Rhythm_Modulation_[runlabel].md`

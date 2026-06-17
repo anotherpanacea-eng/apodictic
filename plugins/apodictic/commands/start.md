@@ -48,9 +48,11 @@ For a **bound** project, routing is driven by the project's state, not by re-ask
    | `pre_writing` | load `../skills/pre-writing-pathway/SKILL.md` |
    | `submission` | submission-readiness (`../skills/core-editor/references/submission-readiness.md`) / triage |
    | `revising` | the revision-loop dispatcher — `../skills/revision-coach/SKILL.md` §Loop Dispatch ("What now?") proposes the next leverage action from the finding lifecycle; the stored `next_action` (`revision_round`/`coaching`) is its default |
-   | `diagnosed` | offer `/coach` |
+   | `diagnosed` | offer `/coach`; **also** offer *"regenerate the marked-up copy from this run?"* — see note below |
    | `diagnosing` | the stored `next_action` (`run_passes` / `run_synthesis` / `run_audits`) |
    | `cold` | no bound project — run the resume gate / full intake below |
+
+   **`diagnosed` — Annotated-Manuscript re-generation (no new command).** The `diagnosed` node means a synthesis/editorial letter exists. Surface a *sibling* offer alongside `/coach` — *"regenerate the marked-up copy from this run?"* — **only when** the resolved run folder (the one passed as `lifecycle-node <sidecar> [run_folder]`) holds a `*_…_DE_Synthesis_*` letter **and no** `*_Annotated_Manuscript_*.md`. The condition is this **no-annotated-copy glob, not** a `next_action` value (do not invent one). On **yes**, run the generation chain in `../skills/core-editor/references/run-synthesis.md §Annotated Manuscript + Crosslinked Letter` (build → A1–A6 → render → X1–X4, staged in a temp copy). If that run folder has **no** snapshot (a pre-wiring run), re-snapshot the manuscript first; if the manuscript isn't available, say so rather than guessing. If **several** diagnosed runs lack an annotated copy, list them and let the author pick — never annotate an unnamed run silently.
 
 4. A bound project's **overlays** (`ai`, `editor`, …) still come from the Q3 / §6 Table B layer, not from the node.
 
