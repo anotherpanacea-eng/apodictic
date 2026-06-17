@@ -25,9 +25,11 @@ Usage:
 Exit: 0 clean, 1 ERROR, 2 usage.
 """
 import glob
+import io
 import os
 import re
 import sys
+import zipfile
 
 try:
     import annotation_manifest as am
@@ -511,6 +513,220 @@ def check_html(manifest_obj, snapshot, html_text):
     return errs, []
 
 
+# ---------------------------------------------------------------- Increment 4: DOCX (→ Google Docs)
+# A .docx is a ZIP of OOXML parts. XML element-content escaping reuses _html_escape/_html_unescape_exact
+# (the same exact `& < >` 3-entity pair). The model assembles fixed boilerplate around copied bytes.
+
+_W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+_DOCX_DATE = "2026-01-01T00:00:00Z"   # fixed literal (determinism)
+_XMLDECL = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+
+_DOCX_CT = (_XMLDECL +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+    '<Default Extension="xml" ContentType="application/xml"/>'
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+    '<Override PartName="/word/comments.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"/>'
+    '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'
+    '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>'
+    '</Types>')
+
+_DOCX_ROOT_RELS = (_XMLDECL +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+    '</Relationships>')
+
+_DOCX_DOC_RELS = (_XMLDECL +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments" Target="comments.xml"/>'
+    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+    '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>'
+    '</Relationships>')
+
+_DOCX_STYLES = (_XMLDECL +
+    '<w:styles xmlns:w="%s">'
+    '<w:docDefaults><w:rPrDefault><w:rPr/></w:rPrDefault><w:pPrDefault><w:pPr/></w:pPrDefault></w:docDefaults>'
+    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>'
+    '</w:styles>' % _W_NS)
+
+_DOCX_SETTINGS = _XMLDECL + '<w:settings xmlns:w="%s"/>' % _W_NS
+
+_WT_RE = re.compile(r'<w:t xml:space="preserve">(.*?)</w:t>', re.DOTALL)
+_WP_RE = re.compile(r"<w:p>(.*?)</w:p>", re.DOTALL)
+
+
+def _line_bounds(snapshot):
+    """1-based lineno -> (start_offset, end_offset_of_content) for each snapshot line."""
+    line_start, line_end, off, lineno = {}, {}, 0, 1
+    for line in snapshot.split("\n"):
+        line_start[lineno], line_end[lineno] = off, off + len(line)
+        off += len(line) + 1
+        lineno += 1
+    return line_start, line_end
+
+
+def _docx_span(anchor, snapshot, line_start, line_end, chap_l, sec_l):
+    """An explicit (start, end) char span for an anchor (commentRange needs a span, not a point)."""
+    kind, val = anchor.get("kind"), anchor.get("value")
+    if kind == "quote":
+        m = re.match(r"(\d+)-(\d+)$", str(val))
+        if m:
+            return int(m.group(1)), int(m.group(2))
+    elif kind == "chapter":
+        ln = chap_l.get(val)
+        if ln:
+            return line_start[ln], line_end[ln]
+    elif kind == "section":
+        ln = sec_l.get(str(val).strip().lower())
+        if ln:
+            return line_start[ln], line_end[ln]
+    elif kind == "line-range":
+        m = re.match(r"(\d+)-(\d+)$", str(val))
+        if m and int(m.group(1)) in line_start and int(m.group(2)) in line_end:
+            return line_start[int(m.group(1))], line_end[int(m.group(2))]
+    return line_start.get(1, 0), line_end.get(1, 0)   # document / fallback -> wrap line 1
+
+
+def _docx_body(snapshot, spans):
+    """document.xml body: one <w:p> per snapshot line; each span wrapped commentRangeStart/End + reference.
+    Ranges sharing an offset NEST rather than cross: at a point, opens go in ascending id (lowest id is
+    outermost — `sorted(finding_id)` order), and closes go in reverse-open order (latest-opened first), so a
+    co-located pair {0,1} emits `start0 start1 … end1 ref1 end0 ref0` — proper LIFO nesting Word/GDocs anchor
+    cleanly, not the crossing `start0 start1 … end0 ref0 end1 ref1`."""
+    starts, ends = {}, {}
+    start_of = {}
+    for s, e, wid in spans:
+        starts.setdefault(s, []).append(wid)
+        ends.setdefault(e, []).append(wid)
+        start_of[wid] = s
+
+    def run(text):
+        return '<w:r><w:t xml:space="preserve">%s</w:t></w:r>' % _html_escape(text) if text else ""
+
+    lines = snapshot.split("\n")
+    if lines and lines[-1] == "":
+        lines = lines[:-1]                      # drop the trailing empty (the final newline is not a paragraph)
+    out, off = [], 0
+    for line in lines:
+        ls, le = off, off + len(line)
+        inner, prev = [], ls
+        for o in sorted(o for o in set(list(starts) + list(ends)) if ls <= o <= le):
+            if o > prev:
+                inner.append(run(snapshot[prev:o]))
+            # close in reverse-open order (latest-opened first): sort by (start offset, id) DESCENDING so
+            # co-located/co-terminating ranges nest instead of cross (Codex #111).
+            for wid in sorted(ends.get(o, []), key=lambda w: (start_of[w], w), reverse=True):
+                inner.append('<w:commentRangeEnd w:id="%d"/><w:r><w:commentReference w:id="%d"/></w:r>' % (wid, wid))
+            for wid in sorted(starts.get(o, [])):
+                inner.append('<w:commentRangeStart w:id="%d"/>' % wid)
+            prev = o
+        if le > prev:
+            inner.append(run(snapshot[prev:le]))
+        out.append("<w:p>" + "".join(inner) + "</w:p>")
+        off = le + 1
+    return "".join(out)
+
+
+def _deterministic_zip(parts):
+    """A byte-stable .docx: ZIP_STORED, explicit ZipInfo per part with pinned date / create_system /
+    external_attr, fixed order, seekable buffer (so the same bytes emit on every machine)."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        for name, data in parts:
+            zi = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+            zi.compress_type = zipfile.ZIP_STORED
+            zi.create_system = 3              # Unix (else host-dependent: 0 on Windows)
+            zi.external_attr = 0o644 << 16    # else open(mode='w') rewrites it
+            zf.writestr(zi, data.encode("utf-8"))
+    return buf.getvalue()
+
+
+def build_docx(manifest_obj, snapshot):
+    """-> (docx_bytes_or_None, errs). Pure projection: the snapshot in <w:p>/<w:t> with each finding's
+    span wrapped as an anchored comment carrying the verbatim comment. errs is the single-line precondition."""
+    annotations = [a for a in (manifest_obj.get("annotations") or []) if isinstance(a, dict)]
+    errs = []
+    for a in annotations:
+        c = a.get("comment") or ""
+        if "\n" in c or "\r" in c:
+            errs.append("D precondition: comment for %s is multi-line — a <w:t> is one line" % a.get("finding_id"))
+    if errs:
+        return None, errs
+
+    ordered = sorted(annotations, key=lambda a: a.get("finding_id") or "")
+    idmap = {a.get("finding_id"): i for i, a in enumerate(ordered)}
+    line_start, line_end = _line_bounds(snapshot)
+    _cn, _sn, chap_l, sec_l = am.heading_index(snapshot)
+    spans = [(*_docx_span(a.get("anchor") or {}, snapshot, line_start, line_end, chap_l, sec_l),
+              idmap[a.get("finding_id")]) for a in ordered]
+
+    document_xml = '%s<w:document xmlns:w="%s"><w:body>%s</w:body></w:document>' % (
+        _XMLDECL, _W_NS, _docx_body(snapshot, spans))
+    comments = "".join(
+        '<w:comment w:id="%d" w:author="APODICTIC" w:date="%s" w:initials="AP">'
+        '<w:p><w:r><w:t xml:space="preserve">%s</w:t></w:r></w:p></w:comment>'
+        % (idmap[a.get("finding_id")], _DOCX_DATE, _html_escape(a.get("comment"))) for a in ordered)
+    comments_xml = '%s<w:comments xmlns:w="%s">%s</w:comments>' % (_XMLDECL, _W_NS, comments)
+
+    parts = [("[Content_Types].xml", _DOCX_CT), ("_rels/.rels", _DOCX_ROOT_RELS),
+             ("word/document.xml", document_xml), ("word/comments.xml", comments_xml),
+             ("word/styles.xml", _DOCX_STYLES), ("word/settings.xml", _DOCX_SETTINGS),
+             ("word/_rels/document.xml.rels", _DOCX_DOC_RELS)]
+    return _deterministic_zip(parts), []
+
+
+def check_docx(manifest_obj, snapshot, docx_bytes):
+    """D1-D3 over an emitted .docx. Returns (errs, warns)."""
+    errs = []
+    annotations = [a for a in (manifest_obj.get("annotations") or []) if isinstance(a, dict)]
+
+    # D1 (authoritative) — the on-disk .docx == a fresh deterministic build, byte-for-byte.
+    expected, _perrs = build_docx(manifest_obj, snapshot)
+    if expected is not None and docx_bytes != expected:
+        errs.append("D1 artifact integrity: the on-disk .docx is not byte-identical to a fresh build from "
+                    "the gated manifest + snapshot (text / comment / structure drift, or authored content)")
+    try:
+        zf = zipfile.ZipFile(io.BytesIO(docx_bytes))
+        document_xml = zf.read("word/document.xml").decode("utf-8")
+        comments_xml = zf.read("word/comments.xml").decode("utf-8")
+    except (zipfile.BadZipFile, KeyError, UnicodeDecodeError) as exc:
+        return errs + ["D1: cannot read the .docx OOXML parts — %s" % exc], []
+
+    # D2 — text round-trip: <w:t> text, exact-unescaped, one <w:p> per line, one trailing newline.
+    para_texts = [_html_unescape_exact("".join(_WT_RE.findall(p))) for p in _WP_RE.findall(document_xml)]
+    if (("\n".join(para_texts) + "\n") if para_texts else "") != snapshot:
+        errs.append("D2 text round-trip: the document.xml <w:t> text does not reproduce the snapshot "
+                    "byte-for-byte")
+
+    # D3 — comment resolution + fidelity (rebuild the sorted(finding_id)->N map).
+    ordered = sorted(annotations, key=lambda a: a.get("finding_id") or "")
+    idmap = {a.get("finding_id"): i for i, a in enumerate(ordered)}
+    expected_ids = set(idmap.values())
+    starts = [int(x) for x in re.findall(r'<w:commentRangeStart w:id="(\d+)"/>', document_xml)]
+    ends = [int(x) for x in re.findall(r'<w:commentRangeEnd w:id="(\d+)"/>', document_xml)]
+    refs = [int(x) for x in re.findall(r'<w:commentReference w:id="(\d+)"/>', document_xml)]
+    comment_text, comment_ids = {}, []
+    for cm in re.finditer(r'<w:comment w:id="(\d+)"[^>]*>(.*?)</w:comment>', comments_xml, re.DOTALL):
+        comment_ids.append(int(cm.group(1)))
+        comment_text[int(cm.group(1))] = _html_unescape_exact("".join(_WT_RE.findall(cm.group(2))))
+
+    def _exactly_once(lst):   # every manifest id appears EXACTLY once, no missing / duplicate / extra
+        seen = {}
+        for x in lst:
+            seen[x] = seen.get(x, 0) + 1
+        return set(seen) == expected_ids and all(v == 1 for v in seen.values())
+    if not (_exactly_once(starts) and _exactly_once(ends) and _exactly_once(refs) and _exactly_once(comment_ids)):
+        errs.append("D3 comment resolution: the commentRangeStart/End/Reference ids and the comments.xml "
+                    "ids must each contain every manifest finding {0..n-1} exactly once (no missing, "
+                    "duplicate, or un-manifested id)")
+    for a in ordered:
+        wid = idmap[a.get("finding_id")]
+        if comment_text.get(wid) != a.get("comment"):
+            errs.append("D3 comment fidelity: comment %d is not the verbatim manifest comment for %s "
+                        "(relocate, never re-author)" % (wid, a.get("finding_id")))
+    return errs, []
+
+
 def _runlabel_of(path):
     base = os.path.basename(path or "")
     for infix in ("_Manuscript_Snapshot_", "_Annotation_Manifest_"):
@@ -656,6 +872,59 @@ def run_html(paths):
         lines.append("html-export: FAIL (%d error(s))" % len(errs))
         return 1, lines
     lines.append("html-export: PASS (H1 round-trip + H2 anchor resolution + H3 comment fidelity)")
+    return 0, lines
+
+
+def _read_bytes(path):
+    try:
+        with open(path, "rb") as fh:
+            return fh.read()
+    except OSError:
+        return None
+
+
+def generate_docx(folder):
+    """Write docx/<Project>_Annotated_Manuscript_<runlabel>.docx. Returns (code, lines)."""
+    obj, snapshot, project, runlabel, _cl, err = _resolve(folder)
+    if err:
+        return 2, ["docx-export: %s" % err]
+    docx, errs = build_docx(obj, snapshot)
+    if errs:
+        return 1, ["docx-export: " + e for e in errs] + ["docx-export: FAIL (D precondition)"]
+    outdir = os.path.join(folder, "docx")
+    os.makedirs(outdir, exist_ok=True)
+    out_path = os.path.join(outdir, "%s_Annotated_Manuscript_%s.docx" % (project, runlabel))
+    with open(out_path, "wb") as fh:
+        fh.write(docx)
+    return 0, ["docx-export: wrote docx/%s" % os.path.basename(out_path)]
+
+
+def run_docx(paths):
+    """Validate the ON-DISK docx/<copy>.docx (D1-D3), never a regenerate."""
+    if len(paths) < 1 or not os.path.isdir(paths[0]):
+        return 2, ["docx-export: usage: docx-export <run_folder>"]
+    obj, snapshot, _p, _r, _cl, err = _resolve(paths[0])
+    if err:
+        return 2, ["docx-export: %s" % err]
+    docx_path = _newest(glob.glob(os.path.join(paths[0], "docx", "*_Annotated_Manuscript_*.docx")))
+    if not docx_path:
+        return 2, ["docx-export: no docx/*_Annotated_Manuscript_*.docx found "
+                   "(run `annotation_export.py docx <run_folder>` first)"]
+    docx_bytes = _read_bytes(docx_path)
+    if docx_bytes is None:
+        return 2, ["docx-export: cannot read %s" % docx_path]
+    _exp, perrs = build_docx(obj, snapshot)
+    if perrs:
+        return 1, ["docx-export: " + e for e in perrs] + ["docx-export: FAIL (D precondition)"]
+    errs, _w = check_docx(obj, snapshot, docx_bytes)
+    lines = ["docx-export: %d finding(s); validating docx/%s"
+             % (len(obj.get("annotations") or []), os.path.basename(docx_path))]
+    for e in errs:
+        lines.append("  ERROR: %s" % e)
+    if errs:
+        lines.append("docx-export: FAIL (%d error(s))" % len(errs))
+        return 1, lines
+    lines.append("docx-export: PASS (D1 artifact integrity + D2 text round-trip + D3 comment resolution)")
     return 0, lines
 
 
@@ -952,6 +1221,65 @@ def run_self_test():
     finally:
         shutil.rmtree(d3, ignore_errors=True)
 
+    # --- Increment 4: DOCX (→ Google Docs) ---
+    docx_bytes, derrs = build_docx(obj, snap)
+    chk("docx_no_precond_errs", not derrs and docx_bytes is not None)
+    chk("docx_is_zip", docx_bytes[:2] == b"PK")
+    chk("docx_deterministic", build_docx(obj, snap)[0] == docx_bytes)   # byte-identical across builds
+    chk("docx_check_clean", check_docx(obj, snap, docx_bytes)[0] == [])
+    z = zipfile.ZipFile(io.BytesIO(docx_bytes))
+    docxml = z.read("word/document.xml").decode("utf-8")
+    cxml = z.read("word/comments.xml").decode("utf-8")
+    chk("docx_seven_parts", len(z.namelist()) == 7)
+    chk("docx_comment_anchored",
+        '<w:commentRangeStart w:id="0"/>' in docxml and '<w:commentReference w:id="0"/>' in docxml
+        and '<w:commentRangeEnd w:id="0"/>' in docxml)
+    chk("docx_comment_verbatim", "pacing seam — fix class: add a beat. (See letter §F-CH-01.)" in cxml)
+    paras = [_html_unescape_exact("".join(_WT_RE.findall(p))) for p in _WP_RE.findall(docxml)]
+    chk("docx_text_round_trip", ("\n".join(paras) + "\n") == snap)
+    # Codex #111: co-located ranges (F-DOC-01 wid 1 + F-NEG-01 wid 2 both span line 1) must NEST, not cross:
+    # opens ascending (1 then 2), closes reverse-open (2 then 1) -> start1 start2 … end2 ref2 end1 ref1.
+    _nested = ('<w:commentRangeStart w:id="1"/><w:commentRangeStart w:id="2"/>' in docxml
+               and ('<w:commentRangeEnd w:id="2"/><w:r><w:commentReference w:id="2"/></w:r>'
+                    '<w:commentRangeEnd w:id="1"/><w:r><w:commentReference w:id="1"/></w:r>') in docxml)
+    _crossing = ('<w:commentRangeEnd w:id="1"/><w:r><w:commentReference w:id="1"/></w:r>'
+                 '<w:commentRangeEnd w:id="2"/>') in docxml
+    chk("docx_colocated_ranges_nest_not_cross", _nested and not _crossing)
+
+    def _rezip_with(override):
+        return _deterministic_zip([(n, override.get(n, z.read(n).decode("utf-8"))) for n in z.namelist()])
+    chk("docx_d1d2_fire_on_body_mutation",
+        any("D1" in x or "D2" in x for x in check_docx(obj, snap, _rezip_with(
+            {"word/document.xml": docxml.replace("Three days collapsed here.", "Three days COLLAPSED here.")}))[0]))
+    chk("docx_d3_fires_on_reauthor",
+        any("D1" in x or "D3" in x for x in check_docx(obj, snap, _rezip_with(
+            {"word/comments.xml": cxml.replace("pacing seam", "INVENTED")}))[0]))
+    # D3 multiset (build-review P3): a DUPLICATED range id must fail D3's resolution check standalone
+    # (a set-based check would collapse it). Inject a second commentRangeStart id=0.
+    _dup = docxml.replace('<w:commentRangeStart w:id="0"/>',
+                          '<w:commentRangeStart w:id="0"/><w:commentRangeStart w:id="0"/>', 1)
+    chk("docx_d3_multiset_catches_dup_id",
+        any("D3 comment resolution" in x for x in check_docx(obj, snap, _rezip_with({"word/document.xml": _dup}))[0]))
+    _t, dperrs = build_docx(
+        {"annotations": [ann("F-X-01", {"kind": "document", "value": ""}, "line\nline2")]}, snap)
+    chk("docx_precond_multiline", any("multi-line" in x for x in dperrs))
+
+    d4 = tempfile.mkdtemp()
+    try:
+        with open(os.path.join(d4, "T_Manuscript_Snapshot_r.md"), "w") as fh:
+            fh.write(snap)
+        with open(os.path.join(d4, "T_Annotation_Manifest_r.md"), "w") as fh:
+            fh.write("<!-- apodictic:annotation\n%s\n-->" % _j.dumps(obj))
+        chk("docx_generate_writes", generate_docx(d4)[0] == 0
+            and os.path.isfile(os.path.join(d4, "docx", "T_Annotated_Manuscript_r.docx")))
+        chk("docx_run_validates", run_docx([d4])[0] == 0)
+        dp = os.path.join(d4, "docx", "T_Annotated_Manuscript_r.docx")
+        with open(dp, "wb") as fh:
+            fh.write(_rezip_with({"word/document.xml": docxml.replace("Three days collapsed here.", "X")}))
+        chk("docx_run_catches_disk_tamper", run_docx([d4])[0] == 1)
+    finally:
+        shutil.rmtree(d4, ignore_errors=True)
+
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 
@@ -964,7 +1292,7 @@ def main(argv):
         return 2
     args = [a for a in argv[1:] if not a.startswith("--")]
     # generate modes
-    for verb, gen in (("obsidian", generate), ("html", generate_html)):
+    for verb, gen in (("obsidian", generate), ("html", generate_html), ("docx", generate_docx)):
         if args and args[0] == verb:
             rest = [a for a in args[1:]]
             if len(rest) != 1 or not os.path.isdir(rest[0]):
@@ -975,15 +1303,16 @@ def main(argv):
                 print(ln)
             return code
     # validate modes
-    if args and args[0] == "html-export":
-        code, lines = run_html(args[1:])
-        for ln in lines:
-            print(ln)
-        return code
+    for verb, val in (("html-export", run_html), ("docx-export", run_docx)):
+        if args and args[0] == verb:
+            code, lines = val(args[1:])
+            for ln in lines:
+                print(ln)
+            return code
     paths = [a for a in args if a != "obsidian-export"]
     if not paths:
-        print("Usage: annotation_export.py obsidian|html <run_folder> | obsidian-export|html-export "
-              "<run_folder> | --self-test")
+        print("Usage: annotation_export.py obsidian|html|docx <run_folder> | "
+              "obsidian-export|html-export|docx-export <run_folder> | --self-test")
         return 2
     code, lines = run(paths, strict="--strict" in argv)
     for ln in lines:

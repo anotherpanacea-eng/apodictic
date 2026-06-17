@@ -5,3 +5,4 @@
 # from language statistics. Review the plugins/ sources instead.
 codex/** linguist-generated=true
 antigravity/** linguist-generated=true
+*.docx binary
