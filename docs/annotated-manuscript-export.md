@@ -103,6 +103,37 @@ The findings `<section>` is structurally **outside** the `<pre>`, so it is outsi
 
 **Validators +1 → 47** — lockstep bump in **both** `scripts/validate.sh` and `plugins/apodictic/scripts/validate.sh` (check-mirror byte-identity) of the four sites: (1) `AGG_VALIDATORS`, (2) the `Commands:` usage string, (3) the `--check-all` description, plus (4) the new `html-export)` dispatch arm (mirroring `obsidian-export)`, including the `python3`-absent advisory-`WARN` degrade).
 
+## Increment 4 — DOCX with anchored comments (→ Google Docs import)
+
+A local **`.docx`** (Office Open XML) the writer imports into **Google Docs** (or opens in Word / LibreOffice), where each finding appears as a **native anchored comment** on its manuscript span — the professional editorial deliverable (Word/GDocs comments are the industry standard). A sibling projection `manifest + snapshot → .docx`, gated by a new **`docx-export`** validator (its own D-series). This one artifact serves **both** "Google Docs" (import → native comments) and the DOCX target.
+
+**Structure — minimal valid OOXML + comments.** A `.docx` is a ZIP of XML parts; the minimal set for a commented document:
+- `[Content_Types].xml` — declares the `document` + `comments` content types + the `rels`/`xml` defaults.
+- `_rels/.rels` — root rel → `word/document.xml`.
+- `word/document.xml` — `<w:document><w:body>` with one `<w:p>` paragraph per snapshot line; each finding's anchored span is wrapped `…<w:commentRangeStart w:id="N"/><w:r><w:t xml:space="preserve">span</w:t></w:r><w:commentRangeEnd w:id="N"/><w:r><w:commentReference w:id="N"/></w:r>…`.
+- `word/comments.xml` — `<w:comments>` with one `<w:comment w:id="N" w:author="APODICTIC" w:date="…" w:initials="AP">` per finding, its `<w:t>` the **verbatim** comment.
+- `word/_rels/document.xml.rels` — rel → `comments.xml`.
+
+**Anchoring per rung.** `quote` → wrap the exact quoted span (offsets); `chapter`/`section` → wrap the heading text; `line-range` → wrap the line; `document` → a document-level comment (anchor the title/first paragraph). Co-located anchors nest by id.
+
+**Deterministic ZIP (so `--check-all` can byte-compare a committed `.docx`).** Use **`ZIP_STORED`** (no compression — DEFLATE bytes vary across zlib versions/levels and would break cross-environment byte-identity), **fixed `ZipInfo` timestamps**, and a **fixed part order**. A fixed `w:date` literal in `comments.xml`. So two builds emit a byte-identical `.docx`, committable as a fixture.
+
+**Firewall.** A pure projection: the document text is the **verbatim snapshot** (XML-escaped — `&`,`<`,`>` — and split into `<w:r>` runs only at comment boundaries), and each comment is the **verbatim** manifest comment. No authored prose; no comment re-authoring. The model assembles fixed OOXML boilerplate around copied bytes.
+
+### The `docx-export` validator (proposed)
+
+`validate.sh docx-export <run_folder>` → delegates to `scripts/annotation_export.py`; degrades to advisory `WARN` without `python3`. Gates the **on-disk** `docx/` artifact (unzip + check, never a regenerate):
+
+| ID | Severity | Rule |
+|---|---|---|
+| **D1 — artifact integrity (authoritative)** | ERROR | The on-disk `.docx` **equals a fresh deterministic build** from the gated manifest + snapshot **byte-for-byte** (the artifact is fully determined; equality pins the document text, comment ranges/ids, comment text, structure, and forbids any authored content — the HTML-H1 discipline, for a binary). |
+| **D2 — text round-trip** | ERROR | From `word/document.xml`, concatenating the `<w:t>` text (XML-unescaped) with `<w:p>`→newline reproduces the gated **snapshot** byte-for-byte (the A2 analog — the document body is the unmutated manuscript; the comment markup carries no body text). |
+| **D3 — comment resolution + fidelity** | ERROR | Every `commentRangeStart`/`End`/`commentReference` `w:id` ↔ a `<w:comment w:id>` in `comments.xml` is a **bijection** whose count equals the manifest's `finding_id` count (an un-anchored comment or dangling range fails); each `<w:comment>`'s text, XML-unescaped, equals its manifest `comment` **verbatim**, and is keyed to the right finding (the A4+A5 analog). |
+
+The canonical `example-annotated-manuscript/` fixture gains its `docx/<Project>_Annotated_Manuscript_<runlabel>.docx` (a `.docx`, not matched by any `*_*.md` glob, sibling to `obsidian/`/`html/`), and `--check-all` runs `annotation_export.py docx` on a **temp copy** then gates it, asserting the fresh export is byte-identical to the committed `.docx` fixture. **Validators +1 → 48.**
+
+**Open questions for spec-review (web-verify the OOXML + GDocs import):** (Q1) the **minimal** part set + exact namespaces (`w:`, content-type strings, rel types) that produces a `.docx` Google Docs imports with the comments intact — confirm against the OOXML spec / a known-good minimal sample; is a `word/styles.xml` / `settings.xml` required, or optional? (Q2) does Google Docs import `<w:commentRangeStart/End>` + `commentReference` as **anchored** comments (not just a comment list)? (Q3) the deterministic-ZIP recipe (`ZIP_STORED`, fixed `ZipInfo(date_time=(1980,1,1,0,0,0))`, fixed order) — is the output truly byte-stable across environments? (Q4) the finding↔comment id mapping (the comment `w:id` is an integer `0..n-1`; the finding↔id map must be deterministic — sort by `finding_id`); how does D3 key a comment back to its finding (via the wrapped span / a sidecar map)? (Q5) the per-rung anchoring + how `<w:p>` paragraphization round-trips the snapshot's exact lines/blank lines.
+
 ## Why CriticMarkup stays canonical (the strategic note)
 
 CriticMarkup is **not** the publishing-industry standard — Word Track Changes + Comments is (Google Docs suggesting mode; PDF for proofing). But CriticMarkup is the right *internal* representation: the firewall's no-mutation proof (A2) is trivial on plain text and painful on DOCX/PDF binaries, and CriticMarkup is the plain-text bridge the Commentator plugin round-trips to Word/Google-Docs comment mode. So the manifest stays canonical, CriticMarkup stays its first render, and the professional formats (DOCX-comments, GDocs, PDF) are future projections — not a new base.
