@@ -410,8 +410,10 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
             qv = anc.get("quote")
             if not isinstance(qv, str) or not qv:
                 errs.append("A1 manifest schema: %s quote anchor requires a non-empty 'quote' string" % where)
-            if not re.match(r"^\d+-\d+$", str(anc.get("value", ""))):
-                errs.append("A1 manifest schema: %s quote anchor value must be '<start>-<end>'" % where)
+            vm = re.match(r"^(\d+)-(\d+)$", str(anc.get("value", "")))
+            if not vm or int(vm.group(1)) > int(vm.group(2)):
+                errs.append("A1 manifest schema: %s quote anchor value must be '<start>-<end>' with "
+                            "start <= end" % where)
         fid = an.get("finding_id")
         if fid is not None:
             seen[fid] = seen.get(fid, 0) + 1
@@ -833,6 +835,13 @@ def run_self_test():
             a["anchor"] = {"kind": "quote", "value": "nope"}
     code, ls = check(snapshot, manifest_md(obj_a1), render(snapshot, obj_a1), ledger, timeline)
     chk("a1_malformed_quote", code == 1 and any("A1 manifest schema" in x and "quote anchor" in x for x in ls))
+    # A1: a reversed quote-anchor range (start > end) is an A1 error (matches the documented gate)
+    obj_rev = json.loads(json.dumps(obj))
+    for a in obj_rev["annotations"]:
+        if a["finding_id"] == "F-QT-01":
+            a["anchor"] = {"kind": "quote", "value": "10-3", "quote": quote_pos}
+    code, ls = check(snapshot, manifest_md(obj_rev), render(snapshot, obj_rev), ledger, timeline)
+    chk("a1_reversed_offsets", code == 1 and any("A1 manifest schema" in x and "start <= end" in x for x in ls))
     # build degrades a multi-line / empty evidence_quote (never a quote rung)
     obj_ml, _ = build_manifest(snapshot, "# L\n" + finding("F-ML-01", "Must-Fix", ["Chapter 9"], quote="a\nb") + "\n", timeline)
     chk("quote_multiline_degrades", obj_ml["annotations"][0]["anchor"]["kind"] != "quote")

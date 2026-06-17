@@ -183,13 +183,13 @@ The shared subset schema engine validates only `required`/`const`/`enum`/`type`/
 
 A manifest with no `quote` anchors validates exactly as in Increment 1 (A6 is a no-op when no quote anchor is present; the unified renderer is byte-identical for non-quote anchors). A finding with no `evidence_quote` resolves on the Increment-1 ladder. No existing fixture changes behaviour, and the canonical Increment-1 `--check-all` fixture passes untouched. *(Increment 2 builds the **consumer** — the locator, rung, gate, render, and schema field. No shipped diagnostic pass emits `evidence_quote`, so the feature is **inert on the real corpus** until that upstream effort lands; the fixtures below are hand-constructed findings that prove the consumer + A6, not a producer.)*
 
-### Canonical `--check-all` gate (four fixtures)
+### Fixtures (four scenarios — two canonical gate, two self-test)
 
-Four fixtures, exercising the rung and **both** halves of the no-fabrication guarantee (existence *and* offset-correctness):
-1. **Positive** — a finding whose `evidence_quote` occurs verbatim-once → a `quote` anchor on the exact span; A6 passes; the rendered span sits at the sentence; A2 reverse-transform identity holds.
-2. **Ambiguous-degrade (negative)** — `evidence_quote` appears **twice** in the snapshot → degrades to the coarser rung; **no** `quote` anchor fabricated.
-3. **Fabricated / absent (negative)** — a manifest carrying a `quote` anchor whose text is **absent** from the snapshot → **A6(b) ERROR**.
-4. **Wrong-offsets (negative)** — a quote that **is** unique in the snapshot but whose recorded `<start>-<end>` is off-by-one (`snapshot[start:end] != quote`) → **A6(c) ERROR** (the offset↔text cross-check — a distinct failure from absence, and the reason the anchor records offsets at all).
+Four scenarios exercise the rung and **both** halves of the no-fabrication guarantee (existence *and* offset-correctness). The two that *validate* live on-disk in the canonical `--check-all` fixture (matching Increment 1's pattern, where the negative `F-NEG-01` degrade sits in the gate manifest); the two that must *fail* cannot be passing gate fixtures, so they are self-test hostile assertions:
+1. **Positive** *(canonical gate — `F-QT-01`)* — a finding whose `evidence_quote` occurs verbatim-once → a `quote` anchor on the exact span; A6 passes; the rendered span sits at the sentence; A2 reverse-transform identity holds.
+2. **Ambiguous-degrade** *(canonical gate — `F-QAMB-01`)* — `evidence_quote` appears **twice** in the snapshot → degrades to the coarser rung; **no** `quote` anchor fabricated.
+3. **Fabricated / absent** *(self-test)* — a manifest carrying a `quote` anchor whose text is **absent** from the snapshot → **A6(b) ERROR**.
+4. **Wrong-offsets** *(self-test)* — a quote that **is** unique in the snapshot but whose recorded `<start>-<end>` is off-by-one (`snapshot[start:end] != quote`) → **A6(c) ERROR** (the offset↔text cross-check — a distinct failure from absence, and the reason the anchor records offsets at all).
 
 ### Increment boundary
 
