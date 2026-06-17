@@ -76,6 +76,28 @@ Increment 1 made each finding a footnote in the copy (forward *reading*). Increm
 - **O5 two-sided precondition (added):** the editorial-letter prose must contain no `[[` and no line-terminal ` ^token` (mirroring crosslink's CriticMarkup sigil precondition), so the strip is unambiguous.
 - **O3 is exact, not loose:** the definition must **equal** `comment + " " + [[<letter>#^id|→ letter §id]]` (the manifest comment verbatim + the *exact* expected forward wikilink) — no room for authored text around the comment.
 
+## Increment 3 — read-only HTML export
+
+A self-contained `.html` the writer (or anyone) opens in **any browser** — no Obsidian, no plugin, no Markdown tool. A sibling projection `manifest + snapshot → HTML`, gated by a new **`html-export`** validator (its own H-series; the O-series is Obsidian-specific). Read-only: it presents the marked-up manuscript + the findings; it is not an editing surface.
+
+**Faithful by construction — a `<pre>` manuscript.** To keep the no-mutation proof exact (the A2 discipline), the manuscript prose is rendered inside a single `<pre>` element (CSS `white-space: pre-wrap` + a serif face makes it read as prose while preserving the snapshot's exact bytes and line breaks) — **not** reflowed into `<p>`/`<h>` (which would restructure whitespace and defeat a byte-exact round-trip; rendered-prose HTML is a deferred future increment). The snapshot text is **HTML-escaped** (`&`→`&amp;`, `<`→`&lt;`, `>`→`&gt;`), and at each anchor locus a footnote-style marker is spliced **between escaped prose segments** (so escaping never touches the injected markup): `<sup class="fnref" id="ref-F-RR-01"><a href="#fn-F-RR-01">[F-RR-01]</a></sup>`. Below the manuscript, a `<section class="findings">` lists each finding: `<li id="fn-F-RR-01" class="sev-must-fix">{HTML-escaped verbatim comment} <a class="backref" href="#ref-F-RR-01">↩</a></li>`. Embedded `<style>` (self-contained, no network). So the browser gives native bidirectional anchor navigation (click `[F-RR-01]` → the finding; click `↩` → back to the locus) with zero tooling.
+
+**Firewall.** A pure projection: the only text is the **escaped snapshot** + the **escaped verbatim comments** + fixed boilerplate (tags, ids, `[id]`/`↩` labels). No authored prose; no comment re-authoring.
+
+### The `html-export` validator (proposed)
+
+`validate.sh html-export <run_folder>` → delegates to `scripts/annotation_export.py`; degrades to advisory `WARN` without `python3`. Gates the **on-disk** `obsidian/`-sibling `html/` artifact (read + gate, never a regenerate):
+
+| ID | Severity | Rule |
+|---|---|---|
+| **H1 — round-trip to source** | ERROR | Extract the `<pre>` content; delete every manifest-keyed `<sup … id="ref-<fid>">…</sup>` marker; **HTML-unescape** → reproduces the gated snapshot **byte-for-byte** (the A2 analog). The escaping makes the inverse total — a snapshot `<`/`&`/`>` is `&lt;`/`&amp;`/`&gt;` in the `<pre>`, so it can never be confused with the injected real-tag markup. |
+| **H2 — anchor resolution** | ERROR | Every `<sup id="ref-<fid>">` ↔ `<li id="fn-<fid>">` is a **bijection** whose id set equals the manifest's `finding_id` set (the A4 forward+inverse multiset, on anchors — an un-manifested marker/finding fails); each finding's `<a href="#ref-<fid>">` back-ref matches its own marker id. |
+| **H3 — comment fidelity** | ERROR | Each finding `<li>`'s content (before the back-ref), **HTML-unescaped**, equals the manifest `comment` byte-for-byte (relocate, never re-author — the A5 analog). |
+
+The canonical `example-annotated-manuscript/` fixture gains its `html/<Project>_Annotated_Manuscript_<runlabel>.html`, and `--check-all` runs `annotation_export.py html` on a **temp copy** then gates it, asserting the fresh export is byte-identical to the committed HTML fixture. **Validators +1 → 47.**
+
+**Open questions for spec-review:** (Q1) the escape-then-splice ordering — splice markers between *escaped prose segments* (escape each gap, never the markers) so H1's "unescape the non-marker text" inverse is exact; confirm no double-escape / no offset drift. (Q2) is `<pre>`-faithful the right call vs reflowed prose (the round-trip cost)? (Q3) H1 marker-strip must be manifest-keyed (delete exactly the `id="ref-<fid>"` markers), not a `<sup>` wildcard, so a `<sup>` legitimately in the (escaped) prose — impossible, since `<` is escaped — or boilerplate can't be over-stripped; confirm. (Q4) the fixture + the `html/` subfolder placement (sibling to `obsidian/`, not swept by other globs).
+
 ## Why CriticMarkup stays canonical (the strategic note)
 
 CriticMarkup is **not** the publishing-industry standard — Word Track Changes + Comments is (Google Docs suggesting mode; PDF for proofing). But CriticMarkup is the right *internal* representation: the firewall's no-mutation proof (A2) is trivial on plain text and painful on DOCX/PDF binaries, and CriticMarkup is the plain-text bridge the Commentator plugin round-trips to Word/Google-Docs comment mode. So the manifest stays canonical, CriticMarkup stays its first render, and the professional formats (DOCX-comments, GDocs, PDF) are future projections — not a new base.
