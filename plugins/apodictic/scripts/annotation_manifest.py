@@ -365,8 +365,15 @@ def reverse_transform(annotated):
 # ---------------------------------------------------------------- the validator
 
 def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_text=None,
-          strict=False):
-    """Run A1-A5 + W1. Returns (code, lines). Each input may be None (resolution reports the gap)."""
+          strict=False, ledger_optional=False):
+    """Run A1-A6 + W1. Returns (code, lines). Each input may be None (resolution reports the gap).
+
+    `ledger_optional=True` is the re-anchoring context (`reanchor.py`): a manifest re-anchored onto a
+    *revised* draft has no re-diagnosed Findings Ledger, so the ledger-dependent arms (A5 projection,
+    A4 Must-Fix completeness) are legitimately absent and the "no Findings Ledger" error is suppressed
+    — leaving A1 + A2 + A3 + A4-multiset + A6 (the structural / no-mutation / quote-integrity subset a
+    re-anchored copy inherits). Comment fidelity in that context is RA2's job (verbatim carry-over),
+    not A5's. Default False preserves the strict ledger requirement for the normal build path."""
     lines, errs, warns = [], [], []
     obj, schema_errs = parse_manifest(manifest_text)
     if obj is None:
@@ -476,7 +483,7 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
         for bt, o, _e in art.parse_blocks(ledger_text):
             if bt == "finding" and isinstance(o, dict) and o.get("id"):
                 led_obj[o["id"]] = o
-    if not have_ledger and annotations:
+    if not have_ledger and annotations and not ledger_optional:
         errs.append("A4/A5: no Findings Ledger resolved — comment provenance (verbatim projection + "
                     "Must-Fix completeness) is unverifiable for %d annotation(s); supply the ledger"
                     % len(annotations))

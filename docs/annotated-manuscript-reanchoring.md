@@ -1,6 +1,7 @@
 # Annotated-Manuscript Round-Trip Re-Anchoring — carry the margin notes across a revision
 
-**Status:** Proposed (unbuilt). Spec for review. Depends on the [Annotated-Manuscript deliverable](annotated-manuscript.md) (Increments 1–3, in `main`), its [producer](annotated-manuscript-producer.md) (PR #104/#105), and [Draft-over-Draft Structural Regression](draft-regression-testing.md) (`regression-diff`, PR #106) — the finding-level cross-round diff this complements at the **anchor/text** level.
+**Status:** **Built (Increment 1, 2026-06-17).** Shipped surface: `scripts/reanchor.py` (the re-resolver + classifier, `--self-test`), the `validate.sh reanchor <prior_run_folder> <new_snapshot>` validator (RA1–RA3 + W1/W2; +1 → 45 validators, mirrored), a `ledger_optional` mode added to `annotation_manifest.check` (so the re-anchored manifest is gated by A1–A3 + A4-multiset + A6 without a re-diagnosed N+1 ledger), and a revised-draft fixture (`example-reanchor-revised.md`) wired into `--check-all`. Depends on the [Annotated-Manuscript deliverable](annotated-manuscript.md) (Increments 1–3, in `main`), its [producer](annotated-manuscript-producer.md) (PR #104/#105), and [Draft-over-Draft Structural Regression](draft-regression-testing.md) (`regression-diff`, PR #106) — the finding-level cross-round diff this complements at the **anchor/text** level.
+<!-- built-when: scripts/reanchor.py -->
 
 ## The gap
 
