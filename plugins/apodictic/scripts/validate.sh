@@ -178,15 +178,15 @@ set -euo pipefail
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).
-AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink check-mirror"
+AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff regression-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink check-mirror"
 # shellcheck disable=SC2086  # intentional word-splitting to count list entries
 AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, check-mirror"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, regression-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -338,6 +338,23 @@ if [ "$1" = "--check-all" ]; then
       fi
     else
       echo "ERROR: $CA_BASE/example-state-card.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical regression-diff (draft-over-draft: cross-round recurrence + quiet-chapter candidates) =="
+    if [ -d "$CA_BASE/example-run-folder-r1" ] && [ -d "$CA_BASE/example-run-folder-r2" ]; then
+      # default mode is advisory: the two regression candidates are WARN, exit 0.
+      "$0" regression-diff "$CA_BASE/example-run-folder-r1" "$CA_BASE/example-run-folder-r2" >/dev/null 2>&1 || CA_FAIL=1
+      # --strict must FAIL (exit non-zero) AND the matcher must RAISE the recurrence (W1) + quiet-chapter
+      # (W2) candidates by heuristic match — non-vacuous proof the cross-round matcher actually fires.
+      if RGD_OUT=$("$0" regression-diff --strict "$CA_BASE/example-run-folder-r1" "$CA_BASE/example-run-folder-r2" 2>&1); then
+        echo "regression-diff (paired fixture): FAIL (expected --strict to exit non-zero on the candidates)"; CA_FAIL=1
+      elif printf '%s' "$RGD_OUT" | grep -q "W1 recurrence-candidate" && printf '%s' "$RGD_OUT" | grep -q "W2 quiet-chapter breakage"; then
+        echo "regression-diff (paired fixture): PASS"
+      else
+        echo "regression-diff (paired fixture): FAIL (--strict ran but W1/W2 candidates not raised)"; CA_FAIL=1
+      fi
+    else
+      echo "ERROR: $CA_BASE/example-run-folder-r1 / -r2 not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical pre-draft Argument_State (argument-spine: spine + support + warrant maps seed §1-§4) =="
@@ -4476,6 +4493,32 @@ EOF
       python3 "$SCD_HELPER" state-card-diff "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — state-card-diff skipped; check inline that every tracked element carries a unique SE-NN id, no active promise has become a forbidden contradiction across rounds, and a shifted controlling idea is intentional. See docs/retcon-planning.md."
+    exit 0
+    ;;
+
+  regression-diff)
+    # Draft-over-Draft Structural Regression Testing (docs/draft-regression-testing.md): the cross-round
+    # Findings-Ledger diff — did this revision resolve what it claimed, and did it break anything that was
+    # working? Finding IDs are per-run (renumbered each round), so cross-round identity is a DETERMINISTIC
+    # heuristic match (same origin code + equal chapter token + >=1 shared mechanism token; greedy stable
+    # one-to-one) and every regression signal is a CANDIDATE for editor judgment. R1 round-linkage (ERROR:
+    # both ledgers parse, non-empty, distinct rounds); W1 recurrence-candidate (a resolved/'revised' prior
+    # finding matched in round N), W2 new-in-quiet-chapter (a current finding in a chapter quiet on the prior
+    # record; override <!-- override: regression-cleared <runlabel>:<chapter> — … -->), W3 unexplained-drop.
+    # W1-W3 advisory, ERROR under --strict. Prints to stdout (the diff-validator precedent — persists no
+    # file); the Regression Report is orchestrator-written at round-close. Delegates to
+    # scripts/regression_diff.py; degrades to an advisory WARN without python3.
+    RGD_DIR=$(cd "$(dirname "$0")" && pwd)
+    RGD_HELPER="$RGD_DIR/regression_diff.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$RGD_HELPER" ]; then python3 "$RGD_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; regression-diff is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$RGD_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 regression-diff <prior_run_folder> <this_run_folder> [--strict] | <run_folder> | --self-test"; exit 2; fi
+      python3 "$RGD_HELPER" regression-diff "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — regression-diff skipped; check inline whether any finding the prior round marked resolved recurs (same origin/chapter/mechanism), and whether a chapter quiet on the prior record now carries findings. See docs/draft-regression-testing.md."
     exit 0
     ;;
 
