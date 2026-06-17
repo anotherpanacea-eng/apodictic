@@ -524,6 +524,8 @@ Model character psychology and track through manuscript.
 
 **Output:** Character cards, agency timeline.
 
+**`evidence_quote` (Annotated-Manuscript quote rung — Pass 5 pilot).** When a Pass-5 finding is about a **specific sentence or line** (a flat-affect beat, a puppet-moment decision line, a voice-drift sentence), attach that span verbatim as `evidence_quote` in the finding's structured block — a **single line copied** from the manuscript, never composed. It lets the marked-up copy anchor the margin note at that exact sentence. **Omit it** for a chapter/arc-level finding (motivation arc, agency-across-acts) — the note then anchors at the chapter, as today. A two-line exchange contains a newline and won't light the rung: pick the single most diagnostic line, or omit. The copy is firewall-safe by construction — the build-time locator emits a quote anchor only when the span occurs in the manuscript verbatim and exactly once, so a non-verbatim or non-unique quote is dropped and the note falls back to the chapter rung (the **A6** gate is the validate-time backstop against a forged quote anchor). See `findings-ledger-format.md` §"When to populate `evidence_quote`".
+
 **Finding-driven audit triggers:**
 - Motivation discontinuity or puppet moments at 2+ major decisions → recommend **Decision Pressure** audit if not already activated
 - Agency collapse in Act III → recommend **Stakes System** audit (pressure field may not be converting)

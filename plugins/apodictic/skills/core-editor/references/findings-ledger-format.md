@@ -99,6 +99,33 @@ The block is **real JSON** inside an HTML comment, validated by a real parser (`
 - The block is versioned via `schema`. If the field set changes, bump the version (`apodictic.finding.v2`); the validator keys off the `schema` value.
 - **Finding Lifecycle ID (`id`).** Assign once at finding creation as `F-<ORIGIN>-<NN>` (ORIGIN = pass/audit code; NN = zero-padded sequence within that origin) — e.g. `F-P5-01`, `F-DP-02`. The ID is durable and unique per run, and follows the finding through its whole lifecycle: pass output → this ledger block → the **Deficit Lock** → the **editorial letter** (cited in an HTML comment near the delivered finding and in the Severity Calibration appendix — never in author-facing prose) → the **revision plan / coaching** (where a confirmed-resolved finding advances to `finding_states[id] = "revised"`, the third lifecycle state). This lets `softness-check` / `deficit-lock` match a locked finding to its delivery **by ID (exact)** instead of prose heuristics. `scripts/validate.sh structured-findings` checks ID presence, format, and per-run uniqueness; `scripts/validate.sh finding-trace <run_folder>` traces the ID *across* artifacts — every ID cited in the letter (and in revision plans) resolves to a ledger finding, `execution.finding_states` keys are real ledger IDs, and a `revised` state is reconciled against the completed-revision artifacts (referential integrity + sidecar lifecycle coherence; see `docs/finding-lifecycle-ids.md`).
 
+#### When to populate `evidence_quote` (optional — the Annotated-Manuscript quote rung)
+
+`apodictic.finding.v1` carries an **optional** `evidence_quote` field. When present and valid it lets the [Annotated-Manuscript deliverable](annotated-manuscript.md) anchor a finding's margin note to the **exact sentence** (the finest `quote` rung) instead of the chapter; when absent the note anchors by `evidence_refs` (line/chapter/document), exactly as before. It is **demand-gated and adopted per pass** — today only **Pass 5 (Character Audit)** populates it (its findings are the most sentence-precise of the Core baseline). No finding is ever forced to carry one.
+
+- **Sentence-precision criterion.** Populate `evidence_quote` **only** when the finding is about a specific line or exchange (a flat-affect beat, a telling-not-showing sentence, a continuity seam at a named line). A finding about a whole chapter or arc **omits** it — the anchor degrades to the chapter/line rung, which is correct, not a loss.
+- **Firewall — copy, never author.** The value is **manuscript bytes copied verbatim** from the span the finding cites; the system never composes one. This is enforced *by identity* downstream: the **A6** gate requires the quote to occur in the manuscript snapshot **verbatim and exactly once**, so a non-verbatim, non-unique, or fabricated quote fails the gate (or degrades before it) and never reaches the margin. The quote is provenance used to *locate* the note; the margin comment itself is the fixed finding-field template, never the quoted text.
+- **Located by its own bytes, not by `evidence_refs`.** The note anchors at the snapshot's unique occurrence of the quoted span, independent of the finding's `evidence_refs` locus (the quote rung is finest, so it wins). Copy the span you actually mean the note to sit on — not a sentence from elsewhere that merely matches the cited chapter.
+- **Single line only.** `evidence_quote` must contain no `\n` or `\r`. A multi-line span — e.g. a two-line dialogue exchange (`"You never came back."` / `"I know," he said.`) — or an empty string is **silently degraded** by `annotation_manifest build` to the non-quote ladder. Don't waste the field on one: from that exchange, populate the single most diagnostic line (here `"I know," he said.`), or omit `evidence_quote` and let the chapter rung carry the note.
+
+```markdown
+   <!-- apodictic:finding
+   {
+     "schema": "apodictic.finding.v1",
+     "id": "F-P5-01",
+     "mechanism": "Protagonist states feeling instead of enacting it — flat affect at the turn",
+     "severity": "Should-Fix",
+     "confidence": "HIGH",
+     "evidence_refs": ["Ch. 7"],
+     "evidence_quote": "\"I am very angry,\" she said calmly.",
+     "fix_class": "dramatize through action/subtext",
+     "risk_if_fixed": "May slow the scene's pace"
+   }
+   -->
+```
+
+A companion arc-level finding (e.g. "the protagonist's want never sharpens across Acts II–III") correctly **omits** `evidence_quote` and anchors at its `evidence_refs` chapter. The field is canonical (optional) in `apodictic.finding.v1.schema.json`; populating it requires **no** schema change.
+
 #### Companion structured blocks (same envelope)
 
 The same `<!-- apodictic:<type> { ... } -->` envelope carries two companion record types, validated by the same helper:
