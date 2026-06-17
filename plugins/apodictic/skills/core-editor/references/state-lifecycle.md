@@ -124,6 +124,16 @@ Before running passes, gather:
 
 A finding under *Flags still present* / *New issues introduced* is named (bare) but carries **no** resolved marker, so it correctly stays `delivered`. A finding that **regresses** in a later round is **not** demoted in place (`revised` is terminal per ledger id; the fold is forward-only) — re-diagnosis (the `revision_round` gate's `allowed_next` is `run_synthesis`) gives it a fresh `F-…` id. `scripts/validate.sh finding-trace <run_folder>` then audits completion by ID — a finding marked resolved but left below `revised` in the sidecar is W3 (advisory; ERROR under `--strict`), and a finding the report **mentions as unresolved** while the sidecar marks it `revised` is E5. See `docs/finding-lifecycle-ids.md` §Increment 3 and `docs/revision-round-gate.md`.
 
+### Cross-Round Regression Check (on re-diagnosis)
+
+When a revised draft is **re-diagnosed** into a new run folder (the `revision_round` gate's `allowed_next: run_synthesis` — a fresh ledger with renumbered `F-…` ids), run the cross-round regression diff before closing the round:
+
+```
+scripts/validate.sh regression-diff <prior_run_folder> <this_run_folder>
+```
+
+It heuristically matches this round's findings against the prior round's (same origin code + chapter token + ≥1 shared mechanism token — finding ids are per-run, so the match is a **candidate**, never an assertion) and surfaces two signals a single-round diagnosis structurally cannot: **W1 recurrence-candidate** — a finding the prior round marked `<!-- resolved: F-… -->` that re-appears, so the fix may not have held (it reverts to the prior round's severity once the editor confirms the match) — and **W2 new-in-quiet-chapter** — a finding in a chapter the prior round left quiet, i.e. candidate fix-induced breakage (clear a false positive with `<!-- override: regression-cleared <runlabel>:<chapter> — investigated, not fix-induced -->`). Both are advisory (re-diagnosing a *changed* manuscript legitimately drops, adds, and moves findings); `--strict` gates them at round close. Fold a confirmed recurrence into this round's ledger at the reverted severity, and record the regression candidates in the Revision Report (the validator prints to stdout — it writes no file). See `docs/draft-regression-testing.md`.
+
 ### When to Reset to Full Analysis
 
 Abandon Revision Round Protocol and run fresh full analysis when:
