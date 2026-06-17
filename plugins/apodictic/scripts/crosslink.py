@@ -155,28 +155,45 @@ def check(letter_text, crosslinked_text, manifest_text, strict=False):
     for f in marker_fids:
         marker_count[f] = marker_count.get(f, 0) + 1
 
-    backlinks = _BACKLINK_RE.findall(crosslinked_text)   # [(fid, anchor_str), ...]
-    backlink_count = {}
-    for fid, _astr in backlinks:
-        backlink_count[fid] = backlink_count.get(fid, 0) + 1
+    # X3 marker integrity — the injected spans must not have CORRUPTED any finding marker (e.g. a span
+    # buried inside `<!-- finding: F-… {>>…<<}-->` reverses cleanly under X4 but breaks navigation). The
+    # crosslinked letter's `finding:` markers, in order, must equal the letter's.
+    crl_markers = [(m.group(1), m.end()) for m in _FINDING_MARKER_RE.finditer(crosslinked_text)]
+    if [f for f, _e in crl_markers] != marker_fids:
+        errs.append("X3 marker integrity: the crosslinked letter's `finding:` markers differ from the "
+                    "letter's — a back-link span was injected inside (not after) a <!-- finding: --> marker")
 
-    # X2 — reverse consistency: each back-link's anchor_str == the manifest anchor (no drift)
-    for fid, astr in backlinks:
-        an = anchors.get(fid)
-        if an is not None:
-            want = _anchor_str(an.get("anchor"))
-            if astr != want:
-                errs.append("X2 anchor drift: back-link %s points at %r but the manifest anchor is %r"
-                            % (fid, astr, want))
-
-    # X3 — phantom (a back-link id with no annotation) + missing (an annotated cited marker, no back-link)
-    for fid in sorted(backlink_count):
-        if fid not in anchors:
-            errs.append("X3 phantom back-link: %s has a back-link but no manifest annotation" % fid)
+    # X2/X3 POSITIONAL pairing — each back-link must sit in the bytes IMMEDIATELY AFTER a marker's `-->`
+    # (start == that marker's end), carry that marker's id, resolve to a manifest annotation, and match
+    # its anchor. This catches swapped/mis-attributed back-links (each globally self-consistent but on the
+    # wrong marker), orphan/in-prose/doubled spans, phantoms, and drift — the global-count checks could not.
+    marker_end_fid = {e: f for f, e in crl_markers}
+    paired = {}   # fid -> count of correctly-placed back-links
+    for bm in _BACKLINK_RE.finditer(crosslinked_text):
+        bl_fid, bl_anchor, bstart = bm.group(1), bm.group(2), bm.start()
+        if bstart not in marker_end_fid:
+            errs.append("X3 misplaced back-link: a %s back-link is not immediately after a `finding:` "
+                        "marker (orphan / in-prose / doubled)" % bl_fid)
+            continue
+        mk_fid = marker_end_fid[bstart]
+        if bl_fid != mk_fid:
+            errs.append("X2 mis-attributed back-link: the back-link after the %s marker carries %s "
+                        "(swapped / wrong finding)" % (mk_fid, bl_fid))
+            continue
+        if bl_fid not in anchors:
+            errs.append("X3 phantom back-link: %s has a back-link but no manifest annotation" % bl_fid)
+            continue
+        want = _anchor_str(anchors[bl_fid].get("anchor"))
+        if bl_anchor != want:
+            errs.append("X2 anchor drift: back-link %s points at %r but the manifest anchor is %r"
+                        % (bl_fid, bl_anchor, want))
+            continue
+        paired[bl_fid] = paired.get(bl_fid, 0) + 1
+    # X3 missing — each annotated finding cited by N markers needs N correctly-paired back-links
     for fid in sorted(anchors):
-        if marker_count.get(fid, 0) > 0 and backlink_count.get(fid, 0) < marker_count[fid]:
-            errs.append("X3 missing reverse link: %s is cited by %d letter marker(s) but has %d back-link(s)"
-                        % (fid, marker_count[fid], backlink_count.get(fid, 0)))
+        if marker_count.get(fid, 0) > paired.get(fid, 0):
+            errs.append("X3 missing reverse link: %s is cited by %d letter marker(s) but has %d correctly-"
+                        "placed back-link(s)" % (fid, marker_count[fid], paired.get(fid, 0)))
 
     # W1 — annotated but not cited by any letter finding: marker (advisory; override-able)
     overrides = set(_OVERRIDE_RE.findall(crosslinked_text)) | set(_OVERRIDE_RE.findall(letter_text))
@@ -193,7 +210,7 @@ def check(letter_text, crosslinked_text, manifest_text, strict=False):
                     "does NOT reproduce the letter byte-for-byte (prose altered, or a span is malformed)")
 
     lines.append("crosslink: %d annotation(s), %d letter `finding:` marker(s), %d back-link(s)"
-                 % (len(anchors), len(marker_fids), len(backlinks)))
+                 % (len(anchors), len(marker_fids), len(_BACKLINK_RE.findall(crosslinked_text))))
     for e in errs:
         lines.append("  ERROR: %s" % e)
     for w in warns:
@@ -345,15 +362,34 @@ def run_self_test():
     code, ls = check(letter, drift, manifest)
     chk("x2_anchor_drift", code == 1 and any("X2 anchor drift" in x and "F-A-01" in x for x in ls))
 
-    # X3 — phantom back-link (id not in the manifest)
-    phantom = crosslinked + ("%s→ marked-up copy: F-Z-99 @ chapter:Ch 1%s" % (am._CM_OPEN, am._CM_CLOSE))
-    code, ls = check(letter, phantom, manifest)
-    chk("x3_phantom", code == 1 and any("X3 phantom" in x and "F-Z-99" in x for x in ls))
-
     # X3 — missing reverse link (a cited annotated finding with no back-link)
     missing = _BACKLINK_RE.sub("", crosslinked, count=1)   # drop the first back-link (an F-A-01 one)
     code, ls = check(letter, missing, manifest)
     chk("x3_missing", code == 1 and any("X3 missing reverse link" in x for x in ls))
+
+    bl_b = "%s→ marked-up copy: F-B-01 @ quote:10-20%s" % (am._CM_OPEN, am._CM_CLOSE)
+    bl_d = "%s→ marked-up copy: F-D-01 @ document:%s" % (am._CM_OPEN, am._CM_CLOSE)
+    # X2 — SWAPPED back-links: the F-B-01 marker followed by F-D-01's back-link and vice-versa. Each
+    # back-link is globally self-consistent (right id+anchor), so only the POSITIONAL pairing catches it.
+    swapped = crosslinked.replace("F-B-01 -->" + bl_b, "F-B-01 -->" + bl_d).replace("F-D-01 -->" + bl_d, "F-D-01 -->" + bl_b)
+    code, ls = check(letter, swapped, manifest)
+    chk("x2_swapped", code == 1 and any("X2 mis-attributed" in x for x in ls))
+    # X3 — a back-link injected INSIDE the marker reverses cleanly under X4 but breaks the marker
+    in_comment = crosslinked.replace("<!-- finding: F-B-01 -->" + bl_b, "<!-- finding: F-B-01 " + bl_b + "-->")
+    code, ls = check(letter, in_comment, manifest)
+    chk("x3_in_comment", code == 1 and any("marker integrity" in x or "misplaced" in x for x in ls))
+    chk("x3_in_comment_x4_blind", am.reverse_transform(in_comment) == letter)   # X4 alone would not catch it
+    # X3 — misplaced back-link (appended in prose, not after a marker)
+    misplaced = crosslinked + bl_b
+    code, ls = check(letter, misplaced, manifest)
+    chk("x3_misplaced", code == 1 and any("X3 misplaced" in x for x in ls))
+    # X3 — a PHANTOM back-link: after a marker for a finding with no manifest annotation
+    letter_ph = letter + "An unannotated finding. <!-- finding: F-Z-99 -->\n"
+    crl_ph = letter_ph.replace("<!-- finding: F-Z-99 -->",
+                               "<!-- finding: F-Z-99 -->%s→ marked-up copy: F-Z-99 @ chapter:Ch 1%s"
+                               % (am._CM_OPEN, am._CM_CLOSE))
+    code, ls = check(letter_ph, crl_ph, manifest)
+    chk("x3_phantom", code == 1 and any("X3 phantom" in x and "F-Z-99" in x for x in ls))
 
     # W1 — annotated but uncited (F-D-01 not cited)
     letter_no_d = letter.replace("A soft genre signal. <!-- finding: F-D-01 -->\n", "")
