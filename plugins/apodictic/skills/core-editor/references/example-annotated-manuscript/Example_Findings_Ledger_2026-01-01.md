@@ -1,10 +1,11 @@
 <!--
 Canonical worked-example Findings Ledger for the annotated-manuscript validator. Paired with the
-snapshot + Timeline in this folder and exercised by `validate.sh --check-all`. The four findings
+snapshot + Timeline in this folder and exercised by `validate.sh --check-all`. The findings
 exercise every anchor rung: F-RR-01 chapter (Chapter 9), F-LR-01 line-range (exact Timeline scene-id),
 F-NEG-01 chapter-DEGRADE (shares Chapter 1 with scene "Ch 1 §1" but is chapter-only — proving the
-resolver does NOT fabricate a line-range), and F-DOC-01 document (a Pass-artifact ref). See
-docs/annotated-manuscript.md.
+resolver does NOT fabricate a line-range), F-DOC-01 document (a Pass-artifact ref), and F-QT-01
+quote (Increment 2 — a verbatim unique evidence_quote anchored to the exact sentence, gated by A6).
+See docs/annotated-manuscript.md.
 -->
 
 # Findings Ledger — Example
@@ -23,4 +24,8 @@ docs/annotated-manuscript.md.
 
 <!-- apodictic:finding
 {"schema":"apodictic.finding.v1","id":"F-DOC-01","mechanism":"the orientation pass flags a soft genre signal with no single manuscript locus","severity":"Could-Fix","confidence":"LOW","evidence_refs":["Pass 1 §Orientation"],"fix_class":"sharpen the opening promise","risk_if_fixed":"none"}
+-->
+
+<!-- apodictic:finding
+{"schema":"apodictic.finding.v1","id":"F-QT-01","mechanism":"the reveal of the unlit lighthouse lands as a stated fact rather than a felt beat","severity":"Must-Fix","confidence":"HIGH","evidence_refs":["Chapter 12"],"evidence_quote":"The lighthouse had stood unlit for the first time in forty years.","fix_class":"stage the reveal through a character's noticing","risk_if_fixed":"could over-explain the image"}
 -->

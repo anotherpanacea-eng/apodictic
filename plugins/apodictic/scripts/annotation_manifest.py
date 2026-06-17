@@ -18,6 +18,9 @@ Three artifacts (so the manuscript is never mutated in place):
                     comment spans injected; the reverse transform (delete every span) == the snapshot.
 
 The anchor ladder (per evidence_refs TOKEN; finest rung any MANUSCRIPT-scoped token supports):
+  quote       (Increment 2) a finding's optional verbatim `evidence_quote` that occurs in the snapshot
+              exactly once — anchors the note to the exact sentence (char offsets). Degrades if absent /
+              multi-line / ambiguous; never fabricates. Gated by A6.
   line-range  a token that EXACTLY equals a Timeline Section-1 scene-id with an in-bounds range.
   section     a non-chapter manuscript heading name matched uniquely in the snapshot.
   chapter     a chapter token (Chapter N / Ch. N / Ch.N / Ch N, via the SHARED chapter_token) with a
@@ -42,6 +45,10 @@ Validator (`annotated-manuscript`):
                          finding_trace.ledger_inventory.
   A5 verbatim+renderable each comment == the fixed template over the finding's verbatim fields, AND
                          each projected field is inline-CriticMarkup-safe (no \\r \\n {>> <<} |).
+  A6 quote integrity     (Increment 2) every `quote` anchor's text occurs in the snapshot VERBATIM and
+                         exactly once, the offsets pin that occurrence, and it matches the finding's
+                         evidence_quote — the fabricated-quote failure A3 cannot see. Provenance-by-
+                         identity; the rendered margin is still the comment (A5), never the quote.
   W1 coverage / drift    a Should/Could finding with a locatable ref left as `document`; or a Timeline
                          line-range that overruns the snapshot at a boundary. Advisory (ERROR --strict);
                          override `<!-- override: annotation-coverage <F-...> -->`.
@@ -86,8 +93,8 @@ _ANNOTATED_GLOB = "*_Annotated_Manuscript_*.md"
 _LEDGER_GLOB = "*_Findings_Ledger_*.md"
 _TIMELINE_GLOBS = ("*_Timeline_*.md", "Timeline.md")
 
-_ANCHOR_KINDS = ("line-range", "section", "chapter", "document")
-_RUNG_RANK = {"document": 1, "chapter": 2, "section": 3, "line-range": 4}
+_ANCHOR_KINDS = ("line-range", "section", "chapter", "document", "quote")
+_RUNG_RANK = {"document": 1, "chapter": 2, "section": 3, "line-range": 4, "quote": 5}
 _TOP_KEYS = ("schema", "project", "runlabel", "snapshot_path", "snapshot_sha256",
              "snapshot_line_count", "annotations")
 _ANNOT_KEYS = ("finding_id", "anchor", "comment")
@@ -244,6 +251,24 @@ def anchor_line(anchor, snapshot, chap_l, sec_l):
     return None
 
 
+def quote_anchor(finding, snapshot):
+    """A `quote` anchor (Increment 2) for a finding's optional verbatim `evidence_quote`, or None.
+
+    Emitted ONLY when the quote is a single-line, inline-safe string that occurs in the snapshot
+    verbatim and EXACTLY ONCE (non-overlapping `str.count`, the same definition A6 uses). Empty /
+    whitespace-only, multi-line, sigil-bearing, absent, or ambiguous (>1) quotes return None and fall
+    through to the `evidence_refs` ladder — the resolver never fabricates a sentence-level span."""
+    q = finding.get("evidence_quote")
+    if not isinstance(q, str) or not q.strip():
+        return None
+    if "\n" in q or _CM_OPEN in q or _CM_CLOSE in q:
+        return None
+    if snapshot.count(q) != 1:
+        return None
+    start = snapshot.find(q)
+    return {"kind": "quote", "value": "%d-%d" % (start, start + len(q)), "quote": q}
+
+
 # ---------------------------------------------------------------- manifest + render
 
 def parse_manifest(text):
@@ -282,7 +307,8 @@ def build_manifest(snapshot, ledger_text, timeline_text, project="Manuscript",
             errs.append("finding %s has non-inline-safe field(s) %s — cannot project a CriticMarkup "
                         "comment (fix the finding text)" % (fd.get("id"), bad))
             continue
-        anchor = resolve_anchor(fd.get("evidence_refs"), lc, chap_n, sec_n, scene_ranges)
+        anchor = (quote_anchor(fd, snapshot)
+                  or resolve_anchor(fd.get("evidence_refs"), lc, chap_n, sec_n, scene_ranges))
         annotations.append({"finding_id": fd["id"], "anchor": anchor, "comment": comment_for(fd)})
     obj = {"schema": _SCHEMA_ID, "project": project, "runlabel": runlabel,
            "snapshot_path": snapshot_path, "snapshot_sha256": sha256(snapshot),
@@ -293,35 +319,42 @@ def build_manifest(snapshot, ledger_text, timeline_text, project="Manuscript",
 def render(snapshot, manifest_obj):
     """Inject CriticMarkup comment spans into the snapshot. Pure function of (snapshot, manifest).
 
-    Spans carry NO surrounding whitespace, so deleting them yields the snapshot byte-for-byte.
-    Raises ValueError on the A2 precondition (snapshot already contains a sigil) — the one guarantee
-    the whole deliverable rests on cannot be silently mishandled."""
+    A single character-offset splice that subsumes Increment-1's line placement (Increment 2): every
+    span is reduced to ONE insertion offset — `document` -> 0; a line-anchored span -> the offset of its
+    line's terminating newline (i.e. end-of-line, exactly as Increment 1); a `quote` span -> its anchor
+    `end` offset — then all spans are spliced in DESCENDING offset order (tie-broken by descending
+    manifest index) so each insertion sits to the right of every not-yet-inserted span and never
+    perturbs another's offset. Spans carry no surrounding whitespace, so deleting them yields the
+    snapshot byte-for-byte; the right-to-left order is what keeps a span from landing INSIDE another's
+    `{>> ... <<}` (which would dangle a sigil — an A2 break). Byte-identical to Increment 1 for
+    non-quote anchors. Raises ValueError on the A2 sigil precondition."""
     if _CM_OPEN in snapshot or _CM_CLOSE in snapshot:
         raise ValueError("snapshot already contains a CriticMarkup sigil — the reverse transform "
                          "would not be reversible; escape the snapshot first")
     chap_n, sec_n, chap_l, sec_l = heading_index(snapshot)
-    lines = snapshot.splitlines(keepends=True)
-    # Group inserts per target line: appends (end-of-line) keep manifest order; document notes prepend
-    # to line 1. Build per-line append/prepend buffers, then splice once.
-    appends = {}     # 0-based line idx -> [span, ...]
-    prepend0 = []    # document notes -> prefix of line 1
-    for an in manifest_obj.get("annotations") or []:
+    # offset of the newline terminating each 1-based line (end-of-line spans insert just before it)
+    nl_at, ln = {}, 1
+    for i, ch in enumerate(snapshot):
+        if ch == "\n":
+            nl_at[ln] = i
+            ln += 1
+    inserts = []   # (offset, manifest_index, span)
+    for idx, an in enumerate(manifest_obj.get("annotations") or []):
+        anc = an.get("anchor") or {}
         span = "%s%s%s" % (_CM_OPEN, an.get("comment", ""), _CM_CLOSE)
-        ln = anchor_line(an.get("anchor") or {}, snapshot, chap_l, sec_l)
-        if ln is None:
-            prepend0.append(span)
+        if anc.get("kind") == "quote":
+            m = re.match(r"(\d+)-(\d+)$", str(anc.get("value", "")))
+            off = int(m.group(2)) if m else 0
         else:
-            appends.setdefault(ln - 1, []).append(span)
-    if not lines:
-        return snapshot
-    for idx, spans in appends.items():
-        if 0 <= idx < len(lines):
-            line = lines[idx]
-            nl = "\n" if line.endswith("\n") else ""
-            lines[idx] = line[:len(line) - len(nl)] + "".join(spans) + nl
-    if prepend0:
-        lines[0] = "".join(prepend0) + lines[0]
-    return "".join(lines)
+            line = anchor_line(anc, snapshot, chap_l, sec_l)
+            off = 0 if line is None else nl_at.get(line, len(snapshot))
+        inserts.append((off, idx, span))
+    out = snapshot
+    # descending (offset, manifest index): insert right-to-left so earlier inserts never shift later ones
+    for off, _idx, span in sorted(inserts, key=lambda t: (t[0], t[1]), reverse=True):
+        off = max(0, min(off, len(out)))
+        out = out[:off] + span + out[off:]
+    return out
 
 
 def reverse_transform(annotated):
@@ -371,6 +404,14 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
         if not isinstance(anc, dict) or anc.get("kind") not in _ANCHOR_KINDS:
             errs.append("A1 manifest schema: %s.anchor.kind must be one of %s"
                         % (where, "/".join(_ANCHOR_KINDS)))
+        elif anc.get("kind") == "quote":
+            # Structural shape of a quote anchor (content/snapshot matching is A6's job). A malformed
+            # quote anchor is an A1 error, not a silent A3 skip (A3 deliberately skips kind=="quote").
+            qv = anc.get("quote")
+            if not isinstance(qv, str) or not qv:
+                errs.append("A1 manifest schema: %s quote anchor requires a non-empty 'quote' string" % where)
+            if not re.match(r"^\d+-\d+$", str(anc.get("value", ""))):
+                errs.append("A1 manifest schema: %s quote anchor value must be '<start>-<end>'" % where)
         fid = an.get("finding_id")
         if fid is not None:
             seen[fid] = seen.get(fid, 0) + 1
@@ -491,6 +532,45 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
         if sev == "Must-Fix" and fid not in manifest_ids:
             errs.append("A4 Must-Fix completeness: ledger Must-Fix %s has no annotation "
                         "(a locked Must-Fix cannot fail to reach the marked-up copy)" % fid)
+
+    # A6 — quote integrity (Increment 2): the content gate A3 does not cover. For every `quote` anchor,
+    # the quoted text must be a verbatim, UNIQUE manuscript span that the recorded offsets pin and that
+    # matches the finding's evidence_quote. Provenance-by-identity: anything A6 admits is, by
+    # construction, manuscript bytes — the rendered margin is still the comment (A5), never the quote.
+    for an in annotations:
+        if not isinstance(an, dict):
+            continue
+        anc = an.get("anchor") or {}
+        if anc.get("kind") != "quote":
+            continue
+        fid = an.get("finding_id")
+        qv = anc.get("quote")
+        # (d) present + inline-safe (extends A2's two-sided sigil precondition to anchor.quote)
+        if not isinstance(qv, str) or not qv or "\n" in qv or _CM_OPEN in qv or _CM_CLOSE in qv:
+            errs.append("A6 quote integrity: %s anchor.quote is missing, empty, multi-line, or not "
+                        "inline-CriticMarkup-safe (no {>> <<} or newline)" % fid)
+            continue
+        # (a) faithful projection of the finding's evidence_quote (no substitution)
+        src = led_obj.get(fid)
+        if src is not None and qv != src.get("evidence_quote"):
+            errs.append("A6 quote integrity: %s anchor.quote is not the finding's verbatim "
+                        "evidence_quote (the manifest substituted a different quote)" % fid)
+        # (b) verbatim + unique (non-overlapping count)
+        n = snapshot.count(qv)
+        if n != 1:
+            errs.append("A6 quote integrity: %s anchor.quote occurs %d time(s) in the snapshot "
+                        "(need exactly 1 — 0 = fabricated, >1 = ambiguous, must degrade not anchor)"
+                        % (fid, n))
+            continue
+        # (c) offsets pin the unique occurrence (catches an off-by-one / relocated span, distinct from absence)
+        m = re.match(r"^(\d+)-(\d+)$", str(anc.get("value", "")))
+        if not m:
+            errs.append("A6 quote integrity: %s quote anchor value is not '<start>-<end>'" % fid)
+            continue
+        start, end = int(m.group(1)), int(m.group(2))
+        if snapshot[start:end] != qv or start != snapshot.find(qv):
+            errs.append("A6 quote integrity: %s offsets %d-%d do not delimit the unique occurrence "
+                        "(snapshot[start:end] != quote, or not the str.find index)" % (fid, start, end))
 
     # W1 — snapshot normalization (the harness owns it; the validator never rewrites the snapshot, so
     # this is advisory). A non-LF / no-trailing-newline snapshot is still A2-self-consistent, but it
@@ -663,27 +743,35 @@ def run_self_test():
         "## Scene Turns\n"         # line 3 (a manuscript section)
         "The turn lands late.\n"   # line 4
         "# Chapter 9\n"            # line 5
-        "Three days passed.\n")    # line 6
+        "Three days passed.\n"     # line 6
+        "# Chapter 12\n"           # line 7
+        "The lighthouse stood unlit for forty years.\n"   # line 8 — a unique sentence (quote rung)
+        "tick tock tick tock\n")   # line 9 — 'tick tock' appears twice (ambiguous -> degrade)
 
     timeline = ("## Section 1: Event Ledger\n\n"
                 "| Scene ID | Chapter / Section | Line range | Word count | POV | Setting | Span | Gap |\n"
                 "|---|---|---|---|---|---|---|---|\n"
                 "| Ch 1 §1 | Ch 1 | 2-2 | 5 | Mara | Door | 1h | n/a |\n")
 
-    def finding(fid, sev, refs, mech="m", fix="f"):
-        return ('<!-- apodictic:finding\n%s\n-->'
-                % json.dumps({"schema": _FINDING_SCHEMA_ID, "id": fid, "mechanism": mech,
-                              "severity": sev, "confidence": "HIGH", "evidence_refs": list(refs),
-                              "fix_class": fix, "risk_if_fixed": "r"}))
+    def finding(fid, sev, refs, mech="m", fix="f", quote=None):
+        o = {"schema": _FINDING_SCHEMA_ID, "id": fid, "mechanism": mech, "severity": sev,
+             "confidence": "HIGH", "evidence_refs": list(refs), "fix_class": fix, "risk_if_fixed": "r"}
+        if quote is not None:
+            o["evidence_quote"] = quote
+        return '<!-- apodictic:finding\n%s\n-->' % json.dumps(o)
 
     # F-LR line-range (exact scene-id), F-CH chapter, F-DOC pass-artifact -> document,
-    # F-SEC section, F-MIX mixed (pass-ref + chapter -> chapter)
+    # F-SEC section, F-MIX mixed (pass-ref + chapter -> chapter); F-QT quote (Inc 2; outranks its Ch 12
+    # ref), F-QAMB ambiguous quote -> degrades to its chapter ref.
+    quote_pos = "The lighthouse stood unlit for forty years."
     ledger = "# Ledger\n" + "\n".join([
         finding("F-LR-01", "Must-Fix", ["Ch 1 §1"]),
         finding("F-CH-01", "Must-Fix", ["Chapter 9"]),
         finding("F-DOC-01", "Should-Fix", ["Pass 1 §Orientation"]),
         finding("F-SEC-01", "Could-Fix", ["Scene Turns"]),
         finding("F-MIX-01", "Should-Fix", ["Pass 4 §Scene Turns", "Ch. 9"]),
+        finding("F-QT-01", "Must-Fix", ["Chapter 12"], quote=quote_pos),
+        finding("F-QAMB-01", "Should-Fix", ["Chapter 12"], quote="tick tock"),
     ]) + "\n"
 
     obj, berrs = build_manifest(snapshot, ledger, timeline, project="T", runlabel="r")
@@ -695,6 +783,12 @@ def run_self_test():
     chk("ladder_section", amap["F-SEC-01"] == {"kind": "section", "value": "Scene Turns"})
     # mixed: the `§` pass-ref is artifact-scoped (cannot win section); the chapter token wins
     chk("ladder_mixed_chapter_wins", amap["F-MIX-01"] == {"kind": "chapter", "value": "Ch 9"})
+    # quote (Inc 2): a unique verbatim evidence_quote outranks the finding's chapter ref
+    _qs = snapshot.find(quote_pos)
+    chk("ladder_quote", amap["F-QT-01"] == {"kind": "quote",
+        "value": "%d-%d" % (_qs, _qs + len(quote_pos)), "quote": quote_pos})
+    # an AMBIGUOUS quote ('tick tock' twice) does NOT anchor; it degrades to the chapter ref
+    chk("ladder_quote_ambiguous_degrades", amap["F-QAMB-01"] == {"kind": "chapter", "value": "Ch 12"})
 
     annotated = render(snapshot, obj)
     chk("render_reverses_to_snapshot", reverse_transform(annotated) == snapshot)
@@ -707,6 +801,43 @@ def run_self_test():
     # clean validate
     code, ls = check(snapshot, manifest_md(obj), annotated, ledger, timeline)
     chk("clean_validate", code == 0)
+
+    # --- Increment 2: A6 quote integrity + A1 quote shape (hostile manifests) ---
+    # A6(b) fabricated: a quote anchor whose text is absent from the snapshot (A2/A4 still pass)
+    obj_fab = json.loads(json.dumps(obj))
+    for a in obj_fab["annotations"]:
+        if a["finding_id"] == "F-QT-01":
+            a["anchor"] = {"kind": "quote", "value": "0-9", "quote": "ABSENTXYZ"}
+    code, ls = check(snapshot, manifest_md(obj_fab), render(snapshot, obj_fab), ledger, timeline)
+    chk("a6_fabricated_quote", code == 1 and any("A6 quote integrity" in x and "occurs 0" in x for x in ls))
+    # A6(c) wrong offsets: correct UNIQUE quote, offsets shifted +1 (distinct from absence)
+    obj_wo = json.loads(json.dumps(obj))
+    for a in obj_wo["annotations"]:
+        if a["finding_id"] == "F-QT-01":
+            a["anchor"] = {"kind": "quote", "value": "%d-%d" % (_qs + 1, _qs + 1 + len(quote_pos)), "quote": quote_pos}
+    code, ls = check(snapshot, manifest_md(obj_wo), render(snapshot, obj_wo), ledger, timeline)
+    chk("a6_wrong_offsets", code == 1 and any("A6 quote integrity" in x and "do not delimit" in x for x in ls))
+    # A6(a) projection mismatch: anchor.quote is a DIFFERENT unique snapshot string than the finding's
+    obj_pm = json.loads(json.dumps(obj))
+    _other = "The turn lands late."
+    _os = snapshot.find(_other)
+    for a in obj_pm["annotations"]:
+        if a["finding_id"] == "F-QT-01":
+            a["anchor"] = {"kind": "quote", "value": "%d-%d" % (_os, _os + len(_other)), "quote": _other}
+    code, ls = check(snapshot, manifest_md(obj_pm), render(snapshot, obj_pm), ledger, timeline)
+    chk("a6_projection_mismatch", code == 1 and any("A6 quote integrity" in x and "evidence_quote" in x for x in ls))
+    # A1: a structurally malformed quote anchor (missing quote, bad value) is an A1 error, not a silent skip
+    obj_a1 = json.loads(json.dumps(obj))
+    for a in obj_a1["annotations"]:
+        if a["finding_id"] == "F-QT-01":
+            a["anchor"] = {"kind": "quote", "value": "nope"}
+    code, ls = check(snapshot, manifest_md(obj_a1), render(snapshot, obj_a1), ledger, timeline)
+    chk("a1_malformed_quote", code == 1 and any("A1 manifest schema" in x and "quote anchor" in x for x in ls))
+    # build degrades a multi-line / empty evidence_quote (never a quote rung)
+    obj_ml, _ = build_manifest(snapshot, "# L\n" + finding("F-ML-01", "Must-Fix", ["Chapter 9"], quote="a\nb") + "\n", timeline)
+    chk("quote_multiline_degrades", obj_ml["annotations"][0]["anchor"]["kind"] != "quote")
+    obj_em, _ = build_manifest(snapshot, "# L\n" + finding("F-EM-01", "Must-Fix", ["Chapter 9"], quote="   ") + "\n", timeline)
+    chk("quote_empty_degrades", obj_em["annotations"][0]["anchor"]["kind"] != "quote")
 
     # a wholly-absent ledger -> ONE clear A4/A5 message, not per-annotation "not in the ledger" noise
     code, ls = check(snapshot, manifest_md(obj), annotated, None, timeline)
