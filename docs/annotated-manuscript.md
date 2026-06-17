@@ -109,6 +109,75 @@ Two cross-cutting build obligations that are easy to miss:
 - **Letter ↔ margin cross-links** — bidirectional `F-…` links between letter and annotated copy.
 - **Round-trip re-anchoring** — when the writer revises, detect which anchors moved or resolved (pairs with [Draft-over-Draft Structural Regression Testing](../ROADMAP.md#horizon-capacities), Horizon item 6). Increment 1 treats the annotated copy as a *snapshot* of one run, exactly like the letter.
 
+## Increment 2 — Character-precise anchoring (quote-locator)
+
+**Status:** Proposed (unbuilt). The natural successor to Increment 1: narrow an anchor from a line-range/chapter down to the **exact span of prose** the finding is about, so the margin note sits on the sentence, not the top of the scene. This is the first increment that changes the *firewall surface*, so it ships its **own** integrity gate.
+
+### The problem Increment 1 left open
+
+Increment 1's finest rung is `line-range` — a whole Timeline scene, often dozens of lines. A developmental finding frequently points at one sentence ("this exchange reads as small talk when the stakes should be highest"); the annotated copy should put the note on *that exchange*. Increment 1 stopped at line granularity on purpose: going finer introduces a failure mode A1–A5 do **not** cover — a **fabricated quote**, an anchor that claims to sit on manuscript text that isn't actually there, or is there in several places so "the exact spot" is a guess. A3 validates that an anchor *resolves* (a heading exists, a line is in bounds); it has no concept of *content matching*. So character-precise anchoring is an anchor-**plus-content** problem, and it needs a content-integrity gate.
+
+### Where the quote comes from (the prerequisite, named honestly)
+
+A character-precise anchor needs a **verbatim manuscript substring** to locate against. `apodictic.finding.v1` does not carry one: its `evidence_refs` are *loci* (`"Chapter 9"`, `"Ch.3 p.40"`) and its `mechanism` is a *diagnosis* (`"the want never forces a sacrifice"`) — neither is manuscript prose, so neither can be matched against the snapshot. So this increment adds one optional field:
+
+- **`evidence_quote`** (optional, `apodictic.finding.v1`): a **verbatim** substring copied from the manuscript that the finding is about. **Optional by design** — a finding without it behaves exactly as in Increment 1 (the new rung simply does not apply), so the change is fully backward-compatible and the existing corpus is untouched. A diagnostic pass populates it only when it has an exact textual locus, else omits it. The field is **manuscript bytes, never authored** — and that claim is what the new gate (A6) *proves*, the same way A5 proves the comment is a projection.
+
+> **Bounded scope.** Populating `evidence_quote` at scale across the diagnostic passes is **upstream** pass work — a separate, demand-gated effort. Increment 2 builds the **consumer**: the locator + the rung + the kind + the gate + the schema field, so the capability exists and is gate-proven on fixtures the moment any pass emits a quote. It does **not** require retrofitting every pass; a corpus with no `evidence_quote` is a no-op for the new rung.
+
+### The ladder gains a finest rung
+
+The per-token ladder (Increment 1: `line-range` > `section` > `chapter` > `document`) gains **`quote`** as the new finest rung (rank 5, above `line-range`):
+
+- **`quote`** — when the finding carries an `evidence_quote` that occurs in the bound snapshot **verbatim and exactly once**. The anchor is the character span of that single occurrence.
+- Quote occurs **zero times** (absent from the snapshot) → **not** a quote anchor; the resolver **falls through** to the Increment-1 ladder *and the build refuses to emit a quote anchor* (a suspect/fabricated quote is never anchored). Never fabricates a span.
+- Quote occurs **more than once** (ambiguous) → **not** a quote anchor; falls through to the coarser rung — the Increment-1 "never fabricate precision" rule, now at the sentence level. A `quote` anchor is emitted **only** on a unique verbatim match.
+
+The Increment-1 per-token rules (artifact-scoping; "finest rung any manuscript-scoped token supports") are unchanged; `quote` simply outranks `line-range` when an unambiguous quote is available.
+
+### The anchor value
+
+A `quote` anchor records both the span and the text, so the gate and the renderer are deterministic and don't re-derive each other:
+
+```
+{ "kind": "quote", "value": "<start>-<end>", "quote": "<verbatim matched text>" }
+```
+
+`<start>-<end>` is the **0-based, half-open character offset range** into the **normalized snapshot** (`snapshot[start:end] == quote`), and `quote` is the verbatim matched substring. The offsets make placement and the no-mutation diff exact; the `quote` field makes A6 checkable without trusting the offsets in isolation.
+
+### Render placement
+
+The comment span is injected **immediately after `<end>`** — no surrounding whitespace, exactly like every Increment-1 span — so the CriticMarkup note sits at the close of the quoted sentence. **A2 is unchanged and still holds**: deleting every `{>> … <<}` span yields the snapshot byte-for-byte, because a span inserted at a character offset is removed by the same reverse transform. Character precision does not weaken the no-mutation proof.
+
+### The new gate — A6 (quote integrity)
+
+`quote` anchoring introduces exactly one new failure mode, so it gets exactly one new gate:
+
+| ID | Severity | Rule |
+|---|---|---|
+| **A6 — quote integrity (the increment's signature gate)** | ERROR | For every `quote` anchor: (a) the recorded `quote` text occurs in the bound snapshot **verbatim and exactly once** — **zero** occurrences is a *fabricated* quote (the failure A3 cannot see); **>1** is an *ambiguous* quote that must have degraded, not anchored; and (b) the offsets delimit exactly that occurrence (`snapshot[start:end] == quote`, and that is the sole occurrence). A `quote` anchor failing either half is an ERROR — the renderer must not place a sentence-level note on text the manuscript does not *uniquely* contain. |
+
+A6 is the character-level analogue of A3 (anchor existence), but for **content**, which A3 explicitly does not cover. Division of labour holds: **A6** proves the *quote* is a real, unique manuscript span; **A5 is unchanged** and still proves the *comment* is a verbatim finding-field projection. The quote (manuscript bytes, gated by A6) and the comment (finding-field projection, gated by A5) are separately proven — neither is authored.
+
+All Increment-1 gates still apply to a quote-anchored manifest: A1 (schema — now allowing the `quote` anchor kind + optional `evidence_quote`/`quote` fields), A2 (no mutation — unchanged), A3 (validates the non-quote anchors; a `quote` anchor is A6's job, not A3's — A3 skips `kind == "quote"`), A4 (multiset equality — unchanged), A5 (verbatim comment projection — unchanged).
+
+### Backward compatibility
+
+A manifest with no `quote` anchors validates exactly as in Increment 1 (A6 is a no-op when no quote anchor is present). A finding with no `evidence_quote` resolves on the Increment-1 ladder. The `quote` kind is *added* to the `anchor.kind` enum; `evidence_quote` is an *optional* finding field. No existing fixture changes behaviour, and the canonical Increment-1 `--check-all` fixture still passes untouched.
+
+### Canonical `--check-all` gate (the fixtures Increment 2 adds)
+
+Three new fixtures exercise the rung and **both** halves of the no-fabrication guarantee:
+1. **Positive** — a finding whose `evidence_quote` occurs verbatim-once → a `quote` anchor on the exact span; A6 passes; the rendered span sits at the sentence; A2 reverse-transform identity holds.
+2. **Ambiguous-degrade (negative)** — a finding whose `evidence_quote` appears **twice** in the snapshot → resolver degrades to the coarser rung; **no** `quote` anchor fabricated.
+3. **Fabricated-quote (negative)** — a manifest carrying a `quote` anchor whose text is **absent** from the snapshot → **A6 ERROR** (the fabrication guard — the whole reason this increment ships its own gate).
+
+### Increment boundary
+
+**In:** the optional `evidence_quote` finding field; the `quote` anchor rung + kind; the unique-verbatim locator (in `build`); offset-precise render placement; the **A6** integrity gate; backward-compatibility (Increment-1 manifests + the existing gate fixture unchanged); the three new `--check-all` fixtures.
+
+**Not in (still future):** retrofitting diagnostic passes to *emit* `evidence_quote` at scale (upstream, demand-gated); DOCX / Google-Docs / Obsidian export; letter↔margin cross-links; round-trip re-anchoring.
+
 ## Self-review (Increment 1)
 
 - *Why a snapshot, not the live file* — anchoring and the no-mutation proof need a frozen, line-stable left-hand side the framework does not otherwise persist. Snapshotting is the smallest honest fix; it also makes the deliverable reproducible.
