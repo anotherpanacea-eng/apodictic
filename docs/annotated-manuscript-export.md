@@ -1,71 +1,59 @@
-# Annotated-Manuscript Export — render targets for the deliverable
+# Annotated-Manuscript Export — Obsidian (native footnotes, no plugin)
 
-**Status:** **Deferred (unbuilt)** — spec-reviewed 2026-06-17; maintainer deferred Obsidian to do Draft-over-Draft Structural Regression next. The spec-review's resolved design + open forks are captured in §Spec-review outcome below so the work resumes cleanly. Increment 1 (when resumed) = **Obsidian**.
+**Status:** Proposed (unbuilt). Spec for review. Obsidian-only this increment (maintainer 2026-06-17: "footnotes, no plugin"; "Obsidian only for now"). Depends on the gated **annotation manifest** + the crosslinked letter (deliverable Increments 1–3, in `main`) and the [producer](annotated-manuscript-producer.md) that generates them (#104/#105).
 
-The [Annotated-Manuscript deliverable](annotated-manuscript.md) + its [producer](annotated-manuscript-producer.md) now generate, in a real run, two gated artifacts: the **annotated copy** (the snapshot with inline CriticMarkup `{>> … <<}` margin comments) and the **crosslinked letter** (the editorial letter with `<!-- finding: F-… -->` markers + `{>>→ marked-up copy: F-… @ kind:value<<}` back-link spans). Both are plain Markdown. This spec adds **export targets** that render the deliverable where writers actually work — **render-only, model-never-authors**: an export is a *pure projection* of the already-gated artifacts; it adds navigation/markup syntax derived from finding IDs + anchors that are already in the gated manifest, and **invents no content**.
+## The framing that unlocks it
 
-**Export sub-stack (ordered — maintainer 2026-06-17):** **(1) Obsidian** (this increment — CriticMarkup + wikilinks render natively, so it's the lightest lift), then **(2) read-only HTML**, then **(3) Google Docs**. **DOCX is deferred to the horizon** (built on demand). Each target is an independent increment over the same gated source; none changes the deliverable's own gates.
+The **canonical, gated artifact is the annotation manifest** (`finding_id → anchor → comment`, sha-bound to the snapshot). The CriticMarkup "annotated copy" is *one projection* of it. So is this Obsidian export — a sibling render `manifest + snapshot → Obsidian-native Markdown`. We do **not** change the base format; we add a projection.
 
-## Why Obsidian is first / what it actually adds
+**Why footnotes, not CriticMarkup, for Obsidian.** Obsidian does **not** render CriticMarkup `{>> … <<}` natively — vanilla Obsidian shows the literal braces as inline text clutter; the comment-bubble rendering exists only via a community plugin (Commentator / CodyBontecou). The requirement is **native, no plugin**. Obsidian's native primitive closest to an anchored margin comment is the **footnote**: `text[^id]` renders a clickable superscript whose definition shows on hover and collects in the core **Footnotes View** pane. Anchor links (`[[note#^block]]`, `[[note#Heading]]`) are *also* native — they were never the obstacle; the comment rendering was. So this export translates the manifest's comments into footnotes and its cross-references into wikilinks — all native.
 
-Obsidian already renders the deliverable's two mechanics natively: the **CriticMarkup** `{>> … <<}` margin comments (via Obsidian's CriticMarkup support), and **wikilinks** `[[…]]` / **block references** `[[note#^id]]` / **heading links** `[[note#Heading]]`. The annotated copy is therefore *already* Obsidian-renderable as comments. What's missing is **navigation**: today the cross-references are **textual** — a margin note ends `(See letter §F-RR-01.)` and a letter entry carries `{>>→ marked-up copy: F-RR-01 @ chapter:Ch 9<<}` — neither is clickable. The Obsidian export turns those textual references into **clickable wikilinks**, so a writer clicks from a margin note to its letter entry and from a letter entry back to the marked-up passage. That is the whole increment: **navigation, not content.**
+## The transform (`manifest + snapshot → Obsidian Markdown`)
 
-## Increment 1 — Obsidian export
+A new `scripts/annotation_export.py obsidian <run_folder>` (mirrored) reads the gated manifest + snapshot + crosslinked letter and writes Obsidian-flavored copies into an `obsidian/` subfolder (leaving the gated artifacts pristine):
 
-### 1a. The generator
+1. **Annotated copy → footnoted Markdown.** For each manifest annotation, insert a footnote reference **`[^<finding_id>]`** at the anchor's locus in the snapshot (the same descending-offset splice the CriticMarkup renderer uses, so insertions never perturb each other), and append one footnote **definition** per annotation in a trailing block:
 
-A new `scripts/annotation_export.py obsidian <run_folder>` (mirrored to root `scripts/`, like the other generators) reads the **gated** manifest + annotated copy + crosslinked letter and writes Obsidian-flavored copies into an `obsidian/` subfolder of the run folder (leaving the canonical gated artifacts **pristine** — the export is a derived view, not a mutation):
+   ```
+   [^F-RR-01]: **[Must-Fix]** three days collapse into one paragraph, a continuity seam — fix class: restore a transit beat. [[<Letter note>#^F-RR-01|→ letter §F-RR-01]]
+   ```
 
-- `obsidian/<Project>_Annotated_Manuscript_<run>.md`
-- `obsidian/<Project>_Crosslinked_Letter_<run>.md`
+   The definition body is the **verbatim finding-field projection** (the same fields the CriticMarkup comment carries, minus the `{>> <<}` sigils) plus a wikilink to the letter entry. The `[^id]` ref is placed: quote → at the quote's end offset; chapter/section → end of the heading line; line-range → end of the line; **document → a single file-level note** appended after the title (no inline ref, since there's no locus).
 
-Writing to a subfolder (a) keeps the gated source immutable for re-gates/re-exports, and (b) gives Obsidian a self-contained pair to open as a mini-vault.
+2. **Letter → block-id targets + back-links.** Each `<!-- finding: F-… -->` marker line in the crosslinked letter gets an Obsidian **block id** `^F-…` appended (so the footnote's `[[…#^F-…]]` resolves), and the existing back-link is rendered as a wikilink to the annotated copy (heading-anchored where the anchor is a chapter/section; file-level otherwise — reverse-nav to an exact inline locus isn't addressable in Obsidian, and we don't fake it).
 
-### 1b. The navigation transform (the only change the export makes)
+Nothing else changes: prose, comment text, finding ids, anchor values — all carried verbatim. The export adds only footnote refs/definitions and `[[…]]`/`^id` tokens whose payloads are finding ids + field projections drawn from the gated manifest.
 
-Two link directions, both keyed on the finding ID, both derived from tokens already in the gated artifacts:
+## Firewall
 
-1. **Letter findings become link targets.** In the Obsidian letter, each `<!-- finding: F-id -->` marker gets an Obsidian **block identifier** appended to its line — `^F-id` (e.g. `^F-RR-01`). This makes every finding addressable as `[[<letter-note>#^F-id]]`. *(Open question Q1 — block-ID charset/case; see §1d.)*
-2. **Margin note → letter (forward nav).** In the Obsidian annotated copy, the margin comment's textual `(See letter §F-id.)` becomes a wikilink: `(See [[<Letter note>#^F-id|letter §F-id]].)` — clickable to the letter entry. *(Open question Q2 — does Obsidian render a wikilink **inside** a `{>> … <<}` CriticMarkup comment as clickable? If not, §1d gives the fallback.)*
-3. **Letter back-link → marked-up copy (reverse nav).** In the Obsidian letter, the back-link span `{>>→ marked-up copy: F-id @ kind:value<<}` becomes a wikilink into the annotated copy. For a `chapter`/`section` anchor this is a **heading link** `[[<Annotated note>#Ch 9]]` (the annotated copy already carries the chapter/section as an ATX heading); for `line-range`/`quote`/`document` anchors — which have no stable heading target — it links to the **note top** `[[<Annotated note>]]` with the kind:value retained as visible text (honest: navigates to the file, not a phantom block). *(Open question Q3 — best addressable target for inline anchors.)*
+A pure projection of the gated manifest — invents nothing. Every footnote definition is the manifest's verbatim comment projection; every `[^id]`/`^id`/`[[…]]` token's payload is a finding id or anchor value copied from the manifest. The reverse transform (delete every `[^id]` reference + the trailing footnote-definition block) reproduces the snapshot **byte-for-byte** — the same no-mutation discipline as A2, on a different decoration. The model never authors or "updates" a note to fit the prose.
 
-Nothing else changes: the prose, the CriticMarkup comment text, the severities, the finding IDs, the anchors — all carried through **verbatim**. The export adds only `[[…]]` / `^id` tokens whose contents are finding IDs and anchor values copied from the gated manifest.
+## The `obsidian-export` validator (proposed)
 
-### 1c. Firewall + the gate (`obsidian-export`, mirrored)
+`validate.sh obsidian-export <run_folder>` → delegates to `scripts/annotation_export.py`; degrades to advisory `WARN` without `python3`. Gates by identity:
 
-The export is firewall-safe because it is a **mechanical projection**: every added token is a wikilink/block-ID whose payload is a finding ID or anchor value drawn verbatim from the gated manifest — never authored prose. A new `obsidian-export` validator gates this **by identity**, the same discipline as A1–A6 / X1–X4:
+| ID | Severity | Rule |
+|---|---|---|
+| **O1 — round-trip to source** | ERROR | Deleting every `[^id]` reference + the footnote-definition block from the exported copy reproduces the gated snapshot **byte-for-byte** (no prose mutation — the A2 analog). Two-sided precondition: the snapshot contains no pre-existing `[^…]` footnote ref. |
+| **O2 — footnote resolution** | ERROR | Every `[^id]` reference has **exactly one** matching definition and vice versa (no orphan ref, no orphan definition); the id set equals the manifest's annotation `finding_id` set (the A4/X3 multiset discipline, on footnotes). |
+| **O3 — comment fidelity** | ERROR | Each footnote definition's projected body carries the **verbatim** manifest comment (relocate, never re-author). |
+| **O4 — link resolution** | ERROR | Every footnote `[[<letter>#^id]]` wikilink targets a block id present in the exported letter; every exported-letter back-link `[[<copy>#Heading]]` targets a real ATX heading in the exported copy. No dangling wikilink. |
+| **W1 — file-level back-link** | WARN | A finding whose manuscript anchor is `line-range`/`quote`/`document` (no addressable heading) gets a file-level letter→copy link — surfaced, not an error. |
 
-- **E1 — round-trip to source.** Stripping the export's *additions* (the appended ` ^F-id` block IDs; the wikilink wrappers, reduced to their visible text) reproduces the gated annotated copy / crosslinked letter **byte-for-byte**. This proves the export mutated no prose and no CriticMarkup — it only decorated.
-- **E2 — link resolution (no dangling links).** Every `[[note#^F-id]]` target resolves: the block ID `^F-id` exists in the named Obsidian letter; every heading link `[[note#Heading]]` resolves to an ATX heading in the named annotated copy. No wikilink points at a missing target.
-- **E3 — projection completeness + no extras.** The set of forward links equals the set of manifest findings with a `(See letter §…)` reference; the set of letter block IDs equals the set of `<!-- finding: F-… -->` markers; no link/block-ID exists that isn't backed by a manifest finding (the A4/X3 "no un-manifested span" discipline, applied to links).
-- **E4 — anchor fidelity.** Each reverse-nav heading link names the **same** chapter/section the manifest anchor records (no drift, mirroring X2).
-- **W1 (advisory)** — an inline-anchored finding (`line-range`/`quote`/`document`) that necessarily degrades to a file-top link, surfaced as a coverage note, not an error.
+The canonical `example-annotated-manuscript/` fixture gains its Obsidian pair under `obsidian/`, and `--check-all` runs `annotation_export.py obsidian` on a **temp copy** then gates it (temp-stage-then-move, the producer precedent), asserting the fresh export is byte-identical to the committed Obsidian fixture.
 
-The canonical `example-annotated-manuscript/` fixture gains its Obsidian pair under `obsidian/`, and `--check-all` runs `annotation_export.py obsidian` on a **temp copy** then gates it (the temp-stage-then-move discipline from the producer), asserting the fresh export is byte-identical to the committed Obsidian fixture.
+## Open questions for spec-review (verify against Obsidian's actual rules)
 
-### 1d. Open questions for spec-review (resolve via Obsidian's actual rendering rules)
-
-- **Q1 — block-ID validity.** Are `^F-RR-01`-style block IDs valid in Obsidian (hyphens; uppercase)? Obsidian's documented rule is "letters, numbers, dashes." Confirm; if case/charset is a problem, define a normalized block ID (e.g. lowercased `^f-rr-01`) and key the wikilinks to it.
-- **Q2 — wikilinks inside CriticMarkup.** Does Obsidian render a `[[…]]` wikilink that sits **inside** a `{>> … <<}` CriticMarkup comment as a clickable link? If the CriticMarkup renderer swallows it, the fallback is to place the forward wikilink **immediately after** the comment span (still on the same line, outside the sigils) rather than inside it — decide which, and reflect it in E1's strip transform.
-- **Q3 — inline-anchor targets.** Is there a better Obsidian-addressable target for `line-range`/`quote` anchors than the file top (e.g. injecting a block ID at the anchored line in the annotated copy)? Weigh the navigation gain against the added round-trip-strip complexity and the risk of mutating the annotated prose.
+- **Q1 — footnote-label charset.** Does Obsidian accept a footnote label containing hyphens/uppercase, i.e. `[^F-RR-01]`? (Markdown footnote labels are typically `[^\w-]+`; confirm Obsidian's parser, and whether labels are case-sensitive. If not, define a normalized label keyed to the finding id.)
+- **Q2 — inline ref placement.** Does a `[^id]` ref placed *mid-line* at a quote's end offset render cleanly, or should every ref go at end-of-line (simpler, but less precisely adjacent to the quoted span)? Weigh adjacency vs. the O1 round-trip simplicity.
+- **Q3 — definition-block round-trip.** Is "delete the trailing footnote-definition block" an unambiguous reverse transform (the block is the contiguous run of `^\[\^…\]:` lines at the end)? Confirm no legitimate snapshot line can collide with a footnote-definition line.
+- **Q4 — reverse nav.** Confirm there's no native way to link from the letter to an *exact inline locus* in the copy (footnote refs aren't link targets), so file/heading-level reverse-nav is the honest ceiling — and that forward nav (copy footnote → letter block id) is the primary, fully-native direction.
+- **Q5 — fixture.** Confirm the Obsidian pair is constructible from the existing `example-annotated-manuscript/` manifest + snapshot + crosslinked letter, and gate-valid under O1–O4.
 
 ## Increment boundary
 
-**In (Increment 1):** the `annotation_export.py obsidian` generator (mirrored) + the `obsidian-export` validator (E1–E4 + W1) + the canonical Obsidian fixture + the `--check-all` temp-copy export-and-gate chain. **Out:** read-only HTML export (Increment 2); Google Docs export (Increment 3); DOCX (horizon); any change to the deliverable's own A/X gates; any content the model authors (the export only decorates with links derived from the manifest).
+**In (Increment 1):** `scripts/annotation_export.py obsidian` (mirrored; `--self-test`) + `validate.sh obsidian-export` (O1–O4 + W1), reusing the manifest parser + the descending-offset splice; the Obsidian annotated copy + letter; the canonical Obsidian fixture + `--check-all` gate; validators +1 → 46 (lockstep bump of `AGG_VALIDATORS` + usage + `--check-all` description in both mirror copies, plus the dispatch arm). **Out:** read-only HTML / Google Docs / DOCX-comments / PDF export (later, demand-driven); the optional Tufte-**CSS-snippet** sidenote styling (documented, not shipped — it's a theme tweak, still no plugin); the Commentator-plugin path (documented as the alternative that also bridges to Word/GDocs, not built); any comment re-authoring.
 
-**Dependencies.** Consumes the gated annotated copy + crosslinked letter + manifest (deliverable Increments 1–3, in `main`) and the producer that generates them (Producer Increment 1, PR #104). Stacks on the producer branches.
+## Why CriticMarkup stays canonical (the strategic note)
 
-## Spec-review outcome (captured 2026-06-17 — read before resuming)
-
-A web-researched adversarial spec-review returned **not build-ready (3 P0s)**. Resolutions and the open fork, recorded so the build resumes from a known-good design:
-
-**Resolved rendering questions (with the decisions to bake in):**
-- **Q1 — block IDs: `^F-RR-01` is valid as-is.** Obsidian block IDs allow Latin letters, numbers, and dashes; finding IDs qualify and are unique. Keep the literal form; the "lowercase if needed" hedge was unnecessary — strike it. The block ID must be appended with a leading space at the end of a line that is itself a valid block (the letter's `<!-- finding: F-… -->` marker lines satisfy this).
-- **Q2 — Obsidian does NOT render CriticMarkup natively.** It needs a community plugin (Fevol/Commentator), which renders comments as hover-tooltip *icons* in Reading View — so a wikilink **inside** a `{>> … <<}` comment is not reliably clickable. **Decision:** place the forward-nav wikilink **immediately after** the comment span (same line, outside the sigils); leave the in-comment `(See letter §F-…)` text verbatim (firewall-clean; keeps the E1 strip simple). Correct the spec's "renders natively" framing throughout.
-- **Q3 — inline-anchor targets: keep the file-top fallback.** Do **not** inject block IDs into the annotated prose for `line-range`/`quote`/`document` anchors — that mutates the snapshot and widens the round-trip surface. Link to the note top, retain `kind:value` as visible text, surface via W1.
-
-**The P0 that drives a product fork — reverse-nav cannot reliably target a passage:**
-- The reverse link (letter entry → marked-up copy) was specced as a heading link `[[…#Ch 9]]`, but (P0-1) the manifest anchor token is `Ch 9` while the heading text is `Chapter 9` (won't match), and (P0-2) the annotated copy's headings aren't clean ATX anyway — the document-anchor F-DOC-01 span is prepended to line 1, so `# Chapter 1` is mid-line (not a heading), and chapter headings carry trailing CriticMarkup. So per-passage reverse links dangle.
-- **Maintainer decision (2026-06-17): deferred.** When resumed, choose between **(A)** file-level reverse-nav (precise forward-nav via block IDs; reverse links to the file, finding ID + anchor as scannable link text — firewall-clean, dissolves P0-1/P0-2, buildable now) and **(B)** restructuring the export's *view* of the annotated copy (clean per-chapter headings + per-finding block IDs as append-only/strippable decorations) for precise both-ways nav (more complex; the export view diverges structurally from the gated copy). Option A is the firewall-clean, incremental default; B is a later upgrade.
-
-**Gate refinements to fold in (from P1/P2):** E1 must pin the exact reversible transform + a two-sided precondition that the source contains no `[[` and no line-terminal ` ^token` (mirroring `crosslink.py`'s sigil precondition); E2 must parse real ATX headings (line-start-only) and `^id` block IDs from the *export files*; E4 must be a 3-way check (link target == real export heading == manifest anchor), not link-token-vs-manifest-token (which would self-validate drift); the export must be byte-deterministic (stable token ordering, like crosslink's descending-offset splice) for the `--check-all` byte-identity compare; W1 must also cover a chapter token with no resolvable ATX heading (degraded to file-top), not only inline anchors.
+CriticMarkup is **not** the publishing-industry standard — Word Track Changes + Comments is (Google Docs suggesting mode; PDF for proofing). But CriticMarkup is the right *internal* representation: the firewall's no-mutation proof (A2) is trivial on plain text and painful on DOCX/PDF binaries, and CriticMarkup is the plain-text bridge the Commentator plugin round-trips to Word/Google-Docs comment mode. So the manifest stays canonical, CriticMarkup stays its first render, and the professional formats (DOCX-comments, GDocs, PDF) are future projections — not a new base.
