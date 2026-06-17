@@ -178,15 +178,15 @@ set -euo pipefail
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).
-AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff regression-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink check-mirror"
+AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff regression-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor check-mirror"
 # shellcheck disable=SC2086  # intentional word-splitting to count list entries
 AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, regression-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, check-mirror"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, regression-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -444,6 +444,27 @@ if [ "$1" = "--check-all" ]; then
       rm -rf "$CA_PC"
     elif [ ! -d "$CA_BASE/example-annotated-manuscript" ]; then
       echo "ERROR: $CA_BASE/example-annotated-manuscript not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical reanchor (round-trip: held/moved/vanished/ambiguous/not-re-anchorable + RA1-RA3) =="
+    if [ -d "$CA_BASE/example-annotated-manuscript" ] && [ -f "$CA_BASE/example-reanchor-revised.md" ] && command -v python3 >/dev/null 2>&1; then
+      # Re-anchor the canonical N manifest onto a REVISED-draft snapshot. Default mode is advisory
+      # (W1 vanished + W2 ambiguous/line-range), exit 0 — and RA1-RA3 (the hard re-anchor contract) must
+      # pass. --strict must FAIL, and the classifier must raise ALL FIVE classes — non-vacuous proof the
+      # re-anchorer actually fires (a held quote, a moved quote, a vanished chapter, an ambiguous chapter,
+      # a not-re-anchorable line-range).
+      "$0" reanchor "$CA_BASE/example-annotated-manuscript" "$CA_BASE/example-reanchor-revised.md" >/dev/null 2>&1 || CA_FAIL=1
+      if RAN_OUT=$("$0" reanchor --strict "$CA_BASE/example-annotated-manuscript" "$CA_BASE/example-reanchor-revised.md" 2>&1); then
+        echo "reanchor (revised-draft fixture): FAIL (expected --strict to exit non-zero on the refusals)"; CA_FAIL=1
+      elif printf '%s' "$RAN_OUT" | grep -q "reanchor:held" && printf '%s' "$RAN_OUT" | grep -q "reanchor:moved" \
+           && printf '%s' "$RAN_OUT" | grep -q "reanchor:vanished" && printf '%s' "$RAN_OUT" | grep -q "reanchor:ambiguous" \
+           && printf '%s' "$RAN_OUT" | grep -q "reanchor:not-re-anchorable"; then
+        echo "reanchor (revised-draft fixture): PASS"
+      else
+        echo "reanchor (revised-draft fixture): FAIL (--strict ran but the five classes not all raised)"; CA_FAIL=1
+      fi
+    elif [ ! -f "$CA_BASE/example-reanchor-revised.md" ]; then
+      echo "ERROR: $CA_BASE/example-reanchor-revised.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical Timeline (timeline-arithmetic, timeline-anchor-conflict, timeline-diff self) =="
@@ -4519,6 +4540,32 @@ EOF
       python3 "$RGD_HELPER" regression-diff "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — regression-diff skipped; check inline whether any finding the prior round marked resolved recurs (same origin/chapter/mechanism), and whether a chapter quiet on the prior record now carries findings. See docs/draft-regression-testing.md."
+    exit 0
+    ;;
+
+  reanchor)
+    # Annotated-Manuscript round-trip re-anchoring (docs/annotated-manuscript-reanchoring.md): carry
+    # draft N's margin annotations onto a REVISED draft (N+1). Re-resolves each anchor against N+1's
+    # snapshot by PURE TEXT SEARCH (the A6 identity reused; the quote offset is recomputed against N+1,
+    # never carried forward) and classifies held / moved / vanished / ambiguous / not-re-anchorable.
+    # RA1 re-anchor integrity (ERROR: the re-anchored manifest passes the structural A-gate — A1+A2+A3+
+    # A4-multiset+A6 — against N+1; ledger arms inert, there is no re-diagnosed N+1 ledger); RA2 comment
+    # fidelity (ERROR: comments carried byte-identical, never re-authored); RA3 partition completeness
+    # (ERROR: every draft-N annotation in exactly one class). W1 candidate-resolved (a vanished anchor),
+    # W2 re-anchor refused (ambiguous / line-range) — advisory, ERROR under --strict. Prints to stdout
+    # (the diff-validator precedent). Delegates to scripts/reanchor.py; degrades to advisory WARN
+    # without python3.
+    RAN_DIR=$(cd "$(dirname "$0")" && pwd)
+    RAN_HELPER="$RAN_DIR/reanchor.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$RAN_HELPER" ]; then python3 "$RAN_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; reanchor is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$RAN_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 reanchor <prior_run_folder> <new_snapshot> [--strict] | --self-test"; exit 2; fi
+      python3 "$RAN_HELPER" reanchor "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — reanchor skipped; check inline that each draft-N margin note's anchored text still occurs verbatim+unique in the revised draft (held/moved), is gone (candidate-resolved), or is duplicated/line-range (refused). See docs/annotated-manuscript-reanchoring.md."
     exit 0
     ;;
 
