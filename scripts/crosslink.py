@@ -64,6 +64,10 @@ _FINDING_MARKER_RE = re.compile(r"<!--\s*finding:\s*(F-[A-Za-z0-9]+-[0-9]{2,})\s
 # spaces '§' or be empty for `document`). Non-greedy stops at the first <<} (anchor values are sigil-safe).
 _BACKLINK_RE = re.compile(r"\{>>→ marked-up copy: (F-[A-Za-z0-9]+-[0-9]{2,}) @ (.*?)<<\}", re.DOTALL)
 _OVERRIDE_RE = re.compile(r"<!--\s*override:\s*crosslink-uncited\s+(F-[A-Za-z0-9]+-[0-9]{2,})", re.IGNORECASE)
+# Any CriticMarkup span (the shared grammar; mirrors annotation_manifest._CM_SPAN_RE). Used to enumerate
+# EVERY span so an authored/non-back-link span can't ride through X4's reverse transform. Fallback only
+# when annotation_manifest isn't importable; otherwise am._CM_SPAN_RE is used.
+_CM_SPAN_RE_FALLBACK = re.compile(r"\{>>.*?<<\}", re.DOTALL)
 
 
 def _read(path):
@@ -163,14 +167,24 @@ def check(letter_text, crosslinked_text, manifest_text, strict=False):
         errs.append("X3 marker integrity: the crosslinked letter's `finding:` markers differ from the "
                     "letter's — a back-link span was injected inside (not after) a <!-- finding: --> marker")
 
-    # X2/X3 POSITIONAL pairing — each back-link must sit in the bytes IMMEDIATELY AFTER a marker's `-->`
-    # (start == that marker's end), carry that marker's id, resolve to a manifest annotation, and match
-    # its anchor. This catches swapped/mis-attributed back-links (each globally self-consistent but on the
-    # wrong marker), orphan/in-prose/doubled spans, phantoms, and drift — the global-count checks could not.
+    # X2/X3 POSITIONAL pairing — enumerate EVERY CriticMarkup span (not just back-link-shaped ones):
+    # each must be a well-formed back-link sitting in the bytes IMMEDIATELY AFTER a marker's `-->`
+    # (start == that marker's end), carrying that marker's id, resolving to a manifest annotation, and
+    # matching its anchor. Iterating the SHARED span regex (not `_BACKLINK_RE`) is the firewall fix: an
+    # authored / malformed `{>> ... <<}` span would otherwise ride through X4 (which deletes ALL spans
+    # before the reverse-transform compare) un-noticed (Codex #103 review). This also catches swapped /
+    # mis-attributed back-links, orphan/in-prose/doubled spans, phantoms, and drift.
+    cm_span = am._CM_SPAN_RE if am is not None else _CM_SPAN_RE_FALLBACK
     marker_end_fid = {e: f for f, e in crl_markers}
     paired = {}   # fid -> count of correctly-placed back-links
-    for bm in _BACKLINK_RE.finditer(crosslinked_text):
-        bl_fid, bl_anchor, bstart = bm.group(1), bm.group(2), bm.start()
+    for sm in cm_span.finditer(crosslinked_text):
+        bm = _BACKLINK_RE.fullmatch(sm.group())
+        bstart = sm.start()
+        if bm is None:
+            errs.append("X3 un-manifested span: a CriticMarkup span in the crosslinked letter is not a "
+                        "valid manifest back-link (authored or malformed) — %r" % (sm.group()[:60]))
+            continue
+        bl_fid, bl_anchor = bm.group(1), bm.group(2)
         if bstart not in marker_end_fid:
             errs.append("X3 misplaced back-link: a %s back-link is not immediately after a `finding:` "
                         "marker (orphan / in-prose / doubled)" % bl_fid)
@@ -383,6 +397,12 @@ def run_self_test():
     misplaced = crosslinked + bl_b
     code, ls = check(letter, misplaced, manifest)
     chk("x3_misplaced", code == 1 and any("X3 misplaced" in x for x in ls))
+    # X3 — an AUTHORED (non-back-link) CriticMarkup span rides through X4 (deletes all spans) unless we
+    # enumerate EVERY span and reject non-back-links (Codex #103 firewall finding).
+    authored = crosslinked + ("%sAUTHORED EXTRA NOTE%s" % (am._CM_OPEN, am._CM_CLOSE))
+    code, ls = check(letter, authored, manifest)
+    chk("x3_authored_span", code == 1 and any("X3 un-manifested span" in x for x in ls))
+    chk("x3_authored_span_x4_blind", am.reverse_transform(authored) == letter)   # X4 alone misses it
     # X3 — a PHANTOM back-link: after a marker for a finding with no manifest annotation
     letter_ph = letter + "An unannotated finding. <!-- finding: F-Z-99 -->\n"
     crl_ph = letter_ph.replace("<!-- finding: F-Z-99 -->",
