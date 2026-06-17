@@ -1,6 +1,7 @@
 # Annotated-Manuscript Producer — wiring the deliverable into the run flow
 
-**Status:** Proposed (unbuilt). Increments 1–3 of the [Annotated-Manuscript Deliverable](annotated-manuscript.md) shipped the **validators** — the annotation manifest + annotated copy + crosslinked letter, gated by A1–A6 / X1–X4. But **nothing in a real run generates those artifacts**: the deliverable is validator-only, proven on hand-built fixtures. This producer closes that gap so a real `/start` diagnosis ends with a marked-up manuscript + a crosslinked letter the writer can actually open. Two increments, **generation first** (maintainer decision 2026-06-17).
+**Status:** **Increment 1 Built** (generation wiring, 2026-06-17); Increment 2 (`evidence_quote` pass-attachment) roadmapped. Increments 1–3 of the [Annotated-Manuscript Deliverable](annotated-manuscript.md) shipped the **validators** — the annotation manifest + annotated copy + crosslinked letter, gated by A1–A6 / X1–X4 — but proven only on hand-built fixtures. This producer wires them into the run flow so a real `/start` diagnosis ends with a marked-up manuscript + a crosslinked letter the writer can actually open. **Increment 1 (Built):** the intake snapshot, the run-end offer (conditioned on a `*_…_DE_Synthesis_*` letter, author-asked), the staged build→A1–A6→render→X1–X4 chain (verified-or-absent), the `<!-- finding: F-… -->` marker pin, the `diagnosed`-node re-gen dispatch, and a `--check-all` chain gate — no new command, no new validator (count stays 43). **Increment 2:** pilots `evidence_quote` on Pass 5 to light the quote rung. Two increments, **generation first** (maintainer decision 2026-06-17).
+<!-- built-when: scripts/validate.sh contains "producer chain" -->
 
 ## The gap, named honestly
 

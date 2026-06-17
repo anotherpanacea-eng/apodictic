@@ -186,7 +186,7 @@ usage() {
   echo "Usage: $0 <command> [args...]"
   echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -379,6 +379,42 @@ if [ "$1" = "--check-all" ]; then
     if [ -d "$CA_BASE/example-annotated-manuscript" ]; then
       "$0" crosslink "$CA_BASE/example-annotated-manuscript" || CA_FAIL=1
     else
+      echo "ERROR: $CA_BASE/example-annotated-manuscript not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy; verified-or-absent) =="
+    # The producer (docs/annotated-manuscript-producer.md, Increment 1) wires the generators into the
+    # run flow: build the manifest + annotated copy and render the crosslinked letter from the run-folder
+    # INPUTS, gating each, and move only verified artifacts into place. Exercise that chain end-to-end on
+    # a temp copy of the canonical INPUTS (snapshot + ledger + editorial letter + timeline) — never in
+    # place, since build/render WRITE outputs (a dirty-tree, non-idempotent gate otherwise; same
+    # temp-copy discipline as the gate engine below). Also assert the fresh build is byte-identical to the
+    # committed fixture, so the committed outputs are provably "what a fresh build emits" (no hand drift).
+    if [ -d "$CA_BASE/example-annotated-manuscript" ] && command -v python3 >/dev/null 2>&1; then
+      CA_PC_SRC="$CA_BASE/example-annotated-manuscript"
+      CA_PC=$(mktemp -d)
+      cp "$CA_PC_SRC"/*_Manuscript_Snapshot_*.md "$CA_PC_SRC"/*_Findings_Ledger_*.md \
+         "$CA_PC_SRC"/*_Editorial_Letter_*.md "$CA_PC_SRC"/*_Timeline_*.md "$CA_PC"/ 2>/dev/null
+      CA_PC_OK=1
+      python3 "$CA_SCRIPT_DIR/annotation_manifest.py" build "$CA_PC" >/dev/null 2>&1 || CA_PC_OK=0
+      "$0" annotated-manuscript "$CA_PC" >/dev/null 2>&1 || CA_PC_OK=0
+      python3 "$CA_SCRIPT_DIR/crosslink.py" render "$CA_PC" >/dev/null 2>&1 || CA_PC_OK=0
+      "$0" crosslink "$CA_PC" >/dev/null 2>&1 || CA_PC_OK=0
+      # fresh build == committed fixture, byte-for-byte, for each generated artifact
+      for CA_PC_F in "$CA_PC"/*_Annotation_Manifest_*.md "$CA_PC"/*_Annotated_Manuscript_*.md "$CA_PC"/*_Crosslinked_Letter_*.md; do
+        if [ -f "$CA_PC_F" ]; then
+          cmp -s "$CA_PC_F" "$CA_PC_SRC/$(basename "$CA_PC_F")" || CA_PC_OK=0
+        else
+          CA_PC_OK=0
+        fi
+      done
+      if [ "$CA_PC_OK" -eq 1 ]; then
+        echo "producer chain (temp copy): PASS"
+      else
+        echo "producer chain (temp copy): FAIL"; CA_FAIL=1
+      fi
+      rm -rf "$CA_PC"
+    elif [ ! -d "$CA_BASE/example-annotated-manuscript" ]; then
       echo "ERROR: $CA_BASE/example-annotated-manuscript not found"; CA_FAIL=1
     fi
     echo ""
