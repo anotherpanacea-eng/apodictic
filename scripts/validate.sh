@@ -178,15 +178,15 @@ set -euo pipefail
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).
-AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff regression-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor check-mirror"
+AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff regression-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor obsidian-export check-mirror"
 # shellcheck disable=SC2086  # intentional word-splitting to count list entries
 AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, regression-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, check-mirror"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, regression-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, obsidian-export, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), obsidian-export vs the canonical manifest projected to native footnotes (O1 round-trip + O2 footnote resolution + O3 comment fidelity, asserting the fresh export is byte-identical to the committed obsidian/ fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -465,6 +465,37 @@ if [ "$1" = "--check-all" ]; then
       fi
     elif [ ! -f "$CA_BASE/example-reanchor-revised.md" ]; then
       echo "ERROR: $CA_BASE/example-reanchor-revised.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical obsidian-export (manifest -> native footnotes; O1-O3 + byte-identical to committed) =="
+    if [ -d "$CA_BASE/example-annotated-manuscript" ] && command -v python3 >/dev/null 2>&1; then
+      # Project the canonical manifest + snapshot to Obsidian-native footnotes on a temp copy (generate
+      # WRITES obsidian/<copy>, so never in place), gate it (O1-O3), and assert the fresh export is
+      # byte-identical to the committed obsidian/ fixture (same discipline as the producer chain).
+      CA_OBE_SRC="$CA_BASE/example-annotated-manuscript"
+      CA_OBE=$(mktemp -d)
+      cp "$CA_OBE_SRC"/*_Manuscript_Snapshot_*.md "$CA_OBE_SRC"/*_Annotation_Manifest_*.md "$CA_OBE"/ 2>/dev/null
+      CA_OBE_OK=1
+      python3 "$CA_SCRIPT_DIR/annotation_export.py" obsidian "$CA_OBE" >/dev/null 2>&1 || CA_OBE_OK=0
+      "$0" obsidian-export "$CA_OBE" >/dev/null 2>&1 || CA_OBE_OK=0
+      CA_OBE_N=0
+      for CA_OBE_F in "$CA_OBE"/obsidian/*_Annotated_Manuscript_*.md; do
+        if [ -f "$CA_OBE_F" ]; then
+          CA_OBE_N=$((CA_OBE_N + 1))
+          cmp -s "$CA_OBE_F" "$CA_OBE_SRC/obsidian/$(basename "$CA_OBE_F")" || CA_OBE_OK=0
+        else
+          CA_OBE_OK=0
+        fi
+      done
+      [ "$CA_OBE_N" -eq 1 ] || CA_OBE_OK=0
+      if [ "$CA_OBE_OK" -eq 1 ]; then
+        echo "obsidian-export (temp copy): PASS"
+      else
+        echo "obsidian-export (temp copy): FAIL"; CA_FAIL=1
+      fi
+      rm -rf "$CA_OBE"
+    else
+      echo "ERROR: $CA_BASE/example-annotated-manuscript not found (obsidian-export)"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical Timeline (timeline-arithmetic, timeline-anchor-conflict, timeline-diff self) =="
@@ -4566,6 +4597,30 @@ EOF
       python3 "$RAN_HELPER" reanchor "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — reanchor skipped; check inline that each draft-N margin note's anchored text still occurs verbatim+unique in the revised draft (held/moved), is gone (candidate-resolved), or is duplicated/line-range (refused). See docs/annotated-manuscript-reanchoring.md."
+    exit 0
+    ;;
+
+  obsidian-export)
+    # Annotated-Manuscript Obsidian export (docs/annotated-manuscript-export.md): project the gated
+    # annotation manifest + snapshot into Obsidian-NATIVE Markdown (no plugin) — each finding becomes a
+    # footnote [^<finding_id>] at its anchor locus whose definition carries the VERBATIM manifest comment
+    # (Obsidian renders footnotes natively; CriticMarkup needs a plugin). A pure projection: the reverse
+    # transform (strip the manifest-keyed [^id] refs + the trailing [^id]: block) reproduces the snapshot
+    # byte-for-byte. O1 round-trip (ERROR, two-sided precondition), O2 footnote resolution (ERROR:
+    # ref<->definition bijection == manifest id set), O3 comment fidelity (ERROR: definition == verbatim
+    # comment). `obsidian <run_folder>` writes obsidian/<copy>; `obsidian-export <run_folder>` validates.
+    # Delegates to scripts/annotation_export.py; degrades to an advisory WARN without python3.
+    OBE_DIR=$(cd "$(dirname "$0")" && pwd)
+    OBE_HELPER="$OBE_DIR/annotation_export.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$OBE_HELPER" ]; then python3 "$OBE_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; obsidian-export is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$OBE_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 obsidian-export <run_folder> | (generate) $0 ... via annotation_export.py obsidian <run_folder>"; exit 2; fi
+      python3 "$OBE_HELPER" obsidian-export "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — obsidian-export skipped; check inline that each finding renders as a [^<finding_id>] footnote whose definition is the verbatim manifest comment, and that stripping the refs + definition block reproduces the snapshot. See docs/annotated-manuscript-export.md."
     exit 0
     ;;
 
