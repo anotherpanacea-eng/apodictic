@@ -134,14 +134,18 @@ def _resolved_ids(text):
 
 
 def _cleared_chapters(text):
-    """Chapter tokens cleared by `<!-- override: regression-cleared … -->` markers."""
+    """Chapter tokens cleared by `<!-- override: regression-cleared <runlabel>:<chapter> — … -->`.
+    The chapter is the `Ch N` token in the `<runlabel>:<chapter>` head (before the em-dash rationale);
+    chapter_token scans for it and ignores the runlabel prefix, so the canonical spaced form `Ch 3`
+    parses correctly (splitting on whitespace would fragment `Ch`/`3` and match neither)."""
     chaps = set()
+    if art is None:
+        return chaps
     for body in _CLEARED_RE.findall(text or ""):
-        if art is not None:
-            for piece in re.split(r"[\s:]+", body):
-                tok = art.chapter_token(piece)
-                if tok:
-                    chaps.add(tok)
+        head = body.split("—")[0]  # drop the rationale so a chapter named there isn't swept in
+        tok = art.chapter_token(head)
+        if tok:
+            chaps.add(tok)
     return chaps
 
 
@@ -270,13 +274,14 @@ def _ledger_path(p):
 
 
 def _resolved_and_cleared(folder_or_file, want_resolved):
-    """(resolved_ids, cleared_chapters) gathered from a round's artifacts."""
+    """(resolved_ids, cleared_chapters) gathered from a round's artifacts. A dir scans its ledger AND
+    revision artifacts (so a `<!-- resolved -->` / `regression-cleared` marker is found whether it lives
+    inline in the ledger or in the Revision Report); resolved_ids computed only when want_resolved."""
     texts = []
     if os.path.isdir(folder_or_file):
         paths = list(glob.glob(os.path.join(folder_or_file, _LEDGER_GLOB)))
-        if want_resolved:
-            for g in _REVISION_GLOBS:
-                paths += glob.glob(os.path.join(folder_or_file, g))
+        for g in _REVISION_GLOBS:
+            paths += glob.glob(os.path.join(folder_or_file, g))
         for p in paths:
             t = _read(p)
             if t:
@@ -395,6 +400,20 @@ def run_self_test():
     chk("w2_override_clears", code == 0 and not any("W2 quiet-chapter breakage" in x for x in lines)
         and any("new-in-quiet-chapter (cleared)" in x for x in lines))
 
+    # _cleared_chapters parses the CANONICAL spaced override form end-to-end (regression: a per-token
+    # whitespace split would fragment `Ch 3` and clear nothing).
+    chk("cleared_canonical_spaced",
+        _cleared_chapters("<!-- override: regression-cleared 2026-02-01_m:Ch 3 — investigated, not fix-induced -->")
+        == {"Ch 3"})
+    chk("cleared_runlabel_not_swept", "Ch 3" in
+        _cleared_chapters("<!-- override: regression-cleared codex54:Ch 3 -->"))
+    chk("cleared_none_when_absent", _cleared_chapters("no override markers here") == set())
+    # the real marker, driven through _cleared_chapters into diff_rounds, clears W2.
+    _ov = "<!-- override: regression-cleared 2026-02-01_m:Ch 3 — investigated -->"
+    code, lines = diff_rounds(r1, r2, set(), _cleared_chapters(_ov))
+    chk("w2_canonical_override_end_to_end",
+        code == 0 and not any("W2 quiet-chapter breakage" in x for x in lines))
+
     # unplaced findings never classify as new-in-quiet-chapter.
     r2u = ledger(finding("F-P8-01", "a reveal lands flat with no felt beat", []))
     rows_u, _ru, quiet_u, _du = classify(f1, findings_of(r2u), set(), set())
@@ -422,6 +441,17 @@ def run_self_test():
         chk("run_single_round_pass", run([d2])[0] == 0)
         chk("run_same_round_r1_fails", run([d2, d2])[0] == 1)
         chk("run_missing_ledger_usage", run([os.path.join(d, "nope"), d2])[0] == 2)
+        # current-round override in a REVISION REPORT (not the ledger) is read and clears W2.
+        d3 = os.path.join(d, "r3")
+        os.makedirs(d3)
+        with open(os.path.join(d3, "P_Findings_Ledger_2026-03-01_m.md"), "w") as fh:
+            fh.write(r2)
+        with open(os.path.join(d3, "P_Revision_Report_2026-03-02_m.md"), "w") as fh:
+            fh.write("# Revision Report\n<!-- override: regression-cleared 2026-03-01_m:Ch 3 — investigated -->\n")
+        _c3, l3 = run([d1, d3])
+        chk("run_override_in_revision_report_clears_w2",
+            not any("W2 quiet-chapter breakage" in x for x in l3)
+            and any("new-in-quiet-chapter (cleared)" in x for x in l3))
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
