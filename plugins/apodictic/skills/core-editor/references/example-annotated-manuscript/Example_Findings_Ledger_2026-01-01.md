@@ -3,9 +3,10 @@ Canonical worked-example Findings Ledger for the annotated-manuscript validator.
 snapshot + Timeline in this folder and exercised by `validate.sh --check-all`. The findings
 exercise every anchor rung: F-RR-01 chapter (Chapter 9), F-LR-01 line-range (exact Timeline scene-id),
 F-NEG-01 chapter-DEGRADE (shares Chapter 1 with scene "Ch 1 §1" but is chapter-only — proving the
-resolver does NOT fabricate a line-range), F-DOC-01 document (a Pass-artifact ref), and F-QT-01
-quote (Increment 2 — a verbatim unique evidence_quote anchored to the exact sentence, gated by A6).
-See docs/annotated-manuscript.md.
+resolver does NOT fabricate a line-range), F-DOC-01 document (a Pass-artifact ref), F-QT-01 quote
+(Increment 2 — a verbatim unique evidence_quote anchored to the exact sentence, gated by A6), and
+F-QAMB-01 quote-DEGRADE (an evidence_quote that appears twice — ambiguous, so it degrades to its
+chapter ref rather than fabricating a sentence anchor). See docs/annotated-manuscript.md.
 -->
 
 # Findings Ledger — Example
@@ -28,4 +29,8 @@ See docs/annotated-manuscript.md.
 
 <!-- apodictic:finding
 {"schema":"apodictic.finding.v1","id":"F-QT-01","mechanism":"the reveal of the unlit lighthouse lands as a stated fact rather than a felt beat","severity":"Must-Fix","confidence":"HIGH","evidence_refs":["Chapter 12"],"evidence_quote":"The lighthouse had stood unlit for the first time in forty years.","fix_class":"stage the reveal through a character's noticing","risk_if_fixed":"could over-explain the image"}
+-->
+
+<!-- apodictic:finding
+{"schema":"apodictic.finding.v1","id":"F-QAMB-01","mechanism":"the repeated phrase reads as an unearned refrain","severity":"Should-Fix","confidence":"MEDIUM","evidence_refs":["Chapter 12"],"evidence_quote":"used to the dark","fix_class":"vary or cut the echo","risk_if_fixed":"none"}
 -->

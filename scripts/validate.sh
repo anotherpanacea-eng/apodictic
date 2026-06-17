@@ -4606,8 +4606,10 @@ EOF
     # resolve to a unique heading; an honest `document` note is fine), A4 the rendered comment-span
     # multiset equals the manifest comment multiset both directions — every body Must-Fix renders, and
     # no un-manifested/authored span is present (reusing finding_trace's ledger inventory), A5 each
-    # comment is a verbatim, inline-CriticMarkup-safe projection of the finding's fields. W1 coverage /
-    # Timeline-boundary drift
+    # comment is a verbatim, inline-CriticMarkup-safe projection of the finding's fields. A6 (Increment 2)
+    # quote integrity: a `quote` anchor's text (from a finding's optional verbatim evidence_quote) occurs
+    # in the snapshot verbatim and EXACTLY once, the offsets pin it, and it matches the finding — the
+    # fabricated/mis-placed-quote failure A3 cannot see. W1 coverage / Timeline-boundary drift
     # advisory, ERROR under --strict (override `<!-- override: annotation-coverage F-... -->`). Comments
     # only — never prose mutation (the Firewall). Takes a run folder (globs snapshot + manifest +
     # annotated copy + Findings Ledger + Timeline) or explicit files. Delegates to
