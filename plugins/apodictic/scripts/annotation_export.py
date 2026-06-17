@@ -450,14 +450,28 @@ def reverse_html(pre_content, finding_ids):
 
 
 def check_html(manifest_obj, snapshot, html_text):
-    """H1-H3 over an emitted HTML export. Returns (errs, warns)."""
+    """H1-H3 over an emitted HTML export. Returns (errs, warns).
+
+    H1 is the AUTHORITATIVE lock: the on-disk HTML must equal a fresh build from the gated manifest +
+    snapshot byte-for-byte — the artifact is fully determined by them, so equality pins prose, comments,
+    marker POSITIONS, structure, and forbids any authored content (in or outside the <pre>/findings).
+    H2/H3 (and the round-trip) remain as granular diagnostics, but H1-equality is the firewall guarantee."""
     errs = []
     annotations = [a for a in (manifest_obj.get("annotations") or []) if isinstance(a, dict)]
     ids = [a.get("finding_id") for a in annotations]
 
+    # H1 (authoritative) — exact-build equality: the on-disk artifact == a fresh deterministic build.
+    expected, _perrs = build_html(manifest_obj, snapshot)
+    if expected is not None and html_text != expected:
+        errs.append("H1 artifact integrity: the on-disk HTML is not byte-identical to a fresh build from "
+                    "the gated manifest + snapshot — prose / comment / marker-position / structure drift, "
+                    "or authored content outside the manuscript or findings")
+
+    n_pre = len(re.findall(r'<pre class="manuscript">', html_text))   # count the OPENING tag (greedy-safe)
     pres = _PRE_RE.findall(html_text)
-    if len(pres) != 1:
-        return ["H1 round-trip: expected exactly one <pre class=\"manuscript\"> (found %d)" % len(pres)], []
+    if n_pre != 1 or len(pres) != 1:
+        errs.append('H1 round-trip: expected exactly one <pre class="manuscript">…</pre> (found %d)' % n_pre)
+        return errs, []
     pre_content = pres[0]
 
     # H1 — round-trip: strip manifest-keyed markers + exact unescape == snapshot.
@@ -892,6 +906,17 @@ def run_self_test():
     chk("html_h2_fires_on_unmanifested",
         any("H2" in x for x in check_html(obj, snap, html.replace(
             "</ol>", '<li id="fn-F-EVIL-01">x <a class="backref" href="#ref-F-EVIL-01">↩</a></li>\n</ol>'))[0]))
+    # H1-equality (authoritative) catches authored prose OUTSIDE the <pre>/findings (the standalone gate
+    # was weaker than the whole-document lock — build-review P2).
+    chk("html_h1_fires_on_authored_prose_outside_pre",
+        any("H1 artifact integrity" in x for x in check_html(
+            obj, snap, html.replace("</main>", "</main>\n<p>EDITOR-INVENTED PROSE</p>"))[0]))
+    # H1-equality catches marker OFFSET-DRIFT (a literal-replace round-trip would not — build-review P2).
+    _drift = html.replace('forty years.<sup class="fnref" id="ref-F-QT-01">',
+                          'forty<sup class="fnref" id="ref-F-QT-01"> years.', 1) \
+        if 'forty years.<sup class="fnref" id="ref-F-QT-01">' in html else html
+    chk("html_h1_fires_on_offset_drift",
+        _drift == html or any("H1" in x for x in check_html(obj, snap, _drift)[0]))
 
     # HOSTILE (mandated): HTML metachars `& < >` UPSTREAM of an anchor (catches offset drift) + literal
     # `& <` in a comment (catches double-escape + the exact inverse) — the canonical fixture has none.
