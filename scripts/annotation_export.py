@@ -588,11 +588,17 @@ def _docx_span(anchor, snapshot, line_start, line_end, chap_l, sec_l):
 
 
 def _docx_body(snapshot, spans):
-    """document.xml body: one <w:p> per snapshot line; each span wrapped commentRangeStart/End + reference."""
+    """document.xml body: one <w:p> per snapshot line; each span wrapped commentRangeStart/End + reference.
+    Ranges sharing an offset NEST rather than cross: at a point, opens go in ascending id (lowest id is
+    outermost — `sorted(finding_id)` order), and closes go in reverse-open order (latest-opened first), so a
+    co-located pair {0,1} emits `start0 start1 … end1 ref1 end0 ref0` — proper LIFO nesting Word/GDocs anchor
+    cleanly, not the crossing `start0 start1 … end0 ref0 end1 ref1`."""
     starts, ends = {}, {}
+    start_of = {}
     for s, e, wid in spans:
         starts.setdefault(s, []).append(wid)
         ends.setdefault(e, []).append(wid)
+        start_of[wid] = s
 
     def run(text):
         return '<w:r><w:t xml:space="preserve">%s</w:t></w:r>' % _html_escape(text) if text else ""
@@ -607,7 +613,9 @@ def _docx_body(snapshot, spans):
         for o in sorted(o for o in set(list(starts) + list(ends)) if ls <= o <= le):
             if o > prev:
                 inner.append(run(snapshot[prev:o]))
-            for wid in sorted(ends.get(o, [])):
+            # close in reverse-open order (latest-opened first): sort by (start offset, id) DESCENDING so
+            # co-located/co-terminating ranges nest instead of cross (Codex #111).
+            for wid in sorted(ends.get(o, []), key=lambda w: (start_of[w], w), reverse=True):
                 inner.append('<w:commentRangeEnd w:id="%d"/><w:r><w:commentReference w:id="%d"/></w:r>' % (wid, wid))
             for wid in sorted(starts.get(o, [])):
                 inner.append('<w:commentRangeStart w:id="%d"/>' % wid)
@@ -1229,6 +1237,14 @@ def run_self_test():
     chk("docx_comment_verbatim", "pacing seam — fix class: add a beat. (See letter §F-CH-01.)" in cxml)
     paras = [_html_unescape_exact("".join(_WT_RE.findall(p))) for p in _WP_RE.findall(docxml)]
     chk("docx_text_round_trip", ("\n".join(paras) + "\n") == snap)
+    # Codex #111: co-located ranges (F-DOC-01 wid 1 + F-NEG-01 wid 2 both span line 1) must NEST, not cross:
+    # opens ascending (1 then 2), closes reverse-open (2 then 1) -> start1 start2 … end2 ref2 end1 ref1.
+    _nested = ('<w:commentRangeStart w:id="1"/><w:commentRangeStart w:id="2"/>' in docxml
+               and ('<w:commentRangeEnd w:id="2"/><w:r><w:commentReference w:id="2"/></w:r>'
+                    '<w:commentRangeEnd w:id="1"/><w:r><w:commentReference w:id="1"/></w:r>') in docxml)
+    _crossing = ('<w:commentRangeEnd w:id="1"/><w:r><w:commentReference w:id="1"/></w:r>'
+                 '<w:commentRangeEnd w:id="2"/>') in docxml
+    chk("docx_colocated_ranges_nest_not_cross", _nested and not _crossing)
 
     def _rezip_with(override):
         return _deterministic_zip([(n, override.get(n, z.read(n).decode("utf-8"))) for n in z.namelist()])
