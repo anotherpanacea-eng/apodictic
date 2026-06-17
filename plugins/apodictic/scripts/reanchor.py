@@ -99,6 +99,19 @@ def _manifest_text(obj):
     return "<!-- apodictic:annotation\n%s\n-->" % json.dumps(obj, indent=2)
 
 
+def _comment_fidelity_errs(emitted_annotations, orig_comment):
+    """RA2: each emitted annotation's comment must equal the draft-N comment for that finding_id."""
+    errs = []
+    for ra in emitted_annotations:
+        if not isinstance(ra, dict):
+            continue
+        fid = ra.get("finding_id")
+        if ra.get("comment") != orig_comment.get(fid):
+            errs.append("RA2 comment fidelity: %s comment differs from the draft-N manifest "
+                        "(re-anchoring must relocate, never re-author)" % fid)
+    return errs
+
+
 def reanchor(manifest_obj, n1_snapshot, n1_path, strict=False):
     """Re-anchor draft-N's manifest onto N+1's snapshot. Returns (code, lines)."""
     lines, errs, warns = [], [], []
@@ -135,24 +148,29 @@ def reanchor(manifest_obj, n1_snapshot, n1_path, strict=False):
               "runlabel": _runlabel_of(n1_path), "snapshot_path": os.path.basename(n1_path),
               "snapshot_sha256": am.sha256(n1_snapshot), "snapshot_line_count": am.line_count(n1_snapshot),
               "annotations": re_anns}
+    re_manifest_text = _manifest_text(re_obj)
 
-    # RA2 — comment fidelity: each carried comment is byte-identical to draft N's.
+    # RA2 — comment fidelity: the EMITTED manifest (serialized + RE-PARSED — the exact form that gets
+    # rendered and gated) must carry each finding's comment byte-identical to draft N's. Re-parsing
+    # breaks the in-memory aliasing, so a serialization/escaping corruption — or any future change that
+    # makes carrying something other than a verbatim copy — is caught here, independently of A4-multiset
+    # (the firewall: relocate, never re-author; RA2 stands in for A6(a)'s projection arm, which is inert
+    # without an N+1 ledger).
     orig_comment = {an.get("finding_id"): an.get("comment") for an in annotations if isinstance(an, dict)}
-    for ra in re_anns:
-        if ra["comment"] != orig_comment.get(ra["finding_id"]):
-            errs.append("RA2 comment fidelity: %s comment differs from the draft-N manifest "
-                        "(re-anchoring must relocate, never re-author)" % ra["finding_id"])
+    emitted, _pe = am.parse_manifest(re_manifest_text)
+    emitted_anns = emitted.get("annotations") if isinstance(emitted, dict) else re_anns
+    errs += _comment_fidelity_errs(emitted_anns, orig_comment)
 
     # RA1 — re-anchor integrity: the re-anchored manifest, rendered, passes the structural A-gate
     # against N+1 (A1 + A2 + A3 + A4-multiset + A6; ledger arms inert — ledger_optional).
     try:
         annotated = am.render(n1_snapshot, re_obj)
-        code, alines = am.check(n1_snapshot, _manifest_text(re_obj), annotated,
+        code, alines = am.check(n1_snapshot, re_manifest_text, annotated,
                                 ledger_text=None, ledger_optional=True)
         if code != 0:
             errs.append("RA1 re-anchor integrity: the re-anchored manifest fails the A-gate against N+1")
             for al in alines:
-                if "FAIL" in al or "A1 " in al or "A2 " in al or "A3 " in al or "A4 " in al or "A6 " in al:
+                if "ERROR" in al or "FAIL" in al:
                     errs.append("  [A-gate] %s" % al.strip())
     except ValueError as exc:
         errs.append("RA1 re-anchor integrity: render failed — %s" % exc)
@@ -296,6 +314,13 @@ def run_self_test():
     # exists by re-anchoring a manifest whose held annotation's comment is fine, then asserting RA2
     # never fires on the clean identity case.
     chk("ra2_clean_on_identity", not any("RA2 comment fidelity" in x for x in lines))
+    # RA2 is a LIVE guard: a divergent emitted comment (a future carrying-logic regression or a
+    # serialization corruption) must fire it.
+    chk("ra2_fires_on_divergence",
+        len(_comment_fidelity_errs([{"finding_id": "F-X-01", "comment": "re-authored"}],
+                                   {"F-X-01": "original"})) == 1)
+    chk("ra2_clean_when_equal",
+        _comment_fidelity_errs([{"finding_id": "F-X-01", "comment": "same"}], {"F-X-01": "same"}) == [])
 
     # determinism: identical inputs -> identical output.
     chk("deterministic", run_via(man_n, snap_moved)[1] == run_via(man_n, snap_moved)[1])
