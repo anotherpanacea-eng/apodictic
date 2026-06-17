@@ -646,9 +646,16 @@ def _docx_date(manifest_obj):
     it never rolls back a day in a western timezone (a midnight-UTC stamp displays as the day before). It is a
     deterministic function of the gated manifest, NOT the wall clock, so the committed .docx stays byte-stable
     (the `--check-all` byte-identity gate still holds). Falls back to a fixed literal if the runlabel carries
-    no date (real DE runs label snapshots with a date, so the fallback is an edge case)."""
+    no date prefix OR the prefix is not a real calendar date (so we never emit a malformed `xsd:dateTime`)."""
+    import datetime as _dt   # used only to VALIDATE the date string — a pure parse, never reads the clock
     m = re.match(r"(\d{4}-\d{2}-\d{2})", str(manifest_obj.get("runlabel") or ""))
-    return (m.group(1) + "T12:00:00Z") if m else _DOCX_DATE_FALLBACK
+    if m:
+        try:
+            _dt.date.fromisoformat(m.group(1))      # reject shape-valid-but-impossible dates (e.g. 2026-13-45)
+            return m.group(1) + "T12:00:00Z"
+        except ValueError:
+            pass
+    return _DOCX_DATE_FALLBACK
 
 
 def build_docx(manifest_obj, snapshot):
@@ -1260,12 +1267,19 @@ def run_self_test():
     # and no timezone day-rollback. The main obj's runlabel "r" has no date -> fixed fallback; a YYYY-MM-DD
     # runlabel -> that date at noon.
     chk("docx_date_fallback", ('w:date="%s"' % _DOCX_DATE_FALLBACK) in cxml)
-    _dated = build_docx({"runlabel": "2026-01-01", "annotations": obj["annotations"]}, snap)[0]
-    _dated_c = zipfile.ZipFile(io.BytesIO(_dated)).read("word/comments.xml").decode("utf-8")
+    # Use a date DISTINCT from the fallback so this proves DERIVATION (a stub that always returns the
+    # fallback would otherwise pass — the fallback literal coincides with the 2026-01-01 fixture date).
+    def _cxml_for(runlabel):
+        b = build_docx({"runlabel": runlabel, "annotations": obj["annotations"]}, snap)[0]
+        return zipfile.ZipFile(io.BytesIO(b)).read("word/comments.xml").decode("utf-8")
     chk("docx_date_from_runlabel",
-        'w:date="2026-01-01T12:00:00Z"' in _dated_c and 'w:date="2026-01-01T00:00:00Z"' not in _dated_c)
-    chk("docx_date_deterministic",
-        build_docx({"runlabel": "2026-01-01", "annotations": obj["annotations"]}, snap)[0] == _dated)
+        'w:date="2025-07-04T12:00:00Z"' in _cxml_for("2025-07-04")
+        and _DOCX_DATE_FALLBACK not in _cxml_for("2025-07-04"))
+    chk("docx_date_with_suffix_runlabel",   # `YYYY-MM-DD` prefix is honored even with a trailing suffix
+        'w:date="2025-07-04T12:00:00Z"' in _cxml_for("2025-07-04-v2"))
+    chk("docx_date_rejects_invalid",        # shape-valid but impossible date -> fallback, never a bad dateTime
+        _DOCX_DATE_FALLBACK in _cxml_for("2026-13-45") and "2026-13-45" not in _cxml_for("2026-13-45"))
+    chk("docx_date_deterministic", _cxml_for("2025-07-04") == _cxml_for("2025-07-04"))
 
     def _rezip_with(override):
         return _deterministic_zip([(n, override.get(n, z.read(n).decode("utf-8"))) for n in z.namelist()])
