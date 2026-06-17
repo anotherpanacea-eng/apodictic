@@ -227,6 +227,16 @@ def _heading_text_of(anchor, snapshot):
     return None
 
 
+def _reverse_wikilink(anchor, snapshot, copy_basename):
+    """The letter→copy back-link for an anchor -> (wikilink, is_file_level). A heading link when the
+    anchor resolves to a heading whose text is safe in an Obsidian `#fragment` (no `] [ | #`, which would
+    break the wikilink syntax / the O5 strip); otherwise a file-level link (W1)."""
+    heading = _heading_text_of(anchor, snapshot)
+    if heading is not None and not any(c in heading for c in "][|#"):
+        return "[[%s#%s]]" % (copy_basename, heading), False
+    return "[[%s]]" % copy_basename, True
+
+
 def build_obsidian_letter(crosslinked_text, manifest_obj, snapshot, copy_basename):
     """-> (letter_text_or_None, errs, warns). Project the gated crosslinked letter: append ` ^F-id` block
     ids to finding lines + convert each CriticMarkup back-link span to a `[[copy#heading]]` wikilink
@@ -255,12 +265,9 @@ def build_obsidian_letter(crosslinked_text, manifest_obj, snapshot, copy_basenam
             continue
         fid = m.group(1)
         anchor = anchor_of.get(fid, {})
-        heading = _heading_text_of(anchor, snapshot)
-        if heading is not None:
-            wl = "[[%s#%s]]" % (copy_basename, heading)
-        else:
-            wl = "[[%s]]" % copy_basename
-            warns.append("W1 file-level back-link: %s anchor (%s) has no addressable heading"
+        wl, file_level = _reverse_wikilink(anchor, snapshot, copy_basename)
+        if file_level:
+            warns.append("W1 file-level back-link: %s anchor (%s) has no Obsidian-linkable heading"
                          % (fid, anchor.get("kind")))
         new_line, n = _CM_SPAN_RE.subn(wl, line, count=1)   # replace the back-link span in place
         if n == 0:
@@ -296,14 +303,26 @@ def check_obsidian_letter(crosslinked_text, obsidian_letter, copy_text, copy_bas
             errs.append("O4 link resolution: copy forward link [[%s#^%s]] has no matching ^%s block id "
                         "in the letter" % (letter_basename, m.group(1), m.group(1)))
 
-    # O4 reverse — every letter `[[copy#heading]]` resolves to a real copy heading (footnote refs stripped).
+    # O4 reverse — PER-FINDING correctness (not mere set-membership): each finding line's back-link must
+    # be EXACTLY the expected `[[copy#<that finding's heading>]]` (or file-level), so a real-but-wrong
+    # heading — or a smuggled `|display` label — fails. Defense-in-depth: any heading fragment must also
+    # resolve to a real copy heading (footnote refs stripped).
     copy_headings = set(_heading_slug(raw) for (_l, raw, _n) in am.atx_headings(copy_text))
-    rev = re.compile(r"\[\[%s#([^\]|]+)(?:\|[^\]]*)?\]\]" % re.escape(copy_basename))
-    for m in rev.finditer(obsidian_letter):
-        frag = m.group(1).strip()
-        if frag not in copy_headings:
+    anchor_of = {an.get("finding_id"): (an.get("anchor") or {})
+                 for an in (manifest_obj.get("annotations") or []) if isinstance(an, dict)}
+    for line in obsidian_letter.split("\n"):
+        fm = _FINDING_MARKER_RE.search(line)
+        if not fm:
+            continue
+        fid = fm.group(1)
+        expected, _fl = _reverse_wikilink(anchor_of.get(fid, {}), snapshot, copy_basename)
+        if expected not in line:
+            errs.append("O4 link resolution: %s back-link is not the expected %s "
+                        "(wrong heading, or a smuggled display label)" % (fid, expected))
+        rm = re.search(r"\[\[%s#([^\]|]+)\]\]" % re.escape(copy_basename), line)
+        if rm and rm.group(1).strip() not in copy_headings:
             errs.append("O4 link resolution: letter reverse link [[%s#%s]] matches no copy heading"
-                        % (copy_basename, frag))
+                        % (copy_basename, rm.group(1).strip()))
     return errs, warns
 
 
@@ -533,6 +552,22 @@ def run_self_test():
     _t, lerrs2, _w = build_obsidian_letter(crosslinked.replace("The reveal lands flat.", "See [[elsewhere]]."),
                                            obj, snap, copy_bn)
     chk("inc2_o5_precondition_wikilink", any("already contains '[['" in x for x in lerrs2))
+
+    # P2-2: O4-reverse is PER-FINDING — a real-but-wrong heading fails (set-membership would pass).
+    chk("inc2_o4_reverse_wrong_heading_fires",
+        any("O4" in x for x in check_obsidian_letter(
+            crosslinked, letter2.replace("#Chapter 9]]", "#Chapter 1]]"), copy2, copy_bn, letter_bn, obj, snap)[0]))
+    # P3: a smuggled `|display` label on a reverse link fails (the expected link has no `|`).
+    chk("inc2_o4_reverse_display_label_fires",
+        any("O4" in x for x in check_obsidian_letter(
+            crosslinked, letter2.replace("#Chapter 9]]", "#Chapter 9|SMUGGLED]]"), copy2, copy_bn, letter_bn, obj, snap)[0]))
+    # P2-1: a section heading with an unsafe char (`]`) degrades to a file-level link (not a malformed one).
+    snap_br = am.normalize_snapshot("# Orientation [draft]\nProse here.\n")
+    obj_br = {"annotations": [ann("F-SEC-01", {"kind": "section", "value": "Orientation [draft]"},
+                                  "[Should-Fix · F-SEC-01] x — fix class: y. (See letter §F-SEC-01.)")]}
+    cl_br = "# L\n\nThing. <!-- finding: F-SEC-01 -->{>>→ marked-up copy: F-SEC-01 @ section:Orientation [draft]<<}\n"
+    lt_br, _e, w_br = build_obsidian_letter(cl_br, obj_br, snap_br, "C")
+    chk("inc2_unsafe_heading_file_level", "[[C]] ^F-SEC-01" in lt_br and "[[C#" not in lt_br and len(w_br) >= 1)
 
     # generate() end-to-end from a run folder.
     d = tempfile.mkdtemp()
