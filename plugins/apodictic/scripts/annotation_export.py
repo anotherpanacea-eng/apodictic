@@ -357,6 +357,146 @@ def check_obsidian_letter(crosslinked_text, obsidian_letter, copy_text, copy_bas
     return errs, warns
 
 
+# ---------------------------------------------------------------- Increment 3: read-only HTML
+
+_HTML_STYLE = (
+    "body{max-width:46em;margin:2rem auto;padding:0 1rem;"
+    "font-family:Georgia,'Times New Roman',serif;line-height:1.5;color:#222}\n"
+    "pre.manuscript{white-space:pre-wrap;font-family:inherit;font-size:1rem;margin:0}\n"
+    ".fnref{font-size:.75em;color:#a00;vertical-align:super}\n"
+    ".fnref a,.backref{text-decoration:none;color:#a00}\n"
+    "section.findings{margin-top:2rem;border-top:1px solid #ccc;padding-top:1rem;font-size:.95em}\n"
+    "section.findings h2{font-size:1.1rem}\n"
+    "section.findings li{margin:.4rem 0}\n"
+)
+
+
+def _html_escape(s):
+    """Element-content escaping: `&` FIRST, then `<`, `>` (the order is load-bearing for the exact inverse)."""
+    return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _html_unescape_exact(s):
+    """The EXACT inverse of _html_escape (mirror order: `<`, `>`, then `&` LAST). NOT a general decoder."""
+    return (s or "").replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
+
+
+def _html_marker(fid):
+    return '<sup class="fnref" id="ref-%s"><a href="#fn-%s">[%s]</a></sup>' % (fid, fid, fid)
+
+
+def _html_backref(fid):
+    return '<a class="backref" href="#ref-%s">↩</a>' % fid
+
+
+_PRE_RE = re.compile(r'<pre class="manuscript">(.*)</pre>', re.DOTALL)
+
+
+def build_html(manifest_obj, snapshot):
+    """-> (html_text_or_None, errs). Pure projection: a self-contained read-only HTML — the snapshot in a
+    faithful <pre> (escaped, markers spliced between escaped segments) + a findings list with bidirectional
+    anchors. errs is the two-sided precondition."""
+    annotations = [a for a in (manifest_obj.get("annotations") or []) if isinstance(a, dict)]
+    errs = []
+    # Two-sided precondition (by construction, since escaping removes every `<`): neither the escaped
+    # snapshot nor any escaped comment can contain the literal marker prefix `<sup`.
+    if "<sup" in _html_escape(snapshot):
+        errs.append("H1 precondition: the escaped snapshot contains '<sup' (impossible after escaping)")
+    for a in annotations:
+        if "<sup" in _html_escape(a.get("comment") or ""):
+            errs.append("H1 precondition: escaped comment for %s contains '<sup'" % a.get("finding_id"))
+    if errs:
+        return None, errs
+
+    project = manifest_obj.get("project", "Manuscript")
+    chap_n, sec_n, chap_l, sec_l = am.heading_index(snapshot)
+    nl_at, ln = {}, 1
+    for i, ch in enumerate(snapshot):
+        if ch == "\n":
+            nl_at[ln] = i
+            ln += 1
+    # group markers by raw-snapshot offset (co-located markers render adjacent, deterministic by id)
+    by_off = {}
+    for a in annotations:
+        off = _insertion_offset(a.get("anchor") or {}, snapshot, nl_at, chap_l, sec_l)
+        by_off.setdefault(max(0, min(off, len(snapshot))), []).append(a.get("finding_id"))
+    # escape each prose segment between offsets; splice literal markers between (never escaped, no drift)
+    parts, prev = [], 0
+    for off in sorted(by_off):
+        parts.append(_html_escape(snapshot[prev:off]))
+        for fid in sorted(by_off[off]):
+            parts.append(_html_marker(fid))
+        prev = off
+    parts.append(_html_escape(snapshot[prev:]))
+    pre_content = "".join(parts)
+
+    lis = "".join('<li id="fn-%s">%s %s</li>\n'
+                  % (a.get("finding_id"), _html_escape(a.get("comment")), _html_backref(a.get("finding_id")))
+                  for a in sorted(annotations, key=lambda x: x.get("finding_id") or ""))
+    html = ('<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+            '<title>%s — Annotated Manuscript</title>\n<style>\n%s</style>\n</head>\n<body>\n'
+            '<main><pre class="manuscript">%s</pre></main>\n'
+            '<section class="findings">\n<h2>Findings</h2>\n<ol>\n%s</ol>\n</section>\n</body>\n</html>\n'
+            % (_html_escape(project), _HTML_STYLE, pre_content, lis))
+    return html, []
+
+
+def reverse_html(pre_content, finding_ids):
+    """The A2-analog inverse: delete the exact manifest-keyed markers, then the exact 3-entity unescape."""
+    t = pre_content
+    for fid in finding_ids:
+        t = t.replace(_html_marker(fid), "")
+    return _html_unescape_exact(t)
+
+
+def check_html(manifest_obj, snapshot, html_text):
+    """H1-H3 over an emitted HTML export. Returns (errs, warns)."""
+    errs = []
+    annotations = [a for a in (manifest_obj.get("annotations") or []) if isinstance(a, dict)]
+    ids = [a.get("finding_id") for a in annotations]
+
+    pres = _PRE_RE.findall(html_text)
+    if len(pres) != 1:
+        return ["H1 round-trip: expected exactly one <pre class=\"manuscript\"> (found %d)" % len(pres)], []
+    pre_content = pres[0]
+
+    # H1 — round-trip: strip manifest-keyed markers + exact unescape == snapshot.
+    if reverse_html(pre_content, ids) != snapshot:
+        errs.append("H1 round-trip: stripping the markers + exact HTML-unescape does NOT reproduce the "
+                    "snapshot byte-for-byte (prose altered, or a marker/escape is malformed)")
+
+    # H2 — anchor resolution: <sup id="ref-fid"> ↔ <li id="fn-fid"> bijection == manifest id set.
+    ref_ids = re.findall(r'<sup class="fnref" id="ref-(F-[A-Za-z0-9]+-[0-9]{2,})">', pre_content)
+    fn_ids = re.findall(r'<li id="fn-(F-[A-Za-z0-9]+-[0-9]{2,})">', html_text)
+    manifest_set = {}
+    for fid in ids:
+        manifest_set[fid] = manifest_set.get(fid, 0) + 1
+    for label, found in (("marker", ref_ids), ("finding", fn_ids)):
+        counts = {}
+        for fid in found:
+            counts[fid] = counts.get(fid, 0) + 1
+        for fid, n in sorted(counts.items()):
+            if n != 1:
+                errs.append("H2 anchor resolution: %s id %s appears %d times (need exactly 1)" % (label, fid, n))
+            if fid not in manifest_set:
+                errs.append("H2 anchor resolution: %s id %s is not a manifest finding_id (un-manifested)" % (label, fid))
+        for fid in sorted(manifest_set):
+            if counts.get(fid, 0) != 1:
+                errs.append("H2 anchor resolution: manifest finding %s has %d %s id(s) (need exactly 1)"
+                            % (fid, counts.get(fid, 0), label))
+
+    # H3 — comment fidelity: each <li> content == escape(comment) + " " + exact back-ref.
+    comment_of = {a.get("finding_id"): a.get("comment") for a in annotations}
+    for m in re.finditer(r'<li id="fn-(F-[A-Za-z0-9]+-[0-9]{2,})">(.*?)</li>', html_text, re.DOTALL):
+        fid, content = m.group(1), m.group(2)
+        if fid in comment_of:
+            expected = "%s %s" % (_html_escape(comment_of[fid]), _html_backref(fid))
+            if content != expected:
+                errs.append("H3 comment fidelity: <li> for %s is not the verbatim manifest comment + the "
+                            "exact back-ref (relocate, never re-author)" % fid)
+    return errs, []
+
+
 def _runlabel_of(path):
     base = os.path.basename(path or "")
     for infix in ("_Manuscript_Snapshot_", "_Annotation_Manifest_"):
@@ -457,6 +597,51 @@ def run(paths, strict=False):
         lines.append("obsidian-export: FAIL (%d error(s))" % len(errs))
         return 1, lines
     lines.append("obsidian-export: PASS (%s)" % gates)
+    return 0, lines
+
+
+def generate_html(folder):
+    """Write html/<Project>_Annotated_Manuscript_<runlabel>.html. Returns (code, lines)."""
+    obj, snapshot, project, runlabel, _cl, err = _resolve(folder)
+    if err:
+        return 2, ["html-export: %s" % err]
+    html, errs = build_html(obj, snapshot)
+    if errs:
+        return 1, ["html-export: " + e for e in errs] + ["html-export: FAIL (H1 precondition)"]
+    outdir = os.path.join(folder, "html")
+    os.makedirs(outdir, exist_ok=True)
+    out_path = os.path.join(outdir, "%s_Annotated_Manuscript_%s.html" % (project, runlabel))
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(html)
+    return 0, ["html-export: wrote html/%s" % os.path.basename(out_path)]
+
+
+def run_html(paths):
+    """Validate the ON-DISK html/<copy>.html (H1-H3), never a regenerate."""
+    if len(paths) < 1 or not os.path.isdir(paths[0]):
+        return 2, ["html-export: usage: html-export <run_folder>"]
+    obj, snapshot, _p, _r, _cl, err = _resolve(paths[0])
+    if err:
+        return 2, ["html-export: %s" % err]
+    html_path = _newest(glob.glob(os.path.join(paths[0], "html", "*_Annotated_Manuscript_*.html")))
+    if not html_path:
+        return 2, ["html-export: no html/*_Annotated_Manuscript_*.html found "
+                   "(run `annotation_export.py html <run_folder>` first)"]
+    html_text = _read(html_path)
+    if html_text is None:
+        return 2, ["html-export: cannot read %s" % html_path]
+    _exp, perrs = build_html(obj, snapshot)
+    if perrs:
+        return 1, ["html-export: " + e for e in perrs] + ["html-export: FAIL (H1 precondition)"]
+    errs, _w = check_html(obj, snapshot, html_text)
+    lines = ["html-export: %d finding(s); validating html/%s"
+             % (len(obj.get("annotations") or []), os.path.basename(html_path))]
+    for e in errs:
+        lines.append("  ERROR: %s" % e)
+    if errs:
+        lines.append("html-export: FAIL (%d error(s))" % len(errs))
+        return 1, lines
+    lines.append("html-export: PASS (H1 round-trip + H2 anchor resolution + H3 comment fidelity)")
     return 0, lines
 
 
@@ -689,6 +874,59 @@ def run_self_test():
     finally:
         shutil.rmtree(d2, ignore_errors=True)
 
+    # --- Increment 3: read-only HTML ---
+    html, herrs = build_html(obj, snap)
+    chk("html_no_precond_errs", not herrs and html is not None)
+    chk("html_one_pre", len(_PRE_RE.findall(html)) == 1)
+    chk("html_marker_at_anchor",
+        '<sup class="fnref" id="ref-F-QT-01"><a href="#fn-F-QT-01">[F-QT-01]</a></sup>' in html)
+    chk("html_finding_li",
+        '<li id="fn-F-CH-01">[Should-Fix · F-CH-01] pacing seam — fix class: add a beat. (See letter §F-CH-01.) '
+        '<a class="backref" href="#ref-F-CH-01">↩</a></li>' in html)
+    chk("html_check_clean", check_html(obj, snap, html)[0] == [])
+    chk("html_round_trip", reverse_html(_PRE_RE.findall(html)[0], [a["finding_id"] for a in obj["annotations"]]) == snap)
+    chk("html_h1_fires_on_mutation",
+        any("H1" in x for x in check_html(obj, snap, html.replace("Three days collapsed here.", "Three days THERE."))[0]))
+    chk("html_h3_fires_on_reauthor",
+        any("H3" in x for x in check_html(obj, snap, html.replace("pacing seam", "INVENTED"))[0]))
+    chk("html_h2_fires_on_unmanifested",
+        any("H2" in x for x in check_html(obj, snap, html.replace(
+            "</ol>", '<li id="fn-F-EVIL-01">x <a class="backref" href="#ref-F-EVIL-01">↩</a></li>\n</ol>'))[0]))
+
+    # HOSTILE (mandated): HTML metachars `& < >` UPSTREAM of an anchor (catches offset drift) + literal
+    # `& <` in a comment (catches double-escape + the exact inverse) — the canonical fixture has none.
+    q = "The lighthouse stood unlit for forty years."
+    snap_h = am.normalize_snapshot("# A & B <tag> here\n" + q + "\n")
+    qh = snap_h.find(q)
+    obj_h = {"project": "H & <co>", "annotations": [ann(
+        "F-QT-01", {"kind": "quote", "value": "%d-%d" % (qh, qh + len(q)), "quote": q},
+        "[Must-Fix · F-QT-01] the line uses & and <x> markup — fix class: stage it. (See letter §F-QT-01.)")]}
+    html_h, _e = build_html(obj_h, snap_h)
+    chk("html_hostile_round_trips", reverse_html(_PRE_RE.findall(html_h)[0], ["F-QT-01"]) == snap_h)
+    chk("html_hostile_check_clean", check_html(obj_h, snap_h, html_h)[0] == [])
+    chk("html_hostile_escapes_prose", "# A &amp; B &lt;tag&gt; here" in html_h)
+    chk("html_hostile_escapes_comment", "uses &amp; and &lt;x&gt; markup" in html_h)
+    chk("html_hostile_no_offset_drift", (q + '<sup class="fnref" id="ref-F-QT-01">') in html_h)
+
+    # generate_html + run_html end-to-end; on-disk tampering caught.
+    d3 = tempfile.mkdtemp()
+    try:
+        with open(os.path.join(d3, "T_Manuscript_Snapshot_r.md"), "w") as fh:
+            fh.write(snap)
+        with open(os.path.join(d3, "T_Annotation_Manifest_r.md"), "w") as fh:
+            fh.write("<!-- apodictic:annotation\n%s\n-->" % _j.dumps(obj))
+        chk("html_generate_writes", generate_html(d3)[0] == 0
+            and os.path.isfile(os.path.join(d3, "html", "T_Annotated_Manuscript_r.html")))
+        chk("html_run_validates", run_html([d3])[0] == 0)
+        hp = os.path.join(d3, "html", "T_Annotated_Manuscript_r.html")
+        gh = open(hp, encoding="utf-8").read()
+        open(hp, "w", encoding="utf-8").write(gh.replace("Three days collapsed here.", "Three days THERE."))
+        chk("html_run_catches_disk_mutation", run_html([d3])[0] == 1)
+        open(hp, "w", encoding="utf-8").write(gh)
+        chk("html_run_passes_after_restore", run_html([d3])[0] == 0)
+    finally:
+        shutil.rmtree(d3, ignore_errors=True)
+
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 
@@ -700,18 +938,27 @@ def main(argv):
         print("obsidian-export: annotation_manifest unavailable (same-dir import failed)")
         return 2
     args = [a for a in argv[1:] if not a.startswith("--")]
-    if args and args[0] == "obsidian":
-        rest = [a for a in args[1:]]
-        if len(rest) != 1 or not os.path.isdir(rest[0]):
-            print("Usage: annotation_export.py obsidian <run_folder>")
-            return 2
-        code, lines = generate(rest[0])
+    # generate modes
+    for verb, gen in (("obsidian", generate), ("html", generate_html)):
+        if args and args[0] == verb:
+            rest = [a for a in args[1:]]
+            if len(rest) != 1 or not os.path.isdir(rest[0]):
+                print("Usage: annotation_export.py %s <run_folder>" % verb)
+                return 2
+            code, lines = gen(rest[0])
+            for ln in lines:
+                print(ln)
+            return code
+    # validate modes
+    if args and args[0] == "html-export":
+        code, lines = run_html(args[1:])
         for ln in lines:
             print(ln)
         return code
     paths = [a for a in args if a != "obsidian-export"]
     if not paths:
-        print("Usage: annotation_export.py obsidian <run_folder> | obsidian-export <run_folder> | --self-test")
+        print("Usage: annotation_export.py obsidian|html <run_folder> | obsidian-export|html-export "
+              "<run_folder> | --self-test")
         return 2
     code, lines = run(paths, strict="--strict" in argv)
     for ln in lines:
