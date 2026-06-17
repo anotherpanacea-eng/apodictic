@@ -207,40 +207,48 @@ The annotated copy's comment template already carries `(See letter §<finding_id
 
 ### The crosslink layer (the annotated-copy machinery, mirrored onto the letter)
 
-The annotation manifest is the source of truth for each finding's anchor (`finding_id → {kind, value}`, gated by A1–A6). Increment 3 treats the **letter as a second snapshot** and produces a **crosslinked letter** the same way the annotated copy is produced from the manuscript snapshot:
+The annotation manifest is the source of truth for each finding's anchor (`finding_id → {kind, value}`, gated by A1–A6). Increment 3 treats the **editorial letter as a second snapshot** and produces a **crosslinked letter** the same way the annotated copy is produced from the manuscript snapshot:
 
-1. **Crosslink render.** Given the editorial letter + the annotation manifest, inject a CriticMarkup back-link span at each `<!-- finding: F-… -->` marker: `{>>→ marked-up copy: <anchor.kind>:<anchor.value><<}` — the `kind:value` copied **verbatim from the manifest** (already gated), behind fixed boilerplate. The render authors nothing.
-2. **No letter mutation (the signature gate, reused).** Removing every `{>> … <<}` span from the crosslinked letter reproduces the letter **byte-for-byte** — the same A2 reverse transform, the same two-sided sigil precondition. The original letter (the artifact of record) is never touched; the crosslinked letter is a derived companion, exactly as the annotated copy is to the snapshot.
+1. **Crosslink render.** Inject a **CriticMarkup span** — `{>> … <<}`, the *same* grammar the annotated copy uses, so the existing `_CM_SPAN_RE` / `reverse_transform` apply unchanged (the back-link is a CriticMarkup span, **not** an HTML comment — an HTML comment would survive the reverse transform and break X4) — **immediately after the closing `-->`** of each `<!-- finding: F-… -->` marker whose finding has a manifest annotation. The span is a fixed template carrying the finding id **and** the anchor, verbatim from the manifest:
+   `{>>→ marked-up copy: <finding_id> @ <anchor.kind>:<anchor.value><<}`
+   The `<finding_id>` makes each back-link **self-describing** (matched by id, not position — so a phantom back-link is detectable); the `@` separates it from `<kind>:<value>` (which may contain `:`, `-`, spaces, `§`, or be empty for `document`). All fields are copied verbatim from the gated manifest; the render authors nothing. **Cardinality:** one back-link per marker *occurrence* (a finding cited N times in the letter gets N back-links, each identical). The spans are spliced in **descending offset order** (the Increment-2 renderer's rule, reused) so insertions never perturb later offsets and never land inside another span's braces; the insertion point is always *after* the comment's `-->`, never inside the `<!-- … -->` (which would corrupt the marker and `finding_trace`'s parser).
+2. **No letter mutation — the signature gate + its two-sided precondition.** **Before render, hard-fail loudly if the letter already contains a `{>>` or `<<}` sigil** — the letter-side analogue of A2's snapshot precondition (the letter is human/LLM-authored prose, *more* likely to carry CriticMarkup or a stray `<<}` than a manuscript; without this the reverse transform would silently delete the author's own span). Then removing every `{>> … <<}` span from the crosslinked letter reproduces the letter **byte-for-byte**. The reverse transform strips only `{>> … <<}` spans, leaving every `<!-- finding: F-… -->` marker (and any other HTML comment) intact, so the identity holds for a letter carrying both.
 
 ### The `crosslink` validator (bidirectional integrity)
 
-`validate.sh crosslink <run_folder>` resolves the letter, the annotation manifest, and the crosslinked letter:
-- **X1 — forward link present** — every annotation's comment cites `§<finding_id>` (margin → letter; true by the comment template, so X1 confirms the template wasn't bypassed). Reuses the annotated-copy comment.
-- **X2 — reverse link present + consistent** — for every finding that has **both** a letter `<!-- finding: F-… -->` marker and a manifest annotation, the crosslinked letter carries a `{>>→ marked-up copy: kind:value<<}` back-link whose `kind:value` **equals the manifest's anchor** for that finding (no drift).
-- **X3 — no dangling, both ways** — every back-link's `F-…` resolves to a manifest annotation (no phantom back-link), and a manifest annotation whose finding the letter cites but for which no back-link exists is an X3 error. A finding annotated but **not** cited in the letter is a **W advisory** (the marked-up copy may carry findings the letter doesn't headline), not an error.
-- **X4 — no letter mutation** — the reverse transform on the crosslinked letter == the letter, byte-for-byte (the A2 analogue).
+`validate.sh crosslink <run_folder>` resolves the editorial letter (`finding_trace`'s letter globs), the annotation manifest, and the crosslinked letter. It parses the back-links with a **new parser** (`{>>→ marked-up copy: (F-…) @ (kind:value)<<}` → `(finding_id, anchor_str)`): `finding_trace.letter_cited_ids` covers only the `<!-- finding: F-… -->` marker side, **not** the spans, so this parse is new (and "letter cites finding X" means the `finding:` marker set specifically — note `letter_cited_ids` also returns `severity_calibration` ids that live in HTML comments).
+
+- **X1 — forward link intact** — each manifest annotation's `comment` contains the literal `(See letter §<finding_id>)` for its **own** id (re-derived from `comment_for`'s template tail), so a manifest whose comment was hand-edited to drop the link fails. (Margin → letter; a real check, not a tautology.)
+- **X2 — reverse link present + consistent** — for every `<!-- finding: F-… -->` marker whose finding has a manifest annotation, the **immediately-following** back-link carries that `finding_id` and an `anchor_str` **string-equal to** `"<kind>:<value>"` from the manifest (no drift). Anchor values (`Ch 9`, `3-4`, `250-315`, and the empty value for `document:`) are compared verbatim.
+- **X3 — no dangling, both ways** — every back-link's `finding_id` resolves to a manifest annotation (no phantom back-link), and every marker-for-an-annotated-finding has its following back-link (no missing reverse link).
+- **W1 — annotated-but-uncited** — a finding **annotated but not cited** by any letter `finding:` marker is advisory (the marked-up copy may carry findings the letter doesn't headline); ERROR under `--strict`; override `<!-- override: crosslink-uncited F-… -->`.
+- **X4 — no letter mutation** — the `{>>`/`<<}` precondition holds on the letter, **and** `reverse_transform(crosslinked) == letter` byte-for-byte (the A2 analogue; the HTML `<!-- finding: … -->` markers are preserved).
 
 ### Firewall
 
-The back-link spans carry only `F-…` IDs + anchor tokens (`kind:value`) drawn verbatim from the gated manifest, behind fixed boilerplate — no authored prose. X4 proves the letter's prose is untouched. Crosslinks invent nothing; they wire two existing artifacts together by ID, exactly as the annotated copy wires findings to the snapshot.
+The back-link spans carry only `F-…` ids + anchor `kind:value` tokens, drawn verbatim from the gated manifest behind fixed boilerplate — no authored prose, and inline-CriticMarkup-safe by construction (anchor values are validator-generated and A1/A6-checked, never contain `{>>`/`<<}`/newline). X4 proves the letter's prose is untouched. Crosslinks invent nothing; they wire two existing artifacts together by id.
 
-### Reuses
+### Reuses (and what's new)
 
-The annotated-copy reverse transform + sigil precondition (`reverse_transform`, the A2 machinery), `finding_trace.letter_cited_ids` (the `<!-- finding: F-… -->` parser) and `ledger_inventory`, and the manifest's anchors. No new parsing.
+**Reused:** the annotated-copy `reverse_transform` + the two-sided sigil precondition, `finding_trace.letter_cited_ids` (the `<!-- finding: F-… -->` marker parser) and `ledger_inventory`, and the manifest anchors. **New:** the back-link span parser (X2/X3) and the crosslink render — so this is *not* a "no new parsing" increment.
 
-### Backward compatibility / scope
+### Build obligations (the dual-mirror / count discipline, easy to miss)
 
-Additive: the original letter and the Increment-1/2 artifacts are unchanged; the `annotated-manuscript` validator (A1–A6) is untouched. `crosslink` runs only over a run folder that has both a letter and a manifest.
+`crosslink` ships as a new helper `scripts/crosslink.py` (importing `annotation_manifest` for `reverse_transform`/`parse_manifest` and `finding_trace` for the marker parser + inventory) with a `crosslink` validator mode, a `crosslink render` mode, and a `--self-test`. It **joins `AGG_VALIDATORS`** (and so the derived `AGG_COUNT`, the `usage()` command list, and the `--self-test-all` / `--check-all` strings) and the **dual script mirror** (`scripts/` ↔ `plugins/apodictic/scripts/` byte-identical, in the `check-mirror` set).
+
+### Backward compatibility / scope + honesty
+
+Additive: the original letter and Increments 1–2 are untouched; `annotated-manuscript` (A1–A6) is unchanged. `crosslink` runs only over a folder with both a letter and a manifest. **Consumer/render-side only — inert on the real corpus:** the shipped synthesis letter does *not* today carry `<!-- finding: F-… -->` markers matching the annotation fixture's findings (the existing `example-editorial-letter.md` marks only `F-RR-01`, disjoint from the annotation fixture's set), so the worked letter + crosslinked letter in the gate are **hand-constructed**. The feature lights up when the synthesis emits a letter whose finding markers match the manifest's finding set — an upstream producer step, like Increment 2's `evidence_quote`.
 
 ### Canonical `--check-all` gate
 
-Extend the canonical `example-annotated-manuscript/` fixture with a worked editorial letter (carrying `<!-- finding: F-… -->` markers for the fixture's findings) + its crosslinked letter (back-links injected). `--check-all` runs `crosslink` over the folder: bidirectional integrity + no-mutation on canonical artifacts. Self-test negatives: a drifted back-link anchor (X2), a phantom back-link (X3), a letter-cited annotated finding with no back-link (X3), and a mutated letter (X4).
+Extend `example-annotated-manuscript/` with a hand-authored worked editorial letter (`<!-- finding: F-… -->` markers for the fixture's findings) + its crosslinked letter (back-links injected). `--check-all` runs `crosslink` over the folder: X1–X4 + W1 on canonical artifacts. Self-test negatives: a drifted back-link anchor (X2), a phantom back-link (X3), a marker-for-annotated-finding with no back-link (X3), a mutated letter (X4), and **a letter that already contains a `{>>`/`<<}` sigil → loud precondition failure** (the X4 analogue of `a2_snapshot_sigil`).
 
 ### Increment boundary
 
-**In:** the crosslink render (letter + manifest → crosslinked letter), the `crosslink` validator (X1–X4 + W), the no-mutation proof, the fixtures.
+**In:** the crosslink render (letter + manifest → crosslinked letter), the `crosslink` validator (X1–X4 + W1), the letter-side sigil precondition + no-mutation proof, `scripts/crosslink.py` + its `AGG_VALIDATORS`/mirror registration, the fixtures.
 
-**Not in:** visible (rendered) navigation links beyond the CriticMarkup spans; a back-link into the annotated *copy's own* line coordinates (the copy's line numbers shift as spans are injected, so the back-link points at the stable **manuscript anchor** instead); DOCX/GDocs export; round-trip re-anchoring.
+**Not in:** the synthesis **producer** (emitting letter `finding:` markers matching the manifest — upstream, like the `evidence_quote` producer); visible (rendered) navigation links beyond the CriticMarkup spans; a back-link into the annotated *copy's own* line coordinates (the copy's lines shift as spans inject, so the back-link points at the stable **manuscript anchor**); DOCX/GDocs export; round-trip re-anchoring.
 
 ## Self-review (Increment 1)
 
