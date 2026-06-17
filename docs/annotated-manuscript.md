@@ -195,7 +195,52 @@ Four scenarios exercise the rung and **both** halves of the no-fabrication guara
 
 **In:** the optional `evidence_quote` finding field; the `quote` anchor rung + kind; the unique-verbatim **single-line** locator (in `build`); the **unified character-offset renderer** (descending-offset splice, byte-identical for Increment-1 anchors); the **A6** integrity gate; the explicit A1 obligations; backward-compatibility; the four new `--check-all` fixtures.
 
-**Not in (still future):** **multi-line quotes**; retrofitting diagnostic passes to *emit* `evidence_quote` at scale (upstream, demand-gated — the feature is inert on the real corpus until then); DOCX / Google-Docs / Obsidian export; letter↔margin cross-links; round-trip re-anchoring.
+**Not in (still future):** **multi-line quotes**; retrofitting diagnostic passes to *emit* `evidence_quote` at scale (upstream, demand-gated — the feature is inert on the real corpus until then); DOCX / Google-Docs / Obsidian export; round-trip re-anchoring. (Letter↔margin cross-links is now **Increment 3**, below.)
+
+## Increment 3 — Letter ↔ margin cross-links
+
+**Status:** Proposed (unbuilt). Increments 1–2 made the **margin → letter** direction real (every margin comment ends "(See letter §F-…)"). Increment 3 adds the **letter → margin** direction and a **bidirectional integrity gate**, so a reader navigates both ways: from a finding in the editorial letter to its exact spot in the marked-up copy, and back. It is the symmetric mirror of the annotated copy — the **same no-mutation machinery, pointed at the letter**.
+
+### What exists, what's missing
+
+The annotated copy's comment template already carries `(See letter §<finding_id>)` — margin → letter. The editorial letter references findings by ID in HTML-comment markers (`<!-- finding: F-… -->`, the convention `finding-trace` reads). Missing: the letter does **not** say *where in the marked-up copy* each finding's note sits, so a reader of the letter cannot jump to the margin.
+
+### The crosslink layer (the annotated-copy machinery, mirrored onto the letter)
+
+The annotation manifest is the source of truth for each finding's anchor (`finding_id → {kind, value}`, gated by A1–A6). Increment 3 treats the **letter as a second snapshot** and produces a **crosslinked letter** the same way the annotated copy is produced from the manuscript snapshot:
+
+1. **Crosslink render.** Given the editorial letter + the annotation manifest, inject a CriticMarkup back-link span at each `<!-- finding: F-… -->` marker: `{>>→ marked-up copy: <anchor.kind>:<anchor.value><<}` — the `kind:value` copied **verbatim from the manifest** (already gated), behind fixed boilerplate. The render authors nothing.
+2. **No letter mutation (the signature gate, reused).** Removing every `{>> … <<}` span from the crosslinked letter reproduces the letter **byte-for-byte** — the same A2 reverse transform, the same two-sided sigil precondition. The original letter (the artifact of record) is never touched; the crosslinked letter is a derived companion, exactly as the annotated copy is to the snapshot.
+
+### The `crosslink` validator (bidirectional integrity)
+
+`validate.sh crosslink <run_folder>` resolves the letter, the annotation manifest, and the crosslinked letter:
+- **X1 — forward link present** — every annotation's comment cites `§<finding_id>` (margin → letter; true by the comment template, so X1 confirms the template wasn't bypassed). Reuses the annotated-copy comment.
+- **X2 — reverse link present + consistent** — for every finding that has **both** a letter `<!-- finding: F-… -->` marker and a manifest annotation, the crosslinked letter carries a `{>>→ marked-up copy: kind:value<<}` back-link whose `kind:value` **equals the manifest's anchor** for that finding (no drift).
+- **X3 — no dangling, both ways** — every back-link's `F-…` resolves to a manifest annotation (no phantom back-link), and a manifest annotation whose finding the letter cites but for which no back-link exists is an X3 error. A finding annotated but **not** cited in the letter is a **W advisory** (the marked-up copy may carry findings the letter doesn't headline), not an error.
+- **X4 — no letter mutation** — the reverse transform on the crosslinked letter == the letter, byte-for-byte (the A2 analogue).
+
+### Firewall
+
+The back-link spans carry only `F-…` IDs + anchor tokens (`kind:value`) drawn verbatim from the gated manifest, behind fixed boilerplate — no authored prose. X4 proves the letter's prose is untouched. Crosslinks invent nothing; they wire two existing artifacts together by ID, exactly as the annotated copy wires findings to the snapshot.
+
+### Reuses
+
+The annotated-copy reverse transform + sigil precondition (`reverse_transform`, the A2 machinery), `finding_trace.letter_cited_ids` (the `<!-- finding: F-… -->` parser) and `ledger_inventory`, and the manifest's anchors. No new parsing.
+
+### Backward compatibility / scope
+
+Additive: the original letter and the Increment-1/2 artifacts are unchanged; the `annotated-manuscript` validator (A1–A6) is untouched. `crosslink` runs only over a run folder that has both a letter and a manifest.
+
+### Canonical `--check-all` gate
+
+Extend the canonical `example-annotated-manuscript/` fixture with a worked editorial letter (carrying `<!-- finding: F-… -->` markers for the fixture's findings) + its crosslinked letter (back-links injected). `--check-all` runs `crosslink` over the folder: bidirectional integrity + no-mutation on canonical artifacts. Self-test negatives: a drifted back-link anchor (X2), a phantom back-link (X3), a letter-cited annotated finding with no back-link (X3), and a mutated letter (X4).
+
+### Increment boundary
+
+**In:** the crosslink render (letter + manifest → crosslinked letter), the `crosslink` validator (X1–X4 + W), the no-mutation proof, the fixtures.
+
+**Not in:** visible (rendered) navigation links beyond the CriticMarkup spans; a back-link into the annotated *copy's own* line coordinates (the copy's line numbers shift as spans are injected, so the back-link points at the stable **manuscript anchor** instead); DOCX/GDocs export; round-trip re-anchoring.
 
 ## Self-review (Increment 1)
 
