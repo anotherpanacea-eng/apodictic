@@ -36,8 +36,10 @@ Validator (`annotated-manuscript`):
   A3 anchor integrity    every anchor resolves against the snapshot — line-range in bounds, a UNIQUE
                          chapter/section heading (ATX, normalized; an ambiguous heading is not precise
                          enough); honest `document` is fine, an unresolved finer anchor is an error.
-  A4 Must-Fix reaches    ledger Must-Fix -> manifest entry -> RENDERED span, one-to-one (matched by
-     the marked-up copy  exact comment string + finding_id). Reuses finding_trace.ledger_inventory.
+  A4 Must-Fix reaches    the rendered comment-span multiset == the manifest comment multiset (each
+     the marked-up copy  manifest comment renders exactly once AND no un-manifested/authored span is
+                         present), then every body Must-Fix is in the manifest. Reuses
+                         finding_trace.ledger_inventory.
   A5 verbatim+renderable each comment == the fixed template over the finding's verbatim fields, AND
                          each projected field is inline-CriticMarkup-safe (no \\r \\n {>> <<} |).
   W1 coverage / drift    a Should/Could finding with a locatable ref left as `document`; or a Timeline
@@ -454,11 +456,20 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
                 errs.append("A5 projection: %s comment is not the verbatim field projection "
                             "(the renderer must project, not author)" % fid)
 
-    # A4 — ledger Must-Fix -> manifest entry -> RENDERED span (one-to-one)
+    # A4 — the rendered comment-span multiset must EQUAL the manifest comment multiset (both
+    # directions), then every body Must-Fix must be present. FORWARD: each manifest comment renders
+    # exactly once (a manifest entry that never renders is the gap a manifest-only check misses).
+    # INVERSE: no rendered span may be absent from the manifest — an extra *authored* CriticMarkup note
+    # passes A2 (the reverse transform deletes it) and the per-manifest checks, smuggling un-projected
+    # content into the deliverable; that is a Firewall violation, caught here. (PR #99 review.)
     span_contents = [s[len(_CM_OPEN):-len(_CM_CLOSE)] for s in _CM_SPAN_RE.findall(annotated_text)]
     span_counts = {}
     for c in span_contents:
         span_counts[c] = span_counts.get(c, 0) + 1
+    manifest_comments = set()
+    for an in annotations:
+        if isinstance(an, dict):
+            manifest_comments.add(an.get("comment"))
     manifest_ids = {an.get("finding_id") for an in annotations if isinstance(an, dict)}
     for an in annotations:
         if not isinstance(an, dict):
@@ -469,6 +480,13 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
             errs.append("A4 rendered span: %s appears as %d rendered comment span(s) in the annotated "
                         "copy (need exactly 1 — a manifest entry that never renders is the gap a "
                         "manifest-only check misses)" % (an.get("finding_id"), n))
+    for content, n in sorted(span_counts.items()):
+        if content not in manifest_comments:
+            shown = (content[:77] + "…") if len(content) > 80 else content
+            errs.append("A4 un-manifested span: the annotated copy carries a CriticMarkup note absent "
+                        "from annotations[] (%d occurrence(s)): %r — every margin span must be a "
+                        "verbatim projection of a manifest annotation; an authored note is a Firewall "
+                        "violation (it passes A2 because the reverse transform deletes it)" % (n, shown))
     for fid, sev in sorted(inv.items()):
         if sev == "Must-Fix" and fid not in manifest_ids:
             errs.append("A4 Must-Fix completeness: ledger Must-Fix %s has no annotation "
@@ -717,6 +735,13 @@ def run_self_test():
     code, ls = check(snapshot, manifest_md(obj_drop), ann_drop, ledger, timeline)
     chk("a4_dropped_mustfix",
         code == 1 and any("A4 Must-Fix completeness" in x and "F-CH-01" in x for x in ls))
+    # A4 inverse (PR #99 review): an EXTRA authored CriticMarkup note appended to the annotated copy
+    # must be rejected — it passes A2 (reverse_transform deletes it) and every per-manifest check, but
+    # it smuggles un-projected content into the deliverable (a Firewall hole).
+    ann_extra = annotated + "{>>AUTHORIZED? no: extra authored note<<}"
+    code, ls = check(snapshot, manifest_md(obj), ann_extra, ledger, timeline)
+    chk("a4_rejects_unmanifested_span",
+        code == 1 and any("A4 un-manifested span" in x for x in ls))
 
     # A5 — an authored (non-projection) comment
     obj_bad = json.loads(json.dumps(obj))
