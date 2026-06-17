@@ -178,15 +178,15 @@ set -euo pipefail
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).
-AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz annotated-manuscript check-mirror"
+AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink check-mirror"
 # shellcheck disable=SC2086  # intentional word-splitting to count list entries
 AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, check-mirror"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -371,6 +371,13 @@ if [ "$1" = "--check-all" ]; then
     echo "== canonical annotated manuscript (annotated-manuscript: no-mutation + anchor ladder + Must-Fix rendered) =="
     if [ -d "$CA_BASE/example-annotated-manuscript" ]; then
       "$0" annotated-manuscript "$CA_BASE/example-annotated-manuscript" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-annotated-manuscript not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical crosslink (crosslink: letter<->margin bidirectional integrity + no letter mutation) =="
+    if [ -d "$CA_BASE/example-annotated-manuscript" ]; then
+      "$0" crosslink "$CA_BASE/example-annotated-manuscript" || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-annotated-manuscript not found"; CA_FAIL=1
     fi
@@ -4627,6 +4634,33 @@ EOF
       python3 "$AM_HELPER" annotated-manuscript "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — annotated-manuscript skipped; check inline that the annotated copy mutates no prose (deleting every {>> ... <<} span reproduces the snapshot), each comment is a verbatim finding-field projection, and every Must-Fix appears as a margin comment span. See docs/annotated-manuscript.md."
+    exit 0
+    ;;
+
+  crosslink)
+    # Letter <-> margin cross-links (Annotated-Manuscript Increment 3; docs/annotated-manuscript.md
+    # §Increment 3): the symmetric mirror of the annotated copy, pointed at the editorial letter. A
+    # crosslink render injects a CriticMarkup back-link span ({>>-> marked-up copy: <id> @ kind:value<<})
+    # after each letter `<!-- finding: F-... -->` marker whose finding has a manifest annotation, copying
+    # the anchor VERBATIM from the gated manifest. The letter is a "second snapshot": the same reverse
+    # transform + two-sided sigil precondition prove no letter mutation. Validates X1 forward link (each
+    # margin comment carries (See letter §id)), X2 reverse-link consistency (back-link anchor == manifest,
+    # no drift), X3 no dangling either way (no phantom back-link; no missing reverse link), X4 no letter
+    # mutation; W1 annotated-but-uncited is advisory (ERROR under --strict, override
+    # `<!-- override: crosslink-uncited F-... -->`). Takes a run folder (globs editorial letter + manifest
+    # + crosslinked letter) or explicit files. Delegates to scripts/crosslink.py; degrades to advisory
+    # WARN without python3. (`crosslink.py render <run_folder>` writes the crosslinked letter.)
+    XL_DIR=$(cd "$(dirname "$0")" && pwd)
+    XL_HELPER="$XL_DIR/crosslink.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$XL_HELPER" ]; then python3 "$XL_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; crosslink is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$XL_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 crosslink <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$XL_HELPER" crosslink "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — crosslink skipped; check inline that each letter finding marker has a back-link to the manifest anchor (no drift), no phantom/missing back-links, and deleting every {>> ... <<} span reproduces the letter. See docs/annotated-manuscript.md."
     exit 0
     ;;
 
