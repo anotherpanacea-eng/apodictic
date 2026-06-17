@@ -7,3 +7,7 @@ She counted the hours until the train would carry her north.
 
 Three days collapsed into a single paragraph here.
 No one tracked where the cast had been, and the seam shows.
+
+# Chapter 12
+
+The lighthouse had stood unlit for the first time in forty years.{>>[Must-Fix · F-QT-01] the reveal of the unlit lighthouse lands as a stated fact rather than a felt beat — fix class: stage the reveal through a character's noticing. (See letter §F-QT-01.)<<}

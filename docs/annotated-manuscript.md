@@ -129,11 +129,16 @@ A character-precise anchor needs a **verbatim manuscript substring** to locate a
 
 The per-token ladder (Increment 1: `line-range` > `section` > `chapter` > `document`) gains **`quote`** as the new finest rung (rank 5, above `line-range`):
 
-- **`quote`** — when the finding carries an `evidence_quote` that occurs in the bound snapshot **verbatim and exactly once**. The anchor is the character span of that single occurrence.
-- Quote occurs **zero times** (absent from the snapshot) → **not** a quote anchor; the resolver **falls through** to the Increment-1 ladder *and the build refuses to emit a quote anchor* (a suspect/fabricated quote is never anchored). Never fabricates a span.
-- Quote occurs **more than once** (ambiguous) → **not** a quote anchor; falls through to the coarser rung — the Increment-1 "never fabricate precision" rule, now at the sentence level. A `quote` anchor is emitted **only** on a unique verbatim match.
+- **`quote`** — when the finding carries an `evidence_quote` that occurs in the bound snapshot **verbatim and exactly once** (uniqueness counted by **non-overlapping left-to-right search**, i.e. `str.count(quote) == 1`, and the span is the single `str.find` index — build and A6 share this one definition so they cannot disagree on a self-overlapping run like `"ana"` in `"banana"`). The anchor is the character span of that occurrence.
+- Quote occurs **zero times** (absent) → **not** a quote anchor; the resolver **falls through** to the Increment-1 ladder and the build refuses to emit a quote anchor (a suspect/fabricated quote is never anchored).
+- Quote occurs **more than once** (ambiguous) → **not** a quote anchor; falls through to the coarser rung — the "never fabricate precision" rule, now at the sentence level.
+- An **empty or whitespace-only** `evidence_quote` is treated as **absent** (no quote rung — never `str.find("") → 0` fabricating a zero-length span at offset 0). A `evidence_quote` containing a newline is **rejected** (single-line quotes only — see §Offsets and §Render placement).
 
 The Increment-1 per-token rules (artifact-scoping; "finest rung any manuscript-scoped token supports") are unchanged; `quote` simply outranks `line-range` when an unambiguous quote is available.
+
+### Offsets and the one byte string
+
+Increment 1 compares the snapshot **as-is** (the sha256-bound `snapshot_text`; the validator never re-normalizes — a non-LF snapshot is a `W1` advisory, not a rewrite). Increment 2 keeps that single left-hand side: **the locator (`build`), the recorded offsets, A6's `snapshot[start:end] == quote` check, and render placement all index the identical byte string the validator reads** — there is no second "normalized" copy. Offsets are **0-based, half-open, code-point (Python `str`) indices** (not byte indices — the whole module already slices/`count("\n")`/`splitlines` on `str`, so a non-ASCII manuscript never desyncs). **Single-line only in Increment 2:** an `evidence_quote` containing `\n` is rejected by A1/A6, so a `[start,end)` span never straddles a line boundary.
 
 ### The anchor value
 
@@ -143,40 +148,54 @@ A `quote` anchor records both the span and the text, so the gate and the rendere
 { "kind": "quote", "value": "<start>-<end>", "quote": "<verbatim matched text>" }
 ```
 
-`<start>-<end>` is the **0-based, half-open character offset range** into the **normalized snapshot** (`snapshot[start:end] == quote`), and `quote` is the verbatim matched substring. The offsets make placement and the no-mutation diff exact; the `quote` field makes A6 checkable without trusting the offsets in isolation.
+`<start>-<end>` matches `^\d+-\d+$` with `start <= end`; `snapshot[start:end] == quote == finding.evidence_quote` (verbatim). `build` sets `anchor.quote` to a **verbatim copy of the source finding's `evidence_quote`** (the projection, analogous to `comment_for`), so the manifest cannot anchor a finding to some *other* unique snapshot string — A6 re-checks this equality.
 
-### Render placement
+### Render placement — the unified character-offset splice
 
-The comment span is injected **immediately after `<end>`** — no surrounding whitespace, exactly like every Increment-1 span — so the CriticMarkup note sits at the close of the quoted sentence. **A2 is unchanged and still holds**: deleting every `{>> … <<}` span yields the snapshot byte-for-byte, because a span inserted at a character offset is removed by the same reverse transform. Character precision does not weaken the no-mutation proof.
+Increment 1's renderer is **line-indexed** (`anchor_line()` returns a 1-based line number; spans are bucketed per line and appended at end-of-line, or prepended to line 1 for `document`). A character offset cannot be expressed in that model, so Increment 2 **generalizes the renderer to a single character-offset splice** that subsumes the line path:
+
+1. **Every** span is reduced to one character insertion offset into the snapshot: `document` → `0`; a line-anchored span (`chapter`/`section`/`line-range`) → the offset of the newline that **terminates its target line** (so it lands at end-of-line, exactly as Increment 1); a `quote` span → its anchor `end` offset.
+2. All spans are spliced in **descending offset order (right-to-left)**, tie-broken by **descending manifest index**, so each insertion sits to the right of every not-yet-inserted span and therefore **never perturbs another span's offset**. (At an equal offset, descending-manifest-index insertion yields left-to-right manifest order in the output — preserving Increment-1's "spans on a line appear in manifest order".)
+
+This reproduces Increment-1 placement **byte-for-byte** for `document`/`chapter`/`section`/`line-range` anchors (so the Increment-1 gate fixture and any existing manifest are unchanged), and places a `quote` note immediately after the quoted sentence. **A2 still holds, and the descending-offset rule is *why*:** right-to-left insertion guarantees no span is ever inserted *inside* another's `{>> … <<}`, so the non-greedy reverse transform brackets each span correctly and still yields the snapshot. (Were a span inserted inside another's braces, the non-greedy `{>>.*?<<}` would mis-bracket and leave a dangling `<<}` in prose — an A2 failure the ordering rule exists to prevent.)
 
 ### The new gate — A6 (quote integrity)
 
-`quote` anchoring introduces exactly one new failure mode, so it gets exactly one new gate:
+`quote` anchoring introduces exactly one new failure mode (a fabricated or mis-placed quote), so it gets exactly one new gate:
 
 | ID | Severity | Rule |
 |---|---|---|
-| **A6 — quote integrity (the increment's signature gate)** | ERROR | For every `quote` anchor: (a) the recorded `quote` text occurs in the bound snapshot **verbatim and exactly once** — **zero** occurrences is a *fabricated* quote (the failure A3 cannot see); **>1** is an *ambiguous* quote that must have degraded, not anchored; and (b) the offsets delimit exactly that occurrence (`snapshot[start:end] == quote`, and that is the sole occurrence). A `quote` anchor failing either half is an ERROR — the renderer must not place a sentence-level note on text the manuscript does not *uniquely* contain. |
+| **A6 — quote integrity (the increment's signature gate)** | ERROR | For every `kind == "quote"` anchor: **(a) faithful projection** — `anchor.quote` equals the source finding's `evidence_quote` verbatim (the manifest cannot substitute a different quote than the finding claimed); **(b) verbatim + unique** — `anchor.quote` occurs in the bound snapshot **exactly once** under non-overlapping search (`str.count == 1`): **zero** = a *fabricated* quote (the failure A3 cannot see); **>1** = an *ambiguous* quote that must have degraded, not anchored; **(c) offsets pin it** — `snapshot[start:end] == anchor.quote` **and** `start` is the unique `str.find` index (so an off-by-one or relocated span is caught, distinct from absence); **(d) inline-safe** — `anchor.quote` contains no `{>>`/`<<}` and no `\n` (this extends A2's two-sided sigil precondition to the new `anchor.quote` field — automatically satisfied for an honest quote, since the snapshot is sigil-free under A2, and a loud failure for a forged one). |
 
-A6 is the character-level analogue of A3 (anchor existence), but for **content**, which A3 explicitly does not cover. Division of labour holds: **A6** proves the *quote* is a real, unique manuscript span; **A5 is unchanged** and still proves the *comment* is a verbatim finding-field projection. The quote (manuscript bytes, gated by A6) and the comment (finding-field projection, gated by A5) are separately proven — neither is authored.
+A6 is the character-level analogue of A3, but for **content**, which A3 explicitly does not cover. **Division of labour:** A6 proves the *quote* is a real, unique manuscript span and the offsets pin it; **A5 is unchanged** and still proves the *comment* is a verbatim field projection. A6 is **provenance-by-identity** — anything it admits is, by construction, manuscript bytes, so the firewall question reduces to A5 (the rendered margin content), which is unchanged. The quote text is **metadata for A6 only**; it is **never** part of the rendered span — the span content is the comment, exactly as a line-anchored span — so **A4's comment-multiset is unchanged** (A4 keys on the comment, not the quote).
 
-All Increment-1 gates still apply to a quote-anchored manifest: A1 (schema — now allowing the `quote` anchor kind + optional `evidence_quote`/`quote` fields), A2 (no mutation — unchanged), A3 (validates the non-quote anchors; a `quote` anchor is A6's job, not A3's — A3 skips `kind == "quote"`), A4 (multiset equality — unchanged), A5 (verbatim comment projection — unchanged).
+All Increment-1 gates still apply to a quote-anchored manifest: A1 (schema + the new obligations below), A2 (no mutation — unchanged, conditional on the §Render descending-offset rule), A3 (validates non-quote anchors; it continues to **skip** `kind == "quote"`, whose content is A6's job), A4 (multiset equality — unchanged), A5 (verbatim comment projection — unchanged).
+
+### A1 obligations (explicit, since the schema engine has no `additionalProperties`)
+
+The shared subset schema engine validates only `required`/`const`/`enum`/`type`/`minItems`/`pattern`; the nested anchor shape and the kind enum are **hand-coded** in the validator. So Increment 2's A1 work is explicit, not a one-line schema edit:
+
+- `"quote"` added to the `anchor.kind` enum (the validator's `_ANCHOR_KINDS`) and to `_RUNG_RANK` (`"quote": 5`).
+- `evidence_quote` added to `apodictic.finding.v1.schema.json` as an **optional** `{"type": "string"}` (type-checked when present; absence = Increment-1 behaviour, so no existing finding changes).
+- When `kind == "quote"`, **A1** requires: `anchor.value` matches `^\d+-\d+$` with `start <= end`; and `anchor.quote` is **present**, a **non-empty** string, with **no `\n`** and **no `{>>`/`<<}`**. A malformed quote anchor (missing `anchor.quote`, bad `value`) is an **A1 ERROR**, not a silent A3 skip — A3 deliberately skips `kind == "quote"`, so A1 is the gate that catches a structurally-broken quote anchor before A6 ever runs.
 
 ### Backward compatibility
 
-A manifest with no `quote` anchors validates exactly as in Increment 1 (A6 is a no-op when no quote anchor is present). A finding with no `evidence_quote` resolves on the Increment-1 ladder. The `quote` kind is *added* to the `anchor.kind` enum; `evidence_quote` is an *optional* finding field. No existing fixture changes behaviour, and the canonical Increment-1 `--check-all` fixture still passes untouched.
+A manifest with no `quote` anchors validates exactly as in Increment 1 (A6 is a no-op when no quote anchor is present; the unified renderer is byte-identical for non-quote anchors). A finding with no `evidence_quote` resolves on the Increment-1 ladder. No existing fixture changes behaviour, and the canonical Increment-1 `--check-all` fixture passes untouched. *(Increment 2 builds the **consumer** — the locator, rung, gate, render, and schema field. No shipped diagnostic pass emits `evidence_quote`, so the feature is **inert on the real corpus** until that upstream effort lands; the fixtures below are hand-constructed findings that prove the consumer + A6, not a producer.)*
 
-### Canonical `--check-all` gate (the fixtures Increment 2 adds)
+### Canonical `--check-all` gate (four fixtures)
 
-Three new fixtures exercise the rung and **both** halves of the no-fabrication guarantee:
+Four fixtures, exercising the rung and **both** halves of the no-fabrication guarantee (existence *and* offset-correctness):
 1. **Positive** — a finding whose `evidence_quote` occurs verbatim-once → a `quote` anchor on the exact span; A6 passes; the rendered span sits at the sentence; A2 reverse-transform identity holds.
-2. **Ambiguous-degrade (negative)** — a finding whose `evidence_quote` appears **twice** in the snapshot → resolver degrades to the coarser rung; **no** `quote` anchor fabricated.
-3. **Fabricated-quote (negative)** — a manifest carrying a `quote` anchor whose text is **absent** from the snapshot → **A6 ERROR** (the fabrication guard — the whole reason this increment ships its own gate).
+2. **Ambiguous-degrade (negative)** — `evidence_quote` appears **twice** in the snapshot → degrades to the coarser rung; **no** `quote` anchor fabricated.
+3. **Fabricated / absent (negative)** — a manifest carrying a `quote` anchor whose text is **absent** from the snapshot → **A6(b) ERROR**.
+4. **Wrong-offsets (negative)** — a quote that **is** unique in the snapshot but whose recorded `<start>-<end>` is off-by-one (`snapshot[start:end] != quote`) → **A6(c) ERROR** (the offset↔text cross-check — a distinct failure from absence, and the reason the anchor records offsets at all).
 
 ### Increment boundary
 
-**In:** the optional `evidence_quote` finding field; the `quote` anchor rung + kind; the unique-verbatim locator (in `build`); offset-precise render placement; the **A6** integrity gate; backward-compatibility (Increment-1 manifests + the existing gate fixture unchanged); the three new `--check-all` fixtures.
+**In:** the optional `evidence_quote` finding field; the `quote` anchor rung + kind; the unique-verbatim **single-line** locator (in `build`); the **unified character-offset renderer** (descending-offset splice, byte-identical for Increment-1 anchors); the **A6** integrity gate; the explicit A1 obligations; backward-compatibility; the four new `--check-all` fixtures.
 
-**Not in (still future):** retrofitting diagnostic passes to *emit* `evidence_quote` at scale (upstream, demand-gated); DOCX / Google-Docs / Obsidian export; letter↔margin cross-links; round-trip re-anchoring.
+**Not in (still future):** **multi-line quotes**; retrofitting diagnostic passes to *emit* `evidence_quote` at scale (upstream, demand-gated — the feature is inert on the real corpus until then); DOCX / Google-Docs / Obsidian export; letter↔margin cross-links; round-trip re-anchoring.
 
 ## Self-review (Increment 1)
 
