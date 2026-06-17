@@ -4603,9 +4603,11 @@ EOF
     # apodictic.annotation.v1 manifest + the annotated copy: A1 schema + finding_id uniqueness, A2
     # no-mutation (delete every {>> ... <<} CriticMarkup span == the bound snapshot, byte-for-byte; a
     # two-sided sigil precondition before render), A3 anchor integrity (line-range/section/chapter must
-    # resolve to a unique heading; an honest `document` note is fine), A4 every body Must-Fix appears as
-    # a RENDERED comment span (reusing finding_trace's ledger inventory), A5 each comment is a verbatim,
-    # inline-CriticMarkup-safe projection of the finding's fields. W1 coverage / Timeline-boundary drift
+    # resolve to a unique heading; an honest `document` note is fine), A4 the rendered comment-span
+    # multiset equals the manifest comment multiset both directions — every body Must-Fix renders, and
+    # no un-manifested/authored span is present (reusing finding_trace's ledger inventory), A5 each
+    # comment is a verbatim, inline-CriticMarkup-safe projection of the finding's fields. W1 coverage /
+    # Timeline-boundary drift
     # advisory, ERROR under --strict (override `<!-- override: annotation-coverage F-... -->`). Comments
     # only — never prose mutation (the Firewall). Takes a run folder (globs snapshot + manifest +
     # annotated copy + Findings Ledger + Timeline) or explicit files. Delegates to
