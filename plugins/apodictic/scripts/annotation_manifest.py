@@ -261,7 +261,7 @@ def quote_anchor(finding, snapshot):
     q = finding.get("evidence_quote")
     if not isinstance(q, str) or not q.strip():
         return None
-    if "\n" in q or _CM_OPEN in q or _CM_CLOSE in q:
+    if "\n" in q or "\r" in q or _CM_OPEN in q or _CM_CLOSE in q:   # any line break -> not single-line
         return None
     if snapshot.count(q) != 1:
         return None
@@ -547,10 +547,13 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
             continue
         fid = an.get("finding_id")
         qv = anc.get("quote")
-        # (d) present + inline-safe (extends A2's two-sided sigil precondition to anchor.quote)
-        if not isinstance(qv, str) or not qv or "\n" in qv or _CM_OPEN in qv or _CM_CLOSE in qv:
-            errs.append("A6 quote integrity: %s anchor.quote is missing, empty, multi-line, or not "
-                        "inline-CriticMarkup-safe (no {>> <<} or newline)" % fid)
+        # (d) present + single-line + inline-safe (extends A2's two-sided sigil precondition to
+        # anchor.quote). Any line break — \n OR \r (a bare CR, the one the snapshot's LF normalization
+        # would have collapsed) — violates the single-line contract, so both are rejected.
+        if (not isinstance(qv, str) or not qv or "\n" in qv or "\r" in qv
+                or _CM_OPEN in qv or _CM_CLOSE in qv):
+            errs.append("A6 quote integrity: %s anchor.quote is missing, empty, multi-line (\\n/\\r), "
+                        "or not inline-CriticMarkup-safe (no {>> <<})" % fid)
             continue
         # (a) faithful projection of the finding's evidence_quote (no substitution)
         src = led_obj.get(fid)
@@ -847,6 +850,22 @@ def run_self_test():
     chk("quote_multiline_degrades", obj_ml["annotations"][0]["anchor"]["kind"] != "quote")
     obj_em, _ = build_manifest(snapshot, "# L\n" + finding("F-EM-01", "Must-Fix", ["Chapter 9"], quote="   ") + "\n", timeline)
     chk("quote_empty_degrades", obj_em["annotations"][0]["anchor"]["kind"] != "quote")
+    # A bare CR (\r) is a line break too: the locator degrades it AND a forged CR quote anchor is an
+    # A6 error — the single-line contract holds against \r, not just \n (Codex PR #101 review P2).
+    snap_cr = "AAAA\nq a\rb z\nBBBB\n"
+    fd_cr = {"schema": _FINDING_SCHEMA_ID, "id": "F-CR-01", "mechanism": "m", "severity": "Must-Fix",
+             "confidence": "HIGH", "evidence_refs": ["x"], "fix_class": "f", "risk_if_fixed": "r",
+             "evidence_quote": "a\rb"}
+    chk("quote_cr_locator_degrades", quote_anchor(fd_cr, snap_cr) is None)
+    _cr = snap_cr.find("a\rb")
+    obj_cr = {"schema": _SCHEMA_ID, "project": "T", "runlabel": "r", "snapshot_path": "s",
+              "snapshot_sha256": sha256(snap_cr), "snapshot_line_count": line_count(snap_cr),
+              "annotations": [{"finding_id": "F-CR-01",
+                               "anchor": {"kind": "quote", "value": "%d-%d" % (_cr, _cr + 3), "quote": "a\rb"},
+                               "comment": comment_for(fd_cr)}]}
+    led_cr = "# L\n<!-- apodictic:finding\n" + json.dumps(fd_cr) + "\n-->\n"
+    code, ls = check(snap_cr, manifest_md(obj_cr), render(snap_cr, obj_cr), led_cr, None)
+    chk("a6_cr_quote_rejected", code == 1 and any("A6 quote integrity" in x for x in ls))
 
     # a wholly-absent ledger -> ONE clear A4/A5 message, not per-annotation "not in the ledger" noise
     code, ls = check(snapshot, manifest_md(obj), annotated, None, timeline)
