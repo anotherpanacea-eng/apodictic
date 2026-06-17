@@ -149,6 +149,17 @@ def check_obsidian(manifest_obj, snapshot, obsidian_text, letter_basename=None):
     annotations = manifest_obj.get("annotations") if isinstance(manifest_obj.get("annotations"), list) else []
     ids = [an.get("finding_id") for an in annotations if isinstance(an, dict)]
 
+    # O1 (authoritative) — exact-build equality: the on-disk copy must equal a fresh deterministic build
+    # from the gated manifest + snapshot, byte-for-byte. The copy is fully determined by them, so this pins
+    # prose, every footnote ref POSITION, the verbatim definitions (+ Inc-2 wikilinks), and forbids any
+    # authored content — including an injected orphan trailing `[^X]: …` definition that the round-trip
+    # strips and O2 (a def with no ref is not a manifest id) would both miss (the H1/D1 discipline).
+    built, _perrs = build_obsidian(manifest_obj, snapshot, letter_basename=letter_basename)
+    if built is not None and obsidian_text != built:
+        errs.append("O1 copy integrity: the on-disk Obsidian copy is not byte-identical to a fresh build "
+                    "from the gated manifest + snapshot (mutated prose, a moved/altered footnote, or "
+                    "authored content such as a smuggled orphan definition)")
+
     # O1 — round-trip to source (manifest-keyed strip == snapshot).
     if reverse_obsidian(obsidian_text, ids) != snapshot:
         errs.append("O1 round-trip: stripping the [^id] refs + the trailing definition block does NOT "
@@ -276,9 +287,15 @@ def build_obsidian_letter(crosslinked_text, manifest_obj, snapshot, copy_basenam
     return "\n".join(out_lines), errs, warns
 
 
-def strip_obsidian_letter(text, finding_ids):
-    """Strip Inc-2 additions (the [[…]] wikilinks + line-terminal ` ^<fid>`) — the O5 inverse."""
-    t = _WIKILINK_RE.sub("", text)
+def strip_obsidian_letter(text, finding_ids, copy_basename=None):
+    """Strip Inc-2 additions (the [[…]] wikilinks + line-terminal ` ^<fid>`) — the O5 inverse. When
+    copy_basename is given the wikilink strip is **manifest-keyed** to that copy target (`[[copy]]` /
+    `[[copy#heading]]`) — never a `[[…]]` wildcard — so an injected wikilink to ANOTHER target survives
+    the strip and is caught by the O5 prose compare (the firewall's manifest-keyed-strip discipline)."""
+    if copy_basename is not None:
+        t = re.sub(r"\[\[%s(?:#[^\]]*)?\]\]" % re.escape(copy_basename), "", text)
+    else:
+        t = _WIKILINK_RE.sub("", text)
     for fid in finding_ids:
         t = t.replace(" ^%s" % fid, "")
     return t
@@ -290,8 +307,22 @@ def check_obsidian_letter(crosslinked_text, obsidian_letter, copy_text, copy_bas
     errs, warns = [], []
     ids = [an.get("finding_id") for an in (manifest_obj.get("annotations") or []) if isinstance(an, dict)]
 
-    # O5 — letter prose fidelity: strip the Obsidian additions == strip the crosslinked CriticMarkup.
-    if strip_obsidian_letter(obsidian_letter, ids) != am.reverse_transform(crosslinked_text):
+    # O5 (authoritative) — exact-build equality: the on-disk letter must equal a fresh build from the gated
+    # crosslinked letter + manifest + snapshot + copy basename, byte-for-byte. The letter is fully determined
+    # by those inputs, so this pins the editorial prose, every block id, and every back-link wikilink, and
+    # forbids any authored content. This is the firewall guarantee: it closes the wildcard-strip hole where
+    # `_WIKILINK_RE.sub("")` deleted an INJECTED `[[Injected_Note]]` before the prose compare, so a tampered
+    # on-disk letter passed (the H1/D1 discipline). The strip-based check below remains a granular diagnostic.
+    built, _berrs, _bw = build_obsidian_letter(crosslinked_text, manifest_obj, snapshot, copy_basename)
+    if built is not None and obsidian_letter != built:
+        errs.append("O5 letter integrity: the on-disk Obsidian letter is not byte-identical to a fresh build "
+                    "from the gated crosslinked letter + manifest + snapshot (an injected/altered wikilink or "
+                    "block id, or mutated editorial prose)")
+
+    # O5 — letter prose fidelity (diagnostic): strip the Obsidian additions == strip the crosslinked
+    # CriticMarkup. Manifest-keyed to the copy target (not a `[[…]]` wildcard), so an injected wikilink to a
+    # foreign target survives the strip and trips this compare too.
+    if strip_obsidian_letter(obsidian_letter, ids, copy_basename) != am.reverse_transform(crosslinked_text):
         errs.append("O5 letter prose fidelity: stripping the Obsidian letter's additions does not "
                     "reproduce the crosslinked letter's editorial prose (the projection mutated prose)")
 
@@ -404,7 +435,14 @@ def run(paths, strict=False):
         return 1, ["obsidian-export: " + e for e in perrs] + ["obsidian-export: FAIL (O1 precondition)"]
     errs, _w = check_obsidian(obj, snapshot, copy_text, letter_basename=letter_basename)
     gates = "O1 round-trip + O2 footnote resolution + O3 comment fidelity"
-    if letter_path and crosslinked:
+    if letter_path and not crosslinked:
+        # An on-disk Obsidian letter exists but its gated crosslinked source is absent, so O4/O5 cannot run.
+        # Refuse to PASS rather than silently skip — else deleting the gated source and leaving a tampered
+        # obsidian/ letter in place would ride through unvalidated (a firewall bypass).
+        errs.append("an exported Obsidian letter (obsidian/%s) is present but its gated crosslinked source "
+                    "(%s) is absent — refusing to PASS an unvalidatable letter"
+                    % (os.path.basename(letter_path), _CROSSLINKED_GLOB))
+    elif letter_path and crosslinked:
         letter_text = _read(letter_path) or ""
         e_l, _wl = check_obsidian_letter(crosslinked, letter_text, copy_text, copy_basename,
                                          letter_basename, obj, snapshot)
@@ -537,9 +575,27 @@ def run_self_test():
     chk("inc2_letter_heading_text_not_token", "#Chapter 9]]" in letter2 and "#Ch 9]]" not in letter2)
     chk("inc2_letter_file_level_doc", "[[T_Annotated_Manuscript_r]] ^F-DOC-01" in letter2 and len(lwarns) >= 1)
     ids = [a["finding_id"] for a in obj["annotations"]]
-    chk("inc2_o5_prose_fidelity", strip_obsidian_letter(letter2, ids) == am.reverse_transform(crosslinked))
+    chk("inc2_o5_prose_fidelity", strip_obsidian_letter(letter2, ids, copy_bn) == am.reverse_transform(crosslinked))
     chk("inc2_o4_o5_clean",
         check_obsidian_letter(crosslinked, letter2, copy2, copy_bn, letter_bn, obj, snap)[0] == [])
+    # Codex #109 (THE reproduced firewall hole): an INJECTED `[[Injected_Note]]` in the on-disk letter — with
+    # no whitespace delta — used to PASS because the wildcard `_WIKILINK_RE.sub("")` stripped it before the
+    # prose compare. The authoritative O5 exact-build equality (and the now manifest-keyed strip) must catch it.
+    # NO leading space — the exact zero-whitespace-delta injection from the bug report, so the OLD wildcard
+    # strip would have removed it cleanly (reproducing the prose, a false PASS); only the authoritative lock
+    # + the manifest-keyed strip catch it. (A leading space would let the old strip leave a residual and pass
+    # for the wrong reason — a vacuous test.)
+    _injected = letter2.replace("# T — Editorial Letter", "# T — Editorial Letter[[Injected_Note]]", 1)
+    chk("inc2_o5_catches_injected_wikilink",
+        any("O5" in x for x in check_obsidian_letter(crosslinked, _injected, copy2, copy_bn, letter_bn, obj, snap)[0]))
+    chk("inc2_o5_keyed_strip_keeps_foreign_wikilink",   # the keyed strip leaves a foreign wikilink in place
+        strip_obsidian_letter(_injected, ids, copy_bn) != am.reverse_transform(crosslinked))
+    # Codex #109 analog on the COPY: an injected orphan trailing `[^X]: …` definition (no in-body ref) used
+    # to slip past O1's trailing-block strip + O2 (a def with no ref is not a manifest id). Authoritative O1
+    # exact-build equality catches it.
+    _orphan = copy2.rstrip("\n") + "\n[^F-EVIL-02]: an authored orphan definition\n"
+    chk("inc2_copy_catches_orphan_definition",
+        any("O1 copy integrity" in x for x in check_obsidian(obj, snap, _orphan, letter_basename=letter_bn)[0]))
     # O4 forward fires when a letter block id is missing (copy forward link dangles).
     chk("inc2_o4_forward_fires",
         any("O4" in x for x in check_obsidian_letter(crosslinked, letter2.replace(" ^F-CH-01", ""),
@@ -617,6 +673,17 @@ def run_self_test():
         good_l = open(letter_p, encoding="utf-8").read()
         open(letter_p, "w", encoding="utf-8").write(good_l.replace("pacing collapses", "pacing COLLAPSES"))
         chk("inc2_run_catches_letter_mutation", run([d2])[0] == 1)
+        # Codex #109 end-to-end: inject a `[[Injected_Note]]` (zero whitespace delta) into the EXPORTED
+        # letter file and run the validator — it must FAIL (it returned PASS before the authoritative O5 lock).
+        open(letter_p, "w", encoding="utf-8").write(
+            good_l.replace("# T — Editorial Letter", "# T — Editorial Letter[[Injected_Note]]", 1))
+        chk("inc2_run_catches_disk_injected_wikilink", run([d2])[0] == 1)
+        # Codex #109 P2: deleting the gated crosslinked SOURCE while leaving the tampered obsidian/ letter
+        # must NOT silently skip O4/O5 — it must FAIL (a present-but-unvalidatable letter is refused).
+        src_p = os.path.join(d2, "T_Crosslinked_Letter_r.md")
+        os.remove(src_p)
+        chk("inc2_run_refuses_letter_without_gated_source", run([d2])[0] == 1)
+        open(src_p, "w", encoding="utf-8").write(crosslinked)   # restore the gated source
         open(letter_p, "w", encoding="utf-8").write(good_l)
         chk("inc2_run_passes_after_restore", run([d2])[0] == 0)
     finally:
