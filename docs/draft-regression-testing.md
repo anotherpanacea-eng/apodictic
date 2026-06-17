@@ -58,7 +58,7 @@ The point is that a revision cannot *quietly* lose ground, even though the signa
 
 | ID | Severity | Rule |
 |---|---|---|
-| **R1 — round linkage** | ERROR | The report names both rounds, both ledgers resolve and parse, and the prior round is the immediate predecessor (no skipped round silently merged). The one genuinely mechanical (non-heuristic) invariant. |
+| **R1 — round linkage** | ERROR | Both ledgers resolve, parse, and are non-empty, and the two rounds are **distinct** (not the same folder diffed against itself). The one genuinely mechanical (non-heuristic) invariant. *Round ordering/adjacency is the orchestrator's responsibility — runlabels are `date_model`, not sequential round numbers, so the validator does not assert "immediate predecessor"; it picks which two rounds to diff.* |
 | **W1 — recurrence candidate** | WARN (ERROR under `--strict`) | One or more `recurrence-candidate` findings (a resolved/`revised` round N-1 finding heuristically matched in round N). Advisory because the match is heuristic and a writer may knowingly defer; `--strict`/round-close gates. Each carries its match basis + the round N-1 severity it would revert to. |
 | **W2 — quiet-chapter breakage candidate** | WARN (ERROR under `--strict`) | One or more `new-in-quiet-chapter` findings, unadjudicated (`<!-- override: regression-cleared <runlabel>:<chapter> — investigated, not fix-induced -->`). Surfaces candidate fix-induced breakage; never asserts causation. |
 | **W3 — unexplained-drop candidate** | WARN (ERROR under `--strict`) | A round N-1 finding with no round-N match and no resolution marker. Advisory (legitimate on a changed manuscript; matches `finding-trace` W1/W2/W3 and `state-card-diff` W1 posture). |
