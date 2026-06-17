@@ -141,7 +141,7 @@ Use these filenames within run folders:
 
 **Core DE:**
 - `[Project]_Contract_[runlabel].md`
-- `[Project]_Manuscript_Snapshot_[runlabel].md` (frozen LF-normalized copy, written at intake; the Annotated-Manuscript deliverable's immutable reference — see `run-core.md` §Intake Step 1)
+- `[Project]_Manuscript_Snapshot_[runlabel].md` (frozen LF-normalized copy, written at intake; the Annotated-Manuscript deliverable's immutable reference — see `run-core.md` §Intake Protocol → Step 1)
 - `[Project]_Pass0_Reverse_Outline_[runlabel].md`
 - `[Project]_Pass1_Reader_Experience_[runlabel].md`
 - `[Project]_Pass2_Structural_Mapping_[runlabel].md`

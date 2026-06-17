@@ -39,7 +39,7 @@ manifest.
 The generators above are **wired into the run flow** so a real edit produces the deliverable — not just the
 validators on a fixture (the producer, `docs/annotated-manuscript-producer.md`):
 
-- **Intake** persists the snapshot for core-de / full-de runs (`run-core.md` §Intake Step 1).
+- **Intake** persists the snapshot for core-de / full-de runs (`run-core.md` §Intake Protocol → Step 1).
 - **Run-end** offers the marked-up copy + crosslinked letter whenever the run wrote a full editorial letter
   (`*_…_DE_Synthesis_*`), **asks the author**, and on *yes* runs build → A1–A6 → render → X1–X4 **staged in a
   temp copy**, moving only verified artifacts into the run folder (`run-synthesis.md` §Annotated Manuscript +
