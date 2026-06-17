@@ -694,15 +694,23 @@ def check_docx(manifest_obj, snapshot, docx_bytes):
     ordered = sorted(annotations, key=lambda a: a.get("finding_id") or "")
     idmap = {a.get("finding_id"): i for i, a in enumerate(ordered)}
     expected_ids = set(idmap.values())
-    starts = set(map(int, re.findall(r'<w:commentRangeStart w:id="(\d+)"/>', document_xml)))
-    ends = set(map(int, re.findall(r'<w:commentRangeEnd w:id="(\d+)"/>', document_xml)))
-    refs = set(map(int, re.findall(r'<w:commentReference w:id="(\d+)"/>', document_xml)))
-    comment_text = {}
+    starts = [int(x) for x in re.findall(r'<w:commentRangeStart w:id="(\d+)"/>', document_xml)]
+    ends = [int(x) for x in re.findall(r'<w:commentRangeEnd w:id="(\d+)"/>', document_xml)]
+    refs = [int(x) for x in re.findall(r'<w:commentReference w:id="(\d+)"/>', document_xml)]
+    comment_text, comment_ids = {}, []
     for cm in re.finditer(r'<w:comment w:id="(\d+)"[^>]*>(.*?)</w:comment>', comments_xml, re.DOTALL):
+        comment_ids.append(int(cm.group(1)))
         comment_text[int(cm.group(1))] = _html_unescape_exact("".join(_WT_RE.findall(cm.group(2))))
-    if not (starts == ends == refs == set(comment_text) == expected_ids):
+
+    def _exactly_once(lst):   # every manifest id appears EXACTLY once, no missing / duplicate / extra
+        seen = {}
+        for x in lst:
+            seen[x] = seen.get(x, 0) + 1
+        return set(seen) == expected_ids and all(v == 1 for v in seen.values())
+    if not (_exactly_once(starts) and _exactly_once(ends) and _exactly_once(refs) and _exactly_once(comment_ids)):
         errs.append("D3 comment resolution: the commentRangeStart/End/Reference ids and the comments.xml "
-                    "ids must each equal the manifest finding set {0..n-1}")
+                    "ids must each contain every manifest finding {0..n-1} exactly once (no missing, "
+                    "duplicate, or un-manifested id)")
     for a in ordered:
         wid = idmap[a.get("finding_id")]
         if comment_text.get(wid) != a.get("comment"):
@@ -1230,6 +1238,12 @@ def run_self_test():
     chk("docx_d3_fires_on_reauthor",
         any("D1" in x or "D3" in x for x in check_docx(obj, snap, _rezip_with(
             {"word/comments.xml": cxml.replace("pacing seam", "INVENTED")}))[0]))
+    # D3 multiset (build-review P3): a DUPLICATED range id must fail D3's resolution check standalone
+    # (a set-based check would collapse it). Inject a second commentRangeStart id=0.
+    _dup = docxml.replace('<w:commentRangeStart w:id="0"/>',
+                          '<w:commentRangeStart w:id="0"/><w:commentRangeStart w:id="0"/>', 1)
+    chk("docx_d3_multiset_catches_dup_id",
+        any("D3 comment resolution" in x for x in check_docx(obj, snap, _rezip_with({"word/document.xml": _dup}))[0]))
     _t, dperrs = build_docx(
         {"annotations": [ann("F-X-01", {"kind": "document", "value": ""}, "line\nline2")]}, snap)
     chk("docx_precond_multiline", any("multi-line" in x for x in dperrs))
