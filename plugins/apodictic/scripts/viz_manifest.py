@@ -116,11 +116,20 @@ def ledger_findings(ledger_text):
 
 
 def chapter_of(obj):
-    """Conservative chapter bin from a finding's evidence_refs: 'Ch N' or the literal 'unplaced'."""
+    """Conservative chapter bin from a finding's evidence_refs: 'Ch N' or the literal 'unplaced'.
+
+    Delegates to the SHARED apodictic_artifacts.chapter_token so viz and annotation_manifest
+    normalize chapter refs identically (it recognizes 'Ch. N' / 'Ch.N' too, which the local
+    _CHAPTER_RE below — kept only for the render-time numeric sort of already-binned 'Ch N'
+    strings — does not). Falls back to the local regex if the shared module is unavailable."""
     for ref in obj.get("evidence_refs") or []:
-        m = _CHAPTER_RE.search(str(ref))
-        if m:
-            return "Ch %s" % m.group(1)
+        tok = art.chapter_token(ref) if art is not None else None
+        if tok:
+            return tok
+        if art is None:
+            m = _CHAPTER_RE.search(str(ref))
+            if m:
+                return "Ch %s" % m.group(1)
     return "unplaced"
 
 
