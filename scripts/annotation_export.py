@@ -79,8 +79,14 @@ def build_obsidian(manifest_obj, snapshot):
             errs.append("O1 precondition: the snapshot contains a footnote-definition-shaped line: %r" % ln[:50])
             break
     for an in annotations:
-        if isinstance(an, dict) and _FN_REF in (an.get("comment") or ""):
+        if not isinstance(an, dict):
+            continue
+        c = an.get("comment") or ""
+        if _FN_REF in c:
             errs.append("O1 precondition: comment for %s contains '[^'" % an.get("finding_id"))
+        if "\n" in c or "\r" in c:
+            errs.append("O1 precondition: comment for %s is multi-line — a footnote definition is one "
+                        "line (the trailing-block round-trip would break)" % an.get("finding_id"))
     if errs:
         return None, errs
     if not annotations:
@@ -218,11 +224,23 @@ def run(paths, strict=False):
     obj, snapshot, _p, _r, err = _resolve(paths[0])
     if err:
         return 2, ["obsidian-export: %s" % err]
-    text, perrs = build_obsidian(obj, snapshot)
+    # Validate the ON-DISK export artifact, never a regenerate — so a hand-edited copy (mutated prose,
+    # re-authored comment, smuggled un-manifested footnote) is actually caught. This mirrors how
+    # `annotated-manuscript` globs and gates the committed annotated copy's bytes (the A2 discipline).
+    copy_path = _newest(glob.glob(os.path.join(paths[0], "obsidian", "*_Annotated_Manuscript_*.md")))
+    if not copy_path:
+        return 2, ["obsidian-export: no obsidian/*_Annotated_Manuscript_*.md found "
+                   "(run `annotation_export.py obsidian <run_folder>` first)"]
+    text = _read(copy_path)
+    if text is None:
+        return 2, ["obsidian-export: cannot read %s" % copy_path]
+    # The two-sided build precondition the artifact must have satisfied (snapshot/comments free of '[^').
+    _expected, perrs = build_obsidian(obj, snapshot)
     if perrs:
         return 1, ["obsidian-export: " + e for e in perrs] + ["obsidian-export: FAIL (O1 precondition)"]
     errs, warns = check_obsidian(obj, snapshot, text)
-    lines = ["obsidian-export: %d finding(s) projected to native footnotes" % len(obj.get("annotations") or [])]
+    lines = ["obsidian-export: %d finding(s); validating obsidian/%s"
+             % (len(obj.get("annotations") or []), os.path.basename(copy_path))]
     for e in errs:
         lines.append("  ERROR: %s" % e)
     if errs:
@@ -312,6 +330,10 @@ def run_self_test():
     _t, perrs = build_obsidian({"annotations": [ann("F-X-01", {"kind": "document", "value": ""}, "see [^1]")]}, snap)
     chk("precondition_comment_sigil", any("comment for F-X-01 contains" in x for x in perrs))
 
+    # O1 precondition: a multi-line comment is refused (a footnote definition is one line).
+    _t, perrs = build_obsidian({"annotations": [ann("F-X-01", {"kind": "document", "value": ""}, "line one\nline two")]}, snap)
+    chk("precondition_comment_multiline", any("is multi-line" in x for x in perrs))
+
     # determinism.
     chk("deterministic", build_obsidian(obj, snap)[0] == build_obsidian(obj, snap)[0])
 
@@ -329,6 +351,22 @@ def run_self_test():
         chk("generate_writes", generate(d)[0] == 0 and os.path.isfile(
             os.path.join(d, "obsidian", "T_Annotated_Manuscript_r.md")))
         chk("run_validates", run([d])[0] == 0)
+        # run() must validate the ON-DISK copy: tampering the emitted file is caught (not a regenerate).
+        copy_p = os.path.join(d, "obsidian", "T_Annotated_Manuscript_r.md")
+        good = open(copy_p, encoding="utf-8").read()
+        open(copy_p, "w", encoding="utf-8").write(good.replace("Three days collapsed here.", "Three days collapsed THERE."))
+        chk("run_catches_disk_prose_mutation", run([d])[0] == 1)
+        open(copy_p, "w", encoding="utf-8").write(good.replace("pacing seam", "AN INVENTED CLAIM"))
+        chk("run_catches_disk_comment_reauthor", run([d])[0] == 1)
+        open(copy_p, "w", encoding="utf-8").write(
+            good.replace("Three days collapsed here.", "Three days collapsed here.[^F-EVIL-01]").rstrip("\n")
+            + "\n[^F-EVIL-01]: authored note\n")
+        chk("run_catches_disk_unmanifested_footnote", run([d])[0] == 1)
+        open(copy_p, "w", encoding="utf-8").write(good)
+        chk("run_passes_after_restore", run([d])[0] == 0)
+        # a missing on-disk export is a usage error, not a false PASS.
+        os.remove(copy_p)
+        chk("run_no_copy_is_usage", run([d])[0] == 2)
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
