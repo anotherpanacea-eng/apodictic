@@ -1114,9 +1114,9 @@ def run_self_test():
     # generate() end-to-end from a run folder.
     d = tempfile.mkdtemp()
     try:
-        with open(os.path.join(d, "T_Manuscript_Snapshot_r.md"), "w") as fh:
+        with open(os.path.join(d, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8") as fh:
             fh.write(snap)
-        with open(os.path.join(d, "T_Annotation_Manifest_r.md"), "w") as fh:
+        with open(os.path.join(d, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8") as fh:
             fh.write("<!-- apodictic:annotation\n%s\n-->" % _j.dumps(obj))
         chk("generate_writes", generate(d)[0] == 0 and os.path.isfile(
             os.path.join(d, "obsidian", "T_Annotated_Manuscript_r.md")))
@@ -1144,11 +1144,11 @@ def run_self_test():
     # run validates both (O1-O5), and tampering the on-disk letter is caught.
     d2 = tempfile.mkdtemp()
     try:
-        with open(os.path.join(d2, "T_Manuscript_Snapshot_r.md"), "w") as fh:
+        with open(os.path.join(d2, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8") as fh:
             fh.write(snap)
-        with open(os.path.join(d2, "T_Annotation_Manifest_r.md"), "w") as fh:
+        with open(os.path.join(d2, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8") as fh:
             fh.write("<!-- apodictic:annotation\n%s\n-->" % _j.dumps(obj))
-        with open(os.path.join(d2, "T_Crosslinked_Letter_r.md"), "w") as fh:
+        with open(os.path.join(d2, "T_Crosslinked_Letter_r.md"), "w", encoding="utf-8") as fh:
             fh.write(crosslinked)
         code, _l = generate(d2)
         chk("inc2_generate_both", code == 0
@@ -1223,9 +1223,9 @@ def run_self_test():
     # generate_html + run_html end-to-end; on-disk tampering caught.
     d3 = tempfile.mkdtemp()
     try:
-        with open(os.path.join(d3, "T_Manuscript_Snapshot_r.md"), "w") as fh:
+        with open(os.path.join(d3, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8") as fh:
             fh.write(snap)
-        with open(os.path.join(d3, "T_Annotation_Manifest_r.md"), "w") as fh:
+        with open(os.path.join(d3, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8") as fh:
             fh.write("<!-- apodictic:annotation\n%s\n-->" % _j.dumps(obj))
         chk("html_generate_writes", generate_html(d3)[0] == 0
             and os.path.isfile(os.path.join(d3, "html", "T_Annotated_Manuscript_r.html")))
@@ -1301,9 +1301,9 @@ def run_self_test():
 
     d4 = tempfile.mkdtemp()
     try:
-        with open(os.path.join(d4, "T_Manuscript_Snapshot_r.md"), "w") as fh:
+        with open(os.path.join(d4, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8") as fh:
             fh.write(snap)
-        with open(os.path.join(d4, "T_Annotation_Manifest_r.md"), "w") as fh:
+        with open(os.path.join(d4, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8") as fh:
             fh.write("<!-- apodictic:annotation\n%s\n-->" % _j.dumps(obj))
         chk("docx_generate_writes", generate_docx(d4)[0] == 0
             and os.path.isfile(os.path.join(d4, "docx", "T_Annotated_Manuscript_r.docx")))

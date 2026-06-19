@@ -1,3 +1,12 @@
+# Normalize line endings: store LF in git, check out LF on every platform.
+# Without this, a Windows checkout (core.autocrlf=true) smudges every text file to
+# CRLF, which (a) breaks the CRLF-sensitive generators — release-generate.mjs matches
+# `\n`-anchored patterns against the README — and (b) risks EOL drift in the
+# byte-identical dual script mirror (scripts/ <-> plugins/apodictic/scripts/). All
+# tracked blobs are already LF, so this is zero-renormalization; `*.docx binary` below
+# still overrides for binary files.
+* text=auto eol=lf
+
 # The codex/ and antigravity/ trees are generated mirrors of plugins/apodictic/**
 # produced by scripts/build-codex.mjs and scripts/build-antigravity.mjs. They are
 # committed because the Codex and Antigravity hosts install from them, but they are

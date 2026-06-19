@@ -516,7 +516,7 @@ def run_self_test():
     # run-folder + explicit-file resolution
     d = tempfile.mkdtemp()
     made.append(d)
-    with open(os.path.join(d, "Proj_Retcon_Plan_run.md"), "w") as fh:
+    with open(os.path.join(d, "Proj_Retcon_Plan_run.md"), "w", encoding="utf-8") as fh:
         fh.write("# Retcon Plan\n" + TARGETS + item("RX-01", blast=["Protected: close"]) + "\n")
     chk("run_folder_resolution", run([d])[0] == 0)
     chk("explicit_file_resolution", run([os.path.join(d, "Proj_Retcon_Plan_run.md")])[0] == 0)
