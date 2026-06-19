@@ -432,9 +432,9 @@ def run_self_test():
     # resolution — a run folder
     d = tempfile.mkdtemp()
     made.append(d)
-    with open(os.path.join(d, "Example_Annotation_Manifest_r.md"), "w") as fh:
+    with open(os.path.join(d, "Example_Annotation_Manifest_r.md"), "w", encoding="utf-8") as fh:
         fh.write(manifest)
-    with open(os.path.join(d, "Example_Editorial_Letter_r.md"), "w") as fh:
+    with open(os.path.join(d, "Example_Editorial_Letter_r.md"), "w", encoding="utf-8") as fh:
         fh.write(letter)
     chk("build_writes_crosslinked", build(d) == 0)
     chk("run_folder_validates", run([d])[0] == 0)

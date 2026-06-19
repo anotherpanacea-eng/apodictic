@@ -429,11 +429,11 @@ def run_self_test():
         d1, d2 = os.path.join(d, "r1"), os.path.join(d, "r2")
         os.makedirs(d1)
         os.makedirs(d2)
-        with open(os.path.join(d1, "P_Findings_Ledger_2026-01-01_m.md"), "w") as fh:
+        with open(os.path.join(d1, "P_Findings_Ledger_2026-01-01_m.md"), "w", encoding="utf-8") as fh:
             fh.write(r1)
-        with open(os.path.join(d1, "P_Revision_Report_2026-01-02_m.md"), "w") as fh:
+        with open(os.path.join(d1, "P_Revision_Report_2026-01-02_m.md"), "w", encoding="utf-8") as fh:
             fh.write("# Revision Report\n<!-- resolved: F-P5-01 -->\n")
-        with open(os.path.join(d2, "P_Findings_Ledger_2026-02-01_m.md"), "w") as fh:
+        with open(os.path.join(d2, "P_Findings_Ledger_2026-02-01_m.md"), "w", encoding="utf-8") as fh:
             fh.write(r2)
         # prior resolved F-P5-01 -> recurrence -> WARN (exit 0), ERROR under --strict.
         chk("run_pair_advisory", run([d1, d2])[0] == 0)
@@ -444,9 +444,9 @@ def run_self_test():
         # current-round override in a REVISION REPORT (not the ledger) is read and clears W2.
         d3 = os.path.join(d, "r3")
         os.makedirs(d3)
-        with open(os.path.join(d3, "P_Findings_Ledger_2026-03-01_m.md"), "w") as fh:
+        with open(os.path.join(d3, "P_Findings_Ledger_2026-03-01_m.md"), "w", encoding="utf-8") as fh:
             fh.write(r2)
-        with open(os.path.join(d3, "P_Revision_Report_2026-03-02_m.md"), "w") as fh:
+        with open(os.path.join(d3, "P_Revision_Report_2026-03-02_m.md"), "w", encoding="utf-8") as fh:
             fh.write("# Revision Report\n<!-- override: regression-cleared 2026-03-01_m:Ch 3 — investigated -->\n")
         _c3, l3 = run([d1, d3])
         chk("run_override_in_revision_report_clears_w2",

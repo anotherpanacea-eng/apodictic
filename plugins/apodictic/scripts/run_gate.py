@@ -744,12 +744,12 @@ def run_self_test():
     def folder(ledger_text, with_log=True, sidecar=None):
         d = tempfile.mkdtemp()
         made.append(d)
-        with open(os.path.join(d, "Proj_Findings_Ledger_run.md"), "w") as fh:
+        with open(os.path.join(d, "Proj_Findings_Ledger_run.md"), "w", encoding="utf-8") as fh:
             fh.write(ledger_text)
         if with_log:
-            with open(os.path.join(d, "Proj_Audit_Invocation_Log_run.md"), "w") as fh:
+            with open(os.path.join(d, "Proj_Audit_Invocation_Log_run.md"), "w", encoding="utf-8") as fh:
                 fh.write("## Audit Invocation Log\n")
-        with open(os.path.join(d, "Diagnostic_State.meta.json"), "w") as fh:
+        with open(os.path.join(d, "Diagnostic_State.meta.json"), "w", encoding="utf-8") as fh:
             json.dump(sidecar if sidecar is not None else {"project": "Proj", "execution": {}}, fh)
         return d
 
@@ -807,7 +807,7 @@ def run_self_test():
     dw = folder(ledger_ok)
     cmd_gate("run_synthesis", dw, manifest, write=True, validate_sh=vs)
     cmd_attest("run_synthesis", dw, manifest, write=True, validate_sh=vs)
-    with open(os.path.join(dw, "Proj_Core_DE_Synthesis_run.md"), "w") as fh:
+    with open(os.path.join(dw, "Proj_Core_DE_Synthesis_run.md"), "w", encoding="utf-8") as fh:
         fh.write("# Edit\n## What Needs Work\nTheo's arc could perhaps be strengthened (Chapter 34).\n"
                  "## Appendix B: Severity Calibration\nTheo arc: Severity held at Must-Fix.\n")
     code, _ = cmd_gate("run_spot_check", dw, manifest, write=True, validate_sh=vs)
@@ -944,7 +944,7 @@ def run_self_test():
           cmd_exception("run_synthesis", "/nonexistent/xyz", manifest, "skip", "r", write=True)[0] == 2)
     nosc = tempfile.mkdtemp()
     made.append(nosc)
-    with open(os.path.join(nosc, "Proj_Findings_Ledger_run.md"), "w") as fh:
+    with open(os.path.join(nosc, "Proj_Findings_Ledger_run.md"), "w", encoding="utf-8") as fh:
         fh.write(ledger_ok)  # ledger present but NO Diagnostic_State.meta.json
     check("skip_no_sidecar_errors",
           cmd_exception("run_synthesis", nosc, manifest, "skip", "r", write=True)[0] == 2)
@@ -977,7 +977,7 @@ def run_self_test():
           fold_pointer(prior["execution"]["gate_events"], manifest)["finding_states"]
           == {"F-P5-01": "delivered", "F-P5-02": "delivered"})
     # revision report resolves ONLY F-P5-01 (F-P5-02 stays present, no marker)
-    with open(os.path.join(drev, "Proj_Revision_Report_run.md"), "w") as fh:
+    with open(os.path.join(drev, "Proj_Revision_Report_run.md"), "w", encoding="utf-8") as fh:
         fh.write("# Revision Report\n- Flags resolved: F-P5-01\n<!-- resolved: F-P5-01 -->\n"
                  "- Flags still present: F-P5-02\n")
     code, _ = cmd_gate("revision_round", drev, manifest, write=True, validate_sh=vs)
@@ -1008,7 +1008,7 @@ def run_self_test():
 
     # (c) zero resolved markers -> no-op on finding_states (empty subset)
     drev0 = folder(ledger2, sidecar=prior)
-    with open(os.path.join(drev0, "Proj_Revision_Report_run.md"), "w") as fh:
+    with open(os.path.join(drev0, "Proj_Revision_Report_run.md"), "w", encoding="utf-8") as fh:
         fh.write("# Revision Report\n- Flags still present: F-P5-01, F-P5-02\n")  # no resolved markers
     cmd_gate("revision_round", drev0, manifest, write=True, validate_sh=vs)
     cmd_attest("revision_round", drev0, manifest, write=True, validate_sh=vs)
@@ -1017,7 +1017,7 @@ def run_self_test():
 
     # (S1) an off-ledger resolved marker is filtered at write time — no phantom finding_states key
     drevp = folder(ledger2, sidecar=prior)
-    with open(os.path.join(drevp, "Proj_Revision_Report_run.md"), "w") as fh:
+    with open(os.path.join(drevp, "Proj_Revision_Report_run.md"), "w", encoding="utf-8") as fh:
         fh.write("# Revision Report\n- Flags resolved: F-P5-01, F-ZZ-99\n"
                  "<!-- resolved: F-P5-01 -->\n<!-- resolved: F-ZZ-99 -->\n")
     cmd_gate("revision_round", drevp, manifest, write=True, validate_sh=vs)
@@ -1028,7 +1028,7 @@ def run_self_test():
     # (P1) a Revision *Calendar* (not a Report) does NOT satisfy the revision_report artifact —
     # even one carrying a resolved marker — so the gate blocks rather than clearing with empty deltas
     drevc = folder(ledger2, sidecar=prior)
-    with open(os.path.join(drevc, "Proj_Revision_Calendar_run.md"), "w") as fh:
+    with open(os.path.join(drevc, "Proj_Revision_Calendar_run.md"), "w", encoding="utf-8") as fh:
         fh.write("# Revision Calendar\n<!-- resolved: F-P5-01 -->\n")
     code, _ = cmd_gate("revision_round", drevc, manifest, write=True, validate_sh=vs)
     check("rev_calendar_not_report_blocks",

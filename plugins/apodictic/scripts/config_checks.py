@@ -422,7 +422,7 @@ def run_self_test(which=None):
                 d = os.path.join(td, name)
                 os.makedirs(d)
                 for f in files:
-                    open(os.path.join(d, f), "w").close()
+                    open(os.path.join(d, f), "w", encoding="utf-8").close()
                 if letter is not None:
                     with open(os.path.join(d, "Editorial_Letter.md"), "w", encoding="utf-8") as fh:
                         fh.write(letter)

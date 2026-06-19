@@ -452,7 +452,9 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
   const runtimeDocs = walkFiles(tempWorkspace)
     .filter((file) => file.endsWith(".md"))
     .filter((file) => {
-      const relPath = path.relative(tempWorkspace, file);
+      // Normalize to forward slashes: path.relative() yields backslashes on Windows,
+      // which would miss the forward-slash allowlist below and false-positive the scan.
+      const relPath = path.relative(tempWorkspace, file).split(path.sep).join("/");
       return !new Set([
         "NON_PARITY_NOTES.md",
         "plugins/apodictic/skills/core-editor/references/changelog.md",
