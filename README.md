@@ -37,6 +37,7 @@ It runs 11 analytical passes: reverse outline, reader experience mapping, struct
 You don't have to install anything to see what APODICTIC produces. These open as live, rendered pages:
 
 - **[A sample editorial letter →](https://anotherpanacea-eng.github.io/apodictic/sample-editorial-letter.html)** — the main deliverable: a structural diagnosis with severity-ranked findings and classes of solution, prose left untouched. ([a second example](https://anotherpanacea-eng.github.io/apodictic/sample-editorial-letter-2.html))
+- **[An annotated manuscript →](https://anotherpanacea-eng.github.io/apodictic/sample-annotated-manuscript.html)** — the marked-up copy: each finding anchored in the manuscript where the problem lives, severity-tagged, and cross-linked to the letter. This is the working surface you revise at the line — comments only, never tracked prose changes. (Also exports to Obsidian, and to Word / Google Docs as native anchored comments.)
 - **[A targeted audit letter →](https://anotherpanacea-eng.github.io/apodictic/sample-targeted-audit-letter.html)** — a focused single-audit deep dive.
 - **[Pre-writing output →](https://anotherpanacea-eng.github.io/apodictic/sample-pre-writing-output.html)** — what you get starting from an idea instead of a draft.
 
@@ -126,9 +127,9 @@ If APODICTIC does not appear, the usual cause is opening the wrong folder. Codex
 
 Prefer to build from source? Clone the repo, run `node scripts/build-codex.mjs`, and open the generated `codex/` folder instead.
 
-### Claude Code / Cowork (legacy host flow)
+### Claude Code & Cowork
 
-The instructions below are the older Claude-oriented install path.
+APODICTIC also installs into Claude Code and Cowork through the plugin marketplace — pick your host below.
 
 ### Claude Code (CLI)
 

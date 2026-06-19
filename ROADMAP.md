@@ -596,7 +596,106 @@ The fixtures in place (F1-F4) are reusable for future model-capability reviews. 
 
 ---
 
+## Release-Readiness Review (2026-06-19)
+
+A pre-v2.5.0 review. v2.5.0 is **staged but untagged**: `plugin.json` / `marketplace.json` already
+read `2.5.0`, 11 `changelog.d/` fragments are accumulated, and the 81 unreleased commits are one
+coherent theme — the **Annotated-Manuscript deliverable + export targets** (Obsidian, HTML,
+DOCX→Google Docs). **GitHub CI for `main` is green on `ubuntu-latest` — the release is shippable.**
+The items below are hardening / showcase work the review surfaced; none blocks the tag. **Several were
+resolved in the same wave** (marked *Fixed*); the strategic items remain roadmap work.
+
+### Cross-platform gate parity (Windows dev environment) — **Fixed (this wave)**
+
+The three named CI gates all fail *locally on Windows* for environment reasons, not content — so a
+maintainer following `AGENTS.md`'s "run the real CI command first" discipline on the Windows rig gets
+spurious red, which trains reviewers to ignore the gate (the dangerous failure mode). All three are
+checkout/locale artifacts; CI is green on Linux.
+- **`validate.sh --check-all`** — 9/48 validator self-tests crash with `UnicodeDecodeError` on byte
+  `0x97` (the cp1252 em-dash): the self-test fixture writers use bare `open(..., "w")`, so on a
+  cp1252 default-locale box the fixture is written non-UTF-8 and the UTF-8 reader chokes. Confirmed:
+  `PYTHONUTF8=1 bash scripts/validate.sh --check-all` → **all 48 pass**.
+- **`release-generate.mjs --check`** — "Pattern not found for root README grouped command list": the
+  README is checked out CRLF (`core.autocrlf=true`, no `eol=lf` in `.gitattributes`) and the script's
+  `\n`-anchored regexes don't match. The raw blob is LF, so Linux CI passes.
+- **`build-codex.mjs --self-check`** — a Claude-specific-reference false positive because the
+  generated path uses Windows backslashes and the allowlist matches forward slashes.
+
+**What landed:** `* text=auto eol=lf` in `.gitattributes` (zero-renormalization — all blobs were already
+LF — and it future-proofs the byte-identical dual-script mirror against EOL drift); `encoding="utf-8"`
+pinned on all **70** text-mode fixture/output writers across the validator suite (root-cause fix, so
+`bash scripts/validate.sh --self-test-all` is **48/48 without `PYTHONUTF8`** on a cp1252 box); and a
+`path.sep`→`/` normalize before build-codex's allowlist match. After a `.gitattributes` refresh
+(`git add --renormalize .` once, post-merge), `--check-all` is green on the Windows rig.
+
+### Input-encoding robustness — **Mostly fine; small follow-up**
+
+*Correction to the initial review, which overstated this.* The **manuscript-reading** family
+(`annotation_export.py`, `reanchor.py`, `regression_diff.py`) already catches `(OSError,
+UnicodeDecodeError)` and degrades — the user-facing path does **not** crash on a non-UTF-8 manuscript.
+The other ~18 `_read` helpers raw-crash on non-UTF-8, but they only ever read **tool-written** artifacts
+(ledgers, sidecars, letters) that are UTF-8 by construction (now doubly so, with the writers pinned). So
+the residual is a small consistency follow-up, not a confirmed user crash. The right shape is **fail-loud**
+(a clear "must be UTF-8" message naming the file), **not** the `regression_diff`-style swallow-to-`None`,
+which produces a *silent* wrong answer — the worse hazard. Demand-gated; no fixture exercises it today.
+
+### Showcase the v2.5.0 marquee deliverable — **Built (this wave)**
+
+v2.5.0's theme is the Annotated-Manuscript deliverable — "the #1 human-DE deliverable"
+(§Annotated-Manuscript Deliverable). Added [`sample-annotated-manuscript.html`](sample-annotated-manuscript.html)
+(rendered from the canonical `example-annotated-manuscript/` fixture via `annotation_export.py html` — a
+self-contained, browser-openable file with severity-tagged, bidirectionally-linked margin findings) and a
+"See It in Action" entry linking it on GitHub Pages, beside the letter / audit / pre-writing samples.
+
+### Repo-browsable version history — **Partly fixed (this wave)**
+
+The "Done" section is **backfilled** with v2.3.0 / v2.3.1 / v2.4.0 (shipped tags that had no entry), so the
+in-repo history is complete through the current release. Still open as a deliberate choice: whether to
+**commit the assembled `CHANGELOG.md`** at release (history in-repo) rather than only in `changelog.d/`
+fragments + GitHub Releases. (For reference, the current suite is **48 validators**; `registry-check`'s
+"43" is the separate signal-emitting-audit count.)
+
+### README host-positioning — **Fixed (this wave)**
+
+The install routing table listed Claude Code (CLI) and Cowork as first-class rows while the section header
+called them "legacy host flow." Dropped the contradictory "legacy" framing (header + body) so the headers
+agree with the table; ordering unchanged (Antigravity / Codex still lead). *If the intent was to actively
+de-emphasize Claude Code / Cowork, re-add an explicit note — this fix only removed the contradiction.*
+
+### Toward "truly great" (strategic) — **Planned**
+
+Beyond hardening: the framework is a deep *diagnostic* instrument, and the highest-value next moves are
+**not more capabilities** (the roadmap's restraint is correct). Three investments move it from
+remarkable to indispensable:
+1. **Published, reproducible validation.** The success condition is already written down (§Benchmark
+   Suite: "two serious editors usually converge on the core claim, top failures, burden mismatch,
+   strongest objection"). Measure and publish it — even at small N — for **fiction** (F1–F4) as well as
+   argument (gated today only on recruiting a second editor). A trust story of "here's the measured
+   inter-rater agreement" beats "trust the discipline." The #1 strategic item; it also matches the
+   maintainer's settle-confusions-with-small-experiments workstyle.
+2. **Close the revision loop into the writer's editor.** v2.5.0 ships the annotated copy *out*
+   (DOCX→GDocs comments). The sticky move is the **round-trip**: ingest the writer's revised draft and
+   re-anchor the notes. The `reanchor` validator already classifies held / moved / vanished / ambiguous
+   — wire it into a real round-trip workflow, not just a gate (§Annotated-Manuscript Deliverable →
+   reanchoring). A one-shot letter is a product; a revision loop in the writer's tool is a habit.
+3. **Finish the visualization leg.** Charts 1–3 ship (pacing, POV, severity-by-chapter); the character
+   co-presence network, scene-function heatmap, reveal-economy timeline, and beat-map-against-spine
+   (§Horizon Tier 1, item 1) are the ones that make a diagnosis legible at a glance, gated only on
+   upstream artifacts becoming machine-readable. Highest-ROI "render what you already produce" work
+   after validation.
+
+---
+
 ## Done
+
+### v2.4.0 — Argument-Engine Calibration, Command Trim & Legal-Risk Wiring
+Additive on top of v2.3.1; no API break. **Nonfiction Argument Engine:** Dialectical Clarity classification **rule 2a** — an AT3 *recommendation* that discharges none of its comparative burden (BP5 + OB3, no funding mechanism) is not evaluable as a recommendation → **Structurally Unsound** (FM-A10, "The Uncompared Proposal"). Post-benchmark it was narrowed so that naming *any* alternative — even a strawman foil — counts as partial discharge (a Should-Fix soft spot), with an anti-gaming clause so a merely decorative foil can still be Unsound via the general evaluability test. Aligns the engine with the `policy-brief-uncompared` ground-truth key (GT7 = UNSOUND); verdict-behavior change, gated on a benchmark convergence run. **Command surface trimmed to 13** — retired `/revision-plan`, `/develop-edit`, `/diagnose`, all reachable through `/start`. **Validators:** `finding-trace` completion glob narrowed to `*_Revision_Report_*.md` so a deadline `*_Revision_Calendar_*.md` isn't mis-counted as a completion. **Legal Risk Register:** a detection layer (per-class signals + severity modifiers + ~20-code escalation-trigger taxonomy) and router wiring — `constraint:risk` offer-then-attach + a `/legal-risk` command. **Onboarding:** README install decision-aid table + a Key Terms glossary.
+
+### v2.3.1 — Decoupled UI Generation & Host-Bundle Distribution
+`release-generate.mjs` no longer reaches into the private APODICTIC-Gemini sibling to write its `App.tsx` / `LandingPage.tsx`; the app now **pulls** this repo's vendored `release-registry.json` and runs its own generator (−175 lines of dead TS-emit), fixing the silent drift when the sibling wasn't checked out at release. The generated `codex/` + `antigravity/` workspaces are **no longer committed** — a new `.github/workflows/release.yml` builds them from the canonical `plugins/` source and publishes them as release assets on `v*` tags (`apodictic-codex-marketplace.zip`, `apodictic-antigravity.zip`, `apodictic.plugin`), so install is download-and-open and the ×3 parity-churn multiplier is gone (GitHub #52, Option B). `release-verify.mjs` + CI now `--self-check` the host builds, and CI gained generator/parity gates (`release-generate --check`, both build `--self-check`s, `assemble-changelog --check`).
+
+### v2.3.0 — Retcon Planning, Legal Risk Register & Nonfiction Pre-Draft
+Captures capability that merged to `main` after the v2.2.0 release commit without a bump; additive, no command/API break. **Retcon Planning** (a `/coach` revision-coaching track) accounts for the *setup debt* a late structural decision incurs, governed by a commitment budget; planning-only (Firewall). **Legal Risk Register** flags defamation / privacy / rights-clearance exposure for work portraying identifiable real people — *flag, don't practice law*. **Nonfiction Pre-Draft Pathway** — thesis-driven pre-writing that plans the argument spine and seeds `Argument_State.md`. **Adaptive Mode Escalation: de-escalation** — steps *down* an over-provisioned mode when Tier 1 reveals a simpler manuscript (strictly conservative, never below `sequential`). Validators **23 → 35** (5 new — `retcon-plan`, `state-card-diff`, `legal-risk`, `scene-ethics`, `argument-spine` — plus self-test coverage for 7 pre-existing pure-utility validators).
 
 ### v2.2.0 — Operator Modes, Feedback Triage & Revision Follow-Through
 Additive on top of v2.1.0; no command/API break. **Operators:** two output-presentation modes close the intake-router operator gaps — **Editor Scaffolding** (`operator:editor`, a superset overlay re-aiming the editorial letter at a human developmental editor: Editor Brief, What-You-Might-Have-Missed, Intervention Menu) and **Diagnostic Vocabulary** (`operator:facilitator`, a Vocabulary Guide teaching aid: grounded glossary + question-framed discussion prompts). **Workflows:** **Feedback Triage** increment 1 (sort/validate/prioritize external feedback; `apodictic.feedback_item.v1`, `/triage-feedback`). **Infrastructure:** **Adaptive Mid-Run Mode Escalation** (condition-triggered post-Tier-1 checkpoint that recommends escalating execution mode). **Harness:** **Finding Lifecycle IDs** increments 2–3 extend `finding-trace` into the revision loop (revision-plan follow-through E4/W2; revision-completion E5/W3 on an explicit `<!-- resolved: F-… -->` marker). Validators **19 → 23** (`escalation-check`, `feedback-triage`, `editor-scaffolding`, `diagnostic-vocabulary`); `--self-test-all` 23/23, `--check-all` + `release-verify` green.
