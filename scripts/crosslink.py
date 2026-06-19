@@ -306,7 +306,7 @@ def build(folder):
         print("crosslink: %s" % exc, file=sys.stderr)
         return 1
     out = os.path.join(folder, _crosslinked_name(letter))
-    with open(out, "w", encoding="utf-8") as fh:
+    with open(out, "w", encoding="utf-8", newline="") as fh:
         fh.write(crosslinked)
     print("crosslink: wrote %s" % os.path.basename(out))
     return 0
@@ -432,9 +432,9 @@ def run_self_test():
     # resolution — a run folder
     d = tempfile.mkdtemp()
     made.append(d)
-    with open(os.path.join(d, "Example_Annotation_Manifest_r.md"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(d, "Example_Annotation_Manifest_r.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write(manifest)
-    with open(os.path.join(d, "Example_Editorial_Letter_r.md"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(d, "Example_Editorial_Letter_r.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write(letter)
     chk("build_writes_crosslinked", build(d) == 0)
     chk("run_folder_validates", run([d])[0] == 0)
@@ -477,7 +477,7 @@ def main(argv):
             print("crosslink: %s" % exc, file=sys.stderr)
             return 1
         if out:
-            with open(out, "w", encoding="utf-8") as fh:
+            with open(out, "w", encoding="utf-8", newline="") as fh:
                 fh.write(h)
             print("crosslink: rendered %s" % out)
         else:

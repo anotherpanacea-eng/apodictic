@@ -786,14 +786,14 @@ def generate(folder):
         return 1, ["obsidian-export: " + e for e in errs] + ["obsidian-export: FAIL (O1 precondition)"]
     outdir = os.path.join(folder, "obsidian")
     os.makedirs(outdir, exist_ok=True)
-    with open(os.path.join(outdir, copy_basename + ".md"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(outdir, copy_basename + ".md"), "w", encoding="utf-8", newline="") as fh:
         fh.write(copy_text)
     wrote = [copy_basename + ".md"]
     if crosslinked:
         letter_text, lerrs, _lwarns = build_obsidian_letter(crosslinked, obj, snapshot, copy_basename)
         if lerrs:
             return 1, ["obsidian-export: " + e for e in lerrs] + ["obsidian-export: FAIL (O5 precondition)"]
-        with open(os.path.join(outdir, letter_basename + ".md"), "w", encoding="utf-8") as fh:
+        with open(os.path.join(outdir, letter_basename + ".md"), "w", encoding="utf-8", newline="") as fh:
             fh.write(letter_text)
         wrote.append(letter_basename + ".md")
     return 0, ["obsidian-export: wrote " + ", ".join("obsidian/" + w for w in wrote)]
@@ -859,7 +859,7 @@ def generate_html(folder):
     outdir = os.path.join(folder, "html")
     os.makedirs(outdir, exist_ok=True)
     out_path = os.path.join(outdir, "%s_Annotated_Manuscript_%s.html" % (project, runlabel))
-    with open(out_path, "w", encoding="utf-8") as fh:
+    with open(out_path, "w", encoding="utf-8", newline="") as fh:
         fh.write(html)
     return 0, ["html-export: wrote html/%s" % os.path.basename(out_path)]
 
@@ -1114,9 +1114,9 @@ def run_self_test():
     # generate() end-to-end from a run folder.
     d = tempfile.mkdtemp()
     try:
-        with open(os.path.join(d, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8") as fh:
+        with open(os.path.join(d, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8", newline="") as fh:
             fh.write(snap)
-        with open(os.path.join(d, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8") as fh:
+        with open(os.path.join(d, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8", newline="") as fh:
             fh.write("<!-- apodictic:annotation\n%s\n-->" % _j.dumps(obj))
         chk("generate_writes", generate(d)[0] == 0 and os.path.isfile(
             os.path.join(d, "obsidian", "T_Annotated_Manuscript_r.md")))
@@ -1124,15 +1124,15 @@ def run_self_test():
         # run() must validate the ON-DISK copy: tampering the emitted file is caught (not a regenerate).
         copy_p = os.path.join(d, "obsidian", "T_Annotated_Manuscript_r.md")
         good = open(copy_p, encoding="utf-8").read()
-        open(copy_p, "w", encoding="utf-8").write(good.replace("Three days collapsed here.", "Three days collapsed THERE."))
+        open(copy_p, "w", encoding="utf-8", newline="").write(good.replace("Three days collapsed here.", "Three days collapsed THERE."))
         chk("run_catches_disk_prose_mutation", run([d])[0] == 1)
-        open(copy_p, "w", encoding="utf-8").write(good.replace("pacing seam", "AN INVENTED CLAIM"))
+        open(copy_p, "w", encoding="utf-8", newline="").write(good.replace("pacing seam", "AN INVENTED CLAIM"))
         chk("run_catches_disk_comment_reauthor", run([d])[0] == 1)
-        open(copy_p, "w", encoding="utf-8").write(
+        open(copy_p, "w", encoding="utf-8", newline="").write(
             good.replace("Three days collapsed here.", "Three days collapsed here.[^F-EVIL-01]").rstrip("\n")
             + "\n[^F-EVIL-01]: authored note\n")
         chk("run_catches_disk_unmanifested_footnote", run([d])[0] == 1)
-        open(copy_p, "w", encoding="utf-8").write(good)
+        open(copy_p, "w", encoding="utf-8", newline="").write(good)
         chk("run_passes_after_restore", run([d])[0] == 0)
         # a missing on-disk export is a usage error, not a false PASS.
         os.remove(copy_p)
@@ -1144,11 +1144,11 @@ def run_self_test():
     # run validates both (O1-O5), and tampering the on-disk letter is caught.
     d2 = tempfile.mkdtemp()
     try:
-        with open(os.path.join(d2, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8") as fh:
+        with open(os.path.join(d2, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8", newline="") as fh:
             fh.write(snap)
-        with open(os.path.join(d2, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8") as fh:
+        with open(os.path.join(d2, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8", newline="") as fh:
             fh.write("<!-- apodictic:annotation\n%s\n-->" % _j.dumps(obj))
-        with open(os.path.join(d2, "T_Crosslinked_Letter_r.md"), "w", encoding="utf-8") as fh:
+        with open(os.path.join(d2, "T_Crosslinked_Letter_r.md"), "w", encoding="utf-8", newline="") as fh:
             fh.write(crosslinked)
         code, _l = generate(d2)
         chk("inc2_generate_both", code == 0
@@ -1157,11 +1157,11 @@ def run_self_test():
         chk("inc2_run_validates_both", run([d2])[0] == 0)
         letter_p = os.path.join(d2, "obsidian", "T_Crosslinked_Letter_r.md")
         good_l = open(letter_p, encoding="utf-8").read()
-        open(letter_p, "w", encoding="utf-8").write(good_l.replace("pacing collapses", "pacing COLLAPSES"))
+        open(letter_p, "w", encoding="utf-8", newline="").write(good_l.replace("pacing collapses", "pacing COLLAPSES"))
         chk("inc2_run_catches_letter_mutation", run([d2])[0] == 1)
         # Codex #109 end-to-end: inject a `[[Injected_Note]]` (zero whitespace delta) into the EXPORTED
         # letter file and run the validator — it must FAIL (it returned PASS before the authoritative O5 lock).
-        open(letter_p, "w", encoding="utf-8").write(
+        open(letter_p, "w", encoding="utf-8", newline="").write(
             good_l.replace("# T — Editorial Letter", "# T — Editorial Letter[[Injected_Note]]", 1))
         chk("inc2_run_catches_disk_injected_wikilink", run([d2])[0] == 1)
         # Codex #109 P2: deleting the gated crosslinked SOURCE while leaving the tampered obsidian/ letter
@@ -1169,8 +1169,8 @@ def run_self_test():
         src_p = os.path.join(d2, "T_Crosslinked_Letter_r.md")
         os.remove(src_p)
         chk("inc2_run_refuses_letter_without_gated_source", run([d2])[0] == 1)
-        open(src_p, "w", encoding="utf-8").write(crosslinked)   # restore the gated source
-        open(letter_p, "w", encoding="utf-8").write(good_l)
+        open(src_p, "w", encoding="utf-8", newline="").write(crosslinked)   # restore the gated source
+        open(letter_p, "w", encoding="utf-8", newline="").write(good_l)
         chk("inc2_run_passes_after_restore", run([d2])[0] == 0)
     finally:
         shutil.rmtree(d2, ignore_errors=True)
@@ -1223,18 +1223,18 @@ def run_self_test():
     # generate_html + run_html end-to-end; on-disk tampering caught.
     d3 = tempfile.mkdtemp()
     try:
-        with open(os.path.join(d3, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8") as fh:
+        with open(os.path.join(d3, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8", newline="") as fh:
             fh.write(snap)
-        with open(os.path.join(d3, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8") as fh:
+        with open(os.path.join(d3, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8", newline="") as fh:
             fh.write("<!-- apodictic:annotation\n%s\n-->" % _j.dumps(obj))
         chk("html_generate_writes", generate_html(d3)[0] == 0
             and os.path.isfile(os.path.join(d3, "html", "T_Annotated_Manuscript_r.html")))
         chk("html_run_validates", run_html([d3])[0] == 0)
         hp = os.path.join(d3, "html", "T_Annotated_Manuscript_r.html")
         gh = open(hp, encoding="utf-8").read()
-        open(hp, "w", encoding="utf-8").write(gh.replace("Three days collapsed here.", "Three days THERE."))
+        open(hp, "w", encoding="utf-8", newline="").write(gh.replace("Three days collapsed here.", "Three days THERE."))
         chk("html_run_catches_disk_mutation", run_html([d3])[0] == 1)
-        open(hp, "w", encoding="utf-8").write(gh)
+        open(hp, "w", encoding="utf-8", newline="").write(gh)
         chk("html_run_passes_after_restore", run_html([d3])[0] == 0)
     finally:
         shutil.rmtree(d3, ignore_errors=True)
@@ -1301,9 +1301,9 @@ def run_self_test():
 
     d4 = tempfile.mkdtemp()
     try:
-        with open(os.path.join(d4, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8") as fh:
+        with open(os.path.join(d4, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8", newline="") as fh:
             fh.write(snap)
-        with open(os.path.join(d4, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8") as fh:
+        with open(os.path.join(d4, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8", newline="") as fh:
             fh.write("<!-- apodictic:annotation\n%s\n-->" % _j.dumps(obj))
         chk("docx_generate_writes", generate_docx(d4)[0] == 0
             and os.path.isfile(os.path.join(d4, "docx", "T_Annotated_Manuscript_r.docx")))
