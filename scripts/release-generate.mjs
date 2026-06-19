@@ -160,6 +160,17 @@ function buildReadmeCapabilitiesLine(stats) {
   ].join(" ");
 }
 
+// README.codex.md carries the capabilities sentence WITHOUT the Claude README's
+// "Current version is in `.claude-plugin/plugin.json`." prefix — it has its own
+// "Current Codex manifest version is `X`." callout, which bump-version.sh owns. So we
+// regenerate only the "Capabilities: … pipeline." span and leave the version callout intact.
+function buildReadmeCodexCapabilitiesLine(stats) {
+  return [
+    `Capabilities: ${counts.plotSpines} plot spines across ${counts.plotFamilies} families, ${stats.available} available audits (${stats.universal} universal, ${stats.craft} craft, ${stats.genre} genre, ${stats.tag} tag), ${counts.researchModes} research modes, ${counts.corePasses} core passes, the evaluative Pass 11 gate, the pre-writing pathway, and the intake router.`,
+    "Includes contract-driven and finding-driven audit integration pipeline."
+  ].join(" ");
+}
+
 function buildRootReadmePlotLine() {
   return `- **Plot coach** with ${counts.plotSpines} structural spines across ${counts.plotFamilies} families (not just three-act)`;
 }
@@ -253,6 +264,32 @@ function main() {
       "README capabilities line"
     );
     writeIfChanged(readmePath, content, changedFiles);
+  }
+
+  if (paths.pluginReadmeCodex) {
+    const codexReadmePath = abs(paths.pluginReadmeCodex);
+    let content = mustRead(codexReadmePath);
+    content = replaceOrThrow(
+      content,
+      /^- \*\*(?:specialized-audits|Specialized Audits)\*\* — .*$/m,
+      buildReadmeSpecializedLine(auditStats),
+      "Codex README specialized line"
+    );
+    content = replaceOrThrow(
+      content,
+      /Run a named audit or list all \d+ available audits\./,
+      buildReadmeAuditCountLine(auditStats),
+      "Codex README available audits line"
+    );
+    // Replace only the "Capabilities: … pipeline." span; the preceding
+    // "Current Codex manifest version is `X`." callout is owned by bump-version.sh.
+    content = replaceOrThrow(
+      content,
+      /Capabilities: .*Includes contract-driven and finding-driven audit integration pipeline\./,
+      buildReadmeCodexCapabilitiesLine(auditStats),
+      "Codex README capabilities line"
+    );
+    writeIfChanged(codexReadmePath, content, changedFiles);
   }
 
   if (paths.rootReadme) {
