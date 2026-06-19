@@ -475,8 +475,8 @@ def run_self_test(which=None):
 
         def diff_rc(p, c):
             with tempfile.TemporaryDirectory() as td:
-                pp = os.path.join(td, "p.md"); open(pp, "w").write(p)
-                cc = os.path.join(td, "c.md"); open(cc, "w").write(c)
+                pp = os.path.join(td, "p.md"); open(pp, "w", encoding="utf-8").write(p)
+                cc = os.path.join(td, "c.md"); open(cc, "w", encoding="utf-8").write(c)
                 return _emit(*timeline_diff(_read(pp), _read(cc)))
         # Generic 'Changed' text must NOT cover a pure addition (review fix).
         cur_changed_masks = prior.replace("## Section 8: Diff Notes\n", added_row).replace(

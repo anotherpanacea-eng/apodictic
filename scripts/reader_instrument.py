@@ -492,9 +492,9 @@ def run_self_test():
     # file + run-folder resolution
     d = tempfile.mkdtemp()
     made.append(d)
-    with open(os.path.join(d, "Proj_Findings_Ledger_run.md"), "w") as fh:
+    with open(os.path.join(d, "Proj_Findings_Ledger_run.md"), "w", encoding="utf-8") as fh:
         fh.write(led_low)
-    with open(os.path.join(d, "Proj_Beta_Reader_Instrument_run.md"), "w") as fh:
+    with open(os.path.join(d, "Proj_Beta_Reader_Instrument_run.md"), "w", encoding="utf-8") as fh:
         fh.write("# Instrument\n" + rq() + "\n")
     chk("run_folder_resolution", run([d])[0] == 0)
     chk("explicit_files_resolution",
