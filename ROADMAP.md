@@ -626,7 +626,15 @@ LF — and it future-proofs the byte-identical dual-script mirror against EOL dr
 pinned on all **70** text-mode fixture/output writers across the validator suite (root-cause fix, so
 `bash scripts/validate.sh --self-test-all` is **48/48 without `PYTHONUTF8`** on a cp1252 box); and a
 `path.sep`→`/` normalize before build-codex's allowlist match. After a `.gitattributes` refresh
-(`git add --renormalize .` once, post-merge), `--check-all` is green on the Windows rig.
+(`git add --renormalize .` once, post-merge), `--check-all` is green on the Windows rig. A follow-on
+(#118) then pinned `newline=""` on the **93** text-mode output writers (+ the one `os.fdopen` sidecar in
+`run_gate.py`) so a fresh build is LF on every platform — otherwise, once the fixtures are LF, a
+CRLF-on-Windows build wouldn't byte-match them.
+
+**Tracked residual (demand-gated):** `scripts/sync_setec.py`'s `Path.write_text` calls still lack
+`newline=`. It's **root-only** (not part of the byte-identical mirrored validator set) and its outputs
+are regenerated via `sync_setec.py` rather than byte-compared, so it doesn't affect any gate — fix only
+if full-tree Windows EOL determinism is ever wanted.
 
 ### Input-encoding robustness — **Mostly fine; small follow-up**
 
