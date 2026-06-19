@@ -236,12 +236,12 @@ def run_self_test():
         d = tempfile.mkdtemp()
         os.makedirs(os.path.join(d, ".apodictic"))
         reg = {"schema": _ENVELOPE_ID, "updated": "2026-06-08", "projects": entries}
-        with open(os.path.join(d, ".apodictic", "registry.json"), "w", encoding="utf-8") as fh:
+        with open(os.path.join(d, ".apodictic", "registry.json"), "w", encoding="utf-8", newline="") as fh:
             json.dump(reg, fh)
         for root, sc in sidecars.items():
             os.makedirs(os.path.join(d, root), exist_ok=True)
             if sc is not None:
-                with open(os.path.join(d, root, _SIDECAR), "w", encoding="utf-8") as fh:
+                with open(os.path.join(d, root, _SIDECAR), "w", encoding="utf-8", newline="") as fh:
                     fh.write(sc)
         return d
 
@@ -308,7 +308,7 @@ def run_self_test():
         # broken JSON -> R1 error
         d = tempfile.mkdtemp(); beds.append(d)
         os.makedirs(os.path.join(d, ".apodictic"))
-        with open(os.path.join(d, ".apodictic", "registry.json"), "w", encoding="utf-8") as fh:
+        with open(os.path.join(d, ".apodictic", "registry.json"), "w", encoding="utf-8", newline="") as fh:
             fh.write('{"schema": "apodictic.project_registry.v1", ')  # truncated
         code, out = run([d])
         chk("r1_broken_json", code == 1 and any("not valid JSON" in ln for ln in out))

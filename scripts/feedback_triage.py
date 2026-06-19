@@ -256,7 +256,7 @@ def run_self_test():
     # file + run-folder resolution
     d = tempfile.mkdtemp()
     made.append(d)
-    with open(os.path.join(d, "Proj_Feedback_Triage_run.md"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(d, "Proj_Feedback_Triage_run.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write("# Feedback Triage\n" + resolved + "\n")
     check("run_folder_resolution", run([d])[0] == 0)
     check("explicit_file_resolution", run([os.path.join(d, "Proj_Feedback_Triage_run.md")])[0] == 0)

@@ -153,12 +153,12 @@ def run_self_test():
     # diagnosed — synthesis present at project root
     d = tempfile.mkdtemp()
     try:
-        open(os.path.join(d, "SYNTHESIS.md"), "w", encoding="utf-8").close()
+        open(os.path.join(d, "SYNTHESIS.md"), "w", encoding="utf-8", newline="").close()
         chk("diagnosed_root_synthesis", node(dict(base), project_root=d) == "diagnosed")
         # via runs/*/*_Synthesis_*.md
         d2 = tempfile.mkdtemp()
         os.makedirs(os.path.join(d2, "runs", "2026-06-08_opus_core-de"))
-        open(os.path.join(d2, "runs", "2026-06-08_opus_core-de", "Proj_Core_DE_Synthesis_run.md"), "w", encoding="utf-8").close()
+        open(os.path.join(d2, "runs", "2026-06-08_opus_core-de", "Proj_Core_DE_Synthesis_run.md"), "w", encoding="utf-8", newline="").close()
         chk("diagnosed_runs_glob", node(dict(base), project_root=d2) == "diagnosed")
         shutil.rmtree(d2, ignore_errors=True)
         # S4 — no letter anywhere -> diagnosing (safe default), even though project_root given
@@ -192,7 +192,7 @@ def run_self_test():
     df = tempfile.mkdtemp()
     try:
         p = os.path.join(df, "Diagnostic_State.meta.json")
-        with open(p, "w", encoding="utf-8") as fh:
+        with open(p, "w", encoding="utf-8", newline="") as fh:
             json.dump(dict(base), fh)
         chk("cli_file_resolution", run([p])[0] == 0 and "diagnosing" in run([p])[1][0])
         chk("cli_usage", run([])[0] == 2)

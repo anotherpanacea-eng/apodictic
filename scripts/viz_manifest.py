@@ -574,11 +574,11 @@ def run_self_test():
     # resolution
     d = tempfile.mkdtemp()
     made.append(d)
-    with open(os.path.join(d, "Proj_Timeline_run.md"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(d, "Proj_Timeline_run.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write(timeline)
-    with open(os.path.join(d, "Proj_Findings_Ledger_run.md"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(d, "Proj_Findings_Ledger_run.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write(ledger)
-    with open(os.path.join(d, "Proj_Structure_Map_run.md"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(d, "Proj_Structure_Map_run.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write("# Structure Map\n" + manifest() + "\n")
     chk("run_folder_resolution", run([d])[0] == 0)
     chk("explicit_files_resolution",
@@ -593,10 +593,10 @@ def run_self_test():
     tlp = os.path.join(rd, "tl.md"); ldp = os.path.join(rd, "ld.md")
     rev_man = os.path.join(rd, "rev_Structure_Map.md"); ok_man = os.path.join(rd, "ok_Structure_Map.md")
     out = os.path.join(rd, "out.html")
-    with open(tlp, "w", encoding="utf-8") as fh: fh.write(timeline)
-    with open(ldp, "w", encoding="utf-8") as fh: fh.write(ledger)
-    with open(rev_man, "w", encoding="utf-8") as fh: fh.write(manifest(scenes=rev_scenes))
-    with open(ok_man, "w", encoding="utf-8") as fh: fh.write(manifest())
+    with open(tlp, "w", encoding="utf-8", newline="") as fh: fh.write(timeline)
+    with open(ldp, "w", encoding="utf-8", newline="") as fh: fh.write(ledger)
+    with open(rev_man, "w", encoding="utf-8", newline="") as fh: fh.write(manifest(scenes=rev_scenes))
+    with open(ok_man, "w", encoding="utf-8", newline="") as fh: fh.write(manifest())
     chk("render_refuses_reordered", main(["x", "render", rev_man, tlp, ldp, "-o", out]) == 1)
     chk("render_force_reordered", main(["x", "render", rev_man, tlp, ldp, "-o", out, "--force"]) == 0)
     chk("render_in_order_ok", main(["x", "render", ok_man, tlp, ldp, "-o", out]) == 0)
@@ -653,7 +653,7 @@ def main(argv):
             return 1
         h = render_html(mtext, tltext, ledtext)
         if out:
-            with open(out, "w", encoding="utf-8") as fh:
+            with open(out, "w", encoding="utf-8", newline="") as fh:
                 fh.write(h)
             print("manuscript-viz: rendered %s" % out)
         else:

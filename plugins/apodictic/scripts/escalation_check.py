@@ -403,9 +403,9 @@ def run_self_test():
     # run-folder resolution
     d = tempfile.mkdtemp()
     made.append(d)
-    with open(os.path.join(d, "Proj_Findings_Ledger_run.md"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(d, "Proj_Findings_Ledger_run.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write(ledger(25))
-    with open(os.path.join(d, "Diagnostic_State.meta.json"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(d, "Diagnostic_State.meta.json"), "w", encoding="utf-8", newline="") as fh:
         fh.write(sidecar("sequential", pov_count=5, nonlinear_timeline=True))
     code, lines = run([d])
     chk("run_folder_resolution", code == 0 and any("escalate sequential -> swarm" in ln for ln in lines))
