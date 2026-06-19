@@ -476,7 +476,7 @@ def run_self_test():
     d = tempfile.mkdtemp()
     try:
         p = os.path.join(d, "Argument_State.md")
-        with open(p, "w", encoding="utf-8") as fh:
+        with open(p, "w", encoding="utf-8", newline="") as fh:
             fh.write(seeded())
         chk("run_folder_resolution", run([d])[0] == 0)
         chk("explicit_file_resolution", run([p])[0] == 0)

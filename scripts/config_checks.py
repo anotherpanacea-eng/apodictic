@@ -348,7 +348,7 @@ def run_self_test(which=None):
         with tempfile.TemporaryDirectory() as td:
             def w(n, s):
                 p = os.path.join(td, n)
-                with open(p, "w", encoding="utf-8") as fh:
+                with open(p, "w", encoding="utf-8", newline="") as fh:
                     fh.write(s)
                 return p
             pos = w("pos.md", "# Contract\nGENRE/SUBGENRE: Literary fiction\nDARKNESS LEVEL: low\n"
@@ -382,12 +382,12 @@ def run_self_test(which=None):
             os.makedirs(audits)
 
             def wa(n, s):
-                with open(os.path.join(audits, n), "w", encoding="utf-8") as fh:
+                with open(os.path.join(audits, n), "w", encoding="utf-8", newline="") as fh:
                     fh.write(s)
 
             def wp(n, s):
                 p = os.path.join(td, n)
-                with open(p, "w", encoding="utf-8") as fh:
+                with open(p, "w", encoding="utf-8", newline="") as fh:
                     fh.write(s)
                 return p
             wa("erotic-content.md", "# Erotic Content Audit\n## Hard Gates\n- EC-1 hard gate.\n## Must-Fix floor\nAny gate firing.\n")
@@ -422,9 +422,9 @@ def run_self_test(which=None):
                 d = os.path.join(td, name)
                 os.makedirs(d)
                 for f in files:
-                    open(os.path.join(d, f), "w", encoding="utf-8").close()
+                    open(os.path.join(d, f), "w", encoding="utf-8", newline="").close()
                 if letter is not None:
-                    with open(os.path.join(d, "Editorial_Letter.md"), "w", encoding="utf-8") as fh:
+                    with open(os.path.join(d, "Editorial_Letter.md"), "w", encoding="utf-8", newline="") as fh:
                         fh.write(letter)
                 return d
             pos1 = mkrun("run_pos1", ["Argument_State.md", "Field_Reconnaissance_Report.md"],

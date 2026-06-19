@@ -725,10 +725,10 @@ def build(folder):
     annotated = render(snapshot, obj)
     man_path = os.path.join(folder, "%s_Annotation_Manifest_%s.md" % (project, runlabel))
     ann_path = os.path.join(folder, "%s_Annotated_Manuscript_%s.md" % (project, runlabel))
-    with open(man_path, "w", encoding="utf-8") as fh:
+    with open(man_path, "w", encoding="utf-8", newline="") as fh:
         fh.write("# Annotation Manifest\n\n<!-- apodictic:annotation\n%s\n-->\n"
                  % json.dumps(obj, indent=2))
-    with open(ann_path, "w", encoding="utf-8") as fh:
+    with open(ann_path, "w", encoding="utf-8", newline="") as fh:
         fh.write(annotated)
     print("annotated-manuscript: wrote %s + %s" % (os.path.basename(man_path), os.path.basename(ann_path)))
     return 0
@@ -966,11 +966,11 @@ def run_self_test():
     # resolution — a real run folder
     d = tempfile.mkdtemp()
     made.append(d)
-    with open(os.path.join(d, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(d, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write(snapshot)
-    with open(os.path.join(d, "T_Findings_Ledger_r.md"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(d, "T_Findings_Ledger_r.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write(ledger)
-    with open(os.path.join(d, "T_Timeline_r.md"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(d, "T_Timeline_r.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write(timeline)
     chk("build_writes_artifacts", build(d) == 0)
     chk("run_folder_validates", run([d])[0] == 0)
@@ -983,17 +983,17 @@ def run_self_test():
     made.append(d2)
     for nm, body in (("P_Manuscript_Snapshot_r1.md", snapshot), ("P_Findings_Ledger_r1.md", ledger),
                      ("P_Timeline_r1.md", timeline)):
-        with open(os.path.join(d2, nm), "w", encoding="utf-8") as fh:
+        with open(os.path.join(d2, nm), "w", encoding="utf-8", newline="") as fh:
             fh.write(body)
     build(d2)   # binds r1 (the only snapshot present at build time)
     r2 = os.path.join(d2, "P_Manuscript_Snapshot_r2.md")
-    with open(r2, "w", encoding="utf-8") as fh:
+    with open(r2, "w", encoding="utf-8", newline="") as fh:
         fh.write(snapshot + "# Chapter 10\nNew material.\n")
     future = os.path.getmtime(os.path.join(d2, "P_Manuscript_Snapshot_r1.md")) + 1000
     os.utime(r2, (future, future))   # force r2 strictly newest, so a newest-glob would mis-pick it
     chk("binding_resolves_bound_not_newest", run([d2])[0] == 0)
     # ...and the sha backstop still catches a genuinely tampered bound snapshot (no silent wrong pass)
-    with open(os.path.join(d2, "P_Manuscript_Snapshot_r1.md"), "a", encoding="utf-8") as fh:
+    with open(os.path.join(d2, "P_Manuscript_Snapshot_r1.md"), "a", encoding="utf-8", newline="") as fh:
         fh.write("tampered\n")
     chk("binding_sha_mismatch_fails", run([d2])[0] == 1)
 
@@ -1040,7 +1040,7 @@ def main(argv):
             print("annotated-manuscript: %s" % exc, file=sys.stderr)
             return 1
         if out:
-            with open(out, "w", encoding="utf-8") as fh:
+            with open(out, "w", encoding="utf-8", newline="") as fh:
                 fh.write(h)
             print("annotated-manuscript: rendered %s" % out)
         else:
