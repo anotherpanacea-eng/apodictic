@@ -558,17 +558,17 @@ def run_self_test():
     # run-folder resolution + explicit-file classification
     d = tempfile.mkdtemp()
     made.append(d)
-    with open(os.path.join(d, "Proj_Findings_Ledger_run.md"), "w") as fh:
+    with open(os.path.join(d, "Proj_Findings_Ledger_run.md"), "w", encoding="utf-8") as fh:
         fh.write(ledger)
-    with open(os.path.join(d, "Proj_Core_DE_Synthesis_run.md"), "w") as fh:
+    with open(os.path.join(d, "Proj_Core_DE_Synthesis_run.md"), "w", encoding="utf-8") as fh:
         fh.write(letter_clean)
-    with open(os.path.join(d, "Diagnostic_State.meta.json"), "w") as fh:
+    with open(os.path.join(d, "Diagnostic_State.meta.json"), "w", encoding="utf-8") as fh:
         fh.write(sc_ok)
-    with open(os.path.join(d, "Proj_Session_Plan_run.md"), "w") as fh:
+    with open(os.path.join(d, "Proj_Session_Plan_run.md"), "w", encoding="utf-8") as fh:
         fh.write("# Session 1\nAddress F-P5-01 (pacing) and F-P5-02 (stakes).\n")
-    with open(os.path.join(d, "Proj_Revision_Report_run.md"), "w") as fh:
+    with open(os.path.join(d, "Proj_Revision_Report_run.md"), "w", encoding="utf-8") as fh:
         fh.write("# Revision Report\n## Flags resolved\nPacing now lands. <!-- resolved: F-P5-01 -->\n")
-    with open(os.path.join(d, "Proj_Retcon_Plan_run.md"), "w") as fh:
+    with open(os.path.join(d, "Proj_Retcon_Plan_run.md"), "w", encoding="utf-8") as fh:
         fh.write(retcon("F-P5-02"))   # F3: source resolves to the ledger -> no E6
     rc_code, rc_lines = run([d])
     check("run_folder_resolution", rc_code == 0)
@@ -585,7 +585,7 @@ def run_self_test():
     # (glob narrowing) a Revision *Calendar* carrying a resolved marker is NOT a completion —
     # so its marker must not advance any finding to rev=done. Genuine regression guard: pre-fix
     # the broad *_Revision_*.md glob classified a calendar as a completion.
-    with open(os.path.join(d, "Proj_Revision_Calendar_run.md"), "w") as fh:
+    with open(os.path.join(d, "Proj_Revision_Calendar_run.md"), "w", encoding="utf-8") as fh:
         fh.write("# Revision Calendar\n<!-- resolved: F-P5-01 -->\n")
     check("calendar_not_completion",
           not any("rev=done" in ln for ln in run([os.path.join(d, "Proj_Findings_Ledger_run.md"),

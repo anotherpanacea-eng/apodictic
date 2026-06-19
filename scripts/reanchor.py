@@ -328,10 +328,10 @@ def run_self_test():
     # run() end-to-end from a folder + snapshot file.
     d = tempfile.mkdtemp()
     try:
-        with open(os.path.join(d, "T_Annotation_Manifest_rN.md"), "w") as fh:
+        with open(os.path.join(d, "T_Annotation_Manifest_rN.md"), "w", encoding="utf-8") as fh:
             fh.write(_manifest_text(man_n))
         sp = os.path.join(d, "T_Manuscript_Snapshot_rN1.md")
-        with open(sp, "w") as fh:
+        with open(sp, "w", encoding="utf-8") as fh:
             fh.write(snap_moved)
         chk("run_folder_snapshot", run([d, sp])[0] == 0)
         chk("run_usage_one_arg", run([d])[0] == 2)

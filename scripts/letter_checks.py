@@ -947,9 +947,9 @@ def run_self_test(which=None):
                 print("  %s: FAIL (rc=%s, expected %s)" % (name, got, want))
                 rc["v"] = 1
         with tempfile.TemporaryDirectory() as td:
-            dp = os.path.join(td, "dep.md"); open(dp, "w").write(dep)
-            rp_ok = os.path.join(td, "reg_ok.md"); open(rp_ok, "w").write(reg_ok)
-            rp_bad = os.path.join(td, "reg_bad.md"); open(rp_bad, "w").write(reg_missing)
+            dp = os.path.join(td, "dep.md"); open(dp, "w", encoding="utf-8").write(dep)
+            rp_ok = os.path.join(td, "reg_ok.md"); open(rp_ok, "w", encoding="utf-8").write(reg_ok)
+            rp_bad = os.path.join(td, "reg_bad.md"); open(rp_bad, "w", encoding="utf-8").write(reg_missing)
             expect_rc("registry_ok", check_registry(rp_ok, dp), 0)
             expect_rc("registry_missing", check_registry(rp_bad, dp), 1)
 

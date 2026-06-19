@@ -398,9 +398,9 @@ def run_self_test():
     try:
         p1 = os.path.join(d, "Proj_State_Card_r1.md")
         p2 = os.path.join(d, "Proj_State_Card_r2.md")
-        with open(p1, "w") as fh:
+        with open(p1, "w", encoding="utf-8") as fh:
             fh.write(card(round_=1))
-        with open(p2, "w") as fh:
+        with open(p2, "w", encoding="utf-8") as fh:
             fh.write(card(round_=2))
         chk("run_folder_single", run([d])[0] == 0)
         chk("explicit_pair_diff", run([p1, p2])[0] == 0)
