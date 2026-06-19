@@ -1,8 +1,37 @@
 # Handoff Spec: SETEC Supplementation for Pass 3 (Rhythm/Modulation) and Pass 7 (POV/Voice)
 
-**Status:** Draft. Phase 2 follow-on. Not yet implemented.
+**Status:** ✅ **IMPLEMENTED** — this is now the **design-of-record**, not a build task. The "Not yet
+implemented" label was stale (caught in the 2026-06-19 Codex-down reconciliation pass — see the box below).
+The live implementation is in `run-full.md` §Pass 3 / §Pass 7, the intake question `run-core.md` Q14a, the
+`setec_runner.py` helper, and the §4e POV Voice Profile rows.
 **Predecessor work:** Phase 2 substrate swap + new audits, 2026-05-17 (see `project_apodictic_setec_integration.md` memory entry; `plugins/apodictic/skills/specialized-audits/scripts/setec_discovery.py` + ai_prose_* shims).
-**Required SETEC:** ≥ 1.86.0 (schema_version 1.0 envelope; the `setec_discovery` helper enforces the floor).
+**Required SETEC:** ≥ 1.86.0 per-surface floor, but the **effective** runtime floor is **1.114.0** (the R2 dispatcher bootstrap in `setec_discovery.py`); the vendored contract is `v1.117.0` (`setec-plugin.lock`).
+
+> ## ⚠️ Reconciliation note — already built (2026-06-19, Codex-down independent review)
+>
+> A build-readiness pass (Opus + adversarial subagent, verified against the live repo) found the work this
+> spec describes **already shipped** — in the *same PR that added the spec* (`dd166d6`), updated for R2/R3
+> (`e532c8f`). Treating this as a build task would re-implement existing code. Verified present:
+> - **Pass 3** SETEC supplementation block — `run-full.md:25-47` (the `variance_audit` ×2 + `punctuation_cadence_audit` Layer-A step, Pass-1 gate, contradiction reporting, post-hoc baseline advisory).
+> - **Pass 7** stylometric block — `run-full.md:134-176` (POV cascade, multi/single-POV branch, `pov_voice_profile`/`voice_distance`/`idiolect_detector`, the Stylometric-Distance column, LLM-detected caveat).
+> - **Intake question** — `run-core.md:88` (Q14a multi-POV), the four-branch answer set of §6½ (so §6½'s instruction to edit `intake-questions.md` is wrong — that file is a **deprecated 3-line stub**; and its "parallels the drafting-method question" precedent is **fictional** — no such question exists).
+> - **`setec_runner.run_supplement(surface, args)`** — `setec_runner.py:264`, API matches §6.6 exactly.
+>
+> **Stale specifics in the body, do not trust them (the live code got them right):**
+> - §3 tables name two SETEC surfaces that **do not exist**: `sliding_window_heatmap` (it's only a
+>   `variance_audit --window-size` flag) and `voice_drift_tracker`. Neither is in the manifest/shims.
+> - §3 table typo `punctuation_cadence` → the real surface is **`punctuation_cadence_audit`**.
+> - §4 step 7 ("regenerate codex + antigravity host workspaces") is **stale**: those trees are no longer
+>   committed (AGENTS.md §Platform parity / GitHub #52 Option B) — `release.sh` cuts versions, it doesn't
+>   commit them.
+> - §5 / §4 step 5 "no §4e change required" is **superseded**: §4e now carries five **POV Voice Profile**
+>   rows (`pass-dependencies.md:389-392`). §6.5 (no special synthesis severity) is still correct.
+>
+> **The one genuinely-unfinished thread:** those five §4e POV Voice Profile rows are all marked
+> **"Provisional 2026-05-18 — first multi-POV fixture validation pending"**, and `validate.sh
+> audit-signal-propagation`'s self-test doesn't exercise them yet. **That** (build a multi-POV fixture →
+> validate the convergence-ladder severities → promote off provisional + add self-test coverage) is the
+> only real remaining work, and it's code/tests → gated on Codex. See the fleet board.
 
 ---
 
