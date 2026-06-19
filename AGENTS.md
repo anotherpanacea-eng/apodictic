@@ -23,9 +23,12 @@ public · Python — **this repo**), `setec-voicewright` (consumer · private ·
   the registry and regenerates its UI from it); changing the capability catalog
   ripples to that app on its next weekly pull.
 
-**Shared workflow:** spec→review→write→review→fix→merge; merge commits, never
-squash; Codex 5.5 is the PR review step (don't merge out from under it); version
-bumps at merge. (Full detail below.)
+**Shared workflow:** spec → review → build → review → merge. **Both reviews (spec
+and build) are subagent passes — iterate until everything is fixed.** Then the fork:
+**a docs-only change lands as a direct merge commit; anything more goes up as a PR
+for Codex 5.5 review** (don't merge out from under it) — iterate with Codex until
+clean + green, then merge. Merge commits, never squash; version bumps at merge.
+(Full detail below.)
 
 **Fuller cross-repo context** (backlog, topology, deep lessons) lives in the
 maintainer's local `Cowork/repo-fleet/` hub — **not reachable from cloud
