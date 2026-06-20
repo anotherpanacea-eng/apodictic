@@ -70,8 +70,10 @@ _SHORT_RE = re.compile(r"^F-(PCF-[0-9]+)$")
 # the colon is tolerated (the ref is also .strip()ed in _ref_kind) so a stray space can't drop a real
 # two-sided ref into the unknown bucket and falsely fail P1.
 _COPY_REF_RE = re.compile(r"^copy:\s*([A-Za-z]+)", re.IGNORECASE)
-_CONTRACT_REF_RE = re.compile(r"^contract:\s*", re.IGNORECASE)
-_MS_REF_RE = re.compile(r"^ms:\s*", re.IGNORECASE)
+# contract:/ms: must carry a NON-EMPTY target (a field name / a locus). A bare `contract:` or `ms:`
+# (or whitespace-only) names no side and must NOT satisfy the two-sided P1 check (Codex P1, 2026-06-19).
+_CONTRACT_REF_RE = re.compile(r"^contract:\s*\S", re.IGNORECASE)
+_MS_REF_RE = re.compile(r"^ms:\s*\S", re.IGNORECASE)
 
 # Override markers naming a finding's short id: "<!-- override: market-prediction PCF-01 — ... -->".
 _OVERRIDE_RE = re.compile(r"<!--\s*override:\s*([a-z-]+)\s+(PCF-[0-9]+)\b", re.IGNORECASE)
@@ -432,6 +434,12 @@ def run_self_test():
     # P1 — schema-invalid finding (empty refs, bad id) is an ERROR
     chk("p1_empty_refs_fails", C(pitch() + "\n" + finding(refs=[]))[0] == 1)
     chk("p1_bad_id_fails", C(pitch() + "\n" + finding(fid="F-PCF-1"))[0] == 1)
+    # P1 — a ref with the right prefix but an EMPTY target (bare `contract:`, `ms:`) names no side and
+    # must NOT satisfy two-sidedness (Codex P1) — this finding is then one-sided -> ERROR.
+    chk("p1_empty_target_contract_fails",
+        C(pitch() + "\n" + finding(refs=["copy:query¶1", "contract:"]))[0] == 1)
+    chk("p1_empty_target_ms_fails",
+        C(pitch() + "\n" + finding(refs=["copy:query¶1", "ms:   "]))[0] == 1)
 
     # P2 — a finding with no persisted pitch copy => ERROR; pitch present => clean
     code, ls = C(finding())  # finding alone, no pitch_copy block
@@ -440,6 +448,9 @@ def run_self_test():
     # P2 — invalid copy_type (bad enum) fails schema
     chk("p2_bad_copy_type_fails", C(pitch(ctype="tagline") + "\n" + finding())[0] == 1)
     chk("p2_bad_pitch_id_fails", C(pitch(pid="PC-1") + "\n" + finding())[0] == 1)
+    # P2 — empty / whitespace-only pitch text is not real copy and must fail the schema (Codex P1)
+    chk("p2_empty_text_fails", C(pitch(text="") + "\n" + finding())[0] == 1)
+    chk("p2_whitespace_text_fails", C(pitch(text="   ") + "\n" + finding())[0] == 1)
 
     # P3 — a PCF2 whose copy ref is a synopsis => ERROR; the same PCF2 against a query => clean;
     #      a NON-PCF2 finding citing a synopsis (the disclosing-synopsis negative) => clean.
