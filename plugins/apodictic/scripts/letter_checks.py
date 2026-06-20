@@ -953,6 +953,57 @@ def run_self_test(which=None):
             expect_rc("registry_ok", check_registry(rp_ok, dp), 0)
             expect_rc("registry_missing", check_registry(rp_bad, dp), 1)
 
+        # In-code propagation cases: POV Voice Profile appendix subsection as a
+        # multi-POV fixture (Mara/Jon + Mara/Elen pairs). Exercises the §4e Must-Fix
+        # row's signal class — a voice-collapse verdict on 2+ POV pairs + Blind-Swap
+        # fail expressed as a Must-Fix floor. The "### POV Voice Profile Audit"
+        # heading is what _AUDIT_NAME_RE parses as audit name "POV Voice Profile"
+        # (slug pov-voice-profile); "Must-Fix floor" is the strong signal _audit_subsection
+        # detects. See pass-dependencies.md §4e (POV Voice Profile rows).
+        pov_positive = (
+            "# Development Edit — Multi-POV Manuscript\n\n"
+            "## What Needs Work\n\n"
+            "- **Must-Fix:** Voice collapse between the Mara and Jon POV strands. "
+            "The POV Voice Profile audit Must-Fix floor at L1840 surfaces here; the "
+            "same flattening recurs across the Mara/Elen pair (lines 2100-2180). "
+            "<!-- finding: F-PVP-01 -->\n\n"
+            "## Appendix A — Diagnostic Detail\n\n"
+            "### POV Voice Profile Audit\n\n"
+            "Must-Fix floor triggered: voice-collapse verdict on 2 POV pairs "
+            "(Mara/Jon, Mara/Elen) AND Pass 7 Blind Swap fails on the same pairs at L1840.\n")
+        # positive: Must-Fix floor propagates via audit-name reference + shared evidence
+        # line (L1840) to a body Must-Fix -> clean.
+        check("pov_propagated_clean", audit_signal_propagation(pov_positive)[0], True)
+
+        pov_negative = (
+            "# Development Edit — Multi-POV Manuscript\n\n"
+            "## What Needs Work\n\n"
+            "- **Should-Fix:** The prologue competes with Chapter 1 for the reader's "
+            "first orientation (Chapter 1, lines 1-40).\n\n"
+            "## Appendix A — Diagnostic Detail\n\n"
+            "### POV Voice Profile Audit\n\n"
+            "Must-Fix floor triggered: voice-collapse verdict on 2 POV pairs "
+            "(Mara/Jon, Mara/Elen) AND Pass 7 Blind Swap fails on the same pairs at L1840.\n")
+        # negative: same Must-Fix floor but no body Must-Fix references the audit and
+        # no shared evidence line -> ERROR.
+        check("pov_unpropagated_errors", audit_signal_propagation(pov_negative)[0], False)
+
+        pov_override = (
+            "# Development Edit — Multi-POV Manuscript\n\n"
+            "<!-- override: audit-propagation-must-fix — POV pair count is borderline "
+            "this round; deferring to the qualitative Blind-Swap read. -->\n\n"
+            "## What Needs Work\n\n"
+            "- **Should-Fix:** The prologue competes with Chapter 1 for the reader's "
+            "first orientation (Chapter 1, lines 1-40).\n\n"
+            "## Appendix A — Diagnostic Detail\n\n"
+            "### POV Voice Profile Audit\n\n"
+            "Must-Fix floor triggered: voice-collapse verdict on 2 POV pairs "
+            "(Mara/Jon, Mara/Elen) AND Pass 7 Blind Swap fails on the same pairs at L1840.\n")
+        # override: the negative case + a body class-override marker -> no ERROR, one WARN.
+        pov_e, pov_w = audit_signal_propagation(pov_override)[:2]
+        check("pov_override_body_no_error", pov_e, True)
+        warns("pov_override_body_warns", pov_w, True)
+
     if which in (None, "author-facing-lint"):
         # Advisory / warn-only: errors must ALWAYS be empty (never gates); warnings
         # flag un-glossed first use of a framework code in the author-facing body.
