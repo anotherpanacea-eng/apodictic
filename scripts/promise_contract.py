@@ -69,7 +69,11 @@ _SHORT_RE = re.compile(r"^F-(PCF-[0-9]+)$")
 # Namespaced evidence-ref convention (PCF-scoped). A ref is prefix-typed; optional whitespace after
 # the colon is tolerated (the ref is also .strip()ed in _ref_kind) so a stray space can't drop a real
 # two-sided ref into the unknown bucket and falsely fail P1.
-_COPY_REF_RE = re.compile(r"^copy:\s*([A-Za-z]+)", re.IGNORECASE)
+# copy:<copy_type>¶<n> — the FULL grammar: a copy_type AND a non-empty paragraph locus (¶<n>, range
+# ok). A locus-less `copy:query`, a malformed `copy:query-does-not-exist` (no ¶), or a bare `copy:`
+# names no span and must NOT satisfy P1's copy side; the captured copy_type is then checked for
+# membership in the PERSISTED copy in check() (a `copy:<absent-type>¶n` is dangling). (Codex P1.)
+_COPY_REF_RE = re.compile(r"^copy:\s*([A-Za-z]+)\s*¶\s*[0-9]+(?:\s*-\s*[0-9]+)?\s*$", re.IGNORECASE)
 # contract:/ms: must carry a NON-EMPTY target (a field name / a locus). A bare `contract:` or `ms:`
 # (or whitespace-only) names no side and must NOT satisfy the two-sided P1 check (Codex P1, 2026-06-19).
 _CONTRACT_REF_RE = re.compile(r"^contract:\s*\S", re.IGNORECASE)
@@ -252,23 +256,37 @@ def check(pitch_text, report_text, strict=False):
     for obj in valid_findings:
         fid = obj.get("id")
         refs = obj.get("evidence_refs") or []
-        has_copy = False
+        has_copy = False           # a well-formed copy: ref that links to PERSISTED copy
+        saw_copy_ref = False       # any well-formed copy: ref (incl. one naming an absent copy_type)
         has_contract_or_ms = False
         for r in refs:
-            kind, _ct = _ref_kind(r)
+            kind, ct = _ref_kind(r)
             if kind == "copy":
-                has_copy = True
+                saw_copy_ref = True
+                # A copy: ref is evidence only when it names a copy_type ACTUALLY persisted; a
+                # fabricated `copy:<absent-type>¶n` must not satisfy the two-sided gate with no copy
+                # behind it (Codex P1, 2026-06-19). When NO copy is persisted at all, P2 owns that
+                # error — don't also dangling-flag every ref here.
+                if copy_types and ct not in copy_types:
+                    errs.append("P1 dangling copy ref: %s cites %r but no persisted "
+                                "apodictic.pitch_copy.v1 document declares copy_type %r — a copy: ref "
+                                "must name a span of persisted copy" % (fid, r, ct))
+                else:
+                    has_copy = True
             elif kind in ("contract", "ms"):
                 has_contract_or_ms = True
         if not (has_copy and has_contract_or_ms):
             missing = []
-            if not has_copy:
+            # a dangling copy ref is already reported above; only call the copy side "missing" when NO
+            # copy: ref was cited at all (else the message would contradict the dangling-ref error).
+            if not has_copy and not saw_copy_ref:
                 missing.append("a copy: ref")
             if not has_contract_or_ms:
                 missing.append("a contract:/ms: ref")
-            errs.append("P1 one-sided gap: %s is missing %s — a PCF flag is a two-sided gap and must "
-                        "cite both the copy side and the contract/manuscript side (namespaced refs)"
-                        % (fid, " and ".join(missing)))
+            if missing:
+                errs.append("P1 one-sided gap: %s is missing %s — a PCF flag is a two-sided gap and "
+                            "must cite both the copy side and the contract/manuscript side "
+                            "(namespaced refs)" % (fid, " and ".join(missing)))
 
     # ---- P3 — reveal-leak form gate: a PCF2 finding's copy: ref must not point at a synopsis ----
     for obj in valid_findings:
@@ -440,6 +458,17 @@ def run_self_test():
         C(pitch() + "\n" + finding(refs=["copy:query¶1", "contract:"]))[0] == 1)
     chk("p1_empty_target_ms_fails",
         C(pitch() + "\n" + finding(refs=["copy:query¶1", "ms:   "]))[0] == 1)
+    # P1 — a copy: ref must carry the FULL grammar (a ¶<n> locus) AND name a PERSISTED copy_type. A
+    # locus-less `copy:query`, a malformed `copy:query-does-not-exist` (no ¶), or a well-formed ref
+    # naming an absent copy_type is NO evidence and must not satisfy the two-sided gate even when a
+    # contract:/ms: ref is present (Codex P1, 2026-06-19 — the copy-side half of the gap).
+    chk("p1_copy_ref_without_locus_fails",
+        C(pitch() + "\n" + finding(refs=["copy:query", "contract:CONTROLLING IDEA"]))[0] == 1)
+    chk("p1_copy_ref_malformed_no_locus_fails",
+        C(pitch() + "\n" + finding(refs=["copy:query-does-not-exist", "contract:READER PROMISE"]))[0] == 1)
+    code, ls = C(pitch() + "\n" + finding(refs=["copy:synopsis¶2", "contract:CONTROLLING IDEA"]))
+    chk("p1_copy_ref_absent_copytype_fails", code == 1)
+    chk("p1_dangling_copy_ref_message", any("P1 dangling copy ref" in ln for ln in ls))
 
     # P2 — a finding with no persisted pitch copy => ERROR; pitch present => clean
     code, ls = C(finding())  # finding alone, no pitch_copy block
