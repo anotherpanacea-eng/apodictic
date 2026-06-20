@@ -178,15 +178,15 @@ set -euo pipefail
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).
-AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff regression-diff legal-risk argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor obsidian-export html-export docx-export check-mirror"
+AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff regression-diff legal-risk promise-contract argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor obsidian-export html-export docx-export check-mirror"
 # shellcheck disable=SC2086  # intentional word-splitting to count list entries
 AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, regression-diff, legal-risk, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, obsidian-export, html-export, docx-export, check-mirror"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, regression-diff, legal-risk, promise-contract, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, obsidian-export, html-export, docx-export, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -326,6 +326,13 @@ if [ "$1" = "--check-all" ]; then
       "$0" legal-risk "$CA_BASE/example-legal-risk-register.md" || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-legal-risk-register.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Promise-Contract Fidelity (promise-contract: two-sided gap P1 + copy typing P2 + reveal form gate P3 + firewall W1) =="
+    if [ -f "$CA_BASE/example-promise-contract.md" ]; then
+      "$0" promise-contract "$CA_BASE/example-promise-contract.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-promise-contract.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical State Card (state-card-diff: cross-round coherence; self-diff + round-2 diff) =="
@@ -4757,6 +4764,35 @@ EOF
       python3 "$LRK_HELPER" legal-risk "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — legal-risk skipped; check inline that the register carries a not-a-lawyer disclaimer, every item flags (not adjudicates) the exposure, and each review-now item routes to counsel. See docs/legal-risk-register.md."
+    exit 0
+    ;;
+
+  promise-contract)
+    # Promise-Contract Fidelity workflow (docs/promise-contract-audit.md): does the pitch keep the
+    # promise the book makes? Structural checks over the apodictic.pitch_copy.v1 input + the F-PCF
+    # apodictic.finding.v1 blocks — P1 two-sided gap (every F-PCF-NN finding cites >=1 copy: ref AND
+    # >=1 contract:/ms: ref, the namespaced convention), P2 pitch copy persisted & typed (a valid
+    # apodictic.pitch_copy.v1 input exists, every doc declares a copy_type), P3 reveal-leak form gate
+    # (a PCF2 finding's copy: ref must not point at a synopsis); W1 drafted-copy leak (a multi-sentence
+    # quoted block in the report that is not a verbatim substring of the persisted pitch copy — the
+    # Firewall; override <!-- override: drafted-copy PCF-NN — … -->), W2 market-prediction drift (a
+    # finding matching the prohibited sales-prediction phrase set — the #14 boundary; override
+    # <!-- override: market-prediction PCF-NN — … -->). W1/W2 advisory, ERROR under --strict. The
+    # module FLAGS the pitch↔book gap and a class of repair; it never drafts the copy (diagnose, don't
+    # write — Shelf & Positioning owns the rewrite). Takes a run folder (globs *_Pitch_Copy_*.md, plus
+    # the folder's findings) or explicit files. Delegates to scripts/promise_contract.py; degrades to
+    # an advisory WARN without python3.
+    PCF_DIR=$(cd "$(dirname "$0")" && pwd)
+    PCF_HELPER="$PCF_DIR/promise_contract.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$PCF_HELPER" ]; then python3 "$PCF_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; promise-contract is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$PCF_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 promise-contract <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$PCF_HELPER" promise-contract "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — promise-contract skipped; check inline that every F-PCF finding cites a two-sided namespaced ref (copy: + contract:/ms:), the pitch copy is persisted and typed, no PCF2 is raised against a synopsis, and the report quotes the author's own copy verbatim (never drafts a replacement). See docs/promise-contract-audit.md."
     exit 0
     ;;
 
