@@ -1,0 +1,13 @@
+{
+  "$id": "apodictic.pitch_copy.v1",
+  "$comment": "Source of truth for the apodictic:pitch_copy block (Promise-Contract Fidelity workflow). One block per persisted marketing-copy document — the author's own query / synopsis / blurb / logline — carried in a [Project]_Pitch_Copy_[runlabel].md artifact. Persisting the copy as a first-class, durable input is what makes the firewall guard (validator W1) a concrete substring check and the reveal-leak form gate (validator P3) mechanically checkable: there has been no convention for an external pasted document, so this module establishes one. `copy_type` is the document kind (query | synopsis | blurb | logline), which form-calibrates the PCF flags (a synopsis discloses by design, so PCF2 never fires on it — P3). `text` is the VERBATIM copy, byte-for-byte as the author wrote it; the module diagnoses it and never drafts it (the Firewall — W1 checks that any multi-sentence quoted block in the report is a verbatim substring of this text). This is NOT a finding; PCF findings are apodictic.finding.v1 blocks (id F-PCF-NN) that cite spans of this copy via the namespaced copy:<copy_type>¶<n> evidence-ref convention. Single-sourced (NOT mirrored). Validated by scripts/promise_contract.py. See docs/promise-contract-audit.md.",
+  "title": "APODICTIC persisted pitch copy (apodictic.pitch_copy.v1)",
+  "type": "object",
+  "required": ["schema", "id", "copy_type", "text"],
+  "properties": {
+    "schema": {"const": "apodictic.pitch_copy.v1"},
+    "id": {"type": "string", "pattern": "^PC-[0-9]{2,}$"},
+    "copy_type": {"enum": ["query", "synopsis", "blurb", "logline"]},
+    "text": {"type": "string", "pattern": "\\S"}
+  }
+}

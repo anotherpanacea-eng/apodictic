@@ -5,6 +5,7 @@
 ```
 GENRE/SUBGENRE: 
 READER PROMISE: 
+CONTROLLING IDEA: 
 HEAT LEVEL: 
 DARKNESS LEVEL: 
 PRIMARY TENSION TYPE: [external / relational / epistemic / moral]
@@ -21,6 +22,8 @@ NON-NEGOTIABLES:
 ---
 
 ## Controlling Idea
+
+*This section elaborates the `CONTROLLING IDEA:` schema field above — the one-line field is the canonical, validator-readable form (it is what `promise-contract` measures pitch copy against); this section restates and develops it.*
 
 **Format:** [Value] + [Cause]
 
