@@ -198,11 +198,11 @@ def check(manifest_text, timeline_text, ledger_text, strict=False, require_block
     """Run the manifest<->source provenance checks. Returns (code, lines)."""
     lines, errs, warns = [], [], []
     obj, schema_errs = parse_manifest(manifest_text)
-    if obj is None:
-        # A present-but-unparseable block is an E1 failure, NOT a no-op — otherwise corrupt JSON
-        # passes silently (and the --check-all gate would pass vacuously if the example broke).
-        if any("invalid JSON" in e for e in schema_errs):
-            return 1, ["manuscript-viz: %s" % schema_errs[0], "manuscript-viz: FAIL (E1 manifest schema)"]
+    if not isinstance(obj, dict):
+        # A present-but-unparseable/non-object block is an E1 failure, NOT a no-op — otherwise corrupt
+        # JSON or a non-object payload (e.g. [1,2,3]) passes silently / the gate passes vacuously.
+        if obj is not None or any("invalid JSON" in e for e in schema_errs):
+            return 1, ["manuscript-viz: %s" % (schema_errs[0] if schema_errs else "manifest block is not a JSON object"), "manuscript-viz: FAIL (E1 manifest schema)"]
         # A genuinely-absent block is a no-op for a run folder, but --require-block (the canonical-
         # example gate) makes it a hard failure so the gate cannot pass with no manifest to validate.
         if require_block:
@@ -498,6 +498,8 @@ def run_self_test():
 
     # clean
     chk("clean", check(manifest(), timeline, ledger)[0] == 0)
+    # regression: a non-dict manifest block is an E1 failure, not a vacuous pass / crash (2026-06-20 sweep)
+    chk("crash_nondict_manifest", check("<!-- apodictic:viz_manifest\n[1,2,3]\n-->", timeline, ledger)[0] == 1)
 
     # E1 — disallowed (visual-style) field in a scene, and at top level
     bad_scene = [scene("Ch 1 §1", "Ch 1", "1-118", "1480", "Mara", "3 hours", "n/a", extra={"color": "red"})]

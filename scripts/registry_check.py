@@ -57,7 +57,8 @@ def _load_sidecar(root):
     if not os.path.isfile(p):
         return None, False
     try:
-        return json.loads(_read(p) or ""), True
+        obj = json.loads(_read(p) or "")
+        return (obj if isinstance(obj, dict) else None), True  # a non-object sidecar is unparseable drift
     except (json.JSONDecodeError, TypeError):
         return None, True  # present but unparseable — treated as drift-unknown
 

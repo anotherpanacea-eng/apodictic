@@ -131,8 +131,8 @@ def build_obsidian(manifest_obj, snapshot, letter_basename=None):
         fid = an.get("finding_id")
         tail = _fwd_wikilink(letter_basename, fid) if letter_basename else ""
         return "[^%s]: %s%s\n" % (fid, an.get("comment"), tail)
-    defs = "".join(_def(an) for an in sorted(annotations, key=lambda a: a.get("finding_id") or "")
-                   if isinstance(an, dict))
+    defs = "".join(_def(an) for an in sorted((a for a in annotations if isinstance(a, dict)),
+                   key=lambda a: a.get("finding_id") or ""))
     return out + "\n" + defs, []
 
 
@@ -207,7 +207,7 @@ def check_obsidian(manifest_obj, snapshot, obsidian_text, letter_basename=None):
     for fid, body_text in def_lines:
         if fid not in comment_of:
             continue
-        expected = comment_of[fid] + (_fwd_wikilink(letter_basename, fid) if letter_basename else "")
+        expected = (comment_of[fid] or "") + (_fwd_wikilink(letter_basename, fid) if letter_basename else "")
         if body_text != expected:
             errs.append("O3 comment fidelity: definition for %s is not the verbatim manifest comment%s "
                         "(relocate, never re-author)" % (fid, " + exact forward wikilink" if letter_basename else ""))
