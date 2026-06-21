@@ -291,7 +291,7 @@ The more ambitious sibling of [Adaptive Mid-Run Mode Escalation](#adaptive-mid-r
 
 ### Research / API Reliability Layer
 
-v2.0.0 Phase 5 handled the first real plumbing (exponential backoff with `Retry-After`, no-sticky-error caching, single-call retraction). Future work hardens the external-research path: cache TTLs, error provenance, per-provider budgets, circuit breakers, freshness notes, and source-resolution confidence metadata — especially for Citation Verifier and Field Reconnaissance, where a silently-degraded API can masquerade as a clean (or missing) result.
+**Status: M1 built** (`docs/research-reliability-layer.md`). v2.0.0 Phase 5 handled the first real plumbing (exponential backoff with `Retry-After`, no-sticky-error caching, single-call retraction). The reliability layer hardens the external-research path at the run/provider level: cache TTLs with freshness stamps (`response_cache.py`), per-provider budgets + a run-scoped circuit breaker + a per-run reliability ledger (`api_reliability.py`), and a per-result `resolution_status` (resolved / not-found / not-checked) wired into `academic_apis.py` — so for Citation Verifier and Field Reconnaissance a silently-degraded API can no longer masquerade as a clean (or missing) result; a degraded provider's `unretrievable` is reported as NOT-CHECKED, not NOT-FOUND. The editor's *use* of the block (writing the honest distinction into the ledger prose) is the model seam, verified through `evals/`. Follow-ons (deferred): telemetry-tuned budgets, a `--strict` halt on degraded high-stakes runs, a `Citation_Reliability.json` sidecar.
 
 ---
 
