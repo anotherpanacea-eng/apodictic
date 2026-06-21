@@ -21,7 +21,8 @@ LENS, never the non-viable Simulated Reader Focus Group (Horizon item 17): predi
                        Segmentation may not downgrade the target-audience verdict (ERROR).
   D4 no fabricated     the map presents a first-person reader-reaction QUOTE ("I got bored …") as data
      testimony        — invented reader testimony, the #17 boundary. Advisory; ERROR under --strict.
-                       Override: <!-- override: persona-quote D-NN — quoting the manuscript -->.
+                       Override: <!-- override: persona-quote D-NN — quoting the manuscript -->, where
+                       D-NN must be a DECLARED divergence id (a bogus id does not silence the scan).
   D5 disposition,      a persona block carries ANY key outside {schema, id, target, the five
      not character     disposition axes} — a persona is a parameterization, never an invented
                        character. A closed-key ERROR, NON-overridable (one of the three #17 guards;
@@ -106,13 +107,20 @@ def _parse(text, btype, schema_id):
 
 
 def ledger_index(ledger_text):
-    """{finding_id: obj} for the ledger's apodictic.finding.v1 blocks."""
+    """{finding_id: obj} for the ledger's SCHEMA-VALID apodictic.finding.v1 blocks. A malformed finding
+    (invalid JSON, bad/missing severity, missing required field) is NOT indexed — it cannot ground a
+    prediction (D2) nor anchor a severity (D3), so a divergence anchored to one surfaces as ungrounded
+    instead of silently passing D2 while escaping D3 (Codex P1)."""
     out = {}
     if not ledger_text or art is None:
         return out
-    for bt, obj, _err in art.parse_blocks(ledger_text):
-        if bt == "finding" and isinstance(obj, dict) and obj.get("id"):
-            out[obj["id"]] = obj
+    schema = art.load_schema(_FINDING_SCHEMA)
+    for bt, obj, jerr in art.parse_blocks(ledger_text):
+        if bt != "finding" or jerr or not isinstance(obj, dict) or not obj.get("id"):
+            continue
+        if schema is not None and art.validate_obj(obj, schema, "finding %s" % obj.get("id")):
+            continue  # schema-invalid finding is not a valid anchor
+        out[obj["id"]] = obj
     return out
 
 
@@ -146,8 +154,12 @@ def divergence(map_text, ledger_text=None, timeline_text=None, strict=False):
     lines, errs, warns = [], [], []
     personas = _parse(map_text, "persona", _PERSONA_SCHEMA)
     divergences = _parse(map_text, "divergence", _DIVERGENCE_SCHEMA)
+    # A map with no parsed persona/divergence blocks (prose-only, or truncated/malformed so the blocks
+    # don't parse) is NOT a free pass: D4 anti-fabrication scans the reader-facing PROSE and must still
+    # run — a prose-only map presenting "I got bored …" as data would bypass it otherwise (Codex P1).
+    # The block-bound checks (D1/D2/D3/D5/W1) no-op naturally on the empty lists below.
     if not personas and not divergences:
-        return 0, ["persona-divergence: no persona / divergence blocks found — nothing to check"]
+        lines.append("persona-divergence: no persona / divergence blocks found — prose-level D4 only")
 
     index = ledger_index(ledger_text)
     scene_ids = timeline_scene_ids(timeline_text)
@@ -229,6 +241,13 @@ def divergence(map_text, ledger_text=None, timeline_text=None, strict=False):
             errs.append("D3 divergence-content: divergence %s omits the target persona %s from its "
                         "experiences — divergence anchors to the target audience's experience"
                         % (o.get("id"), target_id))
+        # …and a divergence should predict EVERY declared persona, not only some — an omitted persona
+        # is an incomplete prediction (Codex P2). Advisory (ERROR --strict); the target omission above
+        # is the harder ERROR, so don't double-report it here.
+        missing = [pid for pid in sorted(persona_ids) if pid not in exp and pid != target_id]
+        if missing:
+            warns.append("D3 coverage: divergence %s omits declared persona(s) %s from its experiences "
+                         "— predict every declared persona's experience" % (o.get("id"), ", ".join(missing)))
         vals = [v for v in exp.values() if isinstance(v, str)]
         if len(vals) == len(exp) and len(set(vals)) < 2:
             only = ", ".join(sorted(set(vals))) or "—"
@@ -236,11 +255,15 @@ def divergence(map_text, ledger_text=None, timeline_text=None, strict=False):
                         "experience (%s) — there is no cross-persona divergence to surface"
                         % (o.get("id"), only))
 
-    # D4 — no fabricated testimony (advisory; ERROR --strict; any persona-quote override silences).
-    # Scan the VISIBLE prose only — the persona/divergence blocks (and any explanatory note) are HTML
-    # comments; fabricated testimony presented *as data* lives in the reader-facing prose.
+    # D4 — no fabricated testimony (advisory; ERROR --strict). A persona-quote override silences D4
+    # ONLY when it names a REAL divergence id ("<!-- override: persona-quote D-NN -->" for a declared
+    # D-NN) — a bogus id like D-99 must not disable the scan globally (Codex P2). Scan the VISIBLE prose
+    # only — the persona/divergence blocks (and any explanatory note) are HTML comments; fabricated
+    # testimony presented *as data* lives in the reader-facing prose.
     visible = _HTML_COMMENT_RE.sub("", map_text or "")
-    if not _overrides(map_text, "persona-quote") and _QUOTE_RE.search(visible):
+    divergence_ids = {o.get("id") for o, _ in valid_divs}
+    q_overrides = _overrides(map_text, "persona-quote") & divergence_ids
+    if not q_overrides and _QUOTE_RE.search(visible):
         warns.append("D4 no-fabricated-testimony: the map presents a first-person reader-reaction "
                      "quote ('I got bored …') as data — reason about reader experience structurally, "
                      "never manufacture reader testimony (the #17 boundary)")
@@ -419,6 +442,30 @@ def run_self_test():
     # a quote INSIDE an HTML comment (an explanatory note, not reader-facing data) is clean
     chk("d4_quote_in_comment_clean",
         not any("D4" in ln for ln in divergence(MAP + '\n<!-- note: D4 catches "I got bored" quotes -->\n', LEDGER)[1]))
+
+    # --- Codex round 2 ---
+    # P1: a prose-only / truncated map (NO parsed blocks) must still run D4 — it bypassed it entirely.
+    prose_only = 'P-01: "I got bored in chapter 3 and put it down."\n'
+    chk("d4_prose_only_fires", any("D4" in ln for ln in divergence(prose_only, LEDGER)[1]))
+    chk("d4_prose_only_strict_fails", divergence(prose_only, LEDGER, strict=True)[0] == 1)
+    # P1: a MALFORMED finding (invalid severity enum) must NOT satisfy D2 grounding — so it cannot
+    # silently pass D2 while escaping D3's severity anchoring. Anchoring to it surfaces as ungrounded.
+    bad_ledger = finding("F-P1-04", severity="Whatever")
+    code, lines = divergence(MAP, bad_ledger)
+    chk("d2_malformed_finding_not_grounded", code == 1 and any("D2 grounded-prediction" in ln for ln in lines))
+    chk("d2_malformed_finding_downgrade_not_masked",
+        divergence(MAP.replace(div("D-01"), div("D-01", asserted="Could-Fix")), bad_ledger)[0] == 1)
+    # P2: a divergence that omits a declared (non-target) persona is incomplete coverage.
+    THIRD = persona("P-03", target=False, pace_tolerance="high", genre_familiarity="newcomer")
+    omit3 = TARGET + EXPERT + THIRD + div("D-01", experiences={"P-01": "friction", "P-02": "engaged"})
+    chk("d3_omits_declared_persona_warns", any("D3 coverage" in ln and "P-03" in ln for ln in divergence(omit3, LEDGER)[1]))
+    chk("d3_omits_declared_persona_strict_fails", divergence(omit3, LEDGER, strict=True)[0] == 1)
+    # P2: a bogus persona-quote override (id not a declared divergence) must NOT disable D4 globally;
+    # the real-id override still silences.
+    bogus_ov = "<!-- override: persona-quote D-99 — no such divergence -->\n"
+    chk("d4_bogus_override_still_fires", any("D4" in ln for ln in divergence(bogus_ov + quote, LEDGER)[1]))
+    chk("d4_bogus_override_strict_fails", divergence(bogus_ov + quote, LEDGER, strict=True)[0] == 1)
+    chk("d4_real_override_still_silences", not any("D4" in ln for ln in divergence(ov + quote, LEDGER)[1]))
 
     # D5 — closed-key (non-overridable)
     code, lines = divergence(persona("P-01", target=True, name="Sarah, 34, a teacher") + EXPERT + div("D-01"), LEDGER)
