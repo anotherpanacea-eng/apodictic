@@ -178,15 +178,15 @@ set -euo pipefail
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).
-AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff regression-diff legal-risk promise-contract continuity-bible world-bible argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor obsidian-export html-export docx-export check-mirror"
+AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff regression-diff legal-risk promise-contract continuity-bible world-bible intake-interview author-fingerprint argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor obsidian-export html-export docx-export check-mirror"
 # shellcheck disable=SC2086  # intentional word-splitting to count list entries
 AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, regression-diff, legal-risk, promise-contract, continuity-bible, world-bible, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, obsidian-export, html-export, docx-export, check-mirror"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, regression-diff, legal-risk, promise-contract, continuity-bible, world-bible, intake-interview, author-fingerprint, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, obsidian-export, html-export, docx-export, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), world-bible vs the canonical Worldbuilding Bible example (W1 schema + closed-key, WD unique ids, WB-R1 rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a unit class, WB-G2 chronology cycle + anchor-drift, and the WF surface-don't-resolve firewall scan — clean under --strict with the staged contradictions overridden), argument-spine vs the canonical pre-draft Argument_State + the three genre-profiled Argument_States (Increment 5: B1-B4 + W4 over grant / academic / pitch, --strict), scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), world-bible vs the canonical Worldbuilding Bible example (W1 schema + closed-key, WD unique ids, WB-R1 rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a unit class, WB-G2 chronology cycle + anchor-drift, and the WF surface-don't-resolve firewall scan — clean under --strict with the staged contradictions overridden), intake-interview vs the canonical Intake Interview example + its Ledger (I1 schema, I2 no-contract-dup, I3 grounded ambiguity via ref + source_note, I4 calibrate-not-suppress under --strict), author-fingerprint vs the canonical Author Voice Profile (F1 schema, F2 provenance, F3 same-register comparison, F4 descriptive-not-prescriptive, clean W1/W2 under --strict), argument-spine vs the canonical pre-draft Argument_State + the three genre-profiled Argument_States (Increment 5: B1-B4 + W4 over grant / academic / pitch, --strict), scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -340,6 +340,20 @@ if [ "$1" = "--check-all" ]; then
       "$0" continuity-bible "$CA_BASE/example-continuity-bible.md" "$CA_BASE/example-timeline.md" --strict || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-continuity-bible.md or example-timeline.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Intake Interview (intake-interview: schema I1 + no-contract-dup I2 + grounded ambiguity I3 (ref + source_note) + calibrate-not-suppress I4, paired with the Ledger, under --strict) =="
+    if [ -f "$CA_BASE/example-intake-interview.md" ] && [ -f "$CA_BASE/example-intake-interview-ledger.md" ]; then
+      "$0" intake-interview "$CA_BASE/example-intake-interview.md" "$CA_BASE/example-intake-interview-ledger.md" --strict || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-intake-interview.md or example-intake-interview-ledger.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Author Voice Profile (author-fingerprint: schema F1 + provenance F2 + same-register F3 + descriptive-not-prescriptive F4 + clean W1/W2, under --strict) =="
+    if [ -f "$CA_BASE/example-author-voice-profile.md" ]; then
+      "$0" author-fingerprint "$CA_BASE/example-author-voice-profile.md" --strict || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-author-voice-profile.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical Worldbuilding Bible (world-bible: schema W1 + closed-key + unique ids WD + rule WB-R1 + cost WB-C1/C2 + distance WB-G1 + chronology WB-G2 + firewall WF, staged contradictions overridden, under --strict) =="
@@ -4902,6 +4916,65 @@ EOF
       python3 "$CBL_HELPER" continuity-bible "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — continuity-bible skipped; check inline that every canon_fact carries a well-shaped locus, the Contradiction Ledger pairs real conflicting facts, chronology facts consolidate to a Timeline scene id, and the Bible records stated facts only (never inferring or resolving canon). See docs/continuity-bible.md."
+    exit 0
+    ;;
+
+  intake-interview)
+    # Uncertainty-Resolution Intake Interview (docs/uncertainty-intake-interview.md): at the
+    # after-Pass-0/1 checkpoint, asks the author to resolve a specific structural ambiguity the
+    # framework DETECTED but cannot settle from the text — and only that. Structural checks over the
+    # apodictic.intake_query.v1 blocks — I1 schema (bad kind/confidence enum, malformed IQ-NN id,
+    # missing current_inference/question, duplicate id), I2 no-contract-duplication (a question that
+    # re-asks a contract element owned by the intake / Shelf — advisory, ERROR --strict; override
+    # <!-- override: intake-dup IQ-NN — … -->), I3 grounded ambiguity (one of a resolving
+    # ambiguity_ref (a real finding id in the Ledger) or a non-empty source_note; a dangling ref is an
+    # error — a query grounded in neither is manufactured), I4 calibrate-not-suppress (treat_as_intended
+    # may direct HOW a feature is assessed but never pre-empt a verdict — ERROR, the Deficit-Lock
+    # guard), W1 coverage (a Pass-0/1 LOW/UNCERTAIN finding or an Unresolved-Questions bullet with no
+    # query — advisory). Pass the Findings Ledger as a second file so I3 resolves ids and W1 checks
+    # coverage. Takes a run folder (globs *_Intake_Interview_*.md) or explicit files. Delegates to
+    # scripts/intake_interview.py; degrades to an advisory WARN without python3.
+    IIV_DIR=$(cd "$(dirname "$0")" && pwd)
+    IIV_HELPER="$IIV_DIR/intake_interview.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$IIV_HELPER" ]; then python3 "$IIV_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; intake-interview is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$IIV_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 intake-interview <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$IIV_HELPER" intake-interview "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — intake-interview skipped; check inline that every intake_query disambiguates a detected ambiguity (never re-asks the contract), is grounded in a real finding id or a source_note, and that treat_as_intended calibrates assessment without suppressing a finding. See docs/uncertainty-intake-interview.md."
+    exit 0
+    ;;
+
+  author-fingerprint)
+    # Cross-Manuscript Author Voice/Craft Fingerprint (docs/author-voice-fingerprint.md): the
+    # persistent cross-work memory of a writer's voice, collected under an operator-designated
+    # author-root. It does NO new stylometry — it consumes the single-voice AI-prose machinery
+    # (voice_profile / voice_distance + personal-baseline z-scores) and persists/diagnoses. Structural
+    # checks over the apodictic.voice_fingerprint.v1 blocks — F1 schema (bad source enum, malformed
+    # VF-… id, missing field, empty/non-scalar metrics, duplicate id), F2 provenance (each fingerprint
+    # cites a centroid_ref naming a consumed audit output), F3 same-register comparison (a drift/range
+    # claim referencing >=2 fingerprints must share a register — the AI-prose domain-shift guard); F4
+    # descriptive-not-prescriptive (no Must/Should/Could token, no "fix your voice" directive — the
+    # module observes movement, it never prescribes or grades; advisory, ERROR --strict; override
+    # <!-- override: fingerprint-frame VF-… — … -->), W1 insufficient data (no register has >=2
+    # fingerprints — seed-only), W2 local-only hygiene (missing local-only marker or an external URL —
+    # advisory WARN ONLY, never gate-blocking; the binding privacy guarantee is the module's runtime
+    # no-external-call rule). Takes an author-root (globs Author_Voice_Profile*.md) or explicit files.
+    # Delegates to scripts/author_fingerprint.py; degrades to an advisory WARN without python3.
+    AVF_DIR=$(cd "$(dirname "$0")" && pwd)
+    AVF_HELPER="$AVF_DIR/author_fingerprint.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$AVF_HELPER" ]; then python3 "$AVF_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; author-fingerprint is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$AVF_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 author-fingerprint <author_root|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$AVF_HELPER" author-fingerprint "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — author-fingerprint skipped; check inline that every voice_fingerprint cites a source + centroid_ref, drift is compared only within a register, the profile is descriptive (no Must/Should/Could, no 'fix your voice'), and it carries a local-only marker. See docs/author-voice-fingerprint.md."
     exit 0
     ;;
 

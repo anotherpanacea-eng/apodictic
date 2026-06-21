@@ -1,0 +1,16 @@
+{
+  "$id": "apodictic.voice_fingerprint.v1",
+  "$comment": "Source of truth for the apodictic:voice_fingerprint block (Cross-Manuscript Author Voice/Craft Fingerprint). One block per work the author collects under a designated author-root, persisting how that work sits in the author's stylometric space so the module can surface movement across a career — drift, range/growth, unconscious self-imitation, signature tics. It does NO new stylometry: it CONSUMES the existing single-voice AI-prose machinery (SETEC voice_profile / voice_distance + the personal-baseline z-scores) and adds only the persistence-and-longitudinal-diagnosis layer. `register` is the comparability class; drift is compared ONLY within a register (validator F3), per the AI-prose domain-shift caution. `source` names which consumed surface the fingerprint draws on (ai-prose-baseline | voice-distance | pov-voice-profile — the last only for the protagonist-collapse sub-diagnostic). `centroid_ref` points into the consumed audit's output (provenance, presence-checked by F2 — the external value cannot be re-resolved here; the module consumes, it does not compute). `metrics` is a flat map of scalar values (the subset engine types the container as object; per-value scalar checks are in Python, the retcon_plan.scores precedent). The module is descriptive (observations, not verdicts): it reports movement, it never prescribes a voice change and carries no Must/Should/Could severity (validator F4). The profile is local-only — make no external call and never transmit it (the no-telemetry mandate; validator W2 is an advisory hygiene check). Validated by scripts/author_fingerprint.py. See docs/author-voice-fingerprint.md.",
+  "title": "APODICTIC author voice fingerprint (apodictic.voice_fingerprint.v1)",
+  "type": "object",
+  "required": ["schema", "id", "work_label", "register", "source", "metrics"],
+  "properties": {
+    "schema": {"const": "apodictic.voice_fingerprint.v1"},
+    "id": {"type": "string", "pattern": "^VF-[A-Za-z0-9-]+$"},
+    "work_label": {"type": "string"},
+    "register": {"type": "string"},
+    "source": {"enum": ["ai-prose-baseline", "voice-distance", "pov-voice-profile"]},
+    "centroid_ref": {"type": "string", "$comment": "Provenance: names the consumed audit output (e.g. 'results.baseline_comparison'). Presence + non-emptiness checked by F2 in author_fingerprint.py — not in `required` here because F2 owns it (the spec separates F1 schema from F2 provenance)."},
+    "metrics": {"type": "object", "$comment": "A flat map of scalar metric values (illustrative keys: mattr_z, mtld_z, burrows_to_author_centroid). The subset engine only types the container as object; author_fingerprint.py checks non-emptiness and that every value is a scalar (str/number/bool), not a nested object/array — the retcon_plan.scores precedent."}
+  }
+}
