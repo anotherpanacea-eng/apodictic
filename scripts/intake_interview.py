@@ -96,6 +96,14 @@ _SUPPRESS_RE = re.compile(
 _NEGATOR_RE = re.compile(r"\b(?:not|never|without|cannot)\b|n['’]?t\b", re.IGNORECASE)
 _CLAUSE_BOUNDARY = ".;:!?"
 
+# A coordinating conjunction (and/but/yet/or/then) joining a fresh predicate. When one of these sits
+# between a negator and the suppression match (with NO comma), the negator governs the EARLIER
+# predicate and the conjunction introduces a separate, un-negated directive ("do not exaggerate BUT
+# suppress the flag" / "never overstate severity AND suppress the finding") — the negation does not
+# reach across the coordinated clause, so the trailing suppression must still fire. This is the
+# comma-less sibling of the comma-coordinated case ("Do not assess it on its own terms, suppress").
+_COORD_CONJ_RE = re.compile(r"\b(?:and|but|yet|or|then)\b", re.IGNORECASE)
+
 
 # Adverbs/intensifiers that can sit between a negator and the verb it governs WITHOUT breaking the
 # binding ("do not EVER, under any circumstances, suppress"). Any -ly word is treated as adverbial
@@ -119,20 +127,27 @@ def _is_adverbial(head):
 
 def _negation_scopes_match(clause):
     """True iff some negator in `clause` scopes the suppression match that ENDS `clause`. A negator
-    exempts the match only when it binds to the suppression itself: NO comma separates them ("does not
-    [...] suppress"), OR the material before the first comma is empty or ONLY adverbial ("do not, ..."
-    / "do not EVER, under any circumstances, suppress" — a parenthetical interruption). NON-adverbial
-    pre-comma material means the negator governs THAT — a fronted phrase ("Not as a calibration,
-    suppress") or a coordinated imperative ("Do not assess it on its own terms, suppress") — so the
-    trailing suppression is an un-negated directive and is NOT exempted. (The prior pass used "any
-    non-empty pre-comma material fires", which wrongly fired on an adverb like "ever" before a
-    parenthetical — Codex P2; the adverb-vs-predicate test fixes that without re-exempting a real
-    coordinated/fronted directive.)"""
+    exempts the match only when it binds to the suppression itself: NO comma AND no coordinating
+    conjunction separate them ("does not [...] suppress"), OR the material before the first comma is
+    empty or ONLY adverbial ("do not, ..." / "do not EVER, under any circumstances, suppress" — a
+    parenthetical interruption). NON-adverbial pre-comma material means the negator governs THAT — a
+    fronted phrase ("Not as a calibration, suppress") or a coordinated imperative ("Do not assess it
+    on its own terms, suppress") — so the trailing suppression is an un-negated directive and is NOT
+    exempted. A comma-LESS coordinating conjunction is the same coordination without the comma ("do
+    not exaggerate BUT suppress" / "never overstate severity AND suppress"): the negator governs the
+    earlier predicate, the conjunction introduces a fresh directive, so the negation does NOT reach
+    the suppression and it must fire. (Prior passes: "any non-empty pre-comma material fires" wrongly
+    fired on an adverb before a parenthetical — Codex P2; this pass closes the comma-less coordinated
+    sibling that the comma-only check left open.)"""
     for nm in _NEGATOR_RE.finditer(clause):
         span = clause[nm.end():]            # text between this negator and the (clause-final) match
         comma = span.find(",")
-        if comma == -1 or _is_adverbial(span[:comma]):
+        if comma == -1:
+            if _COORD_CONJ_RE.search(span):
+                continue                     # conjunction starts a fresh predicate; negation stops there
             return True                      # negation directly scopes the suppression
+        if _is_adverbial(span[:comma]):
+            return True                      # adverb-only parenthetical interruption; still scopes
     return False                             # every negator governs earlier material, not the match
 
 
@@ -482,6 +497,18 @@ def run_self_test():
     chk("i4_fronted_negated_phrase_fires",
         interview(query("IQ-01", source_note="x",
                         treat_as_intended="Not as a calibration, suppress the finding."))[0] == 1)
+    # comma-LESS coordinated directive: the negator governs the EARLIER predicate, a coordinating
+    # conjunction (and/but/yet/or/then) introduces a fresh un-negated suppression directive — the
+    # negation does NOT reach across the coordinated clause, so each of these must fire (Codex P2,
+    # the comma-less sibling of i4_comma_coordinated_directive_fires).
+    for phrase in (
+        "do not exaggerate but suppress the flag",
+        "never overstate severity and suppress the finding",
+        "never inflate the issue yet suppress the finding",
+        "do not calibrate it or drop the flag",
+        "do not assess it on its own terms then suppress the finding"):
+        chk("i4_comma_less_coordinated_fires::%s" % phrase[:22],
+            interview(query("IQ-01", source_note="x", treat_as_intended=phrase))[0] == 1)
     # a bare passing mention of the word "suppress" (no object) does not fire
     chk("i4_bare_mention_clean",
         interview(query("IQ-01", source_note="x",
