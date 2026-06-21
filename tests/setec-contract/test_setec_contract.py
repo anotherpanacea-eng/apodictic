@@ -586,6 +586,154 @@ def t8_run_surface_cli_preserves_dispatcher_exit_code() -> None:
         setec_runner.run_supplement = orig
 
 
+# --------------------------------------------------------------------------
+# T9 — voice_profile CONSUME-side contract: families.<fam>.top_features (and
+#      most_stable_features) carry the {feature, mean, sd, cv} shape that
+#      in-flight apodictic capabilities are specced to glob.
+#
+# Scope note (no current consumer): as of this commit NO shipped apodictic code
+# globs top_features / most_stable_features — the sole voice_profile consumer
+# (skills/specialized-audits/scripts/ai_prose_voice_profile.py) is a pure
+# pass-through that forwards argv to the SETEC dispatcher and returns the exit
+# code; it never parses the envelope. The consumers that glob these arrays are
+# in-flight specs (interpretable-stylometric-explanation et al.), not yet built.
+# This gate pins the field shape NOW so that when those consumers land the
+# contract is already enforced — i.e. it is a forward-looking guard, not a guard
+# on an existing consume path.
+#
+# Why this is its own OFFLINE gate (reads only the vendored fixture, no SETEC):
+# the drift gate's CHECK 2 (sync_setec.cmd_check) is a whole-file byte compare
+# of the vendored fixture against SETEC's own contract_fixtures/ copy — it
+# (a) SKIPS entirely offline (per-PR CI never runs it; only the weekly sync
+# workflow does) and (b) only asserts "vendored == SETEC's copy", never that
+# top_features EXISTS. So if SETEC ever drops/renames top_features, sync_setec
+# re-vendors the smaller fixture, cmd_check passes (they match again), and the
+# breakage would reach the specced consumers SILENTLY once they ship. Pinning
+# the field here surfaces such a drop HERE, in per-PR CI, instead of at runtime
+# in a future capability. most_stable_features is the other specced consume
+# field — pin BOTH so neither can vanish unnoticed.
+# --------------------------------------------------------------------------
+def t9_voice_profile_consume_contract() -> None:
+    print("T9: voice_profile families.<fam>.{top_features,most_stable_features} "
+          "consume-side shape (offline)")
+    fixture = VENDORED_FIXTURES / "voice_profile.json"
+    check(fixture.is_file(), "voice_profile.json fixture present")
+    if not fixture.is_file():
+        return
+    payload = json.loads(fixture.read_text(encoding="utf-8"))
+    families = payload.get("results", {}).get("families")
+    check(
+        isinstance(families, dict) and len(families) > 0,
+        "voice_profile results.families is a non-empty object",
+    )
+    if not (isinstance(families, dict) and families):
+        return
+
+    required_keys = {"feature", "mean", "sd", "cv"}
+    for fam, body in sorted(families.items()):
+        for array_name in ("top_features", "most_stable_features"):
+            arr = body.get(array_name) if isinstance(body, dict) else None
+            check(
+                isinstance(arr, list) and len(arr) > 0,
+                f"families.{fam}.{array_name} is a non-empty array "
+                f"(the specced consume-side contract; a SETEC drop must fail "
+                f"here, not silently break the in-flight consumers once they "
+                f"ship)",
+            )
+            if not (isinstance(arr, list) and arr):
+                continue
+            item = arr[0]
+            has_keys = isinstance(item, dict) and required_keys <= set(item)
+            check(
+                has_keys,
+                f"families.{fam}.{array_name}[] carries {{feature, mean, sd, cv}} "
+                f"(got {sorted(item) if isinstance(item, dict) else type(item).__name__})",
+            )
+            if has_keys:
+                typed = (
+                    isinstance(item["feature"], str)
+                    and all(
+                        isinstance(item[k], (int, float))
+                        and not isinstance(item[k], bool)
+                        for k in ("mean", "sd", "cv")
+                    )
+                )
+                check(
+                    typed,
+                    f"families.{fam}.{array_name}[] typed "
+                    f"(feature:str, mean/sd/cv:number)",
+                )
+
+
+# --------------------------------------------------------------------------
+# T9b — doc-truth guard for T9's rationale. T9 pins a FORWARD-LOOKING contract:
+# as of this commit NO shipped apodictic code globs top_features /
+# most_stable_features (the sole voice_profile consumer is a pass-through shim).
+# A prior draft of T9 asserted as PRESENT-TENSE fact that apodictic capabilities
+# "actually consume" / "glob" these arrays and that a SETEC drop would "silently
+# break consumers" — a consume-side claim grep refutes. This guard fails if (a)
+# that overclaim phrasing creeps back into the T9 block, or (b) a real consumer
+# of these arrays appears outside the test/fixture WITHOUT the wording being
+# updated to match. Either way the rationale must stay congruent with the repo.
+# --------------------------------------------------------------------------
+def t9b_consume_claim_matches_repo() -> None:
+    print("T9b: T9 rationale matches the repo (no overclaimed current consumer)")
+    src = Path(__file__).resolve().read_text(encoding="utf-8")
+
+    # (a) The retired present-tense overclaim phrasing must not reappear in the
+    #     T9 block. Scan ONLY the T9 region (from its header up to T9b's header)
+    #     so this guard does not match the example phrases quoted in its own
+    #     docstring/assertions below. Phrases are split so the literal full
+    #     string never appears in this function's source either.
+    start = src.find("# T9 —")
+    end = src.find("# T9b —")
+    t9_block = src[start:end] if (start != -1 and end != -1 and end > start) else src
+    # Normalize whitespace (incl. comment-continuation '# ' / f-string wraps) so
+    # an overclaim split across lines is still caught.
+    t9_norm = " ".join(t9_block.replace("#", " ").split())
+    overclaims = (
+        "apodictic " + "actually consumes",
+        "every consumer " + "that globs",
+        "capabilities " + "glob.",
+        "silently " + "break consumers)",
+    )
+    for phrase in overclaims:
+        check(
+            phrase not in t9_norm,
+            f"T9 must not reassert the refuted present-tense consumer claim "
+            f"({phrase!r})",
+        )
+
+    # (b) Ground truth: is there actually a non-test consumer of these arrays?
+    #     If one ships, the forward-looking wording is no longer accurate and
+    #     must be revised — this guard forces that update.
+    try:
+        out = subprocess.run(
+            ["git", "grep", "-nE", "top_features|most_stable_features"],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        _SKIPS.append("T9b: git grep unavailable for consumer cross-check")
+        return
+    if out.returncode not in (0, 1):
+        _SKIPS.append("T9b: git grep returned a non-match error; consumer "
+                      "cross-check skipped")
+        return
+    consumers = [
+        line for line in out.stdout.splitlines()
+        if line and "tests/setec-contract/" not in line.split(":", 1)[0]
+    ]
+    check(
+        not consumers,
+        "no shipped consumer of top_features/most_stable_features exists yet, "
+        "so T9's forward-looking wording is accurate; if a consumer lands "
+        f"({consumers!r}) update the T9 rationale to present-tense",
+    )
+
+
 def main() -> int:
     for fn in (
         t1_floor_resolution_from_vendored_manifest,
@@ -597,6 +745,8 @@ def main() -> int:
         t6_required_groups_validation,
         t7_idiolect_help_bypasses_required_groups,
         t8_run_surface_cli_preserves_dispatcher_exit_code,
+        t9_voice_profile_consume_contract,
+        t9b_consume_claim_matches_repo,
     ):
         fn()
         setec_capabilities.clear_cache()

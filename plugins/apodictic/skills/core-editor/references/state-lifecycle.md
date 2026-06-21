@@ -134,6 +134,38 @@ scripts/validate.sh regression-diff <prior_run_folder> <this_run_folder>
 
 It heuristically matches this round's findings against the prior round's (same origin code + chapter token + ≥1 shared mechanism token — finding ids are per-run, so the match is a **candidate**, never an assertion) and surfaces two signals a single-round diagnosis structurally cannot: **W1 recurrence-candidate** — a finding the prior round marked `<!-- resolved: F-… -->` that re-appears, so the fix may not have held (it reverts to the prior round's severity once the editor confirms the match) — and **W2 new-in-quiet-chapter** — a finding in a chapter the prior round left quiet, i.e. candidate fix-induced breakage (clear a false positive with `<!-- override: regression-cleared <runlabel>:<chapter> — investigated, not fix-induced -->`). Both are advisory (re-diagnosing a *changed* manuscript legitimately drops, adds, and moves findings); `--strict` gates them at round close. Fold a confirmed recurrence into this round's ledger at the reverted severity, and record the regression candidates in the Revision Report (the validator prints to stdout — it writes no file). See `docs/draft-regression-testing.md`.
 
+### Round-Trip Re-Anchoring (carry last round's margin notes onto the revised draft)
+
+`regression-diff` works at the **finding** level. The complementary move at the **anchor/text** level — when the prior round produced an annotated copy (`*_Annotated_Manuscript_*` + its `*_Annotation_Manifest_*`, the Annotated-Manuscript deliverable) — is to **carry those margin notes onto the revised draft** *before* a re-diagnosis exists, so the writer opens their new draft already marked with which of last round's notes still apply, which moved, and which point at prose that's now gone. This is the round-trip the deliverable's one-run snapshot otherwise can't do; it makes the annotated copy revision-aware. Run it at **Revision Round Intake** (it needs only the prior run's manifest + the new draft — no new ledger), then cross-reference it against the regression diff at round-close.
+
+**The flow (three steps; pure projection — the model never re-authors a comment):**
+
+1. **Snapshot the revised draft** into the new run folder as `[Project]_Manuscript_Snapshot_[runlabel].md` — line endings → LF, a trailing newline ensured, no other change (the same intake-snapshot discipline as a fresh run; see `run-core.md` §Intake). This frozen copy is the line index the re-anchor resolves against.
+
+2. **Classify, then emit the revision-aware marked-up copy.** First inspect the classification:
+
+   ```
+   scripts/validate.sh reanchor <prior_run_folder> <new_snapshot>
+   ```
+
+   It partitions every prior-round annotation into **held** (same locus), **moved** (`quote` only — verbatim+unique at a new offset), **vanished** (prose gone — a candidate the finding was addressed), **ambiguous** (now duplicated — re-anchor refused), and **not-re-anchorable** (`line-range` — bare line numbers carry no text to find). RA1–RA3 (the mechanical re-anchor contract) are hard; the `vanished` (W1) and `ambiguous`/`not-re-anchorable` (W2) signals are advisory. Then **emit** the artifacts — the re-anchored manifest plus the rendered annotated copy of the *revised* draft, held/moved only (each comment carried **byte-identical** from the prior manifest — relocate, never re-author):
+
+   ```
+   scripts/reanchor.py emit <prior_run_folder> <new_snapshot> [-o <run_folder>]
+   ```
+
+   It writes `[Project]_Reanchored_Manifest_[runlabel].md` + `[Project]_Reanchored_Annotated_Manuscript_[runlabel].md` (the `Reanchored_` infix keeps them distinct from a fresh-diagnosis `_Annotation_Manifest_` / `_Annotated_Manuscript_`, so a carried-over copy is never mistaken for a re-diagnosed one). `emit` **re-gates RA1–RA3 before writing** — it refuses to write an unverified re-anchor. The `vanished` / `ambiguous` / `not-re-anchorable` notes are **not** silently dropped: they stay in the `reanchor` report for editor placement (RA3 guarantees none is lost). On a host without `python3`, run `reanchor` for the classification and place the surviving notes by hand from the prior manifest — never re-author a comment to fit the new prose.
+
+3. **Cross-reference anchor evidence against the regression diff (round-close).** Once the revised draft *is* re-diagnosed into the new run folder (so a fresh ledger exists), join the two diffs by `finding_id` — the only key they share:
+
+   ```
+   scripts/reanchor.py crossref <prior_run_folder> <new_snapshot> <this_run_folder>
+   ```
+
+   It corroborates the heuristic regression signal with anchor ground truth: a **vanished** anchor on a finding `regression-diff` classes **resolved-and-held** is two-source evidence the fix landed; a **held/moved** anchor (prose persists verbatim) on a **recurrence-candidate** is evidence the fix did *not* hold (the `crossref:contradicted-resolution` / `X1` signal — advisory, ERROR under `--strict`). Record the corroborations in the Revision Report beside the regression candidates. The validators stay strictly within their own evidence (anchor-level vs. finding-level); this join is the **orchestrator's** job by design (`docs/annotated-manuscript-reanchoring.md` §Q2), which is why it lives here in the round flow, not inside either validator.
+
+A `--check-all` chain gate (`round-trip glue chain`) exercises emit → A-gate the emitted copy → crossref end-to-end on the canonical fixture, so the flow is proven to compose, not just the individual validators. See `docs/annotated-manuscript-reanchoring.md`.
+
 ### When to Reset to Full Analysis
 
 Abandon Revision Round Protocol and run fresh full analysis when:
