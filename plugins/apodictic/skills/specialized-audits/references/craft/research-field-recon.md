@@ -330,9 +330,27 @@ Predatory venue flags: {N}
 Preprints with published updates: {N}
 Overall health: [HEALTHY / SOME MAINTENANCE NEEDED / SIGNIFICANT ISSUES]
 
+SOURCE COVERAGE (research-reliability-layer)
+[CLEAN / DEGRADED — {provider} ({circuit open / budget exhausted / error rate > 50%})]
+  When DEGRADED: counterevidence and literature-gap conclusions are bounded by an
+  index that did not fully answer. A "no counterevidence found" on a claim whose
+  search depended on a degraded provider is NOT-CHECKED (coverage gap), not a
+  clean "uncontested" — disclose it rather than reading absence as adequacy.
+
 RECOMMENDATIONS
 {Ordered by impact on the argument. Each with specific action.}
 ```
+
+When Field Reconnaissance drives `academic_apis.py`'s batch client, it reads the
+same per-run `reliability` block (`coverage.degraded_providers`) the Citation
+Verifier does and fills the SOURCE COVERAGE line from it. If it labels an
+individual result NOT-CHECKED vs NOT-FOUND, that label comes from that result's
+own `resolution_status` (as in the Citation Verifier), not from re-deriving it off
+the run-level `coverage.degraded_providers` set — the run-level set is for the
+SOURCE COVERAGE line and blind-spot routing only. When it runs more
+LLM-orchestrated (without the batch client), it reports coverage qualitatively
+from observed provider behavior. Either way a DEGRADED state is a coverage
+disclosure, never silently folded into "GAPS IDENTIFIED" vs "ADEQUATE."
 
 ---
 
@@ -387,6 +405,7 @@ Recommended handoff:
 5. **Literature gaps are descriptive, not prescriptive.** Note that all sources are from one jurisdiction; don't insist the author must cite work from every continent. The form and scope of the manuscript determine what counts as a gap.
 6. Never surface counterevidence selectively to support a particular political or ideological position. The module searches for the strongest challenges regardless of their direction.
 7. **Source ecosystem health is maintenance, not judgment.** Dead links and stale preprints are fixable. Report them matter-of-factly.
+8. **Degraded provider coverage is a disclosable blind spot (research-reliability-layer).** When a provider degraded during the run (`reliability.coverage.degraded_providers`), the counterevidence search and literature-gap analysis are bounded by an index that did not fully answer. On a high-stakes / Pre-DE-Prerequisite run, route this to `run-synthesis.md` § 3 Blind Spot / Absence Inventory ("literature-counterevidence coverage incomplete — {provider} degraded") alongside the existing declined-Field-Recon disclosure. A "no counterevidence found" that rode a degraded provider is NOT-CHECKED, not a clean "uncontested" — never read a degraded-run absence as evidence of adequacy.
 
 ---
 
