@@ -28,7 +28,9 @@ defect — no Must/Should/Could severity; its intensity scale is orthogonal to t
      drift            ("should/recommend/consider … cut/remove/soften/tone down/reduce") — not bare
                       adjectives like "excessive" which legitimately describe depicted content. The
                       advisory describes; it does not prescribe. Advisory; ERROR under --strict.
-                      Override (per id): <!-- override: advisory-eval CN-NN — <rationale> -->.
+                      Override a note LABEL (per id): <!-- override: advisory-eval CN-NN — <why> -->.
+                      Override the reader-facing PROSE (id-less, so a per-id override never silences
+                      unrelated prose): <!-- override: advisory-eval-prose — <why> -->.
   W2 opt-in marker    a resolved advisory artifact lacks the `<!-- content-advisory: opted-in -->`
                       marker (generated only on request). Advisory; ERROR under --strict.
 
@@ -70,6 +72,10 @@ _PRESCRIPTIVE_RE = re.compile(
 _OPT_IN_RE = re.compile(r"<!--\s*content-advisory:\s*opted-in\s*-->", re.IGNORECASE)
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 _OVERRIDE_RE = re.compile(r"<!--\s*override:\s*([a-z-]+)\s+(CN-[0-9]+)\b", re.IGNORECASE)
+# The PROSE-level prescription override is id-less (the reader-facing prose isn't bound to a CN-NN),
+# and DISTINCT from the per-id `advisory-eval CN-NN` form — so a per-note override never silences
+# unrelated prose (Codex P1). `<!-- override: advisory-eval-prose — <rationale> -->`.
+_PROSE_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*advisory-eval-prose\b", re.IGNORECASE)
 
 
 def _read(path):
@@ -170,8 +176,9 @@ def advisory(text, strict=False):
         if _PRESCRIPTIVE_RE.search(label) and cid not in eval_overrides:
             warns.append("W1 prescriptive drift: %s's label prescribes a revision ('should cut/soften "
                          "…') — the advisory describes depicted content, it does not prescribe" % cid)
-    # prose-level prescription (not id-bound): silenced by any advisory-eval override
-    if not eval_overrides:
+    # prose-level prescription (not id-bound): silenced ONLY by the prose-scoped override, never by a
+    # per-id `advisory-eval CN-NN` (a note-specific override must not suppress unrelated prose, Codex P1)
+    if not _PROSE_OVERRIDE_RE.search(text or ""):
         # scan prose minus the note labels already handled
         if _PRESCRIPTIVE_RE.search(visible):
             warns.append("W1 prescriptive drift: the advisory prose prescribes a revision "
@@ -302,6 +309,14 @@ def run_self_test():
     ov = "<!-- override: advisory-eval CN-03 — quoting the author's own marketing note -->\n"
     chk("w1_label_override",
         not any("W1" in ln for ln in advisory(OPT + ov + note("CN-03", category="other", label="should soften the torture depiction"))[1]))
+    # a per-id override must NOT silence UNRELATED prescriptive PROSE (Codex P1)
+    presc_prose = "\n## Notes\n\n- The reader should cut this scene to lower the intensity.\n"
+    chk("w1_per_id_override_keeps_unrelated_prose",
+        any("W1 prescriptive" in ln for ln in advisory(OPT + ov + note("CN-03") + presc_prose)[1]))
+    # the prose-scoped override (id-less) DOES silence prose prescription
+    prose_ov = "<!-- override: advisory-eval-prose — author's own jacket copy -->\n"
+    chk("w1_prose_override_silences_prose",
+        not any("W1 prescriptive" in ln for ln in advisory(OPT + prose_ov + TWO + presc_prose)[1]))
 
     # W2 — opt-in marker
     code, lines = advisory(TWO)  # no opt-in marker
