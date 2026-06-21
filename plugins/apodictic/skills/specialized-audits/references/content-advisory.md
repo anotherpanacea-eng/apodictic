@@ -81,6 +81,8 @@ category, generated only under the opt-in marker:
 `other`→non-empty-`label` conditional and non-empty loci elements), **A2** locus presence/shape,
 **A3** no editorial-severity leak (no Must/Should/Could token in the prose or a label, no
 `apodictic:finding` block), plus advisory **W1** prescriptive drift (a "should cut/soften …"
-construction; ERROR under `--strict`; override `<!-- override: advisory-eval CN-NN — <rationale> -->`)
+construction; ERROR under `--strict`; a note-`label` match is overridden per-id with
+`<!-- override: advisory-eval CN-NN — <rationale> -->`, the reader-facing **prose** only with the
+id-less `<!-- override: advisory-eval-prose — <rationale> -->`)
 and **W2** opt-in marker. If no advisory artifact is resolved the command no-ops (exit 2). See
 `docs/content-advisory.md`.
