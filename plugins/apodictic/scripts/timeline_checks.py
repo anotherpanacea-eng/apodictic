@@ -55,6 +55,21 @@ _NONLINEAR_RE = re.compile(
 
 _LEVEL2_RE = re.compile(r"^##[^#]")
 
+# Code spans (fenced ``` ``` and inline ` `) are stripped before an override scan so a documentation
+# EXAMPLE of a marker (in backticks) is not mistaken for a live override.
+_CODE_SPAN_RE = re.compile(r"```.*?```|`[^`\n]*`", re.DOTALL)
+
+
+def _has_override(body, slug):
+    """A genuine body override comment for `slug` — NOT a suffixed slug, NOT inside a code span.
+
+    The earlier `"<!-- override: <slug>" in body` substring test matched a suffixed slug (e.g.
+    `<slug>-but-not-really`) and matched a backtick'd documentation example. This requires the EXACT
+    slug followed by a delimiter (whitespace / em- or en-dash / the comment close), in stripped prose.
+    """
+    region = _CODE_SPAN_RE.sub(" ", body or "")
+    return re.search(r"<!--\s*override:\s*" + re.escape(slug) + r"(?=\s|—|–|-->|$)", region) is not None
+
 
 # --------------------------------------------------------------------------
 # Shared parsing helpers.
@@ -227,7 +242,7 @@ _PASS10 = "core-editor/references/pass-10.md"
 def timeline_arithmetic(text):
     errors, warnings = [], []
     body, _ = _split_section8(text)
-    ov = "<!-- override: timeline-arithmetic-conflict" in body
+    ov = _has_override(body, "timeline-arithmetic-conflict")
 
     # Marker hygiene (faithful to the bash arm) — body only.
     neg_gaps = sum(1 for ln in body.split("\n")
@@ -284,7 +299,7 @@ def timeline_arithmetic(text):
 def timeline_anchor_conflict(text):
     errors, warnings = [], []
     body, _ = _split_section8(text)
-    ov = "<!-- override: timeline-anchor-conflict" in body
+    ov = _has_override(body, "timeline-anchor-conflict")
 
     candidates = sum(1 for ln in body.split("\n")
                      if re.search(r"\((contradicts|paradox with|conflicts with)", ln, re.IGNORECASE))
@@ -340,7 +355,7 @@ def _diff_section3_markers(text):
 def timeline_diff(prior_text, current_text):
     errors, warnings = [], []
     body, section8 = _split_section8(current_text)
-    ov = "<!-- override: timeline-diff-undocumented" in body
+    ov = _has_override(body, "timeline-diff-undocumented")
 
     prior_rows, cur_rows = _diff_event_rows(prior_text), _diff_event_rows(current_text)
     prior_s3, cur_s3 = _diff_section3_markers(prior_text), _diff_section3_markers(current_text)
@@ -490,6 +505,14 @@ def run_self_test(which=None):
         expect("diff_undocumented", diff_rc(prior, cur_undoc), 1)
         expect("diff_documented", diff_rc(prior, cur_doc), 0)
         expect("diff_override_body", diff_rc(prior, cur_over), 0)
+        # 2026-06-20 override-parse hardening: a SUFFIXED slug must NOT be accepted as the override
+        cur_over_suffixed = cur_over.replace("timeline-diff-undocumented —", "timeline-diff-undocumented-later —")
+        expect("diff_override_suffixed_slug_rejected", diff_rc(prior, cur_over_suffixed), 1)
+        # a marker inside a backtick code span (a documentation example) must NOT count as a live override
+        cur_over_backtick = cur_over.replace(
+            "<!-- override: timeline-diff-undocumented — deferred. -->",
+            "Use `<!-- override: timeline-diff-undocumented -->` to defer.")
+        expect("diff_override_in_backticks_rejected", diff_rc(prior, cur_over_backtick), 1)
         expect("diff_changed_masks_add", diff_rc(prior, cur_changed_masks), 1)
         expect("diff_edit_changed_covers", diff_rc(prior, cur_edit), 0)
 
