@@ -48,6 +48,17 @@ try:
     import apodictic_artifacts as art
 except ImportError:
     art = None
+
+
+def _has_block(text, btype):
+    """True if `text` carries a real apodictic:<btype> block (a parsed carrier, not a prose mention).
+
+    Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
+    in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
+    validate.sh validator-conventions (M2)."""
+    if art is None:
+        return ("apodictic:%s" % btype) in (text or "")
+    return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))
 try:
     import timeline_checks as tl
 except ImportError:
@@ -415,11 +426,11 @@ def resolve(paths):
     man = tlp = led = None
     for p in paths:
         body = _read(p) or ""
-        if "apodictic:viz_manifest" in body and man is None:
+        if _has_block(body, "viz_manifest") and man is None:
             man = p
         elif "scene id" in body.lower() and "|" in body and tlp is None:
             tlp = p
-        elif "apodictic:finding" in body and led is None:
+        elif _has_block(body, "finding") and led is None:
             led = p
     if man is None and paths:
         man = paths[0]

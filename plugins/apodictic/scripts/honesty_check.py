@@ -206,12 +206,14 @@ def softness_check(letter_text, ledger_text):
     errs.extend("invalid Severity Calibration block — %s" % e for e in cal_block_errs)
     marker = SOFT_MARKER in body
     for f in parse_locked_findings(ledger_text):
+        if not isinstance(f, dict):
+            continue  # a malformed (non-dict) finding block can't be a locked finding; skip, don't crash
         lock = f.get("severity")
         if lock not in LOCKED:
             continue
         mech = _short(f.get("mechanism", "?"))
         fid = f.get("id")
-        if fid:
+        if fid and isinstance(fid, str):
             in_body = _id_delivered_in_body(body, fid, f)
             # Prefer the structured Severity Calibration block; fall back to prose.
             rec = struct_cal.get(fid)
@@ -392,6 +394,9 @@ def run_self_test():
           deficit_lock("## Pass 8 — Ledger Entry\n### Notable Findings\n1. **Reveal.** Severity: Must-Fix.\n"
                        '<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","severity":"Must-Fix"}\n-->\n')[0], False)
 
+    # regression: a non-dict finding block in the ledger must not crash softness_check (2026-06-20 sweep)
+    check("crash_nondict_finding_in_ledger",
+          softness_check("# Edit\n## What Needs Work\np\n", "<!-- apodictic:finding\n42\n-->")[0], True)
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
 

@@ -50,6 +50,17 @@ try:
 except ImportError:
     art = None
 
+
+def _has_block(text, btype):
+    """True if `text` carries a real apodictic:<btype> block (a parsed carrier, not a prose mention).
+
+    Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
+    in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
+    validate.sh validator-conventions (M2)."""
+    if art is None:
+        return ("apodictic:%s" % btype) in (text or "")
+    return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))
+
 _SCHEMA_ID = "apodictic.reader_question.v1"
 _FINDING_SCHEMA_ID = "apodictic.finding.v1"
 _INSTRUMENT_GLOB = "*_Beta_Reader_Instrument_*.md"
@@ -332,9 +343,9 @@ def resolve(paths):
     inst = led = None
     for p in paths:
         body = _read(p) or ""
-        if "apodictic:reader_question" in body and inst is None:
+        if _has_block(body, "reader_question") and inst is None:
             inst = p
-        elif ("apodictic:finding" in body or "Unresolved Questions" in body) and led is None:
+        elif (_has_block(body, "finding") or "Unresolved Questions" in body) and led is None:
             led = p
     # fall back to the first arg as the instrument so a clean empty file reports a no-op
     if inst is None and paths:
