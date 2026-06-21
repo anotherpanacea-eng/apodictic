@@ -46,7 +46,7 @@ A `[Project]_Continuity_Bible_[runlabel].md` of `apodictic.canon_fact.v1` blocks
 -->
 ```
 
-- All seven fields (`schema`, `id`, `entity`, `category`, `attribute`, `value`, `loci`) are declared **both** in the schema's `properties` and `required`, so the subset engine guards them. (Note: the subset engine silently allows *unknown* keys, so a misspelled field passes — a known limitation shared with `legal_risk` et al.; the Python validator does not add closed-key checking here because, unlike the persona spec, no firewall guarantee rests on it.)
+- All seven fields (`schema`, `id`, `entity`, `category`, `attribute`, `value`, `loci`) are declared **both** in the schema's `properties` and `required`, so the subset engine guards them. (Note: the subset engine now enforces `additionalProperties:false` for the closed-key set (Harness Contracts v2), but `canon_fact.v1` / `legal_risk.v1` stay **open** by design — the Python validator does not add closed-key checking here because, unlike the persona spec, no firewall guarantee rests on it — so for *these* schemas a misspelled field still passes; closing them is a follow-up if a guarantee ever comes to rest on it.)
 - `value` is **always a string** (the extractor quotes numerics: `"32"`, not `32`), so `C1` can type-check it; an unquoted numeric fails.
 - `category` ∈ `person` / `place` / `object` / `world-rule` / `chronology` (closed enum).
 - `loci` — manuscript locations stating the fact (≥1; `C2`).
