@@ -62,17 +62,50 @@ _LOCUS_RE = re.compile(
     re.IGNORECASE)
 # A3 — editorial severity tokens must not leak into the advisory (it is not a defect list).
 _SEVERITY_RE = re.compile(r"\b(?:Must|Should|Could)-Fix\b")
-# W1 — a PRESCRIPTIVE construction (a modal/recommend verb governing a revision action) — NOT a bare
-# descriptive adjective. "should cut this scene" fires; "excessive blood loss" does not.
+# W1 — a PRESCRIPTIVE construction: a modal/recommend verb governing a revision action ("should cut
+# this scene") — NOT a bare descriptive adjective ("excessive blood loss"). `_PRESCRIPTIVE_RE` finds
+# the bare `<modal> … <action>` shape; `_prescribes()` then drops NEGATED instances. Negation scope is
+# a HEURISTIC, not a parser (cf. intake_interview I4): we look only at the two places a negator can
+# actually flip this construction — directly before the MODAL ("do not / never / can't recommend …";
+# also across a comma-bracketed aside "do not, in good conscience, recommend …"), or directly before
+# the ACTION ("recommends NO cut", "should NOT cut"). A negator binding an UNRELATED word mid-gap
+# ("recommend, with no hesitation, cutting") does not negate the action, so it still fires. Failure
+# direction is toward NOT firing (W1 is advisory; ERROR only under --strict, and the prose override
+# `advisory-eval-prose` is the escape). KNOWN LIMIT: a negator separated from the modal by a
+# coordinator or a second clause ("no one objected, we recommend cutting") is read as governing the
+# modal here only when within the bracket/adverb window; deeper scope needs a parser, not this rule.
 _PRESCRIPTIVE_RE = re.compile(
     r"\b(?:should|recommend(?:ed|ing|s)?|consider|advise[sd]?|suggest(?:ed|ing|s)?|ought\s+to|"
     r"needs?\s+to|must|might\s+want\s+to)\b"
-    # negation-aware gap: a negator between the modal and the action means the prose is NOT prescribing
-    # the revision ("recommends NO cut", "should NOT cut") — those describe, so don't fire.
-    r"(?:(?!\b(?:no|not|never)\b|n['’]?t)[^.;\n]){0,40}?"
+    r"(?P<gap>[^.;\n]{0,40}?)"
     r"\b(?:cut(?:ting|s)?|remov\w+|delet\w+|soften\w*|tone\s+(?:it\s+)?down|reduc\w+|"
     r"trim\w*|excis\w+|edit\w*\s+out|rework\w*)\b",
     re.IGNORECASE)
+# A negator that GOVERNS the modal: directly before it (+ ≤2 adverbs), across a comma-bracketed aside,
+# or an `n't`/`cannot` contraction. Anchored to the end of the pre-modal text.
+_NEG_MODAL_RE = re.compile(
+    r"\b(?:not|never|no)\b(?:\s+\w+){0,2}\s*$"     # "do not [really] recommend", "never recommend"
+    r"|\bnot\b\s*,[^.;\n]{0,30}?,\s*$"             # "do not, in good conscience, recommend"
+    r"|n['’]t\b(?:\s*,[^.;\n]{0,30}?,)?\s*$"       # "don't [, …,] recommend"
+    r"|\bcan(?:not|['’]t)\b\s*$",                  # "cannot / can't recommend"
+    re.IGNORECASE)
+# A negator that GOVERNS the action: immediately before it, i.e. the gap ENDS in the negator.
+_NEG_ACTION_RE = re.compile(r"\b(?:no|not|never)\s+$", re.IGNORECASE)
+
+
+def _prescribes(text):
+    """True if `text` carries a genuine prescriptive construction (a modal governing a revision
+    action), excluding NEGATED ones — a negated modal ("do not recommend cutting") or a negated action
+    ("recommends no cut", "should not cut"). A negator binding an unrelated word mid-gap ("recommend,
+    with no hesitation, cutting") does not negate the action, so it still fires."""
+    text = text or ""
+    for m in _PRESCRIPTIVE_RE.finditer(text):
+        if _NEG_MODAL_RE.search(text[:m.start()]):
+            continue                              # the modal itself is negated
+        if _NEG_ACTION_RE.search(m.group("gap")):
+            continue                              # the action is directly negated
+        return True
+    return False
 _OPT_IN_RE = re.compile(r"<!--\s*content-advisory:\s*opted-in\s*-->", re.IGNORECASE)
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 _OVERRIDE_RE = re.compile(r"<!--\s*override:\s*([a-z-]+)\s+(CN-[0-9]+)\b", re.IGNORECASE)
@@ -182,14 +215,14 @@ def advisory(text, strict=False):
     # W1 — prescriptive drift (firewall; advisory, ERROR --strict; per-id / prose override)
     eval_overrides = _overrides(text, "advisory-eval")
     for cid, label in note_labels:
-        if _PRESCRIPTIVE_RE.search(label) and cid not in eval_overrides:
+        if _prescribes(label) and cid not in eval_overrides:
             warns.append("W1 prescriptive drift: %s's label prescribes a revision ('should cut/soften "
                          "…') — the advisory describes depicted content, it does not prescribe" % cid)
     # prose-level prescription (not id-bound): silenced ONLY by the prose-scoped override, never by a
     # per-id `advisory-eval CN-NN` (a note-specific override must not suppress unrelated prose, Codex P1)
     if not _PROSE_OVERRIDE_RE.search(text or ""):
         # scan prose minus the note labels already handled
-        if _PRESCRIPTIVE_RE.search(visible):
+        if _prescribes(visible):
             warns.append("W1 prescriptive drift: the advisory prose prescribes a revision "
                          "('should cut/soften …') — describe the depicted content, do not prescribe")
 
@@ -351,12 +384,24 @@ def run_self_test():
         any("W1 prescriptive" in ln for ln in advisory(OPT + TWO + "\nWe recommend cutting the torture passage.\n")[1]))
     chk("w1_must_cut_fires",
         any("W1 prescriptive" in ln for ln in advisory(OPT + TWO + "\nThe editor says you must cut this scene.\n")[1]))
-    # …but a NEGATED construction describes, it does not prescribe — "recommends no cut" (the canonical
-    # fixture's wording) and "should not cut" must stay clean (the negation-aware gap).
-    for clean in ("the advisory recommends no cut to this scene",
-                  "the editor should not cut this passage"):
-        chk("w1_negated_prescription_clean::%s" % clean[:20],
+    # …but a NEGATED construction describes, it does not prescribe. Negation can sit on the ACTION
+    # ("recommends no cut", "should not cut", "recommend not cutting") or on the MODAL ("do not /
+    # don't / never / cannot recommend cutting", incl. across a comma aside) — all must stay clean.
+    for clean in ("the advisory recommends no cut to this scene",     # action negated
+                  "the editor should not cut this passage",
+                  "we recommend not cutting this passage",
+                  "we do not recommend cutting this scene",           # modal negated (Codex P2 FP)
+                  "we don't recommend cutting this scene",
+                  "we never recommend cutting a scene",
+                  "we cannot recommend cutting this scene",
+                  "we do not, in good conscience, recommend cutting this scene"):  # negator across an aside
+        chk("w1_negated_prescription_clean::%s" % clean[:24],
             not any("W1 prescriptive" in ln for ln in advisory(OPT + TWO + "\n" + clean + "\n")[1]))
+    # …and a negator binding an UNRELATED word mid-gap does NOT negate the action — "recommend, with no
+    # hesitation, cutting" is still a prescription and must fire (Codex P2 false-negative).
+    chk("w1_unrelated_no_still_fires",
+        any("W1 prescriptive" in ln for ln in
+            advisory(OPT + TWO + "\nWe recommend, with no hesitation, cutting this scene.\n")[1]))
 
     # resolution: glob, explicit file, no-artifact exit 2, decoy prose mention skipped
     import tempfile
