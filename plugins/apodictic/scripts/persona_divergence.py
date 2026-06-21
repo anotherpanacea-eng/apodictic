@@ -90,6 +90,19 @@ def _overrides(text, slug):
     return {m.group(2) for m in _OVERRIDE_RE.finditer(text) if m.group(1).lower() == slug}
 
 
+def _section_divergence(prose_before):
+    """The divergence id of the ACTIVE section at the end of `prose_before`: the D-NN in the most recent
+    markdown HEADING line, or None. Only a heading changes the active section — an inline cross-reference
+    ("Compared with D-01, …") does not, and a heading without a D-NN ("### Notes") clears it (so a quote
+    in a later/unrelated section is not silenced by an earlier divergence's override; Codex P2)."""
+    gov = None
+    for line in prose_before.split("\n"):
+        if re.match(r"\s{0,3}#{1,6}\s", line):       # a markdown heading line
+            m = _DIV_ID_RE.search(line)
+            gov = m.group(0) if m else None          # non-divergence heading ends the active section
+    return gov
+
+
 def _parse(text, btype, schema_id):
     """[(obj_or_None, schema_errs, index), ...] for each apodictic:<btype> block."""
     out = []
@@ -259,19 +272,19 @@ def divergence(map_text, ledger_text=None, timeline_text=None, strict=False):
                         % (o.get("id"), only))
 
     # D4 — no fabricated testimony (advisory; ERROR --strict). A persona-quote override silences a
-    # quote ONLY when it names a REAL divergence id AND that divergence SCOPES the quote — i.e. its
-    # D-NN is the divergence-id reference most recently preceding the quote in the prose (e.g. the quote
-    # sits under that divergence's "### D-NN" section). So a D-01 override never silences a D-02 quote,
-    # and a bogus id silences nothing (Codex P2). Scan the VISIBLE prose only — the persona/divergence
-    # blocks (and any explanatory note, incl. the override markers) are HTML comments stripped here;
-    # fabricated testimony presented *as data* lives in the reader-facing prose.
+    # quote ONLY when it names a REAL divergence id AND that divergence is the quote's ACTIVE SECTION —
+    # the D-NN in the most recent markdown heading above the quote (see _section_divergence). An inline
+    # cross-reference ("Compared with D-01, …") inside a "### D-02" section does NOT change the scope,
+    # and a quote under a non-divergence heading ("### Notes") is unscoped; so a D-01 override never
+    # silences a D-02 (or Notes) quote, and a bogus id silences nothing (Codex P2). Scan the VISIBLE
+    # prose only — the persona/divergence blocks (and any note, incl. the override markers) are HTML
+    # comments stripped here; fabricated testimony presented *as data* lives in the reader-facing prose.
     visible = _HTML_COMMENT_RE.sub("", map_text or "")
     divergence_ids = {o.get("id") for o, _ in valid_divs}
     q_overrides = _overrides(map_text, "persona-quote") & divergence_ids
     for m in _QUOTE_RE.finditer(visible):
-        preceding = _DIV_ID_RE.findall(visible[:m.start()])
-        if preceding and preceding[-1] in q_overrides:
-            continue  # the quote sits in the prose scope of an overridden divergence
+        if _section_divergence(visible[:m.start()]) in q_overrides:
+            continue  # the quote sits under an overridden divergence's section heading
         warns.append("D4 no-fabricated-testimony: the map presents a first-person reader-reaction "
                      "quote ('I got bored …') as data — reason about reader experience structurally, "
                      "never manufacture reader testimony (the #17 boundary)")
@@ -452,6 +465,14 @@ def run_self_test():
     cross = ov + MAP2 + '\n\n### D-02\nP-02: "I got bored and stopped reading."\n'
     chk("d4_override_scoped_other_div_fires", any("D4" in ln for ln in divergence(cross, LEDGER)[1]))
     chk("d4_override_scoped_other_div_strict_fails", divergence(cross, LEDGER, strict=True)[0] == 1)
+    # Codex P2 (tighter): an inline D-01 cross-reference INSIDE the "### D-02" section must not change
+    # scope — the active section heading is D-02, so the D-01 override does not silence the quote.
+    xref = ov + MAP2 + '\n\n### D-02\nCompared with D-01, P-02: "I got bored and stopped reading."\n'
+    chk("d4_inline_xref_does_not_rescope", divergence(xref, LEDGER, strict=True)[0] == 1)
+    # …and a trailing non-divergence section ("### Notes") after a D-01 section is unscoped — the D-01
+    # override must not leak into it.
+    notes = ov + MAP2 + '\n\n### D-01\n(structural prediction)\n\n### Notes\nP-02: "I got bored and gave up."\n'
+    chk("d4_trailing_notes_unscoped_fires", divergence(notes, LEDGER, strict=True)[0] == 1)
     # a structural prediction (no first-person quote) is clean
     chk("d4_structural_clean",
         not any("D4" in ln for ln in divergence(MAP + "\n\nA pace-sensitive disposition is at elevated disengagement risk across Ch 3.\n", LEDGER)[1]))
