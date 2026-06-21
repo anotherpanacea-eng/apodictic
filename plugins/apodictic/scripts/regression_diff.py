@@ -58,6 +58,9 @@ _ID_RE = re.compile(r"(?<![\w-])F-[A-Za-z0-9]+-[0-9]{2,}(?![\w-])")
 # W2 adjudication: `<!-- override: regression-cleared <runlabel>:<chapter> — <rationale> -->`.
 _CLEARED_RE = re.compile(r"<!--\s*override:\s*regression-cleared\b(.*?)-->", re.DOTALL | re.IGNORECASE)
 _ID_SPLIT_RE = re.compile(r"^F-(.+)-([0-9]{2,})$")
+# The classes `classify` keys by the PRIOR finding's id (vs. `new` / `new-in-quiet-chapter[ (cleared)]`,
+# keyed by the CURRENT id). `crossref_classes` returns only these — the reanchor manifest carries prior ids.
+_PRIOR_KEYED_CLASSES = frozenset(("persisted", "resolved-and-held", "recurrence-candidate", "unexplained-drop"))
 # Mechanism tokenization: lowercase alnum tokens, drop a small fixed stopword set + tokens < 3 chars.
 _STOP = frozenset((
     "the", "a", "an", "of", "to", "in", "is", "it", "so", "and", "that", "this", "for", "on", "at",
@@ -326,6 +329,36 @@ def run(paths, strict=False):
     return diff_rounds(_read(pri_ledger), _read(cur_ledger), prior_resolved, cleared, strict=strict)
 
 
+def crossref_classes(prior, current):
+    """{prior_finding_id: class} for the PRIOR-round-keyed regression classes (persisted, resolved-and-held,
+    recurrence-candidate, unexplained-drop) — the map `reanchor crossref` joins against by finding_id (the
+    re-anchored manifest carries the prior round's ids). Current-only classes (new / new-in-quiet-chapter)
+    have no prior id to join on and are omitted. Best-effort: returns {} when a ledger is missing/unparseable
+    (the join simply finds no matches — it never raises), so it's safe to call from the orchestrator glue."""
+    if prior is None or current is None:
+        return {}
+    pri_ledger, cur_ledger = _ledger_path(prior), _ledger_path(current)
+    if not pri_ledger or not cur_ledger:
+        return {}
+    prior_findings = findings_of(_read(pri_ledger))
+    if not prior_findings:
+        return {}
+    prior_resolved, _ = _resolved_and_cleared(prior, want_resolved=True)
+    _, cleared = _resolved_and_cleared(current, want_resolved=False)
+    rows, _rec, _quiet, _drops = classify(prior_findings, findings_of(_read(cur_ledger)),
+                                          prior_resolved, cleared)
+    # Keep only the PRIOR-keyed rows (their `id` is the prior finding's id — the join key). Filter by the
+    # known prior-keyed class set, NOT by id membership: per-run renumbering means a current-only `new`
+    # finding can share an id string with a prior finding (both rounds start at `-01`), and `classify`
+    # emits the `new` row AFTER the prior rows — an id-membership filter would let that collision overwrite
+    # the prior class. The class set is collision-proof and order-independent.
+    out = {}
+    for _chapter, fid, klass, _basis, _sev in rows:
+        if klass in _PRIOR_KEYED_CLASSES:
+            out[fid] = klass
+    return out
+
+
 # ---------------------------------------------------------------- self-test
 
 def run_self_test():
@@ -452,6 +485,34 @@ def run_self_test():
         chk("run_override_in_revision_report_clears_w2",
             not any("W2 quiet-chapter breakage" in x for x in l3)
             and any("new-in-quiet-chapter (cleared)" in x for x in l3))
+
+        # crossref_classes: the prior-keyed class map the reanchor crossref glue joins against by id.
+        # In d1->d2: F-P5-01 was resolved in d1 and recurs in d2 (recurrence-candidate); F-RR-01 has no
+        # d2 match and no resolution (unexplained-drop). New/current-only classes carry no prior id and
+        # are omitted; a missing-ledger folder yields {} (best-effort, never raises).
+        cc = crossref_classes(d1, d2)
+        chk("crossref_classes_recurrence", cc.get("F-P5-01") == "recurrence-candidate")
+        chk("crossref_classes_drop", cc.get("F-RR-01") == "unexplained-drop")
+        chk("crossref_classes_no_current_only", "F-P5-02" not in cc)
+        chk("crossref_classes_missing_safe", crossref_classes(os.path.join(d, "nope"), d2) == {})
+
+        # id-collision guard: per-run renumbering can make a current-only `new` finding SHARE an id with a
+        # prior finding. The prior-keyed class must win (it's the join key the reanchor manifest carries) —
+        # a class-set filter is collision-proof where an id-membership filter would let the later `new` row
+        # overwrite it. Here d1's F-RR-01 (Ch 9, unexplained-drop) and a NEW Ch 2 finding both id'd F-RR-01.
+        dcol = os.path.join(d, "rcol")
+        os.makedirs(dcol)
+        with open(os.path.join(dcol, "P_Findings_Ledger_2026-04-01_m.md"), "w",
+                  encoding="utf-8", newline="") as fh:
+            # a recurrence of F-P5 (Ch 7) + a NEW finding in Ch 2 that reuses the id string F-RR-01.
+            fh.write(ledger(
+                finding("F-P5-01", "the want still never forces a sacrifice; stakes remain abstract",
+                        ["Ch 7"], "Must-Fix"),
+                finding("F-RR-01", "a brand-new continuity wobble unrelated to the prior seam", ["Ch 2"])))
+        ccol = crossref_classes(d1, dcol)
+        # prior F-RR-01 (Ch 9) had no Ch-2 match -> unexplained-drop; the class set keeps THAT, not the
+        # current-only `new` Ch-2 row that happens to reuse the id.
+        chk("crossref_classes_id_collision_prior_wins", ccol.get("F-RR-01") == "unexplained-drop")
     finally:
         shutil.rmtree(d, ignore_errors=True)
 

@@ -183,9 +183,10 @@ def contradiction_rows(text):
             continue  # alignment row
         if any("entity" in c.lower() and "attribute" in " ".join(cells).lower() for c in cells):
             continue  # header row (has Entity + Attribute column labels)
-        refs = _CF_REF_RE.findall(ln)
-        if refs:
-            out.append(refs)
+        # Append EVERY data row's refs, even an empty list: skipping zero-ref rows let a real row
+        # like `| Mara | age | unresolved |` vanish from validation so the Bible PASSed. Emitting []
+        # lets the C3 `len(uniq) < 2` guard reject it (Codex P1).
+        out.append(_CF_REF_RE.findall(ln))
     return out
 
 
@@ -397,6 +398,9 @@ def run_self_test():
         bible(pair + LEDGER + "| Mara | age | CF-02, CF-03 |\n")[0] == 0)
     code, lines = bible(pair + LEDGER + "| Mara | age | CF-02 |\n")
     chk("c3_too_few_ids", code == 1 and any("fewer than 2" in ln for ln in lines))
+    # a real data row with NO fact refs must be rejected, not silently dropped (Codex P1)
+    code, lines = bible(pair + LEDGER + "| Mara | age | unresolved |\n")
+    chk("c3_zero_ref_row_rejected", code == 1 and any("fewer than 2" in ln for ln in lines))
     code, lines = bible(pair + LEDGER + "| Mara | age | CF-02, CF-99 |\n")
     chk("c3_unknown_id", code == 1 and any("unknown id" in ln for ln in lines))
     # facts that agree (same value) are not a contradiction
