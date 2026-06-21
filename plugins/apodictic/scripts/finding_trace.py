@@ -46,6 +46,17 @@ try:
 except ImportError:
     art = None
 
+
+def _has_block(text, btype):
+    """True if `text` carries a real apodictic:<btype> block (a parsed carrier, not a prose mention).
+
+    Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
+    in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
+    validate.sh validator-conventions (M2)."""
+    if art is None:
+        return ("apodictic:%s" % btype) in (text or "")
+    return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))
+
 _STATES = ("locked", "delivered", "revised")
 _SYNTH_BOUND = ("Must-Fix", "Should-Fix")
 # Synthesis has cleared (findings locked) once the gate frontier reaches a gated phase.
@@ -349,7 +360,7 @@ def classify_files(paths):
             sidecar = p
         elif "_Retcon_Plan_" in base:
             retcons.append(p)
-        elif "apodictic:finding" in (_read(p) or ""):
+        elif _has_block(_read(p) or "", "finding"):
             ledger = p
         elif "_Session_Plan_" in base or "_Revision_" in base:
             revisions.append(p)

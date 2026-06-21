@@ -61,6 +61,17 @@ try:
 except ImportError:
     art = None
 
+
+def _has_block(text, btype):
+    """True if `text` carries a real apodictic:<btype> block (a parsed carrier, not a prose mention).
+
+    Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
+    in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
+    validate.sh validator-conventions (M2)."""
+    if art is None:
+        return ("apodictic:%s" % btype) in (text or "")
+    return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))
+
 _SCHEMA_ID = "apodictic.argument_spine.v1"
 _SUPPORT_SCHEMA_ID = "apodictic.support_plan.v1"   # Increment 2: source/evidence map (seeds §3)
 _WARRANT_SCHEMA_ID = "apodictic.warrant_plan.v1"   # Increment 3: warrant pre-check (seeds §4)
@@ -297,7 +308,7 @@ def resolve(paths):
     if len(paths) == 1 and os.path.isdir(paths[0]):
         return _newest(glob.glob(os.path.join(paths[0], _STATE_GLOB)))
     for p in paths:
-        if "apodictic:argument_spine" in (_read(p) or ""):
+        if _has_block(_read(p) or "", "argument_spine"):
             return p
     return paths[0] if paths else None
 
