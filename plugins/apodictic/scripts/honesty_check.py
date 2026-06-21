@@ -224,9 +224,11 @@ def softness_check(letter_text, ledger_text):
     # hard ERROR (the softness-downgrade override cannot mask it).
     errs.extend("invalid Severity Calibration block — %s" % e for e in cal_block_errs)
     overrides = soft_overrides(body)
+    # parse_locked_findings only yields dicts (it filters non-dict blocks upstream), so the real
+    # crash surface here is a dict finding with a NON-STRING `id`: an int/list id reaching
+    # re.escape(fid) in _id_delivered_in_body raised an uncaught TypeError. The `isinstance(fid, str)`
+    # guards below route a non-string id to the id-less heuristic path (controlled ERROR, no crash).
     for f in parse_locked_findings(ledger_text):
-        if not isinstance(f, dict):
-            continue  # a malformed (non-dict) finding block can't be a locked finding; skip, don't crash
         lock = f.get("severity")
         if lock not in LOCKED:
             continue
@@ -457,8 +459,24 @@ def run_self_test():
           deficit_lock("## Pass 8 — Ledger Entry\n### Notable Findings\n1. **Reveal.** Severity: Must-Fix.\n"
                        '<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","severity":"Must-Fix"}\n-->\n')[0], False)
 
-    # regression: a non-dict finding block in the ledger must not crash softness_check (2026-06-20 sweep)
-    check("crash_nondict_finding_in_ledger",
+    # regression (2026-06-20 sweep): a LOCKED dict finding with a NON-STRING `id` must not crash.
+    # Pre-fix, a non-string id reached re.escape(fid) in _id_delivered_in_body -> uncaught TypeError;
+    # this call RAISED (failing the self-test). Post-fix it routes to the id-less heuristic path and
+    # produces a controlled ERROR (an id-less finding can't be acknowledged), so errs is NON-empty.
+    # This is the load-bearing assertion: deleting an `isinstance(fid, str)` guard re-introduces the crash.
+    nonstr_id_lock = ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":42,'
+                      '"severity":"Must-Fix","mechanism":"x"}\n-->')
+    check("crash_nonstring_id_finding",
+          softness_check("# Edit\n## What Needs Work\nTheo has no arc.\n", nonstr_id_lock)[0], False)
+    # a non-string id is also exercised through the override-acknowledge branch (line ~258): the
+    # `isinstance(fid, str)` guard there must keep `fid in overrides` from ever running on a non-str.
+    check("crash_nonstring_id_with_override",
+          softness_check("# Edit\n## What Needs Work\nTheo has no arc.\n"
+                         "<!-- override: softness-downgrade F-P5-01 — x -->\n", nonstr_id_lock)[0], False)
+    # smoke: a non-dict block payload is filtered upstream by parse_locked_findings (never reaches the
+    # loop) — it stays clean on both pre- and post-fix code, so it is a coverage smoke test, NOT the
+    # regression guard for the crash fix (which is crash_nonstring_id_finding above).
+    check("nondict_finding_payload_filtered_upstream",
           softness_check("# Edit\n## What Needs Work\np\n", "<!-- apodictic:finding\n42\n-->")[0], True)
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
