@@ -586,6 +586,74 @@ def t8_run_surface_cli_preserves_dispatcher_exit_code() -> None:
         setec_runner.run_supplement = orig
 
 
+# --------------------------------------------------------------------------
+# T9 — voice_profile CONSUME-side contract: families.<fam>.top_features (and
+#      most_stable_features) carry the {feature, mean, sd, cv} shape downstream
+#      apodictic capabilities glob.
+#
+# Why this is its own OFFLINE gate (reads only the vendored fixture, no SETEC):
+# the drift gate's CHECK 2 (sync_setec.cmd_check) is a whole-file byte compare
+# of the vendored fixture against SETEC's own contract_fixtures/ copy — it
+# (a) SKIPS entirely offline (per-PR CI never runs it; only the weekly sync
+# workflow does) and (b) only asserts "vendored == SETEC's copy", never that
+# top_features EXISTS. So if SETEC ever drops/renames top_features, sync_setec
+# re-vendors the smaller fixture, cmd_check passes (they match again), and every
+# consumer that globs top_features breaks SILENTLY. This pins the field
+# apodictic actually consumes so that breakage surfaces HERE, in per-PR CI,
+# instead of in a downstream capability at runtime. most_stable_features is the
+# older consume field — pin BOTH so neither can vanish unnoticed.
+# --------------------------------------------------------------------------
+def t9_voice_profile_consume_contract() -> None:
+    print("T9: voice_profile families.<fam>.{top_features,most_stable_features} "
+          "consume-side shape (offline)")
+    fixture = VENDORED_FIXTURES / "voice_profile.json"
+    check(fixture.is_file(), "voice_profile.json fixture present")
+    if not fixture.is_file():
+        return
+    payload = json.loads(fixture.read_text(encoding="utf-8"))
+    families = payload.get("results", {}).get("families")
+    check(
+        isinstance(families, dict) and len(families) > 0,
+        "voice_profile results.families is a non-empty object",
+    )
+    if not (isinstance(families, dict) and families):
+        return
+
+    required_keys = {"feature", "mean", "sd", "cv"}
+    for fam, body in sorted(families.items()):
+        for array_name in ("top_features", "most_stable_features"):
+            arr = body.get(array_name) if isinstance(body, dict) else None
+            check(
+                isinstance(arr, list) and len(arr) > 0,
+                f"families.{fam}.{array_name} is a non-empty array "
+                f"(the consume-side contract; a SETEC drop must fail here, not "
+                f"silently break consumers)",
+            )
+            if not (isinstance(arr, list) and arr):
+                continue
+            item = arr[0]
+            has_keys = isinstance(item, dict) and required_keys <= set(item)
+            check(
+                has_keys,
+                f"families.{fam}.{array_name}[] carries {{feature, mean, sd, cv}} "
+                f"(got {sorted(item) if isinstance(item, dict) else type(item).__name__})",
+            )
+            if has_keys:
+                typed = (
+                    isinstance(item["feature"], str)
+                    and all(
+                        isinstance(item[k], (int, float))
+                        and not isinstance(item[k], bool)
+                        for k in ("mean", "sd", "cv")
+                    )
+                )
+                check(
+                    typed,
+                    f"families.{fam}.{array_name}[] typed "
+                    f"(feature:str, mean/sd/cv:number)",
+                )
+
+
 def main() -> int:
     for fn in (
         t1_floor_resolution_from_vendored_manifest,
@@ -597,6 +665,7 @@ def main() -> int:
         t6_required_groups_validation,
         t7_idiolect_help_bypasses_required_groups,
         t8_run_surface_cli_preserves_dispatcher_exit_code,
+        t9_voice_profile_consume_contract,
     ):
         fn()
         setec_capabilities.clear_cache()
