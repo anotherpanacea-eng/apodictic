@@ -343,7 +343,11 @@ RECOMMENDATIONS
 
 When Field Reconnaissance drives `academic_apis.py`'s batch client, it reads the
 same per-run `reliability` block (`coverage.degraded_providers`) the Citation
-Verifier does and fills the SOURCE COVERAGE line from it. When it runs more
+Verifier does and fills the SOURCE COVERAGE line from it. If it labels an
+individual result NOT-CHECKED vs NOT-FOUND, that label comes from that result's
+own `resolution_status` (as in the Citation Verifier), not from re-deriving it off
+the run-level `coverage.degraded_providers` set — the run-level set is for the
+SOURCE COVERAGE line and blind-spot routing only. When it runs more
 LLM-orchestrated (without the batch client), it reports coverage qualitatively
 from observed provider behavior. Either way a DEGRADED state is a coverage
 disclosure, never silently folded into "GAPS IDENTIFIED" vs "ADEQUATE."

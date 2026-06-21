@@ -22,7 +22,10 @@ a citation whose only candidate index was a degraded provider is reported as
 NOT-CHECKED, not NOT-FOUND, and a DEGRADED state on a high-stakes / Pre-DE run is
 disclosed as a blind spot in the synthesis Absence Inventory.
 
-Reliability bookkeeping is default-on; `APODICTIC_RELIABILITY=off` reproduces the
-prior behavior in the non-reliability output keys. Per-provider budgets and TTLs
-are env-overridable (`APODICTIC_BUDGET_<PROVIDER>`,
+Reliability bookkeeping is default-on; `APODICTIC_RELIABILITY=off` omits the
+top-level `reliability` block. The additive per-result
+(`resolution_status`/`degraded_providers`) and summary (`not_checked`/`not_found`)
+keys remain, additive and never altering an existing value, so the legacy
+result/summary keys are unchanged. Per-provider budgets and TTLs are
+env-overridable (`APODICTIC_BUDGET_<PROVIDER>`,
 `APODICTIC_CACHE_TTL_METADATA_DAYS`, `APODICTIC_CACHE_TTL_WAYBACK_DAYS`).
