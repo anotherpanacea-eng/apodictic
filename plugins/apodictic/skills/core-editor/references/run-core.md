@@ -308,6 +308,14 @@ The execution mode is chosen at preflight from coarse heuristics (word count, a 
 
 See `docs/adaptive-mode-escalation.md` for the trigger / recommendation matrix and the `complexity_signals` contract.
 
+### Uncertainty-Resolution Intake Interview (Optional, interactive hosts only)
+
+At this same after-Tier-1 seam — and **only** on an interactive-input-capable host — you may run a narrow disambiguation loop for any structural ambiguity Pass 0/1 *detected but could not settle from the text* ("is the non-linear ordering in Ch 4-6 a deliberate braid, or drift?"). It is **distinct** from the mechanical, count-triggered Escalation Check above: it is a model-judgment loop (generate targeted questions, interpret free-text answers), and it borrows only the *seam*, not the mechanics.
+
+- **Ask only detected-ambiguity questions.** Every question is a flavor of *intentional-vs-accidental*. Never re-ask the contract (genre / controlling idea / reader promise / who it's for) — the draft-then-validate intake and Shelf & Positioning already own that.
+- **Calibrate, never suppress.** An answer may tell analysis to *treat a feature as intended* (assess it on its own terms); it may **never** suppress a flag class or pre-empt a verdict before Triage locks it — that is the concession loop the Deficit Lock forbids.
+- **Record** each query as an `apodictic.intake_query.v1` block in a `[Project]_Intake_Interview_[runlabel].md`, then validate with `scripts/validate.sh intake-interview <run_folder>`. On a non-interactive host, **skip** the loop and proceed with the framework's own intentionality inference (it never blocks a run). Full protocol: `references/intake-interview.md`, spec `docs/uncertainty-intake-interview.md`.
+
 ---
 
 ### Pre-Pass Re-Grounding (Required, Mode-Conditional)
