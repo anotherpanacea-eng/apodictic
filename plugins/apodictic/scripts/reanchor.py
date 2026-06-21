@@ -61,7 +61,10 @@ def _newest(paths):
 
 def reclassify(annotation, n1_snapshot, chap_n, sec_n):
     """-> (klass, new_anchor_or_None, evidence). new_anchor is set only for held/moved (the carried set)."""
-    anc = annotation.get("anchor") or {}
+    if not isinstance(annotation, dict):
+        return "ambiguous", None, "malformed annotation (not an object)"
+    anc = annotation.get("anchor")
+    anc = anc if isinstance(anc, dict) else {}
     kind, val = anc.get("kind"), anc.get("value")
     if kind == "quote":
         q = anc.get("quote")
@@ -338,6 +341,10 @@ def run_self_test():
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
+    # regression: a non-dict anchor / annotation must not crash reclassify (2026-06-20 sweep) — the
+    # fix is no-crash; a non-dict anchor yields an empty-anchor classification, a non-dict annotation -> ambiguous
+    chk("crash_nondict_anchor", isinstance(reclassify({"finding_id": "F-X-01", "anchor": [1, 2]}, "snap", 1, 1), tuple))
+    chk("crash_nondict_annotation", reclassify([1, 2, 3], "snap", 1, 1)[0] == "ambiguous")
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 

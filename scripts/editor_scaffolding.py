@@ -70,7 +70,7 @@ def _read(path):
     try:
         with open(path, encoding="utf-8") as fh:
             return fh.read()
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return None
 
 

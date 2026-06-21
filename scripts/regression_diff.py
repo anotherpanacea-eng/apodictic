@@ -87,7 +87,7 @@ def _origin_nn(fid):
 
 def _mech_tokens(mechanism):
     toks = set()
-    for raw in re.split(r"[^A-Za-z0-9]+", (mechanism or "").lower()):
+    for raw in re.split(r"[^A-Za-z0-9]+", str(mechanism or "").lower()):
         if len(raw) >= 3 and raw not in _STOP:
             toks.add(raw)
     return toks
@@ -97,7 +97,7 @@ def _chapter_of(evidence_refs):
     """The finding's chapter token ('Ch N') from its first chapter-bearing ref, else 'unplaced'."""
     if art is None:
         return "unplaced"
-    for ref in (evidence_refs or []):
+    for ref in (evidence_refs if isinstance(evidence_refs, list) else []):
         tok = art.chapter_token(ref)
         if tok:
             return tok
@@ -455,6 +455,9 @@ def run_self_test():
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
+    # regression: a non-string mechanism / non-list evidence_refs must not crash (2026-06-20 sweep)
+    chk("crash_nondict_mechanism", _mech_tokens(42) == set() and _mech_tokens(["a", "b"]) == set())
+    chk("crash_string_evidence_refs", _chapter_of("Ch 5") == "unplaced" and _chapter_of(["Ch 5"]) == "Ch 5")
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 

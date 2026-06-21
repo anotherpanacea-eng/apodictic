@@ -387,9 +387,9 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
     not A5's. Default False preserves the strict ledger requirement for the normal build path."""
     lines, errs, warns = [], [], []
     obj, schema_errs = parse_manifest(manifest_text)
-    if obj is None:
-        if any("invalid JSON" in e for e in schema_errs):
-            return 1, ["annotated-manuscript: %s" % schema_errs[0],
+    if not isinstance(obj, dict):
+        if obj is not None or any("invalid JSON" in e for e in schema_errs):
+            return 1, ["annotated-manuscript: %s" % (schema_errs[0] if schema_errs else "manifest block is not a JSON object"),
                        "annotated-manuscript: FAIL (A1 manifest schema)"]
         return 1, ["annotated-manuscript: no apodictic.annotation block found in the manifest",
                    "annotated-manuscript: FAIL (A1 — manifest block missing)"]
