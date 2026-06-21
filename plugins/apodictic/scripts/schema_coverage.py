@@ -190,25 +190,42 @@ def _token_in(token, text):
 
 
 def _var_assignments(ca_region):
-    """Map of shell variable -> the last value string it is assigned inside the --check-all region.
+    """Ordered list of `(pos, var, value)` assignments inside the --check-all region, source order.
 
     Captures `VAR=value`, `VAR="value"`, and `VAR=$(... )` forms (the leading assignment on a line,
-    possibly indented). Lets C5 resolve one hop of indirection — e.g. `CA_RUNDIR="$CA_BASE/example-
-    run-folder"` then `"$0" gate-state "$CA_RUNDIR/Diagnostic_State.meta.json"` — so a gate reached
-    only through a variable still counts, but ONLY when that variable's value carries the token."""
-    out = {}
+    possibly indented). `pos` is the start offset of the matched line so a consumer can resolve a
+    variable to the assignment IN SCOPE at a given invocation (the latest assignment BEFORE it) —
+    NOT a reassignment that appears later. Lets C5 resolve one hop of indirection — e.g.
+    `CA_RUNDIR="$CA_BASE/example-run-folder"` then `"$0" gate-state "$CA_RUNDIR/Diagnostic_State.meta.json"`
+    — so a gate reached only through a variable still counts, but ONLY when the value that variable
+    HOLDS AT THE INVOCATION carries the token."""
+    out = []
     for m in re.finditer(r'^\s*([A-Za-z_][A-Za-z0-9_]*)=(.*)$', ca_region or "", re.MULTILINE):
-        out[m.group(1)] = m.group(2)
+        out.append((m.start(), m.group(1), m.group(2)))
     return out
 
 
+def _resolve_at(assigns, var, pos):
+    """The value of `var` in scope at offset `pos` — the latest assignment whose line starts BEFORE
+    `pos`. Returns None if `var` is unassigned (or only assigned at/after `pos`). This is what makes a
+    later reassignment unable to retroactively satisfy C5: `P=other; "$0" arm "$P"; P=canonical` leaves
+    `$P` resolving to `other` at the invocation, not to the trailing `canonical`."""
+    val = None
+    for apos, avar, aval in assigns:
+        if avar == var and apos < pos:
+            val = aval  # later (but still-before-pos) assignment wins; assigns is in source order
+    return val
+
+
 def _bound_invocations(ca_region, validators):
-    """The argument strings of every real `$0 <arm> ...` invocation whose arm is one of `validators`.
+    """`(pos, args)` for every real `$0 <arm> ...` invocation whose arm is one of `validators`.
 
     Recognizes both the bare `"$0" <arm> <args>` form and the command-substitution
     `VAR=$("$0" <arm> <args>)` / `if FOO=$("$0" <arm> ...)` forms. The arm is the first bareword
     after `"$0"` (a flag like `--self-test-all` is itself the arm); everything to end-of-line is the
-    candidate arg string. Comments and `echo`/heredoc lines never match (no `"$0" <arm>` there)."""
+    candidate arg string. `pos` is the start offset of the `"$0"` match, so the caller can resolve any
+    `$VAR` in the args against the assignment in scope at THAT point. Comments and `echo`/heredoc lines
+    never match (no `"$0" <arm>` there)."""
     if not ca_region or not validators:
         return []
     vset = set(validators)
@@ -216,7 +233,7 @@ def _bound_invocations(ca_region, validators):
     inv = re.compile(r'"\$0"\s+([A-Za-z0-9][A-Za-z0-9-]*)\b([^\n]*)')
     for m in inv.finditer(ca_region):
         if m.group(1) in vset:
-            args.append(m.group(2))
+            args.append((m.start(), m.group(2)))
     return args
 
 
@@ -224,20 +241,23 @@ def _canonical_invoked(ca_region, validators, token):
     """C5 core: is `token` exercised by a REAL invocation of one of the schema's BOUND validators?
 
     Passes only when the canonical token appears (as a path component) in the args of a `$0 <bound-
-    validator> ...` command — directly, or via one hop of variable indirection (a `$VAR` in those
-    args whose in-region assignment carries the token). A token sitting only in an echo/comment, or
-    passed exclusively to an UNRELATED (non-bound) validator, does NOT satisfy this."""
+    validator> ...` command — directly, or via one hop of variable indirection (a `$VAR` in those args
+    whose value AT THAT INVOCATION carries the token). A `$VAR` is resolved to the assignment in scope
+    at the invocation (the latest assignment before it), so a reassignment that appears LATER cannot
+    retroactively satisfy the gate. A token sitting only in an echo/comment, or passed exclusively to
+    an UNRELATED (non-bound) validator, does NOT satisfy this."""
     assigns = None
-    for arg_str in _bound_invocations(ca_region, validators):
+    for pos, arg_str in _bound_invocations(ca_region, validators):
         if _token_in(token, arg_str):
             return True
-        # one hop of indirection: any $VAR / ${VAR} in the args whose value carries the token.
+        # one hop of indirection: any $VAR / ${VAR} in the args whose IN-SCOPE value carries the token.
         refs = re.findall(r'\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?', arg_str)
         if refs:
             if assigns is None:
                 assigns = _var_assignments(ca_region)
             for v in refs:
-                if v in assigns and _token_in(token, assigns[v]):
+                val = _resolve_at(assigns, v, pos)
+                if val is not None and _token_in(token, val):
                     return True
     return False
 
@@ -661,6 +681,30 @@ def run_self_test():
                     '  "$0" alpha "$CA_RUNDIR/inner.json" || CA_FAIL=1']           # alpha reaches via $CA_RUNDIR
         sd, sc = setup([dict(b) for b in base], ca_lines=_ca_indirect)
         chk("c5_indirection_passes", run(sd, sc)[0] == 0)
+
+        # (c2) GUARD — Codex round-10 P2: a variable reassigned AFTER the bound invocation must NOT
+        # retroactively satisfy C5 via that later value. At the alpha invocation `$P` holds `OTHER.md`
+        # (the gate is NOT exercised); the trailing `P="$CA_BASE/example-alpha.md"` is dead w.r.t. the
+        # call. A last-assignment-wins resolver would wrongly PASS this -> must FAIL. (beta carries its
+        # own gate so only alpha's C5 should fire.)
+        def _ca_reassign_after(bs):
+            return ['  P="$CA_BASE/OTHER.md"',
+                    '  "$0" alpha "$P" || CA_FAIL=1',               # at this point $P = OTHER.md
+                    '  P="$CA_BASE/example-alpha.md"',              # later reassignment — too late
+                    '  "$0" beta "$CA_BASE/example-beta.md" || CA_FAIL=1']
+        sd, sc = setup([dict(b) for b in base], ca_lines=_ca_reassign_after)
+        code, out = run(sd, sc)
+        chk("c5_reassign_after_invocation_fails",
+            code == 1 and any("C5 canonical gate unreached" in ln and "apodictic.alpha.v1" in ln for ln in out))
+
+        # (c3) POSITIVE companion: the SAME variable assigned to the gate BEFORE the invocation (and
+        # only reused/shadowed afterward) still passes — in-scope resolution must accept the prior value.
+        def _ca_reassign_before(bs):
+            return ['  P="$CA_BASE/example-alpha.md"',
+                    '  "$0" alpha "$P" || CA_FAIL=1',               # at this point $P = example-alpha.md
+                    '  P="$CA_BASE/OTHER.md"']                      # later shadow — irrelevant to the call
+        sd, sc = setup([dict(b) for b in base], ca_lines=_ca_reassign_before)
+        chk("c5_reassign_before_invocation_passes", run(sd, sc)[0] == 0)
 
         # (d) GUARD: the component matcher must not let a longer sibling token satisfy a shorter gate.
         # alpha's gate token appears ONLY as `example-alpha.md-r1` (a different component) on alpha's
