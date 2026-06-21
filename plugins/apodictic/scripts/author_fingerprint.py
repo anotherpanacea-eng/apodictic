@@ -135,6 +135,20 @@ def fingerprint_profile(text, strict=False):
             errs.append("F1 schema: %s" % e)
 
     valid = [(obj, idx) for obj, schema_errs, idx in fps if obj is not None and not schema_errs]
+    # F1 — register (and work_label) must be non-blank. The schema's plain `type: string` accepts "",
+    # and two blank-register fingerprints would collide as one register — suppressing W1 and passing
+    # F3 with no comparability class actually supplied (Codex P1). A blank-field fingerprint is treated
+    # as invalid so the same-register / coverage checks never run on it.
+    nonblank = []
+    for obj, idx in valid:
+        blanks = [f for f in ("register", "work_label") if not (obj.get(f) or "").strip()]
+        if blanks:
+            errs.append("F1 schema: %s has a blank %s — required and non-empty (register names the "
+                        "comparability class; an empty value silently collides with other blanks)"
+                        % (obj.get("id"), "/".join(blanks)))
+        else:
+            nonblank.append((obj, idx))
+    valid = nonblank
     by_id, seen = {}, {}
     for obj, idx in valid:
         seen.setdefault(obj.get("id"), []).append(idx)
@@ -152,10 +166,17 @@ def fingerprint_profile(text, strict=False):
 
     # F3 — same-register comparison (a claim referencing >= 2 fingerprints must share a register)
     for refs in _claim_lines(text):
-        known = [r for r in refs if r in by_id]
-        if len(known) < 2:
-            continue  # a claim must reference >= 2 KNOWN fingerprints to be a cross-register risk
-        registers = {(by_id[r].get("register") or "").strip().lower() for r in known}
+        # A referenced-but-unknown VF-id is an integrity error, not a silent skip: discarding it let
+        # a typo ("VF-lit differs from VF-typo") hide the intended cross-register comparison and still
+        # PASS (Codex P1). Mirror continuity-bible C3's unknown-id guard; only run the same-register
+        # check once every ref resolves.
+        unknown = [r for r in refs if r not in by_id]
+        if unknown:
+            errs.append("F3 reference: a drift/range claim references unknown fingerprint id(s) %s — "
+                        "every VF-… in a claim must resolve (a typo can otherwise hide the comparison)"
+                        % ", ".join(sorted(unknown)))
+            continue
+        registers = {(by_id[r].get("register") or "").strip().lower() for r in refs}
         if len(registers) > 1:
             errs.append("F3 same-register: a drift/range claim compares fingerprints across registers "
                         "(%s) — drift is only meaningful within a register (the AI-prose domain-shift "
@@ -287,6 +308,11 @@ def run_self_test():
     chk("f1_bad_json", code == 1 and any("F1 schema" in ln for ln in lines))
     code, lines = fingerprint_profile(LOCAL + fp("VF-01") + "\n" + fp("VF-01", register="memoir"))
     chk("f1_duplicate_id", code == 1 and any("appears 2 times" in ln for ln in lines))
+    # two blank-register fingerprints must be REJECTED — empty registers would collide as one and
+    # suppress W1 / pass F3 with no comparability class supplied (Codex P1)
+    code, lines = fingerprint_profile(LOCAL + fp("VF-e1", register="")
+                                      + "\n" + fp("VF-e2", register=""))
+    chk("f1_blank_register_rejected", code == 1 and any("blank register" in ln for ln in lines))
 
     # F2 — provenance (centroid_ref present)
     code, lines = fingerprint_profile(LOCAL + fp("VF-01", centroid_ref="") + "\n" + fp("VF-02"))
@@ -302,6 +328,11 @@ def run_self_test():
     drift_same = "\n## Drift\n\n- VF-2026-thornfield sits 0.5 further from the centroid than VF-2024-marsh.\n"
     chk("f3_same_register_claim_clean",
         not any("F3" in ln for ln in fingerprint_profile(LOCAL + TWO + drift_same)[1]))
+    # a comparison naming an UNKNOWN id is an integrity error, not a silent skip: a typo must not hide
+    # the intended cross-register comparison (Codex P1)
+    typo = "\n## Drift\n\n- VF-lit differs from VF-typo across the two works.\n"
+    code, lines = fingerprint_profile(LOCAL + MIXED + typo)
+    chk("f3_dangling_ref_errors", code == 1 and any("F3 reference" in ln for ln in lines))
 
     # F4 — descriptive, not prescriptive (advisory; ERROR --strict; override silences)
     sev = LOCAL + TWO + "\n## Notes\n\n- This narrowing is a Must-Fix for the next book.\n"
