@@ -543,8 +543,11 @@ def resolve_batch(citations: list[dict], output_path: str | None = None) -> list
     constructed here — the same place that already constructs `cache` and
     `provenance` — and threaded through resolution. Its `snapshot()` is emitted
     as the `reliability` block alongside `cache_stats`. The ledger is default-on;
-    APODICTIC_RELIABILITY=off disables it (the non-reliability output keys are
-    then byte-for-byte today's behavior — AC-13)."""
+    APODICTIC_RELIABILITY=off omits the top-level `reliability` block. The
+    additive per-result (`resolution_status`/`degraded_providers`) and summary
+    (`not_checked`/`not_found`) keys remain — they are computed without a ledger
+    (`degraded_providers` is then `[]`) and never alter a pre-existing value, so
+    OFF leaves the legacy keys unchanged while staying additive — AC-13."""
     cache = ResponseCache(_default_cache_dir())
     provenance = ProvenanceStore()
     ledger = ReliabilityLedger() if reliability_enabled() else None

@@ -1,6 +1,6 @@
 # Research / API Reliability Layer
 
-**Status:** **Built** (`api_reliability.py` + `response_cache.py` TTL + `academic_apis.py` wiring + the two research-mode prose contracts). Run-level/provider-level hardening of `/research`; additive — `APODICTIC_RELIABILITY=off` reproduces prior behavior.
+**Status:** **Built** (`api_reliability.py` + `response_cache.py` TTL + `academic_apis.py` wiring + the two research-mode prose contracts). Run-level/provider-level hardening of `/research`; additive — `APODICTIC_RELIABILITY=off` omits the `reliability` block (the additive per-result/summary keys remain, never altering existing values).
 <!-- built-when: plugins/apodictic/skills/specialized-audits/scripts/api_reliability.py -->
 <!-- Single-marker by design (docs/qol-status-drift-lint.md § Marker syntax: one repo-relative PATH, no globs, no AND). The CI registration of the module's --self-test is asserted by the ci.yml step, not by a second marker. -->
 
@@ -143,8 +143,12 @@ provider returned no match; `resolved` otherwise. The Firewall is
 one-directional: `resolution_status` is never `"resolved"` on an unresolved
 result. `resolve_batch`'s `output` gains a top-level `reliability` key
 (`ledger.snapshot()`) next to `cache_stats`, and the `summary` gains
-`not_checked` / `not_found` counts. With `APODICTIC_RELIABILITY=off` no
-`reliability` block is emitted and the non-reliability keys are unchanged.
+`not_checked` / `not_found` counts. With `APODICTIC_RELIABILITY=off` the
+top-level `reliability` block is **omitted**; the additive per-result
+(`resolution_status`/`degraded_providers`) and summary (`not_checked`/`not_found`)
+keys still appear (computed without a ledger — `degraded_providers` is then `[]`),
+additive and never altering a pre-existing value, so the legacy result/summary
+keys are unchanged.
 
 ### 4.4 Prose contract (LLM-facing)
 
@@ -247,7 +251,12 @@ directory placement — AC-10's outcome holds, with its rationale corrected).
     providers, or upgrades a verdict; `resolution_status` is never `"resolved"` on
     an unresolved result (asserted in `academic_apis --self-test`).
 13. **AC-13 (backward compat / opt-out).** `APODICTIC_RELIABILITY=off` (or high
-    limits) reproduces today's behavior in the non-reliability output keys.
+    limits) omits the top-level `reliability` block; the additive per-result
+    (`resolution_status`/`degraded_providers`) and summary (`not_checked`/`not_found`)
+    keys remain (additive, never altering an existing value — `degraded_providers`
+    is `[]` with no ledger), so the legacy `results`/`summary` keys are unchanged.
+    (`academic_apis --self-test` AC-13 asserts the block is absent and resolution
+    still works; the additive keys are the repo's accepted pattern.)
 
 ---
 
