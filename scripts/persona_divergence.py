@@ -72,6 +72,9 @@ _QUOTE_RE = re.compile(
     r'wanted|found\s+myself|kept\s+reading|raced\s+through)\b',
     re.IGNORECASE)
 _OVERRIDE_RE = re.compile(r"<!--\s*override:\s*([a-z-]+)\s+(D-[0-9]+)\b", re.IGNORECASE)
+# A divergence-id reference in reader-facing PROSE (e.g. a "### D-NN" section heading) — used to scope
+# a persona-quote override to the divergence whose section a quote sits under (D4).
+_DIV_ID_RE = re.compile(r"\bD-[0-9]+\b")
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 
 
@@ -255,18 +258,24 @@ def divergence(map_text, ledger_text=None, timeline_text=None, strict=False):
                         "experience (%s) — there is no cross-persona divergence to surface"
                         % (o.get("id"), only))
 
-    # D4 — no fabricated testimony (advisory; ERROR --strict). A persona-quote override silences D4
-    # ONLY when it names a REAL divergence id ("<!-- override: persona-quote D-NN -->" for a declared
-    # D-NN) — a bogus id like D-99 must not disable the scan globally (Codex P2). Scan the VISIBLE prose
-    # only — the persona/divergence blocks (and any explanatory note) are HTML comments; fabricated
-    # testimony presented *as data* lives in the reader-facing prose.
+    # D4 — no fabricated testimony (advisory; ERROR --strict). A persona-quote override silences a
+    # quote ONLY when it names a REAL divergence id AND that divergence SCOPES the quote — i.e. its
+    # D-NN is the divergence-id reference most recently preceding the quote in the prose (e.g. the quote
+    # sits under that divergence's "### D-NN" section). So a D-01 override never silences a D-02 quote,
+    # and a bogus id silences nothing (Codex P2). Scan the VISIBLE prose only — the persona/divergence
+    # blocks (and any explanatory note, incl. the override markers) are HTML comments stripped here;
+    # fabricated testimony presented *as data* lives in the reader-facing prose.
     visible = _HTML_COMMENT_RE.sub("", map_text or "")
     divergence_ids = {o.get("id") for o, _ in valid_divs}
     q_overrides = _overrides(map_text, "persona-quote") & divergence_ids
-    if not q_overrides and _QUOTE_RE.search(visible):
+    for m in _QUOTE_RE.finditer(visible):
+        preceding = _DIV_ID_RE.findall(visible[:m.start()])
+        if preceding and preceding[-1] in q_overrides:
+            continue  # the quote sits in the prose scope of an overridden divergence
         warns.append("D4 no-fabricated-testimony: the map presents a first-person reader-reaction "
                      "quote ('I got bored …') as data — reason about reader experience structurally, "
                      "never manufacture reader testimony (the #17 boundary)")
+        break
 
     # W1 — coverage (need >=2 personas AND some disposition axis that varies)
     if valid_personas:
@@ -435,7 +444,14 @@ def run_self_test():
     chk("d4_quote_advisory", code == 0 and any("D4 no-fabricated-testimony" in ln for ln in lines))
     chk("d4_quote_strict_fails", divergence(quote, LEDGER, strict=True)[0] == 1)
     ov = "<!-- override: persona-quote D-01 — quoting the manuscript, not a fabricated reader -->\n"
-    chk("d4_override_silences", not any("D4" in ln for ln in divergence(ov + quote, LEDGER)[1]))
+    # an override silences a quote ONLY within its divergence's prose scope (under "### D-NN")
+    scoped_d01 = MAP + '\n\n### D-01\nP-01: "I got bored in chapter 3 and put it down."\n'
+    chk("d4_override_silences", not any("D4" in ln for ln in divergence(ov + scoped_d01, LEDGER)[1]))
+    # Codex P2 repro: a D-01 override must NOT silence a quote scoped to a DIFFERENT divergence (D-02)
+    MAP2 = TARGET + "\n" + EXPERT + "\n" + div("D-01") + "\n" + div("D-02", experiences={"P-01": "engaged", "P-02": "friction"})
+    cross = ov + MAP2 + '\n\n### D-02\nP-02: "I got bored and stopped reading."\n'
+    chk("d4_override_scoped_other_div_fires", any("D4" in ln for ln in divergence(cross, LEDGER)[1]))
+    chk("d4_override_scoped_other_div_strict_fails", divergence(cross, LEDGER, strict=True)[0] == 1)
     # a structural prediction (no first-person quote) is clean
     chk("d4_structural_clean",
         not any("D4" in ln for ln in divergence(MAP + "\n\nA pace-sensitive disposition is at elevated disengagement risk across Ch 3.\n", LEDGER)[1]))
@@ -465,7 +481,7 @@ def run_self_test():
     bogus_ov = "<!-- override: persona-quote D-99 — no such divergence -->\n"
     chk("d4_bogus_override_still_fires", any("D4" in ln for ln in divergence(bogus_ov + quote, LEDGER)[1]))
     chk("d4_bogus_override_strict_fails", divergence(bogus_ov + quote, LEDGER, strict=True)[0] == 1)
-    chk("d4_real_override_still_silences", not any("D4" in ln for ln in divergence(ov + quote, LEDGER)[1]))
+    chk("d4_real_override_still_silences", not any("D4" in ln for ln in divergence(ov + scoped_d01, LEDGER)[1]))
 
     # D5 — closed-key (non-overridable)
     code, lines = divergence(persona("P-01", target=True, name="Sarah, 34, a teacher") + EXPERT + div("D-01"), LEDGER)
