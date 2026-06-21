@@ -86,8 +86,13 @@ def _origin_nn(fid):
 
 
 def _mech_tokens(mechanism):
+    # Only a STRING mechanism yields match tokens. A malformed list/dict would otherwise be str()'d
+    # into "['foo', ...]" / "{'k': 'v'}" and split into FABRICATED tokens (foo, k, v …) that falsely
+    # match against other findings (Codex P2). A non-string mechanism contributes no tokens.
+    if not isinstance(mechanism, str):
+        return set()
     toks = set()
-    for raw in re.split(r"[^A-Za-z0-9]+", str(mechanism or "").lower()):
+    for raw in re.split(r"[^A-Za-z0-9]+", mechanism.lower()):
         if len(raw) >= 3 and raw not in _STOP:
             toks.add(raw)
     return toks
@@ -362,6 +367,10 @@ def run_self_test():
     f1 = findings_of(r1)
     chk("findings_parsed", len(f1) == 2 and f1[0]["origin"] == "P5" and f1[0]["chapter"] == "Ch 7")
     chk("mech_tokens_drop_stopwords", "want" in f1[0]["tokens"] and "the" not in f1[0]["tokens"])
+    # a malformed (non-string) mechanism yields NO tokens — never fabricated from a list/dict repr (Codex P2)
+    chk("mech_tokens_nonstring_empty",
+        _mech_tokens(["fabricated", "tokens"]) == set() and _mech_tokens({"k": "v"}) == set()
+        and _mech_tokens(None) == set())
 
     # matcher: F-P5-01(r1) <-> F-P5-01(r2) by origin+chapter+shared tokens; F-RR-01 has no r2 match.
     m = match(f1, findings_of(r2))
