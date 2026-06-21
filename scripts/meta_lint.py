@@ -40,16 +40,57 @@ except ImportError:
     art = None
 
 
+def _read_text(path):
+    """Read a file as UTF-8, REPLACING undecodable bytes — a stray non-UTF-8 source file must not
+    crash the linter with `UnicodeDecodeError` (a `ValueError`, NOT an `OSError`, so the bare
+    `except OSError` would not catch it). Returns None if the path can't be opened at all."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            return f.read()
+    except OSError:
+        return None
+
+
+def _str_token_value(tok_string):
+    """The text content of a string-literal token (its prefix + surrounding quotes stripped).
+    Best-effort — used only for substring scanning, so escape sequences need not be resolved."""
+    j = 0
+    while j < len(tok_string) and tok_string[j] in "rbufRBUF":
+        j += 1
+    body = tok_string[j:]
+    for q in ('"""', "'''", '"', "'"):
+        if body.startswith(q) and body.endswith(q) and len(body) >= 2 * len(q):
+            return body[len(q):-len(q)]
+    return tok_string
+
+
 def _strip_comments(py_text):
     """Return `py_text` with `#` comments removed but STRING LITERALS kept — so a schema id is
     counted by M4 only when it's referenced in code (e.g. `load_schema("apodictic.x.v1")`), not when
-    it's merely mentioned in a comment (Codex P2). Falls back to the raw text if the file does not
+    it's merely mentioned in a comment (Codex P2). Adjacent string literals are merged into their
+    concatenated contents so an id split across implicit string concatenation
+    (`"apodictic." "finding.v1"`) is still found. Falls back to the raw text if the file does not
     tokenize (over-counts, the pre-fix behavior, rather than crashing)."""
     try:
-        return " ".join(t.string for t in tokenize.generate_tokens(io.StringIO(py_text).readline)
-                        if t.type != tokenize.COMMENT)
+        toks = [t for t in tokenize.generate_tokens(io.StringIO(py_text).readline)
+                if t.type != tokenize.COMMENT]
     except (tokenize.TokenError, IndentationError, SyntaxError):
         return py_text
+    out, i = [], 0
+    while i < len(toks):
+        if toks[i].type == tokenize.STRING:
+            # Merge a run of adjacent string literals (implicit concatenation) into one
+            # contiguous value, so `"apodictic." "finding.v1"` resolves to `apodictic.finding.v1`
+            # rather than staying split by quotes + a join space.
+            chunk = []
+            while i < len(toks) and toks[i].type == tokenize.STRING:
+                chunk.append(_str_token_value(toks[i].string))
+                i += 1
+            out.append("".join(chunk))
+        else:
+            out.append(toks[i].string)
+            i += 1
+    return " ".join(out)
 
 # A raw marker-substring membership test used for classification — the M2 anti-pattern. A literal
 # "apodictic:<type>" immediately tested with `in`. The safe `_has_block` degraded fallback uses a
@@ -138,18 +179,16 @@ def _script_dir():
 def run():
     d = _script_dir()
     sh_path = os.path.join(d, "validate.sh")
-    try:
-        sh_text = open(sh_path, encoding="utf-8").read()
-    except OSError:
+    sh_text = _read_text(sh_path)
+    if sh_text is None:
         return 2, ["validator-conventions: cannot read %s" % sh_path]
 
     py_files = {}
     for fn in sorted(os.listdir(d)):
         if fn.endswith(".py"):
-            try:
-                py_files[fn] = open(os.path.join(d, fn), encoding="utf-8").read()
-            except OSError:
-                pass
+            txt = _read_text(os.path.join(d, fn))
+            if txt is not None:
+                py_files[fn] = txt
     # M4 reads code, not comments: strip `#` comments so a schema id mentioned only in a comment is
     # not counted as referenced (Codex P2).
     all_py = "\n".join(_strip_comments(t) for t in py_files.values())
@@ -218,6 +257,21 @@ def run_self_test():
             check_m4(["apodictic.ghost.v1"], _strip_comments("# wires apodictic.ghost.v1\nx = 1\n"))))
     chk("m4_string_literal_referenced_ok",
         check_m4(["apodictic.ghost.v1"], _strip_comments('SID = "apodictic.ghost.v1"\n')) == [])
+    # an id split across implicit string concatenation is still found (adjacent literals merged)
+    chk("m4_implicit_string_concat_referenced_ok",
+        check_m4(["apodictic.ghost.v1"], _strip_comments('SID = "apodictic." "ghost.v1"\n')) == [])
+
+    # _read_text: a non-UTF-8 byte sequence must not crash the linter (UnicodeDecodeError is a
+    # ValueError, not an OSError); errors="replace" keeps the ASCII references scannable.
+    import tempfile
+    fd, _tmp = tempfile.mkstemp(suffix=".py")
+    os.write(fd, b'# \xff\xfe not utf-8\nSID = "apodictic.ghost.v1"\n')
+    os.close(fd)
+    try:
+        chk("read_text_non_utf8_no_crash", "apodictic.ghost.v1" in (_read_text(_tmp) or ""))
+    finally:
+        os.unlink(_tmp)
+    chk("read_text_missing_returns_none", _read_text(_tmp) is None)
 
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
