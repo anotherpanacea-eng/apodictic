@@ -291,7 +291,7 @@ The more ambitious sibling of [Adaptive Mid-Run Mode Escalation](#adaptive-mid-r
 
 ### Research / API Reliability Layer
 
-v2.0.0 Phase 5 handled the first real plumbing (exponential backoff with `Retry-After`, no-sticky-error caching, single-call retraction). Future work hardens the external-research path: cache TTLs, error provenance, per-provider budgets, circuit breakers, freshness notes, and source-resolution confidence metadata — especially for Citation Verifier and Field Reconnaissance, where a silently-degraded API can masquerade as a clean (or missing) result.
+**Status: M1 built** (`docs/research-reliability-layer.md`). v2.0.0 Phase 5 handled the first real plumbing (exponential backoff with `Retry-After`, no-sticky-error caching, single-call retraction). The reliability layer hardens the external-research path at the run/provider level: cache TTLs with freshness stamps (`response_cache.py`), per-provider budgets + a run-scoped circuit breaker + a per-run reliability ledger (`api_reliability.py`), and a per-result `resolution_status` (resolved / not-found / not-checked) wired into `academic_apis.py` — so for Citation Verifier and Field Reconnaissance a silently-degraded API can no longer masquerade as a clean (or missing) result; a degraded provider's `unretrievable` is reported as NOT-CHECKED, not NOT-FOUND. The editor's *use* of the block (writing the honest distinction into the ledger prose) is the model seam, verified through `evals/`. Follow-ons (deferred): telemetry-tuned budgets, a `--strict` halt on degraded high-stakes runs, a `Citation_Reliability.json` sidecar.
 
 ---
 
@@ -444,7 +444,7 @@ Bigger lifts, still philosophy-compatible.
 
 10. **Dramatic-Writing Structural Module (screenplay / stage play / audio drama).** The genre-expansion list names interactive fiction, game narrative, and comics but **not** screen or stage — which have their own structure (sequence/act architecture, shown-vs-told, subtext-on-the-page, white-space pacing) and formats (Fountain, Final Draft). The contract-inference engine ports. *Effort: large.*
 
-11. **Argument-Engine Extension to Grant Proposals / Academic Papers / Pitch Decks.** The Dialectical Clarity kernel already handles argument-shaped nonfiction; these add genre-specific argument structures (Specific Aims / Significance / Innovation; contribution + related-work positioning) and reviewer-anticipation. Calibration on an existing engine, not new architecture. *Effort: medium–large.*
+11. **Argument-Engine Extension to Grant Proposals / Academic Papers / Pitch Decks.** ✅ **M1 built** (genre layer — Nonfiction Pre-Draft Increment 5). The Dialectical Clarity kernel already handles argument-shaped nonfiction; this adds the genre-specific *structure contract* (Specific Aims / Significance / Innovation / Approach; contribution + related-work positioning; problem / solution / traction) as an optional `apodictic.genre_profile.v1` block that seeds `Argument_State` and is validated by the existing `argument-spine` validator (B1–B4 + W4 — no new validator; the genre layer rides `argument-spine`, validator count unchanged), plus genre-calibration + reviewer-anticipation prose in Dialectical Clarity. Calibration on an existing engine, not new architecture. See `docs/nonfiction-pre-draft.md` § The genre layer. *Remaining (Increment 2): reviewer-anticipation W5 + the per-genre diagnostic-calibration table.* *Effort: medium–large.*
 
 12. **Songwriting / Lyrics / Spoken-Word Lens.** Poetry is already a genre candidate; lyrics are a different problem (hook economy, refrain function, prosody-against-meter, the verse/chorus contract). Demand-gated. *Effort: small–medium.*
 
@@ -681,11 +681,19 @@ remarkable to indispensable:
    argument (gated today only on recruiting a second editor). A trust story of "here's the measured
    inter-rater agreement" beats "trust the discipline." The #1 strategic item; it also matches the
    maintainer's settle-confusions-with-small-experiments workstyle.
-2. **Close the revision loop into the writer's editor.** v2.5.0 ships the annotated copy *out*
-   (DOCX→GDocs comments). The sticky move is the **round-trip**: ingest the writer's revised draft and
-   re-anchor the notes. The `reanchor` validator already classifies held / moved / vanished / ambiguous
-   — wire it into a real round-trip workflow, not just a gate (§Annotated-Manuscript Deliverable →
-   reanchoring). A one-shot letter is a product; a revision loop in the writer's tool is a habit.
+2. **Close the revision loop into the writer's editor. — Workflow glue Built, 2026-06-20.** v2.5.0 ships
+   the annotated copy *out* (DOCX→GDocs comments). The sticky move is the **round-trip**: ingest the
+   writer's revised draft and re-anchor the notes. The `reanchor` validator already classifies held /
+   moved / vanished / ambiguous — the glue that was missing (a real round-trip workflow, not just a gate)
+   is now built: a `reanchor.py emit` subcommand that **writes** the re-anchored manifest + the rendered
+   annotated copy of the *revised* draft (held/moved only, re-gated RA1–RA3 before any write), a
+   `reanchor.py crossref` subcommand that **joins** the anchor-level classes against `regression-diff`'s
+   finding-level classes by `finding_id` (the §Q2 orchestrator join), and the Revision Round Protocol
+   wiring (`state-lifecycle.md` §Round-Trip Re-Anchoring: snapshot → emit → crossref), proven end-to-end by
+   a `--check-all` `round-trip glue chain` gate. Spec: `docs/annotated-manuscript-reanchoring.md`
+   (Increment 2). A one-shot letter is a product; a revision loop in the writer's tool is a habit.
+   *Remaining for this item: surfacing the flow through `/start`'s `revising`-node resume dispatch (the
+   round-trip is reachable today via the Revision Round Protocol, but not yet a one-click resume offer).*
 3. **Finish the visualization leg.** Charts 1–3 ship (pacing, POV, severity-by-chapter); the character
    co-presence network, scene-function heatmap, reveal-economy timeline, and beat-map-against-spine
    (§Horizon Tier 1, item 1) are the ones that make a diagnosis legible at a glance, gated only on

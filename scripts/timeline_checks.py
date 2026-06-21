@@ -83,15 +83,34 @@ def _split_section8(text):
     return "\n".join(lines[:s8]), "\n".join(lines[s8:])
 
 
+# Number parsing tolerant of comma thousands-separators. The bare `\d+`/`\d` digit runs below used to
+# drop the leading groups under `.search()` — "1,000 days" -> 0.0, "Day 1,000" -> 1 — a false POSITIVE
+# on a self-consistent timeline and a false NEGATIVE on a real conflict (the same blind spot fixed in
+# world_bible.py, PR #135). The grouped alternative requires AT LEAST ONE ",ddd" group (`+`, not `*`)
+# so an ungrouped multi-digit number can't be prefix-matched ("1000" stays "1000", never "100").
+# Commas are stripped via _strip_grouping before float()/int().
+_NUM_UNIT_RE = re.compile(r"(-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d+(?:\.\d+)?)\s*([A-Za-z]+)")
+_ANCHOR_NUM = r"(\d{1,3}(?:,\d{3})+|\d+)"
+_ANCHOR_DAY_RE = re.compile(r"\bDay\s+" + _ANCHOR_NUM, re.IGNORECASE)
+_ANCHOR_WEEK_RE = re.compile(r"\bWeek\s+" + _ANCHOR_NUM, re.IGNORECASE)
+
+
+def _strip_grouping(num):
+    """Drop comma thousands-separators from a captured numeral so float()/int() see the real
+    magnitude ('1,000' -> '1000'). Comma is the only grouping char authors use here; '.' is the
+    decimal point and is preserved."""
+    return num.replace(",", "")
+
+
 def _norm_duration(s):
     """'3 hours' -> 3.0, '2 days' -> 48.0, '30 minutes' -> 0.5, '-2 days' -> -48.0;
-    None for 'n/a' / empty / unparseable."""
+    None for 'n/a' / empty / unparseable. Comma-grouped counts ('1,000 days') parse correctly."""
     if s is None:
         return None
-    m = re.search(r"(-?\d+(?:\.\d+)?)\s*([A-Za-z]+)", s)
+    m = _NUM_UNIT_RE.search(s)
     if not m:
         return None
-    value = float(m.group(1))
+    value = float(_strip_grouping(m.group(1)))
     unit = m.group(2).lower().rstrip("s")
     if unit not in _UNIT_HOURS:
         return None
@@ -104,15 +123,15 @@ def _norm_anchor_day(*texts):
     for t in texts:
         if not t:
             continue
-        m = re.search(r"\bDay\s+(\d+)", t, re.IGNORECASE)
+        m = _ANCHOR_DAY_RE.search(t)
         if m:
-            return int(m.group(1))
+            return int(_strip_grouping(m.group(1)))
     for t in texts:
         if not t:
             continue
-        m = re.search(r"\bWeek\s+(\d+)", t, re.IGNORECASE)
+        m = _ANCHOR_WEEK_RE.search(t)
         if m:
-            return (int(m.group(1)) - 1) * 7 + 1
+            return (int(_strip_grouping(m.group(1))) - 1) * 7 + 1
     return None
 
 
@@ -492,6 +511,35 @@ def run_self_test(which=None):
         expect("diff_override_body", diff_rc(prior, cur_over), 0)
         expect("diff_changed_masks_add", diff_rc(prior, cur_changed_masks), 1)
         expect("diff_edit_changed_covers", diff_rc(prior, cur_edit), 0)
+
+    # Comma thousands-separator parsing — the same blind spot fixed in world_bible.py (#135) lived
+    # in this validator too. Each assertion below FAILS against pre-fix code.
+    if which in (None, "timeline-arithmetic", "timeline-anchor-conflict"):
+        # Unit: grouped numerals parse to full magnitude; ungrouped multi-digit numbers are UNCHANGED
+        # (the grouped alternative requires a comma, so "1000" never prefix-matches down to 100).
+        expect("comma_duration_thousands", _norm_duration("1,000 days"), 1000 * 24.0)   # pre-fix: 0.0
+        expect("comma_duration_ungrouped_unchanged", _norm_duration("1000 days"), 1000 * 24.0)
+        expect("comma_anchor_day", _norm_anchor_day("Day 1,000"), 1000)                 # pre-fix: 1
+        expect("comma_anchor_week", _norm_anchor_day("Week 1,000"), (1000 - 1) * 7 + 1) # pre-fix: 1
+        expect("comma_anchor_ungrouped_unchanged", _norm_anchor_day("Day 1000"), 1000)
+        # Arm-level: an agree-clean timeline must NOT flag (pre-fix: false POSITIVE) and a genuine
+        # conflict MUST flag (pre-fix: false NEGATIVE).
+        anchor_clean = ('# Timeline\n## Section 3: Scene Anchors\n'
+                        '- Ch 2 §1: "the thousandth dawn" -> Day 1,000\n'
+                        '- Ch 2 §1: "a thousand days in" -> Day 1000\n')          # same day, comma vs not
+        anchor_conflict = ('# Timeline\n## Section 3: Scene Anchors\n'
+                           '- Ch 3 §2: "the thousandth dawn" -> Day 1,000\n'
+                           '- Ch 3 §2: "five days later, same scene" -> Day 1,005\n')  # genuinely different days
+        expect("anchor_comma_consistent_clean", _emit(*timeline_anchor_conflict(anchor_clean)), 0)
+        expect("anchor_comma_conflict_flagged", _emit(*timeline_anchor_conflict(anchor_conflict)), 1)
+        _tbl = ("# Timeline\n## Section 1: Event Ledger\n"
+                "| Scene ID | Anchor text | Span |\n|---|---|---|\n")
+        arith_clean = _tbl + ("| Ch 1 §1 | Day 1,000 0:00 | 10 hours |\n"
+                              "| Ch 1 §2 | Day 1,001 0:00 | 1 hour |\n")   # sequential days, no overrun
+        arith_conflict = _tbl + ("| Ch 1 §1 | Day 1 0:00 | 1,000 hours |\n"
+                                 "| Ch 1 §2 | Day 2 0:00 | 1 hour |\n")    # 1,000h span overruns Day 2
+        expect("arith_comma_anchor_sequential_clean", _emit(*timeline_arithmetic(arith_clean)), 0)
+        expect("arith_comma_span_overrun_flagged", _emit(*timeline_arithmetic(arith_conflict)), 1)
 
     if rc["v"] == 0:
         print("Self-test: PASS")
