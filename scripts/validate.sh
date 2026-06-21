@@ -3511,7 +3511,7 @@ EOF
 
     # Override marker detection — body only.
     OV_DIFF=0
-    echo "$BODY" | grep -F "<!-- override: timeline-diff-undocumented" > /dev/null 2>&1 && OV_DIFF=1
+    echo "$BODY" | sed 's/`[^`]*`//g' | grep -E "<!-- override: timeline-diff-undocumented([[:space:]]|-->)" > /dev/null 2>&1 && OV_DIFF=1
 
     # Extract Event Ledger table rows from each file.
     # Heuristic: pipe-table rows (starting with |) that are not the header
@@ -3779,7 +3779,7 @@ EOF
 
     # Override marker — body only.
     OV_AR=0
-    echo "$BODY" | grep -F "<!-- override: timeline-arithmetic-conflict" > /dev/null 2>&1 && OV_AR=1
+    echo "$BODY" | sed 's/`[^`]*`//g' | grep -E "<!-- override: timeline-arithmetic-conflict([[:space:]]|-->)" > /dev/null 2>&1 && OV_AR=1
 
     # Check (a): negative gap. Match table cells containing /^[[:space:]]*-[0-9]/
     # within a pipe-row, or the literal phrase "negative" or "negative gap".
@@ -3946,7 +3946,7 @@ EOF
 
     # Override marker — body only.
     OV_AC=0
-    echo "$BODY" | grep -F "<!-- override: timeline-anchor-conflict" > /dev/null 2>&1 && OV_AC=1
+    echo "$BODY" | sed 's/`[^`]*`//g' | grep -E "<!-- override: timeline-anchor-conflict([[:space:]]|-->)" > /dev/null 2>&1 && OV_AC=1
 
     # Detect pre-flagged contradiction / paradox annotations in Section 3.
     # Heuristic: parenthetical "(contradicts ...)" or "(paradox with ...)" or
