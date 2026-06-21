@@ -178,15 +178,15 @@ set -euo pipefail
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).
-AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff regression-diff legal-risk promise-contract continuity-bible intake-interview author-fingerprint argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor obsidian-export html-export docx-export check-mirror"
+AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff regression-diff legal-risk promise-contract continuity-bible world-bible intake-interview author-fingerprint argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor obsidian-export html-export docx-export check-mirror"
 # shellcheck disable=SC2086  # intentional word-splitting to count list entries
 AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, regression-diff, legal-risk, promise-contract, continuity-bible, intake-interview, author-fingerprint, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, obsidian-export, html-export, docx-export, check-mirror"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, regression-diff, legal-risk, promise-contract, continuity-bible, world-bible, intake-interview, author-fingerprint, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, obsidian-export, html-export, docx-export, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), intake-interview vs the canonical Intake Interview example + its Ledger (I1 schema, I2 no-contract-dup, I3 grounded ambiguity via ref + source_note, I4 calibrate-not-suppress under --strict), author-fingerprint vs the canonical Author Voice Profile (F1 schema, F2 provenance, F3 same-register comparison, F4 descriptive-not-prescriptive, clean W1/W2 under --strict), argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), world-bible vs the canonical Worldbuilding Bible example (W1 schema + closed-key, WD unique ids, WB-R1 rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a unit class, WB-G2 chronology cycle + anchor-drift, and the WF surface-don't-resolve firewall scan — clean under --strict with the staged contradictions overridden), intake-interview vs the canonical Intake Interview example + its Ledger (I1 schema, I2 no-contract-dup, I3 grounded ambiguity via ref + source_note, I4 calibrate-not-suppress under --strict), author-fingerprint vs the canonical Author Voice Profile (F1 schema, F2 provenance, F3 same-register comparison, F4 descriptive-not-prescriptive, clean W1/W2 under --strict), argument-spine vs the canonical pre-draft Argument_State + the three genre-profiled Argument_States (Increment 5: B1-B4 + W4 over grant / academic / pitch, --strict), scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources, annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -356,6 +356,13 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-author-voice-profile.md not found"; CA_FAIL=1
     fi
     echo ""
+    echo "== canonical Worldbuilding Bible (world-bible: schema W1 + closed-key + unique ids WD + rule WB-R1 + cost WB-C1/C2 + distance WB-G1 + chronology WB-G2 + firewall WF, staged contradictions overridden, under --strict) =="
+    if [ -f "$CA_BASE/example-worldbuilding-bible.md" ]; then
+      "$0" world-bible "$CA_BASE/example-worldbuilding-bible.md" --strict || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-worldbuilding-bible.md not found"; CA_FAIL=1
+    fi
+    echo ""
     echo "== canonical State Card (state-card-diff: cross-round coherence; self-diff + round-2 diff) =="
     if [ -f "$CA_BASE/example-state-card.md" ]; then
       "$0" state-card-diff "$CA_BASE/example-state-card.md" || CA_FAIL=1
@@ -391,6 +398,16 @@ if [ "$1" = "--check-all" ]; then
     else
       echo "ERROR: $CA_BASE/example-argument-state-predraft.md not found"; CA_FAIL=1
     fi
+    echo ""
+    echo "== canonical genre-profiled Argument_States (argument-spine Inc 5: B1-B4 + W4 over grant / academic / pitch; --strict) =="
+    for GENRE_FIX in grant academic pitch; do
+      GENRE_F="$CA_BASE/example-argument-state-genre-$GENRE_FIX.md"
+      if [ -f "$GENRE_F" ]; then
+        "$0" argument-spine "$GENRE_F" --strict || CA_FAIL=1
+      else
+        echo "ERROR: $GENRE_F not found"; CA_FAIL=1
+      fi
+    done
     echo ""
     echo "== canonical Scene-Ethics Plan (scene-ethics: ethics-plan contract + resolved depictions) =="
     if [ -f "$CA_BASE/example-scene-ethics-plan.md" ]; then
@@ -493,6 +510,59 @@ if [ "$1" = "--check-all" ]; then
       fi
     elif [ ! -f "$CA_BASE/example-reanchor-revised.md" ]; then
       echo "ERROR: $CA_BASE/example-reanchor-revised.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== round-trip glue chain (emit -> A-gate the revised copy -> crossref; on a temp copy) =="
+    # The round-trip GLUE (docs/annotated-manuscript-reanchoring.md §The artifacts; ROADMAP "truly great"
+    # #2) wires reanchor into a revision-aware flow: emit the re-anchored manifest + the rendered annotated
+    # copy of the REVISED draft, gate that copy against the revised snapshot (A1-A6, ledger-optional), then
+    # cross-reference the anchor classes against regression-diff's finding classes by finding_id. Exercise
+    # the chain end-to-end on a temp copy — emit WRITES outputs (never in place; same discipline as the
+    # producer chain above) — and assert: emit exits 0 and wrote both artifacts, the emitted copy passes
+    # the A-gate, and crossref runs clean (advisory). Non-vacuous: the emitted copy must round-trip the
+    # revised snapshot byte-for-byte (A2 no-mutation) under the gate.
+    if [ -d "$CA_BASE/example-annotated-manuscript" ] && [ -f "$CA_BASE/example-reanchor-revised.md" ] && command -v python3 >/dev/null 2>&1; then
+      CA_RT_SRC="$CA_BASE/example-annotated-manuscript"
+      CA_RT=$(mktemp -d)
+      # Stage the prior run folder's manifest + a properly-named revised snapshot (so emit derives a clean
+      # runlabel from the *_Manuscript_Snapshot_* infix), then emit into the same temp folder.
+      cp "$CA_RT_SRC"/*_Annotation_Manifest_*.md "$CA_RT"/ 2>/dev/null
+      cp "$CA_BASE/example-reanchor-revised.md" "$CA_RT/Example_Manuscript_Snapshot_reanchor-r2.md"
+      CA_RT_OK=1
+      python3 "$CA_SCRIPT_DIR/reanchor.py" emit "$CA_RT" "$CA_RT/Example_Manuscript_Snapshot_reanchor-r2.md" -o "$CA_RT" >/dev/null 2>&1 || CA_RT_OK=0
+      CA_RT_MAN="$CA_RT/Example_Reanchored_Manifest_reanchor-r2.md"
+      CA_RT_ANN="$CA_RT/Example_Reanchored_Annotated_Manuscript_reanchor-r2.md"
+      CA_RT_SNAP="$CA_RT/Example_Manuscript_Snapshot_reanchor-r2.md"
+      [ -f "$CA_RT_MAN" ] && [ -f "$CA_RT_ANN" ] || CA_RT_OK=0
+      # Gate the EMITTED revised-draft copy against the revised snapshot with the SAME ledger-optional
+      # A-gate the reanchor contract uses (A1+A2+A3+A4-multiset+A6; the A4/A5 cross-ledger arms are inert
+      # for a re-anchored copy — there is no re-diagnosed N+1 ledger, by construction). The plain
+      # `annotated-manuscript` validator would (correctly) demand a ledger, so gate via am.check(...,
+      # ledger_optional=True) — proving the written copy round-trips the revised snapshot (A2 no-mutation)
+      # and every carried anchor resolves, on the files emit actually wrote.
+      if [ -f "$CA_RT_MAN" ] && [ -f "$CA_RT_ANN" ]; then
+        CA_SCRIPT_DIR="$CA_SCRIPT_DIR" python3 - "$CA_RT_SNAP" "$CA_RT_MAN" "$CA_RT_ANN" <<'PY' >/dev/null 2>&1 || CA_RT_OK=0
+import os, sys
+sys.path.insert(0, os.environ["CA_SCRIPT_DIR"])
+import annotation_manifest as am
+snap = am.normalize_snapshot(open(sys.argv[1], encoding="utf-8").read())
+man = open(sys.argv[2], encoding="utf-8").read()
+ann = open(sys.argv[3], encoding="utf-8").read()
+code, _ = am.check(snap, man, ann, ledger_text=None, ledger_optional=True)
+sys.exit(code)
+PY
+      fi
+      # crossref joins by finding_id against a current round folder (advisory, exit 0); use the paired
+      # regression fixture as the "this round" ledger — it need not share ids (a clean no-contradiction join).
+      python3 "$CA_SCRIPT_DIR/reanchor.py" crossref "$CA_RT" "$CA_RT/Example_Manuscript_Snapshot_reanchor-r2.md" "$CA_BASE/example-run-folder-r2" >/dev/null 2>&1 || CA_RT_OK=0
+      if [ "$CA_RT_OK" -eq 1 ]; then
+        echo "round-trip glue chain (temp copy): PASS"
+      else
+        echo "round-trip glue chain (temp copy): FAIL"; CA_FAIL=1
+      fi
+      rm -rf "$CA_RT"
+    elif [ ! -f "$CA_BASE/example-reanchor-revised.md" ]; then
+      echo "ERROR: $CA_BASE/example-reanchor-revised.md not found (round-trip glue chain)"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical obsidian-export (manifest -> native footnotes; O1-O3 + byte-identical to committed) =="
@@ -4908,6 +4978,40 @@ EOF
     exit 0
     ;;
 
+  world-bible)
+    # Standalone Worldbuilding Bible (docs/worldbuilding-bible.md): a pre-draft consistency check over
+    # the author's OWN hand-authored worldbuilding bible — distinct from the manuscript-facing SFF
+    # audits. Structural checks over the apodictic.world_fact.v1 blocks — W1 schema (bad category/
+    # polarity enum, malformed WF-NN id, missing field, unquoted-numeric value, empty loci, broken
+    # JSON) PLUS bespoke closed-key checking (the subset engine admits unknown keys, so a misspelled
+    # field would otherwise pass — caught here or the closed-set guarantee is hollow), WD duplicate id,
+    # and the three deterministic, stdlib-only, CONSERVATIVE contradiction arms: WB-R1 closed-set rule
+    # consistency (same subject + normalized value, can vs cannot / requires vs cannot), WB-C1 cost
+    # contradiction (two different stated costs for one subject) + WB-C2 free-then-costed (advisory,
+    # ERROR --strict), WB-G1 distance contradiction (one edge, two parsed distances WITHIN a
+    # commensurable unit class — spatial mile/league/km vs temporal travel-time day/hour are SEPARATE
+    # axes that never collide-check against each other), WB-G2 chronology (a CYCLE in the happens-before
+    # graph, or the same event at two Day anchors). Plus a WF firewall prose scan (a resolution/
+    # invention verb leaking into the bible's prose; advisory, ERROR --strict). Each pair is overridable
+    # per-pair: <!-- override: world-rule|world-cost|world-geo WF-NN/WF-MM — … --> (and
+    # <!-- override: world-firewall — … --> for WF). The tool EXTRACTS the stated and SURFACES the
+    # contradictions the bible has committed to; it never invents world content or resolves a conflict
+    # (the Firewall). Takes a run folder (globs *_Worldbuilding_Bible_*.md) or explicit files.
+    # Delegates to scripts/world_bible.py; degrades to an advisory WARN without python3.
+    WBL_DIR=$(cd "$(dirname "$0")" && pwd)
+    WBL_HELPER="$WBL_DIR/world_bible.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$WBL_HELPER" ]; then python3 "$WBL_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; world-bible is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$WBL_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 world-bible <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$WBL_HELPER" world-bible "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — world-bible skipped; check inline that every world_fact carries a well-shaped locus, no rule both can and cannot the same thing, no power is priced two ways or free-then-costed, no edge has two distances on one axis, the happens-before order has no cycle, and the bible records stated facts only (never inventing or resolving world content). See docs/worldbuilding-bible.md."
+    exit 0
+    ;;
+
   registry-check)
     # Project registry integrity (Project Addressability, Increment 2; docs/project-addressability.md):
     # structural checks over a workspace-relative .apodictic/registry.json (apodictic.project_registry.v1
@@ -4954,16 +5058,20 @@ EOF
     ;;
 
   argument-spine)
-    # Nonfiction Pre-Draft Pathway, Increments 1-3 (docs/nonfiction-pre-draft.md): structural checks
+    # Nonfiction Pre-Draft Pathway, Increments 1-3 + 5 (docs/nonfiction-pre-draft.md): structural checks
     # over the apodictic.argument_spine.v1 block (the pre-draft argument plan that SEEDS the shared
-    # Argument_State.md), the apodictic.support_plan.v1 blocks (source/evidence map, §3), and the
-    # apodictic.warrant_plan.v1 blocks (warrant pre-check, §4). A1 invalid spine; A2 unseeded (spine
-    # must populate §1/§2 — signature); A3 thesis/C0 drift. Inc 2: A4 invalid support plan; A5 dangling
-    # subclaim_id; A6 support unseeded (no §3 heading). Inc 3: A7 invalid warrant plan; A8 dangling
-    # subclaim_id; A9 warrant unseeded (no §4 heading). Advisory (ERROR --strict): W1 anti-thesis echo
-    # (override argument-spine-antithesis), W2 bare assertion (a subclaim with no planned support), W3
-    # implicit warrant for a HOSTILE audience (non-EXPLICIT / ABSENT-backed; override
-    # argument-spine-warrant). Takes a run folder (globs Argument_State*.md) or explicit files.
+    # Argument_State.md), the apodictic.support_plan.v1 blocks (source/evidence map, §3), the
+    # apodictic.warrant_plan.v1 blocks (warrant pre-check, §4), and the apodictic.genre_profile.v1 block
+    # (the genre layer — holds a genre to its required-section skeleton). A1 invalid spine; A2 unseeded
+    # (spine must populate §1/§2 — signature); A3 thesis/C0 drift. Inc 2: A4 invalid support plan; A5
+    # dangling subclaim_id; A6 support unseeded (no §3 heading). Inc 3: A7 invalid warrant plan; A8
+    # dangling subclaim_id; A9 warrant unseeded (no §4 heading). Inc 5: B1 invalid genre profile; B2
+    # section unseeded (a declared genre section has no heading — signature); B3 genre/form mismatch
+    # (spine-present only; normalized); B4 duplicate genre profile. Advisory (ERROR --strict): W1
+    # anti-thesis echo (override argument-spine-antithesis), W2 bare assertion (a subclaim with no
+    # planned support), W3 implicit warrant for a HOSTILE audience (non-EXPLICIT / ABSENT-backed;
+    # override argument-spine-warrant), W4 thin genre skeleton (a canonical genre section omitted;
+    # override argument-spine-genre). Takes a run folder (globs Argument_State*.md) or explicit files.
     # Delegates to scripts/argument_spine.py; degrades to an advisory WARN without python3.
     AS_DIR=$(cd "$(dirname "$0")" && pwd)
     AS_HELPER="$AS_DIR/argument_spine.py"

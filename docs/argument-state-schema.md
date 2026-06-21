@@ -52,7 +52,7 @@ Populated by: Dialectical Clarity Step 1.
 
 Form: [op-ed / policy brief / testimony / academic article / personal essay /
        advocacy journalism / grant proposal / white paper / legal brief /
-       book review / open letter / crisis communication / other: ___]
+       book review / open letter / crisis communication / pitch deck / other: ___]
 
 Goal: [what the piece is trying to accomplish — one sentence]
 
