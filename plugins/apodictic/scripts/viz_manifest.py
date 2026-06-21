@@ -353,12 +353,16 @@ def _check_claim_ladder(items, ladder):
                         "(declared: %s)" % (where, cid, ", ".join(sorted(ids)) or "none"))
             continue
         # X6 — label byte-equal to the subclaim string minus its leading Cn token (the same token
-        # spine_subclaim_ids consumed). A non-matching label is an "invented data point".
+        # spine_subclaim_ids consumed). A non-matching label is an "invented data point". The label
+        # must BE a string (X1/X6 require a byte-for-byte copy of a string) — a non-string label is
+        # refused outright, not str()-coerced (str(123) == str("123") would smuggle a numeric label
+        # past the provenance check; the closed allowlist only validates keys, never value types).
+        mlabel = it.get("label")
         want_label = labels.get(cid)
-        if str(it.get("label", "")) != str(want_label):
+        if not isinstance(mlabel, str) or mlabel != want_label:
             errs.append("X6 no orphan datum: %s.label=%r != the subclaim string minus its leading "
-                        "%s token %r (manifest must copy verbatim)"
-                        % (where, it.get("label"), cid, want_label))
+                        "%s token %r (manifest must copy verbatim as a string)"
+                        % (where, mlabel, cid, want_label))
         # X1/X6 — support[] items: closed allowlist + enum, byte-equal to a real support_plan.v1 block.
         sup = it.get("support")
         if not isinstance(sup, list):
@@ -1032,6 +1036,23 @@ def run_self_test():
     bad = [dict(canon_ladder[0], label="curb cuts matter, basically")] + canon_ladder[1:]
     code, ls = check(cl_manifest(bad), None, None, spine_text=canon_spine)
     chk("x6_label_mismatch_fails", code == 1 and any("X6" in x and "label" in x for x in ls))
+
+    # X6 — a NON-STRING label is refused, not str()-coerced. X1/X6 require a byte-for-byte STRING copy
+    # of the stripped subclaim; the closed allowlist only checks keys, never value types, so a numeric
+    # label 123 reached the provenance check. The pre-fix `str(label) != str(want_label)` made
+    # str(123) == str("123") pass — a numeric "123" smuggled past a check that demands a string. Build
+    # a spine whose C1 subclaim strips to the digit string "123" and a manifest carrying the int 123.
+    num_subclaims = ["C1: 123", "C2: " + L2, "C3: " + L3]
+    num_spine = spine_block(num_subclaims, canon_supports)
+    num_ladder = [{"claim_id": "C1", "label": 123,
+                   "support": [{"support_type": "DATA", "status": "to-acquire"}]}] + canon_ladder[1:]
+    code, ls = check(cl_manifest(num_ladder), None, None, spine_text=num_spine)
+    chk("x6_nonstring_label_refused", code == 1 and any("X6" in x and "label" in x for x in ls))
+    # control: the SAME ladder with the label as the string "123" validates clean (proves the failure
+    # above is the type guard, not the value — a verbatim string copy still passes)
+    str_ladder = [dict(num_ladder[0], label="123")] + canon_ladder[1:]
+    chk("x6_string_label_ok",
+        check(cl_manifest(str_ladder), None, None, spine_text=num_spine)[0] == 0)
 
     # X6 — a support pairing absent from support_plan.v1 fails (C2 is AUTHORITY/in-hand, not DATA)
     bad = [canon_ladder[0],
