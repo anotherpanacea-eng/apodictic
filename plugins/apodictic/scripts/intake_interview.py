@@ -97,20 +97,41 @@ _NEGATOR_RE = re.compile(r"\b(?:not|never|without|cannot)\b|n['’]?t\b", re.IGN
 _CLAUSE_BOUNDARY = ".;:!?"
 
 
+# Adverbs/intensifiers that can sit between a negator and the verb it governs WITHOUT breaking the
+# binding ("do not EVER, under any circumstances, suppress"). Any -ly word is treated as adverbial
+# too (routinely / deliberately / habitually). This is the line between an adverb-only interruption
+# (the negation still reaches the suppression) and a separate predicate (a verb phrase / fronted
+# phrase) that pulls the negation off it.
+_NEG_ADVERB = frozenset({
+    "ever", "never", "not", "just", "always", "once", "then", "now", "again",
+    "also", "still", "yet", "simply", "really", "actually", "generally",
+    "normally", "usually", "typically", "ordinarily", "necessarily", "anymore",
+})
+
+
+def _is_adverbial(head):
+    """True if `head` (the material between a negator and the first following comma) is empty or made
+    up ONLY of adverbs/intensifiers — so it does NOT introduce a separate predicate. A verb phrase
+    ("assess it on its own terms") or a fronted phrase ("as a calibration") is NOT adverbial."""
+    return all(w.lower() in _NEG_ADVERB or w.lower().endswith("ly")
+               for w in re.findall(r"[\w'’-]+", head))
+
+
 def _negation_scopes_match(clause):
     """True iff some negator in `clause` scopes the suppression match that ENDS `clause`. A negator
-    exempts the match only when the suppression is in its OWN scope: either NO comma separates them
-    ("does not [...] suppress"), or the negator is IMMEDIATELY followed by a comma — a parenthetical
-    interruption ("does not, under any circumstances, suppress"). ANY non-empty material before the
-    first comma means the negator governs THAT — a fronted phrase ("Not as a calibration, suppress")
-    or an earlier coordinated imperative ("Do not assess it, suppress") — so the post-comma
-    suppression is an un-negated directive and is NOT exempted. (Third pass: the prior "directive verb
-    before the comma" test missed a fronted NON-verbal phrase; "is there non-empty pre-comma
-    material" subsumes it.)"""
+    exempts the match only when it binds to the suppression itself: NO comma separates them ("does not
+    [...] suppress"), OR the material before the first comma is empty or ONLY adverbial ("do not, ..."
+    / "do not EVER, under any circumstances, suppress" — a parenthetical interruption). NON-adverbial
+    pre-comma material means the negator governs THAT — a fronted phrase ("Not as a calibration,
+    suppress") or a coordinated imperative ("Do not assess it on its own terms, suppress") — so the
+    trailing suppression is an un-negated directive and is NOT exempted. (The prior pass used "any
+    non-empty pre-comma material fires", which wrongly fired on an adverb like "ever" before a
+    parenthetical — Codex P2; the adverb-vs-predicate test fixes that without re-exempting a real
+    coordinated/fronted directive.)"""
     for nm in _NEGATOR_RE.finditer(clause):
         span = clause[nm.end():]            # text between this negator and the (clause-final) match
         comma = span.find(",")
-        if comma == -1 or not span[:comma].strip():
+        if comma == -1 or _is_adverbial(span[:comma]):
             return True                      # negation directly scopes the suppression
     return False                             # every negator governs earlier material, not the match
 
@@ -440,7 +461,11 @@ def run_self_test():
         "never instruct analysis to drop the finding",
         "won't ever ask Pass 2 to suppress the flag",
         "the answer must not (per I4) suppress the flag",
-        "assess it on its own terms without suppressing the finding"):
+        "assess it on its own terms without suppressing the finding",
+        # Codex P2: an adverb ("ever") or an -ly adverb ("routinely") before a parenthetical must NOT
+        # pull the negation off the suppression — these stay exempt (a negated statement, not a directive).
+        "we do not ever, under any circumstances, suppress the finding.",
+        "we do not routinely, as a matter of policy, drop the finding"):
         chk("i4_negated_clean::%s" % phrase[:22],
             interview(query("IQ-01", source_note="x", treat_as_intended=phrase))[0] == 0)
     # but a real directive in a LATER clause still fires (negation in a prior clause doesn't cover it)
