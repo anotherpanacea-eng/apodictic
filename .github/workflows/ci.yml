@@ -55,6 +55,18 @@ jobs:
       - name: Validator self-tests + canonical-framework gate
         run: bash scripts/validate.sh --check-all
 
+      # Research reliability layer (docs/research-reliability-layer.md). These
+      # research-dir modules are single-sourced (NOT in root scripts/, NOT in the
+      # validate.sh mirror pair), so their --self-test cannot route through an
+      # AGG_VALIDATORS dispatcher arm (a byte-identical arm can't reach the
+      # research dir — see the doc's P1 resolution). CI runs the self-tests
+      # directly instead. Static paths only; no workflow inputs are interpolated.
+      - name: Research reliability self-tests
+        run: |
+          python3 plugins/apodictic/skills/specialized-audits/scripts/api_reliability.py --self-test
+          python3 plugins/apodictic/skills/specialized-audits/scripts/response_cache.py --self-test
+          python3 plugins/apodictic/skills/specialized-audits/scripts/academic_apis.py --self-test
+
       # Generator + parity gates. The host trees are no longer committed
       # (GitHub #52), so parity is verified by regenerating fresh and
       # self-checking rather than diffing against committed copies.

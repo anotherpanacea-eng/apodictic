@@ -360,6 +360,8 @@ Phase 1 + Phase 2 combined:
 
 When the verifier cannot get enough source access, it says so explicitly. It does not bluff verification.
 
+**Provider reliability — NOT-FOUND vs. NOT-CHECKED (research-reliability-layer).** An `unretrievable` confidence is not all one thing. `academic_apis.py` already classifies this per result: each result carries an authoritative **`resolution_status ∈ {resolved, not-found, not-checked}`** (with a `not_checked_providers` list naming the skipped indices for that citation), and the batch carries a per-run `reliability` block (`coverage.degraded_providers`, per-provider circuit/budget state). The machine sets `resolution_status = "not-checked"` **only** when a provider that was actually on *this* citation's resolution path was cut short (circuit opened, budget exhausted, error rate > 50%) — the source is **NOT-CHECKED** (we couldn't look), not **NOT-FOUND** (we looked and it isn't there). **Read each result's own `resolution_status`/`not_checked_providers` and report NOT-CHECKED iff that result's `resolution_status == "not-checked"` — do *not* re-derive it from the run-level `coverage.degraded_providers` set.** A provider can be run-level degraded yet never have been on a given citation's path (e.g. Wayback degraded while a title-only citation never reaches the URL tier); that citation is a genuine `not-found`, and over-reporting it as NOT-CHECKED would understate a real CV1/CV2 candidate. The run-level `coverage.degraded_providers` set drives the **Source coverage** line and blind-spot routing (below), not the per-citation verdict. This is a one-directional honesty rule: degradation can only *downgrade* certainty (NOT-FOUND → disclosed NOT-CHECKED), never upgrade a verdict. A genuine NOT-FOUND (`resolution_status == "not-found"`) is still a real CV1/CV2 candidate; a NOT-CHECKED is not — it is a coverage gap to disclose.
+
 ---
 
 ## Citation Types
@@ -543,6 +545,7 @@ When comparing manuscript hedging to source hedging, flag any mismatch in either
 3. If three or more central citations fail in one corridor, escalate from spot-check findings to **CV12** cluster warning. The argument has a structural evidence problem.
 4. If source access is blocked or paywalled, say so explicitly. Record as `metadata-only verified` or `unretrievable`. Do not bluff verification.
 5. Never upgrade a citation verdict based on the author's stated intentions. Verify what is on the page.
+6. **Degraded coverage is a disclosable blind spot (research-reliability-layer).** A DEGRADED `Source coverage` state (one or more providers in `reliability.coverage.degraded_providers`) on a high-stakes / Pre-DE-Prerequisite run is itself a blind spot. Route it to `run-synthesis.md` § 3 Blind Spot / Absence Inventory ("citation provenance not fully verified — {provider} degraded; the {N} not-checked citations are a coverage gap, not confirmed absences"), exactly as a declined Citation Verifier routes. The `{N} not-checked citations` is the count of results whose own `resolution_status == "not-checked"` — **not** the count of all citations on a degraded run (a degraded provider may never have been on a given citation's path, leaving it a genuine `not-found`). Do not let the actually-not-checked citations be swallowed into the resolution rate as if they were searched and found absent.
 
 ---
 
@@ -579,6 +582,12 @@ Resolved: {N}/{N}
   Abstract-only: {N}
   Metadata-only: {N}
   Unretrievable: {N}
+    Not-found (looked, absent): {N}
+    Not-checked (provider degraded — coverage gap): {N}
+Source coverage: CLEAN  |  DEGRADED — {provider} ({circuit open / budget exhausted / error rate > 50%})
+  When DEGRADED: any UNRETRIEVABLE verdict on a citation whose only candidate
+  index was a degraded provider is reported as NOT-CHECKED, not NOT-FOUND. The
+  not-checked count above is a coverage gap to disclose, not a CV1/CV2 finding.
 Verdicts: {N} supported, {N} supported with caveat, {N} partial/overclaimed,
           {N} misrepresented, {N} unretrievable, {N} outdated, {N} needs expert review
 Flags fired: {list CV codes}
