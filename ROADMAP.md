@@ -681,11 +681,19 @@ remarkable to indispensable:
    argument (gated today only on recruiting a second editor). A trust story of "here's the measured
    inter-rater agreement" beats "trust the discipline." The #1 strategic item; it also matches the
    maintainer's settle-confusions-with-small-experiments workstyle.
-2. **Close the revision loop into the writer's editor.** v2.5.0 ships the annotated copy *out*
-   (DOCX→GDocs comments). The sticky move is the **round-trip**: ingest the writer's revised draft and
-   re-anchor the notes. The `reanchor` validator already classifies held / moved / vanished / ambiguous
-   — wire it into a real round-trip workflow, not just a gate (§Annotated-Manuscript Deliverable →
-   reanchoring). A one-shot letter is a product; a revision loop in the writer's tool is a habit.
+2. **Close the revision loop into the writer's editor. — Workflow glue Built, 2026-06-20.** v2.5.0 ships
+   the annotated copy *out* (DOCX→GDocs comments). The sticky move is the **round-trip**: ingest the
+   writer's revised draft and re-anchor the notes. The `reanchor` validator already classifies held /
+   moved / vanished / ambiguous — the glue that was missing (a real round-trip workflow, not just a gate)
+   is now built: a `reanchor.py emit` subcommand that **writes** the re-anchored manifest + the rendered
+   annotated copy of the *revised* draft (held/moved only, re-gated RA1–RA3 before any write), a
+   `reanchor.py crossref` subcommand that **joins** the anchor-level classes against `regression-diff`'s
+   finding-level classes by `finding_id` (the §Q2 orchestrator join), and the Revision Round Protocol
+   wiring (`state-lifecycle.md` §Round-Trip Re-Anchoring: snapshot → emit → crossref), proven end-to-end by
+   a `--check-all` `round-trip glue chain` gate. Spec: `docs/annotated-manuscript-reanchoring.md`
+   (Increment 2). A one-shot letter is a product; a revision loop in the writer's tool is a habit.
+   *Remaining for this item: surfacing the flow through `/start`'s `revising`-node resume dispatch (the
+   round-trip is reachable today via the Revision Round Protocol, but not yet a one-click resume offer).*
 3. **Finish the visualization leg.** Charts 1–3 ship (pacing, POV, severity-by-chapter); the character
    co-presence network, scene-function heatmap, reveal-economy timeline, and beat-map-against-spine
    (§Horizon Tier 1, item 1) are the ones that make a diagnosis legible at a glance, gated only on
