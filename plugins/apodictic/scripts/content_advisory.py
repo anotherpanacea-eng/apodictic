@@ -82,15 +82,18 @@ _PRESCRIPTIVE_RE = re.compile(
     r"trim\w*|excis\w+|edit\w*\s+out|rework\w*)\b",
     re.IGNORECASE)
 # A negator that GOVERNS the modal: directly before it (+ ≤2 adverbs), across a comma-bracketed aside,
-# or an `n't`/`cannot` contraction. Anchored to the end of the pre-modal text.
+# an `n't`/`cannot` contraction, or "against" ("we are against recommending …"). Anchored to the end
+# of the pre-modal text.
 _NEG_MODAL_RE = re.compile(
-    r"\b(?:not|never|no)\b(?:\s+\w+){0,2}\s*$"     # "do not [really] recommend", "never recommend"
+    r"\b(?:not|never|no|against)\b(?:\s+\w+){0,2}\s*$"  # "do not [really] recommend", "against recommending"
     r"|\bnot\b\s*,[^.;\n]{0,30}?,\s*$"             # "do not, in good conscience, recommend"
     r"|n['’]t\b(?:\s*,[^.;\n]{0,30}?,)?\s*$"       # "don't [, …,] recommend"
     r"|\bcan(?:not|['’]t)\b\s*$",                  # "cannot / can't recommend"
     re.IGNORECASE)
-# A negator that GOVERNS the action: immediately before it, i.e. the gap ENDS in the negator.
-_NEG_ACTION_RE = re.compile(r"\b(?:no|not|never)\s+$", re.IGNORECASE)
+# A negator that GOVERNS the action: no/not/never immediately before it (gap ENDS in the negator), OR
+# "against" + the gerund phrase it heads ("recommend against cutting", "advise against ever removing")
+# — but NOT a comma-closed aside ("recommend, against all odds, cutting" still prescribes the cut).
+_NEG_ACTION_RE = re.compile(r"\b(?:no|not|never)\s+$|\bagainst\b(?:\s+\w+){0,2}\s*$", re.IGNORECASE)
 
 
 def _prescribes(text):
@@ -402,6 +405,20 @@ def run_self_test():
     chk("w1_unrelated_no_still_fires",
         any("W1 prescriptive" in ln for ln in
             advisory(OPT + TWO + "\nWe recommend, with no hesitation, cutting this scene.\n")[1]))
+    # "against" is a negator too: "recommend against cutting" / "advise against removing" prescribe
+    # NOT doing the action — they must stay clean (Codex P2). Also handles "against ever removing" and
+    # "against recommending …".
+    for clean in ("we recommend against cutting this scene",
+                  "we advise against removing the passage",
+                  "the guidance advises against ever removing it",
+                  "we are against recommending cutting here"):
+        chk("w1_against_negation_clean::%s" % clean[:24],
+            not any("W1 prescriptive" in ln for ln in advisory(OPT + TWO + "\n" + clean + "\n")[1]))
+    # …but "against" in a comma-closed aside does NOT negate the action — "recommend, against all odds,
+    # cutting" still prescribes the cut and must fire.
+    chk("w1_against_aside_still_fires",
+        any("W1 prescriptive" in ln for ln in
+            advisory(OPT + TWO + "\nWe recommend, against all odds, cutting this scene.\n")[1]))
 
     # resolution: glob, explicit file, no-artifact exit 2, decoy prose mention skipped
     import tempfile
