@@ -360,6 +360,8 @@ Phase 1 + Phase 2 combined:
 
 When the verifier cannot get enough source access, it says so explicitly. It does not bluff verification.
 
+**Provider reliability — NOT-FOUND vs. NOT-CHECKED (research-reliability-layer).** An `unretrievable` confidence is not all one thing. `academic_apis.py` emits, per result, a `resolution_status ∈ {resolved, not-found, not-checked}` and a per-run `reliability` block (`coverage.degraded_providers`, per-provider circuit/budget state). When the index a citation depended on was **degraded** (circuit opened after repeated failures, budget exhausted, or error rate > 50%), the resolution path was cut short — the source is **NOT-CHECKED** (we couldn't look), not **NOT-FOUND** (we looked and it isn't there). You MUST read the `reliability` block and report a degraded-provider `unretrievable` as NOT-CHECKED. This is a one-directional honesty rule: degradation can only *downgrade* certainty (NOT-FOUND → disclosed NOT-CHECKED), never upgrade a verdict. A genuine NOT-FOUND (every healthy provider returned no match) is still a real CV1/CV2 candidate; a NOT-CHECKED is not — it is a coverage gap to disclose.
+
 ---
 
 ## Citation Types
@@ -543,6 +545,7 @@ When comparing manuscript hedging to source hedging, flag any mismatch in either
 3. If three or more central citations fail in one corridor, escalate from spot-check findings to **CV12** cluster warning. The argument has a structural evidence problem.
 4. If source access is blocked or paywalled, say so explicitly. Record as `metadata-only verified` or `unretrievable`. Do not bluff verification.
 5. Never upgrade a citation verdict based on the author's stated intentions. Verify what is on the page.
+6. **Degraded coverage is a disclosable blind spot (research-reliability-layer).** A DEGRADED `Source coverage` state (one or more providers in `reliability.coverage.degraded_providers`) on a high-stakes / Pre-DE-Prerequisite run is itself a blind spot — a NOT-CHECKED `unretrievable` is not the same as a clean NOT-FOUND. Route it to `run-synthesis.md` § 3 Blind Spot / Absence Inventory ("citation provenance not fully verified — {provider} degraded; the {N} not-checked citations are a coverage gap, not confirmed absences"), exactly as a declined Citation Verifier routes. Do not let a degraded run's not-checked citations be swallowed into the resolution rate as if they were searched and found absent.
 
 ---
 
@@ -579,6 +582,12 @@ Resolved: {N}/{N}
   Abstract-only: {N}
   Metadata-only: {N}
   Unretrievable: {N}
+    Not-found (looked, absent): {N}
+    Not-checked (provider degraded — coverage gap): {N}
+Source coverage: CLEAN  |  DEGRADED — {provider} ({circuit open / budget exhausted / error rate > 50%})
+  When DEGRADED: any UNRETRIEVABLE verdict on a citation whose only candidate
+  index was a degraded provider is reported as NOT-CHECKED, not NOT-FOUND. The
+  not-checked count above is a coverage gap to disclose, not a CV1/CV2 finding.
 Verdicts: {N} supported, {N} supported with caveat, {N} partial/overclaimed,
           {N} misrepresented, {N} unretrievable, {N} outdated, {N} needs expert review
 Flags fired: {list CV codes}
