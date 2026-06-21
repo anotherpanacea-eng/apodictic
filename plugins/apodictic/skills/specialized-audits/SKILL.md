@@ -292,10 +292,11 @@ See `references/craft/shelf-positioning.md` for the full audit.
 - `references/craft/research-representation-context.md` — Representation Context research mode
 
 ### Research Mode Scripts
-- `scripts/academic_apis.py` — Batch API client for CrossRef, Semantic Scholar, OpenAlex, CORE, Unpaywall, PubMed, Wayback Machine. Handles resolution pipeline, rate limiting, and provenance tracking.
+- `scripts/academic_apis.py` — Batch API client for CrossRef, Semantic Scholar, OpenAlex, CORE, Unpaywall, PubMed, Wayback Machine. Handles resolution pipeline, rate limiting, provenance tracking, and (research-reliability-layer) per-provider budgets / circuit breaker / reliability ledger — emits a `reliability` block and a per-result `resolution_status` (resolved / not-found / not-checked).
 - `scripts/fuzzy_match.py` — Fuzzy matching for citation metadata resolution (title similarity ≥80%, surname matching, year ±1 tolerance)
-- `scripts/response_cache.py` — In-memory + optional disk cache for API responses
+- `scripts/response_cache.py` — In-memory + optional disk cache for API responses; TTL freshness (metadata 30d, Wayback 7d, env-overridable) with the no-sticky-error rule preserved
 - `scripts/provenance.py` — Provenance tracking store (every verdict traces to a stored API response)
+- `scripts/api_reliability.py` — Run-level reliability: `ProviderBudget`, `CircuitBreaker`, `ReliabilityLedger`, `TTL` (stdlib-only; lets an `unretrievable` verdict be tagged honestly as not-found vs. not-checked). See `docs/research-reliability-layer.md`.
 
 ### Genre Audits (form/genre-specific)
 - `references/genre/comedy-satire.md` — Comedy & Satire audit
