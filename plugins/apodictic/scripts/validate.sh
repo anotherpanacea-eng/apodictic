@@ -481,6 +481,59 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-reanchor-revised.md not found"; CA_FAIL=1
     fi
     echo ""
+    echo "== round-trip glue chain (emit -> A-gate the revised copy -> crossref; on a temp copy) =="
+    # The round-trip GLUE (docs/annotated-manuscript-reanchoring.md §The artifacts; ROADMAP "truly great"
+    # #2) wires reanchor into a revision-aware flow: emit the re-anchored manifest + the rendered annotated
+    # copy of the REVISED draft, gate that copy against the revised snapshot (A1-A6, ledger-optional), then
+    # cross-reference the anchor classes against regression-diff's finding classes by finding_id. Exercise
+    # the chain end-to-end on a temp copy — emit WRITES outputs (never in place; same discipline as the
+    # producer chain above) — and assert: emit exits 0 and wrote both artifacts, the emitted copy passes
+    # the A-gate, and crossref runs clean (advisory). Non-vacuous: the emitted copy must round-trip the
+    # revised snapshot byte-for-byte (A2 no-mutation) under the gate.
+    if [ -d "$CA_BASE/example-annotated-manuscript" ] && [ -f "$CA_BASE/example-reanchor-revised.md" ] && command -v python3 >/dev/null 2>&1; then
+      CA_RT_SRC="$CA_BASE/example-annotated-manuscript"
+      CA_RT=$(mktemp -d)
+      # Stage the prior run folder's manifest + a properly-named revised snapshot (so emit derives a clean
+      # runlabel from the *_Manuscript_Snapshot_* infix), then emit into the same temp folder.
+      cp "$CA_RT_SRC"/*_Annotation_Manifest_*.md "$CA_RT"/ 2>/dev/null
+      cp "$CA_BASE/example-reanchor-revised.md" "$CA_RT/Example_Manuscript_Snapshot_reanchor-r2.md"
+      CA_RT_OK=1
+      python3 "$CA_SCRIPT_DIR/reanchor.py" emit "$CA_RT" "$CA_RT/Example_Manuscript_Snapshot_reanchor-r2.md" -o "$CA_RT" >/dev/null 2>&1 || CA_RT_OK=0
+      CA_RT_MAN="$CA_RT/Example_Reanchored_Manifest_reanchor-r2.md"
+      CA_RT_ANN="$CA_RT/Example_Reanchored_Annotated_Manuscript_reanchor-r2.md"
+      CA_RT_SNAP="$CA_RT/Example_Manuscript_Snapshot_reanchor-r2.md"
+      [ -f "$CA_RT_MAN" ] && [ -f "$CA_RT_ANN" ] || CA_RT_OK=0
+      # Gate the EMITTED revised-draft copy against the revised snapshot with the SAME ledger-optional
+      # A-gate the reanchor contract uses (A1+A2+A3+A4-multiset+A6; the A4/A5 cross-ledger arms are inert
+      # for a re-anchored copy — there is no re-diagnosed N+1 ledger, by construction). The plain
+      # `annotated-manuscript` validator would (correctly) demand a ledger, so gate via am.check(...,
+      # ledger_optional=True) — proving the written copy round-trips the revised snapshot (A2 no-mutation)
+      # and every carried anchor resolves, on the files emit actually wrote.
+      if [ -f "$CA_RT_MAN" ] && [ -f "$CA_RT_ANN" ]; then
+        CA_SCRIPT_DIR="$CA_SCRIPT_DIR" python3 - "$CA_RT_SNAP" "$CA_RT_MAN" "$CA_RT_ANN" <<'PY' >/dev/null 2>&1 || CA_RT_OK=0
+import os, sys
+sys.path.insert(0, os.environ["CA_SCRIPT_DIR"])
+import annotation_manifest as am
+snap = am.normalize_snapshot(open(sys.argv[1], encoding="utf-8").read())
+man = open(sys.argv[2], encoding="utf-8").read()
+ann = open(sys.argv[3], encoding="utf-8").read()
+code, _ = am.check(snap, man, ann, ledger_text=None, ledger_optional=True)
+sys.exit(code)
+PY
+      fi
+      # crossref joins by finding_id against a current round folder (advisory, exit 0); use the paired
+      # regression fixture as the "this round" ledger — it need not share ids (a clean no-contradiction join).
+      python3 "$CA_SCRIPT_DIR/reanchor.py" crossref "$CA_RT" "$CA_RT/Example_Manuscript_Snapshot_reanchor-r2.md" "$CA_BASE/example-run-folder-r2" >/dev/null 2>&1 || CA_RT_OK=0
+      if [ "$CA_RT_OK" -eq 1 ]; then
+        echo "round-trip glue chain (temp copy): PASS"
+      else
+        echo "round-trip glue chain (temp copy): FAIL"; CA_FAIL=1
+      fi
+      rm -rf "$CA_RT"
+    elif [ ! -f "$CA_BASE/example-reanchor-revised.md" ]; then
+      echo "ERROR: $CA_BASE/example-reanchor-revised.md not found (round-trip glue chain)"; CA_FAIL=1
+    fi
+    echo ""
     echo "== canonical obsidian-export (manifest -> native footnotes; O1-O3 + byte-identical to committed) =="
     if [ -d "$CA_BASE/example-annotated-manuscript" ] && command -v python3 >/dev/null 2>&1; then
       # Project the canonical manifest + snapshot to Obsidian-native footnotes on a temp copy (generate
