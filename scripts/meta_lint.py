@@ -116,10 +116,20 @@ def _strip_comments(py_text):
             # text is prose, not a live reference.
             run_is_docstring = toks[i].start in docstring_starts
             chunk = []
-            while i < len(toks) and toks[i].type == tokenize.STRING:
-                if not run_is_docstring:
-                    chunk.append(_str_token_value(toks[i].string))
-                i += 1
+            # Merge an implicit-concatenation run. NL / COMMENT tokens are TRANSPARENT inside it — a
+            # parenthesized multiline constant (`SID = (\n "apodictic."\n "ghost.v1"\n)`) tokenizes the
+            # pieces with NLs between, and Python concatenates them — but a logical NEWLINE (or any other
+            # token) ends the run, so two separate string statements never merge (Codex P2 false orphan).
+            while i < len(toks):
+                t = toks[i]
+                if t.type == tokenize.STRING:
+                    if not run_is_docstring:
+                        chunk.append(_str_token_value(t.string))
+                    i += 1
+                elif t.type in (tokenize.NL, tokenize.COMMENT):
+                    i += 1
+                else:
+                    break
             if chunk:
                 out.append("".join(chunk))
         else:
@@ -179,7 +189,9 @@ def _strip_comments_keep_source(py_text):
 # is not a literal `<type>` and is deliberately NOT matched. An f-string `f"apodictic:{bt}"` IS the
 # anti-pattern (it embeds the literal `apodictic:` prefix in a classification scan) and IS caught.
 # `<type>`: a literal id `[A-Za-z0-9_]+` OR an f-string brace group `{...}` (optionally id-prefixed).
-_MARKER_LIT = r"""(?:f|fr|rf)?['"]apodictic:(?:[A-Za-z0-9_]*\{[^}]*\}|[A-Za-z0-9_]+)['"]"""
+# The quote may carry ANY string prefix — `r`/`R` (the most natural regex form, `re.search(r"apodictic:…")`
+# — Codex P2 that the f/fr/rf-only group missed), `b`/`u`/`f` and 2-letter combos (rb/rf/…).
+_MARKER_LIT = r"""(?:[rRbBuUfF]{0,2})['"]apodictic:(?:[A-Za-z0-9_]*\{[^}]*\}|[A-Za-z0-9_]+)['"]"""
 # membership: `<lit> in` / `<lit> not in` (the literal is the left operand)
 _MARKER_IN_PAT = _MARKER_LIT + r"\s+(?:not\s+)?in\b"
 # scan op: `.find(<lit>` etc., or `re.search(<lit>` etc. — the literal is the (first) argument.
@@ -206,18 +218,20 @@ _M2_EXEMPT = {"apodictic_artifacts.py", "meta_lint.py", "sync_setec.py", "config
 # (the bare form); the hardened helpers write `<!--[[:space:]]*override:` / `<!--\s*override:`, which
 # do NOT contain that literal substring — so a hardened call is not a false positive.
 #
-# Python: a string/f-string literal carrying `<!-- override:` reached by a scan/membership op.
-_OV_LIT = r"""(?:f|fr|rf)?(?:'''|\"\"\"|['"])<!-- override:"""
-_OV_PY_IN_PAT = r"""(?:f|fr|rf)?(?:['"])<!-- override:[^'"\n]*?(?:['"])\s*\)?\s+(?:not\s+)?in\b"""
-_OV_PY_FMT_IN_PAT = r"""\(?\s*(?:f|fr|rf)?['"]<!-- override:[^'"\n]*['"]\s*%[^)\n]*\)\s+(?:not\s+)?in\b"""
+# Python: a string/f-string literal carrying the marker reached by a scan/membership op. The marker is
+# matched with FLEXIBLE whitespace after `<!--` (`<!--\s*override:`), so the zero-space `<!--override:`
+# spelling the hardened parser also accepts is detected (Codex P2); any string prefix is allowed.
+_OV_PFX = r"(?:[rRbBuUfF]{0,2})"
+_OV_MARK = r"<!--\s*override:"
+_OV_PY_IN_PAT = _OV_PFX + r"""(?:['"])""" + _OV_MARK + r"""[^'"\n]*?(?:['"])\s*\)?\s+(?:not\s+)?in\b"""
+_OV_PY_FMT_IN_PAT = r"\(?\s*" + _OV_PFX + r"""['"]""" + _OV_MARK + r"""[^'"\n]*['"]\s*%[^)\n]*\)\s+(?:not\s+)?in\b"""
 _OV_PY_SCAN_PAT = (r"""\.(?:find|rfind|index|rindex|count|startswith|endswith|partition|rpartition|split)"""
-                   r"""\s*\(\s*(?:f|fr|rf)?['"]<!-- override:""")
-_OV_PY_RE_PAT = (r"""\bre\.(?:search|match|fullmatch|findall|finditer)\s*\(\s*"""
-                 r"""(?:r|rb|br)?['"]<!-- override:""")
+                   r"""\s*\(\s*""" + _OV_PFX + r"""['"]""" + _OV_MARK)
+_OV_PY_RE_PAT = (r"""\bre\.(?:search|match|fullmatch|findall|finditer)\s*\(\s*""" + _OV_PFX + r"""['"]""" + _OV_MARK)
 _OV_PY_RE = re.compile("(?:%s)|(?:%s)|(?:%s)|(?:%s)"
                        % (_OV_PY_IN_PAT, _OV_PY_FMT_IN_PAT, _OV_PY_SCAN_PAT, _OV_PY_RE_PAT))
-# bash: a grep over the bare `<!-- override:` prefix (the exact form #128 replaced in the timeline arm).
-_OV_SH_RE = re.compile(r"""grep\b[^\n]*?['"]<!-- override:""")
+# bash: a grep over the bare `<!-- override:` prefix (any whitespace), the form #128 replaced.
+_OV_SH_RE = re.compile(r"""grep\b[^\n]*?['"]""" + _OV_MARK)
 # override_marker.py legitimately DEFINES the hardened helper; meta_lint.py carries the M5 pattern
 # literals themselves. Both are exempt from M5 (they are infra, not gates honoring overrides).
 _M5_EXEMPT = {"override_marker.py", "meta_lint.py"}
@@ -473,6 +487,8 @@ def run_self_test():
     chk("m2_startswith_flagged", check_m2("b.py", 'if t.startswith("apodictic:finding"):\n    pass\n') != [])
     chk("m2_re_search_flagged", check_m2("b.py", 'import re\nif re.search("apodictic:finding", t):\n    pass\n') != [])
     chk("m2_re_findall_flagged", check_m2("b.py", 'import re\nxs = re.findall("apodictic:finding", t)\n') != [])
+    chk("m2_re_raw_string_flagged",  # Codex P2: r"..." — the most natural regex form
+        check_m2("b.py", 'import re\nif re.search(r"apodictic:finding", t):\n    pass\n') != [])
     # a marker TYPE bearing a digit (`apodictic:finding2`) — the old `[A-Za-z_]+` class missed it.
     chk("m2_digit_type_flagged", check_m2("b.py", 'if "apodictic:finding2" in t:\n    pass\n') != [])
     # an f-string marker literal in a scan still embeds the literal prefix — caught.
@@ -500,6 +516,10 @@ def run_self_test():
     # an id split across implicit string concatenation is still found (adjacent literals merged)
     chk("m4_implicit_string_concat_referenced_ok",
         check_m4(["apodictic.ghost.v1"], _strip_comments('SID = "apodictic." "ghost.v1"\n')) == [])
+    # Codex P2: a parenthesized MULTILINE implicit concat (NL tokens between pieces) must still merge
+    chk("m4_multiline_concat_referenced_ok",
+        check_m4(["apodictic.ghost.v1"],
+                 _strip_comments('SID = (\n    "apodictic."\n    "ghost.v1"\n)\n')) == [])
     # a schema id mentioned ONLY in a docstring (a bare string statement) is prose, not a reference
     chk("m4_docstring_only_is_orphan",
         any("orphan-schema" in v for v in
@@ -551,6 +571,12 @@ def run_self_test():
     # a `<!-- override:` named in a `#` comment line is not an executable grep -> not flagged.
     chk("m5_sh_comment_ok",
         check_m5_sh('    # legacy: grep -F "<!-- override: foo" was the bare form\n') == [])
+    # Codex P2: a bare scan in the zero-whitespace `<!--override:` spelling (which the hardened parser
+    # also accepts) is a live bypass and must be flagged — Python and bash.
+    chk("m5_py_zero_whitespace_flagged",
+        check_m5_py("g.py", 'if "<!--override: foo" in body:\n    pass\n') != [])
+    chk("m5_sh_zero_whitespace_flagged",
+        check_m5_sh('  case x)\n    grep -F "<!--override: foo" "$F" && OV=1\n    ;;\n') != [])
 
     # _read_text: a non-UTF-8 byte sequence must not crash the linter (UnicodeDecodeError is a
     # ValueError, not an OSError); errors="replace" keeps the ASCII references scannable.

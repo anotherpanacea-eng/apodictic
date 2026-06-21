@@ -26,9 +26,11 @@ cannot silently re-enter. See docs/validator-conventions.md.
 """
 import re
 
-# Code spans — a fenced ```...``` block (DOTALL) OR an inline `...` span. A marker quoted inside one
-# is a documentation EXAMPLE, not a live directive, so it is stripped before the override scan.
-_CODE_SPAN_RE = re.compile(r"```.*?```|`[^`\n]*`", re.DOTALL)
+# Code spans — a marker quoted inside one is a documentation EXAMPLE, not a live directive, so it is
+# stripped before the override scan. Cover every CommonMark form (Codex P1): a FENCED block opened by a
+# run of 3+ backticks OR 3+ tildes and closed by the same run; and an INLINE span delimited by a run of
+# N backticks (N>=1, so multi-backtick `` `…` `` too) closed by a matching run.
+_CODE_SPAN_RE = re.compile(r"(`{3,}|~{3,}).*?\1|(`+)[^\n]*?\2", re.DOTALL)
 
 # After `<!-- override: <slug>` the slug must end at a real delimiter — whitespace, an em-/en-dash
 # (the `— <rationale>` form), a hyphen-minus reason separator, the comment close `-->`, or EOL — so a
@@ -56,9 +58,11 @@ def override_slugs(body, prefix):
     Used where the concrete slug is data-driven (e.g. per-audit `audit-propagation-<audit-slug>`):
     the caller passes the fixed `<prefix>` and gets back each `<slug>` that actually follows it in a
     live (code-span-stripped) marker. The captured `<slug>` is the lowercase-id tail
-    (`[a-z0-9][a-z0-9-]*`), matching the legacy `re.findall` shape but on stripped prose."""
+    (`[a-z0-9][a-z0-9-]*`) and — like `has_override` — must END at a real marker boundary, so a
+    suffixed/malformed marker (`<prefix>foo_extra`) does NOT yield `foo` and acknowledge the real
+    `foo` audit (Codex P1; kept in parity with the bash `PER_AUDIT_OVERRIDES` extraction)."""
     region = strip_code_spans(body)
-    pat = re.compile(r"<!--\s*override:\s*" + re.escape(prefix) + r"([a-z0-9][a-z0-9-]*)")
+    pat = re.compile(r"<!--\s*override:\s*" + re.escape(prefix) + r"([a-z0-9][a-z0-9-]*)" + _BOUNDARY)
     return set(pat.findall(region))
 
 
@@ -85,10 +89,12 @@ def _self_test():
     chk("flexible_whitespace", has_override("<!--  override:  my-slug  -->", S))
     # bypass 1 — suffix collision is rejected
     chk("suffix_collision_rejected", not has_override("<!-- override: my-slug-but-not-really — x -->", S))
-    # bypass 2 — code-span decoys (inline + fenced) are rejected
+    # bypass 2 — code-span decoys are rejected, in EVERY CommonMark form (Codex P1):
     chk("inline_codespan_rejected", not has_override("Use `<!-- override: my-slug -->` to skip.", S))
     chk("fenced_block_rejected",
         not has_override("before\n```\n<!-- override: my-slug -->\n```\nafter", S))
+    chk("multi_backtick_inline_rejected", not has_override("``<!-- override: my-slug -->``", S))
+    chk("tilde_fence_rejected", not has_override("~~~\n<!-- override: my-slug -->\n~~~", S))
     # a genuinely-absent slug is not found
     chk("absent_slug", not has_override("<!-- override: other-slug -->", S))
     # override_slugs: data-driven extraction, code spans stripped
@@ -96,6 +102,9 @@ def _self_test():
         == {"foo", "bar"})
     chk("slugs_skip_codespan",
         override_slugs("`<!-- override: ap-decoy -->` <!-- override: ap-real -->", "ap-") == {"real"})
+    # bypass 1 in the data-driven path — a suffixed/malformed marker must NOT yield the real slug (P1):
+    chk("slugs_suffix_rejected", override_slugs("<!-- override: ap-foo_extra -->", "ap-") == set())
+    chk("slugs_genuine_hyphenated", override_slugs("<!-- override: ap-foo-bar -->", "ap-") == {"foo-bar"})
 
     print("Self-test: PASS" if rc == 0 else "Self-test: FAIL")
     return rc
