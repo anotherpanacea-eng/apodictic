@@ -1,0 +1,17 @@
+{
+  "$id": "apodictic.canon_fact.v1",
+  "$comment": "Source of truth for the apodictic:canon_fact block (Auto-Derived Continuity Bible — the narrative half of a developmental-edit style sheet). One block per stated canonical fact the manuscript commits to: identity/physical facts (ages, appearance, spellings, aliases), named objects, place details, and consolidated chronology. The Bible EXTRACTS what the text states and CONSOLIDATES facts the framework already owns (the Timeline by scene id); it never infers an unstated fact, fills a gap, or resolves an ambiguity (the Firewall: extract the stated, never author the unstated). Contradictions are SURFACED (both conflicting facts recorded, paired in a Contradiction Ledger row), never resolved — choosing canon is the author's call. `category` is the fact class (person | place | object | world-rule | chronology). `value` is ALWAYS a string (numerics are quoted: \"32\", not 32) so it can be type-checked. `loci` are the manuscript locations stating the fact (>=1). `consolidates` is an optional ref into a consumed artifact WITH an addressable id (a Timeline scene id) when the fact is consumed rather than newly extracted, null otherwise; it is intentionally not type-constrained here because the subset schema engine cannot express a string|null union — its shape and (for chronology facts) its resolution against the Timeline are checked in scripts/continuity_bible.py (C4). Locus PRESENCE/SHAPE is gated (C2); locus RESOLUTION into the manuscript is deferred to the shared snapshot layer, so the firewall here is author/QA-enforced, not yet mechanically proven. Validated by scripts/continuity_bible.py. See docs/continuity-bible.md.",
+  "title": "APODICTIC canonical fact (apodictic.canon_fact.v1)",
+  "type": "object",
+  "required": ["schema", "id", "entity", "category", "attribute", "value", "loci"],
+  "properties": {
+    "schema": {"const": "apodictic.canon_fact.v1"},
+    "id": {"type": "string", "pattern": "^CF-[0-9]{2,}$"},
+    "entity": {"type": "string"},
+    "category": {"enum": ["person", "place", "object", "world-rule", "chronology"]},
+    "attribute": {"type": "string"},
+    "value": {"type": "string"},
+    "loci": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "consolidates": {"$comment": "Optional. A ref into a consumed artifact with an addressable id (a Timeline scene id) when the fact is consumed rather than newly extracted; null otherwise. Not type-constrained (the subset engine cannot express string|null); continuity_bible.py C4 checks chronology facts resolve their consolidates against the real Timeline scene-id set."}
+  }
+}
