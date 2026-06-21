@@ -12,11 +12,11 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "$comment": "{role: string, heading: string, seeded_by: enum}. The per-item shape (incl. the seeded_by enum) is enforced in argument_spine.py parse_genre_profile — the stdlib subset validator only type-checks array items, it does not recurse into object items.",
+        "$comment": "{role: non-empty string, heading: non-empty string, seeded_by: enum}. The per-item shape (incl. the seeded_by enum, the non-whitespace role/heading, and role/heading uniqueness across the list) is enforced in argument_spine.py parse_genre_profile — the stdlib subset validator only type-checks array items, it does not recurse into object items, so minLength/uniqueItems here are documentary; the validator is the gate. A blank or whitespace-only heading cannot carry the B2 seeding contract (a per-section heading that must appear in the artifact), so it is rejected at B1.",
         "required": ["role", "heading", "seeded_by"],
         "properties": {
-          "role": {"type": "string"},
-          "heading": {"type": "string"},
+          "role": {"type": "string", "minLength": 1},
+          "heading": {"type": "string", "minLength": 1},
           "seeded_by": {"enum": ["C0+ladder", "stakes", "subclaim", "support_plan", "warrant_plan", "objection", "none"]}
         }
       }

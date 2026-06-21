@@ -212,8 +212,16 @@ def _genre_section_errs(obj, where):
     (apodictic_artifacts.validate_obj) type-checks array items but does NOT recurse into object items,
     so the {role, heading, seeded_by} contract — incl. the seeded_by enum — is enforced here, returning
     the same flat list of strings the schema engine returns. Only run on an already-schema-valid block
-    (required_sections is a non-empty list of something)."""
+    (required_sections is a non-empty list of something).
+
+    `role` and `heading` must be NON-WHITESPACE strings, and roles/headings must be unique across the
+    section list. A bare type check ('is it a str?') let an empty-or-whitespace heading slip past B1 —
+    and B2 (the seed check) skips empty headings ('if not heading: continue'), so an all-blank-heading
+    profile carrying the canonical roles falsely reported the genre seeded and PASSED --strict. The
+    seeding contract is a per-section heading that must appear in the artifact; a blank or duplicate
+    heading can't carry it, so it's rejected here at the contract gate, before B2 ever runs."""
     errs = []
+    seen_roles, seen_headings = {}, {}
     for i, sec in enumerate((obj.get("required_sections") or [])):
         at = "%s required_sections[%d]" % (where, i)
         if not isinstance(sec, dict):
@@ -222,10 +230,27 @@ def _genre_section_errs(obj, where):
         for k in ("role", "heading", "seeded_by"):
             if k not in sec:
                 errs.append("%s: missing required field '%s'" % (at, k))
-        if "role" in sec and not isinstance(sec["role"], str):
-            errs.append("%s: 'role' must be type string" % at)
-        if "heading" in sec and not isinstance(sec["heading"], str):
-            errs.append("%s: 'heading' must be type string" % at)
+        for k in ("role", "heading"):
+            if k not in sec:
+                continue
+            v = sec[k]
+            if not isinstance(v, str):
+                errs.append("%s: '%s' must be type string" % (at, k))
+            elif not v.strip():
+                errs.append("%s: '%s' must be a non-empty (non-whitespace) string" % (at, k))
+            else:
+                # uniqueness key matches how each field is later consumed: roles on _genre_norm
+                # (W4's role table key — 'related-work'=='related work'); headings case-insensitively
+                # on trimmed text (B2's exact case-insensitive heading match), so 'Approach' /
+                # ' approach ' / 'APPROACH' collide as one declared section without over-merging
+                # hyphen variants B2 would treat as distinct heading text.
+                norm = _genre_norm(v) if k == "role" else v.strip().lower()
+                seen = seen_roles if k == "role" else seen_headings
+                if norm in seen:
+                    errs.append("%s: duplicate %s %r (already declared at required_sections[%d]) — "
+                                "each section's %s must be unique" % (at, k, v, seen[norm], k))
+                else:
+                    seen[norm] = i
         if "seeded_by" in sec and sec["seeded_by"] not in _GENRE_SEEDED_BY:
             errs.append("%s: 'seeded_by'=%r not in %s" % (at, sec.get("seeded_by"), list(_GENRE_SEEDED_BY)))
     return errs
@@ -753,6 +778,58 @@ def run_self_test():
     code, lines = check(seededG("academic-article", evaluator="peer-reviewer", sections=ACAD_NO_RELWORK))
     chk("w4_academic_no_relwork",
         code == 0 and any("W4 thin genre skeleton" in ln and "related-work" in ln for ln in lines))
+
+    # B1 blank/duplicate role|heading — a non-whitespace, unique contract, enforced at the gate.
+    # The smallest-input-that-breaks: all four canonical grant roles but heading="" everywhere. B2
+    # SKIPS empty headings ('if not heading: continue'), so before this guard the profile reported the
+    # genre SEEDED and PASSED --strict — the exact false-pass Codex reproduced. It must FAIL (B1), not
+    # report seeded, in BOTH default and --strict mode (the seeding contract is not advisory).
+    ALL_BLANK_HEAD = [(r, "", s) for (r, _h, s) in _G_SECTIONS["grant-proposal"]]
+    code, lines = check(seededG("grant-proposal", sections=ALL_BLANK_HEAD))
+    chk("b1_all_blank_heading_fails",
+        code == 1 and any("B1 invalid genre profile" in ln and "heading" in ln for ln in lines)
+        and not any("PASS" in ln for ln in lines))
+    chk("b1_all_blank_heading_strict_fails",
+        check(seededG("grant-proposal", sections=ALL_BLANK_HEAD), strict=True)[0] == 1)
+    # one whitespace-only heading is just as empty as "" — a single tab must fail, not pass-through B2
+    ONE_WS_HEAD = [("specific-aims", "Specific Aims", "C0+ladder"),
+                   ("significance", "\t ", "stakes"),
+                   ("innovation", "Innovation", "subclaim"),
+                   ("approach", "Approach", "support_plan")]
+    code, lines = check(seededG("grant-proposal", sections=ONE_WS_HEAD))
+    chk("b1_whitespace_heading_fails",
+        code == 1 and any("B1 invalid genre profile" in ln and "heading" in ln for ln in lines))
+    # blank ROLE is rejected on the same gate (sibling of blank heading)
+    ONE_BLANK_ROLE = [("", "Specific Aims", "C0+ladder"),
+                      ("significance", "Significance", "stakes"),
+                      ("innovation", "Innovation", "subclaim"),
+                      ("approach", "Approach", "support_plan")]
+    code, lines = check(seededG("grant-proposal", sections=ONE_BLANK_ROLE))
+    chk("b1_blank_role_fails",
+        code == 1 and any("B1 invalid genre profile" in ln and "role" in ln for ln in lines))
+    # duplicate heading (case-insensitive) — two sections claim the same seed -> B1
+    DUP_HEAD = [("specific-aims", "Specific Aims", "C0+ladder"),
+                ("significance", "specific aims", "stakes"),
+                ("innovation", "Innovation", "subclaim"),
+                ("approach", "Approach", "support_plan")]
+    code, lines = check(seededG("grant-proposal", sections=DUP_HEAD))
+    chk("b1_duplicate_heading_fails",
+        code == 1 and any("B1 invalid genre profile" in ln and "duplicate" in ln and "heading" in ln
+                          for ln in lines))
+    # duplicate role (normalized) — 'related work' and 'related-work' are the same declared role -> B1
+    DUP_ROLE = [("approach", "Specific Aims", "C0+ladder"),
+                ("approach", "Significance", "stakes"),
+                ("innovation", "Innovation", "subclaim")]
+    code, lines = check(seededG("grant-proposal", sections=DUP_ROLE))
+    chk("b1_duplicate_role_fails",
+        code == 1 and any("B1 invalid genre profile" in ln and "duplicate" in ln and "role" in ln
+                          for ln in lines))
+    # regression guard: the clean fully-seeded profiles (distinct, non-blank role+heading) still PASS,
+    # so the new contract didn't over-reject legitimate genre profiles
+    for _g, _ev in (("grant-proposal", "panel-reviewer"), ("academic-article", "peer-reviewer"),
+                    ("pitch-deck", "investor")):
+        chk("b1_clean_unique_%s" % _g,
+            not any("B1 invalid genre profile" in ln for ln in check(seededG(_g, evaluator=_ev))[1]))
 
     # resolution: run-folder (Argument_State*.md) + explicit file
     import tempfile
