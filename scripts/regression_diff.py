@@ -79,7 +79,11 @@ def _newest(paths):
 
 
 def _origin_nn(fid):
-    m = _ID_SPLIT_RE.match(fid or "")
+    # A non-string id can't be origin/NN-parsed; re.match would traceback on it (sibling of the
+    # _mech_tokens non-string P2). A malformed id contributes no origin/number.
+    if not isinstance(fid, str):
+        return ("", 0)
+    m = _ID_SPLIT_RE.match(fid)
     if not m:
         return (fid or "", 0)
     return (m.group(1), int(m.group(2)))
@@ -371,6 +375,11 @@ def run_self_test():
     chk("mech_tokens_nonstring_empty",
         _mech_tokens(["fabricated", "tokens"]) == set() and _mech_tokens({"k": "v"}) == set()
         and _mech_tokens(None) == set())
+    # a non-string finding id must not crash _origin_nn's re.match — sibling of the mechanism P2
+    chk("origin_nn_nonstring",
+        _origin_nn(5) == ("", 0) and _origin_nn(["a"]) == ("", 0) and _origin_nn(3.14) == ("", 0))
+    chk("findings_of_nonstring_id_no_crash",
+        len(findings_of(ledger(finding(5, "m", ["Ch 1"], "Must-Fix")))) == 1)
 
     # matcher: F-P5-01(r1) <-> F-P5-01(r2) by origin+chapter+shared tokens; F-RR-01 has no r2 match.
     m = match(f1, findings_of(r2))
