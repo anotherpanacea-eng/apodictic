@@ -263,6 +263,22 @@ def _is_skipped(resp) -> bool:
     return isinstance(resp, dict) and resp.get("_skipped") is True
 
 
+def _is_error(resp) -> bool:
+    """An `_error` dict from _fetch_json means the provider call FAILED
+    (timeout / 429 / 5xx after retries exhausted). Like a `_skipped`, the tier
+    was NOT-CHECKED (we couldn't get an answer), not NOT-FOUND (we looked,
+    nothing there). Distinct from `_skipped`, which is a pre-call degradation
+    (circuit open / budget exhausted)."""
+    return isinstance(resp, dict) and "_error" in resp
+
+
+def _unanswered(resp) -> bool:
+    """True when a provider did not return a usable answer for this citation:
+    either skipped before the call (degraded) or errored after retries. Both
+    mean the tier is NOT-CHECKED for this citation, never NOT-FOUND."""
+    return _is_skipped(resp) or _is_error(resp)
+
+
 def resolve_citation(citation: dict, cache: ResponseCache, provenance: ProvenanceStore,
                      ledger: "ReliabilityLedger | None" = None) -> dict:
     """
@@ -307,8 +323,11 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         cr_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
         if cr_result is None:
             cr_result = resolve_crossref_doi(doi, ledger=ledger)
-            if _is_skipped(cr_result):
-                not_checked.append("crossref")  # degraded → do not cache the skip
+            if _unanswered(cr_result):
+                # Degraded (skip) OR failed (error after retries): the provider
+                # did not answer → NOT-CHECKED for this citation, and do not
+                # cache a non-answer (a transient 5xx/timeout is not a fact).
+                not_checked.append("crossref")
             else:
                 cache.set(cache_key, cr_result, ttl=_meta_ttl)
             time.sleep(RATE_LIMIT_DELAY)
@@ -335,16 +354,19 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                 "doi": msg.get("DOI", doi)
             }
 
-            # Check Unpaywall for OA PDF
+            # Check Unpaywall for OA PDF. Unpaywall is an OA-enrichment of an
+            # ALREADY-resolved citation, not a resolution provider, so a
+            # skip/error here does not flip resolution_status to NOT-CHECKED —
+            # but a transient non-answer must still not be cached as fact.
             up_key = f"unpaywall:{doi}"
             up_result = cache.get(up_key, ttl_seconds=_meta_ttl)
             if up_result is None:
                 up_result = check_unpaywall(doi, ledger=ledger)
-                if not _is_skipped(up_result):
+                if not _unanswered(up_result):
                     cache.set(up_key, up_result, ttl=_meta_ttl)
                 time.sleep(RATE_LIMIT_DELAY)
 
-            if up_result and "_error" not in up_result and not _is_skipped(up_result):
+            if up_result and not _unanswered(up_result):
                 prov_ref = provenance.store(ref_id, "unpaywall", up_result)
                 result["provenance_refs"].append(prov_ref)
                 best_oa = up_result.get("best_oa_location", {})
@@ -363,13 +385,13 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         cr_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
         if cr_result is None:
             cr_result = search_crossref(title, author, ledger=ledger)
-            if _is_skipped(cr_result):
-                not_checked.append("crossref")
+            if _unanswered(cr_result):
+                not_checked.append("crossref")  # skip OR error → NOT-CHECKED; don't cache
             else:
                 cache.set(cache_key, cr_result, ttl=_meta_ttl)
             time.sleep(RATE_LIMIT_DELAY)
 
-        if cr_result and "_error" not in cr_result and not _is_skipped(cr_result):
+        if cr_result and not _unanswered(cr_result):
             items = cr_result.get("message", {}).get("items", [])
             from fuzzy_match import best_match
             match = best_match(title, author, year, items, source="crossref")
@@ -387,10 +409,10 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                     up_result = cache.get(up_key, ttl_seconds=_meta_ttl)
                     if up_result is None:
                         up_result = check_unpaywall(found_doi, ledger=ledger)
-                        if not _is_skipped(up_result):
+                        if not _unanswered(up_result):
                             cache.set(up_key, up_result, ttl=_meta_ttl)
                         time.sleep(RATE_LIMIT_DELAY)
-                    if up_result and "_error" not in up_result and not _is_skipped(up_result):
+                    if up_result and not _unanswered(up_result):
                         prov_ref = provenance.store(ref_id, "unpaywall", up_result)
                         result["provenance_refs"].append(prov_ref)
                         best_oa = up_result.get("best_oa_location", {})
@@ -406,13 +428,13 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         s2_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
         if s2_result is None:
             s2_result = search_semantic_scholar(f"{title} {author}".strip(), ledger=ledger)
-            if _is_skipped(s2_result):
-                not_checked.append("semantic-scholar")
+            if _unanswered(s2_result):
+                not_checked.append("semantic-scholar")  # skip OR error → NOT-CHECKED; don't cache
             else:
                 cache.set(cache_key, s2_result, ttl=_meta_ttl)
             time.sleep(RATE_LIMIT_DELAY)
 
-        if s2_result and "_error" not in s2_result and not _is_skipped(s2_result):
+        if s2_result and not _unanswered(s2_result):
             papers = s2_result.get("data", [])
             from fuzzy_match import best_match
             match = best_match(title, author, year, papers, source="s2")
@@ -432,13 +454,13 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         oa_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
         if oa_result is None:
             oa_result = search_openalex(title, author, ledger=ledger)
-            if _is_skipped(oa_result):
-                not_checked.append("openalex")
+            if _unanswered(oa_result):
+                not_checked.append("openalex")  # skip OR error → NOT-CHECKED; don't cache
             else:
                 cache.set(cache_key, oa_result, ttl=_meta_ttl)
             time.sleep(RATE_LIMIT_DELAY)
 
-        if oa_result and "_error" not in oa_result and not _is_skipped(oa_result):
+        if oa_result and not _unanswered(oa_result):
             works = oa_result.get("results", [])
             from fuzzy_match import best_match
             match = best_match(title, author, year, works, source="openalex")
@@ -458,13 +480,13 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         core_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
         if core_result is None:
             core_result = search_core(title, ledger=ledger)
-            if _is_skipped(core_result):
-                not_checked.append("core")
+            if _unanswered(core_result):
+                not_checked.append("core")  # skip OR error → NOT-CHECKED; don't cache
             else:
                 cache.set(cache_key, core_result, ttl=_meta_ttl)
             time.sleep(RATE_LIMIT_DELAY)
 
-        if core_result and "_error" not in core_result and not _is_skipped(core_result):
+        if core_result and not _unanswered(core_result):
             hits = core_result.get("results", [])
             if hits:
                 prov_ref = provenance.store(ref_id, "core", core_result)
@@ -503,13 +525,13 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
             wb_result = cache.get(cache_key, ttl_seconds=_wb_ttl)
             if wb_result is None:
                 wb_result = check_wayback(url, ledger=ledger)
-                if _is_skipped(wb_result):
-                    not_checked.append("wayback")
+                if _unanswered(wb_result):
+                    not_checked.append("wayback")  # skip OR error → NOT-CHECKED; don't cache
                 else:
                     cache.set(cache_key, wb_result, ttl=_wb_ttl)
                 time.sleep(RATE_LIMIT_DELAY)
 
-            if not _is_skipped(wb_result):
+            if wb_result and not _unanswered(wb_result):
                 snapshots = wb_result.get("archived_snapshots", {})
                 closest = snapshots.get("closest", {})
                 if closest.get("available"):
@@ -683,6 +705,32 @@ def run_self_test() -> int:
             # AC-12 firewall: an unresolved result is NEVER "resolved".
             expect_true("ac12_never_resolved_on_unresolved",
                         r.get("resolution_status") != "resolved")
+
+        # --- AC-7 case D: every title-search provider ERRORS (timeout/429/5xx after
+        # retries) → NOT-CHECKED, not NOT-FOUND. A real `_error` (not a `_skipped`)
+        # must record the provider as not-checked for this citation, otherwise an
+        # all-errored citation wrongly reports a confident `not-found` with an empty
+        # not_checked list (Codex round-9 P1). Distinct from case C, where the gate
+        # SKIPS the call pre-flight; here every call FIRES and returns `_error`.
+        with tempfile.TemporaryDirectory() as d:
+            os.environ["APODICTIC_CACHE_DIR"] = d
+            # Every provider call that fires returns a hard error after retries.
+            def _all_error(url, headers=None, timeout=15):
+                return {"_error": "HTTP Error 503: Service Unavailable",
+                        "_url": url, "_status": 503}
+            _fetch_json_network = _all_error
+            led = ReliabilityLedger()
+            cache = ResponseCache(d)
+            prov = ProvenanceStore()
+            r = resolve_citation({"ref_id": "D", "title": "A Real Paper Nobody Could Reach",
+                                  "author": "Smith", "year": "2021"}, cache, prov, ledger=led)
+            expect_true("ac7_caseD_unresolved", r["resolved"] is False)
+            # The core claim: an all-errored citation is NOT a confident not-found.
+            expect("ac7_caseD_status", r.get("resolution_status"), "not-checked")
+            expect_true("ac7_caseD_names_providers",
+                        len(r.get("not_checked_providers", [])) > 0)
+            expect_true("ac7_caseD_not_confidently_not_found",
+                        r.get("resolution_status") != "not-found")
 
         # --- AC-8: batch output shape (reliability block present; legacy keys intact)
         with tempfile.TemporaryDirectory() as d:
