@@ -1,0 +1,15 @@
+{
+  "$id": "apodictic.divergence.v1",
+  "$comment": "Source of truth for the apodictic:divergence block (Reader-Persona Simulation). One block per beat/finding where the predicted reader experience DIFFERS across personas — divergence is the diagnostic signal, exactly as contract-mismatch is. `anchor` is a finding id (F-...) or a Timeline locus that GROUNDS the prediction — every divergence must cite a manuscript-grounded anchor (validator D2, the signature firewall gate; an ungrounded prediction is a fabricated one). `experiences` is a NESTED map (persona-id -> one of engaged | neutral | friction | disengage); the subset engine cannot descend into nested objects (it types the container as object), so per-element enum membership is checked in persona_divergence.py (the retcon_plan.scores precedent). `magnitude` is the spread across personas. `asserted_severity` is OPTIONAL (Must-Fix | Should-Fix | Could-Fix) and present only if the map restates the anchored finding's severity for an audience — it is the field D3 reads: a divergence may NOT assert a severity LOWER than the anchored finding's locked Ledger severity (segmentation cannot downgrade the target-audience verdict — the anti-persona-shopping guard). Validated by scripts/persona_divergence.py. See docs/reader-persona-simulation.md.",
+  "title": "APODICTIC persona divergence (apodictic.divergence.v1)",
+  "type": "object",
+  "required": ["schema", "id", "anchor", "magnitude", "experiences"],
+  "properties": {
+    "schema": {"const": "apodictic.divergence.v1"},
+    "id": {"type": "string", "pattern": "^D-[0-9]+$"},
+    "anchor": {"type": "string"},
+    "experiences": {"type": "object", "$comment": "Nested persona-id -> experience enum (engaged | neutral | friction | disengage). The subset engine only types the container as object; persona_divergence.py checks each value's enum membership (D1) and that each key resolves to a declared persona."},
+    "magnitude": {"type": "string"},
+    "asserted_severity": {"enum": ["Must-Fix", "Should-Fix", "Could-Fix"]}
+  }
+}
