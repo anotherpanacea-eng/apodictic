@@ -591,15 +591,20 @@ def t8_run_surface_cli_preserves_dispatcher_exit_code() -> None:
 #      most_stable_features) carry the {feature, mean, sd, cv} shape that
 #      in-flight apodictic capabilities are specced to glob.
 #
-# Scope note (no current consumer): as of this commit NO shipped apodictic code
-# globs top_features / most_stable_features — the sole voice_profile consumer
-# (skills/specialized-audits/scripts/ai_prose_voice_profile.py) is a pure
-# pass-through that forwards argv to the SETEC dispatcher and returns the exit
-# code; it never parses the envelope. The consumers that glob these arrays are
-# in-flight specs (interpretable-stylometric-explanation et al.), not yet built.
-# This gate pins the field shape NOW so that when those consumers land the
-# contract is already enforced — i.e. it is a forward-looking guard, not a guard
-# on an existing consume path.
+# Scope note (a consumer has landed): as of this commit the Interpretable
+# Stylometric Explanation capability (scripts/style_explanation.py +
+# apodictic.style_label.v1) is the first shipped consume-side reference to the
+# top_features / most_stable_features shape — its `feature_ref` provenance binds
+# a descriptive style label to families.<fam>.top_features[].{feature, mean, sd,
+# cv}. (The M1 validator checks `feature_ref` presence/non-emptiness, not its
+# resolvability — it does not re-read the SETEC envelope at runtime — but the
+# capability's schema/docs/fixture cite this shape as their consume contract, so
+# it is no longer a purely forward-looking reference.) The older voice_profile
+# consumer (skills/specialized-audits/scripts/ai_prose_voice_profile.py) remains
+# a pure pass-through that forwards argv to the SETEC dispatcher and never parses
+# the envelope. This gate pins the field shape so that a SETEC drop of these
+# arrays fails HERE, in per-PR CI, rather than reaching the capability's specced
+# consume contract silently.
 #
 # Why this is its own OFFLINE gate (reads only the vendored fixture, no SETEC):
 # the drift gate's CHECK 2 (sync_setec.cmd_check) is a whole-file byte compare
@@ -666,15 +671,18 @@ def t9_voice_profile_consume_contract() -> None:
 
 
 # --------------------------------------------------------------------------
-# T9b — doc-truth guard for T9's rationale. T9 pins a FORWARD-LOOKING contract:
-# as of this commit NO shipped apodictic code globs top_features /
-# most_stable_features (the sole voice_profile consumer is a pass-through shim).
-# A prior draft of T9 asserted as PRESENT-TENSE fact that apodictic capabilities
-# "actually consume" / "glob" these arrays and that a SETEC drop would "silently
-# break consumers" — a consume-side claim grep refutes. This guard fails if (a)
-# that overclaim phrasing creeps back into the T9 block, or (b) a real consumer
-# of these arrays appears outside the test/fixture WITHOUT the wording being
-# updated to match. Either way the rationale must stay congruent with the repo.
+# T9b — doc-truth guard for T9's rationale. T9 now pins a PRESENT-TENSE contract:
+# the Interpretable Stylometric Explanation capability (style_explanation.py +
+# apodictic.style_label.v1) is the first shipped consume-side reference to
+# top_features / most_stable_features (its `feature_ref` provenance cites the
+# families.<fam>.top_features shape). A prior draft of T9 over-claimed in the
+# OTHER direction — asserting as fact that capabilities "actually consume" /
+# "glob" these arrays and that a SETEC drop would "silently break consumers" when
+# no consumer yet existed. This guard fails if (a) that retired overclaim phrasing
+# reappears in the T9 block, or (b) a consumer of these arrays appears that is NOT
+# the documented Interpretable-Stylometric-Explanation capability — i.e. an
+# UNEXPECTED consumer lands WITHOUT the T9 wording being updated to name it. Either
+# way the rationale must stay congruent with the repo.
 # --------------------------------------------------------------------------
 def t9b_consume_claim_matches_repo() -> None:
     print("T9b: T9 rationale matches the repo (no overclaimed current consumer)")
@@ -704,9 +712,11 @@ def t9b_consume_claim_matches_repo() -> None:
             f"({phrase!r})",
         )
 
-    # (b) Ground truth: is there actually a non-test consumer of these arrays?
-    #     If one ships, the forward-looking wording is no longer accurate and
-    #     must be revised — this guard forces that update.
+    # (b) Ground truth: is there a non-test consumer of these arrays OTHER than the
+    #     documented Interpretable-Stylometric-Explanation capability? That
+    #     capability is the expected, named consumer (T9's present-tense rationale
+    #     above); any OTHER consumer landing without the wording being updated to
+    #     name it is what this guard forces an update for.
     try:
         out = subprocess.run(
             ["git", "grep", "-nE", "top_features|most_stable_features"],
@@ -722,15 +732,29 @@ def t9b_consume_claim_matches_repo() -> None:
         _SKIPS.append("T9b: git grep returned a non-match error; consumer "
                       "cross-check skipped")
         return
+    # Files belonging to the documented Interpretable-Stylometric-Explanation
+    # capability — its `feature_ref` provenance is the EXPECTED consume-side
+    # reference T9's present-tense rationale now names. Matched by path so a stray
+    # new consumer elsewhere still trips the guard.
+    expected_paths = (
+        "style_explanation.py",
+        "apodictic.style_label.v1.schema.json",
+        "interpretable-stylometric-explanation.md",
+        "example-author-style-explanation.md",
+    )
     consumers = [
         line for line in out.stdout.splitlines()
-        if line and "tests/setec-contract/" not in line.split(":", 1)[0]
+        if line
+        and "tests/setec-contract/" not in line.split(":", 1)[0]
+        and not any(p in line.split(":", 1)[0] for p in expected_paths)
     ]
     check(
         not consumers,
-        "no shipped consumer of top_features/most_stable_features exists yet, "
-        "so T9's forward-looking wording is accurate; if a consumer lands "
-        f"({consumers!r}) update the T9 rationale to present-tense",
+        "the only shipped consume-side references to "
+        "top_features/most_stable_features are the documented "
+        "Interpretable-Stylometric-Explanation capability, so T9's present-tense "
+        "wording is accurate; an UNEXPECTED consumer landed "
+        f"({consumers!r}) — name it in the T9 rationale",
     )
 
 
