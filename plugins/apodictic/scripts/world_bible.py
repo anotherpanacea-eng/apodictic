@@ -71,6 +71,23 @@ _BIBLE_GLOB = "*_Worldbuilding_Bible_*.md"
 _KNOWN_KEYS = {"schema", "id", "category", "subject", "attribute", "value",
                "polarity", "cost", "pair_subject", "loci"}
 
+# Per-category KEYED requirements — the flat schema marks the arm-specific fields (polarity, cost,
+# pair_subject) optional for every category, so a fact whose category NEEDS one of them could omit it,
+# pass W1 + --strict, and be SILENTLY SKIPPED by the very arm that gives the category meaning (a `rule`
+# with no `polarity` is skipped by WB-R1; a `distance` with no `pair_subject` by WB-G1; a `cost` with
+# no `cost` by WB-C1/C2). That makes an arm "look clean" over a malformed bible. These checks close the
+# hole so the keyed field is enforced at W1, mirroring the closed-key + cost-type bespoke passes. Each
+# arm was read to derive its category->field pair (review finding P1, round 9):
+#   rule     -> polarity     (WB-R1 pairs can/cannot/requires; a rule must state its closed-set claim,
+#                             which MAY be the explicit opt-out "n/a" — but it must be stated, not absent)
+#   cost     -> cost         (WB-C1/C2 read the `cost` field; a cost fact with no cost field is inert)
+#   distance -> pair_subject (WB-G1 keys on the unordered {subject, pair_subject} edge)
+#   event    -> pair_subject OR a Day/Week anchor (WB-G2 has two arms: the happens-before CYCLE check
+#                             needs pair_subject; the anchor-drift check needs a parseable Day/Week in
+#                             value/attribute. An event with NEITHER feeds no arm and is skipped, so it
+#                             must carry at least one.)
+# place / faction / entity have NO contradiction arm (descriptive-only), so they impose no keyed field.
+
 # Override markers naming an unordered pair of ids: "<!-- override: world-rule WF-01/WF-02 — … -->".
 # The pair is order-insensitive; both "WF-01/WF-02" and "WF-02/WF-01" silence the same conflict.
 _OVERRIDE_RE = re.compile(
@@ -149,6 +166,45 @@ def _norm_anchor_day(*texts):
     return None
 
 
+def _required_field_errs(obj, where):
+    """Per-category KEYED-requirement check (see _KNOWN_KEYS comment). Returns W1 error strings for a
+    fact whose category needs an arm-specific field but omits it — so a malformed fact can never make a
+    contradiction arm 'look clean' by being silently skipped. `obj` is a validated dict (called after
+    the schema pass, so `category` is a known enum). A present-but-empty string counts as omitted for
+    the edge endpoints (an empty subject/pair_subject feeds no arm; the arms already `continue` on it),
+    matching the arms' own truthiness guards."""
+    if not isinstance(obj, dict):
+        return []
+    cat = obj.get("category")
+    errs = []
+    if cat == "rule":
+        # WB-R1 pairs on polarity; an absent polarity is silently skipped. "n/a" is the explicit
+        # opt-out (a rule that makes no closed-set claim) — allowed, but it must be STATED.
+        if "polarity" not in obj:
+            errs.append("%s: category=rule requires `polarity` (can | cannot | requires | n/a) — "
+                        "WB-R1 silently skips a rule with no polarity" % where)
+    elif cat == "cost":
+        # WB-C1/C2 read the `cost` field; a cost fact with no `cost` key feeds no cost arm.
+        if "cost" not in obj:
+            errs.append("%s: category=cost requires the `cost` field (a string price, \"none\", or "
+                        "null) — WB-C1/C2 skip a cost fact with no cost" % where)
+    elif cat == "distance":
+        # WB-G1 keys on the {subject, pair_subject} edge; without pair_subject there is no edge.
+        if not (obj.get("pair_subject") or "").strip():
+            errs.append("%s: category=distance requires a non-empty `pair_subject` (the other edge "
+                        "endpoint) — WB-G1 skips a distance with no pair_subject" % where)
+    elif cat == "event":
+        # WB-G2 is two arms: cycle (needs pair_subject) OR anchor-drift (needs a parseable Day/Week
+        # anchor in value/attribute). An event with NEITHER feeds no arm and is silently skipped.
+        has_edge = bool((obj.get("pair_subject") or "").strip())
+        has_anchor = _norm_anchor_day(obj.get("value"), obj.get("attribute")) is not None
+        if not has_edge and not has_anchor:
+            errs.append("%s: category=event requires either a non-empty `pair_subject` (a "
+                        "happens-before edge) or a parseable Day/Week anchor in value/attribute (a "
+                        "chronology anchor) — WB-G2 skips an event with neither" % where)
+    return errs
+
+
 def _norm_value(s):
     """Normalize a rule value for closed-set collision: case-folded, leading-article-stripped,
     whitespace-collapsed. So 'raise the dead' and 'Raise  the Dead' collide; 'fly' and 'flying' do
@@ -212,6 +268,9 @@ def parse_facts(text):
             if "cost" in obj and obj["cost"] is not None and not isinstance(obj["cost"], str):
                 errs.append("%s: `cost` must be a string or null, got %s"
                             % (where, type(obj["cost"]).__name__))
+            # Per-category KEYED requirement — a fact whose category needs an arm-specific field but
+            # omits it must FAIL W1, not pass --strict and get silently skipped by its arm (P1, round 9).
+            errs.extend(_required_field_errs(obj, where))
         facts.append((obj, errs, idx))
     return facts
 
@@ -611,6 +670,65 @@ def run_self_test():
     chk("w1_cost_not_string_bool",
         bible(fact("WF-01", category="cost", subject="bm", attribute="cost",
                    value="p", cost=True))[0] == 1)
+
+    # W1 per-category KEYED requirements (P1, round 9) — a fact whose category needs an arm-specific
+    # field but omits it must FAIL W1 (and therefore --strict), not pass and get silently skipped by
+    # its arm. Build the malformed facts WITHOUT going through fact() (whose helpers add nothing the
+    # check forbids), spelling each category out so the smallest-input-that-breaks is explicit.
+    def raw(d):
+        return "<!-- apodictic:world_fact\n%s\n-->" % _j.dumps(
+            dict({"schema": _SCHEMA_ID, "loci": ["Bible §1"]}, **d))
+    # rule with NO polarity -> W1 ERROR (was: PASS, silently skipped by WB-R1)
+    code, lines = bible(raw({"id": "WF-01", "category": "rule", "subject": "blood-magic",
+                             "attribute": "limit", "value": "raise the dead"}), strict=True)
+    chk("w1_rule_requires_polarity",
+        code == 1 and any("category=rule requires `polarity`" in ln for ln in lines))
+    # explicit polarity="n/a" is the stated opt-out -> allowed (present, just makes no claim)
+    chk("w1_rule_polarity_na_ok",
+        bible(raw({"id": "WF-01", "category": "rule", "subject": "blood-magic",
+                   "attribute": "limit", "value": "x", "polarity": "n/a"}), strict=True)[0] == 0)
+    # cost with NO cost field -> W1 ERROR (was: PASS, skipped by WB-C1/C2)
+    code, lines = bible(raw({"id": "WF-01", "category": "cost", "subject": "blood-magic",
+                             "attribute": "cost", "value": "the price"}), strict=True)
+    chk("w1_cost_requires_cost",
+        code == 1 and any("category=cost requires the `cost` field" in ln for ln in lines))
+    # cost=null IS a stated (free) cost -> allowed (the WB-C2 free form)
+    chk("w1_cost_null_ok",
+        bible(raw({"id": "WF-01", "category": "cost", "subject": "bm", "attribute": "cost",
+                   "value": "v", "cost": None}), strict=True)[0] == 0)
+    # distance with NO pair_subject -> W1 ERROR (was: PASS, skipped by WB-G1)
+    code, lines = bible(raw({"id": "WF-01", "category": "distance", "subject": "Karth",
+                             "attribute": "distance-to", "value": "120 miles"}), strict=True)
+    chk("w1_distance_requires_pair_subject",
+        code == 1 and any("category=distance requires a non-empty `pair_subject`" in ln for ln in lines))
+    # distance with EMPTY pair_subject -> still W1 ERROR (empty feeds no arm)
+    chk("w1_distance_empty_pair_subject",
+        bible(raw({"id": "WF-01", "category": "distance", "subject": "Karth",
+                   "attribute": "distance-to", "value": "120 miles", "pair_subject": "  "}),
+              strict=True)[0] == 1)
+    # event with NEITHER pair_subject NOR a Day/Week anchor -> W1 ERROR (was: PASS, skipped by WB-G2)
+    code, lines = bible(raw({"id": "WF-01", "category": "event", "subject": "the Sundering",
+                             "attribute": "when", "value": "long ago"}), strict=True)
+    chk("w1_event_requires_edge_or_anchor",
+        code == 1 and any("category=event requires either" in ln for ln in lines))
+    # event WITH a pair_subject (ordering edge) -> allowed
+    chk("w1_event_edge_ok",
+        bible(raw({"id": "WF-01", "category": "event", "subject": "X", "attribute": "happens-before",
+                   "value": "before", "pair_subject": "Y"}), strict=True)[0] == 0)
+    # event WITH a Day anchor (chronology anchor, no edge) -> allowed
+    chk("w1_event_anchor_ok",
+        bible(raw({"id": "WF-01", "category": "event", "subject": "X", "attribute": "Day 100",
+                   "value": "Day 100"}), strict=True)[0] == 0)
+    # categories with NO arm impose no keyed field (descriptive-only) -> allowed
+    chk("w1_place_no_keyed_field",
+        bible(raw({"id": "WF-01", "category": "place", "subject": "Karth",
+                   "attribute": "desc", "value": "a port city"}), strict=True)[0] == 0)
+    chk("w1_faction_no_keyed_field",
+        bible(raw({"id": "WF-01", "category": "faction", "subject": "the Guild",
+                   "attribute": "desc", "value": "merchants"}), strict=True)[0] == 0)
+    chk("w1_entity_no_keyed_field",
+        bible(raw({"id": "WF-01", "category": "entity", "subject": "the Sword",
+                   "attribute": "desc", "value": "a relic"}), strict=True)[0] == 0)
 
     # WD — duplicate id
     code, lines = bible(fact("WF-01", polarity="can", value="fly")
