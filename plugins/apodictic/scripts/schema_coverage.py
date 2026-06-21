@@ -18,8 +18,12 @@ disk reality matches the declarative `_coverage.json` binding table.
                          schema id literal is grep-reachable in a .py the BOUND arm delegates
                          to (the binding is demonstrated, not merely asserted).             ERROR
   C5 canonical reachable for each binding whose canonical_gate is a filename/dirname (not the
-                         literal self-test-only), that exact token appears in validate.sh's
-                         --check-all region AND the named file/dir exists under references/.
+                         literal self-test-only), that exact token (as a whole path component) is
+                         PASSED TO a real `$0 <bound-validator> ...` invocation in the --check-all
+                         region — directly or via one hop of variable indirection — AND the named
+                         file/dir exists under references/. A token sitting only in an echo/comment,
+                         or handed only to an UNRELATED validator, does NOT satisfy C5 (the schema
+                         must be exercised by ITS bound arm against THIS canonical artifact).
                          self-test-only rows are exempt from the file check but the bound arm
                          must be in AGG_VALIDATORS (so SOME real check runs).                ERROR
   W1 non_artifact integ. every non_artifact[] entry exists on disk as a *.schema.json file
@@ -169,6 +173,75 @@ def _check_all_region(validate_sh_text):
     return ""
 
 
+# Tokens are matched as whole PATH COMPONENTS, never as bare substrings, so that
+# `example-run-folder` (a real gate) is NOT satisfied by an `example-run-folder-r1` argument that
+# only an UNRELATED validator (regression-diff) receives. A component is bounded on both sides by a
+# path/quote/whitespace separator (or string end) — `-` is NOT a boundary, so the `-r1`/`-r2`
+# siblings stay distinct.
+_TOKEN_BOUNDARY_BEFORE = r'(?:^|[\s"\'/=$({,])'
+_TOKEN_BOUNDARY_AFTER = r'(?=$|[\s"\'/])'
+
+
+def _token_in(token, text):
+    """True iff `token` occurs in `text` as a whole path component (not a bare substring)."""
+    if not token or not text:
+        return False
+    return re.search(_TOKEN_BOUNDARY_BEFORE + re.escape(token) + _TOKEN_BOUNDARY_AFTER, text) is not None
+
+
+def _var_assignments(ca_region):
+    """Map of shell variable -> the last value string it is assigned inside the --check-all region.
+
+    Captures `VAR=value`, `VAR="value"`, and `VAR=$(... )` forms (the leading assignment on a line,
+    possibly indented). Lets C5 resolve one hop of indirection — e.g. `CA_RUNDIR="$CA_BASE/example-
+    run-folder"` then `"$0" gate-state "$CA_RUNDIR/Diagnostic_State.meta.json"` — so a gate reached
+    only through a variable still counts, but ONLY when that variable's value carries the token."""
+    out = {}
+    for m in re.finditer(r'^\s*([A-Za-z_][A-Za-z0-9_]*)=(.*)$', ca_region or "", re.MULTILINE):
+        out[m.group(1)] = m.group(2)
+    return out
+
+
+def _bound_invocations(ca_region, validators):
+    """The argument strings of every real `$0 <arm> ...` invocation whose arm is one of `validators`.
+
+    Recognizes both the bare `"$0" <arm> <args>` form and the command-substitution
+    `VAR=$("$0" <arm> <args>)` / `if FOO=$("$0" <arm> ...)` forms. The arm is the first bareword
+    after `"$0"` (a flag like `--self-test-all` is itself the arm); everything to end-of-line is the
+    candidate arg string. Comments and `echo`/heredoc lines never match (no `"$0" <arm>` there)."""
+    if not ca_region or not validators:
+        return []
+    vset = set(validators)
+    args = []
+    inv = re.compile(r'"\$0"\s+([A-Za-z0-9][A-Za-z0-9-]*)\b([^\n]*)')
+    for m in inv.finditer(ca_region):
+        if m.group(1) in vset:
+            args.append(m.group(2))
+    return args
+
+
+def _canonical_invoked(ca_region, validators, token):
+    """C5 core: is `token` exercised by a REAL invocation of one of the schema's BOUND validators?
+
+    Passes only when the canonical token appears (as a path component) in the args of a `$0 <bound-
+    validator> ...` command — directly, or via one hop of variable indirection (a `$VAR` in those
+    args whose in-region assignment carries the token). A token sitting only in an echo/comment, or
+    passed exclusively to an UNRELATED (non-bound) validator, does NOT satisfy this."""
+    assigns = None
+    for arg_str in _bound_invocations(ca_region, validators):
+        if _token_in(token, arg_str):
+            return True
+        # one hop of indirection: any $VAR / ${VAR} in the args whose value carries the token.
+        refs = re.findall(r'\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?', arg_str)
+        if refs:
+            if assigns is None:
+                assigns = _var_assignments(ca_region)
+            for v in refs:
+                if v in assigns and _token_in(token, assigns[v]):
+                    return True
+    return False
+
+
 def _references_dir(scripts_dir):
     """Locate core-editor/references/ from either script-dir copy (canonical files live there)."""
     here = Path(scripts_dir).resolve()
@@ -283,9 +356,10 @@ def run(schemas_dir=None, scripts_dir=None, strict=False):
                 errs.append("C5 self-test-only escape unbacked: %s's validator(s) %r are not in AGG_VALIDATORS"
                             % (sid, validators))
         else:
-            if not ca_region or gate not in ca_region:
-                errs.append("C5 canonical gate unreached: %s's canonical_gate %r is not run by --check-all"
-                            % (sid, gate))
+            if not _canonical_invoked(ca_region, validators, gate):
+                errs.append("C5 canonical gate unreached: %s's canonical_gate %r is not passed to a real "
+                            "--check-all invocation of its bound validator(s) %r (an echo/comment, or an "
+                            "arg to an unrelated validator, does not count)" % (sid, gate, validators))
             if refs is None or not (Path(refs) / gate).exists():
                 errs.append("C5 canonical file missing: %s's canonical_gate %r not found under references/"
                             % (sid, gate))
@@ -441,11 +515,14 @@ def run_self_test():
             obj["additionalProperties"] = False
         (sdir / (sid + ".schema.json")).write_text(json.dumps(obj), encoding="utf-8")
 
-    def setup(bindings, non_artifact=None, extra_disk=None, closed_on_disk=None):
+    def setup(bindings, non_artifact=None, extra_disk=None, closed_on_disk=None, ca_lines=None):
         """Build a hermetic fixture: a schemas dir + scripts dir + validate.sh + references dir.
 
         bindings: list of dicts for _coverage.json. extra_disk: schema ids to drop on disk with NO
-        binding (orphans). closed_on_disk: set of schema ids to write additionalProperties:false."""
+        binding (orphans). closed_on_disk: set of schema ids to write additionalProperties:false.
+        ca_lines(bindings) -> list[str]: optional override for the --check-all body (to forge the
+        echo-only / unrelated-validator C5 negatives); default emits a real bound invocation per gate
+        mirroring the production `if [ "$1" = "--check-all" ]; then ... "$0" <arm> "$CA_BASE/<gate>" ...`."""
         root = bed()
         sdir = root / "schemas"
         scr = root / "scripts"
@@ -463,15 +540,25 @@ def run_self_test():
         for sid in (extra_disk or []):
             write_schema(sdir, sid)
         # validate.sh fixture: one dispatch arm per validator named, delegating to <arm>.py,
-        # plus a --check-all region naming each filename canonical_gate, plus AGG_VALIDATORS.
+        # plus a top-level `--check-all` if-block, plus AGG_VALIDATORS.
         arms = sorted({v for b in bindings for v in b.get("validators", [])})
-        ca = ['  --check-all)']
         for b in bindings:
             g = b.get("canonical_gate", "")
             if g and g != _SELF_TEST_ONLY:
-                ca.append('    echo "exercising %s"' % g)
                 (refs / g).write_text("fixture\n", encoding="utf-8")  # the canonical file exists
-        ca.append('    ;;')
+
+        def _default_ca(bs):
+            # Mirror production: a real `"$0" <bound-arm> "$CA_BASE/<gate>"` invocation per gate, so the
+            # gate token is actually PASSED TO its bound validator (what C5 now requires).
+            out = ['  CA_BASE="$CA_SCRIPT_DIR/../skills/core-editor/references"']
+            for b in bs:
+                g = b.get("canonical_gate", "")
+                if g and g != _SELF_TEST_ONLY:
+                    arm = (b.get("validators") or ["?"])[0]
+                    out.append('  "$0" %s "$CA_BASE/%s" || CA_FAIL=1' % (arm, g))
+            return out
+
+        ca_body = (ca_lines(bindings) if ca_lines else _default_ca(bindings))
         arm_blocks = []
         for a in arms:
             scrname = a.replace("-", "_") + ".py"
@@ -481,8 +568,14 @@ def run_self_test():
             (scr / scrname).write_text("# %s\n" % " ".join(ids), encoding="utf-8")
         vsh = ['#!/usr/bin/env bash',
                'AGG_VALIDATORS="%s"' % " ".join(arms),
-               'case "$1" in']
-        vsh += arm_blocks + ca + ['esac']
+               'CA_SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)',
+               'if [ "$1" = "--check-all" ]; then',
+               '  CA_FAIL=0']
+        vsh += ca_body
+        vsh += ['  exit "$CA_FAIL"',
+                'fi',
+                'case "$1" in']
+        vsh += arm_blocks + ['esac']
         (scr / "validate.sh").write_text("\n".join(vsh) + "\n", encoding="utf-8")
         manifest = {"schema": _COVERAGE_ID, "non_artifact": non_artifact or [], "bindings": bindings}
         (sdir / _MANIFEST_NAME).write_text(json.dumps(manifest), encoding="utf-8")
@@ -534,6 +627,50 @@ def run_self_test():
         (Path(sc) / "validate.sh").write_text(vtxt, encoding="utf-8")
         code, out = run(sd, sc)
         chk("c5_gate_unreached", code == 1 and any("C5 canonical gate unreached" in ln for ln in out))
+
+        # C5 BIND — Codex round-9 P2: the token must be passed to a REAL invocation of a BOUND
+        # validator, not merely occur somewhere in the --check-all text.
+        # (a) token present ONLY in an echo/comment -> still on disk, but never exercised -> FAIL.
+        def _ca_echo_only(bs):
+            out_ = []
+            for bb in bs:
+                g = bb.get("canonical_gate", "")
+                if g and g != _SELF_TEST_ONLY:
+                    out_.append('  echo "exercising %s"   # %s' % (g, g))  # echo + comment, no "$0"
+            return out_
+        sd, sc = setup([dict(b) for b in base], ca_lines=_ca_echo_only)
+        code, out = run(sd, sc)
+        chk("c5_echo_only_fails", code == 1 and any("C5 canonical gate unreached" in ln for ln in out))
+
+        # (b) token passed ONLY to an UNRELATED validator (not in alpha's validators[]) -> FAIL.
+        # alpha's gate (example-alpha.md) is handed to `beta`, never to `alpha`.
+        def _ca_unrelated(bs):
+            return ['  "$0" beta "$CA_BASE/example-alpha.md" || CA_FAIL=1',
+                    '  "$0" beta "$CA_BASE/example-beta.md" || CA_FAIL=1']
+        sd, sc = setup([dict(b) for b in base], ca_lines=_ca_unrelated)
+        # beta's own gate is self-test-only so beta needs no file gate; only alpha's C5 should fire.
+        code, out = run(sd, sc)
+        chk("c5_unrelated_validator_fails",
+            code == 1 and any("C5 canonical gate unreached" in ln and "apodictic.alpha.v1" in ln for ln in out))
+
+        # (c) POSITIVE: token reached through ONE HOP of variable indirection (the real CA_RUNDIR
+        # pattern) passes; and a sibling token (-extra) handed to an unrelated arm does NOT leak in.
+        def _ca_indirect(bs):
+            return ['  CA_RUNDIR="$CA_BASE/example-alpha.md"',
+                    '  "$0" beta "$CA_BASE/example-alpha.md-extra" || CA_FAIL=1',  # sibling, unrelated arm
+                    '  "$0" alpha "$CA_RUNDIR/inner.json" || CA_FAIL=1']           # alpha reaches via $CA_RUNDIR
+        sd, sc = setup([dict(b) for b in base], ca_lines=_ca_indirect)
+        chk("c5_indirection_passes", run(sd, sc)[0] == 0)
+
+        # (d) GUARD: the component matcher must not let a longer sibling token satisfy a shorter gate.
+        # alpha's gate token appears ONLY as `example-alpha.md-r1` (a different component) on alpha's
+        # own invocation -> must still FAIL (substring would have wrongly passed).
+        def _ca_sibling_substring(bs):
+            return ['  "$0" alpha "$CA_BASE/example-alpha.md-r1" || CA_FAIL=1']
+        sd, sc = setup([dict(b) for b in base], ca_lines=_ca_sibling_substring)
+        code, out = run(sd, sc)
+        chk("c5_sibling_substring_fails",
+            code == 1 and any("C5 canonical gate unreached" in ln and "apodictic.alpha.v1" in ln for ln in out))
 
         # C5 canonical file missing: remove the canonical file from references/.
         sd, sc = setup([dict(b) for b in base])
