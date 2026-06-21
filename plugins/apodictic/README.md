@@ -75,6 +75,7 @@ The plugin assumes its user is an adult working on a creative project. Its outpu
 - `/coach` — I have a diagnosis — how do I revise?
 - `/plot-coach` — Is my plot structure working?
 - `/legal-risk` — Flag legal exposure (defamation, privacy, rights) for a lawyer's review.
+- `/world-bible` — Check my worldbuilding bible for self-contradiction (rules, magic costs, geography/timeline).
 - `/triage-feedback` — Sort and prioritize beta-reader / editor feedback.
 - `/reader-questions` — Turn my diagnosis into targeted beta-reader questions.
 
