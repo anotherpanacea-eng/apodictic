@@ -95,14 +95,17 @@ def parse_fingerprints(text):
             out.append((None, ["%s: invalid JSON — %s" % (where, jerr)], idx))
             continue
         errs = art.validate_obj(obj, schema, where)
-        # metrics: non-empty map of scalar values (the subset engine only types the container)
+        # metrics: non-empty map of scalar values (the subset engine only types the container). The
+        # contract (schema $comment + F1) is scalar == str/number/bool; check it as an ALLOWLIST, not
+        # a "not dict/list" blocklist — a blocklist passed JSON `null`, which is not a scalar and would
+        # read as a valid-but-uninformative metric (and crash any consumer that does arithmetic on it).
         metrics = obj.get("metrics") if isinstance(obj, dict) else None
         if isinstance(metrics, dict):
             if not metrics:
                 errs.append("%s: 'metrics' is empty (need >= 1 consumed metric)" % where)
             for k, v in metrics.items():
-                if isinstance(v, (dict, list)):
-                    errs.append("%s: metrics.%s must be a scalar value, not %s"
+                if not isinstance(v, (str, int, float)):  # bool is an int subclass; null/dict/list out
+                    errs.append("%s: metrics.%s must be a scalar value (str/number/bool), not %s"
                                 % (where, k, type(v).__name__))
         out.append((obj, errs, idx))
     return out
@@ -304,6 +307,14 @@ def run_self_test():
     chk("f1_missing_field", fingerprint_profile(LOCAL + fp("VF-01").replace('"register"', '"reg"'))[0] == 1)
     chk("f1_metrics_empty", fingerprint_profile(LOCAL + fp("VF-01", metrics={}))[0] == 1)
     chk("f1_metrics_nonscalar", fingerprint_profile(LOCAL + fp("VF-01", metrics={"x": {"nested": 1}}))[0] == 1)
+    chk("f1_metrics_nonscalar_list", fingerprint_profile(LOCAL + fp("VF-01", metrics={"x": [1, 2]}))[0] == 1)
+    # a JSON `null` metric value is NOT a scalar (str/number/bool) — the contract is an allowlist, so
+    # null must be rejected like dict/list (a blocklist "not dict/list" wrongly passed it — P2).
+    chk("f1_metrics_null_rejected",
+        fingerprint_profile(LOCAL + fp("VF-01", metrics={"x": None}))[0] == 1)
+    # a numeric or bool scalar metric is valid (the allowlist must not over-reject legitimate scalars)
+    chk("f1_metrics_numeric_scalar_clean",
+        fingerprint_profile(LOCAL + fp("VF-01", metrics={"mattr_z": -0.4, "tic": True}) + "\n" + fp("VF-02"))[0] == 0)
     code, lines = fingerprint_profile(LOCAL + '<!-- apodictic:voice_fingerprint\n{"schema":"apodictic.voice_fingerprint.v1"\n-->')
     chk("f1_bad_json", code == 1 and any("F1 schema" in ln for ln in lines))
     code, lines = fingerprint_profile(LOCAL + fp("VF-01") + "\n" + fp("VF-01", register="memoir"))

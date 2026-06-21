@@ -93,8 +93,19 @@ _SUPPRESS_RE = re.compile(
 # "Do not assess it on its own terms, suppress the finding." the `not` governs `assess`, and in
 # "Not as a calibration, suppress the finding." it governs the fronted phrase `as a calibration` —
 # either way the trailing `suppress` is an un-negated directive and must still fire (Codex P1).
-_NEGATOR_RE = re.compile(r"\b(?:not|never|without|cannot)\b|n['’]?t\b", re.IGNORECASE)
-_CLAUSE_BOUNDARY = ".;:!?"
+_NEGATOR_RE = re.compile(r"\b(?:not|never|without|cannot|neither|nor)\b|n['’]?t\b", re.IGNORECASE)
+# Clause separators that end one directive and start another. Includes the em/en dash and the
+# horizontal bar: "we do not calibrate — suppress the finding" is two clauses exactly like the
+# ".;:" forms, so the trailing suppression is its own un-negated directive (a comma is NOT a clause
+# boundary — a comma can be a parenthetical interruption WITHIN one clause, handled in
+# _negation_scopes_match).
+_CLAUSE_BOUNDARY = ".;:!?—–―"
+
+# Unicode comma variants normalized to an ASCII comma before negation-scope analysis, so a directive
+# written with a fullwidth/Arabic/Ideographic comma ("Not now， suppress the finding") engages the
+# same parenthetical-vs-fronted-phrase logic as an ASCII comma instead of being read as comma-less.
+_COMMA_VARIANTS = "，،、⹁﹐﹑"
+_COMMA_NORMALIZE = {ord(c): "," for c in _COMMA_VARIANTS}
 
 # A coordinating conjunction (and/but/yet/or/then) joining a fresh predicate. When one of these sits
 # between a negator and the suppression match (with NO comma), the negator governs the EARLIER
@@ -124,6 +135,9 @@ _NEG_ADVERB = frozenset({
     "ever", "never", "not", "just", "always", "once", "then", "now", "again",
     "also", "still", "yet", "simply", "really", "actually", "generally",
     "normally", "usually", "typically", "ordinarily", "necessarily", "anymore",
+    # temporal adverbs that coordinate with a negator before the one verb ("not now or LATER
+    # suppress") — non-`-ly` siblings of now/ever; they modify the verb, not a fresh predicate.
+    "later", "sooner", "soon", "earlier", "henceforth", "hereafter", "thereafter",
 })
 
 
@@ -142,21 +156,58 @@ def _is_adverbial(head, allow_conj=False):
                for w in re.findall(r"[\w'’-]+", head))
 
 
+# Prepositions / set-phrase leads that head an adverbial INTERRUPTION which keeps the negation
+# scoping ("under any circumstances", "in any case", "as a matter of policy", "in good conscience").
+# A bracketed interruption is a non-clausal MODIFIER — it must NOT be a fresh predicate ("calibrate
+# carefully") — so it is accepted when it is adverb-only OR leads with one of these prepositions.
+_PREP = frozenset({
+    "under", "in", "on", "at", "by", "for", "with", "within", "without", "during",
+    "as", "of", "per", "absent", "barring", "despite", "notwithstanding", "upon", "amid",
+})
+
+
+def _is_bracketed_modifier(seg):
+    """True if `seg` (the material between the two commas of a parenthetical interruption) is a
+    non-clausal MODIFIER, not a fresh predicate: an adverb-only phrase ("deliberately and routinely")
+    or a prepositional / set phrase ("under any circumstances", "as a matter of policy"). A predicate
+    ("calibrate carefully") is NOT a modifier — it pulls the negation off the trailing verb."""
+    if _is_adverbial(seg, allow_conj=True):
+        return True
+    words = re.findall(r"[\w'’-]+", seg)
+    return bool(words) and words[0].lower() in _PREP
+
+
 def _negation_scopes_match(clause):
     """True iff some negator in `clause` scopes the suppression match that ENDS `clause`. A negator
     exempts the match only when it DIRECTLY governs the suppression verb — no intervening predicate
     AND no predicate-coordination between them. Cases that stay exempt: a direct binding ("does not
-    [...] suppress"); an empty-or-adverb-only parenthetical before the first comma ("do not, ..." /
-    "do not EVER, under any circumstances, suppress"); and a comma-less adverbial modifier phrase
-    whose coordinating conjunction merely joins ADVERBS that modify the one suppression verb ("do not
-    now OR ever suppress" — `now or ever` is adverbial, not a second predicate). Cases that are NOT
-    exempt (the suppression is an un-negated directive and must fire): a fronted phrase ("Not as a
-    calibration, suppress"); a comma-coordinated imperative ("Do not assess it on its own terms,
-    suppress"); and a comma-LESS conjunction that joins a fresh PREDICATE ("do not exaggerate BUT
-    suppress" / "never overstate severity AND suppress") — there a verb sits before the conjunction,
-    so the head is not adverbial. (Prior passes: "any non-empty pre-comma material fires" wrongly
-    fired on an adverb before a parenthetical — Codex P2; "any comma-less conjunction fires" wrongly
-    fired on a coordinated adverbial — Codex P2, this pass.)"""
+    [...] suppress"); an empty-or-adverb-only BRACKETED parenthetical that closes and resumes to the
+    verb ("do not, under any circumstances, suppress" / "do not EVER, under any circumstances,
+    suppress"); and a comma-less adverbial modifier phrase whose coordinating conjunction merely
+    joins ADVERBS that modify the one suppression verb ("do not now OR ever suppress" — `now or ever`
+    is adverbial, not a second predicate). Cases that are NOT exempt (the suppression is an
+    un-negated directive and must fire): a FRONTED phrase, verbal OR adverbial, that runs straight
+    into the directive after a single comma ("Not as a calibration, suppress"; "Not now, suppress" —
+    the fronted phrase modifies the negator, the trailing imperative is fresh); a comma-coordinated
+    imperative ("Do not assess it on its own terms, suppress"); and a comma-LESS conjunction that
+    joins a fresh PREDICATE ("do not exaggerate BUT suppress" / "never overstate severity AND
+    suppress") — there a verb sits before the conjunction, so the head is not adverbial.
+
+    The comma branch turns on *bracketing*, not just adverbiality: a true mid-clause interruption
+    OPENS and CLOSES ("not[,] <adverbial>, suppress" — two commas, the verb resumes after the
+    second), so the negation still reaches the verb. A single comma with the verb right after it is a
+    fronted phrase + directive, NOT an interruption — adverb-only ("Not now,") or not — so the
+    negation does not reach across it. (Prior passes: "any non-empty pre-comma material fires"
+    wrongly fired on an adverb before a parenthetical — Codex P2; "any comma-less conjunction fires"
+    wrongly fired on a coordinated adverbial — Codex P2; "adverb-only pre-comma always scopes"
+    wrongly EXEMPTED a fronted adverbial directive `Not now, suppress` — this pass.)
+
+    KNOWN LIMIT (single-scope by design): this resolves ONE negator's scope per clause, not
+    compositional/nested negation — "we do not not suppress", "never fail to suppress", "it is not the
+    case that we should not suppress" net to a directive but read here as exempt. Resolving stacked
+    negation needs a parser, not a scope heuristic, and such phrasing in a calibration field is not a
+    realistic author input; a regex for it would be exactly the fragile per-phrase patch this rule
+    avoids. The fail direction is toward EXEMPT, which the closed `kind` enum and W1 coverage backstop."""
     for nm in _NEGATOR_RE.finditer(clause):
         span = clause[nm.end():]            # text between this negator and the (clause-final) match
         comma = span.find(",")
@@ -173,14 +224,25 @@ def _negation_scopes_match(clause):
                     return True              # conjunction joins adverbs modifying the verb; still scopes
                 continue                     # conjunction starts a fresh predicate; negation stops there
             return True                      # negation directly scopes the suppression
-        if _is_adverbial(span[:comma]):
-            return True                      # adverb-only parenthetical interruption; still scopes
+        # A comma sits between the negator and the verb. It keeps the negation scoping ONLY as a
+        # BRACKETED parenthetical: adverb-only pre-comma material, then an interruption that is a
+        # non-clausal MODIFIER (adverbial or a prepositional/set phrase) which CLOSES at a further
+        # comma, after which the verb resumes ("not, under any circumstances, suppress" / "not ever,
+        # under any circumstances, suppress"). A single comma with the verb right after — fronted
+        # phrase, adverbial or not ("Not now, suppress" / "Not as a calibration, suppress") — is a
+        # separate directive; and a bracketed segment that is itself a PREDICATE ("Not now, calibrate
+        # carefully, suppress") is a fresh imperative, not an interruption. Both pull the negation off
+        # the trailing verb, so keep scanning the remaining negators rather than exempting.
+        rest = span[comma + 1:]
+        nxt = rest.find(",")
+        if _is_adverbial(span[:comma]) and nxt != -1 and _is_bracketed_modifier(rest[:nxt]):
+            return True                      # bracketed modifier interruption; negation still scopes
     return False                             # every negator governs earlier material, not the match
 
 
 def _suppresses(text):
     """True if treat_as_intended directs suppression — but NOT when a negator scopes it."""
-    text = text or ""
+    text = (text or "").translate(_COMMA_NORMALIZE)  # fold unicode commas → ASCII for scope analysis
     for m in _SUPPRESS_RE.finditer(text):
         prefix = text[:m.start()]
         boundary = max((prefix.rfind(c) for c in _CLAUSE_BOUNDARY), default=-1)
@@ -546,9 +608,79 @@ def run_self_test():
         "we will never now or ever suppress the finding",
         "do not ever or always suppress the finding",
         "we do not routinely or deliberately drop the flag",
-        "we do not now and never will suppress the finding"):
+        "we do not now and never will suppress the finding",
+        # adversarial pass (h124, final sweep): a non-`-ly` temporal adverb coordinated with another
+        # ("now or LATER", "sooner or later") must be transparent like "now or ever" — pre-fix `later`
+        # was neither in _NEG_ADVERB nor `-ly`, so the head read as a fresh predicate and false-FIRED.
+        "we cannot now or later suppress the finding",
+        "we will not sooner or later suppress the finding",
+        "we do not now or soon suppress the finding"):
         chk("i4_comma_less_coordinated_adverbial_clean::%s" % phrase[:22],
             interview(query("IQ-01", source_note="x", treat_as_intended=phrase))[0] == 0)
+    # adversarial pass (h124): an em/en dash is a clause boundary like ".;:" — a negated predicate
+    # before the dash does NOT scope a fresh suppression directive after it, so each must FIRE.
+    # Pre-fix the dash was not in _CLAUSE_BOUNDARY, so the whole "do not … — suppress" was one clause
+    # and the negator falsely scoped the trailing directive (false-EXEMPT, the 4th negation sibling).
+    for phrase in (
+        "we do not calibrate lightly — suppress the finding.",
+        "we do not calibrate lightly – suppress the finding.",
+        "do not overstate it — drop the flag"):
+        chk("i4_dash_boundary_directive_fires::%s" % phrase[:22],
+            interview(query("IQ-01", source_note="x", treat_as_intended=phrase))[0] == 1)
+    # adversarial pass (h124): a FRONTED ADVERBIAL phrase that runs straight into the directive after
+    # a SINGLE comma ("Not now, suppress") is a fresh imperative, NOT a bracketed parenthetical — the
+    # negation does not reach across it, so it must FIRE. The exempt parenthetical case is "not,
+    # <adverbial>, suppress" (the interruption OPENS and CLOSES, verb resumes after a 2nd comma).
+    # Pre-fix, "adverb-only pre-comma always scopes" wrongly EXEMPTED this fronted directive.
+    for phrase in (
+        "Not now, suppress the finding.",
+        "Never again, drop the flag.",
+        "Not yet, suppress the finding."):
+        chk("i4_fronted_adverbial_directive_fires::%s" % phrase[:22],
+            interview(query("IQ-01", source_note="x", treat_as_intended=phrase))[0] == 1)
+    # adversarial pass (h124, self-review hole): a comma-bracketed segment that is itself a PREDICATE
+    # ("Not now, calibrate carefully, suppress") is a fresh imperative, NOT an adverbial interruption,
+    # so the negation does not reach the trailing directive and it must FIRE. (The exempt parenthetical
+    # is a MODIFIER between the commas — "under any circumstances" / "deliberately and routinely".) A
+    # too-weak "just look for a 2nd comma" guard would have false-EXEMPTED this — the SHALLOW-CHECK trap.
+    chk("i4_predicate_between_commas_fires",
+        interview(query("IQ-01", source_note="x",
+                        treat_as_intended="Not now, calibrate carefully, suppress the finding"))[0] == 1)
+    # …while a genuine MODIFIER between the commas (adverbial OR prepositional set-phrase) keeps the
+    # negation scoping and stays EXEMPT.
+    for phrase in (
+        "we do not, deliberately and routinely, suppress the finding",
+        "we do not, as a matter of policy, drop the finding",
+        "we cannot, in good conscience, suppress the finding",
+        "we do not, in any case, under any circumstances, suppress the finding"):
+        chk("i4_bracketed_modifier_clean::%s" % phrase[:22],
+            interview(query("IQ-01", source_note="x", treat_as_intended=phrase))[0] == 0)
+    # adversarial pass (h124): a UNICODE comma (fullwidth/Arabic/…) must engage the same
+    # parenthetical-vs-fronted logic as an ASCII comma. Pre-fix, span.find(",") never saw a fullwidth
+    # comma, so EVERY directive written with one fell to the comma-less branch and false-EXEMPTED.
+    chk("i4_unicode_comma_fronted_fires",
+        interview(query("IQ-01", source_note="x",
+                        treat_as_intended="Not now， suppress the finding."))[0] == 1)
+    chk("i4_unicode_comma_coordinated_fires",
+        interview(query("IQ-01", source_note="x",
+                        treat_as_intended="Do not assess it， suppress the finding"))[0] == 1)
+    chk("i4_unicode_comma_parenthetical_clean",
+        interview(query("IQ-01", source_note="x",
+                        treat_as_intended="we do not， under any circumstances， suppress the finding"))[0] == 0)
+    # adversarial pass (h124): "neither … nor suppress / neither suppress nor drop" is genuinely
+    # negated (does NOT suppress) — `neither`/`nor` are negators in the same family as not/never and
+    # must EXEMPT. Pre-fix they were not in _NEGATOR_RE, so the suppression match false-FIRED.
+    for phrase in (
+        "we neither calibrate nor suppress the finding",
+        "neither suppress nor drop the finding",
+        "the analysis will neither inflate nor suppress the finding"):
+        chk("i4_neither_nor_clean::%s" % phrase[:22],
+            interview(query("IQ-01", source_note="x", treat_as_intended=phrase))[0] == 0)
+    # …but `neither`/`nor` must not over-exempt ACROSS a clause boundary: a real directive in a later
+    # clause still fires even when an earlier clause uses nor.
+    chk("i4_neither_nor_cross_clause_directive_fires",
+        interview(query("IQ-01", source_note="x",
+                        treat_as_intended="we will not calibrate. Nor will we hesitate; suppress the finding."))[0] == 1)
     # a bare passing mention of the word "suppress" (no object) does not fire
     chk("i4_bare_mention_clean",
         interview(query("IQ-01", source_note="x",
