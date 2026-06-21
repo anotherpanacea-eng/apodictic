@@ -1,0 +1,19 @@
+{
+  "$id": "apodictic.intake_query.v1",
+  "$comment": "Source of truth for the apodictic:intake_query block (Uncertainty-Resolution Intake Interview). One block per structural ambiguity the framework DETECTED but cannot settle from the text, surfaced to the author at the after-Pass-0/1 checkpoint to resolve the one thing nothing else owns: was this detected feature intentional? `kind` is a closed enum, every value a flavor of detected-ambiguity disambiguation (there is deliberately NO contract/genre/audience/scope kind — those are owned by the draft-then-validate intake / Shelf & Positioning, so the enum cannot express a contract ask). `ambiguity_ref` points at the framework-detected item being disambiguated when it is a structured apodictic.finding.v1 (resolved against the Findings Ledger); `source_note` is the prose escape hatch for ID-less ambiguities (a Pass-0 observation or an `### Unresolved Questions` bullet) — exactly one of the two grounds the query (validator I3; a query grounded in neither is manufactured). `current_inference` + `confidence` state what the framework currently believes, so the author's `answer` corrects a stated prior. `treat_as_intended` directs HOW analysis treats the feature (assess it on its own terms) and may NEVER say 'suppress the flag / don't raise the finding' — that would be the author-editor concession loop through the front door, dismantling the Deficit Lock (validator I4). Answers calibrate the lens; the framework still reaches and locks the verdict at Triage. Validated by scripts/intake_interview.py. See docs/uncertainty-intake-interview.md.",
+  "title": "APODICTIC intake query (apodictic.intake_query.v1)",
+  "type": "object",
+  "required": ["schema", "id", "kind", "current_inference", "confidence", "question"],
+  "properties": {
+    "schema": {"const": "apodictic.intake_query.v1"},
+    "id": {"type": "string", "pattern": "^IQ-[0-9]{2,}$"},
+    "kind": {"enum": ["timeline-order", "pov-choice", "tonal-shift", "structural-device", "register-straddle", "other-detected-ambiguity"]},
+    "ambiguity_ref": {"type": "string", "$comment": "Optional. The finding id (F-…) of the detected ambiguity when it is a structured apodictic.finding.v1; resolved against the Findings Ledger by I3. Empty/absent when the ambiguity has no id (use source_note instead)."},
+    "source_note": {"type": "string", "$comment": "Optional. A free-prose pointer used when the ambiguity has no id scheme (a Pass-0 observation or an `### Unresolved Questions` bullet). Exactly one of ambiguity_ref / source_note must ground the query (I3)."},
+    "current_inference": {"type": "string"},
+    "confidence": {"enum": ["HIGH", "MEDIUM", "LOW", "UNCERTAIN"]},
+    "question": {"type": "string"},
+    "answer": {"type": "string", "$comment": "Optional. The author's free-text answer (absent until the interview runs on an interactive host)."},
+    "treat_as_intended": {"type": "string", "$comment": "Optional. How the answer tells analysis to TREAT the feature (assess on its own terms). May never contain suppression phrasing ('suppress', 'drop/skip the flag', 'don't raise', 'remove the finding') — I4 guards the Deficit Lock."}
+  }
+}
