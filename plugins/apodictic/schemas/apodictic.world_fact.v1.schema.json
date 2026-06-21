@@ -1,0 +1,19 @@
+{
+  "$id": "apodictic.world_fact.v1",
+  "$comment": "Source of truth for the apodictic:world_fact block (Standalone Worldbuilding-Bible Coherence Tool — a pre-draft consistency check over the author's OWN hand-authored worldbuilding bible, distinct from the manuscript-facing SFF audits). One block per stated world fact the bible commits to: a closed-set rule (blood-magic can/cannot/requires X), a stated cost (the price of using a power), a place/distance, a chronology event, a faction, or a named entity. The tool checks a BIBLE (not a manuscript) for self-contradiction — closed-set rule consistency, magic-system cost accounting, and geography/timeline contradiction — and SURFACES the contradictions the bible has already committed to; it never invents world content, fills an unstated gap, or resolves a conflict (the Firewall: extract the stated, never author the unstated). Contradictions are recorded with BOTH conflicting facts (each retained) and paired in a contradiction ledger row, never resolved — choosing canon is the author's call. `category` is the fact class (rule | cost | place | distance | event | faction | entity) and drives which contradiction arm applies. `subject` is the named element the fact is about (the grouping key for cross-fact contradiction detection). `value` is ALWAYS a string (numerics are quoted: \"6 days\", not 6) so it can be type-checked and parsed. `polarity` (rule facts) is the closed-set assertion (can | cannot | requires | n/a) the rule-contradiction arm pairs on. `cost` (cost/rule facts) is the stated price the cost arm reads (a string, or null if unstated). `pair_subject` (distance/event facts) is the OTHER endpoint of the edge. `loci` are the bible locations stating the fact (>=1; the firewall's mechanical proxy). The subset schema engine guards the flat fields; closed-key checking, the contradiction arms (WB-R1/C1/C2/G1/G2), and id-uniqueness are done in scripts/world_bible.py. Locus PRESENCE/SHAPE is gated; locus RESOLUTION into the source bible is deferred to the shared snapshot layer, so the firewall here is author/QA-enforced, not yet mechanically proven. Validated by scripts/world_bible.py. See docs/worldbuilding-bible.md.",
+  "title": "APODICTIC world fact (apodictic.world_fact.v1)",
+  "type": "object",
+  "required": ["schema", "id", "category", "subject", "attribute", "value", "loci"],
+  "properties": {
+    "schema": {"const": "apodictic.world_fact.v1"},
+    "id": {"type": "string", "pattern": "^WF-[0-9]{2,}$"},
+    "category": {"enum": ["rule", "cost", "place", "distance", "event", "faction", "entity"]},
+    "subject": {"type": "string"},
+    "attribute": {"type": "string"},
+    "value": {"type": "string"},
+    "polarity": {"enum": ["can", "cannot", "requires", "n/a"], "$comment": "Optional. For category=rule: the closed-set/capability assertion the WB-R1 rule-contradiction arm pairs on (subject can <value> vs cannot <value>). Validated only when present (the subset engine checks enum membership)."},
+    "cost": {"$comment": "Optional. For category=cost/rule: the stated price (\"one year of life\", \"none\", or null if unstated) the WB-C1/C2 cost arm reads. Not type-constrained (the subset engine cannot express string|null); world_bible.py treats null/\"none\" as the free-cost form for WB-C2."},
+    "pair_subject": {"type": "string", "$comment": "Optional. For category=distance/event: the OTHER endpoint of the edge (distance A->B sets subject=A, pair_subject=B; event X-before-Y sets subject=X, pair_subject=Y). world_bible.py keys WB-G1 on the unordered {subject, pair_subject} pair and WB-G2 on the directed subject->pair_subject edge."},
+    "loci": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+  }
+}
