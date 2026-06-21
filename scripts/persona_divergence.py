@@ -183,7 +183,7 @@ def divergence(map_text, ledger_text=None, timeline_text=None, strict=False):
         if not exp:
             errs.append("D1 schema: divergence %s has an empty `experiences` map" % o.get("id"))
         for pid, val in exp.items():
-            if val not in _EXPERIENCE_ENUM:
+            if not isinstance(val, str) or val not in _EXPERIENCE_ENUM:
                 errs.append("D1 schema: divergence %s experiences[%s]=%r not in %s"
                             % (o.get("id"), pid, val, sorted(_EXPERIENCE_ENUM)))
             if pid not in persona_ids:
@@ -229,8 +229,9 @@ def divergence(map_text, ledger_text=None, timeline_text=None, strict=False):
             errs.append("D3 divergence-content: divergence %s omits the target persona %s from its "
                         "experiences — divergence anchors to the target audience's experience"
                         % (o.get("id"), target_id))
-        if len(set(exp.values())) < 2:
-            only = ", ".join(sorted({str(v) for v in exp.values()})) or "—"
+        vals = [v for v in exp.values() if isinstance(v, str)]
+        if len(vals) == len(exp) and len(set(vals)) < 2:
+            only = ", ".join(sorted(set(vals))) or "—"
             errs.append("D3 divergence-content: divergence %s assigns every persona the same "
                         "experience (%s) — there is no cross-persona divergence to surface"
                         % (o.get("id"), only))
@@ -401,6 +402,9 @@ def run_self_test():
         any("no cross-persona divergence" in ln for ln in
             divergence(TARGET + EXPERT + div("D-01", experiences={"P-01": "friction", "P-02": "friction"}),
                        LEDGER)[1]))
+    # a non-hashable experiences value must not crash D3b's set() — D1 owns that error (Codex P2 sibling)
+    chk("d3b_nonhashable_experiences_no_crash",
+        divergence(TARGET + EXPERT + div("D-01", experiences={"P-01": ["a"], "P-02": "engaged"}), LEDGER)[0] == 1)
 
     # D4 — no fabricated testimony (advisory; ERROR --strict; override)
     quote = MAP + '\n\nP-01: "I got bored in chapter 3 and put it down."\n'
