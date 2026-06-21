@@ -89,36 +89,30 @@ _SUPPRESS_RE = re.compile(
     re.IGNORECASE)
 # A suppression match is exempt when a negator genuinely SCOPES it ("does not / never / without …
 # suppress …" — the spec's recommended "it does not pre-suppress any finding"). The negator must
-# bind to the suppression phrase, not to some EARLIER, comma-coordinated imperative: in
-# "Do not assess it on its own terms, suppress the finding." the `not` governs `assess`, so the
-# trailing `suppress` is an un-negated directive and must still fire (Codex P1). We therefore exempt
-# only when a negator precedes the match in the same SENTENCE (`.;:!?`) AND does not hand off to a
-# distinct comma-separated directive before the match — i.e. there is no `<directive verb> … ,`
-# between that negator and the match. Adverbial/parenthetical interruptions ("does not, under any
-# circumstances, suppress") carry the negation through, since they contain no such verb.
+# bind to the suppression phrase, not to EARLIER material it actually governs: in
+# "Do not assess it on its own terms, suppress the finding." the `not` governs `assess`, and in
+# "Not as a calibration, suppress the finding." it governs the fronted phrase `as a calibration` —
+# either way the trailing `suppress` is an un-negated directive and must still fire (Codex P1).
 _NEGATOR_RE = re.compile(r"\b(?:not|never|without|cannot)\b|n['’]?t\b", re.IGNORECASE)
 _CLAUSE_BOUNDARY = ".;:!?"
-# Directive / assessment verbs that can head a coordinated imperative in a treat_as_intended field.
-# A negator that governs one of these before a comma — then a separate suppression directive — does
-# NOT exempt that suppression.
-_DIRECTIVE_VERB_RE = re.compile(
-    r"\b(?:assess|reassess|evaluate|treat|handle|read|interpret|consider|regard|view|judge|weigh|"
-    r"rate|score|grade|calibrate|analy[sz]e|review|frame|accept|allow|permit|keep|leave|retain|"
-    r"mark|record|log|flag|raise|report|surface|suppress|drop|skip|remove|delete|withdraw|ignore|"
-    r"waive|exempt|dismiss|downgrade|demote|mute|silence|hide|omit|exclude|classify|label|tag|rank|"
-    r"count|note)(?:e?s|ed|ing)?\b", re.IGNORECASE)
 
 
 def _negation_scopes_match(clause):
     """True iff some negator in `clause` scopes the suppression match that ENDS `clause`. A negator
-    exempts the match unless, between that negator and the match, a directive verb is followed by a
-    comma — meaning the negator governs an earlier coordinated imperative, not this suppression."""
+    exempts the match only when the suppression is in its OWN scope: either NO comma separates them
+    ("does not [...] suppress"), or the negator is IMMEDIATELY followed by a comma — a parenthetical
+    interruption ("does not, under any circumstances, suppress"). ANY non-empty material before the
+    first comma means the negator governs THAT — a fronted phrase ("Not as a calibration, suppress")
+    or an earlier coordinated imperative ("Do not assess it, suppress") — so the post-comma
+    suppression is an un-negated directive and is NOT exempted. (Third pass: the prior "directive verb
+    before the comma" test missed a fronted NON-verbal phrase; "is there non-empty pre-comma
+    material" subsumes it.)"""
     for nm in _NEGATOR_RE.finditer(clause):
         span = clause[nm.end():]            # text between this negator and the (clause-final) match
         comma = span.find(",")
-        if comma == -1 or not _DIRECTIVE_VERB_RE.search(span[:comma]):
-            return True                      # negation carries through to the suppression
-    return False                             # every negator handed off to an earlier directive
+        if comma == -1 or not span[:comma].strip():
+            return True                      # negation directly scopes the suppression
+    return False                             # every negator governs earlier material, not the match
 
 
 def _suppresses(text):
@@ -458,6 +452,11 @@ def run_self_test():
     chk("i4_comma_coordinated_directive_fires",
         interview(query("IQ-01", source_note="x",
                         treat_as_intended="Do not assess it on its own terms, suppress the finding."))[0] == 1)
+    # a FRONTED negated NON-verbal phrase ("Not as a calibration, ...") — the negator governs the
+    # fronted phrase, the trailing suppression is still a directive and must fire (Codex P1, 3rd pass)
+    chk("i4_fronted_negated_phrase_fires",
+        interview(query("IQ-01", source_note="x",
+                        treat_as_intended="Not as a calibration, suppress the finding."))[0] == 1)
     # a bare passing mention of the word "suppress" (no object) does not fire
     chk("i4_bare_mention_clean",
         interview(query("IQ-01", source_note="x",
