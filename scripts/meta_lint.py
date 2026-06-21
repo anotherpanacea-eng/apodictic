@@ -28,6 +28,7 @@ resolver. No artifact input. See docs/validator-conventions.md.
 
 Exit: 0 clean, 1 violation(s), 2 usage.
 """
+import ast
 import io
 import os
 import re
@@ -64,29 +65,53 @@ def _str_token_value(tok_string):
     return tok_string
 
 
+def _docstring_starts(py_text):
+    """(row, col) start of every bare string-expression statement — module / class / function
+    docstrings and stray string statements (an `ast.Expr` whose value is a str constant). These
+    are PROSE, not executable references, so a schema id appearing only there must not satisfy
+    M4's no-orphan gate (Codex P2). Returns an empty set if the source does not parse (then no
+    docstring is dropped — the over-count fallback, never a crash)."""
+    try:
+        tree = ast.parse(py_text)
+    except (SyntaxError, ValueError):
+        return set()
+    starts = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant) \
+                and isinstance(node.value.value, str):
+            starts.add((node.value.lineno, node.value.col_offset))
+    return starts
+
+
 def _strip_comments(py_text):
-    """Return `py_text` with `#` comments removed but STRING LITERALS kept — so a schema id is
-    counted by M4 only when it's referenced in code (e.g. `load_schema("apodictic.x.v1")`), not when
-    it's merely mentioned in a comment (Codex P2). Adjacent string literals are merged into their
-    concatenated contents so an id split across implicit string concatenation
-    (`"apodictic." "finding.v1"`) is still found. Falls back to the raw text if the file does not
-    tokenize (over-counts, the pre-fix behavior, rather than crashing)."""
+    """Return `py_text` with `#` comments AND bare string-expression statements (docstrings)
+    removed, but EXECUTABLE string literals kept — so a schema id is counted by M4 only when it's
+    referenced in code (e.g. `load_schema("apodictic.x.v1")`), not when it's merely mentioned in a
+    comment OR a docstring (Codex P2). Adjacent string literals are merged into their concatenated
+    contents so an id split across implicit string concatenation (`"apodictic." "finding.v1"`) is
+    still found. Falls back to the raw text if the file does not tokenize (over-counts, the pre-fix
+    behavior, rather than crashing)."""
     try:
         toks = [t for t in tokenize.generate_tokens(io.StringIO(py_text).readline)
                 if t.type != tokenize.COMMENT]
     except (tokenize.TokenError, IndentationError, SyntaxError):
         return py_text
+    docstring_starts = _docstring_starts(py_text)
     out, i = [], 0
     while i < len(toks):
         if toks[i].type == tokenize.STRING:
-            # Merge a run of adjacent string literals (implicit concatenation) into one
-            # contiguous value, so `"apodictic." "finding.v1"` resolves to `apodictic.finding.v1`
-            # rather than staying split by quotes + a join space.
+            # A run of adjacent string literals (implicit concatenation) is merged into one
+            # contiguous value, so `"apodictic." "finding.v1"` resolves to `apodictic.finding.v1`.
+            # If the run IS a bare string-expression statement (a docstring), drop it whole — its
+            # text is prose, not a live reference.
+            run_is_docstring = toks[i].start in docstring_starts
             chunk = []
             while i < len(toks) and toks[i].type == tokenize.STRING:
-                chunk.append(_str_token_value(toks[i].string))
+                if not run_is_docstring:
+                    chunk.append(_str_token_value(toks[i].string))
                 i += 1
-            out.append("".join(chunk))
+            if chunk:
+                out.append("".join(chunk))
         else:
             out.append(toks[i].string)
             i += 1
@@ -260,6 +285,14 @@ def run_self_test():
     # an id split across implicit string concatenation is still found (adjacent literals merged)
     chk("m4_implicit_string_concat_referenced_ok",
         check_m4(["apodictic.ghost.v1"], _strip_comments('SID = "apodictic." "ghost.v1"\n')) == [])
+    # a schema id mentioned ONLY in a docstring (a bare string statement) is prose, not a reference
+    chk("m4_docstring_only_is_orphan",
+        any("orphan-schema" in v for v in
+            check_m4(["apodictic.ghost.v1"], _strip_comments('"""Supports apodictic.ghost.v1."""'))))
+    # ...but an executable literal in the SAME file still counts (docstring dropped, literal kept)
+    chk("m4_executable_literal_with_docstring_ok",
+        check_m4(["apodictic.ghost.v1"],
+                 _strip_comments('"""doc."""\nSID = "apodictic.ghost.v1"\n')) == [])
 
     # _read_text: a non-UTF-8 byte sequence must not crash the linter (UnicodeDecodeError is a
     # ValueError, not an OSError); errors="replace" keeps the ASCII references scannable.
