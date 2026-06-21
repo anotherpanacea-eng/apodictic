@@ -122,6 +122,14 @@ def findings_of(ledger_text):
     for bt, obj, _err in art.parse_blocks(ledger_text):
         if bt != "finding" or not isinstance(obj, dict) or not obj.get("id"):
             continue
+        # A non-string id is dropped at the source: parse_blocks is raw json.loads (no id-type
+        # validation), so a JSON list/dict id is truthy and survives the `not obj.get("id")`
+        # filter, but it is stored verbatim and then used as a dict key / set member downstream
+        # (match(): `c["id"] in consumed` / `consumed.add(...)`; classify(): `{p["id"]: p}`) where
+        # an unhashable list/dict raises TypeError. Guarding only _origin_nn's re.match (the prior
+        # fix) leaves those hashing sites open — same _mech_tokens/id sibling lesson, repeated.
+        if not isinstance(obj.get("id"), str):
+            continue
         origin, nn = _origin_nn(obj["id"])
         refs = obj.get("evidence_refs") or []
         out.append({
@@ -378,8 +386,29 @@ def run_self_test():
     # a non-string finding id must not crash _origin_nn's re.match — sibling of the mechanism P2
     chk("origin_nn_nonstring",
         _origin_nn(5) == ("", 0) and _origin_nn(["a"]) == ("", 0) and _origin_nn(3.14) == ("", 0))
+    # An INT id is hashable, so findings_of keeps it without crashing the downstream key/set sites;
+    # but a NON-HASHABLE list/dict id (valid JSON, truthy, survives the id filter) would crash
+    # match()/classify() at `c["id"] in consumed` / `{p["id"]: p}`. findings_of now drops any
+    # non-string id at the source, so the WHOLE downstream path is guarded, not just _origin_nn.
     chk("findings_of_nonstring_id_no_crash",
-        len(findings_of(ledger(finding(5, "m", ["Ch 1"], "Must-Fix")))) == 1)
+        len(findings_of(ledger(finding(5, "m", ["Ch 1"], "Must-Fix")))) == 0)
+    # the load-bearing regression: a non-hashable id driven through the full diff_rounds path
+    # (-> classify -> match) must not raise TypeError: unhashable type. Pre-fix this crashed.
+    _badl = ledger(finding(["a"], "the want forces a sacrifice", ["Ch 7"], "Must-Fix"))
+    _badd = ledger(finding({"k": "v"}, "the want forces a sacrifice", ["Ch 7"], "Must-Fix"))
+    chk("findings_of_unhashable_id_dropped",
+        findings_of(_badl) == [] and findings_of(_badd) == [])
+
+    def _no_crash(prior_text, current_text):
+        try:
+            diff_rounds(prior_text, current_text, set(), set())
+            return True
+        except TypeError:
+            return False
+    # a malformed (non-hashable id) finding paired with a valid one — exercises match()/classify().
+    _good = ledger(finding("F-P5-01", "the want forces a sacrifice", ["Ch 7"], "Must-Fix"))
+    chk("diff_rounds_unhashable_list_id_no_crash", _no_crash(_badl, _good) and _no_crash(_good, _badl))
+    chk("diff_rounds_unhashable_dict_id_no_crash", _no_crash(_badd, _good) and _no_crash(_good, _badd))
 
     # matcher: F-P5-01(r1) <-> F-P5-01(r2) by origin+chapter+shared tokens; F-RR-01 has no r2 match.
     m = match(f1, findings_of(r2))

@@ -207,7 +207,12 @@ def check_obsidian(manifest_obj, snapshot, obsidian_text, letter_basename=None):
     for fid, body_text in def_lines:
         if fid not in comment_of:
             continue
-        expected = (comment_of[fid] or "") + (_fwd_wikilink(letter_basename, fid) if letter_basename else "")
+        # Only a STRING comment is the verbatim body. `or ""` neutralizes a FALSY comment (None/""),
+        # but a TRUTHY non-string comment (a JSON list/dict — kept as-is by parse_manifest) would slip
+        # through and `list + str` would crash on this line. Coerce any non-string comment to "" so a
+        # malformed comment yields the same clean O3 fidelity error as None does, never a traceback.
+        manifest_comment = comment_of[fid] if isinstance(comment_of[fid], str) else ""
+        expected = manifest_comment + (_fwd_wikilink(letter_basename, fid) if letter_basename else "")
         if body_text != expected:
             errs.append("O3 comment fidelity: definition for %s is not the verbatim manifest comment%s "
                         "(relocate, never re-author)" % (fid, " + exact forward wikilink" if letter_basename else ""))
@@ -227,7 +232,9 @@ def _heading_text_of(anchor, snapshot):
     kind, val = anchor.get("kind"), anchor.get("value")
     _cn, _sn, chap_l, sec_l = am.heading_index(snapshot)
     if kind == "chapter":
-        lineno = chap_l.get(val)
+        # a non-string chapter value is unhashable -> chap_l.get(val) would crash (sibling of the
+        # anchor_line guard; the section branch already str()-coerces).
+        lineno = chap_l.get(val) if isinstance(val, str) else None
     elif kind == "section":
         lineno = sec_l.get(str(val).strip().lower())
     else:
@@ -573,7 +580,9 @@ def _docx_span(anchor, snapshot, line_start, line_end, chap_l, sec_l):
         if m:
             return int(m.group(1)), int(m.group(2))
     elif kind == "chapter":
-        ln = chap_l.get(val)
+        # a non-string chapter value is unhashable -> chap_l.get(val) would crash (sibling of the
+        # anchor_line guard; the section branch already str()-coerces).
+        ln = chap_l.get(val) if isinstance(val, str) else None
         if ln:
             return line_start[ln], line_end[ln]
     elif kind == "section":
@@ -1010,6 +1019,37 @@ def run_self_test():
     reauth = text.replace("flat reveal", "REWRITTEN")
     e, _w = check_obsidian(obj, snap, reauth)
     chk("o3_fires_on_reauthor", any("O3 comment fidelity" in x for x in e))
+
+    # regression: a TRUTHY non-string comment (a JSON list/dict, kept as-is by parse_manifest) must
+    # not crash the O3 line. `or ""` only neutralizes a FALSY comment; pre-fix `list + str` raised
+    # TypeError on the edited line. build_obsidian str()-coerces the comment (survives), so the copy
+    # reaches check_obsidian; the malformed comment must surface as a clean O3 error, never a traceback.
+    for _badc in (["a", "b"], {"k": "v"}):
+        obj_bc = {"schema": am._SCHEMA_ID, "project": "T", "runlabel": "r",
+                  "snapshot_path": "T_Manuscript_Snapshot_r.md", "snapshot_sha256": am.sha256(snap),
+                  "snapshot_line_count": am.line_count(snap),
+                  "annotations": [ann("F-X-01", {"kind": "chapter", "value": "Ch 1"}, _badc)]}
+        _tbc, _ebc = build_obsidian(obj_bc, snap)
+        try:
+            e_bc, _wbc = check_obsidian(obj_bc, snap, _tbc)
+            chk("o3_nonstring_comment_no_crash_%s" % type(_badc).__name__,
+                _tbc is not None and any("O3 comment fidelity" in x for x in e_bc))
+        except TypeError:
+            chk("o3_nonstring_comment_no_crash_%s" % type(_badc).__name__, False)
+
+    # sibling regression: a non-string chapter ANCHOR value (unhashable) must not crash build_obsidian
+    # via _insertion_offset -> anchor_line, nor check_obsidian via _heading_text_of. Pre-fix it raised
+    # TypeError: unhashable type at chap_l.get(val).
+    obj_bv = {"schema": am._SCHEMA_ID, "project": "T", "runlabel": "r",
+              "snapshot_path": "T_Manuscript_Snapshot_r.md", "snapshot_sha256": am.sha256(snap),
+              "snapshot_line_count": am.line_count(snap),
+              "annotations": [ann("F-X-02", {"kind": "chapter", "value": [1, 2]}, "c")]}
+    try:
+        _tbv, _ebv = build_obsidian(obj_bv, snap)
+        check_obsidian(obj_bv, snap, _tbv)
+        chk("nonstring_chapter_value_no_crash", _tbv is not None)
+    except TypeError:
+        chk("nonstring_chapter_value_no_crash", False)
 
     # O2 fires on an un-manifested (authored) footnote ref+def smuggled in.
     smuggled = text.replace("Three days collapsed here.", "Three days collapsed here.[^F-EVIL-01]")

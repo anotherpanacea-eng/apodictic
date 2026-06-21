@@ -256,7 +256,10 @@ def anchor_line(anchor, snapshot, chap_l, sec_l):
         m = re.match(r"(\d+)-(\d+)$", str(val))
         return int(m.group(1)) if m else None
     if kind == "chapter":
-        return chap_l.get(val)
+        # chap_l is a real dict; a non-string chapter value (a JSON list/dict kept as-is by
+        # parse_manifest) is unhashable and would crash chap_l.get(val). The section branch already
+        # str()-coerces; this hashing lookup was the matching open sibling — guard it the same way.
+        return chap_l.get(val) if isinstance(val, str) else None
     if kind == "section":
         return sec_l.get(str(val).strip().lower())
     return None
@@ -473,10 +476,14 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
                 errs.append("A3 anchor integrity: %s line-range %r is not an in-bounds 1..%d range"
                             % (an.get("finding_id"), val, lc))
         elif kind == "chapter":
-            if chap_n.get(val, 0) != 1:
+            # a non-string chapter value is unhashable -> chap_n.get(val) would crash; treat it as
+            # zero matches so A3 reports it as a malformed/unresolved anchor instead of tracebacking
+            # (sibling of the anchor_line guard; the section branch already str()-coerces).
+            cn = chap_n.get(val, 0) if isinstance(val, str) else 0
+            if cn != 1:
                 errs.append("A3 anchor integrity: %s chapter anchor %r matches %d snapshot heading(s) "
                             "(need exactly 1; ambiguous -> document)"
-                            % (an.get("finding_id"), val, chap_n.get(val, 0)))
+                            % (an.get("finding_id"), val, cn))
         elif kind == "section":
             if sec_n.get(str(val).strip().lower(), 0) != 1:
                 errs.append("A3 anchor integrity: %s section anchor %r matches %d snapshot heading(s) "
@@ -959,6 +966,28 @@ def run_self_test():
     obj_a, _ = build_manifest(snap_ambig, "# Ledger\n" + finding("F-CH-02", "Must-Fix", ["Chapter 9"]) + "\n",
                               None)
     chk("a3_ambiguous_chapter_degrades", obj_a["annotations"][0]["anchor"]["kind"] == "document")
+
+    # regression: a non-hashable chapter anchor value (a JSON list/dict kept as-is by parse_manifest)
+    # must NOT crash the chapter-value hashing sites — anchor_line (used by render/_insertion_offset)
+    # and A3's chap_n.get(val). Pre-fix these raised TypeError: unhashable type. The section branch
+    # already str()-coerced; the chapter branch was the open sibling.
+    _cn, _sn, _cl, _sl = heading_index(snapshot)
+    for _bad in ([1, 2], {"k": "v"}):
+        try:
+            _r = anchor_line({"kind": "chapter", "value": _bad}, snapshot, _cl, _sl)
+            chk("anchor_line_nonstring_chapter_%s" % type(_bad).__name__, _r is None)
+        except TypeError:
+            chk("anchor_line_nonstring_chapter_%s" % type(_bad).__name__, False)
+    # end-to-end through the validator gate: check() A3 must classify (not traceback) a non-string
+    # chapter value, and render() (-> anchor_line) must not crash either.
+    obj_badc = json.loads(json.dumps(obj))
+    obj_badc["annotations"][0]["anchor"] = {"kind": "chapter", "value": [1, 2]}
+    try:
+        _ann_bc = render(snapshot, obj_badc)
+        code, ls = check(snapshot, manifest_md(obj_badc), _ann_bc, ledger, timeline)
+        chk("a3_nonstring_chapter_value_no_crash", any("A3 anchor integrity" in x for x in ls))
+    except TypeError:
+        chk("a3_nonstring_chapter_value_no_crash", False)
 
     # W1 — a locatable Should/Could parked at document is advisory (ERROR --strict)
     obj_w = json.loads(json.dumps(obj))
