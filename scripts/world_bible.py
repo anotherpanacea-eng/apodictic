@@ -125,7 +125,26 @@ _TEMPORAL_UNITS = {
     "day": 24.0,
     "week": 168.0,
 }
-_NUM_UNIT_RE = re.compile(r"(-?\d+(?:\.\d+)?)\s*([A-Za-z]+)")
+# The digit run admits comma thousands-separators (an ordinary way authors write worldbuilding
+# numbers: "1,000 miles", "Day 2,000"). The grouped alternative requires AT LEAST ONE ",ddd" group
+# (`+`, not `*`), so a comma-free number can ONLY match the plain `\d+` branch — without that, the
+# leftmost-FIRST alternation would let the grouped branch match a prefix of an ungrouped run ("1000"
+# -> "100") and stop. A grouped numeral is now captured WHOLE rather than truncated to its trailing
+# run — `.search()` on the old `\d+` started at the first non-comma digit and dropped the leading
+# thousands ("1,000" -> "000" -> 0.0), a false-FAIL on a self-consistent bible and a false-NEGATIVE
+# on a real conflict. Commas are stripped via _strip_grouping before float()/int().
+_NUM_UNIT_RE = re.compile(r"(-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d+(?:\.\d+)?)\s*([A-Za-z]+)")
+# Day/Week anchor digit run — same comma-grouping tolerance + same grouped-requires-a-comma guard.
+_ANCHOR_NUM = r"(\d{1,3}(?:,\d{3})+|\d+)"
+_ANCHOR_DAY_RE = re.compile(r"\bDay\s+" + _ANCHOR_NUM, re.IGNORECASE)
+_ANCHOR_WEEK_RE = re.compile(r"\bWeek\s+" + _ANCHOR_NUM, re.IGNORECASE)
+
+
+def _strip_grouping(num):
+    """Drop comma thousands-separators from a captured numeral so float()/int() see the real
+    magnitude ('1,000' -> '1000'). Comma is the only grouping char authors use here; '.' is the
+    decimal point and is preserved."""
+    return num.replace(",", "")
 
 
 def _norm_distance(s):
@@ -138,7 +157,7 @@ def _norm_distance(s):
     m = _NUM_UNIT_RE.search(s)
     if not m:
         return None
-    value = float(m.group(1))
+    value = float(_strip_grouping(m.group(1)))
     unit = m.group(2).lower().rstrip("s")
     if unit in _SPATIAL_UNITS:
         return ("spatial", value * _SPATIAL_UNITS[unit])
@@ -154,15 +173,15 @@ def _norm_anchor_day(*texts):
     for t in texts:
         if not t:
             continue
-        m = re.search(r"\bDay\s+(\d+)", t, re.IGNORECASE)
+        m = _ANCHOR_DAY_RE.search(t)
         if m:
-            return int(m.group(1))
+            return int(_strip_grouping(m.group(1)))
     for t in texts:
         if not t:
             continue
-        m = re.search(r"\bWeek\s+(\d+)", t, re.IGNORECASE)
+        m = _ANCHOR_WEEK_RE.search(t)
         if m:
-            return (int(m.group(1)) - 1) * 7 + 1
+            return (int(_strip_grouping(m.group(1))) - 1) * 7 + 1
     return None
 
 
@@ -824,6 +843,26 @@ def run_self_test():
                    value="a fortnight's walk", pair_subject="B")
               + "\n" + fact("WF-02", category="distance", subject="A", attribute="distance-to",
                             value="some way off", pair_subject="B"))[0] == 0)
+    # COMMA-GROUPED numerals (regression — pre-fix the search grabbed the trailing digit run, so
+    # "1,000 miles" parsed to 0.0): same real length written two ways must be CLEAN, not a false
+    # WB-G1 ERROR (the conservative-firing discipline; a comma-grouped number is parseable to a
+    # human). Direct unit check:
+    chk("comma_distance_parse_eq",
+        _norm_distance("1,000 miles") == _norm_distance("1000 miles") == ("spatial", 1000.0))
+    chk("comma_distance_grouped_full",
+        _norm_distance("2,500 leagues") == ("spatial", 7500.0)
+        and _norm_distance("1,234,567 miles") == ("spatial", 1234567.0))
+    g_comma = fact("WF-01", category="distance", subject="Karth", attribute="distance-to",
+                   value="1,000 miles", pair_subject="the capital")
+    g_plain = fact("WF-02", category="distance", subject="Karth", attribute="distance-to",
+                   value="1000 miles", pair_subject="the capital")
+    chk("wb_g1_comma_grouped_agree_clean", bible(g_comma + "\n" + g_plain)[0] == 0)
+    # ...and a GENUINE conflict between two grouped values must still FIRE (pre-fix both -> 0.0 and
+    # the real contradiction was MISSED — a false negative):
+    g_diff = fact("WF-02", category="distance", subject="Karth", attribute="distance-to",
+                  value="2,000 miles", pair_subject="the capital")
+    chk("wb_g1_comma_grouped_conflict_fires",
+        bible(g_comma + "\n" + g_diff)[0] == 1)
 
     # WB-G2 — chronology cycle + anchor drift; override silences each
     e1 = fact("WF-01", category="event", subject="the Sundering", attribute="happens-before",
@@ -845,6 +884,20 @@ def run_self_test():
     chk("wb_g2_anchor_drift_fires", code == 1 and any("WB-G2 chronology" in ln and "different days" in ln for ln in lines))
     ov_a = "<!-- override: world-geo WF-01/WF-02 — two calendars (old/new reckoning) -->\n"
     chk("wb_g2_anchor_override", bible(ov_a + a1 + "\n" + a2)[0] == 0)
+    # COMMA-GROUPED Day/Week anchors (regression — pre-fix `\bDay\s+(\d+)` stopped at the comma so
+    # "Day 1,000" mis-parsed to 1 and "Day 2,000" to 2, mis-bucketing/mis-reporting the anchor).
+    # Direct unit check on the anchor parser:
+    chk("comma_anchor_day_parse",
+        _norm_anchor_day("Day 1,000") == 1000 and _norm_anchor_day("Day 2,000") == 2000)
+    chk("comma_anchor_week_parse", _norm_anchor_day("Week 1,000") == (1000 - 1) * 7 + 1)
+    # ...and end-to-end: two DIFFERENT grouped Day anchors for one event must still fire anchor-drift
+    # (pre-fix they collapsed to Day 1 / Day 2 — still different, but the magnitudes were wrong; a
+    # SAME grouped anchor written two ways must be CLEAN):
+    ca1 = fact("WF-01", category="event", subject="the Sundering", attribute="Day 1,000", value="Day 1,000")
+    ca2 = fact("WF-02", category="event", subject="the Sundering", attribute="Day 2,000", value="Day 2,000")
+    chk("wb_g2_comma_anchor_drift_fires", bible(ca1 + "\n" + ca2)[0] == 1)
+    ca1b = fact("WF-02", category="event", subject="the Sundering", attribute="Day 1000", value="Day 1000")
+    chk("wb_g2_comma_anchor_same_clean", bible(ca1 + "\n" + ca1b)[0] == 0)
 
     # WF — firewall prose scan (advisory; ERROR --strict; override)
     resolve_prose = "## Notes\n\nThe true order is Day 100 for the Sundering; WF-02 is wrong.\n"
