@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""argument-spine — structural integrity for the Nonfiction Pre-Draft Pathway (Increments 1–2).
+"""argument-spine — structural integrity for the Nonfiction Pre-Draft Pathway (Increments 1–3 + 5).
 
 `validate.sh argument-spine <run_folder|files>` shells out here. Before a draft exists, a writer
 plans the argument: the thesis, the claim ladder, and the opposing view the argument must defeat.
@@ -42,9 +42,30 @@ SEED §4 Warrant and Inference Map:
                       drafting (advisory; ERROR --strict). Audience-calibrated. Override:
                       <!-- override: argument-spine-warrant — <reason> -->.
 
-A2/A3 (spine) and the seeding checks verify the plan actually populated Argument_State (the chosen
-integration). Reuses apodictic_artifacts (block grammar + schema engine). An artifact with no spine
-/ support_plan / warrant_plan block is a no-op. See docs/nonfiction-pre-draft.md.
+Increment 5 — the genre layer: a genre holds itself to its GENRE-REQUIRED argument structure. One
+apodictic.genre_profile.v1 block names the genre (grant-proposal / academic-article / pitch-deck) and
+declares the genre-required section ROLES the pre-draft Argument_State must seed (as ### sub-headings
+under the canonical §1–§6 — no new top-level section, so argument-state-schema.md stays v0.1.1):
+  B1 invalid genre profile  a genre_profile block fails its schema (bad genre / evaluator / seeded_by
+                      enum, empty required_sections, missing field, bad per-section shape, bad JSON).
+  B2 section unseeded a declared required_sections[].heading has no matching heading in the artifact —
+                      the genre's structural skeleton must be SEEDED, not merely declared (parallels
+                      A2/A6/A9, the seed-don't-float-free signature).
+  B3 genre/form mismatch the genre_profile.genre is incompatible with the argument_spine.form (the
+                      genre and the spine disagree about what the piece is). Parallels A3 thesis/C0
+                      drift. ONLY fires when a spine block is also present (a genre profile may exist in
+                      an early pre-draft before the full spine; absent spine -> skip, not fail).
+                      Compatibility is normalized (lowercase, collapse spaces/hyphens) so the spaced
+                      doc-enum spelling ('grant proposal') matches the hyphenated genre ('grant-proposal').
+  B4 duplicate genre profile  more than one genre_profile block (the piece is one genre; parallels E2).
+  W4 thin genre skeleton  a declared genre's CANONICAL required section is missing from
+                      required_sections (e.g. a grant-proposal that omits approach). Advisory (ERROR
+                      --strict): the writer may be working a non-standard variant. Override:
+                      <!-- override: argument-spine-genre <genre> — <rationale> -->.
+
+A2/A3 (spine), B2/B3 (genre), and the seeding checks verify the plan actually populated Argument_State
+(the chosen integration). Reuses apodictic_artifacts (block grammar + schema engine). An artifact with
+no spine / support_plan / warrant_plan / genre_profile block is a no-op. See docs/nonfiction-pre-draft.md.
 
   argument_spine.py argument-spine <run_folder|files...> [--strict]
   argument_spine.py --self-test
@@ -64,6 +85,7 @@ except ImportError:
 _SCHEMA_ID = "apodictic.argument_spine.v1"
 _SUPPORT_SCHEMA_ID = "apodictic.support_plan.v1"   # Increment 2: source/evidence map (seeds §3)
 _WARRANT_SCHEMA_ID = "apodictic.warrant_plan.v1"   # Increment 3: warrant pre-check (seeds §4)
+_GENRE_SCHEMA_ID = "apodictic.genre_profile.v1"    # Increment 5: genre layer (seeds the genre skeleton)
 _STATE_GLOB = "Argument_State*.md"
 _SCORE_ENUMS = ("argument_type", "burden_level", "audience_expertise", "audience_receptivity")
 # Canonical Argument_State headings the spine must seed (docs/argument-state-schema.md §1–§4).
@@ -77,6 +99,21 @@ _C0_RE = re.compile(r"^\s*C0\s*\(main claim\)\s*:\s*(.+?)\s*$", re.IGNORECASE | 
 _SUBCLAIM_ID_RE = re.compile(r"^\s*(C[0-9]+)\b")
 _ANTITHESIS_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*argument-spine-antithesis\b", re.IGNORECASE)
 _WARRANT_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*argument-spine-warrant\b", re.IGNORECASE)
+_GENRE_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*argument-spine-genre\b", re.IGNORECASE)
+
+# Increment 5 — the genre layer (apodictic.genre_profile.v1). Per-section seeded_by enum (the stdlib
+# subset validator type-checks array items but does not recurse into object items, so B1 enforces the
+# per-section {role, heading, seeded_by} shape here). Mirrors the schema's seeded_by enum.
+_GENRE_SEEDED_BY = ("C0+ladder", "stakes", "subclaim", "support_plan", "warrant_plan", "objection", "none")
+# The genre-canonical required-section ROLE sets — the small in-validator table W4 advises against
+# (a declared genre whose required_sections omit a canonical role). Roles, not headings (headings are
+# writer-declared per funder/venue; D2). Drawn from convention; deliberately MINIMAL (the writer may
+# carry more, and W4 only nudges on a missing canonical role, overridably).
+_GENRE_CANONICAL = {
+    "grant-proposal": ("specific-aims", "significance", "innovation", "approach"),
+    "academic-article": ("contribution", "related-work", "method", "limitations"),
+    "pitch-deck": ("problem", "solution", "traction"),
+}
 
 
 def _read(path):
@@ -95,6 +132,14 @@ def _echo_norm(s):
     """Normalization for the W1 echo check: lowercase, collapse whitespace, drop punctuation — so a
     restated thesis ('Fund ramps now.') still reads as an echo of the thesis ('fund ramps now')."""
     return re.sub(r"[^a-z0-9 ]", "", _norm(s)).strip()
+
+
+def _genre_norm(s):
+    """Normalization for the B3 genre/form compatibility check: lowercase, then collapse any run of
+    whitespace OR hyphens to a single space. So the spaced doc-enum spelling ('grant proposal',
+    'academic article') matches the hyphenated genre token ('grant-proposal') without a brittle
+    exact-match."""
+    return re.sub(r"[\s-]+", " ", (s or "").strip().lower()).strip()
 
 
 def parse_spine(text):
@@ -162,15 +207,91 @@ def parse_warrant_plans(text):
     return plans
 
 
+def _genre_section_errs(obj, where):
+    """Per-section shape validation for required_sections (B1). The stdlib subset validator
+    (apodictic_artifacts.validate_obj) type-checks array items but does NOT recurse into object items,
+    so the {role, heading, seeded_by} contract — incl. the seeded_by enum — is enforced here, returning
+    the same flat list of strings the schema engine returns. Only run on an already-schema-valid block
+    (required_sections is a non-empty list of something).
+
+    `role` and `heading` must be NON-WHITESPACE strings, and roles/headings must be unique across the
+    section list. A bare type check ('is it a str?') let an empty-or-whitespace heading slip past B1 —
+    and B2 (the seed check) skips empty headings ('if not heading: continue'), so an all-blank-heading
+    profile carrying the canonical roles falsely reported the genre seeded and PASSED --strict. The
+    seeding contract is a per-section heading that must appear in the artifact; a blank or duplicate
+    heading can't carry it, so it's rejected here at the contract gate, before B2 ever runs."""
+    errs = []
+    seen_roles, seen_headings = {}, {}
+    for i, sec in enumerate((obj.get("required_sections") or [])):
+        at = "%s required_sections[%d]" % (where, i)
+        if not isinstance(sec, dict):
+            errs.append("%s: must be an object" % at)
+            continue
+        for k in ("role", "heading", "seeded_by"):
+            if k not in sec:
+                errs.append("%s: missing required field '%s'" % (at, k))
+        for k in ("role", "heading"):
+            if k not in sec:
+                continue
+            v = sec[k]
+            if not isinstance(v, str):
+                errs.append("%s: '%s' must be type string" % (at, k))
+            elif not v.strip():
+                errs.append("%s: '%s' must be a non-empty (non-whitespace) string" % (at, k))
+            else:
+                # uniqueness key matches how each field is later consumed: roles on _genre_norm
+                # (W4's role table key — 'related-work'=='related work'); headings case-insensitively
+                # on trimmed text (B2's exact case-insensitive heading match), so 'Approach' /
+                # ' approach ' / 'APPROACH' collide as one declared section without over-merging
+                # hyphen variants B2 would treat as distinct heading text.
+                norm = _genre_norm(v) if k == "role" else v.strip().lower()
+                seen = seen_roles if k == "role" else seen_headings
+                if norm in seen:
+                    errs.append("%s: duplicate %s %r (already declared at required_sections[%d]) — "
+                                "each section's %s must be unique" % (at, k, v, seen[norm], k))
+                else:
+                    seen[norm] = i
+        if "seeded_by" in sec and sec["seeded_by"] not in _GENRE_SEEDED_BY:
+            errs.append("%s: 'seeded_by'=%r not in %s" % (at, sec.get("seeded_by"), list(_GENRE_SEEDED_BY)))
+    return errs
+
+
+def parse_genre_profiles(text):
+    """[(obj_or_None, schema_errs, index), ...] for each apodictic:genre_profile block (Increment 5).
+
+    Returns ALL genre_profile blocks (B4 fires on >1). schema_errs folds the subset-schema errors
+    (B1: genre / evaluator enum, empty required_sections, missing field, bad JSON) AND the per-section
+    {role, heading, seeded_by} shape the subset validator can't reach (also B1)."""
+    plans = []
+    if not text or art is None:
+        return plans
+    schema = art.load_schema(_GENRE_SCHEMA_ID)
+    idx = 0
+    for btype, obj, jerr in art.parse_blocks(text):
+        if btype != "genre_profile":
+            continue
+        idx += 1
+        where = "genre_profile #%d" % idx
+        if jerr:
+            plans.append((None, ["%s: invalid JSON — %s" % (where, jerr)], idx))
+            continue
+        serrs = art.validate_obj(obj, schema, where)
+        if not serrs:
+            serrs = _genre_section_errs(obj, where)   # per-section shape, only when the container is valid
+        plans.append((obj, serrs, idx))
+    return plans
+
+
 def check(text, strict=False):
     """Run the argument-spine integrity checks. Returns (code, lines)."""
     lines, errs, warns = [], [], []
     obj, schema_errs = parse_spine(text)
     supports = parse_support_plans(text)
     warrants = parse_warrant_plans(text)
-    if obj is None and not schema_errs and not supports and not warrants:
-        return 0, ["argument-spine: no argument_spine / support_plan / warrant_plan blocks found — "
-                   "nothing to check"]
+    genres = parse_genre_profiles(text)
+    if obj is None and not schema_errs and not supports and not warrants and not genres:
+        return 0, ["argument-spine: no argument_spine / support_plan / warrant_plan / genre_profile "
+                   "blocks found — nothing to check"]
 
     # A1 — schema / JSON validity
     for e in schema_errs:
@@ -259,6 +380,56 @@ def check(text, strict=False):
                                  "audience won't grant it; make the warrant explicit and back it before "
                                  "drafting" % (o.get("subclaim_id"), reason))
 
+    # ---- Increment 5: the genre layer (genre_profile seeds the genre's required-section skeleton) ----
+    # B4 — duplicate genre profile (the piece is one genre). Parallels scene-ethics E2. Fires on the
+    # COUNT, independent of per-block validity, so two malformed blocks still surface the duplication.
+    if len(genres) > 1:
+        errs.append("B4 duplicate genre profile: %d genre_profile blocks present — a pre-draft is one "
+                    "genre; keep exactly one" % len(genres))
+    # B1 — schema / per-section / JSON validity, per genre_profile block
+    for _o, gerrs, _i in genres:
+        for e in gerrs:
+            errs.append("B1 invalid genre profile: %s" % e)
+    valid_genres = [o for o, gerrs, _i in genres if o is not None and not gerrs]
+    for gobj in valid_genres:
+        sections = gobj.get("required_sections") or []
+        # B2 — each declared required section must be SEEDED (a matching heading present in the artifact),
+        # not merely declared. The genre analogue of A2/A6/A9's seed-don't-float-free signature. Headings
+        # seed as ### sub-headings under the canonical §1–§6 (D3), so we match the heading TEXT (case-
+        # insensitive) anywhere a markdown heading carries it, NOT a fixed §-number. The declared text must
+        # be the heading line's ACTUAL content (the full run after the #s, modulo a trailing colon /
+        # whitespace) — a substring of an unrelated heading does NOT seed it (declared 'Approach' is not
+        # seeded by '### Approaching the Funder Landscape', 'Aims' is not seeded by '### Specific Aims').
+        for sec in sections:
+            heading = (sec.get("heading") or "").strip()
+            if not heading:
+                continue
+            hre = re.compile(r"^#{1,6}[ \t]+%s[ \t]*:?[ \t]*$" % re.escape(heading),
+                             re.IGNORECASE | re.MULTILINE)
+            if not hre.search(text):
+                errs.append("B2 section unseeded: declared genre section '%s' (role %s) has no matching "
+                            "heading in the artifact — the genre skeleton must be seeded, not just "
+                            "declared" % (heading, sec.get("role")))
+        # B3 — the genre and the spine must agree about what the piece is. ONLY when a valid spine is
+        # also present (a genre profile may precede the full spine in an early pre-draft -> skip, not
+        # fail). Compatibility is normalized (spaces/hyphens, case), so the spaced doc-enum form
+        # ('grant proposal') matches the hyphenated genre ('grant-proposal').
+        if obj is not None and not schema_errs:
+            if _genre_norm(gobj.get("genre")) != _genre_norm(obj.get("form")):
+                errs.append("B3 genre/form mismatch: genre_profile.genre=%r is incompatible with the "
+                            "spine's form=%r — the genre and the spine disagree about what the piece is"
+                            % (gobj.get("genre"), obj.get("form")))
+        # W4 — thin genre skeleton: a declared genre's CANONICAL required role is missing from
+        # required_sections (advisory; ERROR --strict; override silences). Genre conventions vary, so
+        # this only nudges; the hard B-codes carry structural integrity.
+        if not _GENRE_OVERRIDE_RE.search(text):
+            declared_roles = {_genre_norm(s.get("role")) for s in sections}
+            for canon in _GENRE_CANONICAL.get(gobj.get("genre"), ()):
+                if _genre_norm(canon) not in declared_roles:
+                    warns.append("W4 thin genre skeleton: a %s profile omits the canonical section "
+                                 "'%s' — add it, or override if this is a non-standard variant"
+                                 % (gobj.get("genre"), canon))
+
     # Report
     if obj is not None and not schema_errs:
         lines.append("argument-spine: %s / burden=%s / audience=%s,%s; %d subclaim(s)"
@@ -270,6 +441,10 @@ def check(text, strict=False):
                      % (len(valid_supports), len(spine_subclaim_ids(obj))))
     if valid_warrants:
         lines.append("argument-spine: %d warrant plan(s)" % len(valid_warrants))
+    if valid_genres:
+        g = valid_genres[0]
+        lines.append("argument-spine: genre=%s / evaluator=%s; %d required section(s)"
+                     % (g.get("genre"), g.get("evaluator"), len(g.get("required_sections") or [])))
     for e in errs:
         lines.append("  ERROR: %s" % e)
     for w in warns:
@@ -280,10 +455,12 @@ def check(text, strict=False):
                      % (len(errs), ", %d strict warn(s)" % len(warns) if (strict and warns) else ""))
         return 1, lines
     if warns:
-        lines.append("WARN: argument-spine: %d advisory gap(s) — see W1/W2/W3 above" % len(warns))
+        lines.append("WARN: argument-spine: %d advisory gap(s) — see W1/W2/W3/W4 above" % len(warns))
     else:
         seeded = "§1/§2" + ("/§3" if valid_supports else "") + ("/§4" if valid_warrants else "")
-        lines.append("argument-spine: PASS (contract + seeds Argument_State %s + anti-thesis)" % seeded)
+        genre_tag = (" + genre %s" % valid_genres[0].get("genre")) if valid_genres else ""
+        lines.append("argument-spine: PASS (contract + seeds Argument_State %s + anti-thesis%s)"
+                     % (seeded, genre_tag))
     return 0, lines
 
 
@@ -469,6 +646,190 @@ def run_self_test():
     ovw = "<!-- override: argument-spine-warrant — the implicit warrant is shared ground here -->\n"
     code, lines = check(seeded4(ONE, ovw + warrant("C1", ws="RECOVERABLE"), receptivity="HOSTILE"))
     chk("w3_override", code == 0 and not any("W3" in ln for ln in lines))
+
+    # ---- Increment 5: the genre layer (genre_profile seeds the genre's required-section skeleton) ----
+    # canonical role->heading per genre (the full canonical set; a clean profile carries all of them)
+    _G_SECTIONS = {
+        "grant-proposal": [("specific-aims", "Specific Aims", "C0+ladder"),
+                           ("significance", "Significance", "stakes"),
+                           ("innovation", "Innovation", "subclaim"),
+                           ("approach", "Approach", "support_plan")],
+        "academic-article": [("contribution", "Contribution Claim", "C0+ladder"),
+                             ("related-work", "Related-Work Positioning", "subclaim"),
+                             ("method", "Method and Evidence", "support_plan"),
+                             ("limitations", "Limitations and Scope", "none")],
+        "pitch-deck": [("problem", "Problem", "stakes"),
+                       ("solution", "Solution", "C0+ladder"),
+                       ("traction", "Traction", "support_plan")],
+    }
+
+    def genre(g="grant-proposal", evaluator="panel-reviewer", sections=None, **over):
+        secs = [{"role": r, "heading": h, "seeded_by": s}
+                for (r, h, s) in (sections if sections is not None else _G_SECTIONS[g])]
+        o = {"schema": _GENRE_SCHEMA_ID, "genre": g, "required_sections": secs, "evaluator": evaluator}
+        o.update(over)
+        return "<!-- apodictic:genre_profile\n%s\n-->" % _j.dumps(o)
+
+    def seededG(g="grant-proposal", evaluator="panel-reviewer", form=None, sections=None,
+                thesis="the city should fund curb-cut ramps citywide", extra="", **gover):
+        # a seeded Argument_State whose spine form = the genre, whose §1/§2 carry the genre's required
+        # section headings (as ### sub-headings), + a spine + the genre_profile block. `form` defaults
+        # to the genre token so B3 passes; pass form= to force a mismatch (B3 reads the SPINE's form,
+        # so the spine block carries form_val, not just the §1 markdown line).
+        secs = sections if sections is not None else _G_SECTIONS[g]
+        form_val = form if form is not None else g
+        heads = "".join("### %s\n\n_seeded_\n\n" % h for (_r, h, _s) in secs)
+        gblock = genre(g=g, evaluator=evaluator, sections=sections, **gover)
+        return ("# Argument State\n## 1. Context and Classification\nForm: %s\n%s"
+                "## 2. Claim Architecture\nC0 (main claim): %s\n%s"
+                "## 6. Objection and Dialectical Integrity Map\nObjection 1: low priority\n%s\n"
+                % (form_val, heads, thesis, extra,
+                   gblock + "\n" + spine(thesis=thesis, form=form_val)))
+
+    # clean: all three genres, fully seeded, form == genre -> PASS, no B/W
+    for _g in ("grant-proposal", "academic-article", "pitch-deck"):
+        code, lines = check(seededG(_g, evaluator={"grant-proposal": "panel-reviewer",
+                                                   "academic-article": "peer-reviewer",
+                                                   "pitch-deck": "investor"}[_g]))
+        chk("genre_clean_%s" % _g, code == 0 and not any("B1" in ln or "B2" in ln or "B3" in ln
+                                                         or "B4" in ln or "W4" in ln for ln in lines))
+    # genre layer staged OFF: a plain spine (no genre_profile) behaves exactly as today -> no B/W codes
+    chk("genre_staged_off", not any(("B1" in ln or "B2" in ln or "B3" in ln or "B4" in ln or "W4" in ln)
+                                    for ln in check(seeded())[1]))
+    # genre_profile alone (no spine) still no-op-resolves the spine but checks the genre -> not a crash;
+    # B3 is SKIPPED when no valid spine is present
+    code, lines = check("# notes\n### Specific Aims\n_x_\n### Significance\n_x_\n### Innovation\n_x_\n"
+                        "### Approach\n_x_\n" + genre("grant-proposal"))
+    chk("genre_no_spine_skips_b3", code == 0 and not any("B3" in ln for ln in lines))
+
+    # B1 — bad genre enum / bad evaluator enum / empty required_sections / bad seeded_by / missing field / JSON
+    # (swap the genre token inside the genre_profile JSON to an out-of-enum value; B3 also fires, but B1 is the point)
+    chk("b1_bad_genre", check(seededG().replace('"genre": "grant-proposal"', '"genre": "white-paper"', 1))[0] == 1)
+    chk("b1_bad_evaluator", check(seededG(evaluator="czar"))[0] == 1)
+    code, lines = check(seededG(sections=[]))
+    chk("b1_empty_sections", code == 1 and any("B1 invalid genre profile" in ln for ln in lines))
+    code, lines = check(seededG(sections=[("specific-aims", "Specific Aims", "telepathy")]))
+    chk("b1_bad_seeded_by", code == 1 and any("B1 invalid genre profile" in ln and "seeded_by" in ln for ln in lines))
+    # missing a per-section field (drop heading) -> B1 (the per-section shape enforced in-validator)
+    bad_sec_block = ('<!-- apodictic:genre_profile\n'
+                     '{"schema":"apodictic.genre_profile.v1","genre":"pitch-deck","evaluator":"investor",'
+                     '"required_sections":[{"role":"problem","seeded_by":"stakes"}]}\n-->')
+    code, lines = check("# Argument State\n## 1. Context and Classification\nForm: pitch-deck\n"
+                        "## 2. Claim Architecture\nC0 (main claim): x\n" + bad_sec_block)
+    chk("b1_section_missing_field", code == 1 and any("B1 invalid genre profile" in ln and "heading" in ln for ln in lines))
+    code, lines = check("## 1. Context and Classification\n## 2. Claim Architecture\n"
+                        '<!-- apodictic:genre_profile\n{"schema":"apodictic.genre_profile.v1"\n-->')
+    chk("b1_bad_json", code == 1 and any("B1 invalid genre profile" in ln for ln in lines))
+
+    # B2 — a declared section heading is absent from the artifact (declared but not seeded)
+    code, lines = check(seededG("grant-proposal").replace("### Approach\n\n_seeded_\n\n", "", 1))
+    chk("b2_section_unseeded", code == 1 and any("B2 section unseeded" in ln and "Approach" in ln for ln in lines))
+    # B2 lookalike guard: a heading that merely CONTAINS the word elsewhere as prose (not a heading) is
+    # still unseeded — drop the §heading but leave a prose mention
+    code, lines = check(seededG("pitch-deck").replace("### Traction\n\n_seeded_\n\n",
+                                                      "We will discuss Traction in the deck.\n\n", 1))
+    chk("b2_prose_not_heading", code == 1 and any("B2 section unseeded" in ln and "Traction" in ln for ln in lines))
+    # B2 substring guard: a declared section is NOT seeded by a DIFFERENT heading that merely contains its
+    # text as a substring. Required 'Approach' must not be satisfied by '### Approaching the Funder
+    # Landscape'; required 'Aims' must not be satisfied by '### Specific Aims'. (These PASSED before the
+    # match was tightened from substring-anywhere to full-heading-text — the exact false-pass B2 exists to catch.)
+    code, lines = check(seededG("grant-proposal").replace("### Approach\n\n_seeded_\n\n",
+                                                          "### Approaching the Funder Landscape\n\n_seeded_\n\n", 1))
+    chk("b2_substring_diff_heading", code == 1 and any("B2 section unseeded" in ln and "Approach" in ln for ln in lines))
+    AIMS_SECTIONS = [("aims", "Aims", "C0+ladder"), ("significance", "Significance", "stakes"),
+                     ("innovation", "Innovation", "subclaim"), ("approach", "Approach", "support_plan")]
+    # declare 'Aims' but seed only '### Specific Aims' (a longer, different heading) -> Aims is unseeded
+    base = seededG("grant-proposal", sections=AIMS_SECTIONS)
+    code, lines = check(base.replace("### Aims\n\n_seeded_\n\n", "### Specific Aims\n\n_seeded_\n\n", 1))
+    chk("b2_substring_specific_aims", code == 1 and any("B2 section unseeded" in ln and "'Aims'" in ln for ln in lines))
+    # the seeding IS satisfied by an exact heading, optionally with a trailing colon (the tightened form tolerates ':')
+    code, lines = check(seededG("grant-proposal").replace("### Approach\n\n_seeded_\n\n",
+                                                          "### Approach:\n\n_seeded_\n\n", 1))
+    chk("b2_trailing_colon_ok", code == 0 and not any("B2 section unseeded" in ln and "Approach" in ln for ln in lines))
+
+    # B3 — genre/form mismatch (genre says grant-proposal, the spine's form says pitch-deck)
+    code, lines = check(seededG("grant-proposal", form="pitch-deck"))
+    chk("b3_genre_form_mismatch", code == 1 and any("B3 genre/form mismatch" in ln for ln in lines))
+    # B3 normalization: the spaced doc-enum form 'grant proposal' is COMPATIBLE with 'grant-proposal'
+    code, lines = check(seededG("grant-proposal", form="grant proposal"))
+    chk("b3_spaced_form_ok", code == 0 and not any("B3" in ln for ln in lines))
+    # B3 normalization: 'academic article' (spaced) vs 'academic-article' -> compatible
+    code, lines = check(seededG("academic-article", evaluator="peer-reviewer", form="Academic Article"))
+    chk("b3_spaced_academic_ok", code == 0 and not any("B3" in ln for ln in lines))
+
+    # B4 — two genre_profile blocks (the piece is one genre)
+    code, lines = check(seededG("grant-proposal", extra=genre("grant-proposal") + "\n"))
+    chk("b4_duplicate", code == 1 and any("B4 duplicate genre profile" in ln for ln in lines))
+
+    # W4 — a declared genre omits a canonical role (grant without 'approach') -> advisory; ERROR --strict; override
+    GRANT_NO_APPROACH = [("specific-aims", "Specific Aims", "C0+ladder"),
+                         ("significance", "Significance", "stakes"),
+                         ("innovation", "Innovation", "subclaim")]
+    code, lines = check(seededG("grant-proposal", sections=GRANT_NO_APPROACH))
+    chk("w4_thin_skeleton", code == 0 and any("W4 thin genre skeleton" in ln and "approach" in ln for ln in lines))
+    chk("w4_strict_fails", check(seededG("grant-proposal", sections=GRANT_NO_APPROACH), strict=True)[0] == 1)
+    ovg = "<!-- override: argument-spine-genre grant-proposal — LOI variant has no Approach section -->\n"
+    code, lines = check(seededG("grant-proposal", sections=GRANT_NO_APPROACH, extra=ovg))
+    chk("w4_override", code == 0 and not any("W4" in ln for ln in lines))
+    # W4 academic: a contribution claim with NO related-work positioning is the academic signature thin-skeleton
+    ACAD_NO_RELWORK = [("contribution", "Contribution Claim", "C0+ladder"),
+                       ("method", "Method and Evidence", "support_plan"),
+                       ("limitations", "Limitations and Scope", "none")]
+    code, lines = check(seededG("academic-article", evaluator="peer-reviewer", sections=ACAD_NO_RELWORK))
+    chk("w4_academic_no_relwork",
+        code == 0 and any("W4 thin genre skeleton" in ln and "related-work" in ln for ln in lines))
+
+    # B1 blank/duplicate role|heading — a non-whitespace, unique contract, enforced at the gate.
+    # The smallest-input-that-breaks: all four canonical grant roles but heading="" everywhere. B2
+    # SKIPS empty headings ('if not heading: continue'), so before this guard the profile reported the
+    # genre SEEDED and PASSED --strict — the exact false-pass Codex reproduced. It must FAIL (B1), not
+    # report seeded, in BOTH default and --strict mode (the seeding contract is not advisory).
+    ALL_BLANK_HEAD = [(r, "", s) for (r, _h, s) in _G_SECTIONS["grant-proposal"]]
+    code, lines = check(seededG("grant-proposal", sections=ALL_BLANK_HEAD))
+    chk("b1_all_blank_heading_fails",
+        code == 1 and any("B1 invalid genre profile" in ln and "heading" in ln for ln in lines)
+        and not any("PASS" in ln for ln in lines))
+    chk("b1_all_blank_heading_strict_fails",
+        check(seededG("grant-proposal", sections=ALL_BLANK_HEAD), strict=True)[0] == 1)
+    # one whitespace-only heading is just as empty as "" — a single tab must fail, not pass-through B2
+    ONE_WS_HEAD = [("specific-aims", "Specific Aims", "C0+ladder"),
+                   ("significance", "\t ", "stakes"),
+                   ("innovation", "Innovation", "subclaim"),
+                   ("approach", "Approach", "support_plan")]
+    code, lines = check(seededG("grant-proposal", sections=ONE_WS_HEAD))
+    chk("b1_whitespace_heading_fails",
+        code == 1 and any("B1 invalid genre profile" in ln and "heading" in ln for ln in lines))
+    # blank ROLE is rejected on the same gate (sibling of blank heading)
+    ONE_BLANK_ROLE = [("", "Specific Aims", "C0+ladder"),
+                      ("significance", "Significance", "stakes"),
+                      ("innovation", "Innovation", "subclaim"),
+                      ("approach", "Approach", "support_plan")]
+    code, lines = check(seededG("grant-proposal", sections=ONE_BLANK_ROLE))
+    chk("b1_blank_role_fails",
+        code == 1 and any("B1 invalid genre profile" in ln and "role" in ln for ln in lines))
+    # duplicate heading (case-insensitive) — two sections claim the same seed -> B1
+    DUP_HEAD = [("specific-aims", "Specific Aims", "C0+ladder"),
+                ("significance", "specific aims", "stakes"),
+                ("innovation", "Innovation", "subclaim"),
+                ("approach", "Approach", "support_plan")]
+    code, lines = check(seededG("grant-proposal", sections=DUP_HEAD))
+    chk("b1_duplicate_heading_fails",
+        code == 1 and any("B1 invalid genre profile" in ln and "duplicate" in ln and "heading" in ln
+                          for ln in lines))
+    # duplicate role (normalized) — 'related work' and 'related-work' are the same declared role -> B1
+    DUP_ROLE = [("approach", "Specific Aims", "C0+ladder"),
+                ("approach", "Significance", "stakes"),
+                ("innovation", "Innovation", "subclaim")]
+    code, lines = check(seededG("grant-proposal", sections=DUP_ROLE))
+    chk("b1_duplicate_role_fails",
+        code == 1 and any("B1 invalid genre profile" in ln and "duplicate" in ln and "role" in ln
+                          for ln in lines))
+    # regression guard: the clean fully-seeded profiles (distinct, non-blank role+heading) still PASS,
+    # so the new contract didn't over-reject legitimate genre profiles
+    for _g, _ev in (("grant-proposal", "panel-reviewer"), ("academic-article", "peer-reviewer"),
+                    ("pitch-deck", "investor")):
+        chk("b1_clean_unique_%s" % _g,
+            not any("B1 invalid genre profile" in ln for ln in check(seededG(_g, evaluator=_ev))[1]))
 
     # resolution: run-folder (Argument_State*.md) + explicit file
     import tempfile
