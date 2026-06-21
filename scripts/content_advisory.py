@@ -65,9 +65,13 @@ _SEVERITY_RE = re.compile(r"\b(?:Must|Should|Could)-Fix\b")
 # W1 — a PRESCRIPTIVE construction (a modal/recommend verb governing a revision action) — NOT a bare
 # descriptive adjective. "should cut this scene" fires; "excessive blood loss" does not.
 _PRESCRIPTIVE_RE = re.compile(
-    r"\b(?:should|recommend(?:ed|ing)?|consider|advise|suggest|ought\s+to|needs?\s+to|might\s+want\s+to)\b"
-    r"[^.;\n]{0,40}?"
-    r"\b(?:cut|remove|delet\w+|soften|tone\s+(?:it\s+)?down|reduc\w+|trim|excise|edit\s+out|rework)\b",
+    r"\b(?:should|recommend(?:ed|ing|s)?|consider|advise[sd]?|suggest(?:ed|ing|s)?|ought\s+to|"
+    r"needs?\s+to|must|might\s+want\s+to)\b"
+    # negation-aware gap: a negator between the modal and the action means the prose is NOT prescribing
+    # the revision ("recommends NO cut", "should NOT cut") — those describe, so don't fire.
+    r"(?:(?!\b(?:no|not|never)\b|n['’]?t)[^.;\n]){0,40}?"
+    r"\b(?:cut(?:ting|s)?|remov\w+|delet\w+|soften\w*|tone\s+(?:it\s+)?down|reduc\w+|"
+    r"trim\w*|excis\w+|edit\w*\s+out|rework\w*)\b",
     re.IGNORECASE)
 _OPT_IN_RE = re.compile(r"<!--\s*content-advisory:\s*opted-in\s*-->", re.IGNORECASE)
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
@@ -133,8 +137,13 @@ def advisory(text, strict=False):
     """Run the Content-Advisory integrity checks. Returns (code, lines)."""
     lines, errs, warns = [], [], []
     notes = parse_notes(text)
+    # A filename-matched advisory with NO parsed note blocks is not a free pass: the reader-facing
+    # PROSE checks below (A3 severity leak, W1 prescriptive drift, W2 opt-in) must still run on `text` —
+    # an advisory carrying "Must-Fix; should cut this scene" in prose with no structured note must still
+    # fail under --strict (Codex P1). Only the note-bound checks (A1/A2 + the per-id label scans) skip,
+    # which they do naturally by iterating the empty list.
     if not notes:
-        return 0, ["content-advisory: no content_note blocks found — nothing to check"]
+        lines.append("content-advisory: no content_note blocks found — prose-level checks only")
 
     # A1 — schema / JSON / conditional validity
     for _obj, schema_errs, _idx in notes:
@@ -323,8 +332,31 @@ def run_self_test():
     chk("w2_missing_marker_advisory", code == 0 and any("W2 opt-in marker" in ln for ln in lines))
     chk("w2_missing_marker_strict_fails", advisory(TWO, strict=True)[0] == 1)
 
-    # no blocks -> no-op
+    # no blocks -> prose-level checks still run (Codex P1): a no-notes advisory is NOT a free pass.
+    # Clean prose (with opt-in) still passes; but severity/prescriptive prose must be caught.
+    chk("no_notes_clean_with_optin_ok", advisory(OPT + "Descriptive prose about the depicted content.\n")[0] == 0)
+    chk("no_notes_severity_prose_fails",   # A3 fires (hard ERROR) even with zero parsed notes
+        advisory("This chapter is a Must-Fix.\n")[0] == 1)
+    chk("no_notes_prescriptive_prose_strict_fails",  # W1 fires under --strict with zero notes
+        advisory("We should cut this scene.\n", strict=True)[0] == 1)
+    chk("no_notes_codex_repro_strict_fails",  # Codex's exact P1 repro
+        advisory("Must-Fix; should cut this scene", strict=True)[0] == 1)
+    # …and the old "no notes, no severity/prescription, no opt-in" path still returns 0 (W2 is a
+    # non-strict WARN, not an error).
     chk("no_notes_noop", advisory("# Notes\nnothing structured\n")[0] == 0)
+
+    # W1 P2 (Codex): ordinary prescriptions the prior regex missed — gerund action ("recommend
+    # cutting") and the `must` modal ("must cut") — must fire W1.
+    chk("w1_recommend_cutting_fires",
+        any("W1 prescriptive" in ln for ln in advisory(OPT + TWO + "\nWe recommend cutting the torture passage.\n")[1]))
+    chk("w1_must_cut_fires",
+        any("W1 prescriptive" in ln for ln in advisory(OPT + TWO + "\nThe editor says you must cut this scene.\n")[1]))
+    # …but a NEGATED construction describes, it does not prescribe — "recommends no cut" (the canonical
+    # fixture's wording) and "should not cut" must stay clean (the negation-aware gap).
+    for clean in ("the advisory recommends no cut to this scene",
+                  "the editor should not cut this passage"):
+        chk("w1_negated_prescription_clean::%s" % clean[:20],
+            not any("W1 prescriptive" in ln for ln in advisory(OPT + TWO + "\n" + clean + "\n")[1]))
 
     # resolution: glob, explicit file, no-artifact exit 2, decoy prose mention skipped
     import tempfile
