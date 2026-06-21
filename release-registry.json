@@ -62,6 +62,7 @@
       "apodictic": "core-editor",
       "projects": "core-editor",
       "legal-risk": "core-editor",
+      "world-bible": "core-editor",
       "triage-feedback": "revision-coach",
       "reader-questions": "revision-coach"
     },
@@ -97,6 +98,7 @@
       "apodictic": "core-editor",
       "projects": "core-editor",
       "legal-risk": "core-editor",
+      "world-bible": "core-editor",
       "triage-feedback": "revision-coach",
       "reader-questions": "revision-coach"
     }
@@ -193,6 +195,14 @@
       "routerEquivalent": null,
       "writerQuestion": "Flag legal exposure (defamation, privacy, rights) for a lawyer's review.",
       "description": "Flag potential legal exposure for counsel — flags, never adjudicates."
+    },
+    {
+      "command": "/world-bible",
+      "category": "focused",
+      "status": "first_class_shortcut",
+      "routerEquivalent": null,
+      "writerQuestion": "Check my worldbuilding bible for self-contradiction (rules, magic costs, geography/timeline).",
+      "description": "Check a pre-draft worldbuilding bible for self-contradiction — surfaces conflicts, never resolves them."
     },
     {
       "command": "/triage-feedback",
