@@ -82,6 +82,11 @@ def reclassify(annotation, n1_snapshot, chap_n, sec_n):
             return "held", new_anchor, "quote held at %s" % new_val
         return "moved", new_anchor, "quote moved %s -> %s" % (val, new_val)
     if kind == "chapter":
+        # chap_n is a real dict; a non-string value (JSON list/dict survives parse_manifest as-is)
+        # is unhashable and would crash `chap_n.get(val, 0)`. The section branch is already safe
+        # (it str()-coerces val); this hashing-lookup branch was the one-branch-not-all gap.
+        if not isinstance(val, str):
+            return "ambiguous", None, "malformed chapter anchor value (not a string): %r" % (val,)
         c = chap_n.get(val, 0)
         if c == 1:
             return "held", dict(anc), "chapter heading %r present+unique" % val
@@ -345,6 +350,24 @@ def run_self_test():
     # fix is no-crash; a non-dict anchor yields an empty-anchor classification, a non-dict annotation -> ambiguous
     chk("crash_nondict_anchor", isinstance(reclassify({"finding_id": "F-X-01", "anchor": [1, 2]}, "snap", 1, 1), tuple))
     chk("crash_nondict_annotation", reclassify([1, 2, 3], "snap", 1, 1)[0] == "ambiguous")
+    # regression: a non-hashable chapter anchor value (a JSON list/dict, kept as-is by parse_manifest)
+    # must not crash the chapter branch's `chap_n.get(val, 0)` lookup. chap_n MUST be a real dict here
+    # (the prior non-dict-anchor test passed ints, which never reaches this hashing site). Pre-fix this
+    # raised TypeError: unhashable type. The section branch already str()-coerces; this was the gap.
+    _chap_n, _sec_n, _c, _s = am.heading_index(snap_n)
+    for _bad in ([1, 2], {"k": "v"}):
+        kl, _na, _ev = reclassify({"finding_id": "F-CH-X", "anchor": {"kind": "chapter", "value": _bad}},
+                                  snap_n, _chap_n, _sec_n)
+        chk("crash_nonstring_chapter_value_%s" % type(_bad).__name__, kl == "ambiguous")
+    # end-to-end through reanchor(): a manifest whose chapter anchor value is a list must classify
+    # (not traceback) — the validator-entry path parse_manifest -> reanchor -> reclassify.
+    _man_bad = dict(man_n, annotations=[ann("F-CH-99", {"kind": "chapter", "value": [1, 2]})])
+    try:
+        _cb, _lb = run_via(_man_bad, snap_moved)
+        chk("reanchor_nonstring_chapter_value_no_crash",
+            any("reanchor:ambiguous F-CH-99" in x for x in _lb))
+    except TypeError:
+        chk("reanchor_nonstring_chapter_value_no_crash", False)
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 
