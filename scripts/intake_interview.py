@@ -102,7 +102,17 @@ _CLAUSE_BOUNDARY = ".;:!?"
 # suppress the flag" / "never overstate severity AND suppress the finding") — the negation does not
 # reach across the coordinated clause, so the trailing suppression must still fire. This is the
 # comma-less sibling of the comma-coordinated case ("Do not assess it on its own terms, suppress").
+# A conjunction is NOT predicate-coordinating when it merely joins ADVERBS inside the modifier phrase
+# that leads to the suppression verb ("do not now OR ever suppress" — `now or ever` modifies the
+# single verb `suppress`): there the negation still directly governs the suppression (see _is_adverbial).
 _COORD_CONJ_RE = re.compile(r"\b(?:and|but|yet|or|then)\b", re.IGNORECASE)
+
+# The leading verb of a suppression match ("suppress/drop/skip/... " or "don't raise/flag/..."). Used
+# to isolate the negator-to-verb HEAD so a comma-less conjunction inside an adverbial modifier phrase
+# ("now or ever") is told apart from a conjunction that joins a separate predicate ("exaggerate but").
+_SUPPRESS_VERB_RE = re.compile(
+    r"\b(?:suppress(?:es|ing|ed)?|drop|skip|remove|delete|withdraw|raise|flag|report|surface|record)\b",
+    re.IGNORECASE)
 
 
 # Adverbs/intensifiers that can sit between a negator and the verb it governs WITHOUT breaking the
@@ -117,33 +127,50 @@ _NEG_ADVERB = frozenset({
 })
 
 
-def _is_adverbial(head):
-    """True if `head` (the material between a negator and the first following comma) is empty or made
-    up ONLY of adverbs/intensifiers — so it does NOT introduce a separate predicate. A verb phrase
-    ("assess it on its own terms") or a fronted phrase ("as a calibration") is NOT adverbial."""
+_COORD_CONJ_WORDS = frozenset({"and", "but", "yet", "or", "then"})
+
+
+def _is_adverbial(head, allow_conj=False):
+    """True if `head` (the material between a negator and the first following comma, or the
+    suppression verb) is empty or made up ONLY of adverbs/intensifiers — so it does NOT introduce a
+    separate predicate. A verb phrase ("assess it on its own terms") or a fronted phrase ("as a
+    calibration") is NOT adverbial. With `allow_conj` (the comma-less head, where the trailing token
+    is the suppression VERB), a coordinating conjunction joining adverbs is transparent — "now or
+    ever" modifies the one verb `suppress`, it does not start a second predicate."""
     return all(w.lower() in _NEG_ADVERB or w.lower().endswith("ly")
+               or (allow_conj and w.lower() in _COORD_CONJ_WORDS)
                for w in re.findall(r"[\w'’-]+", head))
 
 
 def _negation_scopes_match(clause):
     """True iff some negator in `clause` scopes the suppression match that ENDS `clause`. A negator
-    exempts the match only when it binds to the suppression itself: NO comma AND no coordinating
-    conjunction separate them ("does not [...] suppress"), OR the material before the first comma is
-    empty or ONLY adverbial ("do not, ..." / "do not EVER, under any circumstances, suppress" — a
-    parenthetical interruption). NON-adverbial pre-comma material means the negator governs THAT — a
-    fronted phrase ("Not as a calibration, suppress") or a coordinated imperative ("Do not assess it
-    on its own terms, suppress") — so the trailing suppression is an un-negated directive and is NOT
-    exempted. A comma-LESS coordinating conjunction is the same coordination without the comma ("do
-    not exaggerate BUT suppress" / "never overstate severity AND suppress"): the negator governs the
-    earlier predicate, the conjunction introduces a fresh directive, so the negation does NOT reach
-    the suppression and it must fire. (Prior passes: "any non-empty pre-comma material fires" wrongly
-    fired on an adverb before a parenthetical — Codex P2; this pass closes the comma-less coordinated
-    sibling that the comma-only check left open.)"""
+    exempts the match only when it DIRECTLY governs the suppression verb — no intervening predicate
+    AND no predicate-coordination between them. Cases that stay exempt: a direct binding ("does not
+    [...] suppress"); an empty-or-adverb-only parenthetical before the first comma ("do not, ..." /
+    "do not EVER, under any circumstances, suppress"); and a comma-less adverbial modifier phrase
+    whose coordinating conjunction merely joins ADVERBS that modify the one suppression verb ("do not
+    now OR ever suppress" — `now or ever` is adverbial, not a second predicate). Cases that are NOT
+    exempt (the suppression is an un-negated directive and must fire): a fronted phrase ("Not as a
+    calibration, suppress"); a comma-coordinated imperative ("Do not assess it on its own terms,
+    suppress"); and a comma-LESS conjunction that joins a fresh PREDICATE ("do not exaggerate BUT
+    suppress" / "never overstate severity AND suppress") — there a verb sits before the conjunction,
+    so the head is not adverbial. (Prior passes: "any non-empty pre-comma material fires" wrongly
+    fired on an adverb before a parenthetical — Codex P2; "any comma-less conjunction fires" wrongly
+    fired on a coordinated adverbial — Codex P2, this pass.)"""
     for nm in _NEGATOR_RE.finditer(clause):
         span = clause[nm.end():]            # text between this negator and the (clause-final) match
         comma = span.find(",")
         if comma == -1:
             if _COORD_CONJ_RE.search(span):
+                # A conjunction sits before the suppression verb with no comma. It only stops the
+                # negation when it joins a PREDICATE: isolate the negator-to-verb HEAD and require it
+                # to be adverbs-only (conjunctions transparent). "now or ever suppress" → head "now or
+                # ever" is adverbial → negation still scopes; "exaggerate but suppress" → head
+                # "exaggerate but" has a verb → fresh predicate → negation stops.
+                vm = _SUPPRESS_VERB_RE.search(span)
+                head = span[:vm.start()] if vm else span
+                if _is_adverbial(head, allow_conj=True):
+                    return True              # conjunction joins adverbs modifying the verb; still scopes
                 continue                     # conjunction starts a fresh predicate; negation stops there
             return True                      # negation directly scopes the suppression
         if _is_adverbial(span[:comma]):
@@ -509,6 +536,19 @@ def run_self_test():
         "do not assess it on its own terms then suppress the finding"):
         chk("i4_comma_less_coordinated_fires::%s" % phrase[:22],
             interview(query("IQ-01", source_note="x", treat_as_intended=phrase))[0] == 1)
+    # Codex P2 (comma-less coordinated ADVERBIAL — the inverse of the case above): a coordinating
+    # conjunction that joins ADVERBS modifying the single suppression verb ("now OR ever suppress")
+    # is NOT a fresh predicate, so the negation still scopes and these legitimate non-suppression
+    # statements must stay EXEMPT. Pre-fix, _COORD_CONJ_RE saw `or`/`and`, dropped the negation, and
+    # I4 false-fired.
+    for phrase in (
+        "we do not now or ever suppress the finding",
+        "we will never now or ever suppress the finding",
+        "do not ever or always suppress the finding",
+        "we do not routinely or deliberately drop the flag",
+        "we do not now and never will suppress the finding"):
+        chk("i4_comma_less_coordinated_adverbial_clean::%s" % phrase[:22],
+            interview(query("IQ-01", source_note="x", treat_as_intended=phrase))[0] == 0)
     # a bare passing mention of the word "suppress" (no object) does not fire
     chk("i4_bare_mention_clean",
         interview(query("IQ-01", source_note="x",
