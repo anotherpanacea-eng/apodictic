@@ -25,8 +25,12 @@ audit-signal-propagation.
 
 Block grammar + severity ordering come from the shared `apodictic_artifacts`
 module (schemas/ are the source of truth). The body override marker is
-`<!-- override: softness-downgrade — <rationale> -->` (body-only; appendix
-markers are non-canonical). Substring matching is HTML-tolerant.
+ID-SCOPED: `<!-- override: softness-downgrade F-<ORIGIN>-<NN> — <rationale> -->`
+(body-only; appendix markers are non-canonical). It downgrades ERROR→WARN ONLY
+for the named Finding Lifecycle ID — a BARE marker with no resolvable ID
+acknowledges nothing (so one marker cannot blanket-mask every locked finding's
+downgrade; the gate-bypass closed 2026-06-20). Markers inside code spans
+(backticks) are ignored. There is intentionally no blanket/all-findings form.
 
 Exit: 0 pass (no ERROR), 1 ERROR(s), 2 usage error.
 """
@@ -51,7 +55,22 @@ PROSE_SEVERITY_RE = re.compile(
 APPENDIX_A_RE = re.compile(r"Appendix\s+A\b", re.IGNORECASE)
 SEVCAL_RE = re.compile(r"Severity\s+Calibration|Appendix\s+B\b", re.IGNORECASE)
 NEXT_APPENDIX_RE = re.compile(r"Appendix\s+[C-Z]\b", re.IGNORECASE)
-SOFT_MARKER = "<!-- override: softness-downgrade"
+SOFT_MARKER = "<!-- override: softness-downgrade"  # legacy slug; overrides are now ID-scoped (see below)
+# An override is acknowledged ONLY when it is an HTML-comment-anchored, ID-scoped directive naming the
+# exact Finding Lifecycle ID it downgrades: `<!-- override: softness-downgrade F-P5-01 — <rationale> -->`.
+# A BARE marker (no resolvable ID) acknowledges NOTHING — a single unscoped marker must not blanket-mask
+# every locked finding's downgrade (that would dismantle the Deficit Lock, severity honesty's core).
+_SOFT_OVERRIDE_RE = re.compile(
+    r"<!--\s*override:\s*softness-downgrade\s+(F-[A-Za-z0-9]+-[0-9]{2,})(?![\w-])", re.IGNORECASE)
+# Code spans (fenced ``` ``` and inline ` `) are stripped before the scan so a documentation EXAMPLE
+# of the marker (in backticks) is not mistaken for a live override.
+_CODE_SPAN_RE = re.compile(r"```.*?```|`[^`\n]*`", re.DOTALL)
+
+
+def soft_overrides(body):
+    """The set of Finding Lifecycle IDs a body's ID-scoped softness-downgrade markers acknowledge."""
+    region = _CODE_SPAN_RE.sub(" ", body or "")
+    return {m.group(1) for m in _SOFT_OVERRIDE_RE.finditer(region)}
 
 
 def parse_locked_findings(ledger_text):
@@ -204,7 +223,7 @@ def softness_check(letter_text, ledger_text):
     # A malformed/schema-invalid Severity Calibration block is a broken delivery contract —
     # hard ERROR (the softness-downgrade override cannot mask it).
     errs.extend("invalid Severity Calibration block — %s" % e for e in cal_block_errs)
-    marker = SOFT_MARKER in body
+    overrides = soft_overrides(body)
     for f in parse_locked_findings(ledger_text):
         if not isinstance(f, dict):
             continue  # a malformed (non-dict) finding block can't be a locked finding; skip, don't crash
@@ -233,10 +252,16 @@ def softness_check(letter_text, ledger_text):
             problem = "locked %s finding recorded in Severity Calibration but absent from the author-facing body (buried)" % lock
         if problem:
             msg = "%s (%s)" % (problem, label)
-            if marker:
-                warns.append(msg + " — softness-downgrade marker present (acknowledged)")
+            # Acknowledged ONLY by an ID-scoped override naming this finding's Lifecycle ID. An id-less
+            # (legacy heuristic) finding has no ID to name, so it cannot be acknowledged — give it a
+            # Lifecycle ID (the Deficit Lock already requires structured findings) to override its downgrade.
+            if fid and isinstance(fid, str) and fid in overrides:
+                warns.append(msg + " — softness-downgrade override for %s present (acknowledged)" % fid)
+            elif fid and isinstance(fid, str):
+                errs.append(msg + " — no softness-downgrade override naming %s in body" % fid)
             else:
-                errs.append(msg + " — no softness-downgrade override marker in body")
+                errs.append(msg + " — no ID-scoped softness-downgrade override (an id-less finding "
+                            "cannot be acknowledged; assign it a Finding Lifecycle ID)")
         elif _has_hedge(body, f):
             warns.append("locked %s finding (%s) delivered but hedged in the body" % (lock, label))
     return errs, warns
@@ -306,10 +331,12 @@ def run_self_test():
     check("prefix_ref_not_matched",
           softness_check("# Edit\n## What Needs Work\nMust-Fix: pacing wanders in Chapter 34.\n"
                          "## Appendix B: Severity Calibration\nChapter 34 pacing: Severity held at Must-Fix.\n", lock_ch3)[0], False)
+    # a BARE marker (no Lifecycle ID) acknowledges NOTHING (the 2026-06-20 gate-bypass fix): an id-less
+    # finding cannot be named, so its downgrade is a hard ERROR — give it a Lifecycle ID to override.
     body_mk = ("# Edit\n## What Needs Work\nTheo has no arc (Chapter 34).\n"
                "<!-- override: softness-downgrade — over-diagnosed; see Appendix B -->\n"
                "## Appendix B: Severity Calibration\nTheo's zero arc: Severity Should-Fix.\n")
-    check("downgrade_with_body_marker_warns", softness_check(body_mk, lock)[0], True)
+    check("id_less_bare_marker_not_acknowledged", softness_check(body_mk, lock)[0], False)
     e_h, w_h = softness_check(letter("Theo's arc could perhaps be strengthened (Chapter 34).", "Must-Fix"), lock)
     check("hedged_warns_no_error", e_h, True)
     check("hedged_has_warning", [] if w_h else ["no warning"], True)
@@ -341,6 +368,42 @@ def run_self_test():
                          "<!-- finding: F-P5-02 -->\n## Appendix B: Severity Calibration\n"
                          "F-P5-02 Theo's zero arc: Severity held at Must-Fix.\n"
                          "F-P5-02 on reflection: softened to Should-Fix.\n", lock_id)[0], False)
+
+    # ---- ID-scoped softness-downgrade override (2026-06-20 gate-bypass fix) ----
+    def letter_id_ov(fid, marker_id, sevcal_sev="Should-Fix"):
+        return ("# Edit\n## What Needs Work\nThe protagonist never changes across the novel (Chapter 34).\n"
+                "<!-- finding: %s -->\n"
+                "<!-- override: softness-downgrade %s — over-diagnosed; see Appendix B -->\n"
+                "## Appendix A\np\n## Appendix B: Severity Calibration\n%s Theo's zero arc: Severity %s.\n"
+                % (fid, marker_id, fid, sevcal_sev))
+    # an override naming the finding's own ID acknowledges its downgrade -> WARN, no ERROR
+    check("id_scoped_override_acknowledges", softness_check(letter_id_ov("F-P5-02", "F-P5-02"), lock_id)[0], True)
+    # an override for a DIFFERENT id does NOT acknowledge this finding's downgrade -> ERROR
+    check("id_scoped_override_wrong_id_errors", softness_check(letter_id_ov("F-P5-02", "F-P5-99"), lock_id)[0], False)
+    # a SUFFIXED id must not match (a F-P5-021 marker must not acknowledge F-P5-02) -> ERROR
+    check("id_scoped_override_suffixed_id_errors", softness_check(letter_id_ov("F-P5-02", "F-P5-021"), lock_id)[0], False)
+    # a HYPHEN-SUFFIXED id must not over-match (a F-P5-02-extra marker must not acknowledge F-P5-02)
+    check("id_scoped_override_hyphen_suffix_errors", softness_check(letter_id_ov("F-P5-02", "F-P5-02-extra"), lock_id)[0], False)
+    # a marker inside a backtick code span is a documentation example, not a live override -> ERROR
+    check("id_scoped_override_in_backticks_ignored",
+          softness_check(letter_id_ov("F-P5-02", "F-P5-02").replace(
+              "<!-- override: softness-downgrade F-P5-02 — over-diagnosed; see Appendix B -->",
+              "Use `<!-- override: softness-downgrade F-P5-02 -->` to acknowledge."), lock_id)[0], False)
+    # THE GATE-BYPASS REGRESSION: an override for ONE finding must NOT mask ANOTHER finding's downgrade
+    lock_two = (lock_id + "\n"
+                + lock_id.replace('"id":"F-P5-02"', '"id":"F-P5-03"')
+                         .replace("protagonist never changes; no arc", "the subplot vanishes without payoff"))
+    letter_two = ("# Edit\n## What Needs Work\n"
+                  "The protagonist never changes across the novel (Chapter 34).\n<!-- finding: F-P5-02 -->\n"
+                  "The subplot vanishes without payoff (Chapter 12).\n<!-- finding: F-P5-03 -->\n"
+                  "<!-- override: softness-downgrade F-P5-02 — over-diagnosed -->\n"
+                  "## Appendix A\np\n## Appendix B: Severity Calibration\n"
+                  "F-P5-02 Theo's zero arc: Severity Should-Fix.\nF-P5-03 subplot: Severity Should-Fix.\n")
+    e_two = softness_check(letter_two, lock_two)[0]
+    check("override_scoped_not_blanket", e_two, False)  # F-P5-03 is unmasked -> has an ERROR
+    check("override_masks_only_named_id",
+          [] if (len(e_two) == 1 and "F-P5-03" in e_two[0] and "F-P5-02" not in e_two[0])
+          else ["expected exactly 1 ERROR naming F-P5-03 only, got: %s" % e_two], True)
 
     # ---- structured Severity Calibration (apodictic.severity_calibration.v1) ----
     def letter_struct(delivered, prose_sev="Must-Fix"):
