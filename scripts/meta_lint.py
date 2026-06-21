@@ -28,19 +28,35 @@ resolver. No artifact input. See docs/validator-conventions.md.
 
 Exit: 0 clean, 1 violation(s), 2 usage.
 """
+import io
 import os
 import re
 import sys
+import tokenize
 
 try:
     import apodictic_artifacts as art
 except ImportError:
     art = None
 
+
+def _strip_comments(py_text):
+    """Return `py_text` with `#` comments removed but STRING LITERALS kept — so a schema id is
+    counted by M4 only when it's referenced in code (e.g. `load_schema("apodictic.x.v1")`), not when
+    it's merely mentioned in a comment (Codex P2). Falls back to the raw text if the file does not
+    tokenize (over-counts, the pre-fix behavior, rather than crashing)."""
+    try:
+        return " ".join(t.string for t in tokenize.generate_tokens(io.StringIO(py_text).readline)
+                        if t.type != tokenize.COMMENT)
+    except (tokenize.TokenError, IndentationError, SyntaxError):
+        return py_text
+
 # A raw marker-substring membership test used for classification — the M2 anti-pattern. A literal
 # "apodictic:<type>" immediately tested with `in`. The safe `_has_block` degraded fallback uses a
 # FORMAT string (`"apodictic:%s" % btype`), which this literal pattern deliberately does NOT match.
-_SUBSTRING_CLASSIFY_RE = re.compile(r'"apodictic:[A-Za-z_]+"\s+in\b')
+# Matches EITHER quote style — `'apodictic:x' in` is the same anti-pattern as `"apodictic:x" in`
+# (Codex P2: the double-quote-only pattern let the single-quoted equivalent through).
+_SUBSTRING_CLASSIFY_RE = re.compile(r"""['"]apodictic:[A-Za-z_]+['"]\s+in\b""")
 _HAS_BLOCK_DEF_RE = re.compile(r"^def _has_block\b", re.MULTILINE)
 _AGG_RE = re.compile(r'^AGG_VALIDATORS="([^"]*)"', re.MULTILINE)
 _CASE_RE = re.compile(r"^  ([a-z0-9][a-z0-9-]*)\)\s*$", re.MULTILINE)
@@ -134,7 +150,9 @@ def run():
                 py_files[fn] = open(os.path.join(d, fn), encoding="utf-8").read()
             except OSError:
                 pass
-    all_py = "\n".join(py_files.values())
+    # M4 reads code, not comments: strip `#` comments so a schema id mentioned only in a comment is
+    # not counted as referenced (Codex P2).
+    all_py = "\n".join(_strip_comments(t) for t in py_files.values())
     schema_ids = art.known_schema_ids() if art else []
 
     viol = []
@@ -180,6 +198,7 @@ def run_self_test():
 
     # M2
     chk("m2_substring_flagged", check_m2("bad.py", 'def resolve(p):\n    if "apodictic:finding" in t:\n        return p\n') != [])
+    chk("m2_substring_single_quote_flagged", check_m2("bad.py", "def resolve(p):\n    if 'apodictic:finding' in t:\n        return p\n") != [])
     chk("m2_has_block_ok", check_m2("good.py", 'def _has_block(text, bt):\n    return any(b==bt for b in x)\ndef resolve(p):\n    if _has_block(t, "finding"):\n        return p\n') == [])
     chk("m2_format_fallback_ok", check_m2("ok.py", 'def _has_block(text, btype):\n    return ("apodictic:%s" % btype) in (text or "")\n') == [])
     chk("m2_no_marker_ok", check_m2("plain.py", 'def check(t):\n    return "scene id" in t\n') == [])
@@ -192,6 +211,13 @@ def run_self_test():
     # M4
     chk("m4_referenced_ok", check_m4(["apodictic.finding.v1"], 'load_schema("apodictic.finding.v1")') == [])
     chk("m4_orphan_fails", any("orphan-schema" in v for v in check_m4(["apodictic.ghost.v1"], "nothing here")))
+    # M4 reads CODE, not comments: a schema id mentioned only in a `#` comment is an orphan (Codex P2),
+    # while a string-literal reference still counts as consumed.
+    chk("m4_comment_only_is_orphan",
+        any("orphan-schema" in v for v in
+            check_m4(["apodictic.ghost.v1"], _strip_comments("# wires apodictic.ghost.v1\nx = 1\n"))))
+    chk("m4_string_literal_referenced_ok",
+        check_m4(["apodictic.ghost.v1"], _strip_comments('SID = "apodictic.ghost.v1"\n')) == [])
 
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
