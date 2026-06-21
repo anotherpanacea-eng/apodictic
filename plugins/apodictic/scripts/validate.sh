@@ -298,8 +298,9 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-vocabulary-guide.md not found"; CA_FAIL=1
     fi
     echo ""
-    echo "== canonical example ledger <-> letter (both directions: finding-trace forward refs + softness-check reverse delivery; deficit-lock structured locks) =="
+    echo "== canonical example ledger <-> letter (both directions: structured-findings on the ledger + finding-trace forward refs + softness-check reverse delivery; deficit-lock structured locks) =="
     if [ -f "$CA_BASE/example-findings-ledger.md" ]; then
+      "$0" structured-findings "$CA_BASE/example-findings-ledger.md" || CA_FAIL=1
       "$0" finding-trace "$CA_BASE/example-findings-ledger.md" "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
       "$0" softness-check "$CA_BASE/example-editorial-letter.md" "$CA_BASE/example-findings-ledger.md" || CA_FAIL=1
       "$0" deficit-lock "$CA_BASE/example-findings-ledger.md" || CA_FAIL=1
