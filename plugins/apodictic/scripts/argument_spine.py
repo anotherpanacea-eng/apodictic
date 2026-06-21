@@ -370,13 +370,17 @@ def check(text, strict=False):
         sections = gobj.get("required_sections") or []
         # B2 — each declared required section must be SEEDED (a matching heading present in the artifact),
         # not merely declared. The genre analogue of A2/A6/A9's seed-don't-float-free signature. Headings
-        # seed as ### sub-headings under the canonical §1–§6 (D3), so we match the heading TEXT anywhere a
-        # markdown heading carries it (case-insensitive), not a fixed §-number.
+        # seed as ### sub-headings under the canonical §1–§6 (D3), so we match the heading TEXT (case-
+        # insensitive) anywhere a markdown heading carries it, NOT a fixed §-number. The declared text must
+        # be the heading line's ACTUAL content (the full run after the #s, modulo a trailing colon /
+        # whitespace) — a substring of an unrelated heading does NOT seed it (declared 'Approach' is not
+        # seeded by '### Approaching the Funder Landscape', 'Aims' is not seeded by '### Specific Aims').
         for sec in sections:
             heading = (sec.get("heading") or "").strip()
             if not heading:
                 continue
-            hre = re.compile(r"^#{1,6}\s+.*%s" % re.escape(heading), re.IGNORECASE | re.MULTILINE)
+            hre = re.compile(r"^#{1,6}[ \t]+%s[ \t]*:?[ \t]*$" % re.escape(heading),
+                             re.IGNORECASE | re.MULTILINE)
             if not hre.search(text):
                 errs.append("B2 section unseeded: declared genre section '%s' (role %s) has no matching "
                             "heading in the artifact — the genre skeleton must be seeded, not just "
@@ -700,6 +704,23 @@ def run_self_test():
     code, lines = check(seededG("pitch-deck").replace("### Traction\n\n_seeded_\n\n",
                                                       "We will discuss Traction in the deck.\n\n", 1))
     chk("b2_prose_not_heading", code == 1 and any("B2 section unseeded" in ln and "Traction" in ln for ln in lines))
+    # B2 substring guard: a declared section is NOT seeded by a DIFFERENT heading that merely contains its
+    # text as a substring. Required 'Approach' must not be satisfied by '### Approaching the Funder
+    # Landscape'; required 'Aims' must not be satisfied by '### Specific Aims'. (These PASSED before the
+    # match was tightened from substring-anywhere to full-heading-text — the exact false-pass B2 exists to catch.)
+    code, lines = check(seededG("grant-proposal").replace("### Approach\n\n_seeded_\n\n",
+                                                          "### Approaching the Funder Landscape\n\n_seeded_\n\n", 1))
+    chk("b2_substring_diff_heading", code == 1 and any("B2 section unseeded" in ln and "Approach" in ln for ln in lines))
+    AIMS_SECTIONS = [("aims", "Aims", "C0+ladder"), ("significance", "Significance", "stakes"),
+                     ("innovation", "Innovation", "subclaim"), ("approach", "Approach", "support_plan")]
+    # declare 'Aims' but seed only '### Specific Aims' (a longer, different heading) -> Aims is unseeded
+    base = seededG("grant-proposal", sections=AIMS_SECTIONS)
+    code, lines = check(base.replace("### Aims\n\n_seeded_\n\n", "### Specific Aims\n\n_seeded_\n\n", 1))
+    chk("b2_substring_specific_aims", code == 1 and any("B2 section unseeded" in ln and "'Aims'" in ln for ln in lines))
+    # the seeding IS satisfied by an exact heading, optionally with a trailing colon (the tightened form tolerates ':')
+    code, lines = check(seededG("grant-proposal").replace("### Approach\n\n_seeded_\n\n",
+                                                          "### Approach:\n\n_seeded_\n\n", 1))
+    chk("b2_trailing_colon_ok", code == 0 and not any("B2 section unseeded" in ln and "Approach" in ln for ln in lines))
 
     # B3 — genre/form mismatch (genre says grant-proposal, the spine's form says pitch-deck)
     code, lines = check(seededG("grant-proposal", form="pitch-deck"))
