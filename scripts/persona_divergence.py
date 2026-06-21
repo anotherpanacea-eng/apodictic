@@ -215,6 +215,26 @@ def divergence(map_text, ledger_text=None, timeline_text=None, strict=False):
                         "finding's locked %s — segmentation may not downgrade the verdict"
                         % (o.get("id"), asserted, locked))
 
+    # D3b — a divergence must actually DIVERGE across personas, anchored to the target. An
+    # experiences map that omits the target persona, or assigns every persona the SAME experience,
+    # predicts no cross-persona divergence at all — the whole point of the block (Codex P1). Only
+    # meaningful when a contrast is structurally possible (>= 2 personas); with fewer, W1 coverage
+    # advises instead.
+    target_id = targets[0] if len(targets) == 1 else None
+    for o, _i in (valid_divs if len(valid_personas) >= 2 else []):
+        exp = o.get("experiences")
+        if not isinstance(exp, dict) or not exp:
+            continue  # an empty/non-object experiences map is already a D1 error
+        if target_id is not None and target_id not in exp:
+            errs.append("D3 divergence-content: divergence %s omits the target persona %s from its "
+                        "experiences — divergence anchors to the target audience's experience"
+                        % (o.get("id"), target_id))
+        if len(set(exp.values())) < 2:
+            only = ", ".join(sorted({str(v) for v in exp.values()})) or "—"
+            errs.append("D3 divergence-content: divergence %s assigns every persona the same "
+                        "experience (%s) — there is no cross-persona divergence to surface"
+                        % (o.get("id"), only))
+
     # D4 — no fabricated testimony (advisory; ERROR --strict; any persona-quote override silences).
     # Scan the VISIBLE prose only — the persona/divergence blocks (and any explanatory note) are HTML
     # comments; fabricated testimony presented *as data* lives in the reader-facing prose.
@@ -373,6 +393,14 @@ def run_self_test():
     # asserting the SAME (or higher) severity is fine
     chk("d3_equal_severity_ok",
         divergence(MAP.replace(div("D-01"), div("D-01", asserted="Must-Fix")), LEDGER)[0] == 0)
+    # D3b — a divergence must include the target persona AND actually diverge (Codex P1)
+    chk("d3b_omits_target",
+        any("omits the target" in ln for ln in
+            divergence(TARGET + EXPERT + div("D-01", experiences={"P-02": "engaged"}), LEDGER)[1]))
+    chk("d3b_no_divergence",
+        any("no cross-persona divergence" in ln for ln in
+            divergence(TARGET + EXPERT + div("D-01", experiences={"P-01": "friction", "P-02": "friction"}),
+                       LEDGER)[1]))
 
     # D4 — no fabricated testimony (advisory; ERROR --strict; override)
     quote = MAP + '\n\nP-01: "I got bored in chapter 3 and put it down."\n'
