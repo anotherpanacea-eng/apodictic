@@ -203,6 +203,15 @@ def parse_facts(text):
                 if k not in _KNOWN_KEYS:
                     errs.append("%s: unknown field %r (closed key set: %s)"
                                 % (where, k, ", ".join(sorted(_KNOWN_KEYS))))
+            # Bespoke `cost` value-type guard — same philosophy as the closed-key pass. The schema
+            # leaves `cost` un-typed (the subset engine cannot express string|null, per its own
+            # $comment), so a numeric/list/bool `cost` would pass W1 + closed-key and crash the
+            # cost arm's _norm_value(c) -> (c or "").strip(). Catch it here so the malformed bible
+            # gets a clean W1 ERROR, matching the spec's "string fields are type-checked so the
+            # arms can safely parse them" guarantee (the one un-schema'd field that needed it).
+            if "cost" in obj and obj["cost"] is not None and not isinstance(obj["cost"], str):
+                errs.append("%s: `cost` must be a string or null, got %s"
+                            % (where, type(obj["cost"]).__name__))
         facts.append((obj, errs, idx))
     return facts
 
@@ -590,6 +599,18 @@ def run_self_test():
     code, lines = bible(fact("WF-01", polairty="cannot"))
     chk("w1_closed_key_misspell", code == 1 and any("unknown field" in ln for ln in lines))
     chk("w1_known_optional_ok", bible(fact("WF-01", polarity="cannot", cost=None))[0] == 0)
+    # closed-key admits `cost` but the schema leaves it un-typed; a non-string/non-null `cost`
+    # (numeric, list, bool) must be a clean W1 ERROR, not an uncaught AttributeError in the cost arm.
+    code, lines = bible(fact("WF-01", category="cost", subject="bm", attribute="cost",
+                             value="p", cost=5))
+    chk("w1_cost_not_string_numeric",
+        code == 1 and any("W1 schema" in ln and "`cost` must be a string or null" in ln for ln in lines))
+    chk("w1_cost_not_string_list",
+        bible(fact("WF-01", category="cost", subject="bm", attribute="cost",
+                   value="p", cost=["a", "b"]))[0] == 1)
+    chk("w1_cost_not_string_bool",
+        bible(fact("WF-01", category="cost", subject="bm", attribute="cost",
+                   value="p", cost=True))[0] == 1)
 
     # WD — duplicate id
     code, lines = bible(fact("WF-01", polarity="can", value="fly")
