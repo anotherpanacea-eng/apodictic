@@ -1,0 +1,27 @@
+{
+  "$id": "apodictic.genre_profile.v1",
+  "$comment": "Source of truth for the apodictic:genre_profile block (Nonfiction Pre-Draft Pathway, argument-spine Increment 5 — the genre layer). ONE block per pre-draft Argument_State. A genre profile holds a genre to its GENRE-REQUIRED argument structure: it names the genre (grant-proposal / academic-article / pitch-deck) and declares which genre-required section ROLES the pre-draft Argument_State must seed, the existing pre-draft artifact each is `seeded_by`, and the evaluator the genre is written for (panel-reviewer / peer-reviewer / investor). SEEDS the genre's required-section skeleton as `###` sub-headings under the canonical Argument_State §1-§6 (docs/argument-state-schema.md), so NO new top-level numbered section is added and the schema doc stays v0.1.1. Validated by scripts/argument_spine.py (B1 schema, B2 a declared section unseeded, B3 genre/form mismatch, B4 duplicate genre profile, W4 thin genre skeleton). The per-section `role`/`heading`/`seeded_by` shape (incl. the `seeded_by` enum) is enforced in argument_spine.py's parse_genre_profile, since the stdlib subset validator (apodictic_artifacts.validate_obj) does not recurse into object array items. The Firewall holds: the genre layer validates the WRITER's declared structure and surfaces which genre-required section is missing or unseeded; it invents no aims, no contribution claim, no objection text, no traction numbers. `reviewer_objections` is the writer's pre-list (Increment 2 / W5); the genre layer never authors objections. See docs/nonfiction-pre-draft.md.",
+  "title": "APODICTIC genre profile (apodictic.genre_profile.v1)",
+  "type": "object",
+  "required": ["schema", "genre", "required_sections", "evaluator"],
+  "properties": {
+    "schema": {"const": "apodictic.genre_profile.v1"},
+    "genre": {"enum": ["grant-proposal", "academic-article", "pitch-deck"]},
+    "required_sections": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "$comment": "{role: string, heading: string, seeded_by: enum}. The per-item shape (incl. the seeded_by enum) is enforced in argument_spine.py parse_genre_profile — the stdlib subset validator only type-checks array items, it does not recurse into object items.",
+        "required": ["role", "heading", "seeded_by"],
+        "properties": {
+          "role": {"type": "string"},
+          "heading": {"type": "string"},
+          "seeded_by": {"enum": ["C0+ladder", "stakes", "subclaim", "support_plan", "warrant_plan", "objection", "none"]}
+        }
+      }
+    },
+    "evaluator": {"enum": ["panel-reviewer", "peer-reviewer", "investor"]},
+    "reviewer_objections": {"type": "array", "items": {"type": "string"}}
+  }
+}
