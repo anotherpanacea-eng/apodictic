@@ -69,6 +69,28 @@ def _read(path):
         return None
 
 
+def _safe_component(value, fallback):
+    """Reduce an untrusted string to a SINGLE safe filename component (no path traversal, no separators).
+
+    `project` is copied verbatim from the prior manifest (schema permits any string) and `runlabel` is
+    derived from a filename, so either could carry path separators, `..`, drive/UNC prefixes, or NUL —
+    each of which, interpolated into `os.path.join(out, ...)`, can write outside `out` (or, if absolute,
+    discard `out` entirely). Strip every directory part, reject the traversal/special names, and keep only
+    a conservative whitelist; fall back to a constant when nothing safe survives. This is the FIRST line of
+    defence — `emit` ALSO verifies the resolved parent stays under `out` (defence in depth)."""
+    s = "" if value is None else str(value)
+    # Drop anything up to the last path separator (handles both / and \, abs paths, drive letters, UNC).
+    s = s.replace("\\", "/").rsplit("/", 1)[-1]
+    # NUL and control bytes are never valid in a filename.
+    s = "".join(ch for ch in s if ch >= " " and ch != "\x7f")
+    # Conservative whitelist: alnum, space, dot, dash, underscore. Everything else (incl. ':') -> '_'.
+    s = "".join(ch if (ch.isalnum() or ch in " ._-") else "_" for ch in s).strip()
+    # Reject pure-dot names (".", "..") and empty -> fallback.
+    if not s or set(s) <= {"."}:
+        return fallback
+    return s
+
+
 def _newest(paths):
     return max(paths, key=os.path.getmtime) if paths else None
 
@@ -320,10 +342,21 @@ def emit(paths, out_dir=None):
     out = out_dir if out_dir else (prior if os.path.isdir(prior) else os.path.dirname(prior) or ".")
     if not os.path.isdir(out):
         return 2, ["reanchor: emit output dir does not exist: %s" % out]
-    project = re_obj.get("project", "Manuscript")
-    runlabel = re_obj.get("runlabel", "run")
+    # `project`/`runlabel` are untrusted (copied from the prior manifest / derived from a filename) and
+    # are interpolated into the output paths. Sanitize each to a single safe filename component so neither
+    # `../escape` (traversal) nor an absolute value (which would make os.path.join discard `out`) can steer
+    # a write outside the requested directory.
+    project = _safe_component(re_obj.get("project", "Manuscript"), "Manuscript")
+    runlabel = _safe_component(re_obj.get("runlabel", "run"), "run")
     man_path = os.path.join(out, "%s_Reanchored_Manifest_%s.md" % (project, runlabel))
     ann_path = os.path.join(out, "%s_Reanchored_Annotated_Manuscript_%s.md" % (project, runlabel))
+    # Defence in depth: regardless of sanitization, REFUSE to write unless the resolved parent of EACH
+    # output file is `out` itself (realpath-compared, so symlinks and `..` are resolved before the check).
+    out_real = os.path.realpath(out)
+    for p in (man_path, ann_path):
+        if os.path.realpath(os.path.dirname(p)) != out_real:
+            return 2, ["reanchor: emit refused — resolved output path escapes the output dir: %s "
+                       "(nothing written)" % p]
     with open(man_path, "w", encoding="utf-8", newline="") as fh:
         fh.write("# Re-anchored Annotation Manifest\n\n%s\n" % _manifest_text(re_obj))
     with open(ann_path, "w", encoding="utf-8", newline="") as fh:
@@ -546,6 +579,71 @@ def run_self_test():
         finally:
             shutil.rmtree(bad_d, ignore_errors=True)
             shutil.rmtree(bad_out, ignore_errors=True)
+
+        # CONTAINMENT (Codex P1): `project`/`runlabel` are untrusted, so a hostile manifest must NEVER
+        # steer emit's writes outside the requested `out`. Two attack vectors, each verified against an
+        # isolated parent + a canary sibling dir that MUST stay empty:
+        #   (a) traversal  project="../escape"  -> would write into out's parent (os.path.join keeps `out`).
+        #   (b) absolute   project="<canary>/x" -> os.path.join DISCARDS `out`, writing under the canary.
+        # Pre-fix this block FAILS (a stray *_Reanchored_*.md lands in the parent / the canary). The held-
+        # quote prior below re-anchors clean (RA1-RA3 pass), so any escape is a path-construction escape,
+        # not an RA refusal masking it.
+        def _attack_prior(project_value):
+            asnap = am.normalize_snapshot("# Chapter 1\nThe unique sentence here.\n")
+            aq = "The unique sentence here."
+            aqs = asnap.find(aq)
+            return asnap, {"schema": am._SCHEMA_ID, "project": project_value, "runlabel": "rN",
+                           "snapshot_path": "T_Manuscript_Snapshot_rN.md",
+                           "snapshot_sha256": am.sha256(asnap),
+                           "snapshot_line_count": am.line_count(asnap),
+                           "annotations": [{"finding_id": "F-Q-01",
+                                            "anchor": {"kind": "quote",
+                                                       "value": "%d-%d" % (aqs, aqs + len(aq)), "quote": aq},
+                                            "comment": "a benign carried comment"}]}
+
+        def _no_escape(project_value, label):
+            # Isolated parent: out is a SUBDIR, and there is a canary sibling. After emit, neither the
+            # parent (minus out) nor the canary may contain any emitted artifact.
+            root = tempfile.mkdtemp()
+            try:
+                esc_out = os.path.join(root, "out")
+                canary = os.path.join(root, "canary")
+                os.makedirs(esc_out)
+                os.makedirs(canary)
+                # For the absolute vector, aim the absolute prefix straight at the canary dir.
+                pv = project_value.replace("__CANARY__", canary) if "__CANARY__" in project_value \
+                    else project_value
+                asnap, aman = _attack_prior(pv)
+                ad = os.path.join(root, "prior")
+                os.makedirs(ad)
+                with open(os.path.join(ad, "T_Annotation_Manifest_rN.md"), "w",
+                          encoding="utf-8", newline="") as fh:
+                    fh.write(_manifest_text(aman))
+                asp = os.path.join(ad, "T_Manuscript_Snapshot_rN1.md")
+                with open(asp, "w", encoding="utf-8", newline="") as fh:
+                    fh.write(asnap)
+                emit([ad, asp], out_dir=esc_out)
+                stray = []
+                for base in (root, canary):
+                    for name in os.listdir(base):
+                        full = os.path.join(base, name)
+                        # the only legitimate entries under root are the out/canary/prior dirs themselves.
+                        if base == root and full in (esc_out, canary, ad):
+                            continue
+                        stray.append(full)
+                chk("emit_contains_%s" % label, not stray)
+            finally:
+                shutil.rmtree(root, ignore_errors=True)
+
+        _no_escape("../escape", "traversal_project")
+        _no_escape("__CANARY__/pwned", "absolute_project")
+        # runlabel is the sibling vector — guard it too (single component, no separators survive).
+        chk("safe_component_traversal", _safe_component("../escape", "fb") == "escape")
+        chk("safe_component_absolute", "/" not in _safe_component("/etc/passwd", "fb")
+            and "\\" not in _safe_component("\\\\srv\\share\\x", "fb"))
+        chk("safe_component_dotdot_fallback", _safe_component("..", "fb") == "fb"
+            and _safe_component(".", "fb") == "fb" and _safe_component("", "fb") == "fb")
+        chk("safe_component_nul_stripped", "\x00" not in _safe_component("a\x00b", "fb"))
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
