@@ -93,6 +93,10 @@ description: >
   "weaponize," "bad faith reading," "screenshot risk," "cultural sensitivity,"
   "political reception," "representation concerns," "identity concerns,"
   "is this going to be a problem," "will this get me cancelled,"
+  "content advisory," "content advisory audit," "content warning,"
+  "content warnings," "content note," "content notes," "trigger warning,"
+  "trigger warnings," "front-matter content note," "retailer content warning,"
+  "content-warning metadata," "sensitivity surface," "what's depicted,"
   or any request for a focused manuscript audit beyond the core development
   edit passes. Also triggers on "list audits," "what audits are available,"
   or "help audits."
@@ -282,6 +286,7 @@ See `references/craft/shelf-positioning.md` for the full audit.
 - `references/craft/compression-audit-expansion-stub.md` — Compression audit expansion stub (design document)
 - `references/craft/reception-risk.md` — Reception Risk audit (17 flags, 5 channels, 5 hard gates, 8 mode calibrations, Risk Map + Pattern Summary + Handoff Memo artifacts)
 - `references/craft/reception-risk-level-setting.md` — Reception Risk level-setting brief (Jauss, Iser, Fish, Hall, Booth, Genette, Phelan, failure taxonomy, positive cases, distinguish problem, three-model workflow)
+- `references/content-advisory.md` — Content-Advisory / Sensitivity-Surface derivation (reader/marketing-facing advisory of what is depicted, at what intensity, on/off page; `apodictic.content_note.v1` blocks, 9-category enum + opt-in marker; descriptive-not-evaluative firewall; validators A1–A3 + W1/W2 via `validate.sh content-advisory`; homed alongside Reception Risk but derives a descriptive advisory, not a harm/craft verdict)
 - `references/craft/short-fiction.md` — Short Fiction audit
 - `references/craft/research-citation-verifier.md` — Citation Verification research mode (CV1-CV12 named flags, 7-tier verdict set, 5 citation relation types, two-phase verification, domain-adaptive source hierarchy, Citation_Ledger.md artifact, Python scripts for batch API resolution)
 - `references/craft/research-comp-validation.md` — Comp Validation research mode

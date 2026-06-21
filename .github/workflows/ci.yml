@@ -94,3 +94,9 @@ jobs:
 
       - name: SETEC contract tests (floors + vendored-golden parse)
         run: python tests/setec-contract/test_setec_contract.py
+
+      # Skill-registration discoverability guard (apodictic#126): every new
+      # reference module must be registered on its owning skill's trigger
+      # surface + reference-module registry list, exactly as its siblings are.
+      - name: Skill-registration discoverability guard
+        run: python tests/skill-registration/test_content_advisory_registration.py
