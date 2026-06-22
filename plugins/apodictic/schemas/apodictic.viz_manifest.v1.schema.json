@@ -1,6 +1,6 @@
 {
   "$id": "apodictic.viz_manifest.v1",
-  "$comment": "Source of truth for the apodictic:viz_manifest block (Manuscript-Structure Visualizations). Validated by scripts/apodictic_artifacts.py (stdlib subset checker) via scripts/viz_manifest.py. The manifest holds ONLY traceable data copied verbatim from existing artifacts (Timeline Event-Ledger rows + apodictic.finding.v1 blocks); it carries NO visual-style fields — the severity->encoding map is hardcoded in the renderer. The subset engine validates only this wrapper; viz_manifest.py validates the nested scenes[]/findings[] objects, enforces the no-style allowlist (E1), and byte-checks provenance against the sources (E2/E4). See docs/manuscript-visualizations.md.",
+  "$comment": "Source of truth for the apodictic:viz_manifest block (Manuscript-Structure Visualizations). Validated by scripts/apodictic_artifacts.py (stdlib subset checker) via scripts/viz_manifest.py. The manifest holds ONLY traceable data copied verbatim from existing artifacts (Timeline Event-Ledger rows + apodictic.finding.v1 blocks); it carries NO visual-style fields — the severity->encoding map is hardcoded in the renderer. The subset engine validates only this wrapper; viz_manifest.py validates the nested scenes[]/findings[] objects, enforces the no-style allowlist (E1), and byte-checks provenance against the sources (E2/E4). Charts 4-7 (Manuscript-Visualization Completion) add four OPTIONAL, additive arrays — co_presence / scene_functions / reveal_points / claim_ladder — populated only when their producer artifact exists; absent arrays are a legitimate partial map. The M1 render-only deliverable is claim_ladder[] (chart 7-nonfiction), copied verbatim from apodictic.argument_spine.v1 (C0 thesis + Cn subclaims) + apodictic.support_plan.v1 (per-rung support coverage): each object admits ONLY {claim_id, label, support[]} and NO scene axis (a scene_ids/scene_id/section key is a hard X1 failure — the claim-to-scene map has no producer). viz_manifest.py validates the new arrays' nested objects and byte-checks them against the producers (X1/X5/X6/X7/X8 + W3). See docs/manuscript-visualizations.md.",
   "title": "APODICTIC manuscript-structure visualization manifest (apodictic.viz_manifest.v1)",
   "type": "object",
   "required": ["schema", "project", "scenes", "findings"],
@@ -9,6 +9,10 @@
     "project": {"type": "string"},
     "partial": {"type": "boolean"},
     "scenes": {"type": "array"},
-    "findings": {"type": "array"}
+    "findings": {"type": "array"},
+    "co_presence": {"type": "array"},
+    "scene_functions": {"type": "array"},
+    "reveal_points": {"type": "array"},
+    "claim_ladder": {"type": "array"}
   }
 }

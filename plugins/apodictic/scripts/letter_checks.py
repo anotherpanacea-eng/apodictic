@@ -31,6 +31,8 @@ import os
 import re
 import sys
 
+from override_marker import has_override, override_slugs
+
 # First "Appendix <X>" heading marks the boundary between the canonical synthesis
 # body and the (non-canonical, evidence-bearing) appendices.
 _APPENDIX_RE = re.compile(r"^#{1,4}.*Appendix\s+[A-Za-z]", re.IGNORECASE | re.MULTILINE)
@@ -55,9 +57,10 @@ def split_body(text):
     return text[: m.start()] if m else text
 
 
-def has_override(body, slug):
-    """True if an override HTML-comment marker for `slug` appears in the body."""
-    return ("<!-- override: %s" % slug) in body
+# `has_override` (and `override_slugs`, for the data-driven per-audit slug) come from the shared
+# `override_marker` module — boundary-matched + code-spans stripped, so a suffixed slug or a
+# backtick'd documentation example is NOT honored (the 2026-06-20 override-substring class, gated by
+# meta_lint.py's M5). Imported above; the legacy bare-substring definition is retired.
 
 
 def count_token(text, token):
@@ -428,11 +431,10 @@ def audit_signal_propagation(text):
     else:
         synth_body, appx_body = "\n".join(lines), ""
 
-    ov_must_fix = "<!-- override: audit-propagation-must-fix" in synth_body
-    ov_hard_gate = "<!-- override: audit-propagation-hard-gate" in synth_body
-    ov_high = "<!-- override: audit-propagation-high" in synth_body
-    per_audit_overrides = set(re.findall(
-        r"<!-- override: audit-propagation-([a-z][a-z0-9-]*)", synth_body))
+    ov_must_fix = has_override(synth_body, "audit-propagation-must-fix")
+    ov_hard_gate = has_override(synth_body, "audit-propagation-hard-gate")
+    ov_high = has_override(synth_body, "audit-propagation-high")
+    per_audit_overrides = override_slugs(synth_body, "audit-propagation-")
 
     def tier_items(tier):
         rx = {"must-fix": r"Must-Fix",
@@ -573,7 +575,7 @@ def underdiagnosis_triggers(text):
     body = "\n".join(lines[: appendix_idx - 1]) if appendix_idx else "\n".join(lines)
     body_mustfix = re.search(r"Must-Fix", body, re.IGNORECASE) is not None
 
-    ov = {k: ("<!-- override: underdiagnosis-trigger-%s" % k) in body
+    ov = {k: has_override(body, "underdiagnosis-trigger-%s" % k)
           for k in ("convergence", "hard-gate", "final-third", "multi-axis",
                     "severity-floor", "propagation")}
 
@@ -678,10 +680,10 @@ def ledger_consolidation(text, raw_text=None):
         else:
             errors.append(err_msg)
 
-    ov_raw = "<!-- override: ledger-consolidation-raw-aggregate" in text
-    ov_conv = "<!-- override: ledger-consolidation-no-convergence" in text
-    ov_collate = "<!-- override: ledger-consolidation-no-collation" in text
-    ov_reduction = "<!-- override: ledger-consolidation-no-reduction" in text
+    ov_raw = has_override(text, "ledger-consolidation-raw-aggregate")
+    ov_conv = has_override(text, "ledger-consolidation-no-convergence")
+    ov_collate = has_override(text, "ledger-consolidation-no-collation")
+    ov_reduction = has_override(text, "ledger-consolidation-no-reduction")
 
     # Check 1: raw concatenation.
     raw_count = _count_lines_matching(text, r"^##+ Pass [0-9]+ Findings")
@@ -924,6 +926,23 @@ def run_self_test(which=None):
                      "## What Needs Work\nPacing Should-Fix flag.\n## Appendix B\n"
                      "<!-- override: severity-floor-weak-axis — marker in appendix only. -->\n")
         check("sf_override_appendix_still_errors", severity_floor(over_appx)[0], False)
+        # 2026-06-20 override-substring hardening (shared override_marker.has_override): a marker quoted
+        # inside a backtick CODE SPAN is a documentation example, not a live override -> still ERROR.
+        over_codespan = ("# Development Edit\n## Best\nVoice axis rated Weak at High intensity.\n"
+                         "Use `<!-- override: severity-floor-weak-axis -->` to suppress.\n"
+                         "## What Needs Work\nPacing Should-Fix flag.\n## Appendix B\nx\n")
+        check("sf_override_codespan_decoy_errors", severity_floor(over_codespan)[0], False)
+        # a SUFFIX-COLLISION slug (`...-weak-axis-but-not-really`) must NOT satisfy `-weak-axis` -> ERROR.
+        over_suffix = ("# Development Edit\n## Best\nVoice axis rated Weak at High intensity.\n"
+                       "<!-- override: severity-floor-weak-axis-but-not-really — decoy. -->\n"
+                       "## What Needs Work\nPacing Should-Fix flag.\n## Appendix B\nx\n")
+        check("sf_override_suffix_collision_errors", severity_floor(over_suffix)[0], False)
+        # a genuine marker WITH an em-dash reason IS honored -> WARN (already covered above); a genuine
+        # marker with NO reason (bare `-->`) is also honored -> no ERROR.
+        over_noreason = ("# Development Edit\n## Best\nVoice axis rated Weak at High intensity.\n"
+                         "<!-- override: severity-floor-weak-axis -->\n"
+                         "## What Needs Work\nPacing Should-Fix flag.\n## Appendix B\nx\n")
+        check("sf_override_no_reason_honored", severity_floor(over_noreason)[0], True)
         # Justification text defuses Rule 3 even at the highest band.
         justified = ("# Development Edit\nVerdict: Strong Fit. The flag volume does not impair.\n"
                      "Should-Fix one. Should-Fix two. Should-Fix three.\n")
