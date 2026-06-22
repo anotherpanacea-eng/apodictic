@@ -76,6 +76,16 @@ def known_schema_ids():
     return sorted(p.name[:-len(".schema.json")] for p in d.glob("*.schema.json")) if d else []
 
 
+def fid_key(value):
+    """A finding/ledger id normalized to a hashable, sortable form (a str, or None). The SINGLE source
+    of truth for the recurring non-hashable/non-string id crash class: a malformed id (a JSON list/
+    object/number kept as-is by parse_*) is str()-coerced — a valid string id is unchanged — so it can
+    never crash a dict KEY (uniqueness maps, ledger indexes, comment-provenance joins) or a SORT key
+    (`'<' not supported between str and int`). Lives here (the lowest shared lib) so finding_trace,
+    annotation_manifest, annotation_export, reanchor, … all route through ONE coercion."""
+    return value if value is None or isinstance(value, str) else str(value)
+
+
 def load_severity_values():
     """Severity tokens, sourced from the finding schema's enum (fallback to RANK)."""
     s = load_schema("apodictic.finding.v1")

@@ -103,7 +103,9 @@ def ledger_inventory(ledger_text):
         return inv
     for bt, obj, _err in art.parse_blocks(ledger_text):
         if bt == "finding" and isinstance(obj, dict) and obj.get("id"):
-            inv[obj["id"]] = obj.get("severity")
+            # art.fid_key: a malformed ledger finding with a non-hashable id (list/object) must not crash
+            # this index key (the authoritative-ID-set sibling of the manifest finding_id crash class).
+            inv[art.fid_key(obj["id"])] = obj.get("severity")
     return inv
 
 
