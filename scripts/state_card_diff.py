@@ -126,8 +126,8 @@ def check_one(text):
     """Single-card S1+S2. Returns (errs, elems, obj)."""
     obj, schema_errs = parse_card(text)
     errs = ["S1 invalid card: %s" % e for e in schema_errs]
-    if obj is None:
-        return errs, {}, None
+    if not isinstance(obj, dict):
+        return errs, {}, None  # None or a non-dict payload (the latter already an S1 'expected a JSON object')
     elems, fmt_errs, dup_errs = card_elements(obj)
     errs += ["S1 invalid card: %s" % e for e in fmt_errs]
     errs += ["S2 duplicate id: %s" % e for e in dup_errs]
@@ -408,6 +408,8 @@ def run_self_test():
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
+    # regression: a non-dict state_card payload must not crash card_elements (2026-06-20 sweep)
+    chk("crash_nondict_card", validate_single('<!-- apodictic:state_card\n[1,2]\n-->')[0] == 1)
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 
