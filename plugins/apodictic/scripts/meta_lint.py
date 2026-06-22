@@ -226,8 +226,20 @@ _M2_EXEMPT = {"apodictic_artifacts.py", "meta_lint.py", "sync_setec.py", "config
 # spelling the hardened parser also accepts is detected (Codex P2); any string prefix is allowed.
 _OV_PFX = r"(?:[rRbBuUfF]{0,2})"
 _OV_MARK = r"<!--\s*override:"
-_OV_PY_IN_PAT = _OV_PFX + _Q + _OV_MARK + r"""[^'"\n]*?""" + _Q + r"""\s*\)?\s+(?:not\s+)?in\b"""
-_OV_PY_FMT_IN_PAT = r"\(?\s*" + _OV_PFX + _Q + _OV_MARK + r"""[^'"\n]*""" + _Q + r"""\s*%[^)\n]*\)\s+(?:not\s+)?in\b"""
+
+
+def _ov_body(group):
+    """A DELIMITER-AWARE marker-string body (Codex P2): capture the opening quote (a UNIQUE group name
+    per call so the 4-way alternation in `_OV_PY_RE` does not collide), the override marker, then a run
+    that does NOT begin the SAME closing delimiter — so an OPPOSITE quote INSIDE the literal
+    (`"<!--override: author's note"`, `'<!--override: "quoted"'`, and their triple-quoted forms) cannot
+    end the body early and let the bare scan evade the gate — then the matching close delimiter."""
+    return (_OV_PFX + (r"""(?P<%s>'''|\"\"\"|['"])""" % group) + _OV_MARK
+            + (r"""(?:(?!(?P=%s)).)*?(?P=%s)""" % (group, group)))
+
+
+_OV_PY_IN_PAT = _ov_body("ovq1") + r"""\s*\)?\s+(?:not\s+)?in\b"""
+_OV_PY_FMT_IN_PAT = r"\(?\s*" + _ov_body("ovq2") + r"""\s*%[^)\n]*\)\s+(?:not\s+)?in\b"""
 _OV_PY_SCAN_PAT = (r"""\.(?:find|rfind|index|rindex|count|startswith|endswith|partition|rpartition|split)"""
                    r"""\s*\(\s*""" + _OV_PFX + _Q + _OV_MARK)
 _OV_PY_RE_PAT = (r"""\bre\.(?:search|match|fullmatch|findall|finditer)\s*\(\s*""" + _OV_PFX + _Q + _OV_MARK)
@@ -551,6 +563,13 @@ def run_self_test():
         check_m5_py("g.py", 'if "<!-- override: foo" in body:\n    pass\n') != [])
     chk("m5_py_format_in_flagged",
         check_m5_py("g.py", 'if ("<!-- override: %s" % slug) in body:\n    pass\n') != [])
+    # Codex P2: an OPPOSITE-quote character inside the marker literal must not let the bare scan evade M5
+    chk("m5_py_opposite_squote_in_dquote_flagged",
+        check_m5_py("g.py", """if "<!--override: foo author's note" in body:\n    pass\n""") != [])
+    chk("m5_py_opposite_dquote_in_squote_flagged",
+        check_m5_py("g.py", """if '<!--override: foo "quoted" note' in body:\n    pass\n""") != [])
+    chk("m5_py_opposite_quote_triplequoted_flagged",
+        check_m5_py("g.py", 'if """<!--override: foo author\'s note""" in body:\n    pass\n') != [])
     chk("m5_py_find_flagged",
         check_m5_py("g.py", 'if body.find("<!-- override: foo") >= 0:\n    pass\n') != [])
     chk("m5_py_re_findall_flagged",
