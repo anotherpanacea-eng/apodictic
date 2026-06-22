@@ -82,15 +82,24 @@ def _newest(paths):
 
 
 def _origin_nn(fid):
-    m = _ID_SPLIT_RE.match(fid or "")
+    # A non-string id can't be origin/NN-parsed; re.match would traceback on it (sibling of the
+    # _mech_tokens non-string P2). A malformed id contributes no origin/number.
+    if not isinstance(fid, str):
+        return ("", 0)
+    m = _ID_SPLIT_RE.match(fid)
     if not m:
         return (fid or "", 0)
     return (m.group(1), int(m.group(2)))
 
 
 def _mech_tokens(mechanism):
+    # Only a STRING mechanism yields match tokens. A malformed list/dict would otherwise be str()'d
+    # into "['foo', ...]" / "{'k': 'v'}" and split into FABRICATED tokens (foo, k, v …) that falsely
+    # match against other findings (Codex P2). A non-string mechanism contributes no tokens.
+    if not isinstance(mechanism, str):
+        return set()
     toks = set()
-    for raw in re.split(r"[^A-Za-z0-9]+", (mechanism or "").lower()):
+    for raw in re.split(r"[^A-Za-z0-9]+", mechanism.lower()):
         if len(raw) >= 3 and raw not in _STOP:
             toks.add(raw)
     return toks
@@ -100,7 +109,7 @@ def _chapter_of(evidence_refs):
     """The finding's chapter token ('Ch N') from its first chapter-bearing ref, else 'unplaced'."""
     if art is None:
         return "unplaced"
-    for ref in (evidence_refs or []):
+    for ref in (evidence_refs if isinstance(evidence_refs, list) else []):
         tok = art.chapter_token(ref)
         if tok:
             return tok
@@ -115,6 +124,14 @@ def findings_of(ledger_text):
         return out
     for bt, obj, _err in art.parse_blocks(ledger_text):
         if bt != "finding" or not isinstance(obj, dict) or not obj.get("id"):
+            continue
+        # A non-string id is dropped at the source: parse_blocks is raw json.loads (no id-type
+        # validation), so a JSON list/dict id is truthy and survives the `not obj.get("id")`
+        # filter, but it is stored verbatim and then used as a dict key / set member downstream
+        # (match(): `c["id"] in consumed` / `consumed.add(...)`; classify(): `{p["id"]: p}`) where
+        # an unhashable list/dict raises TypeError. Guarding only _origin_nn's re.match (the prior
+        # fix) leaves those hashing sites open — same _mech_tokens/id sibling lesson, repeated.
+        if not isinstance(obj.get("id"), str):
             continue
         origin, nn = _origin_nn(obj["id"])
         refs = obj.get("evidence_refs") or []
@@ -395,6 +412,36 @@ def run_self_test():
     f1 = findings_of(r1)
     chk("findings_parsed", len(f1) == 2 and f1[0]["origin"] == "P5" and f1[0]["chapter"] == "Ch 7")
     chk("mech_tokens_drop_stopwords", "want" in f1[0]["tokens"] and "the" not in f1[0]["tokens"])
+    # a malformed (non-string) mechanism yields NO tokens — never fabricated from a list/dict repr (Codex P2)
+    chk("mech_tokens_nonstring_empty",
+        _mech_tokens(["fabricated", "tokens"]) == set() and _mech_tokens({"k": "v"}) == set()
+        and _mech_tokens(None) == set())
+    # a non-string finding id must not crash _origin_nn's re.match — sibling of the mechanism P2
+    chk("origin_nn_nonstring",
+        _origin_nn(5) == ("", 0) and _origin_nn(["a"]) == ("", 0) and _origin_nn(3.14) == ("", 0))
+    # An INT id is hashable, so findings_of keeps it without crashing the downstream key/set sites;
+    # but a NON-HASHABLE list/dict id (valid JSON, truthy, survives the id filter) would crash
+    # match()/classify() at `c["id"] in consumed` / `{p["id"]: p}`. findings_of now drops any
+    # non-string id at the source, so the WHOLE downstream path is guarded, not just _origin_nn.
+    chk("findings_of_nonstring_id_no_crash",
+        len(findings_of(ledger(finding(5, "m", ["Ch 1"], "Must-Fix")))) == 0)
+    # the load-bearing regression: a non-hashable id driven through the full diff_rounds path
+    # (-> classify -> match) must not raise TypeError: unhashable type. Pre-fix this crashed.
+    _badl = ledger(finding(["a"], "the want forces a sacrifice", ["Ch 7"], "Must-Fix"))
+    _badd = ledger(finding({"k": "v"}, "the want forces a sacrifice", ["Ch 7"], "Must-Fix"))
+    chk("findings_of_unhashable_id_dropped",
+        findings_of(_badl) == [] and findings_of(_badd) == [])
+
+    def _no_crash(prior_text, current_text):
+        try:
+            diff_rounds(prior_text, current_text, set(), set())
+            return True
+        except TypeError:
+            return False
+    # a malformed (non-hashable id) finding paired with a valid one — exercises match()/classify().
+    _good = ledger(finding("F-P5-01", "the want forces a sacrifice", ["Ch 7"], "Must-Fix"))
+    chk("diff_rounds_unhashable_list_id_no_crash", _no_crash(_badl, _good) and _no_crash(_good, _badl))
+    chk("diff_rounds_unhashable_dict_id_no_crash", _no_crash(_badd, _good) and _no_crash(_good, _badd))
 
     # matcher: F-P5-01(r1) <-> F-P5-01(r2) by origin+chapter+shared tokens; F-RR-01 has no r2 match.
     m = match(f1, findings_of(r2))
@@ -516,6 +563,9 @@ def run_self_test():
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
+    # regression: a non-string mechanism / non-list evidence_refs must not crash (2026-06-20 sweep)
+    chk("crash_nondict_mechanism", _mech_tokens(42) == set() and _mech_tokens(["a", "b"]) == set())
+    chk("crash_string_evidence_refs", _chapter_of("Ch 5") == "unplaced" and _chapter_of(["Ch 5"]) == "Ch 5")
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 

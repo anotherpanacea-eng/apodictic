@@ -103,7 +103,9 @@ def ledger_inventory(ledger_text):
         return inv
     for bt, obj, _err in art.parse_blocks(ledger_text):
         if bt == "finding" and isinstance(obj, dict) and obj.get("id"):
-            inv[obj["id"]] = obj.get("severity")
+            # art.fid_key: a malformed ledger finding with a non-hashable id (list/object) must not crash
+            # this index key (the authoritative-ID-set sibling of the manifest finding_id crash class).
+            inv[art.fid_key(obj["id"])] = obj.get("severity")
     return inv
 
 
@@ -411,6 +413,11 @@ def run_self_test():
                 '"fix_class":"x","risk_if_fixed":"y"}\n-->' % (fid, sev))
 
     ledger = "## Pass 5 — Ledger Entry\n" + finding("F-P5-01") + "\n" + finding("F-P5-02", "Should-Fix") + "\n"
+    # regression: a non-hashable ledger id must not crash the authoritative-ID index (fid_key SSoT)
+    check("ledger_inventory_nonhashable_id_no_crash",
+          isinstance(ledger_inventory("<!-- apodictic:finding\n" + json.dumps(
+              {"schema": "apodictic.finding.v1", "id": [1, 2], "severity": "Must-Fix", "mechanism": "m"})
+              + "\n-->"), dict))
     letter_clean = ("# Edit\n## What Needs Work\nThe pacing collapses in Chapter 9. "
                     "<!-- finding: F-P5-01 -->\nThe stakes stay abstract. <!-- finding: F-P5-02 -->\n"
                     '<!-- apodictic:severity_calibration\n{"schema":"apodictic.severity_calibration.v1",'
