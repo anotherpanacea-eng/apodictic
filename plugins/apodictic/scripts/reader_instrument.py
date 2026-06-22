@@ -122,7 +122,9 @@ def ledger_index(ledger_text):
         return out
     for bt, obj, _err in art.parse_blocks(ledger_text):
         if bt == "finding" and isinstance(obj, dict) and obj.get("id"):
-            out[obj["id"]] = obj
+            # art.fid_key: a non-hashable ledger id (list/object) must not crash this index key — the
+            # authoritative-ID-set sibling of finding_trace.ledger_inventory (SSoT in apodictic_artifacts).
+            out[art.fid_key(obj["id"])] = obj
     return out
 
 
@@ -408,6 +410,11 @@ def run_self_test():
 
     # clean: a LOW finding tested by a non-leading experiential question
     chk("clean_low", check(rq(), led_low)[0] == 0)
+    # regression: a non-hashable ledger id must not crash the authoritative-ID index (fid_key SSoT)
+    chk("ledger_index_nonhashable_id_no_crash",
+        isinstance(ledger_index("<!-- apodictic:finding\n" + _j.dumps(
+            {"schema": "apodictic.finding.v1", "id": [1, 2], "severity": "Must-Fix", "mechanism": "m"})
+            + "\n-->"), dict))
 
     # B1 — bad enum / id / missing field / JSON
     chk("b1_bad_source_kind", check(rq(kind="rumor"), led_low)[0] == 1)

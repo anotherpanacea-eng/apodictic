@@ -99,7 +99,7 @@ def _sigils():
 
 def _anchor_str(anchor):
     """The verbatim '<kind>:<value>' embedded in a back-link (value may be empty for `document`)."""
-    a = anchor or {}
+    a = anchor if isinstance(anchor, dict) else {}
     return "%s:%s" % (a.get("kind", ""), a.get("value", ""))
 
 
@@ -457,6 +457,8 @@ def run_self_test():
 
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
+    # regression: a non-dict anchor must not crash _anchor_str (2026-06-20 sweep)
+    chk("crash_nondict_anchor", _anchor_str([1, 2, 3]) == ":" and _anchor_str(None) == ":")
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
 
