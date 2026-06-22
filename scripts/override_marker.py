@@ -27,10 +27,15 @@ cannot silently re-enter. See docs/validator-conventions.md.
 import re
 
 # Code spans — a marker quoted inside one is a documentation EXAMPLE, not a live directive, so it is
-# stripped before the override scan. Cover every CommonMark form (Codex P1): a FENCED block opened by a
-# run of 3+ backticks OR 3+ tildes and closed by the same run; and an INLINE span delimited by a run of
-# N backticks (N>=1, so multi-backtick `` `…` `` too) closed by a matching run.
-_CODE_SPAN_RE = re.compile(r"(`{3,}|~{3,}).*?\1|(`+)[^\n]*?\2", re.DOTALL)
+# stripped before the override scan. CommonMark has two forms; we handle them with a small STATE MACHINE
+# rather than one clever regex (successive regex patches kept breeding siblings — multiline inline spans,
+# a ``` line inside a ~~~ fence, …; Codex P1 xN). `strip_code_spans` is the SINGLE source of truth — the
+# bash gates delegate to it via the CLI below, so there is exactly one implementation to keep correct.
+_FENCE_OPEN_RE = re.compile(r"^[ \t]*(`{3,}|~{3,})")
+# An inline span: a run of N backticks, then the shortest content NOT containing the closing run, then a
+# matching run of N. DOTALL — CommonMark inline spans may contain line endings (the multiline form). A
+# run with no matching close is NOT a span, so a stray backtick never over-strips.
+_INLINE_SPAN_RE = re.compile(r"(`+)(?:(?!\1).)*?\1", re.DOTALL)
 
 # After `<!-- override: <slug>` the slug must end at a real delimiter — whitespace, an em-/en-dash
 # (the `— <rationale>` form), a hyphen-minus reason separator, the comment close `-->`, or EOL — so a
@@ -39,8 +44,26 @@ _BOUNDARY = r"(?=\s|—|–|-->|$)"
 
 
 def strip_code_spans(body):
-    """`body` with fenced and inline code spans blanked (replaced by a space)."""
-    return _CODE_SPAN_RE.sub(" ", body or "")
+    """`body` with fenced blocks and inline code spans blanked, so a marker quoted as a documentation
+    EXAMPLE is not honored as a live directive. Fenced blocks are removed line-wise — a fence closes ONLY
+    on a line of the SAME fence character at length >= the opener, so a ``` line inside a ~~~ fence (or
+    vice-versa) is content, not a premature close (Codex P1). Inline spans are then removed by
+    matching-length backtick runs (multiline-aware)."""
+    out, fence = [], None  # fence = (char, length) while inside a fenced block
+    for line in (body or "").split("\n"):
+        m = _FENCE_OPEN_RE.match(line)
+        run = m.group(1) if m else ""
+        if fence is None:
+            if run:
+                fence = (run[0], len(run))
+                out.append("")             # drop the opening fence line
+            else:
+                out.append(line)
+        else:
+            if run and run[0] == fence[0] and len(run) >= fence[1]:
+                fence = None               # a matching-character, long-enough closer
+            out.append("")                 # drop everything between the fences (and the fences)
+    return _INLINE_SPAN_RE.sub(" ", "\n".join(out))
 
 
 def has_override(body, slug):
@@ -95,6 +118,15 @@ def _self_test():
         not has_override("before\n```\n<!-- override: my-slug -->\n```\nafter", S))
     chk("multi_backtick_inline_rejected", not has_override("``<!-- override: my-slug -->``", S))
     chk("tilde_fence_rejected", not has_override("~~~\n<!-- override: my-slug -->\n~~~", S))
+    # a MULTILINE inline span (a backtick run whose content spans lines) hides the marker too (Codex P1)
+    chk("multiline_inline_rejected",
+        not has_override("text `inline open\n<!-- override: my-slug -->\ninline close` more", S))
+    # a ``` line INSIDE a ~~~ fence must NOT close the fence early and expose the marker (Codex P1)
+    chk("tilde_fence_with_backtick_line_rejected",
+        not has_override("~~~\n```\n<!-- override: my-slug -->\n```\n~~~", S))
+    # …and after a fenced block CLOSES, a genuine marker is honored again (the close re-enables scanning)
+    chk("genuine_after_fenced_block",
+        has_override("```\n<!-- override: my-slug -->\n```\n\nReal: <!-- override: my-slug -->", S))
     # a genuinely-absent slug is not found
     chk("absent_slug", not has_override("<!-- override: other-slug -->", S))
     # override_slugs: data-driven extraction, code spans stripped
@@ -112,4 +144,19 @@ def _self_test():
 
 if __name__ == "__main__":
     import sys
-    sys.exit(_self_test() if "--self-test" in sys.argv else 0)
+    if "--self-test" in sys.argv:
+        sys.exit(_self_test())
+    # Delegation entry points for the bash gates (body read from stdin) so the bash path uses THIS one
+    # robust stripper instead of a parallel awk/sed reimplementation:
+    #   --has-override <slug>     -> exit 0 if a live override for <slug> exists in stdin, else 1
+    #   --override-slugs <prefix> -> print each live <slug> following <prefix> in stdin (one per line)
+    if "--has-override" in sys.argv:
+        _i = sys.argv.index("--has-override")
+        _slug = sys.argv[_i + 1] if _i + 1 < len(sys.argv) else ""
+        sys.exit(0 if has_override(sys.stdin.read(), _slug) else 1)
+    if "--override-slugs" in sys.argv:
+        _i = sys.argv.index("--override-slugs")
+        _prefix = sys.argv[_i + 1] if _i + 1 < len(sys.argv) else ""
+        sys.stdout.write("\n".join(sorted(override_slugs(sys.stdin.read(), _prefix))))
+        sys.exit(0)
+    sys.exit(0)
