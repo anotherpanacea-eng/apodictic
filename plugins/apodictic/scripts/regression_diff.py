@@ -58,6 +58,9 @@ _ID_RE = re.compile(r"(?<![\w-])F-[A-Za-z0-9]+-[0-9]{2,}(?![\w-])")
 # W2 adjudication: `<!-- override: regression-cleared <runlabel>:<chapter> — <rationale> -->`.
 _CLEARED_RE = re.compile(r"<!--\s*override:\s*regression-cleared\b(.*?)-->", re.DOTALL | re.IGNORECASE)
 _ID_SPLIT_RE = re.compile(r"^F-(.+)-([0-9]{2,})$")
+# The classes `classify` keys by the PRIOR finding's id (vs. `new` / `new-in-quiet-chapter[ (cleared)]`,
+# keyed by the CURRENT id). `crossref_classes` returns only these — the reanchor manifest carries prior ids.
+_PRIOR_KEYED_CLASSES = frozenset(("persisted", "resolved-and-held", "recurrence-candidate", "unexplained-drop"))
 # Mechanism tokenization: lowercase alnum tokens, drop a small fixed stopword set + tokens < 3 chars.
 _STOP = frozenset((
     "the", "a", "an", "of", "to", "in", "is", "it", "so", "and", "that", "this", "for", "on", "at",
@@ -79,15 +82,24 @@ def _newest(paths):
 
 
 def _origin_nn(fid):
-    m = _ID_SPLIT_RE.match(fid or "")
+    # A non-string id can't be origin/NN-parsed; re.match would traceback on it (sibling of the
+    # _mech_tokens non-string P2). A malformed id contributes no origin/number.
+    if not isinstance(fid, str):
+        return ("", 0)
+    m = _ID_SPLIT_RE.match(fid)
     if not m:
         return (fid or "", 0)
     return (m.group(1), int(m.group(2)))
 
 
 def _mech_tokens(mechanism):
+    # Only a STRING mechanism yields match tokens. A malformed list/dict would otherwise be str()'d
+    # into "['foo', ...]" / "{'k': 'v'}" and split into FABRICATED tokens (foo, k, v …) that falsely
+    # match against other findings (Codex P2). A non-string mechanism contributes no tokens.
+    if not isinstance(mechanism, str):
+        return set()
     toks = set()
-    for raw in re.split(r"[^A-Za-z0-9]+", (mechanism or "").lower()):
+    for raw in re.split(r"[^A-Za-z0-9]+", mechanism.lower()):
         if len(raw) >= 3 and raw not in _STOP:
             toks.add(raw)
     return toks
@@ -97,7 +109,7 @@ def _chapter_of(evidence_refs):
     """The finding's chapter token ('Ch N') from its first chapter-bearing ref, else 'unplaced'."""
     if art is None:
         return "unplaced"
-    for ref in (evidence_refs or []):
+    for ref in (evidence_refs if isinstance(evidence_refs, list) else []):
         tok = art.chapter_token(ref)
         if tok:
             return tok
@@ -112,6 +124,14 @@ def findings_of(ledger_text):
         return out
     for bt, obj, _err in art.parse_blocks(ledger_text):
         if bt != "finding" or not isinstance(obj, dict) or not obj.get("id"):
+            continue
+        # A non-string id is dropped at the source: parse_blocks is raw json.loads (no id-type
+        # validation), so a JSON list/dict id is truthy and survives the `not obj.get("id")`
+        # filter, but it is stored verbatim and then used as a dict key / set member downstream
+        # (match(): `c["id"] in consumed` / `consumed.add(...)`; classify(): `{p["id"]: p}`) where
+        # an unhashable list/dict raises TypeError. Guarding only _origin_nn's re.match (the prior
+        # fix) leaves those hashing sites open — same _mech_tokens/id sibling lesson, repeated.
+        if not isinstance(obj.get("id"), str):
             continue
         origin, nn = _origin_nn(obj["id"])
         refs = obj.get("evidence_refs") or []
@@ -326,6 +346,36 @@ def run(paths, strict=False):
     return diff_rounds(_read(pri_ledger), _read(cur_ledger), prior_resolved, cleared, strict=strict)
 
 
+def crossref_classes(prior, current):
+    """{prior_finding_id: class} for the PRIOR-round-keyed regression classes (persisted, resolved-and-held,
+    recurrence-candidate, unexplained-drop) — the map `reanchor crossref` joins against by finding_id (the
+    re-anchored manifest carries the prior round's ids). Current-only classes (new / new-in-quiet-chapter)
+    have no prior id to join on and are omitted. Best-effort: returns {} when a ledger is missing/unparseable
+    (the join simply finds no matches — it never raises), so it's safe to call from the orchestrator glue."""
+    if prior is None or current is None:
+        return {}
+    pri_ledger, cur_ledger = _ledger_path(prior), _ledger_path(current)
+    if not pri_ledger or not cur_ledger:
+        return {}
+    prior_findings = findings_of(_read(pri_ledger))
+    if not prior_findings:
+        return {}
+    prior_resolved, _ = _resolved_and_cleared(prior, want_resolved=True)
+    _, cleared = _resolved_and_cleared(current, want_resolved=False)
+    rows, _rec, _quiet, _drops = classify(prior_findings, findings_of(_read(cur_ledger)),
+                                          prior_resolved, cleared)
+    # Keep only the PRIOR-keyed rows (their `id` is the prior finding's id — the join key). Filter by the
+    # known prior-keyed class set, NOT by id membership: per-run renumbering means a current-only `new`
+    # finding can share an id string with a prior finding (both rounds start at `-01`), and `classify`
+    # emits the `new` row AFTER the prior rows — an id-membership filter would let that collision overwrite
+    # the prior class. The class set is collision-proof and order-independent.
+    out = {}
+    for _chapter, fid, klass, _basis, _sev in rows:
+        if klass in _PRIOR_KEYED_CLASSES:
+            out[fid] = klass
+    return out
+
+
 # ---------------------------------------------------------------- self-test
 
 def run_self_test():
@@ -362,6 +412,36 @@ def run_self_test():
     f1 = findings_of(r1)
     chk("findings_parsed", len(f1) == 2 and f1[0]["origin"] == "P5" and f1[0]["chapter"] == "Ch 7")
     chk("mech_tokens_drop_stopwords", "want" in f1[0]["tokens"] and "the" not in f1[0]["tokens"])
+    # a malformed (non-string) mechanism yields NO tokens — never fabricated from a list/dict repr (Codex P2)
+    chk("mech_tokens_nonstring_empty",
+        _mech_tokens(["fabricated", "tokens"]) == set() and _mech_tokens({"k": "v"}) == set()
+        and _mech_tokens(None) == set())
+    # a non-string finding id must not crash _origin_nn's re.match — sibling of the mechanism P2
+    chk("origin_nn_nonstring",
+        _origin_nn(5) == ("", 0) and _origin_nn(["a"]) == ("", 0) and _origin_nn(3.14) == ("", 0))
+    # An INT id is hashable, so findings_of keeps it without crashing the downstream key/set sites;
+    # but a NON-HASHABLE list/dict id (valid JSON, truthy, survives the id filter) would crash
+    # match()/classify() at `c["id"] in consumed` / `{p["id"]: p}`. findings_of now drops any
+    # non-string id at the source, so the WHOLE downstream path is guarded, not just _origin_nn.
+    chk("findings_of_nonstring_id_no_crash",
+        len(findings_of(ledger(finding(5, "m", ["Ch 1"], "Must-Fix")))) == 0)
+    # the load-bearing regression: a non-hashable id driven through the full diff_rounds path
+    # (-> classify -> match) must not raise TypeError: unhashable type. Pre-fix this crashed.
+    _badl = ledger(finding(["a"], "the want forces a sacrifice", ["Ch 7"], "Must-Fix"))
+    _badd = ledger(finding({"k": "v"}, "the want forces a sacrifice", ["Ch 7"], "Must-Fix"))
+    chk("findings_of_unhashable_id_dropped",
+        findings_of(_badl) == [] and findings_of(_badd) == [])
+
+    def _no_crash(prior_text, current_text):
+        try:
+            diff_rounds(prior_text, current_text, set(), set())
+            return True
+        except TypeError:
+            return False
+    # a malformed (non-hashable id) finding paired with a valid one — exercises match()/classify().
+    _good = ledger(finding("F-P5-01", "the want forces a sacrifice", ["Ch 7"], "Must-Fix"))
+    chk("diff_rounds_unhashable_list_id_no_crash", _no_crash(_badl, _good) and _no_crash(_good, _badl))
+    chk("diff_rounds_unhashable_dict_id_no_crash", _no_crash(_badd, _good) and _no_crash(_good, _badd))
 
     # matcher: F-P5-01(r1) <-> F-P5-01(r2) by origin+chapter+shared tokens; F-RR-01 has no r2 match.
     m = match(f1, findings_of(r2))
@@ -452,9 +532,40 @@ def run_self_test():
         chk("run_override_in_revision_report_clears_w2",
             not any("W2 quiet-chapter breakage" in x for x in l3)
             and any("new-in-quiet-chapter (cleared)" in x for x in l3))
+
+        # crossref_classes: the prior-keyed class map the reanchor crossref glue joins against by id.
+        # In d1->d2: F-P5-01 was resolved in d1 and recurs in d2 (recurrence-candidate); F-RR-01 has no
+        # d2 match and no resolution (unexplained-drop). New/current-only classes carry no prior id and
+        # are omitted; a missing-ledger folder yields {} (best-effort, never raises).
+        cc = crossref_classes(d1, d2)
+        chk("crossref_classes_recurrence", cc.get("F-P5-01") == "recurrence-candidate")
+        chk("crossref_classes_drop", cc.get("F-RR-01") == "unexplained-drop")
+        chk("crossref_classes_no_current_only", "F-P5-02" not in cc)
+        chk("crossref_classes_missing_safe", crossref_classes(os.path.join(d, "nope"), d2) == {})
+
+        # id-collision guard: per-run renumbering can make a current-only `new` finding SHARE an id with a
+        # prior finding. The prior-keyed class must win (it's the join key the reanchor manifest carries) —
+        # a class-set filter is collision-proof where an id-membership filter would let the later `new` row
+        # overwrite it. Here d1's F-RR-01 (Ch 9, unexplained-drop) and a NEW Ch 2 finding both id'd F-RR-01.
+        dcol = os.path.join(d, "rcol")
+        os.makedirs(dcol)
+        with open(os.path.join(dcol, "P_Findings_Ledger_2026-04-01_m.md"), "w",
+                  encoding="utf-8", newline="") as fh:
+            # a recurrence of F-P5 (Ch 7) + a NEW finding in Ch 2 that reuses the id string F-RR-01.
+            fh.write(ledger(
+                finding("F-P5-01", "the want still never forces a sacrifice; stakes remain abstract",
+                        ["Ch 7"], "Must-Fix"),
+                finding("F-RR-01", "a brand-new continuity wobble unrelated to the prior seam", ["Ch 2"])))
+        ccol = crossref_classes(d1, dcol)
+        # prior F-RR-01 (Ch 9) had no Ch-2 match -> unexplained-drop; the class set keeps THAT, not the
+        # current-only `new` Ch-2 row that happens to reuse the id.
+        chk("crossref_classes_id_collision_prior_wins", ccol.get("F-RR-01") == "unexplained-drop")
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
+    # regression: a non-string mechanism / non-list evidence_refs must not crash (2026-06-20 sweep)
+    chk("crash_nondict_mechanism", _mech_tokens(42) == set() and _mech_tokens(["a", "b"]) == set())
+    chk("crash_string_evidence_refs", _chapter_of("Ch 5") == "unplaced" and _chapter_of(["Ch 5"]) == "Ch 5")
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 

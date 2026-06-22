@@ -49,6 +49,21 @@ try:
     import finding_trace as ft
 except ImportError:
     ft = None
+try:
+    import apodictic_artifacts as art
+except ImportError:
+    art = None
+
+
+def _has_block(text, btype):
+    """True if `text` carries a real apodictic:<btype> block (a parsed carrier, not a prose mention).
+
+    Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
+    in prose from being misrouted (the 2026-06-20 resolver-hardening sweep). Gated by
+    validate.sh validator-conventions (M2)."""
+    if art is None:
+        return ("apodictic:%s" % btype) in (text or "")
+    return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))
 
 _MANIFEST_GLOB = "*_Annotation_Manifest_*.md"
 _CROSSLINKED_GLOB = "*_Crosslinked_Letter_*.md"
@@ -84,7 +99,7 @@ def _sigils():
 
 def _anchor_str(anchor):
     """The verbatim '<kind>:<value>' embedded in a back-link (value may be empty for `document`)."""
-    a = anchor or {}
+    a = anchor if isinstance(anchor, dict) else {}
     return "%s:%s" % (a.get("kind", ""), a.get("value", ""))
 
 
@@ -262,7 +277,7 @@ def classify_files(paths):
     for p in paths:
         base = os.path.basename(p)
         body = _read(p) or ""
-        if "_Annotation_Manifest_" in base or "apodictic:annotation" in body:
+        if "_Annotation_Manifest_" in base or _has_block(body, "annotation"):
             man = p
         elif "_Crosslinked_Letter_" in base or "→ marked-up copy:" in body:
             crl = p
@@ -442,6 +457,8 @@ def run_self_test():
 
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
+    # regression: a non-dict anchor must not crash _anchor_str (2026-06-20 sweep)
+    chk("crash_nondict_anchor", _anchor_str([1, 2, 3]) == ":" and _anchor_str(None) == ":")
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
 

@@ -33,6 +33,8 @@ import os
 import re
 import sys
 
+from override_marker import has_override  # SSoT: state-machine code-span stripper + boundary-matched slug
+
 # Time-of-day word -> hour-of-day. Order matters for substring precedence
 # (check "late night" / "midnight" before "night", "midday" before "day").
 _TOD_WORDS = [
@@ -54,6 +56,17 @@ _NONLINEAR_RE = re.compile(
     r"dream|POV[- ]split|out of order|nonlinear|non-linear)", re.IGNORECASE)
 
 _LEVEL2_RE = re.compile(r"^##[^#]")
+
+def _has_override(body, slug):
+    """A genuine body override comment for `slug` — delegated to the shared `override_marker`.
+
+    The earlier `"<!-- override: <slug>" in body` substring test matched a suffixed slug and a
+    backtick'd documentation example. This had used a LOCAL `re.compile(r"```...```|`...`")` stripper,
+    but that hand-rolled parser was bypassable by a multi-backtick / `~~~`-fenced / multiline /
+    malformed-fence example (Codex P1). It now delegates to `override_marker.has_override` — the single
+    state-machine code-span stripper + boundary-matched slug — so timeline overrides can no longer be
+    activated by a documentation example in any CommonMark code-span form."""
+    return has_override(body, slug)
 
 
 # --------------------------------------------------------------------------
@@ -83,15 +96,34 @@ def _split_section8(text):
     return "\n".join(lines[:s8]), "\n".join(lines[s8:])
 
 
+# Number parsing tolerant of comma thousands-separators. The bare `\d+`/`\d` digit runs below used to
+# drop the leading groups under `.search()` — "1,000 days" -> 0.0, "Day 1,000" -> 1 — a false POSITIVE
+# on a self-consistent timeline and a false NEGATIVE on a real conflict (the same blind spot fixed in
+# world_bible.py, PR #135). The grouped alternative requires AT LEAST ONE ",ddd" group (`+`, not `*`)
+# so an ungrouped multi-digit number can't be prefix-matched ("1000" stays "1000", never "100").
+# Commas are stripped via _strip_grouping before float()/int().
+_NUM_UNIT_RE = re.compile(r"(-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d+(?:\.\d+)?)\s*([A-Za-z]+)")
+_ANCHOR_NUM = r"(\d{1,3}(?:,\d{3})+|\d+)"
+_ANCHOR_DAY_RE = re.compile(r"\bDay\s+" + _ANCHOR_NUM, re.IGNORECASE)
+_ANCHOR_WEEK_RE = re.compile(r"\bWeek\s+" + _ANCHOR_NUM, re.IGNORECASE)
+
+
+def _strip_grouping(num):
+    """Drop comma thousands-separators from a captured numeral so float()/int() see the real
+    magnitude ('1,000' -> '1000'). Comma is the only grouping char authors use here; '.' is the
+    decimal point and is preserved."""
+    return num.replace(",", "")
+
+
 def _norm_duration(s):
     """'3 hours' -> 3.0, '2 days' -> 48.0, '30 minutes' -> 0.5, '-2 days' -> -48.0;
-    None for 'n/a' / empty / unparseable."""
+    None for 'n/a' / empty / unparseable. Comma-grouped counts ('1,000 days') parse correctly."""
     if s is None:
         return None
-    m = re.search(r"(-?\d+(?:\.\d+)?)\s*([A-Za-z]+)", s)
+    m = _NUM_UNIT_RE.search(s)
     if not m:
         return None
-    value = float(m.group(1))
+    value = float(_strip_grouping(m.group(1)))
     unit = m.group(2).lower().rstrip("s")
     if unit not in _UNIT_HOURS:
         return None
@@ -104,15 +136,15 @@ def _norm_anchor_day(*texts):
     for t in texts:
         if not t:
             continue
-        m = re.search(r"\bDay\s+(\d+)", t, re.IGNORECASE)
+        m = _ANCHOR_DAY_RE.search(t)
         if m:
-            return int(m.group(1))
+            return int(_strip_grouping(m.group(1)))
     for t in texts:
         if not t:
             continue
-        m = re.search(r"\bWeek\s+(\d+)", t, re.IGNORECASE)
+        m = _ANCHOR_WEEK_RE.search(t)
         if m:
-            return (int(m.group(1)) - 1) * 7 + 1
+            return (int(_strip_grouping(m.group(1))) - 1) * 7 + 1
     return None
 
 
@@ -227,7 +259,7 @@ _PASS10 = "core-editor/references/pass-10.md"
 def timeline_arithmetic(text):
     errors, warnings = [], []
     body, _ = _split_section8(text)
-    ov = "<!-- override: timeline-arithmetic-conflict" in body
+    ov = _has_override(body, "timeline-arithmetic-conflict")
 
     # Marker hygiene (faithful to the bash arm) — body only.
     neg_gaps = sum(1 for ln in body.split("\n")
@@ -284,7 +316,7 @@ def timeline_arithmetic(text):
 def timeline_anchor_conflict(text):
     errors, warnings = [], []
     body, _ = _split_section8(text)
-    ov = "<!-- override: timeline-anchor-conflict" in body
+    ov = _has_override(body, "timeline-anchor-conflict")
 
     candidates = sum(1 for ln in body.split("\n")
                      if re.search(r"\((contradicts|paradox with|conflicts with)", ln, re.IGNORECASE))
@@ -340,7 +372,7 @@ def _diff_section3_markers(text):
 def timeline_diff(prior_text, current_text):
     errors, warnings = [], []
     body, section8 = _split_section8(current_text)
-    ov = "<!-- override: timeline-diff-undocumented" in body
+    ov = _has_override(body, "timeline-diff-undocumented")
 
     prior_rows, cur_rows = _diff_event_rows(prior_text), _diff_event_rows(current_text)
     prior_s3, cur_s3 = _diff_section3_markers(prior_text), _diff_section3_markers(current_text)
@@ -490,8 +522,55 @@ def run_self_test(which=None):
         expect("diff_undocumented", diff_rc(prior, cur_undoc), 1)
         expect("diff_documented", diff_rc(prior, cur_doc), 0)
         expect("diff_override_body", diff_rc(prior, cur_over), 0)
+        # 2026-06-20 override-parse hardening: a SUFFIXED slug must NOT be accepted as the override
+        cur_over_suffixed = cur_over.replace("timeline-diff-undocumented —", "timeline-diff-undocumented-later —")
+        expect("diff_override_suffixed_slug_rejected", diff_rc(prior, cur_over_suffixed), 1)
+        # a marker inside a backtick code span (a documentation example) must NOT count as a live override
+        cur_over_backtick = cur_over.replace(
+            "<!-- override: timeline-diff-undocumented — deferred. -->",
+            "Use `<!-- override: timeline-diff-undocumented -->` to defer.")
+        expect("diff_override_in_backticks_rejected", diff_rc(prior, cur_over_backtick), 1)
+        # migration to override_marker (Codex P1): a TILDE-fenced and a MULTI-backtick documentation
+        # example must also be rejected (the old local stripper only handled ``` and single backticks)
+        cur_over_tilde = cur_over.replace(
+            "<!-- override: timeline-diff-undocumented — deferred. -->",
+            "~~~\n<!-- override: timeline-diff-undocumented -->\n~~~")
+        expect("diff_override_in_tilde_fence_rejected", diff_rc(prior, cur_over_tilde), 1)
+        cur_over_mbtick = cur_over.replace(
+            "<!-- override: timeline-diff-undocumented — deferred. -->",
+            "``<!-- override: timeline-diff-undocumented -->``")
+        expect("diff_override_in_multibacktick_rejected", diff_rc(prior, cur_over_mbtick), 1)
         expect("diff_changed_masks_add", diff_rc(prior, cur_changed_masks), 1)
         expect("diff_edit_changed_covers", diff_rc(prior, cur_edit), 0)
+
+    # Comma thousands-separator parsing — the same blind spot fixed in world_bible.py (#135) lived
+    # in this validator too. Each assertion below FAILS against pre-fix code.
+    if which in (None, "timeline-arithmetic", "timeline-anchor-conflict"):
+        # Unit: grouped numerals parse to full magnitude; ungrouped multi-digit numbers are UNCHANGED
+        # (the grouped alternative requires a comma, so "1000" never prefix-matches down to 100).
+        expect("comma_duration_thousands", _norm_duration("1,000 days"), 1000 * 24.0)   # pre-fix: 0.0
+        expect("comma_duration_ungrouped_unchanged", _norm_duration("1000 days"), 1000 * 24.0)
+        expect("comma_anchor_day", _norm_anchor_day("Day 1,000"), 1000)                 # pre-fix: 1
+        expect("comma_anchor_week", _norm_anchor_day("Week 1,000"), (1000 - 1) * 7 + 1) # pre-fix: 1
+        expect("comma_anchor_ungrouped_unchanged", _norm_anchor_day("Day 1000"), 1000)
+        # Arm-level: an agree-clean timeline must NOT flag (pre-fix: false POSITIVE) and a genuine
+        # conflict MUST flag (pre-fix: false NEGATIVE).
+        anchor_clean = ('# Timeline\n## Section 3: Scene Anchors\n'
+                        '- Ch 2 §1: "the thousandth dawn" -> Day 1,000\n'
+                        '- Ch 2 §1: "a thousand days in" -> Day 1000\n')          # same day, comma vs not
+        anchor_conflict = ('# Timeline\n## Section 3: Scene Anchors\n'
+                           '- Ch 3 §2: "the thousandth dawn" -> Day 1,000\n'
+                           '- Ch 3 §2: "five days later, same scene" -> Day 1,005\n')  # genuinely different days
+        expect("anchor_comma_consistent_clean", _emit(*timeline_anchor_conflict(anchor_clean)), 0)
+        expect("anchor_comma_conflict_flagged", _emit(*timeline_anchor_conflict(anchor_conflict)), 1)
+        _tbl = ("# Timeline\n## Section 1: Event Ledger\n"
+                "| Scene ID | Anchor text | Span |\n|---|---|---|\n")
+        arith_clean = _tbl + ("| Ch 1 §1 | Day 1,000 0:00 | 10 hours |\n"
+                              "| Ch 1 §2 | Day 1,001 0:00 | 1 hour |\n")   # sequential days, no overrun
+        arith_conflict = _tbl + ("| Ch 1 §1 | Day 1 0:00 | 1,000 hours |\n"
+                                 "| Ch 1 §2 | Day 2 0:00 | 1 hour |\n")    # 1,000h span overruns Day 2
+        expect("arith_comma_anchor_sequential_clean", _emit(*timeline_arithmetic(arith_clean)), 0)
+        expect("arith_comma_span_overrun_flagged", _emit(*timeline_arithmetic(arith_conflict)), 1)
 
     if rc["v"] == 0:
         print("Self-test: PASS")

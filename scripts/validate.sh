@@ -178,15 +178,58 @@ set -euo pipefail
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).
-AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff regression-diff legal-risk promise-contract continuity-bible argument-spine scene-ethics argument-groundtruth-check registry-check lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor obsidian-export html-export docx-export check-mirror"
+AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff regression-diff legal-risk promise-contract continuity-bible world-bible intake-interview author-fingerprint content-advisory persona-divergence argument-spine scene-ethics argument-groundtruth-check registry-check schema-coverage lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor obsidian-export html-export docx-export validator-conventions check-mirror"
 # shellcheck disable=SC2086  # intentional word-splitting to count list entries
 AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 
+# --------------------------------------------------------------------------
+# Shared hardened override-marker detection (2026-06-20 override-substring class).
+#
+# The bash gates honor an author/orchestrator escape hatch `<!-- override: <slug> — <rationale> -->`.
+# The legacy `grep -F "<!-- override: <slug>"` bare-prefix test had two proven bypasses (the same the
+# Python `override_marker.has_override` helper closes, so both arms accept the SAME marker set):
+#   1. SUFFIX COLLISION — a bare-prefix match honors a longer slug (`<slug>-but-not-really`).
+#   2. CODE-SPAN DECOY  — a marker quoted as documentation inside a backtick span — inline `` `…` `` OR
+#                         a fenced ```...``` block — is honored as if live. (Group 4: the old per-line
+#                         `sed` stripped inline only, so a marker inside a FENCED block was honored by
+#                         bash though the Python path rejected it — bash was wrongly MORE permissive.)
+# `_has_override <slug>` reads the body on stdin, strips fenced code blocks (awk fence toggle) AND
+# inline code spans (sed), then requires the EXACT slug followed by a boundary delimiter — whitespace,
+# an em-/en-dash, the comment close `-->`, or EOL — mirroring the Python helper. Whitespace after
+# `<!--` and `override:` is flexible to match Python's `\s*`. Returns 0 (found) / 1 (not found).
+# meta_lint.py's M5 gate flags the legacy bare-substring form so the class cannot re-enter.
+_has_override() {
+  _ho_slug="$1"
+  # AUTHORITATIVE path: delegate to override_marker.py — the SINGLE robust code-span stripper (handles
+  # multiline inline spans, fence char/length, etc.). The fleet's validators already require python3, so
+  # this is the live path. (Avoids a second hand-rolled CommonMark parser in awk/sed — that divergence
+  # was the source of repeated Codex rounds.)
+  _ho_om="$(cd "$(dirname "$0")" && pwd)/override_marker.py"
+  if command -v python3 >/dev/null 2>&1 && [ -f "$_ho_om" ]; then
+    python3 "$_ho_om" --has-override "$_ho_slug"
+    return $?
+  fi
+  # DEGRADED best-effort fallback (python3 unavailable only): line-wise fence strip that tracks the fence
+  # CHARACTER — a ``` line inside a ~~~ fence (or vice-versa) is content, not a premature close (Codex
+  # P1) — plus inline-span blanking + boundary-match. Multiline inline spans are NOT handled here; the
+  # python3 path above is authoritative. LC_ALL=C is NOT set: the em-/en-dash class needs UTF-8.
+  awk '
+    function lead(s){ sub(/^[[:space:]]*/,"",s); return s }
+    { t=lead($0)
+      if (infence) { if ((fc=="`" && t ~ /^```+/) || (fc=="~" && t ~ /^~~~+/)) infence=0; next }
+      if (t ~ /^```+/) { infence=1; fc="`"; next }
+      if (t ~ /^~~~+/) { infence=1; fc="~"; next }
+      print }
+  ' \
+    | sed 's/```[^`]*```//g; s/``[^`]*``//g; s/`[^`]*`//g' \
+    | grep -E "<!--[[:space:]]*override:[[:space:]]*${_ho_slug}([[:space:]]|—|–|-->|$)" >/dev/null 2>&1
+}
+
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, regression-diff, legal-risk, promise-contract, continuity-bible, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, obsidian-export, html-export, docx-export, check-mirror"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, regression-diff, legal-risk, promise-contract, continuity-bible, world-bible, intake-interview, author-fingerprint, content-advisory, persona-divergence, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, schema-coverage, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, obsidian-export, html-export, docx-export, validator-conventions, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), argument-spine vs the canonical pre-draft Argument_State, scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources + the pre-draft Argument_State spine (the claim-ladder X1/X5/X6/X7 gates), annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), world-bible vs the canonical Worldbuilding Bible example (W1 schema + closed-key, WD unique ids, WB-R1 rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a unit class, WB-G2 chronology cycle + anchor-drift, and the WF surface-don't-resolve firewall scan — clean under --strict with the staged contradictions overridden), intake-interview vs the canonical Intake Interview example + its Ledger (I1 schema, I2 no-contract-dup, I3 grounded ambiguity via ref + source_note, I4 calibrate-not-suppress under --strict), author-fingerprint vs the canonical Author Voice Profile (F1 schema, F2 provenance, F3 same-register comparison, F4 descriptive-not-prescriptive, clean W1/W2 under --strict), content-advisory vs the canonical Content Advisory (A1 schema, A2 locus shape, A3 no-severity-leak, descriptive W1, opt-in W2 under --strict), persona-divergence vs the canonical Persona Divergence Map + its Ledger (D1 schema incl. nested experiences enum, D2 grounded prediction, D3 target-severity anchoring, D4 anti-fabrication, D5 closed-key persona under --strict), argument-spine vs the canonical pre-draft Argument_State + the three genre-profiled Argument_States (Increment 5: B1-B4 + W4 over grant / academic / pitch, --strict), scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources + the pre-draft Argument_State spine (the claim-ladder X1/X5/X6/X7 gates), annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, schema-coverage vs the real schemas/ dir (every apodictic.*.schema.json bound + canonically exercised + closed-key table<->file agreement — Harness Contracts v2), plus validator-conventions (the fleet meta-linter — M1 every AGG validator has a --self-test dispatcher case, M2 resolvers classify on parsed blocks not raw apodictic:<type> marker scans, M3 derived count, M4 no orphan schema, M5 no bare \"<!-- override:\" substring scan — overrides use the hardened helper), plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -298,8 +341,9 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-vocabulary-guide.md not found"; CA_FAIL=1
     fi
     echo ""
-    echo "== canonical example ledger <-> letter (both directions: finding-trace forward refs + softness-check reverse delivery; deficit-lock structured locks) =="
+    echo "== canonical example ledger <-> letter (both directions: structured-findings on the ledger + finding-trace forward refs + softness-check reverse delivery; deficit-lock structured locks) =="
     if [ -f "$CA_BASE/example-findings-ledger.md" ]; then
+      "$0" structured-findings "$CA_BASE/example-findings-ledger.md" || CA_FAIL=1
       "$0" finding-trace "$CA_BASE/example-findings-ledger.md" "$CA_BASE/example-editorial-letter.md" || CA_FAIL=1
       "$0" softness-check "$CA_BASE/example-editorial-letter.md" "$CA_BASE/example-findings-ledger.md" || CA_FAIL=1
       "$0" deficit-lock "$CA_BASE/example-findings-ledger.md" || CA_FAIL=1
@@ -342,6 +386,41 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-continuity-bible.md or example-timeline.md not found"; CA_FAIL=1
     fi
     echo ""
+    echo "== canonical Intake Interview (intake-interview: schema I1 + no-contract-dup I2 + grounded ambiguity I3 (ref + source_note) + calibrate-not-suppress I4, paired with the Ledger, under --strict) =="
+    if [ -f "$CA_BASE/example-intake-interview.md" ] && [ -f "$CA_BASE/example-intake-interview-ledger.md" ]; then
+      "$0" intake-interview "$CA_BASE/example-intake-interview.md" "$CA_BASE/example-intake-interview-ledger.md" --strict || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-intake-interview.md or example-intake-interview-ledger.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Author Voice Profile (author-fingerprint: schema F1 + provenance F2 + same-register F3 + descriptive-not-prescriptive F4 + clean W1/W2, under --strict) =="
+    if [ -f "$CA_BASE/example-author-voice-profile.md" ]; then
+      "$0" author-fingerprint "$CA_BASE/example-author-voice-profile.md" --strict || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-author-voice-profile.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Content Advisory (content-advisory: schema A1 + locus shape A2 + no-severity-leak A3 + descriptive W1 + opt-in W2, under --strict) =="
+    if [ -f "$CA_BASE/example-content-advisory.md" ]; then
+      "$0" content-advisory "$CA_BASE/example-content-advisory.md" --strict || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-content-advisory.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Persona Divergence Map (persona-divergence: schema D1 + grounded prediction D2 + target-severity D3 + anti-fabrication D4 + closed-key D5, paired with the Ledger, under --strict) =="
+    if [ -f "$CA_BASE/example-persona-divergence-map.md" ] && [ -f "$CA_BASE/example-persona-divergence-ledger.md" ]; then
+      "$0" persona-divergence "$CA_BASE/example-persona-divergence-map.md" "$CA_BASE/example-persona-divergence-ledger.md" --strict || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-persona-divergence-map.md or example-persona-divergence-ledger.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Worldbuilding Bible (world-bible: schema W1 + closed-key + unique ids WD + rule WB-R1 + cost WB-C1/C2 + distance WB-G1 + chronology WB-G2 + firewall WF, staged contradictions overridden, under --strict) =="
+    if [ -f "$CA_BASE/example-worldbuilding-bible.md" ]; then
+      "$0" world-bible "$CA_BASE/example-worldbuilding-bible.md" --strict || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-worldbuilding-bible.md not found"; CA_FAIL=1
+    fi
+    echo ""
     echo "== canonical State Card (state-card-diff: cross-round coherence; self-diff + round-2 diff) =="
     if [ -f "$CA_BASE/example-state-card.md" ]; then
       "$0" state-card-diff "$CA_BASE/example-state-card.md" || CA_FAIL=1
@@ -377,6 +456,25 @@ if [ "$1" = "--check-all" ]; then
     else
       echo "ERROR: $CA_BASE/example-argument-state-predraft.md not found"; CA_FAIL=1
     fi
+    echo ""
+    echo "== canonical genre-profiled Argument_States (argument-spine Inc 5: B1-B4 + W4 over grant / academic / pitch; --strict) =="
+    # grant runs via an explicit LITERAL path (not the $GENRE_FIX loop) so schema-coverage's C5 can trace
+    # example-argument-state-genre-grant.md to a real argument-spine invocation: it is the
+    # apodictic.genre_profile.v1 canonical_gate (the predraft Argument_State carries no genre_profile
+    # block; the genre files do — C5's one-hop resolver can't see through the loop's double variable).
+    if [ -f "$CA_BASE/example-argument-state-genre-grant.md" ]; then
+      "$0" argument-spine "$CA_BASE/example-argument-state-genre-grant.md" --strict || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-argument-state-genre-grant.md not found"; CA_FAIL=1
+    fi
+    for GENRE_FIX in academic pitch; do
+      GENRE_F="$CA_BASE/example-argument-state-genre-$GENRE_FIX.md"
+      if [ -f "$GENRE_F" ]; then
+        "$0" argument-spine "$GENRE_F" --strict || CA_FAIL=1
+      else
+        echo "ERROR: $GENRE_F not found"; CA_FAIL=1
+      fi
+    done
     echo ""
     echo "== canonical Scene-Ethics Plan (scene-ethics: ethics-plan contract + resolved depictions) =="
     if [ -f "$CA_BASE/example-scene-ethics-plan.md" ]; then
@@ -479,6 +577,59 @@ if [ "$1" = "--check-all" ]; then
       fi
     elif [ ! -f "$CA_BASE/example-reanchor-revised.md" ]; then
       echo "ERROR: $CA_BASE/example-reanchor-revised.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== round-trip glue chain (emit -> A-gate the revised copy -> crossref; on a temp copy) =="
+    # The round-trip GLUE (docs/annotated-manuscript-reanchoring.md §The artifacts; ROADMAP "truly great"
+    # #2) wires reanchor into a revision-aware flow: emit the re-anchored manifest + the rendered annotated
+    # copy of the REVISED draft, gate that copy against the revised snapshot (A1-A6, ledger-optional), then
+    # cross-reference the anchor classes against regression-diff's finding classes by finding_id. Exercise
+    # the chain end-to-end on a temp copy — emit WRITES outputs (never in place; same discipline as the
+    # producer chain above) — and assert: emit exits 0 and wrote both artifacts, the emitted copy passes
+    # the A-gate, and crossref runs clean (advisory). Non-vacuous: the emitted copy must round-trip the
+    # revised snapshot byte-for-byte (A2 no-mutation) under the gate.
+    if [ -d "$CA_BASE/example-annotated-manuscript" ] && [ -f "$CA_BASE/example-reanchor-revised.md" ] && command -v python3 >/dev/null 2>&1; then
+      CA_RT_SRC="$CA_BASE/example-annotated-manuscript"
+      CA_RT=$(mktemp -d)
+      # Stage the prior run folder's manifest + a properly-named revised snapshot (so emit derives a clean
+      # runlabel from the *_Manuscript_Snapshot_* infix), then emit into the same temp folder.
+      cp "$CA_RT_SRC"/*_Annotation_Manifest_*.md "$CA_RT"/ 2>/dev/null
+      cp "$CA_BASE/example-reanchor-revised.md" "$CA_RT/Example_Manuscript_Snapshot_reanchor-r2.md"
+      CA_RT_OK=1
+      python3 "$CA_SCRIPT_DIR/reanchor.py" emit "$CA_RT" "$CA_RT/Example_Manuscript_Snapshot_reanchor-r2.md" -o "$CA_RT" >/dev/null 2>&1 || CA_RT_OK=0
+      CA_RT_MAN="$CA_RT/Example_Reanchored_Manifest_reanchor-r2.md"
+      CA_RT_ANN="$CA_RT/Example_Reanchored_Annotated_Manuscript_reanchor-r2.md"
+      CA_RT_SNAP="$CA_RT/Example_Manuscript_Snapshot_reanchor-r2.md"
+      [ -f "$CA_RT_MAN" ] && [ -f "$CA_RT_ANN" ] || CA_RT_OK=0
+      # Gate the EMITTED revised-draft copy against the revised snapshot with the SAME ledger-optional
+      # A-gate the reanchor contract uses (A1+A2+A3+A4-multiset+A6; the A4/A5 cross-ledger arms are inert
+      # for a re-anchored copy — there is no re-diagnosed N+1 ledger, by construction). The plain
+      # `annotated-manuscript` validator would (correctly) demand a ledger, so gate via am.check(...,
+      # ledger_optional=True) — proving the written copy round-trips the revised snapshot (A2 no-mutation)
+      # and every carried anchor resolves, on the files emit actually wrote.
+      if [ -f "$CA_RT_MAN" ] && [ -f "$CA_RT_ANN" ]; then
+        CA_SCRIPT_DIR="$CA_SCRIPT_DIR" python3 - "$CA_RT_SNAP" "$CA_RT_MAN" "$CA_RT_ANN" <<'PY' >/dev/null 2>&1 || CA_RT_OK=0
+import os, sys
+sys.path.insert(0, os.environ["CA_SCRIPT_DIR"])
+import annotation_manifest as am
+snap = am.normalize_snapshot(open(sys.argv[1], encoding="utf-8").read())
+man = open(sys.argv[2], encoding="utf-8").read()
+ann = open(sys.argv[3], encoding="utf-8").read()
+code, _ = am.check(snap, man, ann, ledger_text=None, ledger_optional=True)
+sys.exit(code)
+PY
+      fi
+      # crossref joins by finding_id against a current round folder (advisory, exit 0); use the paired
+      # regression fixture as the "this round" ledger — it need not share ids (a clean no-contradiction join).
+      python3 "$CA_SCRIPT_DIR/reanchor.py" crossref "$CA_RT" "$CA_RT/Example_Manuscript_Snapshot_reanchor-r2.md" "$CA_BASE/example-run-folder-r2" >/dev/null 2>&1 || CA_RT_OK=0
+      if [ "$CA_RT_OK" -eq 1 ]; then
+        echo "round-trip glue chain (temp copy): PASS"
+      else
+        echo "round-trip glue chain (temp copy): FAIL"; CA_FAIL=1
+      fi
+      rm -rf "$CA_RT"
+    elif [ ! -f "$CA_BASE/example-reanchor-revised.md" ]; then
+      echo "ERROR: $CA_BASE/example-reanchor-revised.md not found (round-trip glue chain)"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical obsidian-export (manifest -> native footnotes; O1-O3 + byte-identical to committed) =="
@@ -624,6 +775,20 @@ if [ "$1" = "--check-all" ]; then
     echo ""
   fi
 
+  # Schema-coverage invariant (Harness Contracts v2): run the gate against the REAL schemas/ dir
+  # (not only its synthetic self-test), so a new/renamed/orphaned schema, an unproven binding, a
+  # canonical file --check-all no longer runs, or a closed-key drift between a schema file and the
+  # _coverage.json table is caught at release time. C2/C5 only have teeth against disk reality.
+  echo "== schema-coverage (real schemas dir) =="
+  "$0" schema-coverage || CA_FAIL=1
+  echo ""
+
+  # Fleet-convention invariant: the meta-linter gates the whole validator fleet against the recurring
+  # bug classes (resolver-substring, count-drift, unwired self-test, orphan schema) found by the
+  # 2026-06-20 sweep, so they cannot silently re-enter.
+  echo "== validator-conventions (meta-linter: M1 dispatch+self-test, M2 resolver hygiene, M3 derived count, M4 no orphan schema, M5 override hygiene) =="
+  "$0" validator-conventions >/dev/null 2>&1 && echo "  ok (fleet conventions hold)" || { echo "  FAIL"; "$0" validator-conventions || true; CA_FAIL=1; }
+  echo ""
   # Dual-script-mirror invariant: the root scripts/ copy (what CI runs) and the canonical
   # plugins/apodictic/scripts/ copy must be byte-identical for the shared mirrored set, or a
   # validator change passes against one copy while CI runs the stale other (AGENTS.md § parity).
@@ -1124,9 +1289,9 @@ EOF
     OVERRIDE_WEAK_AXIS=0
     OVERRIDE_SYSTEMIC=0
     OVERRIDE_BAND_CAP=0
-    echo "$BODY" | grep -F "<!-- override: severity-floor-weak-axis" > /dev/null 2>&1 && OVERRIDE_WEAK_AXIS=1
-    echo "$BODY" | grep -F "<!-- override: severity-floor-systemic" > /dev/null 2>&1 && OVERRIDE_SYSTEMIC=1
-    echo "$BODY" | grep -F "<!-- override: severity-floor-band-cap" > /dev/null 2>&1 && OVERRIDE_BAND_CAP=1
+    echo "$BODY" | _has_override "severity-floor-weak-axis" && OVERRIDE_WEAK_AXIS=1
+    echo "$BODY" | _has_override "severity-floor-systemic" && OVERRIDE_SYSTEMIC=1
+    echo "$BODY" | _has_override "severity-floor-band-cap" && OVERRIDE_BAND_CAP=1
 
     # Rule 1: Weak axis at High/Medium intensity → ≥1 Must-Fix.
     if grep -iE "Weak (at )?(High|Medium)" "$LETTER" > /dev/null 2>&1; then
@@ -1414,18 +1579,32 @@ EOF
     OVERRIDE_MUST_FIX=0
     OVERRIDE_HARD_GATE=0
     OVERRIDE_HIGH=0
-    echo "$SYNTH_BODY" | grep -F "<!-- override: audit-propagation-must-fix" > /dev/null 2>&1 && OVERRIDE_MUST_FIX=1
-    echo "$SYNTH_BODY" | grep -F "<!-- override: audit-propagation-hard-gate" > /dev/null 2>&1 && OVERRIDE_HARD_GATE=1
-    echo "$SYNTH_BODY" | grep -F "<!-- override: audit-propagation-high" > /dev/null 2>&1 && OVERRIDE_HIGH=1
+    echo "$SYNTH_BODY" | _has_override "audit-propagation-must-fix" && OVERRIDE_MUST_FIX=1
+    echo "$SYNTH_BODY" | _has_override "audit-propagation-hard-gate" && OVERRIDE_HARD_GATE=1
+    echo "$SYNTH_BODY" | _has_override "audit-propagation-high" && OVERRIDE_HIGH=1
 
     # Per-audit override marker detection — body only. The marker form is
-    # `<!-- override: audit-propagation-<audit-slug> — <rationale> -->` where
-    # <audit-slug> is the lowercase-hyphenated audit name. Captured into
-    # PER_AUDIT_OVERRIDES as a space-delimited list.
-    PER_AUDIT_OVERRIDES=$(echo "$SYNTH_BODY" \
-      | grep -oE "<!-- override: audit-propagation-[a-z][a-z0-9-]*" \
-      | sed -E 's/<!-- override: audit-propagation-//' \
-      | tr '\n' ' ' || true)
+    # `<!-- override: audit-propagation-<audit-slug> — <rationale> -->`. Captured into
+    # PER_AUDIT_OVERRIDES as a space-delimited list. AUTHORITATIVE path: delegate to
+    # override_marker.override_slugs (the single robust code-span stripper + slug boundary). Best-effort
+    # fence-char-tracked awk/sed fallback only when python3 is unavailable.
+    _ov_om="$(cd "$(dirname "$0")" && pwd)/override_marker.py"
+    if command -v python3 >/dev/null 2>&1 && [ -f "$_ov_om" ]; then
+      PER_AUDIT_OVERRIDES=$(printf '%s' "$SYNTH_BODY" \
+        | python3 "$_ov_om" --override-slugs "audit-propagation-" | tr '\n' ' ' || true)
+    else
+      PER_AUDIT_OVERRIDES=$(echo "$SYNTH_BODY" \
+        | awk 'function lead(s){ sub(/^[[:space:]]*/,"",s); return s }
+               { t=lead($0)
+                 if (infence) { if ((fc=="`" && t ~ /^```+/) || (fc=="~" && t ~ /^~~~+/)) infence=0; next }
+                 if (t ~ /^```+/) { infence=1; fc="`"; next }
+                 if (t ~ /^~~~+/) { infence=1; fc="~"; next }
+                 print }' \
+        | sed 's/```[^`]*```//g; s/``[^`]*``//g; s/`[^`]*`//g' \
+        | grep -oE "<!--[[:space:]]*override:[[:space:]]*audit-propagation-[a-z0-9]([a-z0-9-]*[a-z0-9])?([[:space:]]|—|–|-->|$)" \
+        | sed -E 's/<!--[[:space:]]*override:[[:space:]]*audit-propagation-//; s/([[:space:]]|—|–|-->)$//' \
+        | tr '\n' ' ' || true)
+    fi
 
     # Helper: check whether a per-audit override slug matches a given audit
     # slug. Used below.
@@ -1793,12 +1972,12 @@ EOF
 
     # Per-trigger marker detection — body only.
     OV_CONV=0; OV_HG=0; OV_FT=0; OV_MA=0; OV_SF=0; OV_PROP=0
-    echo "$BODY" | grep -F "<!-- override: underdiagnosis-trigger-convergence" > /dev/null 2>&1 && OV_CONV=1
-    echo "$BODY" | grep -F "<!-- override: underdiagnosis-trigger-hard-gate" > /dev/null 2>&1 && OV_HG=1
-    echo "$BODY" | grep -F "<!-- override: underdiagnosis-trigger-final-third" > /dev/null 2>&1 && OV_FT=1
-    echo "$BODY" | grep -F "<!-- override: underdiagnosis-trigger-multi-axis" > /dev/null 2>&1 && OV_MA=1
-    echo "$BODY" | grep -F "<!-- override: underdiagnosis-trigger-severity-floor" > /dev/null 2>&1 && OV_SF=1
-    echo "$BODY" | grep -F "<!-- override: underdiagnosis-trigger-propagation" > /dev/null 2>&1 && OV_PROP=1
+    echo "$BODY" | _has_override "underdiagnosis-trigger-convergence" && OV_CONV=1
+    echo "$BODY" | _has_override "underdiagnosis-trigger-hard-gate" && OV_HG=1
+    echo "$BODY" | _has_override "underdiagnosis-trigger-final-third" && OV_FT=1
+    echo "$BODY" | _has_override "underdiagnosis-trigger-multi-axis" && OV_MA=1
+    echo "$BODY" | _has_override "underdiagnosis-trigger-severity-floor" && OV_SF=1
+    echo "$BODY" | _has_override "underdiagnosis-trigger-propagation" && OV_PROP=1
 
     BODY_MUSTFIX=0
     echo "$BODY" | grep -iE "Must-Fix" > /dev/null 2>&1 && BODY_MUSTFIX=1
@@ -2023,10 +2202,10 @@ EOF
     # Per-check marker detection (markers may appear anywhere in
     # consolidated ledger; ledger does not have appendix-body distinction).
     OV_RAW=0; OV_CONV=0; OV_COLLATE=0; OV_REDUCTION=0
-    grep -F "<!-- override: ledger-consolidation-raw-aggregate" "$LEDGER" > /dev/null 2>&1 && OV_RAW=1
-    grep -F "<!-- override: ledger-consolidation-no-convergence" "$LEDGER" > /dev/null 2>&1 && OV_CONV=1
-    grep -F "<!-- override: ledger-consolidation-no-collation" "$LEDGER" > /dev/null 2>&1 && OV_COLLATE=1
-    grep -F "<!-- override: ledger-consolidation-no-reduction" "$LEDGER" > /dev/null 2>&1 && OV_REDUCTION=1
+    _has_override "ledger-consolidation-raw-aggregate" < "$LEDGER" && OV_RAW=1
+    _has_override "ledger-consolidation-no-convergence" < "$LEDGER" && OV_CONV=1
+    _has_override "ledger-consolidation-no-collation" < "$LEDGER" && OV_COLLATE=1
+    _has_override "ledger-consolidation-no-reduction" < "$LEDGER" && OV_REDUCTION=1
 
     # Check 1: raw concatenation. Count "Pass N Findings"-style headers; if
     # ≥3 appear consecutively without intervening synthesis text (>10 lines
@@ -2647,11 +2826,11 @@ EOF
 
     # Per-check marker detection — body only.
     OV_PE=0; OV_AD=0; OV_CQ=0; OV_APP=0; OV_ED=0
-    echo "$BODY" | grep -F "<!-- override: decision-layer-protected-elements" > /dev/null 2>&1 && OV_PE=1
-    echo "$BODY" | grep -F "<!-- override: decision-layer-author-decisions" > /dev/null 2>&1 && OV_AD=1
-    echo "$BODY" | grep -F "<!-- override: decision-layer-control-questions" > /dev/null 2>&1 && OV_CQ=1
-    echo "$BODY" | grep -F "<!-- override: decision-layer-appendices" > /dev/null 2>&1 && OV_APP=1
-    echo "$BODY" | grep -F "<!-- override: decision-layer-evidence-density" > /dev/null 2>&1 && OV_ED=1
+    echo "$BODY" | _has_override "decision-layer-protected-elements" && OV_PE=1
+    echo "$BODY" | _has_override "decision-layer-author-decisions" && OV_AD=1
+    echo "$BODY" | _has_override "decision-layer-control-questions" && OV_CQ=1
+    echo "$BODY" | _has_override "decision-layer-appendices" && OV_APP=1
+    echo "$BODY" | _has_override "decision-layer-evidence-density" && OV_ED=1
 
     # ----- C3: argument-DE class detection -----
     # Detect argument-DE letter class via marker presence anywhere in
@@ -3119,11 +3298,11 @@ EOF
 
     # Per-trigger override marker detection (contract body).
     OV_Q1=0; OV_Q2=0; OV_Q3=0; OV_Q4=0; OV_Q5=0
-    grep -F "<!-- override: quality-risk-Q1" "$CONTRACT" > /dev/null 2>&1 && OV_Q1=1
-    grep -F "<!-- override: quality-risk-Q2" "$CONTRACT" > /dev/null 2>&1 && OV_Q2=1
-    grep -F "<!-- override: quality-risk-Q3" "$CONTRACT" > /dev/null 2>&1 && OV_Q3=1
-    grep -F "<!-- override: quality-risk-Q4" "$CONTRACT" > /dev/null 2>&1 && OV_Q4=1
-    grep -F "<!-- override: quality-risk-Q5" "$CONTRACT" > /dev/null 2>&1 && OV_Q5=1
+    _has_override "quality-risk-Q1" < "$CONTRACT" && OV_Q1=1
+    _has_override "quality-risk-Q2" < "$CONTRACT" && OV_Q2=1
+    _has_override "quality-risk-Q3" < "$CONTRACT" && OV_Q3=1
+    _has_override "quality-risk-Q4" < "$CONTRACT" && OV_Q4=1
+    _has_override "quality-risk-Q5" < "$CONTRACT" && OV_Q5=1
 
     # raise_escalation <target> — promote ESCALATION to higher tier (ceiling=swarm).
     raise_escalation() {
@@ -3477,7 +3656,7 @@ EOF
 
     # Override marker detection — body only.
     OV_DIFF=0
-    echo "$BODY" | grep -F "<!-- override: timeline-diff-undocumented" > /dev/null 2>&1 && OV_DIFF=1
+    echo "$BODY" | _has_override "timeline-diff-undocumented" && OV_DIFF=1
 
     # Extract Event Ledger table rows from each file.
     # Heuristic: pipe-table rows (starting with |) that are not the header
@@ -3745,7 +3924,7 @@ EOF
 
     # Override marker — body only.
     OV_AR=0
-    echo "$BODY" | grep -F "<!-- override: timeline-arithmetic-conflict" > /dev/null 2>&1 && OV_AR=1
+    echo "$BODY" | _has_override "timeline-arithmetic-conflict" && OV_AR=1
 
     # Check (a): negative gap. Match table cells containing /^[[:space:]]*-[0-9]/
     # within a pipe-row, or the literal phrase "negative" or "negative gap".
@@ -3912,7 +4091,7 @@ EOF
 
     # Override marker — body only.
     OV_AC=0
-    echo "$BODY" | grep -F "<!-- override: timeline-anchor-conflict" > /dev/null 2>&1 && OV_AC=1
+    echo "$BODY" | _has_override "timeline-anchor-conflict" && OV_AC=1
 
     # Detect pre-flagged contradiction / paradox annotations in Section 3.
     # Heuristic: parenthetical "(contradicts ...)" or "(paradox with ...)" or
@@ -4159,7 +4338,7 @@ EOF
 
       # Per-audit override check: marker in the body of pass-dependencies.
       OV_AUDIT=0
-      if grep -F "<!-- override: audit-tier-criterion-${AUDIT_SLUG}" "$PD_FILE" > /dev/null 2>&1; then
+      if _has_override "audit-tier-criterion-${AUDIT_SLUG}" < "$PD_FILE"; then
         OV_AUDIT=1
       fi
 
@@ -4375,7 +4554,7 @@ EOF
       else
         BODY=$(cat "$LETTER")
       fi
-      if echo "$BODY" | grep -F "<!-- override: argument-recon-prerequisite" > /dev/null 2>&1; then
+      if echo "$BODY" | _has_override "argument-recon-prerequisite"; then
         OV_ARP=1
       fi
     fi
@@ -4835,6 +5014,160 @@ EOF
     exit 0
     ;;
 
+  intake-interview)
+    # Uncertainty-Resolution Intake Interview (docs/uncertainty-intake-interview.md): at the
+    # after-Pass-0/1 checkpoint, asks the author to resolve a specific structural ambiguity the
+    # framework DETECTED but cannot settle from the text — and only that. Structural checks over the
+    # apodictic.intake_query.v1 blocks — I1 schema (bad kind/confidence enum, malformed IQ-NN id,
+    # missing current_inference/question, duplicate id), I2 no-contract-duplication (a question that
+    # re-asks a contract element owned by the intake / Shelf — advisory, ERROR --strict; override
+    # <!-- override: intake-dup IQ-NN — … -->), I3 grounded ambiguity (one of a resolving
+    # ambiguity_ref (a real finding id in the Ledger) or a non-empty source_note; a dangling ref is an
+    # error — a query grounded in neither is manufactured), I4 calibrate-not-suppress (treat_as_intended
+    # may direct HOW a feature is assessed but never pre-empt a verdict — ERROR, the Deficit-Lock
+    # guard), W1 coverage (a Pass-0/1 LOW/UNCERTAIN finding or an Unresolved-Questions bullet with no
+    # query — advisory). Pass the Findings Ledger as a second file so I3 resolves ids and W1 checks
+    # coverage. Takes a run folder (globs *_Intake_Interview_*.md) or explicit files. Delegates to
+    # scripts/intake_interview.py; degrades to an advisory WARN without python3.
+    IIV_DIR=$(cd "$(dirname "$0")" && pwd)
+    IIV_HELPER="$IIV_DIR/intake_interview.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$IIV_HELPER" ]; then python3 "$IIV_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; intake-interview is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$IIV_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 intake-interview <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$IIV_HELPER" intake-interview "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — intake-interview skipped; check inline that every intake_query disambiguates a detected ambiguity (never re-asks the contract), is grounded in a real finding id or a source_note, and that treat_as_intended calibrates assessment without suppressing a finding. See docs/uncertainty-intake-interview.md."
+    exit 0
+    ;;
+
+  author-fingerprint)
+    # Cross-Manuscript Author Voice/Craft Fingerprint (docs/author-voice-fingerprint.md): the
+    # persistent cross-work memory of a writer's voice, collected under an operator-designated
+    # author-root. It does NO new stylometry — it consumes the single-voice AI-prose machinery
+    # (voice_profile / voice_distance + personal-baseline z-scores) and persists/diagnoses. Structural
+    # checks over the apodictic.voice_fingerprint.v1 blocks — F1 schema (bad source enum, malformed
+    # VF-… id, missing field, empty/non-scalar metrics, duplicate id), F2 provenance (each fingerprint
+    # cites a centroid_ref naming a consumed audit output), F3 same-register comparison (a drift/range
+    # claim referencing >=2 fingerprints must share a register — the AI-prose domain-shift guard); F4
+    # descriptive-not-prescriptive (no Must/Should/Could token, no "fix your voice" directive — the
+    # module observes movement, it never prescribes or grades; advisory, ERROR --strict; override
+    # <!-- override: fingerprint-frame VF-… — … -->), W1 insufficient data (no register has >=2
+    # fingerprints — seed-only), W2 local-only hygiene (missing local-only marker or an external URL —
+    # advisory WARN ONLY, never gate-blocking; the binding privacy guarantee is the module's runtime
+    # no-external-call rule). Takes an author-root (globs Author_Voice_Profile*.md) or explicit files.
+    # Delegates to scripts/author_fingerprint.py; degrades to an advisory WARN without python3.
+    AVF_DIR=$(cd "$(dirname "$0")" && pwd)
+    AVF_HELPER="$AVF_DIR/author_fingerprint.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$AVF_HELPER" ]; then python3 "$AVF_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; author-fingerprint is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$AVF_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 author-fingerprint <author_root|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$AVF_HELPER" author-fingerprint "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — author-fingerprint skipped; check inline that every voice_fingerprint cites a source + centroid_ref, drift is compared only within a register, the profile is descriptive (no Must/Should/Could, no 'fix your voice'), and it carries a local-only marker. See docs/author-voice-fingerprint.md."
+    exit 0
+    ;;
+
+  content-advisory)
+    # Content-Advisory / Sensitivity-Surface Derivation (docs/content-advisory.md): derives a
+    # reader/marketing-facing advisory — where the manuscript depicts intense material, at what
+    # intensity, on- or off-page — generated ONLY under the opt-in marker. Structural checks over the
+    # apodictic.content_note.v1 blocks — A1 schema (bad category/intensity/depiction enum, malformed
+    # CN-NN id, missing field, empty loci, category 'other' with empty label, duplicate id), A2 locus
+    # presence & shape (a coarse chapter/§/¶/line/page token; resolution deferred to the snapshot
+    # layer), A3 no editorial-severity leak (no Must/Should/Could token in the prose or a label, no
+    # apodictic:finding block — content notes are advisories, not findings, the Legal-Risk
+    # orthogonal-severity discipline); W1 prescriptive drift (a "should cut/soften …" construction,
+    # NOT a bare descriptive adjective — advisory, ERROR --strict; override
+    # <!-- override: advisory-eval CN-NN — … -->), W2 opt-in marker present. The module DESCRIBES the
+    # depicted; it never judges or prescribes. Takes a run folder (globs *_Content_Advisory_*.md) or
+    # explicit files; if no advisory artifact is resolved it no-ops with exit 2. Delegates to
+    # scripts/content_advisory.py; degrades to an advisory WARN without python3.
+    CAD_DIR=$(cd "$(dirname "$0")" && pwd)
+    CAD_HELPER="$CAD_DIR/content_advisory.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$CAD_HELPER" ]; then python3 "$CAD_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; content-advisory is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$CAD_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 content-advisory <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$CAD_HELPER" content-advisory "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — content-advisory skipped; check inline that every content_note carries a well-shaped locus, the advisory is descriptive (no Must/Should/Could, no 'should cut/soften'), carries no apodictic:finding block, and has the opt-in marker. See docs/content-advisory.md."
+    exit 0
+    ;;
+
+  persona-divergence)
+    # Reader-Persona Simulation (docs/reader-persona-simulation.md): runs the reader-experience lens
+    # through several declared reading DISPOSITIONS and surfaces where the predicted experience
+    # DIVERGES. Structural checks over the apodictic.persona.v1 + apodictic.divergence.v1 blocks — D1
+    # schema (bad disposition/target/experience enum, malformed P-NN/D-NN id, missing
+    # anchor/magnitude/experiences, a nested experiences value not in engaged|neutral|friction|
+    # disengage or naming an undeclared persona, duplicate id), D2 grounded prediction (a divergence
+    # anchor must resolve to a real finding id in the Ledger or a real Timeline scene id — the
+    # signature firewall gate; an ungrounded prediction is fabricated), D3 target-severity anchoring
+    # (exactly one persona target:true, and no divergence asserted_severity below the anchored
+    # finding's locked Ledger severity — segmentation may not downgrade the verdict); D4 no fabricated
+    # testimony (a first-person reader-reaction quote presented as data — the #17 boundary; advisory,
+    # ERROR --strict; override <!-- override: persona-quote D-NN — … -->), D5 disposition-not-character
+    # (a persona block with any key outside the closed disposition set — ERROR, NON-overridable, the
+    # real guarantee against #17), W1 coverage (>=2 personas with a varying disposition axis). Pass the
+    # Findings Ledger (and optionally the Timeline) as additional files so D2/D3 resolve. Takes a run
+    # folder (globs *_Persona_Divergence_Map_*.md) or explicit files. Delegates to
+    # scripts/persona_divergence.py; degrades to an advisory WARN without python3.
+    PDV_DIR=$(cd "$(dirname "$0")" && pwd)
+    PDV_HELPER="$PDV_DIR/persona_divergence.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$PDV_HELPER" ]; then python3 "$PDV_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; persona-divergence is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$PDV_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 persona-divergence <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$PDV_HELPER" persona-divergence "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — persona-divergence skipped; check inline that every persona is a closed-key disposition (no character keys), every divergence anchors a real finding/locus, exactly one persona is target:true with no asserted severity below the locked verdict, and no fabricated reader quotes appear. See docs/reader-persona-simulation.md."
+    exit 0
+    ;;
+
+  world-bible)
+    # Standalone Worldbuilding Bible (docs/worldbuilding-bible.md): a pre-draft consistency check over
+    # the author's OWN hand-authored worldbuilding bible — distinct from the manuscript-facing SFF
+    # audits. Structural checks over the apodictic.world_fact.v1 blocks — W1 schema (bad category/
+    # polarity enum, malformed WF-NN id, missing field, unquoted-numeric value, empty loci, broken
+    # JSON) PLUS bespoke closed-key checking (the subset engine admits unknown keys, so a misspelled
+    # field would otherwise pass — caught here or the closed-set guarantee is hollow), WD duplicate id,
+    # and the three deterministic, stdlib-only, CONSERVATIVE contradiction arms: WB-R1 closed-set rule
+    # consistency (same subject + normalized value, can vs cannot / requires vs cannot), WB-C1 cost
+    # contradiction (two different stated costs for one subject) + WB-C2 free-then-costed (advisory,
+    # ERROR --strict), WB-G1 distance contradiction (one edge, two parsed distances WITHIN a
+    # commensurable unit class — spatial mile/league/km vs temporal travel-time day/hour are SEPARATE
+    # axes that never collide-check against each other), WB-G2 chronology (a CYCLE in the happens-before
+    # graph, or the same event at two Day anchors). Plus a WF firewall prose scan (a resolution/
+    # invention verb leaking into the bible's prose; advisory, ERROR --strict). Each pair is overridable
+    # per-pair: <!-- override: world-rule|world-cost|world-geo WF-NN/WF-MM — … --> (and
+    # <!-- override: world-firewall — … --> for WF). The tool EXTRACTS the stated and SURFACES the
+    # contradictions the bible has committed to; it never invents world content or resolves a conflict
+    # (the Firewall). Takes a run folder (globs *_Worldbuilding_Bible_*.md) or explicit files.
+    # Delegates to scripts/world_bible.py; degrades to an advisory WARN without python3.
+    WBL_DIR=$(cd "$(dirname "$0")" && pwd)
+    WBL_HELPER="$WBL_DIR/world_bible.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$WBL_HELPER" ]; then python3 "$WBL_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; world-bible is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$WBL_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 world-bible <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$WBL_HELPER" world-bible "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — world-bible skipped; check inline that every world_fact carries a well-shaped locus, no rule both can and cannot the same thing, no power is priced two ways or free-then-costed, no edge has two distances on one axis, the happens-before order has no cycle, and the bible records stated facts only (never inventing or resolving world content). See docs/worldbuilding-bible.md."
+    exit 0
+    ;;
+
   registry-check)
     # Project registry integrity (Project Addressability, Increment 2; docs/project-addressability.md):
     # structural checks over a workspace-relative .apodictic/registry.json (apodictic.project_registry.v1
@@ -4854,6 +5187,28 @@ EOF
       python3 "$RGC_HELPER" registry-check "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — registry-check skipped; check inline that .apodictic/registry.json is valid apodictic.project_registry.v1, ids are unique, every root resolves, and denormalized mode/next_action match each project's sidecar (sidecar wins). See docs/project-addressability.md."
+    exit 0
+    ;;
+
+  schema-coverage)
+    # Harness Contracts v2 (docs/harness-contracts-v2.md): the schema-coverage gate — prove disk
+    # reality matches the declarative schemas/_coverage.json binding table, so every apodictic.*.schema.json
+    # stays bound to a validator (C2 no-orphan, C3 no-phantom) and stays exercised against a real canonical
+    # file by --check-all (C4 binding-proven via grep of the BOUND script, C5 canonical-gate reachable),
+    # and the closed-key (additionalProperties:false) contract in each schema file agrees with the manifest
+    # (C1'). W1 (advisory; ERROR --strict) flags a dead non_artifact exclusion. --check-docs runs the
+    # advisory docs-no-re-list prose lint. Delegates to scripts/schema_coverage.py; degrades to advisory
+    # PASS without python3.
+    SCV_DIR=$(cd "$(dirname "$0")" && pwd)
+    SCV_HELPER="$SCV_DIR/schema_coverage.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$SCV_HELPER" ]; then python3 "$SCV_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; schema-coverage is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$SCV_HELPER" ]; then
+      python3 "$SCV_HELPER" schema-coverage "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — schema-coverage skipped; check inline that every plugins/apodictic/schemas/apodictic.*.schema.json appears in schemas/_coverage.json bindings[] with a real validator + canonical file, and that each closed_keys:true schema carries additionalProperties:false. See docs/harness-contracts-v2.md."
     exit 0
     ;;
 
@@ -4881,16 +5236,20 @@ EOF
     ;;
 
   argument-spine)
-    # Nonfiction Pre-Draft Pathway, Increments 1-3 (docs/nonfiction-pre-draft.md): structural checks
+    # Nonfiction Pre-Draft Pathway, Increments 1-3 + 5 (docs/nonfiction-pre-draft.md): structural checks
     # over the apodictic.argument_spine.v1 block (the pre-draft argument plan that SEEDS the shared
-    # Argument_State.md), the apodictic.support_plan.v1 blocks (source/evidence map, §3), and the
-    # apodictic.warrant_plan.v1 blocks (warrant pre-check, §4). A1 invalid spine; A2 unseeded (spine
-    # must populate §1/§2 — signature); A3 thesis/C0 drift. Inc 2: A4 invalid support plan; A5 dangling
-    # subclaim_id; A6 support unseeded (no §3 heading). Inc 3: A7 invalid warrant plan; A8 dangling
-    # subclaim_id; A9 warrant unseeded (no §4 heading). Advisory (ERROR --strict): W1 anti-thesis echo
-    # (override argument-spine-antithesis), W2 bare assertion (a subclaim with no planned support), W3
-    # implicit warrant for a HOSTILE audience (non-EXPLICIT / ABSENT-backed; override
-    # argument-spine-warrant). Takes a run folder (globs Argument_State*.md) or explicit files.
+    # Argument_State.md), the apodictic.support_plan.v1 blocks (source/evidence map, §3), the
+    # apodictic.warrant_plan.v1 blocks (warrant pre-check, §4), and the apodictic.genre_profile.v1 block
+    # (the genre layer — holds a genre to its required-section skeleton). A1 invalid spine; A2 unseeded
+    # (spine must populate §1/§2 — signature); A3 thesis/C0 drift. Inc 2: A4 invalid support plan; A5
+    # dangling subclaim_id; A6 support unseeded (no §3 heading). Inc 3: A7 invalid warrant plan; A8
+    # dangling subclaim_id; A9 warrant unseeded (no §4 heading). Inc 5: B1 invalid genre profile; B2
+    # section unseeded (a declared genre section has no heading — signature); B3 genre/form mismatch
+    # (spine-present only; normalized); B4 duplicate genre profile. Advisory (ERROR --strict): W1
+    # anti-thesis echo (override argument-spine-antithesis), W2 bare assertion (a subclaim with no
+    # planned support), W3 implicit warrant for a HOSTILE audience (non-EXPLICIT / ABSENT-backed;
+    # override argument-spine-warrant), W4 thin genre skeleton (a canonical genre section omitted;
+    # override argument-spine-genre). Takes a run folder (globs Argument_State*.md) or explicit files.
     # Delegates to scripts/argument_spine.py; degrades to an advisory WARN without python3.
     AS_DIR=$(cd "$(dirname "$0")" && pwd)
     AS_HELPER="$AS_DIR/argument_spine.py"
@@ -5136,6 +5495,54 @@ EOF
       python3 "$ES_HELPER" editor-scaffolding "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — editor-scaffolding skipped; if the letter declares editor-scaffolding mode, verify inline that it carries an Editor Brief, a 'What You Might Have Missed' section, an Intervention Menu, and that severity tokens survive. See docs/editor-scaffolding.md."
+    exit 0
+    ;;
+
+  validator-conventions)
+    # Fleet meta-linter (docs/validator-conventions.md): a validator that validates the validators.
+    # M1 every AGG_VALIDATORS entry has a dispatcher case that handles --self-test; M2 no validator
+    # classifies inputs by a raw marker scan/membership op on a literal apodictic:<type> (resolvers
+    # must classify on parsed blocks — the _has_block / art.parse_blocks idiom — the signature
+    # anti-pattern of the 2026-06-20 resolver-hardening sweep); M3 the advertised count is DERIVED from
+    # AGG_VALIDATORS (never hand-typed); M4 every *.schema.json filename stem in the resolved schema dir
+    # is referenced by some validator (degrades to WARN if the resolver is unavailable); M5 no validator
+    # detects an override marker by a bare "<!-- override:" substring scan (the override-marker sibling
+    # of M2 — use override_marker.has_override / the _has_override bash helper). Mechanizes the
+    # conventions that manual review left to drift. Reads validate.sh + the sibling *.py from its own
+    # dir. Delegates to scripts/meta_lint.py; degrades to an advisory WARN without python3.
+    MTL_DIR=$(cd "$(dirname "$0")" && pwd)
+    MTL_HELPER="$MTL_DIR/meta_lint.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      # Bash-side regression for the shared `_has_override` helper (M5's companion: M5 GATES the
+      # anti-pattern, this proves the hardened REPLACEMENT). The Python override_marker.has_override is
+      # covered by each validator's --self-test (severity-floor / quality-risk / etc. decoy+suffix
+      # cases); this covers the bash arm — which the Python self-tests never reach — including the
+      # fenced-block decoy (Group 4: bash used to be wrongly MORE permissive there).
+      HO_R=0; HO_S="severity-floor-weak-axis"
+      _ho_case() { # <label> <expect found|miss> <body>
+        if printf '%b' "$3" | _has_override "$HO_S"; then _g=found; else _g=miss; fi
+        if [ "$_g" = "$2" ]; then echo "  ho_$1: OK ($_g)"; else echo "  ho_$1: FAIL (got $_g want $2)"; HO_R=1; fi
+      }
+      _ho_case genuine_emdash  found "<!-- override: $HO_S — reason -->\n"
+      _ho_case genuine_noreason found "<!-- override: $HO_S -->\n"
+      _ho_case nospace_dash    found "<!-- override: ${HO_S}—reason -->\n"
+      _ho_case flex_whitespace found "<!--  override:  $HO_S  -->\n"
+      _ho_case suffix_collision miss "<!-- override: $HO_S-but-not-really — decoy -->\n"
+      _ho_case inline_codespan_decoy miss "Use \`<!-- override: $HO_S -->\` here.\n"
+      _ho_case fenced_block_decoy miss "before\n\`\`\`\n<!-- override: $HO_S -->\n\`\`\`\nafter\n"
+      _ho_case indented_fenced_decoy miss "x\n    \`\`\`\n<!-- override: $HO_S -->\n    \`\`\`\ny\n"
+      _ho_case multi_backtick_decoy miss "\`\`<!-- override: $HO_S -->\`\`\n"
+      _ho_case tilde_fence_decoy miss "before\n~~~\n<!-- override: $HO_S -->\n~~~\nafter\n"
+      _ho_case tilde_with_backtick_line_decoy miss "~~~\n\`\`\`\n<!-- override: $HO_S -->\n\`\`\`\n~~~\n"
+      _ho_case multiline_inline_decoy miss "a \`open\n<!-- override: $HO_S -->\nclose\` b\n"
+      if [ "$HO_R" -ne 0 ]; then echo "Self-test: FAIL (_has_override bash regression)"; exit 1; fi
+      if command -v python3 >/dev/null 2>&1 && [ -f "$MTL_HELPER" ]; then python3 "$MTL_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; validator-conventions is advisory without it; _has_override bash regression passed)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$MTL_HELPER" ]; then
+      python3 "$MTL_HELPER" validator-conventions "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — validator-conventions skipped; check inline that every AGG validator has a --self-test dispatcher case, resolvers classify on parsed blocks (no raw apodictic:<type> marker scan), the count is derived, no schema is orphaned, and no gate detects an override by a bare \"<!-- override:\" substring (use the _has_override helper). See docs/validator-conventions.md."
     exit 0
     ;;
 

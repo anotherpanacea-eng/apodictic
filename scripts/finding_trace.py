@@ -46,6 +46,17 @@ try:
 except ImportError:
     art = None
 
+
+def _has_block(text, btype):
+    """True if `text` carries a real apodictic:<btype> block (a parsed carrier, not a prose mention).
+
+    Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
+    in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
+    validate.sh validator-conventions (M2)."""
+    if art is None:
+        return ("apodictic:%s" % btype) in (text or "")
+    return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))
+
 _STATES = ("locked", "delivered", "revised")
 _SYNTH_BOUND = ("Must-Fix", "Should-Fix")
 # Synthesis has cleared (findings locked) once the gate frontier reaches a gated phase.
@@ -92,7 +103,9 @@ def ledger_inventory(ledger_text):
         return inv
     for bt, obj, _err in art.parse_blocks(ledger_text):
         if bt == "finding" and isinstance(obj, dict) and obj.get("id"):
-            inv[obj["id"]] = obj.get("severity")
+            # art.fid_key: a malformed ledger finding with a non-hashable id (list/object) must not crash
+            # this index key (the authoritative-ID-set sibling of the manifest finding_id crash class).
+            inv[art.fid_key(obj["id"])] = obj.get("severity")
     return inv
 
 
@@ -349,7 +362,7 @@ def classify_files(paths):
             sidecar = p
         elif "_Retcon_Plan_" in base:
             retcons.append(p)
-        elif "apodictic:finding" in (_read(p) or ""):
+        elif _has_block(_read(p) or "", "finding"):
             ledger = p
         elif "_Session_Plan_" in base or "_Revision_" in base:
             revisions.append(p)
@@ -400,6 +413,11 @@ def run_self_test():
                 '"fix_class":"x","risk_if_fixed":"y"}\n-->' % (fid, sev))
 
     ledger = "## Pass 5 — Ledger Entry\n" + finding("F-P5-01") + "\n" + finding("F-P5-02", "Should-Fix") + "\n"
+    # regression: a non-hashable ledger id must not crash the authoritative-ID index (fid_key SSoT)
+    check("ledger_inventory_nonhashable_id_no_crash",
+          isinstance(ledger_inventory("<!-- apodictic:finding\n" + json.dumps(
+              {"schema": "apodictic.finding.v1", "id": [1, 2], "severity": "Must-Fix", "mechanism": "m"})
+              + "\n-->"), dict))
     letter_clean = ("# Edit\n## What Needs Work\nThe pacing collapses in Chapter 9. "
                     "<!-- finding: F-P5-01 -->\nThe stakes stay abstract. <!-- finding: F-P5-02 -->\n"
                     '<!-- apodictic:severity_calibration\n{"schema":"apodictic.severity_calibration.v1",'
