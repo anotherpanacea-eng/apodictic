@@ -24,6 +24,13 @@
     {"schema": "apodictic.retcon_item.v1", "validators": ["retcon-plan"], "canonical_gate": "example-retcon-plan.md", "closed_keys": false},
     {"schema": "apodictic.retcon_reading.v1", "validators": ["retcon-plan"], "canonical_gate": "example-retcon-plan.md", "closed_keys": false},
     {"schema": "apodictic.scene_ethics.v1", "validators": ["scene-ethics"], "canonical_gate": "example-scene-ethics-plan.md", "closed_keys": true},
-    {"schema": "apodictic.canon_fact.v1", "validators": ["continuity-bible"], "canonical_gate": "example-continuity-bible.md", "closed_keys": false}
+    {"schema": "apodictic.canon_fact.v1", "validators": ["continuity-bible"], "canonical_gate": "example-continuity-bible.md", "closed_keys": false},
+    {"schema": "apodictic.intake_query.v1", "validators": ["intake-interview"], "canonical_gate": "example-intake-interview.md", "closed_keys": false},
+    {"schema": "apodictic.voice_fingerprint.v1", "validators": ["author-fingerprint"], "canonical_gate": "example-author-voice-profile.md", "closed_keys": false},
+    {"schema": "apodictic.content_note.v1", "validators": ["content-advisory"], "canonical_gate": "example-content-advisory.md", "closed_keys": false},
+    {"schema": "apodictic.divergence.v1", "validators": ["persona-divergence"], "canonical_gate": "example-persona-divergence-map.md", "closed_keys": false},
+    {"schema": "apodictic.persona.v1", "validators": ["persona-divergence"], "canonical_gate": "example-persona-divergence-map.md", "closed_keys": false},
+    {"schema": "apodictic.world_fact.v1", "validators": ["world-bible"], "canonical_gate": "example-worldbuilding-bible.md", "closed_keys": false},
+    {"schema": "apodictic.genre_profile.v1", "validators": ["argument-spine"], "canonical_gate": "example-argument-state-predraft.md", "closed_keys": false}
   ]
 }

@@ -49,6 +49,21 @@ try:
     import finding_trace as ft
 except ImportError:
     ft = None
+try:
+    import apodictic_artifacts as art
+except ImportError:
+    art = None
+
+
+def _has_block(text, btype):
+    """True if `text` carries a real apodictic:<btype> block (a parsed carrier, not a prose mention).
+
+    Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
+    in prose from being misrouted (the 2026-06-20 resolver-hardening sweep). Gated by
+    validate.sh validator-conventions (M2)."""
+    if art is None:
+        return ("apodictic:%s" % btype) in (text or "")
+    return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))
 
 _MANIFEST_GLOB = "*_Annotation_Manifest_*.md"
 _CROSSLINKED_GLOB = "*_Crosslinked_Letter_*.md"
@@ -262,7 +277,7 @@ def classify_files(paths):
     for p in paths:
         base = os.path.basename(p)
         body = _read(p) or ""
-        if "_Annotation_Manifest_" in base or "apodictic:annotation" in body:
+        if "_Annotation_Manifest_" in base or _has_block(body, "annotation"):
             man = p
         elif "_Crosslinked_Letter_" in base or "→ marked-up copy:" in body:
             crl = p
