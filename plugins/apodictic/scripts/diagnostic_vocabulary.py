@@ -34,6 +34,8 @@ import os
 import re
 import sys
 
+from override_marker import has_override
+
 MODE_MARKER_RE = re.compile(r"<!--\s*mode:\s*diagnostic-vocabulary\s*-->", re.IGNORECASE)
 # This file IS a Vocabulary Guide (so the mode marker is mandatory, not optional) when its H1
 # title says so. Paired with a filename signal from run(); either is sufficient.
@@ -84,10 +86,9 @@ def _lines(text):
     return out
 
 
-def has_override(body, slug):
-    """Plain-substring override detection, matching the shared codebase convention
-    (letter_checks.has_override / honesty_check.SOFT_MARKER)."""
-    return ("<!-- override: %s" % slug) in body
+# `has_override` is imported from the shared `override_marker` module (boundary-matched + code-spans
+# stripped, identical to every letter-family gate). The legacy local bare-substring definition is
+# retired (it honored a suffixed slug and a backtick'd documentation example; meta_lint.py M5 gates it).
 
 
 def _body(text):
@@ -356,6 +357,18 @@ def run_self_test():
     chk("v3_undergrounded", code == 1 and any("V3: only 1" in l for l in lines))
     code, lines = check(guide(n_grounded=1, grounding_override=True))
     chk("v3_override", code == 0 and any("override marker present" in l for l in lines))
+    # 2026-06-20 override-substring hardening (shared override_marker.has_override): a CODE-SPAN decoy
+    # and a SUFFIX-COLLISION slug must NOT satisfy the V3 override -> still ERROR.
+    v3_decoy = guide(n_grounded=1).replace(
+        marker + "\n",
+        marker + "\nUse `<!-- override: vocabulary-grounding -->` for a conceptual glossary.\n")
+    code, lines = check(v3_decoy)
+    chk("v3_override_codespan_decoy_errors", code == 1 and any("V3: only 1" in l for l in lines))
+    v3_suffix = guide(n_grounded=1).replace(
+        marker + "\n",
+        marker + "\n<!-- override: vocabulary-grounding-not-really — decoy. -->\n")
+    code, lines = check(v3_suffix)
+    chk("v3_override_suffix_collision_errors", code == 1 and any("V3: only 1" in l for l in lines))
 
     # V4: missing section.
     code, lines = check(guide(prompts_section=False))

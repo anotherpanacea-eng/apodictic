@@ -30,6 +30,8 @@ import os
 import re
 import sys
 
+from override_marker import has_override
+
 
 def _read(path):
     with open(path, "r", encoding="utf-8", errors="replace") as fh:
@@ -52,7 +54,7 @@ def _raise_escalation(current, target):
 def quality_risk_triggers(contract_path, meta_path=None):
     contract = _read(contract_path)
     lines, errors, fired, escalation = [], 0, [], "none"
-    ov = {q: ("<!-- override: quality-risk-Q%d" % q) in contract for q in range(1, 6)}
+    ov = {q: has_override(contract, "quality-risk-Q%d" % q) for q in range(1, 6)}
 
     def fire(q, hit, rationale, target):
         nonlocal errors, escalation
@@ -205,7 +207,7 @@ def audit_tier_criterion(pd_path, audit_root=None):
             continue
 
         slug = _audit_tier_slug(audit_name)
-        ov_audit = ("<!-- override: audit-tier-criterion-%s" % slug) in pd_text
+        ov_audit = has_override(pd_text, "audit-tier-criterion-%s" % slug)
 
         ref_file = None
         direct = os.path.join(audit_root, ref_path)
@@ -305,7 +307,7 @@ def argument_recon_prerequisite(run_folder, letter_path=None):
         return 0, ["OK: Argument-engine artifacts detected; canonical blind-spot disclosure "
                    "('literature-counterevidence not surveyed') present in editorial letter."]
 
-    if letter_text and "<!-- override: argument-recon-prerequisite" in _letter_body(letter_text):
+    if letter_text and has_override(_letter_body(letter_text), "argument-recon-prerequisite"):
         return 0, ["WARN: Argument-engine artifacts detected; no Field_Reconnaissance_Report.md and "
                    "no canonical blind-spot disclosure found, but override marker present in editorial "
                    "letter body. Phase 6 Wave 3 / CR-4 Hard Prerequisite policy: this run carries "
@@ -375,6 +377,16 @@ def run_self_test(which=None):
             expect("qr_neg_q4", quality_risk_triggers(q4c, q4m)[0], 1)
             expect("qr_neg_q5", quality_risk_triggers(q5)[0], 1)
             expect("qr_over_q1", quality_risk_triggers(ovq1)[0], 0)
+            # 2026-06-20 override-substring hardening (override_marker.has_override): a CODE-SPAN decoy
+            # and a SUFFIX-COLLISION slug must NOT suppress the Q1 trigger -> still ERROR (rc 1).
+            ovq1_decoy = w("ovq1_decoy.md", "# Contract\nGENRE/SUBGENRE: Horror\nDARKNESS LEVEL: HIGH\n"
+                           "POV count: 2\nGOAL: repair\nRECOMMENDED AUDITS: Consent Complexity, Reception Risk\n"
+                           "Use `<!-- override: quality-risk-Q1 -->` to suppress.\n")
+            ovq1_suffix = w("ovq1_suffix.md", "# Contract\nGENRE/SUBGENRE: Horror\nDARKNESS LEVEL: HIGH\n"
+                            "POV count: 2\nGOAL: repair\nRECOMMENDED AUDITS: Consent Complexity, Reception Risk\n"
+                            "<!-- override: quality-risk-Q1x — decoy. -->\n")
+            expect("qr_over_q1_codespan_decoy_errors", quality_risk_triggers(ovq1_decoy)[0], 1)
+            expect("qr_over_q1_suffix_collision_errors", quality_risk_triggers(ovq1_suffix)[0], 1)
 
     if which in (None, "audit-tier-criterion"):
         with tempfile.TemporaryDirectory() as td:
@@ -412,6 +424,16 @@ def run_self_test(which=None):
             expect("atc_pos", audit_tier_criterion(pos, audits)[0], 0)
             expect("atc_neg", audit_tier_criterion(neg, audits)[0], 1)
             expect("atc_over", audit_tier_criterion(over, audits)[0], 0)
+            # 2026-06-20 override-substring hardening: a CODE-SPAN decoy and a SUFFIX-COLLISION slug
+            # must NOT satisfy the audit-tier-criterion override -> still ERROR (rc 1).
+            over_decoy = wp("over_decoy_pd.md", "## §4a. Router-triggered audits\n| Trigger | Audit | Tier | Reference |\n|---|---|---|---|\n"
+                            "| Some trigger | Soft Audit | Auto-recommend before synthesis | `audits/soft-audit.md` |\n\n"
+                            "Use `<!-- override: audit-tier-criterion-soft-audit -->` to waive.\n")
+            over_suffix = wp("over_suffix_pd.md", "## §4a. Router-triggered audits\n| Trigger | Audit | Tier | Reference |\n|---|---|---|---|\n"
+                             "| Some trigger | Soft Audit | Auto-recommend before synthesis | `audits/soft-audit.md` |\n\n"
+                             "<!-- override: audit-tier-criterion-soft-audit-not-really — decoy. -->\n")
+            expect("atc_over_codespan_decoy_errors", audit_tier_criterion(over_decoy, audits)[0], 1)
+            expect("atc_over_suffix_collision_errors", audit_tier_criterion(over_suffix, audits)[0], 1)
             expect("atc_edge", audit_tier_criterion(edge, audits)[0], 0)
             expect("atc_autorun", audit_tier_criterion(autorun, audits)[0], 0)
             expect("atc_findingtrig", audit_tier_criterion(findingtrig, audits)[0], 0)
@@ -444,6 +466,16 @@ def run_self_test(which=None):
             expect("arp_pos3", argument_recon_prerequisite(pos3)[0], 0)
             expect("arp_neg", argument_recon_prerequisite(neg)[0], 1)
             expect("arp_over", argument_recon_prerequisite(over)[0], 0)
+            # 2026-06-20 override-substring hardening: a CODE-SPAN decoy and a SUFFIX-COLLISION slug
+            # must NOT satisfy the argument-recon-prerequisite override -> still ERROR (rc 1).
+            over_decoy = mkrun("run_over_decoy", ["Argument_State.md"],
+                               "# Editorial Letter\n## §1 What Needs Work\nMust-Fix: warrant gap.\n"
+                               "Use `<!-- override: argument-recon-prerequisite -->` to waive.\n")
+            over_suffix = mkrun("run_over_suffix", ["Argument_State.md"],
+                                "# Editorial Letter\n## §1 What Needs Work\nMust-Fix: warrant gap.\n"
+                                "<!-- override: argument-recon-prerequisite-later — decoy. -->\n")
+            expect("arp_over_codespan_decoy_errors", argument_recon_prerequisite(over_decoy)[0], 1)
+            expect("arp_over_suffix_collision_errors", argument_recon_prerequisite(over_suffix)[0], 1)
 
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
