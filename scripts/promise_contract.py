@@ -52,6 +52,17 @@ try:
 except ImportError:
     art = None
 
+
+def _has_block(text, btype):
+    """True if `text` carries a real apodictic:<btype> block (a parsed carrier, not a prose mention).
+
+    Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
+    in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
+    validate.sh validator-conventions (M2)."""
+    if art is None:
+        return ("apodictic:%s" % btype) in (text or "")
+    return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))
+
 _PITCH_SCHEMA_ID = "apodictic.pitch_copy.v1"
 _FINDING_SCHEMA_ID = "apodictic.finding.v1"
 _PITCH_GLOB = "*_Pitch_Copy_*.md"
@@ -163,8 +174,8 @@ def parse_findings(text):
             continue
         # PCF owns only PCF-origin findings; another origin's finding in the same corpus is ignored.
         # Attribution is by the F-PCF- prefix (loose), so a malformed PCF id is still validated (P1).
-        if obj is not None and not _PCF_ORIGIN_RE.match(str(obj.get("id") or "")):
-            continue
+        if isinstance(obj, dict) and not _PCF_ORIGIN_RE.match(str(obj.get("id") or "")):
+            continue  # non-PCF-origin finding ignored; a non-dict payload falls through to validate_obj (P1)
         if jerr:
             # A malformed finding JSON can't be attributed to an origin; skip rather than mis-claim it.
             continue
@@ -390,7 +401,7 @@ def resolve(paths):
             continue
         found = True
         report_parts.append(t)
-        if "apodictic:pitch_copy" in t:
+        if _has_block(t, "pitch_copy"):
             pitch_parts.append(t)
     if not found:
         return None, None
@@ -574,6 +585,8 @@ def run_self_test():
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
+    # regression: a non-dict finding payload must not crash parse_findings (2026-06-20 sweep)
+    chk("crash_nondict_finding", C(pitch() + "\n" + '<!-- apodictic:finding\n[1,2,3]\n-->')[0] == 1)
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
 
