@@ -789,8 +789,13 @@ def _resolve(folder):
     if not snap:
         return None, None, None, None, None, "no %s in %s" % (am._SNAPSHOT_GLOB, folder)
     obj, merrs = am.parse_manifest(_read(man))
-    if obj is None:
-        return None, None, None, None, None, "manifest invalid — %s" % (merrs[0] if merrs else "no annotation block")
+    # A present-but-non-object manifest block (a JSON array / scalar) parses to a non-None, non-dict
+    # obj; guarding on `obj is None` alone let it reach obj.get("project") below — and the build_* /
+    # check_* manifest_obj.get() sites downstream — and crash with AttributeError. Treat ANY non-dict
+    # as an invalid manifest so every public generate/validate path fails cleanly, not with a traceback.
+    if not isinstance(obj, dict):
+        return None, None, None, None, None, "manifest invalid — %s" % (
+            merrs[0] if merrs else "manifest block is not a JSON object")
     snapshot = am.normalize_snapshot(_read(snap) or "")
     project = os.path.basename(snap).split("_Manuscript_Snapshot_")[0] or obj.get("project", "Manuscript")
     # The crosslinked letter (Increment 2 input) — optional; its presence enables the letter projection.
@@ -1386,6 +1391,23 @@ def run_self_test():
         chk("docx_run_catches_disk_tamper", run_docx([d4])[0] == 1)
     finally:
         shutil.rmtree(d4, ignore_errors=True)
+
+    # regression (Codex #141 round-2): a present-but-non-object manifest block (a JSON array) must not
+    # reach obj.get() in _resolve / the build_* manifest_obj.get() sites — every public generate
+    # entrypoint returns a clean non-zero error, never an AttributeError traceback.
+    d5 = tempfile.mkdtemp()
+    try:
+        with open(os.path.join(d5, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8", newline="") as fh:
+            fh.write(snap)
+        with open(os.path.join(d5, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8", newline="") as fh:
+            fh.write("<!-- apodictic:annotation\n[1, 2, 3]\n-->")
+        try:
+            nonobj_ok = (generate(d5)[0] != 0 and generate_html(d5)[0] != 0 and generate_docx(d5)[0] != 0)
+        except AttributeError:
+            nonobj_ok = False
+        chk("nonobject_manifest_no_crash", nonobj_ok)
+    finally:
+        shutil.rmtree(d5, ignore_errors=True)
 
     # sibling regression (HTML / DOCX / letter): a non-hashable finding_id (a JSON list/object) must not
     # crash the HTML marker sort + H2/H3 dict-keys, the DOCX idmap dict-key/lookup, nor the letter
