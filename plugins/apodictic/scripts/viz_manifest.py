@@ -122,7 +122,9 @@ def ledger_findings(ledger_text):
         return out
     for bt, obj, _err in art.parse_blocks(ledger_text):
         if bt == "finding" and isinstance(obj, dict) and obj.get("id"):
-            out[obj["id"]] = obj
+            # art.fid_key: a non-hashable ledger id (list/object) must not crash this index key — the
+            # authoritative-ID-set sibling of finding_trace.ledger_inventory (SSoT in apodictic_artifacts).
+            out[art.fid_key(obj["id"])] = obj
     return out
 
 
@@ -198,11 +200,11 @@ def check(manifest_text, timeline_text, ledger_text, strict=False, require_block
     """Run the manifest<->source provenance checks. Returns (code, lines)."""
     lines, errs, warns = [], [], []
     obj, schema_errs = parse_manifest(manifest_text)
-    if obj is None:
-        # A present-but-unparseable block is an E1 failure, NOT a no-op — otherwise corrupt JSON
-        # passes silently (and the --check-all gate would pass vacuously if the example broke).
-        if any("invalid JSON" in e for e in schema_errs):
-            return 1, ["manuscript-viz: %s" % schema_errs[0], "manuscript-viz: FAIL (E1 manifest schema)"]
+    if not isinstance(obj, dict):
+        # A present-but-unparseable/non-object block is an E1 failure, NOT a no-op — otherwise corrupt
+        # JSON or a non-object payload (e.g. [1,2,3]) passes silently / the gate passes vacuously.
+        if obj is not None or any("invalid JSON" in e for e in schema_errs):
+            return 1, ["manuscript-viz: %s" % (schema_errs[0] if schema_errs else "manifest block is not a JSON object"), "manuscript-viz: FAIL (E1 manifest schema)"]
         # A genuinely-absent block is a no-op for a run folder, but --require-block (the canonical-
         # example gate) makes it a hard failure so the gate cannot pass with no manifest to validate.
         if require_block:
@@ -498,6 +500,13 @@ def run_self_test():
 
     # clean
     chk("clean", check(manifest(), timeline, ledger)[0] == 0)
+    # regression: a non-dict manifest block is an E1 failure, not a vacuous pass / crash (2026-06-20 sweep)
+    chk("crash_nondict_manifest", check("<!-- apodictic:viz_manifest\n[1,2,3]\n-->", timeline, ledger)[0] == 1)
+    # regression: a non-hashable ledger id must not crash the authoritative-ID index (fid_key SSoT)
+    chk("ledger_findings_nonhashable_id_no_crash",
+        isinstance(ledger_findings("<!-- apodictic:finding\n" + _j.dumps(
+            {"schema": "apodictic.finding.v1", "id": [1, 2], "severity": "Must-Fix", "mechanism": "m"})
+            + "\n-->"), dict))
 
     # E1 — disallowed (visual-style) field in a scene, and at top level
     bad_scene = [scene("Ch 1 §1", "Ch 1", "1-118", "1480", "Mara", "3 hours", "n/a", extra={"color": "red"})]

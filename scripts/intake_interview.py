@@ -305,7 +305,9 @@ def ledger_index(ledger_text):
         return out
     for bt, obj, _err in art.parse_blocks(ledger_text):
         if bt == "finding" and isinstance(obj, dict) and obj.get("id"):
-            out[obj["id"]] = obj
+            # art.fid_key: a non-hashable ledger id (list/object) must not crash this index key — the
+            # authoritative-ID-set sibling of finding_trace.ledger_inventory (SSoT in apodictic_artifacts).
+            out[art.fid_key(obj["id"])] = obj
     return out
 
 
@@ -519,6 +521,11 @@ def run_self_test():
 
     # clean: ref-grounded query against a resolving finding
     chk("clean_ref_grounded", interview(query("IQ-01", ambiguity_ref="F-P2-04"), LEDGER)[0] == 0)
+    # regression: a non-hashable ledger id must not crash the authoritative-ID index (fid_key SSoT)
+    chk("ledger_index_nonhashable_id_no_crash",
+        isinstance(ledger_index("<!-- apodictic:finding\n" + _j.dumps(
+            {"schema": "apodictic.finding.v1", "id": [1, 2], "severity": "Must-Fix", "mechanism": "m"})
+            + "\n-->"), dict))
     # clean: source_note-grounded query (no ledger needed)
     chk("clean_note_grounded",
         interview(query("IQ-01", source_note="Pass 0 flagged a tonal shift at the Ch 7 break."))[0] == 0)
