@@ -95,6 +95,15 @@ def _newest(paths):
     return max(paths, key=os.path.getmtime) if paths else None
 
 
+def _fid(value):
+    """A finding_id normalized to a hashable, sortable form (a str, or None). A malformed non-string id
+    (a JSON list/object/number that survives parse_manifest as-is) is str()-coerced, so it cannot crash
+    the `fid_class` dict key, the `orig_comment` join key, or the report `sorted()` (unhashable `list`,
+    or `'<' not supported between str and int`). This is the finding_id SIBLING of the reclassify-anchor
+    crash guard — finding_id is read for keying/sorting/display in several places, not just reclassify."""
+    return value if value is None or isinstance(value, str) else str(value)
+
+
 def reclassify(annotation, n1_snapshot, chap_n, sec_n):
     """-> (klass, new_anchor_or_None, evidence). new_anchor is set only for held/moved (the carried set)."""
     if not isinstance(annotation, dict):
@@ -149,7 +158,7 @@ def _comment_fidelity_errs(emitted_annotations, orig_comment):
     for ra in emitted_annotations:
         if not isinstance(ra, dict):
             continue
-        fid = ra.get("finding_id")
+        fid = _fid(ra.get("finding_id"))
         if ra.get("comment") != orig_comment.get(fid):
             errs.append("RA2 comment fidelity: %s comment differs from the draft-N manifest "
                         "(re-anchoring must relocate, never re-author)" % fid)
@@ -179,14 +188,14 @@ def build_reanchored(manifest_obj, n1_snapshot, n1_path):
         if not isinstance(an, dict):
             continue
         klass, new_anchor, evidence = reclassify(an, n1_snapshot, chap_n, sec_n)
-        fid = an.get("finding_id")
+        fid = _fid(an.get("finding_id"))
         buckets[klass].append((fid, evidence))
         fid_class[fid] = klass
         if klass in ("held", "moved"):
             carried.append((an, new_anchor))
 
     # The re-anchored manifest (held/moved only, bound to N+1), carrying each comment VERBATIM.
-    re_anns = [{"finding_id": an.get("finding_id"), "anchor": new_anchor, "comment": an.get("comment")}
+    re_anns = [{"finding_id": _fid(an.get("finding_id")), "anchor": new_anchor, "comment": an.get("comment")}
                for an, new_anchor in carried]
     re_obj = {"schema": am._SCHEMA_ID, "project": manifest_obj.get("project", "Manuscript"),
               "runlabel": _runlabel_of(n1_path), "snapshot_path": os.path.basename(n1_path),
@@ -222,7 +231,7 @@ def reanchor(manifest_obj, n1_snapshot, n1_path, strict=False):
     # makes carrying something other than a verbatim copy — is caught here, independently of A4-multiset
     # (the firewall: relocate, never re-author; RA2 stands in for A6(a)'s projection arm, which is inert
     # without an N+1 ledger).
-    orig_comment = {an.get("finding_id"): an.get("comment") for an in annotations if isinstance(an, dict)}
+    orig_comment = {_fid(an.get("finding_id")): an.get("comment") for an in annotations if isinstance(an, dict)}
     emitted, _pe = am.parse_manifest(re_manifest_text)
     emitted_anns = emitted.get("annotations") if isinstance(emitted, dict) else re_obj["annotations"]
     errs += _comment_fidelity_errs(emitted_anns, orig_comment)
@@ -677,6 +686,23 @@ def run_self_test():
             any("reanchor:ambiguous F-CH-99" in x for x in _lb))
     except TypeError:
         chk("reanchor_nonstring_chapter_value_no_crash", False)
+    # regression — the finding_id SIBLING of the reclassify-anchor guard: finding_id is read as a dict
+    # KEY (fid_class / orig_comment) and a SORT key (the report), not just inside reclassify. A
+    # non-hashable id (JSON list/object) crashed `fid_class[fid]` (unhashable type), and a mixed int/str
+    # id set crashed the report `sorted()` (`'<' not supported between str and int`). _fid() normalizes.
+    _secref = {"kind": "section", "value": "Beta"}
+    for _bad, _lbl in (([1, 2], "list"), ({"k": "v"}, "dict")):
+        _mb = dict(man_n, annotations=[{"finding_id": _bad, "anchor": _secref, "comment": "c"}])
+        try:
+            chk("reanchor_nonhashable_finding_id_no_crash_%s" % _lbl, isinstance(run_via(_mb, snap_moved)[1], list))
+        except TypeError:
+            chk("reanchor_nonhashable_finding_id_no_crash_%s" % _lbl, False)
+    _mm = dict(man_n, annotations=[{"finding_id": 7, "anchor": _secref, "comment": "c"},
+                                   {"finding_id": "F-S-01", "anchor": _secref, "comment": "c"}])
+    try:
+        chk("reanchor_mixed_type_finding_id_no_crash", isinstance(run_via(_mm, snap_moved)[1], list))
+    except TypeError:
+        chk("reanchor_mixed_type_finding_id_no_crash", False)
 
     # crossref: the orchestrator join by finding_id. Build a prior run folder whose ledger + manifest share
     # ids, and a current round folder whose re-diagnosis recurs one resolved finding (recurrence-candidate)
