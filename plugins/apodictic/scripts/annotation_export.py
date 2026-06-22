@@ -121,7 +121,9 @@ def build_obsidian(manifest_obj, snapshot, letter_basename=None):
     inserts = [(_insertion_offset(an.get("anchor") or {}, snapshot, nl_at, chap_l, sec_l), an.get("finding_id"))
                for an in annotations if isinstance(an, dict)]
     out = snapshot
-    for off, fid in sorted(inserts, key=lambda t: (t[0], t[1] or ""), reverse=True):
+    # am.fid_key normalizes a malformed (non-string / non-hashable) finding_id so the (offset, fid) sort
+    # cannot crash on a tie comparing a non-string id (the sibling of the chapter-value guard below).
+    for off, fid in sorted(inserts, key=lambda t: (t[0], am.fid_key(t[1]) or ""), reverse=True):
         off = max(0, min(off, len(out)))
         out = out[:off] + ("[^%s]" % fid) + out[off:]
 
@@ -132,7 +134,7 @@ def build_obsidian(manifest_obj, snapshot, letter_basename=None):
         tail = _fwd_wikilink(letter_basename, fid) if letter_basename else ""
         return "[^%s]: %s%s\n" % (fid, an.get("comment"), tail)
     defs = "".join(_def(an) for an in sorted((a for a in annotations if isinstance(a, dict)),
-                   key=lambda a: a.get("finding_id") or ""))
+                   key=lambda a: am.fid_key(a.get("finding_id")) or ""))
     return out + "\n" + defs, []
 
 
@@ -149,7 +151,9 @@ def check_obsidian(manifest_obj, snapshot, obsidian_text, letter_basename=None):
     O3 expects each definition to equal `comment` + the exact forward wikilink."""
     errs = []
     annotations = manifest_obj.get("annotations") if isinstance(manifest_obj.get("annotations"), list) else []
-    ids = [an.get("finding_id") for an in annotations if isinstance(an, dict)]
+    # am.fid_key: a non-hashable list/object id must not crash the O2 `manifest_set[fid]` keying; str()
+    # coercion matches build_obsidian's `"[^%s]" % fid`-rendered footnote ref, so the multiset still ties.
+    ids = [am.fid_key(an.get("finding_id")) for an in annotations if isinstance(an, dict)]
 
     # O1 (authoritative) — exact-build equality: the on-disk copy must equal a fresh deterministic build
     # from the gated manifest + snapshot, byte-for-byte. The copy is fully determined by them, so this pins
@@ -203,7 +207,9 @@ def check_obsidian(manifest_obj, snapshot, obsidian_text, letter_basename=None):
 
     # O3 — comment fidelity: each definition body equals the manifest comment (Inc 1) or the comment +
     # the EXACT forward wikilink (Inc 2). No room for authored text around the verbatim comment.
-    comment_of = {an.get("finding_id"): an.get("comment") for an in annotations if isinstance(an, dict)}
+    # am.fid_key: a non-hashable finding_id must not crash this O3 dict-key; the str() form matches the
+    # parsed `def_lines` fid (which came from the `"[^%s]" % fid`-rendered ref), so the lookup still ties.
+    comment_of = {am.fid_key(an.get("finding_id")): an.get("comment") for an in annotations if isinstance(an, dict)}
     for fid, body_text in def_lines:
         if fid not in comment_of:
             continue
@@ -1050,6 +1056,20 @@ def run_self_test():
         chk("nonstring_chapter_value_no_crash", _tbv is not None)
     except TypeError:
         chk("nonstring_chapter_value_no_crash", False)
+    # sibling regression (finding_id): a non-hashable finding_id (list) must not crash the (offset, fid)
+    # ref sort / the definition-block sort in build_obsidian, nor the O2 `manifest_set[fid]` keying in
+    # check_obsidian; and a mixed int/str id set must not crash those sorts. am.fid_key normalizes both.
+    obj_bf = {"schema": am._SCHEMA_ID, "project": "T", "runlabel": "r",
+              "snapshot_path": "T_Manuscript_Snapshot_r.md", "snapshot_sha256": am.sha256(snap),
+              "snapshot_line_count": am.line_count(snap),
+              "annotations": [ann([1, 2], {"kind": "chapter", "value": "Ch 1"}, "c"),
+                              ann("F-S-01", {"kind": "chapter", "value": "Ch 1"}, "c2")]}
+    try:
+        _tbf, _ebf = build_obsidian(obj_bf, snap)
+        check_obsidian(obj_bf, snap, _tbf)
+        chk("nonhashable_mixed_finding_id_no_crash", _tbf is not None)
+    except TypeError:
+        chk("nonhashable_mixed_finding_id_no_crash", False)
 
     # O2 fires on an un-manifested (authored) footnote ref+def smuggled in.
     smuggled = text.replace("Three days collapsed here.", "Three days collapsed here.[^F-EVIL-01]")

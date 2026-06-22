@@ -110,6 +110,15 @@ _TOP_KEYS = ("schema", "project", "runlabel", "snapshot_path", "snapshot_sha256"
              "snapshot_line_count", "annotations")
 _ANNOT_KEYS = ("finding_id", "anchor", "comment")
 
+
+def fid_key(value):
+    """A finding_id normalized to a hashable, sortable form (a str, or None). A malformed non-string id
+    (a JSON list/object/number that survives parse_manifest as-is) is str()-coerced, so it never crashes
+    a dict KEY (the A1 uniqueness `seen` map) or a SORT key — the recurring non-hashable/non-string
+    finding_id crash class. The SINGLE source of truth: reanchor.py and annotation_export.py (which both
+    import annotation_manifest as `am`) call `am.fid_key`, rather than each re-rolling the coercion."""
+    return value if value is None or isinstance(value, str) else str(value)
+
 # CriticMarkup comment span. The reverse transform deletes exactly these spans; nothing else is
 # ever inserted (spans carry no surrounding whitespace), so the transform is the snapshot identity.
 _CM_OPEN, _CM_CLOSE = "{>>", "<<}"
@@ -435,7 +444,7 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
             if not vm or int(vm.group(1)) > int(vm.group(2)):
                 errs.append("A1 manifest schema: %s quote anchor value must be '<start>-<end>' with "
                             "start <= end" % where)
-        fid = an.get("finding_id")
+        fid = fid_key(an.get("finding_id"))  # normalize: a non-hashable list/object id must not crash seen[]
         if fid is not None:
             seen[fid] = seen.get(fid, 0) + 1
     for fid, n in sorted((kv for kv in seen.items() if kv[1] > 1)):
@@ -500,7 +509,10 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
     if have_ledger and art is not None:
         for bt, o, _e in art.parse_blocks(ledger_text):
             if bt == "finding" and isinstance(o, dict) and o.get("id"):
-                led_obj[o["id"]] = o
+                # fid_key: a malformed LEDGER finding with a non-hashable id (list/object) must not crash
+                # this index key; coercing both sides (here + the manifest's finding_id) keeps the
+                # comment-provenance join consistent.
+                led_obj[fid_key(o["id"])] = o
     if not have_ledger and annotations and not ledger_optional:
         errs.append("A4/A5: no Findings Ledger resolved — comment provenance (verbatim projection + "
                     "Must-Fix completeness) is unverifiable for %d annotation(s); supply the ledger"
@@ -510,7 +522,7 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
         for an in annotations:
             if not isinstance(an, dict):
                 continue
-            fid = an.get("finding_id")
+            fid = fid_key(an.get("finding_id"))
             src = led_obj.get(fid)
             if src is None:
                 errs.append("A5 projection: %s is not an apodictic.finding.v1 in the ledger "
@@ -538,7 +550,7 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
     for an in annotations:
         if isinstance(an, dict):
             manifest_comments.add(an.get("comment"))
-    manifest_ids = {an.get("finding_id") for an in annotations if isinstance(an, dict)}
+    manifest_ids = {fid_key(an.get("finding_id")) for an in annotations if isinstance(an, dict)}
     for an in annotations:
         if not isinstance(an, dict):
             continue
@@ -570,7 +582,7 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
         anc = an.get("anchor") or {}
         if anc.get("kind") != "quote":
             continue
-        fid = an.get("finding_id")
+        fid = fid_key(an.get("finding_id"))
         qv = anc.get("quote")
         # (d) present + single-line + inline-safe (extends A2's two-sided sigil precondition to
         # anchor.quote). Any line break — \n OR \r (a bare CR, the one the snapshot's LF normalization
@@ -614,7 +626,7 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
     for an in annotations:
         if not isinstance(an, dict):
             continue
-        fid = an.get("finding_id")
+        fid = fid_key(an.get("finding_id"))
         anc = an.get("anchor") or {}
         if anc.get("kind") == "document" and fid not in overrides:
             src = led_obj.get(fid)
@@ -988,6 +1000,27 @@ def run_self_test():
         chk("a3_nonstring_chapter_value_no_crash", any("A3 anchor integrity" in x for x in ls))
     except TypeError:
         chk("a3_nonstring_chapter_value_no_crash", False)
+    # regression (finding_id SIBLING of the anchor-value guard): a non-hashable finding_id (a JSON
+    # list/object kept as-is by parse_manifest) must NOT crash the A1 uniqueness `seen[fid]` dict-key.
+    # fid_key() normalizes it; check() must classify (not traceback). The crash class that bit reanchor
+    # and annotation_export lives here too — finding_id is keyed, not just the anchor.
+    obj_badf = json.loads(json.dumps(obj))
+    obj_badf["annotations"][0]["finding_id"] = [1, 2]
+    try:
+        _ann_bf = render(snapshot, obj_badf)
+        _code_bf, _ls_bf = check(snapshot, manifest_md(obj_badf), _ann_bf, ledger, timeline)
+        chk("a1_nonhashable_finding_id_no_crash", isinstance(_ls_bf, list))
+    except TypeError:
+        chk("a1_nonhashable_finding_id_no_crash", False)
+    # ledger-side sibling: a malformed LEDGER finding with a non-hashable id must not crash the led_obj
+    # comment-provenance index key (fid_key normalizes it). check() must not traceback.
+    _bad_led = ledger + "\n<!-- apodictic:finding\n" + json.dumps(
+        {"schema": "apodictic.finding.v1", "id": [1, 2], "severity": "Must-Fix", "mechanism": "m"}) + "\n-->"
+    try:
+        _code_bl, _ls_bl = check(snapshot, manifest_md(obj), render(snapshot, obj), _bad_led, timeline)
+        chk("led_obj_nonhashable_ledger_id_no_crash", isinstance(_ls_bl, list))
+    except TypeError:
+        chk("led_obj_nonhashable_ledger_id_no_crash", False)
 
     # W1 — a locatable Should/Could parked at document is advisory (ERROR --strict)
     obj_w = json.loads(json.dumps(obj))
