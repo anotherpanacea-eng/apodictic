@@ -458,7 +458,16 @@ if [ "$1" = "--check-all" ]; then
     fi
     echo ""
     echo "== canonical genre-profiled Argument_States (argument-spine Inc 5: B1-B4 + W4 over grant / academic / pitch; --strict) =="
-    for GENRE_FIX in grant academic pitch; do
+    # grant runs via an explicit LITERAL path (not the $GENRE_FIX loop) so schema-coverage's C5 can trace
+    # example-argument-state-genre-grant.md to a real argument-spine invocation: it is the
+    # apodictic.genre_profile.v1 canonical_gate (the predraft Argument_State carries no genre_profile
+    # block; the genre files do — C5's one-hop resolver can't see through the loop's double variable).
+    if [ -f "$CA_BASE/example-argument-state-genre-grant.md" ]; then
+      "$0" argument-spine "$CA_BASE/example-argument-state-genre-grant.md" --strict || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-argument-state-genre-grant.md not found"; CA_FAIL=1
+    fi
+    for GENRE_FIX in academic pitch; do
       GENRE_F="$CA_BASE/example-argument-state-genre-$GENRE_FIX.md"
       if [ -f "$GENRE_F" ]; then
         "$0" argument-spine "$GENRE_F" --strict || CA_FAIL=1
