@@ -256,9 +256,15 @@ def explain_profile(text, strict=False):
     if not _LOCAL_ONLY_RE.search(text or ""):
         x6.append("X6 local-only: the artifact lacks a `<!-- author-style-explanation: local-only -->` "
                   "marker — a labelled voice profile is voice-cloning-adjacent and never transmitted")
-    if _EXTERNAL_URL_RE.search(visible):
-        x6.append("X6 local-only: the artifact references an external http(s) URL — a labelled voice "
-                  "profile is local-only and makes no external call")
+    # The URL scan must cover the STRUCTURED label fields, not just the reader-facing prose: a style_label
+    # block is an HTML comment, so it is stripped from `visible` — a URL hidden in a label's
+    # `label`/`feature_ref`/etc. would otherwise evade X6 (mirrors the X3 no-severity prose+label split).
+    url_scan = [visible] + [v for obj, _e, _i in labels if isinstance(obj, dict)
+                            for v in obj.values() if isinstance(v, str)]
+    if any(_EXTERNAL_URL_RE.search(s) for s in url_scan):
+        x6.append("X6 local-only: the artifact references an external http(s) URL (in the reader-facing "
+                  "prose or a structured label field) — a labelled voice profile is local-only and makes "
+                  "no external call")
 
     # W1 — seed / coverage (single glossed feature => thin overlay; advisory, ERROR --strict)
     if len(valid) == 1:
@@ -492,6 +498,13 @@ def run_self_test():
     chk("x6_never_strict_escalates", explain_profile(TWO, strict=True)[0] == 0)
     url = LOCAL + TWO + "\n\nSee https://example.com/profile for the hosted copy.\n"
     chk("x6_external_url", any("external http(s) URL" in ln for ln in explain_profile(url)[1]))
+    # Codex #140 P2: a URL hidden INSIDE a structured label field evaded X6 — the style_label block is an
+    # HTML comment, stripped from the reader-facing prose the scan used. The scan now covers label fields.
+    in_label = LOCAL + sl("SL-01", label="The prose leans on the definite article — https://evil.example/x") \
+        + "\n" + sl("SL-02")
+    chk("x6_external_url_in_label", any("external http(s) URL" in ln for ln in explain_profile(in_label)[1]))
+    # negative control: a clean profile (no URL anywhere) must NOT trip the X6 URL scan (no false positive)
+    chk("x6_no_url_clean", not any("external http(s) URL" in ln for ln in explain_profile(LOCAL + TWO)[1]))
 
     # W1 — seed/coverage (single feature => thin; no blocks => no-op)
     code, lines = explain_profile(LOCAL + sl("SL-01"))
