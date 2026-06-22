@@ -401,6 +401,17 @@ def _check_claim_ladder(items, ladder):
                             "apodictic.support_plan.v1 block with subclaim_id=%s (the manifest copies one "
                             "chip per support block — it may not invent or over-draw a pairing)"
                             % (swhere, {"support_type": key[0], "status": key[1]}, cid))
+        # X6 completeness: the manifest's support[] must be an EXACT multiset of the producer's, not merely
+        # a sub-multiset — every support_plan.v1 block must be copied (one chip per block). A pairing left
+        # in `unconsumed` was SILENTLY OMITTED; dropping a "to-acquire" chip renders the claim as better
+        # supported than the plan declares (the omission-direction mirror of the over-draw check above). An
+        # all-empty support[] is reported by the more specific X5 bare-assertion check below, not here.
+        if sup and unconsumed:
+            errs.append("X6 no orphan datum: %s.support omits %d apodictic.support_plan.v1 pairing(s) for "
+                        "%s (%s) — the manifest must copy every support block, not a subset (a dropped "
+                        "'to-acquire' chip over-states the claim's support coverage)"
+                        % (where, len(unconsumed), cid,
+                           ", ".join("%s/%s" % p for p in sorted(unconsumed))))
         # X5 — an EMPTY support[] is permitted ONLY for a bare assertion (no support_plan declares cid).
         if not sup and cid in planned:
             errs.append("X5 claim-ladder provenance: %s.support is empty but apodictic.support_plan.v1 "
@@ -1081,6 +1092,14 @@ def run_self_test():
         check(cl_manifest(multi_ladder), None, None, spine_text=multi_spine)[0] == 0)
     h_multi = render_html(cl_manifest(multi_ladder), None, None, spine_text=multi_spine)
     chk("render_multi_support_two_chips", h_multi.count("EXAMPLE") >= 1 and h_multi.count("DATA") >= 1)
+    # X6 completeness (Codex #139 P1): omitting a producer support block — here keeping only C1's in-hand
+    # EXAMPLE and dropping its DATA/to-acquire chip — must FAIL. A sub-multiset is not enough: under-
+    # rendering "to-acquire" support over-states the claim. Pre-fix this passed silently.
+    omit_ladder = [{"claim_id": "C1", "label": L1,
+                    "support": [{"support_type": "EXAMPLE", "status": "in-hand"}]}] + canon_ladder[1:]
+    code, ls = check(cl_manifest(omit_ladder), None, None, spine_text=multi_spine)
+    chk("x6_support_omission_fails",
+        code == 1 and any("X6" in x and "omits" in x and "to-acquire" in x for x in ls))
 
     # X5 — an EMPTY support[] is permitted ONLY for a bare assertion (a subclaim with no support_plan).
     bare_spine = spine_block(canon_subclaims, canon_supports[:2])   # drop C3's support plan
