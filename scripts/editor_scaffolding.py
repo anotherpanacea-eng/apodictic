@@ -72,7 +72,7 @@ def _read(path):
     try:
         with open(path, encoding="utf-8") as fh:
             return fh.read()
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return None
 
 
@@ -278,6 +278,10 @@ def run_self_test():
     # No marker -> no-op pass.
     code, lines = check(letter(mode=False))
     chk("no_marker_is_noop", code == 0 and any("not in editor-scaffolding mode" in l for l in lines))
+    # regression: a non-UTF-8 file must not crash _read (returns None, not a UnicodeDecodeError)
+    import tempfile as _tf
+    _efd, _ep = _tf.mkstemp(suffix=".md"); os.write(_efd, b"\xff\xfe\x00x"); os.close(_efd)
+    chk("read_non_utf8_no_crash", _read(_ep) is None); os.unlink(_ep)
 
     # Full, clean scaffolded letter -> pass.
     code, lines = check(letter())
