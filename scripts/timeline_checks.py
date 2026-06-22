@@ -33,6 +33,8 @@ import os
 import re
 import sys
 
+from override_marker import has_override  # SSoT: state-machine code-span stripper + boundary-matched slug
+
 # Time-of-day word -> hour-of-day. Order matters for substring precedence
 # (check "late night" / "midnight" before "night", "midday" before "day").
 _TOD_WORDS = [
@@ -55,20 +57,16 @@ _NONLINEAR_RE = re.compile(
 
 _LEVEL2_RE = re.compile(r"^##[^#]")
 
-# Code spans (fenced ``` ``` and inline ` `) are stripped before an override scan so a documentation
-# EXAMPLE of a marker (in backticks) is not mistaken for a live override.
-_CODE_SPAN_RE = re.compile(r"```.*?```|`[^`\n]*`", re.DOTALL)
-
-
 def _has_override(body, slug):
-    """A genuine body override comment for `slug` — NOT a suffixed slug, NOT inside a code span.
+    """A genuine body override comment for `slug` — delegated to the shared `override_marker`.
 
-    The earlier `"<!-- override: <slug>" in body` substring test matched a suffixed slug (e.g.
-    `<slug>-but-not-really`) and matched a backtick'd documentation example. This requires the EXACT
-    slug followed by a delimiter (whitespace / em- or en-dash / the comment close), in stripped prose.
-    """
-    region = _CODE_SPAN_RE.sub(" ", body or "")
-    return re.search(r"<!--\s*override:\s*" + re.escape(slug) + r"(?=\s|—|–|-->|$)", region) is not None
+    The earlier `"<!-- override: <slug>" in body` substring test matched a suffixed slug and a
+    backtick'd documentation example. This had used a LOCAL `re.compile(r"```...```|`...`")` stripper,
+    but that hand-rolled parser was bypassable by a multi-backtick / `~~~`-fenced / multiline /
+    malformed-fence example (Codex P1). It now delegates to `override_marker.has_override` — the single
+    state-machine code-span stripper + boundary-matched slug — so timeline overrides can no longer be
+    activated by a documentation example in any CommonMark code-span form."""
+    return has_override(body, slug)
 
 
 # --------------------------------------------------------------------------
@@ -532,6 +530,16 @@ def run_self_test(which=None):
             "<!-- override: timeline-diff-undocumented — deferred. -->",
             "Use `<!-- override: timeline-diff-undocumented -->` to defer.")
         expect("diff_override_in_backticks_rejected", diff_rc(prior, cur_over_backtick), 1)
+        # migration to override_marker (Codex P1): a TILDE-fenced and a MULTI-backtick documentation
+        # example must also be rejected (the old local stripper only handled ``` and single backticks)
+        cur_over_tilde = cur_over.replace(
+            "<!-- override: timeline-diff-undocumented — deferred. -->",
+            "~~~\n<!-- override: timeline-diff-undocumented -->\n~~~")
+        expect("diff_override_in_tilde_fence_rejected", diff_rc(prior, cur_over_tilde), 1)
+        cur_over_mbtick = cur_over.replace(
+            "<!-- override: timeline-diff-undocumented — deferred. -->",
+            "``<!-- override: timeline-diff-undocumented -->``")
+        expect("diff_override_in_multibacktick_rejected", diff_rc(prior, cur_over_mbtick), 1)
         expect("diff_changed_masks_add", diff_rc(prior, cur_changed_masks), 1)
         expect("diff_edit_changed_covers", diff_rc(prior, cur_edit), 0)
 
