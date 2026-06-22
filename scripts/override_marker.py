@@ -31,7 +31,13 @@ import re
 # rather than one clever regex (successive regex patches kept breeding siblings — multiline inline spans,
 # a ``` line inside a ~~~ fence, …; Codex P1 xN). `strip_code_spans` is the SINGLE source of truth — the
 # bash gates delegate to it via the CLI below, so there is exactly one implementation to keep correct.
-_FENCE_OPEN_RE = re.compile(r"^[ \t]*(`{3,}|~{3,})")
+# A fence OPENER: 0–3 leading spaces (4+ or a tab is indented code, not a fence) + a run of 3+ backticks
+# or tildes; an opener may carry an info string, so trailing text is allowed here.
+_FENCE_OPEN_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+# A fence CLOSER: in CommonMark a closing fence is ONLY the fence run + optional trailing whitespace —
+# nothing else. A same-run line with other text (`~~~not-a-close`, ` ```python`) is CONTENT, not a
+# closer, so it must not end the block early and expose a later marker (Codex P1).
+_FENCE_CLOSE_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*$")
 # An inline span: a run of N backticks, then the shortest content NOT containing the closing run, then a
 # matching run of N. DOTALL — CommonMark inline spans may contain line endings (the multiline form). A
 # run with no matching close is NOT a span, so a stray backtick never over-strips.
@@ -51,17 +57,17 @@ def strip_code_spans(body):
     matching-length backtick runs (multiline-aware)."""
     out, fence = [], None  # fence = (char, length) while inside a fenced block
     for line in (body or "").split("\n"):
-        m = _FENCE_OPEN_RE.match(line)
-        run = m.group(1) if m else ""
         if fence is None:
-            if run:
-                fence = (run[0], len(run))
+            mo = _FENCE_OPEN_RE.match(line)
+            if mo:
+                fence = (mo.group(1)[0], len(mo.group(1)))
                 out.append("")             # drop the opening fence line
             else:
                 out.append(line)
         else:
-            if run and run[0] == fence[0] and len(run) >= fence[1]:
-                fence = None               # a matching-character, long-enough closer
+            mc = _FENCE_CLOSE_RE.match(line)  # a SYNTACTICALLY VALID closer only (same char, >= len, ws-only tail)
+            if mc and mc.group(1)[0] == fence[0] and len(mc.group(1)) >= fence[1]:
+                fence = None
             out.append("")                 # drop everything between the fences (and the fences)
     return _INLINE_SPAN_RE.sub(" ", "\n".join(out))
 
@@ -124,6 +130,16 @@ def _self_test():
     # a ``` line INSIDE a ~~~ fence must NOT close the fence early and expose the marker (Codex P1)
     chk("tilde_fence_with_backtick_line_rejected",
         not has_override("~~~\n```\n<!-- override: my-slug -->\n```\n~~~", S))
+    # a same-character run with TRAILING text is NOT a valid closer (a closing fence is fence-chars +
+    # whitespace only); it must not end the block early and expose a later marker (Codex P1)
+    chk("malformed_tilde_closer_rejected",
+        not has_override("~~~lang\n~~~not-a-close\n<!-- override: my-slug -->\n~~~", S))
+    chk("backtick_info_string_line_not_a_closer",
+        not has_override("```\n```python\n<!-- override: my-slug -->\n```", S))
+    # a 4-space-indented fence line is INDENTED CODE, not a real fence (opener indent capped at 3
+    # spaces), so it cannot suppress a later LIVE marker (Codex P1)
+    chk("indented_code_tilde_is_not_a_fence",
+        has_override("    ~~~\n<!-- override: my-slug -->\n    ~~~", S))
     # …and after a fenced block CLOSES, a genuine marker is honored again (the close re-enables scanning)
     chk("genuine_after_fenced_block",
         has_override("```\n<!-- override: my-slug -->\n```\n\nReal: <!-- override: my-slug -->", S))

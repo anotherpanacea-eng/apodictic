@@ -38,6 +38,7 @@ import re
 import sys
 
 import apodictic_artifacts as art
+from override_marker import strip_code_spans  # SSoT state-machine code-span stripper
 
 SEV_RANK = art.SEVERITY_RANK
 SEV_TOKENS = tuple(SEV_RANK)
@@ -62,15 +63,15 @@ SOFT_MARKER = "<!-- override: softness-downgrade"  # legacy slug; overrides are 
 # every locked finding's downgrade (that would dismantle the Deficit Lock, severity honesty's core).
 _SOFT_OVERRIDE_RE = re.compile(
     r"<!--\s*override:\s*softness-downgrade\s+(F-[A-Za-z0-9]+-[0-9]{2,})(?![\w-])", re.IGNORECASE)
-# Code spans (fenced ``` ``` and inline ` `) are stripped before the scan so a documentation EXAMPLE
-# of the marker (in backticks) is not mistaken for a live override.
-_CODE_SPAN_RE = re.compile(r"```.*?```|`[^`\n]*`", re.DOTALL)
-
-
 def soft_overrides(body):
-    """The set of Finding Lifecycle IDs a body's ID-scoped softness-downgrade markers acknowledge."""
-    region = _CODE_SPAN_RE.sub(" ", body or "")
-    return {m.group(1) for m in _SOFT_OVERRIDE_RE.finditer(region)}
+    """The set of Finding Lifecycle IDs a body's ID-scoped softness-downgrade markers acknowledge.
+
+    Code spans are stripped first so a documentation EXAMPLE of the marker is not honored as a live
+    override. This delegates to the shared `override_marker.strip_code_spans` (one state machine) rather
+    than a local `re.compile(r"```...```|`...`")` — that hand-rolled stripper was bypassable by a
+    multi-backtick / `~~~`-fenced / multiline / malformed-fence example (Codex P1). The ID-scoped match
+    (`_SOFT_OVERRIDE_RE`) then runs on the stripped region."""
+    return {m.group(1) for m in _SOFT_OVERRIDE_RE.finditer(strip_code_spans(body))}
 
 
 def parse_locked_findings(ledger_text):
@@ -391,6 +392,12 @@ def run_self_test():
           softness_check(letter_id_ov("F-P5-02", "F-P5-02").replace(
               "<!-- override: softness-downgrade F-P5-02 — over-diagnosed; see Appendix B -->",
               "Use `<!-- override: softness-downgrade F-P5-02 -->` to acknowledge."), lock_id)[0], False)
+    # migration to override_marker (Codex P1): a TILDE-fenced documentation example of the ID-scoped
+    # marker must ALSO be ignored (the old local stripper only handled ``` and single backticks)
+    check("id_scoped_override_in_tilde_fence_ignored",
+          softness_check(letter_id_ov("F-P5-02", "F-P5-02").replace(
+              "<!-- override: softness-downgrade F-P5-02 — over-diagnosed; see Appendix B -->",
+              "~~~\n<!-- override: softness-downgrade F-P5-02 -->\n~~~"), lock_id)[0], False)
     # THE GATE-BYPASS REGRESSION: an override for ONE finding must NOT mask ANOTHER finding's downgrade
     lock_two = (lock_id + "\n"
                 + lock_id.replace('"id":"F-P5-02"', '"id":"F-P5-03"')
