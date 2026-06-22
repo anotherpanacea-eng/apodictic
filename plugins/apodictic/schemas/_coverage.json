@@ -27,6 +27,7 @@
     {"schema": "apodictic.canon_fact.v1", "validators": ["continuity-bible"], "canonical_gate": "example-continuity-bible.md", "closed_keys": false},
     {"schema": "apodictic.intake_query.v1", "validators": ["intake-interview"], "canonical_gate": "example-intake-interview.md", "closed_keys": false},
     {"schema": "apodictic.voice_fingerprint.v1", "validators": ["author-fingerprint"], "canonical_gate": "example-author-voice-profile.md", "closed_keys": false},
+    {"schema": "apodictic.style_label.v1", "validators": ["style-explanation"], "canonical_gate": "example-author-style-explanation.md", "closed_keys": false},
     {"schema": "apodictic.content_note.v1", "validators": ["content-advisory"], "canonical_gate": "example-content-advisory.md", "closed_keys": false},
     {"schema": "apodictic.divergence.v1", "validators": ["persona-divergence"], "canonical_gate": "example-persona-divergence-map.md", "closed_keys": false},
     {"schema": "apodictic.persona.v1", "validators": ["persona-divergence"], "canonical_gate": "example-persona-divergence-map.md", "closed_keys": false},
