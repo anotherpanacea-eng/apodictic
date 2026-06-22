@@ -34,6 +34,8 @@ import os
 import re
 import sys
 
+from override_marker import has_override
+
 MODE_MARKER_RE = re.compile(r"<!--\s*mode:\s*editor-scaffolding\s*-->", re.IGNORECASE)
 SEVERITY_RE = re.compile(r"(?<![\w-])(Must-Fix|Should-Fix|Could-Fix)(?![\w-])")
 _LEVEL2_RE = re.compile(r"^##\s")
@@ -70,7 +72,7 @@ def _read(path):
     try:
         with open(path, encoding="utf-8") as fh:
             return fh.read()
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return None
 
 
@@ -81,12 +83,9 @@ def _lines(text):
     return out
 
 
-def has_override(body, slug):
-    """A body override marker `<!-- override: <slug> — <rationale> -->`. Detection mirrors the
-    shared codebase convention exactly (letter_checks.has_override / honesty_check.SOFT_MARKER):
-    a plain substring of the marker prefix, so a marker honored by the letter-family gates is
-    honored identically here."""
-    return ("<!-- override: %s" % slug) in body
+# `has_override` is imported from the shared `override_marker` module (boundary-matched + code-spans
+# stripped, identical to every letter-family gate). The legacy local bare-substring definition — which
+# honored a suffixed slug and a backtick'd documentation example — is retired (meta_lint.py M5 gates it).
 
 
 def _body(text):
@@ -279,6 +278,10 @@ def run_self_test():
     # No marker -> no-op pass.
     code, lines = check(letter(mode=False))
     chk("no_marker_is_noop", code == 0 and any("not in editor-scaffolding mode" in l for l in lines))
+    # regression: a non-UTF-8 file must not crash _read (returns None, not a UnicodeDecodeError)
+    import tempfile as _tf
+    _efd, _ep = _tf.mkstemp(suffix=".md"); os.write(_efd, b"\xff\xfe\x00x"); os.close(_efd)
+    chk("read_non_utf8_no_crash", _read(_ep) is None); os.unlink(_ep)
 
     # Full, clean scaffolded letter -> pass.
     code, lines = check(letter())
@@ -308,6 +311,18 @@ def run_self_test():
     code, lines = check(letter(menu=False, menu_override=True))
     chk("e3_override_warns_not_errors",
         code == 0 and any("override marker is present" in l for l in lines))
+    # 2026-06-20 override-substring hardening (shared override_marker.has_override): a CODE-SPAN decoy
+    # and a SUFFIX-COLLISION slug must NOT silence E3 -> still ERROR.
+    e3_decoy = letter(menu=False).replace(
+        "# Development Edit: Test\n",
+        "# Development Edit: Test\nUse `<!-- override: scaffolding-checklist -->` to keep the author checklist.\n")
+    code, lines = check(e3_decoy)
+    chk("e3_override_codespan_decoy_errors", code == 1 and any("E3: missing" in l for l in lines))
+    e3_suffix = letter(menu=False).replace(
+        "# Development Edit: Test\n",
+        "# Development Edit: Test\n<!-- override: scaffolding-checklist-not-really — decoy. -->\n")
+    code, lines = check(e3_suffix)
+    chk("e3_override_suffix_collision_errors", code == 1 and any("E3: missing" in l for l in lines))
 
     # E4: severity stripped.
     code, lines = check(letter(severity=False))

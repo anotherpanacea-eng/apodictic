@@ -57,7 +57,8 @@ def _load_sidecar(root):
     if not os.path.isfile(p):
         return None, False
     try:
-        return json.loads(_read(p) or ""), True
+        obj = json.loads(_read(p) or "")
+        return (obj if isinstance(obj, dict) else None), True  # a non-object sidecar is unparseable drift
     except (json.JSONDecodeError, TypeError):
         return None, True  # present but unparseable — treated as drift-unknown
 
@@ -257,6 +258,9 @@ def run_self_test():
         d = ws([entry()], {"Wolves_Of_November": sidecar()})
         chk("clean_single", run([d])[0] == 0)
         chk("clean_via_file", run([os.path.join(d, ".apodictic", "registry.json")])[0] == 0)
+        # regression: a non-object sidecar payload must not crash _load_sidecar (R3 drift, not a traceback)
+        chk("nondict_sidecar_no_crash",
+            run([ws([entry(pid="Wolves_Of_November")], {"Wolves_Of_November": "[1,2,3]"})])[0] in (0, 1))
 
         # R1 bad id pattern / missing field / bad mode enum
         chk("r1_bad_id", run([ws([entry(pid="Wolves_Of_November")], {"Wolves_Of_November": sidecar()})])[0] == 1)

@@ -53,6 +53,17 @@ try:
 except ImportError:
     art = None
 
+
+def _has_block(text, btype):
+    """True if `text` carries a real apodictic:<btype> block (a parsed carrier, not a prose mention).
+
+    Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
+    in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
+    validate.sh validator-conventions (M2)."""
+    if art is None:
+        return ("apodictic:%s" % btype) in (text or "")
+    return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))
+
 _SCHEMA_ID = "apodictic.retcon_item.v1"
 _READING_SCHEMA_ID = "apodictic.retcon_reading.v1"
 _PLAN_GLOB = "*_Retcon_Plan_*.md"
@@ -141,6 +152,8 @@ def _score_errors(obj, where):
     """The five-dimension completeness + 1-5 range checks the subset schema checker cannot express
     (nested required keys, numeric bounds). Part of R5. Returns a list of error strings."""
     errs = []
+    if not isinstance(obj, dict):
+        return errs  # a non-dict block is already reported by validate_obj ('expected a JSON object')
     scores = obj.get("scores")
     if not isinstance(scores, dict):
         return errs  # a non-object `scores` is already reported by the schema's type:object check
@@ -325,7 +338,7 @@ def resolve(paths):
         return _newest(glob.glob(os.path.join(paths[0], _PLAN_GLOB)))
     for p in paths:
         body = _read(p) or ""
-        if "apodictic:retcon_item" in body or "apodictic:retcon_reading" in body:
+        if _has_block(body, "retcon_item") or _has_block(body, "retcon_reading"):
             return p
     return paths[0] if paths else None
 
@@ -524,6 +537,8 @@ def run_self_test():
 
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
+    # regression: a non-dict retcon_reading payload must not crash _score_errors (2026-06-20 sweep)
+    chk("crash_nondict_reading", plan('<!-- apodictic:retcon_reading\n"juststring"\n-->')[0] == 1)
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
 

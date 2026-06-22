@@ -121,7 +121,9 @@ def build_obsidian(manifest_obj, snapshot, letter_basename=None):
     inserts = [(_insertion_offset(an.get("anchor") or {}, snapshot, nl_at, chap_l, sec_l), an.get("finding_id"))
                for an in annotations if isinstance(an, dict)]
     out = snapshot
-    for off, fid in sorted(inserts, key=lambda t: (t[0], t[1] or ""), reverse=True):
+    # am.fid_key normalizes a malformed (non-string / non-hashable) finding_id so the (offset, fid) sort
+    # cannot crash on a tie comparing a non-string id (the sibling of the chapter-value guard below).
+    for off, fid in sorted(inserts, key=lambda t: (t[0], am.fid_key(t[1]) or ""), reverse=True):
         off = max(0, min(off, len(out)))
         out = out[:off] + ("[^%s]" % fid) + out[off:]
 
@@ -131,8 +133,8 @@ def build_obsidian(manifest_obj, snapshot, letter_basename=None):
         fid = an.get("finding_id")
         tail = _fwd_wikilink(letter_basename, fid) if letter_basename else ""
         return "[^%s]: %s%s\n" % (fid, an.get("comment"), tail)
-    defs = "".join(_def(an) for an in sorted(annotations, key=lambda a: a.get("finding_id") or "")
-                   if isinstance(an, dict))
+    defs = "".join(_def(an) for an in sorted((a for a in annotations if isinstance(a, dict)),
+                   key=lambda a: am.fid_key(a.get("finding_id")) or ""))
     return out + "\n" + defs, []
 
 
@@ -149,7 +151,9 @@ def check_obsidian(manifest_obj, snapshot, obsidian_text, letter_basename=None):
     O3 expects each definition to equal `comment` + the exact forward wikilink."""
     errs = []
     annotations = manifest_obj.get("annotations") if isinstance(manifest_obj.get("annotations"), list) else []
-    ids = [an.get("finding_id") for an in annotations if isinstance(an, dict)]
+    # am.fid_key: a non-hashable list/object id must not crash the O2 `manifest_set[fid]` keying; str()
+    # coercion matches build_obsidian's `"[^%s]" % fid`-rendered footnote ref, so the multiset still ties.
+    ids = [am.fid_key(an.get("finding_id")) for an in annotations if isinstance(an, dict)]
 
     # O1 (authoritative) — exact-build equality: the on-disk copy must equal a fresh deterministic build
     # from the gated manifest + snapshot, byte-for-byte. The copy is fully determined by them, so this pins
@@ -203,11 +207,18 @@ def check_obsidian(manifest_obj, snapshot, obsidian_text, letter_basename=None):
 
     # O3 — comment fidelity: each definition body equals the manifest comment (Inc 1) or the comment +
     # the EXACT forward wikilink (Inc 2). No room for authored text around the verbatim comment.
-    comment_of = {an.get("finding_id"): an.get("comment") for an in annotations if isinstance(an, dict)}
+    # am.fid_key: a non-hashable finding_id must not crash this O3 dict-key; the str() form matches the
+    # parsed `def_lines` fid (which came from the `"[^%s]" % fid`-rendered ref), so the lookup still ties.
+    comment_of = {am.fid_key(an.get("finding_id")): an.get("comment") for an in annotations if isinstance(an, dict)}
     for fid, body_text in def_lines:
         if fid not in comment_of:
             continue
-        expected = comment_of[fid] + (_fwd_wikilink(letter_basename, fid) if letter_basename else "")
+        # Only a STRING comment is the verbatim body. `or ""` neutralizes a FALSY comment (None/""),
+        # but a TRUTHY non-string comment (a JSON list/dict — kept as-is by parse_manifest) would slip
+        # through and `list + str` would crash on this line. Coerce any non-string comment to "" so a
+        # malformed comment yields the same clean O3 fidelity error as None does, never a traceback.
+        manifest_comment = comment_of[fid] if isinstance(comment_of[fid], str) else ""
+        expected = manifest_comment + (_fwd_wikilink(letter_basename, fid) if letter_basename else "")
         if body_text != expected:
             errs.append("O3 comment fidelity: definition for %s is not the verbatim manifest comment%s "
                         "(relocate, never re-author)" % (fid, " + exact forward wikilink" if letter_basename else ""))
@@ -227,7 +238,9 @@ def _heading_text_of(anchor, snapshot):
     kind, val = anchor.get("kind"), anchor.get("value")
     _cn, _sn, chap_l, sec_l = am.heading_index(snapshot)
     if kind == "chapter":
-        lineno = chap_l.get(val)
+        # a non-string chapter value is unhashable -> chap_l.get(val) would crash (sibling of the
+        # anchor_line guard; the section branch already str()-coerces).
+        lineno = chap_l.get(val) if isinstance(val, str) else None
     elif kind == "section":
         lineno = sec_l.get(str(val).strip().lower())
     else:
@@ -267,7 +280,9 @@ def build_obsidian_letter(crosslinked_text, manifest_obj, snapshot, copy_basenam
             break
     if errs:
         return None, errs, warns
-    anchor_of = {an.get("finding_id"): (an.get("anchor") or {})
+    # am.fid_key: a non-hashable finding_id must not crash this dict-key; the lookup fid comes from the
+    # crosslinked marker regex (a well-formed F-id string), so the str() form still resolves it.
+    anchor_of = {am.fid_key(an.get("finding_id")): (an.get("anchor") or {})
                  for an in (manifest_obj.get("annotations") or []) if isinstance(an, dict)}
 
     out_lines = []
@@ -341,7 +356,8 @@ def check_obsidian_letter(crosslinked_text, obsidian_letter, copy_text, copy_bas
     # heading — or a smuggled `|display` label — fails. Defense-in-depth: any heading fragment must also
     # resolve to a real copy heading (footnote refs stripped).
     copy_headings = set(_heading_slug(raw) for (_l, raw, _n) in am.atx_headings(copy_text))
-    anchor_of = {an.get("finding_id"): (an.get("anchor") or {})
+    # am.fid_key: a non-hashable finding_id must not crash this dict-key (sibling of build_obsidian_letter).
+    anchor_of = {am.fid_key(an.get("finding_id")): (an.get("anchor") or {})
                  for an in (manifest_obj.get("annotations") or []) if isinstance(an, dict)}
     for line in obsidian_letter.split("\n"):
         fm = _FINDING_MARKER_RE.search(line)
@@ -426,7 +442,10 @@ def build_html(manifest_obj, snapshot):
     parts, prev = [], 0
     for off in sorted(by_off):
         parts.append(_html_escape(snapshot[prev:off]))
-        for fid in sorted(by_off[off]):
+        # am.fid_key in the SORT KEY: a malformed (non-string / non-hashable) finding_id must not crash the
+        # co-located-marker ordering — the HTML sibling of build_obsidian's guard (the marker itself is
+        # `%s`-rendered, so a coerced id and the raw id emit the same text and still round-trip).
+        for fid in sorted(by_off[off], key=lambda f: am.fid_key(f) or ""):
             parts.append(_html_marker(fid))
         prev = off
     parts.append(_html_escape(snapshot[prev:]))
@@ -434,7 +453,7 @@ def build_html(manifest_obj, snapshot):
 
     lis = "".join('<li id="fn-%s">%s %s</li>\n'
                   % (a.get("finding_id"), _html_escape(a.get("comment")), _html_backref(a.get("finding_id")))
-                  for a in sorted(annotations, key=lambda x: x.get("finding_id") or ""))
+                  for a in sorted(annotations, key=lambda x: am.fid_key(x.get("finding_id")) or ""))
     html = ('<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
             '<title>%s — Annotated Manuscript</title>\n<style>\n%s</style>\n</head>\n<body>\n'
             '<main><pre class="manuscript">%s</pre></main>\n'
@@ -460,7 +479,9 @@ def check_html(manifest_obj, snapshot, html_text):
     H2/H3 (and the round-trip) remain as granular diagnostics, but H1-equality is the firewall guarantee."""
     errs = []
     annotations = [a for a in (manifest_obj.get("annotations") or []) if isinstance(a, dict)]
-    ids = [a.get("finding_id") for a in annotations]
+    # am.fid_key: a non-hashable finding_id must not crash the H2 `manifest_set[fid]` dict-key nor the
+    # round-trip marker strip; the str() form matches build_html's `%s`-rendered marker, so it still ties.
+    ids = [am.fid_key(a.get("finding_id")) for a in annotations]
 
     # H1 (authoritative) — exact-build equality: the on-disk artifact == a fresh deterministic build.
     expected, _perrs = build_html(manifest_obj, snapshot)
@@ -502,7 +523,8 @@ def check_html(manifest_obj, snapshot, html_text):
                             % (fid, counts.get(fid, 0), label))
 
     # H3 — comment fidelity: each <li> content == escape(comment) + " " + exact back-ref.
-    comment_of = {a.get("finding_id"): a.get("comment") for a in annotations}
+    # am.fid_key: a non-hashable finding_id must not crash this dict-key (the H3 sibling of O3's guard).
+    comment_of = {am.fid_key(a.get("finding_id")): a.get("comment") for a in annotations}
     for m in re.finditer(r'<li id="fn-(F-[A-Za-z0-9]+-[0-9]{2,})">(.*?)</li>', html_text, re.DOTALL):
         fid, content = m.group(1), m.group(2)
         if fid in comment_of:
@@ -573,7 +595,9 @@ def _docx_span(anchor, snapshot, line_start, line_end, chap_l, sec_l):
         if m:
             return int(m.group(1)), int(m.group(2))
     elif kind == "chapter":
-        ln = chap_l.get(val)
+        # a non-string chapter value is unhashable -> chap_l.get(val) would crash (sibling of the
+        # anchor_line guard; the section branch already str()-coerces).
+        ln = chap_l.get(val) if isinstance(val, str) else None
         if ln:
             return line_start[ln], line_end[ln]
     elif kind == "section":
@@ -670,12 +694,14 @@ def build_docx(manifest_obj, snapshot):
     if errs:
         return None, errs
 
-    ordered = sorted(annotations, key=lambda a: a.get("finding_id") or "")
-    idmap = {a.get("finding_id"): i for i, a in enumerate(ordered)}
+    # am.fid_key: a non-hashable finding_id must not crash the sort key nor the idmap dict-key/lookup
+    # (the DOCX sibling of the Obsidian/HTML guards); the comment-id is the idmap index, not the id itself.
+    ordered = sorted(annotations, key=lambda a: am.fid_key(a.get("finding_id")) or "")
+    idmap = {am.fid_key(a.get("finding_id")): i for i, a in enumerate(ordered)}
     line_start, line_end = _line_bounds(snapshot)
     _cn, _sn, chap_l, sec_l = am.heading_index(snapshot)
     spans = [(*_docx_span(a.get("anchor") or {}, snapshot, line_start, line_end, chap_l, sec_l),
-              idmap[a.get("finding_id")]) for a in ordered]
+              idmap[am.fid_key(a.get("finding_id"))]) for a in ordered]
 
     document_xml = '%s<w:document xmlns:w="%s"><w:body>%s</w:body></w:document>' % (
         _XMLDECL, _W_NS, _docx_body(snapshot, spans))
@@ -683,7 +709,7 @@ def build_docx(manifest_obj, snapshot):
     comments = "".join(
         '<w:comment w:id="%d" w:author="APODICTIC" w:date="%s" w:initials="AP">'
         '<w:p><w:r><w:t xml:space="preserve">%s</w:t></w:r></w:p></w:comment>'
-        % (idmap[a.get("finding_id")], docx_date, _html_escape(a.get("comment"))) for a in ordered)
+        % (idmap[am.fid_key(a.get("finding_id"))], docx_date, _html_escape(a.get("comment"))) for a in ordered)
     comments_xml = '%s<w:comments xmlns:w="%s">%s</w:comments>' % (_XMLDECL, _W_NS, comments)
 
     parts = [("[Content_Types].xml", _DOCX_CT), ("_rels/.rels", _DOCX_ROOT_RELS),
@@ -717,8 +743,9 @@ def check_docx(manifest_obj, snapshot, docx_bytes):
                     "byte-for-byte")
 
     # D3 — comment resolution + fidelity (rebuild the sorted(finding_id)->N map).
-    ordered = sorted(annotations, key=lambda a: a.get("finding_id") or "")
-    idmap = {a.get("finding_id"): i for i, a in enumerate(ordered)}
+    # am.fid_key: mirror build_docx's coercion so a non-hashable finding_id cannot crash the rebuilt map.
+    ordered = sorted(annotations, key=lambda a: am.fid_key(a.get("finding_id")) or "")
+    idmap = {am.fid_key(a.get("finding_id")): i for i, a in enumerate(ordered)}
     expected_ids = set(idmap.values())
     starts = [int(x) for x in re.findall(r'<w:commentRangeStart w:id="(\d+)"/>', document_xml)]
     ends = [int(x) for x in re.findall(r'<w:commentRangeEnd w:id="(\d+)"/>', document_xml)]
@@ -738,7 +765,7 @@ def check_docx(manifest_obj, snapshot, docx_bytes):
                     "ids must each contain every manifest finding {0..n-1} exactly once (no missing, "
                     "duplicate, or un-manifested id)")
     for a in ordered:
-        wid = idmap[a.get("finding_id")]
+        wid = idmap[am.fid_key(a.get("finding_id"))]
         if comment_text.get(wid) != a.get("comment"):
             errs.append("D3 comment fidelity: comment %d is not the verbatim manifest comment for %s "
                         "(relocate, never re-author)" % (wid, a.get("finding_id")))
@@ -762,8 +789,13 @@ def _resolve(folder):
     if not snap:
         return None, None, None, None, None, "no %s in %s" % (am._SNAPSHOT_GLOB, folder)
     obj, merrs = am.parse_manifest(_read(man))
-    if obj is None:
-        return None, None, None, None, None, "manifest invalid — %s" % (merrs[0] if merrs else "no annotation block")
+    # A present-but-non-object manifest block (a JSON array / scalar) parses to a non-None, non-dict
+    # obj; guarding on `obj is None` alone let it reach obj.get("project") below — and the build_* /
+    # check_* manifest_obj.get() sites downstream — and crash with AttributeError. Treat ANY non-dict
+    # as an invalid manifest so every public generate/validate path fails cleanly, not with a traceback.
+    if not isinstance(obj, dict):
+        return None, None, None, None, None, "manifest invalid — %s" % (
+            merrs[0] if merrs else "manifest block is not a JSON object")
     snapshot = am.normalize_snapshot(_read(snap) or "")
     project = os.path.basename(snap).split("_Manuscript_Snapshot_")[0] or obj.get("project", "Manuscript")
     # The crosslinked letter (Increment 2 input) — optional; its presence enables the letter projection.
@@ -1010,6 +1042,51 @@ def run_self_test():
     reauth = text.replace("flat reveal", "REWRITTEN")
     e, _w = check_obsidian(obj, snap, reauth)
     chk("o3_fires_on_reauthor", any("O3 comment fidelity" in x for x in e))
+
+    # regression: a TRUTHY non-string comment (a JSON list/dict, kept as-is by parse_manifest) must
+    # not crash the O3 line. `or ""` only neutralizes a FALSY comment; pre-fix `list + str` raised
+    # TypeError on the edited line. build_obsidian str()-coerces the comment (survives), so the copy
+    # reaches check_obsidian; the malformed comment must surface as a clean O3 error, never a traceback.
+    for _badc in (["a", "b"], {"k": "v"}):
+        obj_bc = {"schema": am._SCHEMA_ID, "project": "T", "runlabel": "r",
+                  "snapshot_path": "T_Manuscript_Snapshot_r.md", "snapshot_sha256": am.sha256(snap),
+                  "snapshot_line_count": am.line_count(snap),
+                  "annotations": [ann("F-X-01", {"kind": "chapter", "value": "Ch 1"}, _badc)]}
+        _tbc, _ebc = build_obsidian(obj_bc, snap)
+        try:
+            e_bc, _wbc = check_obsidian(obj_bc, snap, _tbc)
+            chk("o3_nonstring_comment_no_crash_%s" % type(_badc).__name__,
+                _tbc is not None and any("O3 comment fidelity" in x for x in e_bc))
+        except TypeError:
+            chk("o3_nonstring_comment_no_crash_%s" % type(_badc).__name__, False)
+
+    # sibling regression: a non-string chapter ANCHOR value (unhashable) must not crash build_obsidian
+    # via _insertion_offset -> anchor_line, nor check_obsidian via _heading_text_of. Pre-fix it raised
+    # TypeError: unhashable type at chap_l.get(val).
+    obj_bv = {"schema": am._SCHEMA_ID, "project": "T", "runlabel": "r",
+              "snapshot_path": "T_Manuscript_Snapshot_r.md", "snapshot_sha256": am.sha256(snap),
+              "snapshot_line_count": am.line_count(snap),
+              "annotations": [ann("F-X-02", {"kind": "chapter", "value": [1, 2]}, "c")]}
+    try:
+        _tbv, _ebv = build_obsidian(obj_bv, snap)
+        check_obsidian(obj_bv, snap, _tbv)
+        chk("nonstring_chapter_value_no_crash", _tbv is not None)
+    except TypeError:
+        chk("nonstring_chapter_value_no_crash", False)
+    # sibling regression (finding_id): a non-hashable finding_id (list) must not crash the (offset, fid)
+    # ref sort / the definition-block sort in build_obsidian, nor the O2 `manifest_set[fid]` keying in
+    # check_obsidian; and a mixed int/str id set must not crash those sorts. am.fid_key normalizes both.
+    obj_bf = {"schema": am._SCHEMA_ID, "project": "T", "runlabel": "r",
+              "snapshot_path": "T_Manuscript_Snapshot_r.md", "snapshot_sha256": am.sha256(snap),
+              "snapshot_line_count": am.line_count(snap),
+              "annotations": [ann([1, 2], {"kind": "chapter", "value": "Ch 1"}, "c"),
+                              ann("F-S-01", {"kind": "chapter", "value": "Ch 1"}, "c2")]}
+    try:
+        _tbf, _ebf = build_obsidian(obj_bf, snap)
+        check_obsidian(obj_bf, snap, _tbf)
+        chk("nonhashable_mixed_finding_id_no_crash", _tbf is not None)
+    except TypeError:
+        chk("nonhashable_mixed_finding_id_no_crash", False)
 
     # O2 fires on an un-manifested (authored) footnote ref+def smuggled in.
     smuggled = text.replace("Three days collapsed here.", "Three days collapsed here.[^F-EVIL-01]")
@@ -1314,6 +1391,46 @@ def run_self_test():
         chk("docx_run_catches_disk_tamper", run_docx([d4])[0] == 1)
     finally:
         shutil.rmtree(d4, ignore_errors=True)
+
+    # regression (Codex #141 round-2): a present-but-non-object manifest block (a JSON array) must not
+    # reach obj.get() in _resolve / the build_* manifest_obj.get() sites — every public generate
+    # entrypoint returns a clean non-zero error, never an AttributeError traceback.
+    d5 = tempfile.mkdtemp()
+    try:
+        with open(os.path.join(d5, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8", newline="") as fh:
+            fh.write(snap)
+        with open(os.path.join(d5, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8", newline="") as fh:
+            fh.write("<!-- apodictic:annotation\n[1, 2, 3]\n-->")
+        try:
+            nonobj_ok = (generate(d5)[0] != 0 and generate_html(d5)[0] != 0 and generate_docx(d5)[0] != 0)
+        except AttributeError:
+            nonobj_ok = False
+        chk("nonobject_manifest_no_crash", nonobj_ok)
+    finally:
+        shutil.rmtree(d5, ignore_errors=True)
+
+    # sibling regression (HTML / DOCX / letter): a non-hashable finding_id (a JSON list/object) must not
+    # crash the HTML marker sort + H2/H3 dict-keys, the DOCX idmap dict-key/lookup, nor the letter
+    # anchor_of dict-keys — the build_obsidian guard generalized to every export surface. am.fid_key SSoT.
+    obj_nh = {"schema": am._SCHEMA_ID, "project": "T", "runlabel": "r",
+              "snapshot_path": "T_Manuscript_Snapshot_r.md", "snapshot_sha256": am.sha256(snap),
+              "snapshot_line_count": am.line_count(snap),
+              "annotations": [ann([1, 2], {"kind": "chapter", "value": "Ch 1"}, "c"),
+                              ann("F-S-01", {"kind": "chapter", "value": "Ch 1"}, "c2")]}
+    try:
+        _h, _he = build_html(obj_nh, snap)
+        check_html(obj_nh, snap, _h or "")
+        _d, _de = build_docx(obj_nh, snap)
+        check_docx(obj_nh, snap, _d or b"")
+        chk("html_docx_nonhashable_finding_id_no_crash", _h is not None and _d is not None)
+    except TypeError:
+        chk("html_docx_nonhashable_finding_id_no_crash", False)
+    try:
+        _lt, _le, _lw = build_obsidian_letter(crosslinked, obj_nh, snap, copy_bn)
+        check_obsidian_letter(crosslinked, _lt or "", copy2, copy_bn, letter_bn, obj_nh, snap)
+        chk("letter_nonhashable_finding_id_no_crash", _lt is not None)
+    except TypeError:
+        chk("letter_nonhashable_finding_id_no_crash", False)
 
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]

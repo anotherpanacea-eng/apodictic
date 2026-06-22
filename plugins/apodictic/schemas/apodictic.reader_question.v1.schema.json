@@ -1,9 +1,10 @@
 {
   "$id": "apodictic.reader_question.v1",
-  "$comment": "Source of truth for the apodictic:reader_question block (Beta-Reader Instrument Generation, revision-coach). Validated by scripts/apodictic_artifacts.py (stdlib subset checker) via scripts/reader_instrument.py. A question turns a framework-side UNCERTAINTY into a non-leading, content-neutral reader probe. `source_kind` selects which provenance field is required (targets for findings/tradeoffs, source_note for unresolved-questions) — that conditional-required rule is enforced in the Python validator (B3), not the flat subset schema. `targets` and `source_note` are therefore optional here. See docs/beta-reader-instrument.md.",
+  "$comment": "Source of truth for the apodictic:reader_question block (Beta-Reader Instrument Generation, revision-coach). Validated by scripts/apodictic_artifacts.py (stdlib subset checker) via scripts/reader_instrument.py. A question turns a framework-side UNCERTAINTY into a non-leading, content-neutral reader probe. `source_kind` selects which provenance field is required (targets for findings/tradeoffs, source_note for unresolved-questions) — that conditional-required rule is enforced in the Python validator (B3), not the flat subset schema. `targets` and `source_note` are therefore optional here (but declared). Closed-key (additionalProperties:false) enforced by the engine (Harness Contracts v2): every legitimate field — including the two optional provenance fields — is declared, so a misspelled field now fails. Declared closed in schemas/_coverage.json. See docs/beta-reader-instrument.md.",
   "title": "APODICTIC reader question (apodictic.reader_question.v1)",
   "type": "object",
   "required": ["schema", "id", "source_kind", "uncertainty", "probe_type", "question", "expected_signal"],
+  "additionalProperties": false,
   "properties": {
     "schema": {"const": "apodictic.reader_question.v1"},
     "id": {"type": "string", "pattern": "^RQ-[0-9]{2,}$"},

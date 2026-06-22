@@ -75,6 +75,17 @@ try:
     import apodictic_artifacts as art
 except ImportError:
     art = None
+
+
+def _has_block(text, btype):
+    """True if `text` carries a real apodictic:<btype> block (a parsed carrier, not a prose mention).
+
+    Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
+    in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
+    validate.sh validator-conventions (M2)."""
+    if art is None:
+        return ("apodictic:%s" % btype) in (text or "")
+    return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))
 try:
     import timeline_checks as tl
 except ImportError:
@@ -98,6 +109,15 @@ _RUNG_RANK = {"document": 1, "chapter": 2, "section": 3, "line-range": 4, "quote
 _TOP_KEYS = ("schema", "project", "runlabel", "snapshot_path", "snapshot_sha256",
              "snapshot_line_count", "annotations")
 _ANNOT_KEYS = ("finding_id", "anchor", "comment")
+
+
+def fid_key(value):
+    """A finding_id normalized to a hashable, sortable form (a str, or None). A malformed non-string id
+    (a JSON list/object/number that survives parse_manifest as-is) is str()-coerced, so it never crashes
+    a dict KEY (the A1 uniqueness `seen` map) or a SORT key — the recurring non-hashable/non-string
+    finding_id crash class. The SINGLE source of truth: reanchor.py and annotation_export.py (which both
+    import annotation_manifest as `am`) call `am.fid_key`, rather than each re-rolling the coercion."""
+    return value if value is None or isinstance(value, str) else str(value)
 
 # CriticMarkup comment span. The reverse transform deletes exactly these spans; nothing else is
 # ever inserted (spans carry no surrounding whitespace), so the transform is the snapshot identity.
@@ -245,7 +265,10 @@ def anchor_line(anchor, snapshot, chap_l, sec_l):
         m = re.match(r"(\d+)-(\d+)$", str(val))
         return int(m.group(1)) if m else None
     if kind == "chapter":
-        return chap_l.get(val)
+        # chap_l is a real dict; a non-string chapter value (a JSON list/dict kept as-is by
+        # parse_manifest) is unhashable and would crash chap_l.get(val). The section branch already
+        # str()-coerces; this hashing lookup was the matching open sibling — guard it the same way.
+        return chap_l.get(val) if isinstance(val, str) else None
     if kind == "section":
         return sec_l.get(str(val).strip().lower())
     return None
@@ -376,9 +399,9 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
     not A5's. Default False preserves the strict ledger requirement for the normal build path."""
     lines, errs, warns = [], [], []
     obj, schema_errs = parse_manifest(manifest_text)
-    if obj is None:
-        if any("invalid JSON" in e for e in schema_errs):
-            return 1, ["annotated-manuscript: %s" % schema_errs[0],
+    if not isinstance(obj, dict):
+        if obj is not None or any("invalid JSON" in e for e in schema_errs):
+            return 1, ["annotated-manuscript: %s" % (schema_errs[0] if schema_errs else "manifest block is not a JSON object"),
                        "annotated-manuscript: FAIL (A1 manifest schema)"]
         return 1, ["annotated-manuscript: no apodictic.annotation block found in the manifest",
                    "annotated-manuscript: FAIL (A1 — manifest block missing)"]
@@ -421,7 +444,7 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
             if not vm or int(vm.group(1)) > int(vm.group(2)):
                 errs.append("A1 manifest schema: %s quote anchor value must be '<start>-<end>' with "
                             "start <= end" % where)
-        fid = an.get("finding_id")
+        fid = fid_key(an.get("finding_id"))  # normalize: a non-hashable list/object id must not crash seen[]
         if fid is not None:
             seen[fid] = seen.get(fid, 0) + 1
     for fid, n in sorted((kv for kv in seen.items() if kv[1] > 1)):
@@ -462,10 +485,14 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
                 errs.append("A3 anchor integrity: %s line-range %r is not an in-bounds 1..%d range"
                             % (an.get("finding_id"), val, lc))
         elif kind == "chapter":
-            if chap_n.get(val, 0) != 1:
+            # a non-string chapter value is unhashable -> chap_n.get(val) would crash; treat it as
+            # zero matches so A3 reports it as a malformed/unresolved anchor instead of tracebacking
+            # (sibling of the anchor_line guard; the section branch already str()-coerces).
+            cn = chap_n.get(val, 0) if isinstance(val, str) else 0
+            if cn != 1:
                 errs.append("A3 anchor integrity: %s chapter anchor %r matches %d snapshot heading(s) "
                             "(need exactly 1; ambiguous -> document)"
-                            % (an.get("finding_id"), val, chap_n.get(val, 0)))
+                            % (an.get("finding_id"), val, cn))
         elif kind == "section":
             if sec_n.get(str(val).strip().lower(), 0) != 1:
                 errs.append("A3 anchor integrity: %s section anchor %r matches %d snapshot heading(s) "
@@ -482,7 +509,10 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
     if have_ledger and art is not None:
         for bt, o, _e in art.parse_blocks(ledger_text):
             if bt == "finding" and isinstance(o, dict) and o.get("id"):
-                led_obj[o["id"]] = o
+                # fid_key: a malformed LEDGER finding with a non-hashable id (list/object) must not crash
+                # this index key; coercing both sides (here + the manifest's finding_id) keeps the
+                # comment-provenance join consistent.
+                led_obj[fid_key(o["id"])] = o
     if not have_ledger and annotations and not ledger_optional:
         errs.append("A4/A5: no Findings Ledger resolved — comment provenance (verbatim projection + "
                     "Must-Fix completeness) is unverifiable for %d annotation(s); supply the ledger"
@@ -492,7 +522,7 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
         for an in annotations:
             if not isinstance(an, dict):
                 continue
-            fid = an.get("finding_id")
+            fid = fid_key(an.get("finding_id"))
             src = led_obj.get(fid)
             if src is None:
                 errs.append("A5 projection: %s is not an apodictic.finding.v1 in the ledger "
@@ -520,7 +550,7 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
     for an in annotations:
         if isinstance(an, dict):
             manifest_comments.add(an.get("comment"))
-    manifest_ids = {an.get("finding_id") for an in annotations if isinstance(an, dict)}
+    manifest_ids = {fid_key(an.get("finding_id")) for an in annotations if isinstance(an, dict)}
     for an in annotations:
         if not isinstance(an, dict):
             continue
@@ -552,7 +582,7 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
         anc = an.get("anchor") or {}
         if anc.get("kind") != "quote":
             continue
-        fid = an.get("finding_id")
+        fid = fid_key(an.get("finding_id"))
         qv = anc.get("quote")
         # (d) present + single-line + inline-safe (extends A2's two-sided sigil precondition to
         # anchor.quote). Any line break — \n OR \r (a bare CR, the one the snapshot's LF normalization
@@ -596,7 +626,7 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
     for an in annotations:
         if not isinstance(an, dict):
             continue
-        fid = an.get("finding_id")
+        fid = fid_key(an.get("finding_id"))
         anc = an.get("anchor") or {}
         if anc.get("kind") == "document" and fid not in overrides:
             src = led_obj.get(fid)
@@ -666,11 +696,11 @@ def classify_files(paths):
         body = _read(p) or ""
         if "_Manuscript_Snapshot_" in base:
             snap = p
-        elif "_Annotation_Manifest_" in base or "apodictic:annotation" in body:
+        elif "_Annotation_Manifest_" in base or _has_block(body, "annotation"):
             man = p
         elif "_Annotated_Manuscript_" in base:
             ann = p
-        elif "apodictic:finding" in body:
+        elif _has_block(body, "finding"):
             led = p
         elif "scene id" in body.lower() and "|" in body:
             tlp = p
@@ -948,6 +978,49 @@ def run_self_test():
     obj_a, _ = build_manifest(snap_ambig, "# Ledger\n" + finding("F-CH-02", "Must-Fix", ["Chapter 9"]) + "\n",
                               None)
     chk("a3_ambiguous_chapter_degrades", obj_a["annotations"][0]["anchor"]["kind"] == "document")
+
+    # regression: a non-hashable chapter anchor value (a JSON list/dict kept as-is by parse_manifest)
+    # must NOT crash the chapter-value hashing sites — anchor_line (used by render/_insertion_offset)
+    # and A3's chap_n.get(val). Pre-fix these raised TypeError: unhashable type. The section branch
+    # already str()-coerced; the chapter branch was the open sibling.
+    _cn, _sn, _cl, _sl = heading_index(snapshot)
+    for _bad in ([1, 2], {"k": "v"}):
+        try:
+            _r = anchor_line({"kind": "chapter", "value": _bad}, snapshot, _cl, _sl)
+            chk("anchor_line_nonstring_chapter_%s" % type(_bad).__name__, _r is None)
+        except TypeError:
+            chk("anchor_line_nonstring_chapter_%s" % type(_bad).__name__, False)
+    # end-to-end through the validator gate: check() A3 must classify (not traceback) a non-string
+    # chapter value, and render() (-> anchor_line) must not crash either.
+    obj_badc = json.loads(json.dumps(obj))
+    obj_badc["annotations"][0]["anchor"] = {"kind": "chapter", "value": [1, 2]}
+    try:
+        _ann_bc = render(snapshot, obj_badc)
+        code, ls = check(snapshot, manifest_md(obj_badc), _ann_bc, ledger, timeline)
+        chk("a3_nonstring_chapter_value_no_crash", any("A3 anchor integrity" in x for x in ls))
+    except TypeError:
+        chk("a3_nonstring_chapter_value_no_crash", False)
+    # regression (finding_id SIBLING of the anchor-value guard): a non-hashable finding_id (a JSON
+    # list/object kept as-is by parse_manifest) must NOT crash the A1 uniqueness `seen[fid]` dict-key.
+    # fid_key() normalizes it; check() must classify (not traceback). The crash class that bit reanchor
+    # and annotation_export lives here too — finding_id is keyed, not just the anchor.
+    obj_badf = json.loads(json.dumps(obj))
+    obj_badf["annotations"][0]["finding_id"] = [1, 2]
+    try:
+        _ann_bf = render(snapshot, obj_badf)
+        _code_bf, _ls_bf = check(snapshot, manifest_md(obj_badf), _ann_bf, ledger, timeline)
+        chk("a1_nonhashable_finding_id_no_crash", isinstance(_ls_bf, list))
+    except TypeError:
+        chk("a1_nonhashable_finding_id_no_crash", False)
+    # ledger-side sibling: a malformed LEDGER finding with a non-hashable id must not crash the led_obj
+    # comment-provenance index key (fid_key normalizes it). check() must not traceback.
+    _bad_led = ledger + "\n<!-- apodictic:finding\n" + json.dumps(
+        {"schema": "apodictic.finding.v1", "id": [1, 2], "severity": "Must-Fix", "mechanism": "m"}) + "\n-->"
+    try:
+        _code_bl, _ls_bl = check(snapshot, manifest_md(obj), render(snapshot, obj), _bad_led, timeline)
+        chk("led_obj_nonhashable_ledger_id_no_crash", isinstance(_ls_bl, list))
+    except TypeError:
+        chk("led_obj_nonhashable_ledger_id_no_crash", False)
 
     # W1 — a locatable Should/Could parked at document is advisory (ERROR --strict)
     obj_w = json.loads(json.dumps(obj))

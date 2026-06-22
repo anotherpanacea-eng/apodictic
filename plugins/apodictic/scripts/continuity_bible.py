@@ -52,6 +52,17 @@ try:
 except ImportError:
     art = None
 
+
+def _has_block(text, btype):
+    """True if `text` carries a real apodictic:<btype> block (a parsed carrier, not a prose mention).
+
+    Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
+    in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
+    validate.sh validator-conventions (M2)."""
+    if art is None:
+        return ("apodictic:%s" % btype) in (text or "")
+    return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))
+
 _SCHEMA_ID = "apodictic.canon_fact.v1"
 _BIBLE_GLOB = "*_Continuity_Bible_*.md"
 
@@ -309,7 +320,7 @@ def resolve(paths):
     bible = timeline = None
     for p in paths:
         text = _read(p) or ""
-        if "apodictic:canon_fact" in text:
+        if _has_block(text, "canon_fact"):
             bible = bible or p
         elif _is_timeline(text, p):
             timeline = timeline or p

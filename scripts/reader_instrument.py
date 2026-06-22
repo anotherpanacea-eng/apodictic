@@ -50,6 +50,17 @@ try:
 except ImportError:
     art = None
 
+
+def _has_block(text, btype):
+    """True if `text` carries a real apodictic:<btype> block (a parsed carrier, not a prose mention).
+
+    Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
+    in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
+    validate.sh validator-conventions (M2)."""
+    if art is None:
+        return ("apodictic:%s" % btype) in (text or "")
+    return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))
+
 _SCHEMA_ID = "apodictic.reader_question.v1"
 _FINDING_SCHEMA_ID = "apodictic.finding.v1"
 _INSTRUMENT_GLOB = "*_Beta_Reader_Instrument_*.md"
@@ -111,7 +122,9 @@ def ledger_index(ledger_text):
         return out
     for bt, obj, _err in art.parse_blocks(ledger_text):
         if bt == "finding" and isinstance(obj, dict) and obj.get("id"):
-            out[obj["id"]] = obj
+            # art.fid_key: a non-hashable ledger id (list/object) must not crash this index key — the
+            # authoritative-ID-set sibling of finding_trace.ledger_inventory (SSoT in apodictic_artifacts).
+            out[art.fid_key(obj["id"])] = obj
     return out
 
 
@@ -332,9 +345,9 @@ def resolve(paths):
     inst = led = None
     for p in paths:
         body = _read(p) or ""
-        if "apodictic:reader_question" in body and inst is None:
+        if _has_block(body, "reader_question") and inst is None:
             inst = p
-        elif ("apodictic:finding" in body or "Unresolved Questions" in body) and led is None:
+        elif (_has_block(body, "finding") or "Unresolved Questions" in body) and led is None:
             led = p
     # fall back to the first arg as the instrument so a clean empty file reports a no-op
     if inst is None and paths:
@@ -397,6 +410,11 @@ def run_self_test():
 
     # clean: a LOW finding tested by a non-leading experiential question
     chk("clean_low", check(rq(), led_low)[0] == 0)
+    # regression: a non-hashable ledger id must not crash the authoritative-ID index (fid_key SSoT)
+    chk("ledger_index_nonhashable_id_no_crash",
+        isinstance(ledger_index("<!-- apodictic:finding\n" + _j.dumps(
+            {"schema": "apodictic.finding.v1", "id": [1, 2], "severity": "Must-Fix", "mechanism": "m"})
+            + "\n-->"), dict))
 
     # B1 — bad enum / id / missing field / JSON
     chk("b1_bad_source_kind", check(rq(kind="rumor"), led_low)[0] == 1)
