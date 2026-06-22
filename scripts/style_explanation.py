@@ -259,8 +259,17 @@ def explain_profile(text, strict=False):
     # The URL scan must cover the STRUCTURED label fields, not just the reader-facing prose: a style_label
     # block is an HTML comment, so it is stripped from `visible` — a URL hidden in a label's
     # `label`/`feature_ref`/etc. would otherwise evade X6 (mirrors the X3 no-severity prose+label split).
-    url_scan = [visible] + [v for obj, _e, _i in labels if isinstance(obj, dict)
-                            for v in obj.values() if isinstance(v, str)]
+    # Scan scalar string fields AND the items of a list field (`feature_tokens[]`) — a string-array is a
+    # structured field too, so a URL parked in a token would otherwise escape (the array-typed sibling).
+    url_scan = [visible]
+    for obj, _e, _i in labels:
+        if not isinstance(obj, dict):
+            continue
+        for v in obj.values():
+            if isinstance(v, str):
+                url_scan.append(v)
+            elif isinstance(v, list):
+                url_scan.extend(item for item in v if isinstance(item, str))
     if any(_EXTERNAL_URL_RE.search(s) for s in url_scan):
         x6.append("X6 local-only: the artifact references an external http(s) URL (in the reader-facing "
                   "prose or a structured label field) — a labelled voice profile is local-only and makes "
@@ -503,6 +512,12 @@ def run_self_test():
     in_label = LOCAL + sl("SL-01", label="The prose leans on the definite article — https://evil.example/x") \
         + "\n" + sl("SL-02")
     chk("x6_external_url_in_label", any("external http(s) URL" in ln for ln in explain_profile(in_label)[1]))
+    # sibling: a URL parked in the LIST-typed feature_tokens[] field must also trip X6 (the array-typed
+    # field a scalar-only str() scan would skip — the same evade-the-scan class as the label-field case).
+    in_tokens = (LOCAL + sl("SL-01", feature_tokens=["the", "https://evil.example/exfil"])
+                 + "\n" + sl("SL-02"))
+    chk("x6_external_url_in_feature_tokens",
+        any("external http(s) URL" in ln for ln in explain_profile(in_tokens)[1]))
     # negative control: a clean profile (no URL anywhere) must NOT trip the X6 URL scan (no false positive)
     chk("x6_no_url_clean", not any("external http(s) URL" in ln for ln in explain_profile(LOCAL + TWO)[1]))
 
