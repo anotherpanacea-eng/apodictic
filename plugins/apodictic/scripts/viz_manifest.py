@@ -188,7 +188,10 @@ def _dup_errs(items, key, label):
     counts = {}
     for it in items:
         if isinstance(it, dict) and it.get(key) is not None:
-            counts[it[key]] = counts.get(it[key], 0) + 1
+            # art.fid_key: a non-hashable nested id (a JSON list/object) must not crash this count-map
+            # KEY — the nested-id sibling of the ledger_findings index fix (fid_key SSoT).
+            k = art.fid_key(it[key])
+            counts[k] = counts.get(k, 0) + 1
     errs = []
     for val, n in sorted(((v, c) for v, c in counts.items() if c > 1), key=lambda vc: str(vc[0])):
         errs.append("E5 duplicate entry: %s %r appears %d times in the manifest "
@@ -238,7 +241,9 @@ def check(manifest_text, timeline_text, ledger_text, strict=False, require_block
     for sc in scenes:
         if not isinstance(sc, dict):
             continue
-        sid = sc.get("scene_id")
+        # art.fid_key: a non-hashable nested scene_id must not crash the rows.get() lookup (and the
+        # set/membership uses below) — rows is keyed by string scene-ids, so a coerced id still ties.
+        sid = art.fid_key(sc.get("scene_id"))
         src = rows.get(sid)
         if src is None:
             errs.append("E2 provenance closure: scene %r resolves to no Timeline Event-Ledger row" % sid)
@@ -252,7 +257,9 @@ def check(manifest_text, timeline_text, ledger_text, strict=False, require_block
     for fd in findings:
         if not isinstance(fd, dict):
             continue
-        fid = fd.get("id")
+        # art.fid_key: a non-hashable nested finding id must not crash led.get(); led is keyed by the
+        # same fid_key-coerced id, so a non-string id also resolves correctly (not just crash-safe).
+        fid = art.fid_key(fd.get("id"))
         src = led.get(fid)
         if src is None:
             errs.append("E2 provenance closure: finding %r resolves to no apodictic.finding.v1 in the Ledger" % fid)
@@ -267,14 +274,15 @@ def check(manifest_text, timeline_text, ledger_text, strict=False, require_block
                             % (fid, f, fd.get(f), src.get(f)))
 
     # E3 — every body Must-Fix in the ledger appears in findings[]
-    manifest_ids = {fd.get("id") for fd in findings if isinstance(fd, dict)}
+    # art.fid_key: coerce nested ids before set membership — a non-hashable id would crash the set build.
+    manifest_ids = {art.fid_key(fd.get("id")) for fd in findings if isinstance(fd, dict)}
     for fid, src in sorted(led.items()):
         if src.get("severity") == "Must-Fix" and fid not in manifest_ids:
             errs.append("E3 Must-Fix completeness: ledger Must-Fix %s is absent from findings[] "
                         "(the render cannot drop a locked severity)" % fid)
 
     # W1 — coverage: a Timeline row not represented in scenes[]
-    scene_ids = {sc.get("scene_id") for sc in scenes if isinstance(sc, dict)}
+    scene_ids = {art.fid_key(sc.get("scene_id")) for sc in scenes if isinstance(sc, dict)}
     for sid in sorted(rows):
         if sid not in scene_ids:
             warns.append("W1 coverage: Timeline scene %s is not in scenes[] (silent under-render)" % sid)
@@ -282,8 +290,8 @@ def check(manifest_text, timeline_text, ledger_text, strict=False, require_block
     # W2 — scene order: the manifest scenes[] order should follow the Timeline's document order. The
     # pacing curve's x-axis is raw scenes[] order, so a reordered manifest draws a false pacing shape
     # while passing every per-id check (order is a data channel the set-based checks don't close).
-    mf_order = [sc.get("scene_id") for sc in scenes
-                if isinstance(sc, dict) and sc.get("scene_id") in rows]
+    mf_order = [art.fid_key(sc.get("scene_id")) for sc in scenes
+                if isinstance(sc, dict) and art.fid_key(sc.get("scene_id")) in rows]
     tl_subset = [sid for sid in rows if sid in set(mf_order)]   # rows preserves Timeline document order
     if mf_order != tl_subset:
         _fmt = lambda seq: ", ".join("'%s'" % s for s in seq)   # scene ids contain spaces — quote them
@@ -507,6 +515,13 @@ def run_self_test():
         isinstance(ledger_findings("<!-- apodictic:finding\n" + _j.dumps(
             {"schema": "apodictic.finding.v1", "id": [1, 2], "severity": "Must-Fix", "mechanism": "m"})
             + "\n-->"), dict))
+    # regression: a NESTED non-hashable manifest id (scene_id / finding id) must not crash check() — it
+    # is used as a dict KEY / set member / `in rows` test at several sites the ledger-index fix didn't reach.
+    chk("check_nested_nonhashable_id_no_crash",
+        check(manifest(scenes=[scene([1, 2], "Ch 1", "1-118", "1480", "Mara", "3 hours", "n/a")],
+                       findings=[{"id": {"x": 1}, "severity": "Must-Fix", "confidence": "HIGH",
+                                  "chapter": "Ch 9"}]),
+              timeline, ledger)[0] == 1)
 
     # E1 — disallowed (visual-style) field in a scene, and at top level
     bad_scene = [scene("Ch 1 §1", "Ch 1", "1-118", "1480", "Mara", "3 hours", "n/a", extra={"color": "red"})]
