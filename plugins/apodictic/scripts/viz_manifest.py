@@ -168,7 +168,7 @@ def ledger_findings(ledger_text):
         return out
     for bt, obj, _err in art.parse_blocks(ledger_text):
         if bt == "finding" and isinstance(obj, dict) and obj.get("id"):
-            out[obj["id"]] = obj
+            out[_keyable(obj["id"])] = obj   # a non-hashable ledger id must not crash this index key
     return out
 
 
@@ -287,6 +287,19 @@ def _check_objects(items, kind, allowed, required, gate="E1 manifest schema"):
     return errs
 
 
+def _keyable(value):
+    """A hashable, lookup-stable form of a manifest/ledger id: the value itself when hashable, else
+    its repr(). A non-hashable id (a JSON list/dict slipped into scene_id / finding id / claim_id)
+    must never crash a dict KEY, set member, or `in` test — coerced, it simply fails its own
+    E1/E2/E5 (and X1/X5/X7) provenance check as a non-match rather than raising. ONE coercion helper
+    for EVERY id hash-site in this module (the recurring 'guarded one site, missed the sibling' trap)."""
+    try:
+        hash(value)
+    except TypeError:
+        return repr(value)
+    return value
+
+
 def _dup_errs(items, key, label, gate="E5 duplicate entry"):
     """Flag a key value that appears more than once across `items` (each maps to one chart element).
     `gate` is the rule prefix — "E5 duplicate entry" for scenes[]/findings[], "X7 duplicate entry"
@@ -294,14 +307,7 @@ def _dup_errs(items, key, label, gate="E5 duplicate entry"):
     counts = {}
     for it in items:
         if isinstance(it, dict) and it.get(key) is not None:
-            # A non-hashable id (a list/dict slipped into claim_id/scene_id/finding id) can't be a
-            # dict key — normalize to its repr so the uniqueness check can't crash on a hostile shape
-            # (the malformed value still fails its own X1/E1 + X5/E2 provenance check elsewhere).
-            kv = it[key]
-            try:
-                hash(kv)
-            except TypeError:
-                kv = repr(kv)
+            kv = _keyable(it[key])   # a non-hashable id can't be a count-map key — coerce, never crash
             counts[kv] = counts.get(kv, 0) + 1
     errs = []
     for val, n in sorted(((v, c) for v, c in counts.items() if c > 1), key=lambda vc: str(vc[0])):
@@ -465,7 +471,9 @@ def check(manifest_text, timeline_text, ledger_text, spine_text=None,
     for sc in scenes:
         if not isinstance(sc, dict):
             continue
-        sid = sc.get("scene_id")
+        # _keyable: a non-hashable scene_id must not crash rows.get() (rows is keyed by string
+        # scene-ids, so a coerced id still ties; a malformed one fails E2 below as a non-match).
+        sid = _keyable(sc.get("scene_id"))
         src = rows.get(sid)
         if src is None:
             errs.append("E2 provenance closure: scene %r resolves to no Timeline Event-Ledger row" % sid)
@@ -479,7 +487,7 @@ def check(manifest_text, timeline_text, ledger_text, spine_text=None,
     for fd in findings:
         if not isinstance(fd, dict):
             continue
-        fid = fd.get("id")
+        fid = _keyable(fd.get("id"))   # non-hashable finding id must not crash led.get() (E2 lookup)
         src = led.get(fid)
         if src is None:
             errs.append("E2 provenance closure: finding %r resolves to no apodictic.finding.v1 in the Ledger" % fid)
@@ -494,14 +502,15 @@ def check(manifest_text, timeline_text, ledger_text, spine_text=None,
                             % (fid, f, fd.get(f), src.get(f)))
 
     # E3 — every body Must-Fix in the ledger appears in findings[]
-    manifest_ids = {fd.get("id") for fd in findings if isinstance(fd, dict)}
+    # _keyable: coerce before the set build — a non-hashable id would crash the set comprehension.
+    manifest_ids = {_keyable(fd.get("id")) for fd in findings if isinstance(fd, dict)}
     for fid, src in sorted(led.items()):
         if src.get("severity") == "Must-Fix" and fid not in manifest_ids:
             errs.append("E3 Must-Fix completeness: ledger Must-Fix %s is absent from findings[] "
                         "(the render cannot drop a locked severity)" % fid)
 
     # W1 — coverage: a Timeline row not represented in scenes[]
-    scene_ids = {sc.get("scene_id") for sc in scenes if isinstance(sc, dict)}
+    scene_ids = {_keyable(sc.get("scene_id")) for sc in scenes if isinstance(sc, dict)}
     for sid in sorted(rows):
         if sid not in scene_ids:
             warns.append("W1 coverage: Timeline scene %s is not in scenes[] (silent under-render)" % sid)
@@ -509,8 +518,8 @@ def check(manifest_text, timeline_text, ledger_text, spine_text=None,
     # W2 — scene order: the manifest scenes[] order should follow the Timeline's document order. The
     # pacing curve's x-axis is raw scenes[] order, so a reordered manifest draws a false pacing shape
     # while passing every per-id check (order is a data channel the set-based checks don't close).
-    mf_order = [sc.get("scene_id") for sc in scenes
-                if isinstance(sc, dict) and sc.get("scene_id") in rows]
+    mf_order = [_keyable(sc.get("scene_id")) for sc in scenes
+                if isinstance(sc, dict) and _keyable(sc.get("scene_id")) in rows]
     tl_subset = [sid for sid in rows if sid in set(mf_order)]   # rows preserves Timeline document order
     if mf_order != tl_subset:
         _fmt = lambda seq: ", ".join("'%s'" % s for s in seq)   # scene ids contain spaces — quote them
@@ -853,6 +862,14 @@ def run_self_test():
     # regression (Codex #139 round-2): a present-but-non-object manifest block (a JSON array) is an E1
     # failure, not a vacuous pass / crash — retains #141's non-object guard so the branches converge.
     chk("crash_nondict_manifest", check("<!-- apodictic:viz_manifest\n[1,2,3]\n-->", timeline, ledger)[0] == 1)
+    # regression (Codex #139 round-3 pre-screen): a NESTED non-hashable scene_id / finding id must not
+    # crash check()'s E2 rows.get(sid)/led.get(fid), the E3/W1 set builds, or the W2 `in rows` test —
+    # not just _dup_errs. Coerced via _keyable, it fails E2 as a non-match (code 1), never a TypeError.
+    chk("check_nested_nonhashable_id_no_crash",
+        check(manifest(scenes=[scene([1, 2], "Ch 1", "1-118", "1480", "Mara", "3 hours", "n/a")],
+                       findings=[{"id": {"x": 1}, "severity": "Must-Fix", "confidence": "HIGH",
+                                  "chapter": "Ch 9"}]),
+              timeline, ledger)[0] == 1)
 
     # E1 — disallowed (visual-style) field in a scene, and at top level
     bad_scene = [scene("Ch 1 §1", "Ch 1", "1-118", "1480", "Mara", "3 hours", "n/a", extra={"color": "red"})]
