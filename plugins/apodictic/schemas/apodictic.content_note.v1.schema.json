@@ -1,0 +1,16 @@
+{
+  "$id": "apodictic.content_note.v1",
+  "$comment": "Source of truth for the apodictic:content_note block (Content-Advisory / Sensitivity-Surface Derivation). One block per place the manuscript depicts intense material (violence, sexual content, self-harm, abuse, …), recording WHAT is depicted, at what intensity, on- or off-page — a reader/marketing-facing advisory, generated only on author request (the opt-in marker, validator W2). It is DESCRIPTIVE, not evaluative: a note records that content is depicted, never that it is 'gratuitous' and never that it should be cut (validator W1 flags prescriptive drift). It is NOT a defect list — a content note carries NO Must/Should/Could editorial severity; its `intensity` scale is orthogonal to the editorial severity scale, and the advisory artifact must contain no apodictic:finding block and no severity token (validator A3), exactly as the Legal Risk Register keeps its severity orthogonal. `category` is a closed taxonomy; `other` requires a non-empty `label` (a conditional the subset engine cannot express — checked in content_advisory.py). `intensity` and `depiction` are closed enums. `loci` are manuscript locations (>=1); presence/shape is gated (A2), resolution into the manuscript deferred to the shared snapshot layer. Validated by scripts/content_advisory.py. See docs/content-advisory.md.",
+  "title": "APODICTIC content note (apodictic.content_note.v1)",
+  "type": "object",
+  "required": ["schema", "id", "category", "intensity", "depiction", "label", "loci"],
+  "properties": {
+    "schema": {"const": "apodictic.content_note.v1"},
+    "id": {"type": "string", "pattern": "^CN-[0-9]{2,}$"},
+    "category": {"enum": ["violence", "sexual-content", "self-harm-suicide", "substance-use", "abuse", "hate-slurs", "death-grief", "medical", "other"]},
+    "intensity": {"enum": ["low", "medium", "high"]},
+    "depiction": {"enum": ["on-page", "off-page", "referenced"]},
+    "label": {"type": "string", "$comment": "A short descriptive label. Empty for the closed categories; REQUIRED (non-empty) when category is 'other' — a conditional requirement content_advisory.py enforces (A1), since the subset engine has no if/then/dependentRequired."},
+    "loci": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+  }
+}

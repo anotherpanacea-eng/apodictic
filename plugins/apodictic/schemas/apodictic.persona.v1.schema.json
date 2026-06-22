@@ -1,0 +1,17 @@
+{
+  "$id": "apodictic.persona.v1",
+  "$comment": "Source of truth for the apodictic:persona block (Reader-Persona Simulation). A persona is a PARAMETERIZATION of the reader-experience lens by a declared reading DISPOSITION — never a character. It has disposition axes, NOT a name, a job, or a life. Each axis is a top-level string enum (so the subset engine can validate it); `target` (boolean) marks the one persona the book is for. The guarantee that a persona is a disposition vector and not an invented character is enforced by the validator's CLOSED-KEY check (D5, a non-overridable ERROR — the subset engine silently allows unknown properties, so 'the schema has no biography field' would be a FALSE guarantee). `thematic_receptivity` reuses the Argument Engine's Audience.Receptivity enum VERBATIM (SYMPATHETIC | MIXED | HOSTILE). This is one of the three mechanical guards (with D2 grounded-prediction and D4 anti-fabrication) that keep persona simulation a LENS and not the non-viable Simulated Reader Focus Group (Horizon item 17). Validated by scripts/persona_divergence.py. See docs/reader-persona-simulation.md.",
+  "title": "APODICTIC reader persona (apodictic.persona.v1)",
+  "type": "object",
+  "required": ["schema", "id", "target"],
+  "properties": {
+    "schema": {"const": "apodictic.persona.v1"},
+    "id": {"type": "string", "pattern": "^P-[0-9]+$"},
+    "target": {"type": "boolean"},
+    "pace_tolerance": {"enum": ["low", "medium", "high"]},
+    "genre_familiarity": {"enum": ["newcomer", "regular", "expert"]},
+    "content_sensitivity": {"enum": ["low", "medium", "high"]},
+    "thematic_receptivity": {"enum": ["SYMPATHETIC", "MIXED", "HOSTILE"]},
+    "continuity_attention": {"enum": ["casual", "tracking"]}
+  }
+}

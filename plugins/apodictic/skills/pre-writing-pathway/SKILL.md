@@ -5,7 +5,7 @@ description: >
   draft-ready structure. Use when the user asks to "plan a story," "outline
   a novel," "develop a premise," "figure out my book," "structure my idea,"
   or any request for help moving from concept to ready-to-draft planning.
-version: 2.5.0
+version: 2.6.0
 ---
 
 # Pre-Writing Pathway
@@ -258,7 +258,7 @@ Before moving to the Structural Plan, set explicit scope caps for the first draf
 | **POV characters** | Recommend 1–2 for a first novel; flag 3+ as high complexity | Each POV needs its own engine, voice, and arc. More POVs = more structural plates to spin. |
 | **Subplots** | Recommend 1–2 that serve the main spine; flag 3+ | Subplots that don't test, mirror, or complicate the controlling idea are structural weight without structural function. |
 | **Timeline complexity** | Linear default; flag non-linear as a deliberate choice that needs structural justification | Non-linear timelines double the reader's cognitive load and require the juxtaposition itself to create meaning. |
-| **World-building scope** | Flag when world-building threatens to displace character and plot | SFF writers especially: the novum should generate story, not replace it. |
+| **World-building scope** | Flag when world-building threatens to displace character and plot | SFF writers especially: the novum should generate story, not replace it. If the writer already keeps a worldbuilding bible, `/world-bible` (see `../core-editor/references/worldbuilding-bible.md`) checks *that bible* for self-contradiction pre-draft — rules, magic costs, geography/timeline — surfacing conflicts without inventing world content. |
 
 **For discovery-first writers:** Frame the budget as "what to leave out of the first draft" rather than "what to plan." The point is the same — reduce scope to executable size — but the framing respects their process.
 

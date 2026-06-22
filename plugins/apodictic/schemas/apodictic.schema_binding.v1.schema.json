@@ -1,0 +1,14 @@
+{
+  "$id": "apodictic.schema_binding.v1",
+  "$comment": "One row of the schema-coverage binding table (Harness Contracts v2; docs/harness-contracts-v2.md). Asserts that the structured-artifact schema named in `schema` is bound to at least one validate.sh dispatch arm (`validators`, minItems 1) and is exercised by --check-all against a real canonical file (`canonical_gate` = a filename/dirname token that appears in the --check-all body, or the literal `self-test-only` for a schema with no shipped canonical instance whose validator's own self-test is the ground truth). `closed_keys` (default false) opts the schema into additionalProperties:false enforcement by the shared engine. schema_coverage.py proves disk == this table at --check-all; the table is canonical, no doc re-lists it. additionalProperties:false — a stray key here is a manifest typo.",
+  "title": "APODICTIC schema-coverage binding (apodictic.schema_binding.v1)",
+  "type": "object",
+  "required": ["schema", "validators", "canonical_gate"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {"type": "string", "pattern": "^apodictic\\.[A-Za-z0-9_-]+\\.v[0-9]+$"},
+    "validators": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "canonical_gate": {"type": "string"},
+    "closed_keys": {"type": "boolean"}
+  }
+}

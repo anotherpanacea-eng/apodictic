@@ -1,6 +1,15 @@
 # Nonfiction Pre-Draft Pathway — a workflow
 
-**Status:** Increments 1 (**argument spine**) + 2 (**source/evidence map**) + 3 (**warrant pre-check**) + 4 (**scene-ethics plan**) built. Roadmap: `ROADMAP.md` → Workflows → Nonfiction Pre-Draft. Home: **pre-writing-pathway** (thesis-driven mode), reference `pre-writing-pathway/references/nonfiction-pre-draft.md`. Seeds: `Argument_State.md` (`docs/argument-state-schema.md`). Validator: `validate.sh argument-spine`.
+**Status:** Increments 1 (**argument spine**) + 2 (**source/evidence map**) + 3 (**warrant pre-check**) + 4 (**scene-ethics plan**) + 5 (**genre layer**) built. Roadmap: `ROADMAP.md` → Workflows → Nonfiction Pre-Draft (+ Horizon item 11). Home: **pre-writing-pathway** (thesis-driven mode), reference `pre-writing-pathway/references/nonfiction-pre-draft.md`. Seeds: `Argument_State.md` (`docs/argument-state-schema.md`). Validator: `validate.sh argument-spine`.
+<!-- built-when: scripts/argument_spine.py contains "parse_genre_profiles" -->
+<!--
+NOTE on Increment numbering: Increments 1-3 and 5 ride the SAME `argument-spine` validator (they are
+the spine's lenses on the shared `Argument_State`). Increment 4 (scene-ethics) is a DISTINCT artifact on
+a SEPARATE `scene-ethics` validator. The genre layer is "Increment 5 of the pathway" by sequential
+position, but in the A/B-code lineage it is the argument-spine validator's fourth lens (after the spine,
+support, and warrant lenses) — its codes are B1-B4 + W4, not A-codes, to keep them distinct.
+-->
+
 
 ## Purpose
 
@@ -99,6 +108,11 @@ The check is **audience-calibrated** (per the spine's `audience_receptivity`): f
 | **A8 — dangling subclaim_id** | ERROR | A `warrant_plan`'s `subclaim_id` is not a `Cn` declared in the spine's ladder. *(Increment 3)* |
 | **A9 — warrant unseeded** | ERROR | `warrant_plan` blocks present but no `## 4. Warrant and Inference Map` heading (parallel to A2/A6). *(Increment 3)* |
 | **W3 — implicit warrant (hostile)** | WARN (ERROR `--strict`) | For a `HOSTILE` audience, a warrant that is not `EXPLICIT` or has `ABSENT` backing — make it explicit and back it before drafting. **Audience-calibrated** (no-op for non-hostile audiences). Override: `<!-- override: argument-spine-warrant — <rationale> -->`. *(Increment 3)* |
+| **B1 — invalid genre profile** | ERROR | A `genre_profile` block fails its schema (bad `genre`/`evaluator`/`seeded_by` enum, empty `required_sections`, missing field, bad per-section shape, broken JSON). *(Increment 5)* |
+| **B2 — section unseeded** | ERROR | A declared `required_sections[].heading` has no matching heading present in the artifact — the genre's structural skeleton must be **seeded**, not merely declared. **Signature check** (parallel to A2/A6/A9). *(Increment 5)* |
+| **B3 — genre/form mismatch** | ERROR | The `genre_profile.genre` is incompatible with the `argument_spine.form` (normalized: spaces/hyphens collapsed, case-folded, so `grant proposal` matches `grant-proposal`). **Only fires when a spine block is present** — a genre profile may precede the full spine in an early pre-draft. Parallels A3 thesis/C0 drift. *(Increment 5)* |
+| **B4 — duplicate genre profile** | ERROR | More than one `genre_profile` block — a pre-draft is one genre. Parallels scene-ethics E2. *(Increment 5)* |
+| **W4 — thin genre skeleton** | WARN (ERROR `--strict`) | A declared genre's **canonical** required section is missing from `required_sections` (e.g. a `grant-proposal` that omits `approach`, or an `academic-article` that omits `related-work` — a contribution claim with no related-work positioning). Advisory: the writer may be working a non-standard variant. Override: `<!-- override: argument-spine-genre <genre> — <rationale> -->`. *(Increment 5)* |
 
 **A2 and A3 are the signature checks** — together they mechanize the *seed-Argument_State* integration (the chosen design over a standalone artifact); A6 extends that discipline to §3 and **W2** is the source/evidence map's signature (surfacing bare assertions before drafting). **Ownership boundary.** `argument-spine` owns the pre-draft contract and the seeding integrity; it does not diagnose the argument (that is the Dialectical Clarity audit, once a draft exists), judge severity, or fill the draft-dependent sections.
 
@@ -136,6 +150,41 @@ One `apodictic.scene_ethics.v1` block per depicted person:
 
 **Ownership boundary.** `scene-ethics` owns the ethics-plan contract and the unresolved-depiction surfacing; it does not adjudicate ethics, judge legal exposure (that's the Legal Risk Register), or touch the argument structure.
 
+## The genre layer (Increment 5) — holding a genre to its required structure
+
+Some argument-shaped forms are not just "AT3 with a unique burden" — they are near-**contracts** with named, expected sections that an evaluator scores against. A **grant proposal** has Specific Aims / Significance / Innovation / Approach; an **academic paper** must stake a *contribution claim* and *position it against related work*; a **pitch deck** must run the problem → solution → traction narrative or the reader bounces. The genre layer teaches the pre-draft engine those structural skeletons and the **evaluator** each genre is written for — as an optional scaffold that seeds the genre's required sections into the same `Argument_State`, validated exactly like the spine/support/warrant increments.
+
+It is an **argument-spine increment** (it rides the `argument-spine` validator, like Increments 1–3), with its own code family **B1–B4 + W4** to keep it distinct from the A-codes. One `apodictic.genre_profile.v1` block per pre-draft `Argument_State`:
+
+```json
+{
+  "schema": "apodictic.genre_profile.v1",
+  "genre": "grant-proposal",                 // grant-proposal / academic-article / pitch-deck
+  "required_sections": [
+    {"role": "specific-aims", "heading": "Specific Aims", "seeded_by": "C0+ladder"},
+    {"role": "significance",  "heading": "Significance",  "seeded_by": "stakes"},
+    {"role": "innovation",    "heading": "Innovation",    "seeded_by": "subclaim"},
+    {"role": "approach",      "heading": "Approach",      "seeded_by": "support_plan"}
+  ],
+  "evaluator": "panel-reviewer",             // panel-reviewer / peer-reviewer / investor
+  "reviewer_objections": []                  // the writer's pre-list (Increment 2 / W5) — never authored by the engine
+}
+```
+
+The `required_sections` are **writer-declared** (so an NIH R01, an NSF proposal, and a foundation LOI all work) — the engine validates the writer's structure; it does not impose a template. Each declared section seeds the artifact as a `### ` **sub-heading under the canonical §1–§6** (Specific Aims under §2, Significance under §2 stakes, etc.) — so **no** new top-level numbered section is added and `argument-state-schema.md` stays at v0.1.1. **B2** is the signature: a declared section must be present as a heading, or it is *unseeded* (the genre analogue of A2). **W4** carries the genre-canonical advisory (grant: aims/significance/innovation/approach; academic: contribution/related-work/method/limitations; pitch: problem/solution/traction), overridably — a contribution claim with no related-work positioning, or a grant without an Approach, is the kind of thin skeleton it nudges.
+
+The genre-canonical roles + their seeded-by mapping per genre:
+
+| Genre | `form` | Canonical required sections (roles) | Evaluator | Signature risk (audit) |
+|---|---|---|---|---|
+| **Grant proposal** | `grant-proposal` | specific-aims · significance · innovation · approach | panel-reviewer | FM-A18 (Implementation Blindspot) |
+| **Academic paper** | `academic-article` | contribution · related-work · method · limitations | peer-reviewer | a contribution with no related-work positioning |
+| **Pitch deck** | `pitch-deck` | problem · solution · traction | investor | FM-A8 (False Precision Theater — vanity-metric traction) |
+
+**The Firewall holds.** The genre layer validates the writer's *declared* structure and surfaces which genre-required section is missing or unseeded; it invents no aims, no contribution claim, no objection text, no traction numbers. The draft-time diagnosis — does the Approach actually support the Aims? is the traction honest? — is the LLM-driven Dialectical Clarity audit (its *Genre & Audience Calibration* section), unchanged in mechanism; the genre layer ships the model-free structure contract the audit reads. **Pitch-deck boundary (the riskiest genre):** the audit diagnoses whether the *argument* of the deck holds (the problem→solution warrant, traction-as-evidence honesty); it **never** coaches slide design, deck length, or fundraising tactics (the not-rhetoric-coaching line Dialectical Clarity already draws).
+
+**Ownership boundary.** The genre layer owns the *pre-draft genre-structure contract* and its seeding integrity. It does not diagnose the argument's quality, judge severity, or score the proposal/paper/deck. Three canonical worked examples (`core-editor/references/example-argument-state-genre-{grant,academic,pitch}.md`) are gated by `validate.sh --check-all` (under `--strict`). **Reviewer-anticipation (W5)** — the writer pre-lists the evaluator's objections and the validator surfaces an empty required class — is scoped as **Increment 2 of the genre layer** (not in this build); it checks the writer's list, never authors objections.
+
 ## Workflow
 
 1. **Classify** the piece: form, goal, argument type (AT0–AT4), burden level, audience.
@@ -143,8 +192,9 @@ One `apodictic.scene_ethics.v1` block per depicted person:
 3. **Name the anti-thesis** — the strongest opposing view the argument must defeat.
 4. **Map the support (Increment 2)** — per subclaim, add a `support_plan` block naming the intended support and its type (seeds §3). A subclaim with none is a bare assertion to resolve before drafting.
 5. **Pre-check the warrants (Increment 3)** — per subclaim, add a `warrant_plan` block naming the connecting principle and its status/backing (seeds §4). For a HOSTILE audience, make implicit or unbacked warrants explicit.
-6. **Seed `Argument_State.md`** — write the spine, support, and warrant blocks and the §1–§4 (+ §6 Objection 1) they populate; leave the remaining draft-dependent sections pending.
-7. Validate with `validate.sh argument-spine` (`--strict` in CI). A canonical worked example (`core-editor/references/example-argument-state-predraft.md`) is gated by `validate.sh --check-all`.
+6. **Profile the genre (Increment 5, optional)** — if the piece is a grant proposal, academic paper, or pitch deck, add a `genre_profile` block declaring the genre, its required sections, and the evaluator; seed each required section as a `### ` sub-heading. The validator surfaces any genre-required section that is declared but not seeded (B2) and nudges a thin canonical skeleton (W4).
+7. **Seed `Argument_State.md`** — write the spine, support, warrant (and genre) blocks and the §1–§4 (+ §6 Objection 1, + the genre `### ` sub-headings) they populate; leave the remaining draft-dependent sections pending.
+8. Validate with `validate.sh argument-spine` (`--strict` in CI). Canonical worked examples (`core-editor/references/example-argument-state-predraft.md` and the three `example-argument-state-genre-{grant,academic,pitch}.md`) are gated by `validate.sh --check-all`.
 
 ## Increment boundaries
 
@@ -156,4 +206,6 @@ One `apodictic.scene_ethics.v1` block per depicted person:
 
 **Increment 4:** the scene-ethics plan — a *distinct* artifact `[Project]_Scene_Ethics_Plan_[runlabel].md` (`apodictic.scene_ethics.v1` block + schema), with its own `scene-ethics` validator (E1–E2 + W1–W2; the **unresolved-depiction** surfacing being the signature, W2 realizing the cross-reference to the Legal Risk Register). A new validator (25 → 26). Designed per the maintainer's decision that scene-ethics is a distinct ethical-planning artifact coexisting with the Legal Risk Register, not folded into it.
 
-**Future increments:** none currently scoped — the pre-draft pathway covers the argument's Toulmin core (Increments 1–3) and the real-people ethics plan (Increment 4). Candidates if demand surfaces: mechanical resolution of `legal_ref` against a present Legal Risk Register (once both ship), and a §5 burden/scope pre-check.
+**Increment 5:** the genre layer — `apodictic.genre_profile.v1` block + schema (one per pre-draft `Argument_State`, declaring the genre's required-section roles + the evaluator, seeding the skeleton as `### ` sub-headings under §1–§6), the `argument-spine` validator extended with **B1–B4 + W4** (the **section-unseeded** check B2 being the signature, the genre-canonical W4 being the overridable advisory), three worked examples (grant / academic / pitch) gated by `--check-all`, and the genre-calibration prose in Dialectical Clarity's *Genre & Audience Calibration*. **Rides the `argument-spine` validator — same validator, the genre layer adds no validator so the count is unchanged** — unlike scene-ethics (Increment 4), whose distinct artifact and concern earned a separate validator. Reviewer-anticipation (W5) is scoped as the genre layer's Increment 2 (not in this build).
+
+**Future increments:** the genre layer's reviewer-anticipation surface (**W5** — the writer pre-lists the evaluator's objections; the validator surfaces an empty required class; seeds §6; never authors objections) and a per-genre diagnostic-calibration table with worked examples wired into the audit. Other candidates if demand surfaces: mechanical resolution of `legal_ref` against a present Legal Risk Register (once both ship), a §5 burden/scope pre-check, and additional genres (white paper / legal brief / book review — a one-line `genre` enum + one calibration entry each, by design).

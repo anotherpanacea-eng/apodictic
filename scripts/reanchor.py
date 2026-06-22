@@ -29,8 +29,17 @@ Only RA1-RA3 (the mechanical re-anchor contract) are hard; W1/W2 are advisory (a
 candidate, not proof — the writer may have reworded) — the regression-diff posture. Prints to stdout; a
 human-readable re-anchoring report is orchestrator-written.
 
+Round-trip GLUE (the workflow, not just the gate). `reanchor` validates the re-anchor in memory; the
+revision loop also needs the revision-aware marked-up copy ON DISK and the cross-round join:
+  emit      re-anchor draft N's notes onto N+1 and WRITE the re-anchored manifest + the rendered annotated
+            copy of the revised draft (held/moved only; re-gated RA1-RA3 before any write).
+  crossref  join this round-trip's anchor-level classes against regression-diff's finding-level classes
+            BY finding_id (the orchestrator join the spec reserves — anchor x finding corroboration).
+
 Usage:
   reanchor.py reanchor <prior_run_folder> <new_snapshot> [--strict]
+  reanchor.py emit     <prior_run_folder> <new_snapshot> [-o <out_dir>]
+  reanchor.py crossref <prior_run_folder> <new_snapshot> <this_run_folder> [--strict]
   reanchor.py --self-test
 Exit: 0 clean / WARN-only, 1 ERROR (or WARN under --strict), 2 usage.
 """
@@ -44,6 +53,11 @@ try:
 except ImportError:
     am = None
 
+try:
+    import regression_diff as rd
+except ImportError:
+    rd = None
+
 _CLASSES = ("held", "moved", "vanished", "ambiguous", "not-re-anchorable")
 
 
@@ -55,13 +69,47 @@ def _read(path):
         return None
 
 
+def _safe_component(value, fallback):
+    """Reduce an untrusted string to a SINGLE safe filename component (no path traversal, no separators).
+
+    `project` is copied verbatim from the prior manifest (schema permits any string) and `runlabel` is
+    derived from a filename, so either could carry path separators, `..`, drive/UNC prefixes, or NUL —
+    each of which, interpolated into `os.path.join(out, ...)`, can write outside `out` (or, if absolute,
+    discard `out` entirely). Strip every directory part, reject the traversal/special names, and keep only
+    a conservative whitelist; fall back to a constant when nothing safe survives. This is the FIRST line of
+    defence — `emit` ALSO verifies the resolved parent stays under `out` (defence in depth)."""
+    s = "" if value is None else str(value)
+    # Drop anything up to the last path separator (handles both / and \, abs paths, drive letters, UNC).
+    s = s.replace("\\", "/").rsplit("/", 1)[-1]
+    # NUL and control bytes are never valid in a filename.
+    s = "".join(ch for ch in s if ch >= " " and ch != "\x7f")
+    # Conservative whitelist: alnum, space, dot, dash, underscore. Everything else (incl. ':') -> '_'.
+    s = "".join(ch if (ch.isalnum() or ch in " ._-") else "_" for ch in s).strip()
+    # Reject pure-dot names (".", "..") and empty -> fallback.
+    if not s or set(s) <= {"."}:
+        return fallback
+    return s
+
+
 def _newest(paths):
     return max(paths, key=os.path.getmtime) if paths else None
 
 
+def _fid(value):
+    """A finding_id normalized to a hashable, sortable form (a str, or None). A malformed non-string id
+    (a JSON list/object/number that survives parse_manifest as-is) is str()-coerced, so it cannot crash
+    the `fid_class` dict key, the `orig_comment` join key, or the report `sorted()` (unhashable `list`,
+    or `'<' not supported between str and int`). This is the finding_id SIBLING of the reclassify-anchor
+    crash guard — finding_id is read for keying/sorting/display in several places, not just reclassify."""
+    return value if value is None or isinstance(value, str) else str(value)
+
+
 def reclassify(annotation, n1_snapshot, chap_n, sec_n):
     """-> (klass, new_anchor_or_None, evidence). new_anchor is set only for held/moved (the carried set)."""
-    anc = annotation.get("anchor") or {}
+    if not isinstance(annotation, dict):
+        return "ambiguous", None, "malformed annotation (not an object)"
+    anc = annotation.get("anchor")
+    anc = anc if isinstance(anc, dict) else {}
     kind, val = anc.get("kind"), anc.get("value")
     if kind == "quote":
         q = anc.get("quote")
@@ -79,6 +127,11 @@ def reclassify(annotation, n1_snapshot, chap_n, sec_n):
             return "held", new_anchor, "quote held at %s" % new_val
         return "moved", new_anchor, "quote moved %s -> %s" % (val, new_val)
     if kind == "chapter":
+        # chap_n is a real dict; a non-string value (JSON list/dict survives parse_manifest as-is)
+        # is unhashable and would crash `chap_n.get(val, 0)`. The section branch is already safe
+        # (it str()-coerces val); this hashing-lookup branch was the one-branch-not-all gap.
+        if not isinstance(val, str):
+            return "ambiguous", None, "malformed chapter anchor value (not a string): %r" % (val,)
         c = chap_n.get(val, 0)
         if c == 1:
             return "held", dict(anc), "chapter heading %r present+unique" % val
@@ -105,11 +158,50 @@ def _comment_fidelity_errs(emitted_annotations, orig_comment):
     for ra in emitted_annotations:
         if not isinstance(ra, dict):
             continue
-        fid = ra.get("finding_id")
+        fid = _fid(ra.get("finding_id"))
         if ra.get("comment") != orig_comment.get(fid):
             errs.append("RA2 comment fidelity: %s comment differs from the draft-N manifest "
                         "(re-anchoring must relocate, never re-author)" % fid)
     return errs
+
+
+def build_reanchored(manifest_obj, n1_snapshot, n1_path):
+    """Re-resolve every draft-N annotation against N+1 and build the carried (held/moved) manifest.
+
+    The single source of truth for both the validating `reanchor()` (the gate) and the writing `emit()`
+    (the glue): classify each annotation, partition into buckets, and assemble the re-anchored manifest
+    object (held/moved only, bound to N+1, each comment carried VERBATIM — never re-authored). Returns
+    `(re_obj, buckets, carried, fid_class)`:
+      re_obj     the re-anchored manifest dict (held/moved annotations re-pointed onto N+1).
+      buckets    {class: [(finding_id, evidence), …]} — the full RA3 partition of draft-N's annotations.
+      carried    [(orig_annotation, new_anchor), …] for held/moved (the surviving subset).
+      fid_class  {finding_id: class} — the per-finding class map (the crossref join key, Q2).
+    Pure: builds the artifacts, classifies; writes nothing, gates nothing (callers own that)."""
+    annotations = manifest_obj.get("annotations")
+    if not isinstance(annotations, list):
+        annotations = []
+    chap_n, sec_n, _cl, _sl = am.heading_index(n1_snapshot)
+    buckets = {k: [] for k in _CLASSES}
+    carried = []        # (orig_annotation, new_anchor) for held/moved
+    fid_class = {}      # finding_id -> class (the crossref join, Q2)
+    for an in annotations:
+        if not isinstance(an, dict):
+            continue
+        klass, new_anchor, evidence = reclassify(an, n1_snapshot, chap_n, sec_n)
+        fid = _fid(an.get("finding_id"))
+        buckets[klass].append((fid, evidence))
+        fid_class[fid] = klass
+        if klass in ("held", "moved"):
+            carried.append((an, new_anchor))
+
+    # The re-anchored manifest (held/moved only, bound to N+1), carrying each comment VERBATIM.
+    re_anns = [{"finding_id": _fid(an.get("finding_id")), "anchor": new_anchor, "comment": an.get("comment")}
+               for an, new_anchor in carried]
+    re_obj = {"schema": am._SCHEMA_ID, "project": manifest_obj.get("project", "Manuscript"),
+              "runlabel": _runlabel_of(n1_path), "snapshot_path": os.path.basename(n1_path),
+              "snapshot_sha256": am.sha256(n1_snapshot), "snapshot_line_count": am.line_count(n1_snapshot),
+              "annotations": re_anns}
+    return re_obj, buckets, carried, fid_class
 
 
 def reanchor(manifest_obj, n1_snapshot, n1_path, strict=False):
@@ -119,35 +211,18 @@ def reanchor(manifest_obj, n1_snapshot, n1_path, strict=False):
     if not isinstance(annotations, list) or not annotations:
         return 2, ["reanchor: prior manifest has no annotations[] to re-anchor"]
 
-    chap_n, sec_n, _cl, _sl = am.heading_index(n1_snapshot)
-    buckets = {k: [] for k in _CLASSES}
-    carried = []   # (orig_annotation, new_anchor) for held/moved
-    classified = 0
+    re_obj, buckets, carried, _fc = build_reanchored(manifest_obj, n1_snapshot, n1_path)
+
+    # RA3 — partition completeness: every draft-N annotation in exactly one class. A non-dict annotation
+    # is unclassifiable (build_reanchored skips it), so it never lands in a bucket — caught here.
+    classified = sum(len(v) for v in buckets.values())
     for an in annotations:
         if not isinstance(an, dict):
             errs.append("RA3 partition: a non-object annotation cannot be classified")
-            continue
-        klass, new_anchor, evidence = reclassify(an, n1_snapshot, chap_n, sec_n)
-        classified += 1
-        fid = an.get("finding_id")
-        buckets[klass].append((fid, evidence))
-        if klass in ("held", "moved"):
-            carried.append((an, new_anchor))
-
-    # RA3 — partition completeness: every draft-N annotation in exactly one class.
     if classified != len(annotations):
         errs.append("RA3 partition completeness: classified %d of %d annotation(s)"
                     % (classified, len(annotations)))
 
-    # Build the re-anchored manifest (held/moved only, bound to N+1), carrying each comment VERBATIM.
-    re_anns = []
-    for an, new_anchor in carried:
-        re_anns.append({"finding_id": an.get("finding_id"), "anchor": new_anchor,
-                        "comment": an.get("comment")})
-    re_obj = {"schema": am._SCHEMA_ID, "project": manifest_obj.get("project", "Manuscript"),
-              "runlabel": _runlabel_of(n1_path), "snapshot_path": os.path.basename(n1_path),
-              "snapshot_sha256": am.sha256(n1_snapshot), "snapshot_line_count": am.line_count(n1_snapshot),
-              "annotations": re_anns}
     re_manifest_text = _manifest_text(re_obj)
 
     # RA2 — comment fidelity: the EMITTED manifest (serialized + RE-PARSED — the exact form that gets
@@ -156,9 +231,9 @@ def reanchor(manifest_obj, n1_snapshot, n1_path, strict=False):
     # makes carrying something other than a verbatim copy — is caught here, independently of A4-multiset
     # (the firewall: relocate, never re-author; RA2 stands in for A6(a)'s projection arm, which is inert
     # without an N+1 ledger).
-    orig_comment = {an.get("finding_id"): an.get("comment") for an in annotations if isinstance(an, dict)}
+    orig_comment = {_fid(an.get("finding_id")): an.get("comment") for an in annotations if isinstance(an, dict)}
     emitted, _pe = am.parse_manifest(re_manifest_text)
-    emitted_anns = emitted.get("annotations") if isinstance(emitted, dict) else re_anns
+    emitted_anns = emitted.get("annotations") if isinstance(emitted, dict) else re_obj["annotations"]
     errs += _comment_fidelity_errs(emitted_anns, orig_comment)
 
     # RA1 — re-anchor integrity: the re-anchored manifest, rendered, passes the structural A-gate
@@ -215,24 +290,145 @@ def _runlabel_of(snapshot_path):
     return os.path.splitext(base)[0] or "run"
 
 
-def run(paths, strict=False):
-    if len(paths) < 2:
-        return 2, ["reanchor: usage: reanchor <prior_run_folder> <new_snapshot> [--strict]"]
-    prior, new_snap = paths[0], paths[1]
+def _resolve_inputs(prior, new_snap):
+    """Resolve the (draft-N manifest object, normalized N+1 snapshot) pair the round-trip operates on.
+
+    Shared by `run` (the gate), `emit` (the glue write), and `crossref` (the join), so all three resolve
+    the prior manifest + new snapshot the SAME way: a dir -> its newest manifest; a file -> itself.
+    Returns `(obj, n1, err)` — on any failure `obj`/`n1` are None and `err` is a (code, [line]) the caller
+    returns verbatim."""
     if os.path.isdir(prior):
         man_path = _newest(glob.glob(os.path.join(prior, am._MANIFEST_GLOB)))
     else:
         man_path = prior
     if not man_path:
-        return 2, ["reanchor: no %s in %s" % (am._MANIFEST_GLOB, prior)]
+        return None, None, (2, ["reanchor: no %s in %s" % (am._MANIFEST_GLOB, prior)])
     obj, merrs = am.parse_manifest(_read(man_path))
     if obj is None:
-        return 1, ["reanchor: prior manifest invalid — %s" % (merrs[0] if merrs else "no annotation block")]
+        return None, None, (1, ["reanchor: prior manifest invalid — %s"
+                                % (merrs[0] if merrs else "no annotation block")])
     raw = _read(new_snap)
     if raw is None:
-        return 2, ["reanchor: cannot read new snapshot %s" % new_snap]
-    n1 = am.normalize_snapshot(raw)
-    return reanchor(obj, n1, new_snap, strict=strict)
+        return None, None, (2, ["reanchor: cannot read new snapshot %s" % new_snap])
+    return obj, am.normalize_snapshot(raw), None
+
+
+def run(paths, strict=False):
+    if len(paths) < 2:
+        return 2, ["reanchor: usage: reanchor <prior_run_folder> <new_snapshot> [--strict]"]
+    obj, n1, err = _resolve_inputs(paths[0], paths[1])
+    if err is not None:
+        return err
+    return reanchor(obj, n1, paths[1], strict=strict)
+
+
+def emit(paths, out_dir=None):
+    """Round-trip GLUE write: re-anchor draft N's notes onto the revised draft N+1 and WRITE the revision-
+    aware artifacts (the re-anchored manifest + the rendered annotated copy of N+1) to disk. This is the
+    missing producer for the round-trip — `reanchor` (the gate) only classifies + validates in memory; a
+    revision loop needs the marked-up copy of the NEW draft on disk.
+
+    Re-gates before writing (RA1-RA3 must pass — never write an unverified re-anchor), then emits two
+    artifacts named `[Project]_Reanchored_Manifest_[runlabel].md` + `[Project]_Reanchored_Annotated_
+    Manuscript_[runlabel].md` (the `Reanchored_` infix distinguishes them from a fresh-diagnosis
+    `_Annotation_Manifest_` / `_Annotated_Manuscript_`, so a re-anchored copy is never mistaken for a
+    re-diagnosed one). Writes ONLY held/moved annotations (the surviving subset); vanished / ambiguous /
+    not-re-anchorable are reported, never silently re-pointed (RA3 guarantees none is lost). Returns
+    (code, lines)."""
+    if len(paths) < 2:
+        return 2, ["reanchor: usage: emit <prior_run_folder> <new_snapshot> [-o <out_dir>]"]
+    prior, new_snap = paths[0], paths[1]
+    obj, n1, err = _resolve_inputs(prior, new_snap)
+    if err is not None:
+        return err
+
+    # Re-gate first: never write an unverified re-anchor. The default (non-strict) gate makes the
+    # advisory W1/W2 (vanished / refused) non-fatal — they're the expected revision signal — but RA1-RA3
+    # (the mechanical re-anchor contract) MUST pass before anything is written.
+    code, glines = reanchor(obj, n1, new_snap, strict=False)
+    if code != 0:
+        return code, ["reanchor: emit refused — the re-anchor does not pass RA1-RA3 against the revised "
+                      "draft; nothing written"] + glines
+
+    re_obj, _buckets, carried, _fc = build_reanchored(obj, n1, new_snap)
+    try:
+        annotated = am.render(n1, re_obj)
+    except ValueError as exc:
+        return 1, ["reanchor: emit refused — render failed: %s (nothing written)" % exc]
+
+    out = out_dir if out_dir else (prior if os.path.isdir(prior) else os.path.dirname(prior) or ".")
+    if not os.path.isdir(out):
+        return 2, ["reanchor: emit output dir does not exist: %s" % out]
+    # `project`/`runlabel` are untrusted (copied from the prior manifest / derived from a filename) and
+    # are interpolated into the output paths. Sanitize each to a single safe filename component so neither
+    # `../escape` (traversal) nor an absolute value (which would make os.path.join discard `out`) can steer
+    # a write outside the requested directory.
+    project = _safe_component(re_obj.get("project", "Manuscript"), "Manuscript")
+    runlabel = _safe_component(re_obj.get("runlabel", "run"), "run")
+    man_path = os.path.join(out, "%s_Reanchored_Manifest_%s.md" % (project, runlabel))
+    ann_path = os.path.join(out, "%s_Reanchored_Annotated_Manuscript_%s.md" % (project, runlabel))
+    # Defence in depth: regardless of sanitization, REFUSE to write unless the resolved parent of EACH
+    # output file is `out` itself (realpath-compared, so symlinks and `..` are resolved before the check).
+    out_real = os.path.realpath(out)
+    for p in (man_path, ann_path):
+        if os.path.realpath(os.path.dirname(p)) != out_real:
+            return 2, ["reanchor: emit refused — resolved output path escapes the output dir: %s "
+                       "(nothing written)" % p]
+    with open(man_path, "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Re-anchored Annotation Manifest\n\n%s\n" % _manifest_text(re_obj))
+    with open(ann_path, "w", encoding="utf-8", newline="") as fh:
+        fh.write(annotated)
+    return 0, ["reanchor: emit wrote %s + %s (%d held/moved annotation(s) carried onto the revised draft)"
+               % (os.path.basename(man_path), os.path.basename(ann_path), len(carried))]
+
+
+def crossref(paths, strict=False):
+    """The orchestrator's anchor-level x finding-level JOIN (Q2): cross-reference this round-trip's
+    per-annotation classes against `regression-diff`'s per-finding classes BY `finding_id`, the only key
+    they share. `reanchor` keys on anchor.quote / heading text; `regression-diff` on origin+chapter+
+    mechanism — so neither validator asserts the join (each is honest about its own evidence), and it lives
+    here in the glue, exactly as the spec reserves it (docs/annotated-manuscript-reanchoring.md §Q2).
+
+    Surfaces the two corroborations that sharpen the heuristic regression signal with anchor ground truth:
+      - vanished (anchor) x resolved-and-held (finding): the prose is GONE and the prior round marked it
+        resolved — strong, two-source evidence the fix landed.
+      - held/moved (anchor) x recurrence-candidate (finding): the prose PERSISTS verbatim and a resolved
+        finding heuristically matched it — strong evidence the fix did NOT hold.
+    Args: <prior_run_folder> <new_snapshot> <this_run_folder>. Advisory by default (a corroboration is
+    still a candidate for editor judgment); `--strict` makes a persists-but-claimed-resolved corroboration
+    (the regression) an error. Returns (code, lines)."""
+    if len(paths) < 3:
+        return 2, ["reanchor: usage: crossref <prior_run_folder> <new_snapshot> <this_run_folder> [--strict]"]
+    prior, new_snap, this_run = paths[0], paths[1], paths[2]
+    obj, n1, err = _resolve_inputs(prior, new_snap)
+    if err is not None:
+        return err
+    _re_obj, _buckets, _carried, fid_class = build_reanchored(obj, n1, new_snap)
+
+    # The regression-diff side: classify this round's findings against the prior round, by finding_id.
+    reg_class = rd.crossref_classes(prior, this_run) if rd is not None else {}
+
+    lines = ["reanchor: crossref %d re-anchored class(es) x regression-diff finding class(es) by finding_id"
+             % len(fid_class)]
+    warns, errs = [], []
+    for fid in sorted(k for k in fid_class if k):
+        anc = fid_class.get(fid)
+        reg = reg_class.get(fid)
+        if reg is None:
+            continue
+        if anc == "vanished" and reg == "resolved-and-held":
+            lines.append("  crossref:corroborated-resolved %s — prose vanished AND finding resolved-and-held "
+                         "(two-source: the fix landed)" % fid)
+        elif anc in ("held", "moved") and reg == "recurrence-candidate":
+            msg = ("  crossref:contradicted-resolution %s — prose persists (%s) BUT finding is a "
+                   "recurrence-candidate (the resolution may not have held)" % (fid, anc))
+            lines.append(msg)
+            warns.append("X1 persists-but-claimed-resolved: %s anchored prose still present in N+1 while "
+                         "regression-diff flags it recurring — confirm before crediting the fix" % fid)
+        else:
+            lines.append("  crossref:noted %s — reanchor=%s regression-diff=%s" % (fid, anc, reg))
+
+    return _finish(lines, errs, warns, strict, "%d finding(s) joined, no contradictions" % len(fid_class))
 
 
 # ---------------------------------------------------------------- self-test
@@ -325,6 +521,13 @@ def run_self_test():
     # determinism: identical inputs -> identical output.
     chk("deterministic", run_via(man_n, snap_moved)[1] == run_via(man_n, snap_moved)[1])
 
+    # build_reanchored: the shared builder returns the same partition the report shows + the join map.
+    re_obj_b, buckets_b, carried_b, fid_class_b = build_reanchored(man_n, snap_moved, "X_Snapshot_rN1.md")
+    chk("build_reanchored_carries_held_moved", len(carried_b) == 3 and len(re_obj_b["annotations"]) == 3)
+    chk("build_reanchored_fid_class", fid_class_b.get("F-QT-01") == "moved"
+        and fid_class_b.get("F-LR-01") == "not-re-anchorable")
+    chk("build_reanchored_bound_to_n1", re_obj_b["snapshot_sha256"] == am.sha256(snap_moved))
+
     # run() end-to-end from a folder + snapshot file.
     d = tempfile.mkdtemp()
     try:
@@ -335,15 +538,270 @@ def run_self_test():
             fh.write(snap_moved)
         chk("run_folder_snapshot", run([d, sp])[0] == 0)
         chk("run_usage_one_arg", run([d])[0] == 2)
+
+        # emit: writes the re-anchored manifest + the rendered revised-draft annotated copy, and the
+        # emitted copy passes the A-gate against the revised snapshot (held/moved only).
+        outd = tempfile.mkdtemp()
+        try:
+            ecode, elines = emit([d, sp], out_dir=outd)
+            man_w = os.path.join(outd, "T_Reanchored_Manifest_rN1.md")
+            ann_w = os.path.join(outd, "T_Reanchored_Annotated_Manuscript_rN1.md")
+            chk("emit_exit_0", ecode == 0)
+            chk("emit_wrote_both", os.path.isfile(man_w) and os.path.isfile(ann_w))
+            # the emitted copy + manifest re-gate clean against the revised draft (A1-A6, ledger-optional).
+            if os.path.isfile(man_w) and os.path.isfile(ann_w):
+                eobj, _ee = am.parse_manifest(_read(man_w))
+                acode, _al = am.check(am.normalize_snapshot(snap_moved), _read(man_w), _read(ann_w),
+                                      ledger_text=None, ledger_optional=True)
+                chk("emit_copy_passes_agate", acode == 0)
+                chk("emit_manifest_held_moved_only", isinstance(eobj, dict)
+                    and len(eobj.get("annotations", [])) == 3)
+                # firewall: every carried comment is byte-identical to draft N's (relocate, never re-author).
+                orig = {a["finding_id"]: a["comment"] for a in man_n["annotations"]}
+                chk("emit_comments_verbatim",
+                    all(a.get("comment") == orig.get(a.get("finding_id")) for a in eobj["annotations"]))
+            chk("emit_usage_one_arg", emit([d])[0] == 2)
+            chk("emit_missing_outdir", emit([d, sp], out_dir=os.path.join(outd, "nope"))[0] == 2)
+        finally:
+            shutil.rmtree(outd, ignore_errors=True)
+
+        chk("emit_no_write_on_bad_prior", emit(["/no/such/dir", sp])[0] in (1, 2))
+
+        # emit REFUSES TO WRITE when the re-anchor fails the hard contract (the firewall). A carried
+        # comment bearing a CriticMarkup sigil fails A2/A5 -> RA1 against N+1, so emit must exit 1 with
+        # NOTHING written. Build a prior whose held annotation carries such a comment.
+        bad_d = tempfile.mkdtemp()
+        bad_out = tempfile.mkdtemp()
+        try:
+            bad_snap = am.normalize_snapshot("# Chapter 1\nThe unique sentence here.\n")
+            bq = "The unique sentence here."
+            bqs = bad_snap.find(bq)
+            bad_man = {"schema": am._SCHEMA_ID, "project": "T", "runlabel": "rN",
+                       "snapshot_path": "T_Manuscript_Snapshot_rN.md", "snapshot_sha256": am.sha256(bad_snap),
+                       "snapshot_line_count": am.line_count(bad_snap),
+                       "annotations": [{"finding_id": "F-Q-01",
+                                        "anchor": {"kind": "quote", "value": "%d-%d" % (bqs, bqs + len(bq)),
+                                                   "quote": bq},
+                                        "comment": "a comment with a {>> sigil <<} that breaks A2/A5"}]}
+            with open(os.path.join(bad_d, "T_Annotation_Manifest_rN.md"), "w",
+                      encoding="utf-8", newline="") as fh:
+                fh.write(_manifest_text(bad_man))
+            bad_sp = os.path.join(bad_d, "T_Manuscript_Snapshot_rN1.md")
+            with open(bad_sp, "w", encoding="utf-8", newline="") as fh:
+                fh.write(bad_snap)
+            bcode, blines = emit([bad_d, bad_sp], out_dir=bad_out)
+            chk("emit_refuses_on_ra_failure",
+                bcode == 1 and any("emit refused" in x for x in blines))
+            chk("emit_wrote_nothing_on_ra_failure", not os.listdir(bad_out))
+        finally:
+            shutil.rmtree(bad_d, ignore_errors=True)
+            shutil.rmtree(bad_out, ignore_errors=True)
+
+        # CONTAINMENT (Codex P1): `project`/`runlabel` are untrusted, so a hostile manifest must NEVER
+        # steer emit's writes outside the requested `out`. Two attack vectors, each verified against an
+        # isolated parent + a canary sibling dir that MUST stay empty:
+        #   (a) traversal  project="../escape"  -> would write into out's parent (os.path.join keeps `out`).
+        #   (b) absolute   project="<canary>/x" -> os.path.join DISCARDS `out`, writing under the canary.
+        # Pre-fix this block FAILS (a stray *_Reanchored_*.md lands in the parent / the canary). The held-
+        # quote prior below re-anchors clean (RA1-RA3 pass), so any escape is a path-construction escape,
+        # not an RA refusal masking it.
+        def _attack_prior(project_value):
+            asnap = am.normalize_snapshot("# Chapter 1\nThe unique sentence here.\n")
+            aq = "The unique sentence here."
+            aqs = asnap.find(aq)
+            return asnap, {"schema": am._SCHEMA_ID, "project": project_value, "runlabel": "rN",
+                           "snapshot_path": "T_Manuscript_Snapshot_rN.md",
+                           "snapshot_sha256": am.sha256(asnap),
+                           "snapshot_line_count": am.line_count(asnap),
+                           "annotations": [{"finding_id": "F-Q-01",
+                                            "anchor": {"kind": "quote",
+                                                       "value": "%d-%d" % (aqs, aqs + len(aq)), "quote": aq},
+                                            "comment": "a benign carried comment"}]}
+
+        def _no_escape(project_value, label):
+            # Isolated parent: out is a SUBDIR, and there is a canary sibling. After emit, neither the
+            # parent (minus out) nor the canary may contain any emitted artifact.
+            root = tempfile.mkdtemp()
+            try:
+                esc_out = os.path.join(root, "out")
+                canary = os.path.join(root, "canary")
+                os.makedirs(esc_out)
+                os.makedirs(canary)
+                # For the absolute vector, aim the absolute prefix straight at the canary dir.
+                pv = project_value.replace("__CANARY__", canary) if "__CANARY__" in project_value \
+                    else project_value
+                asnap, aman = _attack_prior(pv)
+                ad = os.path.join(root, "prior")
+                os.makedirs(ad)
+                with open(os.path.join(ad, "T_Annotation_Manifest_rN.md"), "w",
+                          encoding="utf-8", newline="") as fh:
+                    fh.write(_manifest_text(aman))
+                asp = os.path.join(ad, "T_Manuscript_Snapshot_rN1.md")
+                with open(asp, "w", encoding="utf-8", newline="") as fh:
+                    fh.write(asnap)
+                emit([ad, asp], out_dir=esc_out)
+                stray = []
+                for base in (root, canary):
+                    for name in os.listdir(base):
+                        full = os.path.join(base, name)
+                        # the only legitimate entries under root are the out/canary/prior dirs themselves.
+                        if base == root and full in (esc_out, canary, ad):
+                            continue
+                        stray.append(full)
+                chk("emit_contains_%s" % label, not stray)
+            finally:
+                shutil.rmtree(root, ignore_errors=True)
+
+        _no_escape("../escape", "traversal_project")
+        _no_escape("__CANARY__/pwned", "absolute_project")
+        # runlabel is the sibling vector — guard it too (single component, no separators survive).
+        chk("safe_component_traversal", _safe_component("../escape", "fb") == "escape")
+        chk("safe_component_absolute", "/" not in _safe_component("/etc/passwd", "fb")
+            and "\\" not in _safe_component("\\\\srv\\share\\x", "fb"))
+        chk("safe_component_dotdot_fallback", _safe_component("..", "fb") == "fb"
+            and _safe_component(".", "fb") == "fb" and _safe_component("", "fb") == "fb")
+        chk("safe_component_nul_stripped", "\x00" not in _safe_component("a\x00b", "fb"))
     finally:
         shutil.rmtree(d, ignore_errors=True)
+
+    # regression: a non-dict anchor / annotation must not crash reclassify (2026-06-20 sweep) — the
+    # fix is no-crash; a non-dict anchor yields an empty-anchor classification, a non-dict annotation -> ambiguous
+    chk("crash_nondict_anchor", isinstance(reclassify({"finding_id": "F-X-01", "anchor": [1, 2]}, "snap", 1, 1), tuple))
+    chk("crash_nondict_annotation", reclassify([1, 2, 3], "snap", 1, 1)[0] == "ambiguous")
+    # regression: a non-hashable chapter anchor value (a JSON list/dict, kept as-is by parse_manifest)
+    # must not crash the chapter branch's `chap_n.get(val, 0)` lookup. chap_n MUST be a real dict here
+    # (the prior non-dict-anchor test passed ints, which never reaches this hashing site). Pre-fix this
+    # raised TypeError: unhashable type. The section branch already str()-coerces; this was the gap.
+    _chap_n, _sec_n, _c, _s = am.heading_index(snap_n)
+    for _bad in ([1, 2], {"k": "v"}):
+        kl, _na, _ev = reclassify({"finding_id": "F-CH-X", "anchor": {"kind": "chapter", "value": _bad}},
+                                  snap_n, _chap_n, _sec_n)
+        chk("crash_nonstring_chapter_value_%s" % type(_bad).__name__, kl == "ambiguous")
+    # end-to-end through reanchor(): a manifest whose chapter anchor value is a list must classify
+    # (not traceback) — the validator-entry path parse_manifest -> reanchor -> reclassify.
+    _man_bad = dict(man_n, annotations=[ann("F-CH-99", {"kind": "chapter", "value": [1, 2]})])
+    try:
+        _cb, _lb = run_via(_man_bad, snap_moved)
+        chk("reanchor_nonstring_chapter_value_no_crash",
+            any("reanchor:ambiguous F-CH-99" in x for x in _lb))
+    except TypeError:
+        chk("reanchor_nonstring_chapter_value_no_crash", False)
+    # regression — the finding_id SIBLING of the reclassify-anchor guard: finding_id is read as a dict
+    # KEY (fid_class / orig_comment) and a SORT key (the report), not just inside reclassify. A
+    # non-hashable id (JSON list/object) crashed `fid_class[fid]` (unhashable type), and a mixed int/str
+    # id set crashed the report `sorted()` (`'<' not supported between str and int`). _fid() normalizes.
+    _secref = {"kind": "section", "value": "Beta"}
+    for _bad, _lbl in (([1, 2], "list"), ({"k": "v"}, "dict")):
+        _mb = dict(man_n, annotations=[{"finding_id": _bad, "anchor": _secref, "comment": "c"}])
+        try:
+            chk("reanchor_nonhashable_finding_id_no_crash_%s" % _lbl, isinstance(run_via(_mb, snap_moved)[1], list))
+        except TypeError:
+            chk("reanchor_nonhashable_finding_id_no_crash_%s" % _lbl, False)
+    _mm = dict(man_n, annotations=[{"finding_id": 7, "anchor": _secref, "comment": "c"},
+                                   {"finding_id": "F-S-01", "anchor": _secref, "comment": "c"}])
+    try:
+        chk("reanchor_mixed_type_finding_id_no_crash", isinstance(run_via(_mm, snap_moved)[1], list))
+    except TypeError:
+        chk("reanchor_mixed_type_finding_id_no_crash", False)
+
+    # crossref: the orchestrator join by finding_id. Build a prior run folder whose ledger + manifest share
+    # ids, and a current round folder whose re-diagnosis recurs one resolved finding (recurrence-candidate)
+    # while the OTHER finding's prose vanished (resolved-and-held) — the two corroborations crossref exists
+    # to surface.
+    if rd is not None:
+        cd = tempfile.mkdtemp()
+        try:
+            _crossref_self_test(chk, cd)
+        finally:
+            shutil.rmtree(cd, ignore_errors=True)
 
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 
 
+def _crossref_self_test(chk, cd):
+    """crossref join: anchor classes (this round-trip) x regression-diff finding classes, by finding_id."""
+    import json as _j
+    # Prior round: a snapshot with a held quote (F-HOLD-01) and a quote that will vanish (F-GONE-01),
+    # an annotation manifest over both, and a ledger marking both findings present, with F-GONE-01 resolved.
+    prior_snap = am.normalize_snapshot("# Chapter 7\nThe want never forces a sacrifice here.\n"
+                                       "A sentence slated for the cut sits in chapter nine.\n# Chapter 9\nx\n")
+    q_hold = "The want never forces a sacrifice here."
+    q_gone = "A sentence slated for the cut sits in chapter nine."
+    hs = prior_snap.find(q_hold)
+    gs = prior_snap.find(q_gone)
+    prior_man = {"schema": am._SCHEMA_ID, "project": "X", "runlabel": "r1",
+                 "snapshot_path": "X_Manuscript_Snapshot_r1.md", "snapshot_sha256": am.sha256(prior_snap),
+                 "snapshot_line_count": am.line_count(prior_snap),
+                 "annotations": [
+                     {"finding_id": "F-HOLD-01", "anchor": {"kind": "quote",
+                      "value": "%d-%d" % (hs, hs + len(q_hold)), "quote": q_hold}, "comment": "held note"},
+                     {"finding_id": "F-GONE-01", "anchor": {"kind": "quote",
+                      "value": "%d-%d" % (gs, gs + len(q_gone)), "quote": q_gone}, "comment": "gone note"},
+                 ]}
+
+    def finding(fid, mech, refs, sev="Should-Fix"):
+        return '<!-- apodictic:finding\n%s\n-->' % _j.dumps(
+            {"schema": "apodictic.finding.v1", "id": fid, "mechanism": mech, "severity": sev,
+             "confidence": "HIGH", "evidence_refs": list(refs), "fix_class": "x", "risk_if_fixed": "y"})
+
+    pri = os.path.join(cd, "r1")
+    cur = os.path.join(cd, "r2")
+    os.makedirs(pri)
+    os.makedirs(cur)
+    with open(os.path.join(pri, "X_Annotation_Manifest_r1.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write(_manifest_text(prior_man))
+    # prior ledger: both findings, F-GONE-01 marked resolved (so regression-diff can recur/hold it).
+    with open(os.path.join(pri, "X_Findings_Ledger_r1.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Ledger\n"
+                 + finding("F-HOLD-01", "the want never forces a sacrifice so stakes stay abstract", ["Ch 7"])
+                 + "\n"
+                 + finding("F-GONE-01", "a sentence slated for the cut creates a continuity seam", ["Ch 9"])
+                 + "\n<!-- resolved: F-GONE-01 -->\n")
+    # current re-diagnosis: F-HOLD recurs (same origin+chapter+shared tokens), F-GONE has no match (held).
+    with open(os.path.join(cur, "X_Findings_Ledger_r2.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Ledger\n"
+                 + finding("F-HOLD-01", "the want still never forces a sacrifice; stakes remain abstract", ["Ch 7"])
+                 + "\n")
+    # also mark F-HOLD resolved in the prior round so the recurrence (held + recurrence-candidate) fires.
+    with open(os.path.join(pri, "X_Revision_Report_r1.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Revision Report\n<!-- resolved: F-HOLD-01 -->\n<!-- resolved: F-GONE-01 -->\n")
+
+    # revised draft N+1: F-HOLD's quote PERSISTS verbatim (held/moved), F-GONE's quote is CUT (vanished).
+    new_snap_path = os.path.join(cd, "X_Manuscript_Snapshot_r2.md")
+    with open(new_snap_path, "w", encoding="utf-8", newline="") as fh:
+        fh.write(am.normalize_snapshot("# Chapter 7\nThe want never forces a sacrifice here.\n# Chapter 9\nx\n"))
+
+    code, lines = crossref([pri, new_snap_path, cur])
+    txt = "\n".join(lines)
+    chk("crossref_corroborated_resolved", "crossref:corroborated-resolved F-GONE-01" in txt)
+    chk("crossref_contradicted_resolution", "crossref:contradicted-resolution F-HOLD-01" in txt)
+    chk("crossref_advisory_exit_0", code == 0)
+    chk("crossref_strict_fails_on_contradiction", crossref([pri, new_snap_path, cur], strict=True)[0] == 1)
+    chk("crossref_usage_two_args", crossref([pri, new_snap_path])[0] == 2)
+    chk("crossref_classes_join", rd.crossref_classes(pri, cur).get("F-HOLD-01") == "recurrence-candidate"
+        and rd.crossref_classes(pri, cur).get("F-GONE-01") == "resolved-and-held")
+
+    # A pure-WIN crossref (vanished x resolved-and-held, no contradiction) must NOT false-fail under
+    # --strict — the win is corroboration, not an error; only X1 (persists-but-claimed-resolved) flips it.
+    win_cur = os.path.join(cd, "r2win")
+    os.makedirs(win_cur)
+    with open(os.path.join(win_cur, "X_Findings_Ledger_r2win.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Ledger\n" + finding("F-UNREL-01", "an unrelated new note", ["Ch 2"]) + "\n")
+    win_snap = os.path.join(cd, "X_Manuscript_Snapshot_r2win.md")
+    with open(win_snap, "w", encoding="utf-8", newline="") as fh:
+        fh.write(am.normalize_snapshot("# Chapter 7\nThe want never forces a sacrifice here.\n# Chapter 9\nx\n"))
+    chk("crossref_strict_clean_on_win_only", crossref([pri, win_snap, win_cur], strict=True)[0] == 0)
+
+
 def run_via(manifest_obj, n1_snapshot, strict=False):
     return reanchor(manifest_obj, n1_snapshot, "X_Manuscript_Snapshot_rN1.md", strict=strict)
+
+
+_USAGE = ("Usage: reanchor.py reanchor <prior_run_folder> <new_snapshot> [--strict]\n"
+          "       reanchor.py emit     <prior_run_folder> <new_snapshot> [-o <out_dir>]\n"
+          "       reanchor.py crossref <prior_run_folder> <new_snapshot> <this_run_folder> [--strict]\n"
+          "       reanchor.py --self-test")
 
 
 def main(argv):
@@ -352,13 +810,25 @@ def main(argv):
     if am is None:
         print("reanchor: annotation_manifest is unavailable (same-dir import failed)")
         return 2
-    args = [a for a in argv[1:] if a != "reanchor"]
-    strict = "--strict" in args
-    paths = [a for a in args if not a.startswith("--")]
+    sub = argv[1] if len(argv) > 1 else None
+    rest = argv[2:] if sub in ("reanchor", "emit", "crossref") else argv[1:]
+    strict = "--strict" in rest
+    # Pull an `-o <out_dir>` pair (emit only) out of the positionals.
+    out_dir = None
+    if "-o" in rest:
+        i = rest.index("-o")
+        out_dir = rest[i + 1] if i + 1 < len(rest) else None
+        rest = rest[:i] + rest[i + 2:]
+    paths = [a for a in rest if not a.startswith("-")]
     if not paths:
-        print("Usage: reanchor.py reanchor <prior_run_folder> <new_snapshot> [--strict] | --self-test")
+        print(_USAGE)
         return 2
-    code, lines = run(paths, strict=strict)
+    if sub == "emit":
+        code, lines = emit(paths, out_dir=out_dir)
+    elif sub == "crossref":
+        code, lines = crossref(paths, strict=strict)
+    else:   # default + explicit `reanchor`
+        code, lines = run(paths, strict=strict)
     for ln in lines:
         print(ln)
     return code
