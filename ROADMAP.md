@@ -422,7 +422,7 @@ Cross-field calibration: the visualization and annotated-manuscript gaps are val
 
 These invent nothing — they render, export, or extract what the engine already produces — and sit in gaps the plan does not touch.
 
-1. **Manuscript-Structure Visualizations — Increment 1 built (charts 1–3).** A *manuscript-specific* visual report. **Built:** the pacing/word-count curve, POV-time distribution, and finding-severity-by-chapter charts, as a render-only single-file SVG companion (`viz_manifest.py render`) over a provenance-closed `apodictic.viz_manifest.v1` manifest. **Future:** the character co-presence network, scene-function heatmap, reveal-economy timeline, and beat-map against the chosen spine (each gated on its upstream artifact becoming machine-readable). **Distinct from** the planned [Framework Overview Dashboard](#framework-overview-dashboard), which visualizes the *plugin's* capabilities, not a book. Highest externally-validated gap (Fictionary's signature). Builds a new single-file SVG renderer in the static-HTML house pattern (no editorial-letter render pipeline exists to reuse); the data already lives, machine-readable, in the Findings Ledger (`apodictic.finding.v1` blocks) and `Timeline.md` (the Event Ledger's per-scene word-count/POV). Firewall-safe (it renders diagnosis, invents nothing). Spec: [`docs/manuscript-visualizations.md`](docs/manuscript-visualizations.md).
+1. **Manuscript-Structure Visualizations — Increment 1 built (charts 1–3) + chart 7-nonfiction claim ladder built (render-only M1).** A *manuscript-specific* visual report. **Built:** the pacing/word-count curve, POV-time distribution, and finding-severity-by-chapter charts, plus the **nonfiction claim ladder** (C0 + subclaims + per-rung support coverage over `argument_spine.v1` + `support_plan.v1` — gates X1/X5/X6/X7/X8 + W3, no scene axis, no new schema or validator), as a render-only single-file SVG companion (`viz_manifest.py render`) over a provenance-closed `apodictic.viz_manifest.v1` manifest. **Producer-gated (future):** the character co-presence network, scene-function heatmap, reveal-economy timeline, and beat-map against the chosen spine (each gated on a producer increment that makes its upstream artifact machine-readable); a claim-to-scene overlay is a further producer increment, out of scope. **Distinct from** the planned [Framework Overview Dashboard](#framework-overview-dashboard), which visualizes the *plugin's* capabilities, not a book. Highest externally-validated gap (Fictionary's signature). Builds a new single-file SVG renderer in the static-HTML house pattern (no editorial-letter render pipeline exists to reuse); the data already lives, machine-readable, in the Findings Ledger (`apodictic.finding.v1` blocks) and `Timeline.md` (the Event Ledger's per-scene word-count/POV). Firewall-safe (it renders diagnosis, invents nothing). Spec: [`docs/manuscript-visualizations.md`](docs/manuscript-visualizations.md).
 
 2. **Annotated-Manuscript Deliverable. — Built (Increment 1), 2026-06-16.** Promoted out of the Horizon scan and shipped the same day; see [§Annotated-Manuscript Deliverable](#annotated-manuscript-deliverable) for status + lineage, and [`docs/annotated-manuscript.md`](docs/annotated-manuscript.md) for the spec. (Number retained for stable cross-reference: locus-anchored margin notes — the #1 human-DE deliverable — exported as an annotated copy; an export/anchor problem over findings that already carry stable loci **and** durable IDs ([Finding Lifecycle IDs](#finding-lifecycle-ids)), comments only, firewall-clean. *Effort: low–medium.*)
 
@@ -696,11 +696,13 @@ remarkable to indispensable:
    (Increment 2). A one-shot letter is a product; a revision loop in the writer's tool is a habit.
    *Remaining for this item: surfacing the flow through `/start`'s `revising`-node resume dispatch (the
    round-trip is reachable today via the Revision Round Protocol, but not yet a one-click resume offer).*
-3. **Finish the visualization leg.** Charts 1–3 ship (pacing, POV, severity-by-chapter); the character
-   co-presence network, scene-function heatmap, reveal-economy timeline, and beat-map-against-spine
-   (§Horizon Tier 1, item 1) are the ones that make a diagnosis legible at a glance, gated only on
-   upstream artifacts becoming machine-readable. Highest-ROI "render what you already produce" work
-   after validation.
+3. **Finish the visualization leg.** Charts 1–3 ship (pacing, POV, severity-by-chapter), **and chart
+   7-nonfiction — the claim ladder — now ships render-only** (Manuscript-Visualization Completion M1:
+   C0 + subclaims + per-rung support coverage over `argument_spine.v1` + `support_plan.v1`, no scene
+   axis, no new schema/validator). The character co-presence network, scene-function heatmap,
+   reveal-economy timeline, and beat-map-against-spine (§Horizon Tier 1, item 1) remain producer-gated
+   — each is gated on a producer increment that makes its upstream artifact machine-readable. Highest-ROI
+   "render what you already produce" work after validation.
 
 ---
 
