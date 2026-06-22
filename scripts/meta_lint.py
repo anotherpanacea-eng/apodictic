@@ -191,7 +191,10 @@ def _strip_comments_keep_source(py_text):
 # `<type>`: a literal id `[A-Za-z0-9_]+` OR an f-string brace group `{...}` (optionally id-prefixed).
 # The quote may carry ANY string prefix — `r`/`R` (the most natural regex form, `re.search(r"apodictic:…")`
 # — Codex P2 that the f/fr/rf-only group missed), `b`/`u`/`f` and 2-letter combos (rb/rf/…).
-_MARKER_LIT = r"""(?:[rRbBuUfF]{0,2})['"]apodictic:(?:[A-Za-z0-9_]*\{[^}]*\}|[A-Za-z0-9_]+)['"]"""
+# `_Q`: a string-literal quote — TRIPLE (`'''`/`\"\"\"`) tried before single (`'`/`"`), so a triple-quoted
+# marker literal is matched, not evaded (Codex P2). Triple alts MUST precede the single class.
+_Q = r"""(?:'''|\"\"\"|['"])"""
+_MARKER_LIT = r"(?:[rRbBuUfF]{0,2})" + _Q + r"apodictic:(?:[A-Za-z0-9_]*\{[^}]*\}|[A-Za-z0-9_]+)" + _Q
 # membership: `<lit> in` / `<lit> not in` (the literal is the left operand)
 _MARKER_IN_PAT = _MARKER_LIT + r"\s+(?:not\s+)?in\b"
 # scan op: `.find(<lit>` etc., or `re.search(<lit>` etc. — the literal is the (first) argument.
@@ -223,11 +226,11 @@ _M2_EXEMPT = {"apodictic_artifacts.py", "meta_lint.py", "sync_setec.py", "config
 # spelling the hardened parser also accepts is detected (Codex P2); any string prefix is allowed.
 _OV_PFX = r"(?:[rRbBuUfF]{0,2})"
 _OV_MARK = r"<!--\s*override:"
-_OV_PY_IN_PAT = _OV_PFX + r"""(?:['"])""" + _OV_MARK + r"""[^'"\n]*?(?:['"])\s*\)?\s+(?:not\s+)?in\b"""
-_OV_PY_FMT_IN_PAT = r"\(?\s*" + _OV_PFX + r"""['"]""" + _OV_MARK + r"""[^'"\n]*['"]\s*%[^)\n]*\)\s+(?:not\s+)?in\b"""
+_OV_PY_IN_PAT = _OV_PFX + _Q + _OV_MARK + r"""[^'"\n]*?""" + _Q + r"""\s*\)?\s+(?:not\s+)?in\b"""
+_OV_PY_FMT_IN_PAT = r"\(?\s*" + _OV_PFX + _Q + _OV_MARK + r"""[^'"\n]*""" + _Q + r"""\s*%[^)\n]*\)\s+(?:not\s+)?in\b"""
 _OV_PY_SCAN_PAT = (r"""\.(?:find|rfind|index|rindex|count|startswith|endswith|partition|rpartition|split)"""
-                   r"""\s*\(\s*""" + _OV_PFX + r"""['"]""" + _OV_MARK)
-_OV_PY_RE_PAT = (r"""\bre\.(?:search|match|fullmatch|findall|finditer)\s*\(\s*""" + _OV_PFX + r"""['"]""" + _OV_MARK)
+                   r"""\s*\(\s*""" + _OV_PFX + _Q + _OV_MARK)
+_OV_PY_RE_PAT = (r"""\bre\.(?:search|match|fullmatch|findall|finditer)\s*\(\s*""" + _OV_PFX + _Q + _OV_MARK)
 _OV_PY_RE = re.compile("(?:%s)|(?:%s)|(?:%s)|(?:%s)"
                        % (_OV_PY_IN_PAT, _OV_PY_FMT_IN_PAT, _OV_PY_SCAN_PAT, _OV_PY_RE_PAT))
 # bash: a grep over the bare `<!-- override:` prefix (any whitespace), the form #128 replaced.
@@ -489,6 +492,8 @@ def run_self_test():
     chk("m2_re_findall_flagged", check_m2("b.py", 'import re\nxs = re.findall("apodictic:finding", t)\n') != [])
     chk("m2_re_raw_string_flagged",  # Codex P2: r"..." — the most natural regex form
         check_m2("b.py", 'import re\nif re.search(r"apodictic:finding", t):\n    pass\n') != [])
+    chk("m2_triple_quote_flagged",  # Codex P2: a triple-quoted marker literal evaded the single-quote class
+        check_m2("b.py", 'if """apodictic:finding""" in t:\n    pass\n') != [])
     # a marker TYPE bearing a digit (`apodictic:finding2`) — the old `[A-Za-z_]+` class missed it.
     chk("m2_digit_type_flagged", check_m2("b.py", 'if "apodictic:finding2" in t:\n    pass\n') != [])
     # an f-string marker literal in a scan still embeds the literal prefix — caught.
@@ -577,6 +582,8 @@ def run_self_test():
         check_m5_py("g.py", 'if "<!--override: foo" in body:\n    pass\n') != [])
     chk("m5_sh_zero_whitespace_flagged",
         check_m5_sh('  case x)\n    grep -F "<!--override: foo" "$F" && OV=1\n    ;;\n') != [])
+    chk("m5_py_triple_quote_flagged",  # Codex P2: triple-quoted override literal evaded the single-quote class
+        check_m5_py("g.py", 'if """<!-- override: foo""" in body:\n    pass\n') != [])
 
     # _read_text: a non-UTF-8 byte sequence must not crash the linter (UnicodeDecodeError is a
     # ValueError, not an OSError); errors="replace" keeps the ASCII references scannable.

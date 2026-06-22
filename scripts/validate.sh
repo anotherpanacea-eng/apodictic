@@ -200,13 +200,26 @@ AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 # meta_lint.py's M5 gate flags the legacy bare-substring form so the class cannot re-enter.
 _has_override() {
   _ho_slug="$1"
-  # Drop fenced blocks (toggle on a line whose first non-space token is a 3+-backtick OR 3+-tilde fence),
-  # then blank inline code spans of any run length (triple / double / single backticks), then
-  # boundary-match the slug. Mirrors override_marker.py's CommonMark coverage (Codex P1). LC_ALL=C is NOT
-  # set: the em-/en-dash class needs the UTF-8 locale to match the multibyte dash characters.
+  # AUTHORITATIVE path: delegate to override_marker.py — the SINGLE robust code-span stripper (handles
+  # multiline inline spans, fence char/length, etc.). The fleet's validators already require python3, so
+  # this is the live path. (Avoids a second hand-rolled CommonMark parser in awk/sed — that divergence
+  # was the source of repeated Codex rounds.)
+  _ho_om="$(cd "$(dirname "$0")" && pwd)/override_marker.py"
+  if command -v python3 >/dev/null 2>&1 && [ -f "$_ho_om" ]; then
+    python3 "$_ho_om" --has-override "$_ho_slug"
+    return $?
+  fi
+  # DEGRADED best-effort fallback (python3 unavailable only): line-wise fence strip that tracks the fence
+  # CHARACTER — a ``` line inside a ~~~ fence (or vice-versa) is content, not a premature close (Codex
+  # P1) — plus inline-span blanking + boundary-match. Multiline inline spans are NOT handled here; the
+  # python3 path above is authoritative. LC_ALL=C is NOT set: the em-/en-dash class needs UTF-8.
   awk '
-    /^[[:space:]]*(```+|~~~+)/ { infence = !infence; next }
-    !infence { print }
+    function lead(s){ sub(/^[[:space:]]*/,"",s); return s }
+    { t=lead($0)
+      if (infence) { if ((fc=="`" && t ~ /^```+/) || (fc=="~" && t ~ /^~~~+/)) infence=0; next }
+      if (t ~ /^```+/) { infence=1; fc="`"; next }
+      if (t ~ /^~~~+/) { infence=1; fc="~"; next }
+      print }
   ' \
     | sed 's/```[^`]*```//g; s/``[^`]*``//g; s/`[^`]*`//g' \
     | grep -E "<!--[[:space:]]*override:[[:space:]]*${_ho_slug}([[:space:]]|—|–|-->|$)" >/dev/null 2>&1
@@ -1553,16 +1566,27 @@ EOF
     echo "$SYNTH_BODY" | _has_override "audit-propagation-high" && OVERRIDE_HIGH=1
 
     # Per-audit override marker detection — body only. The marker form is
-    # `<!-- override: audit-propagation-<audit-slug> — <rationale> -->` where
-    # <audit-slug> is the lowercase-hyphenated audit name. Captured into
-    # PER_AUDIT_OVERRIDES as a space-delimited list. Code spans (fenced + inline) are stripped first
-    # (matching override_marker.override_slugs) so a documentation EXAMPLE slug is not extracted.
-    PER_AUDIT_OVERRIDES=$(echo "$SYNTH_BODY" \
-      | awk '/^[[:space:]]*(```+|~~~+)/ { infence = !infence; next } !infence { print }' \
-      | sed 's/```[^`]*```//g; s/``[^`]*``//g; s/`[^`]*`//g' \
-      | grep -oE "<!--[[:space:]]*override:[[:space:]]*audit-propagation-[a-z0-9]([a-z0-9-]*[a-z0-9])?([[:space:]]|—|–|-->|$)" \
-      | sed -E 's/<!--[[:space:]]*override:[[:space:]]*audit-propagation-//; s/([[:space:]]|—|–|-->)$//' \
-      | tr '\n' ' ' || true)
+    # `<!-- override: audit-propagation-<audit-slug> — <rationale> -->`. Captured into
+    # PER_AUDIT_OVERRIDES as a space-delimited list. AUTHORITATIVE path: delegate to
+    # override_marker.override_slugs (the single robust code-span stripper + slug boundary). Best-effort
+    # fence-char-tracked awk/sed fallback only when python3 is unavailable.
+    _ov_om="$(cd "$(dirname "$0")" && pwd)/override_marker.py"
+    if command -v python3 >/dev/null 2>&1 && [ -f "$_ov_om" ]; then
+      PER_AUDIT_OVERRIDES=$(printf '%s' "$SYNTH_BODY" \
+        | python3 "$_ov_om" --override-slugs "audit-propagation-" | tr '\n' ' ' || true)
+    else
+      PER_AUDIT_OVERRIDES=$(echo "$SYNTH_BODY" \
+        | awk 'function lead(s){ sub(/^[[:space:]]*/,"",s); return s }
+               { t=lead($0)
+                 if (infence) { if ((fc=="`" && t ~ /^```+/) || (fc=="~" && t ~ /^~~~+/)) infence=0; next }
+                 if (t ~ /^```+/) { infence=1; fc="`"; next }
+                 if (t ~ /^~~~+/) { infence=1; fc="~"; next }
+                 print }' \
+        | sed 's/```[^`]*```//g; s/``[^`]*``//g; s/`[^`]*`//g' \
+        | grep -oE "<!--[[:space:]]*override:[[:space:]]*audit-propagation-[a-z0-9]([a-z0-9-]*[a-z0-9])?([[:space:]]|—|–|-->|$)" \
+        | sed -E 's/<!--[[:space:]]*override:[[:space:]]*audit-propagation-//; s/([[:space:]]|—|–|-->)$//' \
+        | tr '\n' ' ' || true)
+    fi
 
     # Helper: check whether a per-audit override slug matches a given audit
     # slug. Used below.
@@ -5460,6 +5484,8 @@ EOF
       _ho_case indented_fenced_decoy miss "x\n    \`\`\`\n<!-- override: $HO_S -->\n    \`\`\`\ny\n"
       _ho_case multi_backtick_decoy miss "\`\`<!-- override: $HO_S -->\`\`\n"
       _ho_case tilde_fence_decoy miss "before\n~~~\n<!-- override: $HO_S -->\n~~~\nafter\n"
+      _ho_case tilde_with_backtick_line_decoy miss "~~~\n\`\`\`\n<!-- override: $HO_S -->\n\`\`\`\n~~~\n"
+      _ho_case multiline_inline_decoy miss "a \`open\n<!-- override: $HO_S -->\nclose\` b\n"
       if [ "$HO_R" -ne 0 ]; then echo "Self-test: FAIL (_has_override bash regression)"; exit 1; fi
       if command -v python3 >/dev/null 2>&1 && [ -f "$MTL_HELPER" ]; then python3 "$MTL_HELPER" --self-test; exit $?; fi
       echo "Self-test: PASS (degraded — python3 unavailable; validator-conventions is advisory without it; _has_override bash regression passed)"; exit 0
