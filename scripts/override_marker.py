@@ -32,8 +32,9 @@ import re
 # a ``` line inside a ~~~ fence, …; Codex P1 xN). `strip_code_spans` is the SINGLE source of truth — the
 # bash gates delegate to it via the CLI below, so there is exactly one implementation to keep correct.
 # A fence OPENER: 0–3 leading spaces (4+ or a tab is indented code, not a fence) + a run of 3+ backticks
-# or tildes; an opener may carry an info string, so trailing text is allowed here.
-_FENCE_OPEN_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+# or tildes; group 2 is the info string (an opener may carry one). CommonMark forbids backticks in a
+# BACKTICK opener's info string — that check is applied in strip_code_spans (a tilde info is unrestricted).
+_FENCE_OPEN_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
 # A fence CLOSER: in CommonMark a closing fence is ONLY the fence run + optional trailing whitespace —
 # nothing else. A same-run line with other text (`~~~not-a-close`, ` ```python`) is CONTENT, not a
 # closer, so it must not end the block early and expose a later marker (Codex P1).
@@ -59,7 +60,10 @@ def strip_code_spans(body):
     for line in (body or "").split("\n"):
         if fence is None:
             mo = _FENCE_OPEN_RE.match(line)
-            if mo:
+            # CommonMark forbids a backtick in the INFO STRING of a backtick opener, so `` ```info` `` is
+            # NOT a fence (it is inline code / text) and must not open a block that swallows a LATER live
+            # marker (Codex P2). A tilde opener's info string is unrestricted.
+            if mo and not (mo.group(1)[0] == "`" and "`" in mo.group(2)):
                 fence = (mo.group(1)[0], len(mo.group(1)))
                 out.append("")             # drop the opening fence line
             else:
@@ -140,6 +144,12 @@ def _self_test():
     # spaces), so it cannot suppress a later LIVE marker (Codex P1)
     chk("indented_code_tilde_is_not_a_fence",
         has_override("    ~~~\n<!-- override: my-slug -->\n    ~~~", S))
+    # a BACKTICK opener whose INFO STRING contains a backtick is NOT a valid fence (CommonMark); it must
+    # not open a block that suppresses a LATER live marker (Codex P2). A tilde info string is fine.
+    chk("invalid_backtick_info_string_not_a_fence",
+        has_override("```info`\n<!-- override: my-slug -->\nplain", S))
+    chk("tilde_info_string_with_backtick_still_a_fence",
+        not has_override("~~~info`tick\n<!-- override: my-slug -->\n~~~", S))
     # …and after a fenced block CLOSES, a genuine marker is honored again (the close re-enables scanning)
     chk("genuine_after_fenced_block",
         has_override("```\n<!-- override: my-slug -->\n```\n\nReal: <!-- override: my-slug -->", S))

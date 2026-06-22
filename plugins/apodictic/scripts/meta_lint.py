@@ -233,9 +233,11 @@ def _ov_body(group):
     per call so the 4-way alternation in `_OV_PY_RE` does not collide), the override marker, then a run
     that does NOT begin the SAME closing delimiter — so an OPPOSITE quote INSIDE the literal
     (`"<!--override: author's note"`, `'<!--override: "quoted"'`, and their triple-quoted forms) cannot
-    end the body early and let the bare scan evade the gate — then the matching close delimiter."""
+    end the body early and let the bare scan evade the gate — then the matching close delimiter. The body
+    uses `[\\s\\S]` (not `.`) so a MULTILINE triple-quoted literal still closes — `_OV_PY_RE` is not
+    compiled DOTALL, and the closing backref bounds the run, so this stays per-alternative (Codex P2)."""
     return (_OV_PFX + (r"""(?P<%s>'''|\"\"\"|['"])""" % group) + _OV_MARK
-            + (r"""(?:(?!(?P=%s)).)*?(?P=%s)""" % (group, group)))
+            + (r"""(?:(?!(?P=%s))[\s\S])*?(?P=%s)""" % (group, group)))
 
 
 _OV_PY_IN_PAT = _ov_body("ovq1") + r"""\s*\)?\s+(?:not\s+)?in\b"""
@@ -570,6 +572,10 @@ def run_self_test():
         check_m5_py("g.py", """if '<!--override: foo "quoted" note' in body:\n    pass\n""") != [])
     chk("m5_py_opposite_quote_triplequoted_flagged",
         check_m5_py("g.py", 'if """<!--override: foo author\'s note""" in body:\n    pass\n') != [])
+    # Codex P2: a MULTILINE triple-quoted membership literal must not evade M5 (`_OV_PY_RE` is not DOTALL;
+    # the `[\s\S]` body lets the run cross the newline to its closing delimiter)
+    chk("m5_py_multiline_triplequote_in_flagged",
+        check_m5_py("g.py", 'if """<!--override: foo\nreason""" in body:\n    pass\n') != [])
     chk("m5_py_find_flagged",
         check_m5_py("g.py", 'if body.find("<!-- override: foo") >= 0:\n    pass\n') != [])
     chk("m5_py_re_findall_flagged",
