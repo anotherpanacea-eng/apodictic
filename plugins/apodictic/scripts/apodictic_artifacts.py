@@ -76,6 +76,17 @@ def known_schema_ids():
     return sorted(p.name[:-len(".schema.json")] for p in d.glob("*.schema.json")) if d else []
 
 
+def schema_field_names(schema_id):
+    """Declared `properties` keys of a schema, as a frozenset, or None if the schema is absent.
+
+    The single source of truth a docs-no-re-list lint reads to assert no author-facing doc
+    enumerates a field name the schema does not declare (Harness Contracts v2)."""
+    schema = load_schema(schema_id)
+    if schema is None:
+        return None
+    return frozenset((schema.get("properties") or {}).keys())
+
+
 def fid_key(value):
     """A finding/ledger id normalized to a hashable, sortable form (a str, or None). The SINGLE source
     of truth for the recurring non-hashable/non-string id crash class: a malformed id (a JSON list/
@@ -170,6 +181,16 @@ def validate_obj(obj, schema, where="<obj>"):
                         errs.append("%s: '%s'[%d]=%r must be type %s" % (where, key, j, el, item_type))
         if "pattern" in spec and isinstance(val, str) and not re.search(spec["pattern"], val):
             errs.append("%s: '%s'=%r does not match pattern /%s/" % (where, key, val, spec["pattern"]))
+    # Closed-key enforcement (Harness Contracts v2): opt-in per schema. When a schema declares
+    # `additionalProperties: false`, every key not in `properties` is an error — this is what kills
+    # a misspelled field (a `severty` typo) that today validates clean. Backward-compatible: schemas
+    # default to `additionalProperties` absent/true, which keeps the permissive behavior the open
+    # schemas (the sidecar, gate_event) intentionally rely on.
+    if schema.get("additionalProperties") is False:
+        declared = set(schema.get("properties", {}).keys())
+        for key in obj:
+            if key not in declared:
+                errs.append("%s: unknown field '%s' (schema is closed; additionalProperties:false)" % (where, key))
     return errs
 
 
@@ -215,6 +236,23 @@ def run_self_test():
              and chapter_token("Pass 1 §Orientation") is None and chapter_token("§Scene Turns") is None
              and chapter_token(None) is None)
     check("chapter_token", [] if ct_ok else ["chapter_token mismatch"], True)
+    # Closed-key enforcement (Harness Contracts v2): a schema with additionalProperties:false rejects
+    # an unknown key; the same schema without the flag (absent/true) still permits it — no regression
+    # to the open schemas (the sidecar, gate_event).
+    closed = {"type": "object", "required": ["schema"],
+              "properties": {"schema": {"const": "x"}, "a": {"type": "string"}},
+              "additionalProperties": False}
+    open_ = {k: v for k, v in closed.items() if k != "additionalProperties"}
+    check("closed_key_rejects_unknown", validate_obj({"schema": "x", "a": "y", "stray": 1}, closed), False)
+    check("closed_key_allows_declared", validate_obj({"schema": "x", "a": "y"}, closed), True)
+    check("open_key_permits_unknown", validate_obj({"schema": "x", "a": "y", "stray": 1}, open_), True)
+    check("closed_key_true_permits_unknown",
+          validate_obj({"schema": "x", "a": "y", "stray": 1}, dict(open_, additionalProperties=True)), True)
+    # schema_field_names — single source the docs-no-re-list lint reads; absent schema -> None.
+    fn = schema_field_names("apodictic.finding.v1")
+    sfn_ok = (fn is not None and "severity" in fn and "evidence_refs" in fn
+              and schema_field_names("apodictic.does_not_exist.v1") is None)
+    check("schema_field_names", [] if sfn_ok else ["schema_field_names mismatch"], True)
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 

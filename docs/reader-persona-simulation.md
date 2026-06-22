@@ -27,7 +27,7 @@ A persona is **a parameterization of the existing reader-experience lens, never 
 
 ## Personas as declared dispositions
 
-A persona is an `apodictic.persona.v1` block: a small, **closed** set of reading-disposition axes, each a top-level string enum (so the subset schema engine *can* validate each one), plus `id` and a boolean `target`. No other keys are permitted (`D5`). No free narrative, no biography field — and, crucially, the guarantee is enforced by the validator's closed-key check, **not** by the schema (the subset engine silently allows unknown properties, so "the schema has no such field" would be a false guarantee).
+A persona is an `apodictic.persona.v1` block: a small, **closed** set of reading-disposition axes, each a top-level string enum (so the subset schema engine *can* validate each one), plus `id` and a boolean `target`. No other keys are permitted (`D5`). No free narrative, no biography field — and, crucially, the guarantee is enforced by the validator's closed-key check, **not** by relying on the schema alone (the subset engine allows unknown properties unless a schema opts into `additionalProperties:false`, so "the schema has no such field" would, on its own, be a false guarantee).
 
 - `pace_tolerance` (low / medium / high)
 - `genre_familiarity` (newcomer / regular / expert)
