@@ -71,7 +71,9 @@ per-persona `experiences` ∈ engaged/neutral/friction/disengage + `magnitude`, 
 `validate.sh persona-divergence <run_folder|files...> [--strict]` runs: **D1** schema (incl. the
 nested `experiences` enum + that each key is a declared persona), **D2** grounded prediction (anchor
 resolves to a Ledger finding or a Timeline scene id), **D3** target-severity anchoring (exactly one
-target; `asserted_severity` must equal the locked severity — neither below nor above), **D4** no fabricated testimony (advisory;
+target; `asserted_severity` must equal the locked severity — neither below nor above — and may be
+asserted only against a Ledger finding, never on a Timeline-locus anchor that has no locked verdict),
+**D4** no fabricated testimony (advisory;
 ERROR `--strict`; override `<!-- override: persona-quote D-NN — quoting the manuscript -->`), **D5**
 closed-key persona (ERROR, non-overridable), and **W1** coverage (≥2 personas with at least one
 varying disposition axis). Pass the Findings Ledger (and optionally the Timeline) as additional files
