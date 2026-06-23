@@ -5,6 +5,12 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.6.1 - 2026-06-23
+
+### Audit Inventory — Content Advisory + Reader-Persona Simulation now registered
+
+Two specialized audits that shipped in v2.6.0 — **Content Advisory** (`content-advisory`, a sensitivity-surface audit sibling to Reception Risk) and **Reader-Persona Simulation** (`persona-divergence`, a Pass-1 reader-dynamics overlay) — were never carded in the user-facing audit surfaces, so they were absent from the downstream Gemini website (generated from `release-registry.json`). Both are now registered across every audit-inventory surface: `release-registry.json` (two new **Craft** items; `availableAudits` 35 → 37, `specializedAudits` 32 → 34), the canonical `audit-routing-table.md` signal-emitting-audits inventory, `AUDIT_SELECTION_MATRIX.md`, and `overview-dashboard.html` (inventory-synced markers re-synced to `audits=45`). The inventory-parity gate (`scripts/check-inventory-parity.mjs`) now **also guards `release-registry.json`**: every shipped reference under `specialized-audits/references/` must be carded in the registry's `categories[].items[].files` or explicitly listed in a new `NOT_CARDED` allowlist — so a future specialized audit can no longer ship uncarded the way these two did. A hermetic `--self-test` case proves the new check is non-vacuous.
+
 ## v2.6.0 - 2026-06-23
 
 ### Annotated-Manuscript Deliverable — letter ↔ margin cross-links (Increment 3)
