@@ -55,51 +55,60 @@ function readMarketplaceMetadataVersion(data) {
 function main() {
   const errors = [];
 
-  // 1) Ensure generated files are up to date.
-  try {
-    execFileSync(
-      process.execPath,
-      [path.join(repoRoot, "scripts/release-generate.mjs"), "--check"],
-      { stdio: "inherit" }
-    );
-  } catch {
-    errors.push("Generated files are stale. Run scripts/release-generate.mjs.");
-  }
+  // --versions-only: run ONLY the cross-manifest version-parity check (section 2),
+  // skipping the generate-check / build self-checks / validate.sh --check-all steps.
+  // CI uses this — those heavy gates already run as their own ci.yml steps, so the
+  // version-parity gate (the one thing CI was NOT checking) is added without
+  // double-running them. The full `release-verify` (no flag) still runs everything.
+  const versionsOnly = process.argv.includes("--versions-only");
 
-  // Host trees are no longer committed (GitHub #52) — regenerate fresh and
-  // validate internal consistency (incl. the release archive) instead of
-  // diffing against a committed copy.
-  try {
-    execFileSync(
-      process.execPath,
-      [path.join(repoRoot, "scripts/build-codex.mjs"), "--self-check"],
-      { stdio: "inherit" }
-    );
-  } catch {
-    errors.push("Codex workspace failed self-check. Run scripts/build-codex.mjs.");
-  }
+  if (!versionsOnly) {
+    // 1) Ensure generated files are up to date.
+    try {
+      execFileSync(
+        process.execPath,
+        [path.join(repoRoot, "scripts/release-generate.mjs"), "--check"],
+        { stdio: "inherit" }
+      );
+    } catch {
+      errors.push("Generated files are stale. Run scripts/release-generate.mjs.");
+    }
 
-  try {
-    execFileSync(
-      process.execPath,
-      [path.join(repoRoot, "scripts/build-antigravity.mjs"), "--self-check"],
-      { stdio: "inherit" }
-    );
-  } catch {
-    errors.push("Antigravity workspace failed self-check. Run scripts/build-antigravity.mjs.");
-  }
+    // Host trees are no longer committed (GitHub #52) — regenerate fresh and
+    // validate internal consistency (incl. the release archive) instead of
+    // diffing against a committed copy.
+    try {
+      execFileSync(
+        process.execPath,
+        [path.join(repoRoot, "scripts/build-codex.mjs"), "--self-check"],
+        { stdio: "inherit" }
+      );
+    } catch {
+      errors.push("Codex workspace failed self-check. Run scripts/build-codex.mjs.");
+    }
 
-  // 1.5) Aggregate real-file gate: self-tests + registry-vs-§4e + structured-findings
-  // on the shipped templates (validate.sh --check-all). Closes the gap where the
-  // standard verification path skipped real-file invariants.
-  try {
-    execFileSync(
-      "bash",
-      [path.join(repoRoot, "plugins/apodictic/scripts/validate.sh"), "--check-all"],
-      { stdio: "inherit" }
-    );
-  } catch {
-    errors.push("validate.sh --check-all failed (self-tests or real-file invariants). Run plugins/apodictic/scripts/validate.sh --check-all.");
+    try {
+      execFileSync(
+        process.execPath,
+        [path.join(repoRoot, "scripts/build-antigravity.mjs"), "--self-check"],
+        { stdio: "inherit" }
+      );
+    } catch {
+      errors.push("Antigravity workspace failed self-check. Run scripts/build-antigravity.mjs.");
+    }
+
+    // 1.5) Aggregate real-file gate: self-tests + registry-vs-§4e + structured-findings
+    // on the shipped templates (validate.sh --check-all). Closes the gap where the
+    // standard verification path skipped real-file invariants.
+    try {
+      execFileSync(
+        "bash",
+        [path.join(repoRoot, "plugins/apodictic/scripts/validate.sh"), "--check-all"],
+        { stdio: "inherit" }
+      );
+    } catch {
+      errors.push("validate.sh --check-all failed (self-tests or real-file invariants). Run plugins/apodictic/scripts/validate.sh --check-all.");
+    }
   }
 
   // 2) Verify version parity across canonical files.

@@ -1,0 +1,119 @@
+name: Release readiness
+
+# Weekly nudge so the version doesn't stall (it sat at 2.5.0 across ~8 merges).
+# If changelog.d/ has accumulated unreleased fragments, OR plugin.json has been
+# bumped past the last git tag, open/refresh a single "Release readiness" issue
+# prompting a release cut; auto-close it once there is nothing unreleased.
+#
+# Uses only repo-internal data (git tags + changelog.d/ file counts). No
+# github.event.* input is read, so there is no workflow-injection surface.
+
+on:
+  schedule:
+    - cron: "0 16 * * 2" # Tuesdays 16:00 UTC (offset from the Monday SETEC syncs)
+  workflow_dispatch:
+
+concurrency:
+  # Serialize runs so a schedule + workflow_dispatch overlap can't both pass the
+  # "does the issue exist?" check while no reminder exists and each take the
+  # create branch — that left duplicate "single" readiness issues. A fixed group
+  # (not per-ref) makes the whole workflow a singleton; cancel-in-progress:false
+  # never kills a run mid issue-update, so the queued run starts only after the
+  # first finishes and then sees the issue it created.
+  group: release-readiness
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  ISSUE_TITLE: "🔖 Release readiness: unreleased changes await a tag"
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need the full tag history for `git describe`
+
+      - name: Assess release readiness
+        id: assess
+        run: |
+          set -euo pipefail
+          LAST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || echo 'none')"
+          CUR_VERSION="$(python3 -c "import json; print(json.load(open('plugins/apodictic/.claude-plugin/plugin.json'))['version'])")"
+          FRAGS="$(find changelog.d -maxdepth 1 -name '*.md' ! -name 'README.md' -printf '%f\n' 2>/dev/null | sort || true)"
+          FRAG_COUNT="$(printf '%s' "$FRAGS" | grep -c . || true)"
+          {
+            echo "last_tag=$LAST_TAG"
+            echo "cur_version=$CUR_VERSION"
+            echo "frag_count=$FRAG_COUNT"
+            echo "frags<<FRAGS_EOF"
+            printf '%s\n' "$FRAGS"
+            echo "FRAGS_EOF"
+          } >> "$GITHUB_OUTPUT"
+          # Ready to cut a release if there are unreleased fragments OR the staged
+          # version is ahead of the last tag.
+          if [ "$FRAG_COUNT" -gt 0 ] || [ "v$CUR_VERSION" != "$LAST_TAG" ]; then
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open / refresh / close the readiness issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEEDED: ${{ steps.assess.outputs.needed }}
+          LAST_TAG: ${{ steps.assess.outputs.last_tag }}
+          CUR_VERSION: ${{ steps.assess.outputs.cur_version }}
+          FRAG_COUNT: ${{ steps.assess.outputs.frag_count }}
+          FRAGS: ${{ steps.assess.outputs.frags }}
+        run: |
+          set -euo pipefail
+          EXISTING="$(gh issue list --state open --json number,title \
+            --jq ".[] | select(.title == env.ISSUE_TITLE) | .number" | head -n1)"
+
+          if [ "$NEEDED" != "true" ]; then
+            if [ -n "$EXISTING" ]; then
+              gh issue close "$EXISTING" \
+                --comment "No unreleased fragments and the version matches the last tag — closing."
+            fi
+            echo "Nothing unreleased; no issue needed."
+            exit 0
+          fi
+
+          BODY_FILE="$(mktemp)"
+          {
+            echo "Unreleased changes are accumulating without a release tag."
+            echo
+            echo "- **Last release tag:** \`$LAST_TAG\`"
+            echo "- **Current plugin.json version:** \`$CUR_VERSION\`"
+            echo "- **Unreleased \`changelog.d/\` fragments:** $FRAG_COUNT"
+            echo
+            if [ "$FRAG_COUNT" -gt 0 ]; then
+              echo "<details><summary>Fragments</summary>"
+              echo
+              printf '%s\n' "$FRAGS" | sed '/^$/d; s/^/- /'
+              echo
+              echo "</details>"
+              echo
+            fi
+            echo "**To cut the release** (bump → assemble changelog → generate → build → verify, then tag):"
+            echo '```'
+            echo "./scripts/release.sh <next-version>"
+            echo "# then commit the result and: git tag v<next-version> && git push origin main v<next-version>"
+            echo '```'
+            echo
+            echo "_Auto-generated weekly by \`.github/workflows/release-readiness.yml\`; closes itself once nothing is unreleased._"
+          } > "$BODY_FILE"
+
+          if [ -n "$EXISTING" ]; then
+            gh issue edit "$EXISTING" --body-file "$BODY_FILE"
+            echo "Refreshed readiness issue #$EXISTING"
+          else
+            gh issue create --title "$ISSUE_TITLE" --body-file "$BODY_FILE"
+            echo "Opened a new readiness issue"
+          fi

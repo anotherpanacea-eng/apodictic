@@ -48,6 +48,13 @@ jobs:
           done
           echo "all ${#files[@]} manifests parse"
 
+      # Cross-manifest version parity: the canonical version (3 plugin.json +
+      # 2 marketplace.json + 5 SKILL.md frontmatters) must all agree, so a
+      # partial / forgotten bump can't merge. --versions-only runs ONLY the parity
+      # check (the build / --check-all gates already run as their own steps below).
+      - name: Version parity across manifests
+        run: node scripts/release-verify.mjs --versions-only
+
       # --check-all subsumes --self-test-all (the validator self-tests) and
       # adds the real-file invariants: the validators are run against the actual
       # canonical framework files (pass-dependencies.md, the shipped templates,
