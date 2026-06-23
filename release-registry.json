@@ -17,8 +17,8 @@
     "auditCommand": "plugins/apodictic/commands/audit.md"
   },
   "counts": {
-    "availableAudits": 35,
-    "specializedAudits": 32,
+    "availableAudits": 37,
+    "specializedAudits": 34,
     "universalAudits": 3,
     "tagAudits": 5,
     "primaryTagAudits": 3,
@@ -500,6 +500,22 @@
           "files": [
             "craft/series-continuity.md",
             "craft/series-continuity-level-setting.md"
+          ]
+        },
+        {
+          "slug": "content-advisory",
+          "name": "Content Advisory",
+          "summary": "where the manuscript depicts intense material, at what intensity, on/off-page — for content warnings, retailer metadata, sensitivity handoff",
+          "files": [
+            "content-advisory.md"
+          ]
+        },
+        {
+          "slug": "persona-divergence",
+          "name": "Reader-Persona Simulation",
+          "summary": "runs the reader-dynamics lens through several declared reading dispositions and reports where audiences' experiences diverge",
+          "files": [
+            "craft/persona-divergence.md"
           ]
         }
       ]

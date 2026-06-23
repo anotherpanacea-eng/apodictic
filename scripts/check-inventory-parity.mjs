@@ -54,6 +54,131 @@ const OPTED_IN_SURFACES = [
   "plugins/apodictic/AUDIT_SELECTION_MATRIX.md",
 ];
 
+// --- release-registry coverage of shipped specialized-audit references --------
+//
+// The Gemini website is generated from release-registry.json, so a specialized
+// audit that ships a reference file but is NEVER carded in the registry's
+// categories[].items[].files is invisible downstream — exactly the v2.6.0 gap
+// where content-advisory.md and craft/persona-divergence.md shipped uncarded.
+// This second check is FILE-PATH based (not name based) to sidestep the
+// inventory-display-name vs. registry-name mismatch: every reference `.md`
+// shipped under the references dir must be either referenced by some registry
+// item's files[] OR explicitly listed in NOT_CARDED below.
+const REGISTRY_FILE = "release-registry.json";
+const SPECIALIZED_REFS_DIR =
+  "plugins/apodictic/skills/specialized-audits/references";
+
+// NOT_CARDED — reference files that legitimately do NOT correspond to a
+// release-registry.json categories[].items[] audit card.
+//
+// A NEW specialized-audit reference must be carded in release-registry.json OR
+// explicitly listed here — this is the gate that catches the v2.6.0 gap where
+// content-advisory/persona-divergence shipped uncarded. Adding a reference file
+// without doing one or the other FAILS this check (that is the whole point).
+//
+// Paths are relative to SPECIALIZED_REFS_DIR (matching the files[] convention).
+// Each entry is a non-audit reference: a level-setting / computational / stub
+// sub-reference of an already-carded audit, OR a reference whose audit is carded
+// only in a non-`categories` registry section (researchModes / argumentCompanions),
+// OR a pre-existing standalone audit that predates this gate and is itself
+// not yet carded in `categories` (POV Voice Profile, Idiolect Preservation,
+// Punctuation Cadence — carding these is out of scope for the v2.6.0 fix and is
+// tracked separately; they are allowlisted here so the gate is green today and
+// only catches *newly* added uncarded references).
+const NOT_CARDED = new Set([
+  // Sub-references of carded audits (level-setting / computational / stubs).
+  "craft/ai-prose-calibration-distributional.md",
+  "craft/ai-prose-calibration-level-setting.md",
+  "craft/compression-audit-expansion-stub.md",
+  "craft/dialectical-clarity-level-setting.md",
+  // Carded in release-registry.json under researchModes (not categories[].items[]).
+  "craft/research-citation-verifier.md",
+  "craft/research-comp-validation.md",
+  "craft/research-factual-verification.md",
+  "craft/research-field-recon.md",
+  "craft/research-genre-currency.md",
+  "craft/research-representation-context.md",
+  // Carded in release-registry.json under argumentCompanions (not categories[].items[]).
+  "craft/adversarial-evidence-review.md",
+  "craft/argument-evidence.md",
+  "craft/argument-persuasion.md",
+  "craft/argument-persuasion-level-setting.md",
+  "craft/argument-red-team.md",
+  "craft/argument-red-team-level-setting.md",
+  // Pre-existing standalone audits not (yet) carded in categories[].items[];
+  // carding them is out of scope for the v2.6.0 fix (tracked separately).
+  "craft/idiolect-preservation.md",
+  "craft/pov-voice-profile.md",
+  "craft/punctuation-cadence.md",
+]);
+
+// Recursively collect every `*.md` under `dir`, returned as POSIX-style paths
+// relative to `dir` (matching the registry's files[] convention).
+function collectReferenceFiles(dir) {
+  const out = [];
+  if (!fs.existsSync(dir)) return out;
+  const walk = (abs, rel) => {
+    for (const entry of fs.readdirSync(abs, { withFileTypes: true })) {
+      const childAbs = path.join(abs, entry.name);
+      const childRel = rel ? `${rel}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        walk(childAbs, childRel);
+      } else if (entry.isFile() && entry.name.endsWith(".md")) {
+        out.push(childRel);
+      }
+    }
+  };
+  walk(dir, "");
+  return out;
+}
+
+// Collect every files[] entry across release-registry.json categories[].items[].
+function collectCardedReferenceFiles(registry) {
+  const carded = new Set();
+  for (const category of registry.categories || []) {
+    for (const item of category.items || []) {
+      for (const f of item.files || []) carded.add(f);
+    }
+  }
+  return carded;
+}
+
+// Returns an array of problem strings (empty => clean). Asserts that every
+// shipped specialized-audit reference is carded in release-registry.json OR
+// explicitly allowlisted in NOT_CARDED.
+function checkRegistryReferenceCoverage(root, { notCarded = NOT_CARDED } = {}) {
+  const refsDir = path.join(root, SPECIALIZED_REFS_DIR);
+  const registryPath = path.join(root, REGISTRY_FILE);
+  if (!fs.existsSync(registryPath)) {
+    return [
+      `MISSING-REGISTRY: ${REGISTRY_FILE} not found at repo root; cannot verify reference coverage.`,
+    ];
+  }
+  let registry;
+  try {
+    registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
+  } catch (e) {
+    return [`BAD-REGISTRY: ${REGISTRY_FILE} is not valid JSON (${e.message}).`];
+  }
+  const shipped = collectReferenceFiles(refsDir);
+  const carded = collectCardedReferenceFiles(registry);
+  const problems = [];
+  for (const rel of shipped.sort()) {
+    if (carded.has(rel)) continue;
+    if (notCarded.has(rel)) continue;
+    problems.push(
+      `UNCARDED-REFERENCE: ${SPECIALIZED_REFS_DIR}/${rel} is a shipped ` +
+        `specialized-audit reference but is NOT carded in ${REGISTRY_FILE} ` +
+        `(categories[].items[].files) and is NOT in the NOT_CARDED allowlist. ` +
+        `A new specialized audit must be carded in the registry (so it surfaces ` +
+        `on the downstream site) OR explicitly allowlisted in ` +
+        `scripts/check-inventory-parity.mjs's NOT_CARDED — this is the gate that ` +
+        `catches the v2.6.0 gap where content-advisory/persona-divergence shipped uncarded.`
+    );
+  }
+  return problems;
+}
+
 const MARKER_RE =
   /<!--\s*inventory-synced:\s*(.*?)\s*-->/;
 // A line that *looks like* the marker (so a malformed one can't be silently skipped).
@@ -254,6 +379,10 @@ function runCheck(root, { quiet = false } = {}) {
     }
   }
 
+  // Second, independent check: every shipped specialized-audit reference must be
+  // carded in release-registry.json or explicitly allowlisted (NOT_CARDED).
+  problems.push(...checkRegistryReferenceCoverage(root));
+
   return { canonical, problems, markerCount, checked };
 }
 
@@ -339,6 +468,29 @@ function selfTest() {
     });
     fs.writeFileSync(path.join(root, AUDIT_REGISTRY_FILE), auditSrc);
     fs.writeFileSync(path.join(root, RESEARCH_FILE), researchSrc);
+    // Seed a clean release-registry.json + a fully-carded references tree so the
+    // registry-coverage check (wired into runCheck) is a no-op for the marker
+    // cases below — those cases assert problems.length===0 and must not be
+    // tripped by an unrelated coverage problem. (The coverage check has its own
+    // dedicated cases (h)/(i) below.)
+    fs.writeFileSync(
+      path.join(root, REGISTRY_FILE),
+      JSON.stringify(
+        {
+          categories: [
+            {
+              name: "Craft",
+              items: [{ name: "Alpha", slug: "alpha", files: ["alpha.md"] }],
+            },
+          ],
+        },
+        null,
+        2
+      )
+    );
+    const refsDir = path.join(root, SPECIALIZED_REFS_DIR);
+    fs.mkdirSync(refsDir, { recursive: true });
+    fs.writeFileSync(path.join(refsDir, "alpha.md"), "# carded ref\n");
     // surfaces: map of relpath -> content; only OPTED_IN_SURFACES are scanned.
     for (const [rel, content] of Object.entries(surfaces)) {
       const abs = path.join(root, rel);
@@ -470,6 +622,102 @@ function selfTest() {
     log(
       !!stubbedWouldPass && result.problems.length > 0,
       "(integrity) negative cases fail only because compare is real"
+    );
+  }
+
+  // --- registry-coverage check (the new release-registry.json guard) ---------
+  //
+  // Hermetic, non-vacuous proof: a fixtured reference file that is neither carded
+  // in release-registry.json nor allowlisted must FAIL; the SAME file once carded
+  // (or once allowlisted) must PASS. We call checkRegistryReferenceCoverage()
+  // directly so the assertion is structural (a non-empty/empty problems array),
+  // mirroring the marker-case style above.
+  function makeCoverageRoot({ registry, refFiles }) {
+    caseN++;
+    const root = path.join(tmpBase, `cov-${caseN}`);
+    fs.mkdirSync(root, { recursive: true });
+    fs.writeFileSync(
+      path.join(root, REGISTRY_FILE),
+      JSON.stringify(registry, null, 2)
+    );
+    const refsDir = path.join(root, SPECIALIZED_REFS_DIR);
+    fs.mkdirSync(refsDir, { recursive: true });
+    for (const rel of refFiles) {
+      const abs = path.join(refsDir, rel);
+      fs.mkdirSync(path.dirname(abs), { recursive: true });
+      fs.writeFileSync(abs, `# ${rel}\n`);
+    }
+    return root;
+  }
+
+  // (h) an uncarded, un-allowlisted reference -> FAIL (non-vacuous: catches the
+  //     exact v2.6.0 class of bug).
+  {
+    const root = makeCoverageRoot({
+      registry: {
+        categories: [
+          {
+            name: "Craft",
+            items: [
+              { name: "Carded", slug: "carded", files: ["craft/carded.md"] },
+            ],
+          },
+        ],
+      },
+      refFiles: ["craft/carded.md", "craft/orphan.md"],
+    });
+    const problems = checkRegistryReferenceCoverage(root, { notCarded: new Set() });
+    const flagged = problems.some(
+      (p) => p.startsWith("UNCARDED-REFERENCE:") && p.includes("craft/orphan.md")
+    );
+    log(
+      !!flagged && problems.length > 0,
+      "(h) uncarded+unallowlisted reference -> FAIL",
+      flagged ? "" : "did not flag the orphan reference"
+    );
+  }
+
+  // (i-card) the SAME orphan, now CARDED in the registry -> PASS.
+  {
+    const root = makeCoverageRoot({
+      registry: {
+        categories: [
+          {
+            name: "Craft",
+            items: [
+              { name: "Carded", slug: "carded", files: ["craft/carded.md"] },
+              { name: "Orphan", slug: "orphan", files: ["craft/orphan.md"] },
+            ],
+          },
+        ],
+      },
+      refFiles: ["craft/carded.md", "craft/orphan.md"],
+    });
+    const problems = checkRegistryReferenceCoverage(root, { notCarded: new Set() });
+    log(problems.length === 0, "(i-card) same reference, now carded -> PASS");
+  }
+
+  // (i-allow) the SAME orphan, now ALLOWLISTED in NOT_CARDED -> PASS.
+  {
+    const root = makeCoverageRoot({
+      registry: {
+        categories: [
+          {
+            name: "Craft",
+            items: [
+              { name: "Carded", slug: "carded", files: ["craft/carded.md"] },
+            ],
+          },
+        ],
+      },
+      refFiles: ["craft/carded.md", "craft/orphan.md"],
+    });
+    const problems = checkRegistryReferenceCoverage(root, {
+      notCarded: new Set(["craft/orphan.md"]),
+    });
+    log(
+      problems.length === 0,
+      "(i-allow) same reference, now allowlisted -> PASS"
     );
   }
 
