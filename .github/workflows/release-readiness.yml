@@ -13,6 +13,16 @@ on:
     - cron: "0 16 * * 2" # Tuesdays 16:00 UTC (offset from the Monday SETEC syncs)
   workflow_dispatch:
 
+concurrency:
+  # Serialize runs so a schedule + workflow_dispatch overlap can't both pass the
+  # "does the issue exist?" check while no reminder exists and each take the
+  # create branch — that left duplicate "single" readiness issues. A fixed group
+  # (not per-ref) makes the whole workflow a singleton; cancel-in-progress:false
+  # never kills a run mid issue-update, so the queued run starts only after the
+  # first finishes and then sees the issue it created.
+  group: release-readiness
+  cancel-in-progress: false
+
 permissions:
   contents: read
   issues: write
