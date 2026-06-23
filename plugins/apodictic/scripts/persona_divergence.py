@@ -17,9 +17,10 @@ LENS, never the non-viable Simulated Reader Focus Group (Horizon item 17): predi
      prediction       Ledger NOR a real Timeline scene id (locus). An ungrounded prediction is a
                        fabricated one — the signature firewall gate (ERROR).
   D3 target-severity   not exactly one persona is target:true; OR a divergence's optional
-     anchoring         `asserted_severity` DIFFERS FROM its anchored finding's locked Ledger severity.
-                       The overlay is descriptive: segmentation may neither downgrade NOR inflate the
-                       target-audience verdict — severity stays locked to the target's finding (ERROR).
+     anchoring         `asserted_severity` DIFFERS FROM its anchored finding's locked Ledger severity,
+                       OR is asserted on an anchor with NO locked severity (a Timeline locus). The
+                       overlay is descriptive: a severity may be asserted only against a Ledger finding
+                       whose locked severity it equals — neither downgrade NOR inflate (ERROR).
   D4 no fabricated     the map presents a first-person reader-reaction QUOTE ("I got bored …") as data
      testimony        — invented reader testimony, the #17 boundary. Advisory; ERROR under --strict.
                        Override: <!-- override: persona-quote D-NN — quoting the manuscript -->, where
@@ -237,9 +238,21 @@ def divergence(map_text, ledger_text=None, timeline_text=None, strict=False):
                     "severity anchors to the target audience" % (len(targets), ", ".join(targets) or "none"))
     for o, _i in valid_divs:
         asserted = o.get("asserted_severity")
+        if asserted not in _RANK:
+            continue  # no severity asserted (the descriptive default), or a bad enum D1 owns
         anchor = (o.get("anchor") or "").strip()
         locked = index.get(anchor, {}).get("severity")
-        if asserted in _RANK and locked in _RANK and _RANK[asserted] != _RANK[locked]:
+        if locked not in _RANK:
+            # The anchor resolves to no locked Ledger severity — a Timeline-locus anchor, or a
+            # finding without a parseable severity. There is nothing to equal, so asserting a
+            # severity here is a free-floating verdict the descriptive overlay must not introduce
+            # (it would propagate while §4e declares the overlay non-propagating).
+            errs.append("D3 target-severity: divergence %s asserts %s but its anchor %r resolves to "
+                        "no locked Ledger severity (e.g. a Timeline locus) — a severity may be "
+                        "asserted ONLY against a Ledger finding whose locked severity it equals; the "
+                        "overlay carries no severity of its own, so drop asserted_severity or anchor "
+                        "to the finding that locks it" % (o.get("id"), asserted, anchor))
+        elif _RANK[asserted] != _RANK[locked]:
             direction = "lower than" if _RANK[asserted] < _RANK[locked] else "higher than"
             errs.append("D3 target-severity: divergence %s asserts %s, %s the anchored "
                         "finding's locked %s — the overlay is descriptive; severity stays "
@@ -448,6 +461,15 @@ def run_self_test():
     # the §4e "no propagating signal" row depends on never happening (Codex P1)
     code, lines = divergence(MAP.replace(div("D-01"), div("D-01", asserted="Must-Fix")), finding("F-P1-04", "Could-Fix"))
     chk("d3_upshift_blocked", code == 1 and any("D3 target-severity" in ln and "higher than" in ln for ln in lines))
+    # a Timeline-locus anchor has NO locked Ledger severity, so an asserted severity would bypass the
+    # equality check and propagate a verdict the §4e "no propagating signal" row denies — a severity may
+    # be asserted ONLY against a Ledger finding (Codex P1 follow-up)
+    code, lines = divergence(MAP.replace(div("D-01"), div("D-01", anchor="Ch 4 §2", asserted="Must-Fix")), LEDGER, TL)
+    chk("d3_timeline_anchor_asserted_blocked",
+        code == 1 and any("D3 target-severity" in ln and "no locked Ledger severity" in ln for ln in lines))
+    # but a Timeline-anchored divergence with NO asserted_severity is purely descriptive -> OK
+    chk("d3_timeline_anchor_no_severity_ok",
+        divergence(MAP.replace(div("D-01"), div("D-01", anchor="Ch 4 §2")), LEDGER, TL)[0] == 0)
     # D3b — a divergence must include the target persona AND actually diverge (Codex P1)
     chk("d3b_omits_target",
         any("omits the target" in ln for ln in
