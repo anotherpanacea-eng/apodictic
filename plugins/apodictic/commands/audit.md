@@ -34,6 +34,8 @@ Display the complete list of available audits with brief descriptions:
 - **compression** — Compression: expendable material, cut list, word-savings map
 - **reception-risk** — Reception Risk: reception exposure, extractability, sensitivity-review handoff
 - **series-continuity** — Cross-Volume Series Continuity: consequence propagation, state tracking, thread inventory, hope calibration across volumes
+- **content-advisory** — Content Advisory: where the manuscript depicts intense material, at what intensity, on/off-page — for content warnings, retailer metadata, sensitivity handoff
+- **persona-divergence** — Reader-Persona Simulation: runs the reader-dynamics lens through several declared reading dispositions and reports where audiences' experiences diverge
 
 ### Genre Audits
 - **comedy** — Comedy & Satire: timing, landing rate, tonal integration

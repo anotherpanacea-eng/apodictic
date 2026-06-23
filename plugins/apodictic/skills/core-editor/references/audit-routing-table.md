@@ -44,6 +44,7 @@ Intentionally **excluded** (no severity signals — they need no §4e row): pure
 - Scene Turn
 - Compression
 - Reception Risk
+- Content Advisory
 - Banister (Epistemic Humility)
 - AI-Prose Calibration
 - Female Interiority
@@ -66,6 +67,7 @@ Intentionally **excluded** (no severity signals — they need no §4e row): pure
 - Narrative-Decision (StoryScope)
 - Argument-Decision (ArgScope)
 - POV Voice Profile
+- Reader-Persona Simulation
 - Comedy & Satire
 - Historical Fiction
 - Memoir / Creative NF
