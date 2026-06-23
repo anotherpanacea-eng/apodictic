@@ -17,8 +17,9 @@ LENS, never the non-viable Simulated Reader Focus Group (Horizon item 17): predi
      prediction       Ledger NOR a real Timeline scene id (locus). An ungrounded prediction is a
                        fabricated one — the signature firewall gate (ERROR).
   D3 target-severity   not exactly one persona is target:true; OR a divergence's optional
-     anchoring         `asserted_severity` is LOWER than its anchored finding's locked Ledger severity.
-                       Segmentation may not downgrade the target-audience verdict (ERROR).
+     anchoring         `asserted_severity` DIFFERS FROM its anchored finding's locked Ledger severity.
+                       The overlay is descriptive: segmentation may neither downgrade NOR inflate the
+                       target-audience verdict — severity stays locked to the target's finding (ERROR).
   D4 no fabricated     the map presents a first-person reader-reaction QUOTE ("I got bored …") as data
      testimony        — invented reader testimony, the #17 boundary. Advisory; ERROR under --strict.
                        Override: <!-- override: persona-quote D-NN — quoting the manuscript -->, where
@@ -238,10 +239,13 @@ def divergence(map_text, ledger_text=None, timeline_text=None, strict=False):
         asserted = o.get("asserted_severity")
         anchor = (o.get("anchor") or "").strip()
         locked = index.get(anchor, {}).get("severity")
-        if asserted in _RANK and locked in _RANK and _RANK[asserted] < _RANK[locked]:
-            errs.append("D3 target-severity: divergence %s asserts %s, lower than the anchored "
-                        "finding's locked %s — segmentation may not downgrade the verdict"
-                        % (o.get("id"), asserted, locked))
+        if asserted in _RANK and locked in _RANK and _RANK[asserted] != _RANK[locked]:
+            direction = "lower than" if _RANK[asserted] < _RANK[locked] else "higher than"
+            errs.append("D3 target-severity: divergence %s asserts %s, %s the anchored "
+                        "finding's locked %s — the overlay is descriptive; severity stays "
+                        "locked to the target's finding (segmentation may neither downgrade "
+                        "nor inflate the verdict)"
+                        % (o.get("id"), asserted, direction, locked))
 
     # D3b — a divergence must actually DIVERGE across personas, anchored to the target. An
     # experiences map that omits the target persona, or assigns every persona the SAME experience,
@@ -436,9 +440,14 @@ def run_self_test():
     chk("d3_two_targets", divergence(TARGET + persona("P-02", target=True) + div("D-01"), LEDGER)[0] == 1)
     code, lines = divergence(MAP.replace(div("D-01"), div("D-01", asserted="Could-Fix")), LEDGER)
     chk("d3_downgrade_blocked", code == 1 and any("D3 target-severity" in ln and "lower than" in ln for ln in lines))
-    # asserting the SAME (or higher) severity is fine
+    # asserting the SAME severity is fine — the overlay is descriptive (severity == the locked finding)
     chk("d3_equal_severity_ok",
         divergence(MAP.replace(div("D-01"), div("D-01", asserted="Must-Fix")), LEDGER)[0] == 0)
+    # asserting HIGHER than the locked severity is ALSO blocked — descriptive overlay re-segments who
+    # experiences a finding, it does not re-verdict it; an upshift would be a silent high-severity sink
+    # the §4e "no propagating signal" row depends on never happening (Codex P1)
+    code, lines = divergence(MAP.replace(div("D-01"), div("D-01", asserted="Must-Fix")), finding("F-P1-04", "Could-Fix"))
+    chk("d3_upshift_blocked", code == 1 and any("D3 target-severity" in ln and "higher than" in ln for ln in lines))
     # D3b — a divergence must include the target persona AND actually diverge (Codex P1)
     chk("d3b_omits_target",
         any("omits the target" in ln for ln in
