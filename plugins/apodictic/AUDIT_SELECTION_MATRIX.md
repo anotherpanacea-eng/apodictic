@@ -1,6 +1,6 @@
 # APODICTIC Audit Selection Matrix
 
-<!-- inventory-synced: audits=43:1202e80a research=6:a1b9dfc4 -->
+<!-- inventory-synced: audits=45:ce0a9a58 research=6:a1b9dfc4 -->
 
 This guide helps route a manuscript to the right APODICTIC passes and specialized audits.
 
@@ -112,9 +112,11 @@ Use these when one craft system needs deeper diagnosis than core passes provide.
 | Short Fiction | Tests compression, effect unity, ending force | Short stories, flash, novella-length compression |
 | Compression | Diagnoses expendable material across 5 channels (16 flags, 4 hard gates) | Manuscript runs long, scenes feel padded, or proportional imbalance detected |
 | Reception Risk | Flags cultural, political, and ideological reception risk for human sensitivity review | Author requests sensitivity pre-read, manuscript handles identity/power/trauma, or "how will this land?" questions |
+| Content Advisory | Maps where the manuscript depicts intense material, at what intensity, on- or off-page | Content warnings, retailer/metadata classification, or a sensitivity-review handoff is needed |
 | Narrative-Decision (StoryScope) | Tracks how decisions propagate consequences through the narrative (consumer of SETEC Surface 6) | Choice-and-consequence wiring across scenes needs a dedicated lens |
 | Argument-Decision (ArgScope) | Structure-level AI tells for how an argument is built — B1 paragraph-role arc + B2 discourse-mode mix (consumer of SETEC's `argument_decision_audit`); anti-verdict, op-ed register | Op-ed/public-debate argument prose where you want collapse-tells that survive sentence-level rewriting, or a descriptive pre-flag before a dialectical-clarity pass |
 | POV Voice Profile | Profiles per-POV voice signatures and distance discipline (opt-in) | Multi-POV works where voices blur or distance drifts |
+| Reader-Persona Simulation | Runs the reader-dynamics lens through several declared reading dispositions and reports where audiences diverge | You want to see how different reader segments experience the same draft |
 | Idiolect Preservation | Advisory: surfaces the author's idiosyncratic voice markers so revision preserves them | Author worries edits will sand off their distinctive voice |
 | Punctuation Cadence | Advisory: maps punctuation rhythm and breath as a deliberate prosody signal | Line-level rhythm or pointing feels off, mechanical, or homogenized |
 

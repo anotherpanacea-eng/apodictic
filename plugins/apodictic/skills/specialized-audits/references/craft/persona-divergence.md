@@ -54,8 +54,9 @@ its provenance.
 
 The danger is *persona-shopping*: softening a real defect by finding some disposition for which it
 "works." So **severity is locked against the target persona before the divergence reframing**: an
-`apodictic.divergence.v1` block whose optional `asserted_severity` is *lower* than the anchored
-finding's locked Ledger severity fails `D3`. "Works for the expert, fails for the newcomer" is recorded
+`apodictic.divergence.v1` block whose optional `asserted_severity` *differs from* the anchored
+finding's locked Ledger severity fails `D3` — the overlay is descriptive, so it may neither downgrade
+nor inflate the verdict. "Works for the expert, fails for the newcomer" is recorded
 as divergence; if the newcomer *is* the target, it is a defect at full severity.
 
 ## The artifact
@@ -70,7 +71,9 @@ per-persona `experiences` ∈ engaged/neutral/friction/disengage + `magnitude`, 
 `validate.sh persona-divergence <run_folder|files...> [--strict]` runs: **D1** schema (incl. the
 nested `experiences` enum + that each key is a declared persona), **D2** grounded prediction (anchor
 resolves to a Ledger finding or a Timeline scene id), **D3** target-severity anchoring (exactly one
-target; no `asserted_severity` below the locked severity), **D4** no fabricated testimony (advisory;
+target; `asserted_severity` must equal the locked severity — neither below nor above — and may be
+asserted only against a Ledger finding, never on a Timeline-locus anchor that has no locked verdict),
+**D4** no fabricated testimony (advisory;
 ERROR `--strict`; override `<!-- override: persona-quote D-NN — quoting the manuscript -->`), **D5**
 closed-key persona (ERROR, non-overridable), and **W1** coverage (≥2 personas with at least one
 varying disposition axis). Pass the Findings Ledger (and optionally the Timeline) as additional files
