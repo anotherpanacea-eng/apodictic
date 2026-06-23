@@ -54,6 +54,147 @@ const OPTED_IN_SURFACES = [
   "plugins/apodictic/AUDIT_SELECTION_MATRIX.md",
 ];
 
+// --- release-registry coverage of shipped specialized-audit references --------
+//
+// The Gemini website is generated from release-registry.json, so a specialized
+// audit that ships a reference file but is NEVER carded in the registry's
+// categories[].items[].files is invisible downstream — exactly the v2.6.0 gap
+// where content-advisory.md and craft/persona-divergence.md shipped uncarded.
+// PRIMARY-REFERENCE BINDING (Codex PR #146 P1). Gemini renders ONE card per
+// registry item, from that item's PRIMARY reference = files[0]. So a reference
+// must be the files[0] of its OWN card; merely occurring somewhere in another
+// card's files[] (e.g. demoted to a non-primary files[1:] sub-reference of an
+// unrelated item, with its own card removed) leaves the audit with no card
+// downstream — the exact regression this gate exists to prevent. The check is
+// therefore: every shipped reference `.md` must be the files[0] primary of
+// exactly one card (across categories[].items[] + researchModes +
+// argumentCompanions) OR be explicitly listed in NOT_CARDED. File-path based,
+// to sidestep the inventory-display-name vs. registry-name mismatch.
+const REGISTRY_FILE = "release-registry.json";
+const SPECIALIZED_REFS_DIR =
+  "plugins/apodictic/skills/specialized-audits/references";
+
+// NOT_CARDED — reference files that are legitimately NOT the files[0] primary of
+// their own card. A NEW specialized-audit reference must become a card's files[0]
+// primary OR be listed here; doing neither FAILS this check (the v2.6.0 gap where
+// content-advisory/persona-divergence shipped uncarded, now guarded).
+// Paths are relative to SPECIALIZED_REFS_DIR (matching the files[] convention).
+const NOT_CARDED = new Set([
+  // (1) Sub-references (files[1:]) of an already-carded audit — level-setting /
+  //     computational / stub companions that ride along with a card's primary.
+  "craft/ai-prose-calibration-distributional.md",
+  "craft/ai-prose-calibration-level-setting.md",
+  "craft/argument-persuasion-level-setting.md",
+  "craft/argument-red-team-level-setting.md",
+  "craft/compression-audit-expansion-stub.md",
+  "craft/compression-audit-level-setting.md",
+  "craft/decision-pressure-level-setting.md",
+  "craft/dialectical-clarity-level-setting.md",
+  "craft/female-interiority-level-setting.md",
+  "craft/force-architecture-level-setting.md",
+  "craft/literary-craft-level-setting.md",
+  "craft/reception-risk-level-setting.md",
+  "craft/series-continuity-level-setting.md",
+  "craft/stakes-system-level-setting.md",
+  "genre/grimdark-level-setting.md",
+  "genre/horror-craft-level-setting.md",
+  "genre/mystery-thriller-architecture-level-setting.md",
+  "genre/sff-worldbuilding-level-setting.md",
+  "genre/supernatural-horror-level-setting.md",
+  "tag/cozy-tag-level-setting.md",
+  // (2) Pre-existing standalone audits not carded in any registry section —
+  //     advisory/opt-in surfaces that predate this gate. Carding them (if they
+  //     should be web-marketed) is tracked separately; allowlisted so the gate
+  //     is green today and only catches NEWLY added uncarded references.
+  "craft/idiolect-preservation.md",
+  "craft/pov-voice-profile.md",
+  "craft/punctuation-cadence.md",
+]);
+
+// Recursively collect every `*.md` under `dir`, returned as POSIX-style paths
+// relative to `dir` (matching the registry's files[] convention).
+function collectReferenceFiles(dir) {
+  const out = [];
+  if (!fs.existsSync(dir)) return out;
+  const walk = (abs, rel) => {
+    for (const entry of fs.readdirSync(abs, { withFileTypes: true })) {
+      const childAbs = path.join(abs, entry.name);
+      const childRel = rel ? `${rel}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        walk(childAbs, childRel);
+      } else if (entry.isFile() && entry.name.endsWith(".md")) {
+        out.push(childRel);
+      }
+    }
+  };
+  walk(dir, "");
+  return out;
+}
+
+// Collect each card's PRIMARY reference = files[0], across every registry section
+// Gemini renders as a card (categories[].items[] + researchModes + argumentCompanions).
+// Returns { primaries, duplicates } — a file bound as files[0] of two cards is
+// itself a misconfiguration (one card per reference).
+function collectPrimaryReferenceFiles(registry) {
+  const counts = new Map(); // files[0] -> number of cards claiming it as primary
+  const sections = [
+    ...(registry.categories || []).flatMap((c) => c.items || []),
+    ...(registry.researchModes || []),
+    ...(registry.argumentCompanions || []),
+  ];
+  for (const item of sections) {
+    const primary = (item.files || [])[0];
+    if (primary) counts.set(primary, (counts.get(primary) || 0) + 1);
+  }
+  return {
+    primaries: new Set(counts.keys()),
+    duplicates: [...counts.entries()].filter(([, n]) => n > 1).map(([f]) => f),
+  };
+}
+
+// Returns an array of problem strings (empty => clean). Asserts that every
+// shipped specialized-audit reference is the files[0] PRIMARY of its own card in
+// release-registry.json OR explicitly allowlisted in NOT_CARDED.
+function checkRegistryReferenceCoverage(root, { notCarded = NOT_CARDED } = {}) {
+  const refsDir = path.join(root, SPECIALIZED_REFS_DIR);
+  const registryPath = path.join(root, REGISTRY_FILE);
+  if (!fs.existsSync(registryPath)) {
+    return [
+      `MISSING-REGISTRY: ${REGISTRY_FILE} not found at repo root; cannot verify reference coverage.`,
+    ];
+  }
+  let registry;
+  try {
+    registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
+  } catch (e) {
+    return [`BAD-REGISTRY: ${REGISTRY_FILE} is not valid JSON (${e.message}).`];
+  }
+  const shipped = collectReferenceFiles(refsDir);
+  const { primaries, duplicates } = collectPrimaryReferenceFiles(registry);
+  const problems = [];
+  for (const dup of duplicates.sort()) {
+    problems.push(
+      `DUPLICATE-PRIMARY: ${dup} is the files[0] primary of more than one card in ` +
+        `${REGISTRY_FILE} — each reference must bind to exactly one card.`
+    );
+  }
+  for (const rel of shipped.sort()) {
+    if (primaries.has(rel)) continue; // it is its own card's files[0] primary
+    if (notCarded.has(rel)) continue; // a declared sub-reference / non-card
+    problems.push(
+      `UNCARDED-REFERENCE: ${SPECIALIZED_REFS_DIR}/${rel} is a shipped ` +
+        `specialized-audit reference but is NOT the files[0] PRIMARY of any card in ` +
+        `${REGISTRY_FILE} (categories[].items[] + researchModes + argumentCompanions) ` +
+        `and is NOT in NOT_CARDED. Gemini renders one card per item from its files[0], ` +
+        `so a reference that is only a non-primary files[1:] of another card (or dropped ` +
+        `entirely) has no card downstream. Make it a card's files[0] primary OR add it to ` +
+        `scripts/check-inventory-parity.mjs's NOT_CARDED — this is the gate that catches ` +
+        `the v2.6.0 gap where content-advisory/persona-divergence shipped uncarded.`
+    );
+  }
+  return problems;
+}
+
 const MARKER_RE =
   /<!--\s*inventory-synced:\s*(.*?)\s*-->/;
 // A line that *looks like* the marker (so a malformed one can't be silently skipped).
@@ -254,6 +395,10 @@ function runCheck(root, { quiet = false } = {}) {
     }
   }
 
+  // Second, independent check: every shipped specialized-audit reference must be
+  // carded in release-registry.json or explicitly allowlisted (NOT_CARDED).
+  problems.push(...checkRegistryReferenceCoverage(root));
+
   return { canonical, problems, markerCount, checked };
 }
 
@@ -339,6 +484,29 @@ function selfTest() {
     });
     fs.writeFileSync(path.join(root, AUDIT_REGISTRY_FILE), auditSrc);
     fs.writeFileSync(path.join(root, RESEARCH_FILE), researchSrc);
+    // Seed a clean release-registry.json + a fully-carded references tree so the
+    // registry-coverage check (wired into runCheck) is a no-op for the marker
+    // cases below — those cases assert problems.length===0 and must not be
+    // tripped by an unrelated coverage problem. (The coverage check has its own
+    // dedicated cases (h)/(i) below.)
+    fs.writeFileSync(
+      path.join(root, REGISTRY_FILE),
+      JSON.stringify(
+        {
+          categories: [
+            {
+              name: "Craft",
+              items: [{ name: "Alpha", slug: "alpha", files: ["alpha.md"] }],
+            },
+          ],
+        },
+        null,
+        2
+      )
+    );
+    const refsDir = path.join(root, SPECIALIZED_REFS_DIR);
+    fs.mkdirSync(refsDir, { recursive: true });
+    fs.writeFileSync(path.join(refsDir, "alpha.md"), "# carded ref\n");
     // surfaces: map of relpath -> content; only OPTED_IN_SURFACES are scanned.
     for (const [rel, content] of Object.entries(surfaces)) {
       const abs = path.join(root, rel);
@@ -470,6 +638,163 @@ function selfTest() {
     log(
       !!stubbedWouldPass && result.problems.length > 0,
       "(integrity) negative cases fail only because compare is real"
+    );
+  }
+
+  // --- registry-coverage check (the new release-registry.json guard) ---------
+  //
+  // Hermetic, non-vacuous proof: a fixtured reference file that is neither carded
+  // in release-registry.json nor allowlisted must FAIL; the SAME file once carded
+  // (or once allowlisted) must PASS. We call checkRegistryReferenceCoverage()
+  // directly so the assertion is structural (a non-empty/empty problems array),
+  // mirroring the marker-case style above.
+  function makeCoverageRoot({ registry, refFiles }) {
+    caseN++;
+    const root = path.join(tmpBase, `cov-${caseN}`);
+    fs.mkdirSync(root, { recursive: true });
+    fs.writeFileSync(
+      path.join(root, REGISTRY_FILE),
+      JSON.stringify(registry, null, 2)
+    );
+    const refsDir = path.join(root, SPECIALIZED_REFS_DIR);
+    fs.mkdirSync(refsDir, { recursive: true });
+    for (const rel of refFiles) {
+      const abs = path.join(refsDir, rel);
+      fs.mkdirSync(path.dirname(abs), { recursive: true });
+      fs.writeFileSync(abs, `# ${rel}\n`);
+    }
+    return root;
+  }
+
+  // (h) an uncarded, un-allowlisted reference -> FAIL (non-vacuous: catches the
+  //     exact v2.6.0 class of bug).
+  {
+    const root = makeCoverageRoot({
+      registry: {
+        categories: [
+          {
+            name: "Craft",
+            items: [
+              { name: "Carded", slug: "carded", files: ["craft/carded.md"] },
+            ],
+          },
+        ],
+      },
+      refFiles: ["craft/carded.md", "craft/orphan.md"],
+    });
+    const problems = checkRegistryReferenceCoverage(root, { notCarded: new Set() });
+    const flagged = problems.some(
+      (p) => p.startsWith("UNCARDED-REFERENCE:") && p.includes("craft/orphan.md")
+    );
+    log(
+      !!flagged && problems.length > 0,
+      "(h) uncarded+unallowlisted reference -> FAIL",
+      flagged ? "" : "did not flag the orphan reference"
+    );
+  }
+
+  // (i-card) the SAME orphan, now CARDED in the registry -> PASS.
+  {
+    const root = makeCoverageRoot({
+      registry: {
+        categories: [
+          {
+            name: "Craft",
+            items: [
+              { name: "Carded", slug: "carded", files: ["craft/carded.md"] },
+              { name: "Orphan", slug: "orphan", files: ["craft/orphan.md"] },
+            ],
+          },
+        ],
+      },
+      refFiles: ["craft/carded.md", "craft/orphan.md"],
+    });
+    const problems = checkRegistryReferenceCoverage(root, { notCarded: new Set() });
+    log(problems.length === 0, "(i-card) same reference, now carded -> PASS");
+  }
+
+  // (i-allow) the SAME orphan, now ALLOWLISTED in NOT_CARDED -> PASS.
+  {
+    const root = makeCoverageRoot({
+      registry: {
+        categories: [
+          {
+            name: "Craft",
+            items: [
+              { name: "Carded", slug: "carded", files: ["craft/carded.md"] },
+            ],
+          },
+        ],
+      },
+      refFiles: ["craft/carded.md", "craft/orphan.md"],
+    });
+    const problems = checkRegistryReferenceCoverage(root, {
+      notCarded: new Set(["craft/orphan.md"]),
+    });
+    log(
+      problems.length === 0,
+      "(i-allow) same reference, now allowlisted -> PASS"
+    );
+  }
+
+  // (j) the orphan attached as a NON-PRIMARY files[1] of the WRONG card, its own
+  //     card removed -> must FAIL. Under the old union-coverage check this PASSED
+  //     (the path occurs in some files[]), while Gemini renders one card per item
+  //     from files[0] and drops it — the exact misattribution Codex PR #146 P1
+  //     flagged. This is the regression test for the primary-binding fix.
+  {
+    const root = makeCoverageRoot({
+      registry: {
+        categories: [
+          {
+            name: "Craft",
+            items: [
+              {
+                name: "Carded",
+                slug: "carded",
+                files: ["craft/carded.md", "craft/orphan.md"],
+              },
+            ],
+          },
+        ],
+      },
+      refFiles: ["craft/carded.md", "craft/orphan.md"],
+    });
+    const problems = checkRegistryReferenceCoverage(root, { notCarded: new Set() });
+    const flagged = problems.some(
+      (p) => p.startsWith("UNCARDED-REFERENCE:") && p.includes("craft/orphan.md")
+    );
+    log(
+      !!flagged && problems.length > 0,
+      "(j) reference demoted to a non-primary files[1] of the wrong card -> FAIL",
+      flagged ? "" : "did not flag the misattributed (non-primary) reference"
+    );
+  }
+
+  // (k) the same reference as files[0] primary of TWO cards -> DUPLICATE-PRIMARY.
+  {
+    const root = makeCoverageRoot({
+      registry: {
+        categories: [
+          {
+            name: "Craft",
+            items: [
+              { name: "A", slug: "a", files: ["craft/dup.md"] },
+              { name: "B", slug: "b", files: ["craft/dup.md"] },
+            ],
+          },
+        ],
+      },
+      refFiles: ["craft/dup.md"],
+    });
+    const problems = checkRegistryReferenceCoverage(root, { notCarded: new Set() });
+    const flagged = problems.some(
+      (p) => p.startsWith("DUPLICATE-PRIMARY:") && p.includes("craft/dup.md")
+    );
+    log(
+      !!flagged,
+      "(k) reference as files[0] of two cards -> DUPLICATE-PRIMARY FAIL",
+      flagged ? "" : "did not flag the duplicate primary"
     );
   }
 
