@@ -741,6 +741,12 @@ def t9b_consume_claim_matches_repo() -> None:
         "apodictic.style_label.v1.schema.json",
         "interpretable-stylometric-explanation.md",
         "example-author-style-explanation.md",
+        # The changelog's assembled entry for that capability quotes the
+        # families.<fam>.top_features shape it consumes. A release note is
+        # documentation of the EXPECTED capability, not a new code consumer —
+        # exclude it like the reference module above (else every release that
+        # carries this entry trips the guard).
+        "changelog.md",
     )
     consumers = [
         line for line in out.stdout.splitlines()
