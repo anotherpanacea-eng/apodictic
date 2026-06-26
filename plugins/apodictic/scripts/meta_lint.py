@@ -490,9 +490,11 @@ def _plugin_md_files(script_dir):
     """Yield (rel_path, abs_path) pairs for all *.md files in the plugin tree.
 
     Walks up from `script_dir` looking for the canonical plugin root
-    (`plugins/apodictic/`). Falls back to walking from `script_dir/..` so the
-    function works when run from either the plugin scripts dir or the repo root
-    scripts dir (both are valid script_dir locations per the mirror discipline)."""
+    (`plugins/apodictic/`). Handles two valid invocation roots per the mirror
+    discipline: (1) `plugins/apodictic/scripts/` — walks up 1 level to
+    `plugins/apodictic/`; (2) repo-root `scripts/` — looks for a
+    `plugins/apodictic/` sibling of `script_dir` at the repo root. Falls back
+    to `script_dir/..` only if neither resolution succeeds."""
     # Resolve plugin root: walk up from script_dir until we find a directory
     # named `apodictic` whose parent is named `plugins`, or until we exhaust parents.
     d = script_dir
@@ -506,8 +508,14 @@ def _plugin_md_files(script_dir):
             break
         d = parent
     if plugin_root is None:
-        # Fallback: walk from parent of script_dir (covers plugins/apodictic/scripts -> plugins/apodictic)
-        plugin_root = os.path.dirname(script_dir)
+        # Check for a plugins/apodictic/ sibling of script_dir (repo-root scripts/ case).
+        # Avoids walking the entire repo root (which includes generated codex/ / antigravity/ trees).
+        repo_candidate = os.path.join(os.path.dirname(script_dir), "plugins", "apodictic")
+        if os.path.isdir(repo_candidate):
+            plugin_root = repo_candidate
+        else:
+            # Final fallback: parent of script_dir
+            plugin_root = os.path.dirname(script_dir)
     for root, dirs, files in os.walk(plugin_root):
         # Skip hidden dirs and __pycache__
         dirs[:] = [x for x in dirs if not x.startswith(".") and x != "__pycache__"]
