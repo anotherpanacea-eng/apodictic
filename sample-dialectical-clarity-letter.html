@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APODICTIC — Sample Dialectical Clarity Letter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vollkorn:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Sans+3:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Alegreya+Sans:wght@300;400;500;700&family=Fira+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1F2118;
+    --ink-light: #2B2D22;
+    --ink-border: #3D4032;
+    --parchment: #EDE5D0;
+    --paper: #E2D8BF;
+    --card: #F4EDDA;
+    --pencil: #8B5E3C;
+    --pencil-hover: #724C30;
+    --pencil-muted: rgba(139, 94, 60, 0.09);
+    --pencil-ring: rgba(139, 94, 60, 0.20);
+    --burnish: #5E8C6A;
+    --burnish-light: rgba(94, 140, 106, 0.10);
+    --charcoal: #33311E;
+    --graphite: #7A7560;
+    --whisper: #D1C8AC;
+    --fog: #9E9680;
+    --sage: #5E8C6A;
+    --navy: #3B4A3E;
+    --sidebar-text: #EDE5D0;
+    --font-serif: 'Vollkorn', Georgia, serif;
+    --font-sans: 'Source Sans 3', 'Source Sans Pro', system-ui, sans-serif;
+    --font-mono: 'Source Code Pro', monospace;
+  }
+
+  [data-theme="scriptorium-noir"] {
+    --ink: #0D0B09;
+    --ink-light: #1A1714;
+    --ink-border: #2E2923;
+    --parchment: #161310;
+    --paper: #1E1B17;
+    --card: #1C1915;
+    --pencil: #A8344A;
+    --pencil-hover: #8C2A3D;
+    --pencil-muted: rgba(168, 52, 74, 0.10);
+    --pencil-ring: rgba(168, 52, 74, 0.22);
+    --burnish: #C9A84C;
+    --burnish-light: rgba(201, 168, 76, 0.10);
+    --charcoal: #D4CFC7;
+    --graphite: #8A8279;
+    --whisper: #2E2923;
+    --fog: #6B6359;
+    --sage: #6B9A67;
+    --navy: #C9A84C;
+    --sidebar-text: #D4CFC7;
+    --font-serif: 'EB Garamond', Georgia, serif;
+    --font-sans: 'Alegreya Sans', system-ui, sans-serif;
+    --font-mono: 'Fira Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-serif);
+    background: var(--parchment);
+    color: var(--charcoal);
+    line-height: 1.7;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+  }
+
+  /* Title Block */
+  header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid var(--whisper);
+  }
+
+  header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+  }
+
+  header .byline {
+    font-size: 0.95rem;
+    color: var(--graphite);
+    margin-bottom: 0.15rem;
+  }
+
+  header .framework-stamp {
+    font-size: 0.85rem;
+    color: var(--graphite);
+    font-style: italic;
+  }
+
+  /* Contamination Disclosure */
+  .disclosure {
+    background: var(--pencil-muted);
+    border-left: 3px solid var(--pencil);
+    padding: 0.85rem 1.15rem;
+    margin-bottom: 2.5rem;
+    font-size: 0.88rem;
+    border-radius: 0 4px 4px 0;
+    line-height: 1.6;
+  }
+
+  .disclosure strong {
+    color: var(--pencil-hover);
+  }
+
+  /* Section Headers */
+  h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--charcoal);
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--whisper);
+  }
+
+  /* Subsection Thesis Headings */
+  h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-top: 1.75rem;
+    margin-bottom: 0.6rem;
+    color: var(--charcoal);
+  }
+
+  p {
+    margin-bottom: 1rem;
+  }
+
+  /* Key Scene Callout */
+  .callout {
+    margin: 1.25rem 0;
+    padding: 0 0 0 1rem;
+    border-left: 3px solid var(--pencil);
+  }
+
+  .callout p {
+    margin-bottom: 0.5rem;
+  }
+
+  .callout strong {
+    color: var(--pencil-hover);
+  }
+
+  /* Claim Ladder */
+  .ladder {
+    background: var(--card);
+    border: 1px solid var(--whisper);
+    border-radius: 6px;
+    padding: 1.15rem 1.35rem;
+    margin: 1.25rem 0;
+    font-size: 0.92rem;
+  }
+
+  .ladder dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.55rem 0.9rem;
+  }
+
+  .ladder dt {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--pencil-hover);
+    white-space: nowrap;
+    padding-top: 0.1rem;
+  }
+
+  .ladder dd {
+    line-height: 1.55;
+  }
+
+  .ladder .stakes {
+    margin-top: 0.9rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--whisper);
+    font-size: 0.9rem;
+  }
+
+  /* Revision Checklist Table */
+  .checklist-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.25rem 0;
+    font-size: 0.9rem;
+  }
+
+  .checklist-table th {
+    background: var(--parchment);
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 2px solid var(--whisper);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--graphite);
+    font-weight: 600;
+  }
+
+  .checklist-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--whisper);
+    vertical-align: top;
+  }
+
+  .checklist-table td:first-child {
+    width: 2rem;
+    text-align: center;
+    color: var(--graphite);
+    font-weight: 600;
+  }
+
+  .checklist-table td:last-child {
+    width: 5.5rem;
+    text-align: center;
+    font-size: 0.85rem;
+  }
+
+  .effort-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .effort-low { background: var(--burnish-light); color: var(--burnish); }
+  .effort-med { background: var(--pencil-muted); color: var(--pencil); }
+  .effort-low-med { background: var(--burnish-light); color: var(--sage); }
+
+  /* Protect / Caution */
+  .protect-caution {
+    margin: 1.25rem 0 0 0;
+    font-size: 0.92rem;
+  }
+
+  .protect-caution p {
+    margin-bottom: 0.6rem;
+  }
+
+  .protect-caution strong {
+    color: var(--pencil-hover);
+  }
+
+  /* Strongest Case Against */
+  .case-against {
+    background: var(--card);
+    border: 1px solid var(--whisper);
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem;
+    margin: 1rem 0;
+  }
+
+  /* Diagnostic Finding cards */
+  .stress-test-intro {
+    font-size: 0.92rem;
+    font-style: italic;
+    color: var(--graphite);
+    margin-bottom: 1rem;
+  }
+
+  .stress-test-note {
+    background: var(--pencil-muted);
+    border-left: 3px solid var(--pencil);
+    padding: 0.7rem 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    border-radius: 0 4px 4px 0;
+    line-height: 1.6;
+  }
+
+  .stress-finding {
+    background: var(--card);
+    border: 1px solid var(--whisper);
+    border-radius: 6px;
+    padding: 1.15rem 1.35rem;
+    margin: 1.25rem 0;
+  }
+
+  .stress-finding h3 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .stress-finding .claim {
+    font-style: italic;
+    margin-bottom: 0.75rem;
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--whisper);
+    color: var(--charcoal);
+    line-height: 1.6;
+  }
+
+  .stress-finding .field-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--graphite);
+  }
+
+  .stress-finding .field-row {
+    margin-bottom: 0.5rem;
+    font-size: 0.92rem;
+  }
+
+  .code-chip {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 0.08rem 0.4rem;
+    border-radius: 3px;
+    background: var(--pencil-muted);
+    color: var(--pencil-hover);
+    margin-right: 0.25rem;
+  }
+
+  .severity-badge {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .severity-should { background: var(--pencil-muted); color: var(--pencil); }
+  .severity-must { background: var(--pencil-ring); color: var(--pencil-hover); }
+  .severity-could { background: var(--burnish-light); color: var(--sage); }
+
+  .verdict-badge {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .verdict-engaged { background: var(--burnish-light); color: var(--burnish); }
+  .verdict-partial { background: var(--pencil-muted); color: var(--pencil); }
+  .verdict-unengaged { background: var(--pencil-ring); color: var(--pencil-hover); }
+
+  .stress-summary {
+    background: var(--card);
+    border: 1px solid var(--whisper);
+    border-radius: 6px;
+    padding: 1.15rem 1.35rem;
+    margin-top: 1.5rem;
+  }
+
+  .stress-summary h3 {
+    margin-top: 0;
+  }
+
+  /* Appendices */
+  .appendices {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--whisper);
+    font-size: 0.88rem;
+    color: var(--graphite);
+  }
+
+  .appendices h3 {
+    font-size: 0.9rem;
+    color: var(--graphite);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 1.75rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+
+  .appendices h3:first-child {
+    margin-top: 0;
+  }
+
+  .appendices p, .appendices li {
+    line-height: 1.6;
+  }
+
+  .appendices ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .appendices li {
+    padding: 0.3rem 0;
+    padding-left: 1rem;
+    position: relative;
+  }
+
+  .appendices li::before {
+    content: "–";
+    position: absolute;
+    left: 0;
+    color: var(--pencil);
+  }
+
+  .appendices em {
+    font-style: italic;
+  }
+
+  .framework-meta {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.2rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .framework-meta dt {
+    font-weight: 600;
+    color: var(--graphite);
+    white-space: nowrap;
+  }
+
+  .framework-meta dd {
+    color: var(--graphite);
+  }
+
+  /* Separator */
+  hr {
+    border: none;
+    border-top: 1px solid var(--whisper);
+    margin: 2rem 0;
+  }
+
+  /* Sample Banner */
+  .sample-banner {
+    text-align: center;
+    background: var(--pencil-hover);
+    color: var(--sidebar-text);
+    padding: 0.5rem 1rem;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    border-radius: 4px;
+  }
+
+  /* Heading & UI Fonts */
+  h1, h2, h3 { font-family: var(--font-serif); }
+  .checklist-table, .framework-meta, .effort-badge, .severity-badge, .verdict-badge,
+  .byline, .framework-stamp, .disclosure, .field-label, .code-chip { font-family: var(--font-sans); }
+  code { font-family: var(--font-mono); }
+
+  /* Theme Toggle */
+  .theme-toggle {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+    background: var(--card);
+    color: var(--charcoal);
+    border: 1px solid var(--whisper);
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .theme-toggle:hover {
+    background: var(--pencil-muted);
+    border-color: var(--pencil);
+  }
+
+  /* Print */
+  @media print {
+    body { max-width: none; padding: 1cm; }
+    .sample-banner { display: none; }
+    .theme-toggle { display: none; }
+    .case-against { break-inside: avoid; }
+    .stress-finding { break-inside: avoid; }
+    .ladder { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">Scriptorium Noir</button>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.querySelector('.theme-toggle');
+    if (html.getAttribute('data-theme') === 'scriptorium-noir') {
+      html.removeAttribute('data-theme');
+      btn.textContent = 'Scriptorium Noir';
+    } else {
+      html.setAttribute('data-theme', 'scriptorium-noir');
+      btn.textContent = 'Dead Sea Scroll';
+    }
+  }
+</script>
+
+<div class="sample-banner">Sample Output — <a href="https://github.com/anotherpanacea-eng/apodictic" style="color:inherit;">APODICTIC</a> Development Editor v2.6.2 · Dialectical Clarity Audit</div>
+
+<header>
+  <h1>Dialectical Clarity Letter: When Brute Force Fails</h1>
+  <div class="byline">Mark A. R. Kleiman · <em>How to Have Less Crime and Less Punishment</em> · Princeton University Press, 2009 · ~250 pp.</div>
+  <div class="framework-stamp">APODICTIC Development Editor v2.6.2 — Nonfiction Argument Engine — June 26, 2026</div>
+</header>
+
+<div class="disclosure">
+  <strong>Contamination disclosure:</strong> This is not independent discovery. <em>When Brute Force Fails</em> is an influential, widely cited book; its central argument — that the certainty and swiftness of sanctions deter more than their severity, so we can have less crime <em>and</em> less punishment — has shaped a decade of criminal-justice scholarship and policy, and my training data carries that reception and its later critiques (including the contested HOPE replication record). I have read the text to ground the loci below, but I cannot claim to have arrived at this diagnosis innocent of what the field already thinks. Two consequences follow, and I hold to both. First, where my findings flatter the book, that agreement carries <strong>no independent evidentiary weight</strong> — the value here is in <em>how</em> the argument is diagnosed, not in whether a respected book turns out to be well-built. Second, and harder: I diagnose <strong>the argument Kleiman actually made in 2009</strong>, on its own terms and against its own evidence — I do not grade him against fifteen years of subsequent HOPE evaluations he could not have read, because hindsight is not a 2009 warrant gap. But I do not bracket that record out of view either: where the later, contested replication evidence bears on a structural soft spot the argument already carried, I note it as an objection — disclosed as hindsight, not scored against the 2009 text (see findings #1–2 and the objection inventory). The Firewall holds throughout: I diagnose classes of solution and never rewrite the argument or supply evidence it does not contain.
+</div>
+
+<h2>The Short Version</h2>
+
+<p>This is a structurally sound argument — one of the cleaner specimens of policy reasoning the audit is likely to meet. It states a falsifiable thesis, builds an explicit claim ladder, and does something most advocacy never attempts: it <em>derives</em> its central warrant rather than asserting it. The spine runs from a diagnosis (the U.S. runs crime control on "brute force" — high-severity, sporadic, swamped, and ruinously expensive in both dollars and cells), through a mechanism (certainty and swiftness deter more than severity, and — the counterintuitive engine of the whole book — more sanctions <em>capacity</em> can mean less sanction actually <em>used</em>), to a prescription (concentrate scarce enforcement, communicate threats directly, and run community corrections this way), cashed out in three field programs that already work: HOPE, the squeegee crackdowns, and High Point.</p>
+
+<p><strong>The verdict is Structurally Sound</strong> — the claim is statable, the evidence evaluable, the warrant explicit and unusually well-backed, and objections engaged with rare honesty (Chapter 10 is, in effect, the author red-teaming his own book). The findings below are a <em>repair agenda</em>, not a structural break. They cluster on one axis: the gap between the <strong>universality of the banner claim</strong> ("we could have <em>much</em> less crime and <em>much</em> fewer people behind bars") and the <strong>narrower set of conditions</strong> under which the book's own mechanism is shown to operate. The single most important note is not that an objection is missing — Kleiman raises it himself — but that he raises it in Chapter 4's caveats and Chapter 10's "Misapplications" without letting it travel back to re-qualify the headline. The argument is strongest exactly where it is most disciplined, and softest exactly where it lets its best result generalize one step further than its support reaches.</p>
+
+<h2>The Argument as Diagnosed</h2>
+
+<p>Argument type is <span class="code-chip">AT3</span> (propositional / policy — "here is what we should do") built on an <span class="code-chip">AT1</span> analytic core (the Chapter 4 deterrence model) and an <span class="code-chip">AT2</span> evaluative throat (Chapters 1–2: the current regime is broken and overpriced). The audience the argument structurally imagines is a <strong>mixed-to-expert, mixed-receptivity</strong> reader — a skeptical policy or scholarly audience that will act on, or argue with, the recommendation — in a <strong>high-consequence</strong> domain. That calibration sets the bar: an AT3 recommendation owes its reader a comparative case, an implementation account, and engagement with the strongest counter. The claim ladder is legible without reconstruction:</p>
+
+<div class="ladder">
+  <dl>
+    <dt>C0</dt><dd>The U.S. can have <em>both</em> less crime and less punishment by reorienting enforcement from severity toward certainty and swiftness — concentrating scarce sanctions capacity, communicating threats directly, and applying this discipline above all to community corrections.</dd>
+    <dt>C1</dt><dd>The current regime is "brute force": high-severity, sporadic, enforcement-swamped, and ruinously costly — the "punitiveness index" quintupled from 1974 to 2007 while a burglary still bought, on average, about four days behind bars <em>(Ch. 1; Intro)</em>.</dd>
+    <dt>C2</dt><dd>Certainty and swiftness deter more than severity, and — the load-bearing move — <em>more</em> capacity to punish can yield <em>less</em> punishment actually imposed, because credible threats need not be carried out <em>(Ch. 4: rational-actor model → stag hunt → tipping → dynamic concentration)</em>.</dd>
+    <dt>C3</dt><dd>Programs already embody this, "spending no more money than we now spend and doing only things we already know how to do" — HOPE probation, the squeegee/turnstile crackdowns, and High Point <em>(Ch. 3)</em>.</dd>
+  </dl>
+  <div class="stakes"><strong>Stakes</strong> (consequential + moral): the status quo inflicts a historically unprecedented quantity of punishment — 2.3 million people behind bars — disproportionately on the poor and on Black Americans, while controlling crime badly. The promise is that this is an avoidable, not a tragic, trade-off. <strong>Key terms tracked:</strong> "cost" of crime (fungible-dollar vs. moral-affront), "brute force" (severity-as-policy), "dynamic concentration."</div>
+</div>
+
+<h2>What the Argument Does Best</h2>
+
+<p><strong>It earns its warrant instead of assuming it.</strong> The single most common failure in policy writing is the warrant gap (<span class="code-chip">WR0</span>): the data is real, the conclusion is plausible, but the principle connecting them is left for the reader to supply, so the argument only works for those who already agree. Kleiman does the opposite. The claim that certainty beats severity is not asserted from the podium of expertise; it is built, brick by brick, from Schelling's threat logic ("the perfect threat never needs to be carried out") through a single-rational-actor model, a two-player stag hunt, an <em>n</em>-player tipping model, and finally agent-based simulation (Ch. 4, the heart of the book). A skeptical reader can inspect each joint. This is what a fully <em>explicit, backed</em> warrant looks like, and it is rare.</p>
+
+<p><strong>It reframes the trade-off honestly, and shows its work.</strong> The book's rhetorical achievement is to convert "tough vs. soft on crime" — a zero-sum frame — into an optimization problem in which both crime <em>and</em> punishment can fall together. Crucially, Kleiman does not smuggle this; he derives it as a property of the model (more capacity → credible deterrence → fewer violations → less sanction actually used) and is candid that the result "sounds paradoxical, but — within the model — it is true nonetheless." The qualifier "within the model" is doing real, honest work. The argument earns the right to its counterintuitive headline by first proving it somewhere it can be proven.</p>
+
+<div class="callout">
+  <p><strong>The objection chapter is a model of dialectical integrity — and the proof that this is a serious book.</strong> Chapter 10, "What Could Go Wrong?", is not the cosmetic concession paragraph that advocacy usually offers (<span class="code-chip">OB4</span> / <span class="code-chip">DI</span> territory). It is the author running his own red team, in his own voice, against his own thesis: misapplications of dynamic concentration where monitoring is expensive (the DUI-checkpoint counterexample); refractory offenders; the net-widening risk that "an unsuccessful program could instead <em>increase</em> aggregate incarceration"; the public-management problem ("Changing addict behavior is easy; changing judge behavior is hard"); and — most strikingly — "Overcontrol, Oppression, and Tyranny," which concedes that the very toolkit could serve unjust laws ("This would be a very different book were it written in Singapore … or the Alabama of 1962"). An argument that pre-empts its hostile reader this fully has already passed the test most policy books fail. Protect this chapter; it is load-bearing for the book's credibility, not an appendix to it.</p>
+</div>
+
+<p><strong>The evidence is provenance-honest at the program level.</strong> Where many briefs launder a single pilot into a movement, Kleiman flags each program's idiosyncrasy as he presents it: Judge Alm's unusual clout as a former U.S. Attorney, Hawaii's distinctive public-management culture and unusually well-educated probation officers, and — explicitly — that this "leaves it an open question how much of this could be exported to the mainland." The scope honesty is genuine. (The finding below is not that this honesty is missing, but that it is quarantined where it cannot pull on the conclusion.)</p>
+
+<h2>Diagnostic Findings</h2>
+
+<p class="stress-test-intro">Four findings, ranked by how much they bear on C0. Each pairs a code family from the Dialectical Clarity audit with a class of solution — what would close the gap <em>structurally</em>. None rewrites the argument; none supplies evidence Kleiman does not have.</p>
+
+<div class="stress-test-note">
+  <strong>Calibration note:</strong> these are Should-Fix and Could-Fix soft spots in a <em>sound</em> argument, not breaks. The audit's specificity guard applies: a published, edited, carefully-reasoned book typically carries one or two genuine soft spots, not a flood of structural failures. Diagnosing this book as "unsound" would be a worse error than missing a real gap. The highest-leverage note is #1 — it closes the strongest objection — though it rates Could-Fix, because Kleiman concedes it himself; #2 is the lone Should-Fix, and the rest are the repair tail.
+</div>
+
+<div class="stress-finding">
+  <h3>1 · The mechanism's scope conditions don't propagate back to the banner claim</h3>
+  <p class="claim">The conditions that make dynamic concentration work — that <em>sanctions capacity</em>, not <em>detection</em>, is the binding constraint; that offenders can't coordinate to defeat the concentration; that monitoring is cheap — are, by the book's own account, the <em>occasional</em> case. Chapter 4's "Limits and Caveats" concedes that the crucial low-cost-monitoring assumption "is true only occasionally"; Chapter 10 concedes "most predatory … offenses are hard to observe" and "there is no direct analogy of a drug crackdown for controlling burglary." Yet C0 generalizes to crime and punishment writ large.</p>
+  <p class="field-row"><span class="field-label">Codes:</span> <span class="code-chip">WR3</span> qualifier mismatch · <span class="code-chip">BP2</span>-adjacent scope travel · pattern <span class="code-chip">FM-A20</span>-adjacent (self-limiting structure)</p>
+  <p class="field-row"><span class="field-label">Severity:</span> <span class="severity-badge severity-could">Could-Fix</span> — the highest-leverage <em>tightening</em>, not a repair: it answers the strongest objection, but one Kleiman concedes himself (Ch. 4 caveats; Ch. 10 misapplications), so propagating it polishes a sound argument rather than fixing a break. C0 stays statable and evaluable.</p>
+  <p class="field-row"><span class="field-label">Why it matters:</span> The strongest objection to this argument is <em>internal</em>, not imported. It is not "but public safety" (which a hostile reader raises against any decarceration argument and which Kleiman dispatches). It is that the engine powering the universal thesis is one the book itself shows runs mainly on a <em>subset</em> of crime — transactional, observable, capacity-constrained offending (drug markets, probation drug-use, public-order nuisance) — while predatory crime, the bulk of what frightens the public, is largely outside its reach. The banner promise of "much less crime" rides on a mechanism the text demonstrates is narrowly conditioned.</p>
+  <p class="field-row"><span class="field-label">Engagement status:</span> <span class="verdict-badge verdict-partial">Engaged but un-propagated</span> — Kleiman raises every piece of this himself (Ch. 4, Ch. 10). The gap is not <span class="code-chip">OB3</span> (objection missing) or <span class="code-chip">OB4</span> (cosmetic concession); it is that the concession is real but <em>local</em> — it lives in the caveat sections and never travels back to re-qualify the introduction's headline.</p>
+  <p class="field-row"><span class="field-label">Class of solution:</span> A scope-discipline pass that lets the Chapter 10 boundary conditions modify C0 at the point of statement — distinguishing the strong claim (large gains for the observable/transactional/capacity-constrained slice of crime) from the weaker claim that survives for predatory crime. The repair is structural re-qualification, not new evidence; the material to do it is already in the book.</p>
+</div>
+
+<div class="stress-finding">
+  <h3>2 · Three programs carry a national claim, and the carrying is footnoted</h3>
+  <p class="claim">C3 — "programs already do this" — rests on three cases: HOPE (35 probationers at launch, ~1,000 by 2008), the squeegee crackdown (fewer than 100 offenders), and High Point (about 20 dealers, of whom 16 active). The representativeness burden — from these pilots to "a national scale … about 400,000 participants" — is acknowledged but discharged in footnotes, while the programs do headline evidential work.</p>
+  <p class="field-row"><span class="field-label">Codes:</span> <span class="code-chip">BP6</span> testimonial/representative overburden · <span class="code-chip">SM3</span>-adjacent (case-study dependence) · <span class="code-chip">AC</span>-honest</p>
+  <p class="field-row"><span class="field-label">Severity:</span> <span class="severity-badge severity-should">Should-Fix</span></p>
+  <p class="field-row"><span class="field-label">Why it matters:</span> Small-<em>n</em>, hand-selected, founder-driven pilots are exactly where program evaluation is most fragile — selection of site, of leader, of cohort, and of the moment to measure. Kleiman knows this and says so, which is to his credit. But a case that <em>looks</em> rigorous because the mechanism is modeled can still rest on a narrow empirical base for the <em>scaling</em> step, and the scaling step is where C0's "we could" lives.</p>
+  <p class="field-row"><span class="field-label">Engagement status:</span> <span class="verdict-badge verdict-engaged">Disclosed, under-weighted</span> — the provenance honesty is present and genuine; the structural issue is placement, not concealment.</p>
+  <p class="field-row"><span class="field-label">Class of solution:</span> Promote the external-validity caveats from footnote to load-bearing text, and let the recommendation carry its own evidentiary qualifier ("demonstrated in these conditions; predicted, not demonstrated, at scale"). Again: re-weighting and re-placing what is already there, not inventing studies.</p>
+</div>
+
+<div class="stress-finding">
+  <h3>3 · "The cost of crime" carries two meanings, and the framing premise leans on the slide</h3>
+  <p class="claim">The book asks the reader to "blunt the emotional edge" and treat crime "as an ordinary domestic-policy problem" — like auto accidents or air pollution — so that crime control becomes a cost-benefit optimization. But Chapter 2 argues that crime's harm is constitutively <em>not</em> like pollution: victimization "is <em>done</em> to someone by someone," carries "insult as well as injury," and demands retribution (the Holmes line — even a dog "knows the difference between being stumbled over and being kicked"). The word "cost" shifts between a fungible-dollar quantity and a moral affront.</p>
+  <p class="field-row"><span class="field-label">Codes:</span> <span class="code-chip">CL4</span> definitional smuggling (mild) · <span class="code-chip">DI3</span>-adjacent (ambiguity doing quiet work)</p>
+  <p class="field-row"><span class="field-label">Severity:</span> <span class="severity-badge severity-could">Could-Fix</span> — improves rigor; does not threaten C0.</p>
+  <p class="field-row"><span class="field-label">Why it matters:</span> The cost-benefit framing is what licenses the whole "blunt the emotional edge" move that makes the argument feel reasonable rather than ideological. If crime's cost is partly irreducibly moral — as Kleiman's own Chapter 2 argues — then a purely consequentialist optimization understates one term in its own equation. The tension is honest (he states both halves) but unreconciled, and the reader is left to decide which "cost" the later cost-benefit reasoning is using.</p>
+  <p class="field-row"><span class="field-label">Engagement status:</span> <span class="verdict-badge verdict-partial">Present, unresolved</span></p>
+  <p class="field-row"><span class="field-label">Class of solution:</span> Stabilize the term — signal explicitly whether "cost" in the optimization includes the moral/retributive component or brackets it, and acknowledge what the bracketing leaves out. A one-paragraph definitional commitment, not a new chapter.</p>
+</div>
+
+<div class="stress-finding">
+  <h3>4 · The implementation case is honest about difficulty but light on the comparative ledger</h3>
+  <p class="claim">For an AT3 recommendation, the reader needs not only "this works" but "this works better, per dollar, than the next-best thing you'd spend the dollar on." Chapter 10's "Failures of Delivery" is unusually frank about <em>why</em> implementation is hard (inter-agency coordination, official incentives, the Break the Cycle cautionary tale). What is thinner is the explicit comparative ledger against the live alternatives — incapacitation-by-incarceration at the margin, or well-targeted social-service prevention — costed head-to-head.</p>
+  <p class="field-row"><span class="field-label">Codes:</span> <span class="code-chip">BP5</span> partial (alternatives named, not fully costed) · <span class="code-chip">FM-A18</span>-adjacent (implementation realism present, comparison light)</p>
+  <p class="field-row"><span class="field-label">Severity:</span> <span class="severity-badge severity-could">Could-Fix</span> — and note the audit's own guard: because alternatives <em>are</em> engaged (the book argues at length against pure incapacitation and triages social programs by "target efficiency"), this is a soft spot, <strong>not</strong> the uncompared-proposal defeat. The comparative dimension is discharged partially, which keeps the argument sound.</p>
+  <p class="field-row"><span class="field-label">Why it matters:</span> The recommendation's persuasive force on a budget-holding reader depends on the marginal comparison, and the book makes that comparison qualitatively more than it makes it on a costed ledger.</p>
+  <p class="field-row"><span class="field-label">Engagement status:</span> <span class="verdict-badge verdict-engaged">Partially discharged</span></p>
+  <p class="field-row"><span class="field-label">Class of solution:</span> Where the recommendation competes with a costed alternative for the same dollar, name the alternative and the comparison explicitly rather than relying on the cumulative case against the status quo.</p>
+</div>
+
+<h2>The Strongest Objection</h2>
+
+<div class="case-against">
+  <p>Derived by procedure, not preference — and run through the audit's two tests. The genre-generic objection ("but won't less punishment mean more crime / less public safety?") is the decoy: it applies almost verbatim to <em>any</em> decarceration argument, and Kleiman dispatches it directly (the whole point is <em>less</em> crime, via deterrence rather than incapacitation). Set it aside. The genuinely strongest objection is <strong>text-internal and self-limiting</strong>: <em>the mechanism that powers the universal thesis is, on the book's own evidence, narrowly conditioned.</em> Dynamic concentration delivers its near-miraculous "more capacity, less punishment" result only where sanctions capacity (not detection) is the binding constraint, where offenders can't coordinate, and where monitoring is cheap — conditions Kleiman himself shows hold for drug markets, drug-using probationers, and public-order nuisance, but <em>not</em> for the predatory crime (burglary, robbery, assault) that drives most public fear and most of the incarceration he wants to shrink. So the argument's best result and its broadest claim are not co-extensive: the proof is strong precisely where the promise is narrow.</p>
+  <p>Does the objection win? <strong>No — but it sets the repair agenda.</strong> It does not defeat C0, because C0 remains true and important for the large, observable, transactional slice of crime and punishment, and because Kleiman <em>raises every component of it himself</em> (Ch. 4 caveats; Ch. 10 misapplications). What it exposes is not a hole in the reasoning but an un-discharged duty of <em>scope propagation</em>: the book proves a conditional and then, in its framing, states it as if it were closer to universal. That is finding #1 — a Could-Fix, because Kleiman concedes every component of it, yet the highest-leverage tightening available: letting the honesty already in Chapter 10 reach the sentence in the Introduction that promises "much less crime" is the one change that would make a structurally sound argument structurally tight.</p>
+</div>
+
+<h2>Objection Inventory</h2>
+
+<p class="stress-test-intro">How the argument handles the objections a well-informed skeptic would raise — engagement quality assessed, not invented.</p>
+
+<div class="stress-finding">
+  <h3>Less punishment will mean more crime (the public-safety objection)</h3>
+  <p class="claim">"Deterrence is a story; in the real world, taking people off the street is what lowers crime. Shrink incarceration and you'll get more victims."</p>
+  <p class="field-row"><span class="field-label">Engagement:</span> <span class="verdict-badge verdict-engaged">Substantive</span> — this is the book's central target; the entire certainty-over-severity case is the answer, with incapacitation retained for genuinely high-rate offenders.</p>
+  <p class="field-row"><span class="field-label">Audit note:</span> genre-generic (the <span class="code-chip">6a</span> decoy) — raised first by hostile readers, but <em>not</em> the load-bearing one. Correctly downranked.</p>
+</div>
+
+<div class="stress-finding">
+  <h3>The toolkit could serve tyranny (the hostile-audience objection)</h3>
+  <p class="claim">"Make enforcement cheaper and more certain and you've handed an efficiency upgrade to every regime that criminalizes things that shouldn't be crimes."</p>
+  <p class="field-row"><span class="field-label">Engagement:</span> <span class="verdict-badge verdict-engaged">Substantive</span> — conceded directly in Ch. 10 ("Overcontrol, Oppression, and Tyranny"); Kleiman grants that clumsy enforcement buffers bad laws and that his principles could burden, e.g., undocumented residents. He offers a hope, "not a promise."</p>
+  <p class="field-row"><span class="field-label">Audit note:</span> a textbook <span class="code-chip">AC2</span> pre-emption — the rare case of a policy book defending against its hostile reader in its own voice.</p>
+</div>
+
+<div class="stress-finding">
+  <h3>Net-widening: short jail stays could increase total incarceration</h3>
+  <p class="claim">"Frequent short sanctions on probationers could destabilize jobs and housing and ratchet people deeper into the system — more cells used, not fewer."</p>
+  <p class="field-row"><span class="field-label">Engagement:</span> <span class="verdict-badge verdict-engaged">Substantive</span> — explicitly conceded (Ch. 10): "an unsuccessful program could instead increase aggregate incarceration," with the LA/DC crack-probationer case flagged as genuinely unknown.</p>
+  <p class="field-row"><span class="field-label">Audit note:</span> a concession with cost — it actually qualifies the claim, the opposite of <span class="code-chip">OB4</span>.</p>
+</div>
+
+<div class="stress-finding">
+  <h3>The proof is in a model; the world is not a model</h3>
+  <p class="claim">"Game theory and agent-based simulation can show anything you build them to show. The frictionless-world result doesn't transfer to messy reality."</p>
+  <p class="field-row"><span class="field-label">Engagement:</span> <span class="verdict-badge verdict-partial">Partially</span> — Kleiman concedes "these exercises in logic and simulation do not, by themselves, prove anything about the real world," then leans on the three programs as the empirical bridge. The bridge is real but narrow (see findings #1–2), so the transfer is asserted more confidently than the cases alone establish. <em>Disclosed as hindsight, not scored against the 2009 text:</em> this objection later took empirical form — the multi-site HOPE replication (the ~2016 Demonstration Field Experiment) largely failed to reproduce Hawaii's dramatic results. Noted, not held against an argument written before it; if anything it confirms that the scope/scaling soft spot of findings #1–2 was visible in the structure at the time.</p>
+  <p class="field-row"><span class="field-label">Audit note:</span> the residual after the honest concession is exactly the scope-propagation gap of finding #1.</p>
+</div>
+
+<h2>Revision Checklist</h2>
+
+<table class="checklist-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>What</th>
+      <th>Why It Matters</th>
+      <th>Effort</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>Let the Chapter 10 boundary conditions re-qualify C0 at the point it's stated; split the strong claim (observable/transactional crime) from the weaker one (predatory crime)</td>
+      <td>Closes the one gap between a sound argument and a tight one — the strongest, text-internal objection</td>
+      <td><span class="effort-badge effort-med">Medium</span></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Promote the program external-validity caveats from footnote to body, and attach an evidentiary qualifier to the scaling claim</td>
+      <td>Matches the confidence of "we could" to the small-<em>n</em>, founder-driven evidence base</td>
+      <td><span class="effort-badge effort-low-med">Low–Med</span></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Stabilize "cost of crime" — state whether the optimization includes or brackets the moral/retributive term, and what bracketing omits</td>
+      <td>Removes the definitional slide that the cost-benefit framing quietly relies on</td>
+      <td><span class="effort-badge effort-low">Low</span></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>Where the recommendation competes for the same dollar (marginal incarceration; targeted prevention), make the comparison on a costed ledger, not only against the status quo</td>
+      <td>Strengthens the AT3 recommendation for the budget-holding reader</td>
+      <td><span class="effort-badge effort-med">Medium</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="protect-caution">
+  <p><strong>What to protect:</strong> The derived warrant (Ch. 4) — do not trade the modeling for more anecdote; the model <em>is</em> the rigor. Chapter 10 in full — it is the book's dialectical conscience and most policy books would be stronger for stealing it. The provenance honesty about each program. The "within the model" qualifier on the central paradox. The reframing of crime-vs-punishment from zero-sum to joint optimization, which is the argument's genuine intellectual contribution.</p>
+  <p><strong>What to be cautious about:</strong> The repairs above are all <em>scope and placement</em> moves — re-qualifying, re-weighting, re-defining what is already in the book. None requires new evidence, and none should be "fixed" by inflating the three programs into more than they are. The temptation a reviser should resist is to make C0 <em>smaller</em> out of caution; the right move is to make it <em>more precisely shaped</em> — strong where the proof is strong, modest where the proof is narrow. And do not over-correct finding #3 into a retreat from the cost-benefit frame: the frame is the contribution; it just needs an honest accounting of the term it brackets.</p>
+</div>
+
+<div class="appendices">
+
+  <h3>Appendix A: Distinguish Protocol &amp; Severity Calibration</h3>
+  <p>The terminal step of the Dialectical Clarity audit asks whether a text fails because it is structurally unsound or because the diagnostic is mis-calibrated to its form. This argument passes every decision test as a <em>pass</em>, not a defeat.</p>
+  <ul>
+    <li><strong>Classification: Structurally Sound.</strong> Claim-accessibility (C0 is statable without reconstruction), evidence-evaluability (the reader can assess both the model and the programs), warrant-recoverability (the bridge is explicit, not imported), scope-honesty (the boundary conditions are stated — the finding is about their placement), and objection-awareness (Ch. 10 is exhaustive) all pass. The fired codes are the Should/Could-Fix repair agenda, not an Unsound verdict.</li>
+    <li><strong>The uncompared-proposal defeat does not apply.</strong> For an AT3 recommendation, engaging <em>no</em> alternative is a defeat (<span class="code-chip">FM-A10</span>). Here alternatives are engaged — pure incapacitation is argued against at length, social programs are triaged by "target efficiency." The comparative burden is discharged partially (finding #4), which is a soft spot in a sound argument, not the automatic defeat.</li>
+    <li><strong>The strongest objection was derived, not preferred.</strong> Test B (self-undermining derivation) was run first and yielded the text-internal scope-propagation objection; Test A (genre-genericity filter) correctly downranked the "but public safety" decoy. The strongest objection is engaged by the book itself (no <span class="code-chip">OB5</span>), but un-propagated to C0 — which is finding #1, not a misidentification finding.</li>
+    <li><strong>Anti-sycophancy hold.</strong> A well-built, respected book invites under-diagnosis: the reviewer who admires the argument is tempted to report zero findings. Each finding here was tested against "does this bear on C0, or am I admiring the prose?" Findings #1 and #2 are genuine scope soft spots (#2 Should-Fix; #1 a Could-Fix, because the author concedes it); #3 and #4 are honest Could-Fix rigor notes, not manufactured deficits. The specificity guard (no flood of Must-Fix codes on a competent argument) is satisfied: zero Must-Fix, one Should-Fix, three Could-Fix.</li>
+    <li><strong>Hindsight: disclosed, not scored.</strong> The book's later contested replication record (HOPE's mixed multi-site results post-2009 — the ~2016 Demonstration Field Experiment) is <em>noted</em>, not used to grade the argument: scoring a 2009 text against evidence Kleiman could not have read would be a category error. But it is not hidden either — it is surfaced as an objection on the model→world bridge (findings #1–2 / the objection inventory), where it <em>confirms</em> the structural soft spot rather than creating a new one.</li>
+  </ul>
+
+  <h3>Appendix B: Fair-Use &amp; Loci</h3>
+  <p>This letter diagnoses the argument <em>by reference</em>: short quotations for commentary and identification, plus chapter/section loci, with no substantial reproduction of the text. Loci cited: Introduction (the "brute force"/"using enough" frame; the dynamic-concentration promise); Ch. 1, "The Trap" (punitiveness index; the four-day burglary "sentence"); Ch. 2, "Thinking about Crime Control" (the cost-of-crime framing; willingness-to-pay; the Holmes quotation); Ch. 3, "Hope" (HOPE, squeegee, High Point; Judge Alm and Hawaii caveats); Ch. 4, "Tipping, Dynamic Concentration, and the Logic of Deterrence" (the model chain; "Limits and Caveats"); Ch. 10, "What Could Go Wrong?" (misapplications, failures of deterrence/delivery/mission, overcontrol); Ch. 11, "An Agenda for Crime Control" (the recommendation checklist).</p>
+
+  <h3>Appendix C: Framework Notes</h3>
+  <dl class="framework-meta">
+    <dt>Analysis version</dt><dd>APODICTIC Development Editor v2.6.2 — Nonfiction Argument Engine</dd>
+    <dt>Audit</dt><dd>Dialectical Clarity v2.0 (specialized audit)</dd>
+    <dt>Model</dt><dd>Claude Opus 4.8</dd>
+    <dt>Run date</dt><dd>June 26, 2026</dd>
+    <dt>Scope</dt><dd>Whole-book development edit of the central / spine argument (not a chapter-by-chapter pass)</dd>
+    <dt>Argument type</dt><dd>AT3 (propositional) on an AT1 analytic core; mixed-to-expert audience, high consequence</dd>
+    <dt>Distinguish outcome</dt><dd>Structurally Sound</dd>
+    <dt>Codes fired</dt><dd>WR3, BP2-adj, BP6, BP5 (partial), CL4 (mild), DI3-adj; patterns FM-A20-adj, FM-A16, FM-A18-adj</dd>
+    <dt>Severity summary</dt><dd>0 Must-Fix · 1 Should-Fix · 3 Could-Fix</dd>
+    <dt>Anti-sycophancy protocol</dt><dd>Active (deficit-first hunt, specificity guard, hindsight disclosed-not-scored, bidirectional self-check)</dd>
+    <dt>Contamination</dt><dd>Disclosed. Independent discovery not claimed; the demonstration is of framework reasoning on a known, influential argument.</dd>
+    <dt>Firewall</dt><dd>Held. Classes of solution only; the argument is never rewritten and no evidence is supplied.</dd>
+  </dl>
+
+</div>
+
+</body>
+</html>
