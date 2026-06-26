@@ -48,6 +48,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -78,8 +80,8 @@ _SCORE_MIN, _SCORE_MAX = 1, 5
 
 # A target declared as a list item in the Retcon Targets section: "- T1: ..." / "- **T1** ...".
 _TARGET_DECL_RE = re.compile(r"^\s*(?:[-*]|[0-9]+\.)\s+\*{0,2}(T[0-9]+)\b", re.MULTILINE)
-# Override markers naming an item id: "<!-- override: <slug> RX-01 — ... -->".
-_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*([a-z-]+)\s+(RX-[0-9]+)\b", re.IGNORECASE)
+# Override markers naming an item id ("<!-- override: <slug> RX-01 — ... -->") route through the
+# shared override_marker SSoT — code spans stripped, slug boundary-matched.
 # W2 firewall-drift heuristics: a long quoted span (likely invented prose), or a directive to
 # write specific content rather than name a class.
 _INVENTED_QUOTE_RE = re.compile(r"[\"“][^\"”]{25,}[\"”]|['‘][^'’]{25,}['’]")
@@ -125,7 +127,9 @@ def declared_targets(text):
 
 
 def _overrides(text, slug):
-    return {m.group(2) for m in _OVERRIDE_RE.finditer(text) if m.group(1).lower() == slug}
+    """The set of RX-NN ids overridden for `slug` — via the shared SSoT, so a marker quoted inside a
+    code span is not honored as a live directive."""
+    return {t[0] for t in override_targets(text, slug, r"(RX-[0-9]+)")}
 
 
 def parse_items(text):

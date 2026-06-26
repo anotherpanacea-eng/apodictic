@@ -46,6 +46,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -73,7 +75,8 @@ _QUOTE_RE = re.compile(
     r'skimmed|skipped|put\s+it\s+down|put\s+the\s+book\s+down|gave\s+up|lost\s+interest|'
     r'wanted|found\s+myself|kept\s+reading|raced\s+through)\b',
     re.IGNORECASE)
-_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*([a-z-]+)\s+(D-[0-9]+)\b", re.IGNORECASE)
+# Persona-quote overrides (`<!-- override: persona-quote D-NN -->`) route through the shared
+# `override_marker` SSoT — code spans stripped, slug boundary-matched.
 # A divergence-id reference in reader-facing PROSE (e.g. a "### D-NN" section heading) — used to scope
 # a persona-quote override to the divergence whose section a quote sits under (D4).
 _DIV_ID_RE = re.compile(r"\bD-[0-9]+\b")
@@ -89,7 +92,9 @@ def _read(path):
 
 
 def _overrides(text, slug):
-    return {m.group(2) for m in _OVERRIDE_RE.finditer(text) if m.group(1).lower() == slug}
+    """The set of D-NN ids overridden for `slug` (`persona-quote`) — via the shared SSoT, so a marker
+    quoted inside a code span is not honored as a live directive."""
+    return {t[0] for t in override_targets(text, slug, r"(D-[0-9]+)")}
 
 
 def _section_divergence(prose_before):
@@ -491,6 +496,12 @@ def run_self_test():
     # an override silences a quote ONLY within its divergence's prose scope (under "### D-NN")
     scoped_d01 = MAP + '\n\n### D-01\nP-01: "I got bored in chapter 3 and put it down."\n'
     chk("d4_override_silences", not any("D4" in ln for ln in divergence(ov + scoped_d01, LEDGER)[1]))
+    # code-span decoy (bypass closed by the SSoT migration): an override quoted inside a code span is a
+    # documentation example, not a live directive — D4 must still fire, in EITHER CommonMark form.
+    chk("d4_inline_codespan_override_does_not_silence",
+        any("D4" in ln for ln in divergence("`" + ov.strip() + "`\n" + scoped_d01, LEDGER)[1]))
+    chk("d4_fenced_codespan_override_does_not_silence",
+        any("D4" in ln for ln in divergence("```\n" + ov.strip() + "\n```\n" + scoped_d01, LEDGER)[1]))
     # Codex P2 repro: a D-01 override must NOT silence a quote scoped to a DIFFERENT divergence (D-02)
     MAP2 = TARGET + "\n" + EXPERT + "\n" + div("D-01") + "\n" + div("D-02", experiences={"P-01": "engaged", "P-02": "friction"})
     cross = ov + MAP2 + '\n\n### D-02\nP-02: "I got bored and stopped reading."\n'

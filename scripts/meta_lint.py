@@ -26,9 +26,17 @@ those conventions so the classes cannot recur: a validator that validates the va
   M5 override hygiene    no validator detects an override marker by a BARE `<!-- override: <slug>`
                          substring scan (Python `"<!-- override: %s" % slug in body` / bash
                          `grep -F "<!-- override:`) — that honors a SUFFIXED slug and a backtick'd
-                         documentation example. Use the shared `override_marker.has_override` (Python) /
-                         the `_has_override` bash helper (boundary-matched, code-spans stripped). The
+                         documentation example — NOR by a local COMPILED/inline regex
+                         `re.compile(r"<!--\\s*override: …")` (boundary-matched, so it evaded the bare
+                         form, but still skips code-span stripping). Use the shared
+                         `override_marker.has_override` / `override_targets` (Python) / the
+                         `_has_override` bash helper (boundary-matched, code-spans stripped). The
                          override-marker sibling of M2's resolver-substring class.
+  M6 code-span hygiene   no validator builds a LOCAL code-span / fence stripper — a `re.compile`/`re.sub`
+                         whose pattern carries a ``` / ~~~ fence run — instead of delegating to
+                         `override_marker.strip_code_spans` (the single state-machine SSoT). Catches the
+                         "helper exists but isn't used" drift that bypassable hand-rolled strippers
+                         (the form #128 removed from timeline_checks / honesty_check) re-introduce.
 
 It reads validate.sh and the sibling `*.py` from its own directory and the schemas via the shared
 resolver. No artifact input. See docs/validator-conventions.md.
@@ -217,15 +225,27 @@ _M2_EXEMPT = {"apodictic_artifacts.py", "meta_lint.py", "sync_setec.py", "config
 # bash `grep -F "<!-- override:`) honors a SUFFIXED slug AND a backtick'd documentation example. The
 # hardened replacement is the shared `override_marker.has_override` (Python) / the `_has_override`
 # helper (bash), which strip code spans and boundary-match. M5 flags the bare form so the class is
-# gated going forward. The literal trigger is `<!-- override:` with EXACTLY ONE space after `<!--`
-# (the bare form); the hardened helpers write `<!--[[:space:]]*override:` / `<!--\s*override:`, which
-# do NOT contain that literal substring — so a hardened call is not a false positive.
+# gated going forward. Two marker spellings matter, and they are gated by two markers:
+#   * `_OV_MARK` — the LITERAL form (`<!-- override:` one space, or `<!--override:` zero) used by the
+#     SUBSTRING/MEMBERSHIP patterns (`in` / `.find` / format-`in`). A `<!--\s*override:` REGEX literal
+#     does NOT contain that literal substring, so those patterns do not false-positive on a regex.
+#   * `_OV_REGEX_MARK` — the REGEX form, used by the re-op pattern (`_OV_PY_RE_PAT`): it ALSO matches the
+#     `\s`/`[[:space:]]` inter-token spelling a compiled pattern uses. A non-exempt `re.compile`/`re.search`
+#     over the marker is boundary-matched yet skips code-span stripping unless it is override_marker's own
+#     (exempt) — i.e. it is the decoy bypass — so it IS flagged.
 #
 # Python: a string/f-string literal carrying the marker reached by a scan/membership op. The marker is
 # matched with FLEXIBLE whitespace after `<!--` (`<!--\s*override:`), so the zero-space `<!--override:`
 # spelling the hardened parser also accepts is detected (Codex P2); any string prefix is allowed.
 _OV_PFX = r"(?:[rRbBuUfF]{0,2})"
 _OV_MARK = r"<!--\s*override:"
+# The marker as written INSIDE a regex pattern literal: `<!--`, then a regex inter-token gap
+# (`\s*` / `\s+` / `[[:space:]]*` / a literal space, or nothing), then `override:`. `\\s` matches a
+# LITERAL backslash-s in the raw-string source (the form `_OV_MARK`'s whitespace `\s*` cannot match); the
+# `\\\\s` alternative ALSO matches the NON-raw spelling `re.compile("<!--\\s*…")`, whose source carries
+# two backslashes. Longer (two-backslash) alternative first so it wins where it applies.
+_OV_REGEX_GAP = r"""(?:\\\\s[*+]?|\\s[*+]?|\[\[:space:\]\][*+]?|[ ]+)?"""
+_OV_REGEX_MARK = r"<!--" + _OV_REGEX_GAP + r"override:"
 
 
 def _ov_body(group):
@@ -244,7 +264,13 @@ _OV_PY_IN_PAT = _ov_body("ovq1") + r"""\s*\)?\s+(?:not\s+)?in\b"""
 _OV_PY_FMT_IN_PAT = r"\(?\s*" + _ov_body("ovq2") + r"""\s*%[^)\n]*\)\s+(?:not\s+)?in\b"""
 _OV_PY_SCAN_PAT = (r"""\.(?:find|rfind|index|rindex|count|startswith|endswith|partition|rpartition|split)"""
                    r"""\s*\(\s*""" + _OV_PFX + _Q + _OV_MARK)
-_OV_PY_RE_PAT = (r"""\bre\.(?:search|match|fullmatch|findall|finditer)\s*\(\s*""" + _OV_PFX + _Q + _OV_MARK)
+# The re-op pattern uses `_OV_REGEX_MARK` (the `\s`/`[[:space:]]` spelling) and includes `compile`, so the
+# COMPILED-REGEX form — `_OVERRIDE_RE = re.compile(r"<!--\s*override: …")` then `_OVERRIDE_RE.search(body)`
+# — is gated. That form is boundary-matched (so it evaded the bare-substring patterns above) yet still
+# skips code-span stripping (the decoy bypass); the id-/pair-scoped gates that carried it now route through
+# override_marker.override_targets / .override_payloads. The canonical helper builds the same literal but
+# lives in override_marker.py (M5-exempt).
+_OV_PY_RE_PAT = (r"""\bre\.(?:search|match|fullmatch|findall|finditer|compile)\s*\(\s*""" + _OV_PFX + _Q + _OV_REGEX_MARK)
 _OV_PY_RE = re.compile("(?:%s)|(?:%s)|(?:%s)|(?:%s)"
                        % (_OV_PY_IN_PAT, _OV_PY_FMT_IN_PAT, _OV_PY_SCAN_PAT, _OV_PY_RE_PAT))
 # bash: a grep over the bare `<!-- override:` prefix (any whitespace), the form #128 replaced.
@@ -252,6 +278,25 @@ _OV_SH_RE = re.compile(r"""grep\b[^\n]*?['"]""" + _OV_MARK)
 # override_marker.py legitimately DEFINES the hardened helper; meta_lint.py carries the M5 pattern
 # literals themselves. Both are exempt from M5 (they are infra, not gates honoring overrides).
 _M5_EXEMPT = {"override_marker.py", "meta_lint.py"}
+
+# ---- M6 code-span-stripper hygiene --------------------------------------------------------------
+# `override_marker.strip_code_spans` is the SINGLE state-machine code-span stripper — a marker quoted in
+# a ``` fence / inline span is a documentation EXAMPLE, not a live directive. The hand-rolled form #128
+# removed from timeline_checks / honesty_check (`re.compile(r"```...```|`...`")`) was bypassable by a
+# multi-backtick / `~~~`-fenced / multiline / malformed-fence example (Codex P1 xN). M6 fails any
+# validator that REINTRODUCES a local fence stripper — a `re.compile`/`re.sub` whose pattern literal
+# carries a CommonMark FENCE run (3+ backticks or tildes) — so "the helper exists" can't drift from "the
+# helper is used." Deliberately narrow to the fence form: the single-backtick INLINE matchers some
+# validators use to pull a `field` / `file.md` token (no 3-run) are NOT fences and are NOT flagged, and a
+# fence run living in a plain test-fixture STRING is not a re.compile/re.sub argument so it is not flagged.
+# The op list mirrors M5's re-op set (compile/sub for building+stripping, plus search/match/findall/
+# finditer/split for a stripper that matches or splits on the fence) so a local fence handler is gated
+# however it is spelled.
+_M6_FENCE = r"(?:`{3,}|~{3,})"
+_M6_PY_RE = re.compile(r"""\bre\.(?:compile|sub|search|match|fullmatch|findall|finditer|split)\s*\(\s*"""
+                       + _OV_PFX + _Q + r"""[^"'\n]*?""" + _M6_FENCE)
+# override_marker.py legitimately DEFINES the canonical stripper; meta_lint.py carries the M6 literal.
+_M6_EXEMPT = {"override_marker.py", "meta_lint.py"}
 
 
 def agg_validators(sh_text):
@@ -396,6 +441,25 @@ def check_m5_sh(sh_text):
     return viol
 
 
+def check_m6_py(py_name, py_text):
+    """A validator that builds a LOCAL code-span / fence stripper instead of delegating to the shared
+    `override_marker.strip_code_spans`.
+
+    Flags a `re.compile`/`re.sub` whose pattern literal carries a CommonMark FENCE run (3+ backticks or
+    tildes) — the bypassable hand-rolled form #128 removed from timeline_checks / honesty_check ("the
+    helper existing != the helper being used"). Scanned with comments/docstrings stripped, so the
+    migration docstrings that QUOTE the old `re.compile(r"```…")` form in prose are not false positives;
+    single-backtick inline matchers (no 3-run) and fence runs in plain test-fixture strings are not
+    `re.compile`/`re.sub` arguments and are not flagged."""
+    if py_name in _M6_EXEMPT:
+        return []
+    if _M6_PY_RE.search(_strip_comments_keep_source(py_text or "")):
+        return ["M6 code-span-hygiene: %s builds a LOCAL code-fence stripper (a re.compile/re.sub whose "
+                "pattern matches a ``` / ~~~ fence) — the hand-rolled form is bypassable; import and call "
+                "override_marker.strip_code_spans (the single state-machine SSoT)" % py_name]
+    return []
+
+
 # ---------------------------------------------------------------- live run
 
 def _script_dir():
@@ -437,6 +501,10 @@ def run():
     for name, text in py_files.items():
         viol += check_m5_py(name, text)
     viol += check_m5_sh(sh_text)
+    # M6 code-span-stripper hygiene — no validator may carry a LOCAL fence stripper; delegate to
+    # override_marker.strip_code_spans (the single state-machine SSoT) so the helper can't drift unused.
+    for name, text in py_files.items():
+        viol += check_m6_py(name, text)
 
     lines = ["validator-conventions: %d validator(s), %d schema(s) checked"
              % (len(agg_validators(sh_text)), len(schema_ids))]
@@ -448,7 +516,7 @@ def run():
         lines.append("validator-conventions: FAIL (%d violation(s))" % len(viol))
         return 1, lines
     lines.append("validator-conventions: PASS (dispatch+self-test + resolver hygiene + derived count "
-                 "+ no orphan schema + override hygiene%s)"
+                 "+ no orphan schema + override hygiene + code-span hygiene%s)"
                  % (" — M4 degraded/skipped, see WARN" if m4_degraded else ""))
     return 0, lines
 
@@ -583,9 +651,10 @@ def run_self_test():
     # the hardened helper call is clean (it does not write the bare `<!-- override:` single-space form).
     chk("m5_py_has_override_call_ok",
         check_m5_py("g.py", 'from override_marker import has_override\nif has_override(body, "foo"):\n    pass\n') == [])
-    # the helper's own boundary regex (`<!--\\s*override:`) is the hardened form — not flagged.
-    chk("m5_py_hardened_regex_ok",
-        check_m5_py("g.py", 'import re\nif re.search(r"<!--\\\\s*override:\\\\s*" + slug, body):\n    pass\n') == [])
+    # the INLINE regex form (`re.search(r"<!--\s*override:" …)` on raw text) is the decoy bypass in a
+    # non-exempt file — now flagged (the only legitimate builder of this regex is override_marker, exempt).
+    chk("m5_py_inline_regex_form_flagged",
+        check_m5_py("g.py", 'import re\nif re.search(r"<!--\\s*override:\\s*" + slug, body):\n    pass\n') != [])
     # a marker NAMED in a comment / docstring is not a classification op -> not flagged.
     chk("m5_py_comment_marker_ok",
         check_m5_py("g.py", 'def f(b):\n    # honors <!-- override: foo -->\n    return has_override(b, "foo")\n') == [])
@@ -609,6 +678,41 @@ def run_self_test():
         check_m5_sh('  case x)\n    grep -F "<!--override: foo" "$F" && OV=1\n    ;;\n') != [])
     chk("m5_py_triple_quote_flagged",  # Codex P2: triple-quoted override literal evaded the single-quote class
         check_m5_py("g.py", 'if """<!-- override: foo""" in body:\n    pass\n') != [])
+    # M5 extension: the COMPILED-regex form (boundary-matched but no code-span stripping) is now gated.
+    chk("m5_py_compile_flagged",
+        check_m5_py("g.py", 'import re\n_OV = re.compile(r"<!--\\s*override:\\s*([a-z-]+)\\s+(CN-[0-9]+)")\n') != [])
+    chk("m5_py_compile_bracket_space_flagged",
+        check_m5_py("g.py", 'import re\n_OV = re.compile(r"<!--[[:space:]]*override:foo")\n') != [])
+    # …and the NON-raw string spelling (two backslashes in source) is gated too.
+    chk("m5_py_compile_nonraw_string_flagged",
+        check_m5_py("g.py", 'import re\n_OV = re.compile("<!--\\\\s*override: foo")\n') != [])
+    # the migrated gates call override_targets (no `<!-- override:` literal) -> clean
+    chk("m5_py_override_targets_call_ok",
+        check_m5_py("g.py", 'from override_marker import override_targets\nx = override_targets(t, "advisory-eval", r"(CN-[0-9]+)")\n') == [])
+
+    # M6 code-span-stripper hygiene — a LOCAL fence stripper must delegate to override_marker.
+    chk("m6_compile_backtick_fence_flagged",
+        check_m6_py("g.py", 'import re\n_F = re.compile(r"```[\\s\\S]*?```")\n') != [])
+    chk("m6_compile_tilde_fence_flagged",
+        check_m6_py("g.py", 'import re\n_F = re.compile(r"~~~.*?~~~", re.DOTALL)\n') != [])
+    chk("m6_sub_fence_flagged",
+        check_m6_py("g.py", 'import re\nx = re.sub(r"```.*?```", "", body)\n') != [])
+    # a fence stripper spelled with search / split (not just compile/sub) is gated too
+    chk("m6_search_fence_flagged",
+        check_m6_py("g.py", 'import re\nm = re.search(r"```[\\s\\S]*?```", body)\n') != [])
+    chk("m6_split_fence_flagged",
+        check_m6_py("g.py", 'import re\nparts = re.split(r"~~~+", body)\n') != [])
+    # single-backtick INLINE matchers (no 3-run) are legit token extractors -> NOT flagged
+    chk("m6_inline_single_backtick_ok",
+        check_m6_py("g.py", 'import re\nm = re.search(r"`([^`]+\\.md)`", cell)\n') == [])
+    # a fence run inside a PLAIN test-fixture string (not a re.compile/re.sub arg) -> NOT flagged
+    chk("m6_fixture_fence_string_ok",
+        check_m6_py("g.py", 'def t():\n    return check("```\\n<!-- override: x -->\\n```")\n') == [])
+    # the old form QUOTED in a docstring (a migration note) -> NOT flagged (docstrings stripped first)
+    chk("m6_docstring_oldform_ok",
+        check_m6_py("g.py", '"""Once a local re.compile(r"' + "`" * 3 + 'x' + "`" * 3 + '") stripper."""\nx = 1\n') == [])
+    # the canonical stripper file is exempt
+    chk("m6_exempt", check_m6_py("override_marker.py", 'import re\nr = re.compile(r"```")\n') == [])
 
     # _read_text: a non-UTF-8 byte sequence must not crash the linter (UnicodeDecodeError is a
     # ValueError, not an OSError); errors="replace" keeps the ASCII references scannable.

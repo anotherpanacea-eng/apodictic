@@ -47,6 +47,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets, override_payloads  # SSoT: code-span-stripped override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -90,15 +92,16 @@ _COPY_REF_RE = re.compile(r"^copy:\s*([A-Za-z]+)\s*¶\s*[0-9]+(?:\s*-\s*[0-9]+)?
 _CONTRACT_REF_RE = re.compile(r"^contract:\s*\S", re.IGNORECASE)
 _MS_REF_RE = re.compile(r"^ms:\s*\S", re.IGNORECASE)
 
-# Override markers naming a finding's short id: "<!-- override: market-prediction PCF-01 — ... -->".
-_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*([a-z-]+)\s+(PCF-[0-9]+)\b", re.IGNORECASE)
+# Override markers naming a finding's short id ("<!-- override: market-prediction PCF-01 — ... -->")
+# route through the shared override_marker SSoT — code spans stripped, slug boundary-matched.
 
 # W1's drafted-copy override is SNIPPET-keyed, not id-keyed: a report's leaked quote isn't
 # attributable to one finding id, so the override quotes a snippet of the leaked text and silences
 # ONLY a leak that snippet matches — "<!-- override: drafted-copy <snippet> — <rationale> -->".
 # This stops one override from blanket-silencing the firewall and stops an override for absent text
 # from silencing a real leak.
-_DRAFTED_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*drafted-copy\s+(.+?)\s*-->", re.IGNORECASE | re.DOTALL)
+# The drafted-copy snippet is the free-text PAYLOAD of a `drafted-copy` marker; it is read via the
+# shared override_marker SSoT (override_payloads) so a backtick'd example is not honored.
 
 # HTML comments (incl. the apodictic:* blocks and the override markers) are stripped before the W1
 # prose scan, so the persisted-copy blocks and impl notes are not themselves mistaken for report prose.
@@ -123,7 +126,9 @@ def _read(path):
 
 
 def _overrides(text, slug):
-    return {m.group(2) for m in _OVERRIDE_RE.finditer(text) if m.group(1).lower() == slug}
+    """The set of PCF-NN ids overridden for `slug` — via the shared SSoT, so a marker quoted inside a
+    code span is not honored as a live directive."""
+    return {t[0] for t in override_targets(text, slug, r"(PCF-[0-9]+)")}
 
 
 def _drafted_override_snippets(text):
@@ -131,8 +136,8 @@ def _drafted_override_snippets(text):
     captured group is split on the em-/en-/hyphen rationale separator and de-quoted; a leak is
     silenced only when one of these snippets is a substring of (or contains) the leaked block."""
     out = []
-    for m in _DRAFTED_OVERRIDE_RE.finditer(text or ""):
-        snip = re.split(r"\s+[—–-]\s+", m.group(1), 1)[0].strip().strip('"“”')
+    for payload in override_payloads(text or "", "drafted-copy"):
+        snip = re.split(r"\s+[—–-]\s+", payload, 1)[0].strip().strip('"“”')
         if snip:
             out.append(snip)
     return out

@@ -36,6 +36,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -60,8 +62,8 @@ _DISCLAIMER_RE = re.compile(r"not\s+a\s+lawyer|not\s+legal\s+advice", re.IGNOREC
 # HTML comments (incl. the apodictic:legal_risk blocks, which ARE <!-- … --> comments) are stripped
 # before the L3 search, so an implementation note or block text cannot satisfy the disclaimer gate.
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
-# Override markers naming an item id: "<!-- override: legal-advice-drift LR-01 — ... -->".
-_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*([a-z-]+)\s+(LR-[0-9]+)\b", re.IGNORECASE)
+# Override markers naming an item id ("<!-- override: legal-advice-drift LR-01 — ... -->") route
+# through the shared override_marker SSoT — code spans stripped, slug boundary-matched.
 # W1 — legal CONCLUSION language (the module flags; it does not adjudicate). Kept specific so an
 # advisory rarely misfires; an intended phrasing is silenced per-id by the override marker.
 _ADVICE_RE = re.compile(
@@ -86,7 +88,9 @@ def _read(path):
 
 
 def _overrides(text, slug):
-    return {m.group(2) for m in _OVERRIDE_RE.finditer(text) if m.group(1).lower() == slug}
+    """The set of LR-NN ids overridden for `slug` — via the shared SSoT, so a marker quoted inside a
+    code span is not honored as a live directive."""
+    return {t[0] for t in override_targets(text, slug, r"(LR-[0-9]+)")}
 
 
 def parse_items(text):

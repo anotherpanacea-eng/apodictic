@@ -45,6 +45,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -64,7 +66,8 @@ _PRESCRIPTIVE_RE = re.compile(
     r"|\bfix\s+your\s+(?:voice|cadence|prose|style|sentences)\b"
     r"|\b(?:vary|tighten|loosen|expand|broaden|change|diversify|fix)\s+your\s+(?:voice|cadence|prose|style|sentences|range)\b",
     re.IGNORECASE)
-_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*([a-z-]+)\s+(VF-[A-Za-z0-9-]+)\b", re.IGNORECASE)
+# Fingerprint-frame overrides (`<!-- override: fingerprint-frame VF-… -->`) route through the shared
+# `override_marker` SSoT — code spans stripped, slug boundary-matched.
 
 
 def _read(path):
@@ -76,7 +79,9 @@ def _read(path):
 
 
 def _overrides(text, slug):
-    return {m.group(2) for m in _OVERRIDE_RE.finditer(text) if m.group(1).lower() == slug}
+    """The set of VF-… ids overridden for `slug` (`fingerprint-frame`) — via the shared SSoT, so a
+    marker quoted inside a code span is not honored as a live directive."""
+    return {t[0] for t in override_targets(text, slug, r"(VF-[A-Za-z0-9-]+)")}
 
 
 def parse_fingerprints(text):
@@ -354,6 +359,12 @@ def run_self_test():
     chk("f4_prescriptive_advisory", any("F4 descriptive" in ln for ln in fingerprint_profile(presc)[1]))
     ov = "<!-- override: fingerprint-frame VF-2026-thornfield — quoting the author's own goal -->\n"
     chk("f4_override_silences", not any("F4" in ln for ln in fingerprint_profile(ov + sev)[1]))
+    # code-span decoy (bypass closed by the SSoT migration): an override quoted inside a code span is a
+    # documentation example, not a live directive — F4 must still fire, in EITHER CommonMark form.
+    chk("f4_inline_codespan_override_does_not_silence",
+        any("F4" in ln for ln in fingerprint_profile("`" + ov.strip() + "`\n" + sev)[1]))
+    chk("f4_fenced_codespan_override_does_not_silence",
+        any("F4" in ln for ln in fingerprint_profile("```\n" + ov.strip() + "\n```\n" + sev)[1]))
     # a plain descriptive observation does not trip F4
     chk("f4_descriptive_clean",
         not any("F4" in ln for ln in fingerprint_profile(

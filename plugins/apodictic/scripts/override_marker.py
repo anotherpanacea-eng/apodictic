@@ -99,6 +99,50 @@ def override_slugs(body, prefix):
     return set(pat.findall(region))
 
 
+def override_targets(body, slug, target=None):
+    """The set of finding-id tuples carried by LIVE `<!-- override: <slug> ... -->` markers in `body`.
+
+    The id-/pair-scoped override forms `has_override` cannot express — a per-finding `<slug> <id>` or a
+    `<slug> <id-a>/<id-b>` pair — used by the content-advisory / persona-divergence / intake-interview /
+    author-fingerprint / world-bible gates. Each of those previously carried its OWN
+    `re.compile(r"<!--\\s*override: …")` that did NOT strip code spans (the code-span-decoy bypass this
+    helper closes); routing them here gives every such gate the one SSoT stripper + boundary discipline.
+
+      * `target=None` — a PRESENCE form: the slug may stand alone (`<!-- override: world-firewall -->`)
+        or carry a `— <rationale>`; returns `{()}` (truthy) if a live marker exists, else `set()`. As in
+        `has_override`, `slug` must END at a real boundary, so a SUFFIXED slug does not match.
+      * `target=<regex>` — the slug is followed by whitespace then the `target` payload; EACH capturing
+        group in `target` becomes one element of the returned tuple (`r"(CN-[0-9]+)"` -> 1-tuples;
+        `r"(WF-[0-9]+)\\s*/\\s*(WF-[0-9]+)"` -> 2-tuples). The payload must END at a real boundary.
+
+    Like `has_override`, code spans are stripped first and the slug is matched literally (regex-escaped).
+    Matching is case-sensitive — the documented marker is lowercase `override:` and every shipped slug
+    and finding-id is fixed-case, so this is byte-for-byte the SSoT discipline (and the fail-closed
+    direction: an off-spec mixed-case marker does not silence a finding)."""
+    region = strip_code_spans(body)
+    head = r"<!--\s*override:\s*" + re.escape(slug)
+    if target is None:
+        pat = re.compile(head + _BOUNDARY)
+    else:
+        pat = re.compile(head + r"\s+(?:" + target + r")" + _BOUNDARY)
+    return {m.groups() for m in pat.finditer(region)}
+
+
+def override_payloads(body, slug):
+    """The raw `<payload>` of each LIVE `<!-- override: <slug><payload>-->` marker in `body` — the text
+    between the slug boundary and the closing `-->`.
+
+    For BESPOKE gates that PARSE the payload themselves, where a fixed id/pair `target` does not fit:
+    promise-contract's drafted-copy snippet (`<!-- override: drafted-copy <snippet> — <why> -->`) and
+    regression-diff's `<runlabel>:<chapter>` tokens (`<!-- override: regression-cleared Ch 3 — … -->`).
+    Code spans are stripped first (a quoted example is not a live marker) and the slug is boundary-matched
+    (a suffixed slug does not match). The payload is returned RAW — callers strip / split / tokenize it
+    exactly as they did against their old local regex; an empty payload yields `""`."""
+    region = strip_code_spans(body)
+    pat = re.compile(r"<!--\s*override:\s*" + re.escape(slug) + _BOUNDARY + r"(.*?)-->", re.DOTALL)
+    return [m.group(1) for m in pat.finditer(region)]
+
+
 # --------------------------------------------------------------------------------------------------
 # Self-test. (Each consuming validator also exercises has_override through its own decoy+suffix cases;
 # this gives the shared helper direct, fast coverage of the two bypasses + the boundary forms.)
@@ -163,6 +207,45 @@ def _self_test():
     # bypass 1 in the data-driven path — a suffixed/malformed marker must NOT yield the real slug (P1):
     chk("slugs_suffix_rejected", override_slugs("<!-- override: ap-foo_extra -->", "ap-") == set())
     chk("slugs_genuine_hyphenated", override_slugs("<!-- override: ap-foo-bar -->", "ap-") == {"foo-bar"})
+    # override_targets: id-/pair-scoped extraction, code spans stripped + boundary-matched
+    CN = r"(CN-[0-9]+)"
+    chk("targets_per_id",
+        override_targets("<!-- override: advisory-eval CN-03 — why -->", "advisory-eval", CN) == {("CN-03",)})
+    chk("targets_skip_inline_codespan",
+        override_targets("`<!-- override: advisory-eval CN-03 -->`", "advisory-eval", CN) == set())
+    chk("targets_skip_fenced_codespan",
+        override_targets("```\n<!-- override: advisory-eval CN-03 -->\n```", "advisory-eval", CN) == set())
+    # bypass 1 in the id path — a per-id slug must not fire for a LONGER slug (advisory-eval vs -prose)
+    chk("targets_slug_boundary",
+        override_targets("<!-- override: advisory-eval-prose CN-03 -->", "advisory-eval", CN) == set())
+    chk("targets_pair",
+        override_targets("<!-- override: world-rule WF-01/WF-02 — staged -->", "world-rule",
+                         r"(WF-[0-9]+)\s*/\s*(WF-[0-9]+)") == {("WF-01", "WF-02")})
+    chk("targets_multi",
+        override_targets("<!-- override: persona-quote D-01 --> a <!-- override: persona-quote D-02 -->",
+                         "persona-quote", r"(D-[0-9]+)") == {("D-01",), ("D-02",)})
+    # presence form (target=None) — id-less slugs (world-firewall / advisory-eval-prose)
+    chk("targets_presence", override_targets("<!-- override: world-firewall — x -->", "world-firewall") == {()})
+    chk("targets_presence_no_reason", override_targets("<!-- override: world-firewall -->", "world-firewall") == {()})
+    chk("targets_presence_skip_codespan",
+        override_targets("`<!-- override: world-firewall -->`", "world-firewall") == set())
+    chk("targets_presence_suffix_rejected",
+        override_targets("<!-- override: world-firewall-ish -->", "world-firewall") == set())
+    chk("targets_absent", override_targets("<!-- override: other CN-03 -->", "advisory-eval", CN) == set())
+    # override_payloads: bespoke free-text capture, code spans stripped + slug boundary-matched
+    chk("payloads_basic",
+        override_payloads("<!-- override: drafted-copy the quick fox — why -->", "drafted-copy")
+        == [" the quick fox — why "])
+    chk("payloads_skip_inline_codespan",
+        override_payloads("`<!-- override: drafted-copy x -->`", "drafted-copy") == [])
+    chk("payloads_skip_fenced_codespan",
+        override_payloads("```\n<!-- override: regression-cleared Ch 3 -->\n```", "regression-cleared") == [])
+    chk("payloads_slug_boundary",
+        override_payloads("<!-- override: drafted-copy-extra x -->", "drafted-copy") == [])
+    chk("payloads_empty", override_payloads("<!-- override: drafted-copy-->", "drafted-copy") == [""])
+    chk("payloads_multi",
+        override_payloads("<!-- override: regression-cleared a --> b <!-- override: regression-cleared c -->",
+                          "regression-cleared") == [" a ", " c "])
 
     print("Self-test: PASS" if rc == 0 else "Self-test: FAIL")
     return rc
