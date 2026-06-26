@@ -45,10 +45,10 @@ You don't have to install anything to see what APODICTIC produces. These open as
 - **[A targeted audit letter →](https://anotherpanacea-eng.github.io/apodictic/sample-targeted-audit-letter.html)** — a focused single-audit deep dive.
 - **[Pre-writing output →](https://anotherpanacea-eng.github.io/apodictic/sample-pre-writing-output.html)** — what you get starting from an idea instead of a draft.
 
-**Nonfiction & argument samples** (available at first release):
+**Nonfiction & argument samples:**
 
-- **Marked-up op-ed** — the argument equivalent of the annotated manuscript: each finding (missing warrant, scope drift, unmet objection) anchored in the piece, severity-tagged, cross-linked to the Dialectical Clarity letter.
-- **Dialectical Clarity letter** — the argument editorial letter: claim ladder, audience burden, warrant gaps, and the strongest unmet objection, with classes of solution. Never rewrites your argument.
+- **[A Dialectical Clarity letter →](https://anotherpanacea-eng.github.io/apodictic/sample-dialectical-clarity-letter.html)** — the argument editorial letter: claim ladder, audience burden, warrant gaps, and the strongest unmet objection, with classes of solution. Never rewrites your argument. (A whole-book development edit of the spine argument in Mark A. R. Kleiman's *When Brute Force Fails*.)
+- **Marked-up op-ed** *(forthcoming)* — the argument equivalent of the annotated manuscript: each finding (missing warrant, scope drift, unmet objection) anchored in the piece, severity-tagged, cross-linked to the Dialectical Clarity letter.
 
 Two interactive maps of the tool itself:
 
