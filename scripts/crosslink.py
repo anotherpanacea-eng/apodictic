@@ -41,6 +41,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+
 try:
     import annotation_manifest as am
 except ImportError:
@@ -78,7 +80,9 @@ _FINDING_MARKER_RE = re.compile(r"<!--\s*finding:\s*(F-[A-Za-z0-9]+-[0-9]{2,})\s
 # (matched by id, not position); `@` separates it from the verbatim kind:value (which may hold ':' '-'
 # spaces '§' or be empty for `document`). Non-greedy stops at the first <<} (anchor values are sigil-safe).
 _BACKLINK_RE = re.compile(r"\{>>→ marked-up copy: (F-[A-Za-z0-9]+-[0-9]{2,}) @ (.*?)<<\}", re.DOTALL)
-_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*crosslink-uncited\s+(F-[A-Za-z0-9]+-[0-9]{2,})", re.IGNORECASE)
+# W1 override ids ("<!-- override: crosslink-uncited F-… -->") route through the shared override_marker
+# SSoT — code spans stripped, slug boundary-matched. The finding-id payload pattern:
+_OVERRIDE_FID = r"(F-[A-Za-z0-9]+-[0-9]{2,})"
 # Any CriticMarkup span (the shared grammar; mirrors annotation_manifest._CM_SPAN_RE). Used to enumerate
 # EVERY span so an authored/non-back-link span can't ride through X4's reverse transform. Fallback only
 # when annotation_manifest isn't importable; otherwise am._CM_SPAN_RE is used.
@@ -225,7 +229,8 @@ def check(letter_text, crosslinked_text, manifest_text, strict=False):
                         "placed back-link(s)" % (fid, marker_count[fid], paired.get(fid, 0)))
 
     # W1 — annotated but not cited by any letter finding: marker (advisory; override-able)
-    overrides = set(_OVERRIDE_RE.findall(crosslinked_text)) | set(_OVERRIDE_RE.findall(letter_text))
+    overrides = ({t[0] for t in override_targets(crosslinked_text, "crosslink-uncited", _OVERRIDE_FID)}
+                 | {t[0] for t in override_targets(letter_text, "crosslink-uncited", _OVERRIDE_FID)})
     for fid in sorted(anchors):
         if marker_count.get(fid, 0) == 0 and fid not in overrides:
             warns.append("W1 uncited: %s is annotated but not cited by any letter `finding:` marker" % fid)

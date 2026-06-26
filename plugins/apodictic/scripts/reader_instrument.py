@@ -45,6 +45,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -196,14 +198,9 @@ def _content_offenders(question, finding_text):
 
 
 def _overrides(text, kind):
-    """RQ ids carrying an override comment of the given kind."""
-    out = set()
-    if not text:
-        return out
-    pat = re.compile(r"<!--\s*override:\s*%s\s+(RQ-[0-9]+)\b" % re.escape(kind), re.IGNORECASE)
-    for m in pat.finditer(text):
-        out.add(m.group(1))
-    return out
+    """RQ ids carrying an override comment of the given `kind` — via the shared override_marker SSoT, so
+    a marker quoted inside a code span is not honored as a live directive."""
+    return {t[0] for t in override_targets(text or "", kind, r"(RQ-[0-9]+)")}
 
 
 def check(instrument_text, ledger_text, strict=False):

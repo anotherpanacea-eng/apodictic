@@ -35,6 +35,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -53,7 +55,8 @@ def _has_block(text, btype):
 
 _SCHEMA_ID = "apodictic.scene_ethics.v1"
 _PLAN_GLOB = "*_Scene_Ethics_Plan_*.md"
-_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*([a-z-]+)\s+(EP-[0-9]+)\b", re.IGNORECASE)
+# Override markers naming an EP id route through the shared override_marker SSoT (code spans stripped,
+# slug boundary-matched): "<!-- override: scene-ethics-unresolved EP-01 — ... -->".
 
 
 def _read(path):
@@ -65,7 +68,9 @@ def _read(path):
 
 
 def _overrides(text, slug):
-    return {m.group(2) for m in _OVERRIDE_RE.finditer(text) if m.group(1).lower() == slug}
+    """The set of EP-NN ids overridden for `slug` — via the shared SSoT, so a marker quoted inside a
+    code span is not honored as a live directive."""
+    return {t[0] for t in override_targets(text, slug, r"(EP-[0-9]+)")}
 
 
 def parse_items(text):

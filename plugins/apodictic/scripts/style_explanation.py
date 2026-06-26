@@ -62,6 +62,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets, override_payloads  # SSoT: code-span-stripped override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -119,8 +121,10 @@ _EMULATE_RE = re.compile(
 # X4 override: per-id (`style-frame SL-NN`) silences a LABEL match; the bare `style-frame` (id-less)
 # silences PROSE-level matches — a per-id override must never suppress unrelated prose (the
 # content_advisory.py advisory-eval / advisory-eval-prose split, Codex P1).
-_OVERRIDE_ID_RE = re.compile(r"<!--\s*override:\s*style-frame\s+(SL-[0-9]+)\b", re.IGNORECASE)
-_OVERRIDE_PROSE_RE = re.compile(r"<!--\s*override:\s*style-frame\s*(?:—|--|-)", re.IGNORECASE)
+# Style-frame overrides route through the shared override_marker SSoT (code spans stripped, slug
+# boundary-matched). Two distinct forms kept apart so a per-id override never silences the prose
+# firewall: the per-id `style-frame SL-NN` (parsed in _id_overrides) and the prose-scoped
+# `style-frame — <rationale>` (detected in _prose_override by a leading rationale dash).
 
 
 def _read(path):
@@ -132,8 +136,21 @@ def _read(path):
 
 
 def _id_overrides(text):
-    """The set of SL-ids carrying a per-id `style-frame SL-NN` override."""
-    return {m.group(1).upper() for m in _OVERRIDE_ID_RE.finditer(text or "")}
+    """The set of SL-ids carrying a per-id `style-frame SL-NN` override — via the shared SSoT, so a
+    marker quoted inside a code span is not honored as a live directive."""
+    return {t[0].upper() for t in override_targets(text or "", "style-frame", r"(SL-[0-9]+)")}
+
+
+def _prose_override(text):
+    """True iff a PROSE-scoped `style-frame` override is present — `<!-- override: style-frame — <why>
+    -->`, a style-frame marker whose payload begins with the rationale dash (—/–/-) rather than an SL
+    id. Distinct from the per-id form so a per-id override never silences the prose firewall (X4). Via
+    the shared SSoT (code spans stripped, slug boundary-matched)."""
+    for payload in override_payloads(text or "", "style-frame"):
+        stripped = payload.lstrip()
+        if stripped and stripped[0] in "—–-":
+            return True
+    return False
 
 
 def _prescribes(text):
@@ -246,7 +263,7 @@ def explain_profile(text, strict=False):
                          "measured feature, it never prescribes" % sid)
     # prose-level prescription (not id-bound): silenced ONLY by the bare `style-frame` prose override,
     # never by a per-id `style-frame SL-NN` (a per-label override must not suppress unrelated prose).
-    if not _OVERRIDE_PROSE_RE.search(text or ""):
+    if not _prose_override(text):
         if _prescribes(visible):
             warns.append("X4 descriptive: the explanation prose prescribes a voice change or names a "
                          "model to emulate ('vary your …', 'write more like X') — describe the "

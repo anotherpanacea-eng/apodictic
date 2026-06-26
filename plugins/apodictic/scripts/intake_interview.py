@@ -45,6 +45,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -263,8 +265,8 @@ def _suppresses(text):
         return True
     return False
 
-# Override markers naming a query id: "<!-- override: intake-dup IQ-03 — ... -->".
-_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*([a-z-]+)\s+(IQ-[0-9]+)\b", re.IGNORECASE)
+# Override markers naming a query id ("<!-- override: intake-dup IQ-03 — ... -->") route through the
+# shared `override_marker` SSoT — code spans stripped, slug boundary-matched.
 
 
 def _read(path):
@@ -276,7 +278,9 @@ def _read(path):
 
 
 def _overrides(text, slug):
-    return {m.group(2) for m in _OVERRIDE_RE.finditer(text) if m.group(1).lower() == slug}
+    """The set of IQ-NN ids overridden for `slug` (`intake-dup`) — via the shared SSoT, so a marker
+    quoted inside a code span is not honored as a live directive."""
+    return {t[0] for t in override_targets(text, slug, r"(IQ-[0-9]+)")}
 
 
 def parse_queries(text):
@@ -549,6 +553,13 @@ def run_self_test():
     ov = "<!-- override: intake-dup IQ-01 — quoting the author's own framing, not re-asking -->\n"
     chk("i2_override_silences",
         not any("I2" in ln for ln in interview(ov + query("IQ-01", source_note="x", question="what genre is this?"))[1]))
+    # code-span decoy (bypass closed by the SSoT migration): an override quoted inside a code span is a
+    # documentation example, not a live directive — I2 must still fire (use a proven contract-dup question).
+    dup_q = query("IQ-01", source_note="x", question="What is the controlling idea of the book?")
+    chk("i2_inline_codespan_override_does_not_silence",
+        any("I2" in ln for ln in interview("`" + ov.strip() + "`\n" + dup_q)[1]))
+    chk("i2_fenced_codespan_override_does_not_silence",
+        any("I2" in ln for ln in interview("```\n" + ov.strip() + "\n```\n" + dup_q)[1]))
 
     # I3 — grounded ambiguity (ERROR)
     code, lines = interview(query("IQ-01"))  # neither ref nor note

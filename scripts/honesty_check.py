@@ -38,7 +38,7 @@ import re
 import sys
 
 import apodictic_artifacts as art
-from override_marker import strip_code_spans  # SSoT state-machine code-span stripper
+from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
 
 SEV_RANK = art.SEVERITY_RANK
 SEV_TOKENS = tuple(SEV_RANK)
@@ -56,22 +56,19 @@ PROSE_SEVERITY_RE = re.compile(
 APPENDIX_A_RE = re.compile(r"Appendix\s+A\b", re.IGNORECASE)
 SEVCAL_RE = re.compile(r"Severity\s+Calibration|Appendix\s+B\b", re.IGNORECASE)
 NEXT_APPENDIX_RE = re.compile(r"Appendix\s+[C-Z]\b", re.IGNORECASE)
-SOFT_MARKER = "<!-- override: softness-downgrade"  # legacy slug; overrides are now ID-scoped (see below)
 # An override is acknowledged ONLY when it is an HTML-comment-anchored, ID-scoped directive naming the
 # exact Finding Lifecycle ID it downgrades: `<!-- override: softness-downgrade F-P5-01 — <rationale> -->`.
 # A BARE marker (no resolvable ID) acknowledges NOTHING — a single unscoped marker must not blanket-mask
 # every locked finding's downgrade (that would dismantle the Deficit Lock, severity honesty's core).
-_SOFT_OVERRIDE_RE = re.compile(
-    r"<!--\s*override:\s*softness-downgrade\s+(F-[A-Za-z0-9]+-[0-9]{2,})(?![\w-])", re.IGNORECASE)
+# Read via the shared override_marker SSoT (code spans stripped, slug + id boundary-matched).
 def soft_overrides(body):
     """The set of Finding Lifecycle IDs a body's ID-scoped softness-downgrade markers acknowledge.
 
-    Code spans are stripped first so a documentation EXAMPLE of the marker is not honored as a live
-    override. This delegates to the shared `override_marker.strip_code_spans` (one state machine) rather
-    than a local `re.compile(r"```...```|`...`")` — that hand-rolled stripper was bypassable by a
-    multi-backtick / `~~~`-fenced / multiline / malformed-fence example (Codex P1). The ID-scoped match
-    (`_SOFT_OVERRIDE_RE`) then runs on the stripped region."""
-    return {m.group(1) for m in _SOFT_OVERRIDE_RE.finditer(strip_code_spans(body))}
+    Via the shared `override_marker.override_targets`, which strips code spans (a documentation EXAMPLE of
+    the marker is not honored as a live override) AND boundary-matches both the `softness-downgrade` slug
+    and the captured Finding Lifecycle ID — one SSoT for stripping and marker-matching, so neither a
+    hand-rolled stripper nor a hand-rolled marker regex can drift back in (gated by M5 / M6)."""
+    return {t[0] for t in override_targets(body, "softness-downgrade", r"(F-[A-Za-z0-9]+-[0-9]{2,})")}
 
 
 def parse_locked_findings(ledger_text):

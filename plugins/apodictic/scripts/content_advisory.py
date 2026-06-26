@@ -48,6 +48,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -111,11 +113,11 @@ def _prescribes(text):
     return False
 _OPT_IN_RE = re.compile(r"<!--\s*content-advisory:\s*opted-in\s*-->", re.IGNORECASE)
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
-_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*([a-z-]+)\s+(CN-[0-9]+)\b", re.IGNORECASE)
-# The PROSE-level prescription override is id-less (the reader-facing prose isn't bound to a CN-NN),
-# and DISTINCT from the per-id `advisory-eval CN-NN` form — so a per-note override never silences
-# unrelated prose (Codex P1). `<!-- override: advisory-eval-prose — <rationale> -->`.
-_PROSE_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*advisory-eval-prose\b", re.IGNORECASE)
+# Override markers route through the shared `override_marker` SSoT (code spans stripped, slug
+# boundary-matched). Two distinct forms: the per-id `advisory-eval CN-NN` (silences one note's label)
+# and the id-less `advisory-eval-prose` (silences the reader-facing prose). They are kept DISTINCT so a
+# per-note override never silences unrelated prose (Codex P1); the slug boundary in `override_targets`
+# is what keeps `advisory-eval` from firing on an `advisory-eval-prose` marker.
 
 
 def _read(path):
@@ -127,7 +129,9 @@ def _read(path):
 
 
 def _overrides(text, slug):
-    return {m.group(2) for m in _OVERRIDE_RE.finditer(text) if m.group(1).lower() == slug}
+    """The set of CN-NN ids overridden for `slug` (e.g. `advisory-eval`) — via the shared SSoT, so a
+    marker quoted inside a code span is not honored and a per-id override does not bleed across slugs."""
+    return {t[0] for t in override_targets(text, slug, r"(CN-[0-9]+)")}
 
 
 def _has_block(text, btype):
@@ -223,7 +227,7 @@ def advisory(text, strict=False):
                          "…') — the advisory describes depicted content, it does not prescribe" % cid)
     # prose-level prescription (not id-bound): silenced ONLY by the prose-scoped override, never by a
     # per-id `advisory-eval CN-NN` (a note-specific override must not suppress unrelated prose, Codex P1)
-    if not _PROSE_OVERRIDE_RE.search(text or ""):
+    if not override_targets(text or "", "advisory-eval-prose"):
         # scan prose minus the note labels already handled
         if _prescribes(visible):
             warns.append("W1 prescriptive drift: the advisory prose prescribes a revision "
@@ -362,6 +366,15 @@ def run_self_test():
     prose_ov = "<!-- override: advisory-eval-prose — author's own jacket copy -->\n"
     chk("w1_prose_override_silences_prose",
         not any("W1 prescriptive" in ln for ln in advisory(OPT + prose_ov + TWO + presc_prose)[1]))
+    # code-span decoy (the bypass this migration closes): an override quoted INSIDE a code span is a
+    # documentation example, not a live directive — it must NOT silence W1, in EITHER CommonMark form.
+    presc_label = note("CN-03", category="other", label="should soften the torture depiction")
+    chk("w1_inline_codespan_override_does_not_silence",
+        any("W1" in ln for ln in advisory(OPT + "`" + ov.strip() + "`\n" + presc_label)[1]))
+    chk("w1_fenced_codespan_override_does_not_silence",
+        any("W1" in ln for ln in advisory(OPT + "```\n" + ov.strip() + "\n```\n" + presc_label)[1]))
+    chk("w1_prose_codespan_override_does_not_silence",
+        any("W1 prescriptive" in ln for ln in advisory(OPT + "`" + prose_ov.strip() + "`\n" + TWO + presc_prose)[1]))
 
     # W2 — opt-in marker
     code, lines = advisory(TWO)  # no opt-in marker

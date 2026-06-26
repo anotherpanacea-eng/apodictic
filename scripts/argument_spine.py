@@ -77,6 +77,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -108,9 +110,9 @@ _SEC4_RE = re.compile(r"^##\s+4\.\s+Warrant and Inference Map", re.IGNORECASE | 
 _C0_RE = re.compile(r"^\s*C0\s*\(main claim\)\s*:\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 # A subclaim string carries a leading Cn id ("C1: …") — the link target for a support plan.
 _SUBCLAIM_ID_RE = re.compile(r"^\s*(C[0-9]+)\b")
-_ANTITHESIS_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*argument-spine-antithesis\b", re.IGNORECASE)
-_WARRANT_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*argument-spine-warrant\b", re.IGNORECASE)
-_GENRE_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*argument-spine-genre\b", re.IGNORECASE)
+# The three argument-spine overrides (antithesis / warrant / genre) are id-less presence markers; they
+# route through the shared override_marker SSoT (code spans stripped, slug boundary-matched) via the
+# presence form of override_targets(text, slug).
 
 # Increment 5 — the genre layer (apodictic.genre_profile.v1). Per-section seeded_by enum (the stdlib
 # subset validator type-checks array items but does not recurse into object items, so B1 enforces the
@@ -330,7 +332,7 @@ def check(text, strict=False):
 
         # W1 — anti-thesis must name a genuine opposing view, not echo the thesis
         anti, thesis = _echo_norm(obj.get("anti_thesis")), _echo_norm(obj.get("thesis"))
-        if (not anti or anti == thesis) and not _ANTITHESIS_OVERRIDE_RE.search(text):
+        if (not anti or anti == thesis) and not override_targets(text, "argument-spine-antithesis"):
             warns.append("W1 anti-thesis echo: the anti_thesis is empty or restates the thesis — "
                          "name the genuine opposing view the argument must defeat")
 
@@ -381,7 +383,7 @@ def check(text, strict=False):
                             % (o.get("subclaim_id"), ", ".join(sorted(declared)) or "none"))
         # W3 — for a HOSTILE audience, an implicit (non-EXPLICIT) or unbacked (ABSENT) warrant must be
         # made explicit and backed before drafting. Audience-calibrated against the spine. Override.
-        if hostile and not _WARRANT_OVERRIDE_RE.search(text):
+        if hostile and not override_targets(text, "argument-spine-warrant"):
             for o in valid_warrants:
                 ws, bk = o.get("warrant_status"), o.get("backing")
                 if ws != "EXPLICIT" or bk == "ABSENT":
@@ -433,7 +435,7 @@ def check(text, strict=False):
         # W4 — thin genre skeleton: a declared genre's CANONICAL required role is missing from
         # required_sections (advisory; ERROR --strict; override silences). Genre conventions vary, so
         # this only nudges; the hard B-codes carry structural integrity.
-        if not _GENRE_OVERRIDE_RE.search(text):
+        if not override_targets(text, "argument-spine-genre"):
             declared_roles = {_genre_norm(s.get("role")) for s in sections}
             for canon in _GENRE_CANONICAL.get(gobj.get("genre"), ()):
                 if _genre_norm(canon) not in declared_roles:
