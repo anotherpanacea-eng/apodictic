@@ -348,12 +348,12 @@
 
 <header>
   <h1><a href="https://github.com/anotherpanacea-eng/apodictic" style="color:inherit; text-decoration:none;">APODICTIC</a></h1>
-  <p>Development Editor — developmental editing that listens before diagnosing.</p>
+  <p>Development Editor for fiction <strong>and</strong> argument-shaped nonfiction — reads what you wrote, diagnoses structure, never rewrites.</p>
   <div class="getting-started">
-    <strong>New here?</strong> This page is a map of everything the editor can do — you don't need to memorize it. Open your agent in your manuscript's folder and type <code>/start</code>; three questions route you to the right workflow.
+    <strong>New here?</strong> This page is a map of everything the editor can do — you don't need to memorize it. Open your agent in your manuscript's folder and type <code>/start</code>; three questions route you to the right workflow. Writing an argument-shaped piece? <code>/start</code> still works — answer "nonfiction" at the constraint question to reach the Nonfiction Argument Engine.
   </div>
   <div class="firewall-note">
-    <strong>The Firewall:</strong> This tool diagnoses structure. It identifies problems, explains mechanisms, and proposes classes of solution. It never invents content — no plot ideas, no dialogue, no prose. Creative authority stays with the author.
+    <strong>The Firewall:</strong> This tool diagnoses structure. It identifies problems, explains mechanisms, and proposes classes of solution. It never invents content — no plot ideas, no dialogue, no prose, no arguments. Creative and argumentative authority stays with the author.
   </div>
 </header>
 
@@ -541,6 +541,47 @@
   </div>
 </section>
 
+<!-- NONFICTION ARGUMENT ENGINE -->
+<section>
+  <h2>Nonfiction Argument Engine</h2>
+  <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:1rem;">For argument-shaped nonfiction — op-eds, policy briefs, testimony, essays. Same Firewall, same diagnose → letter → marked-up-piece spine as the fiction path; different front end. Reach it via <code>/start</code> → constraint: nonfiction, or <code>/audit dialectical</code> for a standalone argument audit.</p>
+
+  <div class="component-grid">
+    <div class="component-chip craft" style="background:#e0f2fe; border-color:#0284c7;">
+      <div class="chip-type craft" style="color:#0369a1;">Argument Engine</div>
+      <div class="chip-name">Nonfiction Argument Engine</div>
+      <div class="chip-desc">Infers the argument contract (claim, audience, burden, stakes); flags missing warrants, scope drift, unmet strongest objections; produces argument editorial letter + marked-up piece</div>
+    </div>
+    <div class="component-chip craft">
+      <div class="chip-type craft">Craft</div>
+      <div class="chip-name">Dialectical Clarity</div>
+      <div class="chip-desc">Claim ladder, thesis–antithesis balance, rhetorical fairness, straw-position detection (<code>/audit dialectical</code>)</div>
+    </div>
+    <div class="component-chip craft">
+      <div class="chip-type craft">Craft</div>
+      <div class="chip-name">Argument Red Team</div>
+      <div class="chip-desc">Stress-tests the argument against its strongest opposition</div>
+    </div>
+    <div class="component-chip craft">
+      <div class="chip-type craft">Craft</div>
+      <div class="chip-name">Argument Persuasion</div>
+      <div class="chip-desc">Audience fit, rhetorical force, concession discipline</div>
+    </div>
+    <div class="component-chip craft">
+      <div class="chip-type craft">Craft</div>
+      <div class="chip-name">Argument Evidence</div>
+      <div class="chip-desc">Audits the evidence base under the claim ladder</div>
+    </div>
+    <div class="component-chip craft">
+      <div class="chip-type craft">Craft</div>
+      <div class="chip-name">Argument-Decision (ArgScope)</div>
+      <div class="chip-desc">Structure-level argument AI tells — paragraph-role arc + discourse-mode mix (<code>/audit argument-decision</code>)</div>
+    </div>
+  </div>
+
+  <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:1rem;">The argument contract — claim, audience, burden, stakes — is the nonfiction equivalent of the fiction contract. When the inferred contract doesn't match what you intended, that mismatch is the core diagnostic signal.</p>
+</section>
+
 <!-- SPECIALIZED AUDITS -->
 <!-- inventory-synced: audits=45:ce0a9a58 research=6:a1b9dfc4 -->
 <section>
@@ -620,6 +661,10 @@
 
   <div class="workflow-list">
     <div class="workflow-item">
+      <div class="wf-scenario">I have an argument-shaped piece (op-ed, brief, testimony) and need to know if it holds up</div>
+      <div class="wf-path"><span>/start</span> → full_draft → repair → constraint: nonfiction → Nonfiction Argument Engine (Dialectical Clarity + Argument companions)</div>
+    </div>
+    <div class="workflow-item">
       <div class="wf-scenario">I have a complete draft and want to know what's wrong</div>
       <div class="wf-path"><span>/start</span> → full_draft → repair → Core DE (passes 0, 1, 2, 5, 8) → Synthesis</div>
     </div>
@@ -658,10 +703,6 @@
     <div class="workflow-item">
       <div class="wf-scenario">I'm coming back to a project I started earlier</div>
       <div class="wf-path"><span>/start &lt;id&gt;</span> → state-driven resume (zero intake questions) from the project registry</div>
-    </div>
-    <div class="workflow-item">
-      <div class="wf-scenario">My nonfiction is an argument that has to hold up</div>
-      <div class="wf-path"><span>/start</span> → full_draft → repair → constraint: nonfiction → Nonfiction Argument Engine (Dialectical Clarity + Argument companions)</div>
     </div>
   </div>
 </section>

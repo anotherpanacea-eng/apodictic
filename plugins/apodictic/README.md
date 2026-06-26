@@ -1,16 +1,18 @@
 # APODICTIC Development Editor
 
-Developmental editing that listens before diagnosing.
+A development editor for fiction **and** argument-shaped nonfiction. Reads what you wrote, diagnoses structure, never rewrites — stories *or* arguments.
 
-AI-powered developmental editing framework for fiction, narrative nonfiction, and persuasive/argument-shaped nonfiction (policy briefs, op-eds, testimony — via the Nonfiction Argument Engine). Diagnoses structural issues in manuscripts through systematic passes, genre-calibrated analysis, and specialized audits.
+AI-powered developmental editing framework for fiction and persuasive/argument-shaped nonfiction (op-eds, policy briefs, testimony, essays — via the Nonfiction Argument Engine), as well as narrative nonfiction and memoir. Diagnoses structural issues through systematic passes, genre-calibrated analysis, and specialized audits. One spine — diagnose → letter → marked-up piece — two front ends.
 
 ## What It Does
 
-The Development Editor works like a human developmental editor: it reads a manuscript, infers what it's trying to do, and diagnoses where it succeeds or struggles. The system listens first — inferring authorial intent from the text — before measuring the work against that intent.
+The Development Editor works like a human developmental editor: it reads a manuscript or argument-shaped piece, infers what it's trying to do, and diagnoses where it succeeds or struggles. The system listens first — inferring authorial intent from the text — before measuring the work against that intent.
 
-**Key design principle:** The editor predicts the manuscript's contract (genre, reader promise, controlling idea) from the text alone. Misalignments between the inferred contract and the author's stated intent are diagnostically valuable — they reveal where the text doesn't communicate what the author intended.
+**For fiction:** The editor predicts the manuscript's contract (genre, reader promise, controlling idea) from the text alone. Misalignments between the inferred contract and the author's stated intent are diagnostically valuable — they reveal where the text doesn't communicate what the author intended.
 
-**The Firewall:** The system diagnoses problems and identifies classes of solution. It never invents content (new plot events, characters, dialogue, imagery). The author creates; the system analyzes.
+**For argument-shaped nonfiction:** The engine infers the argument contract — the claim, the audience, the burden of proof, the stakes — then measures the piece against it. The Nonfiction Argument Engine flags missing warrants, scope drift, and unmet strongest objections via **Dialectical Clarity** and its Red-Team, Persuasion, and Evidence companions.
+
+**The Firewall:** The system diagnoses problems and identifies classes of solution. It never invents content (new plot events, arguments, characters, dialogue, imagery). The author creates; the system analyzes.
 
 ## What This Plugin Does and Does Not Do
 
@@ -39,21 +41,30 @@ The system diagnoses structure. The author creates content. After diagnosis you 
 
 ## Intended Audience
 
-**Primary audience:** Fiction writers working on novels, novellas, and story collections. The plugin also supports narrative nonfiction, memoir, and creative nonfiction with genre-appropriate calibrations. Writers of persuasive, argument-shaped nonfiction — policy briefs, op-eds, and testimony — are a real audience too: the revision-coaching layer triggers on those forms and the Nonfiction Argument Engine diagnoses their argument structure.
+**Fiction pillar:** Fiction writers working on novels, novellas, and story collections — and by extension, narrative nonfiction, memoir, and creative nonfiction with genre-appropriate calibrations.
 
-**Secondary audience:** Human developmental editors seeking analytical scaffolding, and writing groups using diagnostic vocabulary for structured feedback.
+**Nonfiction & argument pillar:** Writers of persuasive, argument-shaped nonfiction — policy briefs, op-eds, testimony, essays, academic arguments. The Nonfiction Argument Engine diagnoses argument structure (claim ladder, warrant gaps, unmet objections, scope drift) using the same diagnose → letter → marked-up-piece spine as the fiction path.
 
-The plugin assumes its user is an adult working on a creative project. Its outputs are structural diagnoses, editorial letters, and revision recommendations — analytical documents, not fiction.
+**Secondary audiences:** Human developmental editors seeking analytical scaffolding, and writing groups using diagnostic vocabulary for structured feedback.
+
+The plugin assumes its user is an adult working on a creative or argumentative project. Its outputs are structural diagnoses, editorial letters, and revision recommendations — analytical documents, not content.
 
 ## Components
 
 ### Workflows
 
+**Fiction pillar:**
 - **Development Edit** — The main workflow: intake protocol, 11 analysis passes, synthesis, revision rounds, genre calibration
 - **Pre-Writing Pathway** — Guides writers from idea to draftable structure (no manuscript required). Writer mode calibration, seed inventory, readiness gates, option architecture, complexity budget, prospective contract, re-entry diff protocol.
 - **Plot Coaching** — Plot structure diagnosis (50 spines across 12 families), selection coaching, fantasy & series architecture
 - **Specialized Audits** — 37 available audits (3 universal, 19 craft, 10 genre, 5 tag), including 3 primary tags (cozy, philosophical, erotic content) and 2 companion intimacy audits; plus 6 internet-enabled research modes
-- **Nonfiction Argument Engine** — Diagnoses argument-shaped nonfiction: argument spine, support, and warrant, with Red-Team, Persuasion, and Evidence companions
+
+**Nonfiction & argument pillar:**
+- **Nonfiction Argument Engine** — Diagnoses argument-shaped nonfiction (op-eds, policy briefs, testimony, essays): infers the argument contract (claim, audience, burden, stakes), then flags missing warrants, scope drift, and unmet strongest objections. Produces an argument editorial letter and marked-up piece. Companions: Dialectical Clarity, Red-Team, Persuasion, Evidence.
+- **Dialectical Clarity** (`/audit dialectical`) — Deep-dive argument structure audit: claim ladder, thesis–antithesis balance, rhetorical fairness, straw-position detection
+- **Argument-Decision / ArgScope** (`/audit argument-decision`) — Structure-level argument AI-tell audit: paragraph-role arc + discourse-mode mix, per-signal contributions
+
+**Shared:**
 - **Legal Risk Register** — Flags possible defamation, privacy, and rights exposure for counsel to review. It flags, never adjudicates — not legal advice
 - **Feedback Triage & Beta-Reader Instrument** — Sort, cluster, and prioritize beta-reader/editor feedback, and turn a diagnosis into targeted beta-reader questions
 - **Projects** — Addressable, resumable editing projects (`/projects`, state-driven resume), with Retcon Planning and State Cards
@@ -63,14 +74,14 @@ The plugin assumes its user is an adult working on a creative project. Its outpu
 ### Commands
 
 **Start here:**
-- `/start` — I have a manuscript — what should I do with it?
+- `/start` — I have a manuscript or argument — what should I do with it?
 - `/apodictic` — What can this plugin do? Where do I start?
 
 **Diagnostic workflows:**
 - `/ready` — Is this ready to submit?
 
 **Focused tools:**
-- `/audit` — Run a specific deep-dive analysis.
+- `/audit` — Run a specific deep-dive analysis — including argument audits (dialectical, argument-decision).
 - `/research` — I need internet-assisted verification.
 - `/coach` — I have a diagnosis — how do I revise?
 - `/plot-coach` — Is my plot structure working?

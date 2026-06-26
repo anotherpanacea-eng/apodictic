@@ -137,8 +137,8 @@
       "category": "entry",
       "status": "primary",
       "routerEquivalent": null,
-      "writerQuestion": "I have a manuscript — what should I do with it?",
-      "description": "Recommended entry point. Routes to the right workflow in 2–3 questions."
+      "writerQuestion": "I have a manuscript or argument — what should I do with it?",
+      "description": "Recommended entry point. Routes to the right workflow in 2–3 questions — for fiction and argument-shaped nonfiction."
     },
     {
       "command": "/apodictic",
@@ -161,8 +161,8 @@
       "category": "focused",
       "status": "first_class_shortcut",
       "routerEquivalent": null,
-      "writerQuestion": "Run a specific deep-dive analysis.",
-      "description": "Run a named specialized audit or list all available audits."
+      "writerQuestion": "Run a specific deep-dive analysis — including argument audits (dialectical, argument-decision).",
+      "description": "Run a named specialized audit or list all available audits. Argument-shaped nonfiction: try /audit dialectical (Dialectical Clarity) or /audit argument-decision (ArgScope)."
     },
     {
       "command": "/research",
