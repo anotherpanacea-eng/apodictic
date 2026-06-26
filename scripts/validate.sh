@@ -5603,14 +5603,21 @@ EOF
     ;;
 
   argument-carve-behavior-preservation)
-    # Carve-equivalence gate (Workstream A, Phase A / §2.4): proves that the nonfiction-argument-engine
-    # modularization refactor is behavior-preserving on the MECHANICAL layer (deterministic Python
-    # resolvers only — the LLM editorial layer is non-deterministic and is not tested here).
-    # Runs two mechanical validators against fixed pre-carve fixtures and diffs each output against
-    # the committed golden: (1) audit-signal-propagation on argument-editorial-letter.md +
-    # argument-findings-ledger.md — diff against precarve/propagation-output.txt; (2) decision-layer-check
-    # on argument-editorial-letter.md — diff against precarve/decision-layer-output.txt.
-    # "Identical" = both diffs empty (exit 0). Fails if fixture files are absent or goldens drift.
+    # Carve-equivalence SMOKE gate (Workstream A, §2.4): a lightweight regression guard that the
+    # nonfiction-argument-engine modularization did not break the MECHANICAL resolvers (deterministic
+    # Python only — the LLM editorial layer is non-deterministic and is not tested here).
+    # Re-runs two resolvers on fixed pre-carve fixtures and diffs each SUMMARY line against a committed
+    # golden: (1) audit-signal-propagation on argument-editorial-letter.md + argument-findings-ledger.md;
+    # (2) decision-layer-check (Argument-DE class) on argument-editorial-letter.md.
+    # SCOPE / HONESTY: this asserts the resolvers still classify the argument fixture as Argument-DE and
+    # do not regress to error post-carve. It is NOT the full §2.4 field-level diff (no row-by-row
+    # Findings-Ledger id/severity/evidence_refs diff, no annotation anchor-map diff); the propagation
+    # summary line is invariant on this fixture, so treat this as a smoke check, not the proof.
+    # The AUTHORITATIVE behavior-preservation guarantees (which have teeth) are elsewhere:
+    #   - `audit-signal-propagation --check-registry` — all 45 signal-emitting audits still have §4e rows
+    #     (FAILS if the split fragment is dropped); and
+    #   - the byte-identical §4e extraction proof in evals/fixtures/argument-carve/4e-before-after.diff.
+    # "Identical" = both summary diffs empty (exit 0). Fails if fixture files are absent or goldens drift.
     # Pure shell + python3 (via validate.sh sub-calls). No helper script.
     ACB_DIR=$(cd "$(dirname "$0")" && pwd)
     ACB_FIXTURE_DIR="$ACB_DIR/../evals/fixtures/argument-carve/precarve"
@@ -5681,7 +5688,7 @@ EOF
       ACB_R=1
     fi
     if [ "$ACB_R" -eq 0 ]; then
-      echo "argument-carve-behavior-preservation: PASS (mechanical resolvers produce golden outputs on pre-carve fixture)"
+      echo "argument-carve-behavior-preservation: PASS (smoke: resolvers still classify the argument fixture as Argument-DE post-carve; authoritative guarantee = audit-signal-propagation --check-registry + the byte-identical §4e diff)"
       exit 0
     fi
     echo "argument-carve-behavior-preservation: FAIL"

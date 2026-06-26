@@ -13,9 +13,18 @@ Files:
 - `propagation-output.txt` — `audit-signal-propagation` output captured on this fixture pre-carve.
 - `decision-layer-output.txt` — `decision-layer-check` output captured on this fixture pre-carve.
 
-## Equivalence contract
+## What this baseline proves (and what it does not)
 
-Post-carve, the `argument-carve-behavior-preservation` validator re-runs
+Post-carve, the `argument-carve-behavior-preservation` smoke gate re-runs
 `audit-signal-propagation` and `decision-layer-check` on these fixed inputs and
-asserts output is byte-identical to the captured golden files. Any drift means
-a resolver no longer reads the argument rows it needs.
+diffs their summary line against the captured goldens — asserting the mechanical
+resolvers still classify the argument fixture as Argument-DE and do not regress to
+error after the table split.
+
+It is deliberately NOT the full §2.4 field-level equivalence (no row-by-row
+Findings-Ledger id/severity diff, no annotation anchor-map diff): the propagation
+summary line is invariant on this fixture, so this is a smoke check, not the proof.
+The authoritative behavior-preservation guarantees — the ones with teeth — are
+`audit-signal-propagation --check-registry` (all 45 signal-emitting audits still
+have §4e rows; it FAILS if the split fragment is dropped) and the byte-identical
+§4e extraction proof in `../4e-before-after.diff`.

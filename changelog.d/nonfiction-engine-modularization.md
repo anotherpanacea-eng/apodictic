@@ -15,4 +15,4 @@ Promoted the nonfiction argument path from implicit to named and bounded:
 
 Source files retain `REPLACED-WITH-INCLUDE` pointer comments.
 
-**Carve-equivalence gate.** `argument-carve-behavior-preservation` validator (`validate.sh`) runs `audit-signal-propagation` and `decision-layer-check` on fixed pre-carve fixtures (`evals/fixtures/argument-carve/precarve/`) and diffs against committed goldens — proving the modularization is behavior-preserving on the mechanical resolver layer. Wired into `--check-all`.
+**Behavior-preservation guarantees.** The split is proven behavior-preserving on the mechanical resolver layer by two gates with teeth: `audit-signal-propagation --check-registry` asserts all 45 signal-emitting audits still have §4e propagation rows (it fails if the split fragment is dropped), and the byte-identical §4e extraction is confirmed by `evals/fixtures/argument-carve/4e-before-after.diff`. A supplementary `argument-carve-behavior-preservation` smoke gate (`validate.sh`, wired into `--check-all`) re-runs the mechanical resolvers on a fixed pre-carve fixture and confirms they still classify it as Argument-DE without regressing to error.
