@@ -474,6 +474,7 @@ const ARTIFACTS = [
   { key: 'C', value: 'partial',    label: 'A draft in progress — started but not finished' },
   { key: 'D', value: 'full_draft', label: 'A complete draft' },
   { key: 'E', value: 'series',     label: 'Multiple books in a series' },
+  { key: 'F', value: 'argument',   label: 'An argument-shaped piece — op-ed, brief, testimony, essay' },
 ];
 
 const GOALS = {
@@ -501,6 +502,12 @@ const GOALS = {
     { key: 'A', value: 'single_vol',  label: 'Work on one book (the current volume)' },
     { key: 'B', value: 'continuity',  label: 'Check continuity across volumes' },
     { key: 'C', value: 'plan_next',   label: 'Plan the series arc or the next volume' },
+  ],
+  argument: [
+    { key: 'A', value: 'diagnose',  label: 'Diagnose what\'s wrong with the argument — missing warrants, scope drift, unmet objections' },
+    { key: 'B', value: 'dialectical', label: 'Deep-dive the argument structure (Dialectical Clarity audit)' },
+    { key: 'C', value: 'red_team',  label: 'Stress-test against the strongest opposition (Red Team)' },
+    { key: 'D', value: 'pre_draft', label: 'I have an argument but no draft yet — help me structure it' },
   ],
 };
 
@@ -545,6 +552,12 @@ const ROUTES = {
   'full_draft|repair|editor':     { workflow: 'Core DE (editor scaffolding)', status: 'built', flow: ['Core DE', 'Editor Output Mode'], passes: ['0','1','2','5','8'], desc: 'Same diagnostic, output re-aimed at a human developmental editor working on someone else\'s manuscript: an Editor Brief, a What-You-Might-Have-Missed blind-spot section, and an intervention menu left to the editor\'s discretion.', outputs: ['Editorial_Letter.md'] },
   'full_draft|repair|facilitator':{ workflow: 'Core DE (diagnostic vocabulary)', status: 'built', flow: ['Core DE', 'Vocabulary Guide'], passes: ['0','1','2','5','8'], desc: 'Diagnostic vocabulary mode for writing-group facilitation: produces a teaching Vocabulary Guide (a grounded glossary plus question-framed discussion prompts) alongside the editorial letter, which keeps its severity record.', outputs: ['Editorial_Letter.md', 'Vocabulary_Guide.md'] },
   'full_draft|repair|team':       { workflow: 'Core DE (multi-party)', status: 'gap', flow: ['Multi-Party Intake', 'Core DE', 'Conflict Surface'], passes: ['0','1','2','5','8'], desc: 'Intake that surfaces conflicting visions between co-authors. Diagnostic flags vision-alignment issues alongside structural problems.', gap: 'Multi-party intake is not yet built. Fallback: single-author Core DE.', outputs: ['Editorial_Letter.md'] },
+
+  // argument
+  'argument|diagnose|*':    { workflow: 'Nonfiction Argument Engine', status: 'built', flow: ['Argument Triage', 'Dialectical Clarity', 'Companion Audits', 'Argument Editorial Letter'], passes: [], desc: 'Infers the argument contract (claim, audience, burden, stakes) from the text, then diagnoses where it breaks down: missing warrants, scope drift, unmet strongest objections. Produces an argument editorial letter and marked-up piece. Companions: Dialectical Clarity, Red-Team, Persuasion, Evidence.', outputs: ['Argument_State.md', 'Editorial_Letter.md', 'Marked_Up_Piece.md'] },
+  'argument|dialectical|*': { workflow: 'Dialectical Clarity Audit', status: 'built', flow: ['Argument Intake', 'Dialectical Clarity'], passes: [], desc: 'Deep-dive argument structure audit: claim ladder, thesis–antithesis balance, rhetorical fairness, straw-position detection. Available directly via /audit dialectical.', outputs: ['Dialectical_Clarity_Report.md'] },
+  'argument|red_team|*':    { workflow: 'Argument Red Team', status: 'built', flow: ['Argument Intake', 'Red Team Simulation'], passes: [], desc: 'Hostile-reader simulation: identifies the strongest version of the opposition, stress-tests the argument against it, surfaces concessions that would strengthen rather than weaken the piece.', outputs: ['Red_Team_Report.md'] },
+  'argument|pre_draft|*':   { workflow: 'Pre-Writing Pathway (argument framing)', status: 'partial', flow: ['Argument Contract', 'Claim Ladder', 'Structural Plan'], passes: [], desc: 'Argument-aware pre-draft pathway: stakes and audience clarification, claim ladder construction, burden scoping, structural plan. The argument equivalent of the fiction pre-writing pathway.', gap: 'Dedicated argument pre-draft pathway is in development. Current fallback: /pre-writing with explicit argument framing at intake.', outputs: ['Argument_Contract.md', 'Structural_Plan.md'] },
 
   // series
   'series|single_vol|*':  { workflow: 'Core DE (series context)', status: 'partial', flow: ['Series Context Noted', 'Re-route to Volume', 'Core DE'], passes: ['0','1','2','5','8'], desc: 'Routes back to Q1 for the specific volume, with series context preserved. Cross-volume character and world state are noted but not formally tracked.', outputs: ['Editorial_Letter.md', 'Diagnostic_State.md'] },
