@@ -125,7 +125,7 @@ function validateRegistry(stats) {
 
 function buildPluginDescription(stats) {
   return [
-    "APODICTIC Development Editor. Developmental editing that listens before diagnosing.",
+    "APODICTIC Development Editor. A development editor for fiction and argument-shaped nonfiction — reads what you wrote, diagnoses structure, never rewrites.",
     "Provides structural diagnosis, genre calibration, tag audits, plot architecture analysis, revision coaching, partial manuscript diagnostic, fragment synthesis, nonfiction argument engine (Dialectical Clarity + Red Team, Persuasion, Evidence, and Coaching companions), pre-writing pathway, and intake routing",
     `across ${counts.corePasses} core passes, ${stats.available} available audits (${stats.universal} universal, ${stats.craft} craft, ${stats.genre} genre, ${stats.tag} tag), ${counts.researchModes} research modes, ${counts.preWritingPathways} pre-writing pathway, and ${counts.intakeRouters} intake router.`,
     "Includes contract-driven and finding-driven audit integration pipeline."
