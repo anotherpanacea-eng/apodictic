@@ -18,7 +18,7 @@ flowchart TD
     style X stroke-dasharray: 5 5,color:#9ca3af
 ```
 
-*Every edit starts at `/start`: three plain-language questions — the second's options depend on the first — route you to the right workflow. ([Walk the specific routes in the interactive route explorer](https://anotherpanacea-eng.github.io/apodictic/plugins/apodictic/route-explorer.html).)*
+*Every edit starts at `/start`: three plain-language questions — the second's options depend on the first — route you to the right workflow. Nonfiction & argument work is reachable either as an up-front choice or by flagging it at the third question; both land in the Nonfiction Argument Engine. ([Walk the specific routes in the interactive route explorer](https://anotherpanacea-eng.github.io/apodictic/plugins/apodictic/route-explorer.html).)*
 
 ## Why This Exists
 
