@@ -27,4 +27,3 @@
 | Citation Verifier | Ghost citation (CV-class verdict: source does not exist) | Must-Fix | Always | `craft/research-citation-verifier.md` §Verdict tiers | — |
 | Citation Verifier | Misquoted / misattributed citation | Should-Fix | Source exists but quote/attribution inaccurate | `craft/research-citation-verifier.md` §Verdict tiers | — |
 | Citation Verifier | Stale or unverifiable citation | Could-Fix | Source unreachable but no evidence of fabrication | `craft/research-citation-verifier.md` §Verdict tiers | — |
-

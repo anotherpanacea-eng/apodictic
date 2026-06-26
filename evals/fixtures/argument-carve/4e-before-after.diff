@@ -1,5 +1,5 @@
 # §4e Argument Cluster — Before/After Extraction Diff
-# 
+#
 # This diff proves the argument-cluster rows extracted from pass-dependencies.md §4e
 # to argument-audits-propagation.md are byte-identical — only location changed.
 #
