@@ -178,7 +178,7 @@ set -euo pipefail
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).
-AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff regression-diff legal-risk promise-contract continuity-bible world-bible intake-interview author-fingerprint content-advisory style-explanation persona-divergence argument-spine scene-ethics argument-groundtruth-check registry-check schema-coverage lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor obsidian-export html-export docx-export validator-conventions check-mirror"
+AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff regression-diff legal-risk promise-contract continuity-bible world-bible intake-interview author-fingerprint content-advisory style-explanation persona-divergence argument-spine scene-ethics argument-groundtruth-check registry-check schema-coverage lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor obsidian-export html-export docx-export validator-conventions argument-carve-behavior-preservation check-mirror"
 # shellcheck disable=SC2086  # intentional word-splitting to count list entries
 AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 
@@ -228,7 +228,7 @@ _has_override() {
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, regression-diff, legal-risk, promise-contract, continuity-bible, world-bible, intake-interview, author-fingerprint, content-advisory, style-explanation, persona-divergence, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, schema-coverage, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, obsidian-export, html-export, docx-export, validator-conventions, check-mirror"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, regression-diff, legal-risk, promise-contract, continuity-bible, world-bible, intake-interview, author-fingerprint, content-advisory, style-explanation, persona-divergence, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, schema-coverage, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, obsidian-export, html-export, docx-export, validator-conventions, argument-carve-behavior-preservation, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
   echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), world-bible vs the canonical Worldbuilding Bible example (W1 schema + closed-key, WD unique ids, WB-R1 rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a unit class, WB-G2 chronology cycle + anchor-drift, and the WF surface-don't-resolve firewall scan — clean under --strict with the staged contradictions overridden), intake-interview vs the canonical Intake Interview example + its Ledger (I1 schema, I2 no-contract-dup, I3 grounded ambiguity via ref + source_note, I4 calibrate-not-suppress under --strict), author-fingerprint vs the canonical Author Voice Profile (F1 schema, F2 provenance, F3 same-register comparison, F4 descriptive-not-prescriptive, clean W1/W2 under --strict), content-advisory vs the canonical Content Advisory (A1 schema, A2 locus shape, A3 no-severity-leak, descriptive W1, opt-in W2 under --strict), style-explanation vs the canonical Author Style Explanation (X1 schema, X2 provenance, X3 no-severity-leak, X4 descriptive-not-prescriptive incl. the comparison-to-emulate firewall, X5 same-register cluster, clean X6/W1 under --strict), persona-divergence vs the canonical Persona Divergence Map + its Ledger (D1 schema incl. nested experiences enum, D2 grounded prediction, D3 target-severity anchoring, D4 anti-fabrication, D5 closed-key persona under --strict), argument-spine vs the canonical pre-draft Argument_State + the three genre-profiled Argument_States (Increment 5: B1-B4 + W4 over grant / academic / pitch, --strict), scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources + the pre-draft Argument_State spine (the claim-ladder X1/X5/X6/X7 gates), annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, schema-coverage vs the real schemas/ dir (every apodictic.*.schema.json bound + canonically exercised + closed-key table<->file agreement — Harness Contracts v2), plus validator-conventions (the fleet meta-linter — M1 every AGG validator has a --self-test dispatcher case, M2 resolvers classify on parsed blocks not raw apodictic:<type> marker scans, M3 derived count, M4 no orphan schema, M5 no bare/compiled override-marker scan + M6 no local code-span stripper — overrides use the override_marker SSoT), plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
@@ -782,6 +782,12 @@ PY
     done
     echo ""
   fi
+
+  # Carve-equivalence gate (Workstream A Phase A): prove the nonfiction-argument-engine modularization
+  # is behavior-preserving — mechanical resolvers produce golden outputs on the pre-carve fixture.
+  echo "== argument-carve-behavior-preservation (carve-equivalence: pre-carve fixture vs goldens) =="
+  "$0" argument-carve-behavior-preservation || CA_FAIL=1
+  echo ""
 
   # Schema-coverage invariant (Harness Contracts v2): run the gate against the REAL schemas/ dir
   # (not only its synthetic self-test), so a new/renamed/orphaned schema, an unproven binding, a
@@ -5594,6 +5600,115 @@ EOF
     fi
     echo "WARN: python3 unavailable — validator-conventions skipped; check inline that every AGG validator has a --self-test dispatcher case, resolvers classify on parsed blocks (no raw apodictic:<type> marker scan), the count is derived, no schema is orphaned, and no gate detects an override by a bare \"<!-- override:\" substring (use the _has_override helper). See docs/validator-conventions.md."
     exit 0
+    ;;
+
+  argument-carve-behavior-preservation)
+    # Carve-equivalence SMOKE gate (Workstream A, §2.4): a lightweight regression guard that the
+    # nonfiction-argument-engine modularization did not break the MECHANICAL resolvers (deterministic
+    # Python only — the LLM editorial layer is non-deterministic and is not tested here).
+    # Re-runs two resolvers on fixed pre-carve fixtures and diffs each SUMMARY line against a committed
+    # golden: (1) audit-signal-propagation on argument-editorial-letter.md + argument-findings-ledger.md;
+    # (2) decision-layer-check (Argument-DE class) on argument-editorial-letter.md.
+    # SCOPE / HONESTY: this asserts the resolvers still classify the argument fixture as Argument-DE and
+    # do not regress to error post-carve. It is NOT the full §2.4 field-level diff (no row-by-row
+    # Findings-Ledger id/severity/evidence_refs diff, no annotation anchor-map diff); the propagation
+    # summary line is invariant on this fixture, so treat this as a smoke check, not the proof.
+    # The AUTHORITATIVE behavior-preservation guarantees (which have teeth) are elsewhere:
+    #   - `audit-signal-propagation --check-registry` — all 45 signal-emitting audits still have §4e rows
+    #     (FAILS if the split fragment is dropped); and
+    #   - the byte-identical §4e extraction proof in evals/fixtures/argument-carve/4e-before-after.diff.
+    # "Identical" = both summary diffs empty (exit 0). Skips when evals/ is absent (repo-only gate);
+    # fails if a fixture is missing within a present evals/ or a golden drifts.
+    # Pure shell + python3 (via validate.sh sub-calls). No helper script.
+    ACB_DIR=$(cd "$(dirname "$0")" && pwd)
+    # The argument-carve fixtures live only at repo root (evals/ is not shipped to host workspaces and
+    # is not mirrored under plugins/apodictic/). Resolve from EITHER validate.sh mirror copy:
+    # ../../../evals (plugins/apodictic/scripts/) or ../evals (root scripts/); resolve-and-skip when
+    # absent rather than fail — matching the argument-groundtruth-check convention above.
+    ACB_FIXTURE_DIR=""
+    for ACB_CAND in "$ACB_DIR/../../../evals/fixtures/argument-carve/precarve" "$ACB_DIR/../evals/fixtures/argument-carve/precarve"; do
+      if [ -d "$ACB_CAND" ]; then ACB_FIXTURE_DIR="$ACB_CAND"; break; fi
+    done
+    if [ -z "$ACB_FIXTURE_DIR" ]; then
+      if [ "${1:-}" = "--self-test" ]; then
+        echo "  fixture_present: SKIP (evals/ not present — repo-only gate)"; echo "Self-test: PASS"
+      else
+        echo "argument-carve-behavior-preservation: SKIP (evals/ not present — repo-only gate)"
+      fi
+      exit 0
+    fi
+    if [ "${1:-}" = "--self-test" ]; then
+      ACB_R=0
+      # Self-test: verify the fixture files exist and the validators produce the golden outputs.
+      ACB_LETTER="$ACB_FIXTURE_DIR/argument-editorial-letter.md"
+      ACB_LEDGER="$ACB_FIXTURE_DIR/argument-findings-ledger.md"
+      ACB_PROP_GOLDEN="$ACB_FIXTURE_DIR/propagation-output.txt"
+      ACB_DL_GOLDEN="$ACB_FIXTURE_DIR/decision-layer-output.txt"
+      for ACB_F in "$ACB_LETTER" "$ACB_LEDGER" "$ACB_PROP_GOLDEN" "$ACB_DL_GOLDEN"; do
+        if [ ! -f "$ACB_F" ]; then echo "  fixture_present: FAIL (missing: $ACB_F)"; ACB_R=1; fi
+      done
+      if [ "$ACB_R" -eq 0 ]; then
+        echo "  fixture_present: OK (4 fixture files found)"
+        # Run propagation check and diff against golden
+        ACB_PROP_OUT=$("$0" audit-signal-propagation "$ACB_LETTER" "$ACB_LEDGER" 2>/dev/null | tail -1)
+        ACB_PROP_EXPECTED=$(cat "$ACB_PROP_GOLDEN")
+        if [ "$ACB_PROP_OUT" = "$ACB_PROP_EXPECTED" ]; then
+          echo "  propagation_golden: OK"
+        else
+          echo "  propagation_golden: FAIL"
+          echo "    expected: $ACB_PROP_EXPECTED"
+          echo "    got:      $ACB_PROP_OUT"
+          ACB_R=1
+        fi
+        # Run decision-layer-check and diff against golden
+        ACB_DL_OUT=$("$0" decision-layer-check "$ACB_LETTER" 2>/dev/null | tail -1)
+        ACB_DL_EXPECTED=$(cat "$ACB_DL_GOLDEN")
+        if [ "$ACB_DL_OUT" = "$ACB_DL_EXPECTED" ]; then
+          echo "  decision_layer_golden: OK"
+        else
+          echo "  decision_layer_golden: FAIL"
+          echo "    expected: $ACB_DL_EXPECTED"
+          echo "    got:      $ACB_DL_OUT"
+          ACB_R=1
+        fi
+      fi
+      if [ "$ACB_R" -eq 0 ]; then echo "Self-test: PASS"; exit 0; else echo "Self-test: FAIL"; exit 1; fi
+    fi
+    # Normal run (no args): runs both mechanical validators on the pre-carve fixture and diffs
+    # outputs against the committed goldens. Usage as a gate: exit 0 = behavior preserved; exit 1 = drift.
+    ACB_LETTER="$ACB_FIXTURE_DIR/argument-editorial-letter.md"
+    ACB_LEDGER="$ACB_FIXTURE_DIR/argument-findings-ledger.md"
+    ACB_PROP_GOLDEN="$ACB_FIXTURE_DIR/propagation-output.txt"
+    ACB_DL_GOLDEN="$ACB_FIXTURE_DIR/decision-layer-output.txt"
+    ACB_R=0
+    for ACB_F in "$ACB_LETTER" "$ACB_LEDGER" "$ACB_PROP_GOLDEN" "$ACB_DL_GOLDEN"; do
+      if [ ! -f "$ACB_F" ]; then
+        echo "ERROR: argument-carve-behavior-preservation fixture missing: $ACB_F"
+        exit 1
+      fi
+    done
+    ACB_PROP_OUT=$("$0" audit-signal-propagation "$ACB_LETTER" "$ACB_LEDGER" 2>/dev/null | tail -1)
+    ACB_PROP_EXPECTED=$(cat "$ACB_PROP_GOLDEN")
+    if [ "$ACB_PROP_OUT" != "$ACB_PROP_EXPECTED" ]; then
+      echo "ERROR: argument-carve-behavior-preservation: audit-signal-propagation output drifted from golden"
+      echo "  expected: $ACB_PROP_EXPECTED"
+      echo "  got:      $ACB_PROP_OUT"
+      ACB_R=1
+    fi
+    ACB_DL_OUT=$("$0" decision-layer-check "$ACB_LETTER" 2>/dev/null | tail -1)
+    ACB_DL_EXPECTED=$(cat "$ACB_DL_GOLDEN")
+    if [ "$ACB_DL_OUT" != "$ACB_DL_EXPECTED" ]; then
+      echo "ERROR: argument-carve-behavior-preservation: decision-layer-check output drifted from golden"
+      echo "  expected: $ACB_DL_EXPECTED"
+      echo "  got:      $ACB_DL_OUT"
+      ACB_R=1
+    fi
+    if [ "$ACB_R" -eq 0 ]; then
+      echo "argument-carve-behavior-preservation: PASS (smoke: resolvers still classify the argument fixture as Argument-DE post-carve; authoritative guarantee = audit-signal-propagation --check-registry + the byte-identical §4e diff)"
+      exit 0
+    fi
+    echo "argument-carve-behavior-preservation: FAIL"
+    exit 1
     ;;
 
   check-mirror)

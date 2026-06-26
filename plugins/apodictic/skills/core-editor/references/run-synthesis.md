@@ -202,7 +202,14 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
 
    **Author Decisions counting (v1.8.0 calibration).** When the Author Decisions section uses Keep / Cut / Unsure (or Defer / Decide) level-3 subheads, the validator counts subhead clusters (typical 1-3) rather than the sub-bullets within them — the contract intent is "3-7 distinct decision categories," and Keep / Cut / Unsure naturally clusters multiple sub-decisions under each category. Letters without subheads are still counted by list-item or paragraph-form rules (verb-leading paragraphs starting with Protect / Keep / Cut / Defer / Decide / Unsure also count when neither list items nor bolded paragraphs are present). This calibration closes Phase 4 Wave 3 eval-coverage findings C1 + C2.
 
-   **Argument-DE class (v1.8.0 calibration).** Argument-shaped letters (detected by markers: "Coalition-Partner Ground-Truth Recommendations", "Editorial-Dispute Territory", "Argument_State", "Claim Ladder", "Argument Engine") use a parallel decision-layer schema. The validator accepts variant heading names ("Coalition-Partner Ground-Truth Recommendations" or "Strengths / Protected Elements" for Protected Elements; "Editorial-Dispute Territory" for Author Decisions) and skips Check 3 (Control Questions) and Check 4 (Mandatory Appendices A/B/C) — argument-DE class is not held to the fiction-DE structural contract. Closes Phase 4 Wave 3 eval-coverage finding C3.
+   <!-- REPLACED-WITH-INCLUDE: Argument-DE class schema extracted to `references/synthesis-argument.md`.
+        The `decision-layer-check` validator already accepts argument-DE markers; this pointer replaces the
+        inline schema paragraph. Load that fragment on argument-shaped runs. -->
+   <!-- INCLUDE: `references/synthesis-argument.md` — Argument-DE class decision-layer schema lives there. -->
+
+   **Argument-DE class.** Argument-shaped letters use a parallel decision-layer schema (validator accepts
+   "Strengths / Protected Elements" and "Editorial-Dispute Territory" heading variants; skips Checks 3/4).
+   See `references/synthesis-argument.md` for the full schema, detection markers, and override path.
 
    **Evidence-density window (v1.8.0 calibration).** Per-Must-Fix evidence density (≥2 references) is checked over a paragraph-block window — from each Must-Fix line until the next Must-Fix occurrence OR the next section header (`^##` at column 0), whichever comes first. The wider window detects paragraph-form evidence that the prior fixed 6-line window missed. Closes Phase 4 Wave 3 eval-coverage finding C4.
 

@@ -1,0 +1,1 @@
+OK: Decision-Layer Consolidation contract satisfied (argument-DE class — Checks 3-4 skipped per C3 calibration; or override markers present).
