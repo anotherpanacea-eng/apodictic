@@ -227,50 +227,16 @@ Mapping:
 
 ## §4a. Nonfiction Routing Rules
 
-When `constraint:nonfiction` is active and the user has prose pages rather than an idea-only project, do not treat nonfiction as a generic gap. Apply this triage:
+<!-- REPLACED-WITH-INCLUDE: the nonfiction triage branch (Route to Argument Engine / Narrative NF / Memoir rules,
+     hybrid rule, Default-activation-by-form table, and Post-diagnostic offer) has been extracted to
+     `references/nonfiction-intake-routing.md`. Load that fragment when `constraint:nonfiction` fires.
+     The full section is reproduced there byte-for-byte; this pointer replaces the inline content. -->
 
-### Route to the Nonfiction Argument Engine when:
+<!-- INCLUDE: `references/nonfiction-intake-routing.md` — nonfiction triage routing rules live there. -->
 
-1. the manuscript makes an extractable main claim
-2. support, comparison, evaluation, proposal, or testimony dominates the structure
-3. the user is working on an op-ed, policy brief, testimony, academic argument, open letter, advocacy argument, recommendation memo, white paper, legal-style brief, or other claim-bearing prose
-
-### Route to Narrative Nonfiction Craft when:
-
-1. the material is primarily scene-led, reportorial, or chronologically narrative
-2. the reader's main question is about scene construction, pacing, source integration, and factual storytelling experience
-
-### Route to Memoir & Creative Nonfiction when:
-
-1. first-person witness, memory, truth-craft, and ethical obligation are central
-2. experiential authority dominates even if an argument is present
-
-### Hybrid rule
-
-If the manuscript is Franklin Classification 3:
-
-1. choose Dialectical Clarity when argument dominates and narrative is serving evidence or stakes
-2. choose Narrative Nonfiction Craft when narrative dominates and the argument is secondary
-
-### Default activation by form
-
-| Form | Default route |
-|---|---|
-| Op-ed / persuasive essay / open letter | Dialectical Clarity |
-| Policy brief / recommendation memo / white paper | Dialectical Clarity; offer Red Team next |
-| Testimony | Dialectical Clarity; offer Red Team next |
-| Academic argument / review essay / legal brief | Dialectical Clarity |
-| Reported feature / scene-led journalism | Narrative Nonfiction Craft |
-| Memoir / personal essay / witness-led CNF | Memoir & CNF; add Dialectical Clarity when explicit claim burden dominates |
-
-### Post-diagnostic offer
-
-After Dialectical Clarity on nonfiction argument work, surface the next likely action:
-
-1. `/audit argument-red-team` for hostile pressure testing
-2. `/audit argument-evidence` when evidence legitimacy is the likely bottleneck
-3. `/audit argument-persuasion` when audience fit is the likely bottleneck
-4. `/coach` for revision sequencing
+*When `constraint:nonfiction` is active and the user has prose pages rather than an idea-only project,
+load `references/nonfiction-intake-routing.md` for the full triage routing logic (Argument Engine /
+Narrative NF / Memoir routes, hybrid rule, default-activation-by-form table, post-diagnostic offer).*
 
 ---
 

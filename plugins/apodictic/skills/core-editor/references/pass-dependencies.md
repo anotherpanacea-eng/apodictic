@@ -177,15 +177,10 @@ Activated by intake answers before passes run. When a router-triggered audit is 
 | Queer romance / queer identity central | Queer Romance/Erotica | Auto-recommend | `tag/queer-romance-erotica.md` |
 | Submission readiness goal | Shelf Positioning | Auto-recommend with Pass 11 | `craft/shelf-positioning.md` |
 | Constraint = risk | Legal Risk Register | **Wired** — offer-then-attach on `constraint:risk` (synthesis constraint hook, `run-synthesis.md §Constraint mode`); direct entry `/legal-risk`. Overlay per `intake-router-runtime.md` §6 Table B. | `references/legal-risk-register.md` |
-| Constraint = nonfiction (idea-stage) | (Nonfiction Pre-Draft Pathway — idea-stage gap) | Note gap; offer closest. Prose-stage nonfiction engines (argument / narrative / memoir) are built — see `intake-router-runtime.md` §6 Table A | — |
-| Argument-shaped run (constraint=nonfiction + intake hint at white paper / policy brief / testimony / op-ed / academic article / regulatory comment / expert affidavit) | Field Reconnaissance | **Hard Prerequisite** when high-stakes signal present (testimony, expert affidavit, regulatory comment, peer-reviewed publication, or `constraint=high-stakes` flag); otherwise **Auto-recommend before synthesis** | `craft/research-field-recon.md` |
-| Argument-shaped run (constraint=nonfiction + high-stakes intake hint: testimony / expert affidavit / regulatory comment / peer-reviewed publication) | Citation Verifier | **Pre-DE Prerequisite** (runs before passes; not a DE-internal audit — see audit reference) | `craft/research-citation-verifier.md` |
-
-**Argument-shaped routing definition (Phase 6 Wave 3 / CR-4 closure).** A run is "argument-shaped" when intake produces `constraint=nonfiction` AND the intake hint, declared form, or contract draft places it in the persuasive-argument family: white paper, policy brief, testimony (oral or written), op-ed, academic article, grant proposal, legal brief, book review, advocacy journalism, open letter, regulatory comment, expert affidavit, or peer-reviewed publication. Memoir, narrative nonfiction, and creative-nonfiction forms are nonfiction but *not* argument-shaped; they route via their own §4a rows above.
-
-**High-stakes signal definition.** "High-stakes" applies when the manuscript's literature provenance is dispositive — i.e., a counterevidence miss could carry legal, regulatory, professional, or publication consequences the author cannot absorb post-hoc. The signal fires when any of the following hold: (a) intake declares the form as testimony, expert affidavit, regulatory comment, or peer-reviewed publication; (b) the contract carries an explicit `constraint=high-stakes` flag; (c) the intake hint identifies the audience as a court, legislative body, regulatory agency, or peer-review panel. Op-eds, academic articles, and policy briefs that lack these hooks default to the Auto-recommend before synthesis tier; the user can request Hard Prerequisite escalation at intake.
-
-**Why argument-shaped runs get a prerequisite tier.** F4 Stage 2 (`docs/review-log/2026-04-24_tay-stage-2-comparative.md`) documented seven literature-counterevidence blind spots that the Stage 1 development edit missed because Field Reconnaissance was not prerequisited — Wave 2 audits operate on manuscript-as-written, so competing studies, replication failures, and meta-analytic counterevidence the author had documented privately (or that exist in the literature but were not surfaced) never entered the Findings Ledger. The Hard Prerequisite tier closes this gap by routing literature-counterevidence surfacing **before** the argument engine fires, so downstream passes (Dialectical Clarity, Argument Red Team, Argument Evidence Deep-Dive) operate against a literature-aware claim graph rather than a manuscript-internal one. The Auto-recommend before synthesis tier provides the same routing for lower-stakes argument runs with an opt-out (and mandatory blind-spot disclosure if declined — see `run-synthesis.md` Step 3 Blind Spot / Absence Inventory and Step 11 Appendix A).
+<!-- REPLACED-WITH-INCLUDE: argument-cluster §4a rows (Field Recon, Citation Verifier, nonfiction idea-stage,
+     argument-shaped routing definition + high-stakes definition + prerequisite rationale) have been extracted to
+     `references/argument-audits-routing.md`. Load that fragment for argument-shaped runs (constraint=nonfiction).
+     Rows below were originally here; they now live in the fragment for ownership by nonfiction-argument-engine. -->
 
 ### §4b. Finding-triggered audits
 
@@ -218,6 +213,11 @@ Activated by pass results during a diagnostic run. The system checks these after
 | 8 (Reveal Economy) | Cross-volume state drift, thread amnesia, or consequence reset in series context | Series Continuity | Auto-recommend before synthesis (if not already loaded) |
 | 10 (Entity Tracking) | Cross-volume entity/state inconsistency or unresolved carry-forward consequences | Series Continuity | Auto-recommend before synthesis (if not already loaded) |
 | Any pass | Fan fiction origin markers (IP scaffolding, assumed worldbuilding) | Fan Fiction Conversion | Recommend |
+
+<!-- FRAGMENT-NOTE: The Dialectical Clarity (Pass 9), Consent Complexity (Any pass), and Reception Risk (Any pass)
+     rows above also appear in `references/argument-audits-routing.md §4b` for completeness of the argument routing
+     picture. On argument-shaped runs, load that fragment alongside this table; the fragment lists only these
+     argument-relevant §4b rows. On fiction-only runs, use this table as-is. -->
 
 ### §4c. Policy definitions
 
@@ -324,35 +324,13 @@ This is the per-audit operationalization of the Canonical Audit-Signal Propagati
 | Interiority Preservation | Pattern flag | Should-Fix | Pattern across ≥2 peak-intensity scenes | `craft/interiority-preservation.md` §Named flags | — |
 | Interiority Preservation | Spot flag | Could-Fix | Isolated | `craft/interiority-preservation.md` §Named flags | — |
 
-#### Argument cluster (Dialectical Clarity, Argument Red Team, Argument Persuasion, Argument Evidence, Adversarial Evidence Review, Field Recon, Citation Verifier)
+<!-- REPLACED-WITH-INCLUDE: argument-cluster §4e rows (Dialectical Clarity, Argument Red Team, Argument Persuasion,
+     Argument Evidence, Adversarial Evidence Review, Field Reconnaissance, Citation Verifier) have been extracted to
+     `references/argument-audits-propagation.md`. The rows are byte-identical — only location changed (confirmed by
+     `evals/fixtures/argument-carve/4e-before-after.diff`). The `audit-signal-propagation` validator loads both
+     this table and the fragment for argument-shaped runs. -->
 
-| Audit | Audit-internal signal | Synthesis severity | Context modifier | Source | Override |
-|---|---|---|---|---|---|
-| Dialectical Clarity | WR0 (warrant gap) at HIGH burden audience | Must-Fix | Burden level HIGH from §Step 1 (policy brief, expert testimony) | `craft/dialectical-clarity.md` §Step 4 WR codes + §Step 1 burden | Refines default (audience-calibrated) |
-| Dialectical Clarity | WR0 (warrant gap) at MEDIUM burden audience | Should-Fix | Burden level MEDIUM | `craft/dialectical-clarity.md` §Step 4 WR codes | — |
-| Dialectical Clarity | WR1 (missing backing for contested warrant) | Must-Fix | Always | `craft/dialectical-clarity.md` §Step 4 WR codes | — |
-| Dialectical Clarity | CL2 (subclaim gap) | Must-Fix | Always | `craft/dialectical-clarity.md` §CL codes | — |
-| Dialectical Clarity | OB4 (concession without cost) | Should-Fix | Pattern-level concession theater | `craft/dialectical-clarity.md` §OB codes | — |
-| Dialectical Clarity | BP2 (scope creep) | Should-Fix | Always; upgrade to Must-Fix if BP2 in conclusion | `craft/dialectical-clarity.md` §BP codes | Refines default (location-sensitive) |
-| Argument Red Team | RT-flag at Fatal severity | Must-Fix | Adversary can defeat the argument entirely | `craft/argument-red-team.md` §Severity Scale | — |
-| Argument Red Team | RT-flag at Major severity | Should-Fix | Real vulnerability; argument needs reinforcement | `craft/argument-red-team.md` §Severity Scale | — |
-| Argument Red Team | RT-flag at Manageable severity | Could-Fix | Limited blast radius | `craft/argument-red-team.md` §Severity Scale | — |
-| Argument Persuasion | PS-flag fortification failure (audience-posture mismatch) | Should-Fix | Pattern across ≥2 audience postures | `craft/argument-persuasion.md` §PS signals | — |
-| Argument Persuasion | PS-flag at hard-rule violation | Must-Fix | Hard rule fires (e.g., concession-without-cost convergence) | `craft/argument-persuasion.md` §7 Hard Rules | — |
-| Argument Evidence | AE10 (Verification Hotspot Cluster) | Must-Fix | Always; per Hard Gate #1 (Evidence Ledger escalates) | `craft/argument-evidence.md` §Hard Gates | — |
-| Argument Evidence | AE1 on C0 support (provenance opaque on central claim) | Must-Fix | Always; per Hard Gate #2 | `craft/argument-evidence.md` §Hard Gates | — |
-| Argument Evidence | AE2 (Secondary Flattening) | Should-Fix | Pattern across ≥2 supports; Must-Fix if confirmed via Citation Verifier | `craft/argument-evidence.md` §Named flags | Refines default (verification-conditional) |
-| Argument Evidence | AE5 + AE6 co-occurrence (testimony boundary) | Must-Fix | Per Hard Gate #3 (handoff to Coaching Track 8) | `craft/argument-evidence.md` §Hard Gates | — |
-| Argument Evidence | AE3 / AE4 / AE7 / AE8 / AE9 isolated | Should-Fix | Pattern-level; upgrade to Must-Fix on convergence | `craft/argument-evidence.md` §Named flags | — |
-| Adversarial Evidence Review | HX-class survivability failure (claim cannot survive hostile expert scrutiny) | Must-Fix | Survivability judgment = Vulnerable across multiple protocols | `craft/adversarial-evidence-review.md` §HX/LX/SX | — |
-| Adversarial Evidence Review | LX-class limited-survival failure | Should-Fix | Survives some protocols; not all | `craft/adversarial-evidence-review.md` §HX/LX/SX | — |
-| Adversarial Evidence Review | SX-class stable-claim flag | Could-Fix | Survives all protocols; flag for documentation | `craft/adversarial-evidence-review.md` §HX/LX/SX | — |
-| Field Reconnaissance | Counterevidence surfaced post-Field-Recon contradicting C0 | Must-Fix | Direct contradiction of central claim | `craft/research-field-recon.md` §Output | — |
-| Field Reconnaissance | Counterevidence surfaced post-Field-Recon weakening subclaim | Should-Fix | Subclaim weakened, central claim stands | `craft/research-field-recon.md` §Output | — |
-| Field Reconnaissance | Literature-gap flag (no counterevidence found despite expected adversarial pressure) | Could-Fix | Documents the search; no actionable finding | `craft/research-field-recon.md` §Output | — |
-| Citation Verifier | Ghost citation (CV-class verdict: source does not exist) | Must-Fix | Always | `craft/research-citation-verifier.md` §Verdict tiers | — |
-| Citation Verifier | Misquoted / misattributed citation | Should-Fix | Source exists but quote/attribution inaccurate | `craft/research-citation-verifier.md` §Verdict tiers | — |
-| Citation Verifier | Stale or unverifiable citation | Could-Fix | Source unreachable but no evidence of fabrication | `craft/research-citation-verifier.md` §Verdict tiers | — |
+<!-- INCLUDE: `references/argument-audits-propagation.md` — argument-cluster §4e rows live there. -->
 
 #### Specialized craft audits
 
