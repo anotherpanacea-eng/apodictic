@@ -5617,10 +5617,26 @@ EOF
     #   - `audit-signal-propagation --check-registry` — all 45 signal-emitting audits still have §4e rows
     #     (FAILS if the split fragment is dropped); and
     #   - the byte-identical §4e extraction proof in evals/fixtures/argument-carve/4e-before-after.diff.
-    # "Identical" = both summary diffs empty (exit 0). Fails if fixture files are absent or goldens drift.
+    # "Identical" = both summary diffs empty (exit 0). Skips when evals/ is absent (repo-only gate);
+    # fails if a fixture is missing within a present evals/ or a golden drifts.
     # Pure shell + python3 (via validate.sh sub-calls). No helper script.
     ACB_DIR=$(cd "$(dirname "$0")" && pwd)
-    ACB_FIXTURE_DIR="$ACB_DIR/../evals/fixtures/argument-carve/precarve"
+    # The argument-carve fixtures live only at repo root (evals/ is not shipped to host workspaces and
+    # is not mirrored under plugins/apodictic/). Resolve from EITHER validate.sh mirror copy:
+    # ../../../evals (plugins/apodictic/scripts/) or ../evals (root scripts/); resolve-and-skip when
+    # absent rather than fail — matching the argument-groundtruth-check convention above.
+    ACB_FIXTURE_DIR=""
+    for ACB_CAND in "$ACB_DIR/../../../evals/fixtures/argument-carve/precarve" "$ACB_DIR/../evals/fixtures/argument-carve/precarve"; do
+      if [ -d "$ACB_CAND" ]; then ACB_FIXTURE_DIR="$ACB_CAND"; break; fi
+    done
+    if [ -z "$ACB_FIXTURE_DIR" ]; then
+      if [ "${1:-}" = "--self-test" ]; then
+        echo "  fixture_present: SKIP (evals/ not present — repo-only gate)"; echo "Self-test: PASS"
+      else
+        echo "argument-carve-behavior-preservation: SKIP (evals/ not present — repo-only gate)"
+      fi
+      exit 0
+    fi
     if [ "${1:-}" = "--self-test" ]; then
       ACB_R=0
       # Self-test: verify the fixture files exist and the validators produce the golden outputs.
