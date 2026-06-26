@@ -1,0 +1,1 @@
+OK: Audit-internal severity signals propagated to synthesis layer (per-audit; or override marker present in body).
