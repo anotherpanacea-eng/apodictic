@@ -56,6 +56,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -96,12 +98,12 @@ _KNOWN_KEYS = {"schema", "id", "category", "subject", "attribute", "value",
 #                             must carry at least one.)
 # place / faction / entity have NO contradiction arm (descriptive-only), so they impose no keyed field.
 
-# Override markers naming an unordered pair of ids: "<!-- override: world-rule WF-01/WF-02 — … -->".
-# The pair is order-insensitive; both "WF-01/WF-02" and "WF-02/WF-01" silence the same conflict.
-_OVERRIDE_RE = re.compile(
-    r"<!--\s*override:\s*(world-[a-z]+)\s+(WF-[0-9]+)\s*/\s*(WF-[0-9]+)\b", re.IGNORECASE)
-# The firewall override is pair-free (it silences the prose scan, not a fact pair).
-_FW_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*world-firewall\b", re.IGNORECASE)
+# Override markers route through the shared `override_marker` SSoT (code spans stripped, slug
+# boundary-matched). Two forms: a pair-scoped `<!-- override: world-rule WF-01/WF-02 — … -->` (order-
+# insensitive; both "WF-01/WF-02" and "WF-02/WF-01" silence the same conflict), parsed via the pair
+# target below; and the pair-free `<!-- override: world-firewall -->` (silences the prose scan, not a
+# fact pair), checked with the presence form of `override_targets`.
+_WF_PAIR_TARGET = r"(WF-[0-9]+)\s*/\s*(WF-[0-9]+)"
 
 # WF firewall — resolution / invention verbs that would mean the bible's prose RESOLVED a conflict or
 # INVENTED canon instead of surfacing it. Kept specific so the advisory rarely misfires; an intended
@@ -252,12 +254,8 @@ def _read(path):
 
 def _overrides(text, slug):
     """Set of frozenset({id, id}) unordered pairs overridden for the given slug (world-rule /
-    world-cost / world-geo)."""
-    out = set()
-    for m in _OVERRIDE_RE.finditer(text or ""):
-        if m.group(1).lower() == slug:
-            out.add(frozenset((m.group(2), m.group(3))))
-    return out
+    world-cost / world-geo). Via the shared SSoT, so a pair quoted inside a code span is not honored."""
+    return {frozenset(pair) for pair in override_targets(text, slug, _WF_PAIR_TARGET)}
 
 
 def parse_facts(text):
@@ -543,7 +541,7 @@ def _firewall_scan(text, strict):
     """WF: the bible's reader-facing prose must SURFACE, never resolve/invent. Scan the visible prose
     (HTML comments — incl. the world_fact blocks, which ARE comments — stripped first) for a
     resolution/invention verb. Advisory; ERROR under --strict; world-firewall override silences."""
-    if _FW_OVERRIDE_RE.search(text or ""):
+    if override_targets(text or "", "world-firewall"):
         return []
     visible = _HTML_COMMENT_RE.sub("", text or "")
     hits = []
@@ -783,6 +781,12 @@ def run_self_test():
     chk("wb_r1_override", bible(ov + can + "\n" + cannot)[0] == 0)
     chk("wb_r1_override_order_insensitive",
         bible("<!-- override: world-rule WF-02/WF-01 — reversed -->\n" + can + "\n" + cannot)[0] == 0)
+    # code-span decoy (bypass closed by the SSoT migration): a pair override quoted inside a code span is
+    # a documentation example, not a live directive — WB-R1 must still fire (non-zero exit).
+    chk("wb_r1_inline_codespan_override_does_not_silence",
+        bible("`" + ov.strip() + "`\n" + can + "\n" + cannot)[0] == 1)
+    chk("wb_r1_fenced_codespan_override_does_not_silence",
+        bible("```\n" + ov.strip() + "\n```\n" + can + "\n" + cannot)[0] == 1)
 
     # WB-C1 — two different real costs for one subject; override silences
     c_a = fact("WF-01", category="cost", subject="blood-magic", attribute="cost",
@@ -916,6 +920,12 @@ def run_self_test():
     fw_ov = "<!-- override: world-firewall — quoting the author's own reconciliation note -->\n"
     chk("wf_firewall_override",
         not any("WF firewall" in ln for ln in bible(a1 + "\n" + a2 + "\n" + ov_a + fw_ov + resolve_prose)[1]))
+    # code-span decoy (bypass closed by the SSoT migration): a firewall override quoted inside a code
+    # span is a documentation example, not a live directive — WF must still fire.
+    chk("wf_firewall_inline_codespan_override_does_not_silence",
+        any("WF firewall" in ln for ln in bible(a1 + "\n" + a2 + "\n" + ov_a + "`" + fw_ov.strip() + "`\n" + resolve_prose)[1]))
+    chk("wf_firewall_fenced_codespan_override_does_not_silence",
+        any("WF firewall" in ln for ln in bible(a1 + "\n" + a2 + "\n" + ov_a + "```\n" + fw_ov.strip() + "\n```\n" + resolve_prose)[1]))
     # clean descriptive prose does not trip WF
     chk("wf_clean_prose_ok",
         not any("WF firewall" in ln for ln in bible(
