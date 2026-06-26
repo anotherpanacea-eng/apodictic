@@ -48,6 +48,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -62,10 +64,10 @@ _KIND = {"active_promises": "promise", "unresolved_tensions": "tension",
          "forbidden_contradictions": "contradiction"}
 # A tracked element: "SE-01: the dual-POV will converge".
 _ELEMENT_RE = re.compile(r"^\s*(SE-[0-9]{2,})\s*:\s*(.+\S)\s*$")
-# Override markers naming an element id: "<!-- override: <slug> SE-01 — ... -->".
-_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*([a-z-]+)\s+(SE-[0-9]+)\b", re.IGNORECASE)
-# The controlling-idea-shift override has no id.
-_IDEA_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*state-card-idea-shift\b", re.IGNORECASE)
+# Override markers route through the shared override_marker SSoT (code spans stripped, slug
+# boundary-matched): a per-element "<!-- override: <slug> SE-01 — ... -->" (parsed via the SE target
+# in _overrides) and the id-less controlling-idea-shift "<!-- override: state-card-idea-shift -->"
+# (the presence form of override_targets).
 
 
 def _read(path):
@@ -81,7 +83,9 @@ def _norm(s):
 
 
 def _overrides(text, slug):
-    return {m.group(2) for m in _OVERRIDE_RE.finditer(text) if m.group(1).lower() == slug}
+    """The set of SE-NN ids overridden for `slug` — via the shared SSoT, so a marker quoted inside a
+    code span is not honored as a live directive."""
+    return {t[0] for t in override_targets(text, slug, r"(SE-[0-9]+)")}
 
 
 def parse_card(text):
@@ -223,7 +227,7 @@ def diff_cards(prior_text, current_text, strict=False):
 
     # W2 — controlling-idea shift
     if _norm(p_obj.get("controlling_idea")) != _norm(c_obj.get("controlling_idea")):
-        if _IDEA_OVERRIDE_RE.search(current_text):
+        if override_targets(current_text, "state-card-idea-shift"):
             warns.append("W2 idea shift (override): controlling_idea changed between rounds (marker present)")
         else:
             warns.append("W2 idea shift: controlling_idea changed between rounds — reframing is "

@@ -37,6 +37,8 @@ import os
 import re
 import sys
 
+from override_marker import override_payloads  # SSoT: code-span-stripped, boundary-matched override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -56,7 +58,8 @@ _REVISION_GLOBS = ("*_Revision_Report_*.md", "*_Revision_*.md", "*_Session_Plan_
 _RESOLVED_RE = re.compile(r"<!--\s*resolved:(.*?)-->", re.DOTALL | re.IGNORECASE)
 _ID_RE = re.compile(r"(?<![\w-])F-[A-Za-z0-9]+-[0-9]{2,}(?![\w-])")
 # W2 adjudication: `<!-- override: regression-cleared <runlabel>:<chapter> — <rationale> -->`.
-_CLEARED_RE = re.compile(r"<!--\s*override:\s*regression-cleared\b(.*?)-->", re.DOTALL | re.IGNORECASE)
+# Read via the shared override_marker SSoT (override_payloads) — code spans stripped, slug
+# boundary-matched — so a backtick'd example is not honored as a live adjudication.
 _ID_SPLIT_RE = re.compile(r"^F-(.+)-([0-9]{2,})$")
 # The classes `classify` keys by the PRIOR finding's id (vs. `new` / `new-in-quiet-chapter[ (cleared)]`,
 # keyed by the CURRENT id). `crossref_classes` returns only these — the reanchor manifest carries prior ids.
@@ -161,7 +164,7 @@ def _cleared_chapters(text):
     chaps = set()
     if art is None:
         return chaps
-    for body in _CLEARED_RE.findall(text or ""):
+    for body in override_payloads(text or "", "regression-cleared"):
         head = body.split("—")[0]  # drop the rationale so a chapter named there isn't swept in
         tok = art.chapter_token(head)
         if tok:

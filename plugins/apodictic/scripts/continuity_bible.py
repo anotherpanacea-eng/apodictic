@@ -47,6 +47,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -79,8 +81,8 @@ _LOCUS_RE = re.compile(
     re.IGNORECASE)
 # CF ids referenced inside a Contradiction-Ledger row.
 _CF_REF_RE = re.compile(r"\bCF-[0-9]+\b")
-# Override markers naming a fact id: "<!-- override: bible-rederive CF-08 — ... -->".
-_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*([a-z-]+)\s+(CF-[0-9]+)\b", re.IGNORECASE)
+# Override markers naming a fact id ("<!-- override: bible-rederive CF-08 — ... -->") route through
+# the shared override_marker SSoT — code spans stripped, slug boundary-matched.
 
 
 def _read(path):
@@ -92,7 +94,9 @@ def _read(path):
 
 
 def _overrides(text, slug):
-    return {m.group(2) for m in _OVERRIDE_RE.finditer(text) if m.group(1).lower() == slug}
+    """The set of CF-NN ids overridden for `slug` — via the shared SSoT, so a marker quoted inside a
+    code span is not honored as a live directive."""
+    return {t[0] for t in override_targets(text, slug, r"(CF-[0-9]+)")}
 
 
 def parse_facts(text):

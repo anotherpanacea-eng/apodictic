@@ -55,9 +55,15 @@ def strip_code_spans(body):
     EXAMPLE is not honored as a live directive. Fenced blocks are removed line-wise — a fence closes ONLY
     on a line of the SAME fence character at length >= the opener, so a ``` line inside a ~~~ fence (or
     vice-versa) is content, not a premature close (Codex P1). Inline spans are then removed by
-    matching-length backtick runs (multiline-aware)."""
+    matching-length backtick runs (multiline-aware).
+
+    Line endings are normalized to LF FIRST: the closer regex is `[ \\t]*$`-anchored, so a CRLF closing
+    fence (a trailing `\\r`) would otherwise never close — leaving the block open and swallowing a LATER
+    live override in a Windows/CRLF manuscript (Codex P2). The stripped region is only ever SCANNED for
+    markers, so LF-normalizing it is harmless."""
+    body = (body or "").replace("\r\n", "\n").replace("\r", "\n")
     out, fence = [], None  # fence = (char, length) while inside a fenced block
-    for line in (body or "").split("\n"):
+    for line in body.split("\n"):
         if fence is None:
             mo = _FENCE_OPEN_RE.match(line)
             # CommonMark forbids a backtick in the INFO STRING of a backtick opener, so `` ```info` `` is
@@ -97,6 +103,82 @@ def override_slugs(body, prefix):
     region = strip_code_spans(body)
     pat = re.compile(r"<!--\s*override:\s*" + re.escape(prefix) + r"([a-z0-9][a-z0-9-]*)" + _BOUNDARY)
     return set(pat.findall(region))
+
+
+def override_targets(body, slug, target=None):
+    """The set of finding-id tuples carried by LIVE `<!-- override: <slug> ... -->` markers in `body`.
+
+    The id-/pair-scoped override forms `has_override` cannot express — a per-finding `<slug> <id>` or a
+    `<slug> <id-a>/<id-b>` pair — used by the content-advisory / persona-divergence / intake-interview /
+    author-fingerprint / world-bible gates. Each of those previously carried its OWN
+    `re.compile(r"<!--\\s*override: …")` that did NOT strip code spans (the code-span-decoy bypass this
+    helper closes); routing them here gives every such gate the one SSoT stripper + boundary discipline.
+
+      * `target=None` — a PRESENCE form: the slug may stand alone (`<!-- override: world-firewall -->`)
+        or carry a `— <rationale>`; returns `{()}` (truthy) if a live marker exists, else `set()`. As in
+        `has_override`, `slug` must END at a real boundary, so a SUFFIXED slug does not match.
+      * `target=<regex>` — the slug is followed by whitespace then the `target` payload; EACH capturing
+        group in `target` becomes one element of the returned tuple (`r"(CN-[0-9]+)"` -> 1-tuples;
+        `r"(WF-[0-9]+)\\s*/\\s*(WF-[0-9]+)"` -> 2-tuples). The payload must END at a real boundary.
+
+    Like `has_override`, code spans are stripped first and the slug is matched literally (regex-escaped).
+    Matching is case-sensitive — the documented marker is lowercase `override:` and every shipped slug
+    and finding-id is fixed-case, so this is byte-for-byte the SSoT discipline (and the fail-closed
+    direction: an off-spec mixed-case marker does not silence a finding)."""
+    region = strip_code_spans(body)
+    head = r"<!--\s*override:\s*" + re.escape(slug)
+    if target is None:
+        pat = re.compile(head + _BOUNDARY)
+    else:
+        pat = re.compile(head + r"\s+(?:" + target + r")" + _BOUNDARY)
+    return {m.groups() for m in pat.finditer(region)}
+
+
+def _code_span_spans(text):
+    """[(start, end), …] char-offset ranges in `text` (LF-normalized) covered by a fenced block or an
+    inline code span — the regions `strip_code_spans` blanks. `override_payloads` uses this to reject a
+    marker whose opening `<!--` lies INSIDE a span (a quoted documentation example) WITHOUT blanking
+    backticked text from a LIVE marker's free-text payload, where the backticks open AFTER the `<!--`
+    (Codex P2). Same fence state machine as `strip_code_spans`, tracking offsets instead of blanking."""
+    spans, fence, fence_start, pos = [], None, 0, 0
+    for line in text.split("\n"):
+        line_end = pos + len(line)
+        if fence is None:
+            mo = _FENCE_OPEN_RE.match(line)
+            if mo and not (mo.group(1)[0] == "`" and "`" in mo.group(2)):
+                fence, fence_start = (mo.group(1)[0], len(mo.group(1))), pos
+        else:
+            mc = _FENCE_CLOSE_RE.match(line)
+            if mc and mc.group(1)[0] == fence[0] and len(mc.group(1)) >= fence[1]:
+                spans.append((fence_start, line_end))
+                fence = None
+        pos = line_end + 1  # account for the consumed "\n"
+    if fence is not None:                       # an unclosed fence runs to EOF
+        spans.append((fence_start, len(text)))
+    for m in _INLINE_SPAN_RE.finditer(text):    # inline spans, but not those inside a fenced range
+        if not any(s <= m.start() < e for s, e in spans):
+            spans.append((m.start(), m.end()))
+    return spans
+
+
+def override_payloads(body, slug):
+    """The raw `<payload>` of each LIVE `<!-- override: <slug><payload>-->` marker in `body` — the text
+    between the slug boundary and the closing `-->`.
+
+    For BESPOKE gates that PARSE the payload themselves, where a fixed id/pair `target` does not fit:
+    promise-contract's drafted-copy snippet (`<!-- override: drafted-copy <snippet> — <why> -->`) and
+    regression-diff's `<runlabel>:<chapter>` tokens (`<!-- override: regression-cleared Ch 3 — … -->`).
+    The slug is boundary-matched (a suffixed slug does not match). A marker whose opening `<!--` lies
+    inside a code span is a quoted EXAMPLE and is dropped — but, UNLIKE the id/pair helpers, the payload
+    is NOT run through `strip_code_spans`, so a live snippet that legitimately CONTAINS backticks (a
+    quoted code span in the leaked report copy) is returned intact (Codex P2). The payload is returned RAW
+    — callers strip / split / tokenize it exactly as they did against their old local regex; an empty
+    payload yields `""`."""
+    text = (body or "").replace("\r\n", "\n").replace("\r", "\n")
+    spans = _code_span_spans(text)
+    pat = re.compile(r"<!--\s*override:\s*" + re.escape(slug) + _BOUNDARY + r"(.*?)-->", re.DOTALL)
+    return [m.group(1) for m in pat.finditer(text)
+            if not any(s <= m.start() < e for s, e in spans)]
 
 
 # --------------------------------------------------------------------------------------------------
@@ -163,6 +245,64 @@ def _self_test():
     # bypass 1 in the data-driven path — a suffixed/malformed marker must NOT yield the real slug (P1):
     chk("slugs_suffix_rejected", override_slugs("<!-- override: ap-foo_extra -->", "ap-") == set())
     chk("slugs_genuine_hyphenated", override_slugs("<!-- override: ap-foo-bar -->", "ap-") == {"foo-bar"})
+    # override_targets: id-/pair-scoped extraction, code spans stripped + boundary-matched
+    CN = r"(CN-[0-9]+)"
+    chk("targets_per_id",
+        override_targets("<!-- override: advisory-eval CN-03 — why -->", "advisory-eval", CN) == {("CN-03",)})
+    chk("targets_skip_inline_codespan",
+        override_targets("`<!-- override: advisory-eval CN-03 -->`", "advisory-eval", CN) == set())
+    chk("targets_skip_fenced_codespan",
+        override_targets("```\n<!-- override: advisory-eval CN-03 -->\n```", "advisory-eval", CN) == set())
+    # bypass 1 in the id path — a per-id slug must not fire for a LONGER slug (advisory-eval vs -prose)
+    chk("targets_slug_boundary",
+        override_targets("<!-- override: advisory-eval-prose CN-03 -->", "advisory-eval", CN) == set())
+    chk("targets_pair",
+        override_targets("<!-- override: world-rule WF-01/WF-02 — staged -->", "world-rule",
+                         r"(WF-[0-9]+)\s*/\s*(WF-[0-9]+)") == {("WF-01", "WF-02")})
+    chk("targets_multi",
+        override_targets("<!-- override: persona-quote D-01 --> a <!-- override: persona-quote D-02 -->",
+                         "persona-quote", r"(D-[0-9]+)") == {("D-01",), ("D-02",)})
+    # presence form (target=None) — id-less slugs (world-firewall / advisory-eval-prose)
+    chk("targets_presence", override_targets("<!-- override: world-firewall — x -->", "world-firewall") == {()})
+    chk("targets_presence_no_reason", override_targets("<!-- override: world-firewall -->", "world-firewall") == {()})
+    chk("targets_presence_skip_codespan",
+        override_targets("`<!-- override: world-firewall -->`", "world-firewall") == set())
+    chk("targets_presence_suffix_rejected",
+        override_targets("<!-- override: world-firewall-ish -->", "world-firewall") == set())
+    chk("targets_absent", override_targets("<!-- override: other CN-03 -->", "advisory-eval", CN) == set())
+    # override_payloads: bespoke free-text capture, code spans stripped + slug boundary-matched
+    chk("payloads_basic",
+        override_payloads("<!-- override: drafted-copy the quick fox — why -->", "drafted-copy")
+        == [" the quick fox — why "])
+    chk("payloads_skip_inline_codespan",
+        override_payloads("`<!-- override: drafted-copy x -->`", "drafted-copy") == [])
+    chk("payloads_skip_fenced_codespan",
+        override_payloads("```\n<!-- override: regression-cleared Ch 3 -->\n```", "regression-cleared") == [])
+    chk("payloads_slug_boundary",
+        override_payloads("<!-- override: drafted-copy-extra x -->", "drafted-copy") == [])
+    chk("payloads_empty", override_payloads("<!-- override: drafted-copy-->", "drafted-copy") == [""])
+    chk("payloads_multi",
+        override_payloads("<!-- override: regression-cleared a --> b <!-- override: regression-cleared c -->",
+                          "regression-cleared") == [" a ", " c "])
+    # Codex P2: a live drafted-copy snippet that CONTAINS backticks must be returned INTACT (the payload is
+    # not run through strip_code_spans), while a marker quoted INSIDE a code span is still dropped.
+    chk("payloads_live_backtick_preserved",
+        override_payloads("<!-- override: drafted-copy A `b c` d — why -->", "drafted-copy")
+        == [" A `b c` d — why "])
+    chk("payloads_inline_decoy_dropped",
+        override_payloads("`<!-- override: drafted-copy x -->`", "drafted-copy") == [])
+    chk("payloads_fenced_decoy_dropped",
+        override_payloads("```\n<!-- override: drafted-copy x -->\n```", "drafted-copy") == [])
+    # Codex P2: a CRLF closing fence must still CLOSE, so a live override after a CRLF fenced block is
+    # honored (the closer regex is `[ \t]*$`-anchored; LF normalization runs first).
+    chk("crlf_fence_closes_then_live_override",
+        has_override("```\r\nexample\r\n```\r\n<!-- override: my-slug -->", S))
+    chk("crlf_fence_targets_live",
+        override_targets("```\r\nex\r\n```\r\n<!-- override: advisory-eval CN-03 -->", "advisory-eval", CN)
+        == {("CN-03",)})
+    # …and a marker INSIDE a CRLF fenced block is still rejected.
+    chk("crlf_fenced_decoy_rejected",
+        not has_override("a\r\n```\r\n<!-- override: my-slug -->\r\n```\r\nb", S))
 
     print("Self-test: PASS" if rc == 0 else "Self-test: FAIL")
     return rc

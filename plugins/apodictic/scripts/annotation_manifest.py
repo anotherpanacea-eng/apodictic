@@ -71,6 +71,8 @@ import os
 import re
 import sys
 
+from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -131,8 +133,9 @@ _UNSAFE_RE = re.compile(r"[\r\n|]|\{>>|<<\}")
 # scoped (and an exact scene-id match is resolved as line-range before this test even applies).
 _PASS_REF_RE = re.compile(r"^\s*pass\s+\d+", re.IGNORECASE)
 _ATX_RE = re.compile(r"^#{1,6}\s+(.+?)\s*$")
-_OVERRIDE_RE = re.compile(r"<!--\s*override:\s*annotation-coverage\s+(F-[A-Za-z0-9]+-[0-9]{2,})",
-                          re.IGNORECASE)
+# Annotation-coverage overrides ("<!-- override: annotation-coverage F-… -->") route through the shared
+# override_marker SSoT — code spans stripped, slug boundary-matched.
+_OVERRIDE_FID = r"(F-[A-Za-z0-9]+-[0-9]{2,})"
 
 
 def _read(path):
@@ -622,7 +625,7 @@ def check(snapshot_text, manifest_text, annotated_text, ledger_text, timeline_te
                      "(the run harness should normalize on snapshot creation, per §Prerequisite)")
 
     # W1 — coverage (a locatable Should/Could left as `document`) + Timeline boundary drift
-    overrides = set(_OVERRIDE_RE.findall(manifest_text or ""))
+    overrides = {t[0] for t in override_targets(manifest_text or "", "annotation-coverage", _OVERRIDE_FID)}
     for an in annotations:
         if not isinstance(an, dict):
             continue
