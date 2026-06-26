@@ -1,0 +1,11 @@
+# §4e Argument Cluster — Before/After Extraction Diff
+# 
+# This diff proves the argument-cluster rows extracted from pass-dependencies.md §4e
+# to argument-audits-propagation.md are byte-identical — only location changed.
+#
+# Source: evals/fixtures/argument-carve/4e-before.txt (rows as they appeared in pass-dependencies.md)
+# Destination: evals/fixtures/argument-carve/4e-after.txt (rows as they appear in argument-audits-propagation.md)
+#
+# Expected diff: only a trailing blank line (30d29) — the 25 table rows + heading are byte-identical.
+30d29
+<
