@@ -7,6 +7,7 @@
     "claudeMarketplaceJson": ".claude-plugin/marketplace.json",
     "skillFiles": [
       "plugins/apodictic/skills/core-editor/SKILL.md",
+      "plugins/apodictic/skills/nonfiction-argument-engine/SKILL.md",
       "plugins/apodictic/skills/pre-writing-pathway/SKILL.md",
       "plugins/apodictic/skills/plot-architecture/SKILL.md",
       "plugins/apodictic/skills/specialized-audits/SKILL.md",
