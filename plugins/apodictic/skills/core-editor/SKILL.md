@@ -40,28 +40,11 @@ This skill is the core of the APODICTIC plugin. Three companion workflows handle
 
 ## The Firewall
 
-*Canonical home for the no-content-invention firewall. Other surfaces (`revision-coach/SKILL.md §The Coaching Firewall`, `adversarial-stress-test.md §Firewall Compliance`, `run-full.md` §QA gate, `pass-11.md` §Forbidden) reference here and add only context-specific elaborations (coaching-mode drift, stress-test scope, market-viability scope). Generic restatements of the firewall belong here only.*
+<!-- Firewall definition has been extracted to `references/firewall.md` (single canonical source).
+     Load `references/firewall.md` for the full no-content-invention firewall definition.
+     The `nonfiction-argument-engine` skill references the same file. -->
 
-Editor mode maintains strict boundaries around output types:
-
-**FORBIDDEN — Content Invention:**
-- New plot events, twists, or scenarios
-- New characters or character traits
-- New imagery, symbols, or motifs
-- Specific dialogue or prose
-- Any "cool idea" the AI generates
-
-**ALLOWED — Structural Intervention:**
-- Diagnosis (what's happening)
-- Mechanism (why it's happening)
-- Abstract intervention classes (what categories of fix address the mechanism)
-- Menu options that don't fill in content
-
-**Example of the distinction:**
-- ❌ "Make the dragon breathe ice; it ties to her childhood trauma."
-- ✅ "Climax needs (a) irreversible choice, (b) value reversal, (c) cost paid on-page. Options: increase external opposition, increase internal contradiction, or force public commitment."
-
-The author invents content. The system identifies structural problems and classes of solution.
+*See `references/firewall.md` for the canonical Firewall definition. The no-content-invention rule applies in all modes — editorial, argument, coaching. Other surfaces (`revision-coach/SKILL.md §The Coaching Firewall`, `adversarial-stress-test.md §Firewall Compliance`, `run-full.md` §QA gate, `pass-11.md` §Forbidden) add only context-specific elaborations; the definition lives in `references/firewall.md` only.*
 
 ---
 
@@ -283,6 +266,11 @@ Writer has idea but no manuscript → Start the pre-writing pathway.
 Spine diagnosis (which of the 50 spines / 12 families governs the whole-work shape), selection coaching, structural triage on stuck drafts, hybrid design, fantasy/series architecture → Start plot coaching (`plot-architecture` skill).
 
 This is distinct from **Pass 2: Structural Mapping** (Tier 2 pass within a development edit run), which maps on-page act/movement boundaries, beat presence, missing-beat lists, and structural causality. Pass 2 answers "is the structure I have on the page working"; Plot Architecture answers "which spine is this and does that paradigm hold." See `plot-architecture/SKILL.md §Plot Architecture vs. Pass 2 (Structural Mapping) — Boundary` for cross-reference and sequencing.
+
+### Nonfiction Argument Engine
+When intake resolves `constraint=nonfiction` AND the declared form is in the persuasive-argument family (op-ed, policy brief, testimony, academic argument, open letter, white paper, advocacy argument, legal brief, regulatory comment, expert affidavit — per `references/intake-router-runtime.md §6 Table A`), delegate to the **`nonfiction-argument-engine` skill**. Pass the full run-shape (form, audience burden, stakes, high-stakes flag); receive the standard artifact set (editorial letter + Findings Ledger + `Argument_State.md` + marked-up manuscript). The fiction path and the argument path share the core editorial spine; this delegation makes the argument route explicit rather than implicit.
+
+Do NOT remove or bypass the existing specialized-audits dispatch (§4a/§4b routing) — the nonfiction-argument-engine itself calls specialized-audits for its argument-cluster audits (Dialectical Clarity, Red Team, Evidence, Field Recon, Citation Verifier). This delegation is additive, not a replacement.
 
 ### Specialized Audits
 Any deep-dive audit, tag audit, or research mode → Run the audit. The specialized-audits workflow maintains its own routing table and trigger logic.

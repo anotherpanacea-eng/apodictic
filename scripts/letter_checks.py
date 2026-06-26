@@ -518,7 +518,9 @@ def audit_signal_propagation(text):
 
 def check_registry(reg_path, dep_path):
     """Every registry-listed signal-emitting audit must have a §4e row ('| <audit> |')
-    in pass-dependencies.md. Prints the legacy Registry-check summary; returns rc."""
+    in pass-dependencies.md or in the argument-audits-propagation.md fragment (Phase A
+    carve moved argument-cluster rows to the fragment; both files are authoritative).
+    Prints the legacy Registry-check summary; returns rc."""
     if not os.path.isfile(reg_path) or not os.path.isfile(dep_path):
         sys.stderr.write("Error: registry or pass-dependencies file not found "
                          "(REG=%s DEP=%s)\n" % (reg_path, dep_path))
@@ -527,6 +529,12 @@ def check_registry(reg_path, dep_path):
         reg_lines = fh.read().split("\n")
     with open(dep_path, "r", encoding="utf-8", errors="replace") as fh:
         dep_text = fh.read()
+    # Also load the argument-audits-propagation fragment (Phase A carve): argument-cluster
+    # §4e rows live there after extraction. Locate it relative to pass-dependencies.md.
+    frag_path = os.path.join(os.path.dirname(dep_path), "argument-audits-propagation.md")
+    if os.path.isfile(frag_path):
+        with open(frag_path, "r", encoding="utf-8", errors="replace") as fh:
+            dep_text += "\n" + fh.read()
     entries, capture = [], False
     for ln in reg_lines:
         if "registry:signal-emitting-audits:begin" in ln:
