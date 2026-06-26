@@ -460,6 +460,100 @@ def check_m6_py(py_name, py_text):
     return []
 
 
+# ---- M7 single-Firewall -------------------------------------------------------------------------
+# Exactly one file in the plugin tree may carry the canonical Firewall *definition* — the
+# `## The Firewall` heading PLUS the no-content-invention rule text (the "FORBIDDEN — Content
+# Invention" marker) within a short structural window. Prose mentions of "firewall", "The Firewall",
+# or "firewall.md" are fine and do not count as a definition. The rule catches the bifurcation risk:
+# if a second file re-inlines the full definition, it immediately drifts from the canonical source.
+#
+# Detection: the heading `## The Firewall` (ATX, level 2) followed by the literal text
+# "FORBIDDEN" within the next 15 lines. This distinguishes the DEFINITION (which carries the
+# content-invention rule) from a REFERENCE/POINTER (which says "see firewall.md" and does not
+# reproduce the forbidden-content enumeration). A file that says *only* "load firewall.md" and
+# references the concept by name does NOT match — prose mentions are fine.
+#
+# The scan walks the plugin tree (.md files only) from the canonical plugin root (resolved relative
+# to the script directory). The single allowed definition file is `references/firewall.md`
+# (relative to `skills/core-editor/`) — but M7 does not hard-code that path; it simply asserts the
+# count is exactly one. If the count is 0 (definition deleted) or >1 (duplicate created), M7 fails.
+#
+# M7 skips the `scripts/` directory itself (no .md skill files there) and caps at the plugin root
+# (`plugins/apodictic/`) to avoid scanning unrelated trees. Non-importable `art` means the plugin
+# root cannot be resolved via the standard path helper; in that case M7 walks relative to the
+# script dir, which still covers the plugin tree when run from `plugins/apodictic/scripts/`.
+_FIREWALL_HEADING_RE = re.compile(r"^## The Firewall[ \t]*$", re.MULTILINE)
+_FIREWALL_CONTENT_RE = re.compile(r"FORBIDDEN\s*[—–-]+\s*Content Invention")
+
+
+def _plugin_md_files(script_dir):
+    """Yield (rel_path, abs_path) pairs for all *.md files in the plugin tree.
+
+    Walks up from `script_dir` looking for the canonical plugin root
+    (`plugins/apodictic/`). Falls back to walking from `script_dir/..` so the
+    function works when run from either the plugin scripts dir or the repo root
+    scripts dir (both are valid script_dir locations per the mirror discipline)."""
+    # Resolve plugin root: walk up from script_dir until we find a directory
+    # named `apodictic` whose parent is named `plugins`, or until we exhaust parents.
+    d = script_dir
+    plugin_root = None
+    for _ in range(6):  # at most 6 levels up
+        if os.path.basename(d) == "apodictic" and os.path.basename(os.path.dirname(d)) == "plugins":
+            plugin_root = d
+            break
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    if plugin_root is None:
+        # Fallback: walk from parent of script_dir (covers plugins/apodictic/scripts -> plugins/apodictic)
+        plugin_root = os.path.dirname(script_dir)
+    for root, dirs, files in os.walk(plugin_root):
+        # Skip hidden dirs and __pycache__
+        dirs[:] = [x for x in dirs if not x.startswith(".") and x != "__pycache__"]
+        for fn in files:
+            if fn.endswith(".md"):
+                abs_path = os.path.join(root, fn)
+                rel_path = os.path.relpath(abs_path, plugin_root)
+                yield rel_path, abs_path
+
+
+def _has_firewall_definition(md_text):
+    """True iff the file carries the canonical Firewall *definition*: `## The Firewall` heading
+    followed by the FORBIDDEN-content rule text within the next 15 lines. A pointer/reference
+    that says 'see firewall.md' but does NOT reproduce the content enumeration is NOT a definition."""
+    if md_text is None:
+        return False
+    m = _FIREWALL_HEADING_RE.search(md_text)
+    if not m:
+        return False
+    # Slice the 15 lines immediately following the heading to check for rule text.
+    after = md_text[m.end():]
+    window_lines = after.split("\n", 16)[:15]
+    window = "\n".join(window_lines)
+    return bool(_FIREWALL_CONTENT_RE.search(window))
+
+
+def check_m7(script_dir, md_files=None):
+    """Exactly one file in the plugin tree carries the canonical Firewall definition.
+
+    `md_files` — optional iterator of (rel_path, text) pairs; used by the self-test to
+    inject synthetic files without touching the filesystem."""
+    if md_files is None:
+        pairs = [(rel, _read_text(abs_)) for rel, abs_ in _plugin_md_files(script_dir)]
+    else:
+        pairs = list(md_files)
+    definition_files = [rel for rel, text in pairs if _has_firewall_definition(text)]
+    if len(definition_files) == 1:
+        return []
+    if len(definition_files) == 0:
+        return ["M7 single-Firewall: no file in the plugin tree carries the canonical Firewall "
+                "definition (## The Firewall heading + FORBIDDEN-content rule text) — the "
+                "definition must live in exactly one file (references/firewall.md)"]
+    return ["M7 single-Firewall: %d files carry the canonical Firewall definition (expected exactly 1): %s"
+            % (len(definition_files), ", ".join(definition_files))]
+
+
 # ---------------------------------------------------------------- live run
 
 def _script_dir():
@@ -505,6 +599,9 @@ def run():
     # override_marker.strip_code_spans (the single state-machine SSoT) so the helper can't drift unused.
     for name, text in py_files.items():
         viol += check_m6_py(name, text)
+    # M7 single-Firewall — exactly one file in the plugin tree carries the canonical Firewall
+    # definition (## The Firewall heading + FORBIDDEN-content rule text). Prose mentions are fine.
+    viol += check_m7(d)
 
     lines = ["validator-conventions: %d validator(s), %d schema(s) checked"
              % (len(agg_validators(sh_text)), len(schema_ids))]
@@ -516,7 +613,7 @@ def run():
         lines.append("validator-conventions: FAIL (%d violation(s))" % len(viol))
         return 1, lines
     lines.append("validator-conventions: PASS (dispatch+self-test + resolver hygiene + derived count "
-                 "+ no orphan schema + override hygiene + code-span hygiene%s)"
+                 "+ no orphan schema + override hygiene + code-span hygiene + single-Firewall%s)"
                  % (" — M4 degraded/skipped, see WARN" if m4_degraded else ""))
     return 0, lines
 
@@ -713,6 +810,42 @@ def run_self_test():
         check_m6_py("g.py", '"""Once a local re.compile(r"' + "`" * 3 + 'x' + "`" * 3 + '") stripper."""\nx = 1\n') == [])
     # the canonical stripper file is exempt
     chk("m6_exempt", check_m6_py("override_marker.py", 'import re\nr = re.compile(r"```")\n') == [])
+
+    # M7 single-Firewall: exactly one file may carry the canonical definition.
+    # The definition is detected by `## The Firewall` heading + "FORBIDDEN — Content Invention"
+    # within the next 15 lines. Prose mentions / pointers (see firewall.md) do NOT count.
+    FW_DEF = ("## The Firewall\n\n"
+              "Editor mode maintains strict boundaries.\n\n"
+              "**FORBIDDEN — Content Invention:**\n- New plot events.\n")
+    FW_PTR = ("## The Firewall\n\n"
+              "<!-- See references/firewall.md for the canonical definition. -->\n"
+              "*See `references/firewall.md`.*\n")
+    FW_PROSE = ("This module references the Firewall. "
+                "Load `references/firewall.md` for the no-content-invention rule.\n")
+    # exactly one definition file -> clean
+    chk("m7_one_definition_clean",
+        check_m7(None, [("a/firewall.md", FW_DEF), ("b/skill.md", FW_PTR)]) == [])
+    # zero definitions -> fail (definition missing)
+    chk("m7_zero_definitions_fail",
+        any("no file" in v for v in check_m7(None, [("b/skill.md", FW_PTR)])))
+    # two definition files -> fail (duplicate)
+    chk("m7_two_definitions_fail",
+        any("2 files" in v for v in check_m7(None, [("a/firewall.md", FW_DEF),
+                                                     ("b/skill.md", FW_DEF)])))
+    # a pointer (heading only, no FORBIDDEN line) is NOT a definition -> clean alongside one def
+    chk("m7_pointer_not_counted_as_def",
+        check_m7(None, [("a/firewall.md", FW_DEF), ("b/skill.md", FW_PTR)]) == [])
+    # bare prose mention (no heading) -> not a definition
+    chk("m7_prose_mention_not_def",
+        check_m7(None, [("a/firewall.md", FW_DEF), ("b/other.md", FW_PROSE)]) == [])
+    # FORBIDDEN line present but NO heading -> not a definition (wrong structure)
+    FW_NO_HEADING = "**FORBIDDEN — Content Invention:**\n- New plot events.\n"
+    chk("m7_forbidden_without_heading_not_def",
+        check_m7(None, [("a/firewall.md", FW_DEF), ("b/bad.md", FW_NO_HEADING)]) == [])
+    # heading present but FORBIDDEN is too far away (>15 lines) -> not a definition
+    FW_FAR = "## The Firewall\n" + "\n" * 16 + "**FORBIDDEN — Content Invention:**\n"
+    chk("m7_forbidden_too_far_not_def",
+        check_m7(None, [("a/firewall.md", FW_DEF), ("b/far.md", FW_FAR)]) == [])
 
     # _read_text: a non-UTF-8 byte sequence must not crash the linter (UnicodeDecodeError is a
     # ValueError, not an OSError); errors="replace" keeps the ASCII references scannable.
