@@ -230,7 +230,9 @@ Mapping:
 <!-- REPLACED-WITH-INCLUDE: the nonfiction triage branch (Route to Argument Engine / Narrative NF / Memoir rules,
      hybrid rule, Default-activation-by-form table, and Post-diagnostic offer) has been extracted to
      `references/nonfiction-intake-routing.md`. Load that fragment when `constraint:nonfiction` fires.
-     The full section is reproduced there byte-for-byte; this pointer replaces the inline content. -->
+     The section is relocated and reformatted there (behavior-inert — no validator parses this routing
+     branch; the byte-identical guarantee applies only to the §4e propagation rows). This pointer
+     replaces the inline content. -->
 
 <!-- INCLUDE: `references/nonfiction-intake-routing.md` — nonfiction triage routing rules live there. -->
 
