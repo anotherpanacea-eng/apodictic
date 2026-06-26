@@ -548,6 +548,13 @@ def run_self_test():
     ov_nomatch = "<!-- override: drafted-copy something unrelated entirely — n/a -->\n"
     chk("w1_override_nonmatching_no_silence",
         any("W1" in ln for ln in C(ov_nomatch + report_leak)[1]))
+    # Codex P2 (PR #148 review): a live drafted-copy snippet that CONTAINS a backtick code span is
+    # returned INTACT (override_payloads no longer blanks payload backticks); a marker quoted inside a
+    # code span still yields nothing.
+    chk("w1_backtick_snippet_preserved",
+        _drafted_override_snippets("<!-- override: drafted-copy a `b c` d — why -->") == ["a `b c` d"])
+    chk("w1_inline_decoy_yields_no_snippet",
+        _drafted_override_snippets("Use `<!-- override: drafted-copy x -->` here.") == [])
 
     # W2 — a PCF finding predicting a market outcome => advisory; ERROR --strict; override silences;
     #      a fidelity-only finding is clean.
