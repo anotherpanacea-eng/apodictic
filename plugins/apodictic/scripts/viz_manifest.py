@@ -163,6 +163,28 @@ _SEV_ENCODING = {
     "Could-Fix":  {"color": "#5E8C6A", "rank": 1},
 }
 _CHAPTER_RE = re.compile(r"\b(?:Chapter|Ch)\s*(\d+)\b", re.IGNORECASE)
+# A LINE-RANGE-shaped anchor: a leading "lines N-M" (case-insensitive; en-dash or hyphen). The
+# producer's anchor MAY instead be a quote (no leading line range) — that form is not bounded.
+# A bare Timeline line_range cell ("N-M") is parsed by the SAME helper (its optional leading "lines"
+# prefix makes both forms parse), so the X2(e) bounding compares like with like.
+_LINE_RANGE_RE = re.compile(r"^\s*(?:lines?\s+)?(\d+)\s*[-–]\s*(\d+)\b", re.IGNORECASE)
+
+
+def _parse_line_range(text):
+    """(start, end) ints from a leading 'lines N-M' / 'N-M' span, or None if `text` isn't line-range
+    shaped (e.g. a quote-form anchor). Normalizes a reversed span so start <= end."""
+    if not isinstance(text, str):
+        return None
+    m = _LINE_RANGE_RE.match(text)
+    if not m:
+        return None
+    a, b = int(m.group(1)), int(m.group(2))
+    return (a, b) if a <= b else (b, a)
+
+
+def _ranges_overlap(r1, r2):
+    """True iff the inclusive integer ranges r1=(a,b), r2=(c,d) overlap at all."""
+    return r1[0] <= r2[1] and r2[0] <= r1[1]
 
 
 def _read(path):
@@ -641,6 +663,9 @@ def _check_co_presence(items, roster, rows):
             continue
         prod_names = roster_names.get(sid, [])
         prod_set = set(prod_names)
+        scene_anchors = (roster.get("anchors") or {}).get(sid, {})
+        # The scene's Timeline line-range (e.g. "1-118"), parsed once for the anchor-bounding check.
+        scene_lr = _parse_line_range((rows.get(sid_key) or {}).get("line_range", "")) if in_timeline else None
         chars = it.get("characters")
         if not isinstance(chars, list):
             errs.append("X1 new-array schema: %s.characters must be an array" % where)
@@ -659,6 +684,19 @@ def _check_co_presence(items, roster, rows):
                             "apodictic.scene_roster.v1 roster names [%s] (a co-presence name must be a "
                             "rostered, present character — not a mentioned/invented one)"
                             % (where, c, sid, ", ".join(sorted(prod_set)) or "none"))
+                continue
+            # X2(e) — line-range anchor bounding (a PARTIAL tightening of anchor-truthfulness, NOT a
+            # claim that prose is gated). When the producer anchor is line-range-shaped ("lines N-M …"),
+            # assert N-M overlaps the scene's Timeline line-range — an anchor that points OUTSIDE the
+            # scene cannot witness on-page presence within it. A QUOTE-form anchor (no leading line
+            # range) is SKIPPED silently — the schema permits it and it can't be mechanically bounded.
+            # The prose present-vs-mentioned reading stays trusted/author-accountable exactly as before.
+            anc_lr = _parse_line_range(scene_anchors.get(c, ""))
+            if anc_lr is not None and scene_lr is not None and not _ranges_overlap(anc_lr, scene_lr):
+                errs.append("X2 co-presence provenance: character %r anchor lines %d-%d fall outside "
+                            "scene %r Timeline line-range %d-%d (a line-range anchor must witness "
+                            "on-page presence WITHIN the scene — quote-form anchors are not bounded)"
+                            % (c, anc_lr[0], anc_lr[1], sid, scene_lr[0], scene_lr[1]))
         # X2(c) — the scene's Timeline POV character must be present in its producer roster (cross-check:
         # the POV is by definition on-page, so a roster missing its own POV is an extraction error).
         if in_timeline:
@@ -1567,7 +1605,10 @@ def run_self_test():
         o["rosters"] = rosters
         return "<!-- apodictic:scene_roster\n%s\n-->" % _j.dumps(o)
 
-    def char(name, anchor="lines 1-2: \"acts\""):
+    def char(name, anchor="\"she acted on-page\""):
+        # Default to a QUOTE-form anchor (no leading line range) so the X2(e) line-range bounding is
+        # skipped for it — the generic helper isn't coupled to each scene's Timeline line_range. Tests
+        # that exercise the bounding pass an explicit "lines N-M …" anchor.
         return {"name": name, "anchor": anchor}
 
     # The canonical worked roster (mirrors example-scene-roster.md). All three scene_ids resolve to the
@@ -1639,6 +1680,36 @@ def run_self_test():
                      roster_text=roster_block(empty_anchor_rosters, canon_aliases))
     chk("x2_empty_anchor_fails",
         code == 1 and any("X2 co-presence provenance" in x and "anchor must be a non-empty" in x for x in ls))
+
+    # X2(e) — a LINE-RANGE-shaped anchor that falls OUTSIDE its scene's Timeline line-range fails
+    # (a partial tightening of anchor-truthfulness — an anchor cannot witness presence in a scene it
+    # points outside of). Ch 1 §1's Timeline line_range is 1-118; an anchor "lines 900-950" is outside.
+    outside_rosters = [{"scene_id": "Ch 1 §1",
+                        "characters": [char("Mara", anchor="lines 1-50: \"here\""),
+                                       char("Adrian", anchor="lines 900-950: \"elsewhere\"")]},
+                       canon_rosters[1], canon_rosters[2]]
+    code, ls = check(cp_manifest(canon_cp), timeline, ledger,
+                     roster_text=roster_block(outside_rosters, canon_aliases))
+    chk("x2_anchor_outside_scene_line_range_fails",
+        code == 1 and any("anchor lines 900-950 fall outside" in x and "Ch 1 §1" in x for x in ls))
+    # X2(e) positive — an in-range line-range anchor (overlapping the Timeline 1-118) passes; and a
+    # QUOTE-form anchor (no leading line range) is SKIPPED, not falsely rejected. Ch 1 §1 gets an
+    # in-range line anchor for Mara + a quote anchor for Adrian; the other scenes keep quote anchors.
+    inrange_rosters = [{"scene_id": "Ch 1 §1",
+                        "characters": [char("Mara", anchor="lines 10-40: \"within scene\""),
+                                       char("Adrian", anchor="\"a quote-only anchor, unbounded\"")]},
+                       canon_rosters[1], canon_rosters[2]]
+    chk("x2_anchor_in_range_and_quote_form_pass",
+        check(cp_manifest(canon_cp), timeline, ledger,
+              roster_text=roster_block(inrange_rosters, canon_aliases))[0] == 0)
+    # X2(e) unit — the helpers: line-range parse (both "lines N-M" and bare "N-M"), quote -> None,
+    # reversed span normalized, overlap math (touching endpoints overlap; disjoint do not).
+    chk("line_range_parse",
+        _parse_line_range("lines 1-118: \"x\"") == (1, 118) and _parse_line_range("119-240") == (119, 240)
+        and _parse_line_range("\"a quote\"") is None and _parse_line_range("lines 40-10") == (10, 40))
+    chk("ranges_overlap",
+        _ranges_overlap((1, 118), (100, 200)) and _ranges_overlap((118, 118), (118, 250))
+        and not _ranges_overlap((1, 50), (51, 99)))
 
     # X8/X2 — a co_presence that DIVERGES from the producer roster (a name the roster doesn't carry)
     # is the provenance-breach case (X2(b) above is exactly this — proven by the Eleanor test).
