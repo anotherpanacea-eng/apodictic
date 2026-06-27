@@ -32,7 +32,7 @@ So I built one. Then I kept building — because the same discipline applies to 
 
 **For argument-shaped nonfiction** (op-eds, policy briefs, testimony, essays): APODICTIC infers the argument contract — the claim you're making, the audience you're addressing, the burden you've accepted, the stakes you've invoked — then measures the piece against it. The engine flags missing warrants, scope drift, and unmet strongest objections via **Dialectical Clarity** and its Red-Team, Persuasion, and Evidence companions. Same Firewall. Same diagnose → letter → marked-up-piece spine. Different front end.
 
-**The Firewall:** APODICTIC diagnoses problems and identifies classes of solution. It never invents content — no new plot events, arguments, characters, dialogue, or imagery. You're the writer. It's the analyst.
+**The Firewall:** APODICTIC diagnoses problems and names *classes* of solution — including which structural elements are missing or mis-weighted. It never drafts your prose, and never scripts the specific content that fills those needs — the events, characters, dialogue, or evidence. Naming that a climax needs a cost paid on the page is diagnosis; writing that scene is yours. You're the writer; it's the analyst.
 
 ## See It in Action
 
@@ -220,7 +220,7 @@ A few words you'll meet in the README and in your first editorial letter:
 
 - **Contract** — what APODICTIC infers your manuscript is *trying to be*: its genre, the promise it makes to readers, and its controlling idea. It predicts this from the text alone, then measures the book against it. When the inferred contract doesn't match what you intended, that mismatch is the core diagnostic signal.
 - **Controlling idea** — the central meaning or argument the story makes through its events. Part of the contract.
-- **The Firewall** — the rule that APODICTIC diagnoses structure and names *classes* of solution but never writes content (no plot, characters, dialogue, or prose). You're the writer; it's the analyst. Applies equally to fiction and argument-shaped nonfiction.
+- **The Firewall** — APODICTIC diagnoses structure and names *classes* of solution (what category of fix the problem needs, and which structural elements are missing or mis-weighted), but never drafts your prose or scripts the specific content that fills them — the events, characters, dialogue, or evidence. Naming a needed element is diagnosis; inventing what fills it is yours. You're the writer; it's the analyst. Applies equally to fiction and argument-shaped nonfiction.
 - **Pass** — one analytical lens over the manuscript (reverse outline, reader experience, reveal economy, and so on). A development edit runs the passes your question requires.
 - **Macro block** — a group of passes organized around a writer question (e.g. "Structure Map," "Reader Dynamics"). Eight blocks in all.
 - **Audit** — a specialized deep-dive beyond the core passes (genre, craft, or tag), run via `/audit`.
