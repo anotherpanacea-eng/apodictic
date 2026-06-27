@@ -10,6 +10,7 @@
 |-------------|---------|------|---------|
 | [Argument Benchmark Suite](#benchmark-suite) | [Harness Contracts v2](#harness-contracts-v2) | [**v2.2.0**](#v220--operator-modes-feedback-triage--revision-follow-through) | [Model-Capacity Exploitation](#model-capacity-exploitation) |
 | [Project Addressability & State-Driven Routing](#project-addressability--state-driven-routing) | [Annotated-Manuscript Deliverable](#annotated-manuscript-deliverable) | | |
+| [Validation & External Evidence](#validation--external-evidence) | | | |
 | | [Multi-Party Intake](#multi-party-intake) | [**v2.1.0**](#v210--runner-governed-execution--finding-lifecycle-ids) | [Research / API Reliability Layer](#research--api-reliability-layer) |
 | | [Legal Risk Register](#legal-risk-register) | [**v2.0.0**](#v200--editorial-honesty--structural-integrity) | [Episode Cadence](#episode-cadence) |
 | | [Coaching Deepening](#coaching-deepening) | [v1.9.0](#v190--ai-prose-calibration-v20) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
@@ -25,6 +26,30 @@
 | | | [v1.0.9](#v109) · [v1.0.8](#v108) · [v1.0.4](#v104) · [v1.0](#v10--public-release) | |
 
 **Recently shipped (through v2.4.0):** **v2.3.0** — Retcon Planning (revision-coaching track), the Nonfiction Pre-Draft Pathway, the Legal Risk Register, Adaptive Mode de-escalation, and the Horizon Capacities scan. **v2.3.1** — decoupled web-app UI generation and research modes 4 → 6. **v2.4.0** — Manuscript-Structure Visualizations, Beta-Reader Instrument generation, the Legal Risk Register detection layer + router wiring, the routing fork/overlay split + project addressability, the Capability Index command (command surface trimmed to 13), and the Argument-Decision (ArgScope) audit with the SETEC normalized-dispatcher integration (vendor/pin/drift-gate); the release pipeline was also decoupled from the APODICTIC-Gemini sibling. *(Earlier — v2.2.0: Editor Scaffolding + Diagnostic Vocabulary operators, Feedback Triage, Adaptive Mid-Run Mode Escalation, Finding Lifecycle IDs incr 2–3.)* **Done and folded into shipped releases:** Runner-Governed Execution (incr 1–3 + 5; incr 4 future), Finding Lifecycle IDs (incr 1–3; incr 4 future), Validator Architecture Hardening, Adaptive Mode Escalation, Editor Scaffolding, Diagnostic Vocabulary, Feedback Triage. Pre-Skill Context Compaction is resolved by platform (see below).
+
+---
+
+## Validation & External Evidence
+
+*Surfaced sharply by an external blind review (GPT, 2026-06-26): the framework's strongest objection is that its **validators verify process, not editorial truth** — they prove a letter is well-formed, severities are locked, and the ledger is consistent, but not that "this protagonist lacks an arc" is **correct**. The honest interim posture is the one the tool already takes — a structured second opinion; findings are hypotheses, not verdicts — and the contamination disclosures, the Distinguish Protocol, and the positive/specificity controls are real mitigations. The three evidence gaps below are named as standing work, not papered over. (Same review credited the project's unusual methodological self-criticism; this section is meant to keep earning that.)*
+
+### V1 — Finding correctness, not just structural conformance
+
+The mechanical layer (~59 validators) gates artifact structure, severity propagation, ledger integrity, and export correctness. None of it can tell whether a finding is *right, relevant, or helpful* — that is editorial judgment, and a system asked to hunt structural defects can always name one. The argument engine is furthest along on closing this (the [Benchmark Suite](#benchmark-suite): ground-truth diagnoses, sensitivity fixtures, specificity positive controls, the two-run convergence protocol). Gaps:
+- **Second-editor confirmation** of the provisional ground-truth (GT4–GT7; GT1–GT3 authoritative) — the blind packet is built and waiting (`evals/fixtures/argument-benchmark/HANDOFF.md`).
+- **The fiction passes/audits have no equivalent ground-truth benchmark.** Breadth (11 passes, dozens of audits) is the least-validated surface; the positive-control / specificity-guard design has not yet earned confidence across it. The bar is inter-rater agreement against human developmental editors on a labeled corpus.
+
+### V2 — Auditable scorecard
+
+Eval scorecards exist (`evals/results/*/SCORECARD.md`), but the corpus *bytes* are largely gitignored — a deliberate provenance choice (copyrighted op-eds/manuscripts can't ship in-repo), not concealment. The cost is that the claimed performance is not straightforwardly externally auditable. Open work: publish a **committed, reconstructable scorecard** on the [shippable-kit model](#benchmark-suite) — keys + harness + protocol + SHA-pinned fetch instructions ship; the bytes reconstitute locally — so a third party can re-run and check the numbers without the repo hosting copyrighted text.
+
+### V3 — Blind demonstration
+
+Every public sample (DCC, *Theo of Golden*, ACOTAR, Kleiman's *When Brute Force Fails*) is a known, published work with a disclosed contamination risk — they demonstrate *presentation quality and reasoning transparency*, not *blind editorial discovery on an unseen manuscript*. Open work: at least one **blind sample** — a permissioned unpublished manuscript, or a sufficiently obscure / post-training-cutoff text — run cold and published, so the examples can show independent discovery rather than recall.
+
+### Positioning until these close
+
+The tool is correctly positioned as a disciplined **structured second opinion**, not an authority. The recent Firewall-honesty pass and the "findings are hypotheses" framing are the right interim stance. These three workstreams are what would move it from *well-engineered and self-audited* toward *externally validated*.
 
 ---
 
