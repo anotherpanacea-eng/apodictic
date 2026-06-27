@@ -216,6 +216,21 @@ The coach operates in several modes (Loop Dispatch above can select among them).
 
 **Output:** `[Project]_Beta_Reader_Instrument_[runlabel].md`
 
+### 8. Multi-Session Revision Arc Planning
+
+**When:** A returning writer with a **completed diagnosis** (a Findings Ledger + `Diagnostic_State.md`) wants a multi-week revision **strategy** — not "what do I do in *this* session?" (that's Loop Dispatch / Session Planning above) but "what's the *arc* across the next several weeks, and in what order?" The layer **above** per-session Loop Dispatch.
+
+**Required input:** The Findings Ledger + `Diagnostic_State.md` (the diagnosis must exist — this mode sequences its findings; it never diagnoses).
+
+**Process** (full protocol in `references/multi-session-arc-planning.md`):
+1. **Read the diagnostic state** — `finding_states`, `severity` per finding, the Root-Cause map, `triage_summary`, `revision_progress` (all on disk). Don't re-diagnose.
+2. **Assign phases** by leverage + root-cause position into an **ordered** `apodictic.revision_arc.v1` block: **Phase 1** the Must-Fix structural *root causes* (recorded in `root_cause_findings`); **Phase 2** their downstream consequences; **Phase 3** polish (Could-Fix / line-level). Phase count is free (2–4+), not a fixed 3-enum.
+3. **Render** each phase with a **sequencing** rationale (never an execution prescription — the Firewall, advisory W1) + an `adaptation_note`. The arc is a **stateless re-plan**: regenerated each run from the current `finding_states`, overwriting the prior arc — no round/version field (like Loop Dispatch).
+4. **Honest posture (the Retcon pattern):** the coach reasons the dependency from `severity` + the root-cause prose (read, not gated); the validator gates the PLAN's **provenance + self-consistency + firewall ONLY** — **not** a true causal graph. The coach's dependency reasoning is **trusted**, not gated.
+5. Gate with `scripts/validate.sh revision-arc <run_folder>` (`--strict` for CI), then hand each phase off to per-session **Loop Dispatch / Session Planning**. The arc is the calendar; it does not re-run dispatch, and it **generalizes** Retcon Planning's single-decision arc to the full Ledger.
+
+**Output:** `[Project]_Revision_Arc_[runlabel].md`
+
 ---
 
 ## Argument Revision Mode (v1.0)
