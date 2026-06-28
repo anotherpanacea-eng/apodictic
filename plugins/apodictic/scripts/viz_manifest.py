@@ -26,19 +26,23 @@ draws it. The validator owns manifest<->source provenance:
                          Advisory.
   W1 coverage            a Timeline row not represented in scenes[] (silent under-render). Advisory.
 
-Manuscript-Visualization Completion (charts 4-7) extends this same manifest<->source contract. The
-M1 render-only deliverable is chart 7-nonfiction — the CLAIM LADDER over apodictic.argument_spine.v1
-(C0 thesis + C1..Cn subclaims) annotated with support coverage from apodictic.support_plan.v1. The
-manifest gains four OPTIONAL, additive arrays (co_presence / scene_functions / reveal_points /
-claim_ladder); only claim_ladder is rendered in M1 (the other three are producer-gated — their
-producers do not exist yet, so their arrays stay absent and the gates skip them):
+Manuscript-Visualization Completion (charts 4-7) extends this same manifest<->source contract. Two
+render deliverables exist today: chart 7-nonfiction — the CLAIM LADDER over apodictic.argument_spine.v1
+(C0 thesis + C1..Cn subclaims) annotated with support coverage from apodictic.support_plan.v1 — and
+chart 5 — the CHARACTER CO-PRESENCE NETWORK over the apodictic.scene_roster.v1 producer (per-scene
+cast; the Timeline carries POV only, not a full roster). The manifest gains four OPTIONAL, additive
+arrays (co_presence / scene_functions / reveal_points / claim_ladder); claim_ladder + co_presence are
+rendered (the other two are still producer-gated — their producers do not exist yet, so their arrays
+stay absent and the gates skip them):
 
   X1 new-array schema    each present co_presence/scene_functions/reveal_points/claim_ladder element
                          is a well-formed object with ONLY its allowlisted keys (a visual-style key
                          is itself a failure; a scene_ids/scene_id/section key on a claim_ladder[]
                          object is itself a failure — the claim-to-scene map has no producer and
                          cannot be smuggled in). claim_ladder[].support[] items admit only
-                         {support_type, status} (the support_plan.v1 enums).
+                         {support_type, status} (the support_plan.v1 enums); co_presence[].characters
+                         items are bare canonical NAME STRINGS (the auditable {name, anchor} richness
+                         lives in the scene_roster.v1 PRODUCER, not the manifest).
   X5 claim-ladder prov   every claim_ladder[].claim_id is a member of
                          argument_spine.spine_subclaim_ids(spine) (REUSE that parser — no second
                          one); label is byte-equal to the matching subclaim string with its leading
@@ -51,14 +55,24 @@ producers do not exist yet, so their arrays stay absent and the gates skip them)
                          support pairing absent from support_plan.v1, fails here).
   X7 no duplicate        generalizes E5 — a scene_id at most once per new array; a claim_id at most
                          once in claim_ladder[].
+  X2 co-presence prov    every co_presence[].scene_id matches a scene_roster.v1 roster entry AND
+                         resolves to a Timeline Event-Ledger row; every name in
+                         co_presence[].characters is in that scene's roster (canonical) names; the
+                         scene's Timeline POV character is present in its roster (cross-check); and in
+                         the producer, every roster character's `anchor` is non-empty. The
+                         present-vs-mentioned READING is producer/author-enforced (a validator cannot
+                         read prose) — the gate enforces anchor-non-empty + provenance closure, NOT
+                         the semantic reading (the Continuity Bible C2 author-enforced precedent).
   X8 producer-present    if a new array is PRESENT, its producer MUST be present and resolvable (for
                          claim_ladder: a resolvable argument_spine.v1 block, plus the support_plan.v1
-                         blocks for any non-empty support[]). Absent array -> skipped, not failed.
+                         blocks for any non-empty support[]; for co_presence: a resolvable
+                         scene_roster.v1 block). Absent array -> skipped, not failed.
   W3 chart coverage      a producer artifact is present but its corresponding array is empty/absent
                          (silent under-rendering). Advisory, ERROR under --strict.
 
-(X2/X3/X4 — roster/function/tension provenance — are reserved for the producer-gated charts 4/5/6;
-their producers do not exist yet, so those gates are not implemented in M1.)
+(X3/X4 — scene-function / tension provenance — are reserved for the still-producer-gated charts 6/4;
+their producers do not exist yet, so those gates are not implemented. X2 now backs chart 5 — its
+scene_roster.v1 producer DOES exist.)
 
 The severity->encoding map is HARDCODED in the renderer, never read from the manifest, so a run
 cannot recolor a Must-Fix to comfort, and a Must-Fix marker is always drawn at full salience (its
@@ -109,10 +123,12 @@ def _has_block(text, btype):
 
 _SCHEMA_ID = "apodictic.viz_manifest.v1"
 _FINDING_SCHEMA_ID = "apodictic.finding.v1"
+_ROSTER_SCHEMA_ID = "apodictic.scene_roster.v1"   # chart 5 producer (per-scene cast)
 _MANIFEST_GLOB = "*_Structure_Map_*.md"
 _TIMELINE_GLOBS = ("*_Timeline_*.md", "Timeline.md")
 _LEDGER_GLOB = "*_Findings_Ledger_*.md"
 _SPINE_GLOB = "Argument_State*.md"   # chart 7-nonfiction source (the seeded pre-draft Argument_State)
+_ROSTER_GLOB = "*Scene_Roster*.md"   # chart 5 producer source (the per-scene cast roster)
 
 # The manifest is style-free: these are the ONLY keys each object may carry (E1 allowlist).
 _SCENE_KEYS = ("scene_id", "chapter", "line_range", "word_count", "pov", "span", "gap")
@@ -127,6 +143,13 @@ _SCENE_FUNCTION_KEYS = ("scene_id", "function", "value_shift")
 _REVEAL_POINT_KEYS = ("scene_id", "tension", "reveal_id")
 _CLAIM_LADDER_KEYS = ("claim_id", "label", "support")
 _SUPPORT_ITEM_KEYS = ("support_type", "status")
+# scene_roster.v1 producer — the nested objects the subset engine cannot recurse into (validated in
+# scene_roster() below). A roster character carries a REQUIRED non-empty `anchor` (the accountability
+# mechanism for the producer-enforced present-vs-mentioned reading); an alias maps a surface form to a
+# canonical name.
+_ROSTER_ENTRY_KEYS = ("scene_id", "characters")
+_ROSTER_CHARACTER_KEYS = ("name", "anchor")
+_ALIAS_KEYS = ("surface", "canonical")
 # The support_plan.v1 enums the manifest copies verbatim (X1 value-allowlist on support[] items).
 _SUPPORT_TYPE_ENUM = ("REASON", "EXAMPLE", "DATA", "AUTHORITY", "EXPERIENCE")
 _SUPPORT_STATUS_ENUM = ("in-hand", "to-acquire")
@@ -140,6 +163,28 @@ _SEV_ENCODING = {
     "Could-Fix":  {"color": "#5E8C6A", "rank": 1},
 }
 _CHAPTER_RE = re.compile(r"\b(?:Chapter|Ch)\s*(\d+)\b", re.IGNORECASE)
+# A LINE-RANGE-shaped anchor: a leading "lines N-M" (case-insensitive; en-dash or hyphen). The
+# producer's anchor MAY instead be a quote (no leading line range) — that form is not bounded.
+# A bare Timeline line_range cell ("N-M") is parsed by the SAME helper (its optional leading "lines"
+# prefix makes both forms parse), so the X2(e) bounding compares like with like.
+_LINE_RANGE_RE = re.compile(r"^\s*(?:lines?\s+)?(\d+)\s*[-–]\s*(\d+)\b", re.IGNORECASE)
+
+
+def _parse_line_range(text):
+    """(start, end) ints from a leading 'lines N-M' / 'N-M' span, or None if `text` isn't line-range
+    shaped (e.g. a quote-form anchor). Normalizes a reversed span so start <= end."""
+    if not isinstance(text, str):
+        return None
+    m = _LINE_RANGE_RE.match(text)
+    if not m:
+        return None
+    a, b = int(m.group(1)), int(m.group(2))
+    return (a, b) if a <= b else (b, a)
+
+
+def _ranges_overlap(r1, r2):
+    """True iff the inclusive integer ranges r1=(a,b), r2=(c,d) overlap at all."""
+    return r1[0] <= r2[1] and r2[0] <= r1[1]
 
 
 def _read(path):
@@ -239,6 +284,145 @@ def spine_ladder(spine_text):
         out["planned"].add(sid)
         out["support"].setdefault(sid, []).append(
             {"support_type": o.get("support_type"), "status": o.get("status")})
+    return out
+
+
+def scene_roster(roster_text):
+    """The chart-5 PRODUCER source — the apodictic.scene_roster.v1 per-scene cast (parsed-block path,
+    no second parser). ONE block per manuscript. Returns a dict the X2 gate + the renderer read:
+
+      {
+        "present":    bool,                            # a valid scene_roster.v1 block resolved
+        "project":    str|None,
+        "aliases":    {surface_lower: canonical},      # declared surface-form -> canonical-name table
+        "names":      {scene_id: [canonical_name, ...]},  # CANONICALIZED, de-duped, in declared order
+        "anchors":    {scene_id: {canonical_name: anchor, ...}},  # the audit locus per character
+        "obj_errs":   [str, ...],                      # nested-object schema errors (anchor non-empty,
+                                                       #   closed allowlist, alias/roster shape)
+      }
+
+    The alias table collapses surface forms to one canonical node (the longest declared surface form
+    is NOT auto-chosen as canonical — canonical is whatever the table's `canonical` field names; the
+    renderer + co-occurrence key on it). A name with no alias row IS its own canonical (identity).
+    Producer-/author-enforced present-vs-mentioned: this records who is PRESENT (anchored); a
+    mentioned-only character is simply absent from `characters` (no entry, no edge). The X2 gate
+    enforces anchor-non-empty + provenance closure here, NOT the semantic reading."""
+    out = {"present": False, "project": None, "aliases": {}, "names": {}, "anchors": {}, "obj_errs": []}
+    if not roster_text or art is None:
+        return out
+    schema = art.load_schema(_ROSTER_SCHEMA_ID)
+    obj = None
+    for bt, o, jerr in art.parse_blocks(roster_text):
+        if bt != "scene_roster":
+            continue
+        if jerr:
+            out["obj_errs"].append("X2 co-presence provenance: scene_roster block — invalid JSON — %s" % jerr)
+            return out
+        obj = o
+        break
+    if not isinstance(obj, dict):
+        return out
+    for e in art.validate_obj(obj, schema, "scene_roster"):
+        out["obj_errs"].append("X2 co-presence provenance: scene_roster — %s" % e)
+    # If the wrapper schema rejected the block (e.g. wrong const / missing rosters / stray top key),
+    # it is not a usable producer — surface the errors but do not pretend it is present.
+    if out["obj_errs"]:
+        return out
+    out["present"] = True
+    out["project"] = obj.get("project")
+
+    # character_aliases[] — {surface, canonical}. Closed allowlist + non-empty strings. Keyed
+    # case-folded on the surface form so 'Mara'/'mara' collapse identically; canonical kept verbatim.
+    aliases = obj.get("character_aliases") or []
+    if not isinstance(aliases, list):
+        out["obj_errs"].append("X2 co-presence provenance: scene_roster.character_aliases must be an array")
+        aliases = []
+    for i, al in enumerate(aliases):
+        where = "scene_roster.character_aliases[%d]" % i
+        if not isinstance(al, dict):
+            out["obj_errs"].append("X2 co-presence provenance: %s must be an object" % where)
+            continue
+        for k in _ALIAS_KEYS:
+            if k not in al:
+                out["obj_errs"].append("X2 co-presence provenance: %s missing required field '%s'" % (where, k))
+        for k in al:
+            if k not in _ALIAS_KEYS:
+                out["obj_errs"].append("X2 co-presence provenance: %s has disallowed field '%s' "
+                                       "(an alias row is only {surface, canonical})" % (where, k))
+        surf, canon = al.get("surface"), al.get("canonical")
+        if not isinstance(surf, str) or not surf.strip() or not isinstance(canon, str) or not canon.strip():
+            out["obj_errs"].append("X2 co-presence provenance: %s surface/canonical must be non-empty strings"
+                                   % where)
+            continue
+        out["aliases"][surf.strip().casefold()] = canon.strip()
+
+    def _canonical(name):
+        # A declared surface form resolves to its canonical; an undeclared name is its own canonical.
+        return out["aliases"].get(name.strip().casefold(), name.strip())
+
+    # rosters[] — {scene_id, characters: [{name, anchor}]}. Closed allowlist; anchor REQUIRED non-empty.
+    rosters = obj.get("rosters") or []
+    if not isinstance(rosters, list):
+        out["obj_errs"].append("X2 co-presence provenance: scene_roster.rosters must be an array")
+        rosters = []
+    for i, r in enumerate(rosters):
+        where = "scene_roster.rosters[%d]" % i
+        if not isinstance(r, dict):
+            out["obj_errs"].append("X2 co-presence provenance: %s must be an object" % where)
+            continue
+        for k in _ROSTER_ENTRY_KEYS:
+            if k not in r:
+                out["obj_errs"].append("X2 co-presence provenance: %s missing required field '%s'" % (where, k))
+        for k in r:
+            if k not in _ROSTER_ENTRY_KEYS:
+                out["obj_errs"].append("X2 co-presence provenance: %s has disallowed field '%s' "
+                                       "(a roster entry is only {scene_id, characters})" % (where, k))
+        sid = r.get("scene_id")
+        chars = r.get("characters")
+        if not isinstance(sid, str) or not sid.strip():
+            out["obj_errs"].append("X2 co-presence provenance: %s.scene_id must be a non-empty string" % where)
+            continue
+        sid = sid.strip()
+        if not isinstance(chars, list):
+            out["obj_errs"].append("X2 co-presence provenance: %s.characters must be an array" % where)
+            continue
+        names, anchors = [], {}
+        for j, c in enumerate(chars):
+            cwhere = "%s.characters[%d]" % (where, j)
+            if not isinstance(c, dict):
+                out["obj_errs"].append("X2 co-presence provenance: %s must be an object" % cwhere)
+                continue
+            for k in _ROSTER_CHARACTER_KEYS:
+                if k not in c:
+                    out["obj_errs"].append("X2 co-presence provenance: %s missing required field '%s'" % (cwhere, k))
+            for k in c:
+                if k not in _ROSTER_CHARACTER_KEYS:
+                    out["obj_errs"].append("X2 co-presence provenance: %s has disallowed field '%s' "
+                                           "(a roster character is only {name, anchor})" % (cwhere, k))
+            nm, anc = c.get("name"), c.get("anchor")
+            if not isinstance(nm, str) or not nm.strip():
+                out["obj_errs"].append("X2 co-presence provenance: %s.name must be a non-empty string" % cwhere)
+                continue
+            # X2(d) — the anchor is the accountability mechanism for the author-enforced presence
+            # reading: it MUST be present and non-empty (a Timeline-relative line-range or on-page
+            # quote). An empty anchor is a free presence assertion — the firewall's whole point.
+            if not isinstance(anc, str) or not anc.strip():
+                out["obj_errs"].append("X2 co-presence provenance: %s.anchor must be a non-empty string "
+                                       "(presence is author-enforced and made auditable by the anchor — "
+                                       "a line-range or on-page quote; an empty anchor is a free assertion)"
+                                       % cwhere)
+            cn = _canonical(nm)
+            if cn not in names:   # collapse surface forms / dup entries to one canonical node
+                names.append(cn)
+            # First anchor for a canonical name wins (deterministic; later dup-name rows keep the first).
+            anchors.setdefault(cn, anc if isinstance(anc, str) else "")
+        # A repeated scene_id in the producer would silently merge two cast lists — flag it (X7-style).
+        if sid in out["names"]:
+            out["obj_errs"].append("X2 co-presence provenance: %s.scene_id %r appears more than once in "
+                                   "the producer (each scene has exactly one roster)" % (where, sid))
+            continue
+        out["names"][sid] = names
+        out["anchors"][sid] = anchors
     return out
 
 
@@ -425,7 +609,107 @@ def _check_claim_ladder(items, ladder):
     return errs
 
 
-def check(manifest_text, timeline_text, ledger_text, spine_text=None,
+def _check_co_presence(items, roster, rows):
+    """X1/X2/X7/X8 for the co_presence[] array (chart 5). `items` is the manifest's co_presence list
+    (each {scene_id, characters:[bare canonical name strings]}); `roster` is scene_roster()'s producer
+    source; `rows` is the Timeline rows index (scene_id -> {pov, ...}). Returns errs.
+
+    The manifest carries BARE NAMES; the auditable {name, anchor} richness lives in the producer. X2
+    byte-checks the manifest names are a subset of the producer roster's CANONICAL names for that
+    scene_id, that every scene_id resolves to a producer roster AND a Timeline row, and that the
+    Timeline POV character is present in the roster. The anchor-non-empty check (X2(d)) runs in
+    scene_roster() and surfaces via roster['obj_errs']. The present-vs-mentioned READING itself is
+    producer-/author-enforced; the gate polices provenance + anchor, never the prose."""
+    errs = []
+    if not isinstance(items, list):
+        errs.append("X1 new-array schema: co_presence must be an array")
+        return errs
+    if not items:
+        return errs
+    # X8 — producer-present: a co_presence array can exist ONLY if its scene_roster.v1 producer
+    # resolves (the firewall's teeth — no producer, no roster to byte-check against).
+    if not roster.get("present"):
+        errs.append("X8 producer-present: co_presence[] is present but no resolvable "
+                    "apodictic.scene_roster.v1 producer was found to byte-check it against "
+                    "(render-what-you-produce: the producer must exist)")
+        # Still surface any nested-object errors from a malformed producer (more actionable than X8 alone).
+        errs += roster.get("obj_errs") or []
+        return errs
+    # X2(d) + nested-object schema — anchor-non-empty / closed allowlists / alias shape, from the producer.
+    errs += roster.get("obj_errs") or []
+    # X1 — per-object allowlist on the manifest array (a visual-style / scene-axis-extra key fails).
+    errs += _check_objects(items, "co_presence", _CO_PRESENCE_KEYS, ("scene_id", "characters"),
+                           gate="X1 new-array schema")
+    # X7 — a scene_id appears at most once in co_presence (a repeat double-draws its edges).
+    errs += _dup_errs([it for it in items if isinstance(it, dict)], "scene_id", "scene_id",
+                      gate="X7 duplicate entry")
+    roster_names = roster.get("names") or {}     # scene_id -> [canonical names] (producer)
+    for i, it in enumerate(items):
+        if not isinstance(it, dict):
+            continue
+        where = "co_presence[%d]" % i
+        sid = it.get("scene_id")
+        # X2(a) — scene_id must match a producer roster AND resolve to a Timeline Event-Ledger row.
+        sid_key = art.fid_key(sid)
+        in_roster = isinstance(sid, str) and sid in roster_names
+        in_timeline = sid_key in rows
+        if not in_roster:
+            errs.append("X2 co-presence provenance: %s.scene_id=%r matches no apodictic.scene_roster.v1 "
+                        "roster entry (the manifest must copy a scene the producer rostered)" % (where, sid))
+        if not in_timeline:
+            errs.append("X2 co-presence provenance: %s.scene_id=%r resolves to no Timeline Event-Ledger "
+                        "row (a co-presence scene must be a real Timeline scene)" % (where, sid))
+        if not in_roster:
+            continue
+        prod_names = roster_names.get(sid, [])
+        prod_set = set(prod_names)
+        scene_anchors = (roster.get("anchors") or {}).get(sid, {})
+        # The scene's Timeline line-range (e.g. "1-118"), parsed once for the anchor-bounding check.
+        scene_lr = _parse_line_range((rows.get(sid_key) or {}).get("line_range", "")) if in_timeline else None
+        chars = it.get("characters")
+        if not isinstance(chars, list):
+            errs.append("X1 new-array schema: %s.characters must be an array" % where)
+            continue
+        for c in chars:
+            # X1 — a co_presence character is a BARE NAME STRING (the {name, anchor} richness is the
+            # producer's, not the manifest's). A non-string is itself a failure.
+            if not isinstance(c, str):
+                errs.append("X1 new-array schema: %s.characters item %r must be a bare name string "
+                            "(the auditable {name, anchor} lives in the scene_roster.v1 producer)"
+                            % (where, c))
+                continue
+            # X2(b) — every co_presence name must be in that scene's producer roster (canonical) names.
+            if c not in prod_set:
+                errs.append("X2 co-presence provenance: %s character %r is not in scene %r's "
+                            "apodictic.scene_roster.v1 roster names [%s] (a co-presence name must be a "
+                            "rostered, present character — not a mentioned/invented one)"
+                            % (where, c, sid, ", ".join(sorted(prod_set)) or "none"))
+                continue
+            # X2(e) — line-range anchor bounding (a PARTIAL tightening of anchor-truthfulness, NOT a
+            # claim that prose is gated). When the producer anchor is line-range-shaped ("lines N-M …"),
+            # assert N-M overlaps the scene's Timeline line-range — an anchor that points OUTSIDE the
+            # scene cannot witness on-page presence within it. A QUOTE-form anchor (no leading line
+            # range) is SKIPPED silently — the schema permits it and it can't be mechanically bounded.
+            # The prose present-vs-mentioned reading stays trusted/author-accountable exactly as before.
+            anc_lr = _parse_line_range(scene_anchors.get(c, ""))
+            if anc_lr is not None and scene_lr is not None and not _ranges_overlap(anc_lr, scene_lr):
+                errs.append("X2 co-presence provenance: character %r anchor lines %d-%d fall outside "
+                            "scene %r Timeline line-range %d-%d (a line-range anchor must witness "
+                            "on-page presence WITHIN the scene — quote-form anchors are not bounded)"
+                            % (c, anc_lr[0], anc_lr[1], sid, scene_lr[0], scene_lr[1]))
+        # X2(c) — the scene's Timeline POV character must be present in its producer roster (cross-check:
+        # the POV is by definition on-page, so a roster missing its own POV is an extraction error).
+        if in_timeline:
+            pov = (rows.get(sid_key) or {}).get("pov", "")
+            if pov and pov not in prod_set:
+                errs.append("X2 co-presence provenance: scene %r's Timeline POV character %r is absent "
+                            "from its apodictic.scene_roster.v1 roster [%s] (the POV is on-page by "
+                            "definition — a roster missing its own POV is an extraction error)"
+                            % (sid, pov, ", ".join(sorted(prod_set)) or "none"))
+    return errs
+
+
+def check(manifest_text, timeline_text, ledger_text, spine_text=None, roster_text=None,
           strict=False, require_block=False):
     """Run the manifest<->source provenance checks. Returns (code, lines)."""
     lines, errs, warns = [], [], []
@@ -526,9 +810,10 @@ def check(manifest_text, timeline_text, ledger_text, spine_text=None,
                      "[%s] — the pacing curve's shape must come from the Timeline, not the manifest"
                      % (_fmt(mf_order), _fmt(tl_subset)))
 
-    # ---- Manuscript-Visualization Completion (charts 4-7): X1/X5/X6/X7/X8 + W3 ----
-    # The four arrays are OPTIONAL and additive. M1 implements chart 7-nonfiction (claim_ladder);
-    # the other three are producer-gated — their producers (scene_roster / scene_function /
+    # ---- Manuscript-Visualization Completion (charts 4-7): X1/X2/X5/X6/X7/X8 + W3 ----
+    # The four arrays are OPTIONAL and additive. Two are rendered: chart 7-nonfiction (claim_ladder,
+    # producer apodictic.argument_spine.v1 + support_plan.v1) and chart 5 (co_presence, producer
+    # apodictic.scene_roster.v1). The other two stay producer-gated — their producers (scene_function /
     # tension_point) do not exist yet, so a PRESENT array for them fails X8 (you cannot ship a chart
     # array without the producer to byte-check it against). Absent arrays are skipped (a partial map
     # is legitimate — the same posture as W1 coverage).
@@ -536,26 +821,36 @@ def check(manifest_text, timeline_text, ledger_text, spine_text=None,
     claim_ladder = obj.get("claim_ladder")
     if claim_ladder is not None:
         errs += _check_claim_ladder(claim_ladder, ladder)
-    # X8 — the three producer-gated arrays have NO producer in M1, so a present array is a hard fail.
-    for arr_key, prod in (("co_presence", "apodictic.scene_roster.v1"),
-                          ("scene_functions", "apodictic.scene_function.v1"),
+    # Chart 5 — co_presence byte-checked against the scene_roster.v1 producer + the Timeline (X1/X2/X7/X8).
+    roster = scene_roster(roster_text)
+    co_presence = obj.get("co_presence")
+    if co_presence is not None:
+        errs += _check_co_presence(co_presence, roster, rows)
+    # X8 — the two STILL-producer-gated arrays have no producer, so a present array is a hard fail.
+    for arr_key, prod in (("scene_functions", "apodictic.scene_function.v1"),
                           ("reveal_points", "apodictic.tension_point.v1")):
         arr = obj.get(arr_key)
         if arr:   # present and non-empty
             errs.append("X8 producer-present: %s[] is present but its producer (%s) does not exist "
                         "yet — this chart is producer-gated and cannot be rendered render-first "
                         "(doing so would fabricate data)" % (arr_key, prod))
-    # W3 — chart coverage: the argument_spine.v1 producer is present (with declared subclaims) but
-    # claim_ladder[] is empty/absent — the data exists but the chart was silently dropped. Advisory.
+    # W3 — chart coverage: a producer is present but its array is empty/absent — the data exists but
+    # the chart was silently dropped. Advisory. (claim ladder: argument_spine.v1 with subclaims;
+    # co-presence: scene_roster.v1 with rostered scenes.)
     if ladder.get("present") and ladder.get("ids") and not claim_ladder:
         warns.append("W3 chart coverage: an apodictic.argument_spine.v1 with %d declared subclaim(s) "
                      "is present but claim_ladder[] is empty/absent — the claim ladder is renderable "
                      "but was dropped (silent under-rendering)" % len(ladder.get("ids")))
+    if roster.get("present") and roster.get("names") and not co_presence:
+        warns.append("W3 chart coverage: an apodictic.scene_roster.v1 with %d rostered scene(s) is "
+                     "present but co_presence[] is empty/absent — the co-presence network is renderable "
+                     "but was dropped (silent under-rendering)" % len(roster.get("names")))
 
     # Report
-    lines.append("manuscript-viz: %s — %d scene(s), %d finding(s)%s%s"
+    lines.append("manuscript-viz: %s — %d scene(s), %d finding(s)%s%s%s"
                  % (obj.get("project", "?"), len(scenes), len(findings),
                     ", %d claim rung(s)" % len(claim_ladder) if claim_ladder else "",
+                    ", %d co-presence scene(s)" % len(co_presence) if co_presence else "",
                     " [partial]" if obj.get("partial") else ""))
     for e in errs:
         lines.append("  ERROR: %s" % e)
@@ -569,7 +864,7 @@ def check(manifest_text, timeline_text, ledger_text, spine_text=None,
     if warns:
         lines.append("WARN: manuscript-viz: %d advisory flag(s) — see W1/W2/W3 above" % len(warns))
     else:
-        lines.append("manuscript-viz: PASS (manifest<->source provenance: schema + closure + Must-Fix + verbatim copy + uniqueness + claim-ladder)")
+        lines.append("manuscript-viz: PASS (manifest<->source provenance: schema + closure + Must-Fix + verbatim copy + uniqueness + claim-ladder + co-presence)")
     return 0, lines
 
 
@@ -654,7 +949,89 @@ def _claim_ladder_svg(thesis, rungs, width=680):
     return '<svg width="%d" height="%d" role="img">%s</svg>' % (width, height, "".join(out))
 
 
-def render_html(manifest_text, timeline_text, ledger_text, spine_text=None):
+# Hardcoded co-presence weight -> chord stroke-width band (renderer-owned; the manifest never carries
+# style — the same discipline as _SEV_ENCODING / _SUPPORT_STATUS_STYLE). The weight is the count of
+# shared scenes, computed MECHANICALLY from the rosters; this map turns that count into a thickness
+# band, it is never read from the manifest. Bands keep a 7-shared-scene chord from drowning the chart.
+def _co_presence_weight_width(weight):
+    """A shared-scene count -> chord stroke width (px), from a fixed band map. Monotone in weight."""
+    if weight <= 1:
+        return 1.4
+    if weight == 2:
+        return 2.6
+    if weight <= 4:
+        return 3.8
+    return 5.0
+
+
+def co_presence_graph(co_presence):
+    """Mechanically derive (nodes, edges) from the manifest's co_presence[] (already X2-byte-checked).
+
+    nodes: sorted list of every distinct character name appearing in ANY scene's characters[] (a solo
+    character keeps its node — never dropped). edges: {(a, b): weight} for a<b, weight = the count of
+    scenes whose roster contains BOTH a and b. No judgement: an edge iff co-occurrence >=1; weight =
+    count. Deterministic (sorted nodes; canonical-ordered pair keys)."""
+    nodes, edges = set(), {}
+    for entry in co_presence or []:
+        if not isinstance(entry, dict):
+            continue
+        names = sorted({c for c in (entry.get("characters") or []) if isinstance(c, str) and c})
+        for n in names:
+            nodes.add(n)
+        for a in range(len(names)):
+            for b in range(a + 1, len(names)):
+                key = (names[a], names[b])   # names is sorted, so a < b lexically — canonical pair key
+                edges[key] = edges.get(key, 0) + 1
+    return sorted(nodes), edges
+
+
+def _co_presence_svg(nodes, edges, width=680):
+    """Chart 5 — the character co-presence network. DETERMINISTIC circular layout: nodes equally
+    spaced on a circle (alphabetical order — no force sim, no randomness); a chord for each shared-
+    scene edge, chord thickness from the hardcoded weight band; a solo character renders as an isolated
+    node (drawn, never dropped). Single-file inline SVG; no network, no model. `nodes`/`edges` come
+    from co_presence_graph (computed mechanically from the byte-checked rosters)."""
+    import math
+    n = len(nodes)
+    height = 420 if n else 60
+    if not nodes:
+        return ('<svg width="%d" height="60" role="img"><text x="0" y="30" fill="#7A7560">'
+                'no co-presence data</text></svg>' % width)
+    cx, cy = width / 2.0, height / 2.0
+    r = min(width, height) / 2.0 - 70   # leave a margin for labels
+    pos = {}
+    for i, name in enumerate(nodes):
+        # Start at the top (-90deg) and go clockwise — a fixed, reproducible placement.
+        ang = -math.pi / 2 + (2 * math.pi * i / n)
+        pos[name] = (cx + r * math.cos(ang), cy + r * math.sin(ang), ang)
+    out = []
+    # Edges first (so nodes draw on top). A straight chord between the two endpoints; thickness banded.
+    for (a, b), w in sorted(edges.items()):
+        if a not in pos or b not in pos:
+            continue
+        x1, y1, _ = pos[a]
+        x2, y2, _ = pos[b]
+        sw = _co_presence_weight_width(w)
+        out.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#8B7E5A" '
+                   'stroke-width="%.1f" stroke-opacity="0.55"/>' % (x1, y1, x2, y2, sw))
+        # weight label at the chord midpoint (the shared-scene count — a copied fact, not a judgement)
+        mx, my = (x1 + x2) / 2.0, (y1 + y2) / 2.0
+        out.append('<text x="%.1f" y="%.1f" font-size="9" fill="#9E9680" text-anchor="middle">%d</text>'
+                   % (mx, my, w))
+    # Nodes + labels.
+    for name in nodes:
+        x, y, ang = pos[name]
+        out.append('<circle cx="%.1f" cy="%.1f" r="6" fill="#3B4A3E"/>' % (x, y))
+        # Label pushed radially outward; anchor by hemisphere so text doesn't overrun the circle.
+        lx = x + 12 * math.cos(ang)
+        ly = y + 12 * math.sin(ang) + 4
+        anchor = "start" if math.cos(ang) >= 0 else "end"
+        out.append('<text x="%.1f" y="%.1f" font-size="11" fill="#33311E" text-anchor="%s">%s</text>'
+                   % (lx, ly, anchor, html.escape(str(name))))
+    return '<svg width="%d" height="%d" role="img">%s</svg>' % (width, height, "".join(out))
+
+
+def render_html(manifest_text, timeline_text, ledger_text, spine_text=None, roster_text=None):
     """Pure function of the manifest (+ verbatim sources): a self-contained HTML+inline-SVG file.
 
     No network, no deps, no model call — render-only. Charts 1-3: pacing curve, POV time-share,
@@ -728,6 +1105,23 @@ def render_html(manifest_text, timeline_text, ledger_text, spine_text=None):
                          "claim-to-scene map.</p>%s"
                          % (ladder_legend, _claim_ladder_svg(ladder_src.get("thesis"), rungs)))
 
+    # Chart 5 — the character co-presence network. Drawn only when the manifest carries a co_presence[]
+    # array AND an apodictic.scene_roster.v1 producer resolves (the X2-byte-checked rosters). Nodes +
+    # edges are computed MECHANICALLY from the byte-checked array (an edge iff two characters co-occur
+    # in >=1 scene; weight = the count of shared scenes); a solo character keeps an isolated node.
+    co_presence_section = ""
+    roster_src = scene_roster(roster_text)
+    cp = [c for c in (obj.get("co_presence") or []) if isinstance(c, dict)]
+    if cp and roster_src.get("present"):
+        nodes, edges = co_presence_graph(cp)
+        co_presence_section = (
+            "<h2>Character co-presence network</h2>"
+            "<p class=meta>Nodes are characters; an edge means they share a scene; chord thickness is "
+            "the count of shared scenes. Computed mechanically from the scene rosters (who is "
+            "<em>present and acting</em> on-page, not merely mentioned). A solo character renders as an "
+            "isolated node. This is structure, not a judgement about any relationship.</p>%s"
+            % _co_presence_svg(nodes, edges))
+
     return """<!doctype html><html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width, initial-scale=1">
 <title>Structure Map — {project}</title>
@@ -741,7 +1135,7 @@ def render_html(manifest_text, timeline_text, ledger_text, spine_text=None):
  .chip.bare{{background:#F0D7DC;color:#8C2A3D;border:1px dashed #A8344A}}
 </style></head><body>
 <h1>Structure Map — {project}</h1>
-<div class=meta>Render-only companion · APODICTIC manuscript-structure visualization (charts 1–3{cl_label})</div>
+<div class=meta>Render-only companion · APODICTIC manuscript-structure visualization (charts 1–3{cl_label}{cp_label})</div>
 <div class=record><strong>The editorial letter is the artifact of record.</strong> This is a render of data the
 passes already produced — it adds no analysis and no verdict lives only here. Severity encoding is fixed:
 a Must-Fix is always rendered at full salience (size never shrinks for low confidence).</div>
@@ -749,11 +1143,13 @@ a Must-Fix is always rendered at full salience (size never shrinks for low confi
 <h2>Pacing — word count by scene</h2>{c1}
 <h2>POV time-share</h2>{c2}
 <h2>Findings by chapter</h2><div class=legend>{legend}</div>{c3}
+{co_presence_section}
 {claim_section}
 </body></html>""".format(project=project, partial_note=partial_note,
                          c1=_bars_svg(pacing), c2=_bars_svg(pov), c3=_bars_svg(sev_bars), legend=legend,
-                         claim_section=claim_section,
-                         cl_label=" + claim ladder" if claim_section else "")
+                         claim_section=claim_section, co_presence_section=co_presence_section,
+                         cl_label=" + claim ladder" if claim_section else "",
+                         cp_label=" + co-presence network" if co_presence_section else "")
 
 
 # ---------------------------------------------------------------- resolution
@@ -763,10 +1159,13 @@ def _newest(paths):
 
 
 def resolve(paths):
-    """Return (manifest_path, timeline_path, ledger_path, spine_path) from a run folder or files.
+    """Return (manifest_path, timeline_path, ledger_path, spine_path, roster_path) from a run folder
+    or files.
 
-    spine_path is the pre-draft Argument_State (the chart 7-nonfiction claim-ladder source); it may
-    be None (a fiction run carries no spine — the claim ladder simply isn't rendered)."""
+    spine_path is the pre-draft Argument_State (the chart 7-nonfiction claim-ladder source) and
+    roster_path is the per-scene cast (the chart-5 co-presence producer); either may be None (a
+    nonfiction run carries no roster — co-presence simply isn't rendered; a fiction run carries no
+    spine — the claim ladder isn't rendered)."""
     if len(paths) == 1 and os.path.isdir(paths[0]):
         d = paths[0]
         man = _newest(glob.glob(os.path.join(d, _MANIFEST_GLOB)))
@@ -777,12 +1176,17 @@ def resolve(paths):
                 break
         led = _newest(glob.glob(os.path.join(d, _LEDGER_GLOB)))
         spinep = _newest(glob.glob(os.path.join(d, _SPINE_GLOB)))
-        return man, tlp, led, spinep
-    man = tlp = led = spinep = None
+        rosterp = _newest(glob.glob(os.path.join(d, _ROSTER_GLOB)))
+        return man, tlp, led, spinep, rosterp
+    man = tlp = led = spinep = rosterp = None
     for p in paths:
         body = _read(p) or ""
         if _has_block(body, "viz_manifest") and man is None:
             man = p
+        elif _has_block(body, "scene_roster") and rosterp is None:
+            # Check the roster BEFORE the Timeline/finding heuristics — the scene-roster producer
+            # carries no pipe-table and no finding block (it would otherwise be mis-detected).
+            rosterp = p
         elif _has_block(body, "argument_spine") and spinep is None:
             # Check the spine BEFORE the Timeline/finding heuristics — the canonical pre-draft
             # Argument_State carries no pipe-table and no finding block, so it falls through to here.
@@ -793,11 +1197,11 @@ def resolve(paths):
             led = p
     if man is None and paths:
         man = paths[0]
-    return man, tlp, led, spinep
+    return man, tlp, led, spinep, rosterp
 
 
 def run(paths, strict=False, require_block=False):
-    man, tlp, led, spinep = resolve(paths)
+    man, tlp, led, spinep, rosterp = resolve(paths)
     if not man:
         return 2, ["manuscript-viz: no Structure Map manifest found (need a *_Structure_Map_*.md "
                    "or a file with an apodictic:viz_manifest block)"]
@@ -806,6 +1210,7 @@ def run(paths, strict=False, require_block=False):
         return 2, ["manuscript-viz: cannot read %s" % man]
     return check(mtext, _read(tlp) if tlp else None, _read(led) if led else None,
                  spine_text=_read(spinep) if spinep else None,
+                 roster_text=_read(rosterp) if rosterp else None,
                  strict=strict, require_block=require_block)
 
 
@@ -1146,8 +1551,9 @@ def run_self_test():
     code, ls = check(cl_manifest(["not-an-object"]), None, None, spine_text=canon_spine)
     chk("x1_non_object_rung_no_crash", code == 1 and any("X1" in x and "must be an object" in x for x in ls))
 
-    # X8 — a present co_presence / scene_functions / reveal_points array fails (no producer in M1)
-    for arr_key in ("co_presence", "scene_functions", "reveal_points"):
+    # X8 — a present scene_functions / reveal_points array fails (no producer yet). co_presence now HAS
+    # a producer (apodictic.scene_roster.v1), so it is exercised in the chart-5 block below, not here.
+    for arr_key in ("scene_functions", "reveal_points"):
         o = {"schema": _SCHEMA_ID, "project": "P", "scenes": [], "findings": [],
              arr_key: [{"scene_id": "Ch 1 §1", "characters": ["Mara"]}]}
         m = "<!-- apodictic:viz_manifest\n%s\n-->" % _j.dumps(o)
@@ -1185,6 +1591,219 @@ def run_self_test():
         fh.write(canon_spine)
     chk("claim_ladder_run_folder_resolution", run([cd])[0] == 0)
 
+    # ============================================================================================
+    # Chart 5 — the character co-presence network (X1/X2/X7/X8). The PRODUCER is apodictic.scene_roster.v1
+    # (per-scene cast; the Timeline carries POV only). The Timeline above is solo-POV (Mara/Mara/Jon →
+    # zero edges), so the worked roster ADDS co-characters: Mara + Adrian share Ch 1 §1 + Ch 1 §2 (one
+    # edge, weight 2); Eleanor is mentioned-not-present (no roster entry → no edge); Jon is solo in Ch 2
+    # §1 (isolated node); and the "Mara Voss" surface form collapses to "Mara" via the alias table.
+    # ============================================================================================
+    def roster_block(rosters, aliases=None):
+        o = {"schema": _ROSTER_SCHEMA_ID, "project": "Test"}
+        if aliases is not None:
+            o["character_aliases"] = aliases
+        o["rosters"] = rosters
+        return "<!-- apodictic:scene_roster\n%s\n-->" % _j.dumps(o)
+
+    def char(name, anchor="\"she acted on-page\""):
+        # Default to a QUOTE-form anchor (no leading line range) so the X2(e) line-range bounding is
+        # skipped for it — the generic helper isn't coupled to each scene's Timeline line_range. Tests
+        # that exercise the bounding pass an explicit "lines N-M …" anchor.
+        return {"name": name, "anchor": anchor}
+
+    # The canonical worked roster (mirrors example-scene-roster.md). All three scene_ids resolve to the
+    # `timeline` fixture above; each scene's POV (Mara/Mara/Jon) is present in its roster.
+    canon_rosters = [
+        {"scene_id": "Ch 1 §1", "characters": [char("Mara"), char("Adrian")]},
+        {"scene_id": "Ch 1 §2", "characters": [char("Mara Voss"), char("Adrian")]},
+        {"scene_id": "Ch 2 §1", "characters": [char("Jon")]},
+    ]
+    canon_aliases = [{"surface": "Mara Voss", "canonical": "Mara"}]
+    canon_roster = roster_block(canon_rosters, canon_aliases)
+
+    def cp_manifest(co_presence):
+        # Scenes mirror the Timeline so the POV cross-check has rows to read (and E2/E4 stay clean); the
+        # findings include the ledger's F-RR-01 Must-Fix so E3 completeness is satisfied (these tests
+        # isolate co_presence, not finding placement).
+        scns = [scene("Ch 1 §1", "Ch 1", "1-118", "1480", "Mara", "3 hours", "n/a"),
+                scene("Ch 1 §2", "Ch 1", "119-240", "1390", "Mara", "2 hours", "3 hours"),
+                scene("Ch 2 §1", "Ch 2", "241-372", "1610", "Jon", "1 hour", "16 hours")]
+        o = {"schema": _SCHEMA_ID, "project": "Test", "scenes": scns,
+             "findings": [{"id": "F-RR-01", "severity": "Must-Fix", "confidence": "HIGH", "chapter": "Ch 9"}],
+             "co_presence": co_presence}
+        return "<!-- apodictic:viz_manifest\n%s\n-->" % _j.dumps(o)
+
+    canon_cp = [
+        {"scene_id": "Ch 1 §1", "characters": ["Mara", "Adrian"]},
+        {"scene_id": "Ch 1 §2", "characters": ["Mara", "Adrian"]},
+        {"scene_id": "Ch 2 §1", "characters": ["Jon"]},
+    ]
+
+    # clean — the canonical co-presence validates against the canonical roster + Timeline
+    code, ls = check(cp_manifest(canon_cp), timeline, ledger, roster_text=canon_roster)
+    chk("x2_co_presence_clean", code == 0 and any("co-presence scene" in x for x in ls))
+
+    # X8 — a co_presence[] with NO resolvable scene_roster producer FAILS (the firewall's teeth)
+    code, ls = check(cp_manifest(canon_cp), timeline, ledger, roster_text=None)
+    chk("x2_no_producer_fails",
+        code == 1 and any("X8 producer-present" in x and "scene_roster" in x for x in ls))
+
+    # X2(a) — a dangling co_presence scene_id (no roster entry AND no Timeline row) fails
+    bad_cp = canon_cp + [{"scene_id": "Ch 9 §9", "characters": ["Mara"]}]
+    code, ls = check(cp_manifest(bad_cp), timeline, ledger, roster_text=canon_roster)
+    chk("x2_dangling_scene_id_fails",
+        code == 1 and any("X2 co-presence provenance" in x and "Ch 9 §9" in x for x in ls))
+
+    # X2(b) — a co_presence name absent from that scene's roster fails (mentioned/invented, not present).
+    # Eleanor is the firewall fixture: she is mentioned-not-present, so she has NO roster entry → naming
+    # her in co_presence is a provenance breach (and, via the render below, draws no edge).
+    bad_cp = [{"scene_id": "Ch 1 §1", "characters": ["Mara", "Adrian", "Eleanor"]}] + canon_cp[1:]
+    code, ls = check(cp_manifest(bad_cp), timeline, ledger, roster_text=canon_roster)
+    chk("x2_name_not_in_roster_fails",
+        code == 1 and any("X2 co-presence provenance" in x and "Eleanor" in x for x in ls))
+
+    # X2(c) — the Timeline POV character must be present in its roster (cross-check). Drop Jon (the POV)
+    # from Ch 2 §1's roster → the producer rosters someone else instead → POV-missing error.
+    pov_missing_rosters = [canon_rosters[0], canon_rosters[1],
+                           {"scene_id": "Ch 2 §1", "characters": [char("Adrian")]}]
+    # the manifest co_presence for Ch 2 §1 names Adrian (in-roster) so X2(b) passes; only X2(c) fires
+    pov_missing_cp = canon_cp[:2] + [{"scene_id": "Ch 2 §1", "characters": ["Adrian"]}]
+    code, ls = check(cp_manifest(pov_missing_cp), timeline, ledger,
+                     roster_text=roster_block(pov_missing_rosters, canon_aliases))
+    chk("x2_pov_missing_from_roster_fails",
+        code == 1 and any("X2 co-presence provenance" in x and "POV" in x and "Jon" in x for x in ls))
+
+    # X2(d) — a producer roster character with an EMPTY anchor fails (presence must be auditable).
+    empty_anchor_rosters = [{"scene_id": "Ch 1 §1", "characters": [char("Mara"), char("Adrian", anchor="")]},
+                            canon_rosters[1], canon_rosters[2]]
+    code, ls = check(cp_manifest(canon_cp), timeline, ledger,
+                     roster_text=roster_block(empty_anchor_rosters, canon_aliases))
+    chk("x2_empty_anchor_fails",
+        code == 1 and any("X2 co-presence provenance" in x and "anchor must be a non-empty" in x for x in ls))
+
+    # X2(e) — a LINE-RANGE-shaped anchor that falls OUTSIDE its scene's Timeline line-range fails
+    # (a partial tightening of anchor-truthfulness — an anchor cannot witness presence in a scene it
+    # points outside of). Ch 1 §1's Timeline line_range is 1-118; an anchor "lines 900-950" is outside.
+    outside_rosters = [{"scene_id": "Ch 1 §1",
+                        "characters": [char("Mara", anchor="lines 1-50: \"here\""),
+                                       char("Adrian", anchor="lines 900-950: \"elsewhere\"")]},
+                       canon_rosters[1], canon_rosters[2]]
+    code, ls = check(cp_manifest(canon_cp), timeline, ledger,
+                     roster_text=roster_block(outside_rosters, canon_aliases))
+    chk("x2_anchor_outside_scene_line_range_fails",
+        code == 1 and any("anchor lines 900-950 fall outside" in x and "Ch 1 §1" in x for x in ls))
+    # X2(e) positive — an in-range line-range anchor (overlapping the Timeline 1-118) passes; and a
+    # QUOTE-form anchor (no leading line range) is SKIPPED, not falsely rejected. Ch 1 §1 gets an
+    # in-range line anchor for Mara + a quote anchor for Adrian; the other scenes keep quote anchors.
+    inrange_rosters = [{"scene_id": "Ch 1 §1",
+                        "characters": [char("Mara", anchor="lines 10-40: \"within scene\""),
+                                       char("Adrian", anchor="\"a quote-only anchor, unbounded\"")]},
+                       canon_rosters[1], canon_rosters[2]]
+    chk("x2_anchor_in_range_and_quote_form_pass",
+        check(cp_manifest(canon_cp), timeline, ledger,
+              roster_text=roster_block(inrange_rosters, canon_aliases))[0] == 0)
+    # X2(e) unit — the helpers: line-range parse (both "lines N-M" and bare "N-M"), quote -> None,
+    # reversed span normalized, overlap math (touching endpoints overlap; disjoint do not).
+    chk("line_range_parse",
+        _parse_line_range("lines 1-118: \"x\"") == (1, 118) and _parse_line_range("119-240") == (119, 240)
+        and _parse_line_range("\"a quote\"") is None and _parse_line_range("lines 40-10") == (10, 40))
+    chk("ranges_overlap",
+        _ranges_overlap((1, 118), (100, 200)) and _ranges_overlap((118, 118), (118, 250))
+        and not _ranges_overlap((1, 50), (51, 99)))
+
+    # X8/X2 — a co_presence that DIVERGES from the producer roster (a name the roster doesn't carry)
+    # is the provenance-breach case (X2(b) above is exactly this — proven by the Eleanor test).
+
+    # X1 — a visual-style / scene-axis-extra key on a co_presence object fails (no smuggled style)
+    bad_cp = [dict(canon_cp[0], color="red")] + canon_cp[1:]
+    code, ls = check(cp_manifest(bad_cp), timeline, ledger, roster_text=canon_roster)
+    chk("x1_co_presence_style_field_fails",
+        code == 1 and any("X1 new-array schema" in x and "disallowed field 'color'" in x for x in ls))
+
+    # X1 — a non-string character item fails (the manifest carries BARE NAME STRINGS only)
+    bad_cp = [{"scene_id": "Ch 1 §1", "characters": [{"name": "Mara", "anchor": "x"}, "Adrian"]}] + canon_cp[1:]
+    code, ls = check(cp_manifest(bad_cp), timeline, ledger, roster_text=canon_roster)
+    chk("x1_co_presence_nonstring_name_fails",
+        code == 1 and any("X1 new-array schema" in x and "bare name string" in x for x in ls))
+
+    # X7 — a duplicate scene_id in co_presence fails (double-draws its edges)
+    bad_cp = canon_cp + [canon_cp[0]]
+    code, ls = check(cp_manifest(bad_cp), timeline, ledger, roster_text=canon_roster)
+    chk("x7_co_presence_dup_scene_fails",
+        code == 1 and any("X7 duplicate entry" in x and "scene_id" in x for x in ls))
+
+    # producer hostile shapes — an empty/missing anchor, a disallowed roster key, a non-string name, a
+    # duplicate producer scene_id, a malformed alias row must FAIL cleanly via the producer's obj_errs.
+    dup_prod = [canon_rosters[0], canon_rosters[0], canon_rosters[2]]   # Ch 1 §1 twice in the producer
+    code, ls = check(cp_manifest(canon_cp), timeline, ledger,
+                     roster_text=roster_block(dup_prod, canon_aliases))
+    chk("x2_producer_dup_scene_fails",
+        code == 1 and any("appears more than once in the producer" in x for x in ls))
+    bad_alias = [{"surface": "Mara Voss", "canonical": "Mara", "weight": 1}]
+    code, ls = check(cp_manifest(canon_cp), timeline, ledger,
+                     roster_text=roster_block(canon_rosters, bad_alias))
+    chk("x2_producer_bad_alias_key_fails",
+        code == 1 and any("character_aliases" in x and "disallowed field 'weight'" in x for x in ls))
+    # a hostile non-dict roster element / non-dict character must not traceback
+    code, ls = check(cp_manifest(canon_cp), timeline, ledger,
+                     roster_text=roster_block(["not-an-object"], canon_aliases))
+    chk("x2_producer_non_object_roster_no_crash",
+        code == 1 and any("X2 co-presence provenance" in x and "must be an object" in x for x in ls))
+    # a producer block whose const is wrong (not a scene_roster) → present:False → X8 fires
+    bad_const = "<!-- apodictic:scene_roster\n%s\n-->" % _j.dumps(
+        {"schema": "apodictic.viz_manifest.v1", "rosters": canon_rosters})
+    code, ls = check(cp_manifest(canon_cp), timeline, ledger, roster_text=bad_const)
+    chk("x2_producer_wrong_const_fails", code == 1)
+
+    # the mechanical edge derivation (co_presence_graph) — the firewall's "invents nothing" core.
+    nodes, edges = co_presence_graph(canon_cp)
+    # Mara/Adrian/Jon are nodes; Eleanor (never in co_presence) is NOT
+    chk("graph_nodes", nodes == ["Adrian", "Jon", "Mara"])
+    # one edge Adrian-Mara with weight 2 (they share Ch 1 §1 + Ch 1 §2); Jon has NO edge (solo)
+    chk("graph_edge_and_weight", edges == {("Adrian", "Mara"): 2})
+    chk("graph_solo_no_edge", not any("Jon" in pair for pair in edges))
+
+    # render — the co-presence network draws when the manifest carries co_presence[] AND a roster
+    # resolves. The firewall fixtures: Eleanor (mentioned-not-present) draws NO node/edge; Jon renders
+    # as an isolated node; the two Mara surface forms are one node.
+    h_cp = render_html(cp_manifest(canon_cp), timeline, ledger, roster_text=canon_roster)
+    chk("render_co_presence", "Character co-presence network" in h_cp and "Adrian" in h_cp and "Jon" in h_cp)
+    chk("render_co_presence_selfcontained",
+        "<svg" in h_cp and "http://" not in h_cp and "https://" not in h_cp)
+    # firewall fixture: a mentioned-not-present character (Eleanor) appears NOWHERE in the render
+    chk("render_mentioned_not_present_no_edge", "Eleanor" not in h_cp)
+    # alias collapse: "Mara Voss" the surface form is collapsed → the node label is the canonical "Mara",
+    # and the surface form does not appear as its own node
+    chk("render_alias_collapse", "Mara" in h_cp and "Mara Voss" not in h_cp)
+    # isolated node: Jon renders even though he shares no scene (a node, never dropped)
+    chk("render_solo_node_present", "Jon" in h_cp)
+    # without a roster source the co-presence section is simply omitted (no crash, no fabricated graph)
+    h_noroster = render_html(cp_manifest(canon_cp), timeline, ledger, roster_text=None)
+    chk("render_no_roster_omits_co_presence", "Character co-presence network" not in h_noroster)
+
+    # co-presence resolution from a run folder (a *Scene_Roster*.md globbed as the producer source)
+    pd = tempfile.mkdtemp()
+    made.append(pd)
+    with open(os.path.join(pd, "Proj_Structure_Map_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Map\n" + cp_manifest(canon_cp) + "\n")
+    with open(os.path.join(pd, "Proj_Timeline_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write(timeline)
+    with open(os.path.join(pd, "Proj_Findings_Ledger_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write(ledger)
+    with open(os.path.join(pd, "Proj_Scene_Roster_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Roster\n" + canon_roster + "\n")
+    chk("co_presence_run_folder_resolution", run([pd])[0] == 0)
+
+    # W3 — a roster producer is present (with rostered scenes) but co_presence absent → advisory.
+    # Use a Could-Fix-only ledger (no Must-Fix) so E3 doesn't fire on the empty findings[].
+    led_cp_could = "# Ledger\n" + finding(fid="F-A-01", severity="Could-Fix", confidence="LOW") + "\n"
+    no_cp = "<!-- apodictic:viz_manifest\n%s\n-->" % _j.dumps(
+        {"schema": _SCHEMA_ID, "project": "P", "scenes": [], "findings": []})
+    code, ls = check(no_cp, timeline, led_cp_could, roster_text=canon_roster)
+    chk("w3_co_presence_coverage_advisory", code == 0 and any("W3 chart coverage" in x and "co-presence" in x for x in ls))
+    chk("w3_co_presence_coverage_strict_fails",
+        check(no_cp, timeline, led_cp_could, roster_text=canon_roster, strict=True)[0] == 1)
+
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
@@ -1206,29 +1825,43 @@ def main(argv):
         if len(rest) < 1:
             # The Timeline + Ledger are required for a normal (gated) render: provenance can't be
             # checked without the sources, so a manifest with scenes/findings would refuse. `--force`
-            # is the manifest-only escape hatch (an un-provenanced preview). A 4th positional file (or
-            # a run folder) supplies the Argument_State spine for the claim ladder (optional).
-            print("Usage: viz_manifest.py render <manifest> <timeline> <ledger> [<argument_state>] [-o out.html]\n"
+            # is the manifest-only escape hatch (an un-provenanced preview). Trailing positional files
+            # (or a run folder) supply the Argument_State spine (claim ladder) + the Scene_Roster
+            # producer (co-presence) — content-sniffed by block type, so their order doesn't matter.
+            print("Usage: viz_manifest.py render <manifest> <timeline> <ledger> [<argument_state>] [<scene_roster>] [-o out.html]\n"
                   "       viz_manifest.py render <run_folder> [-o out.html]\n"
                   "       viz_manifest.py render <manifest> --force        # manifest-only, skips the provenance gate")
             return 2
+        rosterp = None
         if len(rest) == 1 and os.path.isdir(rest[0]):
-            man, tlp, led, spinep = resolve(rest)
+            man, tlp, led, spinep, rosterp = resolve(rest)
         else:
             man = rest[0]
             tlp = rest[1] if len(rest) > 1 else None
             led = rest[2] if len(rest) > 2 else None
             spinep = rest[3] if len(rest) > 3 else None
+            # The spine + roster producers are interchangeable in position beyond index 2 — sniff every
+            # trailing positional by block type so `<manifest> <timeline> <ledger> <roster>` works even
+            # without a spine, and the spine/roster order is free.
+            spinep = rosterp = None
+            for p in rest[3:]:
+                body = _read(p) or ""
+                if _has_block(body, "scene_roster") and rosterp is None:
+                    rosterp = p
+                elif _has_block(body, "argument_spine") and spinep is None:
+                    spinep = p
         mtext = _read(man)
         tltext = _read(tlp) if tlp else None
         ledtext = _read(led) if led else None
         spinetext = _read(spinep) if spinep else None
+        rostertext = _read(rosterp) if rosterp else None
         # Gate before rendering: rendering un-provenanced data is exactly the firewall hole the
         # validator exists to prevent. Refuse on an ERROR-level gate failure, OR on a scene-order
         # divergence — W2 is advisory in general, but a reordered manifest draws a FALSE pacing curve
         # (the one warning that corrupts the render's core output), so it blocks the render too.
         # W1 coverage stays advisory: a legitimate partial map still renders.
-        gcode, glines = check(mtext, tltext, ledtext, spine_text=spinetext, require_block=True)
+        gcode, glines = check(mtext, tltext, ledtext, spine_text=spinetext, roster_text=rostertext,
+                              require_block=True)
         scene_order_broken = any("W2 scene order" in ln for ln in glines)
         if (gcode != 0 or scene_order_broken) and not force:
             for ln in glines:
@@ -1242,7 +1875,7 @@ def main(argv):
                   "scenes vs the Timeline (a false pacing curve). Pass --force to override. See above.",
                   file=sys.stderr)
             return 1
-        h = render_html(mtext, tltext, ledtext, spine_text=spinetext)
+        h = render_html(mtext, tltext, ledtext, spine_text=spinetext, roster_text=rostertext)
         if out:
             with open(out, "w", encoding="utf-8", newline="") as fh:
                 fh.write(h)
