@@ -218,6 +218,13 @@ def plan(text, ledger_text=None, strict=False):
     if not arcs:
         return 0, ["revision-arc: no revision_arc block found — nothing to check"]
 
+    # A1 — one current arc per manuscript (the contract). The arc is a stateless re-plan that
+    # OVERWRITES the prior artifact (no round/version field), so a second block is a stale arc
+    # appended rather than replaced — fail rather than silently iterating over multiples.
+    if len(arcs) > 1:
+        errs.append("A1 duplicate arc: %d revision_arc blocks found — the contract is one current "
+                    "arc per manuscript (a stale arc is replaced, not appended)" % len(arcs))
+
     # A1 — schema/JSON validity + nested phase shape (per arc block)
     for obj, schema_errs, _idx in arcs:
         deep = _phase_shape_errors(obj, "revision_arc") if (obj is not None and not schema_errs) else []
@@ -452,6 +459,12 @@ def run_self_test():
     # a root_cause_findings member not in the phase's findings => A1 shape error
     code, ll = plan(arc([phase("P1", ["F-RC-01"], root_causes=["F-CN-02"])]), ledger_text=LEDGER)
     chk("a1_rcf_not_in_findings", code == 1 and any("not in this phase's findings" in x for x in ll))
+    # two revision_arc blocks in one document => A1 duplicate arc (contract: one arc per manuscript)
+    code, ll = plan(CLEAN + "\n" + CLEAN, ledger_text=LEDGER)
+    chk("a1_duplicate_arc_blocks_fails",
+        code == 1 and any("A1 duplicate arc" in x and "2 revision_arc blocks" in x for x in ll))
+    # the single-arc canonical-shaped example still passes (no false-positive on one block)
+    chk("a1_single_arc_still_passes", plan(CLEAN, ledger_text=LEDGER)[0] == 0)
 
     # A2 — provenance: a finding_ref not in the ledger => ERROR
     code, ll = plan(arc([phase("P1", ["F-XX-99"], root_causes=["F-XX-99"])]), ledger_text=LEDGER)
