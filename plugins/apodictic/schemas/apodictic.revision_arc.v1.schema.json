@@ -1,0 +1,19 @@
+{
+  "$id": "apodictic.revision_arc.v1",
+  "$comment": "Source of truth for the apodictic:revision_arc block (Multi-Session Revision Arc Planning coaching track — operator: revision-coach). One block per manuscript, regenerated each run from the current finding_states (stateless re-plan, overwriting the prior arc artifact — no round/version field, like Loop Dispatch). The coach SEQUENCES the Findings Ledger into a phased multi-week strategy (Phase 1 structural root causes -> Phase 2 downstream consequences -> Phase 3 polish), the layer ABOVE the per-session Loop Dispatch (it feeds the per-session planner; it does not re-run it, and it does not duplicate Retcon Planning — it generalizes Retcon's single-decision arc to the full Ledger). HONEST POSTURE: the validator (revision-arc) gates the PLAN's self-consistency + provenance + firewall ONLY — NOT a true causal graph. The Root-Cause mapping is NOT machine-readable (finding.v1 carries only structured `severity`; the diagnostic-state Root-Cause map is markdown prose), so the coach's dependency reasoning is TRUSTED, not gated (the co-presence present-vs-mentioned precedent): A3 checks the arc's INTERNAL consistency (each finding in exactly one phase; a finding the arc itself labels a Must-Fix structural root cause is not parked in the last/polish phase), never that the arc matches the Ledger's true causal structure. `phases` is an ORDERED list (>=1) — phase order IS the dependency expression (there is no declared-edge field; any cross-phase dependency the coach names lives in `rationale` prose, not blessed as data); 2- and 4-phase arcs are absorbed (no fixed 3-enum). Nested structure (phase objects, the finding_ref arrays, non-empty rationale, the root_cause_findings subset) is enforced in scripts/revision_arc.py (the stdlib subset schema checker cannot express nested required keys / array-of-object shape), as retcon_plan.py's _score_errors does. `closed_keys:false` (match the retcon_item.v1 coaching-artifact precedent). Validated by scripts/apodictic_artifacts.py via scripts/revision_arc.py.",
+  "title": "APODICTIC revision arc (apodictic.revision_arc.v1)",
+  "type": "object",
+  "required": ["schema", "phases", "adaptation_note"],
+  "properties": {
+    "schema": {"const": "apodictic.revision_arc.v1"},
+    "phases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "$comment": "Nested object shape (phase_label/findings/rationale/root_cause_findings?) is enforced in scripts/revision_arc.py (A1+), not by the subset checker. `findings` is a non-empty list of finding.v1 ids (pattern ^F-[A-Za-z0-9]+-[0-9]{2,}$); `rationale` is a non-empty sequencing rationale (NOT execution prescription — the firewall, advisory W1); `root_cause_findings` is the optional subset of `findings` THIS arc labels structural root causes (the A3 leverage check)."
+      }
+    },
+    "adaptation_note": {"type": "string"}
+  }
+}

@@ -24,6 +24,7 @@
     {"schema": "apodictic.reader_question.v1", "validators": ["reader-instrument"], "canonical_gate": "example-beta-reader-instrument.md", "closed_keys": true},
     {"schema": "apodictic.retcon_item.v1", "validators": ["retcon-plan"], "canonical_gate": "example-retcon-plan.md", "closed_keys": false},
     {"schema": "apodictic.retcon_reading.v1", "validators": ["retcon-plan"], "canonical_gate": "example-retcon-plan.md", "closed_keys": false},
+    {"schema": "apodictic.revision_arc.v1", "validators": ["revision-arc"], "canonical_gate": "example-revision-arc.md", "closed_keys": false},
     {"schema": "apodictic.scene_ethics.v1", "validators": ["scene-ethics"], "canonical_gate": "example-scene-ethics-plan.md", "closed_keys": true},
     {"schema": "apodictic.canon_fact.v1", "validators": ["continuity-bible"], "canonical_gate": "example-continuity-bible.md", "closed_keys": false},
     {"schema": "apodictic.intake_query.v1", "validators": ["intake-interview"], "canonical_gate": "example-intake-interview.md", "closed_keys": false},
