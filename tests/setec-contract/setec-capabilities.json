@@ -1,5 +1,5 @@
 {
-  "setec_version": "1.117.0",
+  "setec_version": "1.118.0",
   "manifest_schema_version": "0.3.0",
   "entries": [
     {
@@ -106,7 +106,8 @@
             "mock",
             "anthropic",
             "openai",
-            "gemini"
+            "gemini",
+            "agent_host"
           ]
         },
         {
@@ -144,7 +145,7 @@
       },
       "compute": {
         "tier": "api_llm",
-        "cost_note": "$0.03–0.20 per doc via Anthropic / OpenAI / Gemini (per-paragraph labeling); free with --judge manifest",
+        "cost_note": "$0.03–0.20 per doc via Anthropic / OpenAI / Gemini (per-paragraph labeling); free with --judge manifest; key-free with --judge agent_host (delegates to the host runtime's model — Claude Code / Codex / Gemini Antigravity; see spec 35)",
         "length_floor_words": 300
       },
       "registers": [
@@ -413,7 +414,8 @@
             "mock",
             "anthropic",
             "openai",
-            "gemini"
+            "gemini",
+            "agent_host"
           ]
         },
         {
@@ -441,7 +443,7 @@
       },
       "compute": {
         "tier": "api_llm",
-        "cost_note": "$0.05–0.30 per doc via Anthropic / OpenAI / Gemini; free with --judge manifest",
+        "cost_note": "$0.05–0.30 per doc via Anthropic / OpenAI / Gemini; free with --judge manifest; key-free with --judge agent_host (delegates to the host runtime's model; see spec 35)",
         "length_floor_words": 2000
       },
       "registers": [
