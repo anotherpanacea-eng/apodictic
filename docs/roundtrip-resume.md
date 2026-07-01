@@ -1,6 +1,7 @@
 # One-Click Round-Trip Resume at `/start`'s `revising` node — build spec (apodictic)
 
-**Status:** spec, decision-complete; spec-review pass 1 folded 2026-07-01 (verdict: BUILD-READY-WITH-FIXES, 0 P1) → build. **Estimate:** 1–2 build sessions, single PR (two increments as commits). **Owner of the decision:** editorial.
+**Status:** **Built** (2026-07-01, this PR — `reanchor.py disposition` + `validate.sh roundtrip-disposition` RT1–RT3/W1 + `rev-a4` + the `/start` revising/diagnosed offers; spec-review pass 1 folded, BUILD-READY-WITH-FIXES 0 P1; Opus build-review READY-TO-PR, 0 P1/P2, 1 P3 folded). **Estimate:** 1–2 build sessions, single PR (two increments as commits). **Owner of the decision:** editorial.
+<!-- built-when: plugins/apodictic/skills/core-editor/references/example-roundtrip-disposition.md -->
 **Provenance:** merged candidate — Fable "revision-round diff ingestion" re-scoped down after code
 verification + Opus 4.8 "close the last mile" (whose scoping the code supports).
 
