@@ -35,6 +35,8 @@
     {"schema": "apodictic.persona.v1", "validators": ["persona-divergence"], "canonical_gate": "example-persona-divergence-map.md", "closed_keys": false},
     {"schema": "apodictic.world_fact.v1", "validators": ["world-bible"], "canonical_gate": "example-worldbuilding-bible.md", "closed_keys": false},
     {"schema": "apodictic.genre_profile.v1", "validators": ["argument-spine"], "canonical_gate": "example-argument-state-genre-grant.md", "closed_keys": false},
-    {"schema": "apodictic.finding_disposition.v1", "validators": ["disposition-check"], "canonical_gate": "example-run-folder-dispositions", "closed_keys": true}
+    {"schema": "apodictic.finding_disposition.v1", "validators": ["disposition-check"], "canonical_gate": "example-run-folder-dispositions", "closed_keys": true},
+    {"schema": "apodictic.refutation.v1", "validators": ["refutation-coverage", "refutation-evidence", "refutation-write-scope"], "canonical_gate": "example-run-folder", "closed_keys": false},
+    {"schema": "apodictic.refutation_budget.v1", "validators": ["refutation-coverage", "refutation-evidence"], "canonical_gate": "example-run-folder", "closed_keys": true}
   ]
 }

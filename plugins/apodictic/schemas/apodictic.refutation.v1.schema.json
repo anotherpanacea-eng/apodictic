@@ -1,0 +1,19 @@
+{
+  "$id": "apodictic.refutation.v1",
+  "$comment": "One recorded disconfirmation attempt (docs/finding-disconfirmation.md §4): the Step 6b Finding Disconfirmation Pass's machine-parseable record of trying to REFUTE a locked, synthesis-bound finding against the manuscript text. Lives in [Project]_Refutation_Record_[runlabel].md — the pass's ENTIRE write surface (write-scope isolation: the ledger is touched only by the synthesis agent's §6b confidence transcription, cross-checked by refutation-write-scope). `id` must resolve to a locked ledger finding (refutation-coverage). counter_evidence_quotes are verbatim, single-line manuscript-snapshot substrings verified against the snapshot the snapshot_path/snapshot_sha256 pair binds (refutation-evidence; the same binding-field pair apodictic.annotation.v1 carries — A6's uniqueness requirement is deliberately dropped: a counter-evidence quote is evidence, not an anchor, so a span occurring three times is still real counter-evidence). There is deliberately NO severity property: outcomes re-map CONFIDENCE only, per the outcome caps table (survived = never confidence-raising; weakened capped at MEDIUM; refuted = LOW/UNCERTAIN) — severity stays with the Deficit Lock. Open-keyed (closed_keys false in _coverage.json) because the severity-key kill is refutation-write-scope's, enforced against the subset checker's unknown-key tolerance. Validated by scripts/refutation_check.py via scripts/apodictic_artifacts.py.",
+  "title": "APODICTIC finding-disconfirmation attempt (apodictic.refutation.v1)",
+  "type": "object",
+  "required": ["schema", "id", "attempted", "outcome", "counter_evidence_quotes", "alternative_explanations", "rationale", "confidence_after", "snapshot_path", "snapshot_sha256"],
+  "properties": {
+    "schema": {"const": "apodictic.refutation.v1"},
+    "id": {"type": "string", "pattern": "^F-[A-Za-z0-9]+-[0-9]{2,}$"},
+    "attempted": {"type": "boolean"},
+    "outcome": {"enum": ["survived", "weakened", "refuted"]},
+    "counter_evidence_quotes": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "alternative_explanations": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "rationale": {"type": "string"},
+    "confidence_after": {"enum": ["HIGH", "MEDIUM", "LOW", "UNCERTAIN"]},
+    "snapshot_path": {"type": "string"},
+    "snapshot_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}
