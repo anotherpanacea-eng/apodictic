@@ -1,11 +1,11 @@
 # Spec 05 — Synthesis coverage disclosure (M1) + pre-letter re-grounding (M2) (apodictic)
 
-**Status:** **M1 Built** (this PR — `synthesis_coverage.py` V1–V5 + step 9b + Appendix C note +
-marker + sidecar; Opus build-review READY-WITH-FIXES → V5 letter-family P2 folded; as-built
-corrections in §M1.8); **M2 (pre-letter re-grounding) remains spec**, builds after the
-disconfirmation spec (04). Spec-review pass 1 folded 2026-07-01 (verdict:
-BUILD-READY-WITH-FIXES, 1 P1 — resolved by fix 1); expanded from stub 2026-07-01; all anchors
-grep/read-verified.
+**Status:** **Built** — **M1 Built** (#160 — `synthesis_coverage.py` V1–V5 + step 9b + Appendix C
+note + marker + sidecar; Opus build-review READY-WITH-FIXES → V5 letter-family P2 folded; as-built
+corrections in §M1.8); **M2 Built** (this PR — `specificity_floor.py` + step 9c;
+Opus-build/Fable-review tier-inversion; 3 matcher P2s folded pre-Codex; as-built corrections in
+§M2.5). Spec-review pass 1 folded 2026-07-01 (verdict: BUILD-READY-WITH-FIXES, 1 P1 — resolved by
+fix 1); expanded from stub 2026-07-01; all anchors grep/read-verified.
 **Estimate:** M1 ~2 sessions, M2 ~2–3 sessions. **Owner of the decision:** craft/editorial trust in
 the whole-novel deliverable.
 **Provenance:** Opus 4.8 pick #3, **trimmed after inventory verification** — the "auto-mode
@@ -524,6 +524,84 @@ analog: **the letter is a projection of the ledger, and re-grounding is read-onl
    code fence (must not be honored — M5 helper), a count token that
    appears only inside a manuscript quote in the window (counts — define token match on the
    window's full text, documented).
+
+### 5. As-built corrections (M2 build PR)
+
+Where shipped M2 deviates from the letter of this spec (or of sibling docs) — recorded, per the
+§M1.8 precedent, so nobody "fixes" the build back toward stale text:
+
+- **(a) Step placement: 9c — after the manifest, and therefore after Step 6b.** §M2.1's
+  "immediately after the M1 manifest step and before the Step 10 pre-output gate" is exactly what
+  shipped: **step 9c**, following the step-9b manifest it must update (M2 step 4 flips manifest
+  rows — the step cannot run before the manifest exists). `docs/finding-disconfirmation.md`
+  used to claim re-grounding "precedes Step 6b" — a stale pre-rework claim from before this spec
+  pinned the seam, now reconciled in that doc (its §3 and §14). The imagined loss ("re-grounded
+  specificity improves refutation quality") is phantom: Step 6b consumes the locked ledger + the
+  intake manuscript snapshot — both verbatim disk artifacts, neither subject to context-salience
+  decay — so no refutation input is degraded by running 6b first.
+- **(b) Window direction: backward from the marker, not forward.** §M2.2's phrasing ("from each
+  `<!-- finding: F-… -->` marker to the next marker or `^##` header") reads forward, but the
+  pinned citation convention places the marker at the END of a finding's descriptive prose
+  (`example-editorial-letter.md`: "…two sentences. <!-- finding: F-RR-01 -->"). A forward window
+  would capture the NEXT finding's prose and miss the very sentence the marker terminates. As
+  built, the window runs from the nearest preceding boundary (the prior marker's end or a
+  `^##`/`###` header) up to and including the marker — the same evidence-density rule,
+  direction-corrected.
+- **(c) Known window edges (fail-closed; the override is the escape).** Three constructed edge
+  shapes can false-positive at window boundaries: (1) **trailing prose after a marker** —
+  discussion continuing past a finding's own marker attaches to the NEXT finding's window;
+  (2) a **mid-discussion `###` sub-header** truncates a window early; (3) **shared-section
+  siblings** — section-lead prose before the first of two co-sectioned findings lands in the
+  first finding's window only. All three fail CLOSED (a spurious count/anchor FAIL, never a
+  silent pass), and the ID-scoped `<!-- override: specificity-floor F-… — <rationale> -->` +
+  Appendix B entry is the documented, actionable escape. The window is deliberately NOT
+  redesigned around them: each is rare under the pinned letter format, and a smarter window
+  (paragraph inference, sub-header classification) would trade a loud, overridable false
+  positive for quiet misattribution.
+- **(d) Regrounding-trace advisory: letter marker only — the manifest half is a scope-down.**
+  §M2.2's degrade-path bullet names two presence surfaces: the `<!-- regrounding: done -->`
+  letter marker and the manifest's `regrounded` annotation. As built, `specificity_floor.py`
+  surfaces only the LETTER marker as its advisory W (`--strict` promotes). The manifest half is
+  deliberately not checked here, and the §M2.2 text supports that reading: the bullet defines the
+  **bash degrade path's ceiling** ("presence checks only… advisory WARN without `python3`"), not
+  a Python-validator obligation; the spec's own CLI signature (`validate.sh specificity-floor
+  <letter> <ledger>`) hands the validator no manifest or run-folder path to check; and the
+  step-9b row grammar pins `synthesis_coverage.py` as the manifest's **only** parser, whose V3
+  already enforces the annotation's well-formedness on every run — a second manifest reader
+  inside specificity-floor would recreate exactly the dual-enforcer drift risk §M2.3's single-
+  ownership stance exists to prevent.
+- **(e) Malformed-ledger refusal (never a vacuous pass).** A ledger in which ≥ 1
+  `apodictic:finding` block appears but ZERO parse to a valid finding REFUSES with a named
+  blocking error (`malformed-ledger refusal`) instead of the vacuous "no ledger findings" pass —
+  an all-malformed ledger must not silently disarm the floor. Single-ownership stance for
+  PARTIAL malformation: when some blocks parse, the floor proceeds on the parsed subset and does
+  not police the broken siblings — per-block schema repair is `structured-findings`' gate, and
+  refusing on a partial would double-enforce it.
+- **(f) Matcher hardening (pre-Codex build-review fold, this PR).** The build-review's
+  constructed attacks landed three P2s + cheap P3s in the count-extraction cluster, all fixed
+  and pinned in `--self-test`: integers **10–19** now count (the digit regex missed teens — a
+  ledger "12 belief failures" could decay to "several" unpunished); locator keywords accept
+  **plurals** ("scenes 30-31" is as much a locator as "sc. 30-31"); **number-words normalize to
+  digit strings** at extraction, so a ledger "nine" and a letter "9" satisfy each other in BOTH
+  directions (no blocking false FAIL on a faithful word→digit restoration) and a spelled-out
+  "Chapter Nine" becomes a strippable locator (no over-credit); a **locator/count collision**
+  ("…in the confession scene 9 belief failures cluster…") is rescued via a ledger↔window shared
+  (count, plural-head) phrase **whose head must be the LEDGER's own count-noun** — the ledger
+  side of the match is extracted from the locator-STRIPPED entry, so a locator-adjacent s-token
+  can never be a rescue head (Codex P2 fold, this PR: when the chapter number equals the locked
+  count, the earlier both-sides-raw match let "Chapter 9 opens with several…" pass as rescued
+  via the shared "(9, opens)" bigram) — the rescue never ARMS the floor, it only un-eats a real
+  restoration, so bare locators still credit nothing; and the anchor floor's
+  **chapter-surface-form independence** ("Chapter 12" / "Ch.12" / "Chapter Twelve" against a
+  ledger "Ch 12") is self-test-pinned. Accepted residuals, on record: a locator-eaten count in
+  the LEDGER's own prose does not arm the floor (phrases never arm — and since the Codex P2
+  fold the ledger side of the rescue is likewise locator-stripped, so an s-ending verb after a
+  locator, "Ch 3 opens", widens neither enforcement nor rescue); a collision rescue requires
+  the window to reuse the ledger's count-noun head (a paraphrased noun after a collision is not
+  rescued; the ID-scoped override is the escape); and the narrowed coincidence that remains is
+  a window that juxtaposes a chapter number equal to the locked count directly with the
+  ledger's own count-noun ("Chapter 9 failures mount…") — accepted as genuinely ambiguous
+  prose, with the same override escape.
 
 ---
 
