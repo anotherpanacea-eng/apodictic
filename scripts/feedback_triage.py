@@ -17,6 +17,10 @@ machine-checkable invariants — contract hygiene + conflict referential integri
                           contradiction was never resolved (advisory; ERROR under --strict).
   W2 act-on-unvalidated   an item triaged act-now whose claim is not (partly-)validated — acting
                           now on an unconfirmed external claim (advisory; ERROR under --strict).
+  W3 unreconciled decline an item triaged `decline` whose evidence_refs cite a ledger F-… id, with
+                          no disposition marker for that id in this artifact — the decline lives
+                          only here, invisible to the engine (docs/finding-dispositions.md;
+                          advisory; ERROR under --strict).
 
 Conflicts are treated as an UNDIRECTED graph: A.conflicts_with B pairs {A,B} even if B omits A.
 Each artifact is optional; an empty/absent one is a no-op (no false failure). Reuses
@@ -135,6 +139,25 @@ def triage(text, strict=False):
         if obj.get("triage") == "act-now" and obj.get("assessment") not in _VALIDATED:
             warns.append("W2 act-on-unvalidated: %s is act-now but assessment=%r (not validated)"
                          % (fid, obj.get("assessment")))
+    # W3 — unreconciled decline (docs/finding-dispositions.md): a declined item that CITES a ledger
+    # finding (an F-… token in evidence_refs) should carry an engine disposition marker in this same
+    # artifact — otherwise the decline is invisible to the coach ladder and the /ready caveat.
+    # OWNERSHIP BOUNDARY (W3 vs disposition-check DP2.2): W3 is feedback-triage-ARTIFACT-scoped
+    # advisory — it never reads the sidecar; DP2.2 is sidecar-scoped ledger-integrity — it never
+    # reads triage artifacts. The matching comment lives at DP2.2 in disposition_check.py.
+    marker_ids = ({m["id"] for m in art.parse_disposition_markers(text)}
+                  if art is not None and hasattr(art, "parse_disposition_markers") else set())
+    for fid, obj in sorted(by_id.items()):
+        if obj.get("triage") != "decline":
+            continue
+        cited = set()
+        for ref in obj.get("evidence_refs") or []:
+            if isinstance(ref, str) and art is not None:
+                cited.update(art.FID_RE.findall(ref))
+        for led_id in sorted(cited - marker_ids):
+            warns.append("W3 unreconciled decline: declined feedback %s maps to engine finding %s "
+                         "but no disposition was recorded — the decline lives only in this artifact"
+                         % (fid, led_id))
 
     # Report
     lines.append("feedback-triage: %d item(s)%s" % (len(items),
@@ -154,7 +177,7 @@ def triage(text, strict=False):
                      % (len(errs), ", %d strict warn(s)" % len(warns) if (strict and warns) else ""))
         return 1, lines
     if warns:
-        lines.append("WARN: feedback-triage: %d advisory coherence gap(s) — see W1/W2 above" % len(warns))
+        lines.append("WARN: feedback-triage: %d advisory coherence gap(s) — see W1/W2/W3 above" % len(warns))
     else:
         lines.append("feedback-triage: PASS (contract + conflict integrity)")
     return 0, lines
@@ -260,6 +283,24 @@ def run_self_test():
 
     # monitor on a pending item is fine (no W2)
     check("pending_monitor_clean", triage(item("FB-01", assessment="pending", triage_="monitor"))[0] == 0)
+
+    # W3 unreconciled decline — a declined item citing a ledger F-… id with no disposition marker
+    # in the same artifact fires; recording the marker (or citing no F-… id) clears it.
+    declined_ref = item("FB-01", assessment="refuted", triage_="decline")\
+        .replace('"disposition": "d"', '"disposition": "d", "evidence_refs": ["Pass 5", "F-P5-01"]')
+    code_w, lines_w = triage(declined_ref)
+    check("w3_unreconciled_decline_fires",
+          code_w == 0 and any("W3 unreconciled decline" in ln and "F-P5-01" in ln for ln in lines_w))
+    check("w3_strict_fails", triage(declined_ref, strict=True)[0] == 1)
+    reconciled = declined_ref + "\n<!-- declined: F-P5-01 — reader claim refuted by the diagnosis -->\n"
+    code_w, lines_w = triage(reconciled)
+    check("w3_marker_reconciles", code_w == 0 and not any("W3" in ln for ln in lines_w))
+    check("w3_no_fid_ref_clean",
+          not any("W3" in ln for ln in triage(item("FB-02", assessment="refuted", triage_="decline"))[1]))
+    # a NON-declined item citing an F-… id never fires W3
+    acted = item("FB-03", assessment="validated", triage_="act-now")\
+        .replace('"disposition": "d"', '"disposition": "d", "evidence_refs": ["F-P5-01"]')
+    check("w3_only_on_decline", not any("W3" in ln for ln in triage(acted)[1]))
 
     # no blocks -> no-op
     check("no_items_noop", triage("# Feedback\nNo structured items yet.\n")[0] == 0)

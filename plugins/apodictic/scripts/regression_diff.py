@@ -56,7 +56,10 @@ _REVISION_GLOBS = ("*_Revision_Report_*.md", "*_Revision_*.md", "*_Session_Plan_
 
 # `<!-- resolved: F-XX-NN -->` marker (fallback if finding_trace is unavailable).
 _RESOLVED_RE = re.compile(r"<!--\s*resolved:(.*?)-->", re.DOTALL | re.IGNORECASE)
-_ID_RE = re.compile(r"(?<![\w-])F-[A-Za-z0-9]+-[0-9]{2,}(?![\w-])")
+# Exact Lifecycle-ID token, single-sourced from apodictic_artifacts.FID_RE (dependency direction:
+# this module imports art, never the reverse). The literal below is only the art-less degraded
+# fallback; the apodictic_artifacts --self-test (fid_re_lockstep) pins it byte-equal to FID_RE.
+_ID_RE = art.FID_RE if art is not None else re.compile(r"(?<![\w-])F-[A-Za-z0-9]+-[0-9]{2,}(?![\w-])")
 # W2 adjudication: `<!-- override: regression-cleared <runlabel>:<chapter> — <rationale> -->`.
 # Read via the shared override_marker SSoT (override_payloads) — code spans stripped, slug
 # boundary-matched — so a backtick'd example is not honored as a live adjudication.

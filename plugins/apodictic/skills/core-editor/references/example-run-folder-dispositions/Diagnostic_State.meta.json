@@ -1,0 +1,56 @@
+{
+  "$comment": "Dispositions fixture sidecar (docs/finding-dispositions.md) — a NON-governed project: no execution.gate_events, so execution.finding_dispositions was written by the direct writer (validated against apodictic.finding_disposition.v1 + trigger-iff-deferred before landing), exactly as the direct finding_states 'revised' write works. The markers in the sibling Diagnostic_State.md Coaching Log are the canonical source; this map is the mechanical mirror. finding_states stays {locked, delivered, revised} — dispositions are an overlay, never a lifecycle state.",
+  "project": "Example",
+  "mode": "diagnostic",
+  "last_session": {
+    "date": "2026-03-01",
+    "focus": "revision coaching",
+    "runlabel": "2026-03-01_opus46"
+  },
+  "triage_summary": {
+    "must_fix": 2,
+    "should_fix": 1,
+    "could_fix": 0
+  },
+  "control_questions": {
+    "total": 5,
+    "open": 0,
+    "answered": 5,
+    "deferred": 0
+  },
+  "session_count": 12,
+  "next_action": {
+    "key": "coaching",
+    "description": "Should-Fix tier next; both Must-Fixes are actively dispositioned"
+  },
+  "execution": {
+    "finding_states": {
+      "F-P5-01": "delivered",
+      "F-DP-02": "delivered",
+      "F-P2-03": "delivered"
+    },
+    "finding_dispositions": {
+      "F-P5-01": {
+        "schema": "apodictic.finding_disposition.v1",
+        "id": "F-P5-01",
+        "disposition": "declined",
+        "reason": "the narrated-conclusion register is the book's deliberate mode; revising it would break the contract",
+        "source": "author",
+        "session": 12,
+        "ts": "2026-03-01T15:02:00Z",
+        "artifact": "Diagnostic_State.md"
+      },
+      "F-DP-02": {
+        "schema": "apodictic.finding_disposition.v1",
+        "id": "F-DP-02",
+        "disposition": "deferred",
+        "reason": "cannot judge the setup budget until readers price the bond",
+        "source": "author",
+        "session": 12,
+        "ts": "2026-03-01T15:04:00Z",
+        "trigger": "beta reads back",
+        "artifact": "Diagnostic_State.md"
+      }
+    }
+  }
+}

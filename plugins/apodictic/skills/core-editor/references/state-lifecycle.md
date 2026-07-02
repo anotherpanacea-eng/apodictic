@@ -56,7 +56,8 @@ When gardening is required (or when the user accepts the advisory):
 - The full Root Causes table (always active — never archived)
 - The full Triage Summary (always active)
 - The full Author Decisions section (always active — these are live revision commitments)
-- All coaching log entries (append-only, not compressed — the revision coach depends on the full log)
+- **Active finding dispositions** — the declined/deferred markers and their reason lines (§Finding Dispositions): load-bearing state, never archived — they are what prevents re-flagging (same class as the Author Decisions section)
+- All coaching log entries (append-only, not compressed — the revision coach depends on the full log; the disposition markers ride along)
 - The current Mode section
 
 ### What Gardening Compresses
@@ -65,6 +66,11 @@ When gardening is required (or when the user accepts the advisory):
 - Resolved handoff history → one-line summaries with archive pointers
 - Answered control questions → question + answer only (rationale archived)
 - Completed revision steps → checkbox + session reference
+- **Superseded finding dispositions** (the id has reached `revised`) → the one-line archive form, like resolved handoffs:
+  ```markdown
+  - F-P5-01: declined session 12, later revised session 15. Full record: Diagnostic_State_Archive_[datetime].md
+  ```
+  Active dispositions are never compressed (see Preserves above). The sidecar record is untouched — JSON is not gardened; supersedence already handles precedence.
 - Old change log entries → archived with their sessions
 
 ### Design Principle
@@ -83,13 +89,13 @@ Before running passes, gather:
 
 1. **What changed?** — List major revisions since last analysis (structural changes, added/cut scenes, character modifications)
 2. **Which flags were addressed?** — Mark which previous flags the author attempted to fix
-3. **Which flags were declined?** — Note which previous flags the author intentionally chose not to address (and why, if provided)
+3. **Which flags were declined or deferred?** — Read the engine record first: `execution.finding_dispositions` + the pinned disposition markers (§Finding Dispositions below) carry the prior rounds' set-aside decisions with reasons and triggers. Ask the author only about gaps (a set-aside they mention that was never recorded), and record any new answer as a disposition, not a prose-only note
 4. **New concerns?** — What does the author now suspect isn't working?
 
 ### Revision Round Constraints
 
 **DO NOT:**
-- Re-flag issues the author explicitly declined to address (respect their choices)
+- Re-flag issues the author explicitly declined to address (respect their choices — the declined set is the engine record, `execution.finding_dispositions` + its markers, §Finding Dispositions below; this constraint is applied by the round *workflow* when composing the report — `regression-diff` stays evidence-only)
 - Run full fresh analysis unless structural changes exceed 40% of manuscript
 - Apply stricter standards to revised sections than to original analysis
 
@@ -123,6 +129,30 @@ Before running passes, gather:
 - **Non-runner-governed project** (no `gate_events`): write `execution.finding_states[<id>] = "revised"` **directly**, as before — there is no gate log to fold and no `pointer == fold` invariant, so the direct write is correct and remains the path for the common case.
 
 A finding under *Flags still present* / *New issues introduced* is named (bare) but carries **no** resolved marker, so it correctly stays `delivered`. A finding that **regresses** in a later round is **not** demoted in place (`revised` is terminal per ledger id; the fold is forward-only) — re-diagnosis (the `revision_round` gate's `allowed_next` is `run_synthesis`) gives it a fresh `F-…` id. `scripts/validate.sh finding-trace <run_folder>` then audits completion by ID — a finding marked resolved but left below `revised` in the sidecar is W3 (advisory; ERROR under `--strict`), and a finding the report **mentions as unresolved** while the sidecar marks it `revised` is E5. See `docs/finding-lifecycle-ids.md` §Increment 3 and `docs/revision-round-gate.md`.
+
+### Finding Dispositions (`declined` / `deferred`) — the engine-level set-aside record
+
+A finding the author deliberately sets aside is recorded as a **finding disposition** (`docs/finding-dispositions.md`) — an **overlay** on the lifecycle, never a fourth lifecycle state: `execution.finding_states` stays exactly `locked → delivered → revised`, and the disposition lives beside it in `execution.finding_dispositions` (a map `F-id → apodictic.finding_disposition.v1` record). A declined Must-Fix **remains** `delivered` — the diagnostic truth is untouched; only the author's decision about it is recorded.
+
+**Durable markers (the canonical source; pinned grammar, sibling of `<!-- resolved: F-… -->`):**
+
+```
+<!-- declined: F-P5-01 — <one-line reason> -->
+<!-- deferred: F-P5-01 until: <trigger> — <one-line reason> -->
+```
+
+Marker homes (the home determines the record's `source`): the Coaching Log section of `Diagnostic_State.md` and the Revision Report → `source: author`; a triage-written marker homes in the `*_Feedback_Triage_*.md` artifact itself → `source: triage`. As with `revised`, the markers are canonical and the sidecar map is the mechanical mirror — consumers read the map when present and fall back to the markers.
+
+**Two writers — the same dual-writer rule as `revised` above, exactly:**
+
+- **Runner-governed project** (the sidecar carries `execution.gate_events`): hand-writing the fold-owned map is **forbidden**. Dispositions ride the gate log — the `revision_round` clear scans the run's disposition markers (Revision Report, `*_Feedback_Triage_*.md`, the project Coaching Log) and freezes each **full record** (reason, source, session, ts, trigger) into the clearing event's `disposition_deltas`, so `execution.finding_dispositions` is fold-derived (last-event-wins per id) and `pointer == fold` holds by construction. Sidecar lag between a marker write and the next round clear is acceptable — consumers fall back to the markers.
+- **Non-governed project** (no `gate_events` — the common case): the coach / triage workflow writes `execution.finding_dispositions[<id>] = {record}` **directly**, alongside the marker, exactly as the direct `finding_states[<id>] = "revised"` write works. **Validate before writing:** the record must satisfy `apodictic.finding_disposition.v1` (closed-key) **plus** the trigger-iff-deferred conditional and a non-empty reason — the same record-shape gate the governed path gets from `gate --check-state`.
+
+**Write preconditions (both writers):** a disposition may only be recorded for a finding whose lifecycle state is `delivered` (or `locked` on a non-governed project that never gated — degrade honestly). Declining a finding that was never delivered is synthesis-softening, not an author decision. A disposition on a `revised` id is a no-op-with-warning (supersedence). **Never machine-proposed:** a disposition is an author decision the engine records — nothing auto-declines or auto-defers (the Firewall; the round-trip resume proposes `resolved` candidates only).
+
+**Supersedence (normative):** `finding_states[<id>] == "revised"` supersedes any disposition for that id. The record is **kept** (history); every consumer checks `finding_states` first. There is no deletion channel — a disposition is superseded by `revised` or overwritten by a newer disposition (last-write-wins per id), never removed.
+
+**What reads dispositions:** the coach's Loop Dispatch (skip declined / trigger-review deferred; `revision-coach/SKILL.md`), Revision Round Intake (above), `/ready`'s verdict caveat (`submission-readiness.md`), and the `disposition-check` validator (`scripts/validate.sh disposition-check <run_folder|sidecar> [assessment] [--strict]` — DP0 record shape, DP1 the declined/deferred-Must-Fix readiness caveat, DP2 no-laundering incl. the bidirectional marker/sidecar sync). **What deliberately does not:** every honesty gate — `softness-check`, `deficit-lock`, `severity-floor`, `structured-findings`, `finding-trace` E1–E3/W1, `regression-diff` — reads dispositions **nowhere**. A disposition is not an override marker (`<!-- override: softness-downgrade … -->` remains the only severity-relief channel), grants no relief in any honesty gate, and never decrements a count.
 
 ### Cross-Round Regression Check (on re-diagnosis)
 
@@ -176,7 +206,7 @@ It heuristically matches this round's findings against the prior round's (same o
    scripts/validate.sh roundtrip-disposition <prior_run_folder> <new_snapshot> <this_run_folder>
    ```
 
-   RT1 recompute alignment / RT2 confirmation record present / RT3 confirmed-writes-only are hard; RT4 partition coverage (every recomputed prior finding must have a disposition row — a missing row is a finding silently omitted from round-close review, named by id) and W1 (rows still `pending`, or `confirm-resolved` rows not yet reflected as markers — work legitimately stages across sessions) are advisory, ERROR under `--strict` at round close. Lifecycle advancement then goes through the **existing two writers unchanged** (§Revision Round Output above): the `revision_round` gate (`gate` → `gate --attest`, where the operator personally attests **rev-a4** — every disposition was confirmed, no vanished-anchor auto-close) for runner-governed projects, the scoped direct `finding_states[<id>] = "revised"` write for non-governed. This step adds **no third writer** — only a confirmation precondition upstream of both. `decision=declined` is a **per-round record only** (there is no engine-level declined finding state; the Coaching Log note remains the durable record), and `revised` stays terminal-per-id — a regressed finding gets a fresh id via re-diagnosis, never a demotion.
+   RT1 recompute alignment / RT2 confirmation record present / RT3 confirmed-writes-only are hard; RT4 partition coverage (every recomputed prior finding must have a disposition row — a missing row is a finding silently omitted from round-close review, named by id) and W1 (rows still `pending`, or `confirm-resolved` rows not yet reflected as markers — work legitimately stages across sessions) are advisory, ERROR under `--strict` at round close. Lifecycle advancement then goes through the **existing two writers unchanged** (§Revision Round Output above): the `revision_round` gate (`gate` → `gate --attest`, where the operator personally attests **rev-a4** — every disposition was confirmed, no vanished-anchor auto-close) for runner-governed projects, the scoped direct `finding_states[<id>] = "revised"` write for non-governed. This step adds **no third writer** — only a confirmation precondition upstream of both. **The model's proposed disposition is never `declined` (or a deferral)** — proposals draw on `confirm-resolved` / `keep-open` / `needs-placement` / `pending` only; `decision=declined` is an operator choice (author-initiated, the Firewall). When the operator chooses it, record the durable **engine disposition** (§Finding Dispositions above — the pinned marker + the dual-writer record); the roundtrip row is the per-round audit trail, the finding disposition is the cross-round record the coach and `/ready` read. `revised` stays terminal-per-id — a regressed finding gets a fresh id via re-diagnosis, never a demotion.
 
 A `--check-all` chain gate (`round-trip glue chain`) exercises emit → A-gate the emitted copy → crossref end-to-end on the canonical fixture, and a sibling step gates the canonical disposition record (RT1–RT4, plus hostile token-stripped / unconfirmed-marker / omitted-row arms), so the flow is proven to compose, not just the individual validators. See `docs/annotated-manuscript-reanchoring.md`.
 

@@ -68,6 +68,22 @@ def validate_markdown_text(text, label="<md>"):
     return errs, len(blocks)
 
 
+def severity_tally(items):
+    """The canonical severity tally: count each item's `severity` over the schema-sourced severity
+    set and map to the `triage_summary` keys (`Must-Fix/Should-Fix/Could-Fix` ->
+    `must_fix/should_fix/could_fix`). Factored out of validate_sidecar_obj so `disposition-check`'s
+    DP2.4 tally guard (docs/finding-dispositions.md) REUSES the exact logic it audits — the guard
+    cannot drift from the tally. `items` is any iterable of dicts carrying `severity` (the sidecar
+    findings[] array here; the ledger's parsed apodictic.finding.v1 blocks in disposition_check)."""
+    tally = {sev: 0 for sev in art.load_severity_values()}
+    for el in items:
+        if isinstance(el, dict) and el.get("severity") in tally:
+            tally[el["severity"]] += 1
+    return {"must_fix": tally.get("Must-Fix", 0),
+            "should_fix": tally.get("Should-Fix", 0),
+            "could_fix": tally.get("Could-Fix", 0)}
+
+
 def validate_sidecar_obj(obj, label="<sidecar>"):
     """Validate the optional structured arrays + the triage_summary cross-check."""
     errs = []
@@ -105,13 +121,7 @@ def validate_sidecar_obj(obj, label="<sidecar>"):
             errs.append("%s: findings[] is non-empty but triage_summary is missing or not an "
                         "object — the severity tally cannot be verified" % label)
         else:
-            tally = {sev: 0 for sev in art.load_severity_values()}
-            for el in findings:
-                if isinstance(el, dict) and el.get("severity") in tally:
-                    tally[el["severity"]] += 1
-            expect = {"must_fix": tally.get("Must-Fix", 0),
-                      "should_fix": tally.get("Should-Fix", 0),
-                      "could_fix": tally.get("Could-Fix", 0)}
+            expect = severity_tally(findings)
             for key, want in expect.items():
                 try:
                     got = int(triage.get(key, 0))

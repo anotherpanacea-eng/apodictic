@@ -110,7 +110,9 @@ This phase is unique to the Submission Readiness Workflow. It does not exist in 
 
 Produce the combined output per the template below. This is the primary deliverable of the Submission Readiness Workflow, distinct from the editorial letter (which is also produced but covers craft diagnosis, not submission readiness).
 
-**Confidence and ceiling rule:** If a high-risk blind spot remains unresolved at the end of the run, confidence cannot exceed `MEDIUM`. If the blind spot materially affects ethics/governance legibility, category/reception exposure, or cross-volume consequence coherence, the verdict cannot exceed `CONDITIONALLY VIABLE` without an explicit rationale.
+**Confidence and ceiling rule:** If a high-risk blind spot remains unresolved at the end of the run, confidence cannot exceed `MEDIUM`. If the blind spot materially affects ethics/governance legibility, category/reception exposure, or cross-volume consequence coherence, the verdict cannot exceed `CONDITIONALLY VIABLE` without an explicit rationale. An **active declined Must-Fix** (an `execution.finding_dispositions` record or pinned disposition marker for an id with `finding_states[<id>] != "revised"` — `state-lifecycle.md` §Finding Dispositions) likewise caps the verdict at `CONDITIONALLY VIABLE` unless its caveat line carries a **per-id rationale** for why submission is viable despite it — the exact structure of the blind-spot ceiling. A **deferred Must-Fix whose trigger has fired** (an ISO-date trigger whose date has passed, or a trigger the session context shows has occurred) is treated as **open** — no `READY`. Verdict ceiling only, no confidence cap: a declined finding is *more* legible than a blind spot, not less.
+
+**Disposition gate (mechanical; runs BEFORE the verdict is delivered).** After drafting the assessment, run `scripts/validate.sh disposition-check <sidecar> <assessment_file>`. **A DP1 ERROR blocks the verdict** — an active declined/deferred Must-Fix is missing from the pinned caveat block below, i.e. the verdict is absorbing a set-aside finding. Fix the caveat (never the disposition record), re-run, then deliver. DP1 only has teeth if it runs at verdict time, not just in CI's `--check-all`.
 
 **Sidecar readiness mirror (state-driven dispatch).** When the readiness assessment completes, mirror its per-dimension verdicts into the `Diagnostic_State.meta.json` sidecar's `readiness[]` array as `apodictic.readiness.v1` entries (`dimension` / `verdict` / `rationale`). This is the signal the `submission` lifecycle node derives from (`docs/project-addressability.md` §Increment 3): a non-empty `readiness[]` marks the project as having a recorded submission-readiness assessment, so a later `/start` resumes it at the `submission` node. Append, don't overwrite, across re-assessments.
 
@@ -164,6 +166,11 @@ The full Submission Readiness Workflow has access to all 15 SR codes (unlike Sub
 
 **Blind Spots:** [None, or 1-3 bullets naming deferred/declined high-risk audits and how they limit readiness confidence]
 
+**Declined Must-Fixes:** [required whenever an active declined Must-Fix exists; omit otherwise] F-P5-01 — [reason] (declined, session [N]); [rationale for viability despite it, per the ceiling rule]
+**Deferred Must-Fixes:** [required whenever an active deferred Must-Fix exists; omit otherwise] F-DP-02 — until: [trigger] — [reason]
+
+[Pinned caveat block (mechanically checked — disposition-check DP1): one line per family, `; `-separated entries, EVERY active declined/deferred Must-Fix named by id. These are the exact `**Declined Must-Fixes:**` / `**Deferred Must-Fixes:**` line-start forms the validator parses — do not reword them. Declined Must-Fixes are listed, with reasons; they are not absorbed. Should-Fix/Could-Fix dispositions are informational — they go in the Diagnostic Summary, never here.]
+
 ---
 
 ## The Short Version
@@ -174,7 +181,7 @@ The full Submission Readiness Workflow has access to all 15 SR codes (unlike Sub
 
 ## Diagnostic Summary
 
-[3-5 sentences synthesizing the editorial letter's root causes. Reference the editorial letter for full analysis; don't repeat it here. Focus on how the diagnostic findings affect submission readiness specifically.]
+[3-5 sentences synthesizing the editorial letter's root causes. Reference the editorial letter for full analysis; don't repeat it here. Focus on how the diagnostic findings affect submission readiness specifically. Note any Should-Fix/Could-Fix dispositions (declined/deferred set-asides below the Must-Fix tier) here — they are informational, not caveat-block material.]
 
 **Editorial letter:** See `[Project]_Editorial_Letter_[date].md` for full diagnostic.
 
