@@ -1,0 +1,25 @@
+{
+  "project": "Example",
+  "volume": 1,
+  "mode": "diagnostic",
+  "last_session": {
+    "date": "2026-01-01",
+    "focus": "core-de",
+    "tier": "2",
+    "execution_mode": "hybrid",
+    "passes_completed": [1, 5],
+    "runlabel": "2026-01-01_opus46"
+  },
+  "synthesis_coverage": {
+    "provenance": "dispatch-derived",
+    "execution_mode": "hybrid",
+    "coverage": "ok",
+    "manifest": "runs/2026-01-01_opus46_core-de/Example_Synthesis_Read_Manifest_2026-01-01_opus46.md",
+    "artifacts_verbatim": 3,
+    "artifacts_summary": 2,
+    "artifacts_absent": 0,
+    "spans_outside_active_context": ["Ch 1-2", "Ch 4-11"],
+    "verification_excerpt_count": 2,
+    "estimated_context_utilization": null
+  }
+}
