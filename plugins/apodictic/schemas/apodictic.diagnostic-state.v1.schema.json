@@ -26,6 +26,22 @@
         "orientation_failures": {"type": "integer"}
       }
     },
+    "synthesis_coverage": {
+      "type": "object",
+      "$comment": "Synthesis Coverage Disclosure, M1 (docs/synthesis-regrounding.md; complexity_signals additive pattern — no new schema file, no version bump): the sidecar projection of the [Project]_Synthesis_Read_Manifest_[runlabel].md written BEFORE the editorial letter (run-synthesis.md §Processing Protocol step 9b). `coverage` must equal the letter's `<!-- coverage: ok|degraded -->` title-block marker; the artifacts_* tallies and spans_outside_active_context must equal the manifest rows; `provenance` is dispatch-derived (sequential/hybrid/swarm — the orchestrator wrote the manifest at dispatch) or declared (single-agent only — no read-event log exists, and the letter says so in pinned language). verification_excerpt_count is multi-agent only (null in single-agent); estimated_context_utilization is single-agent only (null in multi-agent, percent of the detected window). Reconciled by `validate.sh synthesis-coverage <run_folder>` — an unfilled template stub (empty provenance+coverage) reads as absent (V1, advisory-first), a present-but-malformed value FAILS reconciliation (V3, blocking). Filled on every run that writes a full editorial letter; leave the stub untouched otherwise.",
+      "properties": {
+        "provenance": {"type": "string"},
+        "execution_mode": {"type": "string"},
+        "coverage": {"type": "string"},
+        "manifest": {"type": "string"},
+        "artifacts_verbatim": {"type": "integer"},
+        "artifacts_summary": {"type": "integer"},
+        "artifacts_absent": {"type": "integer"},
+        "spans_outside_active_context": {"type": "array", "items": {"type": "string"}},
+        "verification_excerpt_count": {"type": ["integer", "null"]},
+        "estimated_context_utilization": {"type": ["number", "null"]}
+      }
+    },
     "execution": {
       "type": "object",
       "$comment": "Runner-Governed Execution state. Increment 5 (state_version 2): gate_events[] is the canonical append-only gate-decision log; phase/allowed_next/pending_gate/finding_states are a recomputable resume pointer (== fold(gate_events), asserted by run_gate.py --check-state). gates (per-phase result map) is DEPRECATED — read only when state_version < 2 (legacy fallback).",
