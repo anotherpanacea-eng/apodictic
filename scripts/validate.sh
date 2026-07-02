@@ -5388,10 +5388,14 @@ EOF
     # is the checkable half: it holds the delivered letter to the specificity the ledger locked.
     # COUNT FLOOR (blocking): for each finding cited in the letter (its `<!-- finding: F-... -->`
     # prose block), if the finding's ledger entry (Notable-Finding sentence + structured block)
-    # carries a count (digit 2-99 or number-word two..ninety-nine, case-insensitively — a
-    # sentence-initial "Nine" satisfies a ledger "nine") and the delivered window uses a vague
-    # quantifier (VAGUE_QUANTIFIERS, pinned in specificity_floor.py) with NONE of the ledger's
-    # counts, FAIL. ANCHOR FLOOR (blocking): each delivered Must-Fix window must carry an evidence
+    # carries a count (integer 2-99; number-words two..ninety-nine NORMALIZE to digit strings,
+    # case-insensitively, so a ledger "nine" and a letter "9" are the same token in both
+    # directions) and the delivered window uses a vague quantifier (VAGUE_QUANTIFIERS, pinned in
+    # specificity_floor.py) with NONE of the ledger's counts, FAIL. Evidence-locator numbers
+    # (Ch 12, sc./scenes 30-31, a spelled-out "Chapter Nine") are stripped, never counted; an
+    # all-malformed ledger (finding blocks present, ZERO parse) REFUSES with a named error
+    # (malformed-ledger refusal) instead of a vacuous pass.
+    # ANCHOR FLOOR (blocking): each delivered Must-Fix window must carry an evidence
     # reference matching the finding's locked evidence_refs, so a restored number rides a
     # ledger-matching anchor (bounds count-hallucination). Both overridable per-ID with
     # `<!-- override: specificity-floor F-... — <why> -->` + an Appendix B entry (non-countable
