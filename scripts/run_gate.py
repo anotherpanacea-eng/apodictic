@@ -49,6 +49,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # (forward-only). run_synthesis -> locked and run_spot_check -> delivered mark
 # ALL ledger findings; revision_round -> revised marks ONLY the resolved subset
 # (the <!-- resolved: F-… --> ids in the run folder) — see _finding_deltas.
+# Finding DISPOSITIONS (declined/deferred, docs/finding-dispositions.md) are an
+# OVERLAY, never a lifecycle state: revision_round clears additionally freeze the
+# run's disposition markers into event.disposition_deltas (full records), folded
+# into execution.finding_dispositions last-event-wins — see _disposition_deltas.
 _PHASE_FINDING_STATE = {"run_synthesis": "locked", "run_spot_check": "delivered",
                         "revision_round": "revised"}
 _STATE_RANK = {"locked": 1, "delivered": 2, "revised": 3}
@@ -335,8 +339,19 @@ def fold_pointer(events, manifest):
             if _STATE_RANK.get(st, 0) >= _STATE_RANK.get(finding_states.get(fid), 0):
                 finding_states[fid] = st
 
-    return {"phase": frontier, "allowed_next": allowed_next,
-            "pending_gate": pending, "finding_states": finding_states}
+    # Finding dispositions (docs/finding-dispositions.md): an OVERLAY beside finding_states, never a
+    # lifecycle state — the rank-monotonic fold above is untouched. Last-event-wins per id (a later
+    # disposition overwrites an earlier one); supersedence by `revised` is a READ-time precedence
+    # rule (consumers check finding_states first), so a superseded record is kept here, not dropped.
+    finding_dispositions = {}
+    for e in events:
+        dd = _ev(e).get("disposition_deltas")
+        if isinstance(dd, dict):
+            for fid, rec in dd.items():
+                finding_dispositions[fid] = rec
+
+    return {"phase": frontier, "allowed_next": allowed_next, "pending_gate": pending,
+            "finding_states": finding_states, "finding_dispositions": finding_dispositions}
 
 
 # ---------------------------------------------------------------- write / migrate
@@ -396,6 +411,13 @@ def append_event(sidecar, event, manifest):
         ex["finding_states"] = ptr["finding_states"]
     else:
         ex.pop("finding_states", None)
+    # finding_dispositions mirrors finding_states handling exactly: written as the fold computes it,
+    # cleared when the fold no longer supports it. A pointer write leaves SUPERSEDED records
+    # untouched (supersedence is read-time precedence, never a write-time deletion or rewrite).
+    if ptr["finding_dispositions"]:
+        ex["finding_dispositions"] = ptr["finding_dispositions"]
+    else:
+        ex.pop("finding_dispositions", None)
     if event.get("run_folder"):
         ex["run_folder"] = event["run_folder"]
 
@@ -456,6 +478,88 @@ def _finding_deltas(phase, run_folder, manifest, resolved):
     return {fid: _PHASE_FINDING_STATE[phase] for fid in _ledger_finding_ids(led)}
 
 
+def _disposition_valid(rec):
+    """Write-time record-shape gate: schema-valid + the trigger-iff-deferred conditional the stdlib
+    subset checker cannot express + non-empty reason. Same rules check_state re-asserts log-side."""
+    schema = art.load_schema("apodictic.finding_disposition.v1") if art else None
+    if schema is None or art.validate_obj(rec, schema, "<disposition>"):
+        return False
+    if rec.get("disposition") == "deferred":
+        if not (isinstance(rec.get("trigger"), str) and rec["trigger"].strip()):
+            return False
+    elif "trigger" in rec:
+        return False
+    return bool(rec.get("reason", "").strip())
+
+
+def _disposition_deltas(phase, run_folder, manifest, resolved, sidecar, exclude_ids=()):
+    """disposition_deltas for a clearing event — {F-id: full apodictic.finding_disposition.v1
+    record}, frozen from the run's pinned disposition markers (docs/finding-dispositions.md) so
+    fold_pointer recomputes execution.finding_dispositions from the log alone. Sibling of
+    _finding_deltas; active for the revision_round phase only.
+
+    Marker homes scanned, in precedence order (a later home wins per id, and within a home the
+    last marker wins): any *_Feedback_Triage_*.md in the run folder (source: triage), the project
+    Diagnostic_State.md Coaching Log — the SIBLING of the sidecar JSON _find_sidecar locates,
+    derived from its dirname (source: author) — then the gate's revision_report artifact
+    (source: author; the round's freshest decision). The grammar is the apodictic_artifacts SSoT
+    (parse_disposition_markers), never a local copy.
+
+    Write-time guards (mirroring _finding_deltas' phantom-id filter): a marker is frozen only when
+    it names a LEDGER finding whose sidecar lifecycle state is 'delivered' (the write
+    precondition; 'revised' is supersedence — a no-op here), is NOT in this clear's resolved
+    subset (`exclude_ids` — the same-event revise+disclaim launder check_state rejects), and its
+    record validates (_disposition_valid). A skipped marker is surfaced as marker/sidecar lag by
+    disposition-check DP2.5 — never frozen into a poisoned append-only event."""
+    if phase != "revision_round" or art is None or not hasattr(art, "parse_disposition_markers"):
+        return {}
+    keys = manifest.get("artifact_keys", {})
+    runlabel = _runlabel(run_folder)
+    led = resolved.get("findings_ledger") or _resolve(run_folder, keys.get("findings_ledger", ""), runlabel)
+    ledger_ids = set(_ledger_finding_ids(led))
+    if not ledger_ids:
+        return {}
+    session, states = 0, {}
+    if sidecar:
+        try:
+            with open(sidecar, encoding="utf-8") as fh:
+                meta = json.load(fh)
+            session = meta.get("session_count") or 0
+            states = (meta.get("execution") or {}).get("finding_states") or {}
+        except (OSError, ValueError):
+            pass
+    sources = []  # (path, source) in precedence order — later wins
+    for p in sorted(glob.glob(os.path.join(run_folder, "*_Feedback_Triage_*.md"))):
+        sources.append((p, "triage"))
+    if sidecar:
+        state_md = os.path.join(os.path.dirname(sidecar), "Diagnostic_State.md")
+        if os.path.exists(state_md):
+            sources.append((state_md, "author"))
+    report = resolved.get("revision_report") or _resolve(run_folder, keys.get("revision_report", ""), runlabel)
+    if report:
+        sources.append((report, "author"))
+    deltas = {}
+    for path, source in sources:
+        try:
+            with open(path, encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+        for m in art.parse_disposition_markers(text):
+            fid = m["id"]
+            if fid not in ledger_ids or fid in exclude_ids or states.get(fid) != "delivered":
+                continue
+            rec = {"schema": "apodictic.finding_disposition.v1", "id": fid,
+                   "disposition": m["kind"], "reason": m["reason"], "source": source,
+                   "session": int(session) if isinstance(session, int) else 0,
+                   "ts": _now_iso(), "artifact": os.path.basename(path)}
+            if m["trigger"] is not None:
+                rec["trigger"] = m["trigger"]
+            if _disposition_valid(rec):
+                deltas[fid] = rec
+    return deltas
+
+
 # ---------------------------------------------------------------- commands
 
 def cmd_gate(phase, run_folder, manifest, strict_warnings=False, write=False, validate_sh=None):
@@ -491,6 +595,10 @@ def cmd_gate(phase, run_folder, manifest, strict_warnings=False, write=False, va
                 event["attested_contract"] = []  # no-attest gate; explicit empty contract
                 event["attested_items"] = []
                 event["finding_deltas"] = _finding_deltas(phase, run_folder, manifest, resolved)
+                dd = _disposition_deltas(phase, run_folder, manifest, resolved, sidecar,
+                                         exclude_ids=set(event["finding_deltas"]))
+                if dd:
+                    event["disposition_deltas"] = dd
             if append_event(sidecar, event, manifest):
                 lines.append("  (recorded execution.gate_events += %s/%s in %s)"
                              % (phase, result, os.path.basename(sidecar)))
@@ -545,6 +653,10 @@ def cmd_attest(phase, run_folder, manifest, write=False, validate_sh=None):
                      "checks": checks, "attested_items": list(contract),
                      "attested_contract": list(contract),
                      "finding_deltas": _finding_deltas(phase, run_folder, manifest, resolved)}
+            dd = _disposition_deltas(phase, run_folder, manifest, resolved, sidecar,
+                                     exclude_ids=set(event["finding_deltas"]))
+            if dd:
+                event["disposition_deltas"] = dd
             if digests:
                 event["artifact_digests"] = digests
             if append_event(sidecar, event, manifest):
@@ -659,6 +771,38 @@ def check_state(sidecar, manifest, strict=False):
             for fid, st in e["finding_deltas"].items():
                 if st not in _STATE_RANK:
                     errs.append("%s: finding_deltas[%s]=%r not a lifecycle state" % (where, fid, st))
+        # disposition_deltas (docs/finding-dispositions.md): clearing-only, full-record shapes (the
+        # log-side twin of disposition-check DP0), and the no-simultaneous-launder rule — one event
+        # cannot both revise and disclaim the same finding.
+        if e.get("disposition_deltas"):
+            dd = e["disposition_deltas"]
+            if not isinstance(dd, dict):
+                errs.append("%s: disposition_deltas must be an object" % where)
+            else:
+                if not is_clearing(events, i):
+                    errs.append("%s: disposition_deltas only on a clearing passed" % where)
+                dispo_schema = art.load_schema("apodictic.finding_disposition.v1") if art else None
+                for fid, rec in dd.items():
+                    dwhere = "%s: disposition_deltas[%s]" % (where, fid)
+                    if not isinstance(rec, dict):
+                        errs.append("%s: not a disposition record object" % dwhere)
+                        continue
+                    if dispo_schema is not None:
+                        errs.extend(art.validate_obj(rec, dispo_schema, dwhere))
+                    if rec.get("id") != fid:
+                        errs.append("%s: record id %r does not match its map key" % (dwhere, rec.get("id")))
+                    # trigger iff deferred — the cross-field rule the subset schema cannot express
+                    if rec.get("disposition") == "deferred":
+                        if not (isinstance(rec.get("trigger"), str) and rec["trigger"].strip()):
+                            errs.append("%s: deferred requires a non-empty 'trigger'" % dwhere)
+                    elif "trigger" in rec:
+                        errs.append("%s: 'trigger' only valid on a deferred disposition" % dwhere)
+                    if not (isinstance(rec.get("reason"), str) and rec["reason"].strip()):
+                        errs.append("%s: 'reason' must be non-empty" % dwhere)
+                    if (e.get("finding_deltas") or {}).get(fid) == "revised":
+                        errs.append("%s: same-event launder — the event both revises and "
+                                    "dispositions %s (a finding cannot be revised and disclaimed "
+                                    "by the same clear)" % (dwhere, fid))
         # checks[] inner shape
         for j, c in enumerate(e.get("checks") or []):
             if not (isinstance(c, dict) and isinstance(c.get("validator"), str)
@@ -698,6 +842,9 @@ def check_state(sidecar, manifest, strict=False):
         errs.append("pointer drift: execution.pending_gate=%r but fold=%r" % (ex.get("pending_gate"), ptr["pending_gate"]))
     if (ex.get("finding_states") or {}) != ptr["finding_states"]:
         errs.append("pointer drift: execution.finding_states=%r but fold=%r" % (ex.get("finding_states"), ptr["finding_states"]))
+    if (ex.get("finding_dispositions") or {}) != ptr["finding_dispositions"]:
+        errs.append("pointer drift: execution.finding_dispositions=%r but fold=%r"
+                    % (ex.get("finding_dispositions"), ptr["finding_dispositions"]))
 
     open_gates = sorted(g for g in {_ev(e).get("gate") for e in events}
                         if g is not None
@@ -1033,6 +1180,132 @@ def run_self_test():
     code, _ = cmd_gate("revision_round", drevc, manifest, write=True, validate_sh=vs)
     check("rev_calendar_not_report_blocks",
           code == 1 and read_ex(drevc)["gate_events"][-1]["result"] == "blocked")
+
+    # --- Finding dispositions (docs/finding-dispositions.md) — governed write path ---
+    # (a) a revision_round clear with a declined marker in the revision report folds the FULL
+    # record into finding_dispositions; pointer == fold.
+    ddis = folder(ledger2, sidecar=prior)
+    rep_path = os.path.join(ddis, "Proj_Revision_Report_run.md")
+    with open(rep_path, "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Revision Report\n- Flags resolved: F-P5-01\n<!-- resolved: F-P5-01 -->\n"
+                 "- Flags set aside: F-P5-02\n"
+                 "<!-- declined: F-P5-02 — abstraction is the register, a deliberate pass -->\n")
+    cmd_gate("revision_round", ddis, manifest, write=True, validate_sh=vs)
+    code, _ = cmd_attest("revision_round", ddis, manifest, write=True, validate_sh=vs)
+    exd = read_ex(ddis)
+    recd = exd.get("finding_dispositions", {}).get("F-P5-02", {})
+    check("dispo_full_record_folds",
+          code == 0 and recd.get("schema") == "apodictic.finding_disposition.v1"
+          and recd.get("disposition") == "declined" and recd.get("source") == "author"
+          and recd.get("reason") == "abstraction is the register, a deliberate pass"
+          and isinstance(recd.get("session"), int) and recd.get("ts")
+          and recd.get("artifact") == "Proj_Revision_Report_run.md")
+    check("dispo_lifecycle_untouched",
+          exd.get("finding_states", {}) == {"F-P5-01": "revised", "F-P5-02": "delivered"})
+    check("dispo_check_state_clean",
+          check_state(os.path.join(ddis, "Diagnostic_State.meta.json"), manifest)[0] == 0)
+
+    # (b) last-write-wins — deferred then declined for one id across two clears (same report file
+    # rewritten, so artifact resolution stays stable).
+    dlw = folder(ledger2, sidecar=prior)
+    rep_lw = os.path.join(dlw, "Proj_Revision_Report_run.md")
+    with open(rep_lw, "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Revision Report\n<!-- deferred: F-P5-02 until: 2026-09 — waiting on the POV decision -->\n")
+    cmd_gate("revision_round", dlw, manifest, write=True, validate_sh=vs)
+    cmd_attest("revision_round", dlw, manifest, write=True, validate_sh=vs)
+    first = read_ex(dlw).get("finding_dispositions", {}).get("F-P5-02", {})
+    with open(rep_lw, "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Revision Report\n<!-- declined: F-P5-02 — POV decided; the stakes stay as-is -->\n")
+    cmd_gate("revision_round", dlw, manifest, write=True, validate_sh=vs)
+    cmd_attest("revision_round", dlw, manifest, write=True, validate_sh=vs)
+    exlw = read_ex(dlw)
+    second = exlw.get("finding_dispositions", {}).get("F-P5-02", {})
+    check("dispo_last_write_wins",
+          first.get("disposition") == "deferred" and first.get("trigger") == "2026-09"
+          and second.get("disposition") == "declined" and "trigger" not in second)
+    check("dispo_lww_check_state_clean",
+          check_state(os.path.join(dlw, "Diagnostic_State.meta.json"), manifest)[0] == 0)
+
+    # (c) supersedence — a later clear resolves the dispositioned id: the revised delta lands, the
+    # disposition record is RETAINED (history; read-time precedence), pointer still == fold.
+    with open(rep_lw, "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Revision Report\n- Flags resolved: F-P5-02\n<!-- resolved: F-P5-02 -->\n")
+    cmd_gate("revision_round", dlw, manifest, write=True, validate_sh=vs)
+    cmd_attest("revision_round", dlw, manifest, write=True, validate_sh=vs)
+    exsup = read_ex(dlw)
+    check("dispo_superseded_record_retained",
+          exsup.get("finding_states", {}).get("F-P5-02") == "revised"
+          and exsup.get("finding_dispositions", {}).get("F-P5-02", {}).get("disposition") == "declined")
+    check("dispo_supersede_check_state_clean",
+          check_state(os.path.join(dlw, "Diagnostic_State.meta.json"), manifest)[0] == 0)
+
+    def _dispo_rec(fid, kind="declined", **kw):
+        rec = {"schema": "apodictic.finding_disposition.v1", "id": fid, "disposition": kind,
+               "reason": "r", "source": "author", "session": 1, "ts": "t"}
+        rec.update(kw)
+        return rec
+
+    # (d) disposition_deltas on a NON-clearing event -> check_state ERROR
+    nonclear = {"project": "Proj", "execution": {"state_version": 2, "gate_events": [
+        {"gate": "revision_round", "result": "mechanical-passed", "provenance": "mechanical", "ts": "t0",
+         "checks": [{"validator": "x", "result": "ok"}],
+         "disposition_deltas": {"F-P5-01": _dispo_rec("F-P5-01")}},
+    ], "finding_dispositions": {"F-P5-01": _dispo_rec("F-P5-01")}, "pending_gate": "revision_round",
+        "allowed_next": []}}
+    dnc2 = folder(ledger2, sidecar=nonclear)
+    code, lines = check_state(os.path.join(dnc2, "Diagnostic_State.meta.json"), manifest)
+    check("dispo_nonclearing_rejected",
+          code == 1 and any("disposition_deltas only on a clearing passed" in ln for ln in lines))
+
+    # (e) same-event launder — one event carrying finding_deltas[F-X]=revised AND
+    # disposition_deltas[F-X] -> ERROR (revised and disclaimed by the same clear)
+    launder_ev = _ev_passed("revision_round", {"F-P5-01": "revised"})
+    launder_ev["disposition_deltas"] = {"F-P5-01": _dispo_rec("F-P5-01")}
+    launder = {"project": "Proj", "execution": {"state_version": 2, "gate_events": [launder_ev],
+               "phase": "revision_round", "allowed_next": ["run_synthesis"],
+               "finding_states": {"F-P5-01": "revised"},
+               "finding_dispositions": {"F-P5-01": _dispo_rec("F-P5-01")}}}
+    dla = folder(ledger2, sidecar=launder)
+    code, lines = check_state(os.path.join(dla, "Diagnostic_State.meta.json"), manifest)
+    check("dispo_same_event_launder_rejected",
+          code == 1 and any("same-event launder" in ln for ln in lines))
+
+    # (f) malformed record — deferred with no trigger -> ERROR (trigger-iff-deferred, log-side)
+    badrec_ev = _ev_passed("revision_round", {})
+    badrec_ev["disposition_deltas"] = {"F-P5-01": _dispo_rec("F-P5-01", kind="deferred")}
+    badrec = {"project": "Proj", "execution": {"state_version": 2, "gate_events": [badrec_ev],
+              "phase": "revision_round", "allowed_next": ["run_synthesis"],
+              "finding_dispositions": {"F-P5-01": _dispo_rec("F-P5-01", kind="deferred")}}}
+    dbr = folder(ledger2, sidecar=badrec)
+    code, lines = check_state(os.path.join(dbr, "Diagnostic_State.meta.json"), manifest)
+    check("dispo_deferred_without_trigger_rejected",
+          code == 1 and any("deferred requires a non-empty 'trigger'" in ln for ln in lines))
+
+    # (g) a marker in a Feedback Triage artifact folds with source: triage
+    dtg = folder(ledger2, sidecar=prior)
+    with open(os.path.join(dtg, "Proj_Feedback_Triage_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Feedback Triage\n<!-- declined: F-P5-02 — reader claim refuted by Pass 5 -->\n")
+    with open(os.path.join(dtg, "Proj_Revision_Report_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Revision Report\n- Flags resolved: F-P5-01\n<!-- resolved: F-P5-01 -->\n")
+    cmd_gate("revision_round", dtg, manifest, write=True, validate_sh=vs)
+    cmd_attest("revision_round", dtg, manifest, write=True, validate_sh=vs)
+    rect = read_ex(dtg).get("finding_dispositions", {}).get("F-P5-02", {})
+    check("dispo_triage_marker_source",
+          rect.get("source") == "triage" and rect.get("artifact") == "Proj_Feedback_Triage_run.md")
+
+    # (h) write-time guards: an off-ledger id and a not-yet-delivered (locked) id are NOT frozen —
+    # the same self-consistency _finding_deltas' phantom filter gives finding_states.
+    locked_prior = {"project": "Proj", "execution": {"state_version": 2, "gate_events": [
+        _ev_passed("run_synthesis", {"F-P5-01": "locked", "F-P5-02": "locked"}),
+    ]}}
+    dwg = folder(ledger2, sidecar=locked_prior)
+    with open(os.path.join(dwg, "Proj_Revision_Report_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Revision Report\n<!-- declined: F-ZZ-99 — off ledger -->\n"
+                 "<!-- declined: F-P5-02 — still only locked -->\n")
+    cmd_gate("revision_round", dwg, manifest, write=True, validate_sh=vs)
+    cmd_attest("revision_round", dwg, manifest, write=True, validate_sh=vs)
+    check("dispo_write_guards_filter",
+          read_ex(dwg).get("finding_dispositions", {}) == {})
 
     for d in made:
         shutil.rmtree(d, ignore_errors=True)

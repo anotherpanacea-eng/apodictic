@@ -118,6 +118,10 @@ E4 (dangling) and W2 (plan coverage) keep treating **both** globs as "a revision
 
 `finding-trace` is the project's owner of cross-artifact `F-…` referential integrity, so the Retcon Planning **F3** increment homes its provenance check here rather than rebuilding ledger access in `retcon-plan`. **E6 — dangling retcon source** (ERROR): a Retcon Plan (`*_Retcon_Plan_*.md`) `apodictic.retcon_item.v1` block with an optional `source` finding-ref (primarily a Pass-8 Reveal-Economy finding, e.g. `F-P8-03`) whose `source` does **not** resolve to a ledger finding. Only schema-shaped `F-…` refs are checked — a malformed `source` is the `retcon-plan` schema's job (R1), not E6's, so the two validators don't double-report a format error. The run-folder resolver picks up Retcon Plans alongside the ledger/letter/revision artifacts; the report header notes how many retcon sources were traced. See [`docs/retcon-planning.md`](retcon-planning.md) §F3.
 
+## Cross-track boundary — finding dispositions are NOT lifecycle states
+
+The engine-level `declined`/`deferred` finding dispositions (`docs/finding-dispositions.md`) live in a **parallel sidecar map**, `execution.finding_dispositions`, never in `finding_states`: the enum stays exactly `{locked, delivered, revised}`, **E3 is unchanged**, and the fold's rank monotonicity is untouched. A declined Must-Fix *remains* `delivered` here — only the author's decision about it is recorded, in the overlay (a `declined` value in `finding_states` is still E3-invalid, by design). `finding-trace` reads dispositions **nowhere**; the disposition map's own integrity — record shape, phantom keys (the E2 pattern applied to the new map), marker/sidecar sync, the readiness caveat — is owned by the sibling `disposition-check` validator, and the governed log-side by `gate-state`.
+
 ## Out of scope (later increments)
 
 - **`deficit-lock` / `softness-check` by-ID consolidation.** Folding their residual prose heuristics fully onto IDs is a separate hardening pass.
