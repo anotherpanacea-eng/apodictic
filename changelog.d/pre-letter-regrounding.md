@@ -31,10 +31,14 @@ mandatory).
 - **New validator `validate.sh specificity-floor <editorial_letter> <findings_ledger> [--strict]`**
   (`scripts/specificity_floor.py`, mirrored ×2): the **count floor** (a finding whose ledger
   entry locks a count may not deliver a vague quantifier — `VAGUE_QUANTIFIERS`, pinned in one
-  module-level constant — with none of that count restored in its letter window; number-word
-  matching is case-insensitive, so a sentence-initial "Nine" satisfies a ledger "nine";
-  evidence-locator numbers like "sc. 30-31" are stripped so a scene number can't masquerade as a
-  restored count) and the **anchor floor** (each delivered Must-Fix window carries an evidence
+  module-level constant — with none of that count restored in its letter window; number-words
+  normalize to digit strings, case-insensitively, so a ledger "nine" and a letter "9" satisfy
+  each other in both directions and a sentence-initial "Nine" satisfies a ledger "nine";
+  evidence-locator numbers — "sc. 30-31", plural "scenes 30-31", a spelled-out "Chapter Nine" —
+  are stripped so a scene number can't masquerade as a restored count, with a ledger↔window
+  count-phrase rescue so a real count heading a count-noun phrase after a locator keyword
+  ("…scene 9 belief failures…") is never falsely eaten; an all-malformed ledger — finding blocks
+  present, zero parse — refuses with a named error instead of a vacuous pass) and the **anchor floor** (each delivered Must-Fix window carries an evidence
   reference matching the finding's locked `evidence_refs`, so a restored number rides a
   ledger-matching anchor). Both are blocking; the `<!-- regrounding: done -->` presence check is
   an advisory WARN (`--strict` promotes). Legitimately non-countable findings use an ID-scoped

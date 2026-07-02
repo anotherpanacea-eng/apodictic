@@ -13,21 +13,36 @@ change (those are Step 5 / Step 6b property, enforced elsewhere).
 
   Count floor    for each delivered finding ID, the finding's LEDGER ENTRY (the Notable Finding
                  prose sentence + its structured apodictic.finding.v1 block) is scanned for count
-                 tokens (digits 2-99 and number-words two..ninety-nine; matching is
-                 CASE-INSENSITIVE — a sentence-initial "Nine" satisfies a ledger "nine"). FAIL when
-                 that ledger entry carries >= 1 count token AND the finding's LETTER WINDOW carries
-                 a vague quantifier from VAGUE_QUANTIFIERS AND the window carries NONE of the
-                 ledger's count tokens — the decayed-to-vague case. Override: an ID-scoped
+                 tokens (integers 2-99; number-words two..ninety-nine are NORMALIZED to digit
+                 strings at extraction, so a ledger "nine" and a letter "9" are the SAME count
+                 token in both directions; matching is CASE-INSENSITIVE — a sentence-initial
+                 "Nine" satisfies a ledger "nine"). FAIL when that ledger entry carries >= 1 count
+                 token AND the finding's LETTER WINDOW carries a vague quantifier from
+                 VAGUE_QUANTIFIERS AND the window carries NONE of the ledger's count tokens — the
+                 decayed-to-vague case. Override: an ID-scoped
                  `<!-- override: specificity-floor F-... — <rationale> -->` (for legitimately
                  non-countable findings) + an Appendix B entry.
   Anchor floor   each delivered Must-Fix window must carry >= 1 evidence reference that
                  token-matches one of that finding's locked evidence_refs — so a restored number
-                 rides a ledger-matching anchor, bounding count-hallucination. Override: same
+                 rides a ledger-matching anchor, bounding count-hallucination. Chapter refs match
+                 on the chapter NUMBER, surface-form independent ("Chapter 12", "Ch.12", and a
+                 spelled-out "Chapter Twelve" all satisfy a ledger "Ch 12"). Override: same
                  ID-scoped marker.
-  Presence       the `<!-- regrounding: done -->` marker (letter) and the manifest's `regrounded`
-                 annotation are the bash-checkable degrade-path floor; here they surface as an
-                 ADVISORY W when the re-grounding step ran on a full-letter run but left no trace
-                 (never a hard FAIL — the count/anchor floors are the teeth; the marker is a hint).
+  Malformed      a ledger in which >= 1 apodictic:finding block appears but ZERO parse to a valid
+                 finding REFUSES with a named ERROR (malformed-ledger refusal, exit 1) instead of
+                 the vacuous "no ledger findings" pass — an all-malformed ledger must not silently
+                 disarm the floor. PARTIAL malformation (some blocks parse) proceeds on the parsed
+                 subset: per-block schema repair is structured-findings' gate (single ownership),
+                 and refusing here on a partial would double-enforce it.
+  Presence       the `<!-- regrounding: done -->` letter marker surfaces as an ADVISORY W when the
+                 re-grounding step ran on a full-letter run but left no trace (never a hard FAIL —
+                 the count/anchor floors are the teeth; the marker is a hint). The OTHER half of
+                 the spec's degrade-path presence pair — the manifest's `regrounded` annotation —
+                 is deliberately NOT checked here (as-built scope-down, docs/synthesis-regrounding.md
+                 §M2 as-built corrections): this validator's spec-pinned CLI receives no
+                 manifest/run-folder path, and synthesis_coverage.py is the manifest's ONLY parser
+                 (run-synthesis.md step 9b row grammar) — a second manifest parser here is exactly
+                 the dual-enforcer drift risk single ownership exists to prevent.
 
 NOT this validator's job (single-ownership, spec §M2.3): the reverse-direction
 letter-ID-must-exist-in-ledger check is `finding-trace` E1's — the sole owner. specificity-floor
@@ -84,35 +99,74 @@ VAGUE_QUANTIFIERS = ("several", "some", "many", "a few", "numerous", "various", 
                      "a number of", "a handful", "repeated", "repeatedly")
 
 # Number-words two..ninety-nine (the count range the floor cares about; "one" and 0/1 are not
-# counts worth restoring — a single belief failure does not decay to "several"). Case-insensitive
-# matching is applied at scan time, so these are stored lowercase.
-_ONES = {"two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
-         "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen",
-         "nineteen"}
-_TENS = {"twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"}
-# number-words as canonical count tokens: the ones/teens, the round tens, and "tens-ones"
-# ("twenty-one", "twenty one"). Built once; all lowercase.
-_NUMBER_WORDS = _ONES | _TENS | {
-    "%s%s%s" % (t, sep, o) for t in _TENS for o in
-    ("one", "two", "three", "four", "five", "six", "seven", "eight", "nine") for sep in ("-", " ")}
-
-# A count token in prose is either a 2-99 integer or one of the number-words above. \b word
-# boundaries keep "19" out of "1984"; "nine" matching inside "ninefold" is intentionally allowed
-# (the count survives) — we only care that SOME ledger count re-appears.
-_DIGIT_RE = re.compile(r"(?<!\d)([2-9]\d?)(?!\d)")            # 2..99, no leading/trailing digit
+# counts worth restoring — a single belief failure does not decay to "several"). NORMALIZED to
+# digit strings at extraction time, so a ledger "nine" and a letter "9" are the same canonical
+# count token — word<->digit equivalence in BOTH directions (a faithful "nine" -> "9" restoration
+# must never be a false FAIL). Case-insensitive; stored lowercase.
+_ONES = {"two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
+         "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14,
+         "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19}
+_TENS = {"twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70,
+         "eighty": 80, "ninety": 90}
+# word -> value map: the ones/teens, the round tens, and "tens-ones" ("twenty-one", "twenty one").
+_WORD_VALUES = dict(_ONES)
+_WORD_VALUES.update(_TENS)
+for _t, _tv in _TENS.items():
+    for _o, _ov in (("one", 1), ("two", 2), ("three", 3), ("four", 4), ("five", 5), ("six", 6),
+                    ("seven", 7), ("eight", 8), ("nine", 9)):
+        for _sep in ("-", " "):
+            _WORD_VALUES["%s%s%s" % (_t, _sep, _o)] = _tv + _ov
 _NUMBER_WORD_RE = re.compile(
-    r"\b(" + "|".join(sorted((re.escape(w) for w in _NUMBER_WORDS), key=len, reverse=True)) + r")\b",
+    r"\b(" + "|".join(sorted((re.escape(w) for w in _WORD_VALUES), key=len, reverse=True)) + r")\b",
     re.IGNORECASE)
 
-# Evidence-LOCATOR numbers are not semantic counts: "Ch 12", "sc. 30-31", "p. 40", "line 220",
-# "Pass 5", "Chapter 9". They must be stripped before count extraction, or a scene/page number in
-# the window would masquerade as a "restored count" and let a decayed "nine -> several" slip the
-# floor (the window "several belief failures (sc. 30-31)" would otherwise share {30,31} with the
-# ledger and pass). Applied to BOTH the ledger entry and the letter window, symmetrically.
+
+def _normalize_number_words(text):
+    """Replace every number-word token two..ninety-nine with its digit string ("nine" -> "9",
+    "Twenty-one" -> "21"), longest-first so compounds win over their parts. Applied BEFORE
+    locator stripping and count extraction, which buys three properties at once: word<->digit
+    count equivalence (ledger "nine" == letter "9"), spelled-out locators become strippable
+    ("Chapter Nine" -> "Chapter 9" -> locator-stripped, so it can never masquerade as a restored
+    count), and all downstream matching is single-form (digits only)."""
+    return _NUMBER_WORD_RE.sub(lambda m: str(_WORD_VALUES[m.group(1).lower()]), text or "")
+
+
+# A count token in prose is a 2-99 integer (after number-word normalization). The lookarounds
+# keep "19" out of "1984" and "220" from yielding "22"/"20" — a count is a WHOLE 1-2 digit
+# number, not a slice of a longer one.
+_DIGIT_RE = re.compile(r"(?<!\d)([1-9]\d|[2-9])(?!\d)")       # 2..99, no leading/trailing digit
+
+# Evidence-LOCATOR numbers are not semantic counts: "Ch 12", "sc. 30-31", "scenes 30-31", "p. 40",
+# "line 220", "Pass 5", "Chapter 9", "Chapter Nine" (normalized first). They must be stripped
+# before count extraction, or a scene/page number in the window would masquerade as a "restored
+# count" and let a decayed "nine -> several" slip the floor (the window "several belief failures
+# (sc. 30-31)" would otherwise share {30,31} with the ledger and pass). Every keyword accepts its
+# plural — "scenes 30-31" is as much a locator as "sc. 30-31". Applied to BOTH the ledger entry
+# and the letter window, symmetrically.
 _LOCATOR_RE = re.compile(
-    r"\b(?:ch(?:apter)?\.?|sc(?:ene)?\.?|p(?:ages?|p)?\.?|lines?|pass(?:es)?|vol(?:ume)?\.?"
-    r"|book|part|act|section|§)\s*\.?\s*\d+(?:\s*[–—-]\s*\d+)?",
+    r"\b(?:ch(?:apters?)?\.?|sc(?:enes?)?\.?|p(?:ages?|p)?\.?|lines?|pass(?:es)?"
+    r"|vol(?:umes?)?\.?|books?|parts?|acts?|sections?|§)\s*\.?\s*\d+(?:\s*[–—-]\s*\d+)?",
     re.IGNORECASE)
+
+# Count-phrase RESCUE channel (locator/count collision): in "in the confession scene 9 belief
+# failures cluster", the locator regex eats "scene 9" although the 9 is a real count heading a
+# count-noun phrase — which would false-FAIL a faithful restoration. The cheapest correct rule:
+# a number followed (optionally via one modifier word) by a plural head word ("9 belief failures",
+# "12 failures") is recorded as a (count, head) PHRASE from the raw un-stripped text, and a count
+# eaten by the locator strip is rescued iff the LEDGER entry and the letter window share the same
+# (count, head) phrase AND that count is one the ledger locks. Both-sides agreement is what keeps
+# the channel un-gameable-by-coincidence: a bare locator ("at scene 9", "sc. 30-31") produces no
+# phrase (no plural head follows), and an s-ending VERB after a locator ("Chapter 9 opens") can
+# only rescue if the ledger itself carries the same number+verb bigram as its count phrase —
+# never true of a real ledger count sentence. Phrases NEVER arm the floor (only safe ledger
+# counts do); they only un-eat a locator-consumed restoration.
+_COUNT_PHRASE_HEAD_RE = re.compile(r"(?<!\d)(\d{1,2})\s+([A-Za-z]{2,}s)\b")
+_COUNT_PHRASE_MOD_RE = re.compile(r"(?<!\d)(\d{1,2})\s+[A-Za-z]+\s+([A-Za-z]{2,}s)\b")
+
+# The one block-location regex, shared by ledger_entries (span -> section mapping) and the
+# malformed-ledger refusal counter (attempted vs parsed) — a single source so the two can never
+# disagree about what "a finding block" is.
+_FINDING_BLOCK_RE = re.compile(r"<!--\s*apodictic:finding\s*(.*?)\s*-->", re.DOTALL)
 
 # The letter cites a delivered finding with the pinned canonical HTML-comment form
 # `<!-- finding: F-... -->` (output-policy.md §Deficit Lock), placed at the END of the finding's
@@ -151,19 +205,33 @@ def _read(path):
 # ---------------------------------------------------------------- count-token extraction
 
 def count_tokens(text):
-    """The set of canonical SEMANTIC count tokens in `text`: integers 2-99 (as their str) and
-    number-words two..ninety-nine (normalized lowercase, spaces->hyphens so "twenty one" ==
-    "twenty-one"). Evidence-locator numbers (Ch 12, sc. 30-31, p. 40, Pass 5, line 220) are
-    stripped FIRST so a scene/page number never masquerades as a restored count. Case-insensitive.
-    Applied to BOTH the ledger entry and the letter window; a ledger count re-appears in the window
-    iff the two sets intersect."""
-    body = _LOCATOR_RE.sub(" ", text or "")
-    toks = set()
-    for m in _DIGIT_RE.finditer(body):
-        toks.add(m.group(1))
-    for m in _NUMBER_WORD_RE.finditer(body):
-        toks.add(m.group(1).lower().replace(" ", "-"))
-    return toks
+    """The set of canonical SEMANTIC count tokens in `text`: integers 2-99 as digit strings.
+    Number-words are normalized to digits FIRST ("nine" -> "9", so word and digit spellings are
+    one token — and a spelled-out locator "Chapter Nine" becomes "Chapter 9", strippable), THEN
+    evidence-locator numbers (Ch 12, sc. 30-31, scenes 30-31, p. 40, Pass 5, line 220) are
+    stripped so a scene/page number never masquerades as a restored count. Case-insensitive.
+    Applied to BOTH the ledger entry and the letter window; a ledger count re-appears in the
+    window iff the two sets intersect (or the count is rescued via a shared count phrase —
+    count_phrases below)."""
+    body = _LOCATOR_RE.sub(" ", _normalize_number_words(text))
+    return {m.group(1) for m in _DIGIT_RE.finditer(body)}
+
+
+def count_phrases(text):
+    """The set of (count_token, plural_head) phrases in `text`, extracted from the NORMALIZED but
+    UN-locator-stripped body: every whole 2-99 number followed by a plural-looking head word,
+    directly ("12 failures") or via one modifier word ("9 belief failures"). The count floor's
+    rescue channel for locator/count collisions ("...scene 9 belief failures..."): a phrase only
+    rescues when ledger and window AGREE on it (see check), so bare locators — no plural head —
+    contribute nothing, and the strip's masquerade protection stays intact."""
+    body = _normalize_number_words(text)
+    out = set()
+    for rx in (_COUNT_PHRASE_HEAD_RE, _COUNT_PHRASE_MOD_RE):
+        for m in rx.finditer(body):
+            num, head = m.group(1), m.group(2).lower()
+            if 2 <= int(num) <= 99 and not head.endswith("ss"):
+                out.add((num, head))
+    return out
 
 
 def has_vague_quantifier(text):
@@ -219,7 +287,7 @@ def ledger_entries(ledger_text):
 
     # Each finding block, located by its own span; the id is parsed from that span's payload so
     # span and id always belong to the same block (no cross-list zip).
-    for mo in re.finditer(r"<!--\s*apodictic:finding\s*(.*?)\s*-->", ledger_text, re.DOTALL):
+    for mo in _FINDING_BLOCK_RE.finditer(ledger_text):
         try:
             obj = json.loads(mo.group(1).strip())
         except (ValueError, TypeError):
@@ -233,6 +301,34 @@ def ledger_entries(ledger_text):
         entry = section_of_offset(mo.start())
         entries[fid] = (entries.get(fid, "") + "\n" + entry) if fid in entries else entry
     return entries
+
+
+def ledger_parse_stats(ledger_text):
+    """(attempted, parsed): finding-typed blocks SEEN in the ledger vs blocks that parse to a
+    dict carrying a valid finding id. Drives the malformed-ledger refusal: attempted >= 1 with
+    parsed == 0 means the ledger is non-empty but the floor would silently disarm — refuse,
+    never a vacuous pass. Classification is on parsed payloads (json.loads per block /
+    art.parse_blocks), not raw marker text (meta-lint M2)."""
+    attempted = parsed = 0
+    if not ledger_text:
+        return 0, 0
+    if art is not None:
+        for bt, obj, _e in art.parse_blocks(ledger_text):
+            if bt != "finding":
+                continue
+            attempted += 1
+            if isinstance(obj, dict) and art.fid_key(obj.get("id")):
+                parsed += 1
+        return attempted, parsed
+    for mo in _FINDING_BLOCK_RE.finditer(ledger_text):
+        attempted += 1
+        try:
+            obj = json.loads(mo.group(1).strip())
+        except (ValueError, TypeError):
+            continue
+        if isinstance(obj, dict) and isinstance(obj.get("id"), str) and obj["id"].strip():
+            parsed += 1
+    return attempted, parsed
 
 
 def ledger_severities(ledger_text):
@@ -295,9 +391,10 @@ def letter_windows(letter_text):
 
 def _window_chapters(text):
     """The set of chapter NUMBERS named anywhere in `text` (any surface form — "Chapter 9",
-    "Ch 12", "Ch.3", "ch 4"). Compared against a ref's normalized chapter number, so the anchor
-    floor matches on the chapter the ledger locked regardless of how the letter spelled it."""
-    return {int(m.group(1)) for m in _WINDOW_CH_RE.finditer(text or "")}
+    "Ch 12", "Ch.3", "ch 4", and via number-word normalization "Chapter Twelve"). Compared
+    against a ref's normalized chapter number, so the anchor floor matches on the chapter the
+    ledger locked regardless of how the letter spelled it."""
+    return {int(m.group(1)) for m in _WINDOW_CH_RE.finditer(_normalize_number_words(text))}
 
 
 def ref_token_match(window_text, refs):
@@ -332,6 +429,22 @@ def check(letter_text, ledger_text, strict=False):
 
     sev = ledger_severities(ledger_text)
     if not sev:
+        attempted, parsed = ledger_parse_stats(ledger_text)
+        if attempted and not parsed:
+            # ALL-malformed ledger: finding blocks exist but none parse. A vacuous "no ledger
+            # findings" PASS here would let a corrupted ledger silently disarm the floor —
+            # refuse instead. (Partial malformation — some blocks parse — proceeds on the
+            # parsed subset below: per-block repair is structured-findings' gate, single
+            # ownership, and this refusal only covers the floor-disarming ALL-malformed case.)
+            return 1, [
+                "specificity-floor: %d apodictic:finding block(s) in the ledger, 0 parsed"
+                % attempted,
+                "  ERROR: malformed-ledger refusal — the findings ledger is non-empty but ZERO "
+                "finding blocks parse to a valid apodictic.finding.v1 record, so the specificity "
+                "floor has nothing to hold the letter to and will not issue a vacuous PASS. Fix "
+                "the ledger (validate.sh structured-findings owns per-block schema repair) and "
+                "re-run.",
+                "specificity-floor: FAIL (1 error(s))"]
         return 0, ["specificity-floor: no ledger findings found — nothing to hold to specificity"]
 
     entries = ledger_entries(ledger_text)
@@ -353,7 +466,13 @@ def check(letter_text, ledger_text, strict=False):
         if ledger_counts:
             window_counts = count_tokens(window)
             vague = has_vague_quantifier(window)
-            if vague and not (ledger_counts & window_counts):
+            # Rescue channel (locator/count collision): a restored count eaten by the locator
+            # strip ("...in the confession scene 9 belief failures cluster...") is honored iff
+            # the ledger entry and the window share the same (count, plural-head) phrase AND the
+            # count is one the ledger locks. Phrases never ARM the floor — only safe ledger
+            # counts do — so this can only un-eat a real restoration, never widen enforcement.
+            rescued = {n for (n, _h) in (count_phrases(entry) & count_phrases(window))}
+            if vague and not (ledger_counts & (window_counts | rescued)):
                 errs.append("count floor: %s — the ledger locks count(s) {%s} but the delivered "
                             "window says %r with no restored count (re-grounding must restore the "
                             "exact number, not decay it to a vague quantifier). Override with "
@@ -598,9 +717,103 @@ def run_self_test():
     code, lines = check(no_count, _LEDGER)
     chk("no_ledger_count_no_fire", code == 0)
 
-    # 17. empty ledger -> nothing to trace
+    # 17. empty ledger -> nothing to trace (no finding blocks at all: graceful, NOT the
+    #     malformed-ledger refusal — that needs blocks present, see 23)
     code, lines = check(green, "# empty ledger\n")
     chk("empty_ledger_noop", code == 0 and out_has(lines, "nothing to hold"))
+
+    # 18. TEEN COUNT (matcher P2-1): _DIGIT_RE must cover 10-19 — a ledger "12 belief failures"
+    #     decayed to "several" is a count-floor FAIL, and the restored "12" passes.
+    led_teen = _LEDGER.replace("nine\nbelief", "12\nbelief")
+    teen_decay = _letter(
+        "The book works.",
+        "The Ch 12 confession triggers several belief failures (sc. 30-31). "
+        "<!-- finding: F-P5-01 -->")
+    code, lines = check(teen_decay, led_teen)
+    chk("teen_decay_fail", code == 1 and out_has(lines, "count floor") and out_has(lines, "12"))
+    teen_ok = _letter(
+        "The book works.",
+        "The Ch 12 confession triggers 12 belief failures (sc. 30-31). <!-- finding: F-P5-01 -->")
+    chk("teen_restored_pass", check(teen_ok, led_teen)[0] == 0)
+
+    # 19. PLURAL LOCATORS (matcher P2-2): "scenes 30-31" / "chapters 30-31" / "sections 40-41"
+    #     are locators — their numbers must be stripped on BOTH sides, so a decayed window can't
+    #     borrow them as "restored counts" when the ledger prose uses the same plural spelling.
+    led_plural = _LEDGER.replace("(sc. 30-31)", "(scenes 30-31)")
+    plural_decay = _letter(
+        "The book works.",
+        "The Ch 12 confession triggers several belief failures (scenes 30-31). "
+        "<!-- finding: F-P5-01 -->")
+    code, lines = check(plural_decay, led_plural)
+    chk("plural_scenes_fail", code == 1 and out_has(lines, "count floor"))
+    plural_more = _letter(
+        "The book works.",
+        "The Ch 12 confession triggers several belief failures across chapters 30-31 and "
+        "sections 40-41. <!-- finding: F-P5-01 -->")
+    code, lines = check(plural_more, led_plural)
+    chk("plural_chapters_sections_fail", code == 1 and out_has(lines, "count floor"))
+
+    # 20. WORD<->DIGIT EQUIVALENCE (matcher P2-3), both directions: a faithful restoration in
+    #     the other spelling (+ an incidental vague word elsewhere in the window) must PASS.
+    word_to_digit = _letter(
+        "The book works.",
+        "The Ch 12 confession triggers 9 belief failures (sc. 30-31), echoed in several "
+        "smaller beats. <!-- finding: F-P5-01 -->")
+    chk("word_ledger_digit_letter_pass", check(word_to_digit, _LEDGER)[0] == 0)
+    led_digit9 = _LEDGER.replace("nine\nbelief", "9\nbelief")
+    digit_to_word = _letter(
+        "The book works.",
+        "The Ch 12 confession triggers Nine belief failures (sc. 30-31), echoed in several "
+        "smaller beats. <!-- finding: F-P5-01 -->")
+    chk("digit_ledger_word_letter_pass", check(digit_to_word, led_digit9)[0] == 0)
+
+    # 21. LOCATOR/COUNT COLLISION (matcher P3-1), both fixtures: (a) a real count heading a
+    #     count-noun phrase right after a locator keyword ("...scene 9 belief failures...") is
+    #     RESCUED via the shared ledger<->window count phrase — no false FAIL; (b) a bare
+    #     locator number ("at scene 9") still never counts as a restoration.
+    collision_ok = _letter(
+        "The book works.",
+        "In the confession scene 9 belief failures cluster (Ch 12, sc. 30-31), echoed in "
+        "several smaller beats. <!-- finding: F-P5-01 -->")
+    chk("locator_count_rescued_pass", check(collision_ok, _LEDGER)[0] == 0)
+    bare_locator = _letter(
+        "The book works.",
+        "The confession triggers several belief failures at scene 9 (Ch 12). "
+        "<!-- finding: F-P5-01 -->")
+    code, lines = check(bare_locator, _LEDGER)
+    chk("bare_locator_no_credit_fail", code == 1 and out_has(lines, "count floor"))
+
+    # 22. SPELLED-OUT LOCATOR (matcher P3-2): "Chapter Nine" normalizes to "Chapter 9" and is
+    #     stripped as a locator — its "Nine" must NOT masquerade as the restored ledger count.
+    spelled_locator = _letter(
+        "The book works.",
+        "The Chapter Nine confession triggers several belief failures (Ch 12, sc. 30-31). "
+        "<!-- finding: F-P5-01 -->")
+    code, lines = check(spelled_locator, _LEDGER)
+    chk("spelled_locator_no_credit_fail", code == 1 and out_has(lines, "count floor"))
+
+    # 23. MALFORMED-LEDGER REFUSAL (matcher P3-4): finding blocks present but ZERO parse ->
+    #     named ERROR, exit 1 — never a vacuous "no ledger findings" PASS. Partial malformation
+    #     (one broken sibling + one good block) proceeds on the parsed subset (single ownership:
+    #     per-block repair is structured-findings').
+    all_malformed = (
+        "# Findings Ledger\n\n## Mechanism: X\n\n### Notable Findings\n\nnine belief failures.\n\n"
+        '<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"F-P5-01",  BROKEN\n-->\n')
+    code, lines = check(green, all_malformed)
+    chk("all_malformed_refused", code == 1 and out_has(lines, "malformed-ledger refusal"))
+    partial_malformed = _LEDGER + (
+        '\n<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"F-P9-77",  BROKEN\n-->\n')
+    chk("partial_malformed_proceeds", check(green, partial_malformed)[0] == 0)
+
+    # 24. CHAPTER SURFACE FORMS (matcher P3-7): the anchor floor matches on the chapter NUMBER,
+    #     independent of the letter's spelling — "Chapter 12", "Ch.12", and the spelled-out
+    #     "Chapter Twelve" all satisfy the locked ref "Ch 12 (sc. 30-31)".
+    for surface in ("Chapter 12", "Ch.12", "Chapter Twelve"):
+        anchored = _letter(
+            "The book works.",
+            "The %s confession triggers nine belief failures. <!-- finding: F-P5-01 -->" % surface)
+        chk("anchor_surface_%s" % surface.replace(" ", "_").replace(".", ""),
+            check(anchored, _LEDGER)[0] == 0)
 
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
