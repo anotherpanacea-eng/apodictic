@@ -7,6 +7,7 @@
     "audit_invocation_log": "*_Audit_Invocation_Log_*.md",
     "editorial_letter":     ["*_Core_DE_Synthesis_*.md", "*_Full_DE_*.md", "*_Editorial_Letter_*.md"],
     "revision_report":      "*_Revision_Report_*.md",
+    "refutation_record":    "*_Refutation_Record_*.md",
     "sidecar":              "Diagnostic_State.meta.json"
   },
   "phases": {
@@ -41,7 +42,11 @@
           {"validator": "softness-check",            "targets": ["editorial_letter", "findings_ledger"]},
           {"validator": "tone-check",                "targets": ["editorial_letter"]},
           {"validator": "synthesis-coverage",        "targets": ["run_folder"],
-           "$comment": "Synthesis coverage disclosure, M1 (docs/synthesis-regrounding.md). Launch posture per the operator call folded 2026-07-01: the V2/V3/V4 fiction-checks exit 1 (gate BLOCKED) day one; V1/V5 print WARN at exit 0 (gate pass-with-warn) — the overall gate is advisory-first for one release. The flip to blocking lands by promoting the validator's --strict behavior to the default once real runs confirm the D1-D4 degrade thresholds don't over-fire."}
+           "$comment": "Synthesis coverage disclosure, M1 (docs/synthesis-regrounding.md). Launch posture per the operator call folded 2026-07-01: the V2/V3/V4 fiction-checks exit 1 (gate BLOCKED) day one; V1/V5 print WARN at exit 0 (gate pass-with-warn) — the overall gate is advisory-first for one release. The flip to blocking lands by promoting the validator's --strict behavior to the default once real runs confirm the D1-D4 degrade thresholds don't over-fire."},
+          {"validator": "refutation-coverage",       "targets": ["editorial_letter", "findings_ledger", "refutation_record"]},
+          {"validator": "refutation-evidence",       "targets": ["refutation_record"],
+           "$comment": "Finding disconfirmation V2 (docs/finding-disconfirmation.md §8). The gate row passes only the record: the validator resolves each record's snapshot_path beside the record (realpath-contained, read-only) and auto-requires the snapshot when the folder holds a *_Core_DE_Synthesis_*/*_Full_DE_Synthesis_* letter — the same run-shape rule as the explicit Step 10 `--require-snapshot` invocation, so a core-de/full-de run with a missing snapshot BLOCKS here too; elsewhere missing = WARN (pass-with-warn) with every demotion in the record void."},
+          {"validator": "refutation-write-scope",    "targets": ["findings_ledger", "refutation_record"]}
         ],
         "attested": [
           {"id": "spot-a1", "text": "each root cause cites >= 1 specific ledger finding (findings integration)"},
