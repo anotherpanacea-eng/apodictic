@@ -104,7 +104,7 @@ def _read(path):
     try:
         with open(path, encoding="utf-8") as fh:
             return fh.read()
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return None
 
 
@@ -371,6 +371,15 @@ def run_self_test():
         print("  %s: %s" % (name, "OK" if cond else "FAIL"))
         if not cond:
             rc["v"] = 1
+
+    # non-UTF8 artifact: _read must degrade to the unreadable path (None), never
+    # a traceback (the disposition_check adjacent-exception class, swept repo-wide)
+    import tempfile as _tf
+    _fd, _nu = _tf.mkstemp(suffix=".md")
+    with os.fdopen(_fd, "wb") as _fh:
+        _fh.write(b"\xff\xfenot utf-8\xff")
+    chk("non_utf8_read_returns_none", _read(_nu) is None)
+    os.unlink(_nu)
 
     def item(rid, target="T1", kind="setup-debt", mut="free", rtype="dramatic",
              iclass="plant a recontextualizable detail", disp="author seeds it",

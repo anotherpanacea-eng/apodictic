@@ -46,7 +46,7 @@ def _read_json(path):
     try:
         with open(path, encoding="utf-8") as fh:
             return json.load(fh)
-    except (OSError, json.JSONDecodeError):
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
         return None
 
 
@@ -112,6 +112,14 @@ def run_self_test():
         print("  %s: %s" % (name, "OK" if cond else "FAIL"))
         if not cond:
             rc["v"] = 1
+
+    # non-UTF8 sidecar: _read_json must degrade to the unreadable path (None), never
+    # a traceback (the disposition_check adjacent-exception class, swept repo-wide)
+    _fd, _nu = tempfile.mkstemp(suffix=".json")
+    with os.fdopen(_fd, "wb") as _fh:
+        _fh.write(b"\xff\xfenot utf-8\xff")
+    chk("non_utf8_read_json_returns_none", _read_json(_nu) is None)
+    os.unlink(_nu)
 
     def node(sidecar, project_root=None, run_folder=None):
         return derive_node(sidecar, project_root=project_root, run_folder=run_folder)[0]
