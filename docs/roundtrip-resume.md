@@ -1,6 +1,7 @@
 # One-Click Round-Trip Resume at `/start`'s `revising` node — build spec (apodictic)
 
-**Status:** spec, decision-complete; spec-review pass 1 folded 2026-07-01 (verdict: BUILD-READY-WITH-FIXES, 0 P1) → build. **Estimate:** 1–2 build sessions, single PR (two increments as commits). **Owner of the decision:** editorial.
+**Status:** **Built** (2026-07-01, this PR — `reanchor.py disposition` + `validate.sh roundtrip-disposition` RT1–RT4/W1 + `rev-a4` + the `/start` revising/diagnosed offers; spec-review pass 1 folded, BUILD-READY-WITH-FIXES 0 P1; Opus build-review READY-TO-PR, 0 P1/P2, 1 P3 folded; Codex review P2 folded — RT4 partition coverage closes the omitted-row hole). **Estimate:** 1–2 build sessions, single PR (two increments as commits). **Owner of the decision:** editorial.
+<!-- built-when: plugins/apodictic/skills/core-editor/references/example-roundtrip-disposition.md -->
 **Provenance:** merged candidate — Fable "revision-round diff ingestion" re-scoped down after code
 verification + Opus 4.8 "close the last mile" (whose scoping the code supports).
 
@@ -108,6 +109,7 @@ compares: <prior runlabel> → <this runlabel>
 | **RT1 — recompute alignment** | ERROR | Every disposition row's `finding_id` exists in the prior manifest's RA3 partition (recomputed live, never trusted from the record), and its recorded `anchor=` class equals the recomputed class; `regression=` (when not `none`) equals the recomputed crossref class. No stale or fabricated evidence classes. The `compares:` header names the actual prior/this runlabels. |
 | **RT2 — confirmation record present** | ERROR | Any row with a decision other than `pending` requires the file-level `<!-- disposition-confirmed: … -->` token. **This is the disposition-write gate the stub demands:** no confirmed disposition exists on the record without the recorded token. Validator output wording (per the Honesty note): "record of confirmation present and consistent" — the validator must **never** print "operator confirmed". |
 | **RT3 — confirmed-writes-only** | ERROR | When a disposition record exists in the run folder, every `<!-- resolved: F-… -->` marker in that folder's Revision Report(s) corresponds to a `decision=confirm-resolved` row. The aggregation mechanism is `finding_trace.resolved_cited_ids()` (`finding_trace.py:130`) accumulated over completion artifacts (the `resolved_ids |= resolved_cited_ids(ct)` loop, `finding_trace.py:202-203`). **Integration contract: import/reuse `resolved_cited_ids` (or the module's `_RESOLVED_RE` marker regex) — do not reimplement the marker parse.** A resolved marker whose finding the record left `pending`/`keep-open` — i.e. an auto-close — is the ERROR this whole spec exists to prevent. |
+| **RT4 — partition coverage** | WARN (ERROR `--strict`) | Every finding id in the recomputed RA3 partition has a disposition row, missing ids reported by id. A record that **exists** is a round-close record (carry-only exit (a) writes no record at all), so a row omitted from it is a finding silently dropped from round-close review — without this check a partial record validates clean even under `--strict` (Codex review P2). WARN by default (a record may be drafted incrementally within a session, the W1 staging posture); `--strict` gates it at round close. |
 | **W1 — unadjudicated / staged** | WARN (ERROR `--strict`) | Rows still `pending`, or `confirm-resolved` rows not yet reflected as resolved markers (work stages across sessions — the finding-trace advisory lesson). `--strict` gates them at round close. |
 
 **Honesty note (bash-validator ceiling):** RT2 cannot prove a human confirmed — it proves the *record* of confirmation exists and is consistent. The human-in-the-loop enforcement layers: the orchestrator instruction (token only after per-row review), rev-a4 (the operator personally attests it at `gate --attest`, the existing attestation surface for exactly this kind of claim), and RT3 (the write-path consistency check). This matches the repo's attestation posture — `gate --attest` is already the operator-confirmation mechanism of record.
@@ -126,9 +128,9 @@ compares: <prior runlabel> → <this runlabel>
 
 ## Fixture / self-test plan
 
-- **`reanchor.py disposition --self-test` cases** (join `--self-test-all` via the existing dispatcher): absent-record no-op PASS; aligned record PASS; RT1 wrong-class + unknown-id FAIL; RT2 decided-rows-no-token FAIL; RT3 resolved-marker-without-confirm-resolved FAIL; W1 pending rows WARN, ERROR under `--strict`.
+- **`reanchor.py disposition --self-test` cases** (join `--self-test-all` via the existing dispatcher): absent-record no-op PASS; aligned record PASS; RT1 wrong-class + unknown-id FAIL; RT2 decided-rows-no-token FAIL; RT3 resolved-marker-without-confirm-resolved FAIL; RT4 omitted-row WARN naming the missing id, ERROR under `--strict`; W1 pending rows WARN, ERROR under `--strict`.
 - **Canonical fixture:** `example-roundtrip-disposition.md` + a companion minimal Revision Report, committed under `plugins/apodictic/skills/core-editor/references/` beside the fixtures the glue chain already uses. Its rows must be **recompute-consistent** with `example-annotated-manuscript` × `example-reanchor-revised.md` (anchor classes) and `example-run-folder-r2` (crossref classes) — build it by running the chain once and confirming by hand.
-- **`--check-all` step (extends the round-trip glue chain temp-copy block, validate.sh:597-647):** copy the fixture pair into the temp folder, run `roundtrip-disposition`, assert PASS; then the **hostile arm** (AGENTS.md review practice): a token-stripped copy must FAIL RT2, and a copy with an extra unconfirmed `<!-- resolved: … -->` marker must FAIL RT3. Assert exit codes + grep the RT ids in stdout (the reanchor-fixture pattern at validate.sh:584-591).
+- **`--check-all` step (extends the round-trip glue chain temp-copy block, validate.sh:597-647):** copy the fixture pair into the temp folder, run `roundtrip-disposition`, assert PASS; then the **hostile arms** (AGENTS.md review practice): a token-stripped copy must FAIL RT2, a copy with an extra unconfirmed `<!-- resolved: … -->` marker must FAIL RT3, and a copy with one finding's disposition row dropped must WARN RT4 by default (exit 0, missing id named) and FAIL under `--strict`. Assert exit codes + grep the RT ids in stdout (the reanchor-fixture pattern at validate.sh:584-591).
 - Full gate: `bash scripts/validate.sh --check-all` green, both mirrors byte-identical (`check-mirror`).
 
 ## Failure modes & guards
@@ -142,6 +144,7 @@ compares: <prior runlabel> → <this runlabel>
 | Round-trip run on a rewrite that needs fresh analysis | Step 1 reset check (the §When to Reset triggers) runs **before** the chain |
 | `emit` clobbering prior-round artifacts | Always `-o <new_run_folder>` (anchor correction #1); emit's own realpath escape guard stays |
 | Model self-confirms the token | Layered: orchestrator instruction + rev-a4 human attestation + RT3 consistency (see §Honesty note) |
+| Partial record — inconvenient findings omitted from the table validate clean | RT4 partition coverage: every recomputed RA3 partition id must have a row, missing ids named; WARN default, ERROR `--strict` at round close (Codex review P2 fold) |
 
 ## Non-goals
 

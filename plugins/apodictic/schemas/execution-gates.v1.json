@@ -59,7 +59,8 @@
         "attested": [
           {"id": "rev-a1", "text": "delta scan complete — each prior finding sorted into resolved / still-present / new"},
           {"id": "rev-a2", "text": "every confirmed-resolved finding carries an explicit <!-- resolved: <id> --> marker in the revision report"},
-          {"id": "rev-a3", "text": "declined items are recorded, not silently re-flagged"}
+          {"id": "rev-a3", "text": "declined items are recorded, not silently re-flagged"},
+          {"id": "rev-a4", "text": "when a *_Roundtrip_Disposition_* record exists in the run folder, every disposition was confirmed by the author — no vanished-anchor auto-close"}
         ]
       },
       "allowed_next": ["run_synthesis"]
