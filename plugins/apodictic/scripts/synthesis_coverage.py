@@ -37,8 +37,11 @@ Checks (spec §M1.5):
   V5 degrade         `ok|degraded` is RECOMPUTED from the manifest + sidecar + ledger per the
                      D1-D4 truth table below; a run that computes degraded but declares ok FAILS
                      (masking fails louder than degrading), and a degraded run must carry the
-                     pinned Short Version sentence. Normal multi-agent outline-mediated coverage
-                     is NOT degraded — that is the architecture working as designed.
+                     pinned degrade sentence in the reader-facing summary section — "The Short
+                     Version", or the "Editor Brief" that REPLACES it in editor-scaffolding
+                     letters (`<!-- mode: editor-scaffolding -->`, run-synthesis.md §Operator
+                     mode). Normal multi-agent outline-mediated coverage is NOT degraded — that
+                     is the architecture working as designed.
 
   D1  any artifact row `status: absent`                                  (all modes)
   D2  a synthesis-bound (Must-Fix/Should-Fix) ledger finding covered by no `verbatim` origin-pass
@@ -111,6 +114,12 @@ _MARKER_RE = re.compile(r"^<!-- coverage: (ok|degraded) -->\s*$")
 _NOTE_HEADING_RE = re.compile(r"^#{2,4}\s+Synthesis Coverage\s*$")
 _HEADING_RE = re.compile(r"^#{1,4}\s")
 _SHORT_VERSION_RE = re.compile(r"^#{1,4}\s.*The Short Version", re.IGNORECASE)
+# Editor-scaffolding letters (run-synthesis.md §Operator mode) REPLACE "The Short Version" with
+# an "Editor Brief" — same slot, same reader-facing-summary function. The mode is declared by
+# the marker editor_scaffolding.py already keys conditional enforcement on; V5's degrade-sentence
+# anchor branches on it so a correctly-degraded, correctly-disclosed scaffolded letter passes.
+_EDITOR_MODE_RE = re.compile(r"<!--\s*mode:\s*editor-scaffolding\s*-->", re.IGNORECASE)
+_EDITOR_BRIEF_RE = re.compile(r"^#{1,4}\s.*Editor Brief", re.IGNORECASE)
 
 _LETTER_GLOBS = ("*_Core_DE_Synthesis_*.md", "*_Full_DE_Synthesis_*.md")
 _LETTER_RE = re.compile(r"^(?P<project>.+?)_(?:Core|Full)_DE_Synthesis_(?P<runlabel>.+)\.md$")
@@ -604,10 +613,20 @@ def check_run_folder(run_folder, strict=False):
                 add("V5", "letter declares 'degraded' but no D1-D4 condition fires — the "
                     "recomputed state is 'ok' (boy-who-cried-degraded erodes the note)")
         if computed == "degraded":
-            sv = _section_text(stripped_lines, _SHORT_VERSION_RE)
+            # The check stays SECTION-scoped (not a whole-body search): the sentence's job is to
+            # surface the degrade in the summary paragraph the reader actually reads, and a
+            # body-wide search would let it hide in Appendix C — where coverage prose already
+            # lives ("body is canonical; appendices hold evidence"). Editor-scaffolding letters
+            # replace The Short Version with the Editor Brief, so the anchor branches on the
+            # letter's mode marker (scanned code-span-stripped, like every marker here).
+            scaffolded = any(_EDITOR_MODE_RE.search(ln) for ln in stripped_lines)
+            summary_re = _EDITOR_BRIEF_RE if scaffolded else _SHORT_VERSION_RE
+            summary_name = "Editor Brief" if scaffolded else "Short Version"
+            sv = _section_text(stripped_lines, summary_re)
             if sv is None or SENT_DEGRADED not in sv:
-                add("V5", "coverage is degraded but the pinned Short Version sentence is "
-                    "missing: %r (body is canonical; appendices hold evidence)" % SENT_DEGRADED)
+                add("V5", "coverage is degraded but the pinned %s sentence is "
+                    "missing: %r (body is canonical; appendices hold evidence)"
+                    % (summary_name, SENT_DEGRADED))
 
     # ---- report ----
     lines.append("synthesis-coverage: letter=%s manifest=%s mode=%s provenance=%s declared=%s"
@@ -668,19 +687,23 @@ def _table(rows):
 
 
 def _letter(mode="hybrid", marker="ok", rows=_GREEN_ROWS, short_extra="", note_rows=None,
-            util_note=None, extra_tail=""):
+            util_note=None, extra_tail="", scaffold=False):
     prov = SENT_DECLARED if mode == "single-agent" else SENT_DISPATCH
     span_prose = ("full manuscript nominally in context (estimated context utilization %s%% "
                   "per preflight)." % util_note) if util_note is not None else \
         "In active context at letter time: the verification excerpts above."
-    return "\n".join([
+    title_block = [
         "# Development Edit: MyBook",
         "### A. Author | 118,000 words | Draft 3",
         "*APODICTIC Development Editor v2 — 2026-07-01*",
+    ]
+    if scaffold:  # editor-scaffolding: mode marker near the title block (run-synthesis.md:297)
+        title_block.append("<!-- mode: editor-scaffolding -->")
+    return "\n".join(title_block + [
         "",
         "<!-- coverage: %s -->" % marker,
         "",
-        "## The Short Version",
+        "## Editor Brief" if scaffold else "## The Short Version",
         "",
         "The book works; targeted revision. " + short_extra,
         "",
@@ -1043,6 +1066,24 @@ def run_self_test():
     code, lines = check_run_folder(d)
     chk("multi_agent_utilization_v3", code == 1 and out_has(lines, "ERROR V3")
         and out_has(lines, "single-agent only"))
+
+    # 35. editor-scaffolding letter family (fixture 16 with the mode marker): the Editor Brief
+    #     replaces The Short Version, pinned sentence at its end -> V5 satisfied, clean --strict
+    d = build(manifest_rows=deg_rows, extra_files=deg_extra,
+              letter=_letter(marker="degraded", rows=deg_rows, short_extra=SENT_DEGRADED,
+                             scaffold=True),
+              sidecar=_sidecar(coverage="degraded", rows=deg_rows))
+    code, lines = check_run_folder(d, strict=True)
+    chk("scaffold_degraded_disclosed_pass", code == 0 and out_has(lines, "coverage: degraded"))
+
+    # 36. scaffolded degraded letter MISSING the sentence still draws V5 (naming Editor Brief)
+    d = build(manifest_rows=deg_rows, extra_files=deg_extra,
+              letter=_letter(marker="degraded", rows=deg_rows, scaffold=True),
+              sidecar=_sidecar(coverage="degraded", rows=deg_rows))
+    code, lines = check_run_folder(d)
+    chk("scaffold_missing_sentence_v5", code == 0 and out_has(lines, "WARN V5")
+        and out_has(lines, "Editor Brief"))
+    chk("scaffold_missing_sentence_strict_fails", check_run_folder(d, strict=True)[0] == 1)
 
     for d in made:
         shutil.rmtree(d, ignore_errors=True)

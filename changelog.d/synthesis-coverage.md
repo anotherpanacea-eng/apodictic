@@ -17,7 +17,9 @@ M2, pre-letter re-grounding, ships separately).
 - **Coverage note in the letter:** a required `### Synthesis Coverage` subsection of Appendix C
   (no 15th top-level section; `synthesis-sections` untouched), a
   `<!-- coverage: ok|degraded -->` machine marker on the first non-blank line after the title
-  block, and a pinned Short Version sentence when degraded. "Degraded" is recomputed from the
+  block, and a pinned degrade sentence in the reader-facing summary section when degraded (The
+  Short Version — or the Editor Brief that replaces it in editor-scaffolding letters, which swap
+  that section out). "Degraded" is recomputed from the
   manifest per an exhaustive D1-D4 truth table, relative to the mode's own baseline — normal
   multi-agent outline-mediated coverage is *not* degraded.
 - **Additive sidecar object** `synthesis_coverage` in `Diagnostic_State.meta.json`
