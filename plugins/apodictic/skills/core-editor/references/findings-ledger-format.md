@@ -133,6 +133,8 @@ The same `<!-- apodictic:<type> { ... } -->` envelope carries two companion reco
 - **`apodictic.audit_trigger.v1`** — for the Audit Triggers section. Fields: `schema`, `audit` (use the registry name in `audit-routing-table.md` where applicable), `evidence`, `recommendation` (run | recommend | defer).
 - **`apodictic.readiness.v1`** — for readiness verdicts (Pass 11 / submission readiness). Fields: `schema`, `dimension`, `verdict`, `rationale`.
 
+The envelope also carries the **Refutation Record**'s blocks — `apodictic.refutation.v1` (one per disconfirmation attempt) and `apodictic.refutation_budget.v1` (exactly one per record) — which live in `[Project]_Refutation_Record_[runlabel].md`, **never in this ledger** (write-scope isolation: the pass's only ledger effect is the synthesis agent's confidence transcription; see `run-synthesis.md §Step 6b`). Validated by the same helper via `scripts/refutation_check.py`.
+
 The **ledger entry** as a whole has no separate JSON wrapper: its structured representation is the set of finding / audit-trigger blocks it contains, mirrored into the `findings[]` / `audit_triggers[]` / `readiness[]` arrays of `Diagnostic_State.meta.json` (where `findings[]` severities must tally to `triage_summary`). This pairs the artifact with a mechanical validator per the Pass-10-Class discipline.
 
 ---
