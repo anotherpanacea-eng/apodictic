@@ -39,7 +39,9 @@
           {"validator": "underdiagnosis-triggers",   "targets": ["editorial_letter"]},
           {"validator": "structured-findings",       "targets": ["editorial_letter"]},
           {"validator": "softness-check",            "targets": ["editorial_letter", "findings_ledger"]},
-          {"validator": "tone-check",                "targets": ["editorial_letter"]}
+          {"validator": "tone-check",                "targets": ["editorial_letter"]},
+          {"validator": "synthesis-coverage",        "targets": ["run_folder"],
+           "$comment": "Synthesis coverage disclosure, M1 (docs/synthesis-regrounding.md). Launch posture per the operator call folded 2026-07-01: the V2/V3/V4 fiction-checks exit 1 (gate BLOCKED) day one; V1/V5 print WARN at exit 0 (gate pass-with-warn) — the overall gate is advisory-first for one release. The flip to blocking lands by promoting the validator's --strict behavior to the default once real runs confirm the D1-D4 degrade thresholds don't over-fire."}
         ],
         "attested": [
           {"id": "spot-a1", "text": "each root cause cites >= 1 specific ledger finding (findings integration)"},

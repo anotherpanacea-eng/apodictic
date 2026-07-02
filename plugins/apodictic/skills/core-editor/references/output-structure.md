@@ -148,6 +148,7 @@ Use these filenames within run folders:
 - `[Project]_Pass5_Character_Audit_[runlabel].md`
 - `[Project]_Pass8_Reveal_Economy_[runlabel].md`
 - `[Project]_Findings_Ledger_[runlabel].md`
+- `[Project]_Synthesis_Read_Manifest_[runlabel].md` — artifact-read manifest written **before** the editorial letter (by the parent orchestrator at synthesis dispatch in multi-agent modes; by the agent immediately before letter-writing in single-agent mode). Row grammar and denominator: `run-synthesis.md` §Processing Protocol step 9b; reconciled by `validate.sh synthesis-coverage <run_folder>`
 - `[Project]_Core_DE_Synthesis_[runlabel].md`
 - `[Project]_Annotation_Manifest_[runlabel].md` — Annotated-Manuscript deliverable, **offered at run-end** (only when a `*_DE_Synthesis_*` letter was written; see `run-synthesis.md §Annotated Manuscript + Crosslinked Letter`)
 - `[Project]_Annotated_Manuscript_[runlabel].md` — the snapshot with CriticMarkup margin comments (one per finding)
@@ -277,6 +278,7 @@ Alongside `Diagnostic_State.md`, maintain a sidecar file `Diagnostic_State.meta.
 - `session_count` and `handoff_count` — increment on each new session or handoff
 - `state_lines` — line count of `Diagnostic_State.md` (used by state gardening to trigger archival)
 - `contract_hash` — SHA-256 of the contract file, set at intake, checked at pre-pass re-grounding (see `run-core.md` §Mechanical Validation)
+- `synthesis_coverage` — at the Synthesis Coverage Manifest step (`run-synthesis.md` §Processing Protocol step 9b), on every run that writes a full editorial letter: the sidecar projection of the `[Project]_Synthesis_Read_Manifest_[runlabel].md` (provenance `dispatch-derived` in sequential/hybrid/swarm, `declared` in single-agent; `coverage` must equal the letter's `<!-- coverage: ok|degraded -->` marker; the `artifacts_*` tallies and `spans_outside_active_context` must equal the manifest rows; `verification_excerpt_count` multi-agent only, `estimated_context_utilization` single-agent only). Audited by `validate.sh synthesis-coverage <run_folder>`; leave the template stub untouched on runs without a full letter
 - `next_action.key` — enumerated dispatch key for resume routing. Valid values: `run_passes`, `run_synthesis`, `run_spot_check`, `deliver`, `revision_round`, `run_audits`, `coaching`, `handoff_reentry`. See `commands/start.md` §Resume Target for the full dispatch table.
 - `next_action.description` — human-readable context for display (e.g., "resume Tier 2 passes — Pass 5 next"). Not used for routing.
 

@@ -30,6 +30,20 @@
     "orientation_failures": 0
   },
 
+  "$comment_synthesis_coverage": "Synthesis Coverage Disclosure, M1 (docs/synthesis-regrounding.md): filled at the Synthesis Coverage Manifest step (run-synthesis.md §Processing Protocol step 9b) on every run that writes a full editorial letter — the sidecar projection of the [Project]_Synthesis_Read_Manifest_[runlabel].md written before the letter. coverage must equal the letter's <!-- coverage: ok|degraded --> marker; the tallies must equal the manifest rows; provenance = dispatch-derived (sequential/hybrid/swarm) or declared (single-agent only). verification_excerpt_count is multi-agent only (null single-agent); estimated_context_utilization is single-agent only (null multi-agent). Audited by validate.sh synthesis-coverage; leave this stub untouched on runs without a full letter (an unfilled stub reads as absent).",
+  "synthesis_coverage": {
+    "provenance": "",
+    "execution_mode": "",
+    "coverage": "",
+    "manifest": "",
+    "artifacts_verbatim": 0,
+    "artifacts_summary": 0,
+    "artifacts_absent": 0,
+    "spans_outside_active_context": [],
+    "verification_excerpt_count": null,
+    "estimated_context_utilization": null
+  },
+
   "$comment_structured": "Phase 3 — optional machine-readable arrays mirroring the embedded apodictic:* blocks in ledger/letter artifacts. Validated by scripts/structured_findings.py (validate.sh structured-findings). When findings[] is populated, its severities must tally to triage_summary; omit any array to keep older sidecars valid.",
   "findings": [],
   "audit_triggers": [],
