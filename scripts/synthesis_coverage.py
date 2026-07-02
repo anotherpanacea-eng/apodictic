@@ -29,7 +29,9 @@ Checks (spec §M1.5):
                      sidecar tallies equal the manifest row counts; `coverage` equals the letter
                      marker; exactly one coverage marker exists; row-grammar violations
                      (unknown kind/status, any annotation other than `regrounded: true`) FAIL
-                     here, never silently ignored.
+                     here, never silently ignored; `spans_outside_active_context` must be a
+                     list of strings — a non-string entry FAILS by index, never filtered out
+                     of the comparison.
   V4 provenance/mode sequential/hybrid/swarm => `dispatch-derived` (`declared` FAILS — the
                      cheap lie is blocked); single-agent => `declared` (a dispatch claim with no
                      dispatch FAILS) plus the pinned declared-not-platform-verified sentence
@@ -366,7 +368,24 @@ def compute_degrade(rows, sc_obj, findings, mode):
             continue  # origin pass artifact re-read verbatim — covered
         if universal:
             continue
-        refs = [r for r in (f.get("evidence_refs") or []) if isinstance(r, str)]
+        # evidence_refs shape is structured-findings' gate (validate_obj rejects non-string
+        # items); here a malformed value is SURFACED in the designed unevaluable channel — never
+        # silently dropped from chapter matching, and a non-list never crashes the recompute.
+        raw_refs = f.get("evidence_refs")
+        if raw_refs is None:
+            raw_refs = []
+        if not isinstance(raw_refs, list):
+            uneval.append("D2 unevaluable for %s (evidence_refs is not a list: %r) — assess "
+                          "coverage manually" % (fid, raw_refs))
+            continue
+        refs = []
+        for i, r in enumerate(raw_refs):
+            if isinstance(r, str):
+                refs.append(r)
+            else:
+                uneval.append("D2 evidence_refs[%d] for %s is not a string: %r — unevaluable "
+                              "for chapter matching (the block shape is structured-findings' "
+                              "gate)" % (i, fid, r))
         ref_ch = set()
         for r in refs:
             ref_ch |= chapters(r)
@@ -547,11 +566,21 @@ def check_run_folder(run_folder, strict=False):
         want_out = sorted(r["id"] for r in rows
                           if r["kind"] == "span" and r["status"] == "outside-active-context")
         got_out = sc_obj.get("spans_outside_active_context")
-        got_list = sorted(x for x in got_out if isinstance(x, str)) if isinstance(got_out, list) \
-            else None
-        if got_list != want_out:
-            add("V3", "sidecar spans_outside_active_context %r does not equal the manifest's "
-                "outside-active-context span ids %r" % (got_out, want_out))
+        if not isinstance(got_out, list):
+            add("V3", "sidecar spans_outside_active_context must be a list of strings; got %r"
+                % (got_out,))
+        else:
+            # Shape first, compare second: a malformed sidecar REFUSES — a non-string entry is
+            # named by index and FAILS, never filtered out of the comparison (filter-then-compare
+            # would let ["Ch 1-2", "Ch 4-11", 3] clear reconciliation).
+            bad = [(i, x) for i, x in enumerate(got_out) if not isinstance(x, str)]
+            for i, x in bad:
+                add("V3", "sidecar spans_outside_active_context[%d] is not a string: %r — a "
+                    "malformed sidecar fails reconciliation, it is never sanitized into "
+                    "agreement" % (i, x))
+            if not bad and sorted(got_out) != want_out:
+                add("V3", "sidecar spans_outside_active_context %r does not equal the manifest's "
+                    "outside-active-context span ids %r" % (got_out, want_out))
         n_in_ctx = sum(1 for r in rows if r["kind"] == "span" and r["status"] == "in-context")
         vec = sc_obj.get("verification_excerpt_count")
         if mode in _MULTI_MODES:
@@ -1084,6 +1113,45 @@ def run_self_test():
     chk("scaffold_missing_sentence_v5", code == 0 and out_has(lines, "WARN V5")
         and out_has(lines, "Editor Brief"))
     chk("scaffold_missing_sentence_strict_fails", check_run_folder(d, strict=True)[0] == 1)
+
+    # 37. Codex P2 (PR #160): a non-string entry smuggled into an otherwise-matching sidecar
+    #     span list REFUSES (blocking V3 naming the entry and its index) — filter-then-compare
+    #     silently narrowed the compared set and let this pass --strict
+    sc = json.loads(_sidecar())
+    sc["synthesis_coverage"]["spans_outside_active_context"] = ["Ch 1-2", "Ch 4-11", 3]
+    d = build(sidecar=json.dumps(sc))
+    code, lines = check_run_folder(d)
+    chk("nonstring_span_entry_v3", code == 1 and out_has(lines, "ERROR V3")
+        and out_has(lines, "spans_outside_active_context[2] is not a string: 3"))
+    chk("nonstring_span_entry_strict_fails", check_run_folder(d, strict=True)[0] == 1)
+
+    # 38. non-list spans values refuse cleanly (blocking V3 naming the shape, no traceback)
+    for label, bad_val in (("string", "Ch 1-2, Ch 4-11"), ("dict", {"Ch 1-2": True})):
+        sc = json.loads(_sidecar())
+        sc["synthesis_coverage"]["spans_outside_active_context"] = bad_val
+        d = build(sidecar=json.dumps(sc))
+        code, lines = check_run_folder(d)
+        chk("nonlist_spans_%s_v3" % label, code == 1 and out_has(lines, "ERROR V3")
+            and out_has(lines, "must be a list of strings"))
+
+    # 39. a clean list stays green under --strict (order-insensitive: sorted compare)
+    sc = json.loads(_sidecar())
+    sc["synthesis_coverage"]["spans_outside_active_context"] = ["Ch 4-11", "Ch 1-2"]
+    d = build(sidecar=json.dumps(sc))
+    chk("clean_span_list_strict_green", check_run_folder(d, strict=True)[0] == 0)
+
+    # 40. same class in the D2 recompute: malformed evidence_refs surface in the unevaluable
+    #     channel (never silently dropped from chapter matching, never a traceback)
+    d = build(ledger="## Ledger\n%s\n" % _finding("F-P1-02", "Should-Fix", ["Ch 12", 3]))
+    code, lines = check_run_folder(d)
+    chk("evidence_refs_nonstring_surfaced", code == 0
+        and out_has(lines, "evidence_refs[1] for F-P1-02 is not a string: 3")
+        and not out_has(lines, "WARN V5"))
+    bad_led = "## Ledger\n%s\n" % _finding("F-P1-02", "Should-Fix", ["PLACEHOLDER"])
+    d = build(ledger=bad_led.replace('["PLACEHOLDER"]', "7"))
+    code, lines = check_run_folder(d)
+    chk("evidence_refs_nonlist_no_crash", code == 0
+        and out_has(lines, "evidence_refs is not a list: 7"))
 
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
