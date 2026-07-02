@@ -16,7 +16,7 @@ All DE outputs are author-facing documents. Framework shorthand — pass numbers
 - ❌ "QF-7: Clustering detected"
 - ✅ "Several individually minor issues cluster in the same section, compounding their effect"
 - ❌ "[HIGH CONFIDENCE]"
-- ✅ "All three evaluative lenses agree on this point"
+- ✅ "All three evaluative lenses agree on this point, and the diagnosis survived a deliberate attempt to refute it against the text"
 
 ---
 
@@ -55,6 +55,8 @@ All flags and diagnoses should carry confidence markers:
 - MEDIUM is the default for single-pass flags
 - LOW should prompt "My hypothesis is X—is this accurate?" framing
 - UNCERTAIN should present the tension explicitly and ask author to clarify intent
+
+**HIGH means "survived" (synthesis-bound findings).** For synthesis-bound Must-Fix and HIGH-candidate findings, HIGH requires the existing bar (2+ passes or unambiguous textual proof) **and** a recorded refutation attempt with `outcome == survived` — the Finding Disconfirmation Pass, `run-synthesis.md §Step 6b`. Survival is a **necessary condition for HIGH, never a confidence-raising event**: a `survived` outcome leaves confidence exactly where the ledger already had it — the pass can only lower or hold, never lift (`weakened` caps at MEDIUM; `refuted` transcribes LOW/UNCERTAIN; severity is never touched). Convergence still *feeds* confidence (§Canonical Severity Scale, lens verdicts) — it is no longer *sufficient* for HIGH. The only legible exception is a cap-bound, disclosed HIGH (`bound: true` budget + the not-attempted-budget marker + Appendix B line), whose author-facing language must say *convergence-only, not stress-tested*. Enforced by `scripts/validate.sh refutation-coverage` / `refutation-evidence` / `refutation-write-scope`.
 
 **Never present LOW or UNCERTAIN findings as definitive diagnoses.** Frame them as hypotheses requiring verification.
 
@@ -103,7 +105,7 @@ APODICTIC has exactly three severity tiers:
 - **Confidence** (`HIGH` / `MEDIUM` / `LOW` / `UNCERTAIN`, see §Confidence Calibration) — how sure the diagnosis is, not how bad the problem is. A real problem with thin evidence keeps its severity and loses confidence, never the reverse.
 - **Prose tier** (`P0`–`P3`) — line-level prose-quality band; independent of structural severity.
 - **Readiness / verdict bands** (submission-readiness tiers, tag-audit Fit verdicts) — whole-manuscript dispositions that *consume* severity counts; they are not themselves severity.
-- **Lens verdicts** (per-lens agreement signals) — convergence indicators that feed confidence, not severity.
+- **Lens verdicts** (per-lens agreement signals) — convergence indicators that feed confidence, not severity. (Convergence alone no longer suffices for HIGH on synthesis-bound findings — HIGH additionally requires a survived refutation attempt; see §Confidence Calibration and `run-synthesis.md §Step 6b`.)
 
 Audit-internal scales (AIC Spot/Pattern/Systemic, Reception Note/Flag/Alert, Red Team Fatal/Major/Manageable, Timeline paradox/drift/ambiguity, etc.) are *local vocabularies* that propagate **onto** this canonical scale per §4e; they are not additional severity tiers.
 
