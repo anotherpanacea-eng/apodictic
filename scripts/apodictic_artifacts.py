@@ -20,12 +20,78 @@ import re
 import sys
 from pathlib import Path
 
+try:
+    import override_marker as _ovm  # code-span stripping SSoT (meta-linter M6); sibling module
+except ImportError:
+    _ovm = None
+
 # One grammar for the embedded block carrier, shared by every validator. We match the
 # CARRIER (`<!-- apodictic:<type> ... -->`) first and capture the whole payload up to the
 # closing `-->`, rather than only comments that already contain a complete `{...}`. A broken
 # payload (e.g. a missing closing brace) is then surfaced as a JSON error by parse_blocks
 # instead of disappearing before validation.
 BLOCK_RE = re.compile(r"<!--\s*apodictic:([A-Za-z_]+)\s*(.*?)\s*-->", re.DOTALL)
+
+# Exact Finding Lifecycle ID token (boundary-guarded, so F-P5-01 != F-P5-011). The same pattern as
+# the finding schema's `id` and the existing finding_trace._ID_RE / honesty_check._id_present
+# mirrors — hosted here too because the disposition-marker grammar below (and its consumers:
+# run_gate.py, disposition_check.py, feedback_triage.py W3) needs it and this module must stay
+# dependency-free (finding_trace imports THIS module, so it cannot be imported from here).
+FID_RE = re.compile(r"(?<![\w-])F-[A-Za-z0-9]+-[0-9]{2,}(?![\w-])")
+
+# Finding-disposition marker grammar — the SINGLE SSoT (docs/finding-dispositions.md §Schema 3),
+# sibling of finding_trace's `<!-- resolved: F-… -->` family. Pinned forms:
+#   <!-- declined: F-P5-01 — <one-line reason> -->
+#   <!-- deferred: F-P5-01 until: <trigger> — <one-line reason> -->
+# Hosted HERE (not finding_trace) so run_gate.py can use it without the hard finding_trace
+# dependency its lazy-import comment exists to avoid, and imported by BOTH run_gate.py and
+# disposition_check.py — neither defines a local copy. Case-insensitive; no collision with the
+# resolved:/override:/finding: comment families.
+_DISPOSITION_RE = re.compile(r"<!--\s*(declined|deferred):(.*?)-->", re.DOTALL | re.IGNORECASE)
+# Body grammar: the id must LEAD the body (a prose comment merely mentioning an id is not a
+# disposition marker); `until:` (deferred only) then an em-/en-dash separates the reason.
+_DISPOSITION_BODY_RE = re.compile(
+    r"^\s*(F-[A-Za-z0-9]+-[0-9]{2,})(?![\w-])\s*(.*)$", re.DOTALL)
+_DISPOSITION_DASH_RE = re.compile(r"\s*[—–]\s*")
+
+
+def parse_disposition_markers(text):
+    """Parse the pinned finding-disposition markers out of `text`.
+
+    Returns [{"kind": "declined"|"deferred", "id": str, "trigger": str|None, "reason": str}, ...]
+    in document order. Parsing is LENIENT, validation strict: a marker missing its reason (or a
+    deferred marker missing `until: <trigger>`) still parses — with reason ""/trigger None — and is
+    then refused by the record-shape gates (disposition-check DP0; run_gate's write-time guard),
+    so a malformed marker is surfaced, never silently honored. A comment whose body does not LEAD
+    with a Finding Lifecycle ID is not a disposition marker and is skipped (e.g. a docs example
+    deferring a work item by slug). Code spans are stripped first through the override_marker SSoT
+    (meta-linter M6) so a marker quoted in a fenced/inline documentation example is never live."""
+    if not text:
+        return []
+    region = _ovm.strip_code_spans(text) if _ovm is not None else text
+    out = []
+    for kind, body in _DISPOSITION_RE.findall(region):
+        m = _DISPOSITION_BODY_RE.match(body)
+        if not m:
+            continue  # no leading F-id -> not a disposition marker
+        fid, rest = m.group(1), m.group(2).strip()
+        kind = kind.lower()
+        trigger = None
+        if kind == "deferred":
+            um = re.match(r"^until:\s*(.*)$", rest, re.DOTALL)
+            if um:
+                parts = _DISPOSITION_DASH_RE.split(um.group(1), maxsplit=1)
+                trigger = parts[0].strip() or None
+                reason = parts[1].strip() if len(parts) > 1 else ""
+            else:
+                # no `until:` -> no trigger; whole tail (past any dash) is the reason
+                parts = _DISPOSITION_DASH_RE.split(rest, maxsplit=1)
+                reason = parts[1].strip() if len(parts) > 1 else parts[0].strip()
+        else:
+            parts = _DISPOSITION_DASH_RE.split(rest, maxsplit=1)
+            reason = parts[1].strip() if len(parts) > 1 else parts[0].strip()
+        out.append({"kind": kind, "id": fid, "trigger": trigger, "reason": reason})
+    return out
 
 # Canonical severity ORDER (semantic; the SET is cross-checked against the
 # finding schema's `severity` enum by load_severity_values()).
@@ -253,6 +319,42 @@ def run_self_test():
     sfn_ok = (fn is not None and "severity" in fn and "evidence_refs" in fn
               and schema_field_names("apodictic.does_not_exist.v1") is None)
     check("schema_field_names", [] if sfn_ok else ["schema_field_names mismatch"], True)
+    # parse_disposition_markers — the shared finding-disposition marker grammar (the SSoT both
+    # run_gate.py and disposition_check.py import; docs/finding-dispositions.md §Schema 3).
+    dm = parse_disposition_markers(
+        "<!-- declined: F-P5-01 — reader intent is deliberate -->\n"
+        "<!-- deferred: F-DP-02 until: beta reads back — waiting on reader signal -->")
+    dm_ok = (len(dm) == 2
+             and dm[0] == {"kind": "declined", "id": "F-P5-01", "trigger": None,
+                           "reason": "reader intent is deliberate"}
+             and dm[1] == {"kind": "deferred", "id": "F-DP-02", "trigger": "beta reads back",
+                           "reason": "waiting on reader signal"})
+    check("disposition_markers_pinned_forms", [] if dm_ok else ["parse mismatch: %r" % dm], True)
+    # case-insensitive kind; en-dash reason separator accepted
+    dm2 = parse_disposition_markers("<!-- DECLINED: F-P5-03 – held for voice -->")
+    check("disposition_markers_case_insensitive",
+          [] if (len(dm2) == 1 and dm2[0]["kind"] == "declined" and dm2[0]["id"] == "F-P5-03"
+                 and dm2[0]["reason"] == "held for voice") else ["mismatch: %r" % dm2], True)
+    # a comment that does not LEAD with an F-id is not a disposition marker (e.g. a docs example
+    # deferring a work item by slug) — skipped, never honored
+    check("disposition_markers_no_leading_id_skipped",
+          [] if parse_disposition_markers(
+              "<!-- deferred: orchestrator-pull-interface until later -->") == [] else ["not skipped"], True)
+    # boundary-guarded id: F-P5-011 does not parse as F-P5-01 (the id is captured whole)
+    dm3 = parse_disposition_markers("<!-- declined: F-P5-011 — x -->")
+    check("disposition_markers_exact_boundary_id",
+          [] if (len(dm3) == 1 and dm3[0]["id"] == "F-P5-011") else ["mismatch: %r" % dm3], True)
+    # lenient parse, strict validation: a reason-less declined / trigger-less deferred still PARSES
+    # (reason "" / trigger None) so DP0 / the write-time guard can refuse it by name
+    dm4 = parse_disposition_markers("<!-- declined: F-P5-04 -->\n<!-- deferred: F-P5-05 — no trigger -->")
+    check("disposition_markers_malformed_parse_for_refusal",
+          [] if (len(dm4) == 2 and dm4[0]["reason"] == "" and dm4[1]["trigger"] is None) else
+          ["mismatch: %r" % dm4], True)
+    # code-span decoy: a marker quoted in a fenced documentation example is NOT live (stripping
+    # goes through the override_marker SSoT — meta-linter M6)
+    check("disposition_markers_codespan_decoy_rejected",
+          [] if parse_disposition_markers(
+              "```\n<!-- declined: F-P5-01 — decoy -->\n```\nprose") == [] else ["decoy honored"], True)
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 
