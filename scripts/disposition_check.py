@@ -85,7 +85,7 @@ def _read(path):
     try:
         with open(path, encoding="utf-8") as fh:
             return fh.read()
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return None
 
 
@@ -414,6 +414,15 @@ def run_self_test():
         print("  %s: %s" % (name, "OK" if cond else "FAIL"))
         if not cond:
             rc["v"] = 1
+
+    # non-UTF8 artifact: _read must degrade to the unreadable path (None), never
+    # a traceback (this module ORIGINATED the disposition_check adjacent-exception
+    # class in PR #162; its own _read was left OSError-only until the class sweep)
+    _fd, _nu = tempfile.mkstemp(suffix=".md")
+    with os.fdopen(_fd, "wb") as _fh:
+        _fh.write(b"\xff\xfenot utf-8\xff")
+    check_("non_utf8_read_returns_none", _read(_nu) is None)
+    os.unlink(_nu)
 
     def finding(fid, sev="Must-Fix"):
         return ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"%s",'
