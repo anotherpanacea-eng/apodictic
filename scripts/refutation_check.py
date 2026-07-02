@@ -650,7 +650,7 @@ def _read_file(path, what):
     try:
         with open(path, encoding="utf-8") as fh:
             return fh.read(), None
-    except OSError as exc:
+    except (OSError, UnicodeDecodeError) as exc:
         return None, "cannot read %s %s: %s" % (what, path, exc)
 
 
@@ -665,6 +665,25 @@ def run_self_test():
         print("  %s: %s" % (name, "OK" if cond else "FAIL%s" % ((" (%s)" % detail) if detail else "")))
         if not cond:
             rc["v"] = 1
+
+    # non-UTF8 artifact on the refutation-coverage CLI read path must degrade to the
+    # named cannot-read usage-error exit (2), never a raw UnicodeDecodeError traceback
+    # (the disposition_check adjacent-exception class, swept repo-wide)
+    _nud = tempfile.mkdtemp()
+    try:
+        _nu = os.path.join(_nud, "letter.md")
+        _ok = os.path.join(_nud, "ok.md")
+        with open(_nu, "wb") as _fh:
+            _fh.write(b"\xff\xfenot utf-8\xff")
+        with open(_ok, "w", encoding="utf-8") as _fh:
+            _fh.write("# ok\n")
+        check("non_utf8_read_file_named_error",
+              _read_file(_nu, "editorial letter")[0] is None
+              and "cannot read editorial letter" in (_read_file(_nu, "editorial letter")[1] or ""))
+        check("non_utf8_coverage_cli_degrades",
+              main(["refutation_check.py", "refutation-coverage", _nu, _ok, _ok]) == 2)
+    finally:
+        shutil.rmtree(_nud)
 
     def finding(fid, sev="Must-Fix", conf="HIGH", mech="the want never costs her anything"):
         return ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"%s",'

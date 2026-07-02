@@ -130,7 +130,7 @@ def _ledger_finding_ids(ledger_path):
     try:
         with open(ledger_path, encoding="utf-8") as fh:
             text = fh.read()
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return []
     return [obj["id"] for bt, obj, _e in art.parse_blocks(text)
             if bt == "finding" and isinstance(obj, dict) and obj.get("id")]
@@ -543,7 +543,7 @@ def _disposition_deltas(phase, run_folder, manifest, resolved, sidecar, exclude_
         try:
             with open(path, encoding="utf-8") as fh:
                 text = fh.read()
-        except OSError:
+        except (OSError, UnicodeDecodeError):
             continue
         for m in art.parse_disposition_markers(text):
             fid = m["id"]
@@ -875,6 +875,14 @@ def run_self_test():
         print("  %s: %s" % (name, "OK" if cond else "FAIL"))
         if not cond:
             rc["v"] = 1
+
+    # non-UTF8 ledger: _ledger_finding_ids must degrade to the no-ids path ([]),
+    # never a traceback (the disposition_check adjacent-exception class, swept repo-wide)
+    _fd, _nu = tempfile.mkstemp(suffix=".md")
+    with os.fdopen(_fd, "wb") as _fh:
+        _fh.write(b"\xff\xfenot utf-8\xff")
+    check("non_utf8_ledger_ids_empty", _ledger_finding_ids(_nu) == [])
+    os.unlink(_nu)
 
     manifest = _load_manifest()
     vs = os.path.join(HERE, "validate.sh")
