@@ -588,10 +588,13 @@ def run_self_test():
     def out_has(lines, token):
         return any(token in ln for ln in lines)
 
-    # 0. NON-UTF8 artifact on the CLI read path must degrade to the reader's None path
-    #    (letter/ledger -> "") instead of a raw UnicodeDecodeError traceback (the
-    #    disposition_check adjacent-exception class, swept repo-wide; the #163
-    #    specificity_floor reader was left OSError-only and is corrected here).
+    # 0. NON-UTF8 REQUIRED artifact on the CLI read path must FAIL CLOSED — a named usage error
+    #    and exit 2 (never a raw UnicodeDecodeError traceback, and never a vacuous PASS). The #163
+    #    sweep matched the disposition_check advisory degrade-to-None sibling, but this floor is
+    #    BLOCKING: collapsing an unreadable letter/ledger to "" bypasses the count/anchor floor with
+    #    a real ledger (Codex #164 P2). The reader still returns None on a read/decode failure; it is
+    #    main() that now refuses to run rather than degrade. Both the letter-read and ledger-read
+    #    failure paths are pinned, and the readable-empty (letter="") case stays green below.
     import tempfile as _tempfile
     _nud = _tempfile.mkdtemp()
     try:
@@ -601,9 +604,25 @@ def run_self_test():
             _fh.write(b"\xff\xfenot utf-8\xff")
         with open(_ok, "w", encoding="utf-8") as _fh:
             _fh.write("# ok\n")
-        chk("non_utf8_read_degrades_to_none", _read(_nu) is None)
-        chk("non_utf8_cli_no_traceback",
-            main(["specificity_floor.py", "specificity-floor", _nu, _ok]) == 0)
+        chk("non_utf8_read_returns_none", _read(_nu) is None)
+        # non-UTF8 LETTER + a real ledger with findings: fail closed (exit 2), not a vacuous PASS.
+        _real = _LEDGER
+        _real_p = os.path.join(_nud, "real_ledger.md")
+        with open(_real_p, "w", encoding="utf-8") as _fh:
+            _fh.write(_real)
+        chk("non_utf8_letter_fails_closed",
+            main(["specificity_floor.py", "specificity-floor", _nu, _real_p]) == 2)
+        # non-UTF8 LEDGER (readable letter): fail closed too — a real ledger must never read as empty.
+        chk("non_utf8_ledger_fails_closed",
+            main(["specificity_floor.py", "specificity-floor", _ok, _nu]) == 2)
+        # readable-but-EMPTY letter (readable "") must NOT be swept up by the fail-closed change:
+        # it reads as "", not None, so the CLI runs; an empty letter delivers 0 findings and the
+        # floor has nothing to hold, exit 0 (unchanged readable-empty semantics).
+        _empty = os.path.join(_nud, "empty.md")
+        with open(_empty, "w", encoding="utf-8") as _fh:
+            _fh.write("")
+        chk("readable_empty_letter_still_runs",
+            main(["specificity_floor.py", "specificity-floor", _empty, _real_p]) == 0)
     finally:
         import shutil as _shutil
         _shutil.rmtree(_nud)
@@ -922,8 +941,22 @@ def main(argv):
         print("Usage: specificity_floor.py specificity-floor <editorial_letter> <findings_ledger> "
               "[--strict] | --self-test")
         return 2
-    letter_text = _read(paths[0]) or ""
-    ledger_text = _read(paths[1]) or ""
+    # An unreadable/undecodable REQUIRED artifact FAILS CLOSED on this blocking floor: a read
+    # failure returns None, which we must NOT collapse to "" (that would degrade an unreadable
+    # letter to a vacuous "0 delivered" PASS and an unreadable ledger to "no findings — nothing
+    # to hold", silently bypassing the count/anchor floor — a fail-OPEN on a blocking gate,
+    # Codex #164 P2). Emit a named usage error and exit 2, mirroring refutation_check._read_file's
+    # (None, msg) -> "Error:" -> exit-2 shape. A legitimately-empty-but-READABLE artifact returns
+    # "" (not None) and is unaffected — its existing readable-empty semantics are preserved.
+    letter_text = _read(paths[0])
+    ledger_text = _read(paths[1])
+    for text, path, what in ((letter_text, paths[0], "editorial letter"),
+                             (ledger_text, paths[1], "findings ledger")):
+        if text is None:
+            print("Error: cannot read %s %s (unreadable or not UTF-8) — the specificity floor is "
+                  "blocking and refuses to run on an unreadable artifact rather than degrade to an "
+                  "empty input and pass vacuously" % (what, path))
+            return 2
     code, lines = check(letter_text, ledger_text, strict=strict)
     for ln in lines:
         print(ln)
