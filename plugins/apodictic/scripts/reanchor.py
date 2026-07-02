@@ -36,16 +36,40 @@ revision loop also needs the revision-aware marked-up copy ON DISK and the cross
   crossref  join this round-trip's anchor-level classes against regression-diff's finding-level classes
             BY finding_id (the orchestrator join the spec reserves — anchor x finding corroboration).
 
+Disposition record (round-close). The `/start` round-trip resume ends in a per-finding disposition table
+the OPERATOR confirms — the model proposes; the operator disposes. The orchestrator-written record
+(`[Project]_Roundtrip_Disposition_[runlabel].md`, marker-based) is gated by `disposition`:
+  RT1 (ERROR)  recompute alignment: every row's finding_id is in the prior manifest's RA3 partition
+       (recomputed live, never trusted from the record), its anchor= class equals the recomputed class,
+       its regression= class (when not `none`) equals the recomputed crossref class, and the `compares:`
+       header names the actual prior/this runlabels. No stale or fabricated evidence classes.
+  RT2 (ERROR)  confirmation record present: any row decided (decision != pending) requires the file-level
+       `<!-- disposition-confirmed: operator <ts> -->` token. This proves the RECORD of confirmation
+       exists and is consistent — a bash/py validator cannot prove a human confirmed (the honesty
+       ceiling); rev-a4 (`gate --attest`) is the human-attestation layer.
+  RT3 (ERROR)  confirmed-writes-only: when a disposition record exists, every `<!-- resolved: F-… -->`
+       marker in the run folder's Revision Report(s) whose id is in the RA3 partition corresponds to a
+       decision=confirm-resolved row — an unconfirmed close (vanished-anchor auto-close) is the error
+       this gate exists to prevent. Marker parse reuses finding_trace.resolved_cited_ids (never
+       reimplemented).
+  RT4 (WARN; ERROR --strict)  partition coverage: every finding id in the recomputed RA3 partition has
+       a disposition row — a record that exists is a round-close record (carry-only writes none), so a
+       missing row is a finding silently omitted from round-close review; reported by id.
+  W1 (WARN; ERROR --strict)  unadjudicated / staged: rows still pending, or confirm-resolved rows not
+       yet reflected as resolved markers (work legitimately stages across sessions).
+
 Usage:
-  reanchor.py reanchor <prior_run_folder> <new_snapshot> [--strict]
-  reanchor.py emit     <prior_run_folder> <new_snapshot> [-o <out_dir>]
-  reanchor.py crossref <prior_run_folder> <new_snapshot> <this_run_folder> [--strict]
+  reanchor.py reanchor    <prior_run_folder> <new_snapshot> [--strict]
+  reanchor.py emit        <prior_run_folder> <new_snapshot> [-o <out_dir>]
+  reanchor.py crossref    <prior_run_folder> <new_snapshot> <this_run_folder> [--strict]
+  reanchor.py disposition <prior_run_folder> <new_snapshot> <this_run_folder> [--strict]
   reanchor.py --self-test
 Exit: 0 clean / WARN-only, 1 ERROR (or WARN under --strict), 2 usage.
 """
 import glob
 import json
 import os
+import re
 import sys
 
 try:
@@ -58,7 +82,35 @@ try:
 except ImportError:
     rd = None
 
+try:
+    import finding_trace as ft
+except ImportError:
+    ft = None
+
 _CLASSES = ("held", "moved", "vanished", "ambiguous", "not-re-anchorable")
+
+# ---- Roundtrip Disposition record (the round-close operator record; marker-based, no schema file) ----
+_DISPOSITION_GLOB = "*_Roundtrip_Disposition_*.md"
+_REVISION_REPORT_GLOB = "*_Revision_Report_*.md"
+# regression= values a row may record: the prior-keyed crossref classes (regression_diff.
+# _PRIOR_KEYED_CLASSES — incl. `unexplained-drop`, which the recompute really yields for a prior
+# finding with no current match and no resolution claim), the current-keyed classes the record
+# grammar names for completeness (`new` / `new-in-quiet-chapter` — never joinable to a prior id, so
+# RT1 fails them against the recompute), and `none` (no crossref join — e.g. a carry-only round).
+_DISPO_REGRESSION = ("persisted", "resolved-and-held", "recurrence-candidate", "unexplained-drop",
+                     "new", "new-in-quiet-chapter", "none")
+_DISPO_DECISIONS = ("confirm-resolved", "keep-open", "needs-placement", "declined", "pending")
+# `disposition:` requires the colon immediately after the word, so the `disposition-confirmed:`
+# token can never be swallowed as a row.
+_DISPO_ANY_RE = re.compile(r"<!--\s*disposition:(.*?)-->", re.DOTALL)
+_DISPO_ROW_RE = re.compile(
+    r"\A(?P<fid>\S+)\s+anchor=(?P<anchor>\S+)\s+regression=(?P<reg>\S+)\s+decision=(?P<dec>\S+)\Z")
+# The confirmation token: `operator <ISO-8601, minutes, hyphenated>` (e.g. 2026-07-01T14-30). The
+# validator checks the RECORD's shape only — its output must never claim a human confirmed (RT2's
+# honesty ceiling; the human layer is rev-a4 at `gate --attest`).
+_DISPO_TOKEN_RE = re.compile(
+    r"<!--\s*disposition-confirmed:\s*operator\s+\d{4}-\d{2}-\d{2}T\d{2}-\d{2}\s*-->")
+_COMPARES_RE = re.compile(r"^compares:\s*(\S+)\s*(?:→|->)\s*(\S+)\s*$", re.MULTILINE)
 
 
 def _read(path):
@@ -267,19 +319,22 @@ def reanchor(manifest_obj, n1_snapshot, n1_path, strict=False):
                    "%d held/moved re-anchored, no refusals" % len(carried))
 
 
-def _finish(lines, errs, warns, strict, ok_msg):
+def _finish(lines, errs, warns, strict, ok_msg, label="reanchor"):
     for e in errs:
         lines.append("  ERROR: %s" % e)
     for w in warns:
         lines.append("  %s: %s" % ("ERROR (--strict)" if strict else "WARN", w))
     if errs or (strict and warns):
-        lines.append("reanchor: FAIL (%d error(s)%s)"
-                     % (len(errs), ", %d strict warn(s)" % len(warns) if (strict and warns) else ""))
+        lines.append("%s: FAIL (%d error(s)%s)"
+                     % (label, len(errs), ", %d strict warn(s)" % len(warns) if (strict and warns) else ""))
         return 1, lines
     if warns:
-        lines.append("WARN: reanchor: %d re-anchor advisory(ies) — see W1-W2 above" % len(warns))
+        if label == "reanchor":
+            lines.append("WARN: reanchor: %d re-anchor advisory(ies) — see W1-W2 above" % len(warns))
+        else:
+            lines.append("WARN: %s: %d advisory(ies) — see the RT4/W1 lines above" % (label, len(warns)))
     else:
-        lines.append("reanchor: PASS (%s)" % ok_msg)
+        lines.append("%s: PASS (%s)" % (label, ok_msg))
     return 0, lines
 
 
@@ -290,17 +345,35 @@ def _runlabel_of(snapshot_path):
     return os.path.splitext(base)[0] or "run"
 
 
+def _runlabel_of_manifest(man_path):
+    """The prior round's runlabel, derived from the RESOLVED manifest path (the actual input the
+    disposition recompute runs against) — the manifest-filename sibling of `_runlabel_of` (which
+    splits on the snapshot infix). Derived, never hand-typed: the `compares:` header is validated
+    against this, so it always names the real inputs, not what the record claims."""
+    base = os.path.basename(man_path or "")
+    if "_Annotation_Manifest_" in base:
+        return os.path.splitext(base.split("_Annotation_Manifest_")[-1])[0] or "run"
+    return _runlabel_of(man_path or "")
+
+
+def _prior_manifest_path(prior):
+    """The draft-N manifest path the round-trip resolves: a dir -> its newest manifest; a file ->
+    itself. The single resolution rule shared by `_resolve_inputs` and `disposition` (which also
+    needs the PATH, for the derived `compares:` prior runlabel)."""
+    if os.path.isdir(prior):
+        return _newest(glob.glob(os.path.join(prior, am._MANIFEST_GLOB)))
+    return prior
+
+
 def _resolve_inputs(prior, new_snap):
     """Resolve the (draft-N manifest object, normalized N+1 snapshot) pair the round-trip operates on.
 
-    Shared by `run` (the gate), `emit` (the glue write), and `crossref` (the join), so all three resolve
-    the prior manifest + new snapshot the SAME way: a dir -> its newest manifest; a file -> itself.
+    Shared by `run` (the gate), `emit` (the glue write), `crossref` (the join), and `disposition`
+    (the round-close record gate), so all four resolve the prior manifest + new snapshot the SAME way:
+    a dir -> its newest manifest; a file -> itself.
     Returns `(obj, n1, err)` — on any failure `obj`/`n1` are None and `err` is a (code, [line]) the caller
     returns verbatim."""
-    if os.path.isdir(prior):
-        man_path = _newest(glob.glob(os.path.join(prior, am._MANIFEST_GLOB)))
-    else:
-        man_path = prior
+    man_path = _prior_manifest_path(prior)
     if not man_path:
         return None, None, (2, ["reanchor: no %s in %s" % (am._MANIFEST_GLOB, prior)])
     obj, merrs = am.parse_manifest(_read(man_path))
@@ -429,6 +502,137 @@ def crossref(paths, strict=False):
             lines.append("  crossref:noted %s — reanchor=%s regression-diff=%s" % (fid, anc, reg))
 
     return _finish(lines, errs, warns, strict, "%d finding(s) joined, no contradictions" % len(fid_class))
+
+
+def disposition(paths, strict=False):
+    """Gate the Roundtrip Disposition record (`[Project]_Roundtrip_Disposition_[runlabel].md`) in
+    <this_run_folder> against the LIVE recompute — the model proposes; the operator disposes; this
+    validator proves the record never asserts evidence the recompute doesn't support (RT1), never
+    carries a decision without the recorded confirmation token (RT2), that no resolved marker
+    was written without a confirmed disposition (RT3 — the no-auto-close rule), and that no
+    recomputed prior finding is silently omitted from the record (RT4 — partition coverage; WARN,
+    ERROR --strict). Absent record ->
+    PASS no-op (the check_state early-return precedent), so it is safe anywhere, including hosts
+    where no disposition record can have been produced. Args mirror `crossref`:
+    <prior_run_folder> <new_snapshot> <this_run_folder> [--strict]. Returns (code, lines)."""
+    if len(paths) < 3:
+        return 2, ["reanchor: usage: disposition <prior_run_folder> <new_snapshot> <this_run_folder> "
+                   "[--strict]"]
+    prior, new_snap, this_run = paths[0], paths[1], paths[2]
+    if not os.path.isdir(this_run):
+        return 2, ["reanchor: disposition run folder not found: %s" % this_run]
+    rec_path = _newest(glob.glob(os.path.join(this_run, _DISPOSITION_GLOB)))
+    if rec_path is None:
+        return 0, ["disposition: no %s in %s — nothing to check" % (_DISPOSITION_GLOB, this_run),
+                   "disposition: PASS (no disposition record — nothing to check)"]
+    rec_text = _read(rec_path)
+    if rec_text is None:
+        return 2, ["reanchor: cannot read disposition record %s" % rec_path]
+    if ft is None:
+        return 2, ["reanchor: finding_trace is unavailable (same-dir import failed) — RT3 cannot "
+                   "verify the resolved markers; refusing to gate %s" % os.path.basename(rec_path)]
+    obj, n1, err = _resolve_inputs(prior, new_snap)
+    if err is not None:
+        return err
+    _re_obj, _buckets, _carried, fid_class = build_reanchored(obj, n1, new_snap)
+    # Best-effort like `crossref` ({} when a ledger is missing): a recorded non-`none` class with no
+    # recomputed join then FAILS RT1 — the record is never taken at its word.
+    reg_class = rd.crossref_classes(prior, this_run) if rd is not None else {}
+
+    lines, errs, warns = [], [], []
+    lines.append("disposition: %s — %d prior annotation class(es) recomputed"
+                 % (os.path.basename(rec_path), len(fid_class)))
+
+    # RT1 — the `compares:` header must name the ACTUAL inputs (both runlabels derived live).
+    prior_label = _runlabel_of_manifest(_prior_manifest_path(prior))
+    this_label = _runlabel_of(new_snap)
+    cm = _COMPARES_RE.search(rec_text)
+    if cm is None:
+        errs.append("RT1 recompute alignment: no `compares: <prior> → <this>` header in the record")
+    elif (cm.group(1), cm.group(2)) != (prior_label, this_label):
+        errs.append("RT1 recompute alignment: `compares:` header names %s → %s but the actual inputs "
+                    "are %s → %s" % (cm.group(1), cm.group(2), prior_label, this_label))
+
+    # Parse the disposition rows (the machine record; the human table is presentation only).
+    rows, seen = [], set()
+    for raw in _DISPO_ANY_RE.findall(rec_text):
+        rm = _DISPO_ROW_RE.match(raw.strip())
+        if (rm is None or rm.group("anchor") not in _CLASSES
+                or rm.group("reg") not in _DISPO_REGRESSION
+                or rm.group("dec") not in _DISPO_DECISIONS):
+            errs.append("RT1 recompute alignment: malformed disposition row `%s`"
+                        % " ".join(raw.split()))
+            continue
+        fid = rm.group("fid")
+        if fid in seen:
+            errs.append("RT1 recompute alignment: duplicate disposition row for %s" % fid)
+            continue
+        seen.add(fid)
+        rows.append((fid, rm.group("anchor"), rm.group("reg"), rm.group("dec")))
+
+    # RT1 — recompute alignment, row by row (never trust the record's classes).
+    for fid, anc, reg, dec in rows:
+        lines.append("  disposition:%s %s anchor=%s regression=%s" % (dec, fid, anc, reg))
+        if fid not in fid_class:
+            errs.append("RT1 recompute alignment: %s is not in the prior manifest's RA3 partition" % fid)
+            continue
+        if anc != fid_class[fid]:
+            errs.append("RT1 recompute alignment: %s records anchor=%s but the recompute classifies it "
+                        "%s" % (fid, anc, fid_class[fid]))
+        if reg != "none":
+            actual = reg_class.get(fid)
+            if reg != actual:
+                errs.append("RT1 recompute alignment: %s records regression=%s but the recomputed "
+                            "crossref class is %s" % (fid, reg, actual if actual else "none (no join)"))
+
+    # RT2 — confirmation record present: no decision stands on the record without the token. The
+    # validator proves the RECORD of confirmation is present and consistent — never that a human
+    # confirmed (that layer is the state-lifecycle sequencing rule + rev-a4 at `gate --attest`).
+    token = _DISPO_TOKEN_RE.search(rec_text) is not None
+    decided = [fid for fid, _a, _r, dec in rows if dec != "pending"]
+    if decided and not token:
+        errs.append("RT2 confirmation record: %d decided row(s) but no `<!-- disposition-confirmed: "
+                    "operator <ISO-8601> -->` token — the record of confirmation is absent"
+                    % len(decided))
+
+    # RT3 — confirmed-writes-only: a resolved marker in this folder's Revision Report(s) whose id the
+    # prior manifest annotates (the RA3 partition — the ids a disposition row CAN govern; RT1 bars
+    # rows for anything else) must have a confirm-resolved row. Marker parse: finding_trace.
+    # resolved_cited_ids — the SSoT (never a local reimplementation). Markers for un-annotated ledger
+    # findings carry no anchor evidence either way and stay governed by rev-a2 / finding-trace.
+    confirm_ok = {fid for fid, _a, _r, dec in rows if dec == "confirm-resolved"}
+    resolved_ids = set()
+    for rp in sorted(glob.glob(os.path.join(this_run, _REVISION_REPORT_GLOB))):
+        resolved_ids |= ft.resolved_cited_ids(_read(rp) or "")
+    for rid in sorted(resolved_ids):
+        if rid in fid_class and rid not in confirm_ok:
+            errs.append("RT3 confirmed-writes-only: `<!-- resolved: %s -->` in a Revision Report has no "
+                        "decision=confirm-resolved disposition row — an unconfirmed close is the "
+                        "auto-close this gate exists to prevent" % rid)
+
+    # RT4 — partition coverage: every finding id the recompute puts in the RA3 partition must have a
+    # disposition row. A record that EXISTS is a round-close record (carry-only exit (a) writes no
+    # record at all), so a missing row is a finding silently dropped from round-close review — it must
+    # never read as adjudicated. Reported by id; WARN by default (a record may be drafted incrementally
+    # within a session, the W1 staging posture), ERROR under --strict (round close). The falsy-key
+    # filter mirrors crossref's: an annotation _fid could not normalize (None) has no id a row could
+    # name — it is outside the record's governable domain and gated upstream by the A-gate/RA3.
+    for fid in sorted(k for k in fid_class if k and k not in seen):
+        warns.append("RT4 partition coverage: %s is in the recomputed RA3 partition but has no "
+                     "disposition row — adjudicate it (or record it decision=pending) before "
+                     "round close" % fid)
+
+    # W1 — unadjudicated / staged (advisory; work stages across sessions — `--strict` gates round close).
+    for fid, _a, _r, dec in rows:
+        if dec == "pending":
+            warns.append("W1 unadjudicated: %s is still pending — adjudicate before round close" % fid)
+    for fid in sorted(confirm_ok - resolved_ids):
+        warns.append("W1 staged: %s is confirm-resolved but not yet reflected as a `<!-- resolved: %s "
+                     "-->` marker in a Revision Report" % (fid, fid))
+
+    ok_msg = ("%d disposition row(s) aligned; record of confirmation %s"
+              % (len(rows), "present and consistent" if token else "not required (no decided rows)"))
+    return _finish(lines, errs, warns, strict, ok_msg, label="disposition")
 
 
 # ---------------------------------------------------------------- self-test
@@ -715,6 +919,15 @@ def run_self_test():
         finally:
             shutil.rmtree(cd, ignore_errors=True)
 
+    # disposition: the round-close record gate (RT1-RT4 + W1) — needs the crossref join (rd) and the
+    # finding_trace marker SSoT (ft), both same-dir siblings.
+    if rd is not None and ft is not None:
+        dd = tempfile.mkdtemp()
+        try:
+            _disposition_self_test(chk, dd)
+        finally:
+            shutil.rmtree(dd, ignore_errors=True)
+
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 
@@ -794,13 +1007,183 @@ def _crossref_self_test(chk, cd):
     chk("crossref_strict_clean_on_win_only", crossref([pri, win_snap, win_cur], strict=True)[0] == 0)
 
 
+def _disposition_self_test(chk, dd):
+    """disposition (RT1-RT4 + W1): the round-close record gate against a live recompute. The staged
+    rounds mirror _crossref_self_test's: F-HOLD-01 (quote persists -> held; recurs -> recurrence-
+    candidate) and F-GONE-01 (quote cut -> vanished; resolved, no match -> resolved-and-held)."""
+    import json as _j
+
+    prior_snap = am.normalize_snapshot("# Chapter 7\nThe want never forces a sacrifice here.\n"
+                                       "A sentence slated for the cut sits in chapter nine.\n# Chapter 9\nx\n")
+    q_hold = "The want never forces a sacrifice here."
+    q_gone = "A sentence slated for the cut sits in chapter nine."
+    hs, gs = prior_snap.find(q_hold), prior_snap.find(q_gone)
+    prior_man = {"schema": am._SCHEMA_ID, "project": "X", "runlabel": "r1",
+                 "snapshot_path": "X_Manuscript_Snapshot_r1.md", "snapshot_sha256": am.sha256(prior_snap),
+                 "snapshot_line_count": am.line_count(prior_snap),
+                 "annotations": [
+                     {"finding_id": "F-HOLD-01", "anchor": {"kind": "quote",
+                      "value": "%d-%d" % (hs, hs + len(q_hold)), "quote": q_hold}, "comment": "held note"},
+                     {"finding_id": "F-GONE-01", "anchor": {"kind": "quote",
+                      "value": "%d-%d" % (gs, gs + len(q_gone)), "quote": q_gone}, "comment": "gone note"},
+                 ]}
+
+    def finding(fid, mech, refs, sev="Should-Fix"):
+        return '<!-- apodictic:finding\n%s\n-->' % _j.dumps(
+            {"schema": "apodictic.finding.v1", "id": fid, "mechanism": mech, "severity": sev,
+             "confidence": "HIGH", "evidence_refs": list(refs), "fix_class": "x", "risk_if_fixed": "y"})
+
+    def w(path, text):
+        with open(path, "w", encoding="utf-8", newline="") as fh:
+            fh.write(text)
+
+    pri = os.path.join(dd, "r1")
+    os.makedirs(pri)
+    w(os.path.join(pri, "X_Annotation_Manifest_r1.md"), _manifest_text(prior_man))
+    w(os.path.join(pri, "X_Findings_Ledger_r1.md"),
+      "# Ledger\n"
+      + finding("F-HOLD-01", "the want never forces a sacrifice so stakes stay abstract", ["Ch 7"]) + "\n"
+      + finding("F-GONE-01", "a sentence slated for the cut creates a continuity seam", ["Ch 9"]) + "\n")
+    # round 1 claimed both resolved -> the recompute yields recurrence-candidate (F-HOLD recurs) and
+    # resolved-and-held (F-GONE, no match).
+    w(os.path.join(pri, "X_Revision_Report_r1.md"),
+      "# Revision Report\n<!-- resolved: F-HOLD-01 -->\n<!-- resolved: F-GONE-01 -->\n")
+    new_snap = os.path.join(dd, "X_Manuscript_Snapshot_r2.md")
+    w(new_snap, am.normalize_snapshot("# Chapter 7\nThe want never forces a sacrifice here.\n# Chapter 9\nx\n"))
+
+    aligned_record = ("# Roundtrip Disposition — X r2\ncompares: r1 → r2\n\n"
+                      "| finding | anchor class | regression class | proposed | decision |\n"
+                      "|---|---|---|---|---|\n"
+                      "| F-GONE-01 | vanished | resolved-and-held | confirm-resolved | confirm-resolved |\n"
+                      "| F-HOLD-01 | held | recurrence-candidate | keep-open | keep-open |\n\n"
+                      "<!-- disposition: F-GONE-01 anchor=vanished regression=resolved-and-held "
+                      "decision=confirm-resolved -->\n"
+                      "<!-- disposition: F-HOLD-01 anchor=held regression=recurrence-candidate "
+                      "decision=keep-open -->\n")
+    token = "<!-- disposition-confirmed: operator 2026-07-01T14-30 -->\n"
+    report = "# Revision Report\n- Flags resolved: F-GONE-01\n<!-- resolved: F-GONE-01 -->\n"
+
+    seq = {"n": 0}
+
+    def cur_folder(record, rep=report, ledger=True):
+        seq["n"] += 1
+        cur = os.path.join(dd, "r2-%d" % seq["n"])
+        os.makedirs(cur)
+        if ledger:
+            w(os.path.join(cur, "X_Findings_Ledger_r2.md"),
+              "# Ledger\n" + finding("F-HOLD-01", "the want still never forces a sacrifice; "
+                                     "stakes remain abstract", ["Ch 7"]) + "\n")
+        if record is not None:
+            w(os.path.join(cur, "X_Roundtrip_Disposition_r2.md"), record)
+        if rep is not None:
+            w(os.path.join(cur, "X_Revision_Report_r2.md"), rep)
+        return cur
+
+    # absent record -> PASS no-op (safe anywhere).
+    code, lines = disposition([pri, new_snap, cur_folder(None, rep=None)])
+    chk("dispo_absent_record_noop", code == 0 and any("nothing to check" in x for x in lines))
+
+    # aligned record + token + confirmed-only marker -> PASS, no warns; wording stays inside the
+    # honesty ceiling (never "operator confirmed").
+    code, lines = disposition([pri, new_snap, cur_folder(aligned_record + token)])
+    txt = "\n".join(lines)
+    chk("dispo_aligned_pass", code == 0 and "disposition:confirm-resolved F-GONE-01" in txt
+        and "disposition:keep-open F-HOLD-01" in txt and "PASS" in txt)
+    chk("dispo_no_warns_when_clean", "W1" not in txt)
+    chk("dispo_honesty_wording", "record of confirmation present and consistent" in txt
+        and "operator confirmed" not in txt)
+    chk("dispo_deterministic", disposition([pri, new_snap, cur_folder(aligned_record + token)])[1][1:]
+        == lines[1:])   # line 0 names the (per-case) record folder's basename-invariant record name
+
+    # RT1 wrong class: the record claims F-GONE-01 held (it vanished) -> FAIL.
+    bad = aligned_record.replace("F-GONE-01 anchor=vanished", "F-GONE-01 anchor=held") + token
+    code, lines = disposition([pri, new_snap, cur_folder(bad)])
+    chk("dispo_rt1_wrong_anchor_class", code == 1 and any("RT1" in x and "anchor=held" in x for x in lines))
+
+    # RT1 wrong regression class (stale/fabricated evidence) -> FAIL.
+    bad = aligned_record.replace("regression=recurrence-candidate decision=keep-open",
+                                 "regression=resolved-and-held decision=keep-open") + token
+    code, lines = disposition([pri, new_snap, cur_folder(bad)])
+    chk("dispo_rt1_wrong_regression_class", code == 1 and any("RT1" in x for x in lines))
+
+    # RT1 unknown id: a row for a finding the RA3 partition never had -> FAIL.
+    bad = aligned_record + "<!-- disposition: F-NOPE-01 anchor=held regression=none decision=keep-open -->\n" + token
+    code, lines = disposition([pri, new_snap, cur_folder(bad)])
+    chk("dispo_rt1_unknown_id", code == 1 and any("RT1" in x and "F-NOPE-01" in x for x in lines))
+
+    # RT1 compares-header drift: names a prior round that is not the actual input -> FAIL.
+    bad = (aligned_record + token).replace("compares: r1 → r2", "compares: r0 → r2")
+    code, lines = disposition([pri, new_snap, cur_folder(bad)])
+    chk("dispo_rt1_compares_header", code == 1 and any("RT1" in x and "compares" in x for x in lines))
+    bad = (aligned_record + token).replace("compares: r1 → r2\n", "")
+    chk("dispo_rt1_compares_missing",
+        disposition([pri, new_snap, cur_folder(bad)])[0] == 1)
+
+    # RT1 malformed row / duplicate row -> FAIL (the record grammar is closed).
+    bad = aligned_record + "<!-- disposition: F-HOLD-01 anchor=held regression=none decision=maybe -->\n" + token
+    code, lines = disposition([pri, new_snap, cur_folder(bad)])
+    chk("dispo_rt1_malformed_decision", code == 1 and any("malformed" in x for x in lines))
+    bad = (aligned_record
+           + "<!-- disposition: F-HOLD-01 anchor=held regression=recurrence-candidate decision=declined -->\n"
+           + token)
+    code, lines = disposition([pri, new_snap, cur_folder(bad)])
+    chk("dispo_rt1_duplicate_row", code == 1 and any("duplicate" in x for x in lines))
+
+    # RT2 decided rows without the confirmation token -> FAIL (no decision stands on the record alone).
+    code, lines = disposition([pri, new_snap, cur_folder(aligned_record)])
+    chk("dispo_rt2_no_token", code == 1 and any("RT2" in x for x in lines))
+
+    # RT3 resolved marker without a confirm-resolved row (the auto-close) -> FAIL.
+    rep = report + "<!-- resolved: F-HOLD-01 -->\n"
+    code, lines = disposition([pri, new_snap, cur_folder(aligned_record + token, rep=rep)])
+    chk("dispo_rt3_unconfirmed_marker", code == 1 and any("RT3" in x and "F-HOLD-01" in x for x in lines))
+
+    # W1 pending rows: advisory by default, ERROR under --strict.
+    pend = aligned_record.replace(
+        "regression=recurrence-candidate decision=keep-open",
+        "regression=recurrence-candidate decision=pending") + token
+    code, lines = disposition([pri, new_snap, cur_folder(pend)])
+    chk("dispo_w1_pending_warn", code == 0 and any("W1 unadjudicated" in x for x in lines))
+    chk("dispo_w1_pending_strict_fails",
+        disposition([pri, new_snap, cur_folder(pend)], strict=True)[0] == 1)
+
+    # W1 staged: confirm-resolved not yet reflected as a resolved marker (no report at all).
+    code, lines = disposition([pri, new_snap, cur_folder(aligned_record + token, rep=None)])
+    chk("dispo_w1_staged_warn", code == 0 and any("W1 staged" in x and "F-GONE-01" in x for x in lines))
+
+    # RT4 omitted row: the record simply DROPS F-HOLD-01 (no row at all) -> WARN by default naming
+    # the missing id, ERROR under --strict — a partial record must never read as round-close clean
+    # (the silently-omitted-finding hole; a record that exists is a round-close record, so coverage
+    # of the recomputed RA3 partition is expected — carry-only exit (a) writes no record at all).
+    omit = ("# Roundtrip Disposition — X r2\ncompares: r1 → r2\n\n"
+            "<!-- disposition: F-GONE-01 anchor=vanished regression=resolved-and-held "
+            "decision=confirm-resolved -->\n" + token)
+    code, lines = disposition([pri, new_snap, cur_folder(omit)])
+    chk("dispo_rt4_omitted_row_warn", code == 0
+        and any("RT4" in x and "F-HOLD-01" in x for x in lines))
+    chk("dispo_rt4_omitted_row_strict_fails",
+        disposition([pri, new_snap, cur_folder(omit)], strict=True)[0] == 1)
+
+    # carry-only round: no ledger in this_run (no crossref join yet) -> regression=none rows align.
+    carry = ("# Roundtrip Disposition — X r2\ncompares: r1 → r2\n\n"
+             "<!-- disposition: F-GONE-01 anchor=vanished regression=none decision=needs-placement -->\n"
+             "<!-- disposition: F-HOLD-01 anchor=held regression=none decision=pending -->\n" + token)
+    code, lines = disposition([pri, new_snap, cur_folder(carry, rep=None, ledger=False)])
+    chk("dispo_carry_only_none_rows", code == 0 and any("W1 unadjudicated: F-HOLD-01" in x for x in lines))
+
+    # usage: two args -> 2.
+    chk("dispo_usage_two_args", disposition([pri, new_snap])[0] == 2)
+    chk("dispo_missing_folder", disposition([pri, new_snap, os.path.join(dd, "nope")])[0] == 2)
+
+
 def run_via(manifest_obj, n1_snapshot, strict=False):
     return reanchor(manifest_obj, n1_snapshot, "X_Manuscript_Snapshot_rN1.md", strict=strict)
 
 
-_USAGE = ("Usage: reanchor.py reanchor <prior_run_folder> <new_snapshot> [--strict]\n"
-          "       reanchor.py emit     <prior_run_folder> <new_snapshot> [-o <out_dir>]\n"
-          "       reanchor.py crossref <prior_run_folder> <new_snapshot> <this_run_folder> [--strict]\n"
+_USAGE = ("Usage: reanchor.py reanchor    <prior_run_folder> <new_snapshot> [--strict]\n"
+          "       reanchor.py emit        <prior_run_folder> <new_snapshot> [-o <out_dir>]\n"
+          "       reanchor.py crossref    <prior_run_folder> <new_snapshot> <this_run_folder> [--strict]\n"
+          "       reanchor.py disposition <prior_run_folder> <new_snapshot> <this_run_folder> [--strict]\n"
           "       reanchor.py --self-test")
 
 
@@ -811,7 +1194,7 @@ def main(argv):
         print("reanchor: annotation_manifest is unavailable (same-dir import failed)")
         return 2
     sub = argv[1] if len(argv) > 1 else None
-    rest = argv[2:] if sub in ("reanchor", "emit", "crossref") else argv[1:]
+    rest = argv[2:] if sub in ("reanchor", "emit", "crossref", "disposition") else argv[1:]
     strict = "--strict" in rest
     # Pull an `-o <out_dir>` pair (emit only) out of the positionals.
     out_dir = None
@@ -827,6 +1210,8 @@ def main(argv):
         code, lines = emit(paths, out_dir=out_dir)
     elif sub == "crossref":
         code, lines = crossref(paths, strict=strict)
+    elif sub == "disposition":
+        code, lines = disposition(paths, strict=strict)
     else:   # default + explicit `reanchor`
         code, lines = run(paths, strict=strict)
     for ln in lines:

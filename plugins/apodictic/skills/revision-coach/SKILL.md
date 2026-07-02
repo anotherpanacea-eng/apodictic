@@ -95,7 +95,7 @@ Before picking a mode, the coach can answer **"what's the highest-leverage thing
 4. All Must-Fix `revised`, Should-Fix still open → **Session Planning** at the next severity tier.
 5. All findings `revised` and `control_questions.open == 0` → offer **submission readiness** (`/ready`).
 
-**Precedence with the lifecycle node (Increment 3).** At the `revising` node `/start` dispatches here; this ladder is the *decider* of the next action, and the sidecar's stored `next_action` is its default/output (used when the ladder is indeterminate), not a competing authority.
+**Precedence with the lifecycle node (Increment 3).** At the `revising` node `/start` dispatches here; this ladder is the *decider* of the next action, and the sidecar's stored `next_action` is its default/output (used when the ladder is indeterminate), not a competing authority. One exception precedes the ladder: when the writer **returns with a revised draft**, `/start`'s round-trip resume offer (`../core-editor/references/state-lifecycle.md` §Round-Trip Re-Anchoring) runs first — the ladder remains the decider otherwise.
 
 The dispatcher reads only existing signals. For **runner-governed** projects the `revision_round` gate (Increment 4a) folds the resolved markers into `finding_states.revised`, so the ladder reads the sidecar field directly; for **non-governed** projects the revision round writes the field directly and the ladder falls back to the markers. Behavior is identical either way.
 
