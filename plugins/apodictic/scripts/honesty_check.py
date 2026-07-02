@@ -306,6 +306,17 @@ def run_self_test():
             print("  %s: FAIL (errs=%s)" % (name, errs))
             rc["v"] = 1
 
+    # non-UTF8 artifact on the CLI read path must degrade to the usage-error exit (2),
+    # never a traceback (the disposition_check adjacent-exception class, swept repo-wide)
+    import os as _os
+    import tempfile as _tf
+    _fd, _nu = _tf.mkstemp(suffix=".md")
+    with _os.fdopen(_fd, "wb") as _fh:
+        _fh.write(b"\xff\xfenot utf-8\xff")
+    check("non_utf8_cli_degrades",
+          [] if main(["honesty_check.py", "deficit-lock", _nu]) == 2 else ["non-2 exit"], True)
+    _os.unlink(_nu)
+
     # ---- heuristic path (id-less findings; backward-compat) ----
     lock = ('<!-- apodictic:finding\n'
             '{"schema":"apodictic.finding.v1","mechanism":"Theo has no arc; protagonist does not change",'
@@ -500,7 +511,7 @@ def main(argv):
         try:
             letter_text = open(argv[2], encoding="utf-8").read()
             ledger_text = open(argv[3], encoding="utf-8").read()
-        except OSError as exc:
+        except (OSError, UnicodeDecodeError) as exc:
             print("Error: %s" % exc)
             return 2
         return report(*softness_check(letter_text, ledger_text), label="softness-check")
@@ -510,7 +521,7 @@ def main(argv):
             return 2
         try:
             ledger_text = open(argv[2], encoding="utf-8").read()
-        except OSError as exc:
+        except (OSError, UnicodeDecodeError) as exc:
             print("Error: %s" % exc)
             return 2
         return report(*deficit_lock(ledger_text), label="deficit-lock")

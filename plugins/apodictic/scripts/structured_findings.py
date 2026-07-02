@@ -155,7 +155,7 @@ def validate_file(path):
     try:
         with open(path, "r", encoding="utf-8") as fh:
             text = fh.read()
-    except OSError as exc:
+    except (OSError, UnicodeDecodeError) as exc:
         return ["%s: cannot read — %s" % (path, exc)]
     if path.endswith(".json"):
         try:
@@ -187,6 +187,15 @@ def run_self_test():
         else:
             print("  %s: FAIL (errs=%s)" % (name, errs))
             results["rc"] = 1
+
+    # non-UTF8 artifact: validate_file must degrade to the cannot-read error path,
+    # never a traceback (the disposition_check adjacent-exception class, swept repo-wide)
+    import tempfile as _tf
+    _fd, _nu = _tf.mkstemp(suffix=".md")
+    with os.fdopen(_fd, "wb") as _fh:
+        _fh.write(b"\xff\xfenot utf-8\xff")
+    check("non_utf8_validate_file_degrades", validate_file(_nu), False)
+    os.unlink(_nu)
 
     F = ('<!-- apodictic:finding\n'
          '{"schema":"apodictic.finding.v1","id":"F-P5-01","mechanism":"m","severity":"Must-Fix",'
