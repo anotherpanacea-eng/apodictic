@@ -13,7 +13,7 @@ artifact-side audit; `run_gate.py --check-state` owns the log-side one for gover
                        apodictic.finding_disposition.v1 (closed-key); `trigger` present iff
                        `deferred`; `reason` non-empty; map key == record id.            ERROR
   DP1 caveat teeth     when a readiness assessment (*Submission_Readiness_Assessment_*.md) is
-                       present and an ACTIVE (finding_states[id] != 'revised') declined/deferred
+                       present and an ACTIVE (not superseded — see DP2.6) declined/deferred
                        Must-Fix exists (sidecar map or markers), the assessment must carry the
                        pinned caveat line(s) — `**Declined Must-Fixes:** …` / `**Deferred
                        Must-Fixes:** …` — naming EVERY such id (a mechanical per-family id-set
@@ -35,6 +35,13 @@ artifact-side audit; `run_gate.py --check-state` owns the log-side one for gover
                        and every active record has a marker in some home (WARN; ERROR under
                        --strict; a governed project's marker awaiting its next revision_round
                        fold is lag, not divergence — exempt).
+                       2.6 uncorroborated supersedence — a dispositioned id whose finding_states
+                       reads 'revised' with no <!-- resolved: F-… --> marker in any reachable
+                       completion artifact (run folder, project root, runs/* archives).
+                       Supersedence is RECOMPUTED, never trusted (the PR #161 recorded-field
+                       rule applied to an exemption gate): an uncorroborated 'revised' leaves
+                       the disposition ACTIVE everywhere — DP1 still owes its caveat, DP2.5
+                       still audits sync (WARN; ERROR under --strict).
 
 Marker homes: the project Diagnostic_State.md Coaching Log, `*_Revision_Report_*.md`, and
 `*_Feedback_Triage_*.md`. Each artifact is optional; a missing one skips its dimension (no false
@@ -43,6 +50,15 @@ severity-floor, structured-findings, finding-trace, regression-diff — a dispos
 override marker and grants no honesty-gate relief (the laundering firewall). The `/ready` workflow
 runs `validate.sh disposition-check <sidecar> <assessment>` BEFORE delivering a verdict; a DP1
 ERROR blocks the verdict. Degrades to an advisory WARN without python3 (the bash dispatcher).
+
+Supersedence trust model (DP2.6, docs/disposition-supersedence-recompute.md): corroboration
+accepts any regex-matched <!-- resolved: F-id --> marker in a reachable *_Revision_Report_*.md —
+evidence artifacts are NOT schema-validated or provenance-checked (markers are the canonical
+record, docs/finding-dispositions.md §Schema 3; the recompute raises the fabrication bar from one
+JSON field edit to forging a completion artifact — the artifact-forgery floor every
+marker-canonical surface shares, by design). Evidence is gathered from the project root and its
+runs/* archives whenever a sidecar was located; an explicit-files invocation gathers no archive
+evidence — pass the archived report as an argument, or invoke via the run folder / project root.
 
   disposition_check.py disposition-check <run_folder|sidecar|files...> [--strict]
   disposition_check.py --self-test
@@ -101,12 +117,19 @@ def _glob_multi(dirs, pattern):
 
 
 def _resolve(paths):
-    """Resolve inputs to (sidecar, state_md, ledger, letter, reports, triages, assessment).
+    """Resolve inputs to (sidecar, state_md, ledger, letter, reports, triages, assessment,
+    evidence_reports).
 
     One dir arg = a run folder (walk up for the sidecar; the Coaching Log home is the sidecar's
     SIBLING Diagnostic_State.md). One .json arg = the sidecar itself (project-root mode: artifacts
     are globbed from the project root and its runs/*/ archives — the /ready invocation shape).
-    Explicit .md files classify by the output-structure.md naming convention."""
+    Explicit .md files classify by the output-structure.md naming convention.
+
+    evidence_reports = every completion artifact reachable from the located sidecar (project root
+    + runs/*/ archives) — the DP2.6 supersedence-corroboration surface ONLY. It never feeds the
+    primary report set, so DP2.1's same-run scoping and DP2.5's marker homes are untouched by the
+    wider glob. No sidecar located (explicit-files mode) -> empty; the caller controls the
+    evidence surface."""
     sidecar = state_md = ledger = letter = assessment = None
     reports, triages = [], []
     dirs = []
@@ -151,7 +174,12 @@ def _resolve(paths):
         cand = os.path.join(os.path.dirname(sidecar) or ".", _STATE_MD)
         if os.path.exists(cand):
             state_md = cand
-    return sidecar, state_md, ledger, letter, reports, triages, assessment
+    evidence = []
+    if sidecar:
+        root = os.path.dirname(sidecar) or "."
+        evidence = _glob_multi([root] + sorted(glob.glob(os.path.join(root, "runs", "*"))),
+                               _REPORT_GLOB)
+    return sidecar, state_md, ledger, letter, reports, triages, assessment, evidence
 
 
 def _has_finding_block(path):
@@ -183,8 +211,11 @@ def _validate_record(fid, rec, where, schema):
 
 
 def check(sidecar_obj, ledger_text, letter_text, report_texts, triage_texts, state_text,
-          assessment_text, strict=False, sidecar_parse_ok=True):
-    """Run the disposition audit over already-read inputs. Returns (code, lines)."""
+          assessment_text, strict=False, sidecar_parse_ok=True, evidence_texts=None):
+    """Run the disposition audit over already-read inputs. Returns (code, lines).
+
+    evidence_texts = archived completion artifacts (project root + runs/*) read for DP2.6
+    supersedence corroboration ONLY — never merged into report_texts (DP2.1/DP2.5 scoping)."""
     lines, errs, warns, notes = [], [], [], []
     if art is None or ft is None:
         return 2, ["disposition-check: apodictic_artifacts/finding_trace unavailable — cannot run"]
@@ -206,10 +237,6 @@ def check(sidecar_obj, ledger_text, letter_text, report_texts, triage_texts, sta
     governed = bool(ex.get("gate_events"))
     triage_summary = (sidecar_obj or {}).get("triage_summary")
 
-    def active(fid):
-        # Supersedence (read-time precedence): finding_states is checked FIRST, everywhere.
-        return finding_states.get(fid) != "revised"
-
     # Marker scan — the three homes, via the shared grammar SSoT (never a local regex).
     marker_homes = ([("coaching-log", state_text)]
                     + [("revision-report", t) for t in (report_texts or [])]
@@ -226,6 +253,20 @@ def check(sidecar_obj, ledger_text, letter_text, report_texts, triage_texts, sta
     resolved_ids = set()
     for t in (report_texts or []):
         resolved_ids |= ft.resolved_cited_ids(t)
+    # Supersedence corroboration surface: the run's own resolved markers PLUS the archived
+    # completion artifacts (evidence_texts — corroboration-only; never folded into resolved_ids
+    # or report_marker_ids, so DP2.1's same-run scoping stays exact).
+    corroborated = set(resolved_ids)
+    for t in (evidence_texts or []):
+        corroborated |= ft.resolved_cited_ids(t)
+
+    def active(fid):
+        # Supersedence (read-time precedence): finding_states is checked FIRST, everywhere — but
+        # RECOMPUTED, never trusted (the PR #161 recorded-field rule applied to an exemption
+        # gate): a sidecar 'revised' supersedes only when a <!-- resolved: fid --> marker
+        # corroborates it in some reachable completion artifact. Uncorroborated 'revised' leaves
+        # the disposition ACTIVE (fail-closed; DP2.6 surfaces the mismatch).
+        return not (finding_states.get(fid) == "revised" and fid in corroborated)
 
     inv = ft.ledger_inventory(ledger_text) if ledger_text else {}
     have_ledger = bool(inv)
@@ -349,6 +390,19 @@ def check(sidecar_obj, ledger_text, letter_text, report_texts, triage_texts, sta
             if active(fid) and fid not in markers:
                 warns.append("DP2.5 record without marker: active finding_dispositions[%s] has no "
                              "disposition marker in any home — the markers are the canonical source" % fid)
+    # 2.6 uncorroborated supersedence — the recompute backstop for the active() exemption (the
+    # PR #161 recorded-field rule): a dispositioned id whose finding_states says 'revised' with no
+    # <!-- resolved --> marker in any reachable completion artifact. Fail-closed: active() already
+    # treats it as ACTIVE above (DP1 caveat owed, DP2.5 audited); this WARN names the mismatch
+    # even when no assessment is present (no verdict to launder yet) or the caveat is already
+    # over-disclosed. Dispositioned ids only — an undispositioned 'revised' consumes no exemption.
+    for fid in sorted(dispositioned):
+        if finding_states.get(fid) == "revised" and fid not in corroborated:
+            warns.append("DP2.6 uncorroborated supersedence: finding_states[%s]=revised but no "
+                         "<!-- resolved: %s --> marker in any reachable completion artifact — "
+                         "the disposition is treated as ACTIVE (DP1 caveat still owed, DP2.5 sync "
+                         "still audited). If genuinely revised, make the completion report "
+                         "reachable (run folder, project root, or runs/ archives)" % (fid, fid))
 
     # ---- report --------------------------------------------------------------------------
     lines.append("disposition-check: %d record(s), %d marker(s)%s"
@@ -380,7 +434,7 @@ def check(sidecar_obj, ledger_text, letter_text, report_texts, triage_texts, sta
 def run(paths, strict=False):
     if art is None or ft is None:
         return 2, ["disposition-check: apodictic_artifacts/finding_trace unavailable — cannot run"]
-    sidecar, state_md, ledger, letter, reports, triages, assessment = _resolve(paths)
+    sidecar, state_md, ledger, letter, reports, triages, assessment, evidence = _resolve(paths)
     if not sidecar and not (reports or triages or state_md):
         return 2, ["disposition-check: nothing to check — need a run folder, a "
                    "Diagnostic_State.meta.json sidecar, or disposition-marker artifacts"]
@@ -399,7 +453,8 @@ def run(paths, strict=False):
                  [t for t in (_read(t_) for t_ in triages) if t is not None],
                  _read(state_md) if state_md else None,
                  _read(assessment) if assessment else None,
-                 strict=strict, sidecar_parse_ok=sc_ok)
+                 strict=strict, sidecar_parse_ok=sc_ok,
+                 evidence_texts=[t for t in (_read(e) for e in evidence) if t is not None])
 
 
 # ---------------------------------------------------------------- self-test
@@ -461,12 +516,12 @@ def run_self_test():
 
     def go(dispositions=None, states=None, triage=None, governed=False, ledger_text=ledger,
            letter=None, reports=(), triages=(), state=coaching, assessment=None, strict=False,
-           no_sidecar=False):
+           no_sidecar=False, evidence=()):
         sc = None if no_sidecar else sidecar(dispositions if dispositions is not None else both,
                                              states if states is not None else dict(states_delivered),
                                              triage, governed)
         return check(sc, ledger_text, letter, list(reports), list(triages), state, assessment,
-                     strict=strict)
+                     strict=strict, evidence_texts=list(evidence))
 
     # clean: records + markers in sync, no assessment (DP1 skipped with a note)
     code, lines = go()
@@ -512,10 +567,25 @@ def run_self_test():
     # an EXTRA caveat id is subset-legal over-disclosure — never an error
     code, _ = go(assessment=caveat + "**Declined Must-Fixes:** F-ZZ-77 — over-disclosed\n")
     check_("dp1_extra_id_subset_legal", code == 0)
-    # a superseded (revised) id is exempt — no caveat owed
+    # a superseded (revised) id is exempt — no caveat owed. The revised state carries its
+    # corroborating completion artifact (a <!-- resolved --> report): supersedence is recomputed
+    # from evidence, never trusted (docs/disposition-supersedence-recompute.md).
     sup_states = dict(states_delivered, **{"F-P5-01": "revised"})
-    code, lines = go(states=sup_states, assessment="**Deferred Must-Fixes:** F-DP-02 — until: beta reads back\n")
+    code, lines = go(states=sup_states, reports=["<!-- resolved: F-P5-01 -->\n"],
+                     assessment="**Deferred Must-Fixes:** F-DP-02 — until: beta reads back\n")
     check_("dp1_superseded_exempt", code == 0)
+    # KEYSTONE (the exploit repro, pre-fix exit 0): the SAME shape with the corroborating report
+    # withheld — a fabricated finding_states 'revised' alone must NOT waive the caveat.
+    code, lines = go(states=sup_states, assessment="**Deferred Must-Fixes:** F-DP-02 — until: beta reads back\n")
+    check_("dp1_fabricated_supersedence_still_owes_caveat",
+           code == 1 and any("DP1 declined Must-Fix F-P5-01" in ln for ln in lines)
+           and any("DP2.6" in ln for ln in lines))
+    # archived-round evidence (project root / runs/* — the rolling-map shape): the resolved
+    # marker arrives via evidence_texts only -> exempt, no DP2.6
+    code, lines = go(states=sup_states, evidence=["# Old report\n<!-- resolved: F-P5-01 -->\n"],
+                     assessment="**Deferred Must-Fixes:** F-DP-02 — until: beta reads back\n")
+    check_("dp1_archived_evidence_exempt",
+           code == 0 and not any("DP2.6" in ln for ln in lines))
     # a Should-Fix disposition needs no caveat (lower tiers are informational)
     only_should = {"F-P5-03": rec("F-P5-03")}
     code, _ = go(dispositions=only_should, state="<!-- declined: F-P5-03 — style call -->",
@@ -575,6 +645,30 @@ def run_self_test():
            go(state="## Coaching Log\n<!-- declined: F-P5-01 — abstraction is the register -->\n",
               strict=True)[0] == 1)
 
+    # ---- DP2.6 (supersedence recompute — docs/disposition-supersedence-recompute.md) ----
+    # uncorroborated 'revised' on a dispositioned id: WARN by default (the mismatch is named even
+    # with no assessment present), ERROR under --strict
+    code, lines = go(states=sup_states)
+    check_("dp2_6_uncorroborated_warns",
+           code == 0 and any("DP2.6 uncorroborated supersedence" in ln and "F-P5-01" in ln for ln in lines))
+    check_("dp2_6_strict_escalates", go(states=sup_states, strict=True)[0] == 1)
+    code, lines = go(states=sup_states, reports=["<!-- resolved: F-P5-01 -->\n"])
+    check_("dp2_6_corroborated_clean", code == 0 and not any("DP2.6" in ln for ln in lines))
+    # a fabricated 'revised' must NOT silence the DP2.5 sync audit (pre-fix it did): F-DP-02's
+    # record has no marker anywhere AND its state is fabricated 'revised' -> both warns fire
+    fab_states = dict(states_delivered, **{"F-DP-02": "revised"})
+    code, lines = go(states=fab_states,
+                     state="## Coaching Log\n<!-- declined: F-P5-01 — abstraction is the register -->\n")
+    check_("dp2_5_not_suppressed_by_fabricated_revised",
+           code == 0 and any("DP2.5 record without marker" in ln and "F-DP-02" in ln for ln in lines)
+           and any("DP2.6" in ln and "F-DP-02" in ln for ln in lines))
+    # corroboration is evidence-ONLY: a resolved marker present only in evidence_texts must not
+    # enter resolved_ids -> no DP2.1 contradiction with a same-run disposition marker (DP2.1's
+    # same-run scoping stays exact; with a leak this exact shape would ERROR)
+    code, lines = go(reports=["# R\n<!-- declined: F-P5-01 — still declining -->\n"],
+                     evidence=["<!-- resolved: F-P5-01 -->\n"])
+    check_("dp2_1_evidence_not_leaked", code == 0 and not any("DP2.1" in ln for ln in lines))
+
     # ---- gardening (state-lifecycle.md §State Gardening) ----
     # active disposition markers survive gardening and must still be FOUND in a gardened state
     # file; a SUPERSEDED disposition compressed to the one-line archive form must NOT parse as an
@@ -617,6 +711,34 @@ def run_self_test():
         fh.write("## Readiness Verdict: READY\nLooks great.\n")
     check_("run_folder_dp1_blocks", run([d])[0] == 1)
     check_("usage_error_on_nothing", run([os.path.join(d, "nope", "nothing.xyz")])[0] == 2)
+
+    # ---- supersedence-recompute end-to-end (run-folder mode + runs/* archive evidence) ----
+    d2 = tempfile.mkdtemp()
+    made.append(d2)
+    cur = os.path.join(d2, "runs", "cur")
+    old = os.path.join(d2, "runs", "old")
+    os.makedirs(cur)
+    os.makedirs(old)
+    with open(os.path.join(d2, "Diagnostic_State.meta.json"), "w", encoding="utf-8", newline="") as fh:
+        json.dump(sidecar(both, dict(sup_states)), fh)
+    with open(os.path.join(d2, _STATE_MD), "w", encoding="utf-8", newline="") as fh:
+        fh.write(coaching)
+    with open(os.path.join(cur, "P_Findings_Ledger_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write(ledger)
+    with open(os.path.join(cur, "Submission_Readiness_Assessment_2026-07-02.md"), "w",
+              encoding="utf-8", newline="") as fh:
+        fh.write("**Deferred Must-Fixes:** F-DP-02 — until: beta reads back\n")
+    old_report = os.path.join(old, "P_Revision_Report_old.md")
+    with open(old_report, "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Revision Report\n<!-- resolved: F-P5-01 -->\n")
+    # the archived earlier-round report corroborates the 'revised' state -> exempt (rolling map)
+    check_("run_folder_archived_evidence_exempt", run([cur])[0] == 0)
+    # delete the archive -> the same tree is the fabrication shape: DP1 blocks + DP2.6 names it
+    os.unlink(old_report)
+    code, lines2 = run([cur])
+    check_("run_folder_fabricated_supersedence_blocks",
+           code == 1 and any("DP1 declined Must-Fix F-P5-01" in ln for ln in lines2)
+           and any("DP2.6" in ln for ln in lines2))
 
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
