@@ -1,7 +1,7 @@
 # Roundtrip Disposition — Example reanchor-r2
 
 <!--
-Canonical fixture for the `roundtrip-disposition` validator (RT1-RT3 + W1), paired with
+Canonical fixture for the `roundtrip-disposition` validator (RT1-RT4 + W1), paired with
 example-roundtrip-revision-report.md. The `--check-all` step stages it as
 Example_Roundtrip_Disposition_reanchor-r2.md in a temp "this round" folder beside a copy of
 ../example-run-folder-r2's ledger, with a temp prior folder holding ../example-annotated-manuscript's
@@ -16,7 +16,9 @@ operator's: one vanished anchor confirmed resolved (and reflected in the compani
 the surviving notes kept open, the two refused re-anchors sent to placement. The human table is
 presentation; the HTML-comment rows are the machine record; the file-level confirmation token is
 written only after every row has been presented and confirmed (state-lifecycle.md §Round-Trip
-Re-Anchoring, step 4). Keep gate-valid: `validate.sh roundtrip-disposition` must PASS with no W1.
+Re-Anchoring, step 4). Every finding in the recomputed partition has a row (RT4 partition
+coverage — the hostile arm drops one row to prove a partial record never reads clean). Keep
+gate-valid: `validate.sh roundtrip-disposition` must PASS with no RT4/W1.
 -->
 
 compares: 2026-01-01 → reanchor-r2

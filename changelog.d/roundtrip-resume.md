@@ -18,7 +18,10 @@ classes and the derived `compares:` header must equal a live reanchor/crossref r
 stale or fabricated evidence), **RT2** confirmation record present (no decided row without the
 token; the validator proves the record, never the human — that layer is the new **rev-a4**
 attested item on the `revision_round` gate), **RT3** confirmed-writes-only (a resolved marker
-without a confirmed disposition — the vanished-anchor auto-close — is an ERROR), **W1**
+without a confirmed disposition — the vanished-anchor auto-close — is an ERROR), **RT4**
+partition coverage (every finding id in the recomputed RA3 partition must have a disposition
+row, missing ids named — a partial record never reads round-close clean; WARN, ERROR
+`--strict`), **W1**
 unadjudicated/staged (advisory; ERROR `--strict`). Existing gates (RA1–RA3, R1, W1–W3, X1,
 rev-a1–a3) and both lifecycle writers are unchanged — the disposition record is a confirmation
 precondition upstream, never a third writer. Closes ROADMAP "Toward truly great" #2's last mile.

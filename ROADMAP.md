@@ -725,7 +725,7 @@ remarkable to indispensable:
    (Increment 2). A one-shot letter is a product; a revision loop in the writer's tool is a habit.
    *The remaining last mile is closed: surfaced as the `/start` round-trip resume offer at the
    bound-project `revising` and `diagnosed` nodes, with the operator-confirmed disposition round-close
-   (`roundtrip-disposition`, RT1–RT3 + `rev-a4` — Increment 3), 2026-07-01.*
+   (`roundtrip-disposition`, RT1–RT4 + `rev-a4` — Increment 3), 2026-07-01.*
 3. **Finish the visualization leg.** Charts 1–3 ship (pacing, POV, severity-by-chapter), **and chart
    7-nonfiction — the claim ladder — now ships render-only** (Manuscript-Visualization Completion M1:
    C0 + subclaims + per-rung support coverage over `argument_spine.v1` + `support_plan.v1`, no scene
