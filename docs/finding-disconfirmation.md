@@ -67,9 +67,12 @@ section is the in-repo precedent for lettered insertion).
 structurally locked, so this pass physically cannot be the softening vector) and after Step 6
 (Adversarial Self-Check — so the pass supplements, not duplicates, the one-sentence calibration
 test), before Step 7. Steps 8–10 then consume the re-mapped confidences; the letter (Step 11) is
-written with refutation outcomes already known. When stub 05-M2 lands, its pre-synthesis
-re-grounding runs *before* Step 6b (re-grounded specificity improves refutation quality); 05-M1's
-coverage note discloses any context degradation independently.
+written with refutation outcomes already known. 05-M2's Pre-Letter Re-Grounding is built as
+**step 9c** — after the step-9b coverage manifest it must update, and therefore *after* Step 6b
+(`docs/synthesis-regrounding.md` §M2.5a; this paragraph's earlier "runs before Step 6b" was a
+stale pre-rework claim). Nothing is lost by the ordering: Step 6b consumes the locked ledger +
+the intake manuscript snapshot, both verbatim disk artifacts that do not decay; 05-M1's coverage
+note discloses any context degradation independently.
 
 **What the pass does, per eligible finding:** an adversarial attempt to refute the diagnosis
 against the manuscript text — hunt counter-evidence spans, generate alternative explanations, then
@@ -541,8 +544,11 @@ forces it: **PR A** = session 1 (inert validators + fixtures, green alone), **PR
 - **Stub 05-M1 (coverage disclosure):** independent; both edit `run-synthesis.md`, hence the
   sequencing, not a logic dependency. A coverage note disclosing degraded context makes V2's
   snapshot-anchored quotes *more* valuable, not less.
-- **Stub 05-M2 (re-grounding):** when it lands, re-grounding precedes Step 6b; no change to this
-  spec's contracts.
+- **Stub 05-M2 (re-grounding):** BUILT as **step 9c** — re-grounding runs *after* Step 6b, not
+  before it as this row once claimed (stale pre-rework text): it must follow the step-9b coverage
+  manifest, which it updates (`docs/synthesis-regrounding.md` §M2.5a). The ordering costs Step 6b
+  nothing — the pass reads the locked ledger + the intake manuscript snapshot, neither of which
+  decays. No change to this spec's contracts.
 
 ## 15. Open Questions (operator)
 
