@@ -1,7 +1,11 @@
 # Spec 05 — Synthesis coverage disclosure (M1) + pre-letter re-grounding (M2) (apodictic)
 
-**Status:** spec-review pass 1 folded 2026-07-01 (verdict: BUILD-READY-WITH-FIXES, 1 P1 —
-resolved by fix 1). Expanded from stub 2026-07-01; all anchors grep/read-verified.
+**Status:** **M1 Built** (this PR — `synthesis_coverage.py` V1–V5 + step 9b + Appendix C note +
+marker + sidecar; Opus build-review READY-WITH-FIXES → V5 letter-family P2 folded; as-built
+corrections in §M1.8); **M2 (pre-letter re-grounding) remains spec**, builds after the
+disconfirmation spec (04). Spec-review pass 1 folded 2026-07-01 (verdict:
+BUILD-READY-WITH-FIXES, 1 P1 — resolved by fix 1); expanded from stub 2026-07-01; all anchors
+grep/read-verified.
 **Estimate:** M1 ~2 sessions, M2 ~2–3 sessions. **Owner of the decision:** craft/editorial trust in
 the whole-novel deliverable.
 **Provenance:** Opus 4.8 pick #3, **trimmed after inventory verification** — the "auto-mode
@@ -13,7 +17,7 @@ re-grounding and honest degrade disclosure.
 Protocol seam and the same `letter_checks.py`-family validator surface, and stacking in-flight
 edits there is how merge trains die. M1 is a **hard dependency of M2 and stays mandatory after
 M2 lands** (disclosure is never replaced by remediation).
-<!-- The M1 build PR adds the live built-when marker (scripts/synthesis_coverage.py) when it flips Status to Built; a spec-stage doc must not carry one (Codex #157 P2). -->
+<!-- built-when: scripts/synthesis_coverage.py -->
 
 ---
 
@@ -335,6 +339,44 @@ advisory WARN without `python3` (the model performs the checks inline per `run-c
 6. Hostile shapes per AGENTS.md review practice: a lookalike filename satisfying the manifest
    glob (`*_Synthesis_Read_Manifest_Draft_*`), malformed-but-valid JSON sidecar (bare-string
    `synthesis_coverage`), empty manifest, manifest naming a nonexistent path.
+
+### 8. As-built corrections (M1 build PR)
+
+Where shipped M1 deviates from the letter of this spec — recorded so nobody "fixes" the build
+back toward stale spec text:
+
+- **(a) Step number: 9b, not a renumber.** §M1.6 said "new Processing Protocol step between
+  Step 9 and Step 10"; the build inserts it as **step 9b** and leaves Steps 10–13 unrenumbered,
+  so every existing cross-reference to the Step 10 pre-output gate and the Step 12 checklist
+  (here, in `run-synthesis.md`, and in the sibling specs) stays valid.
+- **(b) Span-dimension honesty: spans have no disk denominator — by design.** §M1.2's
+  "manuscript spans come from `preflight.sh` output" over-promised: preflight persists no span
+  artifact, so there is nothing on disk to enumerate a span denominator from, and the span half
+  of V2 is **not** a bijection. The teeth that remain are mechanical: V2 requires ≥ 1 span row
+  (the manuscript dimension cannot be omitted), V3 forces three-way agreement (manifest = note
+  table = sidecar span lists/counts), and D2 anchors coverage on the **ledger's `evidence_refs`
+  chapters**, which the manifest cannot edit. Build-review attack trace: a consistently-shrunk
+  span set cannot hide an uncovered Must-Fix, because shrinking the in-context set makes D2 fire
+  *more*, not less. The surviving hole is a false `in-context` **padding** claim in a `declared`
+  single-agent manifest — exactly the §M1.1 honesty ladder's acknowledged
+  labeled-not-laundered gap, not a new one.
+- **(c) The pinned degrade sentence is backtick-free.** Marker/sentence scanning runs on
+  code-span-stripped text (shared `override_marker.strip_code_spans`); a pinned sentence
+  containing backticks could never match post-strip. The shipped `SENT_DEGRADED` carries none —
+  keep it that way if the wording is ever revised.
+- **(d) Manifest resolved by exact derived name (lookalike-proof).** V1 does not glob for
+  manifest-shaped filenames; it constructs the one legal
+  `[Project]_Synthesis_Read_Manifest_[runlabel].md` name from the letter's own project/runlabel
+  and checks that exact file — a `*_Synthesis_Read_Manifest_Draft_*` lookalike (hostile fixture,
+  §M1.7 item 6) cannot satisfy presence.
+- **(e) V5 letter-family branch (build-review P2, folded).** Editor-scaffolding letters
+  (`run-synthesis.md` §Operator mode) replace "The Short Version" with an **Editor Brief**, so
+  V5's degrade-sentence anchor branches on the letter's `<!-- mode: editor-scaffolding -->`
+  marker (the same marker `editor_scaffolding.py` keys on) and scopes to the Editor Brief in
+  that family. The check stays **section-scoped** rather than searching the whole body: the
+  sentence's job is to surface the degrade in the reader-facing summary paragraph, and a
+  body-wide match would let it hide in Appendix C — where coverage prose already lives —
+  defeating "body is canonical; appendices hold evidence" (§M1.3).
 
 ---
 

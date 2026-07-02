@@ -178,7 +178,7 @@ set -euo pipefail
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).
-AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff revision-arc regression-diff legal-risk promise-contract continuity-bible world-bible intake-interview author-fingerprint content-advisory style-explanation persona-divergence argument-spine scene-ethics argument-groundtruth-check registry-check schema-coverage lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor roundtrip-disposition disposition-check obsidian-export html-export docx-export validator-conventions argument-carve-behavior-preservation check-mirror"
+AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff revision-arc regression-diff legal-risk promise-contract continuity-bible world-bible intake-interview author-fingerprint content-advisory style-explanation persona-divergence argument-spine scene-ethics argument-groundtruth-check registry-check schema-coverage lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor roundtrip-disposition disposition-check synthesis-coverage obsidian-export html-export docx-export validator-conventions argument-carve-behavior-preservation check-mirror"
 # shellcheck disable=SC2086  # intentional word-splitting to count list entries
 AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 
@@ -228,9 +228,9 @@ _has_override() {
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, revision-arc, regression-diff, legal-risk, promise-contract, continuity-bible, world-bible, intake-interview, author-fingerprint, content-advisory, style-explanation, persona-divergence, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, schema-coverage, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, disposition-check, obsidian-export, html-export, docx-export, validator-conventions, argument-carve-behavior-preservation, check-mirror"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, revision-arc, regression-diff, legal-risk, promise-contract, continuity-bible, world-bible, intake-interview, author-fingerprint, content-advisory, style-explanation, persona-divergence, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, schema-coverage, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, disposition-check, synthesis-coverage, obsidian-export, html-export, docx-export, validator-conventions, argument-carve-behavior-preservation, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, revision-arc vs the canonical Revision Arc + its Findings Ledger (A1 schema/nested-phase shape, A2 provenance closure, A3 self-consistency — one-phase-per-finding + Must-Fix-root-cause-not-in-polish, A4 non-empty rationale; clean W1 firewall-drift + W2 orphan under --strict), regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), world-bible vs the canonical Worldbuilding Bible example (W1 schema + closed-key, WD unique ids, WB-R1 rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a unit class, WB-G2 chronology cycle + anchor-drift, and the WF surface-don't-resolve firewall scan — clean under --strict with the staged contradictions overridden), intake-interview vs the canonical Intake Interview example + its Ledger (I1 schema, I2 no-contract-dup, I3 grounded ambiguity via ref + source_note, I4 calibrate-not-suppress under --strict), author-fingerprint vs the canonical Author Voice Profile (F1 schema, F2 provenance, F3 same-register comparison, F4 descriptive-not-prescriptive, clean W1/W2 under --strict), content-advisory vs the canonical Content Advisory (A1 schema, A2 locus shape, A3 no-severity-leak, descriptive W1, opt-in W2 under --strict), style-explanation vs the canonical Author Style Explanation (X1 schema, X2 provenance, X3 no-severity-leak, X4 descriptive-not-prescriptive incl. the comparison-to-emulate firewall, X5 same-register cluster, clean X6/W1 under --strict), persona-divergence vs the canonical Persona Divergence Map + its Ledger (D1 schema incl. nested experiences enum, D2 grounded prediction, D3 target-severity anchoring, D4 anti-fabrication, D5 closed-key persona under --strict), argument-spine vs the canonical pre-draft Argument_State + the three genre-profiled Argument_States (Increment 5: B1-B4 + W4 over grant / academic / pitch, --strict), scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources + the pre-draft Argument_State spine (the claim-ladder X1/X5/X6/X7 gates) + the scene-roster producer (the co-presence X2 gate), annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), roundtrip-disposition vs the canonical Roundtrip Disposition record + companion Revision Report staged with the glue-chain fixtures (RT1 recompute alignment + RT2 confirmation-record + RT3 confirmed-writes-only + RT4 partition coverage, plus hostile arms — a token-stripped copy must FAIL RT2, an extra unconfirmed resolved marker must FAIL RT3, and a copy with one finding's disposition row dropped must WARN RT4 by default and FAIL under --strict), disposition-check vs the canonical example-run-folder-dispositions (a non-governed sidecar + Coaching Log markers + readiness-caveat excerpt: DP0 record shape incl. trigger-iff-deferred, DP1 declined/deferred-Must-Fix caveat coverage, DP2 no-laundering incl. the bidirectional marker/sidecar sync — plus hostile arms: an assessment stripped of its Declined caveat line must FAIL DP1 (the severity-laundering attempt), a deferred record stripped of its trigger must FAIL DP0, and a sidecar with one record dropped must WARN DP2.5 by default and FAIL under --strict), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, schema-coverage vs the real schemas/ dir (every apodictic.*.schema.json bound + canonically exercised + closed-key table<->file agreement — Harness Contracts v2), plus validator-conventions (the fleet meta-linter — M1 every AGG validator has a --self-test dispatcher case, M2 resolvers classify on parsed blocks not raw apodictic:<type> marker scans, M3 derived count, M4 no orphan schema, M5 no bare/compiled override-marker scan + M6 no local code-span stripper — overrides use the override_marker SSoT), plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, revision-arc vs the canonical Revision Arc + its Findings Ledger (A1 schema/nested-phase shape, A2 provenance closure, A3 self-consistency — one-phase-per-finding + Must-Fix-root-cause-not-in-polish, A4 non-empty rationale; clean W1 firewall-drift + W2 orphan under --strict), regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), world-bible vs the canonical Worldbuilding Bible example (W1 schema + closed-key, WD unique ids, WB-R1 rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a unit class, WB-G2 chronology cycle + anchor-drift, and the WF surface-don't-resolve firewall scan — clean under --strict with the staged contradictions overridden), intake-interview vs the canonical Intake Interview example + its Ledger (I1 schema, I2 no-contract-dup, I3 grounded ambiguity via ref + source_note, I4 calibrate-not-suppress under --strict), author-fingerprint vs the canonical Author Voice Profile (F1 schema, F2 provenance, F3 same-register comparison, F4 descriptive-not-prescriptive, clean W1/W2 under --strict), content-advisory vs the canonical Content Advisory (A1 schema, A2 locus shape, A3 no-severity-leak, descriptive W1, opt-in W2 under --strict), style-explanation vs the canonical Author Style Explanation (X1 schema, X2 provenance, X3 no-severity-leak, X4 descriptive-not-prescriptive incl. the comparison-to-emulate firewall, X5 same-register cluster, clean X6/W1 under --strict), persona-divergence vs the canonical Persona Divergence Map + its Ledger (D1 schema incl. nested experiences enum, D2 grounded prediction, D3 target-severity anchoring, D4 anti-fabrication, D5 closed-key persona under --strict), argument-spine vs the canonical pre-draft Argument_State + the three genre-profiled Argument_States (Increment 5: B1-B4 + W4 over grant / academic / pitch, --strict), scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources + the pre-draft Argument_State spine (the claim-ladder X1/X5/X6/X7 gates) + the scene-roster producer (the co-presence X2 gate), annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), roundtrip-disposition vs the canonical Roundtrip Disposition record + companion Revision Report staged with the glue-chain fixtures (RT1 recompute alignment + RT2 confirmation-record + RT3 confirmed-writes-only + RT4 partition coverage, plus hostile arms — a token-stripped copy must FAIL RT2, an extra unconfirmed resolved marker must FAIL RT3, and a copy with one finding's disposition row dropped must WARN RT4 by default and FAIL under --strict), disposition-check vs the canonical example-run-folder-dispositions (a non-governed sidecar + Coaching Log markers + readiness-caveat excerpt: DP0 record shape incl. trigger-iff-deferred, DP1 declined/deferred-Must-Fix caveat coverage, DP2 no-laundering incl. the bidirectional marker/sidecar sync — plus hostile arms: an assessment stripped of its Declined caveat line must FAIL DP1 (the severity-laundering attempt), a deferred record stripped of its trigger must FAIL DP0, and a sidecar with one record dropped must WARN DP2.5 by default and FAIL under --strict), synthesis-coverage vs the canonical coverage run folders (green hybrid dispatch-derived + degraded-and-disclosed, both PASS incl. --strict — V1 presence, V2 disk<->manifest row bijection, V3 note/sidecar/marker projection, V4 provenance/mode agreement, V5 D1-D4 degrade recompute; plus hostile arms — a manifest row removed for an on-disk pass artifact must FAIL V2, a letter marker flipped against the sidecar must FAIL V3, and a degraded run masked to ok in marker+sidecar must WARN V5 by default and FAIL under --strict), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, schema-coverage vs the real schemas/ dir (every apodictic.*.schema.json bound + canonically exercised + closed-key table<->file agreement — Harness Contracts v2), plus validator-conventions (the fleet meta-linter — M1 every AGG validator has a --self-test dispatcher case, M2 resolvers classify on parsed blocks not raw apodictic:<type> marker scans, M3 derived count, M4 no orphan schema, M5 no bare/compiled override-marker scan + M6 no local code-span stripper — overrides use the override_marker SSoT), plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -919,6 +919,70 @@ PY
       fi
     else
       echo "ERROR: $CA_BASE/example-run-folder not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical synthesis coverage (green + degraded-and-disclosed run folders; V2/V3 hostile arms; V5 masking arm) =="
+    if [ -d "$CA_BASE/example-run-folder-coverage" ] && [ -d "$CA_BASE/example-run-folder-coverage-degraded" ]; then
+      CA_SCV_SRC="$CA_BASE/example-run-folder-coverage"
+      CA_SCVD_SRC="$CA_BASE/example-run-folder-coverage-degraded"
+      CA_SCV_OK=1
+      # Both canonical folders are clean under the default AND --strict postures: the green hybrid
+      # dispatch-derived run, and the degraded run that DISCLOSES its degrade (the note fires and
+      # passes — the boy-who-cried-degraded guard's positive case).
+      "$0" synthesis-coverage "$CA_SCV_SRC" >/dev/null 2>&1 || CA_SCV_OK=0
+      "$0" synthesis-coverage "$CA_SCV_SRC" --strict >/dev/null 2>&1 || CA_SCV_OK=0
+      "$0" synthesis-coverage "$CA_SCVD_SRC" >/dev/null 2>&1 || CA_SCV_OK=0
+      "$0" synthesis-coverage "$CA_SCVD_SRC" --strict >/dev/null 2>&1 || CA_SCV_OK=0
+      [ "$CA_SCV_OK" -eq 1 ] || echo "  canonical coverage folders: FAIL (expected clean PASS incl. --strict)"
+      if command -v python3 >/dev/null 2>&1; then
+        CA_SCV=$(mktemp -d)
+        # h1 — shrunk denominator: drop the Pass 5 row from the manifest while the artifact stays
+        # on disk => V2 FAIL (blocking day one; the manifest cannot shrink the denominator).
+        mkdir -p "$CA_SCV/h1"; cp "$CA_SCV_SRC"/* "$CA_SCV/h1/"
+        grep -v "Example_Pass5_Character_Audit" "$CA_SCV/h1/Example_Synthesis_Read_Manifest_2026-01-01_opus46.md" > "$CA_SCV/h1/m.tmp" \
+          && mv "$CA_SCV/h1/m.tmp" "$CA_SCV/h1/Example_Synthesis_Read_Manifest_2026-01-01_opus46.md"
+        if SCV_OUT=$("$0" synthesis-coverage "$CA_SCV/h1" 2>&1); then
+          echo "  h1 shrunk-denominator: FAIL (expected V2 exit 1)"; CA_SCV_OK=0
+        else
+          echo "$SCV_OUT" | grep -q "ERROR V2" && echo "  h1 shrunk-denominator: OK (V2 caught)" \
+            || { echo "  h1 shrunk-denominator: FAIL (exit 1 but no V2 finding)"; CA_SCV_OK=0; }
+        fi
+        # h2 — marker flipped against the sidecar: one declaration, one place => V3 FAIL.
+        mkdir -p "$CA_SCV/h2"; cp "$CA_SCV_SRC"/* "$CA_SCV/h2/"
+        sed 's/<!-- coverage: ok -->/<!-- coverage: degraded -->/' "$CA_SCV/h2/Example_Core_DE_Synthesis_2026-01-01_opus46.md" > "$CA_SCV/h2/l.tmp" \
+          && mv "$CA_SCV/h2/l.tmp" "$CA_SCV/h2/Example_Core_DE_Synthesis_2026-01-01_opus46.md"
+        if SCV_OUT=$("$0" synthesis-coverage "$CA_SCV/h2" 2>&1); then
+          echo "  h2 marker-vs-sidecar: FAIL (expected V3 exit 1)"; CA_SCV_OK=0
+        else
+          echo "$SCV_OUT" | grep -q "ERROR V3" && echo "  h2 marker-vs-sidecar: OK (V3 caught)" \
+            || { echo "  h2 marker-vs-sidecar: FAIL (exit 1 but no V3 finding)"; CA_SCV_OK=0; }
+        fi
+        # h3 — masking (spec fixture M1-2 letter B): the degraded run's marker AND sidecar flipped
+        # to ok while the manifest still computes degraded => V5 WARN by default (advisory-first
+        # launch posture, gate pass-with-warn), FAIL under --strict.
+        mkdir -p "$CA_SCV/h3"; cp "$CA_SCVD_SRC"/* "$CA_SCV/h3/"
+        sed 's/<!-- coverage: degraded -->/<!-- coverage: ok -->/' "$CA_SCV/h3/Example_Core_DE_Synthesis_2026-01-01_opus46.md" > "$CA_SCV/h3/l.tmp" \
+          && mv "$CA_SCV/h3/l.tmp" "$CA_SCV/h3/Example_Core_DE_Synthesis_2026-01-01_opus46.md"
+        sed 's/"coverage": "degraded"/"coverage": "ok"/' "$CA_SCV/h3/Diagnostic_State.meta.json" > "$CA_SCV/h3/s.tmp" \
+          && mv "$CA_SCV/h3/s.tmp" "$CA_SCV/h3/Diagnostic_State.meta.json"
+        if SCV_OUT=$("$0" synthesis-coverage "$CA_SCV/h3" 2>&1); then
+          echo "$SCV_OUT" | grep -q "WARN V5" && echo "  h3 masking-default: OK (V5 surfaced as WARN)" \
+            || { echo "  h3 masking-default: FAIL (exit 0 but no V5 WARN)"; CA_SCV_OK=0; }
+        else
+          echo "  h3 masking-default: FAIL (expected advisory exit 0 with V5 WARN)"; CA_SCV_OK=0
+        fi
+        "$0" synthesis-coverage "$CA_SCV/h3" --strict >/dev/null 2>&1 \
+          && { echo "  h3 masking-strict: FAIL (expected exit 1 under --strict)"; CA_SCV_OK=0; } \
+          || echo "  h3 masking-strict: OK (caught)"
+        rm -rf "$CA_SCV"
+      fi
+      if [ "$CA_SCV_OK" -eq 1 ]; then
+        echo "synthesis-coverage (canonical + hostile arms): PASS"
+      else
+        echo "synthesis-coverage (canonical + hostile arms): FAIL"; CA_FAIL=1
+      fi
+    else
+      echo "ERROR: $CA_BASE/example-run-folder-coverage(+-degraded) not found (synthesis-coverage)"; CA_FAIL=1
     fi
     echo ""
   fi
@@ -5117,6 +5181,46 @@ EOF
       python3 "$DPC_HELPER" disposition-check "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — disposition-check skipped; verify inline that every finding_dispositions record is schema-shaped (trigger iff deferred, non-empty reason), that every ACTIVE declined/deferred Must-Fix is named on the readiness assessment's '**Declined/Deferred Must-Fixes:**' caveat line(s), and that markers and sidecar records agree. See docs/finding-dispositions.md."
+    exit 0
+    ;;
+
+  synthesis-coverage)
+    # Synthesis coverage disclosure gate (docs/synthesis-regrounding.md, M1): a run that wrote a
+    # full editorial letter (*_Core_DE_Synthesis_* / *_Full_DE_Synthesis_*) must disclose what the
+    # synthesis step could actually see. The disclosure is computed FROM the artifact-read manifest
+    # ([Project]_Synthesis_Read_Manifest_[runlabel].md, written BEFORE the letter — run-synthesis.md
+    # §Processing Protocol step 9b), and the manifest's denominator is enumerated FROM DISK
+    # (run-folder globs) — never from the letter's own prose. V1 presence (manifest, exact name — a
+    # *_Manifest_Draft_* lookalike does not count; the Appendix C `### Synthesis Coverage`
+    # subsection; the `<!-- coverage: ok|degraded -->` title-block marker; the sidecar
+    # synthesis_coverage object). V2 completeness (disk<->manifest row bijection — the manifest can
+    # neither shrink nor pad the denominator). V3 reconciliation (the note table + sidecar tallies
+    # are exact projections of the manifest; coverage == the letter marker; one marker, one place).
+    # V4 provenance/mode agreement (sequential/hybrid/swarm => dispatch-derived, `declared` FAILS —
+    # the cheap lie is blocked; single-agent => declared + the pinned not-platform-verified sentence
+    # verbatim). V5 degrade disclosure (ok|degraded RECOMPUTED from the D1-D4 truth table — absent
+    # artifact rows, uncovered synthesis-bound findings, >60% single-agent context utilization,
+    # zero excerpts under a Must-Fix — masking fails louder than degrading; normal multi-agent
+    # outline-mediated coverage is NOT degraded). No override markers exist for any check —
+    # disclosure is not overridable; the only escape is fixing the manifest. LAUNCH POSTURE
+    # (operator call folded 2026-07-01, spec §Open questions #1): V2/V3/V4 fiction-checks are
+    # BLOCKING day one (exit 1); V1/V5 — and so the overall gate — are ADVISORY-FIRST for one
+    # release (print WARN at exit 0, the escalation-check posture; the run_spot_check gate records
+    # pass-with-warn); --strict promotes V1/V5 to ERROR. Nothing in the manifest or sidecar ever
+    # drives a filesystem read/write — row ids and paths are compared as strings against this
+    # validator's own enumeration. Delegates to scripts/synthesis_coverage.py; degrades to an
+    # advisory WARN without python3.
+    SCV_DIR=$(cd "$(dirname "$0")" && pwd)
+    SCV_HELPER="$SCV_DIR/synthesis_coverage.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$SCV_HELPER" ]; then python3 "$SCV_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; synthesis-coverage is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$SCV_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 synthesis-coverage <run_folder> [--strict] | --self-test"; exit 2; fi
+      python3 "$SCV_HELPER" synthesis-coverage "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — synthesis-coverage skipped; verify inline that the Synthesis Read Manifest exists and covers every on-disk pass artifact / Findings Ledger / Contract / audit file with a closed-enum status, that the letter's Appendix C 'Synthesis Coverage' note and the sidecar synthesis_coverage object are exact projections of the manifest, that provenance matches the execution mode (multi-agent => dispatch-derived), and that the <!-- coverage: ok|degraded --> title-block marker matches the recomputed D1-D4 degrade state. See docs/synthesis-regrounding.md."
     exit 0
     ;;
 
