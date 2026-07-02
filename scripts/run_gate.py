@@ -949,14 +949,32 @@ def run_self_test():
     check("skip_recorded_open",
           exs["gate_events"][-1]["result"] == "skipped" and exs.get("pending_gate") == "run_synthesis")
 
-    # --- pending_gate tracks the WARNED gate, not the last passed one (Codex P1#2 scenario)
-    # synthesis cleared, spot_check pass-with-warn (softness WARN)
+    # --- pending_gate tracks the non-cleared gate, not the last passed one (Codex P1#2
+    # scenario): synthesis cleared, spot_check runs and does NOT clear. run_spot_check now
+    # also requires the Step 6b Refutation Record (finding-disconfirmation), so stage a
+    # green snapshot + record for the ledger's F-P5-01 (Must-Fix HIGH; survived, sha-bound)
+    # — the three refutation checks stay green and the scenario's original check surface
+    # (the minimal letter's own non-green checks) is what keeps the gate un-cleared.
     dw = folder(ledger_ok)
     cmd_gate("run_synthesis", dw, manifest, write=True, validate_sh=vs)
     cmd_attest("run_synthesis", dw, manifest, write=True, validate_sh=vs)
     with open(os.path.join(dw, "Proj_Core_DE_Synthesis_run.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write("# Edit\n## What Needs Work\nTheo's arc could perhaps be strengthened (Chapter 34).\n"
                  "## Appendix B: Severity Calibration\nTheo arc: Severity held at Must-Fix.\n")
+    snap_text = "Chapter 34\n\nTheo watches the harbor and never chooses, and the chapter ends unchanged.\n"
+    with open(os.path.join(dw, "Proj_Manuscript_Snapshot_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write(snap_text)
+    with open(os.path.join(dw, "Proj_Refutation_Record_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write('# Refutation Record\n\n<!-- apodictic:refutation\n'
+                 '{"schema":"apodictic.refutation.v1","id":"F-P5-01","attempted":true,'
+                 '"outcome":"survived","counter_evidence_quotes":'
+                 '["Theo watches the harbor and never chooses, and the chapter ends unchanged."],'
+                 '"alternative_explanations":["Stillness could be the design — Ch. 34 frames it as watching, but no choice is paid for there either."],'
+                 '"rationale":"A scene where Theo chooses under pressure would refute this; none found.",'
+                 '"confidence_after":"HIGH","snapshot_path":"Proj_Manuscript_Snapshot_run.md",'
+                 '"snapshot_sha256":"%s"}\n-->\n\n<!-- apodictic:refutation_budget\n'
+                 '{"schema":"apodictic.refutation_budget.v1","cap":15,"eligible":1,"processed":1,"bound":false}\n-->\n'
+                 % hashlib.sha256(snap_text.encode("utf-8")).hexdigest())
     code, _ = cmd_gate("run_spot_check", dw, manifest, write=True, validate_sh=vs)
     exw = read_ex(dw)
     check("warn_pending_is_spot_check",

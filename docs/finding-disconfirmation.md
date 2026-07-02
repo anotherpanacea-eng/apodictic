@@ -1,8 +1,11 @@
 # Adversarial finding disconfirmation: HIGH means "survived" (apodictic) — build spec
 
-**Status:** spec (decision-complete; spec-review pass 1 folded 2026-07-01 — verdict:
-BUILD-READY-WITH-FIXES, 0 P1) → build. **Estimate:** 2–3 sessions, one PR
+**Status:** **Built** (this PR — Step 6b + the `[Project]_Refutation_Record_` artifact +
+`refutation_check.py` three-arm validator + the behavioral eval fixtures; spec-review pass 1 folded
+2026-07-01 BUILD-READY-WITH-FIXES 0 P1; Opus build-review READY-WITH-FIXES — the only P2 was this
+Status flip, every constructed attack failed closed). **Estimate:** 2–3 sessions, one PR
 (split point named in §Build). **Owner of the decision:** craft (the writer's revision-triage call).
+<!-- built-when: scripts/refutation_check.py -->
 **Provenance:** Opus 4.8 pick #1 — a genuine miss in the Fable list; evidence verified against the
 code 2026-07-01. Expanded to a full spec 2026-07-01; every anchor below re-verified by grep/read
 against the repo at expansion time.
@@ -160,9 +163,12 @@ Must-Fix is always processed** — the cap can only ever bind on HIGH Should-Fix
   `<!-- refutation: not-attempted-budget F-<ORIGIN>-<NN> -->` in the letter body plus an Appendix B
   narrative line, and its author-facing confidence language must say *convergence-only, not
   stress-tested* (two grades of HIGH, visibly distinct — §7).
-- V1 honors the marker **only when** the budget block says `bound: true` and the marked id has no
-  record (a marker on a processed finding, or under an unbound budget, is an ERROR — the marker is
-  a disclosure, not an exemption you can reach for). Marker detection reuses the hardened
+- V1 honors the marker **only when the recomputed budget actually binds** — the eligible set
+  recomputed from the locked ledger exceeds the cap — AND the budget block says `bound: true` AND
+  the marked id has no record (a marker on a processed finding, under an unbound budget, or under
+  a `bound: true` the ledger recompute does not corroborate, is an ERROR — the marker is a
+  disclosure, not an exemption you can reach for; the block's `bound` is a claim to verify, never
+  an input — see the §8 as-built correction). Marker detection reuses the hardened
   boundary-matched, code-span-stripping helper discipline (`override_marker.py`; meta-lint M5
   class, `docs/validator-conventions.md`).
 
@@ -286,7 +292,8 @@ so the bash side stays a thin dispatcher).
 *no HIGH without survived refutation.*
 - Every synthesis-bound ledger finding carrying `confidence: HIGH` must have a record block with
   `attempted: true && outcome == "survived"` — **or** a valid cap-bound disclosure marker (honored
-  only under `bound: true`, id-not-processed; else ERROR).
+  only when the budget **recomputes** as binding — as-built correction below — under `bound: true`,
+  id-not-processed; else ERROR).
 - Every Must-Fix (any confidence) must have a record block (Must-Fix always fits under the cap).
 - Every record `id` must resolve to a locked ledger finding (dangling record = ERROR).
 
@@ -340,7 +347,9 @@ so the bash side stays a thin dispatcher).
     record was written against different bytes (the stale-`sha256` loud-fail class the intake note
     in `run-core.md` establishes for annotation manifests).
 - Budget-block consistency: `processed == min(eligible, cap)`, `bound == (eligible > processed)`,
-  every marker-carrying id absent from the record.
+  every marker-carrying id absent from the record; `cap` equals the §5 spec constant 15, and
+  `processed` equals the count of schema-valid refutation blocks in the record (as-built
+  correction: blocking ERRORs, promoted from WARN).
 
 **V3 — `refutation-write-scope`** (`<findings_ledger> <refutation_record>`):
 *the pass may write only `refutation.*` + confidence; any severity write fails the run.*
@@ -360,6 +369,27 @@ so the bash side stays a thin dispatcher).
   (`output-policy.md` §Deficit Lock), which this pass runs entirely downstream of. Together the two
   layers make severity untouchable by mechanism, not convention. V3 does not duplicate
   softness-check (the same no-duplication note softness-check itself carries for severity-floor).
+
+**As-built correction (WARN → ERROR promotion; Codex P1 on the build PR #161,
+discussion_r3512685648):** the budget cross-checks originally shipped as advisory WARNs and the
+cap-bound exemption trusted the block's `bound: true` — so a fabricated budget block
+(`bound: true` plus invented `eligible`/`processed`) could ship an untested HIGH as "cap-bound"
+with zero real refutation work, bypassing the HIGH-means-survived gate. Corrected at build time
+to **recompute, don't trust** (the recorded-field rule applied to an exemption gate):
+
+- **V1** recomputes `eligible` from the locked ledger (Must-Fix ∪ HIGH Should-Fix, dispositions
+  excluded) and derives `bound` from that recompute vs the cap — mismatch on either is a blocking
+  ERROR, and the disclosure marker is honored **only when the recomputed budget actually binds**;
+  a marker riding a `bound: true` the recompute does not corroborate is an ERROR naming the
+  finding.
+- **V2** pins `processed` to the count of schema-valid refutation blocks actually in the record —
+  mismatch is a blocking ERROR (promoted from WARN; a processed count with no blocks behind it is
+  fabricated work).
+- **Both arms** pin `cap` to the §5 spec constant 15 — a lowered cap manufactures a "binding"
+  budget, the same fabrication class as a lied `bound: true`.
+
+The `--check-all` hostile arm 4 (fabricated budget: invented `bound:true/eligible:16/processed:15`
+plus a disclosure marker on an untested HIGH) locks the fail-closed behavior in CI.
 
 **Wiring (all in the build PR):**
 - Register all three arms in `AGG_VALIDATORS` (`validate.sh:181`) — the validator count is
@@ -442,8 +472,11 @@ malformed-but-valid JSON and wrong-shaped blocks):
 
 1. Valid record, survived HIGH Must-Fix → all three arms PASS.
 2. HIGH finding, no record, budget unbound → V1 ERROR (the headline gate).
-3. HIGH finding, no record, `bound: true` + valid disclosure marker → V1 PASS-with-note; same
-   marker with `bound: false` → ERROR; marker on a *processed* id → ERROR.
+3. HIGH finding, no record, genuinely binding budget (as-built: 16 eligible > cap 15, recomputed
+   from the ledger) + `bound: true` + valid disclosure marker → V1 PASS-with-note; same marker
+   with `bound: false` → ERROR; marker under a `bound: true` whose ledger recompute does NOT bind
+   → ERROR naming the finding (the §8 as-built correction); fabricated `eligible` → ERROR;
+   lowered `cap` → ERROR; marker on a *processed* id → ERROR.
 4. Record with empty `counter_evidence_quotes` / empty `alternative_explanations` → V2 ERROR,
    attempt void.
 5. Fabricated quote (absent from snapshot) → V2 ERROR; multi-line quote → V2 ERROR; 30-word quote
