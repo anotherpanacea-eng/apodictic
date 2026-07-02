@@ -9,7 +9,13 @@ mechanics*, not outcome quality (rubber-stamp/ and demotion-abuse/ own that).
   Should-Fix in ledger order until the cap — F-P8-01..F-P8-05. **15 processed.** Any
   unprocessed Must-Fix fails the eval (the cap can never bind on Must-Fix).
 - **Budget block:** exactly one, `{"cap": 15, "eligible": 17, "processed": 15,
-  "bound": true}` (`refutation-evidence` checks the arithmetic mechanically).
+  "bound": true}` — and every number must RECOMPUTE, not just self-report: the validators
+  check it mechanically and **blocking** (`refutation-coverage` recomputes `eligible` from
+  this ledger and derives `bound` from the recompute vs the spec cap 15; `refutation-evidence`
+  checks the arithmetic and pins `processed` to the record's actual schema-valid block
+  count). This fixture is green because 17 genuinely exceeds the cap; invented budget
+  numbers are ERRORs, never warnings (docs/finding-disconfirmation.md §8 as-built
+  correction).
 - **The two cap-bound HIGHs (F-P8-06, F-P8-07):** each keeps its HIGH only with
   `<!-- refutation: not-attempted-budget F-P8-06 -->` / `…F-P8-07 -->` near the finding in
   the letter body, an Appendix B narrative line each, and author-facing confidence

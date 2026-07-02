@@ -11,9 +11,16 @@ attempt plus exactly one `apodictic.refutation_budget.v1` block. Three arms enfo
       V1 — no HIGH without survived refutation. Every synthesis-bound ledger finding at
       confidence HIGH needs a record block with attempted:true + outcome "survived", OR a
       cap-bound disclosure marker `<!-- refutation: not-attempted-budget F-<ORIGIN>-<NN> -->`
-      in the letter BODY — honored ONLY when the budget block says bound:true and the id is
-      unprocessed (a marker on a processed finding, or under an unbound budget, is an ERROR:
-      the marker is a disclosure, not an exemption you can reach for). Every Must-Fix needs a
+      in the letter BODY — honored ONLY when the RECOMPUTED budget actually binds (the
+      eligible set recomputed from the ledger — Must-Fix ∪ HIGH Should-Fix, minus
+      disposition-exempt — exceeds the spec cap 15) AND the block says bound:true AND the id
+      is unprocessed (a marker on a processed finding, under an unbound budget, or under a
+      bound:true claim the ledger recompute does not corroborate, is an ERROR: the marker is
+      a disclosure, not an exemption you can reach for). The budget block is the pass's
+      SELF-REPORT: its eligible/bound/cap are recomputed/pinned against the ledger and the
+      spec — mismatch is a blocking ERROR (recompute, don't trust — the recorded-field
+      rule applied to an exemption gate; Codex P1, PR #161: a fabricated bound:true
+      budget must never let an untested HIGH ship as "cap-bound"). Every Must-Fix needs a
       record with attempted:true — the cap can never bind on Must-Fix (their ceiling is 10,
       the cap is 15), so a missing Must-Fix record is a silent skip, forbidden. Every record
       id must resolve to a locked (Must-Fix/Should-Fix) ledger finding (dangling = ERROR). A
@@ -49,7 +56,10 @@ attempt plus exactly one `apodictic.refutation_budget.v1` block. Three arms enfo
       READS only: it is resolved beside the record and contained to that folder (realpath);
       an absolute or escaping path is refused by name, never followed, never written to.
       Budget arithmetic: processed == min(eligible, cap) and bound == (eligible > processed),
-      from the block's own fields -> ERROR on mismatch.
+      from the block's own fields -> ERROR on mismatch. cap must equal the spec constant 15
+      (§5 — not a per-run knob) and processed must equal the count of schema-valid refutation
+      blocks in the record -> both ERROR (the block is a self-report; promoted from WARN per
+      the Codex P1 — a processed count with no blocks behind it is fabricated work).
 
   refutation-write-scope <findings_ledger> <refutation_record>
       V3 — the pass may write only refutation.* + confidence; any severity write fails the
@@ -89,6 +99,11 @@ from override_marker import strip_code_spans  # code-span stripping SSoT (meta-l
 REFUTATION_SCHEMA = "apodictic.refutation.v1"
 BUDGET_SCHEMA = "apodictic.refutation_budget.v1"
 LOCKED = {"Must-Fix", "Should-Fix"}
+# §5 cap: 15 findings per run — a SPEC CONSTANT (the Must-Fix ceiling is 10, so the cap can
+# only ever bind on HIGH Should-Fix). Pinned here because the budget block's `cap` field is
+# model-written: a lowered cap manufactures a "binding" budget, the same fabrication class
+# as a lied bound:true (Codex P1, PR #161) — recompute/pin, don't trust.
+SPEC_CAP = 15
 # §7 caps table: outcome -> permitted confidence_after values. survived is absent on
 # purpose — its rule is equality with the ledger (unchanged; never confidence-raising),
 # asserted separately.
@@ -267,7 +282,43 @@ def refutation_coverage(letter_text, ledger_text, record_text):
     ledger_ids = {art.fid_key(f.get("id")) for f in locked if f.get("id") is not None}
     dispo = _disposition_ids(ledger_text, letter_text)
 
-    # Cap-bound disclosure markers — letter BODY only, code spans stripped (SSoT).
+    # Budget recompute (BLOCKING — the recorded-field rule applied to an exemption gate:
+    # recompute a recorded value, never trust it; Codex P1, PR #161): the budget block is
+    # the pass's SELF-REPORT, and the
+    # cap-bound exemption used to trust it — a fabricated bound:true with eligible/processed
+    # lies let an untested HIGH ship as "cap-bound" with zero real refutation work, with the
+    # mismatches surfacing only as advisory WARNs. eligible is DERIVED from the lock
+    # (Must-Fix ∪ HIGH Should-Fix, dispositions excluded), bound is DERIVED from that
+    # recompute vs the spec cap, and cap is the §5 spec constant — every one of the block's
+    # fields is a claim to verify, never an input.
+    recomputed_eligible = sum(
+        1 for f in locked
+        if art.fid_key(f.get("id")) not in dispo
+        and (f.get("severity") == "Must-Fix"
+             or (f.get("severity") == "Should-Fix" and f.get("confidence") == "HIGH")))
+    recomputed_bound = recomputed_eligible > SPEC_CAP
+    if budget is not None:
+        if budget.get("cap") != SPEC_CAP:
+            errs.append("budget block records cap: %r but the refutation cap is the spec "
+                        "constant %d (docs/finding-disconfirmation.md §5) — the cap is not "
+                        "a per-run knob; a lowered cap manufactures a binding budget"
+                        % (budget.get("cap"), SPEC_CAP))
+        if budget.get("eligible") != recomputed_eligible:
+            errs.append("budget block records eligible: %r but the ledger's eligible set "
+                        "(Must-Fix ∪ HIGH Should-Fix, dispositions excluded) recomputes to "
+                        "%d — eligible is derived from the lock, not asserted; reconcile "
+                        "the budget with the ledger"
+                        % (budget.get("eligible"), recomputed_eligible))
+        if bound != recomputed_bound:
+            errs.append("budget block records bound: %r but the ledger recompute derives "
+                        "bound: %r (eligible recomputes to %d vs cap %d) — bound is a "
+                        "claim the ledger must corroborate, never an input to the "
+                        "cap-bound exemption"
+                        % (bound, recomputed_bound, recomputed_eligible, SPEC_CAP))
+
+    # Cap-bound disclosure markers — letter BODY only, code spans stripped (SSoT). The
+    # exemption is honored only when the RECOMPUTED budget actually binds: the block's
+    # bound:true is necessary (the pass must have disclosed) but never sufficient.
     markers = set(_BUDGET_MARKER_RE.findall(strip_code_spans(_body(letter_text))))
     for fid in sorted(markers):
         if fid in by_id:
@@ -278,6 +329,12 @@ def refutation_coverage(letter_text, ledger_text, record_text):
             errs.append("cap-bound disclosure marker for %s under an unbound budget "
                         "(bound: %r) — the marker is honored only when the budget block "
                         "records bound: true" % (fid, bound))
+        elif not recomputed_bound:
+            errs.append("cap-bound disclosure marker for %s but the recomputed budget does "
+                        "NOT bind (eligible recomputes to %d from the ledger, cap %d) — "
+                        "bound: true in the budget block is a claim to verify, never an "
+                        "input; run the Step 6b pass for %s or demote its confidence per "
+                        "the §7 caps table" % (fid, recomputed_eligible, SPEC_CAP, fid))
         elif fid not in ledger_ids:
             errs.append("cap-bound disclosure marker names %s, which resolves to no locked "
                         "ledger finding — a disclosure for a phantom finding" % fid)
@@ -310,18 +367,20 @@ def refutation_coverage(letter_text, ledger_text, record_text):
                             "is always processed (the cap cannot bind on Must-Fix); run the "
                             "Step 6b pass for it or record the author's disposition" % label)
             elif conf == "HIGH":
-                if fid in markers and bound is True:
+                if fid in markers and bound is True and recomputed_bound:
                     notes.append("HIGH finding %s not attempted — cap-bound and disclosed "
-                                 "(marker honored under bound: true); its letter language "
-                                 "must say convergence-only, not stress-tested" % fid)
+                                 "(marker honored: bound: true corroborated by the ledger "
+                                 "recompute); its letter language must say convergence-only, "
+                                 "not stress-tested" % fid)
                 elif fid not in markers:
                     errs.append("HIGH finding %s has no survived refutation record and no "
                                 "cap-bound disclosure marker — HIGH means survived; demote "
                                 "the confidence per the §7 caps table, run the pass, or "
                                 "disclose the cap with "
                                 "<!-- refutation: not-attempted-budget %s --> (honored only "
-                                "under a bound budget)" % (label, fid))
-                # fid in markers with bound != true already errored in the marker scan.
+                                "when the recomputed budget binds)" % (label, fid))
+                # fid in markers under an unbound budget, or under a bound:true the
+                # recompute does not corroborate, already errored in the marker scan.
             continue
         if rec.get("attempted") is not True:
             errs.append("%s finding %s has a refutation record with attempted: false — a "
@@ -349,20 +408,6 @@ def refutation_coverage(letter_text, ledger_text, record_text):
                             "finding" % fid)
     for fid in (k for k in by_id if k is None):
         errs.append("refutation record with a null id — cannot resolve to a ledger finding")
-
-    # Advisory eligibility recompute (lesson: eligibility-set completeness): the budget's
-    # eligible count should match |Must-Fix ∪ HIGH Should-Fix| minus disposition-skipped.
-    if budget is not None and isinstance(budget.get("eligible"), int):
-        recomputed = sum(
-            1 for f in locked
-            if art.fid_key(f.get("id")) not in dispo
-            and (f.get("severity") == "Must-Fix"
-                 or (f.get("severity") == "Should-Fix" and f.get("confidence") == "HIGH")))
-        if budget["eligible"] != recomputed:
-            warns.append("budget block records eligible: %d but the ledger's eligible set "
-                         "(Must-Fix ∪ HIGH Should-Fix, dispositions excluded) recomputes to "
-                         "%d — reconcile the budget with the lock"
-                         % (budget["eligible"], recomputed))
     return errs, warns, notes
 
 
@@ -377,10 +422,19 @@ def refutation_evidence(record_text, record_dir, snapshot_arg=None, require_snap
     errs.extend(shape_errs)
     budget = _the_budget(budgets, errs)
 
-    # Budget arithmetic (spec §V2): internal consistency of the block's own fields.
+    # Budget arithmetic (spec §V2): internal consistency of the block's own fields, plus
+    # the two grounded checks — cap pinned to the spec constant, processed pinned to the
+    # actual schema-valid block count (BLOCKING, promoted from WARN per the Codex P1 on
+    # PR #161: the block is a self-report; a processed count with no blocks behind it is
+    # fabricated work).
     if budget is not None:
         cap, eligible, processed, bound = (budget.get("cap"), budget.get("eligible"),
                                            budget.get("processed"), budget.get("bound"))
+        if cap != SPEC_CAP:
+            errs.append("budget block records cap: %r but the refutation cap is the spec "
+                        "constant %d (docs/finding-disconfirmation.md §5) — the cap is not "
+                        "a per-run knob; a lowered cap manufactures a binding budget"
+                        % (cap, SPEC_CAP))
         if processed != min(eligible, cap):
             errs.append("budget arithmetic: processed (%r) != min(eligible, cap) = %r — the "
                         "pass processes Must-Fix first, then HIGH Should-Fix, up to the cap"
@@ -389,9 +443,11 @@ def refutation_evidence(record_text, record_dir, snapshot_arg=None, require_snap
             errs.append("budget arithmetic: bound (%r) != (eligible > processed) (%r) — the "
                         "bound flag is derived, not asserted" % (bound, eligible > processed))
         if processed != len(refs):
-            warns.append("budget block records processed: %r but the record carries %d valid "
-                         "refutation block(s) — reconcile (malformed blocks are refused above "
-                         "and do not count)" % (processed, len(refs)))
+            errs.append("budget block records processed: %r but the record carries %d "
+                        "schema-valid refutation block(s) — processed is a recorded count "
+                        "the record itself must corroborate (malformed blocks are refused "
+                        "above and do not count); reconcile the budget with the record"
+                        % (processed, len(refs)))
 
     required = bool(require_snapshot) or _core_full_run_shape(record_dir)
     explicit = None
@@ -669,31 +725,64 @@ def run_self_test():
         check("v1_high_no_record_unbound_errors",
               any("F-P5-02" in x and "no survived refutation record" in x for x in e), str(e))
 
-        # 3. bound:true + valid marker -> PASS with note; bound:false marker -> ERROR;
-        #    marker on a processed id -> ERROR
+        # 3. Cap-bound disclosure — recompute-not-trust (Codex P1, PR #161). A GENUINELY
+        #    binding budget: 16 eligible (1 Must-Fix + 15 HIGH Should-Fix) > cap 15, 15
+        #    processed in ledger order, marker on the one unprocessed HIGH -> PASS with
+        #    note. Then the attacks, each a blocking ERROR: bound:true whose ledger
+        #    recompute does NOT bind (naming the marker's finding); bound:false marker;
+        #    fabricated eligible (the Codex repro shape — promoted from WARN); lowered
+        #    cap; marker on a processed id.
+        sf_ids = ["F-P8-%02d" % i for i in range(1, 16)]
+        led_bound = LEDGER + "".join(
+            finding(fid, sev="Should-Fix", mech="subplot %s stalls" % fid) + "\n" for fid in sf_ids)
+        rec_bound = ("# Refutation Record\n" + ref_block() + "\n"
+                     + "".join(ref_block(fid=fid) + "\n" for fid in sf_ids[:-1])
+                     + budget_block(eligible=16, processed=15, bound=True) + "\n")
+        let_bound = LETTER.replace("## Appendix B",
+                                   "<!-- refutation: not-attempted-budget F-P8-15 -->\n## Appendix B")
+        e, w, notes = refutation_coverage(let_bound, led_bound, rec_bound)
+        check("v1_bound_marker_honored", not e and any("F-P8-15" in x for x in notes), str(e + w))
+        # bound:true the ledger recompute does not corroborate (2 eligible <= cap 15) —
+        # the fabricated-exemption keystone: the marker must ERROR naming the finding.
         rec3 = "# Refutation Record\n" + ref_block() + "\n" + budget_block(eligible=2, processed=1, bound=True) + "\n"
         let3 = LETTER.replace("## Appendix B",
                               "<!-- refutation: not-attempted-budget F-P5-02 -->\n## Appendix B")
-        e, _, notes = refutation_coverage(let3, led2, rec3)
-        check("v1_bound_marker_honored", not e and any("F-P5-02" in x for x in notes), str(e))
+        e, _, _ = refutation_coverage(let3, led2, rec3)
+        check("v1_marker_fake_bound_errors",
+              any("F-P5-02" in x and "does NOT bind" in x for x in e)
+              and any("claim the ledger must corroborate" in x for x in e), str(e))
         e, _, _ = refutation_coverage(let3, led2, rec2)  # same marker, bound:false
         check("v1_marker_unbound_budget_errors", any("unbound budget" in x for x in e), str(e))
+        # fabricated eligible (the Codex repro shape): 16/15/bound:true claimed on a
+        # 2-finding ledger -> blocking ERROR, not the old advisory WARN.
+        rec3f = ("# Refutation Record\n" + ref_block() + "\n"
+                 + budget_block(eligible=16, processed=15, bound=True) + "\n")
+        e, w, _ = refutation_coverage(let3, led2, rec3f)
+        check("v1_fabricated_eligible_errors",
+              any("eligible is derived from the lock" in x for x in e) and not w, str(e + w))
+        # lowered cap: cap is the §5 spec constant, not a knob a record can turn.
+        rec3c = ("# Refutation Record\n" + ref_block() + "\n"
+                 + budget_block(cap=1, eligible=2, processed=1, bound=True) + "\n")
+        e, _, _ = refutation_coverage(let3, led2, rec3c)
+        check("v1_lowered_cap_errors", any("not a per-run knob" in x for x in e), str(e))
         let3p = LETTER.replace("## Appendix B",
                                "<!-- refutation: not-attempted-budget F-P5-01 -->\n## Appendix B")
         e, _, _ = refutation_coverage(let3p, LEDGER, RECORD)
         check("v1_marker_on_processed_errors", any("HAS a refutation record" in x for x in e), str(e))
         # marker quoted in a code span is a documentation example, not a live disclosure
         let3c = LETTER.replace("## Appendix B",
-                               "`<!-- refutation: not-attempted-budget F-P5-02 -->`\n## Appendix B")
-        e, _, _ = refutation_coverage(let3c, led2, rec3)
+                               "`<!-- refutation: not-attempted-budget F-P8-15 -->`\n## Appendix B")
+        e, _, _ = refutation_coverage(let3c, led_bound, rec_bound)
         check("v1_marker_codespan_decoy_rejected",
-              any("F-P5-02" in x and "no survived refutation record" in x for x in e), str(e))
-        # boundary: a marker for F-P5-021 must not disclose F-P5-02
+              any("F-P8-15" in x and "no survived refutation record" in x for x in e), str(e))
+        # boundary: a marker for F-P8-151 must not disclose F-P8-15 — and under a genuinely
+        # bound budget an unknown marked id is a phantom disclosure
         let3b = LETTER.replace("## Appendix B",
-                               "<!-- refutation: not-attempted-budget F-P5-021 -->\n## Appendix B")
-        e, _, _ = refutation_coverage(let3b, led2, rec3)
+                               "<!-- refutation: not-attempted-budget F-P8-151 -->\n## Appendix B")
+        e, _, _ = refutation_coverage(let3b, led_bound, rec_bound)
         check("v1_marker_id_boundary",
-              any("F-P5-02 " in x or ("F-P5-02" in x and "no survived" in x) for x in e), str(e))
+              any("F-P8-15" in x and "no survived" in x for x in e)
+              and any("phantom" in x for x in e), str(e))
 
         # 4. empty quotes / empty alternatives -> V2 ERROR (attempt void; schema minItems)
         rec4a = "# R\n" + ref_block(quotes=[]) + "\n" + budget_block() + "\n"
@@ -767,6 +856,16 @@ def run_self_test():
         e, _, _ = refutation_evidence("# R\n" + ref_block() + "\n"
                                       + budget_block(bound=True) + "\n", tmp, snap_file)
         check("v2_budget_bound_arithmetic_errors", any("bound" in x and "derived" in x for x in e), str(e))
+        # processed must equal the actual schema-valid block count — a blocking ERROR
+        # (promoted from WARN per the Codex P1: processed with no blocks behind it is
+        # fabricated work), and the cap is the §5 spec constant, not a knob.
+        e, w, _ = refutation_evidence("# R\n" + ref_block() + "\n"
+                                      + budget_block(eligible=2, processed=2) + "\n", tmp, snap_file)
+        check("v2_processed_count_mismatch_errors",
+              any("schema-valid refutation block" in x for x in e) and not w, str(e + w))
+        e, _, _ = refutation_evidence("# R\n" + ref_block() + "\n"
+                                      + budget_block(cap=1, eligible=1, processed=1) + "\n", tmp, snap_file)
+        check("v2_lowered_cap_errors", any("not a per-run knob" in x for x in e), str(e))
         # budget block missing / duplicated
         e, _, _ = refutation_evidence("# R\n" + ref_block() + "\n", tmp, snap_file)
         check("v2_missing_budget_block_errors", any("no apodictic.refutation_budget.v1" in x for x in e), str(e))
