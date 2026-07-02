@@ -63,7 +63,10 @@ _SYNTH_BOUND = ("Must-Fix", "Should-Fix")
 _SYNTH_CLEARED_PHASES = ("run_synthesis", "run_spot_check")
 
 # Exact Lifecycle-ID token (so F-P5-01 != F-P5-011); mirrors honesty_check._id_present.
-_ID_RE = re.compile(r"(?<![\w-])F-[A-Za-z0-9]+-[0-9]{2,}(?![\w-])")
+# Single-sourced from apodictic_artifacts.FID_RE (the host — dependency direction: this module
+# imports art, never the reverse). The literal below is only the art-less degraded fallback;
+# the apodictic_artifacts --self-test (fid_re_lockstep) pins it byte-equal to FID_RE.
+_ID_RE = art.FID_RE if art is not None else re.compile(r"(?<![\w-])F-[A-Za-z0-9]+-[0-9]{2,}(?![\w-])")
 _COMMENT_RE = re.compile(r"<!--(.*?)-->", re.DOTALL)
 # Explicit resolution marker in a completed-revision artifact: `<!-- resolved: F-XX-NN -->`.
 # A bare mention (e.g. a finding listed under "Flags still present") is NOT a resolution claim,
