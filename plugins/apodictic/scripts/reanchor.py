@@ -52,6 +52,9 @@ the OPERATOR confirms — the model proposes; the operator disposes. The orchest
        decision=confirm-resolved row — an unconfirmed close (vanished-anchor auto-close) is the error
        this gate exists to prevent. Marker parse reuses finding_trace.resolved_cited_ids (never
        reimplemented).
+  RT4 (WARN; ERROR --strict)  partition coverage: every finding id in the recomputed RA3 partition has
+       a disposition row — a record that exists is a round-close record (carry-only writes none), so a
+       missing row is a finding silently omitted from round-close review; reported by id.
   W1 (WARN; ERROR --strict)  unadjudicated / staged: rows still pending, or confirm-resolved rows not
        yet reflected as resolved markers (work legitimately stages across sessions).
 
@@ -329,7 +332,7 @@ def _finish(lines, errs, warns, strict, ok_msg, label="reanchor"):
         if label == "reanchor":
             lines.append("WARN: reanchor: %d re-anchor advisory(ies) — see W1-W2 above" % len(warns))
         else:
-            lines.append("WARN: %s: %d advisory(ies) — see the W1 lines above" % (label, len(warns)))
+            lines.append("WARN: %s: %d advisory(ies) — see the RT4/W1 lines above" % (label, len(warns)))
     else:
         lines.append("%s: PASS (%s)" % (label, ok_msg))
     return 0, lines
@@ -505,8 +508,10 @@ def disposition(paths, strict=False):
     """Gate the Roundtrip Disposition record (`[Project]_Roundtrip_Disposition_[runlabel].md`) in
     <this_run_folder> against the LIVE recompute — the model proposes; the operator disposes; this
     validator proves the record never asserts evidence the recompute doesn't support (RT1), never
-    carries a decision without the recorded confirmation token (RT2), and that no resolved marker
-    was written without a confirmed disposition (RT3 — the no-auto-close rule). Absent record ->
+    carries a decision without the recorded confirmation token (RT2), that no resolved marker
+    was written without a confirmed disposition (RT3 — the no-auto-close rule), and that no
+    recomputed prior finding is silently omitted from the record (RT4 — partition coverage; WARN,
+    ERROR --strict). Absent record ->
     PASS no-op (the check_state early-return precedent), so it is safe anywhere, including hosts
     where no disposition record can have been produced. Args mirror `crossref`:
     <prior_run_folder> <new_snapshot> <this_run_folder> [--strict]. Returns (code, lines)."""
@@ -604,6 +609,18 @@ def disposition(paths, strict=False):
             errs.append("RT3 confirmed-writes-only: `<!-- resolved: %s -->` in a Revision Report has no "
                         "decision=confirm-resolved disposition row — an unconfirmed close is the "
                         "auto-close this gate exists to prevent" % rid)
+
+    # RT4 — partition coverage: every finding id the recompute puts in the RA3 partition must have a
+    # disposition row. A record that EXISTS is a round-close record (carry-only exit (a) writes no
+    # record at all), so a missing row is a finding silently dropped from round-close review — it must
+    # never read as adjudicated. Reported by id; WARN by default (a record may be drafted incrementally
+    # within a session, the W1 staging posture), ERROR under --strict (round close). The falsy-key
+    # filter mirrors crossref's: an annotation _fid could not normalize (None) has no id a row could
+    # name — it is outside the record's governable domain and gated upstream by the A-gate/RA3.
+    for fid in sorted(k for k in fid_class if k and k not in seen):
+        warns.append("RT4 partition coverage: %s is in the recomputed RA3 partition but has no "
+                     "disposition row — adjudicate it (or record it decision=pending) before "
+                     "round close" % fid)
 
     # W1 — unadjudicated / staged (advisory; work stages across sessions — `--strict` gates round close).
     for fid, _a, _r, dec in rows:
@@ -902,7 +919,7 @@ def run_self_test():
         finally:
             shutil.rmtree(cd, ignore_errors=True)
 
-    # disposition: the round-close record gate (RT1-RT3 + W1) — needs the crossref join (rd) and the
+    # disposition: the round-close record gate (RT1-RT4 + W1) — needs the crossref join (rd) and the
     # finding_trace marker SSoT (ft), both same-dir siblings.
     if rd is not None and ft is not None:
         dd = tempfile.mkdtemp()
@@ -991,7 +1008,7 @@ def _crossref_self_test(chk, cd):
 
 
 def _disposition_self_test(chk, dd):
-    """disposition (RT1-RT3 + W1): the round-close record gate against a live recompute. The staged
+    """disposition (RT1-RT4 + W1): the round-close record gate against a live recompute. The staged
     rounds mirror _crossref_self_test's: F-HOLD-01 (quote persists -> held; recurs -> recurrence-
     candidate) and F-GONE-01 (quote cut -> vanished; resolved, no match -> resolved-and-held)."""
     import json as _j
@@ -1133,6 +1150,19 @@ def _disposition_self_test(chk, dd):
     # W1 staged: confirm-resolved not yet reflected as a resolved marker (no report at all).
     code, lines = disposition([pri, new_snap, cur_folder(aligned_record + token, rep=None)])
     chk("dispo_w1_staged_warn", code == 0 and any("W1 staged" in x and "F-GONE-01" in x for x in lines))
+
+    # RT4 omitted row: the record simply DROPS F-HOLD-01 (no row at all) -> WARN by default naming
+    # the missing id, ERROR under --strict — a partial record must never read as round-close clean
+    # (the silently-omitted-finding hole; a record that exists is a round-close record, so coverage
+    # of the recomputed RA3 partition is expected — carry-only exit (a) writes no record at all).
+    omit = ("# Roundtrip Disposition — X r2\ncompares: r1 → r2\n\n"
+            "<!-- disposition: F-GONE-01 anchor=vanished regression=resolved-and-held "
+            "decision=confirm-resolved -->\n" + token)
+    code, lines = disposition([pri, new_snap, cur_folder(omit)])
+    chk("dispo_rt4_omitted_row_warn", code == 0
+        and any("RT4" in x and "F-HOLD-01" in x for x in lines))
+    chk("dispo_rt4_omitted_row_strict_fails",
+        disposition([pri, new_snap, cur_folder(omit)], strict=True)[0] == 1)
 
     # carry-only round: no ledger in this_run (no crossref join yet) -> regression=none rows align.
     carry = ("# Roundtrip Disposition — X r2\ncompares: r1 → r2\n\n"
