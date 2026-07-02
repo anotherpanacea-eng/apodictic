@@ -123,9 +123,12 @@ check**: corroboration reads resolved markers from the run's own `report_texts` 
   sidecar) returns `[]`. `run()`'s 7-tuple unpack (`:383`) updates to match, reads the evidence
   files, and passes `evidence_texts=` through. In sidecar/project-root mode (the `/ready`
   invocation shape, `:136-137`) this is a no-op superset of the existing scan; in run-folder mode
-  it is what makes an earlier round's legitimate revision corroborable. Explicit-files mode gathers
-  no extra evidence — the caller controls the surface; the module docstring states the remediation
-  (pass the archived report as an argument, or invoke via the project root/sidecar).
+  it is what makes an earlier round's legitimate revision corroborable. Evidence is gathered
+  whenever a sidecar was LOCATED (a run-folder arg's walk-up or an explicit `.json` arg both
+  count — the `/ready` sidecar+assessment shape gets it); only a **no-sidecar** explicit-files
+  invocation gathers none — the module docstring states the remediation (invoke via the run
+  folder / project root / sidecar; passing an archived report as a direct argument would widen
+  DP2.1's same-run scope, so it is not the recommended route).
 - **Evidence is corroboration-only.** It must NOT feed `report_texts` / `report_marker_ids` /
   `resolved_ids` / the marker homes — DP2.1's *same-run* contradiction scoping (`:283-289`) and
   DP2.5 stay exactly as they are. A new **keyword-only** `check(…, evidence_texts=None)` parameter
@@ -240,6 +243,17 @@ restructure.
 **Spec-review:** pass 1 run 2026-07-02, verdict **BUILD-READY-WITH-FIXES** (0 P1, 5 P2 — evidence
 plumbing concreteness, DP2.6 placement, fixture-repair mechanics, corroboration-boundary negative
 test, trust-model docstring); all folded above.
+
+**Build-review (pre-Codex, 2026-07-02):** mutation-verified (4 reverts, each fails exactly its
+pinning tests), hostile-fixture pass clean on boundary ids / nested runs / governed sidecars /
+marker-only dispositions / unreadable evidence. Folded: `_read` gains the `UnicodeDecodeError`
+guard (a non-UTF8 archived report on the newly-widened evidence surface degraded to a traceback,
+now the honest skip/fail-closed path + `evidence_non_utf8_fails_closed`); the stale trusting-rule
+sentences in `state-lifecycle.md` §Supersedence and `submission-readiness.md` §Ceiling rule are
+amended; the code-span acceptance depth (evidence markers are the same raw
+`resolved_cited_ids` scan the governed fold writer uses — checker exactly as strict as producer)
+is stated in the module docstring; `evidence_texts` is keyword-only as specced; the exit-0 WARN
+summary line no longer mispoints at DP2.5.
 
 ## Failure modes if built badly
 

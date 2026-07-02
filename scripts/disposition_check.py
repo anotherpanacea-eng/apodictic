@@ -56,9 +56,13 @@ accepts any regex-matched <!-- resolved: F-id --> marker in a reachable *_Revisi
 evidence artifacts are NOT schema-validated or provenance-checked (markers are the canonical
 record, docs/finding-dispositions.md §Schema 3; the recompute raises the fabrication bar from one
 JSON field edit to forging a completion artifact — the artifact-forgery floor every
-marker-canonical surface shares, by design). Evidence is gathered from the project root and its
-runs/* archives whenever a sidecar was located; an explicit-files invocation gathers no archive
-evidence — pass the archived report as an argument, or invoke via the run folder / project root.
+marker-canonical surface shares, by design). Corroboration deliberately accepts markers quoted
+in code spans / fenced blocks: resolved_cited_ids is the same raw scan the governed fold WRITER
+uses (run_gate._finding_deltas), so the checker is exactly as strict as the producer — any
+hardening belongs at that shared SSoT, never locally here. Evidence is gathered from the project
+root and its runs/* archives whenever a sidecar was LOCATED (a run-folder arg's walk-up or an
+explicit .json arg both count); only a no-sidecar invocation gathers none — remediate by
+invoking via the run folder, project root, or sidecar.
 
   disposition_check.py disposition-check <run_folder|sidecar|files...> [--strict]
   disposition_check.py --self-test
@@ -98,6 +102,8 @@ _SEV_KEY = {"Must-Fix": "must_fix", "Should-Fix": "should_fix", "Could-Fix": "co
 
 
 def _read(path):
+    # UnicodeDecodeError included: a non-UTF8 artifact (e.g. an archived evidence report on the
+    # DP2.6 surface) must degrade to the honest skip/fail-closed path, never a traceback.
     try:
         with open(path, encoding="utf-8") as fh:
             return fh.read()
@@ -211,7 +217,7 @@ def _validate_record(fid, rec, where, schema):
 
 
 def check(sidecar_obj, ledger_text, letter_text, report_texts, triage_texts, state_text,
-          assessment_text, strict=False, sidecar_parse_ok=True, evidence_texts=None):
+          assessment_text, strict=False, sidecar_parse_ok=True, *, evidence_texts=None):
     """Run the disposition audit over already-read inputs. Returns (code, lines).
 
     evidence_texts = archived completion artifacts (project root + runs/*) read for DP2.6
@@ -425,7 +431,7 @@ def check(sidecar_obj, ledger_text, letter_text, report_texts, triage_texts, sta
                      % (len(errs), ", %d strict warn(s)" % len(warns) if (strict and warns) else ""))
         return 1, lines
     if warns:
-        lines.append("WARN: disposition-check: %d advisory sync gap(s) — see DP2.5 above" % len(warns))
+        lines.append("WARN: disposition-check: %d advisory warning(s) — see the WARN lines above" % len(warns))
     else:
         lines.append("disposition-check: PASS (record shape + caveat coverage + no-laundering)")
     return 0, lines
@@ -739,6 +745,13 @@ def run_self_test():
     check_("run_folder_fabricated_supersedence_blocks",
            code == 1 and any("DP1 declined Must-Fix F-P5-01" in ln for ln in lines2)
            and any("DP2.6" in ln for ln in lines2))
+    # a non-UTF8 archived report on the evidence surface degrades to the skip/fail-closed path
+    # (unreadable evidence = no corroboration), never a traceback (the adjacent-exception class)
+    with open(old_report, "wb") as fh:
+        fh.write(b"\xff\xfenot utf-8\xff")
+    code, lines2 = run([cur])
+    check_("evidence_non_utf8_fails_closed",
+           code == 1 and any("DP2.6" in ln for ln in lines2))
 
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
