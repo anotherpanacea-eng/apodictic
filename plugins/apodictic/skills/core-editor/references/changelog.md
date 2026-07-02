@@ -5,6 +5,322 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.7.0 - 2026-07-02
+
+### Disposition supersedence is recomputed, never trusted (disposition-check DP2.6)
+
+Sibling-sweep fix from the PR #161 Codex P1 class (an exemption gate trusting a recorded field):
+`disposition-check`'s `active()` exempted a declined/deferred Must-Fix from the DP1 readiness
+caveat on the sidecar's self-reported `finding_states[id] == "revised"` alone — one JSON field
+edit on a non-governed sidecar waived the caveat, silenced the DP2.5 sync audit for the id, and
+no validator on the enforcement path corroborated (finding-trace E5 is deliberately scoped to
+report-mentioned ids; `/ready` runs only `disposition-check` at verdict time). Supersedence now
+requires a corroborating `<!-- resolved: F-id -->` marker in a reachable completion artifact
+(run folder, project root, or `runs/*` archives — evidence-only, so DP2.1's same-run scoping is
+untouched); an uncorroborated `revised` leaves the disposition ACTIVE (DP1 caveat still owed)
+and is surfaced as the new **DP2.6** WARN (ERROR under `--strict`). Adds 10 self-tests (the
+`disposition-check` suite → 46): the keystone exploit repro, archived-evidence exemption,
+evidence-not-leaked negative, DP2.5-no-longer-suppressed, non-UTF8 evidence fails closed, and a
+run-folder + `runs/*` end-to-end both directions; `--check-all` gains hostile arm 4 (fabricated
+supersedence must fail closed). Build-review folds: `_read` gains the `UnicodeDecodeError` guard
+(the adjacent-exception class this PR later seeded a repo-wide sweep for), and the trusting-rule
+sentences in `state-lifecycle.md` / `submission-readiness.md` are amended to the corroborated
+form. Spec: `docs/disposition-supersedence-recompute.md`.
+
+### Adversarial finding disconfirmation: HIGH means "survived"
+
+New synthesis-time **Finding Disconfirmation Pass** — Step 6b in `run-synthesis.md`
+§Processing Protocol (lettered, no renumbering; after the Deficit Lock and the Adversarial
+Self-Check, before the stress test). Per eligible finding (Must-Fix ∪ HIGH Should-Fix, cap
+15 — Must-Fix always processed), the pass hunts counter-evidence spans, generates rival
+readings, judges `survived | weakened | refuted`, and records the attempt in a new
+`[Project]_Refutation_Record_[runlabel].md` artifact (`apodictic.refutation.v1` +
+`apodictic.refutation_budget.v1` blocks; hybrid/swarm runs dispatch a dedicated
+disconfirmation subagent whose input excludes the letter draft and confidence tokens —
+anti-anchoring). The synthesis agent then transcribes only the confidence consequences into
+the locked ledger blocks: survived = unchanged (never confidence-raising — HIGH now
+*requires* a survived attempt, `output-policy.md §Confidence Calibration`), weakened capped
+at MEDIUM, refuted = LOW/UNCERTAIN, severity never remapped. Cap-bound HIGHs are disclosed
+(`<!-- refutation: not-attempted-budget F-… -->` + Appendix B), never silently skipped; a
+refuted finding ships labeled with its counter-evidence quoted, never dropped.
+
+Three new validators in one `scripts/refutation_check.py` module (registered in
+`AGG_VALIDATORS`, the `run_spot_check` gate, and `--check-all` against an extended
+`example-run-folder` fixture with hostile arms): `refutation-coverage` (no HIGH without
+survived refutation; dangling ids; marker abuse), `refutation-evidence` (verbatim
+single-line snapshot quotes — fabricated quotes void the attempt; `snapshot_sha256` binding;
+missing-snapshot split — ERROR on core-de/full-de runs under `--require-snapshot`/run-shape
+detection, WARN-with-demotions-void elsewhere; budget arithmetic), and
+`refutation-write-scope` (no severity channel in the record; exact confidence transcription
+per the outcome caps). Behavioral eval fixtures land under
+`evals/fixtures/finding-disconfirmation/` (rubber-stamp, demotion-abuse, budget).
+
+### Finding Dispositions — engine-level `declined`/`deferred` set-asides
+
+A deliberately set-aside finding is now a mechanical record, not a prose note a later session must
+remember to read (`docs/finding-dispositions.md`). Dispositions are an **overlay**, never a fourth
+lifecycle state: `execution.finding_dispositions` maps `F-id → apodictic.finding_disposition.v1`
+(new closed-key schema, no severity field by construction) beside an untouched
+`finding_states` — the fold stays rank-monotonic, finding-trace E3 unchanged. Pinned durable
+markers (`<!-- declined: F-… — reason -->` / `<!-- deferred: F-… until: trigger — reason -->`) are
+the canonical source, with ONE shared grammar helper (`apodictic_artifacts._DISPOSITION_RE` +
+`parse_disposition_markers()`, code-span-stripped via the `override_marker` SSoT) imported by both
+`run_gate.py` and the new validator. Dual writer mirrors `revised` exactly: governed projects
+freeze full records into `gate_events[].disposition_deltas` at `revision_round` clear (fold-derived
+map, `pointer == fold`, same-event revise+disclaim launder rejected by `gate-state`); non-governed
+projects write the validated record directly. New `disposition-check` validator (self-testable
+count is derived): DP0 record shape (trigger-iff-deferred), DP1 the `/ready` teeth — an active
+declined/deferred Must-Fix must be named on the assessment's pinned `**Declined/Deferred
+Must-Fixes:**` caveat lines, run BEFORE the verdict is delivered — and DP2 no-laundering
+(same-run resolved+declined contradiction, phantom keys, ledger↔calibration severity mismatch,
+triage-tally decrement via the shared `structured_findings.severity_tally`, bidirectional
+marker/sidecar sync with governed-lag exemption). Canonical fixture
+`references/example-run-folder-dispositions/` wired into `--check-all` with three hostile arms
+(caveat stripped → DP1 fails; trigger stripped → DP0 fails; record dropped → DP2.5 warns, `--strict`
+fails). Consumers: the revision-coach Loop Dispatch skips declined ids, trigger-reviews deferrals
+(ISO dates fire mechanically), and records set-asides at the stalled off-ramp; `feedback-triage`
+gains W3 (a declined item citing a ledger `F-…` id with no recorded disposition) plus the
+decline-reconciliation offer; `/ready` gains the caveat block + a `CONDITIONALLY VIABLE` ceiling
+for undisclosed declined Must-Fixes (fired deferrals count as open); the roundtrip resume displays
+active dispositions and never machine-proposes `declined`/`deferred`. State gardening preserves
+active disposition markers and compresses superseded ones to the archive line form. The honesty
+gates (`softness-check`, `deficit-lock`, `severity-floor`, `structured-findings`, `finding-trace`,
+`regression-diff`) read dispositions nowhere — a disposition grants no severity relief and never
+decrements a count.
+
+### The Firewall — claim honesty
+
+Reframed the Firewall's user-facing claim to match what the audit actually does. The absolute "it never invents content — no new plot events, characters, dialogue, or imagery" overstated the boundary: the audit routinely (and usefully) names that a structural element is missing or mis-weighted — "the climax needs a cost paid on-page," "this character carries no climactic agency," "this argument never re-qualifies its scope" — which is a *class of solution*, not content invention. The honest line is **never drafts your prose and never scripts the specific content (events, characters, dialogue, evidence)** — not *never names a needed element*. Updated the canonical `references/firewall.md` (with an explicit naming-a-need-vs-inventing-content distinction), the README ("How It Works" + Key Terms), and the `/apodictic` command (whose canonical pointer now targets `references/firewall.md`).
+
+### Workflows — Multi-Session Revision Arc Planning
+
+New revision-coaching capability: a **phased multi-week revision arc** (Phase 1 structural root causes → Phase 2 downstream consequences → Phase 3 polish) that sequences the full Findings Ledger — the layer **above** the per-session Loop Dispatch, and the generalization of Retcon Planning's single-decision arc to the whole Ledger. The coach SEQUENCES findings; it never prescribes execution (the Coaching Firewall). Adds the `apodictic.revision_arc.v1` schema (one block per manuscript; `phases` an ordered list, ≥1, no fixed 3-enum; stateless re-plan with no round/version field), the `revision-arc` validator, the `multi-session-arc-planning.md` skill (revision-coach mode 8), `docs/multi-session-arc-planning.md`, and the canonical `example-revision-arc.md` gate.
+
+**Honest posture (the Retcon pattern — load-bearing).** The Root-Cause mapping is not machine-readable (`finding.v1` carries only structured `severity`; the diagnostic-state root-cause map is prose), so the coach's dependency reasoning is **trusted, not gated**. The `revision-arc` validator gates the PLAN's **provenance + self-consistency + firewall only** — **A1** schema + nested phase shape, **A2** provenance closure (every `finding_ref` resolves to a real Ledger finding), **A3 self-consistency ONLY** (each finding in exactly one phase; a Must-Fix finding the arc *itself* labels a structural root cause is not parked in the polish phase — **not** a true-causal-graph check), **A4** non-empty sequencing rationale; advisory **W1** firewall-drift (a rationale that prescribes execution) and **W2** orphan (a Must-Fix Ledger finding absent from the arc).
+
+### Nonfiction Argument Engine — Modularization (Workstream A)
+
+Promoted the nonfiction argument path from implicit to named and bounded:
+
+**Named skill.** `skills/nonfiction-argument-engine/SKILL.md` is now a first-class skill alongside `core-editor`, `specialized-audits`, `revision-coach`, and `plot-architecture`. The skill defines the delegation contract (triggered from `core-editor §Delegation Rules` when intake resolves `constraint=nonfiction` + persuasive-argument form), scope boundary, owned references, argument engine workflow, and QA guardrails. `core-editor/SKILL.md` gained an explicit `§ Nonfiction Argument Engine` delegation rule replacing the previous implicit routing through `specialized-audits`.
+
+**Firewall single-sourced.** The canonical Firewall definition (`## The Firewall` + no-content-invention rule text) was extracted from the inline section in `core-editor/SKILL.md` to a new shared `references/firewall.md`. The engine skill and the core-editor pointer both reference this single file. `meta_lint.py` M7 (single-Firewall) enforces that exactly one plugin `.md` file carries the canonical definition — prose mentions and pointers are fine; a second definition is a lint error.
+
+**Five interleaved tables split into dedicated fragments.** Argument-cluster rows extracted from `pass-dependencies.md` §4a, §4b, §4e and from `intake-router-runtime.md §4a` and `run-synthesis.md §Step 8` into four named reference files:
+
+- `argument-audits-routing.md` — §4a Field Recon + Citation Verifier rows + §4b Dialectical Clarity / Consent / Reception rows
+- `argument-audits-propagation.md` — §4e argument-cluster signal-propagation rows (Dialectical Clarity, Red Team, Persuasion, Evidence, Adversarial Evidence Review, Field Recon, Citation Verifier) — byte-identical to source; confirmed by `evals/fixtures/argument-carve/4e-before-after.diff`
+- `nonfiction-intake-routing.md` — nonfiction triage branch (route conditions, hybrid rule, default-by-form table, post-diagnostic offer)
+- `synthesis-argument.md` — Argument-DE parallel decision-layer schema (detection markers, skip contract, override path)
+
+Source files retain `REPLACED-WITH-INCLUDE` pointer comments.
+
+**Behavior-preservation guarantees.** The split is proven behavior-preserving on the mechanical resolver layer by two gates with teeth: `audit-signal-propagation --check-registry` asserts all 45 signal-emitting audits still have §4e propagation rows (it fails if the split fragment is dropped), and the byte-identical §4e extraction is confirmed by `evals/fixtures/argument-carve/4e-before-after.diff`. A supplementary `argument-carve-behavior-preservation` smoke gate (`validate.sh`, wired into `--check-all`) re-runs the mechanical resolvers on a fixed pre-carve fixture and confirms they still classify it as Argument-DE without regressing to error.
+
+### Nonfiction & Argument — First-Class Front Door
+
+Restructured README, plugin description, and browser-facing materials to surface fiction and argument-shaped nonfiction as co-equal pillars.
+
+**README.md (root):** Tagline updated to "a development editor for fiction and argument-shaped nonfiction." The `/start` mermaid promotes nonfiction from a Q3 constraint modifier to a Q1 fork (argument-shaped piece alongside manuscript). "How It Works" adds the argument contract framing (claim / audience / burden / stakes) and the Nonfiction Argument Engine's diagnostic role. "See It in Action" adds a nonfiction samples section (marked-up op-ed + Dialectical Clarity letter, marked available at first release — no sample files exist yet). "Beyond Full Edits" restructured into two co-equal headed blocks: Fiction and Nonfiction & Argument. "Key Terms" expanded with argument terms: argument contract, claim ladder, warrant, burden, Dialectical Clarity, scope drift.
+
+**Plugin description (registry-derived):** Updated tagline across `plugin.json`, `marketplace.json`, and `.claude-plugin/marketplace.json` to lead with "fiction and argument-shaped nonfiction."
+
+**Registry commands:** `/start` writerQuestion updated to "manuscript or argument"; `/audit` writerQuestion surfaces argument-specific audits (dialectical, argument-decision).
+
+**`plugins/apodictic/README.md`:** Tagline, "What It Does," "Intended Audience," and "Components > Workflows" restructured into Fiction and Nonfiction & Argument pillars, with the Nonfiction Argument Engine and its Dialectical Clarity / Red-Team / Persuasion / Evidence companions called out as a top-level workflow group.
+
+**`overview-dashboard.html`:** Header tagline updated. New "Nonfiction Argument Engine" section added as a top-level subsystem (before Specialized Audits) listing the engine, Dialectical Clarity, Red-Team, Persuasion, Evidence, and ArgScope. Argument workflow promoted to first position in Common Workflows.
+
+**`route-explorer.html` + `route-explorer.codex.html`:** Added `argument` as a Q1 artifact option ("An argument-shaped piece — op-ed, brief, testimony, essay") with four goals (diagnose, dialectical, red_team, pre_draft) and corresponding ROUTES entries routing to the Nonfiction Argument Engine, Dialectical Clarity Audit, Argument Red Team, and argument pre-draft pathway.
+
+### Nonfiction Sample — Dialectical Clarity Letter (When Brute Force Fails)
+
+Shipped the first nonfiction "See It in Action" deliverable: a hand-authored Dialectical Clarity letter on the spine argument of Mark A. R. Kleiman's *When Brute Force Fails: How to Have Less Crime and Less Punishment* (Princeton University Press, 2009), retiring the "available at first release" placeholders in the README's nonfiction samples section.
+
+**`sample-dialectical-clarity-letter.html` (root):** A whole-book development edit of the central argument (not a chapter-by-chapter pass), produced by running APODICTIC's Nonfiction Argument Engine / Dialectical Clarity audit. Mirrors the existing fiction letter samples' structure, styling, and Dead Sea Scroll / Scriptorium Noir theme. Opens with a contamination disclosure (WBFF is a known, influential book; the model's knowledge contaminates independent discovery). Hindsight is handled as disclosed-not-scored: the argument is graded on its 2009 evidence, and the later contested HOPE replication record (the ~2016 Demonstration Field Experiment) is not used to grade it but is surfaced as an objection on the model→world bridge, where it confirms an existing structural soft spot rather than creating a new one. Diagnoses the argument with real Dialectical Clarity codes — claim ladder (C0–C3), the derived certainty-over-severity warrant as the headline strength, and four findings clustered on scope propagation (WR3/BP2-adjacent banner-vs-mechanism gap as the highest-leverage note; BP6 small-*n* program evidence; CL4 "cost of crime" definitional slide; BP5-partial comparative ledger). Names the strongest objection by procedure (text-internal scope-conditioning, not the genre-generic "public safety" decoy), credits Chapter 10 as a model of dialectical integrity, and returns a **Structurally Sound** Distinguish verdict (0 Must-Fix / 1 Should-Fix / 3 Could-Fix). Quotation kept within fair use (minimal quotes + loci, no substantial reproduction); the Firewall holds throughout (classes of solution only; the argument is never rewritten and no evidence is supplied).
+
+This is a hand-authored static page like the fiction letter samples — not an `html-export` pipeline output — so no byte-determinism gate applies and it is not regenerated in CI. The contamination disclosure and Firewall are review obligations (Codex + human), not mechanical validators.
+
+**`README.md` (root):** Retired the "(available at first release)" framing on the "See It in Action → Nonfiction & argument samples" section. The Dialectical Clarity letter bullet is now a live link to the published Pages URL (and ordered first, as the shipped deliverable); the Marked-up op-ed bullet remains a non-linked placeholder-stub marked *(forthcoming)* pending a follow-up.
+
+### Pre-Letter Re-Grounding (M2)
+
+Whole-novel editorial letters now **restore the specificity the ledger locked** before they are
+written — the context-salience decay that smears "nine belief failures" into "several belief
+failures" (`docs/subagent-architecture-design.md:15`) becomes a mechanically checkable fidelity
+gate (spec: `docs/synthesis-regrounding.md`, M2; builds on M1's coverage disclosure, which stays
+mandatory).
+
+- **New Processing Protocol step 9c — Pre-Letter Re-Grounding** in `run-synthesis.md` (lettered,
+  no renumbering; after the step-9b Synthesis Coverage Manifest, before the Step 10 pre-output
+  gate and Step 11 letter-writing). Named to avoid collision with the built `run-core.md
+  §Pre-Pass Re-Grounding` — a different seam, untouched. The step re-reads the consolidated
+  Findings Ledger **verbatim from disk** and re-reads bounded manuscript spans for each
+  synthesis-bound finding, then restores exact counts / names / quote anchors into the draft
+  claims. **Add-only:** re-grounding may not add a finding (new observations go to §4b without an
+  ID), change any severity (Deficit Lock untouched), or soften wording (softness-check still
+  applies). It writes a `<!-- regrounding: done -->` marker directly after the coverage marker and
+  **updates the M1 manifest** — re-read rows flip to `verbatim` / `in-context` with the
+  `regrounded: true` annotation M1 already parse-accepts, so the coverage note improves because
+  contact with the text actually happened; it never lets a `degraded` coverage read `ok` (M1's V5
+  masking check still fires).
+
+- **Bounded-pull seam (Increment-1 scope-down).** In sequential/hybrid/swarm, the synthesis step
+  may request per-finding retrievals (≤ 2 spans × 5k tokens, keyed on `finding_id` +
+  `evidence_refs`) serviced by the parent orchestrator (`run-core.md` §Execution Protocol step 10).
+  The orchestrator-governed pull *API* is unbuilt (Runner-Governed Execution Increment 4 remains
+  future), so this ships **prompt-level** — step-text instructions backstopped by the mechanical
+  floors, with a `<!-- deferred: orchestrator-pull-interface (Runner-Governed Execution
+  Increment 4) -->` marker recording where a mechanically enforced pull lands if ever.
+
+- **New validator `validate.sh specificity-floor <editorial_letter> <findings_ledger> [--strict]`**
+  (`scripts/specificity_floor.py`, mirrored ×2): the **count floor** (a finding whose ledger
+  entry locks a count may not deliver a vague quantifier — `VAGUE_QUANTIFIERS`, pinned in one
+  module-level constant — with none of that count restored in its letter window; number-words
+  normalize to digit strings, case-insensitively, so a ledger "nine" and a letter "9" satisfy
+  each other in both directions and a sentence-initial "Nine" satisfies a ledger "nine";
+  evidence-locator numbers — "sc. 30-31", plural "scenes 30-31", a spelled-out "Chapter Nine" —
+  are stripped so a scene number can't masquerade as a restored count, with a ledger↔window
+  count-phrase rescue so a real count heading a count-noun phrase after a locator keyword
+  ("…scene 9 belief failures…") is never falsely eaten — the rescue head must be the ledger's
+  own count-noun (the ledger side of the match is locator-stripped), so a locator+verb bigram
+  ("Chapter 9 opens") never rescues a decayed window even when the chapter number equals the
+  locked count; an all-malformed ledger — finding blocks
+  present, zero parse — refuses with a named error instead of a vacuous pass) and the **anchor floor** (each delivered Must-Fix window carries an evidence
+  reference matching the finding's locked `evidence_refs`, so a restored number rides a
+  ledger-matching anchor). Both are blocking; the `<!-- regrounding: done -->` presence check is
+  an advisory WARN (`--strict` promotes). Legitimately non-countable findings use an ID-scoped
+  `<!-- override: specificity-floor F-… — <rationale> -->` marker (via the shared
+  `override_marker` SSoT — code-span-stripped, boundary-matched) + an Appendix B entry. Wired into
+  the `run_spot_check` gate and the Step 10 checklist; a canonical re-grounded letter↔ledger pair
+  plus hostile arms (decay → count-floor FAIL, anchor-drift → anchor-floor FAIL, missing marker →
+  WARN/strict-FAIL) run at `--check-all`.
+
+- **Single ownership of the smuggled-finding direction.** The reverse-direction
+  letter-ID-must-exist-in-ledger check is **`finding-trace` E1's** — its sole owner
+  (`docs/finding-lifecycle-ids.md`). `specificity-floor` implements no reverse ID check (two
+  enforcers with subtly different ID grammars is the drift risk single ownership prevents); the
+  step text names `validate.sh finding-trace` as the smuggled-finding gate, and E1's own
+  `e1_dangling_ref` self-test pins that shape.
+
+### Non-UTF8 artifacts degrade instead of crashing (repo-wide reader class sweep)
+
+PR #162's build review found `disposition_check.py`'s `_read()` crashed with a raw
+UnicodeDecodeError traceback on a non-UTF8 artifact — and the idiom is a class, not an instance.
+Swept every OSError-only artifact reader in `scripts/`: the shared `_read()` helper in 25
+validators (annotation-manifest through world-bible/viz-manifest, incl. the `Path.read_text`
+variant in `schema_coverage.py`), both CLI read sites in `honesty_check.py`,
+`structured_findings.validate_file`, two `run_gate.py` sites (`_ledger_finding_ids` and the
+disposition-marker sources loop), `lifecycle_node._read_json` (whose
+`(OSError, JSONDecodeError)` did NOT cover UnicodeDecodeError — it subclasses ValueError, not
+JSONDecodeError), `refutation_check._read_file` (the shared letter/ledger/record CLI reader — the
+Codex #164 P2 miss; its `_read_bytes` sibling is binary and cannot decode-fault), and
+`disposition_check._read` itself (the module that ORIGINATED the class in PR #162 was left
+OSError-only — the earlier note that it was "already guarded on PR #162" was incorrect and is
+corrected here), and `specificity_floor._read` (added by PR #163 after this sweep's branch was cut,
+so the class sweep couldn't see it; its letter/ledger CLI reader was OSError-only — a non-UTF8
+letter/ledger via `validate.sh specificity-floor` raw-tracebacked — and is folded in on the
+main-merge here). Each now catches `(OSError, UnicodeDecodeError)`. The advisory readers degrade to
+their existing unreadable-artifact path (skip / `None` / `[]` / error-line) instead of a traceback.
+**`specificity_floor` is the exception: it is a BLOCKING gate, so it FAILS CLOSED.** Its `_read`
+still returns `None` on a read/decode failure, but `main()` no longer collapses that `None` to `""`
+— an unreadable letter or ledger now prints a named `Error:` and exits 2 (mirroring
+`refutation_check._read_file`'s `(None, msg) -> Error -> exit-2` shape), rather than degrading an
+unreadable letter to a vacuous "0 delivered / PASS" and an unreadable ledger to "no findings —
+nothing to hold" — either of which silently bypassed the count/anchor floor with a real ledger
+(Codex #164 P2, a fail-OPEN on a blocking gate). A legitimately-empty-but-readable artifact still
+reads as `""` (not `None`) and runs unchanged. One non-UTF8 self-test case added per touched
+validator, plus — for specificity_floor — fail-CLOSED pins on both the letter-read and ledger-read
+failure paths and a readable-empty-stays-green regression pin. Already safe and untouched: the
+previously guarded readers (`annotation_export`, `editor_scaffolding`, `reanchor`,
+`regression_diff`), the `errors="replace"` family
+(`config_checks`, `timeline_checks`, `letter_checks`, `meta_lint`, `argument_groundtruth`), the
+`except (OSError, ValueError)` sites in `run_gate.py` (ValueError covers UnicodeDecodeError), and
+the repo-internal fail-loud readers (`run_gate._load_manifest`, `apodictic_artifacts` schema
+loads, `sync_setec`), which never see user-supplied artifact paths.
+
+### Workflows — One-Click Round-Trip Resume at `/start`
+
+The built round-trip revision loop (reanchor → emit → crossref) is now **surfaced**, not just
+reachable: at the bound-project `revising` **and** `diagnosed` nodes, `/start` checks round-trip
+eligibility (a prior run folder holding a `*_Annotation_Manifest_*.md` + `python3` — a file glob,
+no new command, no new `next_action`) and, when eligible, offers **"Returning with a revised
+draft?"** alongside the existing dispatch. On accept it sequences the existing gated surfaces —
+reset check, snapshot, `reanchor` classify, `emit -o <new_run_folder>` (exit (a): carry-only),
+optional targeted re-diagnosis, `regression-diff` + `crossref` — and closes the round with a new
+step 4: a per-finding **disposition table** the operator confirms row by row (the model proposes;
+the operator disposes). The record (`[Project]_Roundtrip_Disposition_[runlabel].md`, marker-based)
+carries a **hard-sequenced** confirmation token written only after every row is confirmed, and
+resolved markers are written for `confirm-resolved` rows only.
+
+New `roundtrip-disposition` validator (`reanchor.py disposition`, joined into `--self-test-all` /
+`--check-all` with a canonical fixture pair + hostile arms): **RT1** recompute alignment (row
+classes and the derived `compares:` header must equal a live reanchor/crossref recompute — no
+stale or fabricated evidence), **RT2** confirmation record present (no decided row without the
+token; the validator proves the record, never the human — that layer is the new **rev-a4**
+attested item on the `revision_round` gate), **RT3** confirmed-writes-only (a resolved marker
+without a confirmed disposition — the vanished-anchor auto-close — is an ERROR), **RT4**
+partition coverage (every finding id in the recomputed RA3 partition must have a disposition
+row, missing ids named — a partial record never reads round-close clean; WARN, ERROR
+`--strict`), **W1**
+unadjudicated/staged (advisory; ERROR `--strict`). Existing gates (RA1–RA3, R1, W1–W3, X1,
+rev-a1–a3) and both lifecycle writers are unchanged — the disposition record is a confirmation
+precondition upstream, never a third writer. Closes ROADMAP "Toward truly great" #2's last mile.
+
+### Synthesis Coverage Disclosure (M1)
+
+Whole-novel editorial letters now disclose what the synthesis step could actually see when it
+wrote the letter — the silent degrade (chapters and pass artifacts outside active context at
+letter time) becomes a mechanical, author-visible record (spec: `docs/synthesis-regrounding.md`;
+M2, pre-letter re-grounding, ships separately).
+
+- **Artifact-read manifest** `[Project]_Synthesis_Read_Manifest_[runlabel].md`, written **before**
+  the letter exists — by the parent orchestrator at synthesis dispatch (sequential/hybrid/swarm,
+  provenance `dispatch-derived`) or by the agent immediately before letter-writing (single-agent,
+  provenance `declared`, labeled in pinned language). Closed row grammar
+  (`| kind | id | status | annotations |`; `verbatim | summary | absent`,
+  `in-context | outside-active-context`; the `regrounded: true` annotation is encoded now and
+  reserved for M2). The denominator is enumerated **from disk** (run-folder globs + preflight
+  section boundaries), never from the letter's prose — new Processing Protocol step 9b in
+  `run-synthesis.md` + the dispatch-side write in `run-core.md` §Execution Protocol step 10.
+- **Coverage note in the letter:** a required `### Synthesis Coverage` subsection of Appendix C
+  (no 15th top-level section; `synthesis-sections` untouched), a
+  `<!-- coverage: ok|degraded -->` machine marker on the first non-blank line after the title
+  block, and a pinned degrade sentence in the reader-facing summary section when degraded (The
+  Short Version — or the Editor Brief that replaces it in editor-scaffolding letters, which swap
+  that section out). "Degraded" is recomputed from the
+  manifest per an exhaustive D1-D4 truth table, relative to the mode's own baseline — normal
+  multi-agent outline-mediated coverage is *not* degraded.
+- **Additive sidecar object** `synthesis_coverage` in `Diagnostic_State.meta.json`
+  (`complexity_signals` additive pattern — property + `$comment` in
+  `apodictic.diagnostic-state.v1`, template field, `output-structure.md` docs; no new schema
+  file, no version bump).
+- **New validator `validate.sh synthesis-coverage <run_folder> [--strict]`**
+  (`scripts/synthesis_coverage.py`, mirrored ×2): V1 presence, V2 disk↔manifest row bijection
+  (the manifest can neither shrink nor pad the denominator), V3 note/sidecar/marker as exact
+  projections of the manifest, V4 provenance/mode agreement (`declared` in a multi-agent run
+  fails — the cheap lie is blocked), V5 degrade recompute (masking fails louder than degrading).
+  No override markers — disclosure is not overridable. Wired into the `run_spot_check` gate;
+  canonical green + degraded-and-disclosed fixtures plus hostile arms run at `--check-all`.
+  Launch posture (operator call folded 2026-07-01): the V2/V3/V4 fiction-checks are blocking day
+  one; V1/V5 — and so the overall gate — are advisory-first for one release (WARN at exit 0,
+  `--strict` promotes), flipping to blocking once real runs confirm the degrade thresholds don't
+  over-fire.
+
+### Manuscript visualizations — character co-presence network (chart 5)
+
+Built Viz Chart 5, the character co-presence network: nodes are characters, an edge means they share a scene, and chord thickness is the count of shared scenes. It is the firewall-safe, producer-gated chart — co-presence is a *fact* (two characters both on-page in a scene), so the chart renders structure and invents no relationship.
+
+**New producer schema `apodictic.scene_roster.v1`** — one block per manuscript: `rosters: [{scene_id, characters: [{name, anchor}]}]` plus an inline `character_aliases` table (surface-form → canonical-name). Each roster character carries a **required, non-empty `anchor`** (a Timeline-relative line-range or short on-page quote). The Timeline carries POV only, not a full cast roster, so this dedicated roster pass is what makes the per-scene cast machine-readable — without mutating the Timeline columns (charts 1–3 are untouched).
+
+**Present-vs-mentioned rule (the firewall crux).** A character is *present* in a scene iff they take on-page action, speak, or are a POV/thought subject within the scene's line-range; a character named only in another's speech, in summary, or by reference is *mentioned* → no roster entry, no edge. The reading is **producer/author-enforced** (a validator cannot read prose) and made auditable by the required `anchor` — the Continuity Bible C2 author-enforced precedent. The gate enforces anchor-non-empty + provenance closure, not the semantic reading.
+
+**`manuscript-viz` gate X2** byte-checks the manifest's `co_presence[]` against the producer: every `scene_id` matches a roster entry and resolves to a Timeline row; every `co_presence` name is in that scene's (canonical) roster names; the scene's Timeline POV character is present in its roster (cross-check); and every producer anchor is non-empty. X8 flips for `co_presence` (a present array is now legitimate iff it byte-checks against `scene_roster.v1`); it still fails for the producer-less `scene_functions`/`reveal_points`.
+
+**Deterministic render** — a circular node layout with chords for shared scenes; chord thickness comes from a hardcoded weight band (never read from the manifest). Edges and weights are computed mechanically from the rosters (an edge iff two characters co-occur in ≥1 scene; weight = the count). A solo character renders as an isolated node, never dropped. Single-file inline SVG, no network.
+
+**Worked fixture** `example-scene-roster.md` (paired to `example-timeline.md`): Mara + Adrian share two scenes (one edge, weight 2); Eleanor is mentioned-not-present (no node, no edge); Jon is a solo isolated node; and the "Mara Voss" surface form collapses to "Mara" via the alias table. The `_coverage.json` binding row (`manuscript-viz`, `closed_keys:true`) is added and exercised by `--check-all`.
+
 ## v2.6.2 - 2026-06-26
 
 ### Validators — override-marker hardening
