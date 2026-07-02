@@ -150,16 +150,23 @@ _LOCATOR_RE = re.compile(
 
 # Count-phrase RESCUE channel (locator/count collision): in "in the confession scene 9 belief
 # failures cluster", the locator regex eats "scene 9" although the 9 is a real count heading a
-# count-noun phrase — which would false-FAIL a faithful restoration. The cheapest correct rule:
-# a number followed (optionally via one modifier word) by a plural head word ("9 belief failures",
-# "12 failures") is recorded as a (count, head) PHRASE from the raw un-stripped text, and a count
-# eaten by the locator strip is rescued iff the LEDGER entry and the letter window share the same
-# (count, head) phrase AND that count is one the ledger locks. Both-sides agreement is what keeps
-# the channel un-gameable-by-coincidence: a bare locator ("at scene 9", "sc. 30-31") produces no
-# phrase (no plural head follows), and an s-ending VERB after a locator ("Chapter 9 opens") can
-# only rescue if the ledger itself carries the same number+verb bigram as its count phrase —
-# never true of a real ledger count sentence. Phrases NEVER arm the floor (only safe ledger
-# counts do); they only un-eat a locator-consumed restoration.
+# count-noun phrase — which would false-FAIL a faithful restoration. The rule: a number followed
+# (optionally via one modifier word) by a plural head word ("9 belief failures", "12 failures")
+# is recorded as a (count, head) PHRASE, and a count eaten by the locator strip is rescued iff
+# the LEDGER entry and the letter window share the same (count, head) phrase AND that count is
+# one the ledger locks. ASYMMETRY (Codex P2, PR #163): the LEDGER side of the match is extracted
+# from the locator-STRIPPED entry, so a ledger phrase is always headed by the noun a LOCKED
+# (non-locator) count actually counts ("belief failures") — never by an s-ending token trailing a
+# locator phrase ("Chapter 9 opens"). The previous both-sides-raw rule assumed a real ledger
+# count sentence could never carry a (number, s-verb) locator bigram — false: the ledger's own
+# count sentence may OPEN with the locator ("Chapter 9 opens with nine belief failures"), so
+# whenever the chapter/scene number equals the locked count, the shared raw (9, opens) bigram
+# rescued a window that had decayed to "several". The WINDOW side stays raw — un-eating the
+# window's locator-consumed restoration is the channel's whole purpose — so what remains
+# rescuable is exactly a window that puts the locked count in front of the ledger's own
+# count-noun head. A bare locator ("at scene 9", "sc. 30-31") still produces no phrase (no
+# plural head follows), and phrases NEVER arm the floor (only safe ledger counts do); they only
+# un-eat a locator-consumed restoration.
 _COUNT_PHRASE_HEAD_RE = re.compile(r"(?<!\d)(\d{1,2})\s+([A-Za-z]{2,}s)\b")
 _COUNT_PHRASE_MOD_RE = re.compile(r"(?<!\d)(\d{1,2})\s+[A-Za-z]+\s+([A-Za-z]{2,}s)\b")
 
@@ -217,14 +224,21 @@ def count_tokens(text):
     return {m.group(1) for m in _DIGIT_RE.finditer(body)}
 
 
-def count_phrases(text):
-    """The set of (count_token, plural_head) phrases in `text`, extracted from the NORMALIZED but
-    UN-locator-stripped body: every whole 2-99 number followed by a plural-looking head word,
-    directly ("12 failures") or via one modifier word ("9 belief failures"). The count floor's
-    rescue channel for locator/count collisions ("...scene 9 belief failures..."): a phrase only
-    rescues when ledger and window AGREE on it (see check), so bare locators — no plural head —
-    contribute nothing, and the strip's masquerade protection stays intact."""
+def count_phrases(text, strip_locators=False):
+    """The set of (count_token, plural_head) phrases in `text`: every whole 2-99 number followed
+    by a plural-looking head word, directly ("12 failures") or via one modifier word ("9 belief
+    failures"), after number-word normalization. The count floor's rescue channel for
+    locator/count collisions ("...scene 9 belief failures..."): a phrase only rescues when
+    ledger and window AGREE on it (see check), so bare locators — no plural head — contribute
+    nothing, and the strip's masquerade protection stays intact. strip_locators=True is the
+    LEDGER side: phrases come from the locator-STRIPPED body, so a rescue head can only be the
+    noun a locked count counts, never a locator-adjacent s-token ("Chapter 9 opens" — Codex P2,
+    PR #163). The strip substitutes a non-word placeholder (never a bare space) so removal
+    cannot butt a preceding count against a following plural word and mint a phrase that never
+    existed in the text ("saw 12 Chapter 9 openings" must not yield (12, openings))."""
     body = _normalize_number_words(text)
+    if strip_locators:
+        body = _LOCATOR_RE.sub(" ~ ", body)
     out = set()
     for rx in (_COUNT_PHRASE_HEAD_RE, _COUNT_PHRASE_MOD_RE):
         for m in rx.finditer(body):
@@ -469,9 +483,14 @@ def check(letter_text, ledger_text, strict=False):
             # Rescue channel (locator/count collision): a restored count eaten by the locator
             # strip ("...in the confession scene 9 belief failures cluster...") is honored iff
             # the ledger entry and the window share the same (count, plural-head) phrase AND the
-            # count is one the ledger locks. Phrases never ARM the floor — only safe ledger
-            # counts do — so this can only un-eat a real restoration, never widen enforcement.
-            rescued = {n for (n, _h) in (count_phrases(entry) & count_phrases(window))}
+            # count is one the ledger locks. The LEDGER side is locator-stripped first, so the
+            # shared head must be the ledger's own count-noun ("belief failures") — a
+            # locator-adjacent s-token ("Chapter 9 opens") can never rescue, even when the
+            # chapter number equals the locked count (Codex P2, PR #163). Phrases never ARM the
+            # floor — only safe ledger counts do — so this can only un-eat a real restoration,
+            # never widen enforcement.
+            rescued = {n for (n, _h) in (count_phrases(entry, strip_locators=True)
+                                         & count_phrases(window))}
             if vague and not (ledger_counts & (window_counts | rescued)):
                 errs.append("count floor: %s — the ledger locks count(s) {%s} but the delivered "
                             "window says %r with no restored count (re-grounding must restore the "
@@ -814,6 +833,60 @@ def run_self_test():
             "The %s confession triggers nine belief failures. <!-- finding: F-P5-01 -->" % surface)
         chk("anchor_surface_%s" % surface.replace(" ", "_").replace(".", ""),
             check(anchored, _LEDGER)[0] == 0)
+
+    # 25. LOCATOR-COINCIDENCE RESCUE (Codex P2, PR #163): when the locked count EQUALS a
+    #     chapter/scene/section number, a shared locator+s-token bigram ("Chapter 9 opens") must
+    #     NOT rescue a decayed window — the rescue head must be the LEDGER's own count-noun,
+    #     which is why the ledger side of the phrase match is locator-stripped. Exact Codex
+    #     repro first, then the sibling coincidence paths (other s-verbs, other locator
+    #     keywords, the spelled-out locator, and the one-modifier-word MOD_RE bridge); the
+    #     faithful restoration under the SAME ledger stays green.
+    def _coincidence_ledger(prose):
+        return ("# Findings Ledger\n\n## Mechanism: X\n\n### Notable Findings\n\n" + prose
+                + "\n\n" + _finding("F-P5-01", "Must-Fix", ["Ch 9"]) + "\n")
+
+    led_ch9_opens = _coincidence_ledger(
+        "Chapter 9 opens with nine belief failures that cluster with no visible pressure.")
+    codex_repro = _letter(
+        "The book works.",
+        "Chapter 9 opens with several belief failures. <!-- finding: F-P5-01 -->")
+    code, lines = check(codex_repro, led_ch9_opens)
+    chk("locator_coincidence_opens_fail", code == 1 and out_has(lines, "count floor")
+        and out_has(lines, "F-P5-01"))
+    codex_restored = _letter(
+        "The book works.",
+        "Chapter 9 opens with nine belief failures. <!-- finding: F-P5-01 -->")
+    chk("locator_coincidence_restored_pass", check(codex_restored, led_ch9_opens)[0] == 0)
+    led_ch9_stresses = _coincidence_ledger(
+        "Chapter 9 stresses the nine belief failures that cluster here.")
+    stresses = _letter(
+        "The book works.",
+        "Chapter 9 stresses several belief failures. <!-- finding: F-P5-01 -->")
+    code, lines = check(stresses, led_ch9_stresses)
+    chk("locator_coincidence_stresses_fail", code == 1 and out_has(lines, "count floor"))
+    led_sec3 = _coincidence_ledger("Section 3 collapses under three timeline breaks (Ch 9).")
+    collapses = _letter(
+        "The book works.",
+        "Section 3 collapses under several timeline breaks (Chapter 9). "
+        "<!-- finding: F-P5-01 -->")
+    code, lines = check(collapses, led_sec3)
+    chk("locator_coincidence_sections_fail", code == 1 and out_has(lines, "count floor"))
+    led_spelled = _coincidence_ledger(
+        "Chapter Nine opens with nine belief failures that cluster with no visible pressure.")
+    spelled = _letter(
+        "The book works.",
+        "Chapter Nine opens with several belief failures. <!-- finding: F-P5-01 -->")
+    code, lines = check(spelled, led_spelled)
+    chk("locator_coincidence_spelled_fail", code == 1 and out_has(lines, "count floor"))
+    # the MOD_RE bridge: the locked count appears ONLY inside the locator phrase on both sides,
+    # and the s-token sits one modifier word after it ("scene 9 confession triggers")
+    led_bridge = _coincidence_ledger("The scene 9 confession triggers nine belief failures (Ch 9).")
+    bridge = _letter(
+        "The book works.",
+        "The scene 9 confession triggers several belief failures (Chapter 9). "
+        "<!-- finding: F-P5-01 -->")
+    code, lines = check(bridge, led_bridge)
+    chk("locator_coincidence_bridge_fail", code == 1 and out_has(lines, "count floor"))
 
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]

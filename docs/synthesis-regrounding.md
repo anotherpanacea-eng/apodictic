@@ -586,14 +586,22 @@ Where shipped M2 deviates from the letter of this spec (or of sibling docs) — 
   directions (no blocking false FAIL on a faithful word→digit restoration) and a spelled-out
   "Chapter Nine" becomes a strippable locator (no over-credit); a **locator/count collision**
   ("…in the confession scene 9 belief failures cluster…") is rescued via a ledger↔window shared
-  (count, plural-head) phrase — the rescue never ARMS the floor, it only un-eats a real
+  (count, plural-head) phrase **whose head must be the LEDGER's own count-noun** — the ledger
+  side of the match is extracted from the locator-STRIPPED entry, so a locator-adjacent s-token
+  can never be a rescue head (Codex P2 fold, this PR: when the chapter number equals the locked
+  count, the earlier both-sides-raw match let "Chapter 9 opens with several…" pass as rescued
+  via the shared "(9, opens)" bigram) — the rescue never ARMS the floor, it only un-eats a real
   restoration, so bare locators still credit nothing; and the anchor floor's
   **chapter-surface-form independence** ("Chapter 12" / "Ch.12" / "Chapter Twelve" against a
   ledger "Ch 12") is self-test-pinned. Accepted residuals, on record: a locator-eaten count in
-  the LEDGER's own prose does not arm the floor (phrases never arm — arming on them would let
-  s-ending verbs after locators, "Ch 3 opens", spuriously widen enforcement), and a collision
-  rescue requires the window to reuse the ledger's count-noun head (a paraphrased noun after a
-  collision is not rescued; the ID-scoped override is the escape).
+  the LEDGER's own prose does not arm the floor (phrases never arm — and since the Codex P2
+  fold the ledger side of the rescue is likewise locator-stripped, so an s-ending verb after a
+  locator, "Ch 3 opens", widens neither enforcement nor rescue); a collision rescue requires
+  the window to reuse the ledger's count-noun head (a paraphrased noun after a collision is not
+  rescued; the ID-scoped override is the escape); and the narrowed coincidence that remains is
+  a window that juxtaposes a chapter number equal to the locked count directly with the
+  ledger's own count-noun ("Chapter 9 failures mount…") — accepted as genuinely ambiguous
+  prose, with the same override escape.
 
 ---
 
