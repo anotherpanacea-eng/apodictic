@@ -37,7 +37,10 @@ mandatory).
   evidence-locator numbers — "sc. 30-31", plural "scenes 30-31", a spelled-out "Chapter Nine" —
   are stripped so a scene number can't masquerade as a restored count, with a ledger↔window
   count-phrase rescue so a real count heading a count-noun phrase after a locator keyword
-  ("…scene 9 belief failures…") is never falsely eaten; an all-malformed ledger — finding blocks
+  ("…scene 9 belief failures…") is never falsely eaten — the rescue head must be the ledger's
+  own count-noun (the ledger side of the match is locator-stripped), so a locator+verb bigram
+  ("Chapter 9 opens") never rescues a decayed window even when the chapter number equals the
+  locked count; an all-malformed ledger — finding blocks
   present, zero parse — refuses with a named error instead of a vacuous pass) and the **anchor floor** (each delivered Must-Fix window carries an evidence
   reference matching the finding's locked `evidence_refs`, so a restored number rides a
   ledger-matching anchor). Both are blocking; the `<!-- regrounding: done -->` presence check is
