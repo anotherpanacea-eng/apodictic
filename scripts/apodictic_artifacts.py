@@ -33,10 +33,13 @@ except ImportError:
 BLOCK_RE = re.compile(r"<!--\s*apodictic:([A-Za-z_]+)\s*(.*?)\s*-->", re.DOTALL)
 
 # Exact Finding Lifecycle ID token (boundary-guarded, so F-P5-01 != F-P5-011). The same pattern as
-# the finding schema's `id` and the existing finding_trace._ID_RE / honesty_check._id_present
-# mirrors — hosted here too because the disposition-marker grammar below (and its consumers:
-# run_gate.py, disposition_check.py, feedback_triage.py W3) needs it and this module must stay
-# dependency-free (finding_trace imports THIS module, so it cannot be imported from here).
+# the finding schema's `id` and honesty_check._id_present's per-id boundary match — hosted HERE
+# because the disposition-marker grammar below (and its consumers: run_gate.py,
+# disposition_check.py, feedback_triage.py W3) needs it and this module must stay dependency-free
+# (finding_trace imports THIS module, so it cannot be imported from here). This is the SINGLE
+# compiled source: finding_trace._ID_RE and regression_diff._ID_RE are re-pointed to this object
+# (each keeps a byte-equal literal only as its art-less degraded fallback), and the
+# fid_re_lockstep self-test below pins all three patterns equal so the fallbacks cannot drift.
 FID_RE = re.compile(r"(?<![\w-])F-[A-Za-z0-9]+-[0-9]{2,}(?![\w-])")
 
 # Finding-disposition marker grammar — the SINGLE SSoT (docs/finding-dispositions.md §Schema 3),
@@ -355,6 +358,19 @@ def run_self_test():
     check("disposition_markers_codespan_decoy_rejected",
           [] if parse_disposition_markers(
               "```\n<!-- declined: F-P5-01 — decoy -->\n```\nprose") == [] else ["decoy honored"], True)
+    # fid_re_lockstep — FID_RE is the single compiled id-token source; finding_trace._ID_RE and
+    # regression_diff._ID_RE re-point to it, keeping byte-equal literals only as their art-less
+    # degraded fallback. Pin all three patterns equal so the fallbacks cannot drift. Imported
+    # locally (this module must stay dependency-free of both siblings — no top-level cycle).
+    try:
+        import finding_trace as _ft
+        import regression_diff as _rd
+        check("fid_re_lockstep",
+              [] if FID_RE.pattern == _ft._ID_RE.pattern == _rd._ID_RE.pattern else
+              ["pattern drift: art=%r ft=%r rd=%r"
+               % (FID_RE.pattern, _ft._ID_RE.pattern, _rd._ID_RE.pattern)], True)
+    except ImportError as e:  # a missing sibling would mask drift — fail loud, never skip
+        check("fid_re_lockstep", ["sibling import failed: %s" % e], True)
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 

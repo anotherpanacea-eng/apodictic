@@ -279,7 +279,13 @@ def check(sidecar_obj, ledger_text, letter_text, report_texts, triage_texts, sta
     # 2.1 contradiction, scoped to the run's COMPLETION artifacts: the same report set both
     # resolves F-X and carries an active disposition marker for it — each direction launders the
     # other. (A Coaching-Log decline later resolved by a NEW round's report is legitimate
-    # supersedence and is NOT this class — hence the report-only scope.)
+    # supersedence and is NOT this class — hence the report-only scope.) By the same design,
+    # a live contradiction whose disposition marker homes in the Coaching Log or a triage
+    # artifact (resolved in the report, dispositioned elsewhere) is deliberately OUT of DP2.1's
+    # scope — both resolved_ids and report_marker_ids gather from the report home only. The
+    # completion-side consistency of that cross-home case is backstopped by finding-trace E5
+    # (phantom completion) / W3 (completion follow-through), and the residual marker/sidecar
+    # divergence by DP2.5.
     for fid in sorted(resolved_ids & report_marker_ids):
         if active(fid):
             errs.append("DP2.1 contradiction: the run's completion artifacts carry both "
