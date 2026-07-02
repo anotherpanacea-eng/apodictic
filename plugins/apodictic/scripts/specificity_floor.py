@@ -205,7 +205,7 @@ def _read(path):
     try:
         with open(path, encoding="utf-8") as fh:
             return fh.read()
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return None
 
 
@@ -587,6 +587,26 @@ def run_self_test():
 
     def out_has(lines, token):
         return any(token in ln for ln in lines)
+
+    # 0. NON-UTF8 artifact on the CLI read path must degrade to the reader's None path
+    #    (letter/ledger -> "") instead of a raw UnicodeDecodeError traceback (the
+    #    disposition_check adjacent-exception class, swept repo-wide; the #163
+    #    specificity_floor reader was left OSError-only and is corrected here).
+    import tempfile as _tempfile
+    _nud = _tempfile.mkdtemp()
+    try:
+        _nu = os.path.join(_nud, "letter.md")
+        _ok = os.path.join(_nud, "ledger.md")
+        with open(_nu, "wb") as _fh:
+            _fh.write(b"\xff\xfenot utf-8\xff")
+        with open(_ok, "w", encoding="utf-8") as _fh:
+            _fh.write("# ok\n")
+        chk("non_utf8_read_degrades_to_none", _read(_nu) is None)
+        chk("non_utf8_cli_no_traceback",
+            main(["specificity_floor.py", "specificity-floor", _nu, _ok]) == 0)
+    finally:
+        import shutil as _shutil
+        _shutil.rmtree(_nud)
 
     # 1. GREEN: the restored letter names "nine belief failures" with the Ch 12 anchor
     green = _letter(

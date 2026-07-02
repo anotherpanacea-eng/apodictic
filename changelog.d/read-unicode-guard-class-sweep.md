@@ -12,9 +12,13 @@ JSONDecodeError), `refutation_check._read_file` (the shared letter/ledger/record
 Codex #164 P2 miss; its `_read_bytes` sibling is binary and cannot decode-fault), and
 `disposition_check._read` itself (the module that ORIGINATED the class in PR #162 was left
 OSError-only — the earlier note that it was "already guarded on PR #162" was incorrect and is
-corrected here). Each now catches `(OSError, UnicodeDecodeError)` and degrades to its existing
+corrected here), and `specificity_floor._read` (added by PR #163 after this sweep's branch was cut,
+so the class sweep couldn't see it; its letter/ledger CLI reader was OSError-only — a non-UTF8
+letter/ledger via `validate.sh specificity-floor` raw-tracebacked — and is folded in on the
+main-merge here). Each now catches `(OSError, UnicodeDecodeError)` and degrades to its existing
 unreadable-artifact path (skip / `None` / `[]` / error-line) instead of a traceback. One non-UTF8
-self-test case added per touched validator (32 new cases). Already safe and untouched: the
+self-test case added per touched validator, plus a CLI-no-traceback case for specificity_floor
+(34 new cases). Already safe and untouched: the
 previously guarded readers (`annotation_export`, `editor_scaffolding`, `reanchor`,
 `regression_diff`), the `errors="replace"` family
 (`config_checks`, `timeline_checks`, `letter_checks`, `meta_lint`, `argument_groundtruth`), the
