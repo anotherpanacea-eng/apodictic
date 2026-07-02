@@ -96,7 +96,7 @@ compares: <prior runlabel> → <this runlabel>
 - **Row grammar:** `<!-- disposition: <finding_id> anchor=<held|moved|vanished|ambiguous|not-re-anchorable> regression=<persisted|resolved-and-held|recurrence-candidate|new|new-in-quiet-chapter|none> decision=<confirm-resolved|keep-open|needs-placement|declined|pending> -->`. `regression=none` when the finding had no crossref join (carry-only rounds have no ledger yet — the record can still capture anchor-class dispositions for `needs-placement` triage). The human table is presentation; the markers are the machine record (the finding-trace precedent).
 - **The `compares:` header is derived, never hand-typed:** the `disposition` subcommand computes both runlabels from its folder arguments via `_runlabel_of()` (`reanchor.py:286`) — the same derivation `emit` already uses — so the header always names the actual inputs RT1 recomputes against.
 - **The confirmation token** `<!-- disposition-confirmed: operator <ISO-8601, minutes, hyphenated> -->` is **hard-sequenced**: it is written ONLY after every row has been presented to the operator and confirmed — never alongside, never before, never on a partially reviewed table (the orchestrator instruction lives in state-lifecycle.md step 4, worded as this sequencing rule, not as a soft "after review"). It is the recorded precondition RT2 checks.
-- `decision=declined` is a **per-round record only** (there is no engine-level declined finding state — revision-coach/SKILL.md:91 stalled off-ramp); a durable declined channel is a named future increment, not M1.
+- `decision=declined` is a **per-round record only**; the durable declined channel was a named future increment at build time, **since built** as the engine-level finding dispositions (`docs/finding-dispositions.md`): the roundtrip row stays the per-round audit trail, an operator-chosen `declined` is additionally recorded as a finding disposition (marker + `execution.finding_dispositions`), and the proposal column still never proposes `declined`/`deferred` (author-initiated only).
 
 ## Mechanical gates
 
@@ -152,7 +152,7 @@ compares: <prior runlabel> → <this runlabel>
 - **No comment re-authoring** (Firewall). RA2 byte-identity stands; refused re-anchors go to the operator.
 - **Python-less degrade unchanged** — the manual protocol is the documented path, not a bash reimplementation.
 - **No new `next_action` enum, no new command, no `apodictic.*.v1` schema.**
-- **No durable cross-round finding identity** and no engine-level `declined` state — both stay named future increments (`docs/draft-regression-testing.md` §Future; revision-coach stalled off-ramp).
+- **No durable cross-round finding identity** — stays a named future increment (`docs/draft-regression-testing.md` §Future). The engine-level `declined` state was likewise future at build time and has **since been built** — as an overlay, not a lifecycle state (`docs/finding-dispositions.md`); this spec's own scope is unchanged.
 - **No auto-selected prior run** when several qualify; no offer at lifecycle nodes other than `revising` and `diagnosed` in M1 (see Resolved questions).
 
 ## Increment plan, sessions, PR shape

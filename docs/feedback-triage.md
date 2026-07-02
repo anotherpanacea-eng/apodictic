@@ -44,6 +44,7 @@ Each feedback item is recorded as a real-JSON `apodictic.feedback_item.v1` block
 | **E4 — self conflict** | ERROR | An item lists its own id in `conflicts_with`. |
 | **W1 — unresolved conflict** | WARN (ERROR under `--strict`) | Two items contradict (`conflicts_with`, treated as an **undirected** graph — one-sided declaration counts) but **both** remain actionable (`act-now`/`act-later`). The contradiction was never resolved; acting on both would produce incompatible revisions. Resolution = decline or park (`monitor`) one side. This is the roadmap's "conflict resolution when feedback contradicts itself," made checkable. |
 | **W2 — act-on-unvalidated** | WARN (ERROR under `--strict`) | An item triaged `act-now` whose `assessment` is not `validated`/`partly-validated`. Spending revision time *now* on a claim our own analysis hasn't confirmed. Advisory because a writer may legitimately act on a trusted-source claim ahead of formal validation; `--strict` makes it a gate. |
+| **W3 — unreconciled decline** | WARN (ERROR under `--strict`) | An item triaged `decline` whose `evidence_refs` contain a ledger `F-…` id, with no disposition marker for that id in the same artifact — "declined feedback maps to engine finding F-… but no disposition was recorded — the decline lives only in this artifact." The mechanical nudge behind the decline-reconciliation flow (below; `docs/finding-dispositions.md`). **Ownership boundary (W3 vs disposition-check DP2.2):** W3 is feedback-triage-**artifact**-scoped advisory — it never reads the sidecar; DP2.2 is **sidecar**-scoped ledger-integrity — it never reads triage artifacts. |
 
 **Report.** One line per item — `id · source · assessment · triage · conflicts` — so the writer (and `/coach`) sees the whole triage at a glance. Exit `0` clean / WARN-only, `1` on any ERROR (or WARN under `--strict`), `2` usage.
 
@@ -58,7 +59,8 @@ Each feedback item is recorded as a real-JSON `apodictic.feedback_item.v1` block
 3. **Map to findings.** A `validated` claim that names a real defect becomes (or links to) an `apodictic.finding.v1` in the ledger, where its severity is governed normally.
 4. **Resolve conflicts.** For each `conflicts_with` pair, decide — keep one, decline the other, or park both; never leave both actionable.
 5. **Triage & sequence.** Set `triage` per item; produce the prioritized list (and hand off to Session Planning for the act-now set).
-6. **Gate.** `validate.sh feedback-triage <run_folder>` (or `--strict` in CI) before the plan is finalized.
+6. **Reconcile declines with the engine (`docs/finding-dispositions.md`).** An item triaged `decline` whose `evidence_refs` cite a ledger `F-…` id gets the offer to record an engine finding disposition — `{disposition: declined, source: triage, reason: <item claim + assessment>}` — via the dual-writer path (marker in the triage artifact itself; non-governed sidecar write direct, governed folds at the next `revision_round` clear). Author-decided, never automatic. The FB-item decline alone (external feedback about no engine finding) records nothing — dispositions attach to ledger findings only. W3 nudges the miss.
+7. **Gate.** `validate.sh feedback-triage <run_folder>` (or `--strict` in CI) before the plan is finalized.
 
 ## Self-review (Increment 1)
 
