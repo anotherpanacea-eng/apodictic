@@ -272,9 +272,29 @@ availability of the same module if/when it invokes the batch client.
 
 ## 9. Open questions (non-blocking)
 
-- **OQ-1.** Should a DEGRADED coverage state on a high-stakes run *halt* (`--strict`)
-  or only *disclose*? Defaults to **disclose** (route to the synthesis blind-spot
-  inventory), matching the field-recon decline path.
-- **OQ-2.** Should per-provider budgets scale with batch size? Deferred to telemetry.
-- **OQ-3.** Persist the `reliability` block to a `Citation_Reliability.json`
-  sidecar? Not in M1; additive follow-on.
+- **OQ-1. RESOLVED / BUILT (additive follow-on).** The default is still
+  **disclose** (route a DEGRADED coverage state to the synthesis blind-spot
+  inventory, matching the field-recon decline path) — that default is UNCHANGED.
+  A `--strict` opt-in now *also* HALTS a high-stakes run: `resolve_batch(...,
+  strict=True)` (CLI `batch --strict`) evaluates `api_reliability.strict_halt_decision`
+  and, iff coverage is DEGRADED (≥1 degraded provider) **and** ≥1 citation ended
+  NOT-CHECKED, adds a `strict` sub-block to the `reliability` block
+  (`{enabled, halt: true, reason, degraded_providers, not_checked}`) and exits
+  `STRICT_HALT_EXIT_CODE` (3) so the caller stops rather than emit a degraded
+  verdict as a clean not-found. The halt is **one-directional**: a clean run, a
+  non-strict run, or a genuine all-healthy NOT-FOUND (NOT-FOUND ≠ NOT-CHECKED)
+  never halts, and with `APODICTIC_RELIABILITY=off` there is no degradation signal
+  so it can never fire. Non-strict output is byte-identical to before (no `strict`
+  key). Self-tested in both modules' `--self-test`.
+- **OQ-2.** Should per-provider budgets scale with batch size? Deferred to
+  telemetry (defaults stay reasoned, not telemetry-tuned). **Still open.**
+- **OQ-3. RESOLVED / BUILT (additive follow-on).** The `reliability` block is now
+  serializable to a deterministic `Citation_Reliability.json` sidecar:
+  `api_reliability.build_reliability_sidecar` (pure serializer — budget spent,
+  circuit states, coverage/degraded_providers, per-provider snapshot, events, and
+  the resolved/not_found/not_checked summary; optional `strict` decision) plus
+  `write_reliability_sidecar(dir_or_path, ...)` (stdlib `json`, `sort_keys` key
+  order, schema `apodictic.citation_reliability.v1`). Opt-in via `resolve_batch(...,
+  sidecar_dir=...)` / CLI `batch --sidecar-dir DIR`. Additive: it reads the ledger
+  and never alters the in-`output` `reliability` block. Self-tested (shape,
+  determinism, disk round-trip).

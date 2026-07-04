@@ -297,11 +297,11 @@ See `references/craft/shelf-positioning.md` for the full audit.
 - `references/craft/research-representation-context.md` — Representation Context research mode
 
 ### Research Mode Scripts
-- `scripts/academic_apis.py` — Batch API client for CrossRef, Semantic Scholar, OpenAlex, CORE, Unpaywall, PubMed, Wayback Machine. Handles resolution pipeline, rate limiting, provenance tracking, and (research-reliability-layer) per-provider budgets / circuit breaker / reliability ledger — emits a `reliability` block and a per-result `resolution_status` (resolved / not-found / not-checked).
+- `scripts/academic_apis.py` — Batch API client for CrossRef, Semantic Scholar, OpenAlex, CORE, Unpaywall, PubMed, Wayback Machine. Handles resolution pipeline, rate limiting, provenance tracking, and (research-reliability-layer) per-provider budgets / circuit breaker / reliability ledger — emits a `reliability` block and a per-result `resolution_status` (resolved / not-found / not-checked). Opt-in high-stakes controls: `batch --strict` (OQ-1) HALTS (non-zero exit + `reliability.strict.halt`) when degraded coverage left ≥1 citation NOT-CHECKED; `batch --sidecar-dir DIR` (OQ-3) writes a `Citation_Reliability.json` sidecar. Both additive — default behavior is unchanged.
 - `scripts/fuzzy_match.py` — Fuzzy matching for citation metadata resolution (title similarity ≥80%, surname matching, year ±1 tolerance)
 - `scripts/response_cache.py` — In-memory + optional disk cache for API responses; TTL freshness (metadata 30d, Wayback 7d, env-overridable) with the no-sticky-error rule preserved
 - `scripts/provenance.py` — Provenance tracking store (every verdict traces to a stored API response)
-- `scripts/api_reliability.py` — Run-level reliability: `ProviderBudget`, `CircuitBreaker`, `ReliabilityLedger`, `TTL` (stdlib-only; lets an `unretrievable` verdict be tagged honestly as not-found vs. not-checked). See `docs/research-reliability-layer.md`.
+- `scripts/api_reliability.py` — Run-level reliability: `ProviderBudget`, `CircuitBreaker`, `ReliabilityLedger`, `TTL` (stdlib-only; lets an `unretrievable` verdict be tagged honestly as not-found vs. not-checked). Also `strict_halt_decision` (OQ-1 one-directional high-stakes halt) and `build_reliability_sidecar` / `write_reliability_sidecar` (OQ-3 `Citation_Reliability.json`). See `docs/research-reliability-layer.md`.
 
 ### Genre Audits (form/genre-specific)
 - `references/genre/comedy-satire.md` — Comedy & Satire audit

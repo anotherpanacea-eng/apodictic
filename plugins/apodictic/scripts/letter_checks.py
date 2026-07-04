@@ -7,8 +7,13 @@ prefix evidence-ref / calibration-line edge-case findings). validate.sh stays th
 command surface and degrades to its prior bash path when python3 is absent.
 
 Ported arms (Validator Architecture Hardening, incremental):
-  - severity-floor   — output-policy.md §Severity Floor Rules
-  (decision-layer-check, audit-signal-propagation, ... follow in later increments)
+  - severity-floor, decision-layer-check, audit-signal-propagation,
+    underdiagnosis-triggers, ledger-consolidation, author-facing-lint
+  - synthesis-sections, tone-check, ledger-check (Increment 8 — the remaining
+    editorial-letter / ledger prose arms, previously bash-regex): heading-anchored
+    section matching (kills mid-heading mentions), body-only + code-span-stripped +
+    blockquote-skipped tone scanning, and anchored per-pass ledger subsections.
+    ledger-check returns (rc, lines) directly (NOTE + no-passes WARNING) via RAW_CHECKS.
 
 Conventions mirror structured_findings.py / honesty_check.py:
   - body vs appendix split: the synthesis body (above the first "Appendix <X>"
@@ -23,6 +28,9 @@ Conventions mirror structured_findings.py / honesty_check.py:
 
 CLI:
   letter_checks.py severity-floor <letter_file> [<ledger_file>]
+  letter_checks.py synthesis-sections <letter_file>
+  letter_checks.py tone-check <letter_file>
+  letter_checks.py ledger-check <ledger_file>
   letter_checks.py --self-test [<check-name>]
 """
 
@@ -31,7 +39,7 @@ import os
 import re
 import sys
 
-from override_marker import has_override, override_slugs
+from override_marker import has_override, override_slugs, strip_code_spans
 
 # First "Appendix <X>" heading marks the boundary between the canonical synthesis
 # body and the (non-canonical, evidence-bearing) appendices.
@@ -837,6 +845,190 @@ def author_facing_lint(text):
     return [], warnings, ok, failed
 
 
+# --------------------------------------------------------------------------
+# synthesis-sections — run-synthesis.md §Post-Write Section Validation.
+#
+# The 14 required editorial-letter sections must each appear as a markdown
+# HEADING (a line opening with 1-4 `#`), not merely as a phrase in prose.
+#
+# Hardening over the legacy `grep -iE "^#{1,4}\s.*NAME"`: the section name
+# must open the heading *title* (after the `#` run, whitespace, and optional
+# emphasis markers), matched at a trailing word boundary. This kills the
+# mid-heading false-positive the raw `.*NAME` substring allowed — a heading
+# like `## Notes on the Stress Test approach` no longer satisfies the
+# `Stress Test` requirement — while still accepting the canonical
+# subtitled/emphasized forms (`## Appendix A — Diagnostic Detail`,
+# `# Development Edit — Worked Example`, `## **Stress Test**`).
+# --------------------------------------------------------------------------
+
+# Required section headings, in the run-synthesis.md validation order.
+_SYNTHESIS_SECTIONS = (
+    "Development Edit", "The Short Version", "What the Book Does Best",
+    "What Needs Work", "Additional Observations", "Revision Checklist",
+    "Protected Elements", "Author Decisions", "Control Questions",
+    "The Strongest Case Against", "Stress Test", "Appendix A",
+    "Appendix B", "Appendix C",
+)
+
+# A markdown heading line: 1-4 `#`, whitespace, then the title (group 1).
+_HEADING_RE = re.compile(r"^#{1,4}\s+(.*\S)\s*$", re.MULTILINE)
+# Leading emphasis / list decoration to peel off a heading title before the
+# section-name prefix test (`**Stress Test**`, `_Stress Test_`).
+_HEADING_LEAD_RE = re.compile(r"^[*_\s]+")
+
+
+def _heading_titles(text):
+    """Every markdown heading title in `text`, decoration-stripped."""
+    out = []
+    for m in _HEADING_RE.finditer(text):
+        title = _HEADING_LEAD_RE.sub("", m.group(1)).lstrip()
+        out.append(title)
+    return out
+
+
+def _title_opens_with(title, name):
+    """True iff `title` opens with section `name` at a trailing word boundary.
+
+    Case-insensitive. `Appendix A — Diagnostic Detail` opens with `Appendix A`
+    (next char is whitespace); `Appendix Alpha` does NOT open with `Appendix A`
+    (next char `l` is a word char); `Notes on X` does not open with `X`.
+    """
+    tl, nl = title.lower(), name.lower()
+    if not tl.startswith(nl):
+        return False
+    rest = tl[len(nl):]
+    # trailing boundary: end-of-title, or the next char is not alphanumeric.
+    return rest == "" or not (rest[0].isalnum() or rest[0] == "_")
+
+
+def synthesis_sections(text):
+    """Check the 14 required editorial-letter section headings are present.
+
+    Returns (errors, warnings, ok_line, failed_line). One ERROR per missing
+    heading; the letter fails (exit 1) if any are missing.
+    """
+    titles = _heading_titles(text)
+    errors = []
+    for name in _SYNTHESIS_SECTIONS:
+        if not any(_title_opens_with(t, name) for t in titles):
+            errors.append("ERROR: Missing required heading: '%s'" % name)
+    ok = "OK: All 14 required section headings present in editorial letter."
+    failed = ("FAILED: %d missing required heading(s) in editorial letter.\n"
+              "NOTE: Sections must appear as markdown headings (lines starting with #),\n"
+              "not just as phrases in prose." % len(errors))
+    return errors, [], ok, failed
+
+
+# --------------------------------------------------------------------------
+# tone-check — output-policy.md §Severity Tone (no sycophantic superlatives).
+#
+# Hardening over the legacy whole-file `grep -iq "\bWORD\b"`: scan only the
+# synthesis BODY (superlatives quoted as evidence in an appendix are not the
+# letter's own tone), with code spans/fences stripped via the shared
+# override_marker.strip_code_spans SSoT (a superlative in a fenced example or
+# inline `code` is documentation, not praise) and markdown blockquote lines
+# dropped (a `>`-quoted author blurb — "> a masterpiece" — is quoted external
+# text, not the letter's assessment voice). The letter's own prose is judged.
+# --------------------------------------------------------------------------
+
+_BLOCKED_SUPERLATIVES = (
+    "masterpiece", "stunning", "flawless", "clean bill",
+    "tour de force", "triumph", "perfection",
+)
+
+
+def tone_check(text):
+    """Flag blocked sycophantic superlatives in the editorial-letter body.
+
+    Returns (errors, warnings, ok_line, failed_line). One ERROR per distinct
+    blocked superlative found; the letter fails (exit 1) if any are found.
+    """
+    body = split_body(text)
+    scan = strip_code_spans(body)
+    scan = "\n".join(ln for ln in scan.split("\n") if not ln.lstrip().startswith(">"))
+    errors = []
+    for word in _BLOCKED_SUPERLATIVES:
+        if re.search(r"\b%s\b" % re.escape(word), scan, re.IGNORECASE):
+            errors.append("ERROR: Blocked superlative found: '%s'" % word)
+    ok = "OK: No blocked superlatives found. Severity tone is compliant."
+    failed = ("FAILED: %d blocked superlative(s) found in editorial letter.\n"
+              "NOTE: The framework enforces rigorous diagnosis; sycophantic praise "
+              "is not permitted." % len(errors))
+    return errors, [], ok, failed
+
+
+# --------------------------------------------------------------------------
+# ledger-check — the Findings Ledger's per-pass required-subsection contract.
+#
+# Each `## Pass N` entry must carry five `### ` subsections; Pass 0 and Pass 10
+# are data-building passes (a missing subsection is a NOTE, not an ERROR). This
+# check emits NOTE lines and a no-passes WARNING that fails — output the 4-tuple
+# CHECKS wrapper can't express — so it returns (rc, lines) directly and is
+# dispatched via RAW_CHECKS.
+#
+# Hardening over the legacy `sed`-sliced `grep -q "### NAME"`: the pass slices
+# are bounded exactly between consecutive `## Pass N` headings, and required
+# subsections are matched as real `### ` heading lines (anchored, word-boundary)
+# rather than a substring that a mid-line prose `### NAME` could satisfy.
+# --------------------------------------------------------------------------
+
+_LEDGER_REQUIRED = (
+    "Notable Findings", "Data Artifacts for Letter Reference",
+    "Cross-Pass Connections", "Unresolved Questions", "Audit Triggers",
+)
+_PASS_HEADER_RE = re.compile(r"^## Pass (\d+)", re.MULTILINE)
+_SUBSECTION_RE = re.compile(r"^#{3,}\s+(.*\S)\s*$", re.MULTILINE)
+
+
+def _pass_has_subsection(section_text, name):
+    """True iff `section_text` contains a `### `/`#### ` heading opening with `name`."""
+    for m in _SUBSECTION_RE.finditer(section_text):
+        title = _HEADING_LEAD_RE.sub("", m.group(1)).lstrip()
+        if _title_opens_with(title, name):
+            return True
+    return False
+
+
+def ledger_check(text):
+    """Validate the Findings Ledger's per-pass required subsections.
+
+    Returns (rc, lines). rc 0 = all required subsections present (Pass 0/10
+    misses are NOTE-only), rc 1 = a missing subsection in a non-data-building
+    pass, or no pass entries at all.
+    """
+    headers = list(_PASS_HEADER_RE.finditer(text))
+    if not headers:
+        return 1, ["WARNING: No pass entries found in ledger."]
+
+    lines, errors = [], 0
+    for idx, m in enumerate(headers):
+        # Verbatim digit token (string), matching the legacy bash `grep -o '[0-9]\+'`:
+        # the Pass 0/10 leniency is a string compare, and the surfaced line echoes the
+        # token verbatim (so a non-canonical `## Pass 00` stays strict + prints "Pass 00").
+        pass_tok = m.group(1)
+        start = m.start()
+        end = headers[idx + 1].start() if idx + 1 < len(headers) else len(text)
+        section = text[start:end]
+        lenient = pass_tok in ("0", "10")
+        for req in _LEDGER_REQUIRED:
+            if _pass_has_subsection(section, req):
+                continue
+            if lenient:
+                lines.append("NOTE: Pass %s missing '### %s' (acceptable for "
+                             "data-building pass)" % (pass_tok, req))
+            else:
+                lines.append("ERROR: Pass %s missing required section '### %s'"
+                             % (pass_tok, req))
+                errors += 1
+
+    if errors > 0:
+        lines.append("")
+        lines.append("FAILED: %d missing required section(s) in ledger." % errors)
+        return 1, lines
+    lines.append("OK: All pass entries contain required sections.")
+    return 0, lines
+
+
 # Registry of file-driven checks: name -> function(text) -> (errors, warnings, ok, failed).
 CHECKS = {
     "severity-floor": severity_floor,
@@ -845,6 +1037,14 @@ CHECKS = {
     "underdiagnosis-triggers": underdiagnosis_triggers,
     "ledger-consolidation": ledger_consolidation,
     "author-facing-lint": author_facing_lint,
+    "synthesis-sections": synthesis_sections,
+    "tone-check": tone_check,
+}
+
+# Checks that return (rc, lines) directly (NOTE lines / no-passes WARNING that
+# the (errors, warnings, ok, failed) wrapper can't express). Dispatched apart.
+RAW_CHECKS = {
+    "ledger-check": ledger_check,
 }
 
 # Checks that accept an optional second file (raw ledger for ledger-consolidation).
@@ -882,6 +1082,23 @@ def run_check(name, path, extra_path=None):
     return 0
 
 
+def run_raw_check(name, path):
+    """Run a (rc, lines)-returning check against a file; print its lines; return rc."""
+    fn = RAW_CHECKS.get(name)
+    if fn is None:
+        sys.stderr.write("Error: unknown check: %s\n" % name)
+        return 2
+    if not os.path.isfile(path):
+        sys.stderr.write("Error: File not found: %s\n" % path)
+        return 2
+    with open(path, "r", encoding="utf-8", errors="replace") as fh:
+        text = fh.read()
+    rc, lines = fn(text)
+    for ln in lines:
+        print(ln)
+    return rc
+
+
 def _fixture_dir():
     here = os.path.dirname(os.path.abspath(__file__))
     for c in (os.path.join(here, "test_fixtures"),
@@ -899,6 +1116,13 @@ def run_self_test(which=None):
             print("  %s: OK" % name)
         else:
             print("  %s: FAIL (errs=%s)" % (name, errs))
+            rc["v"] = 1
+
+    def check_rc(name, got_rc, expect_clean):
+        if (got_rc == 0) == expect_clean:
+            print("  %s: OK" % name)
+        else:
+            print("  %s: FAIL (rc=%s)" % (name, got_rc))
             rc["v"] = 1
 
     def warns(name, ws, expect_warn):
@@ -1061,6 +1285,68 @@ def run_self_test(which=None):
         codes_gloss = ("# Development Edit\n## What Needs Work\nPass 11F (QF-7) is unresolved.\n")
         warns("afl_codes_gloss_codes_warn", author_facing_lint(codes_gloss)[1], True)  # codes glossing codes -> warns
 
+    if which in (None, "synthesis-sections"):
+        _ss_full = "".join("## %s\n\nbody\n\n" % h for h in _SYNTHESIS_SECTIONS)
+        check("ss_all_headings", synthesis_sections(_ss_full)[0], True)
+        _ss_missing = _ss_full.replace("## Stress Test\n\nbody\n\n", "")
+        check("ss_missing_heading", synthesis_sections(_ss_missing)[0], False)
+        # Subtitled / emphasized canonical forms still satisfy the requirement.
+        _ss_subtitled = (_ss_full
+                         .replace("## Development Edit\n", "# Development Edit — Worked Example\n")
+                         .replace("## Stress Test\n", "## **Stress Test**\n")
+                         .replace("## Appendix A\n", "## Appendix A — Diagnostic Detail\n"))
+        check("ss_subtitled_headings_ok", synthesis_sections(_ss_subtitled)[0], True)
+        # Hardening: the section named only mid-heading (not opening the title) does NOT count.
+        _ss_midheading = _ss_full.replace("## Stress Test\n\nbody\n\n",
+                                          "## Notes on the Stress Test approach\n\nbody\n\n")
+        check("ss_midheading_mention_fails", synthesis_sections(_ss_midheading)[0], False)
+        # Hardening: a lookalike prefix (`Appendix Alpha`) does not satisfy `Appendix A`.
+        _ss_lookalike = _ss_full.replace("## Appendix A\n\nbody\n\n",
+                                         "## Appendix Alpha\n\nbody\n\n")
+        check("ss_lookalike_prefix_fails", synthesis_sections(_ss_lookalike)[0], False)
+
+    if which in (None, "tone-check"):
+        clean = "# Development Edit\nThe pacing needs work; the voice is distinctive.\n"
+        check("tc_clean", tone_check(clean)[0], True)
+        superlative = "# Development Edit\nThis is a flawless masterpiece.\n"
+        check("tc_body_superlative", tone_check(superlative)[0], False)
+        # Hardening: a superlative quoted as evidence in an appendix is not the letter's tone.
+        appendix_only = ("# Development Edit\n## What Needs Work\nPacing needs work.\n"
+                         "## Appendix A\nThe jacket copy calls it a masterpiece.\n")
+        check("tc_appendix_exempt", tone_check(appendix_only)[0], True)
+        # Hardening: a superlative inside a code span / fence is documentation, not praise.
+        codespan_only = ("# Development Edit\n## What Needs Work\nAvoid words like "
+                         "`masterpiece` in the letter.\n")
+        check("tc_codespan_exempt", tone_check(codespan_only)[0], True)
+        fence_only = ("# Development Edit\n## What Needs Work\nBlocked list:\n"
+                      "```\nmasterpiece\nflawless\n```\nProse stays clean.\n")
+        check("tc_fence_exempt", tone_check(fence_only)[0], True)
+        # Hardening: a `>`-quoted author blurb is quoted external text, not the letter's voice.
+        blockquote_only = ("# Development Edit\n## What Needs Work\nPacing needs work.\n"
+                           "> The author's blurb calls it a triumph.\n")
+        check("tc_blockquote_exempt", tone_check(blockquote_only)[0], True)
+
+    if which in (None, "ledger-check"):
+        _sect = ("### Notable Findings\nx\n### Data Artifacts for Letter Reference\nx\n"
+                 "### Cross-Pass Connections\nx\n### Unresolved Questions\nx\n"
+                 "### Audit Triggers\nx\n")
+        check_rc("lc_complete_pass", ledger_check("## Pass 5 — Character\n" + _sect)[0], True)
+        check_rc("lc_missing_section",
+                 ledger_check("## Pass 5 — Character\n### Notable Findings\nx\n"
+                              "### Cross-Pass Connections\nx\n### Unresolved Questions\nx\n"
+                              "### Audit Triggers\nx\n")[0], False)
+        check_rc("lc_pass0_lenient",
+                 ledger_check("## Pass 0 — Structure\n### Notable Findings\nx\n")[0], True)
+        check_rc("lc_pass10_lenient",
+                 ledger_check("## Pass 10 — Timeline\n### Notable Findings\nx\n")[0], True)
+        check_rc("lc_no_passes", ledger_check("# Ledger\nno passes here\n")[0], False)
+        # Hardening: a required subsection named only in mid-line prose (not a `### ` heading)
+        # does NOT satisfy the requirement; the anchored heading match catches the miss.
+        _prose = ("## Pass 5 — Character\n### Notable Findings\nx\n"
+                  "### Data Artifacts for Letter Reference\nx\n### Cross-Pass Connections\nx\n"
+                  "### Unresolved Questions\nx\nSee the ### Audit Triggers list below.\n")
+        check_rc("lc_prose_pseudo_heading_fails", ledger_check(_prose)[0], False)
+
     # Data-driven fixtures: lc.<pass|fail>.<check>.<name>.md in test_fixtures/.
     fdir = _fixture_dir()
     if fdir:
@@ -1072,8 +1358,11 @@ def run_self_test(which=None):
                 continue
             with open(path, "r", encoding="utf-8", errors="replace") as fh:
                 txt = fh.read()
-            fn = CHECKS.get(chk, severity_floor)
-            check("fixture:%s" % name, fn(txt)[0], ".pass." in name)
+            if chk in RAW_CHECKS:
+                check_rc("fixture:%s" % name, RAW_CHECKS[chk](txt)[0], ".pass." in name)
+            else:
+                fn = CHECKS.get(chk, severity_floor)
+                check("fixture:%s" % name, fn(txt)[0], ".pass." in name)
     else:
         print("  fixtures: SKIP (test_fixtures/ not found)")
 
@@ -1098,6 +1387,11 @@ def main(argv):
             sys.stderr.write("Usage: letter_checks.py %s <file> [<ledger_file>]\n" % argv[1])
             return 2
         return run_check(argv[1], argv[2], argv[3] if len(argv) > 3 else None)
+    if argv[1] in RAW_CHECKS:
+        if len(argv) < 3:
+            sys.stderr.write("Usage: letter_checks.py %s <file>\n" % argv[1])
+            return 2
+        return run_raw_check(argv[1], argv[2])
     sys.stderr.write("Error: unknown command: %s\n" % argv[1])
     return 2
 

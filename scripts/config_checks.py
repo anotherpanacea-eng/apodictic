@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 """Validators for APODICTIC's non-letter artifact types (validate.sh contract/config arms).
 
-These three arms do not take an editorial letter or ledger — they validate different
-artifact types — so they live here rather than in letter_checks.py:
+These arms do not take an editorial letter or ledger — they validate different
+artifact types (contracts, directory trees, run folders, filename conventions) — so
+they live here rather than in letter_checks.py:
 
   * quality-risk-triggers      — pre-pass mode selection from a CONTRACT artifact (+ optional
                                  Diagnostic_State.meta.json sidecar). Five triggers Q1-Q5.
@@ -12,6 +13,9 @@ artifact types — so they live here rather than in letter_checks.py:
                                  floors (criterion 1). Walks an audits directory tree.
   * argument-recon-prerequisite— an argument-shaped run folder must carry a Field
                                  Reconnaissance report OR the canonical blind-spot disclosure.
+  * artifact-names             — pass artifacts in an output DIRECTORY must match the
+                                 <Project>_Pass<N>_<Name>_<runlabel>.md filename convention
+                                 (Increment 8; project/runlabel matched as literals).
 
 Faithful re-implementations of the bash arms (verified by oracle-diff against the pre-port
 arm: identical exit codes). validate.sh stays the command surface and degrades to its prior
@@ -22,6 +26,7 @@ CLI:
   config_checks.py quality-risk-triggers <contract_file> [<meta_json>]
   config_checks.py audit-tier-criterion <pass_dependencies_file> [<audits_root_dir>]
   config_checks.py argument-recon-prerequisite <run_folder> [<editorial_letter_file>]
+  config_checks.py artifact-names <output_dir> <project> <runlabel>
   config_checks.py --self-test [<check-name>]
 """
 
@@ -326,6 +331,37 @@ def argument_recon_prerequisite(run_folder, letter_path=None):
 
 
 # --------------------------------------------------------------------------
+# artifact-names — pass-artifact filename convention.
+#
+# Pass artifacts in an output dir must match  <Project>_Pass<N>_<Name>_<runlabel>.md.
+# Faithful re-implementation of the bash glob+regex arm; the hardening is that the
+# project and runlabel are matched as LITERALS (re.escape) rather than interpolated
+# raw into the pattern, so a project/runlabel carrying a regex metacharacter can no
+# longer distort the convention check.
+# --------------------------------------------------------------------------
+
+def artifact_names(output_dir, project, runlabel):
+    pattern = re.compile(r"^%s_Pass\d+_[A-Za-z_]+_%s\.md$"
+                         % (re.escape(project), re.escape(runlabel)))
+    lines, errors = [], 0
+    pass_files = sorted(f for f in os.listdir(output_dir)
+                        if "Pass" in f and f.endswith(".md")
+                        and os.path.isfile(os.path.join(output_dir, f)))
+    for base in pass_files:
+        if not pattern.match(base):
+            lines.append("WARNING: Artifact name doesn't match convention: %s" % base)
+            lines.append("  Expected pattern: %s_Pass[N]_[Name]_%s.md" % (project, runlabel))
+            errors += 1
+
+    if errors > 0:
+        lines.append("")
+        lines.append("FAILED: %d artifact(s) with non-standard names." % errors)
+        return 1, lines
+    lines.append("OK: All pass artifacts match naming convention.")
+    return 0, lines
+
+
+# --------------------------------------------------------------------------
 # CLI + self-test.
 # --------------------------------------------------------------------------
 
@@ -477,6 +513,25 @@ def run_self_test(which=None):
             expect("arp_over_codespan_decoy_errors", argument_recon_prerequisite(over_decoy)[0], 1)
             expect("arp_over_suffix_collision_errors", argument_recon_prerequisite(over_suffix)[0], 1)
 
+    if which in (None, "artifact-names"):
+        with tempfile.TemporaryDirectory() as td:
+            def touch(d, *names):
+                os.makedirs(d, exist_ok=True)
+                for n in names:
+                    open(os.path.join(d, n), "w", encoding="utf-8", newline="").close()
+                return d
+            good = touch(os.path.join(td, "good"),
+                         "Proj_Pass1_Reader_Experience_r1.md", "Proj_Pass5_Character_r1.md")
+            expect("an_conforming", artifact_names(good, "Proj", "r1")[0], 0)
+            touch(good, "Proj_Pass2_Structure_WRONGLABEL.md")   # wrong runlabel -> non-conforming
+            expect("an_nonconforming", artifact_names(good, "Proj", "r1")[0], 1)
+            empty = touch(os.path.join(td, "empty"))            # no Pass artifacts -> vacuously OK
+            expect("an_no_artifacts", artifact_names(empty, "Proj", "r1")[0], 0)
+            # Hardening: a project name carrying a regex metacharacter is matched as a literal,
+            # so a lookalike that would satisfy an un-escaped pattern is still flagged.
+            meta = touch(os.path.join(td, "meta"), "A.B_Pass1_Scene_r1.md", "AXB_Pass1_Scene_r1.md")
+            expect("an_literal_project_escaped", artifact_names(meta, "A.B", "r1")[0], 1)
+
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
 
@@ -495,6 +550,15 @@ def main(argv):
         return 2
     if argv[1] == "--self-test":
         return run_self_test(argv[2] if len(argv) > 2 else None)
+    if argv[1] == "artifact-names":
+        if len(argv) < 5:
+            sys.stderr.write("Usage: config_checks.py artifact-names <output_dir> <project> <runlabel>\n")
+            return 2
+        out_dir = argv[2]
+        if not os.path.isdir(out_dir):
+            sys.stderr.write("Error: Directory not found: %s\n" % out_dir)
+            return 2
+        return _emit(*artifact_names(out_dir, argv[3], argv[4]))
     if argv[1] in _CHECKS:
         if len(argv) < 3:
             sys.stderr.write("Usage: config_checks.py %s <path> [<extra>]\n" % argv[1])

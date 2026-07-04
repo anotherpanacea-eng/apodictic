@@ -31,7 +31,9 @@ The manifest carries **no visual-style fields** — color/size/emphasis live in 
 2. **POV time-share** — `word_count` summed by `pov` (a join *within* the Timeline, not the stylometric `pov-voice` audit).
 3. **Finding-severity-by-chapter** — findings binned by the conservative chapter parse, severity as the dominant channel.
 
-Future (each gated on its upstream artifact becoming machine-readable): reveal/tension timeline, character co-presence network, scene-function heatmap, and a validated `evidence_ref → scene_id` resolution for scene-precise placement.
+Also built (Manuscript-Visualization Completion, over dedicated producers): chart 7-nonfiction (claim ladder, over `argument_spine.v1` + `support_plan.v1`), chart 5 (character co-presence network, over the `apodictic.scene_roster.v1` producer), chart 6 (scene-function heatmap, over the `apodictic.scene_function.v1` producer — per-scene structural function from the scene-turn audit's Step-1 Unit Classification: `scene | sequel | hybrid | non-unit`), chart 4 (reveal-economy / tension timeline, over the `apodictic.tension_point.v1` producer — per-scene reader tension on the reader-dynamics Pass-1 1–5 intensity scale; keyed directly on `scene_id`, no `evidence_ref` resolution), and chart 7-fiction (beat-map-against-spine, over the `apodictic.story_spine.v1` producer — the chosen fiction `spine_framework` from the plot-architecture / plot-coach closed 50-spine taxonomy + its ordered `beats`, each mapped to a Timeline scene; gate X9 byte-checks `beats` against the producer + Timeline).
+
+No producer-gated chart remains. A validated `evidence_ref → scene_id` resolution remains a separate future increment for scene-precise placement of free-text finding refs (chart 3), not required by any built chart.
 
 ## Severity honesty
 

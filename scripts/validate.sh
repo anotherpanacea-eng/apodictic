@@ -230,7 +230,7 @@ usage() {
   echo "Usage: $0 <command> [args...]"
   echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, revision-arc, regression-diff, legal-risk, promise-contract, continuity-bible, world-bible, intake-interview, author-fingerprint, content-advisory, style-explanation, persona-divergence, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, schema-coverage, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, disposition-check, synthesis-coverage, specificity-floor, refutation-coverage, refutation-evidence, refutation-write-scope, obsidian-export, html-export, docx-export, validator-conventions, argument-carve-behavior-preservation, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter, diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, revision-arc vs the canonical Revision Arc + its Findings Ledger (A1 schema/nested-phase shape, A2 provenance closure, A3 self-consistency — one-phase-per-finding + Must-Fix-root-cause-not-in-polish, A4 non-empty rationale; clean W1 firewall-drift + W2 orphan under --strict), regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), world-bible vs the canonical Worldbuilding Bible example (W1 schema + closed-key, WD unique ids, WB-R1 rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a unit class, WB-G2 chronology cycle + anchor-drift, and the WF surface-don't-resolve firewall scan — clean under --strict with the staged contradictions overridden), intake-interview vs the canonical Intake Interview example + its Ledger (I1 schema, I2 no-contract-dup, I3 grounded ambiguity via ref + source_note, I4 calibrate-not-suppress under --strict), author-fingerprint vs the canonical Author Voice Profile (F1 schema, F2 provenance, F3 same-register comparison, F4 descriptive-not-prescriptive, clean W1/W2 under --strict), content-advisory vs the canonical Content Advisory (A1 schema, A2 locus shape, A3 no-severity-leak, descriptive W1, opt-in W2 under --strict), style-explanation vs the canonical Author Style Explanation (X1 schema, X2 provenance, X3 no-severity-leak, X4 descriptive-not-prescriptive incl. the comparison-to-emulate firewall, X5 same-register cluster, clean X6/W1 under --strict), persona-divergence vs the canonical Persona Divergence Map + its Ledger (D1 schema incl. nested experiences enum, D2 grounded prediction, D3 target-severity anchoring, D4 anti-fabrication, D5 closed-key persona under --strict), argument-spine vs the canonical pre-draft Argument_State + the three genre-profiled Argument_States (Increment 5: B1-B4 + W4 over grant / academic / pitch, --strict), scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources + the pre-draft Argument_State spine (the claim-ladder X1/X5/X6/X7 gates) + the scene-roster producer (the co-presence X2 gate), annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), roundtrip-disposition vs the canonical Roundtrip Disposition record + companion Revision Report staged with the glue-chain fixtures (RT1 recompute alignment + RT2 confirmation-record + RT3 confirmed-writes-only + RT4 partition coverage, plus hostile arms — a token-stripped copy must FAIL RT2, an extra unconfirmed resolved marker must FAIL RT3, and a copy with one finding's disposition row dropped must WARN RT4 by default and FAIL under --strict), disposition-check vs the canonical example-run-folder-dispositions (a non-governed sidecar + Coaching Log markers + readiness-caveat excerpt: DP0 record shape incl. trigger-iff-deferred, DP1 declined/deferred-Must-Fix caveat coverage, DP2 no-laundering incl. the bidirectional marker/sidecar sync — plus hostile arms: an assessment stripped of its Declined caveat line must FAIL DP1 (the severity-laundering attempt), a deferred record stripped of its trigger must FAIL DP0, a sidecar with one record dropped must WARN DP2.5 by default and FAIL under --strict, and a declined id's finding_states flipped to 'revised' with no corroborating completion artifact must FAIL DP1 + name DP2.6 — supersedence is recomputed from resolved markers, never trusted), synthesis-coverage vs the canonical coverage run folders (green hybrid dispatch-derived + degraded-and-disclosed, both PASS incl. --strict — V1 presence, V2 disk<->manifest row bijection, V3 note/sidecar/marker projection, V4 provenance/mode agreement, V5 D1-D4 degrade recompute; plus hostile arms — a manifest row removed for an on-disk pass artifact must FAIL V2, a letter marker flipped against the sidecar must FAIL V3, and a degraded run masked to ok in marker+sidecar must WARN V5 by default and FAIL under --strict), specificity-floor vs the canonical re-grounded letter<->ledger pair (docs/synthesis-regrounding.md M2: the restored 'nine belief failures' + Ch 12 anchor letter PASSES clean incl. --strict; plus hostile arms — decaying 'nine' to 'several' must FAIL the count floor, stripping the Ch 12 anchor from the Must-Fix window must FAIL the anchor floor, and removing the <!-- regrounding: done --> marker must WARN by default and FAIL under --strict; the smuggled-finding reverse-ID check is finding-trace E1's, not re-fixtured here), refutation-coverage + refutation-evidence + refutation-write-scope vs the canonical example-run-folder Refutation Record (docs/finding-disconfirmation.md §8: V1 no-HIGH-without-survived-refutation incl. the cap-bound disclosure-marker rules, V2 verbatim single-line snapshot-anchored counter-evidence + snapshot_sha256 binding + budget arithmetic, V3 no-severity-channel + exact confidence transcription per the outcome caps; plus hostile arms — a record stripped of its survived block must FAIL refutation-coverage, a fabricated not-in-snapshot quote must FAIL refutation-evidence, an injected severity key must FAIL refutation-write-scope, and a fabricated bound:true budget with eligible/processed numbers that don't recompute from the ledger/record must FAIL refutation-coverage (the cap-bound exemption recomputes, never trusts) + refutation-evidence), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, schema-coverage vs the real schemas/ dir (every apodictic.*.schema.json bound + canonically exercised + closed-key table<->file agreement — Harness Contracts v2), plus validator-conventions (the fleet meta-linter — M1 every AGG validator has a --self-test dispatcher case, M2 resolvers classify on parsed blocks not raw apodictic:<type> marker scans, M3 derived count, M4 no orphan schema, M5 no bare/compiled override-marker scan + M6 no local code-span stripper — overrides use the override_marker SSoT), plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter (plus the editor↔author dual-output pair — editor-scaffolding --dual over the scaffolded letter + its author-facing companion: D1 editor side E1-E4, D2 author register no-leak + Revision Checklist anchor, D3 top-severity-band consistency; plus the per-pass arm — editor-scaffolding --per-pass over the canonical scaffolded PASS artifact under --strict: P1 Editor Note addressee, P2 What-You-Might-Have-Missed, clean W1 firewall), diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, revision-arc vs the canonical Revision Arc + its Findings Ledger (A1 schema/nested-phase shape, A2 provenance closure, A3 self-consistency — one-phase-per-finding + Must-Fix-root-cause-not-in-polish, A4 non-empty rationale; clean W1 firewall-drift + W2 orphan under --strict), regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), world-bible vs the canonical Worldbuilding Bible example (W1 schema + closed-key, WD unique ids, WB-R1 rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a unit class, WB-G2 chronology cycle + anchor-drift, and the WF surface-don't-resolve firewall scan — clean under --strict with the staged contradictions overridden), intake-interview vs the canonical Intake Interview example + its Ledger (I1 schema, I2 no-contract-dup, I3 grounded ambiguity via ref + source_note, I4 calibrate-not-suppress under --strict), author-fingerprint vs the canonical Author Voice Profile (F1 schema, F2 provenance, F3 same-register comparison, F4 descriptive-not-prescriptive, clean W1/W2 under --strict), content-advisory vs the canonical Content Advisory (A1 schema, A2 locus shape, A3 no-severity-leak, descriptive W1, opt-in W2 under --strict), style-explanation vs the canonical Author Style Explanation (X1 schema, X2 provenance, X3 no-severity-leak, X4 descriptive-not-prescriptive incl. the comparison-to-emulate firewall, X5 same-register cluster, clean X6/W1 under --strict), persona-divergence vs the canonical Persona Divergence Map + its Ledger (D1 schema incl. nested experiences enum, D2 grounded prediction, D3 target-severity anchoring, D4 anti-fabrication, D5 closed-key persona under --strict), argument-spine vs the canonical pre-draft Argument_State + the three genre-profiled Argument_States (Increment 5: B1-B4 + W4-W5 over grant / academic / pitch, --strict; the genre examples each carry a non-empty reviewer_objections pre-list so W5 stays green), scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources + the pre-draft Argument_State spine (the claim-ladder X1/X5/X6/X7 gates) + the scene-roster producer (the co-presence X2 gate), annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), roundtrip-disposition vs the canonical Roundtrip Disposition record + companion Revision Report staged with the glue-chain fixtures (RT1 recompute alignment + RT2 confirmation-record + RT3 confirmed-writes-only + RT4 partition coverage, plus hostile arms — a token-stripped copy must FAIL RT2, an extra unconfirmed resolved marker must FAIL RT3, and a copy with one finding's disposition row dropped must WARN RT4 by default and FAIL under --strict), disposition-check vs the canonical example-run-folder-dispositions (a non-governed sidecar + Coaching Log markers + readiness-caveat excerpt: DP0 record shape incl. trigger-iff-deferred, DP1 declined/deferred-Must-Fix caveat coverage, DP2 no-laundering incl. the bidirectional marker/sidecar sync — plus hostile arms: an assessment stripped of its Declined caveat line must FAIL DP1 (the severity-laundering attempt), a deferred record stripped of its trigger must FAIL DP0, a sidecar with one record dropped must WARN DP2.5 by default and FAIL under --strict, and a declined id's finding_states flipped to 'revised' with no corroborating completion artifact must FAIL DP1 + name DP2.6 — supersedence is recomputed from resolved markers, never trusted), synthesis-coverage vs the canonical coverage run folders (green hybrid dispatch-derived + degraded-and-disclosed, both PASS incl. --strict — V1 presence, V2 disk<->manifest row bijection, V3 note/sidecar/marker projection, V4 provenance/mode agreement, V5 D1-D4 degrade recompute; plus hostile arms — a manifest row removed for an on-disk pass artifact must FAIL V2, a letter marker flipped against the sidecar must FAIL V3, and a degraded run masked to ok in marker+sidecar must WARN V5 by default and FAIL under --strict), specificity-floor vs the canonical re-grounded letter<->ledger pair (docs/synthesis-regrounding.md M2: the restored 'nine belief failures' + Ch 12 anchor letter PASSES clean incl. --strict; plus hostile arms — decaying 'nine' to 'several' must FAIL the count floor, stripping the Ch 12 anchor from the Must-Fix window must FAIL the anchor floor, and removing the <!-- regrounding: done --> marker must WARN by default and FAIL under --strict; the smuggled-finding reverse-ID check is finding-trace E1's, not re-fixtured here), refutation-coverage + refutation-evidence + refutation-write-scope vs the canonical example-run-folder Refutation Record (docs/finding-disconfirmation.md §8: V1 no-HIGH-without-survived-refutation incl. the cap-bound disclosure-marker rules, V2 verbatim single-line snapshot-anchored counter-evidence + snapshot_sha256 binding + budget arithmetic, V3 no-severity-channel + exact confidence transcription per the outcome caps; plus hostile arms — a record stripped of its survived block must FAIL refutation-coverage, a fabricated not-in-snapshot quote must FAIL refutation-evidence, an injected severity key must FAIL refutation-write-scope, and a fabricated bound:true budget with eligible/processed numbers that don't recompute from the ledger/record must FAIL refutation-coverage (the cap-bound exemption recomputes, never trusts) + refutation-evidence), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, schema-coverage vs the real schemas/ dir (every apodictic.*.schema.json bound + canonically exercised + closed-key table<->file agreement — Harness Contracts v2), plus validator-conventions (the fleet meta-linter — M1 every AGG validator has a --self-test dispatcher case, M2 resolvers classify on parsed blocks not raw apodictic:<type> marker scans, M3 derived count, M4 no orphan schema, M5 no bare/compiled override-marker scan + M6 no local code-span stripper — overrides use the override_marker SSoT), plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -241,10 +241,15 @@ if [ $# -lt 1 ]; then usage; fi
 # self-test exits 0. Added per Codex P2 finding: the E1 final report
 # referred to an aggregate command that did not exist; this closes the
 # documentation-vs-implementation mismatch and simplifies CI invocation.
-# The seven pure-utility commands (contract-hash, contract-check, ledger-check,
+# The seven early utility commands (contract-hash, contract-check, ledger-check,
 # artifact-names, synthesis-sections, tone-check, state-lines) now carry
 # fixture-driven self-tests too (Validator Architecture Hardening — they
 # previously had none), so every command in the suite is exercised here.
+# Four of the seven (ledger-check, synthesis-sections, tone-check → letter_checks.py;
+# artifact-names → config_checks.py) were ported to real parsers in Increment 8;
+# their bash bodies below are retained as the no-python3 degrade path. The three
+# genuinely pure utilities (contract-hash, contract-check, state-lines — sha256 /
+# line-count, no markdown parsing) stay bash-only.
 if [ "$1" = "--self-test-all" ]; then
   AGG_FAIL=0
   AGG_PASS_COUNT=0
@@ -331,6 +336,24 @@ if [ "$1" = "--check-all" ]; then
       "$0" editor-scaffolding "$CA_BASE/example-editorial-letter-scaffolded.md" || CA_FAIL=1
       "$0" decision-layer-check "$CA_BASE/example-editorial-letter-scaffolded.md" || CA_FAIL=1
       "$0" severity-floor "$CA_BASE/example-editorial-letter-scaffolded.md" || CA_FAIL=1
+      # editor↔author dual-output (docs/editor-scaffolding.md §Dual-output): the same diagnosis
+      # emitted as the scaffolded editor letter AND its author-facing companion — D1 editor side
+      # (E1-E4), D2 author register (no editor marker / no editor-only sections + a Revision
+      # Checklist anchor), D3 top-severity-band consistency (both Must-Fix).
+      if [ -f "$CA_BASE/example-editorial-letter-dual-author.md" ]; then
+        "$0" editor-scaffolding --dual "$CA_BASE/example-editorial-letter-scaffolded.md" "$CA_BASE/example-editorial-letter-dual-author.md" || CA_FAIL=1
+      else
+        echo "ERROR: $CA_BASE/example-editorial-letter-dual-author.md not found"; CA_FAIL=1
+      fi
+      # per-pass scaffolding (docs/editor-scaffolding.md §Per-pass scaffolding): the SAME reframe
+      # over an individual PASS artifact (not the letter) — P1 Editor Note, P2 What-You-Might-Have-
+      # Missed, clean W1 firewall under --strict. The pass example is coherent with the letter above
+      # (same manuscript, same middle-third Must-Fix).
+      if [ -f "$CA_BASE/example-pass-scaffolded.md" ]; then
+        "$0" editor-scaffolding --per-pass "$CA_BASE/example-pass-scaffolded.md" --strict || CA_FAIL=1
+      else
+        echo "ERROR: $CA_BASE/example-pass-scaffolded.md not found"; CA_FAIL=1
+      fi
     else
       echo "ERROR: $CA_BASE/example-editorial-letter-scaffolded.md not found"; CA_FAIL=1
     fi
@@ -472,7 +495,7 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-argument-state-predraft.md not found"; CA_FAIL=1
     fi
     echo ""
-    echo "== canonical genre-profiled Argument_States (argument-spine Inc 5: B1-B4 + W4 over grant / academic / pitch; --strict) =="
+    echo "== canonical genre-profiled Argument_States (argument-spine Inc 5: B1-B4 + W4-W5 over grant / academic / pitch; --strict) =="
     # grant runs via an explicit LITERAL path (not the $GENRE_FIX loop) so schema-coverage's C5 can trace
     # example-argument-state-genre-grant.md to a real argument-spine invocation: it is the
     # apodictic.genre_profile.v1 canonical_gate (the predraft Argument_State carries no genre_profile
@@ -505,11 +528,11 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-beta-reader-instrument.md / example-uncertainty-ledger.md not found"; CA_FAIL=1
     fi
     echo ""
-    echo "== canonical Structure Map manifest (manuscript-viz: manifest<->source provenance vs Timeline + Ledger + claim-ladder spine + co-presence roster) =="
-    if [ -f "$CA_BASE/example-structure-map-manifest.md" ] && [ -f "$CA_BASE/example-timeline.md" ] && [ -f "$CA_BASE/example-findings-ledger.md" ] && [ -f "$CA_BASE/example-argument-state-predraft.md" ] && [ -f "$CA_BASE/example-scene-roster.md" ]; then
-      "$0" manuscript-viz "$CA_BASE/example-structure-map-manifest.md" "$CA_BASE/example-timeline.md" "$CA_BASE/example-findings-ledger.md" "$CA_BASE/example-argument-state-predraft.md" "$CA_BASE/example-scene-roster.md" --require-block || CA_FAIL=1
+    echo "== canonical Structure Map manifest (manuscript-viz: manifest<->source provenance vs Timeline + Ledger + claim-ladder spine + co-presence roster + scene-function producer + tension-point producer + story-spine producer) =="
+    if [ -f "$CA_BASE/example-structure-map-manifest.md" ] && [ -f "$CA_BASE/example-timeline.md" ] && [ -f "$CA_BASE/example-findings-ledger.md" ] && [ -f "$CA_BASE/example-argument-state-predraft.md" ] && [ -f "$CA_BASE/example-scene-roster.md" ] && [ -f "$CA_BASE/example-scene-function.md" ] && [ -f "$CA_BASE/example-tension-points.md" ] && [ -f "$CA_BASE/example-story-spine.md" ]; then
+      "$0" manuscript-viz "$CA_BASE/example-structure-map-manifest.md" "$CA_BASE/example-timeline.md" "$CA_BASE/example-findings-ledger.md" "$CA_BASE/example-argument-state-predraft.md" "$CA_BASE/example-scene-roster.md" "$CA_BASE/example-scene-function.md" "$CA_BASE/example-tension-points.md" "$CA_BASE/example-story-spine.md" --require-block || CA_FAIL=1
     else
-      echo "ERROR: $CA_BASE/example-structure-map-manifest.md / example-timeline.md / example-findings-ledger.md / example-argument-state-predraft.md / example-scene-roster.md not found"; CA_FAIL=1
+      echo "ERROR: $CA_BASE/example-structure-map-manifest.md / example-timeline.md / example-findings-ledger.md / example-argument-state-predraft.md / example-scene-roster.md / example-scene-function.md / example-tension-points.md / example-story-spine.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical annotated manuscript (annotated-manuscript: no-mutation + anchor ladder + Must-Fix rendered) =="
@@ -1218,13 +1241,16 @@ COMMAND="$1"
 shift
 
 # ----------------------------------------------------------------------
-# Pure-utility self-tests (Validator Architecture Hardening). The seven
-# count/format utilities below (contract-hash, contract-check, ledger-check,
+# Early-utility self-tests (Validator Architecture Hardening). The seven
+# early commands below (contract-hash, contract-check, ledger-check,
 # artifact-names, synthesis-sections, tone-check, state-lines) previously
-# carried no self-tests. These fixture-driven functions give each one
-# regression coverage and let them join --self-test-all. Each prints
-# per-case OK/FAIL, sets PU_FAIL on any failure, and the caller exits PU_FAIL.
-# Invoked as `validate.sh <utility> --self-test`.
+# carried no self-tests. These functions give each one regression coverage
+# and let them join --self-test-all. Each prints per-case OK/FAIL, sets
+# PU_FAIL on any failure, and the caller exits PU_FAIL. Invoked as
+# `validate.sh <utility> --self-test`. NOTE: the four ported arms
+# (ledger-check, synthesis-sections, tone-check, artifact-names) delegate
+# their --self-test to the Python parser when python3 is present; these bash
+# functions are the no-python3 degrade-path self-tests for them.
 # ----------------------------------------------------------------------
 _pu_rc() {  # _pu_rc <name> <want_rc> -- <cmd...>   asserts the command's exit code
   local name="$1" want="$2"; shift 3
@@ -1357,9 +1383,20 @@ case "$COMMAND" in
     ;;
 
   ledger-check)
-    if [ "${1:-}" = "--self-test" ]; then _selftest_ledger_check; exit $?; fi
+    # Primary path: real parser in scripts/letter_checks.py (Validator Architecture
+    # Hardening Inc 8) — anchored per-pass subsection matching, replacing the sed/grep
+    # slicing below. Degrades to the bash implementation when python3 is unavailable.
+    LC_DIR=$(cd "$(dirname "$0")" && pwd); LC_HELPER="$LC_DIR/letter_checks.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then python3 "$LC_HELPER" --self-test ledger-check; exit $?; fi
+      _selftest_ledger_check; exit $?
+    fi
     if [ $# -lt 1 ]; then echo "Usage: $0 ledger-check <ledger_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+      python3 "$LC_HELPER" ledger-check "$1"; exit $?
+    fi
+    # Degraded path (no python3): bash regex implementation (kept for python-less hosts).
     LEDGER="$1"
     ERRORS=0
 
@@ -1413,9 +1450,20 @@ case "$COMMAND" in
     ;;
 
   artifact-names)
-    if [ "${1:-}" = "--self-test" ]; then _selftest_artifact_names; exit $?; fi
+    # Primary path: real checker in scripts/config_checks.py (Validator Architecture
+    # Hardening Inc 8) — project/runlabel matched as literals. Degrades to the bash
+    # glob+regex implementation below when python3 is unavailable.
+    CC_DIR=$(cd "$(dirname "$0")" && pwd); CC_HELPER="$CC_DIR/config_checks.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$CC_HELPER" ]; then python3 "$CC_HELPER" --self-test artifact-names; exit $?; fi
+      _selftest_artifact_names; exit $?
+    fi
     if [ $# -lt 3 ]; then echo "Usage: $0 artifact-names <output_dir> <project_name> <runlabel>"; exit 2; fi
     if [ ! -d "$1" ]; then echo "Error: Directory not found: $1" >&2; exit 2; fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$CC_HELPER" ]; then
+      python3 "$CC_HELPER" artifact-names "$1" "$2" "$3"; exit $?
+    fi
+    # Degraded path (no python3): bash glob+regex implementation (kept for python-less hosts).
     OUTPUT_DIR="$1"
     PROJECT="$2"
     RUNLABEL="$3"
@@ -1444,9 +1492,20 @@ case "$COMMAND" in
     ;;
 
   synthesis-sections)
-    if [ "${1:-}" = "--self-test" ]; then _selftest_synthesis_sections; exit $?; fi
+    # Primary path: real parser in scripts/letter_checks.py (Validator Architecture
+    # Hardening Inc 8) — heading-anchored section matching (kills the mid-heading
+    # substring false-positive), replacing the grep below. Degrades to bash without python3.
+    LC_DIR=$(cd "$(dirname "$0")" && pwd); LC_HELPER="$LC_DIR/letter_checks.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then python3 "$LC_HELPER" --self-test synthesis-sections; exit $?; fi
+      _selftest_synthesis_sections; exit $?
+    fi
     if [ $# -lt 1 ]; then echo "Usage: $0 synthesis-sections <editorial_letter_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+      python3 "$LC_HELPER" synthesis-sections "$1"; exit $?
+    fi
+    # Degraded path (no python3): bash regex implementation (kept for python-less hosts).
     LETTER="$1"
     ERRORS=0
 
@@ -1491,9 +1550,21 @@ case "$COMMAND" in
     ;;
 
   tone-check)
-    if [ "${1:-}" = "--self-test" ]; then _selftest_tone_check; exit $?; fi
+    # Primary path: real parser in scripts/letter_checks.py (Validator Architecture
+    # Hardening Inc 8) — body-only + code-span-stripped + blockquote-skipped scan (a
+    # superlative in an appendix, code span, or quoted blurb no longer false-fails),
+    # replacing the whole-file grep below. Degrades to bash without python3.
+    LC_DIR=$(cd "$(dirname "$0")" && pwd); LC_HELPER="$LC_DIR/letter_checks.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then python3 "$LC_HELPER" --self-test tone-check; exit $?; fi
+      _selftest_tone_check; exit $?
+    fi
     if [ $# -lt 1 ]; then echo "Usage: $0 tone-check <editorial_letter_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+      python3 "$LC_HELPER" tone-check "$1"; exit $?
+    fi
+    # Degraded path (no python3): bash regex implementation (kept for python-less hosts).
     LETTER="$1"
     ERRORS=0
 
@@ -6048,18 +6119,23 @@ EOF
     # claim-ladder provenance (claim_id is a declared spine subclaim via spine_subclaim_ids; label is the
     # subclaim string minus its leading Cn token; support[] byte-copies support_plan.v1; an empty
     # support[] only for a bare assertion), X7 no duplicate rung, X8 producer-present (no producer, no
-    # chart), W3 chart coverage. Chart 5 (co_presence) now has a producer too — apodictic.scene_roster.v1
-    # (per-scene cast; the Timeline carries POV only): X2 co-presence provenance byte-checks each
-    # co_presence[].scene_id against a roster entry + a Timeline row, every co_presence name against the
-    # scene's roster (canonical) names, the Timeline POV against the roster (cross-check), and the
-    # producer's anchor-non-empty (the author-enforced presence accountability). The remaining two
-    # producer-gated arrays (scene_functions/reveal_points) have no producer yet, so a present one fails
-    # X8. --require-block makes a missing/
+    # chart), W3 chart coverage. All four manifest arrays now have a producer: chart 5 (co_presence) over
+    # apodictic.scene_roster.v1 (X2 — byte-checks each co_presence[].scene_id against a roster entry + a
+    # Timeline row, every co_presence name against the scene's roster (canonical) names, the Timeline POV
+    # against the roster (cross-check), and the producer's anchor-non-empty); chart 6 (scene_functions)
+    # over apodictic.scene_function.v1 (X3 — manifest function == the producer's closed scene-turn
+    # Unit-Classification, non-empty anchor, provenance closure); and chart 4 (reveal_points) over
+    # apodictic.tension_point.v1 (X4 — manifest tension == the producer's closed 1-5 reader-intensity
+    # level, non-empty anchor, provenance closure — keyed directly on scene_id, no evidence_ref
+    # resolution). The one still-producer-gated chart is 7-fiction's beat-map (no manifest array here;
+    # awaits apodictic.story_spine.v1). --require-block makes a missing/
     # invalid manifest a hard failure (the canonical-example gate uses it so it can't pass vacuously). The
-    # severity->encoding map (and the co-presence weight->chord-thickness band) is hardcoded in the
-    # render-only SVG layer (charts 1-3 + the claim ladder + the co-presence network),
+    # severity->encoding map (and the co-presence weight->chord-thickness band, the scene-function colour
+    # band, the tension level->y-position map) is hardcoded in the render-only SVG layer (charts 1-3 + the
+    # claim ladder + the co-presence network + the scene-function heatmap + the tension timeline),
     # not the manifest, so a run cannot recolor a Must-Fix. Takes a run folder (globs the manifest +
-    # Timeline + Findings Ledger + Argument_State spine + Scene_Roster producer) or explicit files. Delegates to
+    # Timeline + Findings Ledger + Argument_State spine + Scene_Roster + Scene_Function + Tension producers)
+    # or explicit files. Delegates to
     # scripts/viz_manifest.py; degrades to an advisory WARN without python3. (`viz_manifest.py render ...`
     # emits the HTML.)
     MVZ_DIR=$(cd "$(dirname "$0")" && pwd)
@@ -6207,7 +6283,13 @@ EOF
     # blind-spot section, E3 Intervention Menu (prescription deferred to the human editor),
     # E4 severity vocabulary preserved; W1 author-directed prescription leak is advisory (ERROR
     # under --strict). A letter WITHOUT the marker is a no-op pass, so this is safe over any
-    # letter. Delegates to scripts/editor_scaffolding.py; degrades to an advisory WARN without python3.
+    # letter. DUAL-OUTPUT: `editor-scaffolding --dual <editor_letter> <author_letter>` validates
+    # one diagnosis emitted as BOTH letters — D1 editor side (E1-E4), D2 author register (no editor
+    # marker / no editor-only sections + a Revision Checklist anchor), D3 top-severity-band match.
+    # PER-PASS: `editor-scaffolding --per-pass <pass_artifact>` applies the same reframe to an
+    # individual PASS artifact (not the letter) — P1 Editor Note addressee, P2 What-You-Might-Have-
+    # Missed blind-spot, W1 prescription firewall; a pass has no checklist so E3/E4 have no per-pass
+    # analog. Delegates to scripts/editor_scaffolding.py; degrades to an advisory WARN without python3.
     ES_DIR=$(cd "$(dirname "$0")" && pwd)
     ES_HELPER="$ES_DIR/editor_scaffolding.py"
     if [ "${1:-}" = "--self-test" ]; then
@@ -6215,10 +6297,10 @@ EOF
       echo "Self-test: PASS (degraded — python3 unavailable; editor-scaffolding is advisory without it)"; exit 0
     fi
     if command -v python3 >/dev/null 2>&1 && [ -f "$ES_HELPER" ]; then
-      if [ $# -lt 1 ]; then echo "Usage: $0 editor-scaffolding <editorial_letter|run_folder> [--strict] | --self-test"; exit 2; fi
+      if [ $# -lt 1 ]; then echo "Usage: $0 editor-scaffolding <editorial_letter|run_folder> [--strict] | editor-scaffolding --dual <editor_letter> <author_letter> [--strict] | editor-scaffolding --per-pass <pass_artifact> [--strict] | --self-test"; exit 2; fi
       python3 "$ES_HELPER" editor-scaffolding "$@"; exit $?
     fi
-    echo "WARN: python3 unavailable — editor-scaffolding skipped; if the letter declares editor-scaffolding mode, verify inline that it carries an Editor Brief, a 'What You Might Have Missed' section, an Intervention Menu, and that severity tokens survive. See docs/editor-scaffolding.md."
+    echo "WARN: python3 unavailable — editor-scaffolding skipped; if the letter (or pass artifact) declares editor-scaffolding mode, verify inline that a letter carries an Editor Brief, a 'What You Might Have Missed' section, an Intervention Menu, and surviving severity tokens — or that a --per-pass artifact carries an Editor Note and a 'What You Might Have Missed' section. See docs/editor-scaffolding.md."
     exit 0
     ;;
 
