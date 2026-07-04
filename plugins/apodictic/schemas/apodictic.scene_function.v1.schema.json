@@ -1,0 +1,13 @@
+{
+  "$id": "apodictic.scene_function.v1",
+  "$comment": "Source of truth for the apodictic:scene_function block — the PRODUCER for Viz Chart 6 (scene-function heatmap; docs/manuscript-visualizations.md §The chart set, chart 6). ONE block per manuscript. It records, per Timeline scene, the scene's STRUCTURAL FUNCTION — the scene-turn audit's Step 1 Unit Classification (craft/scene-turn.md §Step 1): the closed set scene | sequel | hybrid | non-unit. SCENE = an action unit (goal -> conflict -> outcome). SEQUEL = a processing unit (reaction -> dilemma -> decision). HYBRID = contains both, one incomplete. NON-UNIT = exposition / montage / vignette (no attempt, no processing, no decision). The `function` token is the author's classification, copied verbatim; a value outside the enum is a schema failure. This reading is PRODUCER/AUTHOR-ENFORCED (a validator cannot read prose to adjudicate a scene's function — the Continuity Bible C2 / scene_roster.v1 author-enforced precedent) and made ACCOUNTABLE by the REQUIRED, non-empty `anchor` (a Timeline-relative line-range or a short on-page quote witnessing the classification). VERBATIM-COPY DISCIPLINE: the manifest's scene_functions[] entries are bare {scene_id, function} copied from these classifications and byte-checked against them (viz_manifest.py X3); the renderer draws a scenes x functions grid MECHANICALLY (one shaded cell per scene at its function column, from a hardcoded function->color band) and invents nothing. PROVENANCE-CLOSED: every scene_id must resolve to a Timeline Event-Ledger row. additionalProperties:false — a stray top-level key is a typo. The nested functions[] objects are validated by viz_manifest.py (the subset engine does not recurse). The GATE enforces schema + provenance closure + anchor-non-empty, NOT the semantic scene-function reading. Validated by scripts/viz_manifest.py (X3). See docs/manuscript-visualizations.md.",
+  "title": "APODICTIC scene function (apodictic.scene_function.v1)",
+  "type": "object",
+  "required": ["schema", "functions"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {"const": "apodictic.scene_function.v1"},
+    "project": {"type": "string"},
+    "functions": {"type": "array"}
+  }
+}

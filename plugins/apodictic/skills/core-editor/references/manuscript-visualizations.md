@@ -31,7 +31,9 @@ The manifest carries **no visual-style fields** — color/size/emphasis live in 
 2. **POV time-share** — `word_count` summed by `pov` (a join *within* the Timeline, not the stylometric `pov-voice` audit).
 3. **Finding-severity-by-chapter** — findings binned by the conservative chapter parse, severity as the dominant channel.
 
-Future (each gated on its upstream artifact becoming machine-readable): reveal/tension timeline, character co-presence network, scene-function heatmap, and a validated `evidence_ref → scene_id` resolution for scene-precise placement.
+Also built (Manuscript-Visualization Completion, over dedicated producers): chart 7-nonfiction (claim ladder, over `argument_spine.v1` + `support_plan.v1`), chart 5 (character co-presence network, over the `apodictic.scene_roster.v1` producer), and chart 6 (scene-function heatmap, over the `apodictic.scene_function.v1` producer — per-scene structural function from the scene-turn audit's Step-1 Unit Classification: `scene | sequel | hybrid | non-unit`).
+
+Future (each gated on its upstream artifact becoming machine-readable): reveal/tension timeline (chart 4), beat-map-against-spine (chart 7-fiction), and a validated `evidence_ref → scene_id` resolution for scene-precise placement.
 
 ## Severity honesty
 
