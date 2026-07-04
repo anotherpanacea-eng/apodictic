@@ -574,7 +574,14 @@ def run_per_pass(paths, strict=False, ledger_path=None):
     text = _read(paths[0])
     if text is None:
         return 2, ["editor-scaffolding: cannot read %s" % paths[0]]
-    ledger_text = _read(ledger_path) if ledger_path else None
+    ledger_text = None
+    if ledger_path:
+        ledger_text = _read(ledger_path)
+        if ledger_text is None:
+            # The R3 cross-check was explicitly requested via --ledger=; an unreadable
+            # path must NOT fail open (silently skipping the anti-laundering guard) — error
+            # exactly as the main-file path does when it is unreadable.
+            return 2, ["editor-scaffolding: cannot read ledger %s" % ledger_path]
     return check_per_pass(text, strict=strict, ledger_text=ledger_text)
 
 
@@ -598,7 +605,13 @@ def run(paths, strict=False, ledger_path=None):
     text = _read(letter)
     if text is None:
         return 2, ["editor-scaffolding: cannot read %s" % letter]
-    ledger_text = _read(ledger_path) if ledger_path else None
+    ledger_text = None
+    if ledger_path:
+        ledger_text = _read(ledger_path)
+        if ledger_text is None:
+            # An explicitly-requested --ledger= R3 cross-check must not fail open on an
+            # unreadable path — error as the main-file path does.
+            return 2, ["editor-scaffolding: cannot read ledger %s" % ledger_path]
     return check(text, strict=strict, ledger_text=ledger_text)
 
 
@@ -1029,6 +1042,25 @@ def run_self_test():
                                      ledger_text=led_should)
         chk("rank_pass_ledger_mismatch_errors",
             code == 1 and any("R3:" in l and "laundered" in l for l in lines))
+        # review P2: an explicitly-requested --ledger= that is UNREADABLE must fail closed (exit 2),
+        # not silently skip the R3 guard. A readable ledger still works (control).
+        with _tf.TemporaryDirectory() as _td:
+            _lp = os.path.join(_td, "letter.md")
+            with open(_lp, "w", encoding="utf-8") as _fh:
+                _fh.write(letter(ranking=ordered))
+            _pp = os.path.join(_td, "pass.md")
+            with open(_pp, "w", encoding="utf-8") as _fh:
+                _fh.write(pass_artifact(ranking=ordered))
+            _missing = os.path.join(_td, "no_such_ledger.md")
+            chk("rank_unreadable_ledger_errors_single", run([_lp], ledger_path=_missing)[0] == 2)
+            chk("rank_unreadable_ledger_errors_perpass", run_per_pass([_pp], ledger_path=_missing)[0] == 2)
+            _lg = os.path.join(_td, "ledger.md")
+            with open(_lg, "w", encoding="utf-8") as _fh:
+                _fh.write(led_ok)
+            chk("rank_readable_ledger_ok_control", run([_lp], ledger_path=_lg)[0] == 0)
+        # review P3: --ledger= passed with --dual is rejected (exit 2) rather than silently ignored.
+        chk("rank_dual_rejects_ledger",
+            main(["editor-scaffolding", "--dual", "a.md", "b.md", "--ledger=x.md"]) == 2)
 
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
@@ -1047,6 +1079,12 @@ def main(argv):
     for a in args:
         if a.startswith("--ledger="):
             ledger_path = a.split("=", 1)[1]
+    # --ledger= only wires the R3 cross-check on the single-file / per-pass arms. Passing it with
+    # --dual would be silently ignored (and could read as "the cross-check ran"), so reject it.
+    if dual and ledger_path is not None:
+        print("editor-scaffolding: --ledger= is not supported with --dual "
+              "(the R3 ledger cross-check applies to the single-file and --per-pass arms only)")
+        return 2
     paths = [a for a in args if not a.startswith("--")]
     if not paths:
         print("Usage: editor_scaffolding.py editor-scaffolding <editorial_letter|run_folder> "
