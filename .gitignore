@@ -42,3 +42,6 @@ evals/manifests/*.md
 # Wildcard + README allowlist mirrors the manifests pattern above.
 evals/results/*
 !evals/results/README.md
+
+# Claude Code agent worktrees (transient)
+.claude/worktrees/
