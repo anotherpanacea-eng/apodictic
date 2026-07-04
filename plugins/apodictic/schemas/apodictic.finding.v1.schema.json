@@ -13,6 +13,7 @@
     "evidence_refs": {"type": "array", "items": {"type": "string"}, "minItems": 1},
     "fix_class": {"type": "string"},
     "risk_if_fixed": {"type": "string"},
+    "salience": {"enum": ["prominent", "moderate", "subtle"], "$comment": "Optional (Editor Scaffolding — Blind-spot ranking). Surface prominence / miss-risk of this finding on a confident first editorial read: prominent = obvious (likely already caught); moderate; subtle = easy to miss (e.g. masked by strong prose). Additive + optional — a finding without it stays valid (the subset checker ignores an absent optional field). The editor-scaffolding blind-spot ranking (apodictic.blind_spot_ranking.v1) orders the 'What You Might Have Missed' section by gap = severity_rank - salience_rank, largest first; the model owns this judgment, the validator never assigns it."},
     "evidence_quote": {"type": "string", "$comment": "Optional (Annotated-Manuscript Increment 2). A VERBATIM single-line substring of the manuscript the finding is about, used by the annotated-manuscript quote-locator to anchor a margin note to the exact sentence. Manuscript bytes, never authored — proved by the annotated-manuscript A6 gate (verbatim + unique occurrence + offset cross-check). Absent on Increment-1 findings; the annotation rung degrades when absent/ambiguous."}
   }
 }

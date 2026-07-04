@@ -1,0 +1,14 @@
+{
+  "$id": "apodictic.blind_spot_ranking.v1",
+  "$comment": "Source of truth for an embedded Blind-Spot Ranking entry in a scaffolded editor letter's 'What You Might Have Missed' section (letter E2) or a scaffolded pass artifact's (per-pass P2). One block per blind-spot entry, emitted IN DISPLAY ORDER. Each duplicates the finding's `severity` for self-containment + cross-checkability (exactly like apodictic.severity_calibration.v1 duplicates `delivered`) and declares its surface `salience` — how noticeable the finding is on a confident first editorial read (prominent = obvious / likely already caught; subtle = easy to miss, e.g. masked by strong prose). editor-scaffolding's ranking sub-check reads these blocks in document order and enforces DESCENDING blind-spot-gap order, gap = severity_rank - salience_rank with Must-Fix/prominent=3 .. Could-Fix/subtle=1, so a high-severity easy-to-miss (subtle) finding has the LARGEST gap and ranks FIRST while an obvious high-severity finding the editor already caught ranks lower; ties break by descending severity, then stable. OPT-IN: a scaffolded letter/pass WITHOUT these blocks stays valid (unranked). The validator is MECHANICAL — it NEVER assigns salience or decides which findings are blind spots; it checks only the declared ranking's gap arithmetic + sort order (and, when a companion Findings Ledger is provided, that each finding_id exists and its severity matches the locked tier — a laundered severity fails). Author-facing docs (editor-scaffolding.md) describe this block; they must not re-list the field set — this file is canonical. Closed-key (additionalProperties:false); declared closed in schemas/_coverage.json.",
+  "title": "APODICTIC structured Blind-Spot Ranking entry (apodictic.blind_spot_ranking.v1)",
+  "type": "object",
+  "required": ["schema", "finding_id", "severity", "salience"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {"const": "apodictic.blind_spot_ranking.v1"},
+    "finding_id": {"type": "string", "pattern": "^F-[A-Za-z0-9]+-[0-9]{2,}$", "$comment": "Finding Lifecycle ID this blind-spot entry ranks (matches apodictic.finding.v1 `id`)."},
+    "severity": {"enum": ["Must-Fix", "Should-Fix", "Could-Fix"], "$comment": "The finding's structural severity, duplicated for self-containment + ledger cross-check (a laundered severity fails editor-scaffolding R3 when a companion ledger is provided)."},
+    "salience": {"enum": ["prominent", "moderate", "subtle"], "$comment": "Surface prominence / miss-risk on a confident first read: prominent = obvious (the editor likely already caught it), moderate, subtle = easy to miss (e.g. masked by strong prose). The model owns this judgment; the validator never assigns it."}
+  }
+}

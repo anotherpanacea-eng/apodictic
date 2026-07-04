@@ -54,14 +54,24 @@ beat map below is where I'd have you look again.
 
 ## What You Might Have Missed
 
-Two structural facts at this pass's layer are easy to under-weight on a confident read:
+Two structural facts at this pass's layer are easy to under-weight on a confident read, ordered by
+**blind-spot gap** (structural severity minus surface salience, largest first — the finding most
+likely to slip a fast read leads):
 
 - The Chapter 9 turn has no on-page causal beat between the choice and its consequence (line 220).
   It is the mechanism behind the pacing flag above, not a separate issue — the polish of the
-  surrounding scene masks the missing link.
+  surrounding scene masks the missing link. <!-- finding: F-P2-01 -->
+<!-- apodictic:blind_spot_ranking
+{"schema":"apodictic.blind_spot_ranking.v1","finding_id":"F-P2-01","severity":"Must-Fix","salience":"subtle"}
+-->
 - The middle third runs on a single tension line. With almost no secondary thread open across
   Chapters 7-9, the primary line has nothing to lean on while it compresses, which is why the
-  compression reads as flatness rather than as restraint.
+  compression reads as flatness rather than as restraint. <!-- finding: F-P5-02 -->
+<!-- apodictic:blind_spot_ranking
+{"schema":"apodictic.blind_spot_ranking.v1","finding_id":"F-P5-02","severity":"Should-Fix","salience":"subtle"}
+-->
+
+(Blind-spot gaps: F-P2-01 Must-Fix/subtle = 2, ranked first; F-P5-02 Should-Fix/subtle = 1.)
 
 ## Appendix A — Proportional Distribution Table
 
