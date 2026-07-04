@@ -20,10 +20,12 @@ Checks (see docs/editor-scaffolding.md):
   B1-B4  (opt-in, letter/run_folder path) if the E2 section carries `<!-- blindspot-ranked -->`, its
       items must be an ordered, `F-…`-anchored list verified against the run folder's Findings Ledger:
       B1 every item anchored + Ledger-resolvable (a marked section with no resolvable Ledger is a hard
-      ERROR — never a silent pass), B2 order = severity band desc, then fewer DISTINCT evidence_refs
-      first (thin footprint = the serious finding a confident read skims past), then id, B3 severity
-      fidelity (a reorder may not restate a band below the lock), B4 no duplicate anchor (WARN /
-      ERROR --strict). Marker absent => E2 stays presence-only (backward compatible).
+      ERROR — never a silent pass), B2 order = severity band desc, then the model's `salience`
+      (subtle first — the serious-but-easy-to-miss finding leads its band), then fewer DISTINCT
+      evidence_refs (footprint tiebreak), then id — band stays DOMINANT (salience/footprint order
+      only WITHIN a band, so a Must-Fix never falls below a Should-Fix), B3 severity fidelity (a
+      reorder may not restate a band below the lock), B4 no duplicate anchor (WARN / ERROR --strict).
+      Marker absent => E2 stays presence-only (backward compatible).
   E3  an `## Intervention Menu` heading (prescription deferred to the editor)
       override: <!-- override: scaffolding-checklist — <rationale> -->
   E4  >= 1 canonical severity token (Must-Fix/Should-Fix/Could-Fix) survives in the body
@@ -114,6 +116,14 @@ _REVISION_CHECKLIST_PAT = "Revision Checklist"
 # D3 severity band ranking (descending). Purely mechanical — token match + rank, no prose read.
 _SEVERITY_RANK = {"must-fix": (3, "Must-Fix"), "should-fix": (2, "Should-Fix"),
                   "could-fix": (1, "Could-Fix")}
+# Blind-spot ordering: the model's salience judgment (apodictic.finding.v1 optional `salience`) —
+# how easily the finding is missed. `subtle` (rank 1) is the MOST missable, so within a severity
+# band it sorts FIRST (ascending rank). Absent/unrecognized -> `moderate` (neutral), so a ledger
+# without salience orders by footprint exactly as before. Salience is a WITHIN-band key only —
+# severity band stays dominant, so it can never reorder across bands (a Must-Fix can't fall below a
+# Should-Fix) or touch the Deficit Lock.
+_SALIENCE_RANK = {"prominent": 3, "moderate": 2, "subtle": 1}
+_SALIENCE_DEFAULT = 2  # absent or unrecognized salience is neutral (footprint then decides)
 
 
 def _top_severity_band(body_text):
@@ -252,7 +262,11 @@ def _ledger_findings(ledger_text):
         if sev.lower() not in _SEVERITY_RANK:    # non-canonical band -> unrankable, fail closed
             unusable.add(key)
             continue
-        out[key] = {"severity": sev, "footprint": len({str(r) for r in refs})}
+        sal = obj.get("salience")                # optional model judgment; neutral when absent/bad
+        sal_rank = _SALIENCE_RANK.get(sal.lower(), _SALIENCE_DEFAULT) if isinstance(sal, str) \
+            else _SALIENCE_DEFAULT
+        out[key] = {"severity": sev, "salience_rank": sal_rank,
+                    "footprint": len({str(r) for r in refs})}
     return out, unusable
 
 
@@ -275,11 +289,13 @@ def _parse_ranked_items(section_lines):
 
 
 def _blindspot_rank(rec):
-    """Order key for one resolved finding: severity band DESC, then fewer DISTINCT evidence_refs
-    first (thin surface footprint = the serious finding a confident read skims past). Severity band
-    is DOMINANT — footprint is only the within-band tiebreak, so the Deficit Lock is never
-    subordinated to footprint."""
-    return (-_SEVERITY_RANK.get(rec["severity"].lower(), (0, None))[0], rec["footprint"])
+    """Order key for one resolved finding: severity band DESC, then the model's SALIENCE (subtle
+    first — the serious-but-easy-to-miss finding leads its band), then fewer DISTINCT evidence_refs
+    first (footprint, the final mechanical tiebreak), then id (applied by the caller). Severity band
+    is DOMINANT — salience and footprint only order WITHIN a band, so the Deficit Lock is never
+    subordinated to either (a Must-Fix can never fall below a Should-Fix, whatever its salience)."""
+    return (-_SEVERITY_RANK.get(rec["severity"].lower(), (0, None))[0],
+            rec["salience_rank"], rec["footprint"])
 
 
 def _check_blindspot(section_lines, ledger_text):
@@ -347,8 +363,8 @@ def _check_blindspot(section_lines, ledger_text):
     if got != want:
         first = next((i for i in range(len(got)) if got[i] != want[i]), 0)
         errors.append("B2: blind-spot ordering wrong at position %d — got %s, expected %s. Order "
-                      "key: severity band (Must>Should>Could), then fewer distinct evidence_refs "
-                      "first, then finding-id. Expected order: %s."
+                      "key: severity band (Must>Should>Could), then salience (subtle first), then "
+                      "fewer distinct evidence_refs, then finding-id. Expected order: %s."
                       % (first + 1, got[first], want[first], ", ".join(want)))
     # B4 — no duplicate anchor (each ranked item is a distinct blind spot). WARN / ERROR --strict.
     seen, dupes = set(), []
@@ -811,10 +827,12 @@ def run_self_test():
     chk("e2_appendix_section_strict_fails", code_s == 1)
 
     # ---- blind-spot ordering (opt-in <!-- blindspot-ranked --> in the E2 section) ---------------
-    def _find(fid, sev, refs):  # one apodictic:finding carrier block
+    def _find(fid, sev, refs, sal=None):  # one apodictic:finding carrier block
+        salf = ',"salience":"%s"' % sal if sal else ""
         return ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"%s","mechanism":"m",'
                 '"severity":"%s","confidence":"HIGH","evidence_refs":%s,"fix_class":"f",'
-                '"risk_if_fixed":"r"}\n-->\n' % (fid, sev, refs))
+                '"risk_if_fixed":"r"%s}\n-->\n' % (fid, sev, refs, salf))
+    # No salience -> neutral, so order falls back to footprint:
     # F-P5-01 Must-Fix/1-ref, F-P5-02 Must-Fix/3-refs, F-P2-03 Should-Fix/1-ref.
     # Correct order = band desc, then fewer refs first: F-P5-01, F-P5-02, F-P2-03.
     _ledger = (_find("F-P5-01", "Must-Fix", '["Ch 9"]')
@@ -886,6 +904,23 @@ def run_self_test():
                         ledger_text=_ledger)
     chk("ranked_multi_anchor_b1",
         code == 1 and any("B1:" in l and "more than one finding" in l for l in lines))
+    # salience (from the ledger) is the WITHIN-band key: a subtle Must-Fix leads its band even with
+    # MORE evidence_refs than a prominent one (salience > footprint tiebreak).
+    _sal_ledger = (_find("F-P5-01", "Must-Fix", '["Ch 9"]', "prominent")
+                   + _find("F-P5-02", "Must-Fix", '["Ch 1","Ch 2","Ch 3"]', "subtle")
+                   + _find("F-P2-03", "Should-Fix", '["Ch 4"]', "subtle"))
+    code, lines = check(ranked_letter("- F-P5-02 — subtle, buried under three chapters.\n"
+                                      "- F-P5-01 — prominent.\n- F-P2-03 — c.\n"),
+                        ledger_text=_sal_ledger)
+    chk("ranked_salience_within_band",
+        code == 0 and any("blind-spot ordering (B1-B4): OK" in l for l in lines))
+    # band dominance: a subtle Should-Fix can NEVER outrank a prominent Must-Fix (salience is
+    # within-band only) — putting it first is a B2 error, so the Deficit Lock is never subordinated.
+    _band_ledger = (_find("F-P5-01", "Must-Fix", '["Ch 9"]', "prominent")
+                    + _find("F-P2-03", "Should-Fix", '["Ch 4"]', "subtle"))
+    code, lines = check(ranked_letter("- F-P2-03 — subtle Should-Fix.\n- F-P5-01 — prominent Must.\n"),
+                        ledger_text=_band_ledger)
+    chk("ranked_salience_band_dominant_b2", code == 1 and any("B2:" in l for l in lines))
 
     # ---- dual-output (--dual: editor letter + author-facing companion) -------------------------
     def author_letter(leak_marker=False, brief=False, blind=False, menu=False,

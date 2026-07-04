@@ -5,11 +5,12 @@ Worked example: an EDITOR SCAFFOLDING letter whose "What You Might Have Missed" 
 RANKED (carries the <!-- blindspot-ranked --> marker). Exercised by `validate.sh --check-all`
 as the canonical release-gate target for the blind-spot ordering path (B1-B4) on the
 editor-scaffolding validator, run over THIS FOLDER (the letter + its co-located Findings
-Ledger) under --strict. The order is the declared key — severity band descending, then fewer
-DISTINCT evidence_refs first (thin surface footprint = the serious finding a confident read
-skims past), then finding-id: F-P2-01 (Must-Fix, 1 ref) before F-P5-02 (Must-Fix, 3 refs)
-before F-P1-03 (Should-Fix, 1 ref). Keep it passing when the validator changes. Illustrative,
-not a run artifact; keep the body free of author-directed prescriptions (W1 lexicon).
+Ledger) under --strict. The order is the declared key — severity band descending, then the
+model's `salience` (subtle first — the serious-but-easy-to-miss finding leads its band), then
+evidence-ref footprint, then finding-id: F-P2-01 (Must-Fix, subtle) before F-P5-02 (Must-Fix,
+moderate) before F-P1-03 (Should-Fix, subtle) — salience orders within the Must-Fix band, and
+band dominance keeps the Should-Fix last. Keep it passing when the validator changes.
+Illustrative, not a run artifact; keep the body free of author-directed prescriptions (W1 lexicon).
 -->
 
 <!-- mode: editor-scaffolding -->
