@@ -6,24 +6,27 @@
 
 ## Board
 
+*Reconciled 2026-07-02 against git tags + `fleet_inventory.py`: shipped capability lanes moved to their release versions in Done; In Progress / Planned now list only genuinely-open work.*
+
 | In Progress | Planned | Done | Backlog |
 |-------------|---------|------|---------|
-| [Argument Benchmark Suite](#benchmark-suite) | [Harness Contracts v2](#harness-contracts-v2) | [**v2.2.0**](#v220--operator-modes-feedback-triage--revision-follow-through) | [Model-Capacity Exploitation](#model-capacity-exploitation) |
-| [Project Addressability & State-Driven Routing](#project-addressability--state-driven-routing) | [Annotated-Manuscript Deliverable](#annotated-manuscript-deliverable) | | |
-| [Validation & External Evidence](#validation--external-evidence) | | | |
-| | [Multi-Party Intake](#multi-party-intake) | [**v2.1.0**](#v210--runner-governed-execution--finding-lifecycle-ids) | [Research / API Reliability Layer](#research--api-reliability-layer) |
-| | [Legal Risk Register](#legal-risk-register) | [**v2.0.0**](#v200--editorial-honesty--structural-integrity) | [Episode Cadence](#episode-cadence) |
-| | [Coaching Deepening](#coaching-deepening) | [v1.9.0](#v190--ai-prose-calibration-v20) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
-| | [Genre Audit Expansion](#genre--audit-expansion) | [v1.7.0](#v170--harness-engineering) | |
-| | [Nonfiction Pre-Draft](#nonfiction-pre-draft-pathway) | [v1.4.0](#v140--surface-hardening--writers-block) | [Corpus-Expansion Fixtures](#deferred-corpus-expansion-candidates) |
+| [Argument Benchmark Suite](#benchmark-suite) | [Multi-Party Intake](#multi-party-intake) | **v2.7.0** · **v2.6.2** · **v2.6.1** · **v2.6.0** *(sections below stop at v2.4.0; see git tags / CHANGELOG)* | [Model-Capacity Exploitation](#model-capacity-exploitation) |
+| [Validation & External Evidence](#validation--external-evidence) | [Coaching Deepening](#coaching-deepening) | [**v2.4.0**](#v240--argument-engine-calibration-command-trim--legal-risk-wiring) | [Research / API Reliability Layer](#research--api-reliability-layer) *(M1 built; follow-ons deferred)* |
+| | [Genre Audit Expansion](#genre--audit-expansion) | [**v2.3.1**](#v231--decoupled-ui-generation--host-bundle-distribution) | [Episode Cadence](#episode-cadence) |
+| | | [**v2.3.0**](#v230--retcon-planning-legal-risk-register--nonfiction-pre-draft) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
+| | | [**v2.2.0**](#v220--operator-modes-feedback-triage--revision-follow-through) | [Corpus-Expansion Fixtures](#deferred-corpus-expansion-candidates) |
+| | | [**v2.1.0**](#v210--runner-governed-execution--finding-lifecycle-ids) | [Horizon Capacities](#horizon-capacities) *(Tier-1 fully shipped; Tier-2 mostly deferred)* |
+| | | [**v2.0.0**](#v200--editorial-honesty--structural-integrity) | |
+| | | [v1.9.0](#v190--ai-prose-calibration-v20) | |
+| | | [v1.7.0](#v170--harness-engineering) | |
+| | | [v1.4.0](#v140--surface-hardening--writers-block) | |
 | | | [v1.3.0](#v130--nonfiction-argument-engine--genre-audits) | |
-| | | [v1.2.1](#v121--audit-sequencing--model-tags) | [Horizon Capacities](#horizon-capacities) |
+| | | [v1.2.1](#v121--audit-sequencing--model-tags) | |
 | | | [v1.2.0](#v120--artifact-coverage) | |
-| | | [v1.1.3](#v113--coaching-deepening) | |
-| | | [v1.1.2](#v112--revision-coach) | |
-| | | [v1.1.1](#v111--series-continuity--pass-9) | |
-| | | [v1.1.0](#v110--token-aware-agent-usage) | |
+| | | [v1.1.3](#v113--coaching-deepening) · [v1.1.2](#v112--revision-coach) · [v1.1.1](#v111--series-continuity--pass-9) · [v1.1.0](#v110--token-aware-agent-usage) | |
 | | | [v1.0.9](#v109) · [v1.0.8](#v108) · [v1.0.4](#v104) · [v1.0](#v10--public-release) | |
+
+**Now backfilled below (v2.6.0–v2.7.0):** **v2.6.0** — the Horizon Tier-1 wave (the Annotated-Manuscript deliverable + all its exports, plus the Tier-1 extraction audits); **v2.6.1** — audit carding + persona-divergence severity hardening; **v2.6.2** — override-marker SSoT hardening; **v2.7.0** — the state-seams wave (round-trip resume, finding dispositions, finding disconfirmation, synthesis re-grounding) + Multi-Session Arc Planning + the co-presence-network chart. See the [Done](#done) sections; git tags remain authoritative. *(There is no v2.5.0.)*
 
 **Recently shipped (through v2.4.0):** **v2.3.0** — Retcon Planning (revision-coaching track), the Nonfiction Pre-Draft Pathway, the Legal Risk Register, Adaptive Mode de-escalation, and the Horizon Capacities scan. **v2.3.1** — decoupled web-app UI generation and research modes 4 → 6. **v2.4.0** — Manuscript-Structure Visualizations, Beta-Reader Instrument generation, the Legal Risk Register detection layer + router wiring, the routing fork/overlay split + project addressability, the Capability Index command (command surface trimmed to 13), and the Argument-Decision (ArgScope) audit with the SETEC normalized-dispatcher integration (vendor/pin/drift-gate); the release pipeline was also decoupled from the APODICTIC-Gemini sibling. *(Earlier — v2.2.0: Editor Scaffolding + Diagnostic Vocabulary operators, Feedback Triage, Adaptive Mid-Run Mode Escalation, Finding Lifecycle IDs incr 2–3.)* **Done and folded into shipped releases:** Runner-Governed Execution (incr 1–3 + 5; incr 4 future), Finding Lifecycle IDs (incr 1–3; incr 4 future), Validator Architecture Hardening, Adaptive Mode Escalation, Editor Scaffolding, Diagnostic Vocabulary, Feedback Triage. Pre-Skill Context Compaction is resolved by platform (see below).
 
@@ -737,6 +740,18 @@ remarkable to indispensable:
 ---
 
 ## Done
+
+### v2.7.0 — State-Seams Wave, Multi-Session Arc Planning & Co-Presence Network
+Additive; no command/API break. The **state-seams wave** hardens the diagnose⇄revise loop's seams. **One-click round-trip resume** surfaces at `/start`'s `revising` + `diagnosed` nodes (Increment 1) with a `reanchor.py` disposition gate (RT1–RT4 + W1, Increment 2). **Finding dispositions** — a declined/deferred overlay that is explicitly *not* a lifecycle state (anti-laundering by construction: no disposition can improve on a declined Must-Fix), with a marker-grammar SSoT and the `disposition-check` validator. **Finding disconfirmation** — HIGH now means *survived a recorded refutation attempt* (the Step-6b Finding Disconfirmation Pass; `refutation_check.py` + three `validate.sh` arms; the refuter never sees severity or confidence — anti-anchoring). **Synthesis coverage disclosure** (M1 — the read manifest + letter coverage note + `synthesis_coverage` sidecar/validator) plus **pre-letter re-grounding** (M2 — re-read spans flip their manifest rows, so disclosure gets *better* on contact with the text). Also: **Multi-Session Revision Arc Planning** (the `revision-arc` validator + `apodictic.revision_arc.v1`, one arc per manuscript), **Manuscript-Structure Visualization chart 5** (character co-presence network — the first producer-gated chart to land), the **Validation & External Evidence** lane added to the roadmap, and the **SETEC contract re-sync** to v1.118.0. Hardening: a UnicodeDecodeError class-sweep across every OSError-only artifact reader, `specificity_floor` fail-*closed* on an unreadable required artifact, and disposition-supersedence recompute-don't-trust. Released `#166`, 2026-07-02.
+
+### v2.6.2 — Override-Marker SSoT Hardening
+Additive; no behavior change to green runs. Routes **18 validators through a single `override_marker` source-of-truth** so structured-dissent detection (the `<!-- override: … -->` path) is parsed identically everywhere instead of by per-validator regex, closing a fleet-wide substring-match class. Folds #148 review P2s: CRLF fence closing and drafted-copy backtick payloads. Released 2026-06-26.
+
+### v2.6.1 — Audit Carding & Persona-Divergence Severity Hardening
+**Registers the two genuine new specialized audits — Content Advisory + Reader-Persona Simulation — on the marketing/inventory surfaces** (`release-registry.json`) and adds the `check-inventory-parity` gate so a shipped specialized-audit reference that isn't carded (or explicitly `NOT_CARDED`) fails CI. Two Codex #146 P1 follow-ups: the `files[0]`-primary binding gate (a ref misattached as a non-primary file no longer passes coverage) and persona-divergence **D3 severity equality**, including the Timeline-anchor path where an asserted Must-Fix over a no-locked-severity anchor was a silent severity sink. Released 2026-06-22.
+
+### v2.6.0 — Horizon Tier-1 Wave: Annotated-Manuscript Deliverable + Extraction Audits
+The largest capability release since v2.0.0 — it completes **Horizon Capacities Tier-1**. **Annotated-Manuscript Deliverable** (the #1 human-DE deliverable): locus-anchored margin comments (Increment 1), character-precise quote anchoring + the A6 quote-integrity gate (Increment 2), letter↔margin cross-links (Increment 3), the producer that wires it into the run flow, plus **round-trip re-anchoring** and **draft-over-draft `regression-diff`**, and four render targets — Obsidian (footnotes + bidirectional wikilinks), self-contained HTML, and **DOCX with anchored Word comments that Google Docs imports natively**. **Horizon Tier-1 extraction audits:** Promise-Contract Fidelity (#4), Reader-Persona Simulation (#5), Auto-Derived Continuity Bible (#7), Content-Advisory / Sensitivity-Surface Derivation (#8), Cross-Manuscript Author Voice/Craft Fingerprint (#9), Uncertainty-Resolution Intake Interview (#18), Interpretable Stylometric Explanation (#19, M1). **Tier-2:** the standalone Worldbuilding-Bible coherence tool (#13) and the Nonfiction Argument Engine **genre layer** for grants / academic papers / pitch decks (#11, M1). **Visualizations:** the render-only nonfiction claim ladder (chart 7). **Harness:** the Harness Contracts v2 keystone — the `schema-coverage` gate + opt-in closed-key (`additionalProperties:false`) enforcement — and the run-level **Research / API reliability layer** (M1). CI gained a version-parity gate + a weekly release-readiness nudge, and a long Codex-hardening tail across the new validators (override-marker fleet-wide, content-advisory negation scope, persona-divergence D4, intake I4). Released `#145`, 2026-06-22. *(No v2.5.0 — the wave shipped as v2.6.0.)*
 
 ### v2.4.0 — Argument-Engine Calibration, Command Trim & Legal-Risk Wiring
 Additive on top of v2.3.1; no API break. **Nonfiction Argument Engine:** Dialectical Clarity classification **rule 2a** — an AT3 *recommendation* that discharges none of its comparative burden (BP5 + OB3, no funding mechanism) is not evaluable as a recommendation → **Structurally Unsound** (FM-A10, "The Uncompared Proposal"). Post-benchmark it was narrowed so that naming *any* alternative — even a strawman foil — counts as partial discharge (a Should-Fix soft spot), with an anti-gaming clause so a merely decorative foil can still be Unsound via the general evaluability test. Aligns the engine with the `policy-brief-uncompared` ground-truth key (GT7 = UNSOUND); verdict-behavior change, gated on a benchmark convergence run. **Command surface trimmed to 13** — retired `/revision-plan`, `/develop-edit`, `/diagnose`, all reachable through `/start`. **Validators:** `finding-trace` completion glob narrowed to `*_Revision_Report_*.md` so a deadline `*_Revision_Calendar_*.md` isn't mis-counted as a completion. **Legal Risk Register:** a detection layer (per-class signals + severity modifiers + ~20-code escalation-trigger taxonomy) and router wiring — `constraint:risk` offer-then-attach + a `/legal-risk` command. **Onboarding:** README install decision-aid table + a Key Terms glossary.
