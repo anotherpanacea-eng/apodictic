@@ -519,11 +519,11 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-beta-reader-instrument.md / example-uncertainty-ledger.md not found"; CA_FAIL=1
     fi
     echo ""
-    echo "== canonical Structure Map manifest (manuscript-viz: manifest<->source provenance vs Timeline + Ledger + claim-ladder spine + co-presence roster + scene-function producer) =="
-    if [ -f "$CA_BASE/example-structure-map-manifest.md" ] && [ -f "$CA_BASE/example-timeline.md" ] && [ -f "$CA_BASE/example-findings-ledger.md" ] && [ -f "$CA_BASE/example-argument-state-predraft.md" ] && [ -f "$CA_BASE/example-scene-roster.md" ] && [ -f "$CA_BASE/example-scene-function.md" ]; then
-      "$0" manuscript-viz "$CA_BASE/example-structure-map-manifest.md" "$CA_BASE/example-timeline.md" "$CA_BASE/example-findings-ledger.md" "$CA_BASE/example-argument-state-predraft.md" "$CA_BASE/example-scene-roster.md" "$CA_BASE/example-scene-function.md" --require-block || CA_FAIL=1
+    echo "== canonical Structure Map manifest (manuscript-viz: manifest<->source provenance vs Timeline + Ledger + claim-ladder spine + co-presence roster + scene-function producer + tension-point producer) =="
+    if [ -f "$CA_BASE/example-structure-map-manifest.md" ] && [ -f "$CA_BASE/example-timeline.md" ] && [ -f "$CA_BASE/example-findings-ledger.md" ] && [ -f "$CA_BASE/example-argument-state-predraft.md" ] && [ -f "$CA_BASE/example-scene-roster.md" ] && [ -f "$CA_BASE/example-scene-function.md" ] && [ -f "$CA_BASE/example-tension-points.md" ]; then
+      "$0" manuscript-viz "$CA_BASE/example-structure-map-manifest.md" "$CA_BASE/example-timeline.md" "$CA_BASE/example-findings-ledger.md" "$CA_BASE/example-argument-state-predraft.md" "$CA_BASE/example-scene-roster.md" "$CA_BASE/example-scene-function.md" "$CA_BASE/example-tension-points.md" --require-block || CA_FAIL=1
     else
-      echo "ERROR: $CA_BASE/example-structure-map-manifest.md / example-timeline.md / example-findings-ledger.md / example-argument-state-predraft.md / example-scene-roster.md / example-scene-function.md not found"; CA_FAIL=1
+      echo "ERROR: $CA_BASE/example-structure-map-manifest.md / example-timeline.md / example-findings-ledger.md / example-argument-state-predraft.md / example-scene-roster.md / example-scene-function.md / example-tension-points.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical annotated manuscript (annotated-manuscript: no-mutation + anchor ladder + Must-Fix rendered) =="
@@ -6110,18 +6110,23 @@ EOF
     # claim-ladder provenance (claim_id is a declared spine subclaim via spine_subclaim_ids; label is the
     # subclaim string minus its leading Cn token; support[] byte-copies support_plan.v1; an empty
     # support[] only for a bare assertion), X7 no duplicate rung, X8 producer-present (no producer, no
-    # chart), W3 chart coverage. Chart 5 (co_presence) now has a producer too — apodictic.scene_roster.v1
-    # (per-scene cast; the Timeline carries POV only): X2 co-presence provenance byte-checks each
-    # co_presence[].scene_id against a roster entry + a Timeline row, every co_presence name against the
-    # scene's roster (canonical) names, the Timeline POV against the roster (cross-check), and the
-    # producer's anchor-non-empty (the author-enforced presence accountability). The remaining two
-    # producer-gated arrays (scene_functions/reveal_points) have no producer yet, so a present one fails
-    # X8. --require-block makes a missing/
+    # chart), W3 chart coverage. All four manifest arrays now have a producer: chart 5 (co_presence) over
+    # apodictic.scene_roster.v1 (X2 — byte-checks each co_presence[].scene_id against a roster entry + a
+    # Timeline row, every co_presence name against the scene's roster (canonical) names, the Timeline POV
+    # against the roster (cross-check), and the producer's anchor-non-empty); chart 6 (scene_functions)
+    # over apodictic.scene_function.v1 (X3 — manifest function == the producer's closed scene-turn
+    # Unit-Classification, non-empty anchor, provenance closure); and chart 4 (reveal_points) over
+    # apodictic.tension_point.v1 (X4 — manifest tension == the producer's closed 1-5 reader-intensity
+    # level, non-empty anchor, provenance closure — keyed directly on scene_id, no evidence_ref
+    # resolution). The one still-producer-gated chart is 7-fiction's beat-map (no manifest array here;
+    # awaits apodictic.story_spine.v1). --require-block makes a missing/
     # invalid manifest a hard failure (the canonical-example gate uses it so it can't pass vacuously). The
-    # severity->encoding map (and the co-presence weight->chord-thickness band) is hardcoded in the
-    # render-only SVG layer (charts 1-3 + the claim ladder + the co-presence network),
+    # severity->encoding map (and the co-presence weight->chord-thickness band, the scene-function colour
+    # band, the tension level->y-position map) is hardcoded in the render-only SVG layer (charts 1-3 + the
+    # claim ladder + the co-presence network + the scene-function heatmap + the tension timeline),
     # not the manifest, so a run cannot recolor a Must-Fix. Takes a run folder (globs the manifest +
-    # Timeline + Findings Ledger + Argument_State spine + Scene_Roster producer) or explicit files. Delegates to
+    # Timeline + Findings Ledger + Argument_State spine + Scene_Roster + Scene_Function + Tension producers)
+    # or explicit files. Delegates to
     # scripts/viz_manifest.py; degrades to an advisory WARN without python3. (`viz_manifest.py render ...`
     # emits the HTML.)
     MVZ_DIR=$(cd "$(dirname "$0")" && pwd)
