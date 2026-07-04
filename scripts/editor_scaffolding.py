@@ -47,7 +47,7 @@ import os
 import re
 import sys
 
-from override_marker import has_override
+from override_marker import has_override, strip_code_spans
 
 MODE_MARKER_RE = re.compile(r"<!--\s*mode:\s*editor-scaffolding\s*-->", re.IGNORECASE)
 SEVERITY_RE = re.compile(r"(?<![\w-])(Must-Fix|Should-Fix|Could-Fix)(?![\w-])")
@@ -72,9 +72,15 @@ _SEVERITY_RANK = {"must-fix": (3, "Must-Fix"), "should-fix": (2, "Should-Fix"),
 
 def _top_severity_band(body_text):
     """Highest canonical severity band present in a letter body, or None. Mechanical: SEVERITY_RE
-    token extraction + fixed rank (Must-Fix > Should-Fix > Could-Fix), no semantic reading."""
+    token extraction + fixed rank (Must-Fix > Should-Fix > Could-Fix), no semantic reading.
+
+    HTML comments and code spans are stripped first (via the shared strip_code_spans SSoT + the
+    module's _strip_comments) so a stale/boilerplate band token in a `<!-- ... -->` header comment
+    or a `` `code span` `` cannot be read as the letter's verdict — that is exactly the
+    severity-laundering the D3 consistency check exists to catch."""
+    scan = strip_code_spans(_strip_comments(body_text))
     best = (0, None)
-    for m in SEVERITY_RE.finditer(body_text):
+    for m in SEVERITY_RE.finditer(scan):
         rank = _SEVERITY_RANK.get(m.group(1).lower())
         if rank and rank[0] > best[0]:
             best = rank
@@ -207,8 +213,10 @@ def check(letter_text, strict=False):
                       "<!-- override: scaffolding-checklist — <rationale> -->."
                       % _INTERVENTION_PAT)
 
-    # E4 — severity vocabulary survives the reframe.
-    if SEVERITY_RE.search(body):
+    # E4 — severity vocabulary survives the reframe. Uses _top_severity_band (comments + code spans
+    # stripped) so a token surviving only in a header comment can't satisfy E4 either — keeping E4
+    # and the D3 band read consistent (E4-pass <=> non-None top band).
+    if _top_severity_band(body) is not None:
         out.append("  E4 severity-preserved: OK")
     else:
         errors.append("E4: no canonical severity token (Must-Fix/Should-Fix/Could-Fix) in the "
@@ -584,6 +592,23 @@ def run_self_test():
         "- **Could-Fix:** a minor polish note.\n## Appendix A — Diagnostic Detail"))
     chk("dual_d3_extra_lower_band_ok",
         code == 0 and any("top severity band = Must-Fix" in l for l in lines))
+
+    # D3 — severity-laundering guard: a stale higher band in an HTML COMMENT or a `code span` in the
+    # author letter must NOT be read as its verdict (comments + code spans are stripped). The author's
+    # real prose verdict is Should-Fix; a leftover `<!-- ... Must-Fix ... -->` header comment and a
+    # `` `Must-Fix` `` code span must not launder it back up to match the editor's Must-Fix.
+    author_laundered = ("<!-- house style: escalate a Must-Fix to the editor before sending -->\n"
+                        + author_letter(severity="Should-Fix").replace(
+                            "## The Short Version\n",
+                            "## The Short Version\nSee the `Must-Fix` rubric in the style guide.\n"))
+    code, lines = check_dual(letter(), author_laundered)
+    chk("dual_d3_comment_codespan_not_laundered",
+        code == 1 and any("D3:" in l and "mismatch" in l for l in lines))
+    # And the positive control: with the comment/code-span band as the ONLY higher mention, the real
+    # matching-band pair still passes (strip doesn't eat the genuine prose token).
+    code, lines = check_dual(ed_should, author_laundered)
+    chk("dual_d3_laundered_matches_real_should",
+        code == 0 and any("top severity band = Should-Fix" in l for l in lines))
 
     # --dual usage: not exactly two files -> usage exit 2.
     code, _l = run_dual(["only-one.md"])
