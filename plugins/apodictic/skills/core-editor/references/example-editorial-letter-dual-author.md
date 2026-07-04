@@ -108,5 +108,3 @@ directions; the prologue finding held at Should-Fix.
 ## Appendix C — Framework Notes
 
 Run metadata, model, run date, and pass-set provenance.
-</content>
-</invoke>
