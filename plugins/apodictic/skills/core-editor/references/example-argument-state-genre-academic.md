@@ -11,7 +11,8 @@ reviewer, and the audit's calibration here is the STRICTEST (CL0 is disqualifyin
 the genre layer validates the writer's declared structure; it does not author the contribution claim.
 
 Exercised by `validate.sh --check-all`: B1 schema, B2 each declared section seeded, B3 genre agrees with
-the spine's form, B4 one profile, W4 all four canonical roles declared.
+the spine's form, B4 one profile, W4 all four canonical roles declared, W5 the writer's
+reviewer_objections pre-list is non-empty (seeds §6; the genre layer never authors objections).
 -->
 
 <!-- apodictic:argument_spine

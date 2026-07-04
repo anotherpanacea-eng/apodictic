@@ -63,6 +63,16 @@ under the canonical §1–§6 — no new top-level section, so argument-state-sc
                       --strict): the writer may be working a non-standard variant. Override:
                       <!-- override: argument-spine-genre <genre> — <rationale> -->.
 
+Increment 2 of the genre layer — reviewer-anticipation, the writer's pre-list of the evaluator's likely
+objections (the genre_profile's reviewer_objections array), surfaced as an empty required class:
+  W5 reviewer-anticipation  a genre_profile is present but its reviewer_objections array is empty or
+                      absent — pre-list the evaluator's likely objections (which seed §6, The Strongest
+                      Case Against) before drafting (advisory; ERROR --strict). FIREWALL: W5 checks ONLY
+                      that the writer's list is NON-EMPTY; it never authors, suggests, or validates the
+                      CONTENT of an objection (the engine never writes the writer's objections). Fires
+                      only when a genre_profile is present (parallels W4). Override:
+                      <!-- override: argument-spine-reviewer <genre> — <rationale> -->.
+
 A2/A3 (spine), B2/B3 (genre), and the seeding checks verify the plan actually populated Argument_State
 (the chosen integration). Reuses apodictic_artifacts (block grammar + schema engine). An artifact with
 no spine / support_plan / warrant_plan / genre_profile block is a no-op. See docs/nonfiction-pre-draft.md.
@@ -442,6 +452,21 @@ def check(text, strict=False):
                     warns.append("W4 thin genre skeleton: a %s profile omits the canonical section "
                                  "'%s' — add it, or override if this is a non-standard variant"
                                  % (gobj.get("genre"), canon))
+        # W5 — reviewer-anticipation (Increment 2 of the genre layer): the writer must pre-list the
+        # evaluator's likely objections (reviewer_objections). Empty or absent -> advisory (ERROR
+        # --strict); override silences. FIREWALL: W5 checks ONLY that the writer's list is NON-EMPTY
+        # (a real, non-whitespace entry); it never authors, suggests, or validates the CONTENT of an
+        # objection — the engine never writes the writer's objections, it only surfaces the empty class.
+        # The objections seed §6 (The Strongest Case Against); the core check is non-emptiness. A
+        # W5-specific override slug (argument-spine-reviewer) keeps this decision decoupled from W4's.
+        if not override_targets(text, "argument-spine-reviewer"):
+            objections = gobj.get("reviewer_objections")
+            non_empty = isinstance(objections, list) and any(
+                isinstance(o, str) and o.strip() for o in objections)
+            if not non_empty:
+                warns.append("W5 reviewer-anticipation: %s pre-draft declares no reviewer_objections — "
+                             "pre-list the evaluator's likely objections (seeds §6, The Strongest Case "
+                             "Against) before drafting; the engine never authors them." % gobj.get("genre"))
 
     # Report
     if obj is not None and not schema_errs:
@@ -468,7 +493,7 @@ def check(text, strict=False):
                      % (len(errs), ", %d strict warn(s)" % len(warns) if (strict and warns) else ""))
         return 1, lines
     if warns:
-        lines.append("WARN: argument-spine: %d advisory gap(s) — see W1/W2/W3/W4 above" % len(warns))
+        lines.append("WARN: argument-spine: %d advisory gap(s) — see W1/W2/W3/W4/W5 above" % len(warns))
     else:
         seeded = "§1/§2" + ("/§3" if valid_supports else "") + ("/§4" if valid_warrants else "")
         genre_tag = (" + genre %s" % valid_genres[0].get("genre")) if valid_genres else ""
@@ -685,23 +710,31 @@ def run_self_test():
                        ("traction", "Traction", "support_plan")],
     }
 
-    def genre(g="grant-proposal", evaluator="panel-reviewer", sections=None, **over):
+    # `objections` default is a NON-EMPTY list so a clean genre profile is also W5-clean (Increment 2
+    # of the genre layer): pass objections=() for the empty-list W5 case, objections=None to omit the
+    # key entirely (the absent W5 case). Content is placeholder — W5 only checks non-emptiness.
+    def genre(g="grant-proposal", evaluator="panel-reviewer", sections=None,
+              objections=("the evaluator will doubt feasibility",), **over):
         secs = [{"role": r, "heading": h, "seeded_by": s}
                 for (r, h, s) in (sections if sections is not None else _G_SECTIONS[g])]
         o = {"schema": _GENRE_SCHEMA_ID, "genre": g, "required_sections": secs, "evaluator": evaluator}
+        if objections is not None:
+            o["reviewer_objections"] = list(objections)
         o.update(over)
         return "<!-- apodictic:genre_profile\n%s\n-->" % _j.dumps(o)
 
     def seededG(g="grant-proposal", evaluator="panel-reviewer", form=None, sections=None,
-                thesis="the city should fund curb-cut ramps citywide", extra="", **gover):
+                thesis="the city should fund curb-cut ramps citywide", extra="",
+                objections=("the evaluator will doubt feasibility",), **gover):
         # a seeded Argument_State whose spine form = the genre, whose §1/§2 carry the genre's required
         # section headings (as ### sub-headings), + a spine + the genre_profile block. `form` defaults
         # to the genre token so B3 passes; pass form= to force a mismatch (B3 reads the SPINE's form,
-        # so the spine block carries form_val, not just the §1 markdown line).
+        # so the spine block carries form_val, not just the §1 markdown line). `objections` forwards to
+        # genre() (non-empty by default -> W5-clean; () empty / None absent -> W5 fires).
         secs = sections if sections is not None else _G_SECTIONS[g]
         form_val = form if form is not None else g
         heads = "".join("### %s\n\n_seeded_\n\n" % h for (_r, h, _s) in secs)
-        gblock = genre(g=g, evaluator=evaluator, sections=sections, **gover)
+        gblock = genre(g=g, evaluator=evaluator, sections=sections, objections=objections, **gover)
         return ("# Argument State\n## 1. Context and Classification\nForm: %s\n%s"
                 "## 2. Claim Architecture\nC0 (main claim): %s\n%s"
                 "## 6. Objection and Dialectical Integrity Map\nObjection 1: low priority\n%s\n"
@@ -714,9 +747,10 @@ def run_self_test():
                                                    "academic-article": "peer-reviewer",
                                                    "pitch-deck": "investor"}[_g]))
         chk("genre_clean_%s" % _g, code == 0 and not any("B1" in ln or "B2" in ln or "B3" in ln
-                                                         or "B4" in ln or "W4" in ln for ln in lines))
+                                                         or "B4" in ln or "W4" in ln or "W5" in ln for ln in lines))
     # genre layer staged OFF: a plain spine (no genre_profile) behaves exactly as today -> no B/W codes
-    chk("genre_staged_off", not any(("B1" in ln or "B2" in ln or "B3" in ln or "B4" in ln or "W4" in ln)
+    chk("genre_staged_off", not any(("B1" in ln or "B2" in ln or "B3" in ln or "B4" in ln or "W4" in ln
+                                     or "W5" in ln)
                                     for ln in check(seeded())[1]))
     # genre_profile alone (no spine) still no-op-resolves the spine but checks the genre -> not a crash;
     # B3 is SKIPPED when no valid spine is present
@@ -800,6 +834,43 @@ def run_self_test():
     code, lines = check(seededG("academic-article", evaluator="peer-reviewer", sections=ACAD_NO_RELWORK))
     chk("w4_academic_no_relwork",
         code == 0 and any("W4 thin genre skeleton" in ln and "related-work" in ln for ln in lines))
+
+    # ---- W5: reviewer-anticipation (Increment 2 of the genre layer) ----
+    # clean: a non-empty reviewer_objections list -> no W5 (the writer pre-listed the objections)
+    code, lines = check(seededG("grant-proposal", objections=("the eval design can't isolate the effect",)))
+    chk("w5_clean_nonempty", code == 0 and not any("W5" in ln for ln in lines))
+    # W5 default: an EMPTY reviewer_objections list -> advisory (code 0, WARN); ERROR under --strict
+    code, lines = check(seededG("grant-proposal", objections=()))
+    chk("w5_empty_warn",
+        code == 0 and any("W5 reviewer-anticipation" in ln and "grant-proposal" in ln for ln in lines))
+    chk("w5_empty_strict_fails", check(seededG("grant-proposal", objections=()), strict=True)[0] == 1)
+    # W5 absent: no reviewer_objections key at all (the optional field) -> same advisory
+    code, lines = check(seededG("pitch-deck", evaluator="investor", objections=None))
+    chk("w5_absent_warn",
+        code == 0 and any("W5 reviewer-anticipation" in ln and "pitch-deck" in ln for ln in lines))
+    # W5 non-emptiness means REAL content: a list of only whitespace-blank strings still fires W5
+    code, lines = check(seededG("grant-proposal", objections=("   ", "")))
+    chk("w5_whitespace_only_warn", code == 0 and any("W5 reviewer-anticipation" in ln for ln in lines))
+    # W5 override silences — a W5-SPECIFIC slug (argument-spine-reviewer), decoupled from W4's genre slug
+    ovr = "<!-- override: argument-spine-reviewer grant-proposal — objections tracked in the sponsor portal -->\n"
+    code, lines = check(seededG("grant-proposal", objections=(), extra=ovr))
+    chk("w5_override", code == 0 and not any("W5" in ln for ln in lines))
+    # W5 decoupled from W4: overriding W4 (argument-spine-genre) does NOT silence W5, and vice versa
+    code, lines = check(seededG("grant-proposal", sections=GRANT_NO_APPROACH, objections=(),
+                                extra="<!-- override: argument-spine-genre grant-proposal — LOI variant -->\n"))
+    chk("w5_not_silenced_by_w4_override",
+        code == 0 and not any("W4 thin genre skeleton" in ln for ln in lines)
+        and any("W5 reviewer-anticipation" in ln for ln in lines))
+    # W5 staged OFF: a plain spine (no genre_profile) never fires W5 (parallels W4's staged-off)
+    chk("w5_staged_off", not any("W5" in ln for ln in check(seeded())[1]))
+    # W5 FIREWALL: the surfaced warning names NO objection content — it only reports the empty class and
+    # points at where the writer should pre-list. The engine must never author the objection text.
+    code, lines = check(seededG("academic-article", evaluator="peer-reviewer", objections=()))
+    w5_line = next((ln for ln in lines if "W5 reviewer-anticipation" in ln), "")
+    chk("w5_firewall_authors_no_content",
+        bool(w5_line) and "the engine never authors them" in w5_line
+        and not any(term in w5_line for term in ("this is already known", "the gap isn't real",
+                                                 "the method doesn't support")))
 
     # B1 blank/duplicate role|heading — a non-whitespace, unique contract, enforced at the gate.
     # The smallest-input-that-breaks: all four canonical grant roles but heading="" everywhere. B2

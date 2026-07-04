@@ -15,8 +15,10 @@ Dialectical Clarity audit, unchanged.
 Exercised by `validate.sh --check-all` as a canonical genre-layer target: B1 schema (genre / evaluator /
 seeded_by enums + per-section shape), B2 every declared section is seeded (a ### heading present), B3
 the genre agrees with the spine's form, B4 exactly one genre profile, W4 the genre's canonical sections
-(specific-aims / significance / innovation / approach) are all declared. The §3/§4 support and warrant
-maps and the remaining draft-dependent sections (§§5, 7–9) are left PENDING — they are the audit's job.
+(specific-aims / significance / innovation / approach) are all declared, and W5 the writer's
+reviewer_objections pre-list is non-empty (seeds §6 — the genre layer never authors these). The §3/§4
+support and warrant maps and the remaining draft-dependent sections (§§5, 7–9) are left PENDING — they
+are the audit's job.
 -->
 
 <!-- apodictic:argument_spine
