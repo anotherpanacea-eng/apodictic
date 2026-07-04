@@ -62,7 +62,7 @@ Genuinely remaining gaps:
 
 - **Multi-Party Intake** (`operator:team`, fork=intake) — co-authoring intake; conflict surfacing / sign-off. Closest: single-author Core DE.
 - **Nonfiction Pre-Draft, idea-stage** (`engine=nonfiction` at `artifact:idea`) — the prose-stage nonfiction engines (argument / narrative / memoir) are built; only the idea-stage pre-draft pathway entry remains a router gap. (The Nonfiction Pre-Draft *module* itself is built per `ROADMAP.md`; the open item is its router wiring.)
-- **Legal Risk Register content-detection auto-recommend** — the explicit-flag path is **built** (`constraint:risk` offers + attaches the overlay; `/legal-risk` direct command). The remaining gap is *content* detection: auto-recommending the register for memoir/autofiction portraying identifiable real people *without* an explicit `constraint:risk` flag.
+- ~~**Legal Risk Register content-detection auto-recommend**~~ — **Built (prompt/router-only).** Both paths now ship: the explicit-flag path (`constraint:risk` offers + attaches the overlay; `/legal-risk` direct command) *and* the content-detection auto-recommend — the model reads the manuscript for the memoir / real-people signals and **offers** the register for memoir / autofiction / nonfiction portraying identifiable real people *without* an explicit `constraint:risk` flag. Per the maintainer's decision this is model-side detection in the routing/synthesis prose, **not** a mechanical validator arm (`run-synthesis.md §Content-detection auto-recommend`, `references/legal-risk-register.md` §Auto-recommend, `intake-router-runtime.md` §3 D / §6 Table B, `pass-dependencies.md §4a`).
 
 ---
 

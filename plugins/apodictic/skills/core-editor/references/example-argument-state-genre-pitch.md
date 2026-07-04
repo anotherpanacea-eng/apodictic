@@ -14,7 +14,8 @@ It NEVER coaches slide design, slide count, or fundraising tactics — that is t
 the Dialectical Clarity audit already forbids. It invents no problem, no solution, no traction numbers.
 
 Exercised by `validate.sh --check-all`: B1 schema, B2 each declared section seeded, B3 genre agrees with
-the spine's form, B4 one profile, W4 all three canonical roles declared.
+the spine's form, B4 one profile, W4 all three canonical roles declared, W5 the writer's
+reviewer_objections pre-list is non-empty (seeds §6; the genre layer never authors the objections).
 -->
 
 <!-- apodictic:argument_spine

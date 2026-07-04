@@ -1,0 +1,13 @@
+{
+  "$id": "apodictic.tension_point.v1",
+  "$comment": "Source of truth for the apodictic:tension_point block — the PRODUCER for Viz Chart 4 (reveal-economy / tension timeline; docs/manuscript-visualizations.md §The chart set, chart 4). ONE block per manuscript. It records, per Timeline scene, the reader's TENSION LEVEL — the reader-dynamics Pass 1 (Reader Experience) reading, on the closed ordinal 1-5 reader-intensity scale. GROUNDING: Pass 1 tracks the reader's emotional/cognitive response (run-core.md §Pass 1), and that emotional tracking surfaces as an explicit ordinal scale in Dashboard Component 1, the Pacing Heat Map — 'intensity level (1-5 scale derived from Pass 1 emotional tracking)' (run-full.md §Component 1). This block copies that scale verbatim: `tension` is a token in the closed set 1 | 2 | 3 | 4 | 5 (1 = flat / no felt tension, 5 = peak). A value outside the enum is a schema failure. This reading is PRODUCER/AUTHOR-ENFORCED (a validator cannot read prose to adjudicate how tense a scene feels — the scene_roster.v1 / scene_function.v1 author-enforced precedent) and made ACCOUNTABLE by the REQUIRED, non-empty `anchor` (a Timeline-relative line-range or a short on-page quote witnessing the reading). VERBATIM-COPY DISCIPLINE: the manifest's reveal_points[] entries are bare {scene_id, tension} copied from these scores and byte-checked against them (viz_manifest.py X4); the renderer draws a tension-over-scene-order timeline MECHANICALLY (tension level on the y-axis, scene order on the x-axis, from the byte-checked levels) and invents nothing. PROVENANCE-CLOSED: every scene_id must resolve to a Timeline Event-Ledger row. SCOPE NOTE: tension points are keyed directly on scene_id (per-scene, like scene_roster/scene_function) — no evidence_ref -> scene_id resolution is needed or performed here; the evidence_ref overlay (docs' chart-4 caveat) is explicitly out of scope. additionalProperties:false — a stray top-level key is a typo. The nested points[] objects are validated by viz_manifest.py (the subset engine does not recurse). The GATE enforces schema + the 1-5 enum + anchor-non-empty + provenance closure, NOT the semantic tension reading. Validated by scripts/viz_manifest.py (X4). See docs/manuscript-visualizations.md.",
+  "title": "APODICTIC tension point (apodictic.tension_point.v1)",
+  "type": "object",
+  "required": ["schema", "points"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {"const": "apodictic.tension_point.v1"},
+    "project": {"type": "string"},
+    "points": {"type": "array"}
+  }
+}
