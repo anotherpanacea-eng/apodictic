@@ -288,10 +288,19 @@ class ReliabilityLedger:
         return False
 
     def degraded_providers(self) -> list[str]:
-        seen = set(self._calls) | set(self.breaker.state()) | set(self.budget.spent())
-        # Only report providers that were actually touched OR forced open.
-        touched = [p for p in PROVIDERS if p in self._calls or self.breaker.is_open(p)]
-        touched += [p for p in seen if p not in PROVIDERS and (p in self._calls or self.breaker.is_open(p))]
+        # A provider is ENGAGED if a call fired, its breaker forced open, OR a budget-exhausted
+        # event fired — allow_call() records `budget-exhausted` when the provider's budget was
+        # spent BEFORE any call could fire, which cuts an unresolved citation to NOT-CHECKED. The
+        # bare _calls/breaker touched-set missed that path, so a budget-exhausted-only provider was
+        # classified _degraded() yet dropped from coverage (and thus from the OQ-1 strict halt).
+        exhausted_evt = {ev["provider"] for ev in self._events if ev["kind"] == "budget-exhausted"}
+
+        def _engaged(p):
+            return p in self._calls or self.breaker.is_open(p) or p in exhausted_evt
+
+        seen = set(self._calls) | set(self.breaker.state()) | set(self.budget.spent()) | exhausted_evt
+        touched = [p for p in PROVIDERS if _engaged(p)]
+        touched += [p for p in seen if p not in PROVIDERS and _engaged(p)]
         return [p for p in touched if self._degraded(p)]
 
     def is_degraded(self, provider: str) -> bool:
@@ -711,6 +720,22 @@ def run_self_test() -> int:
     # a None/empty snapshot never fabricates a halt.
     t.expect_true("oq1_none_snapshot_no_halt",
                   strict_halt_decision(None, 5, strict=True)["halt"] is False)
+    # regression (PR #168 review): a provider budget-EXHAUSTED BEFORE any call fires records a
+    # budget-exhausted event and cuts a citation to NOT-CHECKED, but the bare _calls/breaker
+    # touched-set dropped it from coverage — so --strict silently did NOT halt. Coverage must now
+    # list it degraded and the strict halt must fire.
+    be_led = ReliabilityLedger(budget=ProviderBudget(limits={"semantic-scholar": 0}))
+    be_led.allow_call("semantic-scholar")   # False: exhausted before any call; event recorded
+    be_snap = be_led.snapshot()
+    t.expect("oq1_budget_exhausted_coverage_degraded",
+             be_snap["coverage"]["degraded_providers"], ["semantic-scholar"])
+    t.expect_true("oq1_budget_exhausted_not_clean", be_snap["coverage"]["clean"] is False)
+    t.expect_true("oq1_budget_exhausted_strict_halts",
+                  strict_halt_decision(be_snap, not_checked_count=1, strict=True)["halt"] is True)
+    # but a truly UNUSED zero-budget provider (never engaged, no event) stays clean — no over-report.
+    unused_led = ReliabilityLedger(budget=ProviderBudget(limits={"semantic-scholar": 0}))
+    t.expect("oq1_unused_zero_budget_clean",
+             unused_led.snapshot()["coverage"]["degraded_providers"], [])
 
     # -- OQ-3: Citation_Reliability.json sidecar serializer -------------------
     import tempfile
