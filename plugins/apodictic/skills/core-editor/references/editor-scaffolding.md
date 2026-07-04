@@ -1,8 +1,8 @@
 # Editor Scaffolding (operator mode)
 
-**Status:** v1 (Increment 1)
+**Status:** v1 (Increment 1 + dual-output + per-pass)
 **Trigger:** `operator:editor` flag from the intake router (Question 3 option E — "I'm editing someone else's work"), or any Core DE command carrying `operator:editor`.
-**Applies to:** the Core DE editorial letter (synthesis). Pass artifacts are unchanged in this increment.
+**Applies to:** the Core DE editorial letter (synthesis) and — via the `--per-pass` arm — an individual Core DE pass artifact (see §Per-pass scaffolding).
 **Does not change:** which passes run, what is diagnosed, or how severe a finding is. This is a presentation overlay, not a different analysis.
 
 ---
@@ -83,3 +83,17 @@ An editor who wants **both** letters — the scaffolded one to work from *and* t
 - **D3** the highest severity band (Must-Fix > Should-Fix > Could-Fix) matches across both letters — the verdict class can't soften on either side.
 
 Worked pair: `references/example-editorial-letter-scaffolded.md` (editor) + `references/example-editorial-letter-dual-author.md` (author). See [`docs/editor-scaffolding.md` §Dual-output](../../../docs/editor-scaffolding.md).
+
+## Per-pass scaffolding
+
+When an editor wants a **single pass** re-aimed at them — not the whole letter — reframe that pass artifact (`[Project]_Pass<N>_<Name>_<runlabel>.md`) for the editor and validate it with the same validator's single-file per-pass arm:
+
+`scripts/validate.sh editor-scaffolding --per-pass <pass_artifact>`
+
+A pass is a single diagnostic lens, so the reframe is a right-sized subset of the letter's E1–E4 (and marker-conditional, exactly like the letter path — a pass artifact without `<!-- mode: editor-scaffolding -->` is an ordinary diagnostic artifact and passes as a no-op):
+
+- **P1** the marker is present **and** the pass carries a non-empty **Editor Note** — the editor addressee for this pass (what it surfaces + where the editor's read of this layer is likely to under-weight). A distinct heading from the letter's Editor Brief; a pass artifact is not the letter.
+- **P2** a non-empty **What You Might Have Missed** section — the per-pass value-add (not ranked; blind-spot ranking is deferred).
+- **W1** the same author-directed prescription scan as the letter path (advisory; ERROR under `--strict`; same override). A pass has no Revision Checklist to reframe into an Intervention Menu, so there is no positive per-pass E3, and severity honesty stays owned downstream (the pass flags are locked in the Findings Ledger by `softness-check` / `deficit-lock`) — so there is no mandatory per-pass severity token either (a Pass 0 reverse outline is legitimately severity-free).
+
+All three are evaluated over the **body** (before Appendix A), so an appendix section can't satisfy P1/P2 or hide a W1 leak. Worked example: `references/example-pass-scaffolded.md` (a scaffolded Pass 2 Structural Mapping artifact). See [`docs/editor-scaffolding.md` §Per-pass scaffolding](../../../docs/editor-scaffolding.md).
