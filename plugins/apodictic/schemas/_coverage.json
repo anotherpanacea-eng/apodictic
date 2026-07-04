@@ -8,6 +8,7 @@
     {"schema": "apodictic.readiness.v1", "validators": ["structured-findings"], "canonical_gate": "diagnostic-state-meta-template.json", "closed_keys": true},
     {"schema": "apodictic.diagnostic-state.v1", "validators": ["structured-findings"], "canonical_gate": "diagnostic-state-meta-template.json", "closed_keys": false},
     {"schema": "apodictic.severity_calibration.v1", "validators": ["finding-trace"], "canonical_gate": "example-editorial-letter.md", "closed_keys": true},
+    {"schema": "apodictic.blind_spot_ranking.v1", "validators": ["editor-scaffolding"], "canonical_gate": "example-editorial-letter-scaffolded.md", "closed_keys": true},
     {"schema": "apodictic.gate_event.v1", "validators": ["gate-state"], "canonical_gate": "example-run-folder", "closed_keys": false},
     {"schema": "apodictic.state_card.v1", "validators": ["state-card-diff"], "canonical_gate": "example-state-card.md", "closed_keys": false},
     {"schema": "apodictic.legal_risk.v1", "validators": ["legal-risk"], "canonical_gate": "example-legal-risk-register.md", "closed_keys": false},

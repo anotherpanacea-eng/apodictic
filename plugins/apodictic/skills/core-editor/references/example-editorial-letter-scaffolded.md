@@ -50,15 +50,27 @@ sister-relationship arc carries the emotional spine without ever stating it outr
 
 ## What You Might Have Missed
 
-Two findings are easy to under-weight on a first read because the prose carries you past them:
+Two findings are easy to under-weight on a first read because the prose carries you past them.
+They are ordered by **blind-spot gap** — how far a finding's structural severity outruns its
+surface salience (how easy it is to miss) — largest gap first, so the finding most likely to slip
+a confident read leads. The machine-checkable ranking blocks below carry that order; the editor
+owns the judgment, the validator only checks the gap arithmetic and sort order.
 
 - The Chapter 9 turn has no on-page causal link between the choice and its consequence
   (Chapter 9, line 220) — the polish of the surrounding scene masks the missing beat. This is
-  the mechanism behind the pacing finding above, not a separate problem.
+  the mechanism behind the pacing finding above, not a separate problem. <!-- finding: F-P2-01 -->
+<!-- apodictic:blind_spot_ranking
+{"schema":"apodictic.blind_spot_ranking.v1","finding_id":"F-P2-01","severity":"Must-Fix","salience":"subtle"}
+-->
 - The novel runs on almost zero dramatic irony (see Reverse Outline, §Reader Knowledge). That
   is a structural characteristic, not a flaw — but it means the middle third has no secondary
   tension to lean on while the primary line compresses, which is *why* the compression reads
-  as flatness rather than restraint (see Reader Dynamics, §Tension Sources).
+  as flatness rather than restraint (see Reader Dynamics, §Tension Sources). <!-- finding: F-P5-02 -->
+<!-- apodictic:blind_spot_ranking
+{"schema":"apodictic.blind_spot_ranking.v1","finding_id":"F-P5-02","severity":"Should-Fix","salience":"subtle"}
+-->
+
+(Blind-spot gaps: F-P2-01 Must-Fix/subtle = 2, ranked first; F-P5-02 Should-Fix/subtle = 1.)
 
 ## Intervention Menu — editor's discretion
 

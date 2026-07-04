@@ -1,6 +1,6 @@
 # Editor Scaffolding (operator mode)
 
-**Status:** v1 (Increment 1 + dual-output + per-pass)
+**Status:** v1 (Increment 1 + dual-output + per-pass + blind-spot ranking)
 **Trigger:** `operator:editor` flag from the intake router (Question 3 option E — "I'm editing someone else's work"), or any Core DE command carrying `operator:editor`.
 **Applies to:** the Core DE editorial letter (synthesis) and — via the `--per-pass` arm — an individual Core DE pass artifact (see §Per-pass scaffolding).
 **Does not change:** which passes run, what is diagnosed, or how severe a finding is. This is a presentation overlay, not a different analysis.
@@ -50,7 +50,7 @@ Scaffolding changes *framing and addressee*, never *severity or evidence*:
 | 2 | **Editor Brief** | replaces "The Short Version"; addressee = editor; names divergence zones |
 | 3 | What the Book Does Best | unchanged (still the protect-list basis) |
 | 4 | What Needs Work | unchanged; severity tokens kept |
-| 5 | **What You Might Have Missed** | new — blind-spot inventory |
+| 5 | **What You Might Have Missed** | new — blind-spot inventory; order by blind-spot gap (§Blind-spot ranking) |
 | 6 | **Intervention Menu — editor's discretion** | reframes "Revision Checklist" as option-classes |
 | 7 | Protected Elements | unchanged |
 | 8 | Author Decisions | unchanged headings; intro reframed ("surface with the author") |
@@ -71,6 +71,10 @@ Worked example: `references/example-editorial-letter-scaffolded.md`.
 - **W1** (advisory; ERROR under `--strict`) author-directed prescription in the body — modal ("you should rewrite") or a bare line-start imperative ("Add a scene…", "Cut the prologue"); intervention classes and Keep/Cut/Unsure labels are exempt (override `<!-- override: scaffolding-prescription — … -->`).
 
 Run it alongside `decision-layer-check`, `severity-floor`, and `softness-check` — they all still apply to a scaffolded letter. Design + ownership boundary: [`docs/editor-scaffolding.md`](../../../docs/editor-scaffolding.md).
+
+### Blind-spot ranking (opt-in)
+
+Order the "What You Might Have Missed" section by the **gap** between a finding's structural severity and its surface **salience** (how easy it is to miss), largest gap first — so a high-severity finding that a confident read *glides past* (masked by strong prose) leads, not the obvious ones the editor already caught. Declare the order with one `apodictic.blind_spot_ranking.v1` block per entry, **in display order**, each `{finding_id, severity, salience}` where `salience ∈ {prominent, moderate, subtle}` (mirror the optional `salience` field on `apodictic.finding.v1`). The E2/P2 sub-check then enforces, **only when blocks are present** (no blocks → unranked, still valid): **R1** each block schema-valid; **R2** descending-gap order (`gap = rank(severity) − rank(salience)`, Must-Fix/prominent = 3 … Could-Fix/subtle = 1; ties break by descending severity); **R3** (with `--ledger=<ledger.md>`) each `finding_id` exists in the ledger and its severity matches the locked tier (a laundered severity fails). The model owns severity *and* salience; the validator checks only the arithmetic + order. See [`docs/editor-scaffolding.md` §Blind-spot ranking](../../../docs/editor-scaffolding.md).
 
 ## Dual-output (editor ↔ author)
 
@@ -93,7 +97,7 @@ When an editor wants a **single pass** re-aimed at them — not the whole letter
 A pass is a single diagnostic lens, so the reframe is a right-sized subset of the letter's E1–E4 (and marker-conditional, exactly like the letter path — a pass artifact without `<!-- mode: editor-scaffolding -->` is an ordinary diagnostic artifact and passes as a no-op):
 
 - **P1** the marker is present **and** the pass carries a non-empty **Editor Note** — the editor addressee for this pass (what it surfaces + where the editor's read of this layer is likely to under-weight). A distinct heading from the letter's Editor Brief; a pass artifact is not the letter.
-- **P2** a non-empty **What You Might Have Missed** section — the per-pass value-add (not ranked; blind-spot ranking is deferred).
+- **P2** a non-empty **What You Might Have Missed** section — the per-pass value-add. Carries the **same opt-in blind-spot ranking** as the letter's E2 (§Blind-spot ranking above): if the section has `apodictic.blind_spot_ranking.v1` blocks they must be in descending-gap order; no blocks → unranked, still valid.
 - **W1** the same author-directed prescription scan as the letter path (advisory; ERROR under `--strict`; same override). A pass has no Revision Checklist to reframe into an Intervention Menu, so there is no positive per-pass E3, and severity honesty stays owned downstream (the pass flags are locked in the Findings Ledger by `softness-check` / `deficit-lock`) — so there is no mandatory per-pass severity token either (a Pass 0 reverse outline is legitimately severity-free).
 
 All three are evaluated over the **body** (before Appendix A), so an appendix section can't satisfy P1/P2 or hide a W1 leak. Worked example: `references/example-pass-scaffolded.md` (a scaffolded Pass 2 Structural Mapping artifact). See [`docs/editor-scaffolding.md` §Per-pass scaffolding](../../../docs/editor-scaffolding.md).

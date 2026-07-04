@@ -17,6 +17,11 @@ letter (e.g. in a batch gate) without false positives on author-facing runs.
 Checks (see docs/editor-scaffolding.md):
   E1  mode marker present AND a non-empty `## Editor Brief` (addressee = editor)
   E2  non-empty `## What You Might Have Missed` blind-spot section
+      + OPT-IN blind-spot ranking (R1/R2/R3) when the section carries apodictic:blind_spot_ranking
+        blocks: R1 each block schema-valid, R2 descending severity-vs-salience gap order
+        (gap = severity_rank - salience_rank, so a high-severity SUBTLE finding ranks first), R3 (with
+        a `--ledger=<ledger.md>` companion) each finding_id exists + its severity matches the locked
+        tier. No blocks -> unranked, passes E2 unchanged. The validator never assigns salience.
   E3  an `## Intervention Menu` heading (prescription deferred to the editor)
       override: <!-- override: scaffolding-checklist — <rationale> -->
   E4  >= 1 canonical severity token (Must-Fix/Should-Fix/Could-Fix) survives in the body
@@ -45,7 +50,8 @@ diagnostic artifact — reported as a no-op and exit 0):
       what the pass surfaces and where the editor's own read of this layer is likely to under-weight;
       a distinct heading from the letter's Editor Brief, since a pass artifact is not the letter).
   P2  a non-empty `## What You Might Have Missed` blind-spot section (the per-pass value-add; reuses
-      the E2 heading; NOT ranked — blind-spot ranking is a separate deferred increment).
+      the E2 heading) + the SAME OPT-IN blind-spot ranking (R1/R2/R3) as E2 when the section carries
+      apodictic:blind_spot_ranking blocks. No blocks -> unranked, passes P2 unchanged.
   W1  author-directed prescription leak (reused, advisory; ERROR under --strict) — same lexicon as
       the letter path. A pass carries no author-facing checklist to reframe into an Intervention
       Menu, so E3 has no positive per-pass analog and the prescription-deferral discipline IS this
@@ -55,9 +61,9 @@ diagnostic artifact — reported as a no-op and exit 0):
       letter's E4 — the per-pass path does NOT require a severity token. Same override:
       <!-- override: scaffolding-prescription — <rationale> -->.
 
-  editor_scaffolding.py editor-scaffolding <editorial_letter|run_folder> [--strict]
+  editor_scaffolding.py editor-scaffolding <editorial_letter|run_folder> [--strict] [--ledger=<ledger.md>]
   editor_scaffolding.py editor-scaffolding --dual <editor_letter> <author_letter> [--strict]
-  editor_scaffolding.py editor-scaffolding --per-pass <pass_artifact> [--strict]
+  editor_scaffolding.py editor-scaffolding --per-pass <pass_artifact> [--strict] [--ledger=<ledger.md>]
   editor_scaffolding.py --self-test
 
 Exit: 0 clean / WARN-only / not-in-mode, 1 on ERROR (or WARN under --strict), 2 usage.
@@ -68,6 +74,11 @@ import re
 import sys
 
 from override_marker import has_override, strip_code_spans
+
+try:
+    import apodictic_artifacts as art  # structured-block parsing + subset schema check (SSoT)
+except ImportError:  # degrade: without it the OPT-IN blind-spot ranking sub-check is skipped
+    art = None
 
 MODE_MARKER_RE = re.compile(r"<!--\s*mode:\s*editor-scaffolding\s*-->", re.IGNORECASE)
 SEVERITY_RE = re.compile(r"(?<![\w-])(Must-Fix|Should-Fix|Could-Fix)(?![\w-])")
@@ -93,6 +104,101 @@ _REVISION_CHECKLIST_PAT = "Revision Checklist"
 # D3 severity band ranking (descending). Purely mechanical — token match + rank, no prose read.
 _SEVERITY_RANK = {"must-fix": (3, "Must-Fix"), "should-fix": (2, "Should-Fix"),
                   "could-fix": (1, "Could-Fix")}
+
+# Blind-spot ranking (docs/editor-scaffolding.md §Blind-spot ranking). The "What You Might Have
+# Missed" section (letter E2 / per-pass P2) MAY carry an ordered list of apodictic:blind_spot_ranking
+# blocks — one per entry, IN DISPLAY ORDER — each duplicating the finding's severity and declaring its
+# surface salience. gap = severity_rank - salience_rank (Must-Fix/prominent=3 .. Could-Fix/subtle=1),
+# so a high-severity easy-to-miss (subtle) finding has the LARGEST gap and must rank FIRST. The
+# sub-check is OPT-IN (fires only when >=1 block is present) and MECHANICAL: the validator never
+# assigns salience or picks blind spots — it checks the declared ranking's arithmetic + order only.
+_BLIND_SPOT_RANK_SCHEMA = "apodictic.blind_spot_ranking.v1"
+_SALIENCE_RANK = {"prominent": 3, "moderate": 2, "subtle": 1}
+
+
+def _severity_gap_rank(token):
+    """Mechanical severity rank (Must-Fix=3 .. Could-Fix=1) or None for a non-canonical token."""
+    r = _SEVERITY_RANK.get(str(token).lower())
+    return r[0] if r else None
+
+
+def _ledger_inventory(ledger_text):
+    """{finding_id: severity} from a companion Findings Ledger's apodictic.finding.v1 blocks — the
+    authoritative severity set the ranking's R3 laundering guard cross-checks against."""
+    inv = {}
+    if not ledger_text or art is None:
+        return inv
+    for bt, obj, _err in art.parse_blocks(ledger_text):
+        if bt == "finding" and isinstance(obj, dict) and obj.get("id"):
+            inv[art.fid_key(obj["id"])] = obj.get("severity")
+    return inv
+
+
+def _ranking_check(scan_text, ledger_inv, label):
+    """Blind-spot ranking sub-check over `scan_text` (a letter/pass BODY). `label` is E2 or P2.
+    Returns (errors, ok_line_or_None). Fires ONLY when >=1 apodictic:blind_spot_ranking block is
+    present, so a scaffolded letter/pass with no blocks stays valid (unranked; backward-compatible).
+
+    R1  each block validates against apodictic.blind_spot_ranking.v1 (schema + closed keys).
+    R2  the blocks are in DESCENDING blind-spot-gap order (gap = severity_rank - salience_rank),
+        ties broken by descending severity then stable — a high-severity SUBTLE (easy-to-miss)
+        finding, the true blind spot, ranks first; an obvious (prominent) high-severity one lower.
+    R3  (only when a companion Findings Ledger is provided) each finding_id exists in the ledger and
+        its declared severity matches the locked tier — a laundered severity fails.
+
+    Mechanical throughout: no prose is read, and the validator never decides salience."""
+    if art is None:
+        return [], None  # cannot parse structured blocks — ranking not enforced (degraded)
+    entries = [(obj, jerr) for bt, obj, jerr in art.parse_blocks(scan_text)
+               if bt == "blind_spot_ranking"]
+    if not entries:
+        return [], None  # OPT-IN: no ranking block -> unranked, backward-compatible
+    errs = []
+    schema = art.load_schema(_BLIND_SPOT_RANK_SCHEMA)
+    keys, computable = [], True
+    for i, (obj, jerr) in enumerate(entries, 1):
+        where = "%s blind-spot ranking entry #%d" % (label, i)
+        if jerr:
+            errs.append("R1: %s — invalid JSON: %s" % (where, jerr))
+            computable = False
+            continue
+        if schema is None:
+            errs.append("R1: %s — schema %s unavailable" % (where, _BLIND_SPOT_RANK_SCHEMA))
+        else:
+            for e in art.validate_obj(obj, schema, where):
+                errs.append("R1: %s" % e)
+        fid = obj.get("finding_id") if isinstance(obj, dict) else None
+        sev = obj.get("severity") if isinstance(obj, dict) else None
+        sal = obj.get("salience") if isinstance(obj, dict) else None
+        sr = _severity_gap_rank(sev)
+        lr = _SALIENCE_RANK.get(str(sal).lower()) if sal is not None else None
+        if sr is None or lr is None:
+            computable = False  # a bad enum already errored via R1; skip the order arithmetic
+        else:
+            keys.append((fid, sr, sr - lr))
+        if ledger_inv is not None and fid:
+            fk = art.fid_key(fid)
+            if fk not in ledger_inv:
+                errs.append("R3: %s cites %s — not in the Findings Ledger" % (where, fid))
+            elif sev is not None and ledger_inv[fk] != sev:
+                errs.append("R3: %s declares severity %r but the Findings Ledger locks %s at %r "
+                            "(a laundered severity)" % (where, sev, fid, ledger_inv[fk]))
+    if computable and len(keys) >= 2:
+        for i in range(len(keys) - 1):
+            fid_a, sr_a, gap_a = keys[i]
+            fid_b, sr_b, gap_b = keys[i + 1]
+            # descending order <=> the sort key (-gap, -severity) is non-decreasing down the list.
+            if (-gap_a, -sr_a) > (-gap_b, -sr_b):
+                errs.append("R2: %s blind-spot entries are not in descending-gap order — %s "
+                            "(gap %d, severity rank %d) is ranked above %s (gap %d, severity rank "
+                            "%d), which has the larger blind-spot gap and must come first "
+                            "(gap = severity_rank - salience_rank; ties break by descending "
+                            "severity)." % (label, fid_a, gap_a, sr_a, fid_b, gap_b, sr_b))
+                break
+    if errs:
+        return errs, None
+    return [], ("  %s blind-spot ranking (%d entr%s, descending-gap order): OK"
+                % (label, len(entries), "y" if len(entries) == 1 else "ies"))
 
 
 def _top_severity_band(body_text):
@@ -188,8 +294,10 @@ def _section_nonempty(lines, pat):
     return False  # present but empty
 
 
-def check(letter_text, strict=False):
-    """Return (exit_code, report_lines)."""
+def check(letter_text, strict=False, ledger_text=None):
+    """Return (exit_code, report_lines). `ledger_text` (optional companion Findings Ledger) enables
+    the blind-spot ranking's R3 laundered-severity cross-check; without it the ranking's declared
+    severity is checked for internal consistency (schema + gap order) only."""
     lines = _lines(letter_text)
     out = []
 
@@ -224,6 +332,15 @@ def check(letter_text, strict=False):
         errors.append("E2: '%s' section is present but empty." % _BLIND_SPOT_PAT)
     else:
         out.append("  E2 blind-spot: OK")
+
+    # E2 blind-spot RANKING (OPT-IN) — if the blind-spot section carries apodictic:blind_spot_ranking
+    # blocks, enforce the declared severity-vs-salience gap ordering (+ ledger cross-check when a
+    # companion ledger is provided). Body-scoped, so an appendix-smuggled block is ignored. A letter
+    # WITHOUT the blocks stays unranked and passes E2 unchanged (backward-compatible).
+    r_errs, r_ok = _ranking_check(body, _ledger_inventory(ledger_text) if ledger_text else None, "E2")
+    errors.extend(r_errs)
+    if r_ok:
+        out.append(r_ok)
 
     # E3 — Intervention Menu (prescription deferred), or an explicit override.
     if _has_heading(body_lines, _INTERVENTION_PAT):
@@ -367,7 +484,7 @@ def run_dual(paths, strict=False):
     return check_dual(editor_text, author_text, strict=strict)
 
 
-def check_per_pass(pass_text, strict=False):
+def check_per_pass(pass_text, strict=False, ledger_text=None):
     """Per-pass contract: a Core DE PASS ARTIFACT (not the synthesis letter) that DECLARES the mode
     is reframed for the editor audience. Return (exit_code, report_lines). See the module docstring
     P1/P2 + reused W1.
@@ -413,6 +530,14 @@ def check_per_pass(pass_text, strict=False):
     else:
         out.append("  P2 blind-spot: OK")
 
+    # P2 blind-spot RANKING (OPT-IN) — same sub-check as the letter's E2, applied to the pass's
+    # blind-spot section: if apodictic:blind_spot_ranking blocks are present, enforce descending-gap
+    # order (+ ledger cross-check when a companion ledger is provided). No blocks -> unranked, passes.
+    r_errs, r_ok = _ranking_check(body, _ledger_inventory(ledger_text) if ledger_text else None, "P2")
+    errors.extend(r_errs)
+    if r_ok:
+        out.append(r_ok)
+
     # W1 (reused) — author-directed prescription leak (advisory; ERROR under --strict). Identical
     # lexicon + body scan to the single-file letter path: in scaffolding mode the prescription belongs
     # to the human editor, and a DIAGNOSTIC pass artifact carries no revision plan at all — so the
@@ -443,13 +568,14 @@ def check_per_pass(pass_text, strict=False):
     return 0, out
 
 
-def run_per_pass(paths, strict=False):
+def run_per_pass(paths, strict=False, ledger_path=None):
     if len(paths) != 1:
         return 2, ["editor-scaffolding --per-pass: need exactly one pass-artifact file"]
     text = _read(paths[0])
     if text is None:
         return 2, ["editor-scaffolding: cannot read %s" % paths[0]]
-    return check_per_pass(text, strict=strict)
+    ledger_text = _read(ledger_path) if ledger_path else None
+    return check_per_pass(text, strict=strict, ledger_text=ledger_text)
 
 
 def _newest(paths):
@@ -457,7 +583,7 @@ def _newest(paths):
     return max(paths, key=os.path.getmtime) if paths else None
 
 
-def run(paths, strict=False):
+def run(paths, strict=False, ledger_path=None):
     letter = None
     if len(paths) == 1 and os.path.isdir(paths[0]):
         for pat in _LETTER_GLOB:
@@ -472,7 +598,8 @@ def run(paths, strict=False):
     text = _read(letter)
     if text is None:
         return 2, ["editor-scaffolding: cannot read %s" % letter]
-    return check(text, strict=strict)
+    ledger_text = _read(ledger_path) if ledger_path else None
+    return check(text, strict=strict, ledger_text=ledger_text)
 
 
 # ---------------------------------------------------------------- self-test
@@ -487,9 +614,25 @@ def run_self_test():
 
     marker = "<!-- mode: editor-scaffolding -->"
 
+    def bsr(fid, sev, sal):
+        """One apodictic:blind_spot_ranking carrier block (a blind-spot entry)."""
+        return ('<!-- apodictic:blind_spot_ranking\n'
+                '{"schema":"apodictic.blind_spot_ranking.v1","finding_id":"%s",'
+                '"severity":"%s","salience":"%s"}\n-->' % (fid, sev, sal))
+
+    def ledger(*pairs):
+        """A minimal companion Findings Ledger carrying apodictic.finding.v1 blocks (id, severity)."""
+        s = ["## Findings Ledger\n"]
+        for fid, sev in pairs:
+            s.append('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"%s","mechanism":"m",'
+                     '"severity":"%s","confidence":"HIGH","evidence_refs":["c"],"fix_class":"x",'
+                     '"risk_if_fixed":"y"}\n-->\n' % (fid, sev))
+        return "".join(s)
+
     def letter(brief=True, blind=True, menu=True, severity=True, prescription=False, bare=False,
                brief_empty=False, blind_empty=False, mode=True,
-               menu_override=False, presc_override=False, sections_in_appendix=False):
+               menu_override=False, presc_override=False, sections_in_appendix=False,
+               ranking="", ranking_in_appendix=""):
         s = ["# Development Edit: Test\n"]
         if mode:
             s.append(marker + "\n")
@@ -505,6 +648,8 @@ def run_self_test():
         if blind:
             s.append("## What You Might Have Missed\n")
             s.append("" if blind_empty else "The prose polish in Part I masks a missing causal link (Ch. 3).\n")
+            if ranking:  # blind-spot ranking blocks, in display order, inside the body section
+                s.append(ranking + "\n")
         if menu:
             s.append("## Intervention Menu — editor's discretion\n- Option: compress the aftermath beats.\n")
         if bare:  # author-facing checklist leak — bare imperative at a list start, in the body
@@ -517,6 +662,8 @@ def run_self_test():
         s.append("You should add a scene here, then cut the prologue (appendix prose, not scanned).\n")
         if sections_in_appendix:
             s.append("### What You Might Have Missed\nblind-spot text smuggled into the appendix.\n")
+        if ranking_in_appendix:  # a ranking block under the appendix must be ignored (body-scoped)
+            s.append(ranking_in_appendix + "\n")
         return "".join(s)
 
     # No marker -> no-op pass.
@@ -727,7 +874,7 @@ def run_self_test():
     # ---- per-pass (--per-pass: a scaffolded PASS ARTIFACT, not the synthesis letter) ------------
     def pass_artifact(note=True, blind=True, severity=True, prescription=False, bare=False,
                       note_empty=False, blind_empty=False, mode=True, presc_override=False,
-                      sections_in_appendix=False):
+                      sections_in_appendix=False, ranking=""):
         """A Core DE pass artifact (e.g. Pass 2 Structural Mapping) reframed for the editor: an
         Editor Note addressee + a What-You-Might-Have-Missed blind-spot section, over the same W1
         firewall. Unlike the synthesis letter it carries NO Revision Checklist / Intervention Menu
@@ -749,6 +896,8 @@ def run_self_test():
             s.append("## What You Might Have Missed\n")
             s.append("" if blind_empty else
                      "The polished Part I prose masks a missing causal beat at the Ch. 9 turn (line 220).\n")
+            if ranking:  # blind-spot ranking blocks, in display order, inside the body section
+                s.append(ranking + "\n")
         if bare:  # author-facing checklist leak — bare imperative at a list start, in the body
             s.append("- Add a scene where the consequence lands.\n")
         if prescription:  # modal second-person leak, in the body
@@ -807,6 +956,80 @@ def run_self_test():
     code, _l = run_per_pass(["a.md", "b.md"])
     chk("pp_needs_one_file", code == 2)
 
+    # ---- blind-spot ranking (OPT-IN E2/P2 sub-check) --------------------------------------------
+    # Descending blind-spot-gap order (gap = severity_rank - salience_rank): a high-severity SUBTLE
+    # (easy-to-miss) finding ranks FIRST; an obvious high-severity one lower. The validator only
+    # checks the declared ranking's arithmetic + order — it never assigns salience.
+    if art is not None:  # ranking is enforced only when apodictic_artifacts is importable
+        ordered = "\n".join([bsr("F-P2-01", "Must-Fix", "subtle"),      # gap 3-1 = 2
+                             bsr("F-P8-02", "Should-Fix", "subtle")])   # gap 2-1 = 1
+        # correctly gap-ordered block on the LETTER (E2) -> clean, with the ranking OK line.
+        code, lines = check(letter(ranking=ordered))
+        chk("rank_letter_ordered_clean",
+            code == 0 and any("E2 blind-spot ranking" in l and "OK" in l for l in lines))
+        # a scaffolded letter with NO ranking block still passes E2 unranked (backward-compat).
+        code, lines = check(letter())
+        chk("rank_absent_backcompat",
+            code == 0 and not any("blind-spot ranking" in l for l in lines))
+        # MIS-ordered: an obvious Must-Fix (prominent, gap 0) ranked ABOVE a subtle Must-Fix (gap 2).
+        misordered = "\n".join([bsr("F-P2-09", "Must-Fix", "prominent"),  # gap 0
+                                bsr("F-P2-01", "Must-Fix", "subtle")])    # gap 2 -> must come first
+        code, lines = check(letter(ranking=misordered))
+        chk("rank_letter_misordered_errors",
+            code == 1 and any("R2:" in l and "descending-gap" in l for l in lines))
+        # a mis-ordered block SMUGGLED into the appendix is ignored (body-scoped) -> no ranking fires.
+        code, lines = check(letter(ranking_in_appendix=misordered))
+        chk("rank_appendix_block_ignored",
+            code == 0 and not any("blind-spot ranking" in l for l in lines))
+        # tie-break: equal gap (both gap 1) -> ties break by DESCENDING severity (Must-Fix before
+        # Should-Fix). Correct order clean; reversed -> R2 error.
+        tie_ok = "\n".join([bsr("F-P2-01", "Must-Fix", "moderate"),     # gap 1, sev 3
+                            bsr("F-P8-02", "Should-Fix", "subtle")])   # gap 1, sev 2
+        chk("rank_tie_severity_ok", check(letter(ranking=tie_ok))[0] == 0)
+        tie_bad = "\n".join([bsr("F-P8-02", "Should-Fix", "subtle"),    # gap 1, sev 2
+                            bsr("F-P2-01", "Must-Fix", "moderate")])   # gap 1, sev 3 -> should lead
+        code, lines = check(letter(ranking=tie_bad))
+        chk("rank_tie_severity_misordered_errors", code == 1 and any("R2:" in l for l in lines))
+        # a FULL tie (same gap AND same severity) is stable -> any order passes.
+        full_tie = "\n".join([bsr("F-P2-01", "Must-Fix", "subtle"),
+                             bsr("F-P2-02", "Must-Fix", "subtle")])
+        chk("rank_full_tie_stable_ok", check(letter(ranking=full_tie))[0] == 0)
+        # R1: a bad salience enum -> schema error (and the order arithmetic is skipped).
+        code, lines = check(letter(ranking=bsr("F-P2-01", "Must-Fix", "invisible")))
+        chk("rank_bad_salience_errors", code == 1 and any("R1:" in l for l in lines))
+        # R1: closed-key — an unknown field in a block is rejected (additionalProperties:false).
+        extra = ('<!-- apodictic:blind_spot_ranking\n{"schema":"apodictic.blind_spot_ranking.v1",'
+                 '"finding_id":"F-P2-01","severity":"Must-Fix","salience":"subtle","bogus":1}\n-->')
+        code, lines = check(letter(ranking=extra))
+        chk("rank_closed_key_rejects_unknown",
+            code == 1 and any("R1:" in l and "unknown field" in l for l in lines))
+        # R3: severity MISMATCH vs a provided companion ledger (a laundered severity) -> ERROR.
+        led_should = ledger(("F-P2-01", "Should-Fix"))
+        code, lines = check(letter(ranking=bsr("F-P2-01", "Must-Fix", "subtle")), ledger_text=led_should)
+        chk("rank_ledger_severity_mismatch_errors",
+            code == 1 and any("R3:" in l and "laundered" in l for l in lines))
+        # R3: matching severities across the block + ledger -> clean.
+        led_ok = ledger(("F-P2-01", "Must-Fix"), ("F-P8-02", "Should-Fix"))
+        chk("rank_ledger_severity_match_clean", check(letter(ranking=ordered), ledger_text=led_ok)[0] == 0)
+        # R3: a finding_id not in the provided ledger -> ERROR (dangling reference).
+        code, lines = check(letter(ranking=bsr("F-XX-99", "Must-Fix", "subtle")), ledger_text=led_ok)
+        chk("rank_ledger_dangling_id_errors",
+            code == 1 and any("R3:" in l and "not in the Findings Ledger" in l for l in lines))
+        # PER-PASS P2: the SAME ranking sub-check applies to a pass artifact's blind-spot section.
+        code, lines = check_per_pass(pass_artifact(ranking=ordered))
+        chk("rank_pass_ordered_clean",
+            code == 0 and any("P2 blind-spot ranking" in l and "OK" in l for l in lines))
+        code, lines = check_per_pass(pass_artifact(ranking=misordered))
+        chk("rank_pass_misordered_errors", code == 1 and any("R2:" in l for l in lines))
+        code, lines = check_per_pass(pass_artifact())  # no blocks -> unranked, passes P2
+        chk("rank_pass_absent_backcompat",
+            code == 0 and not any("blind-spot ranking" in l for l in lines))
+        # PER-PASS R3 laundering guard vs a provided ledger.
+        code, lines = check_per_pass(pass_artifact(ranking=bsr("F-P2-01", "Must-Fix", "subtle")),
+                                     ledger_text=led_should)
+        chk("rank_pass_ledger_mismatch_errors",
+            code == 1 and any("R3:" in l and "laundered" in l for l in lines))
+
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
 
@@ -818,18 +1041,25 @@ def main(argv):
     strict = "--strict" in args
     dual = "--dual" in args
     per_pass = "--per-pass" in args
+    # Optional companion Findings Ledger for the blind-spot ranking's R3 laundered-severity guard
+    # (single-file / per-pass arms only): `--ledger=<ledger.md>`.
+    ledger_path = None
+    for a in args:
+        if a.startswith("--ledger="):
+            ledger_path = a.split("=", 1)[1]
     paths = [a for a in args if not a.startswith("--")]
     if not paths:
         print("Usage: editor_scaffolding.py editor-scaffolding <editorial_letter|run_folder> "
-              "[--strict] | editor-scaffolding --dual <editor_letter> <author_letter> [--strict] "
-              "| editor-scaffolding --per-pass <pass_artifact> [--strict] | --self-test")
+              "[--strict] [--ledger=<ledger.md>] | editor-scaffolding --dual <editor_letter> "
+              "<author_letter> [--strict] | editor-scaffolding --per-pass <pass_artifact> [--strict] "
+              "[--ledger=<ledger.md>] | --self-test")
         return 2
     if dual:
         code, lines = run_dual(paths, strict=strict)
     elif per_pass:
-        code, lines = run_per_pass(paths, strict=strict)
+        code, lines = run_per_pass(paths, strict=strict, ledger_path=ledger_path)
     else:
-        code, lines = run(paths, strict=strict)
+        code, lines = run(paths, strict=strict, ledger_path=ledger_path)
     for ln in lines:
         print(ln)
     return code
