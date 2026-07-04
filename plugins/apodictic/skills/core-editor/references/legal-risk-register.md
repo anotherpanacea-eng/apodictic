@@ -79,6 +79,17 @@ A controlled vocabulary for `escalation_trigger` (recommended, not schema-enforc
 
 A few researched classes are deliberately **code-less** for now — *life rights / releases*, *breach of confidence* (non-contractual, UK/AU), and *religious-hatred / blasphemy* (non-US). Flag these under the nearest schema `risk_class` (usually `other` or `rights-clearance`) with a prose `escalation_trigger`; a dedicated code can be added later if they recur.
 
+## Auto-recommend
+
+The register attaches two ways. **Explicit-flag path:** the author sets `constraint:risk` at intake and the synthesis layer offers the register (offer-then-attach, `run-synthesis.md` §Constraint mode). **Content-detection path:** the model reads the manuscript for the memoir / real-people signals and **offers** the register even when `constraint:risk` was *not* set — the auto-recommend. This is **model-side detection, prompt/router-only** (no mechanical validator arm): the routing declaration lives in `intake-router-runtime.md` §3/§6 Table B and `pass-dependencies.md` §4a; the operative synthesis-time offer lives in `run-synthesis.md` §Content-detection auto-recommend. Both surfaces key on the *same* signals so detection guidance and routing agree.
+
+**Trigger — memoir / autofiction / nonfiction portraying identifiable real people.** A **mode signal** *plus* at least one **real-people content signal**:
+
+- **Mode signals:** first-person retrospective narration presented as the author's own lived experience (memoir); an autofictional author-surrogate, or an author's-note / framing that maps characters onto real people (autofiction); nonfiction that names or depicts identifiable living people (biography, reportage, personal essay; the `constraint:nonfiction` memoir / witness-led route).
+- **Real-people content signals** (any one, mapped to the §Detection guidance patterns): a reputational **statement of fact** about a named or role-identifiable **living** person (`defamation`); **intimate private facts** about an identifiable living **private** person (`privacy`); **changed-name fiction that stays recognizable** (`defamation`, `DEF_FICTION_IDENTIFIABLE`); quoted **lyrics / poetry / epigraphs / unpublished letters or diaries** or other substantial third-party copyrighted material (`rights-clearance`); an admitted **NDA / settlement / confidentiality** covering disclosed material (`NDA_DISCLOSES_COVERED`).
+
+**Offer, never auto-produce — the firewall is why.** Detection **offers** the register and runs the §Protocol only on the author's explicit accept; it never auto-writes the artifact and never adjudicates. The not-a-lawyer boundary is exactly what makes this an offer rather than a silent attach: flagging "this content *may* warrant legal review" is inside the firewall; producing a legal register the author never asked for, or concluding "not defamatory" / "fair use", is not. **False-positive guard:** purely invented fiction with no identifiable real-person mapping is not a trigger, and the §Detection guidance lower-exposure carve-outs (the dead, public figures in their public role, lawfully-public-record facts, a real person merely written *about* in expressive content) are not signals.
+
 ---
 
 ## Protocol
