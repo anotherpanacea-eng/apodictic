@@ -1,6 +1,6 @@
 {
   "$id": "apodictic.feedback_item.v1",
-  "$comment": "Source of truth for the apodictic:feedback_item block (Feedback Triage workflow). Validated by scripts/apodictic_artifacts.py (stdlib subset checker) via scripts/feedback_triage.py. `assessment` is whether APODICTIC's own analysis confirmed the external claim; `triage` is the disposition (kept orthogonal to the canonical Must-Fix/Should-Fix/Could-Fix severity scale on purpose). Closed-key (additionalProperties:false) enforced by the engine (Harness Contracts v2): all optional fields (conflicts_with, evidence_refs) are declared, so a misspelled field now fails. Declared closed in schemas/_coverage.json. See docs/feedback-triage.md.",
+  "$comment": "Source of truth for the apodictic:feedback_item block (Feedback Triage workflow). Validated by scripts/apodictic_artifacts.py (stdlib subset checker) via scripts/feedback_triage.py. `assessment` is whether APODICTIC's own analysis confirmed the external claim; `triage` is the disposition (kept orthogonal to the canonical Must-Fix/Should-Fix/Could-Fix severity scale on purpose). Closed-key (additionalProperties:false) enforced by the engine (Harness Contracts v2): all optional fields (conflicts_with, evidence_refs, maps_to) are declared, so a misspelled field now fails. Declared closed in schemas/_coverage.json. `maps_to` (Increment 2) is the structured finding-id link, cross-checked against the Findings Ledger by feedback-triage. See docs/feedback-triage.md.",
   "title": "APODICTIC feedback item (apodictic.feedback_item.v1)",
   "type": "object",
   "required": ["schema", "id", "source", "claim", "assessment", "triage", "disposition"],
@@ -14,6 +14,7 @@
     "triage": {"enum": ["act-now", "act-later", "monitor", "decline"]},
     "conflicts_with": {"type": "array", "items": {"type": "string"}},
     "evidence_refs": {"type": "array", "items": {"type": "string"}},
+    "maps_to": {"type": "string", "pattern": "^F-[A-Za-z0-9]+-[0-9]{2,}$", "$comment": "Optional (Feedback Triage Increment 2). A Finding Lifecycle ID (apodictic.finding.v1.id) this feedback item maps to in the Findings Ledger — the structured successor to the prose 'maps to F-…' link. Additive: a feedback item without it stays valid. feedback-triage cross-checks it against the ledger when one is supplied (E5 dangling maps_to = a phantom finding ref; W4 = a `validated` item carrying no maps_to). Same F-<ORIGIN>-<NN> pattern as the finding id it references."},
     "disposition": {"type": "string"}
   }
 }
