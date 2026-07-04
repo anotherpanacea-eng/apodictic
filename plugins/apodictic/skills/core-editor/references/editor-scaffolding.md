@@ -71,3 +71,15 @@ Worked example: `references/example-editorial-letter-scaffolded.md`.
 - **W1** (advisory; ERROR under `--strict`) author-directed prescription in the body — modal ("you should rewrite") or a bare line-start imperative ("Add a scene…", "Cut the prologue"); intervention classes and Keep/Cut/Unsure labels are exempt (override `<!-- override: scaffolding-prescription — … -->`).
 
 Run it alongside `decision-layer-check`, `severity-floor`, and `softness-check` — they all still apply to a scaffolded letter. Design + ownership boundary: [`docs/editor-scaffolding.md`](../../../docs/editor-scaffolding.md).
+
+## Dual-output (editor ↔ author)
+
+An editor who wants **both** letters — the scaffolded one to work from *and* the author-facing one to hand the author — runs one diagnosis into two letters and validates the pair with the same validator's two-file arm:
+
+`scripts/validate.sh editor-scaffolding --dual <editor_letter> <author_letter>`
+
+- **D1** the editor letter declares the mode and passes E1–E4.
+- **D2** the author letter is in **author register** — no editor marker, no Editor Brief / What You Might Have Missed / Intervention Menu, and it carries a **Revision Checklist** heading. (The framework never authors the checklist *content* — D2 only checks register; the Firewall holds.)
+- **D3** the highest severity band (Must-Fix > Should-Fix > Could-Fix) matches across both letters — the verdict class can't soften on either side.
+
+Worked pair: `references/example-editorial-letter-scaffolded.md` (editor) + `references/example-editorial-letter-dual-author.md` (author). See [`docs/editor-scaffolding.md` §Dual-output](../../../docs/editor-scaffolding.md).
