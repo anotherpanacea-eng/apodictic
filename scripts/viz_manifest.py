@@ -26,16 +26,18 @@ draws it. The validator owns manifest<->source provenance:
                          Advisory.
   W1 coverage            a Timeline row not represented in scenes[] (silent under-render). Advisory.
 
-Manuscript-Visualization Completion (charts 4-7) extends this same manifest<->source contract. Three
+Manuscript-Visualization Completion (charts 4-7) extends this same manifest<->source contract. Four
 render deliverables exist today: chart 7-nonfiction — the CLAIM LADDER over apodictic.argument_spine.v1
 (C0 thesis + C1..Cn subclaims) annotated with support coverage from apodictic.support_plan.v1; chart 5 —
 the CHARACTER CO-PRESENCE NETWORK over the apodictic.scene_roster.v1 producer (per-scene cast; the
-Timeline carries POV only, not a full roster); and chart 6 — the SCENE-FUNCTION HEATMAP over the
+Timeline carries POV only, not a full roster); chart 6 — the SCENE-FUNCTION HEATMAP over the
 apodictic.scene_function.v1 producer (per-scene structural function from the scene-turn audit's Step-1
-Unit Classification: scene | sequel | hybrid | non-unit). The manifest gains four OPTIONAL, additive
-arrays (co_presence / scene_functions / reveal_points / claim_ladder); claim_ladder + co_presence +
-scene_functions are rendered (reveal_points is still producer-gated — apodictic.tension_point.v1 does
-not exist yet, so its array stays absent and the gate skips it):
+Unit Classification: scene | sequel | hybrid | non-unit); and chart 4 — the REVEAL-ECONOMY / TENSION
+TIMELINE over the apodictic.tension_point.v1 producer (per-scene reader tension on the reader-dynamics
+Pass-1 1-5 intensity scale — the Pacing Heat Map's "intensity level (1-5 scale derived from Pass 1
+emotional tracking)"). The manifest gains four OPTIONAL, additive arrays (co_presence / scene_functions /
+reveal_points / claim_ladder); all four are now rendered (each over a resolvable producer — the last
+producer-gated chart, 7-fiction's beat-map, has no manifest array here and waits on apodictic.story_spine.v1):
 
   X1 new-array schema    each present co_presence/scene_functions/reveal_points/claim_ladder element
                          is a well-formed object with ONLY its allowlisted keys (a visual-style key
@@ -64,6 +66,14 @@ not exist yet, so its array stays absent and the gate skips it):
                          non-empty (a line-range anchor must overlap the scene's Timeline line-range).
                          The function READING is producer/author-enforced — the gate enforces
                          enum + anchor + provenance closure, NOT the semantic reading.
+  X4 tension provenance  every reveal_points[].scene_id matches a tension_point.v1 producer entry AND
+                         resolves to a Timeline Event-Ledger row; the manifest tension is byte-equal to
+                         the producer's level; in the producer, every tension is in the closed 1-5
+                         reader-intensity enum and every anchor is non-empty (a line-range anchor must
+                         overlap the scene's Timeline line-range). The tension READING is producer/
+                         author-enforced — the gate enforces enum + anchor + provenance closure, NOT
+                         the semantic reading. Tension points are keyed directly on scene_id (per-scene,
+                         like scene_function) — NO evidence_ref -> scene_id resolution is needed here.
   X2 co-presence prov    every co_presence[].scene_id matches a scene_roster.v1 roster entry AND
                          resolves to a Timeline Event-Ledger row; every name in
                          co_presence[].characters is in that scene's roster (canonical) names; the
@@ -76,13 +86,15 @@ not exist yet, so its array stays absent and the gate skips it):
                          claim_ladder: a resolvable argument_spine.v1 block, plus the support_plan.v1
                          blocks for any non-empty support[]; for co_presence: a resolvable
                          scene_roster.v1 block; for scene_functions: a resolvable scene_function.v1
-                         block). Absent array -> skipped, not failed.
+                         block; for reveal_points: a resolvable tension_point.v1 block). Absent array
+                         -> skipped, not failed.
   W3 chart coverage      a producer artifact is present but its corresponding array is empty/absent
                          (silent under-rendering). Advisory, ERROR under --strict.
 
-(X4 — reveal/tension provenance — is reserved for the still-producer-gated chart 4; its
-apodictic.tension_point.v1 producer does not exist yet, so that gate is not implemented. X2 backs chart
-5 and X3 backs chart 6 — their scene_roster.v1 / scene_function.v1 producers DO exist.)
+(All four manifest arrays now have a resolvable producer: X2 backs chart 5 (scene_roster.v1), X3 backs
+chart 6 (scene_function.v1), X4 backs chart 4 (tension_point.v1), and X5/X6 back chart 7-nonfiction
+(argument_spine.v1 + support_plan.v1). The one still-producer-gated chart is 7-fiction's beat-map, whose
+apodictic.story_spine.v1 producer does not exist yet — it has no manifest array here.)
 
 The severity->encoding map is HARDCODED in the renderer, never read from the manifest, so a run
 cannot recolor a Must-Fix to comfort, and a Must-Fix marker is always drawn at full salience (its
@@ -135,18 +147,20 @@ _SCHEMA_ID = "apodictic.viz_manifest.v1"
 _FINDING_SCHEMA_ID = "apodictic.finding.v1"
 _ROSTER_SCHEMA_ID = "apodictic.scene_roster.v1"   # chart 5 producer (per-scene cast)
 _SFUNC_SCHEMA_ID = "apodictic.scene_function.v1"  # chart 6 producer (per-scene structural function)
+_TENSION_SCHEMA_ID = "apodictic.tension_point.v1" # chart 4 producer (per-scene reader tension)
 _MANIFEST_GLOB = "*_Structure_Map_*.md"
 _TIMELINE_GLOBS = ("*_Timeline_*.md", "Timeline.md")
 _LEDGER_GLOB = "*_Findings_Ledger_*.md"
 _SPINE_GLOB = "Argument_State*.md"   # chart 7-nonfiction source (the seeded pre-draft Argument_State)
 _ROSTER_GLOB = "*Scene_Roster*.md"   # chart 5 producer source (the per-scene cast roster)
 _SFUNC_GLOB = "*Scene_Function*.md"  # chart 6 producer source (the per-scene function classification)
+_TENSION_GLOB = "*Tension*.md"       # chart 4 producer source (the per-scene tension-point scores)
 
 # The manifest is style-free: these are the ONLY keys each object may carry (E1 allowlist).
 _SCENE_KEYS = ("scene_id", "chapter", "line_range", "word_count", "pov", "span", "gap")
 _FINDING_KEYS = ("id", "severity", "confidence", "chapter")
-# Charts 4-7 (Manuscript-Visualization Completion) — four OPTIONAL additive arrays. M1 renders only
-# claim_ladder; the other three are producer-gated (their producers do not exist yet). The closed
+# Charts 4-7 (Manuscript-Visualization Completion) — four OPTIONAL additive arrays, now all rendered
+# over a resolvable producer (claim_ladder / co_presence / scene_functions / reveal_points). The closed
 # allowlists are the X1 firewall: claim_ladder[] admits NO scene_ids/scene_id/section key (the
 # claim-to-scene map has no producer and cannot be smuggled in); support[] items admit only the two
 # support_plan.v1 fields the manifest copies verbatim.
@@ -154,7 +168,9 @@ _CO_PRESENCE_KEYS = ("scene_id", "characters")
 # chart 6 — the manifest scene_functions[] carries a bare {scene_id, function}; the auditable `anchor`
 # richness lives in the scene_function.v1 PRODUCER (the same manifest/producer split as co_presence).
 _SCENE_FUNCTION_KEYS = ("scene_id", "function")
-_REVEAL_POINT_KEYS = ("scene_id", "tension", "reveal_id")
+# chart 4 — the manifest reveal_points[] carries a bare {scene_id, tension}; the auditable `anchor`
+# richness lives in the tension_point.v1 PRODUCER (the same manifest/producer split as scene_functions).
+_REVEAL_POINT_KEYS = ("scene_id", "tension")
 _CLAIM_LADDER_KEYS = ("claim_id", "label", "support")
 _SUPPORT_ITEM_KEYS = ("support_type", "status")
 # scene_roster.v1 producer — the nested objects the subset engine cannot recurse into (validated in
@@ -170,6 +186,13 @@ _ALIAS_KEYS = ("surface", "canonical")
 # enum (craft/scene-turn.md §Step 1): scene | sequel | hybrid | non-unit.
 _FUNCTION_ENTRY_KEYS = ("scene_id", "function", "anchor")
 _SCENE_FUNCTION_ENUM = ("scene", "sequel", "hybrid", "non-unit")
+# tension_point.v1 producer — the nested points[] objects (validated in tension_points_producer()
+# below). Each carries a REQUIRED non-empty `anchor` (the accountability mechanism for the
+# author-enforced tension reading) and a `tension` from the CLOSED reader-dynamics Pass-1 1-5 intensity
+# scale — the Pacing Heat Map's "intensity level (1-5 scale derived from Pass 1 emotional tracking)"
+# (run-full.md §Component 1 / run-core.md §Pass 1): 1 (flat) .. 5 (peak), monotone ordinal.
+_TENSION_ENTRY_KEYS = ("scene_id", "tension", "anchor")
+_TENSION_ENUM = ("1", "2", "3", "4", "5")
 # The support_plan.v1 enums the manifest copies verbatim (X1 value-allowlist on support[] items).
 _SUPPORT_TYPE_ENUM = ("REASON", "EXAMPLE", "DATA", "AUTHORITY", "EXPERIENCE")
 _SUPPORT_STATUS_ENUM = ("in-hand", "to-acquire")
@@ -538,6 +561,98 @@ def scene_functions_producer(sfunc_text):
     return out
 
 
+def tension_points_producer(tension_text):
+    """The chart-4 PRODUCER source — the apodictic.tension_point.v1 per-scene reader tension (parsed-block
+    path, no second parser). ONE block per manuscript. Returns a dict the X4 gate + the renderer read:
+
+      {
+        "present":   bool,                      # a valid tension_point.v1 block resolved
+        "project":   str|None,
+        "tensions":  {scene_id: tension},       # scene_id -> the closed 1-5 reader-intensity token
+        "anchors":   {scene_id: anchor},        # the audit locus per scene
+        "obj_errs":  [str, ...],                # nested-object schema errors (tension-in-enum,
+                                                #   anchor non-empty, closed allowlist, dup scene_id)
+      }
+
+    The `tension` token is the reader-dynamics Pass 1 (Reader Experience) intensity level, on the closed
+    ordinal 1-5 scale — the Pacing Heat Map's "intensity level (1-5 scale derived from Pass 1 emotional
+    tracking)" (run-full.md §Component 1 / run-core.md §Pass 1), copied verbatim. Producer-/author-
+    enforced: this records the author's tension reading, made auditable by the required non-empty
+    `anchor`. The X4 gate enforces tension-in-enum + anchor-non-empty + provenance closure (scene_id ->
+    Timeline row), NOT the semantic reading (the scene_function.v1 author-enforced precedent). Tension
+    points are keyed directly on scene_id (per-scene) — NO evidence_ref -> scene_id resolution here."""
+    out = {"present": False, "project": None, "tensions": {}, "anchors": {}, "obj_errs": []}
+    if not tension_text or art is None:
+        return out
+    schema = art.load_schema(_TENSION_SCHEMA_ID)
+    obj = None
+    for bt, o, jerr in art.parse_blocks(tension_text):
+        if bt != "tension_point":
+            continue
+        if jerr:
+            out["obj_errs"].append("X4 tension provenance: tension_point block — invalid JSON — %s" % jerr)
+            return out
+        obj = o
+        break
+    if not isinstance(obj, dict):
+        return out
+    for e in art.validate_obj(obj, schema, "tension_point"):
+        out["obj_errs"].append("X4 tension provenance: tension_point — %s" % e)
+    # If the wrapper schema rejected the block (wrong const / missing points / stray top key), it is not a
+    # usable producer — surface the errors but do not pretend it is present.
+    if out["obj_errs"]:
+        return out
+    out["present"] = True
+    out["project"] = obj.get("project")
+
+    # points[] — {scene_id, tension, anchor}. Closed allowlist; tension in the closed 1-5 enum; anchor
+    # REQUIRED non-empty.
+    points = obj.get("points") or []
+    if not isinstance(points, list):
+        out["obj_errs"].append("X4 tension provenance: tension_point.points must be an array")
+        points = []
+    for i, p in enumerate(points):
+        where = "tension_point.points[%d]" % i
+        if not isinstance(p, dict):
+            out["obj_errs"].append("X4 tension provenance: %s must be an object" % where)
+            continue
+        for k in _TENSION_ENTRY_KEYS:
+            if k not in p:
+                out["obj_errs"].append("X4 tension provenance: %s missing required field '%s'" % (where, k))
+        for k in p:
+            if k not in _TENSION_ENTRY_KEYS:
+                out["obj_errs"].append("X4 tension provenance: %s has disallowed field '%s' "
+                                       "(a tension entry is only {scene_id, tension, anchor})" % (where, k))
+        sid = p.get("scene_id")
+        tn = p.get("tension")
+        anc = p.get("anchor")
+        if not isinstance(sid, str) or not sid.strip():
+            out["obj_errs"].append("X4 tension provenance: %s.scene_id must be a non-empty string" % where)
+            continue
+        sid = sid.strip()
+        # X4(b) — tension must be a member of the closed 1-5 reader-intensity enum. A value outside it is
+        # an invented level (the firewall's whole point — the render draws only the author's score).
+        if tn not in _TENSION_ENUM:
+            out["obj_errs"].append("X4 tension provenance: %s.tension=%r is not in the reader-intensity "
+                                   "1-5 scale %s" % (where, tn, list(_TENSION_ENUM)))
+        # X4(d) — the anchor is the accountability mechanism for the author-enforced tension reading: it
+        # MUST be present and non-empty (a Timeline-relative line-range or on-page quote). An empty anchor
+        # is a free score — the firewall's whole point.
+        if not isinstance(anc, str) or not anc.strip():
+            out["obj_errs"].append("X4 tension provenance: %s.anchor must be a non-empty string "
+                                   "(the tension reading is author-enforced and made auditable by the "
+                                   "anchor — a line-range or on-page quote; an empty anchor is a free "
+                                   "assertion)" % where)
+        # A repeated scene_id in the producer would silently overwrite a score — flag it (X7-style).
+        if sid in out["tensions"]:
+            out["obj_errs"].append("X4 tension provenance: %s.scene_id %r appears more than once in "
+                                   "the producer (each scene has exactly one tension point)" % (where, sid))
+            continue
+        out["tensions"][sid] = tn if isinstance(tn, str) else ""
+        out["anchors"][sid] = anc if isinstance(anc, str) else ""
+    return out
+
+
 def chapter_of(obj):
     """Conservative chapter bin from a finding's evidence_refs: 'Ch N' or the literal 'unplaced'.
 
@@ -898,8 +1013,86 @@ def _check_scene_functions(items, sfunc, rows):
     return errs
 
 
+def _check_reveal_points(items, tension, rows):
+    """X1/X4/X7/X8 for the reveal_points[] array (chart 4). `items` is the manifest's reveal_points list
+    (each {scene_id, tension}); `tension` is tension_points_producer()'s source; `rows` is the Timeline
+    rows index (scene_id -> {line_range, ...}). Returns errs.
+
+    The manifest carries a BARE {scene_id, tension}; the auditable `anchor` richness lives in the producer
+    (the same split as scene_functions). X4 byte-checks the manifest tension is EQUAL to the producer's
+    level for that scene_id, that every scene_id resolves to a producer entry AND a Timeline row, and (via
+    the producer's obj_errs) that every tension is in the closed 1-5 reader-intensity enum and every anchor
+    is non-empty. The author-enforced tension READING itself is producer-/author-enforced; the gate polices
+    provenance + anchor + enum, never the prose. Tension points are keyed directly on scene_id (per-scene)
+    — NO evidence_ref -> scene_id resolution is done here (the evidence_ref overlay is out of scope)."""
+    errs = []
+    if not isinstance(items, list):
+        errs.append("X1 new-array schema: reveal_points must be an array")
+        return errs
+    if not items:
+        return errs
+    # X8 — producer-present: a reveal_points array can exist ONLY if its tension_point.v1 producer
+    # resolves (the firewall's teeth — no producer, nothing to byte-check against).
+    if not tension.get("present"):
+        errs.append("X8 producer-present: reveal_points[] is present but no resolvable "
+                    "apodictic.tension_point.v1 producer was found to byte-check it against "
+                    "(render-what-you-produce: the producer must exist)")
+        # Still surface any nested-object errors from a malformed producer (more actionable than X8 alone).
+        errs += tension.get("obj_errs") or []
+        return errs
+    # X4(b/d) + nested-object schema — tension-in-enum / anchor-non-empty / closed allowlist / dup, from
+    # the producer.
+    errs += tension.get("obj_errs") or []
+    # X1 — per-object allowlist on the manifest array (a visual-style / extra key fails).
+    errs += _check_objects(items, "reveal_points", _REVEAL_POINT_KEYS, ("scene_id", "tension"),
+                           gate="X1 new-array schema")
+    # X7 — a scene_id appears at most once in reveal_points (a repeat double-plots its timeline point).
+    errs += _dup_errs([it for it in items if isinstance(it, dict)], "scene_id", "scene_id",
+                      gate="X7 duplicate entry")
+    prod_tensions = tension.get("tensions") or {}   # scene_id -> tension token (producer)
+    prod_anchors = tension.get("anchors") or {}
+    for i, it in enumerate(items):
+        if not isinstance(it, dict):
+            continue
+        where = "reveal_points[%d]" % i
+        sid = it.get("scene_id")
+        sid_key = art.fid_key(sid)
+        in_prod = isinstance(sid, str) and sid in prod_tensions
+        in_timeline = sid_key in rows
+        # X4(a) — scene_id must match a producer score AND resolve to a Timeline Event-Ledger row.
+        if not in_prod:
+            errs.append("X4 tension provenance: %s.scene_id=%r matches no apodictic.tension_point.v1 "
+                        "tension point (the manifest must copy a scene the producer scored)" % (where, sid))
+        if not in_timeline:
+            errs.append("X4 tension provenance: %s.scene_id=%r resolves to no Timeline Event-Ledger "
+                        "row (a tension-point scene must be a real Timeline scene)" % (where, sid))
+        if not in_prod:
+            continue
+        # X4(c) — the manifest tension must be byte-equal to the producer's level (verbatim copy; not a
+        # computed or relabelled score — the same E4/X6 no-orphan-datum discipline).
+        mtn = it.get("tension")
+        ptn = prod_tensions.get(sid)
+        if mtn != ptn:
+            errs.append("X4 tension provenance: %s.tension=%r != the apodictic.tension_point.v1 level %r "
+                        "for scene %r (the manifest must copy the producer verbatim)"
+                        % (where, mtn, ptn, sid))
+        # X4(e) — line-range anchor bounding (a PARTIAL tightening of anchor-truthfulness, mirroring the
+        # scene-function X3(e)). When the producer anchor is line-range-shaped ("lines N-M …"), assert N-M
+        # overlaps the scene's Timeline line-range — an anchor pointing OUTSIDE the scene cannot witness
+        # its tension. A QUOTE-form anchor (no leading line range) is SKIPPED silently.
+        if in_timeline:
+            scene_lr = _parse_line_range((rows.get(sid_key) or {}).get("line_range", ""))
+            anc_lr = _parse_line_range(prod_anchors.get(sid, ""))
+            if anc_lr is not None and scene_lr is not None and not _ranges_overlap(anc_lr, scene_lr):
+                errs.append("X4 tension provenance: scene %r anchor lines %d-%d fall outside its "
+                            "Timeline line-range %d-%d (a line-range anchor must witness the tension "
+                            "WITHIN the scene — quote-form anchors are not bounded)"
+                            % (sid, anc_lr[0], anc_lr[1], scene_lr[0], scene_lr[1]))
+    return errs
+
+
 def check(manifest_text, timeline_text, ledger_text, spine_text=None, roster_text=None,
-          scene_function_text=None, strict=False, require_block=False):
+          scene_function_text=None, tension_point_text=None, strict=False, require_block=False):
     """Run the manifest<->source provenance checks. Returns (code, lines)."""
     lines, errs, warns = [], [], []
     obj, schema_errs = parse_manifest(manifest_text)
@@ -999,13 +1192,15 @@ def check(manifest_text, timeline_text, ledger_text, spine_text=None, roster_tex
                      "[%s] — the pacing curve's shape must come from the Timeline, not the manifest"
                      % (_fmt(mf_order), _fmt(tl_subset)))
 
-    # ---- Manuscript-Visualization Completion (charts 4-7): X1/X2/X5/X6/X7/X8 + W3 ----
-    # The four arrays are OPTIONAL and additive. Two are rendered: chart 7-nonfiction (claim_ladder,
-    # producer apodictic.argument_spine.v1 + support_plan.v1) and chart 5 (co_presence, producer
-    # apodictic.scene_roster.v1). The other two stay producer-gated — their producers (scene_function /
-    # tension_point) do not exist yet, so a PRESENT array for them fails X8 (you cannot ship a chart
-    # array without the producer to byte-check it against). Absent arrays are skipped (a partial map
-    # is legitimate — the same posture as W1 coverage).
+    # ---- Manuscript-Visualization Completion (charts 4-7): X1/X2/X3/X4/X5/X6/X7/X8 + W3 ----
+    # The four arrays are OPTIONAL and additive, and all four are now rendered over a resolvable producer:
+    # chart 7-nonfiction (claim_ladder, producer apodictic.argument_spine.v1 + support_plan.v1), chart 5
+    # (co_presence, producer apodictic.scene_roster.v1), chart 6 (scene_functions, producer
+    # apodictic.scene_function.v1), and chart 4 (reveal_points, producer apodictic.tension_point.v1). A
+    # PRESENT array whose producer does not resolve fails X8 (you cannot ship a chart array without the
+    # producer to byte-check it against). Absent arrays are skipped (a partial map is legitimate — the
+    # same posture as W1 coverage). The one still-producer-gated chart, 7-fiction's beat-map, has no
+    # manifest array here and waits on apodictic.story_spine.v1.
     ladder = spine_ladder(spine_text)
     claim_ladder = obj.get("claim_ladder")
     if claim_ladder is not None:
@@ -1021,18 +1216,18 @@ def check(manifest_text, timeline_text, ledger_text, spine_text=None, roster_tex
     scene_functions = obj.get("scene_functions")
     if scene_functions is not None:
         errs += _check_scene_functions(scene_functions, sfunc, rows)
-    # X8 — the ONE still-producer-gated array (reveal_points) has no producer yet, so a present array is a
-    # hard fail. (scene_functions now has apodictic.scene_function.v1 — wired above; co_presence has
-    # scene_roster.v1; claim_ladder has argument_spine.v1.)
-    for arr_key, prod in (("reveal_points", "apodictic.tension_point.v1"),):
-        arr = obj.get(arr_key)
-        if arr:   # present and non-empty
-            errs.append("X8 producer-present: %s[] is present but its producer (%s) does not exist "
-                        "yet — this chart is producer-gated and cannot be rendered render-first "
-                        "(doing so would fabricate data)" % (arr_key, prod))
+    # Chart 4 — reveal_points byte-checked against the tension_point.v1 producer + the Timeline
+    # (X1/X4/X7/X8). The producer scores each Timeline scene on the closed 1-5 reader-intensity scale.
+    tension = tension_points_producer(tension_point_text)
+    reveal_points = obj.get("reveal_points")
+    if reveal_points is not None:
+        errs += _check_reveal_points(reveal_points, tension, rows)
+    # (All four manifest arrays now have a producer wired above — there is no longer a producer-gated
+    # hard-fail array. 7-fiction's beat-map has no manifest array here, so nothing to gate.)
     # W3 — chart coverage: a producer is present but its array is empty/absent — the data exists but
     # the chart was silently dropped. Advisory. (claim ladder: argument_spine.v1 with subclaims;
-    # co-presence: scene_roster.v1 with rostered scenes; scene-function: scene_function.v1 with classes.)
+    # co-presence: scene_roster.v1 with rostered scenes; scene-function: scene_function.v1 with classes;
+    # tension: tension_point.v1 with scored scenes.)
     if ladder.get("present") and ladder.get("ids") and not claim_ladder:
         warns.append("W3 chart coverage: an apodictic.argument_spine.v1 with %d declared subclaim(s) "
                      "is present but claim_ladder[] is empty/absent — the claim ladder is renderable "
@@ -1045,13 +1240,18 @@ def check(manifest_text, timeline_text, ledger_text, spine_text=None, roster_tex
         warns.append("W3 chart coverage: an apodictic.scene_function.v1 with %d classified scene(s) is "
                      "present but scene_functions[] is empty/absent — the scene-function heatmap is "
                      "renderable but was dropped (silent under-rendering)" % len(sfunc.get("functions")))
+    if tension.get("present") and tension.get("tensions") and not reveal_points:
+        warns.append("W3 chart coverage: an apodictic.tension_point.v1 with %d scored scene(s) is "
+                     "present but reveal_points[] is empty/absent — the tension timeline is renderable "
+                     "but was dropped (silent under-rendering)" % len(tension.get("tensions")))
 
     # Report
-    lines.append("manuscript-viz: %s — %d scene(s), %d finding(s)%s%s%s%s"
+    lines.append("manuscript-viz: %s — %d scene(s), %d finding(s)%s%s%s%s%s"
                  % (obj.get("project", "?"), len(scenes), len(findings),
                     ", %d claim rung(s)" % len(claim_ladder) if claim_ladder else "",
                     ", %d co-presence scene(s)" % len(co_presence) if co_presence else "",
                     ", %d scene-function scene(s)" % len(scene_functions) if scene_functions else "",
+                    ", %d tension point(s)" % len(reveal_points) if reveal_points else "",
                     " [partial]" if obj.get("partial") else ""))
     for e in errs:
         lines.append("  ERROR: %s" % e)
@@ -1065,7 +1265,7 @@ def check(manifest_text, timeline_text, ledger_text, spine_text=None, roster_tex
     if warns:
         lines.append("WARN: manuscript-viz: %d advisory flag(s) — see W1/W2/W3 above" % len(warns))
     else:
-        lines.append("manuscript-viz: PASS (manifest<->source provenance: schema + closure + Must-Fix + verbatim copy + uniqueness + claim-ladder + co-presence + scene-function)")
+        lines.append("manuscript-viz: PASS (manifest<->source provenance: schema + closure + Must-Fix + verbatim copy + uniqueness + claim-ladder + co-presence + scene-function + tension)")
     return 0, lines
 
 
@@ -1296,8 +1496,79 @@ def _scene_function_svg(grid, width=680):
     return '<svg width="%d" height="%d" role="img">%s</svg>' % (width, height, "".join(out))
 
 
+# Hardcoded tension-level -> y-position band (renderer-owned; the manifest never carries style — the same
+# discipline as _SEV_ENCODING / _SCENE_FUNCTION_ENCODING). The tension token is the author's 1-5
+# reader-intensity score, copied verbatim; the render maps it MECHANICALLY onto the y-axis (level 1 at the
+# baseline, level 5 at the top), never read from the manifest. The scale bounds are the closed enum's.
+_TENSION_LEVEL_LO, _TENSION_LEVEL_HI = 1, 5
+
+
+def tension_timeline(reveal_points):
+    """Mechanically derive [(scene_id, level_int), ...] from the manifest's reveal_points[] (already
+    X4-byte-checked), preserving manifest order (= Timeline order after the gate). No judgement: one point
+    per scene, its single declared tension level. A tension outside the closed 1-5 scale is dropped from
+    the series (the gate already failed it — the render never invents a level)."""
+    series = []
+    for entry in reveal_points or []:
+        if not isinstance(entry, dict):
+            continue
+        sid = entry.get("scene_id")
+        tn = entry.get("tension")
+        if isinstance(sid, str) and sid and tn in _TENSION_ENUM:
+            series.append((sid, int(tn)))
+    return series
+
+
+def _tension_timeline_svg(series, width=680):
+    """Chart 4 — the reveal-economy / tension timeline. DETERMINISTIC line chart: tension level (the
+    reader-dynamics 1-5 intensity scale) on the y-axis over scene order on the x-axis; a polyline through
+    the scored scenes with a marker + level label at each, and 1..5 gridlines. Single-file inline SVG; no
+    network, no model, no time/random. `series` comes from tension_timeline (computed mechanically from the
+    byte-checked levels); the level->y-position map is hardcoded here, never read from the manifest."""
+    if not series:
+        return ('<svg width="%d" height="60" role="img"><text x="0" y="30" fill="#7A7560">'
+                'no tension data</text></svg>' % width)
+    pad_l, pad_r, pad_t, pad_b = 44, 20, 26, 58
+    height = 260
+    plot_w = width - pad_l - pad_r
+    plot_h = height - pad_t - pad_b
+    lo, hi = _TENSION_LEVEL_LO, _TENSION_LEVEL_HI
+    n = len(series)
+
+    def yfor(level):
+        return pad_t + plot_h * (hi - level) / float(hi - lo)
+
+    def xfor(i):
+        # Centre each scene in its own slot so the first/last points aren't on the axes.
+        return pad_l + plot_w * (i + 0.5) / n
+
+    out = []
+    # Horizontal gridlines + y-axis level labels (1..5 — the closed reader-intensity scale).
+    for level in range(lo, hi + 1):
+        y = yfor(level)
+        out.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#E0D8BE" stroke-width="0.5"/>'
+                   % (pad_l, y, width - pad_r, y))
+        out.append('<text x="%.1f" y="%.1f" font-size="9" fill="#9E9680" text-anchor="end">%d</text>'
+                   % (pad_l - 6, y + 3, level))
+    # x-axis baseline (at level 1).
+    out.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#D1C8AC"/>'
+               % (pad_l, yfor(lo), width - pad_r, yfor(lo)))
+    # The tension polyline through the points, in scene order.
+    pts = " ".join("%.1f,%.1f" % (xfor(i), yfor(lvl)) for i, (_sid, lvl) in enumerate(series))
+    out.append('<polyline points="%s" fill="none" stroke="#8B5E3C" stroke-width="2"/>' % pts)
+    # Markers + per-point level labels + scene_id x-axis labels.
+    for i, (sid, lvl) in enumerate(series):
+        x, y = xfor(i), yfor(lvl)
+        out.append('<circle cx="%.1f" cy="%.1f" r="4" fill="#3B4A3E"/>' % (x, y))
+        out.append('<text x="%.1f" y="%.1f" font-size="9" fill="#9E9680" text-anchor="middle">%d</text>'
+                   % (x, y - 8, lvl))
+        out.append('<text x="%.1f" y="%.1f" font-size="9" fill="#33311E" text-anchor="middle">%s</text>'
+                   % (x, height - pad_b + 16, html.escape(str(sid))))
+    return '<svg width="%d" height="%d" role="img">%s</svg>' % (width, height, "".join(out))
+
+
 def render_html(manifest_text, timeline_text, ledger_text, spine_text=None, roster_text=None,
-                scene_function_text=None):
+                scene_function_text=None, tension_point_text=None):
     """Pure function of the manifest (+ verbatim sources): a self-contained HTML+inline-SVG file.
 
     No network, no deps, no model call — render-only. Charts 1-3: pacing curve, POV time-share,
@@ -1410,6 +1681,22 @@ def render_html(manifest_text, timeline_text, ledger_text, spine_text=None, rost
             "made auditable by its anchor, not a judgement the render reached.</p>%s"
             % (sf_legend, _scene_function_svg(grid)))
 
+    # Chart 4 — the reveal-economy / tension timeline. Drawn only when the manifest carries a
+    # reveal_points[] array AND an apodictic.tension_point.v1 producer resolves (the X4-byte-checked
+    # scores). The series is computed MECHANICALLY from the byte-checked array (one point per scene at its
+    # declared 1-5 level); the level->y-position map is hardcoded here, never read from the manifest.
+    tension_section = ""
+    tension_src = tension_points_producer(tension_point_text)
+    rp = [c for c in (obj.get("reveal_points") or []) if isinstance(c, dict)]
+    if rp and tension_src.get("present"):
+        series = tension_timeline(rp)
+        tension_section = (
+            "<h2>Reveal-economy / tension timeline</h2>"
+            "<p class=meta>Tension level on the reader-experience 1–5 intensity scale "
+            "(1 = flat, 5 = peak), over scene order, copied from the tension-point pass. This is the "
+            "<em>reader-dynamics</em> reading made auditable by its anchor, not a judgement the render "
+            "reached.</p>%s" % _tension_timeline_svg(series))
+
     return """<!doctype html><html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width, initial-scale=1">
 <title>Structure Map — {project}</title>
@@ -1423,7 +1710,7 @@ def render_html(manifest_text, timeline_text, ledger_text, spine_text=None, rost
  .chip.bare{{background:#F0D7DC;color:#8C2A3D;border:1px dashed #A8344A}}
 </style></head><body>
 <h1>Structure Map — {project}</h1>
-<div class=meta>Render-only companion · APODICTIC manuscript-structure visualization (charts 1–3{cp_label}{sf_label}{cl_label})</div>
+<div class=meta>Render-only companion · APODICTIC manuscript-structure visualization (charts 1–3{cp_label}{sf_label}{tn_label}{cl_label})</div>
 <div class=record><strong>The editorial letter is the artifact of record.</strong> This is a render of data the
 passes already produced — it adds no analysis and no verdict lives only here. Severity encoding is fixed:
 a Must-Fix is always rendered at full salience (size never shrinks for low confidence).</div>
@@ -1433,14 +1720,16 @@ a Must-Fix is always rendered at full salience (size never shrinks for low confi
 <h2>Findings by chapter</h2><div class=legend>{legend}</div>{c3}
 {co_presence_section}
 {scene_function_section}
+{tension_section}
 {claim_section}
 </body></html>""".format(project=project, partial_note=partial_note,
                          c1=_bars_svg(pacing), c2=_bars_svg(pov), c3=_bars_svg(sev_bars), legend=legend,
                          claim_section=claim_section, co_presence_section=co_presence_section,
-                         scene_function_section=scene_function_section,
+                         scene_function_section=scene_function_section, tension_section=tension_section,
                          cl_label=" + claim ladder" if claim_section else "",
                          cp_label=" + co-presence network" if co_presence_section else "",
-                         sf_label=" + scene-function heatmap" if scene_function_section else "")
+                         sf_label=" + scene-function heatmap" if scene_function_section else "",
+                         tn_label=" + tension timeline" if tension_section else "")
 
 
 # ---------------------------------------------------------------- resolution
@@ -1450,13 +1739,14 @@ def _newest(paths):
 
 
 def resolve(paths):
-    """Return (manifest_path, timeline_path, ledger_path, spine_path, roster_path, scene_function_path)
-    from a run folder or files.
+    """Return (manifest_path, timeline_path, ledger_path, spine_path, roster_path, scene_function_path,
+    tension_point_path) from a run folder or files.
 
     spine_path is the pre-draft Argument_State (the chart 7-nonfiction claim-ladder source), roster_path
-    is the per-scene cast (the chart-5 co-presence producer), and scene_function_path is the per-scene
-    function classification (the chart-6 heatmap producer); any may be None (a run carrying no producer
-    simply doesn't render that chart)."""
+    is the per-scene cast (the chart-5 co-presence producer), scene_function_path is the per-scene
+    function classification (the chart-6 heatmap producer), and tension_point_path is the per-scene
+    tension scores (the chart-4 timeline producer); any may be None (a run carrying no producer simply
+    doesn't render that chart)."""
     if len(paths) == 1 and os.path.isdir(paths[0]):
         d = paths[0]
         man = _newest(glob.glob(os.path.join(d, _MANIFEST_GLOB)))
@@ -1469,8 +1759,9 @@ def resolve(paths):
         spinep = _newest(glob.glob(os.path.join(d, _SPINE_GLOB)))
         rosterp = _newest(glob.glob(os.path.join(d, _ROSTER_GLOB)))
         sfuncp = _newest(glob.glob(os.path.join(d, _SFUNC_GLOB)))
-        return man, tlp, led, spinep, rosterp, sfuncp
-    man = tlp = led = spinep = rosterp = sfuncp = None
+        tensionp = _newest(glob.glob(os.path.join(d, _TENSION_GLOB)))
+        return man, tlp, led, spinep, rosterp, sfuncp, tensionp
+    man = tlp = led = spinep = rosterp = sfuncp = tensionp = None
     for p in paths:
         body = _read(p) or ""
         if _has_block(body, "viz_manifest") and man is None:
@@ -1483,6 +1774,10 @@ def resolve(paths):
             # Check the scene-function producer BEFORE the Timeline/finding heuristics — it carries no
             # pipe-table and no finding block, so it would otherwise be mis-detected.
             sfuncp = p
+        elif _has_block(body, "tension_point") and tensionp is None:
+            # Check the tension-point producer BEFORE the Timeline/finding heuristics — it carries no
+            # pipe-table and no finding block, so it would otherwise be mis-detected.
+            tensionp = p
         elif _has_block(body, "argument_spine") and spinep is None:
             # Check the spine BEFORE the Timeline/finding heuristics — the canonical pre-draft
             # Argument_State carries no pipe-table and no finding block, so it falls through to here.
@@ -1493,11 +1788,11 @@ def resolve(paths):
             led = p
     if man is None and paths:
         man = paths[0]
-    return man, tlp, led, spinep, rosterp, sfuncp
+    return man, tlp, led, spinep, rosterp, sfuncp, tensionp
 
 
 def run(paths, strict=False, require_block=False):
-    man, tlp, led, spinep, rosterp, sfuncp = resolve(paths)
+    man, tlp, led, spinep, rosterp, sfuncp, tensionp = resolve(paths)
     if not man:
         return 2, ["manuscript-viz: no Structure Map manifest found (need a *_Structure_Map_*.md "
                    "or a file with an apodictic:viz_manifest block)"]
@@ -1508,6 +1803,7 @@ def run(paths, strict=False, require_block=False):
                  spine_text=_read(spinep) if spinep else None,
                  roster_text=_read(rosterp) if rosterp else None,
                  scene_function_text=_read(sfuncp) if sfuncp else None,
+                 tension_point_text=_read(tensionp) if tensionp else None,
                  strict=strict, require_block=require_block)
 
 
@@ -1857,16 +2153,9 @@ def run_self_test():
     code, ls = check(cl_manifest(["not-an-object"]), None, None, spine_text=canon_spine)
     chk("x1_non_object_rung_no_crash", code == 1 and any("X1" in x and "must be an object" in x for x in ls))
 
-    # X8 — a present reveal_points array fails (no producer yet). co_presence + scene_functions now HAVE
-    # producers (apodictic.scene_roster.v1 / apodictic.scene_function.v1), so they are exercised in the
-    # chart-5 / chart-6 blocks below, not here.
-    for arr_key in ("reveal_points",):
-        o = {"schema": _SCHEMA_ID, "project": "P", "scenes": [], "findings": [],
-             arr_key: [{"scene_id": "Ch 1 §1", "characters": ["Mara"]}]}
-        m = "<!-- apodictic:viz_manifest\n%s\n-->" % _j.dumps(o)
-        code, ls = check(m, timeline, ledger, spine_text=None)
-        chk("x8_producer_gated_%s_fails" % arr_key,
-            code == 1 and any("X8 producer-present" in x and arr_key in x for x in ls))
+    # (All four manifest arrays now have a resolvable producer — co_presence/scene_roster.v1,
+    # scene_functions/scene_function.v1, reveal_points/tension_point.v1, claim_ladder/argument_spine.v1 —
+    # each exercised in its own block. reveal_points' X8-no-producer case is in the chart-4 block below.)
 
     # W3 — spine present (with subclaims) but claim_ladder absent → advisory (ERROR under --strict)
     no_ladder = "<!-- apodictic:viz_manifest\n%s\n-->" % _j.dumps(
@@ -2260,6 +2549,157 @@ def run_self_test():
     chk("w3_scene_function_coverage_strict_fails",
         check(no_sf, timeline, led_sf_could, scene_function_text=canon_sfunc, strict=True)[0] == 1)
 
+    # ============================================================================================
+    # Chart 4 — the reveal-economy / tension timeline (X1/X4/X7/X8). The PRODUCER is
+    # apodictic.tension_point.v1 (per-scene reader tension on the closed reader-dynamics Pass-1 1-5
+    # intensity scale — the Pacing Heat Map's "intensity level (1-5 scale derived from Pass 1 emotional
+    # tracking)"). All three scene_ids resolve to the `timeline` fixture; each tension is in the closed
+    # 1-5 enum; each carries a required non-empty anchor. Tension points are keyed directly on scene_id
+    # (per-scene) — no evidence_ref -> scene_id resolution. Negatives: a scene_id not in Timeline, an
+    # empty anchor, a duplicate scene_id, a tension outside the enum, and a manifest/producer mismatch.
+    # ============================================================================================
+    def tension_block(points, project="Test"):
+        o = {"schema": _TENSION_SCHEMA_ID, "project": project, "points": points}
+        return "<!-- apodictic:tension_point\n%s\n-->" % _j.dumps(o)
+
+    def tpt(sid, tension, anchor="\"the reader tenses on-page\""):
+        # Default to a QUOTE-form anchor (no leading line range) so the X4(e) line-range bounding is
+        # skipped; tests that exercise the bounding pass an explicit "lines N-M …" anchor.
+        return {"scene_id": sid, "tension": tension, "anchor": anchor}
+
+    # The canonical worked producer (mirrors example-tension-points.md): Ch 1 §1 = 2 (building), Ch 1 §2
+    # = 4 (high), Ch 2 §1 = 3 (partial release). All resolve to `timeline`.
+    canon_points = [tpt("Ch 1 §1", "2"), tpt("Ch 1 §2", "4"), tpt("Ch 2 §1", "3")]
+    canon_tension = tension_block(canon_points)
+
+    def rp_manifest(reveal_points):
+        scns = [scene("Ch 1 §1", "Ch 1", "1-118", "1480", "Mara", "3 hours", "n/a"),
+                scene("Ch 1 §2", "Ch 1", "119-240", "1390", "Mara", "2 hours", "3 hours"),
+                scene("Ch 2 §1", "Ch 2", "241-372", "1610", "Jon", "1 hour", "16 hours")]
+        o = {"schema": _SCHEMA_ID, "project": "Test", "scenes": scns,
+             "findings": [{"id": "F-RR-01", "severity": "Must-Fix", "confidence": "HIGH", "chapter": "Ch 9"}],
+             "reveal_points": reveal_points}
+        return "<!-- apodictic:viz_manifest\n%s\n-->" % _j.dumps(o)
+
+    canon_rp = [{"scene_id": "Ch 1 §1", "tension": "2"},
+                {"scene_id": "Ch 1 §2", "tension": "4"},
+                {"scene_id": "Ch 2 §1", "tension": "3"}]
+
+    # clean — the canonical reveal_points validate against the canonical producer + Timeline
+    code, ls = check(rp_manifest(canon_rp), timeline, ledger, tension_point_text=canon_tension)
+    chk("x4_tension_clean", code == 0 and any("tension point" in x for x in ls))
+
+    # X8 — a reveal_points[] with NO resolvable tension_point producer FAILS (the firewall's teeth)
+    code, ls = check(rp_manifest(canon_rp), timeline, ledger, tension_point_text=None)
+    chk("x4_no_producer_fails",
+        code == 1 and any("X8 producer-present" in x and "tension_point" in x for x in ls))
+
+    # X4(a) — a dangling reveal_points scene_id (no producer entry AND no Timeline row) fails
+    bad_rp = canon_rp + [{"scene_id": "Ch 9 §9", "tension": "2"}]
+    code, ls = check(rp_manifest(bad_rp), timeline, ledger, tension_point_text=canon_tension)
+    chk("x4_dangling_scene_id_fails",
+        code == 1 and any("X4 tension provenance" in x and "Ch 9 §9" in x for x in ls))
+
+    # X4(c) — a manifest tension that DIVERGES from the producer level fails (verbatim copy)
+    bad_rp = [{"scene_id": "Ch 1 §1", "tension": "5"}] + canon_rp[1:]
+    code, ls = check(rp_manifest(bad_rp), timeline, ledger, tension_point_text=canon_tension)
+    chk("x4_tension_mismatch_fails",
+        code == 1 and any("X4 tension provenance" in x and "!=" in x for x in ls))
+
+    # X4(b) — a producer tension OUTSIDE the closed 1-5 enum fails
+    bad_prod = tension_block([tpt("Ch 1 §1", "6"), canon_points[1], canon_points[2]])
+    code, ls = check(rp_manifest(canon_rp), timeline, ledger, tension_point_text=bad_prod)
+    chk("x4_tension_not_in_enum_fails",
+        code == 1 and any("reader-intensity" in x and "'6'" in x for x in ls))
+
+    # X4(d) — a producer entry with an EMPTY anchor fails (the score must be auditable)
+    empty_anchor_prod = tension_block([tpt("Ch 1 §1", "2", anchor=""), canon_points[1], canon_points[2]])
+    code, ls = check(rp_manifest(canon_rp), timeline, ledger, tension_point_text=empty_anchor_prod)
+    chk("x4_empty_anchor_fails",
+        code == 1 and any("X4 tension provenance" in x and "anchor must be a non-empty" in x for x in ls))
+
+    # X4(e) — a LINE-RANGE anchor outside the scene's Timeline line-range fails; an in-range one passes.
+    # Ch 1 §1's Timeline line_range is 1-118; an anchor "lines 900-950" is outside.
+    outside_prod = tension_block([tpt("Ch 1 §1", "2", anchor="lines 900-950: \"elsewhere\""),
+                                  canon_points[1], canon_points[2]])
+    code, ls = check(rp_manifest(canon_rp), timeline, ledger, tension_point_text=outside_prod)
+    chk("x4_anchor_outside_scene_line_range_fails",
+        code == 1 and any("anchor lines 900-950 fall outside" in x for x in ls))
+    inrange_prod = tension_block([tpt("Ch 1 §1", "2", anchor="lines 10-40: \"within\""),
+                                  canon_points[1], canon_points[2]])
+    chk("x4_anchor_in_range_passes",
+        check(rp_manifest(canon_rp), timeline, ledger, tension_point_text=inrange_prod)[0] == 0)
+
+    # X1 — a visual-style / extra key on a reveal_points object fails (no smuggled style)
+    bad_rp = [dict(canon_rp[0], color="red")] + canon_rp[1:]
+    code, ls = check(rp_manifest(bad_rp), timeline, ledger, tension_point_text=canon_tension)
+    chk("x1_tension_style_field_fails",
+        code == 1 and any("X1 new-array schema" in x and "disallowed field 'color'" in x for x in ls))
+
+    # X7 — a duplicate scene_id in the manifest reveal_points fails (double-plots its timeline point)
+    bad_rp = canon_rp + [canon_rp[0]]
+    code, ls = check(rp_manifest(bad_rp), timeline, ledger, tension_point_text=canon_tension)
+    chk("x7_tension_dup_scene_fails",
+        code == 1 and any("X7 duplicate entry" in x and "scene_id" in x for x in ls))
+
+    # producer hostile shapes — a duplicate producer scene_id, a disallowed point key, a non-dict entry,
+    # a wrong const must FAIL cleanly via the producer's obj_errs.
+    dup_prod = tension_block([canon_points[0], canon_points[0], canon_points[2]])
+    code, ls = check(rp_manifest(canon_rp), timeline, ledger, tension_point_text=dup_prod)
+    chk("x4_producer_dup_scene_fails",
+        code == 1 and any("appears more than once in the producer" in x for x in ls))
+    bad_key_prod = tension_block([{"scene_id": "Ch 1 §1", "tension": "2", "anchor": "x", "weight": 1},
+                                  canon_points[1], canon_points[2]])
+    code, ls = check(rp_manifest(canon_rp), timeline, ledger, tension_point_text=bad_key_prod)
+    chk("x4_producer_bad_entry_key_fails",
+        code == 1 and any("disallowed field 'weight'" in x for x in ls))
+    non_obj_prod = tension_block(["not-an-object"])
+    code, ls = check(rp_manifest(canon_rp), timeline, ledger, tension_point_text=non_obj_prod)
+    chk("x4_producer_non_object_entry_no_crash",
+        code == 1 and any("X4 tension provenance" in x and "must be an object" in x for x in ls))
+    bad_const = "<!-- apodictic:tension_point\n%s\n-->" % _j.dumps(
+        {"schema": "apodictic.viz_manifest.v1", "points": canon_points})
+    code, ls = check(rp_manifest(canon_rp), timeline, ledger, tension_point_text=bad_const)
+    chk("x4_producer_wrong_const_fails", code == 1)
+
+    # the mechanical series derivation (tension_timeline) — the firewall's "invents nothing" core.
+    series = tension_timeline(canon_rp)
+    chk("series_points", series == [("Ch 1 §1", 2), ("Ch 1 §2", 4), ("Ch 2 §1", 3)])
+
+    # render — the tension timeline draws when the manifest carries reveal_points[] AND a producer
+    # resolves. Deterministic line chart; self-contained; drops nothing; no time/random.
+    h_rp = render_html(rp_manifest(canon_rp), timeline, ledger, tension_point_text=canon_tension)
+    chk("render_tension",
+        "tension timeline" in h_rp and "Ch 1 §1" in h_rp and "<polyline" in h_rp)
+    chk("render_tension_selfcontained",
+        "<svg" in h_rp and "http://" not in h_rp and "https://" not in h_rp)
+    # without a producer source the timeline section is simply omitted (no crash, no fabricated series)
+    h_no_rp = render_html(rp_manifest(canon_rp), timeline, ledger, tension_point_text=None)
+    chk("render_no_producer_omits_tension", "tension timeline" not in h_no_rp)
+
+    # tension resolution from a run folder (a *Tension*.md globbed as the producer source)
+    tpd = tempfile.mkdtemp()
+    made.append(tpd)
+    with open(os.path.join(tpd, "Proj_Structure_Map_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Map\n" + rp_manifest(canon_rp) + "\n")
+    with open(os.path.join(tpd, "Proj_Timeline_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write(timeline)
+    with open(os.path.join(tpd, "Proj_Findings_Ledger_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write(ledger)
+    with open(os.path.join(tpd, "Proj_Tension_Points_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Tension\n" + canon_tension + "\n")
+    chk("tension_run_folder_resolution", run([tpd])[0] == 0)
+
+    # W3 — a producer is present (with scored scenes) but reveal_points absent → advisory.
+    led_tp_could = "# Ledger\n" + finding(fid="F-A-01", severity="Could-Fix", confidence="LOW") + "\n"
+    no_rp = "<!-- apodictic:viz_manifest\n%s\n-->" % _j.dumps(
+        {"schema": _SCHEMA_ID, "project": "P", "scenes": [], "findings": []})
+    code, ls = check(no_rp, timeline, led_tp_could, tension_point_text=canon_tension)
+    chk("w3_tension_coverage_advisory",
+        code == 0 and any("W3 chart coverage" in x and "tension timeline" in x for x in ls))
+    chk("w3_tension_coverage_strict_fails",
+        check(no_rp, timeline, led_tp_could, tension_point_text=canon_tension, strict=True)[0] == 1)
+
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
@@ -2284,27 +2724,29 @@ def main(argv):
             # is the manifest-only escape hatch (an un-provenanced preview). Trailing positional files
             # (or a run folder) supply the Argument_State spine (claim ladder) + the Scene_Roster
             # producer (co-presence) — content-sniffed by block type, so their order doesn't matter.
-            print("Usage: viz_manifest.py render <manifest> <timeline> <ledger> [<argument_state>] [<scene_roster>] [<scene_function>] [-o out.html]\n"
+            print("Usage: viz_manifest.py render <manifest> <timeline> <ledger> [<argument_state>] [<scene_roster>] [<scene_function>] [<tension_point>] [-o out.html]\n"
                   "       viz_manifest.py render <run_folder> [-o out.html]\n"
                   "       viz_manifest.py render <manifest> --force        # manifest-only, skips the provenance gate")
             return 2
-        rosterp = sfuncp = None
+        rosterp = sfuncp = tensionp = None
         if len(rest) == 1 and os.path.isdir(rest[0]):
-            man, tlp, led, spinep, rosterp, sfuncp = resolve(rest)
+            man, tlp, led, spinep, rosterp, sfuncp, tensionp = resolve(rest)
         else:
             man = rest[0]
             tlp = rest[1] if len(rest) > 1 else None
             led = rest[2] if len(rest) > 2 else None
-            # The spine + roster + scene-function producers are interchangeable in position beyond index
-            # 2 — sniff every trailing positional by block type so `<manifest> <timeline> <ledger>
-            # <roster>` works even without a spine, and the producer order is free.
-            spinep = rosterp = sfuncp = None
+            # The spine + roster + scene-function + tension producers are interchangeable in position
+            # beyond index 2 — sniff every trailing positional by block type so `<manifest> <timeline>
+            # <ledger> <roster>` works even without a spine, and the producer order is free.
+            spinep = rosterp = sfuncp = tensionp = None
             for p in rest[3:]:
                 body = _read(p) or ""
                 if _has_block(body, "scene_roster") and rosterp is None:
                     rosterp = p
                 elif _has_block(body, "scene_function") and sfuncp is None:
                     sfuncp = p
+                elif _has_block(body, "tension_point") and tensionp is None:
+                    tensionp = p
                 elif _has_block(body, "argument_spine") and spinep is None:
                     spinep = p
         mtext = _read(man)
@@ -2313,13 +2755,15 @@ def main(argv):
         spinetext = _read(spinep) if spinep else None
         rostertext = _read(rosterp) if rosterp else None
         sfunctext = _read(sfuncp) if sfuncp else None
+        tensiontext = _read(tensionp) if tensionp else None
         # Gate before rendering: rendering un-provenanced data is exactly the firewall hole the
         # validator exists to prevent. Refuse on an ERROR-level gate failure, OR on a scene-order
         # divergence — W2 is advisory in general, but a reordered manifest draws a FALSE pacing curve
         # (the one warning that corrupts the render's core output), so it blocks the render too.
         # W1 coverage stays advisory: a legitimate partial map still renders.
         gcode, glines = check(mtext, tltext, ledtext, spine_text=spinetext, roster_text=rostertext,
-                              scene_function_text=sfunctext, require_block=True)
+                              scene_function_text=sfunctext, tension_point_text=tensiontext,
+                              require_block=True)
         scene_order_broken = any("W2 scene order" in ln for ln in glines)
         if (gcode != 0 or scene_order_broken) and not force:
             for ln in glines:
@@ -2334,7 +2778,7 @@ def main(argv):
                   file=sys.stderr)
             return 1
         h = render_html(mtext, tltext, ledtext, spine_text=spinetext, roster_text=rostertext,
-                        scene_function_text=sfunctext)
+                        scene_function_text=sfunctext, tension_point_text=tensiontext)
         if out:
             with open(out, "w", encoding="utf-8", newline="") as fh:
                 fh.write(h)
