@@ -385,6 +385,151 @@ class TTL:
 
 
 # ---------------------------------------------------------------------------
+# OQ-1 — strict-mode halt on a degraded high-stakes run
+# ---------------------------------------------------------------------------
+
+# Exit code the CLI uses to signal a strict high-stakes HALT. Distinct from
+# argparse's usage exit (2) and a generic error (1) so a wrapper can tell a
+# degraded-coverage halt from a parse/other error. Additive: only ever returned
+# when the caller opted into --strict AND coverage was genuinely degraded.
+STRICT_HALT_EXIT_CODE = 3
+
+
+def strict_halt_decision(snapshot, not_checked_count, *, strict: bool) -> dict:
+    """Decide whether a strict high-stakes run must HALT on degraded coverage (OQ-1).
+
+    A high-stakes run (Citation Verifier / Field Reconnaissance) opts in by
+    setting `strict=True`; that flag IS the caller's high-stakes declaration.
+    The halt fires iff ALL THREE hold:
+
+      1. strict is enabled,
+      2. coverage is DEGRADED — the ledger snapshot lists >= 1 degraded provider
+         (`snapshot["coverage"]["degraded_providers"]` is non-empty), and
+      3. >= 1 result was NOT-CHECKED — `not_checked_count > 0` — meaning a
+         degraded provider was actually on some unresolved citation's path and
+         cut it short (the batch summary's `not_checked` count).
+
+    Condition (3) is what makes the halt ONE-DIRECTIONAL and honest, matching the
+    per-result rule in research-citation-verifier.md (NOT-CHECKED is set only when
+    a degraded provider was on *that* citation's path):
+
+      * a CLEAN run (no degraded providers) never halts;
+      * a genuine all-healthy NOT-FOUND never halts — with no degraded provider,
+        or with `not_checked_count == 0`, an unresolved citation is NOT-FOUND, not
+        NOT-CHECKED, so degradation that never blocked a lookup cannot manufacture
+        a halt.
+
+    Returns a JSON-serializable dict (embedded under the reliability block's
+    `strict` key when strict is on; never mutates the ledger):
+      {"enabled", "halt", "reason", "degraded_providers", "not_checked"}.
+    """
+    coverage = {}
+    if isinstance(snapshot, dict):
+        cov = snapshot.get("coverage")
+        if isinstance(cov, dict):
+            coverage = cov
+    degraded = list(coverage.get("degraded_providers", []) or [])
+    nc = int(not_checked_count or 0)
+    halt = bool(strict) and bool(degraded) and nc > 0
+    if halt:
+        reason = (
+            "STRICT HALT: degraded provider coverage on a high-stakes run — "
+            f"{', '.join(degraded)} degraded and {nc} citation(s) NOT-CHECKED "
+            "(could not be looked up); refusing to emit a degraded verdict as a "
+            "clean not-found. Route to run-synthesis Blind Spot / Absence Inventory."
+        )
+    else:
+        reason = None
+    return {
+        "enabled": bool(strict),
+        "halt": halt,
+        "reason": reason,
+        "degraded_providers": degraded,
+        "not_checked": nc,
+    }
+
+
+# ---------------------------------------------------------------------------
+# OQ-3 — Citation_Reliability.json sidecar
+# ---------------------------------------------------------------------------
+
+CITATION_RELIABILITY_FILENAME = "Citation_Reliability.json"
+CITATION_RELIABILITY_SCHEMA = "apodictic.citation_reliability.v1"
+
+
+def build_reliability_sidecar(ledger, resolution_summary=None,
+                              strict_decision=None) -> dict:
+    """Pure serializer for the Citation_Reliability.json sidecar (OQ-3).
+
+    Assembles a deterministic, stdlib-JSON-serializable payload from a
+    `ReliabilityLedger` plus the batch's resolution summary and (optionally) the
+    strict-halt decision. It records: per-provider **budget spent**, **circuit
+    states** (raw failure counts + open flags), the **coverage /
+    degraded_providers** block, the per-provider snapshot, the event log, and the
+    **resolved / not_found / not_checked** resolution summary.
+
+    ADDITIVE and side-effect-free: it READS the ledger (snapshot/budget/breaker),
+    never mutates it, and does NOT alter the in-`output` `reliability` block
+    (which stays `ledger.snapshot()`). Callable with no disk access, so the
+    self-test can assert the JSON shape directly."""
+    if ledger is not None:
+        snap = ledger.snapshot()
+        budget_spent = dict(ledger.budget.spent())
+        circuits = dict(ledger.breaker.state())
+    else:
+        snap = {"providers": {}, "events": [],
+                "coverage": {"degraded_providers": [], "clean": True, "note": ""}}
+        budget_spent = {}
+        circuits = {}
+    summary = dict(resolution_summary or {})
+    resolution = {
+        "total": int(summary.get("total", 0)),
+        "resolved": int(summary.get("resolved", 0)),
+        "not_found": int(summary.get("not_found", 0)),
+        "not_checked": int(summary.get("not_checked", 0)),
+        "unretrievable": int(summary.get("unretrievable", 0)),
+    }
+    payload = {
+        "schema": CITATION_RELIABILITY_SCHEMA,
+        "coverage": dict(snap.get("coverage", {})),
+        "providers": dict(snap.get("providers", {})),
+        "budget_spent": budget_spent,
+        "circuits": circuits,
+        "events": list(snap.get("events", [])),
+        "resolution_summary": resolution,
+    }
+    if strict_decision is not None:
+        payload["strict"] = dict(strict_decision)
+    return payload
+
+
+def sidecar_json(payload: dict) -> str:
+    """Canonical deterministic serialization of a sidecar payload (sorted keys,
+    stdlib json). The single source of the on-disk bytes so the self-test can
+    assert byte-determinism without touching disk."""
+    return json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n"
+
+
+def write_reliability_sidecar(target, ledger, resolution_summary=None,
+                              strict_decision=None) -> str:
+    """Write the Citation_Reliability.json sidecar (OQ-3) and return its path.
+
+    `target` may be a directory (the file is written as Citation_Reliability.json
+    inside it) or an explicit `*.json` path. Deterministic key order, stdlib json.
+    Purely additive: writing the sidecar does not touch the batch `output` or the
+    in-`output` reliability block; it is opt-in at the call site."""
+    p = str(target)
+    path = p if p.endswith(".json") else os.path.join(p, CITATION_RELIABILITY_FILENAME)
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    payload = build_reliability_sidecar(ledger, resolution_summary, strict_decision)
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(sidecar_json(payload))
+    return path
+
+
+# ---------------------------------------------------------------------------
 # Self-test (the contract). Introduces the convention to this dir; run directly
 # from CI. Positive AND negative fixtures — the negatives are the point.
 # ---------------------------------------------------------------------------
@@ -535,6 +680,78 @@ def run_self_test() -> int:
         t.expect_true("ac8_snapshot_json", True)
     except (TypeError, ValueError) as e:
         t.expect("ac8_snapshot_json", str(e), "<serializable>")
+
+    # -- OQ-1: strict-mode halt on a degraded high-stakes run -----------------
+    # `snap` (AC-6) is a DEGRADED snapshot: coverage.degraded_providers ==
+    # ["semantic-scholar"]. `snap3` (AC-13) is a CLEAN snapshot: [].
+    deg_snap, clean_snap = snap, snap3
+    # (a) degraded high-stakes run under strict + a not-checked citation → HALTS.
+    d_a = strict_halt_decision(deg_snap, not_checked_count=2, strict=True)
+    t.expect_true("oq1_a_strict_degraded_halts", d_a["halt"] is True)
+    t.expect_true("oq1_a_halt_has_reason", bool(d_a["reason"]))
+    t.expect("oq1_a_degraded_named", d_a["degraded_providers"], ["semantic-scholar"])
+    t.expect("oq1_a_not_checked_echoed", d_a["not_checked"], 2)
+    # (b) the SAME degraded run NON-strict → does NOT halt (default preserved).
+    d_b = strict_halt_decision(deg_snap, not_checked_count=2, strict=False)
+    t.expect_true("oq1_b_nonstrict_no_halt", d_b["halt"] is False)
+    t.expect_true("oq1_b_reason_none", d_b["reason"] is None)
+    t.expect_true("oq1_b_enabled_false", d_b["enabled"] is False)
+    # (c) a CLEAN / all-healthy run under strict → does NOT halt.
+    d_c = strict_halt_decision(clean_snap, not_checked_count=0, strict=True)
+    t.expect_true("oq1_c_clean_strict_no_halt", d_c["halt"] is False)
+    t.expect_true("oq1_c_enabled_true", d_c["enabled"] is True)
+    # (d) a genuine all-healthy NOT-FOUND under strict → does NOT halt
+    #     (no degraded provider, not_checked == 0: NOT-FOUND is not NOT-CHECKED).
+    d_d = strict_halt_decision(clean_snap, not_checked_count=0, strict=True)
+    t.expect_true("oq1_d_healthy_notfound_no_halt", d_d["halt"] is False)
+    # one-directional guard: degraded providers present but not_checked == 0
+    # (degradation never blocked a lookup) → still NO halt.
+    d_guard = strict_halt_decision(deg_snap, not_checked_count=0, strict=True)
+    t.expect_true("oq1_guard_degraded_no_notchecked_no_halt", d_guard["halt"] is False)
+    # a None/empty snapshot never fabricates a halt.
+    t.expect_true("oq1_none_snapshot_no_halt",
+                  strict_halt_decision(None, 5, strict=True)["halt"] is False)
+
+    # -- OQ-3: Citation_Reliability.json sidecar serializer -------------------
+    import tempfile
+    sc_summary = {"total": 5, "resolved": 2, "not_found": 1, "not_checked": 2,
+                  "unretrievable": 3}
+    payload = build_reliability_sidecar(led2, sc_summary, d_a)
+    # (e) expected keys + values.
+    t.expect("oq3_sidecar_schema", payload.get("schema"), CITATION_RELIABILITY_SCHEMA)
+    for k in ("schema", "coverage", "providers", "budget_spent", "circuits",
+              "events", "resolution_summary", "strict"):
+        t.expect_true(f"oq3_sidecar_has_{k}", k in payload)
+    t.expect("oq3_sidecar_resolution_not_checked",
+             payload["resolution_summary"]["not_checked"], 2)
+    t.expect("oq3_sidecar_resolution_not_found",
+             payload["resolution_summary"]["not_found"], 1)
+    t.expect("oq3_sidecar_coverage_degraded",
+             payload["coverage"]["degraded_providers"], ["semantic-scholar"])
+    t.expect_true("oq3_sidecar_budget_spent_s2",
+                  payload["budget_spent"].get("semantic-scholar", 0) >= 3)
+    t.expect("oq3_sidecar_circuit_open_recorded",
+             payload["circuits"].get("semantic-scholar", {}).get("open"), True)
+    t.expect_true("oq3_sidecar_strict_halt", payload["strict"]["halt"] is True)
+    # a sidecar built WITHOUT a strict decision omits the strict key (additive).
+    payload_ns = build_reliability_sidecar(led2, sc_summary, None)
+    t.expect_true("oq3_sidecar_no_strict_key_when_none", "strict" not in payload_ns)
+    # (f) deterministic serialization + JSON round-trip / schema.
+    s1 = sidecar_json(payload)
+    s2 = sidecar_json(build_reliability_sidecar(led2, sc_summary, d_a))
+    t.expect_true("oq3_sidecar_deterministic", s1 == s2)
+    rt = json.loads(s1)
+    t.expect("oq3_sidecar_roundtrip_schema", rt.get("schema"), CITATION_RELIABILITY_SCHEMA)
+    t.expect("oq3_sidecar_roundtrip_not_checked",
+             rt["resolution_summary"]["not_checked"], 2)
+    # writer round-trips to disk identically to the pure serializer.
+    with tempfile.TemporaryDirectory() as _d:
+        wpath = write_reliability_sidecar(_d, led2, sc_summary, d_a)
+        t.expect_true("oq3_sidecar_writes_named_file",
+                      wpath.endswith(CITATION_RELIABILITY_FILENAME))
+        with open(wpath, encoding="utf-8") as _fh:
+            disk = json.loads(_fh.read())
+        t.expect("oq3_sidecar_disk_matches_pure", disk, rt)
 
     # -- report ---------------------------------------------------------------
     total = t.passed + len(t.failures)

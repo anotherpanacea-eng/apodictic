@@ -34,6 +34,9 @@ from api_reliability import (
     TTL,
     PROVIDERS,
     reliability_enabled,
+    strict_halt_decision,
+    write_reliability_sidecar,
+    STRICT_HALT_EXIT_CODE,
 )
 
 # ---------------------------------------------------------------------------
@@ -558,8 +561,9 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
     return result
 
 
-def resolve_batch(citations: list[dict], output_path: str | None = None) -> list[dict]:
-    """Resolve a batch of citations. Returns list of results.
+def resolve_batch(citations: list[dict], output_path: str | None = None,
+                  *, strict: bool = False, sidecar_dir: str | None = None) -> dict:
+    """Resolve a batch of citations. Returns the batch `output` dict.
 
     A per-run ReliabilityLedger (per-provider budget + circuit breaker) is
     constructed here — the same place that already constructs `cache` and
@@ -569,7 +573,19 @@ def resolve_batch(citations: list[dict], output_path: str | None = None) -> list
     additive per-result (`resolution_status`/`degraded_providers`) and summary
     (`not_checked`/`not_found`) keys remain — they are computed without a ledger
     (`degraded_providers` is then `[]`) and never alter a pre-existing value, so
-    OFF leaves the legacy keys unchanged while staying additive — AC-13."""
+    OFF leaves the legacy keys unchanged while staying additive — AC-13.
+
+    OQ-1 (`strict`): the caller's high-stakes declaration. When strict AND the run
+    ends DEGRADED with >=1 NOT-CHECKED citation, a `strict` sub-block is added to
+    the reliability block with `halt: true` + a reason (the caller stops rather
+    than emit a degraded verdict as a clean not-found). Default `strict=False`
+    leaves the reliability block byte-identical to today (no `strict` key) — a
+    strict CLEAN or all-healthy NOT-FOUND run never halts (one-directional).
+
+    OQ-3 (`sidecar_dir`): when set (and the ledger is on), also writes a
+    deterministic `Citation_Reliability.json` sidecar into that directory. Opt-in
+    and additive — it does not alter `output` or the in-`output` reliability
+    block."""
     cache = ResponseCache(_default_cache_dir())
     provenance = ProvenanceStore()
     ledger = ReliabilityLedger() if reliability_enabled() else None
@@ -600,8 +616,19 @@ def resolve_batch(citations: list[dict], output_path: str | None = None) -> list
         "provenance": provenance.entries,
         "cache_stats": cache.stats(),
     }
+    # OQ-1: strict-mode halt. With no ledger (reliability off) there is no
+    # degradation signal, so the decision is a guaranteed no-halt and no block is
+    # attached. With a ledger, evaluate against the snapshot; the `strict`
+    # sub-block is ATTACHED only when the caller opted in, so the default
+    # (strict=False) reliability block stays byte-identical to today (AC-13).
+    snapshot = ledger.snapshot() if ledger is not None else None
+    decision = strict_halt_decision(snapshot, summary["not_checked"], strict=strict)
     if ledger is not None:
-        output["reliability"] = ledger.snapshot()
+        if strict:
+            snapshot["strict"] = decision
+        output["reliability"] = snapshot
+        if decision["halt"]:
+            print(f"[api_reliability] {decision['reason']}", file=sys.stderr)
 
     if output_path:
         Path(output_path).write_text(json.dumps(output, indent=2, default=str))
@@ -609,7 +636,14 @@ def resolve_batch(citations: list[dict], output_path: str | None = None) -> list
     else:
         print(json.dumps(output, indent=2, default=str))
 
-    return results
+    # OQ-3: optional Citation_Reliability.json sidecar (opt-in; needs a ledger).
+    if sidecar_dir is not None and ledger is not None:
+        sidecar_path = write_reliability_sidecar(
+            sidecar_dir, ledger, summary,
+            strict_decision=(decision if strict else None))
+        print(f"Reliability sidecar written to {sidecar_path}", file=sys.stderr)
+
+    return output
 
 
 # ---------------------------------------------------------------------------
@@ -758,6 +792,92 @@ def run_self_test() -> int:
             expect_true("ac13_off_no_reliability_block", "reliability" not in out)
             expect_true("ac13_off_still_resolves", out["summary"]["resolved"] == 1)
             os.environ.pop("APODICTIC_RELIABILITY", None)
+
+        # --- OQ-1: strict halt on a genuinely-degraded high-stakes batch ------
+        # 4 title-only citations, every provider call ERRORS. Each index provider
+        # accrues 3 consecutive failures over citations 1-3 → circuit opens →
+        # degraded; all 4 citations end NOT-CHECKED. This is the real degradation
+        # the halt exists for (not a synthetic zero-budget skip).
+        def _all_error(url, headers=None, timeout=15):
+            return {"_error": "HTTP Error 503: Service Unavailable",
+                    "_url": url, "_status": 503}
+        degraded_batch = [{"ref_id": f"D{i}", "title": f"Unreachable Paper {i}",
+                           "author": "Nemo", "year": "2020"} for i in range(4)]
+
+        # (a) strict → HALTS, with the strict block + reason in the reliability block.
+        with tempfile.TemporaryDirectory() as d:
+            os.environ["APODICTIC_CACHE_DIR"] = d
+            _fetch_json_network = _all_error
+            out = resolve_batch(list(degraded_batch), str(Path(d) / "out.json"),
+                                strict=True)
+            rel = out["reliability"]
+            expect_true("oq1_batch_a_degraded_nonempty",
+                        len(rel["coverage"]["degraded_providers"]) > 0)
+            expect_true("oq1_batch_a_not_checked_positive",
+                        out["summary"]["not_checked"] > 0)
+            expect_true("oq1_batch_a_strict_block", "strict" in rel)
+            expect_true("oq1_batch_a_halts", rel["strict"]["halt"] is True)
+            expect_true("oq1_batch_a_has_reason", bool(rel["strict"]["reason"]))
+
+        # (b) the SAME degraded batch NON-strict → does NOT halt (default preserved).
+        with tempfile.TemporaryDirectory() as d:
+            os.environ["APODICTIC_CACHE_DIR"] = d
+            _fetch_json_network = _all_error
+            out = resolve_batch(list(degraded_batch), str(Path(d) / "out.json"))
+            rel = out["reliability"]
+            # degradation is identical, but with no --strict there is NO halt and
+            # NO strict key — the block is byte-identical to today (AC-13).
+            expect_true("oq1_batch_b_still_degraded",
+                        len(rel["coverage"]["degraded_providers"]) > 0)
+            expect_true("oq1_batch_b_no_strict_key", "strict" not in rel)
+
+        # (c) a CLEAN run under strict → does NOT halt (no degraded provider).
+        with tempfile.TemporaryDirectory() as d:
+            os.environ["APODICTIC_CACHE_DIR"] = d
+            _fetch_json_network = make_network({"crossref.org/works/": GOOD_DOI_RESP})
+            out = resolve_batch([{"ref_id": "1", "doi": "10.1/good"}],
+                                str(Path(d) / "out.json"), strict=True)
+            rel = out["reliability"]
+            expect("oq1_batch_c_clean", rel["coverage"]["degraded_providers"], [])
+            expect_true("oq1_batch_c_strict_block_present", "strict" in rel)
+            expect_true("oq1_batch_c_no_halt", rel["strict"]["halt"] is False)
+
+        # (d) a genuine all-healthy NOT-FOUND under strict → does NOT halt
+        #     (every provider answered cleanly-empty; not-found != not-checked).
+        with tempfile.TemporaryDirectory() as d:
+            os.environ["APODICTIC_CACHE_DIR"] = d
+            _fetch_json_network = make_network({})  # clean 0-match everywhere
+            out = resolve_batch([{"ref_id": "1", "title": "Genuinely Absent Paper QZX",
+                                  "author": "Nobody"}], str(Path(d) / "out.json"),
+                                strict=True)
+            rel = out["reliability"]
+            expect("oq1_batch_d_not_found", out["summary"]["not_found"], 1)
+            expect("oq1_batch_d_no_not_checked", out["summary"]["not_checked"], 0)
+            expect("oq1_batch_d_clean", rel["coverage"]["degraded_providers"], [])
+            expect_true("oq1_batch_d_no_halt", rel["strict"]["halt"] is False)
+
+        # --- OQ-3: batch wiring writes the Citation_Reliability.json sidecar ---
+        with tempfile.TemporaryDirectory() as d:
+            os.environ["APODICTIC_CACHE_DIR"] = d
+            _fetch_json_network = _all_error
+            sc_dir = str(Path(d) / "run")
+            out = resolve_batch(list(degraded_batch), str(Path(d) / "out.json"),
+                                strict=True, sidecar_dir=sc_dir)
+            sidecar_file = Path(sc_dir) / "Citation_Reliability.json"
+            expect_true("oq3_batch_sidecar_written", sidecar_file.exists())
+            side = json.loads(sidecar_file.read_text())
+            expect("oq3_batch_sidecar_schema", side.get("schema"),
+                   "apodictic.citation_reliability.v1")
+            expect("oq3_batch_sidecar_not_checked",
+                   side["resolution_summary"]["not_checked"],
+                   out["summary"]["not_checked"])
+            expect_true("oq3_batch_sidecar_degraded",
+                        len(side["coverage"]["degraded_providers"]) > 0)
+            expect_true("oq3_batch_sidecar_strict_halt", side["strict"]["halt"] is True)
+            # the sidecar is ADDITIVE: the in-output reliability block is unchanged.
+            expect("oq3_batch_sidecar_no_output_mutation",
+                   out["reliability"]["coverage"]["degraded_providers"],
+                   side["coverage"]["degraded_providers"])
     finally:
         _fetch_json_network = orig_network
         globals()["_check_url"] = orig_check_url
@@ -795,6 +915,14 @@ def main():
     batch = sub.add_parser("batch", help="Resolve a batch of citations from JSON")
     batch.add_argument("--input", required=True, help="Input JSON file (array of citation objects)")
     batch.add_argument("--output", default=None, help="Output JSON file")
+    batch.add_argument("--strict", action="store_true",
+                       help="High-stakes mode (OQ-1): exit non-zero (HALT) if degraded "
+                            "provider coverage left >=1 citation NOT-CHECKED, rather than "
+                            "emitting a degraded verdict as a clean not-found. A clean or "
+                            "all-healthy not-found run never halts.")
+    batch.add_argument("--sidecar-dir", default=None,
+                       help="Directory to write the Citation_Reliability.json reliability "
+                            "sidecar into (OQ-3; opt-in, additive, off by default).")
 
     # check-url
     curl = sub.add_parser("check-url", help="Check if a URL is live")
@@ -823,7 +951,14 @@ def main():
 
     elif args.command == "batch":
         citations = json.loads(Path(args.input).read_text())
-        resolve_batch(citations, args.output)
+        output = resolve_batch(citations, args.output,
+                               strict=args.strict, sidecar_dir=args.sidecar_dir)
+        # OQ-1 exit contract: a strict high-stakes run that ended DEGRADED with a
+        # NOT-CHECKED citation exits non-zero so the caller HALTS. A non-strict
+        # run, a clean run, or a genuine all-healthy not-found exits 0 as before.
+        rel = output.get("reliability", {}) if isinstance(output, dict) else {}
+        if isinstance(rel, dict) and rel.get("strict", {}).get("halt"):
+            sys.exit(STRICT_HALT_EXIT_CODE)
 
     elif args.command == "check-url":
         result = _check_url(args.url)
