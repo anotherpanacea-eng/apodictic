@@ -178,7 +178,7 @@ set -euo pipefail
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).
-AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff revision-arc regression-diff legal-risk promise-contract continuity-bible world-bible intake-interview author-fingerprint content-advisory style-explanation persona-divergence argument-spine scene-ethics argument-groundtruth-check registry-check schema-coverage lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor roundtrip-disposition disposition-check synthesis-coverage specificity-floor refutation-coverage refutation-evidence refutation-write-scope obsidian-export html-export docx-export validator-conventions argument-carve-behavior-preservation check-mirror"
+AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff revision-arc regression-diff legal-risk promise-contract continuity-bible world-bible intake-interview author-fingerprint content-advisory style-explanation persona-divergence argument-spine scene-ethics argument-groundtruth-check registry-check schema-coverage lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor roundtrip-disposition disposition-check synthesis-coverage specificity-floor refutation-coverage refutation-evidence refutation-write-scope obsidian-export html-export docx-export pdf-export validator-conventions argument-carve-behavior-preservation check-mirror"
 # shellcheck disable=SC2086  # intentional word-splitting to count list entries
 AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 
@@ -228,9 +228,9 @@ _has_override() {
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, revision-arc, regression-diff, legal-risk, promise-contract, continuity-bible, world-bible, intake-interview, author-fingerprint, content-advisory, style-explanation, persona-divergence, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, schema-coverage, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, disposition-check, synthesis-coverage, specificity-floor, refutation-coverage, refutation-evidence, refutation-write-scope, obsidian-export, html-export, docx-export, validator-conventions, argument-carve-behavior-preservation, check-mirror"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, revision-arc, regression-diff, legal-risk, promise-contract, continuity-bible, world-bible, intake-interview, author-fingerprint, content-advisory, style-explanation, persona-divergence, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, schema-coverage, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, disposition-check, synthesis-coverage, specificity-floor, refutation-coverage, refutation-evidence, refutation-write-scope, obsidian-export, html-export, docx-export, pdf-export, validator-conventions, argument-carve-behavior-preservation, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage, editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter (plus the editor↔author dual-output pair — editor-scaffolding --dual over the scaffolded letter + its author-facing companion: D1 editor side E1-E4, D2 author register no-leak + Revision Checklist anchor, D3 top-severity-band consistency; plus the per-pass arm — editor-scaffolding --per-pass over the canonical scaffolded PASS artifact under --strict: P1 Editor Note addressee, P2 What-You-Might-Have-Missed, clean W1 firewall), diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, revision-arc vs the canonical Revision Arc + its Findings Ledger (A1 schema/nested-phase shape, A2 provenance closure, A3 self-consistency — one-phase-per-finding + Must-Fix-root-cause-not-in-polish, A4 non-empty rationale; clean W1 firewall-drift + W2 orphan under --strict), regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), world-bible vs the canonical Worldbuilding Bible example (W1 schema + closed-key, WD unique ids, WB-R1 rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a unit class, WB-G2 chronology cycle + anchor-drift, and the WF surface-don't-resolve firewall scan — clean under --strict with the staged contradictions overridden), intake-interview vs the canonical Intake Interview example + its Ledger (I1 schema, I2 no-contract-dup, I3 grounded ambiguity via ref + source_note, I4 calibrate-not-suppress under --strict), author-fingerprint vs the canonical Author Voice Profile (F1 schema, F2 provenance, F3 same-register comparison, F4 descriptive-not-prescriptive, clean W1/W2 under --strict), content-advisory vs the canonical Content Advisory (A1 schema, A2 locus shape, A3 no-severity-leak, descriptive W1, opt-in W2 under --strict), style-explanation vs the canonical Author Style Explanation (X1 schema, X2 provenance, X3 no-severity-leak, X4 descriptive-not-prescriptive incl. the comparison-to-emulate firewall, X5 same-register cluster, clean X6/W1 under --strict), persona-divergence vs the canonical Persona Divergence Map + its Ledger (D1 schema incl. nested experiences enum, D2 grounded prediction, D3 target-severity anchoring, D4 anti-fabrication, D5 closed-key persona under --strict), argument-spine vs the canonical pre-draft Argument_State + the three genre-profiled Argument_States (Increment 5: B1-B4 + W4-W5 over grant / academic / pitch, --strict; the genre examples each carry a non-empty reviewer_objections pre-list so W5 stays green), scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources + the pre-draft Argument_State spine (the claim-ladder X1/X5/X6/X7 gates) + the scene-roster producer (the co-presence X2 gate), annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), roundtrip-disposition vs the canonical Roundtrip Disposition record + companion Revision Report staged with the glue-chain fixtures (RT1 recompute alignment + RT2 confirmation-record + RT3 confirmed-writes-only + RT4 partition coverage, plus hostile arms — a token-stripped copy must FAIL RT2, an extra unconfirmed resolved marker must FAIL RT3, and a copy with one finding's disposition row dropped must WARN RT4 by default and FAIL under --strict), disposition-check vs the canonical example-run-folder-dispositions (a non-governed sidecar + Coaching Log markers + readiness-caveat excerpt: DP0 record shape incl. trigger-iff-deferred, DP1 declined/deferred-Must-Fix caveat coverage, DP2 no-laundering incl. the bidirectional marker/sidecar sync — plus hostile arms: an assessment stripped of its Declined caveat line must FAIL DP1 (the severity-laundering attempt), a deferred record stripped of its trigger must FAIL DP0, a sidecar with one record dropped must WARN DP2.5 by default and FAIL under --strict, and a declined id's finding_states flipped to 'revised' with no corroborating completion artifact must FAIL DP1 + name DP2.6 — supersedence is recomputed from resolved markers, never trusted), synthesis-coverage vs the canonical coverage run folders (green hybrid dispatch-derived + degraded-and-disclosed, both PASS incl. --strict — V1 presence, V2 disk<->manifest row bijection, V3 note/sidecar/marker projection, V4 provenance/mode agreement, V5 D1-D4 degrade recompute; plus hostile arms — a manifest row removed for an on-disk pass artifact must FAIL V2, a letter marker flipped against the sidecar must FAIL V3, and a degraded run masked to ok in marker+sidecar must WARN V5 by default and FAIL under --strict), specificity-floor vs the canonical re-grounded letter<->ledger pair (docs/synthesis-regrounding.md M2: the restored 'nine belief failures' + Ch 12 anchor letter PASSES clean incl. --strict; plus hostile arms — decaying 'nine' to 'several' must FAIL the count floor, stripping the Ch 12 anchor from the Must-Fix window must FAIL the anchor floor, and removing the <!-- regrounding: done --> marker must WARN by default and FAIL under --strict; the smuggled-finding reverse-ID check is finding-trace E1's, not re-fixtured here), refutation-coverage + refutation-evidence + refutation-write-scope vs the canonical example-run-folder Refutation Record (docs/finding-disconfirmation.md §8: V1 no-HIGH-without-survived-refutation incl. the cap-bound disclosure-marker rules, V2 verbatim single-line snapshot-anchored counter-evidence + snapshot_sha256 binding + budget arithmetic, V3 no-severity-channel + exact confidence transcription per the outcome caps; plus hostile arms — a record stripped of its survived block must FAIL refutation-coverage, a fabricated not-in-snapshot quote must FAIL refutation-evidence, an injected severity key must FAIL refutation-write-scope, and a fabricated bound:true budget with eligible/processed numbers that don't recompute from the ledger/record must FAIL refutation-coverage (the cap-bound exemption recomputes, never trusts) + refutation-evidence), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, schema-coverage vs the real schemas/ dir (every apodictic.*.schema.json bound + canonically exercised + closed-key table<->file agreement — Harness Contracts v2), plus validator-conventions (the fleet meta-linter — M1 every AGG validator has a --self-test dispatcher case, M2 resolvers classify on parsed blocks not raw apodictic:<type> marker scans, M3 derived count, M4 no orphan schema, M5 no bare/compiled override-marker scan + M6 no local code-span stripper — overrides use the override_marker SSoT), plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage paired with its Findings Ledger under --strict (contract + conflict integrity + the Increment-2 maps_to cross-check: FB-01.maps_to=F-RR-01 resolves E5-clean, no fully-validated item left unmapped W4-clean), editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter (plus the editor↔author dual-output pair — editor-scaffolding --dual over the scaffolded letter + its author-facing companion: D1 editor side E1-E4, D2 author register no-leak + Revision Checklist anchor, D3 top-severity-band consistency; plus the per-pass arm — editor-scaffolding --per-pass over the canonical scaffolded PASS artifact under --strict: P1 Editor Note addressee, P2 What-You-Might-Have-Missed, clean W1 firewall), diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, revision-arc vs the canonical Revision Arc + its Findings Ledger (A1 schema/nested-phase shape, A2 provenance closure, A3 self-consistency — one-phase-per-finding + Must-Fix-root-cause-not-in-polish, A4 non-empty rationale; clean W1 firewall-drift + W2 orphan under --strict), regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), world-bible vs the canonical Worldbuilding Bible example (W1 schema + closed-key, WD unique ids, WB-R1 rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a unit class, WB-G2 chronology cycle + anchor-drift, and the WF surface-don't-resolve firewall scan — clean under --strict with the staged contradictions overridden), intake-interview vs the canonical Intake Interview example + its Ledger (I1 schema, I2 no-contract-dup, I3 grounded ambiguity via ref + source_note, I4 calibrate-not-suppress under --strict), author-fingerprint vs the canonical Author Voice Profile (F1 schema, F2 provenance, F3 same-register comparison, F4 descriptive-not-prescriptive, clean W1/W2 under --strict), content-advisory vs the canonical Content Advisory (A1 schema, A2 locus shape, A3 no-severity-leak, descriptive W1, opt-in W2 under --strict), style-explanation vs the canonical Author Style Explanation (X1 schema, X2 provenance, X3 no-severity-leak, X4 descriptive-not-prescriptive incl. the comparison-to-emulate firewall, X5 same-register cluster, clean X6/W1 under --strict), persona-divergence vs the canonical Persona Divergence Map + its Ledger (D1 schema incl. nested experiences enum, D2 grounded prediction, D3 target-severity anchoring, D4 anti-fabrication, D5 closed-key persona under --strict), argument-spine vs the canonical pre-draft Argument_State + the three genre-profiled Argument_States (Increment 5: B1-B4 + W4-W5 over grant / academic / pitch, --strict; the genre examples each carry a non-empty reviewer_objections pre-list so W5 stays green), scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources + the pre-draft Argument_State spine (the claim-ladder X1/X5/X6/X7 gates) + the scene-roster producer (the co-presence X2 gate), annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), roundtrip-disposition vs the canonical Roundtrip Disposition record + companion Revision Report staged with the glue-chain fixtures (RT1 recompute alignment + RT2 confirmation-record + RT3 confirmed-writes-only + RT4 partition coverage, plus hostile arms — a token-stripped copy must FAIL RT2, an extra unconfirmed resolved marker must FAIL RT3, and a copy with one finding's disposition row dropped must WARN RT4 by default and FAIL under --strict), disposition-check vs the canonical example-run-folder-dispositions (a non-governed sidecar + Coaching Log markers + readiness-caveat excerpt: DP0 record shape incl. trigger-iff-deferred, DP1 declined/deferred-Must-Fix caveat coverage, DP2 no-laundering incl. the bidirectional marker/sidecar sync — plus hostile arms: an assessment stripped of its Declined caveat line must FAIL DP1 (the severity-laundering attempt), a deferred record stripped of its trigger must FAIL DP0, a sidecar with one record dropped must WARN DP2.5 by default and FAIL under --strict, and a declined id's finding_states flipped to 'revised' with no corroborating completion artifact must FAIL DP1 + name DP2.6 — supersedence is recomputed from resolved markers, never trusted), synthesis-coverage vs the canonical coverage run folders (green hybrid dispatch-derived + degraded-and-disclosed, both PASS incl. --strict — V1 presence, V2 disk<->manifest row bijection, V3 note/sidecar/marker projection, V4 provenance/mode agreement, V5 D1-D4 degrade recompute; plus hostile arms — a manifest row removed for an on-disk pass artifact must FAIL V2, a letter marker flipped against the sidecar must FAIL V3, and a degraded run masked to ok in marker+sidecar must WARN V5 by default and FAIL under --strict), specificity-floor vs the canonical re-grounded letter<->ledger pair (docs/synthesis-regrounding.md M2: the restored 'nine belief failures' + Ch 12 anchor letter PASSES clean incl. --strict; plus hostile arms — decaying 'nine' to 'several' must FAIL the count floor, stripping the Ch 12 anchor from the Must-Fix window must FAIL the anchor floor, and removing the <!-- regrounding: done --> marker must WARN by default and FAIL under --strict; the smuggled-finding reverse-ID check is finding-trace E1's, not re-fixtured here), refutation-coverage + refutation-evidence + refutation-write-scope vs the canonical example-run-folder Refutation Record (docs/finding-disconfirmation.md §8: V1 no-HIGH-without-survived-refutation incl. the cap-bound disclosure-marker rules, V2 verbatim single-line snapshot-anchored counter-evidence + snapshot_sha256 binding + budget arithmetic, V3 no-severity-channel + exact confidence transcription per the outcome caps; plus hostile arms — a record stripped of its survived block must FAIL refutation-coverage, a fabricated not-in-snapshot quote must FAIL refutation-evidence, an injected severity key must FAIL refutation-write-scope, and a fabricated bound:true budget with eligible/processed numbers that don't recompute from the ledger/record must FAIL refutation-coverage (the cap-bound exemption recomputes, never trusts) + refutation-evidence), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), pdf-export vs the canonical manifest projected to a self-contained .pdf (hand-written PDF objects, base-14 Helvetica, an inline [finding_id] marker at each locus + a Findings section — P1 artifact integrity + P2 text round-trip + P3 comment resolution, asserting the fresh byte-deterministic pdf/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, quality-risk-triggers vs the canonical clean Contract (example-quality-risk-contract.md raises no Q1-Q5 pre-pass trigger, plus a hostile arm — a darkness rating flipped to the top setting must raise the Q1 consent/governance trigger and exit non-zero), schema-coverage vs the real schemas/ dir (every apodictic.*.schema.json bound + canonically exercised + closed-key table<->file agreement — Harness Contracts v2), plus validator-conventions (the fleet meta-linter — M1 every AGG validator has a --self-test dispatcher case, M2 resolvers classify on parsed blocks not raw apodictic:<type> marker scans, M3 derived count, M4 no orphan schema, M5 no bare/compiled override-marker scan + M6 no local code-span stripper — overrides use the override_marker SSoT), plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -375,11 +375,13 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-findings-ledger.md not found"; CA_FAIL=1
     fi
     echo ""
-    echo "== canonical Feedback Triage (feedback-triage: contract + conflict integrity) =="
-    if [ -f "$CA_BASE/example-feedback-triage.md" ]; then
-      "$0" feedback-triage "$CA_BASE/example-feedback-triage.md" || CA_FAIL=1
+    echo "== canonical Feedback Triage (feedback-triage: contract + conflict integrity + maps_to cross-check vs the ledger) =="
+    if [ -f "$CA_BASE/example-feedback-triage.md" ] && [ -f "$CA_BASE/example-findings-ledger.md" ]; then
+      # Increment 2: paired with the canonical Findings Ledger so the maps_to cross-check engages —
+      # FB-01.maps_to=F-RR-01 resolves (no E5) and no fully-validated item is left unmapped (no W4).
+      "$0" feedback-triage "$CA_BASE/example-feedback-triage.md" "$CA_BASE/example-findings-ledger.md" --strict || CA_FAIL=1
     else
-      echo "ERROR: $CA_BASE/example-feedback-triage.md not found"; CA_FAIL=1
+      echo "ERROR: $CA_BASE/example-feedback-triage.md or example-findings-ledger.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical Retcon Plan (retcon-plan: commitment-budget + fair-play + target integrity + ranked selection) =="
@@ -934,6 +936,37 @@ PY
       echo "ERROR: $CA_BASE/example-annotated-manuscript not found (docx-export)"; CA_FAIL=1
     fi
     echo ""
+    echo "== canonical pdf-export (manifest -> self-contained .pdf; P1-P3 + byte-identical) =="
+    if [ -d "$CA_BASE/example-annotated-manuscript" ] && command -v python3 >/dev/null 2>&1; then
+      # Project the canonical manifest + snapshot to a .pdf on a temp copy (generate WRITES
+      # pdf/<copy>.pdf, never in place), gate it (P1-P3), and assert the fresh byte-deterministic export
+      # is byte-identical to the committed pdf/ fixture.
+      CA_PXE_SRC="$CA_BASE/example-annotated-manuscript"
+      CA_PXE=$(mktemp -d)
+      cp "$CA_PXE_SRC"/*_Manuscript_Snapshot_*.md "$CA_PXE_SRC"/*_Annotation_Manifest_*.md "$CA_PXE"/ 2>/dev/null
+      CA_PXE_OK=1
+      python3 "$CA_SCRIPT_DIR/annotation_export.py" pdf "$CA_PXE" >/dev/null 2>&1 || CA_PXE_OK=0
+      "$0" pdf-export "$CA_PXE" >/dev/null 2>&1 || CA_PXE_OK=0
+      CA_PXE_N=0
+      for CA_PXE_F in "$CA_PXE"/pdf/*.pdf; do
+        if [ -f "$CA_PXE_F" ]; then
+          CA_PXE_N=$((CA_PXE_N + 1))
+          cmp -s "$CA_PXE_F" "$CA_PXE_SRC/pdf/$(basename "$CA_PXE_F")" || CA_PXE_OK=0
+        else
+          CA_PXE_OK=0
+        fi
+      done
+      [ "$CA_PXE_N" -eq 1 ] || CA_PXE_OK=0
+      if [ "$CA_PXE_OK" -eq 1 ]; then
+        echo "pdf-export (temp copy): PASS"
+      else
+        echo "pdf-export (temp copy): FAIL"; CA_FAIL=1
+      fi
+      rm -rf "$CA_PXE"
+    else
+      echo "ERROR: $CA_BASE/example-annotated-manuscript not found (pdf-export)"; CA_FAIL=1
+    fi
+    echo ""
     echo "== canonical Timeline (timeline-arithmetic, timeline-anchor-conflict, timeline-diff self) =="
     if [ -f "$CA_BASE/example-timeline.md" ]; then
       "$0" timeline-arithmetic "$CA_BASE/example-timeline.md" || CA_FAIL=1
@@ -963,6 +996,31 @@ PY
       fi
     else
       echo "ERROR: $CA_BASE/example-run-folder not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical clean contract (quality-risk-triggers: no Q1-Q5 fires; hostile Q1 darkness arm) =="
+    if [ -f "$CA_BASE/example-quality-risk-contract.md" ]; then
+      # clean arm: the canonical well-formed, low-risk Contract raises none of the five pre-pass
+      # quality-risk triggers (Q1-Q5) and exits 0 — the release-gate proof that the canonical
+      # framework's own worked-example contract satisfies the validator, not just synthetic fixtures.
+      "$0" quality-risk-triggers "$CA_BASE/example-quality-risk-contract.md" || CA_FAIL=1
+      # hostile arm: the SAME contract with its darkness rating flipped from Moderate to the top
+      # setting must raise the Q1 consent/governance trigger and exit non-zero — non-vacuous proof
+      # the gate has teeth (a sed no-op, were the fixture to stop carrying the Moderate rating,
+      # leaves the copy identical to the clean one and so trips the FAIL branch below). Mutated on a
+      # throwaway copy so the committed fixture stays clean.
+      CA_QR=$(mktemp)
+      sed 's/DARKNESS LEVEL: Moderate/DARKNESS LEVEL: HIGH/' "$CA_BASE/example-quality-risk-contract.md" > "$CA_QR"
+      if QR_OUT=$("$0" quality-risk-triggers "$CA_QR" 2>&1); then
+        echo "quality-risk-triggers (hostile darkness arm): FAIL (expected Q1 to fire and exit non-zero)"; CA_FAIL=1
+      elif printf '%s' "$QR_OUT" | grep -q "Q1 (consent/governance)"; then
+        echo "quality-risk-triggers (hostile darkness arm): PASS"
+      else
+        echo "quality-risk-triggers (hostile darkness arm): FAIL (exited non-zero but Q1 not raised)"; CA_FAIL=1
+      fi
+      rm -f "$CA_QR"
+    else
+      echo "ERROR: $CA_BASE/example-quality-risk-contract.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical synthesis coverage (green + degraded-and-disclosed run folders; V2/V3 hostile arms; V5 masking arm) =="
@@ -1841,6 +1899,12 @@ EOF
   #   audit-internal HIGH (Alert)     → synthesis Must-Fix or Should-Fix
   #   audit-internal MEDIUM (Flag)    → synthesis Should-Fix
   #   audit-internal LOW (Note)       → synthesis Could-Fix
+  # §4e-source-of-truth (2026-07-04): the Python primary (letter_checks.py) no
+  # longer hardcodes this mapping — it PARSES it from the pass-dependencies.md §4e
+  # `#### Default mapping` block, and honors a per-audit `propagate-override:
+  # <signal-class> → <severity>` directive in a §4e row's Override column. The
+  # taxonomy above is the committed §4e default, reproduced here for reference; the
+  # bash degraded path below retains it inline for python-less hosts.
   #
   # Mechanics (v1.7.9): the validator no longer accepts a generic synthesis-
   # body Must-Fix / Should-Fix mention as evidence of propagation. For each
@@ -5218,10 +5282,14 @@ EOF
   feedback-triage)
     # Feedback Triage workflow integrity (docs/feedback-triage.md): structural checks over the
     # apodictic.feedback_item.v1 blocks in a Feedback Triage artifact — E1 invalid item, E2
-    # duplicate id, E3 dangling conflict reference, E4 self conflict, W1 unresolved conflict (both
-    # sides still actionable), W2 acting now on an unvalidated claim (W1/W2 advisory; ERROR under
-    # --strict). Owns conflict referential integrity + the "contradiction kept live" coherence gap.
-    # Takes a run folder (globs *_Feedback_Triage_*.md) or explicit files. Delegates to
+    # duplicate id, E3 dangling conflict reference, E4 self conflict, E5 dangling maps_to (a
+    # finding-id ref not in the paired ledger; Increment 2), W1 unresolved conflict (both sides
+    # still actionable), W2 acting now on an unvalidated claim, W4 unmapped validated (a `validated`
+    # item carrying no maps_to; Increment 2). W1/W2/W4 advisory; ERROR under --strict. Owns conflict
+    # referential integrity, the "contradiction kept live" coherence gap, and feedback->ledger
+    # maps_to referential integrity. Takes a run folder (globs *_Feedback_Triage_*.md plus an
+    # optional *_Findings_Ledger_*.md for the maps_to cross-check) or explicit files (triage +
+    # optional ledger); without a ledger the maps_to check is skipped. Delegates to
     # scripts/feedback_triage.py; degrades to an advisory WARN without python3.
     FBT_DIR=$(cd "$(dirname "$0")" && pwd)
     FBT_HELPER="$FBT_DIR/feedback_triage.py"
@@ -5676,6 +5744,32 @@ EOF
       python3 "$DXE_HELPER" docx-export "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — docx-export skipped; check inline that document.xml is the snapshot text in <w:p>/<w:t> with each finding's span wrapped commentRangeStart/End + commentReference, and comments.xml carries the verbatim comments. See docs/annotated-manuscript-export.md."
+    exit 0
+    ;;
+
+  pdf-export)
+    # Annotated-Manuscript PDF export (docs/annotated-manuscript-export.md, Increment 5): project the
+    # gated manifest + snapshot into a self-contained .pdf hand-written from raw PDF objects (header,
+    # body, xref, trailer — NO external libs). The snapshot prose renders as base-14 Helvetica text; each
+    # finding drops an inline [<finding_id>] marker at its anchor locus (the HTML <sup> precedent) and its
+    # verbatim comment lands in a trailing Findings section. A pure projection; the PDF is byte-
+    # deterministic (no /Info, no dates, no /ID, no compression, octal-escaped ASCII text). P1 artifact
+    # integrity (ERROR: on-disk == fresh build byte-for-byte — the authoritative lock for a binary), P2
+    # text round-trip (ERROR: the manuscript text runs, markers stripped, -> snapshot), P3 marker
+    # resolution + comment fidelity (ERROR: markers <-> comments bijection == manifest set; each comment
+    # verbatim). `pdf <run_folder>` writes pdf/<copy>.pdf; `pdf-export <run_folder>` validates.
+    # Delegates to scripts/annotation_export.py; degrades to an advisory WARN without python3.
+    PXE_DIR=$(cd "$(dirname "$0")" && pwd)
+    PXE_HELPER="$PXE_DIR/annotation_export.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$PXE_HELPER" ]; then python3 "$PXE_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; pdf-export is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$PXE_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 pdf-export <run_folder> | (generate) via annotation_export.py pdf <run_folder>"; exit 2; fi
+      python3 "$PXE_HELPER" pdf-export "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — pdf-export skipped; check inline that the PDF text runs are the snapshot lines with a manifest-keyed [finding_id] marker at each locus, the Findings section carries the verbatim comments, and stripping the markers reproduces the snapshot. See docs/annotated-manuscript-export.md."
     exit 0
     ;;
 

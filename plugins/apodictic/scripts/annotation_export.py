@@ -772,6 +772,310 @@ def check_docx(manifest_obj, snapshot, docx_bytes):
     return errs, []
 
 
+# ---------------------------------------------------------------- Increment 5: PDF (proofing target)
+# A .pdf is a hand-written stack of PDF objects — header, body, xref, trailer — NO external libs. The
+# manuscript prose renders as base-14 Helvetica text; each finding drops an inline [<finding_id>] marker
+# at its anchor locus (the HTML <sup> precedent, without a font that can superscript) and its verbatim
+# comment lands in a trailing Findings section. Byte-determinism (the DOCX discipline, for a different
+# binary): NO /Info dict (so no /CreationDate or /ModDate), NO /ID array, NO stream compression (so no
+# zlib-version drift), all text emitted as octal-escaped ASCII (so no locale/encoding drift), a fixed
+# object order, and xref offsets computed from byte lengths — no wall clock, no random anywhere.
+
+_PDF_FONT_SIZE = 11
+_PDF_LEADING = 14
+_PDF_X = 72
+_PDF_Y_START = 734          # first T* moves down one LEADING -> baseline 720
+_PDF_PAGE_W = 612           # US Letter
+_PDF_PAGE_H = 792
+_PDF_LINES_PER_PAGE = 45    # (720 - 45*14) = 90 >= 72 bottom margin
+_PDF_WRAP = 90              # findings comments wrap at a raw char boundary (concatenation is exact)
+_PDF_TITLE_SUFFIX = " — Annotated Manuscript"
+_PDF_FINDINGS_HEADER = "Findings"
+_PDF_MARKER_RE = re.compile(r"\[(F-[A-Za-z0-9]+-[0-9]{2,})\]")
+
+
+def _pdf_marker(fid):
+    return "[%s]" % fid
+
+
+def _pdf_comment_str(annotation):
+    """The verbatim comment as a string; a non-string (malformed) comment coerces to '' (never crashes)."""
+    c = annotation.get("comment")
+    return c if isinstance(c, str) else ""
+
+
+def _pdf_enc_ok(s):
+    """True iff every char is WinAnsi(CP1252)-encodable — the base-14 Helvetica codomain."""
+    try:
+        (s if isinstance(s, str) else "").encode("cp1252")
+        return True
+    except (UnicodeEncodeError, LookupError):
+        return False
+
+
+def _pdf_escape_string(s):
+    """A PDF string-literal body: CP1252 bytes, with `( ) \\` and every non-printable/high byte emitted as
+    an octal `\\ddd` escape — so the whole content stream stays ASCII and byte-deterministic. The font's
+    /WinAnsiEncoding interprets the bytes; a `\\247` renders as § matching the CP1252 encode."""
+    out = []
+    for byte in s.encode("cp1252"):
+        if byte == 0x28:
+            out.append("\\(")
+        elif byte == 0x29:
+            out.append("\\)")
+        elif byte == 0x5C:
+            out.append("\\\\")
+        elif 32 <= byte <= 126:
+            out.append(chr(byte))
+        else:
+            out.append("\\%03o" % byte)
+    return "".join(out)
+
+
+def _pdf_string_literals(stream_text):
+    """Parse every `( … )` string literal in a content stream, in order, back to a unicode str (the exact
+    inverse of _pdf_escape_string: octal + `\\( \\) \\\\` unescape, then CP1252-decode). The build emits a
+    `(…)` literal ONLY for shown text (each followed by ` Tj`), so this yields exactly the shown strings."""
+    out, i, n = [], 0, len(stream_text)
+    while i < n:
+        if stream_text[i] != "(":
+            i += 1
+            continue
+        i += 1
+        depth, buf = 1, []
+        while i < n and depth > 0:
+            c = stream_text[i]
+            if c == "\\":
+                nxt = stream_text[i + 1] if i + 1 < n else ""
+                if nxt in "01234567":
+                    j, octs = i + 1, ""
+                    while j < n and len(octs) < 3 and stream_text[j] in "01234567":
+                        octs += stream_text[j]
+                        j += 1
+                    buf.append(int(octs, 8) & 0xFF)
+                    i = j
+                    continue
+                simple = {"n": 10, "r": 13, "t": 9, "b": 8, "f": 12, "(": 40, ")": 41, "\\": 92}
+                if nxt in simple:
+                    buf.append(simple[nxt])
+                elif nxt == "\n":
+                    pass                          # line continuation -> nothing
+                else:
+                    buf.append(ord(nxt) & 0xFF)   # `\x` -> x
+                i += 2
+                continue
+            if c == "(":
+                depth += 1
+                buf.append(40)
+                i += 1
+                continue
+            if c == ")":
+                depth -= 1
+                if depth == 0:
+                    i += 1
+                    break
+                buf.append(41)
+                i += 1
+                continue
+            buf.append(ord(c) & 0xFF)
+            i += 1
+        out.append(bytes(buf).decode("cp1252", errors="replace"))
+    return out
+
+
+def _pdf_content_streams(pdf_bytes):
+    """The content-stream bodies, in file (= page) order."""
+    s = pdf_bytes.decode("latin-1")
+    return re.findall(r"stream\r?\n(.*?)\r?\nendstream", s, re.DOTALL)
+
+
+def _snapshot_lines(snapshot):
+    """The snapshot's lines with the final-newline's trailing '' dropped (one line -> one shown text run)."""
+    lines = snapshot.split("\n")
+    if lines and lines[-1] == "":
+        lines = lines[:-1]
+    return lines
+
+
+def _pdf_wrap(s, width):
+    """Wrap at a raw char boundary (never a word/space boundary) so the chunks concatenate back to `s`
+    byte-for-byte — the exact-fidelity discipline (D3/H3/O3), independent of any word model."""
+    return [s[i:i + width] for i in range(0, len(s), width)] or [""]
+
+
+def _pdf_marked(snapshot, annotations, chap_l, sec_l, nl_at):
+    """The snapshot with a `[<finding_id>]` marker spliced at each anchor locus (descending (offset, fid)
+    splice, so co-located markers land adjacent `[A][B]` and never perturb a not-yet-inserted offset)."""
+    inserts = [(_insertion_offset(a.get("anchor") or {}, snapshot, nl_at, chap_l, sec_l), a.get("finding_id"))
+               for a in annotations]
+    out = snapshot
+    for off, fid in sorted(inserts, key=lambda t: (t[0], am.fid_key(t[1]) or ""), reverse=True):
+        off = max(0, min(off, len(out)))
+        out = out[:off] + _pdf_marker(fid) + out[off:]
+    return out
+
+
+def _pdf_content(page_items):
+    """A page content stream. Each item is ('show', text) or ('skip',); every item advances one line (T*),
+    so a snapshot blank line shows as `() Tj` (round-trippable) while a structural spacer shows nothing."""
+    out = ["BT", "/F1 %d Tf" % _PDF_FONT_SIZE, "%d TL" % _PDF_LEADING, "%d %d Td" % (_PDF_X, _PDF_Y_START)]
+    for it in page_items:
+        out.append("T*")
+        if it[0] == "show":
+            out.append("(%s) Tj" % _pdf_escape_string(it[1]))
+    out.append("ET")
+    return "\n".join(out) + "\n"
+
+
+def build_pdf(manifest_obj, snapshot):
+    """-> (pdf_bytes_or_None, errs). Pure projection: the snapshot prose as Helvetica text with a
+    `[<finding_id>]` marker at each locus, then a Findings section of the verbatim comments. errs is the
+    two-sided precondition (WinAnsi-encodable; no marker sigil already in the snapshot; single-line comment)."""
+    annotations = [a for a in (manifest_obj.get("annotations") or []) if isinstance(a, dict)]
+    project = manifest_obj.get("project", "Manuscript")
+    project = project if isinstance(project, str) else "Manuscript"
+    title = project + _PDF_TITLE_SUFFIX
+    errs = []
+    # Precondition (two-sided, the O1/D discipline): every rendered string must be WinAnsi-encodable, no
+    # comment may be multi-line (it reads as clutter — forbid it like DOCX), and the snapshot must not
+    # already carry a manifest marker (else the P2 manifest-keyed strip would not be reversible).
+    if not _pdf_enc_ok(snapshot):
+        errs.append("P precondition: the snapshot has a character outside WinAnsi (CP1252) — not renderable "
+                    "in a base-14 Helvetica PDF without an embedded font")
+    if not _pdf_enc_ok(title):
+        errs.append("P precondition: the project title has a non-WinAnsi character")
+    for a in annotations:
+        c = _pdf_comment_str(a)
+        if not _pdf_enc_ok(c):
+            errs.append("P precondition: comment for %s has a non-WinAnsi character" % a.get("finding_id"))
+        if "\n" in c or "\r" in c:
+            errs.append("P precondition: comment for %s is multi-line" % a.get("finding_id"))
+        if _pdf_marker(a.get("finding_id")) in snapshot:
+            errs.append("P precondition: the snapshot already contains the marker %s — the reverse "
+                        "transform would not be reversible" % _pdf_marker(a.get("finding_id")))
+    if errs:
+        return None, errs
+
+    chap_n, sec_n, chap_l, sec_l = am.heading_index(snapshot)
+    nl_at, ln = {}, 1
+    for i, ch in enumerate(snapshot):
+        if ch == "\n":
+            nl_at[ln] = i
+            ln += 1
+    marked_lines = _snapshot_lines(_pdf_marked(snapshot, annotations, chap_l, sec_l, nl_at))
+    ordered = sorted(annotations, key=lambda a: am.fid_key(a.get("finding_id")) or "")
+
+    # The flat, deterministic sequence of shown strings: [title] + manuscript(L) + [header] + finding chunks.
+    # Structural spacers advance the cursor (T*) but show nothing, so they never enter the shown sequence.
+    items = [("show", title), ("skip",)]
+    items += [("show", m) for m in marked_lines]
+    items += [("skip",), ("show", _PDF_FINDINGS_HEADER), ("skip",)]
+    for a in ordered:
+        items += [("show", chunk) for chunk in _pdf_wrap(_pdf_comment_str(a), _PDF_WRAP)]
+        items.append(("skip",))
+
+    pages = [items[i:i + _PDF_LINES_PER_PAGE] for i in range(0, len(items), _PDF_LINES_PER_PAGE)] or [[]]
+    page_count = len(pages)
+    font_num = 3 + 2 * page_count
+
+    objs = {}
+    objs[1] = b"<< /Type /Catalog /Pages 2 0 R >>"
+    kids = " ".join("%d 0 R" % (3 + 2 * p) for p in range(page_count))
+    objs[2] = ("<< /Type /Pages /Kids [%s] /Count %d >>" % (kids, page_count)).encode("ascii")
+    for p in range(page_count):
+        page_num, cont_num = 3 + 2 * p, 4 + 2 * p
+        objs[page_num] = (
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %d %d] "
+            "/Resources << /Font << /F1 %d 0 R >> >> /Contents %d 0 R >>"
+            % (_PDF_PAGE_W, _PDF_PAGE_H, font_num, cont_num)).encode("ascii")
+        data = _pdf_content(pages[p]).encode("ascii")
+        objs[cont_num] = b"<< /Length %d >>\nstream\n" % len(data) + data + b"\nendstream"
+    objs[font_num] = b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"
+
+    buf = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")   # the binary-comment 2nd line marks the file binary
+    offsets = {}
+    for num in range(1, font_num + 1):
+        offsets[num] = len(buf)
+        buf += b"%d 0 obj\n" % num + objs[num] + b"\nendobj\n"
+    xref_off = len(buf)
+    n_entries = font_num + 1
+    buf += b"xref\n0 %d\n" % n_entries
+    buf += b"0000000000 65535 f\r\n"
+    for num in range(1, font_num + 1):
+        buf += b"%010d 00000 n\r\n" % offsets[num]
+    buf += (b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (n_entries, xref_off))
+    return bytes(buf), []
+
+
+def check_pdf(manifest_obj, snapshot, pdf_bytes):
+    """P1-P3 over an emitted .pdf. Returns (errs, warns).
+
+    P1 (authoritative) — the on-disk .pdf == a fresh deterministic build byte-for-byte (the artifact is
+    fully determined by the gated manifest + snapshot; equality pins prose, marker positions, comment text,
+    structure, and forbids any authored content — the DOCX-D1 discipline, for a text-native PDF).
+    P2/P3 independently parse the PDF bytes as granular diagnostics."""
+    errs = []
+    annotations = [a for a in (manifest_obj.get("annotations") or []) if isinstance(a, dict)]
+
+    expected, _perrs = build_pdf(manifest_obj, snapshot)
+    if expected is not None and pdf_bytes != expected:
+        errs.append("P1 artifact integrity: the on-disk .pdf is not byte-identical to a fresh build from "
+                    "the gated manifest + snapshot (prose / marker-position / comment / structure drift, "
+                    "or authored content)")
+
+    shown = []
+    for cs in _pdf_content_streams(pdf_bytes):
+        shown += _pdf_string_literals(cs)
+
+    ids = [am.fid_key(a.get("finding_id")) for a in annotations]
+    lines = _snapshot_lines(snapshot)
+    L = len(lines)
+    # Structure: shown[0] = title, shown[1:1+L] = manuscript, shown[1+L] = header, shown[2+L:] = findings.
+    if len(shown) < 2 + L:
+        return errs + ["P2 text round-trip: the PDF carries too few text runs (%d) to hold the manuscript "
+                       "(%d lines) + the Findings header" % (len(shown), L)], []
+    manuscript = shown[1:1 + L]
+
+    # P2 — text round-trip: join the manuscript runs, strip the manifest-keyed markers, == snapshot.
+    reconstructed = "\n".join(manuscript) + "\n"
+    for fid in ids:
+        reconstructed = reconstructed.replace(_pdf_marker(fid), "")
+    if reconstructed != snapshot:
+        errs.append("P2 text round-trip: the PDF manuscript text (markers stripped) does not reproduce the "
+                    "snapshot byte-for-byte")
+
+    # P3 — marker resolution: the manuscript markers ↔ the manifest finding_id set (bijection, multiset).
+    marker_counts = {}
+    for m in manuscript:
+        for fid in _PDF_MARKER_RE.findall(m):
+            marker_counts[fid] = marker_counts.get(fid, 0) + 1
+    manifest_set = {}
+    for fid in ids:
+        manifest_set[fid] = manifest_set.get(fid, 0) + 1
+    for fid, ncount in sorted(marker_counts.items()):
+        if ncount != 1:
+            errs.append("P3 marker resolution: marker [%s] appears %d times (need exactly 1)" % (fid, ncount))
+        if fid not in manifest_set:
+            errs.append("P3 marker resolution: marker [%s] is not a manifest finding_id (un-manifested)" % fid)
+    for fid in sorted(manifest_set):
+        if marker_counts.get(fid, 0) != 1:
+            errs.append("P3 marker resolution: manifest finding %s has %d markers (need exactly 1)"
+                        % (fid, marker_counts.get(fid, 0)))
+
+    # P3 — comment fidelity: each finding's chunk group (re-derived) concatenates to the verbatim comment.
+    findings = shown[2 + L:]
+    pos = 0
+    for a in sorted(annotations, key=lambda x: am.fid_key(x.get("finding_id")) or ""):
+        c = _pdf_comment_str(a)
+        chunks = _pdf_wrap(c, _PDF_WRAP)
+        got = findings[pos:pos + len(chunks)]
+        pos += len(chunks)
+        if "".join(got) != c:
+            errs.append("P3 comment fidelity: the comment for %s is not the verbatim manifest comment "
+                        "(relocate, never re-author)" % a.get("finding_id"))
+    return errs, []
+
+
 def _runlabel_of(path):
     base = os.path.basename(path or "")
     for infix in ("_Manuscript_Snapshot_", "_Annotation_Manifest_"):
@@ -975,6 +1279,51 @@ def run_docx(paths):
         lines.append("docx-export: FAIL (%d error(s))" % len(errs))
         return 1, lines
     lines.append("docx-export: PASS (D1 artifact integrity + D2 text round-trip + D3 comment resolution)")
+    return 0, lines
+
+
+def generate_pdf(folder):
+    """Write pdf/<Project>_Annotated_Manuscript_<runlabel>.pdf. Returns (code, lines)."""
+    obj, snapshot, project, runlabel, _cl, err = _resolve(folder)
+    if err:
+        return 2, ["pdf-export: %s" % err]
+    pdf, errs = build_pdf(obj, snapshot)
+    if errs:
+        return 1, ["pdf-export: " + e for e in errs] + ["pdf-export: FAIL (P precondition)"]
+    outdir = os.path.join(folder, "pdf")
+    os.makedirs(outdir, exist_ok=True)
+    out_path = os.path.join(outdir, "%s_Annotated_Manuscript_%s.pdf" % (project, runlabel))
+    with open(out_path, "wb") as fh:
+        fh.write(pdf)
+    return 0, ["pdf-export: wrote pdf/%s" % os.path.basename(out_path)]
+
+
+def run_pdf(paths):
+    """Validate the ON-DISK pdf/<copy>.pdf (P1-P3), never a regenerate."""
+    if len(paths) < 1 or not os.path.isdir(paths[0]):
+        return 2, ["pdf-export: usage: pdf-export <run_folder>"]
+    obj, snapshot, _p, _r, _cl, err = _resolve(paths[0])
+    if err:
+        return 2, ["pdf-export: %s" % err]
+    pdf_path = _newest(glob.glob(os.path.join(paths[0], "pdf", "*_Annotated_Manuscript_*.pdf")))
+    if not pdf_path:
+        return 2, ["pdf-export: no pdf/*_Annotated_Manuscript_*.pdf found "
+                   "(run `annotation_export.py pdf <run_folder>` first)"]
+    pdf_bytes = _read_bytes(pdf_path)
+    if pdf_bytes is None:
+        return 2, ["pdf-export: cannot read %s" % pdf_path]
+    _exp, perrs = build_pdf(obj, snapshot)
+    if perrs:
+        return 1, ["pdf-export: " + e for e in perrs] + ["pdf-export: FAIL (P precondition)"]
+    errs, _w = check_pdf(obj, snapshot, pdf_bytes)
+    lines = ["pdf-export: %d finding(s); validating pdf/%s"
+             % (len(obj.get("annotations") or []), os.path.basename(pdf_path))]
+    for e in errs:
+        lines.append("  ERROR: %s" % e)
+    if errs:
+        lines.append("pdf-export: FAIL (%d error(s))" % len(errs))
+        return 1, lines
+    lines.append("pdf-export: PASS (P1 artifact integrity + P2 text round-trip + P3 comment resolution)")
     return 0, lines
 
 
@@ -1392,6 +1741,84 @@ def run_self_test():
     finally:
         shutil.rmtree(d4, ignore_errors=True)
 
+    # --- Increment 5: PDF (proofing target) ---
+    pdf_bytes, pperrs = build_pdf(obj, snap)
+    chk("pdf_no_precond_errs", not pperrs and pdf_bytes is not None)
+    chk("pdf_is_pdf", pdf_bytes[:5] == b"%PDF-")
+    chk("pdf_deterministic", build_pdf(obj, snap)[0] == pdf_bytes)      # byte-identical across builds
+    chk("pdf_check_clean", check_pdf(obj, snap, pdf_bytes)[0] == [])
+    _pshown = []
+    for _cs in _pdf_content_streams(pdf_bytes):
+        _pshown += _pdf_string_literals(_cs)
+    _Lp = len(_snapshot_lines(snap))
+    _pman = _pshown[1:1 + _Lp]
+    chk("pdf_marker_on_chapter_line", "# Chapter 9[F-CH-01]" in _pman)
+    chk("pdf_marker_at_quote_end", any("forty years.[F-QT-01]" in m for m in _pman))
+    # F-DOC-01 (document, end of line 1) + F-NEG-01 (Ch 1, end of line 1) are CO-LOCATED -> adjacent markers.
+    chk("pdf_colocated_adjacent", "# Chapter 1[F-DOC-01][F-NEG-01]" in _pman)
+    _precon = "\n".join(_pman) + "\n"
+    for _fid in [a["finding_id"] for a in obj["annotations"]]:
+        _precon = _precon.replace("[%s]" % _fid, "")
+    chk("pdf_round_trip", _precon == snap)
+    chk("pdf_comment_verbatim_extractable",
+        "flat reveal" in "".join(_pshown[2 + _Lp:]) and "pacing seam" in "".join(_pshown[2 + _Lp:]))
+    # P1/P2 fire on a manuscript prose mutation (equal-length byte edit keeps xref valid so P2/P3 can parse).
+    _pmut = pdf_bytes.replace(b"Three days collapsed here.", b"Three days collapsed THERE.")
+    chk("pdf_p1_fires_on_mutation",
+        _pmut != pdf_bytes and any("P1" in x or "P2" in x for x in check_pdf(obj, snap, _pmut)[0]))
+    # P1/P3 fire on a re-authored comment.
+    _preauth = pdf_bytes.replace(b"flat reveal", b"REWRITTEN!!")
+    chk("pdf_p3_fires_on_reauthor",
+        _preauth != pdf_bytes and any("P1" in x or "P3" in x for x in check_pdf(obj, snap, _preauth)[0]))
+    # P precondition: a snapshot already carrying a manifest marker is refused (irreversible strip).
+    _t, _pe = build_pdf({"annotations": [ann("F-QT-01", {"kind": "document", "value": ""}, "c")]},
+                        am.normalize_snapshot("# Ch\nsee [F-QT-01] here\n"))
+    chk("pdf_precond_marker_in_snapshot", any("already contains the marker" in x for x in _pe))
+    # P precondition: a non-WinAnsi (CP1252) character in a comment is refused (no embedded font).
+    _t, _pe = build_pdf({"annotations": [ann("F-X-01", {"kind": "document", "value": ""}, "bad \U0001f600 char")]}, snap)
+    chk("pdf_precond_non_winansi", any("non-WinAnsi" in x for x in _pe))
+    # P precondition: a multi-line comment is refused.
+    _t, _pe = build_pdf({"annotations": [ann("F-X-01", {"kind": "document", "value": ""}, "line\nline2")]}, snap)
+    chk("pdf_precond_multiline", any("multi-line" in x for x in _pe))
+    # HOSTILE (mandated, like HTML/DOCX): PDF-string metachars `( ) \` + non-ASCII `§` UPSTREAM of an
+    # anchor (catches offset/escape drift) and in a comment (catches the exact escape/unescape inverse) —
+    # the canonical fixture has none.
+    _pq = "The lighthouse stood unlit for forty years."
+    _psnap = am.normalize_snapshot("# A (paren) \\slash § here\n" + _pq + "\n")
+    _pqi = _psnap.find(_pq)
+    _pobj = {"project": "P (co) §", "annotations": [ann(
+        "F-QT-01", {"kind": "quote", "value": "%d-%d" % (_pqi, _pqi + len(_pq)), "quote": _pq},
+        "[Must-Fix · F-QT-01] uses ( ) \\ and § chars — fix. (See letter §F-QT-01.)")]}
+    _ppdf, _pe = build_pdf(_pobj, _psnap)
+    chk("pdf_hostile_no_precond", not _pe and _ppdf is not None)
+    chk("pdf_hostile_check_clean", check_pdf(_pobj, _psnap, _ppdf)[0] == [])
+    _hshown = []
+    for _cs in _pdf_content_streams(_ppdf):
+        _hshown += _pdf_string_literals(_cs)
+    _hman = _hshown[1:1 + len(_snapshot_lines(_psnap))]
+    chk("pdf_hostile_round_trips", ("\n".join(_hman) + "\n").replace("[F-QT-01]", "") == _psnap)
+
+    # generate_pdf + run_pdf end-to-end; on-disk tampering caught.
+    d6 = tempfile.mkdtemp()
+    try:
+        with open(os.path.join(d6, "T_Manuscript_Snapshot_r.md"), "w", encoding="utf-8", newline="") as fh:
+            fh.write(snap)
+        with open(os.path.join(d6, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8", newline="") as fh:
+            fh.write("<!-- apodictic:annotation\n%s\n-->" % _j.dumps(obj))
+        chk("pdf_generate_writes", generate_pdf(d6)[0] == 0
+            and os.path.isfile(os.path.join(d6, "pdf", "T_Annotated_Manuscript_r.pdf")))
+        chk("pdf_run_validates", run_pdf([d6])[0] == 0)
+        _pp = os.path.join(d6, "pdf", "T_Annotated_Manuscript_r.pdf")
+        _gp = _read_bytes(_pp)
+        with open(_pp, "wb") as fh:
+            fh.write(_gp.replace(b"Three days collapsed here.", b"Three days collapsed THERE."))
+        chk("pdf_run_catches_disk_tamper", run_pdf([d6])[0] == 1)
+        with open(_pp, "wb") as fh:
+            fh.write(_gp)
+        chk("pdf_run_passes_after_restore", run_pdf([d6])[0] == 0)
+    finally:
+        shutil.rmtree(d6, ignore_errors=True)
+
     # regression (Codex #141 round-2): a present-but-non-object manifest block (a JSON array) must not
     # reach obj.get() in _resolve / the build_* manifest_obj.get() sites — every public generate
     # entrypoint returns a clean non-zero error, never an AttributeError traceback.
@@ -1402,7 +1829,8 @@ def run_self_test():
         with open(os.path.join(d5, "T_Annotation_Manifest_r.md"), "w", encoding="utf-8", newline="") as fh:
             fh.write("<!-- apodictic:annotation\n[1, 2, 3]\n-->")
         try:
-            nonobj_ok = (generate(d5)[0] != 0 and generate_html(d5)[0] != 0 and generate_docx(d5)[0] != 0)
+            nonobj_ok = (generate(d5)[0] != 0 and generate_html(d5)[0] != 0 and generate_docx(d5)[0] != 0
+                         and generate_pdf(d5)[0] != 0)
         except AttributeError:
             nonobj_ok = False
         chk("nonobject_manifest_no_crash", nonobj_ok)
@@ -1422,7 +1850,9 @@ def run_self_test():
         check_html(obj_nh, snap, _h or "")
         _d, _de = build_docx(obj_nh, snap)
         check_docx(obj_nh, snap, _d or b"")
-        chk("html_docx_nonhashable_finding_id_no_crash", _h is not None and _d is not None)
+        _pn, _pne = build_pdf(obj_nh, snap)
+        check_pdf(obj_nh, snap, _pn or b"")
+        chk("html_docx_nonhashable_finding_id_no_crash", _h is not None and _d is not None and _pn is not None)
     except TypeError:
         chk("html_docx_nonhashable_finding_id_no_crash", False)
     try:
@@ -1444,7 +1874,8 @@ def main(argv):
         return 2
     args = [a for a in argv[1:] if not a.startswith("--")]
     # generate modes
-    for verb, gen in (("obsidian", generate), ("html", generate_html), ("docx", generate_docx)):
+    for verb, gen in (("obsidian", generate), ("html", generate_html), ("docx", generate_docx),
+                      ("pdf", generate_pdf)):
         if args and args[0] == verb:
             rest = [a for a in args[1:]]
             if len(rest) != 1 or not os.path.isdir(rest[0]):
@@ -1455,7 +1886,7 @@ def main(argv):
                 print(ln)
             return code
     # validate modes
-    for verb, val in (("html-export", run_html), ("docx-export", run_docx)):
+    for verb, val in (("html-export", run_html), ("docx-export", run_docx), ("pdf-export", run_pdf)):
         if args and args[0] == verb:
             code, lines = val(args[1:])
             for ln in lines:
@@ -1463,8 +1894,8 @@ def main(argv):
             return code
     paths = [a for a in args if a != "obsidian-export"]
     if not paths:
-        print("Usage: annotation_export.py obsidian|html|docx <run_folder> | "
-              "obsidian-export|html-export|docx-export <run_folder> | --self-test")
+        print("Usage: annotation_export.py obsidian|html|docx|pdf <run_folder> | "
+              "obsidian-export|html-export|docx-export|pdf-export <run_folder> | --self-test")
         return 2
     code, lines = run(paths, strict="--strict" in argv)
     for ln in lines:

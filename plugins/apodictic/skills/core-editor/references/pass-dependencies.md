@@ -282,7 +282,22 @@ This is the per-audit operationalization of the Canonical Audit-Signal Propagati
 
 **How to read each row.** Each row maps one audit-internal signal class to one synthesis severity. An audit may produce multiple signal classes; each gets its own row. Where audit-internal signals are context-modified (e.g., Compression's Must-Fix floor only applies in specific channels; Reception Risk Alerts vary by genre context), the Context column documents the modifier. The Source column points to the audit reference file specifying the signal class. The Override column flags any deviation from the canonical default mapping.
 
-**Validator integration.** The `scripts/validate.sh audit-signal-propagation` validator (Phase 4) reads this table to verify that audit-internal signals reach the editorial letter at the rule-mandated synthesis severity. The Phase 4 default mapping (canonical rule's column 2) is the fallback for any audit not enumerated here; the per-audit entries below refine the default for audit-specific context.
+**Column contract (formalized 2026-07-04).** Every per-audit table in §4e (Universal / High-priority / Specialized / Genre / Tag / Pass-10-Class) carries the **same six named columns**, in this fixed order. Naming them explicitly makes the contract machine-parseable and pins what each cell means:
+
+1. **Audit** — the signal-emitting audit's display name (matches its Signal-Emitting Audit Registry entry in `audit-routing-table.md`, so `audit-signal-propagation --check-registry` can bind rows to registry entries). This is the slug source: lowercase, `&`/parens dropped, spaces/`/` → `-` (e.g. `Reception Risk` → `reception-risk`, `Banister (Epistemic Humility)` → `banister-epistemic-humility`).
+2. **Audit-internal signal** — the signal *class* the audit emits (hard gate · Must-Fix floor · HIGH/Alert · MEDIUM/Flag · LOW/Note · or an explicit "no propagating signal" for descriptive audits), with the audit's own flag codes for reference.
+3. **Synthesis severity** — the **required-severity** column: the synthesis-layer tier (Must-Fix · Should-Fix · Could-Fix · "Must-Fix or Should-Fix" · None) that this audit-internal signal must reach in the editorial-letter body.
+4. **Context modifier** — the condition under which the row applies (channel, scene class, genre contract, convergence, threshold-confidence). Prose; read by the model, not mechanically gated. A row applies only when its context modifier holds.
+5. **Source** — the audit reference file + subsection that defines the signal class, so the model can load context on demand.
+6. **Override** — the **override-modifier** column: a brief rationale whenever the row diverges from the canonical default mapping (`—` when it does not). This column is also where an *optional machine directive* lives (see "Override-modifier directive" below); prose rationale and the directive can coexist in the cell.
+
+**Validator integration.** The `scripts/validate.sh audit-signal-propagation` validator reads this table as the **source of truth** for the signal-class → synthesis-severity mapping — it no longer hardcodes a default map in Python. The machine-parseable source is the **`#### Default mapping (fallback for un-enumerated audits)`** block below: the validator parses its `- Audit-internal <signal> → Synthesis <severity>` bullets into the required-severity for each of the three strong signal classes it can mechanically check (hard gate, Must-Fix floor, HIGH/Alert), and applies that tier to every detected audit unless the audit's own row supplies an override-modifier directive. A malformed Default-mapping row (unrecognized synthesis severity, or a missing strong-signal class) is a validator ERROR, not a silent fallback.
+
+**Override-modifier directive (per-audit required-severity reassignment).** An audit's Override cell MAY carry an explicit, machine-parseable directive that reassigns the required synthesis severity for one of that audit's strong signal classes:
+
+> `propagate-override: <signal-class> → <synthesis-severity>`
+
+where `<signal-class>` ∈ {`hard-gate`, `must-fix-floor`, `high`} and `<synthesis-severity>` ∈ {`Must-Fix`, `Should-Fix`, `Could-Fix`, `Must-Fix or Should-Fix`}. When present in a §4e table row, the directive overrides the Default mapping's required-severity for that audit's slug and signal class (a malformed directive is a validator ERROR). No current §4e row carries a directive — every enumerated strong signal maps to the Default mapping's tier — so the mechanical behavior is identical to the historical hardcode; the directive is the sanctioned path for a future audit whose strong signal must land at a non-default tier without editing Python. Context-modifier **downshifts** that depend on model judgment (e.g. the POV Voice Profile threshold-confidence / provenance rows) are documented in the Context and Override columns as prose and are **not** expressed as directives — the validator cannot evaluate their conditions and does not mechanically apply them (see the POV Voice Profile §4e validation note).
 
 **Override path.** Per-audit refinements that diverge from the canonical default mapping are documented in the Override column with a brief rationale. Synthesis-time overrides for individual findings still follow the canonical rule's body-only marker pattern (`<!-- override: audit-propagation-must-fix — <rationale> -->`, etc.).
 
@@ -437,7 +452,7 @@ Pass 10 (Timeline) is a data-building pass that carries no severity itself; seve
 
 #### Default mapping (fallback for un-enumerated audits)
 
-Audits not enumerated above default to the canonical rule's column-2 mapping (`run-synthesis.md §Step 2`):
+Audits not enumerated above default to the canonical rule's column-2 mapping (`run-synthesis.md §Step 2`). **This bullet list is the machine-parseable source of truth** for the `audit-signal-propagation` validator's signal-class → required-synthesis-severity mapping (it parses the `- Audit-internal <signal> → Synthesis <severity>` bullets directly); keep the `- Audit-internal <signal> → Synthesis <severity>` shape and the recognized severity tokens (`Must-Fix`, `Should-Fix`, `Could-Fix`, `Must-Fix or Should-Fix`) when editing, or the validator will report a malformed §4e mapping.
 
 - Audit-internal Must-Fix floor → Synthesis Must-Fix
 - Audit-internal hard gate → Synthesis Must-Fix
