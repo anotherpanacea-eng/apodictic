@@ -358,6 +358,17 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-editorial-letter-scaffolded.md not found"; CA_FAIL=1
     fi
     echo ""
+    echo "== canonical blind-spot ordering (editor-scaffolding ranked E2, verified vs the run folder's Ledger) =="
+    # docs/editor-scaffolding.md §Future increments -> built: the opt-in <!-- blindspot-ranked -->
+    # "What You Might Have Missed" section, ordered by severity band desc then fewer distinct
+    # evidence_refs first, verified against the folder's Findings Ledger (B1 anchored+resolvable,
+    # B2 order, B3 severity fidelity, B4 no duplicate anchor) under --strict.
+    if [ -d "$CA_BASE/example-blindspot-ranked" ]; then
+      "$0" editor-scaffolding "$CA_BASE/example-blindspot-ranked" --strict || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-blindspot-ranked not found"; CA_FAIL=1
+    fi
+    echo ""
     echo "== canonical Vocabulary Guide (diagnostic-vocabulary: glossary grounding + question framing) =="
     if [ -f "$CA_BASE/example-vocabulary-guide.md" ]; then
       "$0" diagnostic-vocabulary "$CA_BASE/example-vocabulary-guide.md" || CA_FAIL=1

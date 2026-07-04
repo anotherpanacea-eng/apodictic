@@ -17,6 +17,13 @@ letter (e.g. in a batch gate) without false positives on author-facing runs.
 Checks (see docs/editor-scaffolding.md):
   E1  mode marker present AND a non-empty `## Editor Brief` (addressee = editor)
   E2  non-empty `## What You Might Have Missed` blind-spot section
+  B1-B4  (opt-in, letter/run_folder path) if the E2 section carries `<!-- blindspot-ranked -->`, its
+      items must be an ordered, `F-…`-anchored list verified against the run folder's Findings Ledger:
+      B1 every item anchored + Ledger-resolvable (a marked section with no resolvable Ledger is a hard
+      ERROR — never a silent pass), B2 order = severity band desc, then fewer DISTINCT evidence_refs
+      first (thin footprint = the serious finding a confident read skims past), then id, B3 severity
+      fidelity (a reorder may not restate a band below the lock), B4 no duplicate anchor (WARN /
+      ERROR --strict). Marker absent => E2 stays presence-only (backward compatible).
   E3  an `## Intervention Menu` heading (prescription deferred to the editor)
       override: <!-- override: scaffolding-checklist — <rationale> -->
   E4  >= 1 canonical severity token (Must-Fix/Should-Fix/Could-Fix) survives in the body
@@ -45,7 +52,8 @@ diagnostic artifact — reported as a no-op and exit 0):
       what the pass surfaces and where the editor's own read of this layer is likely to under-weight;
       a distinct heading from the letter's Editor Brief, since a pass artifact is not the letter).
   P2  a non-empty `## What You Might Have Missed` blind-spot section (the per-pass value-add; reuses
-      the E2 heading; NOT ranked — blind-spot ranking is a separate deferred increment).
+      the E2 heading; NOT ranked — blind-spot ordering (B1-B4) is letter/run_folder-path only in v1,
+      since the per-pass arm has no Findings-Ledger channel to verify an order against).
   W1  author-directed prescription leak (reused, advisory; ERROR under --strict) — same lexicon as
       the letter path. A pass carries no author-facing checklist to reframe into an Intervention
       Menu, so E3 has no positive per-pass analog and the prescription-deferral discipline IS this
@@ -69,11 +77,24 @@ import sys
 
 from override_marker import has_override, strip_code_spans
 
+try:
+    import apodictic_artifacts as art
+except ImportError:  # degrade path; ranked blind-spot mode then fails CLOSED (B1) — never silent
+    art = None
+
 MODE_MARKER_RE = re.compile(r"<!--\s*mode:\s*editor-scaffolding\s*-->", re.IGNORECASE)
 SEVERITY_RE = re.compile(r"(?<![\w-])(Must-Fix|Should-Fix|Could-Fix)(?![\w-])")
 _LEVEL2_RE = re.compile(r"^##\s")
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 _LETTER_GLOB = ("*_Editorial_Letter_*.md", "*_Synthesis_*.md")
+_LEDGER_GLOB = "*_Findings_Ledger_*.md"
+# Blind-spot ordering (opt-in increment): the marker that turns the E2 "What You Might Have Missed"
+# section into an ordered, id-anchored list; the F-… token that anchors each item (single-sourced
+# from apodictic_artifacts.FID_RE); and the list-item line shape.
+_BLINDSPOT_MARKER_RE = re.compile(r"<!--\s*blindspot-ranked\s*-->", re.IGNORECASE)
+_FINDING_ID_RE = art.FID_RE if art is not None else re.compile(
+    r"(?<![\w-])F-[A-Za-z0-9]+-[0-9]{2,}(?![\w-])")
+_LIST_ITEM_RE = re.compile(r"^[ \t>]*(?:[-*+]|\d+[.)])\s")
 
 # E1/E2/E3 required headings (substring of a level-1..4 heading, case-insensitive).
 _EDITOR_BRIEF_PAT = "Editor Brief"
@@ -188,8 +209,162 @@ def _section_nonempty(lines, pat):
     return False  # present but empty
 
 
-def check(letter_text, strict=False):
-    """Return (exit_code, report_lines)."""
+def _section_lines(lines, pat):
+    """Content lines under the first heading matching `pat`, up to the next level-2 heading
+    (exclusive); [] if the heading is absent. Same discovery as _section_nonempty."""
+    rx = re.compile(r"^#{1,4}\s+.*" + re.escape(pat), re.IGNORECASE)
+    start = next((i for i, ln in enumerate(lines) if rx.search(ln)), None)
+    if start is None:
+        return []
+    end = len(lines)
+    for j in range(start + 1, len(lines)):
+        if _LEVEL2_RE.match(lines[j]):
+            end = j
+            break
+    return lines[start + 1:end]
+
+
+def _ledger_findings(ledger_text):
+    """(findings, unusable). findings = {fid_key: {"severity", "footprint"}} for each WELL-FORMED,
+    UNAMBIGUOUS apodictic:finding block — seen exactly once, canonical severity band. footprint =
+    count of DISTINCT evidence_refs (dedup, so a repeated ref can't inflate it).
+
+    unusable = fid_keys the Ledger records ambiguously: a DUPLICATE id (two blocks, so the lock is
+    not single-valued — last-write-wins would silently pick a band) or a NON-CANONICAL severity
+    (not a Must/Should/Could token). Anchoring an unusable id is a B1 ERROR — a Deficit-Lock check
+    must never silently choose a band when the Ledger itself is ambiguous. Malformed/incomplete
+    blocks are skipped and surface as a B1 lookup failure at the anchor that references them."""
+    out, seen, unusable = {}, set(), set()
+    if art is None:
+        return out, unusable
+    for btype, obj, _err in art.parse_blocks(ledger_text or ""):
+        if btype != "finding" or not isinstance(obj, dict):
+            continue
+        sev, refs = obj.get("severity"), obj.get("evidence_refs")
+        if not isinstance(sev, str) or not isinstance(refs, list):
+            continue
+        key = art.fid_key(obj.get("id"))
+        if key in seen:                          # duplicate id -> ambiguous lock, fail closed
+            unusable.add(key)
+            out.pop(key, None)
+            continue
+        seen.add(key)
+        if sev.lower() not in _SEVERITY_RANK:    # non-canonical band -> unrankable, fail closed
+            unusable.add(key)
+            continue
+        out[key] = {"severity": sev, "footprint": len({str(r) for r in refs})}
+    return out, unusable
+
+
+def _parse_ranked_items(section_lines):
+    """[(fids, [severity_tokens]), ...] in document order, one per list item under the marker, where
+    `fids` is EVERY F-… anchor on the item line (0 or >1 are both B1 errors — one finding per item,
+    so a Must-Fix can't be tucked as a secondary anchor on a lower item's line and escape check).
+    Comments are stripped (a commented-out id is invisible, so it must not anchor); code spans are
+    NOT stripped — a back-ticked `F-…` is a legitimate visible anchor, and leaving code spans in
+    makes the B3 read strictly MORE fail-closed (a code-span-hidden restatement is still caught)."""
+    items = []
+    for ln in section_lines:
+        if not _LIST_ITEM_RE.match(ln):
+            continue
+        scan = _strip_comments(ln)
+        fids = _FINDING_ID_RE.findall(scan)
+        sevs = [m.group(1) for m in SEVERITY_RE.finditer(scan)]
+        items.append((fids, sevs))
+    return items
+
+
+def _blindspot_rank(rec):
+    """Order key for one resolved finding: severity band DESC, then fewer DISTINCT evidence_refs
+    first (thin surface footprint = the serious finding a confident read skims past). Severity band
+    is DOMINANT — footprint is only the within-band tiebreak, so the Deficit Lock is never
+    subordinated to footprint."""
+    return (-_SEVERITY_RANK.get(rec["severity"].lower(), (0, None))[0], rec["footprint"])
+
+
+def _check_blindspot(section_lines, ledger_text):
+    """B1-B4 over a <!-- blindspot-ranked --> E2 section. Returns (errors, warns). Fail-closed: no
+    resolvable Ledger, an unanchored/multi-anchored/unresolved/ambiguous item, or a below-lock
+    restatement is an ERROR (a silent pass would let a softened band ride the reorder through).
+
+    The Deficit Lock is enforced by B2, which reads each item's LEDGER severity (never the item's
+    prose), so an item's cross-band POSITION is pinned to its true locked band regardless of what
+    the item text says. B3 is the narrower *restatement* guard: if an item also writes a severity
+    token, it may not state one below the lock."""
+    errors, warns = [], []
+    if ledger_text is None or art is None:
+        errors.append(
+            "B1: the '%s' section is marked <!-- blindspot-ranked --> but no Findings Ledger is "
+            "resolvable — run editor-scaffolding on the RUN FOLDER (which carries "
+            "*_Findings_Ledger_*.md), not a bare letter file, so the order can be verified."
+            % _BLIND_SPOT_PAT)
+        return errors, warns
+    ledger, unusable = _ledger_findings(ledger_text)
+    items = _parse_ranked_items(section_lines)
+    if not items:
+        errors.append("B1: <!-- blindspot-ranked --> is present but the '%s' section has no list "
+                      "items to order." % _BLIND_SPOT_PAT)
+        return errors, warns
+    # B1 — every item anchors exactly one Ledger-resolvable finding.
+    resolved = []  # (fid_raw, key, rec, sevs) in document order
+    for fids, sevs in items:
+        if not fids:
+            errors.append("B1: a ranked '%s' item carries no F-… anchor; ranked mode requires "
+                          "every item to anchor a Findings-Ledger finding." % _BLIND_SPOT_PAT)
+            continue
+        if len(fids) > 1:
+            errors.append("B1: a ranked '%s' item names more than one finding (%s) — one finding "
+                          "per ranked item (each item is a distinct blind spot), so a Must-Fix "
+                          "can't ride hidden as a secondary anchor." % (_BLIND_SPOT_PAT, ", ".join(fids)))
+            continue
+        fid_raw = fids[0]
+        key = art.fid_key(fid_raw)
+        if key in unusable:
+            errors.append("B1: ranked item anchors %s, which the Findings Ledger records ambiguously "
+                          "(a duplicate id or a non-canonical severity) — cannot verify its order or "
+                          "severity." % fid_raw)
+            continue
+        rec = ledger.get(key)
+        if rec is None:
+            errors.append("B1: ranked item anchors %s, which is not a finding in the Findings "
+                          "Ledger — cannot verify its order or severity." % fid_raw)
+            continue
+        resolved.append((fid_raw, key, rec, sevs))
+    if errors:
+        return errors, warns  # cannot order/verify against an incomplete resolution
+    # B3 — severity fidelity (fail-closed; casing normalized).
+    for fid_raw, _key, rec, sevs in resolved:
+        locked = rec["severity"]
+        lr = _SEVERITY_RANK.get(locked.lower(), (0, None))[0]
+        for st in sevs:
+            if _SEVERITY_RANK.get(st.lower(), (0, None))[0] < lr:
+                errors.append("B3: ranked item %s restates severity '%s' below its locked Ledger "
+                              "severity '%s' — reordering must not launder a softened band."
+                              % (fid_raw, st, locked))
+    # B2 — order equals the blindspot key (band desc, fewer refs first, id asc).
+    got = [t[0] for t in resolved]
+    want = [t[0] for t in sorted(resolved, key=lambda t: _blindspot_rank(t[2]) + (t[1],))]
+    if got != want:
+        first = next((i for i in range(len(got)) if got[i] != want[i]), 0)
+        errors.append("B2: blind-spot ordering wrong at position %d — got %s, expected %s. Order "
+                      "key: severity band (Must>Should>Could), then fewer distinct evidence_refs "
+                      "first, then finding-id. Expected order: %s."
+                      % (first + 1, got[first], want[first], ", ".join(want)))
+    # B4 — no duplicate anchor (each ranked item is a distinct blind spot). WARN / ERROR --strict.
+    seen, dupes = set(), []
+    for fid_raw, key, _rec, _s in resolved:
+        if key in seen and fid_raw not in dupes:
+            dupes.append(fid_raw)
+        seen.add(key)
+    if dupes:
+        warns.append("B4: ranked '%s' lists a finding more than once (%s) — each item should be a "
+                     "distinct blind spot." % (_BLIND_SPOT_PAT, ", ".join(dupes)))
+    return errors, warns
+
+
+def check(letter_text, strict=False, ledger_text=None):
+    """Return (exit_code, report_lines). `ledger_text` (the run folder's Findings Ledger) is used
+    only by the opt-in blind-spot ordering path; None on a bare-letter invocation."""
     lines = _lines(letter_text)
     out = []
 
@@ -224,6 +399,17 @@ def check(letter_text, strict=False):
         errors.append("E2: '%s' section is present but empty." % _BLIND_SPOT_PAT)
     else:
         out.append("  E2 blind-spot: OK")
+
+    # Blind-spot ordering (opt-in: <!-- blindspot-ranked --> inside the E2 section; letter/run_folder
+    # path only — needs a resolvable Findings Ledger). Marker absent => E2 stays presence-only.
+    if blind:
+        e2_lines = _section_lines(body_lines, _BLIND_SPOT_PAT)
+        if _BLINDSPOT_MARKER_RE.search("\n".join(e2_lines)):
+            berrs, bwarns = _check_blindspot(e2_lines, ledger_text)
+            errors.extend(berrs)
+            warns.extend(bwarns)
+            if not berrs and not bwarns:
+                out.append("  blind-spot ordering (B1-B4): OK")
 
     # E3 — Intervention Menu (prescription deferred), or an explicit override.
     if _has_heading(body_lines, _INTERVENTION_PAT):
@@ -459,11 +645,17 @@ def _newest(paths):
 
 def run(paths, strict=False):
     letter = None
+    ledger_text = None
     if len(paths) == 1 and os.path.isdir(paths[0]):
         for pat in _LETTER_GLOB:
             letter = _newest(glob.glob(os.path.join(paths[0], pat)))
             if letter:
                 break
+        # Resolve the Findings Ledger from the same run folder for the opt-in blind-spot ordering
+        # path. Absent on a bare-letter invocation, where ranked mode fails closed at B1.
+        led = _newest(glob.glob(os.path.join(paths[0], _LEDGER_GLOB)))
+        if led:
+            ledger_text = _read(led)
     else:
         letter = paths[0] if paths else None
     if letter is None:
@@ -472,7 +664,7 @@ def run(paths, strict=False):
     text = _read(letter)
     if text is None:
         return 2, ["editor-scaffolding: cannot read %s" % letter]
-    return check(text, strict=strict)
+    return check(text, strict=strict, ledger_text=ledger_text)
 
 
 # ---------------------------------------------------------------- self-test
@@ -617,6 +809,83 @@ def run_self_test():
         code == 1 and any("E2: missing" in l for l in lines))
     code_s, _ls = check(letter(blind=False, sections_in_appendix=True), strict=True)
     chk("e2_appendix_section_strict_fails", code_s == 1)
+
+    # ---- blind-spot ordering (opt-in <!-- blindspot-ranked --> in the E2 section) ---------------
+    def _find(fid, sev, refs):  # one apodictic:finding carrier block
+        return ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"%s","mechanism":"m",'
+                '"severity":"%s","confidence":"HIGH","evidence_refs":%s,"fix_class":"f",'
+                '"risk_if_fixed":"r"}\n-->\n' % (fid, sev, refs))
+    # F-P5-01 Must-Fix/1-ref, F-P5-02 Must-Fix/3-refs, F-P2-03 Should-Fix/1-ref.
+    # Correct order = band desc, then fewer refs first: F-P5-01, F-P5-02, F-P2-03.
+    _ledger = (_find("F-P5-01", "Must-Fix", '["Ch 9"]')
+               + _find("F-P5-02", "Must-Fix", '["Ch 1","Ch 2","Ch 3"]')
+               + _find("F-P2-03", "Should-Fix", '["Ch 4"]'))
+
+    def ranked_letter(items_md, ranked_marker=True):
+        s = [marker + "\n",
+             "## Editor Brief\nWhere our reads diverge: the middle third.\n",
+             "## What Needs Work\n- **Must-Fix:** Pacing collapse (Ch. 7).\n",
+             "## What You Might Have Missed\n"]
+        if ranked_marker:
+            s.append("<!-- blindspot-ranked -->\n")
+        s.append(items_md)
+        s.append("## Intervention Menu — editor's discretion\n- Option: compress the aftermath.\n")
+        s.append("## Appendix A — Diagnostic Detail\ndetail.\n")
+        return "".join(s)
+
+    _ordered = ("- F-P5-01 — buried causal gap.\n- F-P5-02 — diffuse setup.\n"
+                "- F-P2-03 — minor echo.\n")
+    # correct order + within-band footprint tiebreak (F-P5-01/1-ref before F-P5-02/3-refs) -> pass.
+    code, lines = check(ranked_letter(_ordered), ledger_text=_ledger)
+    chk("ranked_ordered_passes",
+        code == 0 and any("blind-spot ordering (B1-B4): OK" in l for l in lines))
+    # a back-ticked anchor still resolves (we strip comments, not code spans).
+    code, lines = check(ranked_letter("- `F-P5-01` — a.\n- `F-P5-02` — b.\n- `F-P2-03` — c.\n"),
+                        ledger_text=_ledger)
+    chk("ranked_backticked_anchor_ok",
+        code == 0 and any("blind-spot ordering (B1-B4): OK" in l for l in lines))
+    # B2: mis-ordered (higher-footprint Must-Fix before the thin one) -> ERROR.
+    code, lines = check(ranked_letter("- F-P5-02 — a.\n- F-P5-01 — b.\n- F-P2-03 — c.\n"),
+                        ledger_text=_ledger)
+    chk("ranked_misorder_b2", code == 1 and any("B2:" in l for l in lines))
+    # B1: an anchor that is not a Ledger finding -> ERROR (fail-closed).
+    code, lines = check(ranked_letter("- F-ZZ-99 — ghost.\n"), ledger_text=_ledger)
+    chk("ranked_unresolved_b1",
+        code == 1 and any("B1:" in l and "not a finding" in l for l in lines))
+    # B1: a ranked item with no F-… anchor -> ERROR.
+    code, lines = check(ranked_letter("- Just prose, no anchor.\n- F-P5-01 — a.\n"),
+                        ledger_text=_ledger)
+    chk("ranked_unanchored_b1", code == 1 and any("no F-" in l for l in lines))
+    # B3: an item restating a Must-Fix as Should-Fix -> ERROR (severity-launder, fail-closed).
+    code, lines = check(ranked_letter("- F-P5-01 (Should-Fix) — restated low.\n"
+                                      "- F-P5-02 — a.\n- F-P2-03 — b.\n"), ledger_text=_ledger)
+    chk("ranked_launder_b3", code == 1 and any("B3:" in l for l in lines))
+    # B1: marker present but NO resolvable Ledger (bare-letter invocation) -> ERROR, never silent.
+    code, lines = check(ranked_letter(_ordered), ledger_text=None)
+    chk("ranked_no_ledger_b1",
+        code == 1 and any("B1:" in l and "no Findings Ledger" in l for l in lines))
+    # marker ABSENT -> ranked checks never fire; E2 stays presence-only (backward compatible).
+    code, lines = check(ranked_letter(_ordered, ranked_marker=False), ledger_text=_ledger)
+    chk("ranked_marker_absent_unchanged",
+        code == 0 and not any("blind-spot ordering" in l for l in lines))
+    # B4: a duplicate anchor -> WARN (order still valid), ERROR under --strict.
+    _dup = "- F-P5-01 — a.\n- F-P5-01 — dup.\n- F-P5-02 — b.\n- F-P2-03 — c.\n"
+    code, lines = check(ranked_letter(_dup), ledger_text=_ledger)
+    code_s, _ls = check(ranked_letter(_dup), ledger_text=_ledger, strict=True)
+    chk("ranked_duplicate_b4",
+        code == 0 and any("B4:" in l for l in lines) and code_s == 1)
+    # B1 (review P2): a DUPLICATE ledger id makes the lock ambiguous -> ERROR, never last-write-wins.
+    _dup_ledger = (_find("F-P5-01", "Must-Fix", '["Ch 9"]')
+                   + _find("F-P5-01", "Should-Fix", '["Ch 4"]'))
+    code, lines = check(ranked_letter("- F-P5-01 (Should-Fix) — restated low.\n"),
+                        ledger_text=_dup_ledger)
+    chk("ranked_dup_ledger_id_b1",
+        code == 1 and any("B1:" in l and "ambiguously" in l for l in lines))
+    # B1 (review P2): a SECOND anchor tucked on one item's line -> ERROR (one finding per item).
+    code, lines = check(ranked_letter("- F-P5-01 — and secretly F-P5-02 too.\n- F-P2-03 — c.\n"),
+                        ledger_text=_ledger)
+    chk("ranked_multi_anchor_b1",
+        code == 1 and any("B1:" in l and "more than one finding" in l for l in lines))
 
     # ---- dual-output (--dual: editor letter + author-facing companion) -------------------------
     def author_letter(leak_marker=False, brief=False, blind=False, menu=False,
