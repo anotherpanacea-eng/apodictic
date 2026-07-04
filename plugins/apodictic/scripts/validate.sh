@@ -1868,6 +1868,12 @@ EOF
   #   audit-internal HIGH (Alert)     → synthesis Must-Fix or Should-Fix
   #   audit-internal MEDIUM (Flag)    → synthesis Should-Fix
   #   audit-internal LOW (Note)       → synthesis Could-Fix
+  # §4e-source-of-truth (2026-07-04): the Python primary (letter_checks.py) no
+  # longer hardcodes this mapping — it PARSES it from the pass-dependencies.md §4e
+  # `#### Default mapping` block, and honors a per-audit `propagate-override:
+  # <signal-class> → <severity>` directive in a §4e row's Override column. The
+  # taxonomy above is the committed §4e default, reproduced here for reference; the
+  # bash degraded path below retains it inline for python-less hosts.
   #
   # Mechanics (v1.7.9): the validator no longer accepts a generic synthesis-
   # body Must-Fix / Should-Fix mention as evidence of propagation. For each

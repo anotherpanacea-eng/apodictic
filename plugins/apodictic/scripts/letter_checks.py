@@ -356,7 +356,179 @@ def decision_layer_check(text):
 # Faithful port of the bash arm (per-audit appendix-subsection detection; name-match
 # OR shared-evidence-line propagation; per-class + per-audit override markers; legacy
 # whole-letter fallback when no audit appendix is present).
+#
+# §4e-SOURCE-OF-TRUTH mapping (2026-07-04). The signal-class → synthesis-severity
+# mapping the validator enforces is no longer hardcoded here: it is READ from the
+# `#### Default mapping (fallback for un-enumerated audits)` block of
+# pass-dependencies.md §4e (the "Column contract" the §4e prose formalizes). A §4e
+# per-audit row may additionally reassign the required severity for its own signal
+# class via a machine-parseable directive in the Override column
+# (`propagate-override: <signal-class> → <synthesis-severity>`); such a directive is
+# honored for that audit's slug. On the real committed §4e the Default mapping block
+# reproduces the historical hardcode exactly and no row carries an override directive,
+# so the port is oracle-identical. A malformed §4e mapping (unrecognized synthesis
+# severity, a missing required signal class, or a malformed override directive) is
+# surfaced as an ERROR rather than silently defaulting. When pass-dependencies.md is
+# not locatable (e.g. a self-test synthetic context passing no dep_text), the parser
+# degrades to the canonical fallback map below — the same values, so never a regression.
 # --------------------------------------------------------------------------
+
+# Canonical fallback map (used only when pass-dependencies.md cannot be located).
+# Byte-equivalent to the §4e Default-mapping block; kept so the validator never
+# crashes in a python-context that lacks the reference file.
+_CANONICAL_SIGNAL_MAP = {
+    "must-fix-floor": "must-fix",
+    "hard-gate": "must-fix",
+    "high": "must-or-should",
+}
+# The three signal classes this validator drives (the strong audit-internal signals).
+_REQUIRED_SIGNAL_CLASSES = ("must-fix-floor", "hard-gate", "high")
+
+
+class SignalMapError(ValueError):
+    """Raised when the §4e Audit-Signal Propagation mapping is malformed."""
+
+
+# Synthesis-severity recognizers, longest/most-specific first so
+# "Must-Fix or Should-Fix" resolves to must-or-should before the bare Must-Fix rule.
+_SEVERITY_TIERS = (
+    ("must-or-should", re.compile(r"Must-Fix\s+or\s+Should-Fix", re.IGNORECASE)),
+    ("must-fix", re.compile(r"Must-Fix", re.IGNORECASE)),
+    ("should-fix", re.compile(r"Should-Fix", re.IGNORECASE)),
+    ("could-fix", re.compile(r"Could-Fix", re.IGNORECASE)),
+)
+# Signal-class recognizers for the Default-mapping bullet left-hand side,
+# most-specific first ("Must-Fix floor" before the bare "HIGH"/"Alert" rule).
+_SIGNAL_CLASS_PATTERNS = (
+    ("must-fix-floor", re.compile(r"Must-Fix\s+floor", re.IGNORECASE)),
+    ("hard-gate", re.compile(r"hard[\s-]gate", re.IGNORECASE)),
+    ("high", re.compile(r"\bHIGH\b|\bAlert\b", re.IGNORECASE)),
+)
+_MAPPING_ARROW = r"(?:→|->)"  # → or ASCII ->
+_DEFAULT_MAPPING_HEADING_RE = re.compile(r"^#{1,6}\s.*Default mapping", re.IGNORECASE)
+_OVERRIDE_DIRECTIVE_RE = re.compile(
+    r"propagate-override:\s*([A-Za-z][A-Za-z-]*)\s*" + _MAPPING_ARROW + r"\s*([^|]+)",
+    re.IGNORECASE)
+
+
+def _severity_to_tier(text):
+    for tier, rx in _SEVERITY_TIERS:
+        if rx.search(text):
+            return tier
+    return None
+
+
+def _parse_default_mapping(dep_text):
+    """Parse the §4e '#### Default mapping' block into {signal-class: synthesis-tier}
+    for the three strong signal classes. Raise SignalMapError if the block is missing,
+    a required class is absent, or a row's synthesis severity is unrecognized."""
+    lines = dep_text.split("\n")
+    start = None
+    for i, ln in enumerate(lines):
+        if _DEFAULT_MAPPING_HEADING_RE.match(ln):
+            start = i
+            break
+    if start is None:
+        raise SignalMapError(
+            "§4e '#### Default mapping (fallback for un-enumerated audits)' block not found")
+    mapping = {}
+    for ln in lines[start + 1:]:
+        if re.match(r"^#{1,6}\s", ln):  # next heading closes the block
+            break
+        m = re.match(r"\s*-\s+(.*?)\s*" + _MAPPING_ARROW + r"\s*(.*\S)\s*$", ln)
+        if not m:
+            continue
+        lhs, rhs = m.group(1), m.group(2)
+        cls = None
+        for c, rx in _SIGNAL_CLASS_PATTERNS:
+            if rx.search(lhs):
+                cls = c
+                break
+        if cls is None:
+            continue  # MEDIUM/Flag and LOW/Note rows are not driven by this validator
+        tier = _severity_to_tier(rhs)
+        if tier is None:
+            raise SignalMapError(
+                "malformed §4e default-mapping row (unrecognized synthesis severity): %r"
+                % ln.strip())
+        mapping[cls] = tier
+    for required in _REQUIRED_SIGNAL_CLASSES:
+        if required not in mapping:
+            raise SignalMapError(
+                "§4e default mapping is missing required signal class %r" % required)
+    return mapping
+
+
+def _parse_per_audit_overrides(dep_text):
+    """Scan §4e table rows for an Override-column directive
+    `propagate-override: <signal-class> → <synthesis-severity>` and build
+    {audit-slug: {signal-class: synthesis-tier}}. A directive naming an unknown signal
+    class or an unrecognized synthesis severity is a SignalMapError (malformed row)."""
+    overrides = {}
+    for ln in dep_text.split("\n"):
+        if "propagate-override:" not in ln:
+            continue
+        if not ln.lstrip().startswith("|"):
+            continue  # directives are only honored inside a §4e table row
+        cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+        if not cells or not cells[0]:
+            continue
+        slug = _audit_slug(_strip_leading_determiner(cells[0]))
+        for m in _OVERRIDE_DIRECTIVE_RE.finditer(ln):
+            cls_raw = m.group(1).strip().lower()
+            sev_raw = m.group(2).strip()
+            if cls_raw not in _REQUIRED_SIGNAL_CLASSES:
+                raise SignalMapError(
+                    "malformed §4e override directive for %r: unknown signal class %r"
+                    % (cells[0], cls_raw))
+            tier = _severity_to_tier(sev_raw)
+            if tier is None:
+                raise SignalMapError(
+                    "malformed §4e override directive for %r: unrecognized synthesis "
+                    "severity %r" % (cells[0], sev_raw))
+            overrides.setdefault(slug, {})[cls_raw] = tier
+    return overrides
+
+
+def _locate_pass_dependencies():
+    """Best-effort locate pass-dependencies.md relative to this script, mirroring the
+    two committed script-mirror layouts (plugin copy and repo-root copy). Returns a
+    path or None."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    for base in (os.path.join(here, "..", "skills", "core-editor", "references"),
+                 os.path.join(here, "..", "plugins", "apodictic", "skills",
+                              "core-editor", "references")):
+        cand = os.path.join(base, "pass-dependencies.md")
+        if os.path.isfile(cand):
+            return cand
+    return None
+
+
+def _load_signal_map(dep_text=None):
+    """Build the §4e-driven signal map {'default': {...}, 'per_audit': {...}}.
+
+    dep_text (raw §4e / pass-dependencies markdown) drives the parse when supplied
+    (used by the hostile self-test fixtures). Otherwise the real pass-dependencies.md
+    is located and read. If the file cannot be located, degrade to the canonical
+    fallback map (same values — never a regression). A located-but-malformed §4e
+    raises SignalMapError so the caller can surface it."""
+    if dep_text is None:
+        path = _locate_pass_dependencies()
+        if path is None:
+            return {"default": dict(_CANONICAL_SIGNAL_MAP), "per_audit": {}}
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            dep_text = fh.read()
+    return {"default": _parse_default_mapping(dep_text),
+            "per_audit": _parse_per_audit_overrides(dep_text)}
+
+
+def _tier_satisfied(tier, synth_mf, synth_sf):
+    """Whether the presence of body Must-Fix / Should-Fix satisfies `tier`."""
+    return {"must-fix": synth_mf,
+            "must-or-should": synth_mf or synth_sf,
+            "should-fix": synth_sf,
+            "could-fix": True}.get(tier, False)
+
 
 _HIGH_SIGNAL_RE = re.compile(
     r"(HIGH[- ]severity|Alert finding|Alert concentration|HIGH signal|HIGH rating|"
@@ -423,8 +595,23 @@ def _audit_subsection(appx_body, name, fallback_after):
     return "\n".join(out)
 
 
-def audit_signal_propagation(text):
+def audit_signal_propagation(text, dep_text=None):
     errors, warnings = [], []
+    ok_line = ("OK: Audit-internal severity signals propagated to synthesis layer "
+               "(per-audit; or override marker present in body).")
+    failed_line = ("FAILED: %d audit-signal propagation failure(s). Canonical rule: "
+                   "core-editor/references/run-synthesis.md §Step 2; per-audit table: "
+                   "pass-dependencies.md §4e.")
+    # §4e is the source of truth for the signal-class → synthesis-severity mapping.
+    try:
+        signal_map = _load_signal_map(dep_text)
+    except SignalMapError as exc:
+        errors.append("ERROR: §4e Audit-Signal Propagation mapping is malformed — %s "
+                      "(pass-dependencies.md §4e is the source of truth for the "
+                      "signal→severity mapping)." % exc)
+        return errors, warnings, ok_line, failed_line % len(errors)
+    default_map = signal_map["default"]
+    per_audit_map = signal_map["per_audit"]
     lines = _content_lines(text)
     total = len(lines)
     appendix_idx = None  # 1-based
@@ -452,8 +639,12 @@ def audit_signal_propagation(text):
         pat = re.compile(rx, re.IGNORECASE)
         return "\n".join(ln for ln in synth_body.split("\n") if pat.search(ln))
 
-    def check_audit_signal(audit_name, signal_class, required_tier):
+    def check_audit_signal(audit_name, signal_class):
         slug = _audit_slug(audit_name)
+        # Required synthesis tier is §4e-driven: a per-audit Override-column directive
+        # for this slug/signal-class wins; otherwise the §4e Default mapping applies.
+        required_tier = per_audit_map.get(slug, {}).get(signal_class) \
+            or default_map[signal_class]
         subsection = _audit_subsection(appx_body, audit_name, 5)
         audit_lines = _evidence_lines(subsection)
         body_items = tier_items(required_tier)
@@ -480,16 +671,20 @@ def audit_signal_propagation(text):
     audit_names = sorted({_strip_leading_determiner(n) for n in _AUDIT_NAME_RE.findall(appx_body)})
 
     if not audit_names:
+        # Legacy whole-letter fallback (no named audit appendix). The required tier
+        # for each strong signal class is §4e-driven (default_map), not hardcoded.
         synth_mf = re.search(r"Must-Fix", synth_body, re.IGNORECASE) is not None
         synth_sf = re.search(r"Should-Fix", synth_body, re.IGNORECASE) is not None
-        if re.search(r"hard gate", text, re.IGNORECASE) and not synth_mf:
+        if re.search(r"hard gate", text, re.IGNORECASE) and \
+                not _tier_satisfied(default_map["hard-gate"], synth_mf, synth_sf):
             if ov_hard_gate:
                 warnings.append("WARN: Audit hard gate present without synthesis-layer "
                                 "Must-Fix (override marker detected in body).")
             else:
                 errors.append("ERROR: Audit hard gate present but no synthesis-layer "
                               "Must-Fix flag (no override marker in body).")
-        if re.search(r"Must-Fix floor", text, re.IGNORECASE) and not synth_mf:
+        if re.search(r"Must-Fix floor", text, re.IGNORECASE) and \
+                not _tier_satisfied(default_map["must-fix-floor"], synth_mf, synth_sf):
             if ov_must_fix:
                 warnings.append("WARN: Audit Must-Fix floor present without synthesis-layer "
                                 "Must-Fix (override marker detected in body).")
@@ -497,7 +692,8 @@ def audit_signal_propagation(text):
                 errors.append("ERROR: Audit Must-Fix floor present but no synthesis-layer "
                               "Must-Fix flag (no override marker in body).")
         if re.search(r"(HIGH[- ]severity|Alert finding|Alert concentration|HIGH signal|"
-                     r"HIGH rating)", text, re.IGNORECASE) and not synth_mf and not synth_sf:
+                     r"HIGH rating)", text, re.IGNORECASE) and \
+                not _tier_satisfied(default_map["high"], synth_mf, synth_sf):
             if ov_high:
                 warnings.append("WARN: Audit HIGH/Alert signal present without synthesis "
                                 "Must-Fix or Should-Fix (override marker detected in body).")
@@ -509,19 +705,15 @@ def audit_signal_propagation(text):
             sub = _audit_subsection(appx_body, audit_name, 8)
             saw_strong = False
             if re.search(r"(hard gate|hard-gate)", sub, re.IGNORECASE):
-                check_audit_signal(audit_name, "hard-gate", "must-fix")
+                check_audit_signal(audit_name, "hard-gate")
                 saw_strong = True
             if re.search(r"Must-Fix floor", sub, re.IGNORECASE):
-                check_audit_signal(audit_name, "must-fix-floor", "must-fix")
+                check_audit_signal(audit_name, "must-fix-floor")
                 saw_strong = True
             if not saw_strong and _HIGH_SIGNAL_RE.search(sub):
-                check_audit_signal(audit_name, "high", "must-or-should")
+                check_audit_signal(audit_name, "high")
 
-    return errors, warnings, \
-        "OK: Audit-internal severity signals propagated to synthesis layer (per-audit; or override marker present in body).", \
-        ("FAILED: %d audit-signal propagation failure(s). Canonical rule: "
-         "core-editor/references/run-synthesis.md §Step 2; per-audit table: "
-         "pass-dependencies.md §4e." % len(errors))
+    return errors, warnings, ok_line, failed_line % len(errors)
 
 
 def check_registry(reg_path, dep_path):
@@ -1254,6 +1446,51 @@ def run_self_test(which=None):
         pov_e, pov_w = audit_signal_propagation(pov_override)[:2]
         check("pov_override_body_no_error", pov_e, True)
         warns("pov_override_body_warns", pov_w, True)
+
+        # §4e-table-driven mapping hostile fixtures (2026-07-04). The signal→severity
+        # mapping is now READ from §4e (dep_text). These inject a synthetic §4e to
+        # prove (a) a per-audit Override-column modifier that reassigns the required
+        # severity is honored, and (b) a malformed §4e mapping is caught.
+        _dep_default = (
+            "#### Default mapping (fallback for un-enumerated audits)\n\n"
+            "- Audit-internal Must-Fix floor → Synthesis Must-Fix\n"
+            "- Audit-internal hard gate → Synthesis Must-Fix\n"
+            "- Audit-internal HIGH / Alert → Synthesis Must-Fix or Should-Fix per audit context\n")
+        # A Reception Risk hard gate that reaches only a synthesis Should-Fix. Under the
+        # §4e Default mapping (hard gate → Must-Fix) this FAILS; a per-audit
+        # Override-column modifier reassigning hard-gate → Should-Fix makes it PASS.
+        _mod_letter = (
+            "# Development Edit\n## What Needs Work\n"
+            "- **Should-Fix:** Reception Risk hard gate at L2956 — softened this round "
+            "per calibration.\n"
+            "## Appendix A: Reception Risk Audit\nHard Gate triggered at L2956.\n")
+        _dep_modifier = _dep_default + (
+            "\n| Reception Risk | Alert | Should-Fix | ctx | src | "
+            "propagate-override: hard-gate → Should-Fix |\n")
+        # honored: modifier reassigns the required tier to Should-Fix -> clean.
+        check("asp_4e_modifier_honored",
+              audit_signal_propagation(_mod_letter, dep_text=_dep_modifier)[0], True)
+        # control: SAME letter under the default §4e mapping (no modifier row) -> ERROR
+        # (hard gate requires Must-Fix; only Should-Fix present). Proves the modifier —
+        # not the letter — changed the required severity.
+        check("asp_4e_modifier_control_default_errors",
+              audit_signal_propagation(_mod_letter, dep_text=_dep_default)[0], False)
+        # malformed: a §4e override directive with an unrecognized synthesis severity
+        # is caught (surfaced as an ERROR), not silently defaulted.
+        _dep_malformed = _dep_default + (
+            "\n| Reception Risk | Alert | ? | ctx | src | "
+            "propagate-override: hard-gate → Teleport-Fix |\n")
+        check("asp_4e_malformed_row_caught",
+              audit_signal_propagation(_mod_letter, dep_text=_dep_malformed)[0], False)
+        # malformed default block: a Default-mapping row with an unrecognized severity
+        # is likewise caught.
+        _dep_bad_default = (
+            "#### Default mapping (fallback for un-enumerated audits)\n\n"
+            "- Audit-internal Must-Fix floor → Synthesis Must-Fix\n"
+            "- Audit-internal hard gate → Synthesis Banana-Fix\n"
+            "- Audit-internal HIGH / Alert → Synthesis Must-Fix or Should-Fix\n")
+        check("asp_4e_malformed_default_caught",
+              audit_signal_propagation(_mod_letter, dep_text=_dep_bad_default)[0], False)
 
     if which in (None, "author-facing-lint"):
         # Advisory / warn-only: errors must ALWAYS be empty (never gates); warnings

@@ -566,9 +566,9 @@ Items deferred from the Phase 7 closeout per scope-control. Each has a documente
 
 Originally deferred from the Phase 7 closeout: Phase 7 plan §A3 specified four Python modules (`timeline_parser.py`, `timeline_arithmetic.py`, `timeline_anchor.py`, `timeline_diff.py`) to lift the bash-validator capability ceiling for Pass 10 Timeline verification. **Subsequently delivered** under §Validator Architecture Hardening (Increment 4): a single `scripts/timeline_checks.py` structured Timeline parser backs the three `timeline-*` arms, upgrading `timeline-arithmetic` and `timeline-anchor-conflict` from marker-hygiene to **true** span-overrun arithmetic and same-scene anchor-drift detection (the capability `pass-10.md` §Phase 7 explicitly deferred). The four originally-specified modules were collapsed into the one parser module; the bash implementations are retained as the no-`python3` degrade path.
 
-### audit-signal-propagation §4e context-modifier extension
+### audit-signal-propagation §4e context-modifier extension — **Built**
 
-Phase 7 plan §A2 specified three optional validators; the third (`audit-signal-propagation §4e context-modifier extension`) was deferred per scope-control. The v1.7.9 validator uses a default mapping; this extension would make the propagation table fully driven by the `§4e` source of truth. Refinement, not missing capability. Defer to v1.9.x or until `§4e` table changes force a re-derivation.
+Phase 7 plan §A2 specified three optional validators; the third (`audit-signal-propagation §4e context-modifier extension`) was deferred per scope-control. **Now built** (changelog fragment `section-4e-table-driven.md`): the `audit-signal-propagation` validator (`letter_checks.py`) no longer hardcodes the signal-class → synthesis-severity mapping — it **parses it from `pass-dependencies.md §4e`** (the `#### Default mapping` block) and honors a per-audit `propagate-override: <signal-class> → <synthesis-severity>` directive in a §4e row's Override column, making the propagation table fully driven by the `§4e` source of truth. A malformed §4e mapping is surfaced as an ERROR (hostile fixture); a per-audit modifier that reassigns the required severity is honored (hostile fixture). The port is oracle-identical on the real committed §4e — `--check-registry`, the byte-identical §4e diff, and `argument-carve-behavior-preservation` pass unchanged; no new validator (count stays 67).
 
 ### Codex `validateGeneratedWorkspace` allowlist maintainability
 
@@ -588,9 +588,9 @@ Original finding (Codex final critique, P1, v1.8.4): the `audit-tier-criterion` 
 
 **Remaining:** only the self-test-only `artifacts-schema` (validates arbitrary embedded blocks; covered indirectly by `structured-findings` on the shipped templates) has no clean canonical target. Defer until a forcing function surfaces.
 
-### Clearer §4e table-driven propagation framing
+### Clearer §4e table-driven propagation framing — **Built**
 
-Surfaced by Codex final critique (P3, v1.8.4): the current `pass-dependencies.md §4e` framing is sufficient for the present validator suite (per-audit propagation rules with default mapping for un-tabled cases), but could be sharpened with explicit table-driven language — naming each row's columns, formalizing the override-modifier column, and pulling the modifier semantics into the §4e header rather than the per-row prose. Pairs with the deferred `audit-signal-propagation §4e context-modifier extension` above: if/when the propagation table is fully driven by §4e source-of-truth parsing, the table framing should be sharpened first. Defer to whichever cycle picks up the §4e extension; not a release-blocker.
+Surfaced by Codex final critique (P3, v1.8.4): the `pass-dependencies.md §4e` framing could be sharpened with explicit table-driven language — naming each row's columns, formalizing the override-modifier column, and pulling the modifier semantics into the §4e header rather than the per-row prose. **Now built** (paired, as planned, with the `audit-signal-propagation §4e context-modifier extension` above): §4e carries a formalized **six-column contract** (*Audit · Audit-internal signal · Synthesis severity (required-severity) · Context modifier · Source · Override (override-modifier)*), each column's semantics named in the §4e header prose; the **override-modifier column** is formalized with a machine directive (`propagate-override: <signal-class> → <synthesis-severity>`); and the `#### Default mapping` block is declared the machine-parseable source of truth the validator parses. The framing was sharpened first, then the validator was wired to source-of-truth parsing, exactly as this item prescribed.
 
 ---
 
