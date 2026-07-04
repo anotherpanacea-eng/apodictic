@@ -241,10 +241,15 @@ if [ $# -lt 1 ]; then usage; fi
 # self-test exits 0. Added per Codex P2 finding: the E1 final report
 # referred to an aggregate command that did not exist; this closes the
 # documentation-vs-implementation mismatch and simplifies CI invocation.
-# The seven pure-utility commands (contract-hash, contract-check, ledger-check,
+# The seven early utility commands (contract-hash, contract-check, ledger-check,
 # artifact-names, synthesis-sections, tone-check, state-lines) now carry
 # fixture-driven self-tests too (Validator Architecture Hardening — they
 # previously had none), so every command in the suite is exercised here.
+# Four of the seven (ledger-check, synthesis-sections, tone-check → letter_checks.py;
+# artifact-names → config_checks.py) were ported to real parsers in Increment 8;
+# their bash bodies below are retained as the no-python3 degrade path. The three
+# genuinely pure utilities (contract-hash, contract-check, state-lines — sha256 /
+# line-count, no markdown parsing) stay bash-only.
 if [ "$1" = "--self-test-all" ]; then
   AGG_FAIL=0
   AGG_PASS_COUNT=0
@@ -1218,13 +1223,16 @@ COMMAND="$1"
 shift
 
 # ----------------------------------------------------------------------
-# Pure-utility self-tests (Validator Architecture Hardening). The seven
-# count/format utilities below (contract-hash, contract-check, ledger-check,
+# Early-utility self-tests (Validator Architecture Hardening). The seven
+# early commands below (contract-hash, contract-check, ledger-check,
 # artifact-names, synthesis-sections, tone-check, state-lines) previously
-# carried no self-tests. These fixture-driven functions give each one
-# regression coverage and let them join --self-test-all. Each prints
-# per-case OK/FAIL, sets PU_FAIL on any failure, and the caller exits PU_FAIL.
-# Invoked as `validate.sh <utility> --self-test`.
+# carried no self-tests. These functions give each one regression coverage
+# and let them join --self-test-all. Each prints per-case OK/FAIL, sets
+# PU_FAIL on any failure, and the caller exits PU_FAIL. Invoked as
+# `validate.sh <utility> --self-test`. NOTE: the four ported arms
+# (ledger-check, synthesis-sections, tone-check, artifact-names) delegate
+# their --self-test to the Python parser when python3 is present; these bash
+# functions are the no-python3 degrade-path self-tests for them.
 # ----------------------------------------------------------------------
 _pu_rc() {  # _pu_rc <name> <want_rc> -- <cmd...>   asserts the command's exit code
   local name="$1" want="$2"; shift 3
@@ -1357,9 +1365,20 @@ case "$COMMAND" in
     ;;
 
   ledger-check)
-    if [ "${1:-}" = "--self-test" ]; then _selftest_ledger_check; exit $?; fi
+    # Primary path: real parser in scripts/letter_checks.py (Validator Architecture
+    # Hardening Inc 8) — anchored per-pass subsection matching, replacing the sed/grep
+    # slicing below. Degrades to the bash implementation when python3 is unavailable.
+    LC_DIR=$(cd "$(dirname "$0")" && pwd); LC_HELPER="$LC_DIR/letter_checks.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then python3 "$LC_HELPER" --self-test ledger-check; exit $?; fi
+      _selftest_ledger_check; exit $?
+    fi
     if [ $# -lt 1 ]; then echo "Usage: $0 ledger-check <ledger_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+      python3 "$LC_HELPER" ledger-check "$1"; exit $?
+    fi
+    # Degraded path (no python3): bash regex implementation (kept for python-less hosts).
     LEDGER="$1"
     ERRORS=0
 
@@ -1413,9 +1432,20 @@ case "$COMMAND" in
     ;;
 
   artifact-names)
-    if [ "${1:-}" = "--self-test" ]; then _selftest_artifact_names; exit $?; fi
+    # Primary path: real checker in scripts/config_checks.py (Validator Architecture
+    # Hardening Inc 8) — project/runlabel matched as literals. Degrades to the bash
+    # glob+regex implementation below when python3 is unavailable.
+    CC_DIR=$(cd "$(dirname "$0")" && pwd); CC_HELPER="$CC_DIR/config_checks.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$CC_HELPER" ]; then python3 "$CC_HELPER" --self-test artifact-names; exit $?; fi
+      _selftest_artifact_names; exit $?
+    fi
     if [ $# -lt 3 ]; then echo "Usage: $0 artifact-names <output_dir> <project_name> <runlabel>"; exit 2; fi
     if [ ! -d "$1" ]; then echo "Error: Directory not found: $1" >&2; exit 2; fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$CC_HELPER" ]; then
+      python3 "$CC_HELPER" artifact-names "$1" "$2" "$3"; exit $?
+    fi
+    # Degraded path (no python3): bash glob+regex implementation (kept for python-less hosts).
     OUTPUT_DIR="$1"
     PROJECT="$2"
     RUNLABEL="$3"
@@ -1444,9 +1474,20 @@ case "$COMMAND" in
     ;;
 
   synthesis-sections)
-    if [ "${1:-}" = "--self-test" ]; then _selftest_synthesis_sections; exit $?; fi
+    # Primary path: real parser in scripts/letter_checks.py (Validator Architecture
+    # Hardening Inc 8) — heading-anchored section matching (kills the mid-heading
+    # substring false-positive), replacing the grep below. Degrades to bash without python3.
+    LC_DIR=$(cd "$(dirname "$0")" && pwd); LC_HELPER="$LC_DIR/letter_checks.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then python3 "$LC_HELPER" --self-test synthesis-sections; exit $?; fi
+      _selftest_synthesis_sections; exit $?
+    fi
     if [ $# -lt 1 ]; then echo "Usage: $0 synthesis-sections <editorial_letter_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+      python3 "$LC_HELPER" synthesis-sections "$1"; exit $?
+    fi
+    # Degraded path (no python3): bash regex implementation (kept for python-less hosts).
     LETTER="$1"
     ERRORS=0
 
@@ -1491,9 +1532,21 @@ case "$COMMAND" in
     ;;
 
   tone-check)
-    if [ "${1:-}" = "--self-test" ]; then _selftest_tone_check; exit $?; fi
+    # Primary path: real parser in scripts/letter_checks.py (Validator Architecture
+    # Hardening Inc 8) — body-only + code-span-stripped + blockquote-skipped scan (a
+    # superlative in an appendix, code span, or quoted blurb no longer false-fails),
+    # replacing the whole-file grep below. Degrades to bash without python3.
+    LC_DIR=$(cd "$(dirname "$0")" && pwd); LC_HELPER="$LC_DIR/letter_checks.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then python3 "$LC_HELPER" --self-test tone-check; exit $?; fi
+      _selftest_tone_check; exit $?
+    fi
     if [ $# -lt 1 ]; then echo "Usage: $0 tone-check <editorial_letter_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$LC_HELPER" ]; then
+      python3 "$LC_HELPER" tone-check "$1"; exit $?
+    fi
+    # Degraded path (no python3): bash regex implementation (kept for python-less hosts).
     LETTER="$1"
     ERRORS=0
 

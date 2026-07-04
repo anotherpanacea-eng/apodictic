@@ -1,17 +1,20 @@
 # Validator Architecture Hardening (Tier 1 Harness bundle)
 
-**Status:** Increments 1–6 built. The **editorial-letter / ledger family** is on
+**Status:** Increments 1–8 built. The **editorial-letter / ledger family** is on
 `letter_checks.py`; the **timeline family** is on `timeline_checks.py`; the
-**contract/config/run-folder family** (quality-risk-triggers, audit-tier-criterion,
-argument-recon-prerequisite) is on `config_checks.py`. All `validate.sh` prose/config arms now
-delegate to a real parser with a bash degrade path. **Inc 6** extends `--check-all` to run the
+**contract/config/run-folder/filename family** (quality-risk-triggers, audit-tier-criterion,
+argument-recon-prerequisite, artifact-names) is on `config_checks.py`. All `validate.sh` prose/config
+arms now delegate to a real parser with a bash degrade path. **Inc 6** extends `--check-all` to run the
 ported validators against the real `pass-dependencies.md` and two canonical worked examples
 (`example-editorial-letter.md`, `example-timeline.md`), so framework drift is caught at release
 time. **Inc 7** (Contracts v2 completion) ships the `apodictic.severity_calibration.v1` schema so
 `softness-check` reads structured Appendix-B data instead of prose — closing the loop with
-Track A. The bundle is now complete; the one explicitly out-of-scope piece (structured
-gate-event records) is deferred to the **Runner-Governed Execution** track, which owns that
-contract (see that spec's §Later increments — "option 2, after design").
+Track A. **Inc 8** ports the last four early bash-regex arms — `ledger-check`, `synthesis-sections`,
+`tone-check` (onto `letter_checks.py`) and `artifact-names` (onto `config_checks.py`) — so no
+`validate.sh` markdown/filename validator parses with shell regex anymore. The bundle is now complete;
+the one explicitly out-of-scope piece (structured gate-event records) is deferred to the
+**Runner-Governed Execution** track, which owns that contract (see that spec's §Later increments —
+"option 2, after design").
 
 <!-- Pre-Inc-5 status retained below for context. -->
 Increments 1–4 built — the whole **editorial-letter / ledger validator family**
@@ -48,9 +51,12 @@ to the prior behavior, never to nothing).
   primitives: body-vs-appendix split (synthesis body above the first `Appendix <X>`
   heading is canonical for findings; markers in appendices don't count), override-marker
   detection (body only), case-insensitive token counting, token-boundary evidence-ref
-  matching. Backs: `severity-floor` (done), then `decision-layer-check`,
-  `audit-signal-propagation`, `underdiagnosis-triggers`, `quality-risk-triggers`,
-  `ledger-consolidation`, `audit-tier-criterion`, `argument-recon-prerequisite`.
+  matching, heading-anchored section matching, and the shared `strip_code_spans` SSoT.
+  Backs: `severity-floor`, `decision-layer-check`, `audit-signal-propagation`,
+  `underdiagnosis-triggers`, `ledger-consolidation`, `author-facing-lint`, and (Increment 8)
+  `synthesis-sections`, `tone-check`, `ledger-check`. (`ledger-check` returns `(rc, lines)`
+  directly via `RAW_CHECKS` — its NOTE lines + no-passes WARNING don't fit the
+  `(errors, warnings, ok, failed)` wrapper.)
 - **`scripts/timeline_checks.py`** (Increment 4) — the timeline arithmetic arms
   (`timeline-diff`, `timeline-arithmetic`, `timeline-anchor-conflict`). These are genuine
   computation (date math, conflict detection), the strongest Python candidates of all.
@@ -77,6 +83,7 @@ helpers use.
 | **5** | A — other artifact families | `config_checks.py` + port the non-letter validators that operate on *different artifact types*: **quality-risk-triggers** (contract + sidecar), **audit-tier-criterion** (pass-dependencies + audits dir tree), **argument-recon-prerequisite** (run-folder scan). Their own module (not `letter_checks.py`) since they take paths/dirs and do filesystem I/O. Faithful ports (oracle-diff identical, incl. byte-identical output on the real `pass-dependencies.md`). | ✅ done |
 | **6** | B — Release gate | Extend `validate.sh --check-all` to run validators against the *actual* canonical files: `audit-tier-criterion` vs the real `pass-dependencies.md`; `decision-layer-check` + `audit-signal-propagation` + `severity-floor` vs a new canonical worked-example letter; `timeline-arithmetic`/`-anchor-conflict`/`-diff` vs a new canonical worked-example Timeline. Both examples ship under `core-editor/references/` (`example-editorial-letter.md`, `example-timeline.md`) and double as docs. (The shipped sample letters are HTML renders and fail the markdown parsers, so canonical worked examples are gated instead.) Closes the deferred *Canonical-framework validator runs as release gate* item. | ✅ done |
 | **7** | C — Contracts v2 completion | Ship `apodictic.severity_calibration.v1`: a structured Appendix-B Severity Calibration entry (`id` / `locked` / `delivered` / `direction` / `rationale`). `softness-check` reads `delivered` keyed by `id` from embedded blocks in preference to the prose heuristic (prose fallback retained); `structured-findings` validates the blocks via the shared stdlib checker (no engine change). The canonical example letter carries a worked-example block, gated by `--check-all`. | ✅ done |
+| **8** | A — remaining prose/filename arms | Port the four early bash-regex arms the earlier increments left behind (they predate the hardening): **ledger-check**, **synthesis-sections**, **tone-check** onto `letter_checks.py` (they take a letter/ledger — same family boundary as Inc 1–3), and **artifact-names** onto `config_checks.py` (it takes an output directory — filesystem, like the Inc 5 arms). Faithful ports (oracle-diff byte-identical vs the pre-port arm on non-hostile inputs), then edge-harden: heading-anchored section matching (kills the mid-heading substring false-positive), body-only + code-span-stripped + blockquote-skipped superlative scan, anchored per-pass ledger subsections, and literal (re.escape) project/runlabel matching. Fixtures + degrade paths preserved. | ✅ done |
 | — | (deferred) | **Structured gate-event records** were the other half of the original Inc 7 line. Deliberately deferred — not enum-tightened, no shared-validator object-map-value change — because the record is owned by the still-evolving **Runner-Governed Execution** track. Re-homed there as a future "option 2, after design" increment (with the runner-owned design questions); `execution.gates` stays `{"type": "object"}` until then. See `docs/runner-governed-execution.md` §Later increments. | deferred |
 
 Increments 1–3 ship together as one PR (the coherent letter/ledger family); 4–7 follow as
