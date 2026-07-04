@@ -7,7 +7,7 @@ Fixture manifests, rubrics, and comparison protocols for testing prompt and harn
 - `manifests/` — fixture metadata. Each manifest describes a fixture, names its source class and permission status, and points to where the fixture content lives. Manifests are gitignored (they name specific manuscripts).
 - `rubrics/` — scoring references for core developmental-edit output, synthesis, audit routing, and the argument-engine benchmark. In-repo.
 - `argument-groundtruth-template.md` — pre-registration answer-key template for the Argument Engine Benchmark. In-repo.
-- `fixtures/` — public fixture content. Includes `fixtures/argument-benchmark/` (synthetic + public-domain argument fixtures with pre-registered ground truth). Private fixture content lives under gitignored paths (`Outputs/Hybrid_Test/`, `Outputs/blind-review/`, etc.) and is referenced by manifest only.
+- `fixtures/` — public fixture content. Includes `fixtures/argument-benchmark/` (synthetic + public-domain argument fixtures with pre-registered ground truth) and behavioral-eval sets, each a self-contained directory with a README + pre-registered `expected.md`: `fixtures/finding-disconfirmation/` (Step 6b), `fixtures/ai-prose-calibration/` (AIC-2/4/6/8 unexercised families), `fixtures/tag-audits/` (queer-romance / cozy / philosophical + no-tag baseline), and `fixtures/execution-mode-ab/` (single-agent vs. multi-agent A/B pair). Private fixture content lives under gitignored paths (`Outputs/Hybrid_Test/`, `Outputs/blind-review/`, etc.) and is referenced by manifest only.
 - `results/` — eval run outputs. Currently gitignored by default; move specific results in-repo only after the fixture-provenance policy for that fixture permits it.
 
 ## Argument Engine Benchmark
