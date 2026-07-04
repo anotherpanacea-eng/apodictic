@@ -7,17 +7,20 @@ All fixture text is **synthetic** — authored for this eval, no permission cons
 
 ## Why this set exists
 
-The audit defines flag families AIC-1 through AIC-8. Prior canonical coverage exercised
-**AIC-1** (Generic Hand / Voice Singularity), **AIC-3** (Echo Stack), **AIC-5** (Puppet
-Dialogue), and **AIC-7** (Discourse Leak). The remaining four families lacked any fixture
-that genuinely exhibits them:
+The audit defines seven numbered flag families, **AIC-1 through AIC-7**, plus **Unearned
+Fluency** — the *meta-category* they all manifest (the audit's "Why Seven Flags" note; there is
+no numbered AIC-8 in the reference — "AIC-8" is only a repo-wide shorthand for the umbrella
+verdict, kept here for continuity with the ROADMAP/changelog). Prior canonical coverage
+exercised **AIC-1** (Generic Hand / Voice Singularity), **AIC-3** (Echo Stack), **AIC-5** (Puppet
+Dialogue), and **AIC-7** (Discourse Leak). The remaining families lacked any fixture that
+genuinely exhibits them:
 
 | Flag | Name | What the audit hunts for |
 |------|------|--------------------------|
 | **AIC-2** | Velvet Fog | Scene fog + lexical genericism — unspecified spaces, generic physical detail, indefinite-pronoun gesture ("something," "a kind of") |
 | **AIC-4** | Register Seams | Multi-source splicing — bad drift: a vocabulary/confidence shift that serves nothing and breaks reader trust |
 | **AIC-6** | Continuity Smear | World-model failures — objects teleport, spatial positions contradict, time smears, a character knows what hasn't been revealed |
-| **AIC-8** | Unearned Fluency | The meta-category — grammatically smooth prose where you can swap any sentence for a paraphrase and lose nothing; competence without consequence |
+| **AIC-8**\* | Unearned Fluency | The meta-category (\*not a numbered audit flag — the umbrella verdict AIC-1–7 manifest) — grammatically smooth prose where you can swap any sentence for a paraphrase and lose nothing; competence without consequence |
 
 This set supplies a single AI-heavy prose sample deliberately drafted to fire exactly those
 four families, with named-flag invocation targets, so a real audit run has ground truth to
