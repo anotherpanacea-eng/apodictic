@@ -1,6 +1,6 @@
 # Editor Scaffolding — analytical assist for human developmental editors
 
-**Status:** Increment 1 **built**. Roadmap: `ROADMAP.md` → Operators → Editor Scaffolding. Implementation: `plugins/apodictic/skills/core-editor/references/editor-scaffolding.md` (mode contract), `run-synthesis.md §Operator Mode: Editor Scaffolding` (synthesis hook), the intake-router `operator:editor` flip (gap → built), `scripts/editor_scaffolding.py`, `validate.sh editor-scaffolding` (+ canonical `--check-all` gate), and the worked example `references/example-editorial-letter-scaffolded.md`.
+**Status:** Increment 1 **built**; the **Editor ↔ author dual-output** increment **built** (see §Dual-output). Per-pass scaffolding and blind-spot ranking remain deferred. Roadmap: `ROADMAP.md` → Operators → Editor Scaffolding. Implementation: `plugins/apodictic/skills/core-editor/references/editor-scaffolding.md` (mode contract), `run-synthesis.md §Operator Mode: Editor Scaffolding` (synthesis hook), the intake-router `operator:editor` flip (gap → built), `scripts/editor_scaffolding.py`, `validate.sh editor-scaffolding` (+ `--dual` arm and canonical `--check-all` gate), and the worked examples `references/example-editorial-letter-scaffolded.md` (editor side) + `references/example-editorial-letter-dual-author.md` (author side).
 
 A human developmental editor is using APODICTIC as an *analytical assistant*, not as the editor of record. They have already read the manuscript and formed their own view; what they want from the framework is **a second pair of eyes that surfaces what their own read might have under-weighted** — not a finished author-facing edit letter that competes with the one they will write. The author-facing default letter is the wrong artifact for this reader: it addresses the author, hands the author a revision plan, and translates every framework term into plain language the editor does not need. Editor Scaffolding re-aims the same diagnosis at the editor.
 
@@ -66,12 +66,31 @@ Scaffolding changes *framing and addressee*, never *severity or evidence*. The f
 
 `references/example-editorial-letter-scaffolded.md` is a contract-conformant worked example of a scaffolded letter. `validate.sh --check-all` runs `editor-scaffolding` **and** `decision-layer-check` **and** `severity-floor` against it — proving the overlay *composes* with the standard gates on the canonical framework's own example, not merely that the validator passes its own fixtures. (This is the "canonical-framework validator runs as release gate" discipline, ROADMAP §Deferred.)
 
+## Dual-output (Editor ↔ author)
+
+An editor who wants **both** artifacts — the editor-scaffolded letter to work from *and* the author-facing letter to hand the author — runs a **dual-output** run: one diagnosis, emitted as two letters. The editor letter carries the mode marker and the three scaffold sections (Editor Brief / What You Might Have Missed / Intervention Menu); the author letter is an ordinary author-facing synthesis (The Short Version / What Needs Work / Revision Checklist) — no editor marker, no editor-only sections. The **same `editor-scaffolding` validator** validates the pair (no new validator; the derived count is unchanged) via a two-file arm:
+
+`validate.sh editor-scaffolding --dual <editor_letter> <author_letter> [--strict]`
+
+The convention is a **two-file flag**, not a second marker, because the invariant is *cross-file* — it relates two artifacts — and the fleet's other cross-artifact gates (`finding-trace <ledger> <letter>`, `softness-check <letter> <ledger>`, `continuity-bible <bible> <timeline>`) already take positional file pairs. A marker embedded in one file can't point at the other.
+
+| ID | Severity | Rule |
+|---|---|---|
+| **D1 — editor side** | ERROR | The editor letter **declares** the mode (`<!-- mode: editor-scaffolding -->`) **and** passes the full E1–E4 contract (reuses `check`; `--strict` propagates, so a W1 leak on the editor side fails under `--strict`). A no-op author-facing letter can't stand in for the editor side. |
+| **D2 — author side (register)** | ERROR | The author letter is in **author register**: it does **not** carry the editor marker or any of the three editor-only section headings (Editor Brief / What You Might Have Missed / Intervention Menu) — the leak scan runs over the **whole** author document, so a leak hidden in an appendix still fails — **and** it **does** carry a `Revision Checklist` heading in the body (the positive register anchor, so D2 can't pass vacuously on a file that merely omits editor scaffolding). D2 never inspects the *content* of the checklist — the framework does not author the author-facing prescription (**Firewall preserved**); D2 only checks the letter is in the right register. |
+| **D3 — verdict consistency** | ERROR | The **highest canonical severity band** (Must-Fix > Should-Fix > Could-Fix) present in each letter's **body** must **match**. Both letters derive from one diagnosis, so the verdict class can't be softened on either side (a Must-Fix on the editor side can't quietly become a Should-Fix for the author). |
+
+**Why D3 is a hard gate, not advisory.** The invariant is purely mechanical — token extraction plus a fixed rank, no prose reading — and it enforces the same severity-honesty principle the single-file E4 and `softness-check` protect, now *across* the two outputs. Because there is no semantic judgment involved, a mismatch is always a real inconsistency, so D3 is an ERROR. (The "share a manuscript identifier" alternative was rejected as the primary invariant: filenames/titles drift for benign reasons, so it would be a weaker, false-positive-prone signal than the severity band.)
+
+`validate.sh --check-all` runs the `--dual` arm over the canonical pair (`example-editorial-letter-scaffolded.md` as the editor side, `example-editorial-letter-dual-author.md` as its author companion — same manuscript, same Must-Fix verdict), alongside the single-file scaffolded gate.
+
 ## Increment boundaries
 
-**Increment 1 (this):** the mode contract, the synthesis hook, the router flip, the validator (E1–E4 + W1), the worked example, and the `--check-all` composition gate.
+**Increment 1:** the mode contract, the synthesis hook, the router flip, the validator (E1–E4 + W1), the worked example, and the `--check-all` composition gate.
+
+**Editor ↔ author dual-output (built):** the `--dual` two-file arm (D1/D2/D3 above), the author-facing worked example, and its `--check-all` gate — generating the editor-scaffolded letter *and* the author-facing letter from one diagnosis, for an editor who wants both.
 
 **Future increments (not built):**
 - **Per-pass editor scaffolding** — reframing individual pass artifacts (not just the synthesis letter) for the editor audience.
 - **Blind-spot ranking** — ordering the "What You Might Have Missed" section by the gap between a finding's structural severity and its surface salience (how easy it is to miss), rather than by severity alone.
-- **Editor ↔ author dual-output** — generating the editor-scaffolded letter *and* the author-facing letter from one run, for an editor who wants both.
 - The sibling operators **Diagnostic Vocabulary Mode** (`operator:facilitator`) and **Multi-Party Intake** (`operator:team`) remain separate ROADMAP gaps.

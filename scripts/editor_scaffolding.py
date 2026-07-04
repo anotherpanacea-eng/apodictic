@@ -24,7 +24,20 @@ Checks (see docs/editor-scaffolding.md):
       under --strict) — `you (should|must|need to|...) (rewrite|add|cut|...)`
       override: <!-- override: scaffolding-prescription — <rationale> -->
 
+DUAL-OUTPUT (`--dual <editor_letter> <author_letter>`): one diagnosis, two letters — the
+editor-scaffolded letter AND its author-facing companion — validated for consistent register:
+  D1  editor side — the editor letter DECLARES the mode and passes E1-E4 (reuses `check`).
+  D2  author side — the author letter is in author register: it does NOT carry the editor
+      marker or the editor-only sections (Editor Brief / What You Might Have Missed /
+      Intervention Menu), and it DOES carry the author-facing revision guidance (a Revision
+      Checklist heading — the positive register anchor, so D2 can't pass vacuously). D2 never
+      reads the prescription content (the framework does not author it — the Firewall holds).
+  D3  consistency — a mechanical invariant, no prose reading: the highest canonical severity
+      band (Must-Fix > Should-Fix > Could-Fix) present in each letter's body must match. Both
+      letters derive from one diagnosis, so the verdict class can't be softened on either side.
+
   editor_scaffolding.py editor-scaffolding <editorial_letter|run_folder> [--strict]
+  editor_scaffolding.py editor-scaffolding --dual <editor_letter> <author_letter> [--strict]
   editor_scaffolding.py --self-test
 
 Exit: 0 clean / WARN-only / not-in-mode, 1 on ERROR (or WARN under --strict), 2 usage.
@@ -46,6 +59,26 @@ _LETTER_GLOB = ("*_Editorial_Letter_*.md", "*_Synthesis_*.md")
 _EDITOR_BRIEF_PAT = "Editor Brief"
 _BLIND_SPOT_PAT = "What You Might Have Missed"
 _INTERVENTION_PAT = "Intervention Menu"
+
+# Dual-output (--dual): the three editor-only sections that must NOT leak into the author letter
+# (D2), and the author-facing revision-guidance heading that anchors the author register (D2).
+_EDITOR_ONLY_PATS = (_EDITOR_BRIEF_PAT, _BLIND_SPOT_PAT, _INTERVENTION_PAT)
+_REVISION_CHECKLIST_PAT = "Revision Checklist"
+
+# D3 severity band ranking (descending). Purely mechanical — token match + rank, no prose read.
+_SEVERITY_RANK = {"must-fix": (3, "Must-Fix"), "should-fix": (2, "Should-Fix"),
+                  "could-fix": (1, "Could-Fix")}
+
+
+def _top_severity_band(body_text):
+    """Highest canonical severity band present in a letter body, or None. Mechanical: SEVERITY_RE
+    token extraction + fixed rank (Must-Fix > Should-Fix > Could-Fix), no semantic reading."""
+    best = (0, None)
+    for m in SEVERITY_RE.finditer(body_text):
+        rank = _SEVERITY_RANK.get(m.group(1).lower())
+        if rank and rank[0] > best[0]:
+            best = rank
+    return best[1]
 
 # W1: author-directed second-person prescription. "you" addresses someone; in scaffolding the
 # reader is the editor, so a directive to *rewrite/cut/add* manuscript content (something neither
@@ -206,6 +239,99 @@ def check(letter_text, strict=False):
         return 1, out
     out.append("OK: editor-scaffolding contract satisfied.")
     return 0, out
+
+
+def check_dual(editor_text, author_text, strict=False):
+    """Dual-output contract: one diagnosis emitted as an editor-scaffolded letter AND its
+    author-facing companion. Return (exit_code, report_lines). See the module docstring D1-D3."""
+    out = ["editor-scaffolding: dual-output — validating the editor letter and its "
+           "author-facing companion (D1 editor side, D2 author register, D3 verdict consistency)."]
+    errors, warns = [], []
+
+    # D1 — editor side: must DECLARE the mode (so it can't pass vacuously as a no-op author letter)
+    # and pass the full E1-E4 contract. Reuses `check`; --strict propagates (so a W1 leak in the
+    # editor letter fails under --strict exactly as in the single-file path).
+    if not MODE_MARKER_RE.search(editor_text):
+        errors.append("D1: the editor letter does not declare editor-scaffolding mode "
+                      "(<!-- mode: editor-scaffolding --> marker missing) — the dual run's editor "
+                      "side must be a scaffolded letter.")
+    else:
+        e_code, e_lines = check(editor_text, strict=strict)
+        if e_code == 0:
+            out.append("  D1 editor-side (E1-E4): OK")
+        else:
+            sub = [ln.strip() for ln in e_lines if "ERROR" in ln]
+            errors.append("D1: the editor letter fails the editor-scaffolding contract — "
+                          + " | ".join(sub))
+
+    # D2 — author side: author register. The leak scan (editor marker + the three editor-only
+    # section HEADINGS) runs over the WHOLE author document, so a leak hidden in an appendix still
+    # fails. The positive register anchor (a Revision Checklist heading) is required in the BODY.
+    # D2 never inspects the prescription CONTENT — the framework does not author it (Firewall).
+    author_lines = _lines(author_text)
+    leaked = []
+    if MODE_MARKER_RE.search(author_text):
+        leaked.append("the editor-scaffolding mode marker")
+    for pat in _EDITOR_ONLY_PATS:
+        if _has_heading(author_lines, pat):
+            leaked.append("the editor-only '%s' section" % pat)
+    if leaked:
+        errors.append("D2: the author letter leaked editor scaffolding — %s. The author-facing "
+                      "companion must be in author register (no editor marker, no Editor Brief / "
+                      "What You Might Have Missed / Intervention Menu)." % ", ".join(leaked))
+    else:
+        out.append("  D2 author-side register (no editor leak): OK")
+
+    if _has_heading(_lines(_body(author_text)), _REVISION_CHECKLIST_PAT):
+        out.append("  D2 author-side anchor (Revision Checklist): OK")
+    else:
+        errors.append("D2: the author letter has no '%s' heading. The author-facing companion "
+                      "must carry the author-facing revision guidance — the positive register "
+                      "anchor that distinguishes it from a bare non-editor file."
+                      % _REVISION_CHECKLIST_PAT)
+
+    # D3 — consistency: the top severity band must match across both letters. Fully mechanical
+    # (token + rank), so it's a hard ERROR — it enforces the severity-honesty invariant the whole
+    # mode rests on (a Must-Fix on the editor side can't be softened to Should-Fix for the author).
+    e_band = _top_severity_band(_body(editor_text))
+    a_band = _top_severity_band(_body(author_text))
+    if e_band is None or a_band is None:
+        errors.append("D3: cannot read a severity band from %s — both letters must carry a "
+                      "canonical severity token (Must-Fix/Should-Fix/Could-Fix) so the verdict "
+                      "class is comparable." %
+                      ("the editor letter" if e_band is None else "the author letter"))
+    elif e_band != a_band:
+        errors.append("D3: severity-band mismatch — the editor letter's top verdict is %s but the "
+                      "author letter's is %s. Both letters derive from one diagnosis; the verdict "
+                      "class must be consistent (severity honesty is preserved across both "
+                      "outputs, not softened on either side)." % (e_band, a_band))
+    else:
+        out.append("  D3 verdict consistency (top severity band = %s): OK" % e_band)
+
+    for e in errors:
+        out.append("  ERROR: " + e)
+    for w in warns:
+        out.append("  %s: %s" % ("ERROR (--strict)" if strict else "WARN", w))
+
+    if errors or (strict and warns):
+        out.append("FAILED: editor-scaffolding dual-output contract not satisfied. "
+                   "See docs/editor-scaffolding.md.")
+        return 1, out
+    out.append("OK: editor-scaffolding dual-output contract satisfied.")
+    return 0, out
+
+
+def run_dual(paths, strict=False):
+    if len(paths) != 2:
+        return 2, ["editor-scaffolding --dual: need exactly two letter files "
+                   "(<editor_letter> <author_letter>)"]
+    editor_text = _read(paths[0])
+    if editor_text is None:
+        return 2, ["editor-scaffolding: cannot read %s" % paths[0]]
+    author_text = _read(paths[1])
+    if author_text is None:
+        return 2, ["editor-scaffolding: cannot read %s" % paths[1]]
+    return check_dual(editor_text, author_text, strict=strict)
 
 
 def _newest(paths):
@@ -374,6 +500,95 @@ def run_self_test():
     code_s, _ls = check(letter(blind=False, sections_in_appendix=True), strict=True)
     chk("e2_appendix_section_strict_fails", code_s == 1)
 
+    # ---- dual-output (--dual: editor letter + author-facing companion) -------------------------
+    def author_letter(leak_marker=False, brief=False, blind=False, menu=False,
+                      checklist=True, severity="Must-Fix", leak_in_appendix=False):
+        """An ordinary author-facing synthesis letter: The Short Version / What Needs Work /
+        Revision Checklist. The Revision Checklist carries author-directed prescriptions ON
+        PURPOSE — that is the author register, and D2 never scans them (Firewall)."""
+        s = ["# Development Edit: Test — Author-Facing\n"]
+        if leak_marker:
+            s.append(marker + "\n")
+        s.append("## The Short Version\nA strong voice with a soft middle third; targeted revision.\n")
+        if brief:
+            s.append("## Editor Brief\nleaked editor addressee.\n")
+        if blind:
+            s.append("## What You Might Have Missed\nleaked blind-spot section.\n")
+        if menu:
+            s.append("## Intervention Menu — editor's discretion\nleaked menu.\n")
+        s.append("## What Needs Work\n")
+        if severity:
+            s.append("- **%s:** Pacing collapse in the middle third (Ch. 7).\n" % severity)
+        else:
+            s.append("- Pacing collapse in the middle third (Ch. 7).\n")
+        if checklist:
+            s.append("## Revision Checklist\n- Add a scene where the consequence lands.\n")
+        s.append("## Appendix A — Diagnostic Detail\n")
+        if leak_in_appendix:  # a leaked editor heading hidden in the appendix must still fail D2
+            s.append("### What You Might Have Missed\nsmuggled blind-spot heading.\n")
+        s.append("Evidence.\n")
+        return "".join(s)
+
+    # A valid dual pair -> clean, all three checks OK.
+    code, lines = check_dual(letter(), author_letter())
+    chk("dual_clean_pair_passes",
+        code == 0 and any("dual-output contract satisfied" in l for l in lines)
+        and any("D1 editor-side (E1-E4): OK" in l for l in lines)
+        and any("D2 author-side register" in l for l in lines)
+        and any("D2 author-side anchor" in l for l in lines)
+        and any("D3 verdict consistency" in l for l in lines))
+
+    # D2 — author letter carrying an editor-only section (What You Might Have Missed) -> FAIL.
+    code, lines = check_dual(letter(), author_letter(blind=True))
+    chk("dual_d2_author_leaks_blind_spot",
+        code == 1 and any("D2:" in l and "leaked" in l for l in lines))
+    # D2 — author letter carrying the Editor Brief -> FAIL.
+    code, lines = check_dual(letter(), author_letter(brief=True))
+    chk("dual_d2_author_leaks_editor_brief",
+        code == 1 and any("D2:" in l and "Editor Brief" in l for l in lines))
+    # D2 — author letter carrying the editor mode marker -> FAIL.
+    code, lines = check_dual(letter(), author_letter(leak_marker=True))
+    chk("dual_d2_author_leaks_marker",
+        code == 1 and any("D2:" in l and "marker" in l for l in lines))
+    # D2 — a leaked editor heading hidden in the AUTHOR appendix must still fail (whole-doc scan).
+    code, lines = check_dual(letter(), author_letter(leak_in_appendix=True))
+    chk("dual_d2_author_appendix_leak_fails",
+        code == 1 and any("D2:" in l and "leaked" in l for l in lines))
+    # D2 — author letter missing the Revision Checklist register anchor -> FAIL.
+    code, lines = check_dual(letter(), author_letter(checklist=False))
+    chk("dual_d2_missing_revision_checklist",
+        code == 1 and any("D2:" in l and "Revision Checklist" in l for l in lines))
+
+    # D1 — editor letter missing a scaffold section (blind-spot) -> FAIL (E2 propagates).
+    code, lines = check_dual(letter(blind=False), author_letter())
+    chk("dual_d1_editor_missing_section",
+        code == 1 and any("D1:" in l and "E2" in l for l in lines))
+    # D1 — editor letter not in mode (no marker) -> FAIL.
+    code, lines = check_dual(letter(mode=False), author_letter())
+    chk("dual_d1_editor_no_marker",
+        code == 1 and any("D1:" in l and "mode" in l for l in lines))
+
+    # D3 — verdict mismatch: editor top band Must-Fix, author top band Should-Fix -> FAIL.
+    code, lines = check_dual(letter(), author_letter(severity="Should-Fix"))
+    chk("dual_d3_verdict_mismatch",
+        code == 1 and any("D3:" in l and "mismatch" in l for l in lines))
+    # D3 — matching top bands (both Should-Fix) pass, even though rank < Must-Fix.
+    ed_should = letter().replace("**Must-Fix:** Pacing collapse (Ch. 7, lines 142-160).",
+                                 "**Should-Fix:** Pacing softness (Ch. 7, lines 142-160).")
+    code, lines = check_dual(ed_should, author_letter(severity="Should-Fix"))
+    chk("dual_d3_matching_bands_pass",
+        code == 0 and any("top severity band = Should-Fix" in l for l in lines))
+    # D3 — the AUTHOR letter's extra Could-Fix must not lower its top band below the editor's.
+    code, lines = check_dual(letter(), author_letter().replace(
+        "## Appendix A — Diagnostic Detail",
+        "- **Could-Fix:** a minor polish note.\n## Appendix A — Diagnostic Detail"))
+    chk("dual_d3_extra_lower_band_ok",
+        code == 0 and any("top severity band = Must-Fix" in l for l in lines))
+
+    # --dual usage: not exactly two files -> usage exit 2.
+    code, _l = run_dual(["only-one.md"])
+    chk("dual_needs_two_files", code == 2)
+
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
 
@@ -383,12 +598,14 @@ def main(argv):
         return run_self_test()
     args = [a for a in argv[1:] if a != "editor-scaffolding"]
     strict = "--strict" in args
+    dual = "--dual" in args
     paths = [a for a in args if not a.startswith("--")]
     if not paths:
         print("Usage: editor_scaffolding.py editor-scaffolding <editorial_letter|run_folder> "
-              "[--strict] | --self-test")
+              "[--strict] | editor-scaffolding --dual <editor_letter> <author_letter> [--strict] "
+              "| --self-test")
         return 2
-    code, lines = run(paths, strict=strict)
+    code, lines = run_dual(paths, strict=strict) if dual else run(paths, strict=strict)
     for ln in lines:
         print(ln)
     return code
