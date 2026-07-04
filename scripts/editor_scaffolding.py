@@ -24,7 +24,7 @@ Checks (see docs/editor-scaffolding.md):
       (subtle first — the serious-but-easy-to-miss finding leads its band), then fewer DISTINCT
       evidence_refs (footprint tiebreak), then id — band stays DOMINANT (salience/footprint order
       only WITHIN a band, so a Must-Fix never falls below a Should-Fix), B3 severity fidelity (a
-      reorder may not restate a band below the lock), B4 no duplicate anchor (WARN / ERROR --strict).
+      restated band must match the lock — below softens, above inflates), B4 no duplicate anchor (WARN / ERROR --strict).
       Marker absent => E2 stays presence-only (backward compatible).
   E3  an `## Intervention Menu` heading (prescription deferred to the editor)
       override: <!-- override: scaffolding-checklist — <rationale> -->
@@ -306,7 +306,7 @@ def _check_blindspot(section_lines, ledger_text):
     The Deficit Lock is enforced by B2, which reads each item's LEDGER severity (never the item's
     prose), so an item's cross-band POSITION is pinned to its true locked band regardless of what
     the item text says. B3 is the narrower *restatement* guard: if an item also writes a severity
-    token, it may not state one below the lock."""
+    token, it must match the lock exactly — a lower token softens (launders), a higher one inflates."""
     errors, warns = [], []
     if ledger_text is None or art is None:
         errors.append(
@@ -348,15 +348,19 @@ def _check_blindspot(section_lines, ledger_text):
         resolved.append((fid_raw, key, rec, sevs))
     if errors:
         return errors, warns  # cannot order/verify against an incomplete resolution
-    # B3 — severity fidelity (fail-closed; casing normalized).
+    # B3 — severity fidelity (fail-closed; casing normalized). A stated severity token must MATCH the
+    # anchored finding's locked band, in EITHER direction: below softens (launders the Deficit Lock);
+    # above inflates (misrepresents the ledger). Fidelity means equal, not merely "not below".
     for fid_raw, _key, rec, sevs in resolved:
         locked = rec["severity"]
         lr = _SEVERITY_RANK.get(locked.lower(), (0, None))[0]
         for st in sevs:
-            if _SEVERITY_RANK.get(st.lower(), (0, None))[0] < lr:
-                errors.append("B3: ranked item %s restates severity '%s' below its locked Ledger "
-                              "severity '%s' — reordering must not launder a softened band."
-                              % (fid_raw, st, locked))
+            sr = _SEVERITY_RANK.get(st.lower(), (0, None))[0]
+            if sr != lr:
+                direction = "below (softening the locked band)" if sr < lr else "above (inflating the locked band)"
+                errors.append("B3: ranked item %s restates severity '%s' %s its locked Ledger "
+                              "severity '%s' — a ranked item's stated severity must match the lock."
+                              % (fid_raw, st, direction, locked))
     # B2 — order equals the blindspot key (band desc, fewer refs first, id asc).
     got = [t[0] for t in resolved]
     want = [t[0] for t in sorted(resolved, key=lambda t: _blindspot_rank(t[2]) + (t[1],))]
@@ -874,10 +878,15 @@ def run_self_test():
     code, lines = check(ranked_letter("- Just prose, no anchor.\n- F-P5-01 — a.\n"),
                         ledger_text=_ledger)
     chk("ranked_unanchored_b1", code == 1 and any("no F-" in l for l in lines))
-    # B3: an item restating a Must-Fix as Should-Fix -> ERROR (severity-launder, fail-closed).
+    # B3: an item restating a Must-Fix as Should-Fix -> ERROR (severity-launder / soften, fail-closed).
     code, lines = check(ranked_letter("- F-P5-01 (Should-Fix) — restated low.\n"
                                       "- F-P5-02 — a.\n- F-P2-03 — b.\n"), ledger_text=_ledger)
     chk("ranked_launder_b3", code == 1 and any("B3:" in l for l in lines))
+    # B3: an item restating a Should-Fix ledger finding as Must-Fix -> ERROR (INFLATE — fidelity is
+    # a match in EITHER direction, not just "not below"). Regression for the reviewer's P2.
+    code, lines = check(ranked_letter("- F-P5-01 — a.\n- F-P5-02 — b.\n"
+                                      "- F-P2-03 (Must-Fix) — inflated.\n"), ledger_text=_ledger)
+    chk("ranked_inflate_b3", code == 1 and any("B3:" in l and "above" in l for l in lines))
     # B1: marker present but NO resolvable Ledger (bare-letter invocation) -> ERROR, never silent.
     code, lines = check(ranked_letter(_ordered), ledger_text=None)
     chk("ranked_no_ledger_b1",
