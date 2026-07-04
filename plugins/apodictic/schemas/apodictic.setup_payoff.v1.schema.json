@@ -1,0 +1,18 @@
+{
+  "$id": "apodictic.setup_payoff.v1",
+  "$comment": "Source of truth for the apodictic:setup_payoff block (Setup–Payoff Ledger — the referential-completeness half of a developmental-edit style sheet). One block per FORESHADOW: a committed narrative expectation the manuscript plants (a planted gun, a prophecy, a withheld backstory, a foreshadowed reunion) — the F of the Foreshadow → Trigger → Payoff triple (Codified Foreshadowing-Payoff Text Generation, arXiv:2601.07033), the initial setup that establishes a 'causal debt'. `foreshadow` is the setup text; `anchor` is the manuscript locus (>=1 coarse chapter/§/¶/line/page token). `trigger` is OPTIONAL free-text (CFPG's activation condition) — recorded, NOT gated (completeness is F<->P; T is context). `payoff_ref` is the id of the resolving apodictic:payoff.v1 block (a PO-NN id), or an empty string when unresolved; SP2 checks a non-empty ref resolves to an existing payoff block in the same run (N:1 allowed — many foreshadows may resolve to one payoff; back-references are NOT checked in this stage). `state` is the mechanically-derived resolution state (paid_off | open | abandoned); the validator DERIVES it (SP4 confirms an author-written state matches the derivation — a mismatch FAILs; NO model in the gate). `open_rationale` is REQUIRED (non-empty) when state is `open` (a deliberately unresolved thread — a series-level deferral, an intentional ambiguity — flagged, not a defect). The Ledger EXTRACTS the author-marked triples and CHECKS referential completeness; it never DECIDES whether a passage counts as payoff and carries NO editorial severity (the Firewall — X1: no apodictic:finding block, no Must/Should/Could-Fix token). Validated by scripts/setup_payoff_checks.py. See docs/setup-payoff-ledger.md.",
+  "title": "APODICTIC setup-payoff foreshadow block (apodictic.setup_payoff.v1)",
+  "type": "object",
+  "required": ["schema", "id", "foreshadow", "anchor", "payoff_ref", "state"],
+  "properties": {
+    "schema": {"const": "apodictic.setup_payoff.v1"},
+    "id": {"type": "string", "pattern": "^SP-[0-9]{2,}$"},
+    "foreshadow": {"type": "string"},
+    "anchor": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "trigger": {"type": "string"},
+    "payoff_ref": {"type": "string"},
+    "state": {"enum": ["paid_off", "open", "abandoned"]},
+    "open_rationale": {"type": "string"}
+  },
+  "additionalProperties": false
+}
