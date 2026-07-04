@@ -36,8 +36,28 @@ editor-scaffolded letter AND its author-facing companion — validated for consi
       band (Must-Fix > Should-Fix > Could-Fix) present in each letter's body must match. Both
       letters derive from one diagnosis, so the verdict class can't be softened on either side.
 
+PER-PASS (`--per-pass <pass_artifact>`): the SAME operator-mode reframe applied to an individual
+Core DE PASS ARTIFACT (Pass 0/1/2/5/8/…), not the synthesis letter — for an editor working a
+single diagnostic lens. A pass is lighter than the letter, so the contract is a right-sized
+subset, marker-conditional exactly like `check` (a pass artifact WITHOUT the marker is an ordinary
+diagnostic artifact — reported as a no-op and exit 0):
+  P1  mode marker present AND a non-empty `## Editor Note` (the editor addressee for this pass —
+      what the pass surfaces and where the editor's own read of this layer is likely to under-weight;
+      a distinct heading from the letter's Editor Brief, since a pass artifact is not the letter).
+  P2  a non-empty `## What You Might Have Missed` blind-spot section (the per-pass value-add; reuses
+      the E2 heading; NOT ranked — blind-spot ranking is a separate deferred increment).
+  W1  author-directed prescription leak (reused, advisory; ERROR under --strict) — same lexicon as
+      the letter path. A pass carries no author-facing checklist to reframe into an Intervention
+      Menu, so E3 has no positive per-pass analog and the prescription-deferral discipline IS this
+      negative scan. Severity honesty is owned downstream (pass flags propagate to the Findings
+      Ledger and are locked by softness-check / deficit-lock / the letter's E4); a pass artifact may
+      legitimately carry no severity vocabulary (e.g. a Pass 0 reverse outline), so — unlike the
+      letter's E4 — the per-pass path does NOT require a severity token. Same override:
+      <!-- override: scaffolding-prescription — <rationale> -->.
+
   editor_scaffolding.py editor-scaffolding <editorial_letter|run_folder> [--strict]
   editor_scaffolding.py editor-scaffolding --dual <editor_letter> <author_letter> [--strict]
+  editor_scaffolding.py editor-scaffolding --per-pass <pass_artifact> [--strict]
   editor_scaffolding.py --self-test
 
 Exit: 0 clean / WARN-only / not-in-mode, 1 on ERROR (or WARN under --strict), 2 usage.
@@ -59,6 +79,11 @@ _LETTER_GLOB = ("*_Editorial_Letter_*.md", "*_Synthesis_*.md")
 _EDITOR_BRIEF_PAT = "Editor Brief"
 _BLIND_SPOT_PAT = "What You Might Have Missed"
 _INTERVENTION_PAT = "Intervention Menu"
+
+# Per-pass (--per-pass): the editor addressee for an individual PASS artifact. A distinct heading
+# from the letter's Editor Brief — a pass is a single diagnostic lens, not the synthesis letter, so
+# the two artifact types stay visibly different. The per-pass blind-spot section reuses _BLIND_SPOT_PAT.
+_EDITOR_NOTE_PAT = "Editor Note"
 
 # Dual-output (--dual): the three editor-only sections that must NOT leak into the author letter
 # (D2), and the author-facing revision-guidance heading that anchors the author register (D2).
@@ -342,6 +367,91 @@ def run_dual(paths, strict=False):
     return check_dual(editor_text, author_text, strict=strict)
 
 
+def check_per_pass(pass_text, strict=False):
+    """Per-pass contract: a Core DE PASS ARTIFACT (not the synthesis letter) that DECLARES the mode
+    is reframed for the editor audience. Return (exit_code, report_lines). See the module docstring
+    P1/P2 + reused W1.
+
+    CONDITIONAL exactly like `check`: enforced only when the pass artifact declares the mode marker;
+    without it, a pass artifact is an ordinary diagnostic artifact (no-op, exit 0), so this is safe
+    to run over every pass artifact in a batch gate."""
+    out = []
+    if not MODE_MARKER_RE.search(pass_text):
+        out.append("editor-scaffolding --per-pass: not in editor-scaffolding mode "
+                   "(no <!-- mode: editor-scaffolding --> marker) — nothing to enforce.")
+        return 0, out
+
+    out.append("editor-scaffolding --per-pass: mode declared — enforcing the per-pass "
+               "operator:editor contract.")
+    body = _body(pass_text)
+    # P1/P2 are BODY-level (before the first Appendix A), same boundary as the letter's E1-E3, so a
+    # section smuggled under an appendix can't satisfy a required per-pass section.
+    body_lines = _lines(body)
+    errors, warns = [], []
+
+    # P1 — mode marker (already true) + a non-empty Editor Note (the editor addressee for THIS pass:
+    # what the pass surfaces and where the editor's own read of this layer is likely to under-weight).
+    # Parallel to E1's Editor Brief, but a distinct heading — a pass artifact is not the letter.
+    note = _section_nonempty(body_lines, _EDITOR_NOTE_PAT)
+    if note is None:
+        errors.append("P1: missing the '%s' section (the editor addressee for this pass). The marker "
+                      "is present but the pass artifact is not reframed for the editor." % _EDITOR_NOTE_PAT)
+    elif note is False:
+        errors.append("P1: '%s' section is present but empty." % _EDITOR_NOTE_PAT)
+    else:
+        out.append("  P1 mode+editor-framing: OK")
+
+    # P2 — non-empty blind-spot section (the per-pass value-add: what THIS pass surfaces that a
+    # confident read of its layer under-weights). Reuses the E2 heading; an appendix heading does not
+    # satisfy it. NOT ordered by salience — blind-spot RANKING is a separate deferred increment.
+    blind = _section_nonempty(body_lines, _BLIND_SPOT_PAT)
+    if blind is None:
+        errors.append("P2: missing the '%s' blind-spot section (the per-pass scaffolding value-add)."
+                      % _BLIND_SPOT_PAT)
+    elif blind is False:
+        errors.append("P2: '%s' section is present but empty." % _BLIND_SPOT_PAT)
+    else:
+        out.append("  P2 blind-spot: OK")
+
+    # W1 (reused) — author-directed prescription leak (advisory; ERROR under --strict). Identical
+    # lexicon + body scan to the single-file letter path: in scaffolding mode the prescription belongs
+    # to the human editor, and a DIAGNOSTIC pass artifact carries no revision plan at all — so the
+    # prescription-deferral discipline is this negative scan (there is no author-facing checklist on a
+    # pass to reframe into an Intervention Menu, so E3 has no positive per-pass analog).
+    body_prose = _strip_comments(body)
+    m = _PRESCRIPTION_RE.search(body_prose) or _BARE_PRESCRIPTION_RE.search(body_prose)
+    if m and not has_override(body, "scaffolding-prescription"):
+        ls = body_prose.rfind("\n", 0, m.start()) + 1
+        le = body_prose.find("\n", m.start())
+        snippet = body_prose[ls:(le if le != -1 else len(body_prose))].strip()
+        if len(snippet) > 80:
+            snippet = snippet[:77] + "..."
+        warns.append("W1: author-directed prescription leak — '%s' in the body. In scaffolding mode "
+                     "the prescription belongs to the human editor. Override: "
+                     "<!-- override: scaffolding-prescription — <rationale> -->." % snippet)
+
+    for e in errors:
+        out.append("  ERROR: " + e)
+    for w in warns:
+        out.append("  %s: %s" % ("ERROR (--strict)" if strict else "WARN", w))
+
+    if errors or (strict and warns):
+        out.append("FAILED: editor-scaffolding per-pass contract not satisfied. "
+                   "See docs/editor-scaffolding.md.")
+        return 1, out
+    out.append("OK: editor-scaffolding per-pass contract satisfied.")
+    return 0, out
+
+
+def run_per_pass(paths, strict=False):
+    if len(paths) != 1:
+        return 2, ["editor-scaffolding --per-pass: need exactly one pass-artifact file"]
+    text = _read(paths[0])
+    if text is None:
+        return 2, ["editor-scaffolding: cannot read %s" % paths[0]]
+    return check_per_pass(text, strict=strict)
+
+
 def _newest(paths):
     paths = [p for p in paths if p and os.path.isfile(p)]
     return max(paths, key=os.path.getmtime) if paths else None
@@ -614,6 +724,89 @@ def run_self_test():
     code, _l = run_dual(["only-one.md"])
     chk("dual_needs_two_files", code == 2)
 
+    # ---- per-pass (--per-pass: a scaffolded PASS ARTIFACT, not the synthesis letter) ------------
+    def pass_artifact(note=True, blind=True, severity=True, prescription=False, bare=False,
+                      note_empty=False, blind_empty=False, mode=True, presc_override=False,
+                      sections_in_appendix=False):
+        """A Core DE pass artifact (e.g. Pass 2 Structural Mapping) reframed for the editor: an
+        Editor Note addressee + a What-You-Might-Have-Missed blind-spot section, over the same W1
+        firewall. Unlike the synthesis letter it carries NO Revision Checklist / Intervention Menu
+        (a pass is diagnostic), so the prescription-deferral discipline is the negative W1 scan only."""
+        s = ["# Pass 2: Structural Mapping — Test\n"]
+        if mode:
+            s.append(marker + "\n")
+        if presc_override:
+            s.append("<!-- override: scaffolding-prescription — quoting the author's own note -->\n")
+        if note:
+            s.append("## Editor Note\n")
+            s.append("" if note_empty else
+                     "For the editor: this pass maps the beat structure; where your read and mine "
+                     "most likely diverge is the Ch. 9 turn.\n")
+        if severity:
+            s.append("## Structural Flags\n- **Must-Fix:** the aftermath compresses across "
+                     "Ch. 7-9 (lines 142-220).\n")
+        if blind:
+            s.append("## What You Might Have Missed\n")
+            s.append("" if blind_empty else
+                     "The polished Part I prose masks a missing causal beat at the Ch. 9 turn (line 220).\n")
+        if bare:  # author-facing checklist leak — bare imperative at a list start, in the body
+            s.append("- Add a scene where the consequence lands.\n")
+        if prescription:  # modal second-person leak, in the body
+            s.append("\nYou should rewrite the climax to raise the stakes.\n")
+        s.append("## Appendix A — Beat Table\n")
+        # Appendix prose carries a leak AND a scaffold heading; the body scan stops at Appendix A, so
+        # neither satisfies a body section nor trips W1.
+        s.append("You should add a scene here (appendix prose, not scanned).\n")
+        if sections_in_appendix:
+            s.append("### What You Might Have Missed\nblind-spot text smuggled into the appendix.\n")
+        return "".join(s)
+
+    # No marker -> no-op pass.
+    code, lines = check_per_pass(pass_artifact(mode=False))
+    chk("pp_no_marker_is_noop",
+        code == 0 and any("not in editor-scaffolding mode" in l for l in lines))
+    # Full, clean scaffolded pass artifact -> pass (P1 + P2 OK).
+    code, lines = check_per_pass(pass_artifact())
+    chk("pp_clean_scaffolded_passes",
+        code == 0 and any("per-pass contract satisfied" in l for l in lines)
+        and any("P1 mode+editor-framing: OK" in l for l in lines)
+        and any("P2 blind-spot: OK" in l for l in lines))
+    # P1: missing / empty Editor Note.
+    code, lines = check_per_pass(pass_artifact(note=False))
+    chk("pp_p1_missing_note", code == 1 and any("P1: missing" in l for l in lines))
+    code, lines = check_per_pass(pass_artifact(note_empty=True))
+    chk("pp_p1_empty_note", code == 1 and any("P1:" in l and "empty" in l for l in lines))
+    # P2: missing / empty blind-spot.
+    code, lines = check_per_pass(pass_artifact(blind=False))
+    chk("pp_p2_missing_blind", code == 1 and any("P2: missing" in l for l in lines))
+    code, lines = check_per_pass(pass_artifact(blind_empty=True))
+    chk("pp_p2_empty_blind", code == 1 and any("P2:" in l and "empty" in l for l in lines))
+    # W1: author-directed prescription in body -> WARN default, ERROR under --strict.
+    code, lines = check_per_pass(pass_artifact(prescription=True))
+    chk("pp_w1_advisory_warn", code == 0 and any("WARN: W1" in l for l in lines))
+    code_s, lines_s = check_per_pass(pass_artifact(prescription=True), strict=True)
+    chk("pp_w1_strict_errors", code_s == 1 and any("ERROR (--strict): W1" in l for l in lines_s))
+    # W1 override silences it.
+    code, lines = check_per_pass(pass_artifact(prescription=True, presc_override=True))
+    chk("pp_w1_override_silences", code == 0 and not any("W1" in l for l in lines))
+    # W1 BARE imperative leak ("Add a scene ..." at a list start) is caught.
+    code, lines = check_per_pass(pass_artifact(bare=True))
+    chk("pp_w1_bare_imperative_warn",
+        code == 0 and any("WARN: W1" in l for l in lines)
+        and any("Add a scene" in l for l in lines))
+    # W1 must NOT fire on appendix prose ("You should add a scene" lives in Appendix A).
+    code, lines = check_per_pass(pass_artifact(prescription=False))
+    chk("pp_w1_ignores_appendix", code == 0 and not any("W1" in l for l in lines))
+    # A required section satisfied only from an appendix must FAIL (body scan stops at Appendix A).
+    code, lines = check_per_pass(pass_artifact(blind=False, sections_in_appendix=True))
+    chk("pp_appendix_section_does_not_satisfy",
+        code == 1 and any("P2: missing" in l for l in lines))
+    code_s, _ls = check_per_pass(pass_artifact(blind=False, sections_in_appendix=True), strict=True)
+    chk("pp_appendix_section_strict_fails", code_s == 1)
+    # --per-pass usage: not exactly one file -> usage exit 2.
+    code, _l = run_per_pass(["a.md", "b.md"])
+    chk("pp_needs_one_file", code == 2)
+
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
 
@@ -624,13 +817,19 @@ def main(argv):
     args = [a for a in argv[1:] if a != "editor-scaffolding"]
     strict = "--strict" in args
     dual = "--dual" in args
+    per_pass = "--per-pass" in args
     paths = [a for a in args if not a.startswith("--")]
     if not paths:
         print("Usage: editor_scaffolding.py editor-scaffolding <editorial_letter|run_folder> "
               "[--strict] | editor-scaffolding --dual <editor_letter> <author_letter> [--strict] "
-              "| --self-test")
+              "| editor-scaffolding --per-pass <pass_artifact> [--strict] | --self-test")
         return 2
-    code, lines = run_dual(paths, strict=strict) if dual else run(paths, strict=strict)
+    if dual:
+        code, lines = run_dual(paths, strict=strict)
+    elif per_pass:
+        code, lines = run_per_pass(paths, strict=strict)
+    else:
+        code, lines = run(paths, strict=strict)
     for ln in lines:
         print(ln)
     return code
