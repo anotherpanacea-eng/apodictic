@@ -375,7 +375,11 @@ def decision_layer_check(text):
 
 # Canonical fallback map (used only when pass-dependencies.md cannot be located).
 # Byte-equivalent to the §4e Default-mapping block; kept so the validator never
-# crashes in a python-context that lacks the reference file.
+# crashes in a python-context that lacks the reference file. KEEP IN SYNC with the
+# §4e `#### Default mapping` block (and the bash degrade-path inline map): a future
+# §4e default change must update this constant too, or a degraded (no-reference-file,
+# non-CI) host would resolve stale severities. CI always locates the file, so this
+# constant is never exercised there — it is purely the degraded-host safety net.
 _CANONICAL_SIGNAL_MAP = {
     "must-fix-floor": "must-fix",
     "hard-gate": "must-fix",
