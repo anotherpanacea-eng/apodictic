@@ -1002,20 +1002,23 @@ def ledger_check(text):
 
     lines, errors = [], 0
     for idx, m in enumerate(headers):
-        pass_n = int(m.group(1))
+        # Verbatim digit token (string), matching the legacy bash `grep -o '[0-9]\+'`:
+        # the Pass 0/10 leniency is a string compare, and the surfaced line echoes the
+        # token verbatim (so a non-canonical `## Pass 00` stays strict + prints "Pass 00").
+        pass_tok = m.group(1)
         start = m.start()
         end = headers[idx + 1].start() if idx + 1 < len(headers) else len(text)
         section = text[start:end]
-        lenient = pass_n in (0, 10)
+        lenient = pass_tok in ("0", "10")
         for req in _LEDGER_REQUIRED:
             if _pass_has_subsection(section, req):
                 continue
             if lenient:
-                lines.append("NOTE: Pass %d missing '### %s' (acceptable for "
-                             "data-building pass)" % (pass_n, req))
+                lines.append("NOTE: Pass %s missing '### %s' (acceptable for "
+                             "data-building pass)" % (pass_tok, req))
             else:
-                lines.append("ERROR: Pass %d missing required section '### %s'"
-                             % (pass_n, req))
+                lines.append("ERROR: Pass %s missing required section '### %s'"
+                             % (pass_tok, req))
                 errors += 1
 
     if errors > 0:
