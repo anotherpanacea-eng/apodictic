@@ -7,8 +7,8 @@ The `apodictic.viz_manifest.v1` block below copies — **verbatim** — the thre
 byte-equal copy fidelity (E4), Must-Fix completeness (E3, `F-RR-01` is a Must-Fix), and the
 chapter-honesty parse (its `evidence_refs: ["Chapter 9"]` → the `Ch 9` bin, which has no scenes —
 findings bin by chapter independently of the Timeline). Validate with
-`scripts/validate.sh manuscript-viz <this file> example-timeline.md example-findings-ledger.md example-argument-state-predraft.md example-scene-roster.md example-scene-function.md example-tension-points.md`
-(run by `--check-all`). Render with `scripts/viz_manifest.py render <this file> example-timeline.md example-findings-ledger.md example-argument-state-predraft.md example-scene-roster.md example-scene-function.md example-tension-points.md -o out.html`.*
+`scripts/validate.sh manuscript-viz <this file> example-timeline.md example-findings-ledger.md example-argument-state-predraft.md example-scene-roster.md example-scene-function.md example-tension-points.md example-story-spine.md`
+(run by `--check-all`). Render with `scripts/viz_manifest.py render <this file> example-timeline.md example-findings-ledger.md example-argument-state-predraft.md example-scene-roster.md example-scene-function.md example-tension-points.md example-story-spine.md -o out.html`.*
 
 The manifest carries **only traceable data** — no per-finding color, size, or emphasis. The
 severity→encoding map is hardcoded in the renderer, so there is structurally nothing to soften.
@@ -44,6 +44,19 @@ closed `1 | 2 | 3 | 4 | 5` enum with a non-empty anchor; the scene resolves to a
 (the producer must exist). The render draws a tension-over-scene-order timeline **mechanically** — one
 point per scene at its declared level, connected in scene order. Tension points are keyed directly on
 `scene_id` (per-scene) — **no** `evidence_ref → scene_id` resolution, so that overlay stays out of scope.
+
+**Chart 7-fiction — the beat-map against spine.** The `beats[]` array below is the chart-7-fiction
+render deliverable. Each entry is copied — **verbatim** — from the
+[`example-story-spine.md`](example-story-spine.md) producer (`apodictic.story_spine.v1`): the `beat` is
+one of that manuscript's ordered spine beats and the `scene_id` matches the producer's mapping for that
+beat and a Timeline row (the auditable `anchor` and the chosen `spine_framework` live in the producer,
+not here). It proves X9 (every beat matches a producer beat, its scene_id byte-equals the producer's
+mapping and resolves to a Timeline row; the producer's `spine_framework` is in the closed 50-spine
+plot-coach taxonomy with non-empty beats and anchors) and X8 (the producer must exist). The render draws
+a beat-map along the spine **mechanically** — one node per beat, in spine order, at its mapped scene. The
+worked spine is **Seven-Point (Dan Wells)**; its first three beats (Hook, Plot Turn 1, Pinch 1) map to
+the Timeline's three scenes. Beats are keyed directly on `scene_id` (per-scene) — **no** `evidence_ref →
+scene_id` resolution.
 
 **Chart 7-nonfiction — the claim ladder.** The `claim_ladder[]` array below is the render-only M1
 deliverable of the Manuscript-Visualization Completion increment. Each rung is copied — **verbatim** —
@@ -82,6 +95,11 @@ a subclaim to a location, by design).
     {"scene_id": "Ch 1 §1", "tension": "2"},
     {"scene_id": "Ch 1 §2", "tension": "4"},
     {"scene_id": "Ch 2 §1", "tension": "3"}
+  ],
+  "beats": [
+    {"beat": "Hook", "scene_id": "Ch 1 §1"},
+    {"beat": "Plot Turn 1", "scene_id": "Ch 1 §2"},
+    {"beat": "Pinch 1", "scene_id": "Ch 2 §1"}
   ],
   "claim_ladder": [
     {"claim_id": "C1", "label": "missing curb cuts are a documented, daily mobility barrier for wheelchair and stroller users", "support": [{"support_type": "DATA", "status": "to-acquire"}]},

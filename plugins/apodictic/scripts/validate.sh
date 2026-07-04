@@ -528,11 +528,11 @@ if [ "$1" = "--check-all" ]; then
       echo "ERROR: $CA_BASE/example-beta-reader-instrument.md / example-uncertainty-ledger.md not found"; CA_FAIL=1
     fi
     echo ""
-    echo "== canonical Structure Map manifest (manuscript-viz: manifest<->source provenance vs Timeline + Ledger + claim-ladder spine + co-presence roster + scene-function producer + tension-point producer) =="
-    if [ -f "$CA_BASE/example-structure-map-manifest.md" ] && [ -f "$CA_BASE/example-timeline.md" ] && [ -f "$CA_BASE/example-findings-ledger.md" ] && [ -f "$CA_BASE/example-argument-state-predraft.md" ] && [ -f "$CA_BASE/example-scene-roster.md" ] && [ -f "$CA_BASE/example-scene-function.md" ] && [ -f "$CA_BASE/example-tension-points.md" ]; then
-      "$0" manuscript-viz "$CA_BASE/example-structure-map-manifest.md" "$CA_BASE/example-timeline.md" "$CA_BASE/example-findings-ledger.md" "$CA_BASE/example-argument-state-predraft.md" "$CA_BASE/example-scene-roster.md" "$CA_BASE/example-scene-function.md" "$CA_BASE/example-tension-points.md" --require-block || CA_FAIL=1
+    echo "== canonical Structure Map manifest (manuscript-viz: manifest<->source provenance vs Timeline + Ledger + claim-ladder spine + co-presence roster + scene-function producer + tension-point producer + story-spine producer) =="
+    if [ -f "$CA_BASE/example-structure-map-manifest.md" ] && [ -f "$CA_BASE/example-timeline.md" ] && [ -f "$CA_BASE/example-findings-ledger.md" ] && [ -f "$CA_BASE/example-argument-state-predraft.md" ] && [ -f "$CA_BASE/example-scene-roster.md" ] && [ -f "$CA_BASE/example-scene-function.md" ] && [ -f "$CA_BASE/example-tension-points.md" ] && [ -f "$CA_BASE/example-story-spine.md" ]; then
+      "$0" manuscript-viz "$CA_BASE/example-structure-map-manifest.md" "$CA_BASE/example-timeline.md" "$CA_BASE/example-findings-ledger.md" "$CA_BASE/example-argument-state-predraft.md" "$CA_BASE/example-scene-roster.md" "$CA_BASE/example-scene-function.md" "$CA_BASE/example-tension-points.md" "$CA_BASE/example-story-spine.md" --require-block || CA_FAIL=1
     else
-      echo "ERROR: $CA_BASE/example-structure-map-manifest.md / example-timeline.md / example-findings-ledger.md / example-argument-state-predraft.md / example-scene-roster.md / example-scene-function.md / example-tension-points.md not found"; CA_FAIL=1
+      echo "ERROR: $CA_BASE/example-structure-map-manifest.md / example-timeline.md / example-findings-ledger.md / example-argument-state-predraft.md / example-scene-roster.md / example-scene-function.md / example-tension-points.md / example-story-spine.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical annotated manuscript (annotated-manuscript: no-mutation + anchor ladder + Must-Fix rendered) =="
