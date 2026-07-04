@@ -15,3 +15,4 @@
 codex/** linguist-generated=true
 antigravity/** linguist-generated=true
 *.docx binary
+*.pdf binary
