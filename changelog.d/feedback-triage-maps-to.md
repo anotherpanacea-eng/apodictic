@@ -1,0 +1,7 @@
+### Workflows — Feedback Triage structured `maps_to` (Increment 2)
+
+A feedback item can now carry an optional **`maps_to`** field — a Finding-Lifecycle id (`F-<ORIGIN>-<NN>`) linking a triaged claim to its finding in the Findings Ledger, the structured successor to Increment 1's prose "maps to F-…" note. The field is additive: every pre-existing feedback item without it stays valid.
+
+`feedback-triage` grows a paired-artifact cross-check (an **optional second file — the Findings Ledger**, resolved from a run folder's `*_Findings_Ledger_*.md` or an explicit file, exactly like `finding-trace` / `ledger-consolidation`). When the ledger is present it enforces two new invariants: **E5 (dangling `maps_to`)** — a hard ERROR when an item's `maps_to` names a finding that is not in the ledger (assessment-independent referential integrity, mirroring `finding-trace` E1) — and **W4 (unmapped validated)** — an advisory WARN (ERROR under `--strict`) when a `validated` item carries no `maps_to`, the checkable form of the spec's "a validated feedback item must point at a real F-…". W4 is advisory by default so a claim marked `validated` ahead of its ledger entry stays valid; `--strict` is the finalize/CI gate. Without a ledger the cross-check is skipped and single-file behavior is unchanged.
+
+The canonical worked example is now paired with the example Findings Ledger under `--check-all --strict` (FB-01 `maps_to: F-RR-01` resolves E5-clean; no fully-validated item is left unmapped). No new validator — the self-testable validator count is unchanged (67).

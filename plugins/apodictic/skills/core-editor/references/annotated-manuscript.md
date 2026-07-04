@@ -103,8 +103,8 @@ appendices live there; the annotated copy carries the per-locus findings, reache
 - **Increment 3 (shipped):** letter↔margin cross-links (the `crosslink` validator, X1–X4).
 - **Producer (this wiring):** intake snapshot + run-end offer + `diagnosed`-node re-gen, so a real run
   produces the deliverable (`docs/annotated-manuscript-producer.md`).
-- **Export (shipped):** render-target export — Obsidian → read-only HTML → DOCX/Google-Docs comments
-  (`docs/annotated-manuscript-export.md`).
+- **Export (shipped):** render-target export — Obsidian → read-only HTML → DOCX/Google-Docs comments →
+  a self-contained byte-deterministic PDF proofing target (`docs/annotated-manuscript-export.md`).
 - **Round-trip re-anchoring (shipped):** carry the margin notes onto a revised draft and re-emit the
   marked-up copy of the new draft, classifying held / moved / vanished / ambiguous / not-re-anchorable;
   cross-referenced against draft-over-draft regression at round-close. Wired into the Revision Round
