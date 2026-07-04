@@ -584,7 +584,9 @@ Original finding (Codex final critique, P1, v1.8.4): the `audit-tier-criterion` 
 
 **Run-folder validators now gated too.** A canonical *run folder* fixture (`core-editor/references/example-run-folder/`: a gate-valid Findings Ledger + an Audit Invocation Log + a `Diagnostic_State.meta.json` sidecar carrying an attested `run_synthesis` gate event) was added, and `--check-all` now gates the run-folder–shaped validators against it: `gate-state`, `escalation-check`, and `argument-recon-prerequisite` run read-only against the committed fixture, and the **gate engine** (`gate run_synthesis`) runs against a throwaway temp copy (it appends an event to the sidecar, so the committed fixture stays immutable). With that, every validator that has a single-artifact or run-folder canonical target is gated.
 
-**Remaining:** only the two with no clean canonical target — the self-test-only `artifacts-schema` (validates arbitrary embedded blocks; covered indirectly by `structured-findings` on the shipped templates) and `quality-risk-triggers` (would need a dedicated clean canonical contract). Defer until a forcing function surfaces.
+**Contract validator now gated too.** A canonical clean *Contract* worked example (`core-editor/references/example-quality-risk-contract.md`: a single-POV literary family drama at moderate darkness with a mid-draft developmental goal) was added, and `--check-all` now gates `quality-risk-triggers` against it — a clean arm asserting the contract raises none of the five pre-pass triggers (Q1-Q5) and exits 0, plus a hostile arm that flips the darkness rating to the top setting on a throwaway copy and asserts the Q1 consent/governance trigger fires (gate proven to have teeth). That closes the `quality-risk-triggers` hole below.
+
+**Remaining:** only the self-test-only `artifacts-schema` (validates arbitrary embedded blocks; covered indirectly by `structured-findings` on the shipped templates) has no clean canonical target. Defer until a forcing function surfaces.
 
 ### Clearer §4e table-driven propagation framing
 
