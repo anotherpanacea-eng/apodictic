@@ -86,9 +86,12 @@ bible](worldbuilding-bible.md)):
 The state is **mechanically derived, never judged**: the validator computes it from the literal
 collision + the override presence and rejects a `State` value that disagrees (X1). The override slug is
 `bible-contradiction` — distinct from `bible-rederive` (the C4 chronology-consume escape hatch, not a
-contradiction resolution). The register **never** carries an editorial-severity token or an
+contradiction resolution). Every ledger row must pair **at least two distinct `CF-NN` ids that each
+resolve to a real, well-formed `canon_fact` block** — a fabricated or single id FAILs X1 referential
+integrity (a row must cite real, distinct facts). The register **never** carries an editorial-severity token or an
 `apodictic:finding` block — a contradiction is a fact-state, not a defect (X1 firewall, the
-Content-Advisory A3 precedent).
+Content-Advisory A3 precedent). A ledger with data rows but no `State` column is the pre-axis form:
+accepted (the column is additive) but WARNed loudly (ERROR under `--strict`).
 
 ### Feeding the letter (Stage A — prose citation)
 

@@ -280,7 +280,15 @@ def bible(text, timeline_text=None, strict=False):
         overridden = any(pair <= idset for pair in cx_overrides)
         return cstate.derive_state(True, overridden)
 
-    for e in cstate.check_row_states(cstate.state_rows(text, _CF_REF_RE), _derived_state):
+    # Loud absence (adopted P3) — a ledger with data rows but NO `State` column is a pre-axis form; the
+    # column is additive and NOT required, so this is a WARN (rc stays 0), not an ERROR. Silence would
+    # let a bible sit indefinitely without the fact-state axis; the WARN nudges the author to add it.
+    _cf_rows = cstate.state_rows(text, _CF_REF_RE)
+    if _cf_rows and not cstate.has_state_column(text):
+        warns.append("Contradiction Ledger has %d row(s) but no State column — pre-axis form; add the "
+                     "State column per the reference module" % len(_cf_rows))
+
+    for e in cstate.check_row_states(_cf_rows, _derived_state):
         errs.append(e)
     if cstate.severity_leak(text):
         errs.append("X1 firewall: the Contradiction Ledger carries an editorial Must/Should/Could-Fix "
@@ -534,9 +542,16 @@ def run_self_test():
                         + "| Mara | age | CF-02, CF-03 | apparent | quoted-example decoy |\n")
     chk("x1_codespan_override_does_not_silence",
         code == 1 and any("X1 State agreement" in ln for ln in lines))
-    # a pre-axis ledger (no State column) is still accepted — the column is additive, not required
-    chk("x1_preaxis_ledger_ok",
-        bible(pair + LEDGER + "| Mara | age | CF-02, CF-03 |\n")[0] == 0)
+    # a pre-axis ledger (no State column) is still accepted (rc 0 — the column is additive, not
+    # required) but now WARNs loudly (adopted P3: silence would let a bible sit without the fact-state
+    # axis). LEDGER is the pre-axis header (Entity | Attribute | Conflicting facts — no State column).
+    _pre_code, _pre_lines = bible(pair + LEDGER + "| Mara | age | CF-02, CF-03 |\n")
+    chk("x1_preaxis_ledger_ok", _pre_code == 0)
+    chk("x1_preaxis_ledger_warns_no_state",
+        any("no State column" in ln for ln in _pre_lines))
+    # ...and under --strict the additive-column nudge escalates to an ERROR (rc 1), like the other warns.
+    chk("x1_preaxis_ledger_strict_fails",
+        bible(pair + LEDGER + "| Mara | age | CF-02, CF-03 |\n", strict=True)[0] == 1)
 
     # C4 — chronology consume (advisory; ERROR --strict; override; resolves against Timeline)
     chron = fact("CF-10", entity="office scene", category="chronology", attribute="day",
@@ -598,6 +613,15 @@ def run_self_test():
         chk("missing_artifact_usage", run([os.path.join(d, "nope.md")])[0] == 2)
     finally:
         shutil.rmtree(d, ignore_errors=True)
+
+    # Shared contradiction_state helper self-test — this module carries the State-axis truth table,
+    # the plain-markdown State-column parse (header decoy, `Statement`/`Restated` guard, tuple-vs-string
+    # derived_for), and the X1 severity regex, but is invoked by NOTHING in CI on its own (no validate.sh
+    # command, not an AGG_VALIDATORS entry — it is a shared helper like override_marker / apodictic_
+    # artifacts). Wire it here so `continuity-bible --self-test` (which runs in --self-test-all) also
+    # exercises the helper's own cases. Both bibles import cstate; homing this in continuity-bible keeps
+    # the world-bible self-test focused on its arms without double-running the helper suite.
+    chk("contradiction_state_helper_selftest", cstate._self_test() == 0)
 
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
