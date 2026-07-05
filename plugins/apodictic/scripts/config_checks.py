@@ -22,8 +22,9 @@ they live here rather than in letter_checks.py:
                                  WARN (H1), block/question/pass mismatches vs §3 ERROR (H2/H3).
 
 Faithful re-implementations of the bash arms (verified by oracle-diff against the pre-port
-arm: identical exit codes). validate.sh stays the command surface and degrades to its prior
-bash path when python3 is absent. Output keeps the legacy WARN: / ERROR: / FAILED: / OK:
+arm: identical exit codes). validate.sh stays the command surface; when python3 is absent the
+pass-header arm degrades to the fleet advisory-WARN convention (skip + inline-check guidance,
+rc 0), NOT a bash reimplementation. Output keeps the legacy WARN: / ERROR: / FAILED: / OK:
 prefixes and exit codes (0 ok, 1 fail, 2 usage).
 
 CLI:
@@ -470,7 +471,7 @@ def pass_header(artifact_path, pd_path=None):
             header_line = ln
             break
 
-    lines, errors, warns = [], 0, 0
+    lines, errors = [], 0
 
     if header_line is None:
         # H1 miss on a legacy/header-less artifact is a WARN, not an ERROR —
@@ -504,12 +505,16 @@ def pass_header(artifact_path, pd_path=None):
         errors += 1
     else:
         # H2 — block matches §3's pass->block map for this Legacy pass id.
+        # An unmapped pass id is WRONG by the SSoT contract (not merely
+        # uncheckable): either the header names a pass §3 doesn't define, or §3
+        # is out of date. Per R4, a WARN marks ABSENCE (a header-less legacy
+        # artifact, H1) — never a present-but-wrong value like this. So ERROR.
         canonical_block = pass_to_block.get(pass_id)
         if canonical_block is None:
-            lines.append("WARN: '%s' — Legacy pass id 'Pass %s' is not mapped to a macro block "
-                         "in §3; cannot verify block↔pass agreement (H2). §3 maps passes: %s."
+            lines.append("ERROR: '%s' — Pass %s is not mapped in §3 — either the header is "
+                         "wrong or §3 must be updated in the same change (H2). §3 maps passes: %s."
                          % (artifact_path, pass_id, ", ".join(sorted(pass_to_block, key=lambda p: int(p) if p.isdigit() else 0))))
-            warns += 1
+            errors += 1
         elif canonical_block != block:
             lines.append("ERROR: '%s' — Macro block '%s' does not match §3's canonical block "
                          "for Pass %s, which is '%s' (H2). The pass↔block map is by pass, not by "
@@ -526,12 +531,12 @@ def pass_header(artifact_path, pd_path=None):
 
     if errors > 0:
         lines.append("")
-        lines.append("FAILED: %d pass-header failure(s); %d warning(s). §3 (Macro Block "
+        lines.append("FAILED: %d pass-header failure(s). §3 (Macro Block "
                      "Definitions) in pass-dependencies.md is the single source of truth for the "
-                     "block, the pass↔block map, and the User Question." % (errors, warns))
+                     "block, the pass↔block map, and the User Question." % (errors,))
         return 1, lines
     lines.append("OK: pass header for '%s' agrees with §3 (block ∈ 8, block↔pass map, User "
-                 "Question). %d warning(s)." % (artifact_path, warns))
+                 "Question)." % (artifact_path,))
     return 0, lines
 
 
@@ -743,6 +748,11 @@ def run_self_test(which=None):
             emptyq = wf("emptyq.md",
                         "> **Macro block:** Structure Map · **Writer question:**  · "
                         "**Legacy pass id:** Pass 2\n\n# Body\n")
+            # H2 FAIL (R2): a valid block + its own question, but a Legacy pass id
+            # §3 does not map (Pass 3 is not in the fixture's 0/2/5/7/4/8 set). An
+            # unmapped pass is present-but-wrong by the SSoT contract -> ERROR, not
+            # WARN (R4: WARN marks absence, never a present-but-wrong value).
+            notmapped = wf("notmapped.md", hdr % ("Structure Map", "Is the structure working?", "3"))
             expect("ph_pos", pass_header(pos, pd)[0], 0)
             expect("ph_pos_concern_driven", pass_header(posc, pd)[0], 0)
             expect("ph_missing_header_warns", pass_header(missing, pd)[0], 0)
@@ -750,6 +760,7 @@ def run_self_test(which=None):
             expect("ph_block_pass_mismatch", pass_header(mismatch, pd)[0], 1)
             expect("ph_wrong_question", pass_header(wrongq, pd)[0], 1)
             expect("ph_empty_field", pass_header(emptyq, pd)[0], 1)
+            expect("ph_pass_not_mapped", pass_header(notmapped, pd)[0], 1)
 
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
