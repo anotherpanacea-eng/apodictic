@@ -18,7 +18,7 @@ Use this guide to find the detailed analysis behind each finding.
 - Detail: `Example_Pass5_Character_Audit_run.md`
 
 ## Specialized audits run
-- Scene Architecture Audit: `Example_Pass5_Character_Audit_run.md`
+- Interiority Audit: `Example_Interiority_Audit_run.md`
 
 ## State files
 - Diagnostic State: `Diagnostic_State.md`
