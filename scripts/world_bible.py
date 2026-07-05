@@ -611,17 +611,37 @@ def bible(text, strict=False):
         overridden = any(pair <= idset for pair in all_pair_overrides)
         return cstate.derive_state(True, overridden)  # a written ledger row is always a collision
 
-    # X1(b) — ledger-row referential integrity (R1(b), the register-neutral leg). Over EVERY ledger
-    # data row (ALL rows, pre-axis included — the check does not depend on the State column): each row
-    # must pair >=2 DISTINCT WF ids AND every id must resolve to a real, well-formed world_fact block.
-    # A fabricated id (WF-88 for a fact that does not exist) or a single-id row would otherwise pass to
-    # the conflicting-rollup and cite a phantom contradiction into the editorial letter. This is the
-    # id-EXISTENCE leg only — it does NOT adjudicate whether the two facts truly collide (that would
-    # author the tension the arms deliberately leave to the author); it only proves the row points at
-    # real, distinct facts (mirrors continuity_bible C3's referential-integrity legs). ERRORs here fail
-    # the file BEFORE the rollup runs (the rollup only runs on an empty errs list), so a bad row never
-    # reaches the letter.
+    # X1(b) — ledger-row referential integrity (R1(b′), the register-neutral leg). Over EVERY ledger
+    # data row (ALL rows, pre-axis included — the check does not depend on the State column). Three
+    # legs, all a pure field recompute from the PARSED world_fact blocks — the same integrity class as
+    # continuity_bible C3 (no arm restructuring, no semantic judgment):
+    #   1. the row must pair >=2 DISTINCT WF ids, all resolving to real, well-formed world_fact blocks;
+    #   2. the cited facts must share the SAME `subject` (the world_fact grouping key every arm keys on —
+    #      WB-R1/C1/C2 all group by _norm_value(subject); mirrors C3's same-entity leg, using world's
+    #      own _norm_value normalization);
+    #   3. the cited facts' recorded DECLARATIONS must be NON-IDENTICAL under that same normalization —
+    #      identical declarations cannot be "in tension" (§D4: a no-collision pair is `consistent`, and a
+    #      written consistent row is already an error class). Mirrors C3's SAME-value leg. C3's `value`
+    #      column carries a continuity fact's WHOLE declaration; a world_fact's declaration is split
+    #      across the closed-set fields the arms read — `value` (WB-G1/G2 distance/anchor + the rule
+    #      predicate), `polarity` (WB-R1's can/cannot/requires), and `cost` (WB-C1/C2's price). So the
+    #      recorded declaration compared here is the normalized (value, polarity, cost) triple: two facts
+    #      that agree on ALL THREE are the same declaration (Codex's repro: two `place` facts with the
+    #      same value, no polarity, no cost). A pair differing on ANY of the three carries two DIFFERENT
+    #      declarations and is a legitimate collision (a rule pair differs in polarity, a cost pair in
+    #      cost, a distance/event pair in value) — no polarity/semantic JUDGMENT is made (we never ask
+    #      whether the polarities OPPOSE, only whether the declarations DIFFER; the normative register
+    #      leaves the tension itself to the author).
+    # A fabricated id (WF-88 for a fact that does not exist), a single-id row, a cross-subject pair, or a
+    # same-value pair would otherwise pass to the conflicting-rollup and cite a phantom contradiction into
+    # the editorial letter (Codex P1: two identical `place` facts labeled `conflicting` passed clean and
+    # rolled up). This is the id-existence + same-subject + differing-value class ONLY — it does NOT
+    # adjudicate whether a same-subject/different-value tension is "real" (a declared tension the literal
+    # arms can't see is the author's call, per the normative register — so NO polarity/semantic leg is
+    # added). ERRORs here fail the file BEFORE the rollup runs (the rollup only runs on an empty errs
+    # list), so a bad row never reaches the letter.
     valid_ids = {obj.get("id") for obj in valid}
+    by_id = {obj.get("id"): obj for obj in valid}
     for ids, _token, _cells in cstate.state_rows(text, _WF_REF_RE):
         uniq = sorted(set(ids))
         tag = "+".join(uniq) if uniq else "<no ids>"
@@ -634,6 +654,28 @@ def bible(text, strict=False):
             errs.append("X1 ledger integrity: Contradiction-Ledger row [%s] references id(s) %s that "
                         "resolve to no well-formed world_fact block (a ledger row must cite real, "
                         "parsed facts)" % (tag, ", ".join(missing)))
+            continue
+        # Legs 2+3 — C3-parity field recompute over the resolved facts. Same normalization (_norm_value)
+        # the world arms use for both the subject grouping key and the closed-set value.
+        objs = [by_id[i] for i in uniq]
+        subjects = {_norm_value(o.get("subject")) for o in objs}
+        if len(subjects) > 1:
+            errs.append("X1 ledger integrity: Contradiction-Ledger row [%s] cites facts about "
+                        "different subjects (%s) — a contradiction pairs two facts about the SAME "
+                        "subject, not a stray pairing"
+                        % (tag, ", ".join(sorted(repr(s) for s in subjects))))
+            continue
+        def _declaration(o):
+            # The normalized recorded declaration — the closed-set fields the arms read. `cost` may be
+            # null (its stated-free form); normalize it like a value so null/"none"/"None" agree.
+            return (_norm_value(o.get("value")),
+                    _norm_value(o.get("polarity")),
+                    _norm_value(o.get("cost")))
+        if len({_declaration(o) for o in objs}) < 2:
+            errs.append("X1 ledger integrity: Contradiction-Ledger row [%s] cites facts that record "
+                        "IDENTICAL values (no collision — a consistent pair must not be written as a "
+                        "ledger row; a contradiction pairs the same subject with DIFFERENT recorded "
+                        "values)" % tag)
 
     # Loud absence (adopted P3) — a ledger with data rows but NO `State` column is a pre-axis form; the
     # column is additive and NOT required, so this is a WARN (rc stays 0), not an ERROR. Silence would
@@ -1032,12 +1074,45 @@ def run_self_test():
     # so use a distance collision that IS overridden-as-apparent vs one that is NOT: instead, verify
     # the conflicting rollup on an un-overridden ledger row whose facts DON'T also trip an arm (a row
     # naming facts with no live arm collision is a stray, but the State parse still derives conflicting
-    # and rolls it up). Use a benign descriptive pair (place facts, no arm) so only the ledger drives it:
+    # and rolls it up). Use a benign descriptive pair (place facts, no arm) so only the ledger drives it.
+    # The two facts share the SAME subject (Karth) but record DIFFERENT values ("a port" vs "a fortress")
+    # — a genuine §D4 collision, so the R1(b′) same-subject + differing-value legs PASS and the row rolls
+    # up. (WAS Codex's P1 repro: this fixture previously gave BOTH facts value="a port" — two identical
+    # `place` facts labeled `conflicting` passed clean and rolled up a phantom contradiction into the
+    # letter. The identical-value fixture encoded the bug; leg 3 now rejects it — see
+    # x1_world_identical_value_row_fails below for that exact repro as a negative test.)
     pl1 = fact("WF-10", category="place", subject="Karth", attribute="desc", value="a port")
-    pl2 = fact("WF-11", category="place", subject="Karth", attribute="desc", value="a port")
+    pl2 = fact("WF-11", category="place", subject="Karth", attribute="desc", value="a fortress")
     code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
                         + "| Karth | place | WF-10, WF-11 | conflicting | surfaced |\n")
     chk("x1_world_conflicting_rollup",
+        code == 0 and any("CONFLICTING WF-10+WF-11" in ln for ln in lines))
+    # Codex P1 repro AS A NEGATIVE TEST — two IDENTICAL `place` facts (same subject, same value) labeled
+    # `conflicting` must now FAIL leg 3 and must NOT roll up (identical declarations are not "in tension";
+    # a consistent pair must not be written as a ledger row). Fail-before-fix: pre-fold this exact input
+    # returned code 0 AND emitted `CONFLICTING WF-10+WF-12`.
+    pl_dup = fact("WF-12", category="place", subject="Karth", attribute="desc", value="a port")
+    code, lines = bible(pl1 + "\n" + pl_dup + W_LEDGER
+                        + "| Karth | place | WF-10, WF-12 | conflicting | identical facts (Codex repro) |\n")
+    chk("x1_world_identical_value_row_fails",
+        code == 1 and any("X1 ledger integrity" in ln and "IDENTICAL values" in ln for ln in lines))
+    chk("x1_world_identical_value_row_not_rolled_up",
+        not any("CONFLICTING" in ln for ln in lines))
+    # leg 2 (same-subject) negative — a cross-subject pair labeled `conflicting` must FAIL and NOT roll
+    # up (two facts about DIFFERENT subjects are not the same fact in tension). Fail-before-fix: pre-fold
+    # this passed clean and rolled up a phantom cross-subject contradiction.
+    pl_other = fact("WF-13", category="place", subject="Vhey", attribute="desc", value="a fortress")
+    code, lines = bible(pl1 + "\n" + pl_other + W_LEDGER
+                        + "| ? | place | WF-10, WF-13 | conflicting | cross-subject stray |\n")
+    chk("x1_world_cross_subject_row_fails",
+        code == 1 and any("X1 ledger integrity" in ln and "different subjects" in ln for ln in lines))
+    chk("x1_world_cross_subject_row_not_rolled_up",
+        not any("CONFLICTING" in ln for ln in lines))
+    # leg positive — same subject, DIFFERENT value, un-overridden -> PASS + rollup (already covered by
+    # x1_world_conflicting_rollup above; asserted here explicitly for the leg-4 pairing).
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10, WF-11 | conflicting | genuine collision |\n")
+    chk("x1_world_same_subject_diff_value_rolls_up",
         code == 0 and any("CONFLICTING WF-10+WF-11" in ln for ln in lines))
     # X1(b) ledger-row referential integrity (R1(b)) — a row that cites FABRICATED ids (no such facts)
     # must FAIL, and must NOT reach the conflicting rollup (a phantom contradiction must never be cited

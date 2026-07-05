@@ -106,8 +106,10 @@ bible](continuity-bible.md)):
 The state is **mechanically derived, never judged**: the validator computes it from the literal
 collision + the override presence and rejects a `State` value that disagrees (X1). A row whose pair is
 overridden derives `apparent`; an un-overridden row derives `conflicting`. Every ledger row must pair
-**at least two distinct `WF-NN` ids that each resolve to a real, well-formed `world_fact` block** — a
-fabricated or single id FAILs X1 referential integrity (a row must cite real, distinct facts). The register **never**
+**at least two distinct `WF-NN` ids that each resolve to a real, well-formed `world_fact` block, about
+the SAME `subject`, whose recorded declarations DIFFER** — a fabricated or single id, a cross-subject
+pair, or a pair recording identical declarations FAILs X1 referential integrity (a row must cite real,
+distinct facts genuinely in tension; identical or cross-subject pairs are rejected). The register **never**
 carries an editorial-severity token or an `apodictic:finding` block — a contradiction is a fact-state,
 not a defect (X1 firewall, the Content-Advisory A3 precedent). A ledger with data rows but no `State`
 column is the pre-axis form: accepted (the column is additive) but WARNed loudly (ERROR under `--strict`).
