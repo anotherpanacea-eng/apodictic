@@ -20,7 +20,9 @@ Bible's contradiction axis and Content Advisory's descriptive stance.
 
   SP1 state present    a setup_payoff.v1 foreshadow block whose `state` is absent or not one of
                        {paid_off, open, abandoned} (also covers schema/JSON validity of both block
-                       kinds, malformed SP-NN / PO-NN ids, missing required fields, duplicate ids).
+                       kinds, malformed SP-NN / PO-NN ids, missing required fields, duplicate ids,
+                       and anchor locus shape — each `anchor` must be a coarse chapter / §section /
+                       ¶ / line / page locus, not a blank or a prose description).
   SP2 referential      a non-empty `payoff_ref` that does not id-match an existing apodictic.payoff.v1
      integrity         block in the same run (a phantom ref). Forward integrity ONLY — N:1 allowed
                        (many foreshadows -> one payoff); a payoff with no foreshadow is NOT flagged
@@ -86,6 +88,21 @@ _LEDGER_GLOB = "*_Setup_Payoff_Ledger_*.md"
 _SEVERITY_RE = re.compile(r"\b(?:Must|Should|Could)-Fix\b")
 
 _VALID_STATES = ("paid_off", "open", "abandoned")
+
+# SP1 anchor locus shape — each `anchor` entry must be a COARSE manuscript locus (a chapter /
+# §section / ¶ / line / page / paragraph token), not a blank or a prose description. The schema only
+# enforces minItems>=1 + string, so `[""]` / `["the kitchen"]` pass JSON validation; this precondition
+# rejects them (the abandoned-row report cites anchor[0] as the prose locus, so a blank/non-locus
+# anchor would emit an empty or meaningless citation). Mirrors continuity_bible._LOCUS_RE (C2). NOT a
+# firewall proof — a well-shaped-but-fabricated locus ("Ch 9 ¶4") passes; resolution is deferred.
+_LOCUS_RE = re.compile(
+    r"\bch(?:apter)?\.?\s*\d+"          # Ch 9 / Chapter 9 / Ch. 9
+    r"|§"                                # §section
+    r"|¶"                                # ¶paragraph
+    r"|\blines?\s+\d+"                   # line 42 / lines 42
+    r"|\bp(?:g|ag\.?|\.)?\s*\d+"         # p. 40 / pg 40 / p40
+    r"|\bpara(?:graph)?\.?\s*\d+",       # paragraph 4 / para. 4
+    re.IGNORECASE)
 
 
 def _read(path):
@@ -165,6 +182,17 @@ def ledger(text, strict=False):
                             % (cid, len(where)))
 
     payoff_ids = {o.get("id") for o, _ in valid_p}
+
+    # SP1 — anchor locus shape: each anchor entry is a coarse manuscript locus, not a blank or a
+    # prose description (the schema allows `[""]` / `["the kitchen"]`; the abandoned-row report cites
+    # anchor[0] as the prose locus). Applies to BOTH block kinds. Mirrors continuity_bible's C2.
+    for _kind, valid in (("SP", valid_f), ("PO", valid_p)):
+        for obj, _idx in valid:
+            for locus in (obj.get("anchor") or []):
+                if not isinstance(locus, str) or not locus.strip() or not _LOCUS_RE.search(locus):
+                    errs.append("SP1 anchor locus: %s has a malformed / non-locus anchor entry %r "
+                                "(need a chapter / §section / ¶ / line / page token)"
+                                % (obj.get("id"), locus))
 
     # SP1 (state token) is enforced by the schema enum; a foreshadow that reached valid_f has a
     # state in the enum. (An absent/out-of-enum state is an SP1 schema error above.)
@@ -351,6 +379,18 @@ def run_self_test():
     chk("po_closed_key_rejects_unknown", code == 1 and any("SP1 schema" in ln for ln in lines))
     # empty anchor -> minItems fail
     chk("sp1_empty_anchor", ledger(fore("SP-01", state="abandoned", anchor=[]))[0] == 1)
+    # anchor locus shape: a BLANK or a PROSE (non-locus) anchor FAILs even though the schema
+    # (minItems>=1 + string) accepts them — the abandoned-row citation uses anchor[0] as the locus
+    code, lines = ledger(fore("SP-01", state="abandoned", anchor=[""]))
+    chk("sp1_blank_anchor_locus", code == 1 and any("SP1 anchor locus" in ln for ln in lines))
+    code, lines = ledger(fore("SP-01", state="abandoned", anchor=["the kitchen"]))
+    chk("sp1_nonlocus_anchor", code == 1 and any("SP1 anchor locus" in ln for ln in lines))
+    # a payoff block's anchor is validated too (both kinds carry a locus)
+    code, lines = ledger(payoff("PO-01", anchor=["nowhere in particular"]))
+    chk("po_nonlocus_anchor", code == 1 and any("SP1 anchor locus" in ln for ln in lines))
+    # a well-shaped locus passes (the report cites it cleanly)
+    chk("sp1_valid_locus_passes",
+        ledger(fore("SP-01", state="abandoned", anchor=["Ch 3 ¶2"]))[0] == 0)
 
     # SP2 — HOSTILE: a paid_off with a phantom payoff_ref FAILs
     code, lines = ledger(fore("SP-02", state="paid_off", payoff_ref="PO-09"))

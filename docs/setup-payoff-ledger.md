@@ -60,7 +60,7 @@ The validator DERIVES `state` from the resolved refs; SP2 resolves `payoff_ref` 
 
 ## The checks
 
-- **SP1 schema** — every `setup_payoff.v1` / `payoff.v1` block validates (SP-NN / PO-NN ids, required fields, `state` enum, unique ids, valid JSON, closed-key).
+- **SP1 schema** — every `setup_payoff.v1` / `payoff.v1` block validates (SP-NN / PO-NN ids, required fields, `state` enum, unique ids, valid JSON, closed-key) **and its `anchor` entries are coarse manuscript loci** (a chapter / §section / ¶ / line / page token — not a blank or a prose description; the schema alone accepts `[""]` / `["the kitchen"]`, and the abandoned-row report cites `anchor[0]` as the prose locus). Mirrors the Continuity Bible's C2.
 - **SP2 referential integrity** — a non-empty `payoff_ref` must id-match an existing `payoff.v1` block in the same run. Forward-only; **N:1 allowed** (many foreshadows → one payoff); a payoff with no foreshadow is not flagged here (the inverse is deferred Stage B). A phantom ref FAILs.
 - **SP3 open rationale** — an `open` state must carry a non-empty `open_rationale`.
 - **SP4 derived state** — the declared `state` must match the derived state (§Derivation). SP2 owns a phantom ref, so a paid_off with a phantom ref reports SP2 only, never a double SP4 mismatch.
