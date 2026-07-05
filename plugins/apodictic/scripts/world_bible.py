@@ -57,6 +57,7 @@ import re
 import sys
 
 from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+import contradiction_state as cstate  # shared State axis: derive_state + State-column parse + X1 firewall
 
 try:
     import apodictic_artifacts as art
@@ -104,6 +105,9 @@ _KNOWN_KEYS = {"schema", "id", "category", "subject", "attribute", "value",
 # target below; and the pair-free `<!-- override: world-firewall -->` (silences the prose scan, not a
 # fact pair), checked with the presence form of `override_targets`.
 _WF_PAIR_TARGET = r"(WF-[0-9]+)\s*/\s*(WF-[0-9]+)"
+# WF ids referenced inside a Contradiction-Ledger row (the State-axis table parse; mirrors
+# continuity_bible._CF_REF_RE).
+_WF_REF_RE = re.compile(r"\bWF-[0-9]+\b")
 
 # WF firewall — resolution / invention verbs that would mean the bible's prose RESOLVED a conflict or
 # INVENTED canon instead of surfacing it. Kept specific so the advisory rarely misfires; an intended
@@ -594,6 +598,99 @@ def bible(text, strict=False):
     errs.extend(_distance_contradictions(valid, geo_ov))
     errs.extend(_chronology_contradictions(valid, geo_ov))
 
+    # X1 — contradiction State axis (§D4 + firewall) on the `## Contradiction Ledger` table. A ledger
+    # row is a live collision, so its derived State is `conflicting` unless one of the three pair
+    # override slugs (world-rule / world-cost / world-geo) marks the pair intentional (=> `apparent`).
+    # The author-written `State` column must be a valid enum token AND match the derivation; the
+    # register carries no severity token / no finding block. Mechanical, no model judgment — the shared
+    # contradiction_state helper owns the truth table + parse + regex.
+    all_pair_overrides = rule_ov | cost_ov | geo_ov
+
+    def _derived_state(ids):
+        idset = set(ids)
+        overridden = any(pair <= idset for pair in all_pair_overrides)
+        return cstate.derive_state(True, overridden)  # a written ledger row is always a collision
+
+    # X1(b) — ledger-row referential integrity (R1(b″), the register-neutral leg). Over EVERY ledger
+    # data row (ALL rows, pre-axis included — the check does not depend on the State column). Two legs,
+    # both a pure field recompute from the PARSED world_fact blocks — the same integrity class as
+    # continuity_bible C3 (no arm restructuring, no semantic judgment):
+    #   1. the row must pair >=2 DISTINCT WF ids, all resolving to real, well-formed world_fact blocks;
+    #   2. the cited facts must not all record the SAME normalized declaration. A world's collision
+    #      universe is ARM-DEFINED, not subject-defined: WB-G1's reversed-distance edge (A->B "6 days"
+    #      vs B->A "2 days" — the edge is an unordered frozenset, so the two facts have DIFFERENT
+    #      subjects yet collide) and WB-G2's chronology cycle (A->B, B->C, C->A — three DIFFERENT
+    #      subjects that collectively form the loop) are both legitimate cross-subject collisions. So
+    #      subject-sameness is NOT a precondition for a world contradiction — it was wrongly imported
+    #      from continuity's schema in R1(b′), and the same-subject leg is DROPPED. The ONLY relation
+    #      that mechanically precludes a collision is IDENTITY: two facts whose normalized
+    #      (subject, value, polarity, cost) tuples are IDENTICAL declare the same thing and cannot be
+    #      "in tension" (§D4: a no-collision pair is `consistent`, and a written consistent row is
+    #      already an error class). Every NON-identical pairing is the author's DECLARED tension — an
+    #      arm may or may not see it, but the normative register never adjudicates it. The declaration
+    #      compared spans the closed-set fields the arms read — `subject`/`value` (WB-G1/G2
+    #      distance/anchor/edge + the rule predicate), `polarity` (WB-R1's can/cannot/requires), and
+    #      `cost` (WB-C1/C2's price) — each under the SAME _norm_value normalization. A row whose facts
+    #      all collapse to one tuple carries no tension (Codex P1 repro: two `place` facts with the same
+    #      subject+value, no polarity, no cost).
+    # A fabricated id (WF-88 for a fact that does not exist), a single-id row, or a row of identical
+    # declarations would otherwise pass to the conflicting-rollup and cite a phantom contradiction into
+    # the editorial letter (Codex P1: two identical `place` facts labeled `conflicting` passed clean and
+    # rolled up). This is the id-existence + non-identity class ONLY — it makes NO semantic/polarity
+    # judgment (we never ask whether the facts OPPOSE, only whether they are IDENTICAL; a declared
+    # cross-subject or same-subject tension the literal arms can't see is the author's call, per the
+    # normative register). ERRORs here fail the file BEFORE the rollup runs (the rollup only runs on an
+    # empty errs list), so a bad row never reaches the letter.
+    valid_ids = {obj.get("id") for obj in valid}
+    by_id = {obj.get("id"): obj for obj in valid}
+    for ids, _token, _cells in cstate.state_rows(text, _WF_REF_RE):
+        uniq = sorted(set(ids))
+        tag = "+".join(uniq) if uniq else "<no ids>"
+        if len(uniq) < 2:
+            errs.append("X1 ledger integrity: Contradiction-Ledger row [%s] references fewer than 2 "
+                        "distinct world_fact ids (a contradiction pairs at least two stated facts)" % tag)
+            continue
+        missing = [i for i in uniq if i not in valid_ids]
+        if missing:
+            errs.append("X1 ledger integrity: Contradiction-Ledger row [%s] references id(s) %s that "
+                        "resolve to no well-formed world_fact block (a ledger row must cite real, "
+                        "parsed facts)" % (tag, ", ".join(missing)))
+            continue
+        # Leg 2 — identity check. C3-parity field recompute over the resolved facts, using the same
+        # _norm_value normalization the world arms use on each closed-set field. Identity is the only
+        # relation that precludes a collision; every non-identical pairing is a declared tension.
+        objs = [by_id[i] for i in uniq]
+
+        def _declaration(o):
+            # The normalized recorded declaration — the closed-set fields the arms read. `cost` may be
+            # null (its stated-free form); normalize it like a value so null/"none"/"None" agree.
+            return (_norm_value(o.get("subject")),
+                    _norm_value(o.get("value")),
+                    _norm_value(o.get("polarity")),
+                    _norm_value(o.get("cost")))
+        if len({_declaration(o) for o in objs}) < 2:
+            errs.append("X1 ledger integrity: Contradiction-Ledger row [%s] cites facts that record "
+                        "IDENTICAL declarations (no collision — a consistent pair must not be written "
+                        "as a ledger row; a contradiction pairs facts with DIFFERENT recorded "
+                        "declarations)" % tag)
+
+    # Loud absence (adopted P3) — a ledger with data rows but NO `State` column is a pre-axis form; the
+    # column is additive and NOT required, so this is a WARN (rc stays 0), not an ERROR. Silence would
+    # let a bible sit indefinitely without the fact-state axis; the WARN nudges the author to add it.
+    _wf_rows = cstate.state_rows(text, _WF_REF_RE)
+    if _wf_rows and not cstate.has_state_column(text):
+        warns.append("Contradiction Ledger has %d row(s) but no State column — pre-axis form; add the "
+                     "State column per the reference module" % len(_wf_rows))
+
+    errs.extend(cstate.check_row_states(_wf_rows, _derived_state))
+    if cstate.severity_leak(text):
+        errs.append("X1 firewall: the Contradiction Ledger carries an editorial Must/Should/Could-Fix "
+                    "token — a contradiction is a fact-state, not a defect (severity is orthogonal; "
+                    "see docs/worldbuilding-bible.md §State axis)")
+    if _has_block(text, "finding"):
+        errs.append("X1 firewall: the Contradiction Ledger contains an apodictic:finding block — the "
+                    "bible records both stated values, it never carries a severity-bearing finding")
+
     # WF — firewall prose scan (advisory; ERROR under --strict)
     warns.extend(_firewall_scan(text, strict))
 
@@ -611,11 +708,24 @@ def bible(text, strict=False):
         lines.append("world-bible: FAIL (%d error(s)%s)"
                      % (len(errs), ", %d strict warn(s)" % len(warns) if (strict and warns) else ""))
         return 1, lines
+
+    # Conflicting-state rollup — the `conflicting` ledger rows (id-pair) for the editorial letter to
+    # cite in prose (Stage A wiring; the Legal-Risk / Content-Advisory / setup-payoff precedent), so an
+    # unresolved self-contradiction reaches the author's revision plan. An `apparent` (overridden) row
+    # is intentional and is NOT rolled up. These are not errors.
+    conflicting = [ids for ids, token, _cells in cstate.state_rows(text, _WF_REF_RE)
+                   if token == "conflicting"]
+    if conflicting:
+        lines.append("world-bible: %d conflicting contradiction(s) — cite in the editorial letter "
+                     "(prose):" % len(conflicting))
+        for ids in conflicting:
+            lines.append("  CONFLICTING %s" % ("+".join(ids) if ids else "<no ids>"))
+
     if warns:
         lines.append("WARN: world-bible: %d advisory signal(s) — see WB-C2/WF above" % len(warns))
     else:
         lines.append("world-bible: PASS (schema + closed-key + rule/cost/geo contradiction arms + "
-                     "surface-don't-resolve firewall)")
+                     "State axis + surface-don't-resolve firewall)")
     return 0, lines
 
 
@@ -939,6 +1049,164 @@ def run_self_test():
     chk("wf_clean_prose_ok",
         not any("WF firewall" in ln for ln in bible(
             fact("WF-01", polarity="cannot") + "\n## Notes\n\nThe bible states one rule, cited.\n")[1]))
+
+    # X1 — contradiction State axis (§D4 mechanical derivation + firewall) on the ledger table. The
+    # world-bible ledger is Subject | Arm | Conflicting facts | State | Author's note.
+    W_LEDGER = ("\n## Contradiction Ledger\n\n"
+                "| Subject | Arm | Conflicting facts | State | Author's note |\n"
+                "|---|---|---|---|---|\n")
+    # An arm-firing pair (WB-R1) that IS overridden -> the arm is silenced AND the derived State is
+    # `apparent`; an honest `apparent` State row is clean and is NOT rolled up as conflicting.
+    ov_rule = "<!-- override: world-rule WF-01/WF-02 — staged reveal after the Sundering -->\n"
+    code, lines = bible(ov_rule + can + "\n" + cannot + W_LEDGER
+                        + "| blood-magic | rule (WB-R1) | WF-01, WF-02 | apparent | staged, overridden |\n")
+    chk("x1_world_apparent_with_override_clean", code == 0)
+    chk("x1_world_apparent_not_rolled_up", not any("CONFLICTING" in ln for ln in lines))
+    # HOSTILE: the pair is overridden (apparent) but the row asserts `conflicting` -> X1 mismatch FAIL
+    code, lines = bible(ov_rule + can + "\n" + cannot + W_LEDGER
+                        + "| blood-magic | rule (WB-R1) | WF-01, WF-02 | conflicting | mislabel |\n")
+    chk("x1_world_conflicting_but_overridden_fails",
+        code == 1 and any("X1 State agreement" in ln for ln in lines))
+    # A genuinely-conflicting row (NO override on the pair) — but then the arm itself FAILs (WB-R1),
+    # so use a distance collision that IS overridden-as-apparent vs one that is NOT: instead, verify
+    # the conflicting rollup on an un-overridden ledger row whose facts DON'T also trip an arm (a row
+    # naming facts with no live arm collision is a stray, but the State parse still derives conflicting
+    # and rolls it up). Use a benign descriptive pair (place facts, no arm) so only the ledger drives it.
+    # The two facts share the SAME subject (Karth) but record DIFFERENT values ("a port" vs "a fortress")
+    # — a genuine §D4 collision, so the R1(b′) same-subject + differing-value legs PASS and the row rolls
+    # up. (WAS Codex's P1 repro: this fixture previously gave BOTH facts value="a port" — two identical
+    # `place` facts labeled `conflicting` passed clean and rolled up a phantom contradiction into the
+    # letter. The identical-value fixture encoded the bug; leg 3 now rejects it — see
+    # x1_world_identical_value_row_fails below for that exact repro as a negative test.)
+    pl1 = fact("WF-10", category="place", subject="Karth", attribute="desc", value="a port")
+    pl2 = fact("WF-11", category="place", subject="Karth", attribute="desc", value="a fortress")
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10, WF-11 | conflicting | surfaced |\n")
+    chk("x1_world_conflicting_rollup",
+        code == 0 and any("CONFLICTING WF-10+WF-11" in ln for ln in lines))
+    # Codex P1 repro AS A NEGATIVE TEST — two IDENTICAL `place` facts (same subject, same value) labeled
+    # `conflicting` must now FAIL leg 2 (identity) and must NOT roll up (identical declarations are not
+    # "in tension"; a consistent pair must not be written as a ledger row). Fail-before-fix: pre-fold
+    # this exact input returned code 0 AND emitted `CONFLICTING WF-10+WF-12`.
+    pl_dup = fact("WF-12", category="place", subject="Karth", attribute="desc", value="a port")
+    code, lines = bible(pl1 + "\n" + pl_dup + W_LEDGER
+                        + "| Karth | place | WF-10, WF-12 | conflicting | identical facts (Codex repro) |\n")
+    chk("x1_world_identical_value_row_fails",
+        code == 1 and any("X1 ledger integrity" in ln and "IDENTICAL declarations" in ln for ln in lines))
+    chk("x1_world_identical_value_row_not_rolled_up",
+        not any("CONFLICTING" in ln for ln in lines))
+    # R1(b″) — a cross-subject pair is now LEGAL (different subjects => different (subject, ...) tuples
+    # => a declared tension; world's collision universe is ARM-defined, not subject-defined). These two
+    # checks WAS the round-1 overcorrection: pre-R1(b″) they pinned cross-subject-FAILs (leg "different
+    # subjects"); R1(b″) drops the same-subject leg, so the row PASSES and rolls up.
+    pl_other = fact("WF-13", category="place", subject="Vhey", attribute="desc", value="a fortress")
+    code, lines = bible(pl1 + "\n" + pl_other + W_LEDGER
+                        + "| ? | place | WF-10, WF-13 | conflicting | cross-subject, legal |\n")
+    chk("x1_world_cross_subject_row_passes",
+        code == 0 and not any("different subjects" in ln for ln in lines))
+    chk("x1_world_cross_subject_row_rolls_up",
+        any("CONFLICTING WF-10+WF-13" in ln for ln in lines))
+    # R1(b″) POSITIVE repros — the two world-geo collision shapes Codex named that the round-1
+    # same-subject leg wrongly rejected. Both cite facts with DIFFERENT subjects but are legitimate
+    # geo collisions; overridden so the arm derives `apparent` and the row is clean. Fail-before-fix:
+    # pre-R1(b″) BOTH returned code 1 with "different subjects" (X1 ledger integrity).
+    #   (a) reversed distance edge — WF-01 Karth->capital "6 days", WF-02 capital->Karth "2 days": the
+    #       WB-G1 edge is an unordered frozenset, so the two facts collide despite different subjects.
+    dd6 = fact("WF-01", category="distance", subject="Karth", attribute="distance-to",
+               value="6 days", pair_subject="the capital")
+    dd2rev = fact("WF-02", category="distance", subject="the capital", attribute="distance-to",
+                  value="2 days", pair_subject="Karth")
+    ovg = "<!-- override: world-geo WF-01/WF-02 — the fast road halves the ride -->\n"
+    code, lines = bible(ovg + dd6 + "\n" + dd2rev + W_LEDGER
+                        + "| Karth<->capital | geo (WB-G1) | WF-01, WF-02 | apparent | reversed edge, overridden |\n")
+    chk("x1_world_reversed_distance_edge_passes",
+        code == 0 and not any("X1 ledger integrity" in ln for ln in lines))
+    #   (b) chronology cycle — WF-01 Sundering->Founding, WF-02 Founding->War, WF-03 War->Sundering:
+    #       three DIFFERENT subjects forming a WB-G2 loop; overridden (any two cycle ids) => apparent.
+    ce1 = fact("WF-01", category="event", subject="the Sundering", attribute="happens-before",
+               value="before", pair_subject="the Founding")
+    ce2 = fact("WF-02", category="event", subject="the Founding", attribute="happens-before",
+               value="before", pair_subject="the War")
+    ce3 = fact("WF-03", category="event", subject="the War", attribute="happens-before",
+               value="before", pair_subject="the Sundering")
+    ovcyc = "<!-- override: world-geo WF-01/WF-02 — intentional time-loop myth -->\n"
+    code, lines = bible(ovcyc + ce1 + "\n" + ce2 + "\n" + ce3 + W_LEDGER
+                        + "| cycle | geo (WB-G2) | WF-01, WF-02, WF-03 | apparent | time-loop, overridden |\n")
+    chk("x1_world_chronology_cycle_passes",
+        code == 0 and not any("X1 ledger integrity" in ln for ln in lines))
+    # leg positive — same subject, DIFFERENT value, un-overridden -> PASS + rollup (already covered by
+    # x1_world_conflicting_rollup above; asserted here explicitly for the leg-4 pairing).
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10, WF-11 | conflicting | genuine collision |\n")
+    chk("x1_world_same_subject_diff_value_rolls_up",
+        code == 0 and any("CONFLICTING WF-10+WF-11" in ln for ln in lines))
+    # X1(b) ledger-row referential integrity (R1(b)) — a row that cites FABRICATED ids (no such facts)
+    # must FAIL, and must NOT reach the conflicting rollup (a phantom contradiction must never be cited
+    # into the editorial letter). Fail-before-fix: pre-fold this row PASSed (code 0) and emitted a
+    # CONFLICTING line for ids that resolve to nothing.
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-88, WF-89 | conflicting | fabricated ids |\n")
+    chk("x1_world_fabricated_id_row_fails",
+        code == 1 and any("X1 ledger integrity" in ln for ln in lines))
+    chk("x1_world_fabricated_id_row_not_rolled_up",
+        not any("CONFLICTING" in ln for ln in lines))
+    # a SINGLE-id row (fewer than 2 distinct facts) must FAIL and must NOT roll up (a contradiction
+    # pairs at least two stated facts).
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10 | conflicting | single id |\n")
+    chk("x1_world_single_id_row_fails",
+        code == 1 and any("X1 ledger integrity" in ln and "fewer than 2" in ln for ln in lines))
+    chk("x1_world_single_id_row_not_rolled_up",
+        not any("CONFLICTING" in ln for ln in lines))
+    # HOSTILE: that same un-overridden pair asserted `apparent` -> derives conflicting -> mismatch FAIL
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10, WF-11 | apparent | claims staged |\n")
+    chk("x1_world_author_asserted_apparent_no_override_fails",
+        code == 1 and any("X1 State agreement" in ln for ln in lines))
+    # HOSTILE: a `consistent` row is written -> FAIL (consistent needs no row)
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10, WF-11 | consistent | stray |\n")
+    chk("x1_world_consistent_row_fails",
+        code == 1 and any("X1 State agreement" in ln and "needs no" in ln for ln in lines))
+    # HOSTILE: a bad enum State token -> FAIL
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10, WF-11 | resolved | bad enum |\n")
+    chk("x1_world_bad_enum_fails",
+        code == 1 and any("X1 State enum" in ln for ln in lines))
+    # HOSTILE: a planted Must-Fix severity token -> X1 firewall FAIL
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10, WF-11 | conflicting | x |\n"
+                        + "\n## Notes\n\n- WF-11 is a Must-Fix.\n")
+    chk("x1_world_severity_token_fails",
+        code == 1 and any("X1 firewall" in ln and "Must/Should/Could-Fix" in ln for ln in lines))
+    # HOSTILE: a planted apodictic:finding block -> X1 firewall FAIL
+    _wfinding = ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"F-P5-01",'
+                 '"mechanism":"m","severity":"Must-Fix","confidence":"HIGH","evidence_refs":["c"],'
+                 '"fix_class":"x","risk_if_fixed":"y"}\n-->')
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10, WF-11 | conflicting | x |\n" + _wfinding)
+    chk("x1_world_finding_block_fails",
+        code == 1 and any("X1 firewall" in ln and "apodictic:finding block" in ln for ln in lines))
+    # a code-span-quoted override is a documentation example -> author-asserted `apparent` still FAILs
+    code, lines = bible("`" + ov_rule.strip() + "`\n" + can + "\n" + cannot + W_LEDGER
+                        + "| blood-magic | rule (WB-R1) | WF-01, WF-02 | apparent | quoted decoy |\n")
+    # (the arm ALSO fires here because the override is a decoy; either way exit is non-zero and the
+    #  State parse sees NO live override -> derives conflicting, so the apparent label mismatches too)
+    chk("x1_world_codespan_override_does_not_silence",
+        code == 1 and (any("X1 State agreement" in ln for ln in lines) or any("WB-R1" in ln for ln in lines)))
+    # a pre-axis ledger (no State column) is still accepted (rc 0 — the column is additive) but now
+    # WARNs loudly (adopted P3: silence would let a bible sit indefinitely without the fact-state axis).
+    _pre_code, _pre_lines = bible(pl1 + "\n" + pl2 + "\n## Contradiction Ledger\n\n"
+                                  "| Subject | Arm | Conflicting facts | Author's note |\n|---|---|---|---|\n"
+                                  "| Karth | place | WF-10, WF-11 | surfaced |\n")
+    chk("x1_world_preaxis_ledger_ok", _pre_code == 0)
+    chk("x1_world_preaxis_ledger_warns_no_state",
+        any("no State column" in ln for ln in _pre_lines))
+    # ...and under --strict the additive-column nudge escalates to an ERROR (rc 1), like the other warns.
+    chk("x1_world_preaxis_ledger_strict_fails",
+        bible(pl1 + "\n" + pl2 + "\n## Contradiction Ledger\n\n"
+              "| Subject | Arm | Conflicting facts | Author's note |\n|---|---|---|---|\n"
+              "| Karth | place | WF-10, WF-11 | surfaced |\n", strict=True)[0] == 1)
 
     # no blocks -> no-op
     chk("no_facts_noop", bible("# Notes\nnothing structured\n")[0] == 0)

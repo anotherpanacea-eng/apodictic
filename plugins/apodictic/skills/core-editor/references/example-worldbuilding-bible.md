@@ -103,10 +103,15 @@ reconciling canon is the author's call.
 The bible states two intentional, staged contradictions. Both pairs are recorded with an override
 that names the author's intent; the bible records both stated values and does not pick a winner.
 
-| Subject | Arm | Conflicting facts | Author's note |
-|---|---|---|---|
-| blood-magic | rule (WB-R1) | WF-02, WF-03 | "cannot raise the dead" before the Sundering vs "can" after — staged reveal, override world-rule |
-| a resurrection | cost (WB-C1) | WF-11, WF-12 | "one year of life" (untrained) vs "a day of life" (adept) — documented escalation, override world-cost |
+| Subject | Arm | Conflicting facts | State | Author's note |
+|---|---|---|---|---|
+| blood-magic | rule (WB-R1) | WF-02, WF-03 | apparent | "cannot raise the dead" before the Sundering vs "can" after — staged reveal, override world-rule |
+| a resurrection | cost (WB-C1) | WF-11, WF-12 | apparent | "one year of life" (untrained) vs "a day of life" (adept) — documented escalation, override world-cost |
+
+The `State` column is the mechanically-derived contradiction axis (orthogonal to editorial severity):
+`conflicting` (a live, un-overridden collision), `apparent` (a collision an override marks intentional
+— as both rows here are), or `consistent` (no collision — never written as a row). Both rows above
+derive `apparent` because each pair carries a matching `world-rule` / `world-cost` override.
 
 ## Notes
 
