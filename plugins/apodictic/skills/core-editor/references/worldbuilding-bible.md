@@ -106,10 +106,13 @@ bible](continuity-bible.md)):
 The state is **mechanically derived, never judged**: the validator computes it from the literal
 collision + the override presence and rejects a `State` value that disagrees (X1). A row whose pair is
 overridden derives `apparent`; an un-overridden row derives `conflicting`. Every ledger row must pair
-**at least two distinct `WF-NN` ids that each resolve to a real, well-formed `world_fact` block, about
-the SAME `subject`, whose recorded declarations DIFFER** — a fabricated or single id, a cross-subject
-pair, or a pair recording identical declarations FAILs X1 referential integrity (a row must cite real,
-distinct facts genuinely in tension; identical or cross-subject pairs are rejected). The register **never**
+**at least two distinct `WF-NN` ids that each resolve to a real, well-formed `world_fact` block, whose
+recorded `(subject, value, polarity, cost)` declarations are NOT all IDENTICAL** — a fabricated id, a
+single id, or a row of identical declarations FAILs X1 referential integrity. A world's collision
+universe is **arm-defined, not subject-defined**: cross-subject rows are legal, because geo's arms
+already collide facts with different subjects (WB-G1's reversed-distance edge `A→B` vs `B→A`, and
+WB-G2's chronology cycle `A→B→C→A`). Identity is the only relation that mechanically precludes a
+collision; every non-identical pairing is the author's declared tension. The register **never**
 carries an editorial-severity token or an `apodictic:finding` block — a contradiction is a fact-state,
 not a defect (X1 firewall, the Content-Advisory A3 precedent). A ledger with data rows but no `State`
 column is the pre-axis form: accepted (the column is additive) but WARNed loudly (ERROR under `--strict`).
