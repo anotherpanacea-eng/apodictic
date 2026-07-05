@@ -1,0 +1,14 @@
+{
+  "$id": "apodictic.payoff.v1",
+  "$comment": "Source of truth for the apodictic:payoff block (Setup–Payoff Ledger — the referential-completeness half of a developmental-edit style sheet, the mechanical home for ConStory-Bench's 'Abandoned Plot Elements' row). One block per resolving PAYOFF the manuscript delivers: the concluding event that FULFILLS a foreshadowed commitment (the Foreshadow → Trigger → Payoff triple of Codified Foreshadowing-Payoff Text Generation, arXiv:2601.07033). A setup_payoff.v1 foreshadow block references a payoff by its `id` (payoff_ref = a PO-NN id, or empty). The Ledger EXTRACTS the author-marked triples and CHECKS referential completeness (every foreshadow resolves); it never DECIDES whether a passage 'counts' as payoff (that semantic call is the deferred SETEC-consumer job) and carries NO editorial severity (the Firewall — mirrors continuity-bible/content-advisory: extract the stated, never author the verdict). `payoff` is the resolving event text; `anchor` is the manuscript locus (>=1 coarse chapter/§/¶/line/page token). Validated by scripts/setup_payoff_checks.py (SP2 referential integrity resolves setup_payoff.v1.payoff_ref against these ids). See docs/setup-payoff-ledger.md.",
+  "title": "APODICTIC payoff block (apodictic.payoff.v1)",
+  "type": "object",
+  "required": ["schema", "id", "payoff", "anchor"],
+  "properties": {
+    "schema": {"const": "apodictic.payoff.v1"},
+    "id": {"type": "string", "pattern": "^PO-[0-9]{2,}$"},
+    "payoff": {"type": "string"},
+    "anchor": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}
