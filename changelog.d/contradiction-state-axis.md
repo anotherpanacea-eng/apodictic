@@ -36,17 +36,20 @@ referential integrity**: over every ledger data row (all rows, pre-axis included
 at least two *distinct* `WF-NN` / `CF-NN` ids that each resolve to a real, well-formed `world_fact` /
 `canon_fact` block — a fabricated id or a single-id row FAILs (`X1 ledger integrity`) and, crucially,
 never reaches the `conflicting`-row prose rollup, so a phantom contradiction can no longer be cited
-into the editorial letter. **Codex-P1 hardening (world-bible):** the `X1` ledger-integrity check now
-also runs the C3-parity legs as a pure field recompute over the parsed `world_fact` blocks — the cited
-facts must share the same `subject` AND record DIFFERENT declarations (the normalized value / polarity /
-cost triple the arms read). A row that cites two facts about different subjects, or two facts recording
-identical declarations (Codex's exact repro: two identical `place` facts labeled `conflicting`),
-previously passed clean and rolled up a phantom contradiction into the letter; it now FAILs
-(`X1 ledger integrity`) and never reaches the rollup. No arm restructuring and no semantic judgment
-(same-subject/different-declaration pairs stay legal regardless of polarity — a declared tension the
-literal arms can't see is the author's call), exactly the class continuity C3 already enforces via its
-same-entity + differing-value legs. This is still the register-neutral leg set: it does not
-adjudicate whether the two facts truly collide (that stays the author's call). A ledger with data rows
+into the editorial letter. **Codex-P1 hardening (world-bible), R1(b″):** the `X1` ledger-integrity
+check now runs a single **identity** leg as a pure field recompute over the parsed `world_fact` blocks —
+a row FAILs only when its cited facts all record the SAME normalized `(subject, value, polarity, cost)`
+tuple (Codex's exact repro: two identical `place` facts labeled `conflicting`, which previously passed
+clean and rolled up a phantom contradiction into the letter; it now FAILs `X1 ledger integrity` and
+never reaches the rollup). **A world's collision universe is arm-defined, not subject-defined**, so
+**cross-subject rows are LEGAL** — the geo arm already collides facts about different subjects (WB-G1's
+reversed-distance edge `A→B` vs `B→A`, WB-G2's chronology cycle `A→B→C→A`). Round-1 (R1(b′)) added a
+same-subject leg that wrongly imported continuity C3's schema and rejected both of those legitimate geo
+shapes; R1(b″) **drops the same-subject leg entirely** (a round-2 Codex P1 — the round-1 fix's own
+tests had encoded the overcorrection by pinning cross-subject-FAILs). Identity is the only relation
+that mechanically precludes a collision; every non-identical pairing is the author's declared tension.
+No arm restructuring and no semantic judgment — the register-neutral leg does not adjudicate whether
+the facts truly collide (that stays the author's call). A ledger with data rows
 but **no `State` column** is now a **loud pre-axis WARN** (ERROR under `--strict`) rather than silent —
 the additive column is nudged, not forced. And the shared `contradiction_state.py --self-test` (the
 truth-table / State-column-parse / `Statement`-decoy / X1-regex cases), previously invoked by nothing
