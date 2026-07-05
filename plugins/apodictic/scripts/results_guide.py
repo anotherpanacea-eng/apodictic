@@ -13,13 +13,16 @@ checks, R2 load-bearing:
                   (`pass-dependencies.md §3`, the SSoT for the 8 macro blocks). An UNKNOWN question
                   is the defect (an invented block); a run that produced only some blocks is legal
                   (the Guide lists only what ran — absence is fine, invention is not). Cheap.
-  R2 referential  (LOAD-BEARING) every cited run-folder filename resolves to a file in the run
+  R2 referential  (LOAD-BEARING) every cited run-folder filename resolves to a file IN the run
                   folder. A backtick token is a CITATION only if it ends in .md/.json (the guide's
                   "What to do next" section carries `/coach` / `/audit [name]` command tokens that
                   are NOT files — the extension guard excludes them so they never false-fail R2).
                   A citation still carrying an un-substituted `[...]` placeholder is a defect (the
                   template was copied but not filled). A dangling citation (no such file) is the
-                  finding-trace E1 analogue — the guide points at a file that isn't there.
+                  finding-trace E1 analogue — the guide points at a file that isn't there. Citations
+                  must also stay INSIDE the run folder: an absolute path or a traversal/subdir path
+                  (`../outside.md`, `/etc/x`) FAILS — it could otherwise resolve to a file outside
+                  the folder and falsely PASS (the run folder is flat; citations are bare filenames).
   R3 hygiene      the guide must not leak editorial severity (`Must/Should/Could-Fix`) or masquerade
                   as a second letter (no `apodictic:finding` block). It indexes, never diagnoses.
                   (Rides along, cheap; the same posture content_advisory's A3 enforces.)
@@ -176,12 +179,34 @@ def check(guide_text, run_folder, pd_text=None, strict=False):
         if _PLACEHOLDER_FILE_HINT_RE.search(ph):
             errs.append("R2 placeholder citation: `%s` — the guide cites an un-substituted "
                         "placeholder filename (the template was copied but not filled)" % ph)
-    # Resolved citations (extension-guarded) must resolve to a run-folder file.
+    # Resolved citations (extension-guarded) must resolve to a run-folder file — and must be a
+    # plain, run-folder-CONTAINED reference. The run folder is FLAT (no subdir walk, per this
+    # function's contract): a citation is a bare filename, never a path. So the stricter, simpler
+    # rule consistent with that convention is to reject any citation that (a) is an absolute path,
+    # or (b) carries a path separator or a `..` traversal segment — either would let a citation
+    # like `../outside.md` (or `/etc/passwd`) resolve to a file OUTSIDE the run folder and PASS
+    # R2, silently breaking the R2 guarantee ("every cited artifact is a real file in the run
+    # folder"). Belt-and-suspenders: after the syntactic reject, a realpath CONTAINMENT check
+    # guards against symlink games (a bare filename that is itself a symlink escaping the folder).
     cited = _CITED_RE.findall(guide_text)
     if folder_ok:
+        run_root = os.path.realpath(run_folder)
         for c in cited:
             if "[" in c or "]" in c:
                 continue  # an un-substituted slot — already reported by the placeholder pass
+            if os.path.isabs(c):
+                errs.append("R2 escaping citation: `%s` — an absolute path; the guide may cite "
+                            "only bare run-folder filenames (flat run folder)" % c)
+                continue
+            if os.sep in c or (os.altsep and os.altsep in c) or ".." in c.split("/"):
+                errs.append("R2 escaping citation: `%s` — a traversal/subdir path; citations must "
+                            "not escape the run folder (flat run folder, bare filenames only)" % c)
+                continue
+            resolved = os.path.realpath(os.path.join(run_folder, c))
+            if resolved != run_root and not resolved.startswith(run_root + os.sep):
+                errs.append("R2 escaping citation: `%s` — resolves outside the run folder "
+                            "(symlink escape); citations must stay in the run folder" % c)
+                continue
             if not os.path.isfile(os.path.join(run_folder, c)):
                 errs.append("R2 dangling citation: `%s` — no such file in the run folder" % c)
 
@@ -326,6 +351,32 @@ def run_self_test():
     code, lines = check(guide(sec_dangling), d, pd_text=PD)
     check_case("rg_r2_dangling",
                code == 1 and any("R2 dangling" in ln and "Nonexistent" in ln for ln in lines))
+
+    # rg_r2_escape_traversal — THE Codex P1 repro: a real file OUTSIDE the run folder, cited via
+    # `../<file>.md`, must FAIL (escape) and NOT resolve-then-PASS. Create the outside file in the
+    # run folder's parent so `../` would otherwise land on a real file.
+    _outside = os.path.join(os.path.dirname(os.path.abspath(d)), "rg_outside_probe.md")
+    with open(_outside, "w", encoding="utf-8", newline="") as fh:
+        fh.write("outside\n")
+    try:
+        sec_escape = ("### %s\n- Detail: `../rg_outside_probe.md`\n" % Q_STRUCT)
+        code, lines = check(guide(sec_escape), d, pd_text=PD)
+        check_case("rg_r2_escape_traversal",
+                   code == 1 and any("R2 escaping citation" in ln and "rg_outside_probe" in ln
+                                     for ln in lines)
+                   and not any("PASS" in ln for ln in lines))
+    finally:
+        os.unlink(_outside)
+
+    # rg_r2_escape_absolute — an absolute-path citation must FAIL (escape), never PASS. Point it at
+    # a file that really exists (a run-folder artifact by absolute path) so the failure is the
+    # escape rule, not a dangling-file coincidence.
+    sec_abs = ("### %s\n- Detail: `%s`\n"
+               % (Q_STRUCT, os.path.join(d, "Proj_Pass2_Structural_Mapping_run.md")))
+    code, lines = check(guide(sec_abs), d, pd_text=PD)
+    check_case("rg_r2_escape_absolute",
+               code == 1 and any("R2 escaping citation" in ln for ln in lines)
+               and not any("PASS" in ln for ln in lines))
 
     # rg_r2_placeholder — an un-substituted `[pass artifact filename]` left in -> 1
     sec_ph = "### %s\n- Detail: `[pass artifact filename]`\n" % Q_STRUCT
