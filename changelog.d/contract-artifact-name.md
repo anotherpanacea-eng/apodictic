@@ -1,0 +1,3 @@
+### Intake — contract artifact name reconciled
+
+`run-core.md` §Output: Contract Document instructed the bare `Contract_and_Controlling_Idea.md` filename while `output-structure.md` declares `[Project]_Contract_[runlabel].md` — and the qualified name is load-bearing: `/start`'s Step 0.5 contract-hash precondition locates the contract via the `runs/*/[Project]_Contract_*.md` glob, and the shipped coverage fixtures already use `Example_Contract_…`. A run following the old instruction silently broke zero-question dispatch. The qualified name is now emitted at intake. Sibling of the Pass 0 reverse-outline name reconciliation (same drifted-emitter class, same file).

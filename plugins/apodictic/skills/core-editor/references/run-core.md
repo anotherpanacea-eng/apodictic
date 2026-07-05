@@ -106,7 +106,7 @@ If router output already answered any of these, do not ask again unless clarific
 
 ### Output: Contract Document
 
-Generate `Contract_and_Controlling_Idea.md` containing:
+Generate `[Project]_Contract_[runlabel].md` (naming per `output-structure.md`; `/start`'s Step 0.5 contract-hash precondition locates the contract by this name) containing:
 - Completed schema fields
 - Contract paragraph (generated from fields)
 - Controlling idea and anti-idea
