@@ -115,17 +115,15 @@ Never synthesize before all selected passes and their dependencies are complete.
 
 ### Pass-Detail Artifact Headers
 
-Every pass-detail output artifact must begin with a YAML-style header that makes the file legible without framework knowledge:
+Every pass-detail output artifact must begin with a one-line blockquote header that makes the file legible without framework knowledge:
 
 ```
----
-Macro block: [block name from §3 of pass-dependencies.md]
-Writer question: [the user-facing question this block answers]
-Pass: [number] ([pass name])
----
+> **Macro block:** [block name from §3 of pass-dependencies.md] · **Writer question:** [the §3 User Question for this block] · **Legacy pass id:** Pass [N]
 ```
 
-Mapping:
+The three values are **read from `references/pass-dependencies.md §3` (Macro Block Definitions) — never authored.** §3 is the single source of truth for the 8 blocks, the pass→block map, and each block's User Question. `scripts/validate.sh pass-header` checks the header against §3 (see `references/run-core.md §What each pass subagent returns` and the canonical `references/example-pass-artifact-header.md`).
+
+Mapping (**derived from §3 — reconcile here only by re-deriving from §3, do not hand-edit against it**):
 
 | Pass | Macro Block | Writer Question |
 |------|-------------|-----------------|
