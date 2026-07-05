@@ -30,6 +30,8 @@
     {"schema": "apodictic.revision_arc.v1", "validators": ["revision-arc"], "canonical_gate": "example-revision-arc.md", "closed_keys": false},
     {"schema": "apodictic.scene_ethics.v1", "validators": ["scene-ethics"], "canonical_gate": "example-scene-ethics-plan.md", "closed_keys": true},
     {"schema": "apodictic.canon_fact.v1", "validators": ["continuity-bible"], "canonical_gate": "example-continuity-bible.md", "closed_keys": false},
+    {"schema": "apodictic.setup_payoff.v1", "validators": ["setup-payoff"], "canonical_gate": "example-setup-payoff-ledger.md", "closed_keys": true},
+    {"schema": "apodictic.payoff.v1", "validators": ["setup-payoff"], "canonical_gate": "example-setup-payoff-ledger.md", "closed_keys": true},
     {"schema": "apodictic.intake_query.v1", "validators": ["intake-interview"], "canonical_gate": "example-intake-interview.md", "closed_keys": false},
     {"schema": "apodictic.voice_fingerprint.v1", "validators": ["author-fingerprint"], "canonical_gate": "example-author-voice-profile.md", "closed_keys": false},
     {"schema": "apodictic.style_label.v1", "validators": ["style-explanation"], "canonical_gate": "example-author-style-explanation.md", "closed_keys": false},
