@@ -16,6 +16,10 @@ they live here rather than in letter_checks.py:
   * artifact-names             — pass artifacts in an output DIRECTORY must match the
                                  <Project>_Pass<N>_<Name>_<runlabel>.md filename convention
                                  (Increment 8; project/runlabel matched as literals).
+  * pass-header                — a Core DE pass artifact must carry a §3-sourced header
+                                 (Macro block · Writer question · Legacy pass id). Values are
+                                 read from pass-dependencies.md §3; header-less legacy artifacts
+                                 WARN (H1), block/question/pass mismatches vs §3 ERROR (H2/H3).
 
 Faithful re-implementations of the bash arms (verified by oracle-diff against the pre-port
 arm: identical exit codes). validate.sh stays the command surface and degrades to its prior
@@ -27,6 +31,7 @@ CLI:
   config_checks.py audit-tier-criterion <pass_dependencies_file> [<audits_root_dir>]
   config_checks.py argument-recon-prerequisite <run_folder> [<editorial_letter_file>]
   config_checks.py artifact-names <output_dir> <project> <runlabel>
+  config_checks.py pass-header <pass_artifact_file> [<pass_dependencies_file>]
   config_checks.py --self-test [<check-name>]
 """
 
@@ -362,6 +367,175 @@ def artifact_names(output_dir, project, runlabel):
 
 
 # --------------------------------------------------------------------------
+# pass-header — Core DE pass-artifact §3-sourced header.
+#
+# Each Core DE pass artifact carries a one-line blockquote header:
+#   > **Macro block:** <one of the 8> · **Writer question:** <§3 User Question>
+#   · **Legacy pass id:** Pass <N>
+#
+# The three values are READ from pass-dependencies.md §3 (Macro Block Definitions),
+# never authored. §3 is the single source of truth: the 8 blocks, each block's
+# Internal Passes, and each block's User Question. This validator parses §3 into a
+# pass -> (block, question) map and checks the artifact header against it.
+#
+#   H1  header present                     (header-less LEGACY artifact -> WARN, not ERROR)
+#   H2  Macro block in the 8 AND matches §3's pass->block map for the Legacy pass id,
+#       AND Writer question matches §3's User Question for that block   (ERROR)
+#   H3  all three fields present + non-empty                            (ERROR)
+#
+# Concern-driven-run case: a run may pull a dependency pass OUTSIDE its canonical
+# block (e.g., Pass 0/1 in a Characters-concern run). The header still declares the
+# pass's OWN canonical §3 block — the pass->block map is by pass, not by run — so H2
+# checks against §3, never against the run's concern.
+# --------------------------------------------------------------------------
+
+# A §3 row: | <Macro Block> | <Internal Passes e.g. "5 + 7"> | "<User Question>" |
+# The header line the artifact carries.
+_PH_HEADER_RE = re.compile(
+    r"^\s*>\s*\*\*Macro block:\*\*\s*(?P<block>.*?)\s*(?:·|\|)\s*"
+    r"\*\*Writer question:\*\*\s*(?P<question>.*?)\s*(?:·|\|)\s*"
+    r"\*\*Legacy pass id:\*\*\s*Pass\s*(?P<pass>[0-9A-Za-z]+)\s*$"
+)
+# Detect a header line by its leading anchor even when malformed (so an empty-field
+# header is caught by H3, not silently treated as "no header" -> WARN).
+_PH_ANCHOR_RE = re.compile(r"^\s*>\s*\*\*Macro block:\*\*")
+
+
+def _parse_section3(pd_text):
+    """Parse pass-dependencies.md §3 into (pass_to_block, block_to_question, blocks).
+
+    Returns:
+      pass_to_block  : {pass_id_str: macro_block}
+      block_to_question : {macro_block: user_question}
+      blocks         : set of the macro-block names (the canonical 8)
+    Only the §3 table is read (the "## §3" heading through the next "## " heading).
+    """
+    lines = pd_text.split("\n")
+    in_s3 = False
+    pass_to_block, block_to_question, blocks = {}, {}, set()
+    for ln in lines:
+        if re.match(r"^##\s+§3\b", ln) or re.match(r"^##\s+§3\.", ln):
+            in_s3 = True
+            continue
+        if in_s3 and re.match(r"^##\s", ln):
+            break  # left §3
+        if not in_s3 or not ln.lstrip().startswith("|"):
+            continue
+        cells = [c.strip() for c in ln.split("|")]
+        # Leading "|" => cells[0] == ""; row is | block | passes | question |
+        if len(cells) < 4:
+            continue
+        block, passes_cell, question = cells[1], cells[2], cells[3]
+        # Skip the header row and the separator row.
+        if not block or block == "Macro Block" or set(block) <= set("-: "):
+            continue
+        # Pull integer pass ids from the Internal Passes cell (e.g. "5 + 7", "9 + 10").
+        pass_ids = re.findall(r"\d+", passes_cell)
+        if not pass_ids:
+            continue
+        question = question.strip().strip('"').strip("'")
+        blocks.add(block)
+        block_to_question[block] = question
+        for pid in pass_ids:
+            pass_to_block[pid] = block
+    return pass_to_block, block_to_question, blocks
+
+
+def pass_header(artifact_path, pd_path=None):
+    """Validate a Core DE pass artifact's §3-sourced header (H1/H2/H3)."""
+    if not pd_path:
+        art_dir = os.path.dirname(artifact_path)
+        cand = os.path.join(art_dir, "pass-dependencies.md")
+        if os.path.isfile(cand):
+            pd_path = cand
+        else:
+            cand2 = os.path.join(art_dir, "..", "skills", "core-editor",
+                                 "references", "pass-dependencies.md")
+            pd_path = cand2 if os.path.isfile(cand2) else cand
+    if not os.path.isfile(pd_path):
+        return 2, ["ERROR: pass-dependencies.md (§3 source of truth) not found at '%s'. "
+                   "pass-header cannot validate without §3." % pd_path]
+
+    pass_to_block, block_to_question, blocks = _parse_section3(_read(pd_path))
+    if not blocks:
+        return 2, ["ERROR: could not parse §3 Macro Block Definitions from '%s' — no blocks "
+                   "extracted. pass-header cannot validate." % pd_path]
+
+    art_text = _read(artifact_path)
+    art_lines = art_text.split("\n")
+
+    header_line = None
+    for ln in art_lines:
+        if _PH_ANCHOR_RE.match(ln):
+            header_line = ln
+            break
+
+    lines, errors, warns = [], 0, 0
+
+    if header_line is None:
+        # H1 miss on a legacy/header-less artifact is a WARN, not an ERROR —
+        # historical runs must not break.
+        return 0, ["WARN: '%s' — no §3 pass header found (H1). A header-less legacy artifact "
+                   "is tolerated; new pass artifacts must carry "
+                   "'> **Macro block:** <block> · **Writer question:** <question> · "
+                   "**Legacy pass id:** Pass <N>'." % artifact_path]
+
+    m = _PH_HEADER_RE.match(header_line)
+    if not m:
+        # The anchor is present but the header is malformed / a field is missing.
+        return 1, ["ERROR: '%s' — pass header present but malformed or a field is empty (H3). "
+                   "Expected all three non-empty fields in "
+                   "'> **Macro block:** <block> · **Writer question:** <question> · "
+                   "**Legacy pass id:** Pass <N>'. Got: %s" % (artifact_path, header_line.strip())]
+
+    block = m.group("block").strip()
+    question = m.group("question").strip()
+    pass_id = m.group("pass").strip()
+
+    # H3 — all three fields non-empty.
+    if not block or not question or not pass_id:
+        return 1, ["ERROR: '%s' — pass header has an empty field (H3): "
+                   "block=%r question=%r pass=%r." % (artifact_path, block, question, pass_id)]
+
+    # H2 — block in the 8.
+    if block not in blocks:
+        lines.append("ERROR: '%s' — Macro block '%s' is not one of the 8 §3 blocks (H2). "
+                     "The 8: %s." % (artifact_path, block, ", ".join(sorted(blocks))))
+        errors += 1
+    else:
+        # H2 — block matches §3's pass->block map for this Legacy pass id.
+        canonical_block = pass_to_block.get(pass_id)
+        if canonical_block is None:
+            lines.append("WARN: '%s' — Legacy pass id 'Pass %s' is not mapped to a macro block "
+                         "in §3; cannot verify block↔pass agreement (H2). §3 maps passes: %s."
+                         % (artifact_path, pass_id, ", ".join(sorted(pass_to_block, key=lambda p: int(p) if p.isdigit() else 0))))
+            warns += 1
+        elif canonical_block != block:
+            lines.append("ERROR: '%s' — Macro block '%s' does not match §3's canonical block "
+                         "for Pass %s, which is '%s' (H2). The pass↔block map is by pass, not by "
+                         "run — a concern-driven run still declares the pass's own §3 block."
+                         % (artifact_path, block, pass_id, canonical_block))
+            errors += 1
+        # H2 — Writer question matches §3's User Question for the declared block.
+        expected_q = block_to_question.get(block)
+        if expected_q is not None and question != expected_q:
+            lines.append("ERROR: '%s' — Writer question '%s' does not match §3's User Question "
+                         "for block '%s', which is '%s' (H2). Values are read from §3, never "
+                         "authored." % (artifact_path, question, block, expected_q))
+            errors += 1
+
+    if errors > 0:
+        lines.append("")
+        lines.append("FAILED: %d pass-header failure(s); %d warning(s). §3 (Macro Block "
+                     "Definitions) in pass-dependencies.md is the single source of truth for the "
+                     "block, the pass↔block map, and the User Question." % (errors, warns))
+        return 1, lines
+    lines.append("OK: pass header for '%s' agrees with §3 (block ∈ 8, block↔pass map, User "
+                 "Question). %d warning(s)." % (artifact_path, warns))
+    return 0, lines
+
+
+# --------------------------------------------------------------------------
 # CLI + self-test.
 # --------------------------------------------------------------------------
 
@@ -532,6 +706,51 @@ def run_self_test(which=None):
             meta = touch(os.path.join(td, "meta"), "A.B_Pass1_Scene_r1.md", "AXB_Pass1_Scene_r1.md")
             expect("an_literal_project_escaped", artifact_names(meta, "A.B", "r1")[0], 1)
 
+    if which in (None, "pass-header"):
+        with tempfile.TemporaryDirectory() as td:
+            def wf(n, s):
+                p = os.path.join(td, n)
+                with open(p, "w", encoding="utf-8", newline="") as fh:
+                    fh.write(s)
+                return p
+            # Minimal §3 fixture (a strict subset of the canonical table shape):
+            # | Macro Block | Internal Passes | User Question |
+            pd = wf("pass-dependencies.md",
+                    "## §3. Macro Block Definitions\n\n"
+                    "| Macro Block | Internal Passes | User Question |\n"
+                    "|-------------|----------------|---------------|\n"
+                    "| Structure Map | 0 + 2 | \"Is the structure working?\" |\n"
+                    "| Character Architecture | 5 + 7 | \"Are my characters landing?\" |\n"
+                    "| Emotional Dynamics | 4 | \"Are the emotional beats earning their weight?\" |\n"
+                    "| Reveal Economy | 8 | \"Is the information flow right?\" |\n\n"
+                    "## §4. Audit Resolver\n")
+            hdr = ("> **Macro block:** %s · **Writer question:** %s · "
+                   "**Legacy pass id:** Pass %s\n\n# Body\ntext\n")
+            # Positive: correct §3-sourced header (Pass 2 -> Structure Map).
+            pos = wf("pos.md", hdr % ("Structure Map", "Is the structure working?", "2"))
+            # Concern-driven positive: Pass 0 pulled outside its block still declares
+            # its OWN canonical §3 block (Structure Map) — must PASS.
+            posc = wf("posc.md", hdr % ("Structure Map", "Is the structure working?", "0"))
+            # H1 WARN: no header at all -> WARN, rc 0 (legacy tolerance).
+            missing = wf("missing.md", "# Pass 5 — Character Audit\n\nJust body, no header.\n")
+            # H2 FAIL: Macro block not one of the 8.
+            notin8 = wf("notin8.md", hdr % ("Vibes Map", "Is the structure working?", "2"))
+            # H2 FAIL: block↔pass mismatch (Pass 4 is Emotional Dynamics, not Structure Map).
+            mismatch = wf("mismatch.md", hdr % ("Structure Map", "Is the structure working?", "4"))
+            # H2 FAIL: wrong Writer question for the (valid) block.
+            wrongq = wf("wrongq.md", hdr % ("Structure Map", "Does the pacing hold?", "2"))
+            # H3 FAIL: an empty field (empty Writer question).
+            emptyq = wf("emptyq.md",
+                        "> **Macro block:** Structure Map · **Writer question:**  · "
+                        "**Legacy pass id:** Pass 2\n\n# Body\n")
+            expect("ph_pos", pass_header(pos, pd)[0], 0)
+            expect("ph_pos_concern_driven", pass_header(posc, pd)[0], 0)
+            expect("ph_missing_header_warns", pass_header(missing, pd)[0], 0)
+            expect("ph_block_not_in_8", pass_header(notin8, pd)[0], 1)
+            expect("ph_block_pass_mismatch", pass_header(mismatch, pd)[0], 1)
+            expect("ph_wrong_question", pass_header(wrongq, pd)[0], 1)
+            expect("ph_empty_field", pass_header(emptyq, pd)[0], 1)
+
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
 
@@ -540,13 +759,14 @@ _CHECKS = {
     "quality-risk-triggers": (quality_risk_triggers, True),       # (fn, file-must-exist)
     "audit-tier-criterion": (audit_tier_criterion, True),
     "argument-recon-prerequisite": (argument_recon_prerequisite, False),  # arg is a directory
+    "pass-header": (pass_header, True),
 }
 
 
 def main(argv):
     if len(argv) < 2:
         sys.stderr.write("Usage: config_checks.py <quality-risk-triggers|audit-tier-criterion|"
-                         "argument-recon-prerequisite|--self-test> ...\n")
+                         "argument-recon-prerequisite|pass-header|--self-test> ...\n")
         return 2
     if argv[1] == "--self-test":
         return run_self_test(argv[2] if len(argv) > 2 else None)

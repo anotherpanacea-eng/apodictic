@@ -384,9 +384,9 @@ Continuing the v0.5 vision: the plugin should be organized around writer questio
 
 2. **Doc sync across all public surfaces.** ✅ **Shipped (#80).** Every public doc, README, help surface, and marketplace entry uses the same grouped command presentation generated from the registry — the 5 previously-unregistered commands are registered and both READMEs' command lists are registry-generated. No more hand-maintained command lists; the inventory-parity check (#82) keeps the dashboard/matrix inventories from drifting again.
 
-3. **Canonical 8-block macro map.** Resolve Pass 4 ambiguity by giving Emotional Dynamics its own block permanently. The 8 blocks: Structure Map, Reader Dynamics, Character Architecture, Emotional Dynamics, Scene Delivery, Reveal Economy, Theme & Continuity, Submission Readiness. Source of truth in pass-dependencies.md.
+3. **Canonical 8-block macro map.** ✅ **Shipped.** Emotional Dynamics has its own block permanently. The 8 blocks: Structure Map, Reader Dynamics, Character Architecture, Emotional Dynamics, Scene Delivery, Reveal Economy, Theme & Continuity, Submission Readiness. `pass-dependencies.md §3` is locked as the single source of truth for the blocks, the pass→block map, and the per-block `User Question` — §2's concern map and `core-editor/SKILL.md` derive from it; `audit-signal-propagation` / `audit-tier-criterion` (which read §4) ripple-verified unchanged.
 
-4. **Pass-detail file headers.** Add a standard header to each pass artifact with `Macro block`, `Writer question`, and `Legacy pass id`. Makes a direct-opened file legible without framework knowledge.
+4. **Pass-detail file headers.** ✅ **Shipped.** Each Core DE pass artifact begins with a §3-sourced blockquote header (`Macro block` · `Writer question` · `Legacy pass id`), values read from §3, never authored. New `pass-header` validator (H1 header present — legacy header-less = WARN; H2 block ∈ 8 + block↔pass + question all agree with §3; H3 non-empty) checked in `--check-all` against the real §3 via `example-pass-artifact-header.md`. Emission wired into `run-core.md`. Makes a direct-opened file legible without framework knowledge.
 
 5. **Results Guide artifact.** `[Project]_Results_Guide_[runlabel].md` — maps each writer question to the relevant artifacts, audits, and state files. First file after the editorial letter.
 
