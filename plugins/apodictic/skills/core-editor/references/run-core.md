@@ -274,8 +274,16 @@ Each evaluative pass runs as an independent subagent that receives the full manu
 | Focus map | No | No | Yes (for later passes) | No |
 
 **What each pass subagent returns:**
-- Its pass artifact (analysis output), written to disk
+- Its pass artifact (analysis output), written to disk — **beginning with the §3-sourced pass header** (see below)
 - Its Findings Ledger entry (formatted per `references/findings-ledger-format.md` §Ledger Entry Format), written to disk
+
+**Pass-artifact header (first line of every Core DE pass artifact).** Emit one blockquote line at the very top of each pass artifact:
+
+```
+> **Macro block:** <one of the 8, from §3> · **Writer question:** <the §3 User Question for this pass> · **Legacy pass id:** Pass <N>
+```
+
+The three values are **read from `references/pass-dependencies.md §3` (Macro Block Definitions), never authored** — §3 is the single source of truth for the 8 blocks, the pass→block map, and each block's User Question. The block is the pass's **own canonical §3 block by pass id**, even in a concern-driven run that pulls a dependency pass outside its usual block (e.g., Pass 0/1 in a Characters-concern run still declares Structure Map / Reader Dynamics — the map is by pass, not by run). This makes a directly-opened file legible without framework knowledge. `scripts/validate.sh pass-header <pass_artifact> [pass-dependencies.md]` checks it (H1 present — a header-less legacy artifact WARNs, not ERRORs; H2 block ∈ the 8 + block↔pass + question all agree with §3; H3 non-empty). Canonical example: `references/example-pass-artifact-header.md`.
 
 **Post-pass validation (all modes):** After each pass writes its ledger entry, verify the entry contains all 5 required subsection headings: Notable Findings, Data Artifacts for Letter Reference, Cross-Pass Connections, Unresolved Questions, Audit Triggers (use `scripts/validate.sh ledger-check` if available, otherwise check inline). If any section is missing, fix before dispatching the next pass. A structurally incomplete ledger degrades synthesis quality. Additionally verify that each synthesis-bound (Must-Fix/Should-Fix) Notable Finding carries an `apodictic:finding` structured block (`scripts/validate.sh structured-findings <ledger>`; see `references/findings-ledger-format.md`) — the block is required, not optional, for findings that propagate to synthesis.
 

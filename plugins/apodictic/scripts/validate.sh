@@ -178,7 +178,7 @@ set -euo pipefail
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).
-AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff revision-arc regression-diff legal-risk promise-contract continuity-bible setup-payoff world-bible intake-interview author-fingerprint content-advisory style-explanation persona-divergence argument-spine scene-ethics argument-groundtruth-check registry-check schema-coverage lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor roundtrip-disposition disposition-check synthesis-coverage specificity-floor refutation-coverage refutation-evidence refutation-write-scope obsidian-export html-export docx-export pdf-export validator-conventions argument-carve-behavior-preservation check-mirror"
+AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion pass-header argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff revision-arc regression-diff legal-risk promise-contract continuity-bible setup-payoff world-bible intake-interview author-fingerprint content-advisory style-explanation persona-divergence argument-spine scene-ethics argument-groundtruth-check registry-check schema-coverage lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor roundtrip-disposition disposition-check synthesis-coverage specificity-floor refutation-coverage refutation-evidence refutation-write-scope obsidian-export html-export docx-export pdf-export validator-conventions argument-carve-behavior-preservation check-mirror"
 # shellcheck disable=SC2086  # intentional word-splitting to count list entries
 AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 
@@ -228,9 +228,9 @@ _has_override() {
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, revision-arc, regression-diff, legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, intake-interview, author-fingerprint, content-advisory, style-explanation, persona-divergence, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, schema-coverage, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, disposition-check, synthesis-coverage, specificity-floor, refutation-coverage, refutation-evidence, refutation-write-scope, obsidian-export, html-export, docx-export, pdf-export, validator-conventions, argument-carve-behavior-preservation, check-mirror"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, pass-header, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, revision-arc, regression-diff, legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, intake-interview, author-fingerprint, content-advisory, style-explanation, persona-divergence, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, schema-coverage, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, disposition-check, synthesis-coverage, specificity-floor, refutation-coverage, refutation-evidence, refutation-write-scope, obsidian-export, html-export, docx-export, pdf-export, validator-conventions, argument-carve-behavior-preservation, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
-  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage paired with its Findings Ledger under --strict (contract + conflict integrity + the Increment-2 maps_to cross-check: FB-01.maps_to=F-RR-01 resolves E5-clean, no fully-validated item left unmapped W4-clean), editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter (plus the editor↔author dual-output pair — editor-scaffolding --dual over the scaffolded letter + its author-facing companion: D1 editor side E1-E4, D2 author register no-leak + Revision Checklist anchor, D3 top-severity-band consistency; plus the per-pass arm — editor-scaffolding --per-pass over the canonical scaffolded PASS artifact under --strict: P1 Editor Note addressee, P2 What-You-Might-Have-Missed, clean W1 firewall), diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, revision-arc vs the canonical Revision Arc + its Findings Ledger (A1 schema/nested-phase shape, A2 provenance closure, A3 self-consistency — one-phase-per-finding + Must-Fix-root-cause-not-in-polish, A4 non-empty rationale; clean W1 firewall-drift + W2 orphan under --strict), regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), setup-payoff vs the canonical Setup–Payoff Ledger example (SP1 schema over both block kinds, SP2 referential integrity — SP-01.payoff_ref=PO-03 resolves, SP3 open rationale — SP-02 carries one, SP4 derived-state agreement, clean X1 firewall; the three valid states pass and the abandoned SP-03 row is surfaced for prose citation), world-bible vs the canonical Worldbuilding Bible example (W1 schema + closed-key, WD unique ids, WB-R1 rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a unit class, WB-G2 chronology cycle + anchor-drift, and the WF surface-don't-resolve firewall scan — clean under --strict with the staged contradictions overridden), intake-interview vs the canonical Intake Interview example + its Ledger (I1 schema, I2 no-contract-dup, I3 grounded ambiguity via ref + source_note, I4 calibrate-not-suppress under --strict), author-fingerprint vs the canonical Author Voice Profile (F1 schema, F2 provenance, F3 same-register comparison, F4 descriptive-not-prescriptive, clean W1/W2 under --strict), content-advisory vs the canonical Content Advisory (A1 schema, A2 locus shape, A3 no-severity-leak, descriptive W1, opt-in W2 under --strict), style-explanation vs the canonical Author Style Explanation (X1 schema, X2 provenance, X3 no-severity-leak, X4 descriptive-not-prescriptive incl. the comparison-to-emulate firewall, X5 same-register cluster, clean X6/W1 under --strict), persona-divergence vs the canonical Persona Divergence Map + its Ledger (D1 schema incl. nested experiences enum, D2 grounded prediction, D3 target-severity anchoring, D4 anti-fabrication, D5 closed-key persona under --strict), argument-spine vs the canonical pre-draft Argument_State + the three genre-profiled Argument_States (Increment 5: B1-B4 + W4-W5 over grant / academic / pitch, --strict; the genre examples each carry a non-empty reviewer_objections pre-list so W5 stays green), scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources + the pre-draft Argument_State spine (the claim-ladder X1/X5/X6/X7 gates) + the scene-roster producer (the co-presence X2 gate), annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), roundtrip-disposition vs the canonical Roundtrip Disposition record + companion Revision Report staged with the glue-chain fixtures (RT1 recompute alignment + RT2 confirmation-record + RT3 confirmed-writes-only + RT4 partition coverage, plus hostile arms — a token-stripped copy must FAIL RT2, an extra unconfirmed resolved marker must FAIL RT3, and a copy with one finding's disposition row dropped must WARN RT4 by default and FAIL under --strict), disposition-check vs the canonical example-run-folder-dispositions (a non-governed sidecar + Coaching Log markers + readiness-caveat excerpt: DP0 record shape incl. trigger-iff-deferred, DP1 declined/deferred-Must-Fix caveat coverage, DP2 no-laundering incl. the bidirectional marker/sidecar sync — plus hostile arms: an assessment stripped of its Declined caveat line must FAIL DP1 (the severity-laundering attempt), a deferred record stripped of its trigger must FAIL DP0, a sidecar with one record dropped must WARN DP2.5 by default and FAIL under --strict, and a declined id's finding_states flipped to 'revised' with no corroborating completion artifact must FAIL DP1 + name DP2.6 — supersedence is recomputed from resolved markers, never trusted), synthesis-coverage vs the canonical coverage run folders (green hybrid dispatch-derived + degraded-and-disclosed, both PASS incl. --strict — V1 presence, V2 disk<->manifest row bijection, V3 note/sidecar/marker projection, V4 provenance/mode agreement, V5 D1-D4 degrade recompute; plus hostile arms — a manifest row removed for an on-disk pass artifact must FAIL V2, a letter marker flipped against the sidecar must FAIL V3, and a degraded run masked to ok in marker+sidecar must WARN V5 by default and FAIL under --strict), specificity-floor vs the canonical re-grounded letter<->ledger pair (docs/synthesis-regrounding.md M2: the restored 'nine belief failures' + Ch 12 anchor letter PASSES clean incl. --strict; plus hostile arms — decaying 'nine' to 'several' must FAIL the count floor, stripping the Ch 12 anchor from the Must-Fix window must FAIL the anchor floor, and removing the <!-- regrounding: done --> marker must WARN by default and FAIL under --strict; the smuggled-finding reverse-ID check is finding-trace E1's, not re-fixtured here), refutation-coverage + refutation-evidence + refutation-write-scope vs the canonical example-run-folder Refutation Record (docs/finding-disconfirmation.md §8: V1 no-HIGH-without-survived-refutation incl. the cap-bound disclosure-marker rules, V2 verbatim single-line snapshot-anchored counter-evidence + snapshot_sha256 binding + budget arithmetic, V3 no-severity-channel + exact confidence transcription per the outcome caps; plus hostile arms — a record stripped of its survived block must FAIL refutation-coverage, a fabricated not-in-snapshot quote must FAIL refutation-evidence, an injected severity key must FAIL refutation-write-scope, and a fabricated bound:true budget with eligible/processed numbers that don't recompute from the ledger/record must FAIL refutation-coverage (the cap-bound exemption recomputes, never trusts) + refutation-evidence), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), pdf-export vs the canonical manifest projected to a self-contained .pdf (hand-written PDF objects, base-14 Helvetica, an inline [finding_id] marker at each locus + a Findings section — P1 artifact integrity + P2 text round-trip + P3 comment resolution, asserting the fresh byte-deterministic pdf/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, quality-risk-triggers vs the canonical clean Contract (example-quality-risk-contract.md raises no Q1-Q5 pre-pass trigger, plus a hostile arm — a darkness rating flipped to the top setting must raise the Q1 consent/governance trigger and exit non-zero), schema-coverage vs the real schemas/ dir (every apodictic.*.schema.json bound + canonically exercised + closed-key table<->file agreement — Harness Contracts v2), plus validator-conventions (the fleet meta-linter — M1 every AGG validator has a --self-test dispatcher case, M2 resolvers classify on parsed blocks not raw apodictic:<type> marker scans, M3 derived count, M4 no orphan schema, M5 no bare/compiled override-marker scan + M6 no local code-span stripper — overrides use the override_marker SSoT), plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
+  echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, pass-header vs the canonical example-pass-artifact-header.md checked against the real pass-dependencies.md §3, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage paired with its Findings Ledger under --strict (contract + conflict integrity + the Increment-2 maps_to cross-check: FB-01.maps_to=F-RR-01 resolves E5-clean, no fully-validated item left unmapped W4-clean), editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter (plus the editor↔author dual-output pair — editor-scaffolding --dual over the scaffolded letter + its author-facing companion: D1 editor side E1-E4, D2 author register no-leak + Revision Checklist anchor, D3 top-severity-band consistency; plus the per-pass arm — editor-scaffolding --per-pass over the canonical scaffolded PASS artifact under --strict: P1 Editor Note addressee, P2 What-You-Might-Have-Missed, clean W1 firewall), diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, revision-arc vs the canonical Revision Arc + its Findings Ledger (A1 schema/nested-phase shape, A2 provenance closure, A3 self-consistency — one-phase-per-finding + Must-Fix-root-cause-not-in-polish, A4 non-empty rationale; clean W1 firewall-drift + W2 orphan under --strict), regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), setup-payoff vs the canonical Setup–Payoff Ledger example (SP1 schema over both block kinds, SP2 referential integrity — SP-01.payoff_ref=PO-03 resolves, SP3 open rationale — SP-02 carries one, SP4 derived-state agreement, clean X1 firewall; the three valid states pass and the abandoned SP-03 row is surfaced for prose citation), world-bible vs the canonical Worldbuilding Bible example (W1 schema + closed-key, WD unique ids, WB-R1 rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a unit class, WB-G2 chronology cycle + anchor-drift, and the WF surface-don't-resolve firewall scan — clean under --strict with the staged contradictions overridden), intake-interview vs the canonical Intake Interview example + its Ledger (I1 schema, I2 no-contract-dup, I3 grounded ambiguity via ref + source_note, I4 calibrate-not-suppress under --strict), author-fingerprint vs the canonical Author Voice Profile (F1 schema, F2 provenance, F3 same-register comparison, F4 descriptive-not-prescriptive, clean W1/W2 under --strict), content-advisory vs the canonical Content Advisory (A1 schema, A2 locus shape, A3 no-severity-leak, descriptive W1, opt-in W2 under --strict), style-explanation vs the canonical Author Style Explanation (X1 schema, X2 provenance, X3 no-severity-leak, X4 descriptive-not-prescriptive incl. the comparison-to-emulate firewall, X5 same-register cluster, clean X6/W1 under --strict), persona-divergence vs the canonical Persona Divergence Map + its Ledger (D1 schema incl. nested experiences enum, D2 grounded prediction, D3 target-severity anchoring, D4 anti-fabrication, D5 closed-key persona under --strict), argument-spine vs the canonical pre-draft Argument_State + the three genre-profiled Argument_States (Increment 5: B1-B4 + W4-W5 over grant / academic / pitch, --strict; the genre examples each carry a non-empty reviewer_objections pre-list so W5 stays green), scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources + the pre-draft Argument_State spine (the claim-ladder X1/X5/X6/X7 gates) + the scene-roster producer (the co-presence X2 gate), annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), roundtrip-disposition vs the canonical Roundtrip Disposition record + companion Revision Report staged with the glue-chain fixtures (RT1 recompute alignment + RT2 confirmation-record + RT3 confirmed-writes-only + RT4 partition coverage, plus hostile arms — a token-stripped copy must FAIL RT2, an extra unconfirmed resolved marker must FAIL RT3, and a copy with one finding's disposition row dropped must WARN RT4 by default and FAIL under --strict), disposition-check vs the canonical example-run-folder-dispositions (a non-governed sidecar + Coaching Log markers + readiness-caveat excerpt: DP0 record shape incl. trigger-iff-deferred, DP1 declined/deferred-Must-Fix caveat coverage, DP2 no-laundering incl. the bidirectional marker/sidecar sync — plus hostile arms: an assessment stripped of its Declined caveat line must FAIL DP1 (the severity-laundering attempt), a deferred record stripped of its trigger must FAIL DP0, a sidecar with one record dropped must WARN DP2.5 by default and FAIL under --strict, and a declined id's finding_states flipped to 'revised' with no corroborating completion artifact must FAIL DP1 + name DP2.6 — supersedence is recomputed from resolved markers, never trusted), synthesis-coverage vs the canonical coverage run folders (green hybrid dispatch-derived + degraded-and-disclosed, both PASS incl. --strict — V1 presence, V2 disk<->manifest row bijection, V3 note/sidecar/marker projection, V4 provenance/mode agreement, V5 D1-D4 degrade recompute; plus hostile arms — a manifest row removed for an on-disk pass artifact must FAIL V2, a letter marker flipped against the sidecar must FAIL V3, and a degraded run masked to ok in marker+sidecar must WARN V5 by default and FAIL under --strict), specificity-floor vs the canonical re-grounded letter<->ledger pair (docs/synthesis-regrounding.md M2: the restored 'nine belief failures' + Ch 12 anchor letter PASSES clean incl. --strict; plus hostile arms — decaying 'nine' to 'several' must FAIL the count floor, stripping the Ch 12 anchor from the Must-Fix window must FAIL the anchor floor, and removing the <!-- regrounding: done --> marker must WARN by default and FAIL under --strict; the smuggled-finding reverse-ID check is finding-trace E1's, not re-fixtured here), refutation-coverage + refutation-evidence + refutation-write-scope vs the canonical example-run-folder Refutation Record (docs/finding-disconfirmation.md §8: V1 no-HIGH-without-survived-refutation incl. the cap-bound disclosure-marker rules, V2 verbatim single-line snapshot-anchored counter-evidence + snapshot_sha256 binding + budget arithmetic, V3 no-severity-channel + exact confidence transcription per the outcome caps; plus hostile arms — a record stripped of its survived block must FAIL refutation-coverage, a fabricated not-in-snapshot quote must FAIL refutation-evidence, an injected severity key must FAIL refutation-write-scope, and a fabricated bound:true budget with eligible/processed numbers that don't recompute from the ledger/record must FAIL refutation-coverage (the cap-bound exemption recomputes, never trusts) + refutation-evidence), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), pdf-export vs the canonical manifest projected to a self-contained .pdf (hand-written PDF objects, base-14 Helvetica, an inline [finding_id] marker at each locus + a Findings section — P1 artifact integrity + P2 text round-trip + P3 comment resolution, asserting the fresh byte-deterministic pdf/ export is byte-identical to the committed fixture), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, quality-risk-triggers vs the canonical clean Contract (example-quality-risk-contract.md raises no Q1-Q5 pre-pass trigger, plus a hostile arm — a darkness rating flipped to the top setting must raise the Q1 consent/governance trigger and exit non-zero), schema-coverage vs the real schemas/ dir (every apodictic.*.schema.json bound + canonically exercised + closed-key table<->file agreement — Harness Contracts v2), plus validator-conventions (the fleet meta-linter — M1 every AGG validator has a --self-test dispatcher case, M2 resolvers classify on parsed blocks not raw apodictic:<type> marker scans, M3 derived count, M4 no orphan schema, M5 no bare/compiled override-marker scan + M6 no local code-span stripper — overrides use the override_marker SSoT), plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
 }
 
@@ -317,6 +317,13 @@ if [ "$1" = "--check-all" ]; then
       "$0" audit-tier-criterion "$CA_BASE/pass-dependencies.md" || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/pass-dependencies.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== pass-header (canonical pass artifact vs real pass-dependencies.md §3) =="
+    if [ -f "$CA_BASE/example-pass-artifact-header.md" ] && [ -f "$CA_BASE/pass-dependencies.md" ]; then
+      "$0" pass-header "$CA_BASE/example-pass-artifact-header.md" "$CA_BASE/pass-dependencies.md" || CA_FAIL=1
+    else
+      echo "ERROR: $CA_BASE/example-pass-artifact-header.md or pass-dependencies.md not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical editorial letter (decision-layer-check, audit-signal-propagation, severity-floor, structured-findings, underdiagnosis-triggers, ledger-consolidation) =="
@@ -4945,6 +4952,152 @@ EOF
       echo "OK: All high-tier audit assignments satisfy criterion 1 (named hard gates / Must-Fix floor in reference file) or carry override markers. ${WARNS} warning(s) surfaced. Capability ceiling: criteria 2 + 3 remain prose-verified."
       exit 0
     fi
+    ;;
+
+  # ----------------------------------------------------------------------
+  # pass-header <pass_artifact_file> [<pass_dependencies_file>]
+  #
+  # A Core DE pass artifact must carry a §3-sourced header:
+  #   > **Macro block:** <block> · **Writer question:** <question>
+  #   · **Legacy pass id:** Pass <N>
+  # The three values are READ from pass-dependencies.md §3 (the single source
+  # of truth for the 8 blocks, the pass↔block map, and the User Question),
+  # never authored. H1 header present (header-less legacy artifact = WARN, not
+  # ERROR); H2 block ∈ 8 AND block matches §3's pass→block map for the Legacy
+  # pass id AND Writer question matches §3's User Question; H3 all three fields
+  # non-empty. Concern-driven runs declare the pass's OWN canonical §3 block
+  # (the map is by pass, not by run).
+  #
+  # Primary path: scripts/config_checks.py. Degrades to bash when python3 is absent.
+  # ----------------------------------------------------------------------
+  pass-header)
+    if [ $# -lt 1 ]; then echo "Usage: $0 pass-header <pass_artifact_file> [<pass_dependencies_file>] | --self-test"; exit 2; fi
+    PH_DIR=$(cd "$(dirname "$0")" && pwd)
+    PH_HELPER="$PH_DIR/config_checks.py"
+
+    if [ "$1" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$PH_HELPER" ]; then python3 "$PH_HELPER" --self-test pass-header; exit $?; fi
+      TMPDIR=$(mktemp -d)
+      trap 'rm -rf "$TMPDIR"' EXIT
+      # Minimal §3 fixture.
+      cat > "$TMPDIR/pass-dependencies.md" <<'EOF'
+## §3. Macro Block Definitions
+
+| Macro Block | Internal Passes | User Question |
+|-------------|----------------|---------------|
+| Structure Map | 0 + 2 | "Is the structure working?" |
+| Character Architecture | 5 + 7 | "Are my characters landing?" |
+| Emotional Dynamics | 4 | "Are the emotional beats earning their weight?" |
+| Reveal Economy | 8 | "Is the information flow right?" |
+
+## §4. Audit Resolver
+EOF
+      printf '> **Macro block:** Structure Map · **Writer question:** Is the structure working? · **Legacy pass id:** Pass 2\n\n# Body\n' > "$TMPDIR/pos.md"
+      printf '> **Macro block:** Structure Map · **Writer question:** Is the structure working? · **Legacy pass id:** Pass 0\n\n# Body\n' > "$TMPDIR/posc.md"
+      printf '# Pass 5 — Character Audit\n\nJust body, no header.\n' > "$TMPDIR/missing.md"
+      printf '> **Macro block:** Vibes Map · **Writer question:** Is the structure working? · **Legacy pass id:** Pass 2\n\n# Body\n' > "$TMPDIR/notin8.md"
+      printf '> **Macro block:** Structure Map · **Writer question:** Is the structure working? · **Legacy pass id:** Pass 4\n\n# Body\n' > "$TMPDIR/mismatch.md"
+      printf '> **Macro block:** Structure Map · **Writer question:** Does the pacing hold? · **Legacy pass id:** Pass 2\n\n# Body\n' > "$TMPDIR/wrongq.md"
+      printf '> **Macro block:** Structure Map · **Writer question:**  · **Legacy pass id:** Pass 2\n\n# Body\n' > "$TMPDIR/emptyq.md"
+      RESULTS=0
+      "$0" pass-header "$TMPDIR/pos.md" "$TMPDIR/pass-dependencies.md" >/dev/null 2>&1 && echo "  ph_pos: OK" || { echo "  ph_pos: FAIL (expected OK)"; RESULTS=1; }
+      "$0" pass-header "$TMPDIR/posc.md" "$TMPDIR/pass-dependencies.md" >/dev/null 2>&1 && echo "  ph_pos_concern_driven: OK" || { echo "  ph_pos_concern_driven: FAIL (expected OK)"; RESULTS=1; }
+      "$0" pass-header "$TMPDIR/missing.md" "$TMPDIR/pass-dependencies.md" >/dev/null 2>&1 && echo "  ph_missing_header_warns: OK (WARN, rc 0)" || { echo "  ph_missing_header_warns: FAIL (expected OK — legacy WARN)"; RESULTS=1; }
+      "$0" pass-header "$TMPDIR/notin8.md" "$TMPDIR/pass-dependencies.md" >/dev/null 2>&1 && { echo "  ph_block_not_in_8: FAIL (expected ERROR)"; RESULTS=1; } || echo "  ph_block_not_in_8: OK (caught)"
+      "$0" pass-header "$TMPDIR/mismatch.md" "$TMPDIR/pass-dependencies.md" >/dev/null 2>&1 && { echo "  ph_block_pass_mismatch: FAIL (expected ERROR)"; RESULTS=1; } || echo "  ph_block_pass_mismatch: OK (caught)"
+      "$0" pass-header "$TMPDIR/wrongq.md" "$TMPDIR/pass-dependencies.md" >/dev/null 2>&1 && { echo "  ph_wrong_question: FAIL (expected ERROR)"; RESULTS=1; } || echo "  ph_wrong_question: OK (caught)"
+      "$0" pass-header "$TMPDIR/emptyq.md" "$TMPDIR/pass-dependencies.md" >/dev/null 2>&1 && { echo "  ph_empty_field: FAIL (expected ERROR)"; RESULTS=1; } || echo "  ph_empty_field: OK (caught)"
+      [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
+    fi
+
+    # Real-file invocation: delegate to the parser when python3 is present.
+    if command -v python3 >/dev/null 2>&1 && [ -f "$PH_HELPER" ]; then
+      python3 "$PH_HELPER" pass-header "$@"; exit $?
+    fi
+
+    # Degraded path (no python3): bash implementation.
+    if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
+    PH_ART="$1"
+    PH_PD="${2:-}"
+    if [ -z "$PH_PD" ]; then
+      PH_ART_DIR=$(dirname "$PH_ART")
+      if [ -f "$PH_ART_DIR/pass-dependencies.md" ]; then
+        PH_PD="$PH_ART_DIR/pass-dependencies.md"
+      else
+        PH_PD="$PH_ART_DIR/../skills/core-editor/references/pass-dependencies.md"
+      fi
+    fi
+    if [ ! -f "$PH_PD" ]; then
+      echo "ERROR: pass-dependencies.md (§3 source of truth) not found at '${PH_PD}'. pass-header cannot validate without §3." >&2
+      exit 2
+    fi
+
+    # Parse §3 into pass→block and block→question maps (awk, scoped to the §3 section).
+    PH_S3=$(awk '
+      /^##[ \t]+§3([. ]|$)/ { in3=1; next }
+      in3 && /^##[ \t]/ { exit }
+      in3 && /^\|/ { print }
+    ' "$PH_PD")
+    # pass→block lines: "<pass>\t<block>"; block→question lines: "<block>\t<question>".
+    PH_MAP=$(echo "$PH_S3" | awk -F'|' '
+      {
+        b=$2; p=$3; q=$4;
+        gsub(/^[ \t]+|[ \t]+$/, "", b); gsub(/^[ \t]+|[ \t]+$/, "", p); gsub(/^[ \t]+|[ \t]+$/, "", q);
+        gsub(/^"|"$/, "", q);
+        if (b=="" || b=="Macro Block" || b ~ /^[-: ]+$/) next;
+        n=split(p, ids, /[^0-9]+/);
+        for (i=1;i<=n;i++) if (ids[i] != "") print "P\t" ids[i] "\t" b;
+        print "Q\t" b "\t" q;
+      }
+    ')
+    if [ -z "$PH_MAP" ]; then
+      echo "ERROR: could not parse §3 Macro Block Definitions from '${PH_PD}' — no blocks extracted." >&2
+      exit 2
+    fi
+
+    # Locate the header line (leading anchor).
+    PH_LINE=$(grep -nE '^[[:space:]]*>[[:space:]]*\*\*Macro block:\*\*' "$PH_ART" | head -1 | cut -d: -f2-)
+    if [ -z "$PH_LINE" ]; then
+      echo "WARN: '${PH_ART}' — no §3 pass header found (H1). A header-less legacy artifact is tolerated; new pass artifacts must carry the § 3 header."
+      exit 0
+    fi
+
+    # Extract the three fields.
+    PH_BLOCK=$(echo "$PH_LINE" | sed -E 's/.*\*\*Macro block:\*\*[[:space:]]*//; s/[[:space:]]*(·|\|)[[:space:]]*\*\*Writer question:\*\*.*//')
+    PH_Q=$(echo "$PH_LINE" | sed -E 's/.*\*\*Writer question:\*\*[[:space:]]*//; s/[[:space:]]*(·|\|)[[:space:]]*\*\*Legacy pass id:\*\*.*//')
+    PH_PASS=$(echo "$PH_LINE" | sed -E 's/.*\*\*Legacy pass id:\*\*[[:space:]]*Pass[[:space:]]*//; s/[[:space:]]*$//')
+    if [ -z "$PH_BLOCK" ] || [ -z "$PH_Q" ] || [ -z "$PH_PASS" ]; then
+      echo "ERROR: '${PH_ART}' — pass header has an empty field (H3): block='${PH_BLOCK}' question='${PH_Q}' pass='${PH_PASS}'."
+      exit 1
+    fi
+
+    PH_ERRORS=0
+    PH_BLOCKS=$(echo "$PH_MAP" | awk -F'\t' '$1=="Q"{print $2}')
+    if ! echo "$PH_BLOCKS" | grep -qxF "$PH_BLOCK"; then
+      echo "ERROR: '${PH_ART}' — Macro block '${PH_BLOCK}' is not one of the 8 §3 blocks (H2)."
+      PH_ERRORS=$((PH_ERRORS + 1))
+    else
+      PH_CANON=$(echo "$PH_MAP" | awk -F'\t' -v p="$PH_PASS" '$1=="P" && $2==p {print $3; exit}')
+      if [ -z "$PH_CANON" ]; then
+        echo "WARN: '${PH_ART}' — Legacy pass id 'Pass ${PH_PASS}' is not mapped to a macro block in §3; cannot verify block↔pass agreement (H2)."
+      elif [ "$PH_CANON" != "$PH_BLOCK" ]; then
+        echo "ERROR: '${PH_ART}' — Macro block '${PH_BLOCK}' does not match §3's canonical block for Pass ${PH_PASS}, which is '${PH_CANON}' (H2)."
+        PH_ERRORS=$((PH_ERRORS + 1))
+      fi
+      PH_EXPQ=$(echo "$PH_MAP" | awk -F'\t' -v b="$PH_BLOCK" '$1=="Q" && $2==b {print $3; exit}')
+      if [ -n "$PH_EXPQ" ] && [ "$PH_EXPQ" != "$PH_Q" ]; then
+        echo "ERROR: '${PH_ART}' — Writer question '${PH_Q}' does not match §3's User Question for block '${PH_BLOCK}', which is '${PH_EXPQ}' (H2)."
+        PH_ERRORS=$((PH_ERRORS + 1))
+      fi
+    fi
+
+    if [ "$PH_ERRORS" -gt 0 ]; then
+      echo ""
+      echo "FAILED: ${PH_ERRORS} pass-header failure(s). §3 (Macro Block Definitions) in pass-dependencies.md is the single source of truth."
+      exit 1
+    fi
+    echo "OK: pass header for '${PH_ART}' agrees with §3 (block ∈ 8, block↔pass map, User Question)."
+    exit 0
     ;;
 
   # ----------------------------------------------------------------------

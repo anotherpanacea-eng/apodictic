@@ -138,6 +138,8 @@ User-facing groupings that organize output. Writers see 8 blocks, not 12 passes.
 
 Pass 7 (POV & Voice) belongs to Character Architecture because voice is a character concern. Pass 4 (Emotional Value Tracking) has its own block — it was previously subordinated to Character Architecture, but emotional dynamics is a distinct diagnostic dimension.
 
+**§3 is the single source of truth for the macro map.** The table above is canonical for the 8 macro blocks, the `Internal Passes` (pass→block map), and the per-block `User Question`. Downstream surfaces read from §3 and must not re-author these values: the §2 concern→pass resolver's `Macro block` column, the `core-editor/SKILL.md §Pass-Detail Artifact Headers` mapping (derived from §3), and the per-pass artifact header emitted per `run-core.md`. The `scripts/validate.sh pass-header` validator parses this table (block ∈ the 8, block↔pass map, block→User Question) as its authority; `scripts/validate.sh audit-signal-propagation` and `scripts/validate.sh audit-tier-criterion` read §4 of this file and are unaffected by §3.
+
 When a query-driven run selects a subset of passes, only the relevant macro blocks appear in the editorial letter. Blocks with no selected passes are omitted entirely — not shown as empty.
 
 ---
