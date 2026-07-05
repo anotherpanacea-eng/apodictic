@@ -468,6 +468,14 @@ Add a brief note after each question: why the answer matters for the book's revi
 
 The primary deliverable. Format specified in §Core DE Synthesis above.
 
+### Results Guide (first file after the editorial letter)
+
+After the letter is written, generate `[Project]_Results_Guide_[runlabel].md` per `core-editor/SKILL.md §Results Guide Artifact` — a plain-language **navigation index** that maps each writer question the run produced (the §3 `User Question` for each macro block that actually ran) to the run-folder artifacts, specialized audits, and state files behind it. It helps the writer navigate their results without framework knowledge. **This is a standard deliverable, not an offer** (unlike the annotated manuscript): the letter is the diagnosis; the Guide is the map to it.
+
+- **Index, never diagnose.** The Guide points at artifacts; it carries no severity language (no `Must/Should/Could-Fix`) and no findings — those live in the editorial letter. Do **not** re-author the template; emit the SKILL.md format, substituting real filenames.
+- **Only the blocks that ran.** List one `### <writer question>` section per macro block the run produced — absence is legal (a targeted run maps fewer questions); inventing a question the run did not produce is the defect.
+- Validate with `scripts/validate.sh results-guide <run_folder>` (R1 every heading is a §3 User Question, R2 every cited filename resolves in the run folder, R3 no severity leak / no finding block). On hosts without shell execution, perform the citation trace inline with the same discipline.
+
 ### Run Folder, Rolling State & Machine-Readable Sidecar
 
 Where run artifacts and rolling state are written (run folder vs. project root), the post-synthesis update steps for `Diagnostic_State.md` / `SYNTHESIS.md` / `README.md`, and the `Diagnostic_State.meta.json` sidecar update schedule live in `references/output-structure.md` (loaded at write/persist time). The sidecar `contract_hash` is set at intake and checked at pre-pass re-grounding (see `run-core.md` §Mechanical Validation).
