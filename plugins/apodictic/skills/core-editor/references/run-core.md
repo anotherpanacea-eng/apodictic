@@ -438,7 +438,7 @@ At the end of Pass 0, measure and report:
 2. Word count per major part/act (extract and measure each)
 3. Use these measured values for all subsequent proportional analysis
 
-**Output:** `Reverse_Outline.md` with verified word counts
+**Output:** `[Project]_Pass0_Reverse_Outline_[runlabel].md` with verified word counts (naming per `output-structure.md`)
 
 **Mid-run escalation signals (record to the sidecar):** Write the discovered POV-character count and whether the timeline is non-linear / nested-frame into `complexity_signals.pov_count` and `complexity_signals.nonlinear_timeline` in `Diagnostic_State.meta.json`. The §Mid-Run Escalation Check reads these (plus Pass 1's failure counts and the Tier-1 finding count) after Tier 1 to recommend a mode escalation before Tier 2.
 
