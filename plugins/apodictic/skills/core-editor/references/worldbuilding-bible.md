@@ -93,6 +93,29 @@ A contradiction is recorded as one `world_fact` per conflicting value, plus a Co
 row pairing their ids — and, when the contradiction is *intended* (a staged reveal, a documented cost
 escalation), a per-pair override marker carrying the author's rationale.
 
+The ledger table carries a **`State` column** — the contradiction axis, orthogonal to editorial
+severity (the shared `contradiction_state` helper, also used by the [continuity
+bible](continuity-bible.md)):
+
+| State | Meaning | When |
+|---|---|---|
+| `conflicting` | a live, un-explained collision | the default for any written ledger row |
+| `apparent` | a collision the author marks intentional | the pair carries a matching `world-rule` / `world-cost` / `world-geo` override marker (the same per-pair markers that silence the arm) |
+| `consistent` | no collision | **never written as a row** |
+
+The state is **mechanically derived, never judged**: the validator computes it from the literal
+collision + the override presence and rejects a `State` value that disagrees (X1). A row whose pair is
+overridden derives `apparent`; an un-overridden row derives `conflicting`. The register **never**
+carries an editorial-severity token or an `apodictic:finding` block — a contradiction is a fact-state,
+not a defect (X1 firewall, the Content-Advisory A3 precedent).
+
+### Feeding the letter (Stage A — prose citation)
+
+When the bible runs inside a dev-edit, the editorial letter references each `conflicting` row **by
+prose citation** (the Legal-Risk / Content-Advisory / Setup–Payoff precedent), so an unresolved
+self-contradiction reaches the author's revision plan. The validator emits the conflicting rows (the
+id-pair) for the letter to cite. An `apparent` (overridden) row is intentional and is **not** cited.
+
 ## How to extract (the model's job)
 
 1. **Read the bible, not a manuscript.** The input is the author's hand-authored notes — prose and
@@ -102,9 +125,11 @@ escalation), a per-pair override marker carrying the author's rationale.
    stated price → `category=cost` (or a `cost` on a `rule`). A travel-distance or mileage →
    `category=distance` with `pair_subject`. An ordering or a dated event → `category=event`.
 3. **Build the Contradiction Ledger.** Wherever the bible asserts two conflicting values, record both
-   facts and pair them in a ledger row. Do not adjudicate. If the author *means* the contradiction
-   (a rule that changes after an event, a cost that escalates), add the matching override marker —
-   recording intent without softening the verdict.
+   facts and pair them in a ledger row with a `State` of `conflicting`. Do not adjudicate. If the
+   author *means* the contradiction (a rule that changes after an event, a cost that escalates), add
+   the matching `world-rule` / `world-cost` / `world-geo` override marker and set that row's `State` to
+   `apparent` — recording intent without softening the verdict. The validator rejects a `State` that
+   disagrees with the override reality.
 
 ## What it is not
 

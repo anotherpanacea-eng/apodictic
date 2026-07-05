@@ -59,6 +59,19 @@ Timeline setting — Kitchen, Office, Train station — has a Places entry). `va
 {"schema":"apodictic.canon_fact.v1","id":"CF-09","entity":"Train station","category":"place","attribute":"description","value":"the regional station where Jon arrives","loci":["Ch 2 §1"],"consolidates":null}
 -->
 
+<!-- apodictic:canon_fact
+{"schema":"apodictic.canon_fact.v1","id":"CF-12","entity":"Kitchen","category":"place","attribute":"wall colour","value":"yellow","loci":["Ch 1 §1"],"consolidates":null}
+-->
+
+<!-- apodictic:canon_fact
+{"schema":"apodictic.canon_fact.v1","id":"CF-13","entity":"Kitchen","category":"place","attribute":"wall colour","value":"grey","loci":["Ch 9 ¶3"],"consolidates":null}
+-->
+
+<!-- The kitchen is repainted between the opening and the return chapter — a deliberate, in-world
+     change of state, not a continuity error. The override marks the collision APPARENT (State=apparent):
+     both stated values are true, the second follows the first in story time. -->
+<!-- override: bible-contradiction CF-12/CF-13 — the kitchen is repainted grey after the mother's death (Ch 5); both colours are canonical, in sequence -->
+
 ## Objects
 
 <!-- apodictic:canon_fact
@@ -73,18 +86,29 @@ Timeline setting — Kitchen, Office, Train station — has a Places entry). `va
 
 ## Contradiction Ledger
 
-The manuscript states two different ages for Mara. Both are recorded; the Bible does not pick a
-winner — reconciling canon is the author's call.
+The manuscript states two different ages for Mara — a live, unexplained conflict (State `conflicting`).
+It also states the kitchen wall as two colours; that pair is overridden as a deliberate in-world
+repaint (State `apparent`). Both are recorded; the Bible does not pick a winner — reconciling canon is
+the author's call.
 
-| Entity | Attribute | Conflicting facts | Note |
-|---|---|---|---|
-| Mara | age | CF-03, CF-04 | "30" in Ch 2 ¶6 vs "32" in Ch 9 ¶4 — surfaced, not resolved |
+| Entity | Attribute | Conflicting facts | State | Note |
+|---|---|---|---|---|
+| Mara | age | CF-03, CF-04 | conflicting | "30" in Ch 2 ¶6 vs "32" in Ch 9 ¶4 — surfaced, not resolved |
+| Kitchen | wall colour | CF-12, CF-13 | apparent | "yellow" (Ch 1) vs "grey" (Ch 9) — a deliberate repaint, override bible-contradiction |
+
+The `State` column is the mechanically-derived contradiction axis, orthogonal to editorial severity:
+`conflicting` (a live, un-overridden collision), `apparent` (a collision a `bible-contradiction`
+override marks intentional), or `consistent` (no collision — never written as a row). The register
+carries no editorial-severity token and no `apodictic:finding` block (validator X1) — a contradiction
+is a fact-state, not a defect. The `conflicting` Mara-age row is the one the editorial letter cites in
+prose so it reaches the author's revision plan.
 
 ## Notes
 
 - **Facts are stated, never inferred.** Every entry cites the locus where the manuscript asserts it.
   Mara's age appears twice, in conflict, so both are catalogued and paired in the Contradiction
-  Ledger — the Bible makes the conflict impossible to miss and stops there.
+  Ledger — the Bible makes the conflict impossible to miss and stops there. The kitchen-colour pair is
+  a repaint the author staged, so its override marks it `apparent`, not a defect.
 - **Chronology is consumed, not re-derived.** CF-11 consolidates the Pass-10 Timeline scene id
   `Ch 1 §2` rather than re-stating a temporal fact the Timeline already owns (validator C4).
 - **Locus presence/shape is gated (C2), not resolved.** A locus is checked for a coarse

@@ -57,6 +57,7 @@ import re
 import sys
 
 from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+import contradiction_state as cstate  # shared State axis: derive_state + State-column parse + X1 firewall
 
 try:
     import apodictic_artifacts as art
@@ -104,6 +105,9 @@ _KNOWN_KEYS = {"schema", "id", "category", "subject", "attribute", "value",
 # target below; and the pair-free `<!-- override: world-firewall -->` (silences the prose scan, not a
 # fact pair), checked with the presence form of `override_targets`.
 _WF_PAIR_TARGET = r"(WF-[0-9]+)\s*/\s*(WF-[0-9]+)"
+# WF ids referenced inside a Contradiction-Ledger row (the State-axis table parse; mirrors
+# continuity_bible._CF_REF_RE).
+_WF_REF_RE = re.compile(r"\bWF-[0-9]+\b")
 
 # WF firewall — resolution / invention verbs that would mean the bible's prose RESOLVED a conflict or
 # INVENTED canon instead of surfacing it. Kept specific so the advisory rarely misfires; an intended
@@ -594,6 +598,28 @@ def bible(text, strict=False):
     errs.extend(_distance_contradictions(valid, geo_ov))
     errs.extend(_chronology_contradictions(valid, geo_ov))
 
+    # X1 — contradiction State axis (§D4 + firewall) on the `## Contradiction Ledger` table. A ledger
+    # row is a live collision, so its derived State is `conflicting` unless one of the three pair
+    # override slugs (world-rule / world-cost / world-geo) marks the pair intentional (=> `apparent`).
+    # The author-written `State` column must be a valid enum token AND match the derivation; the
+    # register carries no severity token / no finding block. Mechanical, no model judgment — the shared
+    # contradiction_state helper owns the truth table + parse + regex.
+    all_pair_overrides = rule_ov | cost_ov | geo_ov
+
+    def _derived_state(ids):
+        idset = set(ids)
+        overridden = any(pair <= idset for pair in all_pair_overrides)
+        return cstate.derive_state(True, overridden)  # a written ledger row is always a collision
+
+    errs.extend(cstate.check_row_states(cstate.state_rows(text, _WF_REF_RE), _derived_state))
+    if cstate.severity_leak(text):
+        errs.append("X1 firewall: the Contradiction Ledger carries an editorial Must/Should/Could-Fix "
+                    "token — a contradiction is a fact-state, not a defect (severity is orthogonal; "
+                    "see docs/worldbuilding-bible.md §State axis)")
+    if _has_block(text, "finding"):
+        errs.append("X1 firewall: the Contradiction Ledger contains an apodictic:finding block — the "
+                    "bible records both stated values, it never carries a severity-bearing finding")
+
     # WF — firewall prose scan (advisory; ERROR under --strict)
     warns.extend(_firewall_scan(text, strict))
 
@@ -611,11 +637,24 @@ def bible(text, strict=False):
         lines.append("world-bible: FAIL (%d error(s)%s)"
                      % (len(errs), ", %d strict warn(s)" % len(warns) if (strict and warns) else ""))
         return 1, lines
+
+    # Conflicting-state rollup — the `conflicting` ledger rows (id-pair) for the editorial letter to
+    # cite in prose (Stage A wiring; the Legal-Risk / Content-Advisory / setup-payoff precedent), so an
+    # unresolved self-contradiction reaches the author's revision plan. An `apparent` (overridden) row
+    # is intentional and is NOT rolled up. These are not errors.
+    conflicting = [ids for ids, token, _cells in cstate.state_rows(text, _WF_REF_RE)
+                   if token == "conflicting"]
+    if conflicting:
+        lines.append("world-bible: %d conflicting contradiction(s) — cite in the editorial letter "
+                     "(prose):" % len(conflicting))
+        for ids in conflicting:
+            lines.append("  CONFLICTING %s" % ("+".join(ids) if ids else "<no ids>"))
+
     if warns:
         lines.append("WARN: world-bible: %d advisory signal(s) — see WB-C2/WF above" % len(warns))
     else:
         lines.append("world-bible: PASS (schema + closed-key + rule/cost/geo contradiction arms + "
-                     "surface-don't-resolve firewall)")
+                     "State axis + surface-don't-resolve firewall)")
     return 0, lines
 
 
@@ -939,6 +978,76 @@ def run_self_test():
     chk("wf_clean_prose_ok",
         not any("WF firewall" in ln for ln in bible(
             fact("WF-01", polarity="cannot") + "\n## Notes\n\nThe bible states one rule, cited.\n")[1]))
+
+    # X1 — contradiction State axis (§D4 mechanical derivation + firewall) on the ledger table. The
+    # world-bible ledger is Subject | Arm | Conflicting facts | State | Author's note.
+    W_LEDGER = ("\n## Contradiction Ledger\n\n"
+                "| Subject | Arm | Conflicting facts | State | Author's note |\n"
+                "|---|---|---|---|---|\n")
+    # An arm-firing pair (WB-R1) that IS overridden -> the arm is silenced AND the derived State is
+    # `apparent`; an honest `apparent` State row is clean and is NOT rolled up as conflicting.
+    ov_rule = "<!-- override: world-rule WF-01/WF-02 — staged reveal after the Sundering -->\n"
+    code, lines = bible(ov_rule + can + "\n" + cannot + W_LEDGER
+                        + "| blood-magic | rule (WB-R1) | WF-01, WF-02 | apparent | staged, overridden |\n")
+    chk("x1_world_apparent_with_override_clean", code == 0)
+    chk("x1_world_apparent_not_rolled_up", not any("CONFLICTING" in ln for ln in lines))
+    # HOSTILE: the pair is overridden (apparent) but the row asserts `conflicting` -> X1 mismatch FAIL
+    code, lines = bible(ov_rule + can + "\n" + cannot + W_LEDGER
+                        + "| blood-magic | rule (WB-R1) | WF-01, WF-02 | conflicting | mislabel |\n")
+    chk("x1_world_conflicting_but_overridden_fails",
+        code == 1 and any("X1 State agreement" in ln for ln in lines))
+    # A genuinely-conflicting row (NO override on the pair) — but then the arm itself FAILs (WB-R1),
+    # so use a distance collision that IS overridden-as-apparent vs one that is NOT: instead, verify
+    # the conflicting rollup on an un-overridden ledger row whose facts DON'T also trip an arm (a row
+    # naming facts with no live arm collision is a stray, but the State parse still derives conflicting
+    # and rolls it up). Use a benign descriptive pair (place facts, no arm) so only the ledger drives it:
+    pl1 = fact("WF-10", category="place", subject="Karth", attribute="desc", value="a port")
+    pl2 = fact("WF-11", category="place", subject="Karth", attribute="desc", value="a port")
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10, WF-11 | conflicting | surfaced |\n")
+    chk("x1_world_conflicting_rollup",
+        code == 0 and any("CONFLICTING WF-10+WF-11" in ln for ln in lines))
+    # HOSTILE: that same un-overridden pair asserted `apparent` -> derives conflicting -> mismatch FAIL
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10, WF-11 | apparent | claims staged |\n")
+    chk("x1_world_author_asserted_apparent_no_override_fails",
+        code == 1 and any("X1 State agreement" in ln for ln in lines))
+    # HOSTILE: a `consistent` row is written -> FAIL (consistent needs no row)
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10, WF-11 | consistent | stray |\n")
+    chk("x1_world_consistent_row_fails",
+        code == 1 and any("X1 State agreement" in ln and "needs no" in ln for ln in lines))
+    # HOSTILE: a bad enum State token -> FAIL
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10, WF-11 | resolved | bad enum |\n")
+    chk("x1_world_bad_enum_fails",
+        code == 1 and any("X1 State enum" in ln for ln in lines))
+    # HOSTILE: a planted Must-Fix severity token -> X1 firewall FAIL
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10, WF-11 | conflicting | x |\n"
+                        + "\n## Notes\n\n- WF-11 is a Must-Fix.\n")
+    chk("x1_world_severity_token_fails",
+        code == 1 and any("X1 firewall" in ln and "Must/Should/Could-Fix" in ln for ln in lines))
+    # HOSTILE: a planted apodictic:finding block -> X1 firewall FAIL
+    _wfinding = ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"F-P5-01",'
+                 '"mechanism":"m","severity":"Must-Fix","confidence":"HIGH","evidence_refs":["c"],'
+                 '"fix_class":"x","risk_if_fixed":"y"}\n-->')
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10, WF-11 | conflicting | x |\n" + _wfinding)
+    chk("x1_world_finding_block_fails",
+        code == 1 and any("X1 firewall" in ln and "apodictic:finding block" in ln for ln in lines))
+    # a code-span-quoted override is a documentation example -> author-asserted `apparent` still FAILs
+    code, lines = bible("`" + ov_rule.strip() + "`\n" + can + "\n" + cannot + W_LEDGER
+                        + "| blood-magic | rule (WB-R1) | WF-01, WF-02 | apparent | quoted decoy |\n")
+    # (the arm ALSO fires here because the override is a decoy; either way exit is non-zero and the
+    #  State parse sees NO live override -> derives conflicting, so the apparent label mismatches too)
+    chk("x1_world_codespan_override_does_not_silence",
+        code == 1 and (any("X1 State agreement" in ln for ln in lines) or any("WB-R1" in ln for ln in lines)))
+    # a pre-axis ledger (no State column) is still accepted — the column is additive
+    chk("x1_world_preaxis_ledger_ok",
+        bible(pl1 + "\n" + pl2 + "\n## Contradiction Ledger\n\n"
+              "| Subject | Arm | Conflicting facts | Author's note |\n|---|---|---|---|\n"
+              "| Karth | place | WF-10, WF-11 | surfaced |\n")[0] == 0)
 
     # no blocks -> no-op
     chk("no_facts_noop", bible("# Notes\nnothing structured\n")[0] == 0)
