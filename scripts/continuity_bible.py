@@ -48,6 +48,7 @@ import re
 import sys
 
 from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+import contradiction_state as cstate  # shared State axis: derive_state + State-column parse + X1 firewall
 
 try:
     import apodictic_artifacts as art
@@ -83,6 +84,12 @@ _LOCUS_RE = re.compile(
 _CF_REF_RE = re.compile(r"\bCF-[0-9]+\b")
 # Override markers naming a fact id ("<!-- override: bible-rederive CF-08 — ... -->") route through
 # the shared override_marker SSoT — code spans stripped, slug boundary-matched.
+# The contradiction-STATE axis marks a ledger row's collision INTENTIONAL (State=apparent) via a
+# pair-scoped `<!-- override: bible-contradiction CF-NN/CF-MM — <in-world rationale> -->` (order-
+# insensitive, mirroring world-bible's world-rule/world-cost/world-geo pair markers). No override =>
+# State=conflicting. This slug is distinct from `bible-rederive` (which is the C4 chronology-consume
+# escape hatch, NOT a contradiction resolution).
+_CF_PAIR_TARGET = r"(CF-[0-9]+)\s*/\s*(CF-[0-9]+)"
 
 
 def _read(path):
@@ -97,6 +104,14 @@ def _overrides(text, slug):
     """The set of CF-NN ids overridden for `slug` — via the shared SSoT, so a marker quoted inside a
     code span is not honored as a live directive."""
     return {t[0] for t in override_targets(text, slug, r"(CF-[0-9]+)")}
+
+
+def _contradiction_overrides(text):
+    """Set of frozenset({CF-id, CF-id}) unordered pairs marked intentional by a live
+    `<!-- override: bible-contradiction CF-NN/CF-MM — … -->` marker (order-insensitive). Via the shared
+    SSoT (code spans stripped, boundary-matched), so a quoted example is not honored — the same pair
+    idiom world_bible uses for world-rule/world-cost/world-geo."""
+    return {frozenset(pair) for pair in override_targets(text, "bible-contradiction", _CF_PAIR_TARGET)}
 
 
 def parse_facts(text):
@@ -250,6 +265,31 @@ def bible(text, timeline_text=None, strict=False):
             errs.append("C3 contradiction: ledger row [%s] pairs facts that assert the SAME value "
                         "(not a contradiction)" % tag)
 
+    # X1 — contradiction State axis (§D4 + firewall). A ledger row is a live collision, so its derived
+    # State is `conflicting` unless a `bible-contradiction CF-NN/CF-MM` override marks the pair
+    # intentional (=> `apparent`). The author-written `State` column must be a valid enum token AND
+    # match the derivation; the register carries no severity token / no finding block. Mechanical,
+    # no model judgment — the shared contradiction_state helper owns the truth table + parse + regex.
+    cx_overrides = _contradiction_overrides(text)
+
+    def _derived_state(ids):
+        # A row with a bible-contradiction override naming ANY two of its ids is `apparent` (the author
+        # marked the collision intentional); else `conflicting`. A ledger row is always a collision
+        # (it would not be written otherwise), so `collides=True` here.
+        idset = set(ids)
+        overridden = any(pair <= idset for pair in cx_overrides)
+        return cstate.derive_state(True, overridden)
+
+    for e in cstate.check_row_states(cstate.state_rows(text, _CF_REF_RE), _derived_state):
+        errs.append(e)
+    if cstate.severity_leak(text):
+        errs.append("X1 firewall: the Contradiction Ledger carries an editorial Must/Should/Could-Fix "
+                    "token — a contradiction is a fact-state, not a defect (severity is orthogonal; "
+                    "see docs/continuity-bible.md §State axis)")
+    if _has_block(text, "finding"):
+        errs.append("X1 firewall: the Contradiction Ledger contains an apodictic:finding block — the "
+                    "register records both stated values, it never carries a severity-bearing finding")
+
     # C4 — chronology consume-vs-rederive (chronology<->Timeline only; advisory, ERROR --strict)
     scene_ids, povs, settings = timeline_facts(timeline_text)
     rederive_overrides = _overrides(text, "bible-rederive")
@@ -292,11 +332,24 @@ def bible(text, timeline_text=None, strict=False):
         lines.append("continuity-bible: FAIL (%d error(s)%s)"
                      % (len(errs), ", %d strict warn(s)" % len(warns) if (strict and warns) else ""))
         return 1, lines
+
+    # Conflicting-state rollup — the `conflicting` ledger rows (id-pair + State) for the editorial
+    # letter to cite in prose (Stage A wiring; the Legal-Risk / Content-Advisory / setup-payoff
+    # precedent), so an unresolved self-contradiction reaches the author's revision plan. An
+    # `apparent` (overridden) row is intentional and is NOT rolled up. These are not errors.
+    conflicting = [ids for ids, token, _cells in cstate.state_rows(text, _CF_REF_RE)
+                   if token == "conflicting"]
+    if conflicting:
+        lines.append("continuity-bible: %d conflicting contradiction(s) — cite in the editorial "
+                     "letter (prose):" % len(conflicting))
+        for ids in conflicting:
+            lines.append("  CONFLICTING %s" % ("+".join(ids) if ids else "<no ids>"))
+
     if warns:
         lines.append("WARN: continuity-bible: %d advisory gap(s) — see C4/W1 above" % len(warns))
     else:
         lines.append("continuity-bible: PASS (schema + locus shape + contradiction integrity + "
-                     "chronology consume boundary)")
+                     "State axis + chronology consume boundary)")
     return 0, lines
 
 
@@ -426,6 +479,64 @@ def run_self_test():
         fact("CF-03", entity="Jon", attribute="age", value="32", loci=["Ch 9"])
     code, lines = bible(cross + LEDGER + "| ? | age | CF-02, CF-03 |\n")
     chk("c3_mismatched_facts", code == 1 and any("do not share" in ln for ln in lines))
+
+    # X1 — contradiction State axis (§D4 mechanical derivation + firewall). LEDGER_S carries a State
+    # column; a valid contradiction pair with no override derives `conflicting`.
+    LEDGER_S = ("\n## Contradiction Ledger\n\n"
+                "| Entity | Attribute | Conflicting facts | State | Note |\n"
+                "|---|---|---|---|---|\n")
+    code, lines = bible(pair + LEDGER_S + "| Mara | age | CF-02, CF-03 | conflicting | 30 vs 32 |\n")
+    chk("x1_conflicting_clean", code == 0)
+    chk("x1_conflicting_rollup",
+        any("CONFLICTING CF-02+CF-03" in ln for ln in lines))
+    # a `bible-contradiction` override marks the pair intentional -> derives `apparent`; State=apparent clean
+    ov_cx = "<!-- override: bible-contradiction CF-02/CF-03 — staged reveal, both ages are true in-world -->\n"
+    chk("x1_apparent_with_override_clean",
+        bible(ov_cx + pair + LEDGER_S + "| Mara | age | CF-02, CF-03 | apparent | staged |\n")[0] == 0)
+    chk("x1_apparent_override_order_insensitive",
+        bible("<!-- override: bible-contradiction CF-03/CF-02 — reversed -->\n"
+              + pair + LEDGER_S + "| Mara | age | CF-02, CF-03 | apparent | staged |\n")[0] == 0)
+    # an apparent row is NOT rolled up as conflicting
+    chk("x1_apparent_not_rolled_up",
+        not any("CONFLICTING" in ln for ln in bible(
+            ov_cx + pair + LEDGER_S + "| Mara | age | CF-02, CF-03 | apparent | staged |\n")[1]))
+    # HOSTILE: author asserts `apparent` but NO override present -> derives conflicting -> X1 mismatch FAIL
+    code, lines = bible(pair + LEDGER_S + "| Mara | age | CF-02, CF-03 | apparent | claims staged |\n")
+    chk("x1_author_asserted_apparent_no_override_fails",
+        code == 1 and any("X1 State agreement" in ln for ln in lines))
+    # HOSTILE: author asserts `conflicting` but the pair IS overridden -> derives apparent -> mismatch FAIL
+    code, lines = bible(ov_cx + pair + LEDGER_S + "| Mara | age | CF-02, CF-03 | conflicting | mislabel |\n")
+    chk("x1_conflicting_but_overridden_fails",
+        code == 1 and any("X1 State agreement" in ln for ln in lines))
+    # HOSTILE: a `consistent` row is written (a consistent fact needs no row) -> FAIL
+    code, lines = bible(pair + LEDGER_S + "| Mara | age | CF-02, CF-03 | consistent | stray |\n")
+    chk("x1_consistent_row_written_fails",
+        code == 1 and any("X1 State agreement" in ln and "needs no" in ln for ln in lines))
+    # HOSTILE: a bad enum State token -> FAIL
+    code, lines = bible(pair + LEDGER_S + "| Mara | age | CF-02, CF-03 | resolved | bad enum |\n")
+    chk("x1_bad_enum_state_fails",
+        code == 1 and any("X1 State enum" in ln for ln in lines))
+    # HOSTILE: a planted Must-Fix severity token in the register -> X1 firewall FAIL
+    code, lines = bible(pair + LEDGER_S + "| Mara | age | CF-02, CF-03 | conflicting | x |\n"
+                        + "\n## Notes\n\n- CF-03 is a Must-Fix.\n")
+    chk("x1_severity_token_fails",
+        code == 1 and any("X1 firewall" in ln and "Must/Should/Could-Fix" in ln for ln in lines))
+    # HOSTILE: a planted apodictic:finding block -> X1 firewall FAIL
+    _finding = ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"F-P5-01",'
+                '"mechanism":"m","severity":"Must-Fix","confidence":"HIGH","evidence_refs":["c"],'
+                '"fix_class":"x","risk_if_fixed":"y"}\n-->')
+    code, lines = bible(pair + LEDGER_S + "| Mara | age | CF-02, CF-03 | conflicting | x |\n" + _finding)
+    chk("x1_finding_block_fails",
+        code == 1 and any("X1 firewall" in ln and "apodictic:finding block" in ln for ln in lines))
+    # a code-span-quoted override is a documentation example, not a live directive: author-asserted
+    # `apparent` must still FAIL (the SSoT stripper closes the decoy bypass)
+    code, lines = bible("`" + ov_cx.strip() + "`\n" + pair + LEDGER_S
+                        + "| Mara | age | CF-02, CF-03 | apparent | quoted-example decoy |\n")
+    chk("x1_codespan_override_does_not_silence",
+        code == 1 and any("X1 State agreement" in ln for ln in lines))
+    # a pre-axis ledger (no State column) is still accepted — the column is additive, not required
+    chk("x1_preaxis_ledger_ok",
+        bible(pair + LEDGER + "| Mara | age | CF-02, CF-03 |\n")[0] == 0)
 
     # C4 — chronology consume (advisory; ERROR --strict; override; resolves against Timeline)
     chron = fact("CF-10", entity="office scene", category="chronology", attribute="day",
