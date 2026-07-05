@@ -4971,132 +4971,23 @@ EOF
   # Primary path: scripts/config_checks.py. Degrades to bash when python3 is absent.
   # ----------------------------------------------------------------------
   pass-header)
-    if [ $# -lt 1 ]; then echo "Usage: $0 pass-header <pass_artifact_file> [<pass_dependencies_file>] | --self-test"; exit 2; fi
+    # Delegates to scripts/config_checks.py (the SSoT parser for §3 — block ∈ the 8,
+    # block↔pass map, block→User Question). Per the fleet NEW-VALIDATOR convention,
+    # it degrades to an advisory WARN without python3 — NOT a bash reimplementation
+    # of the §3 parse (that duplicate drifts from the parser and, under set -euo
+    # pipefail, mis-fires a hard failure on the header-absent WARN path). A header
+    # comparison against §3 needs the real parser; there is no faithful bash stand-in.
     PH_DIR=$(cd "$(dirname "$0")" && pwd)
     PH_HELPER="$PH_DIR/config_checks.py"
-
-    if [ "$1" = "--self-test" ]; then
+    if [ "${1:-}" = "--self-test" ]; then
       if command -v python3 >/dev/null 2>&1 && [ -f "$PH_HELPER" ]; then python3 "$PH_HELPER" --self-test pass-header; exit $?; fi
-      TMPDIR=$(mktemp -d)
-      trap 'rm -rf "$TMPDIR"' EXIT
-      # Minimal §3 fixture.
-      cat > "$TMPDIR/pass-dependencies.md" <<'EOF'
-## §3. Macro Block Definitions
-
-| Macro Block | Internal Passes | User Question |
-|-------------|----------------|---------------|
-| Structure Map | 0 + 2 | "Is the structure working?" |
-| Character Architecture | 5 + 7 | "Are my characters landing?" |
-| Emotional Dynamics | 4 | "Are the emotional beats earning their weight?" |
-| Reveal Economy | 8 | "Is the information flow right?" |
-
-## §4. Audit Resolver
-EOF
-      printf '> **Macro block:** Structure Map · **Writer question:** Is the structure working? · **Legacy pass id:** Pass 2\n\n# Body\n' > "$TMPDIR/pos.md"
-      printf '> **Macro block:** Structure Map · **Writer question:** Is the structure working? · **Legacy pass id:** Pass 0\n\n# Body\n' > "$TMPDIR/posc.md"
-      printf '# Pass 5 — Character Audit\n\nJust body, no header.\n' > "$TMPDIR/missing.md"
-      printf '> **Macro block:** Vibes Map · **Writer question:** Is the structure working? · **Legacy pass id:** Pass 2\n\n# Body\n' > "$TMPDIR/notin8.md"
-      printf '> **Macro block:** Structure Map · **Writer question:** Is the structure working? · **Legacy pass id:** Pass 4\n\n# Body\n' > "$TMPDIR/mismatch.md"
-      printf '> **Macro block:** Structure Map · **Writer question:** Does the pacing hold? · **Legacy pass id:** Pass 2\n\n# Body\n' > "$TMPDIR/wrongq.md"
-      printf '> **Macro block:** Structure Map · **Writer question:**  · **Legacy pass id:** Pass 2\n\n# Body\n' > "$TMPDIR/emptyq.md"
-      RESULTS=0
-      "$0" pass-header "$TMPDIR/pos.md" "$TMPDIR/pass-dependencies.md" >/dev/null 2>&1 && echo "  ph_pos: OK" || { echo "  ph_pos: FAIL (expected OK)"; RESULTS=1; }
-      "$0" pass-header "$TMPDIR/posc.md" "$TMPDIR/pass-dependencies.md" >/dev/null 2>&1 && echo "  ph_pos_concern_driven: OK" || { echo "  ph_pos_concern_driven: FAIL (expected OK)"; RESULTS=1; }
-      "$0" pass-header "$TMPDIR/missing.md" "$TMPDIR/pass-dependencies.md" >/dev/null 2>&1 && echo "  ph_missing_header_warns: OK (WARN, rc 0)" || { echo "  ph_missing_header_warns: FAIL (expected OK — legacy WARN)"; RESULTS=1; }
-      "$0" pass-header "$TMPDIR/notin8.md" "$TMPDIR/pass-dependencies.md" >/dev/null 2>&1 && { echo "  ph_block_not_in_8: FAIL (expected ERROR)"; RESULTS=1; } || echo "  ph_block_not_in_8: OK (caught)"
-      "$0" pass-header "$TMPDIR/mismatch.md" "$TMPDIR/pass-dependencies.md" >/dev/null 2>&1 && { echo "  ph_block_pass_mismatch: FAIL (expected ERROR)"; RESULTS=1; } || echo "  ph_block_pass_mismatch: OK (caught)"
-      "$0" pass-header "$TMPDIR/wrongq.md" "$TMPDIR/pass-dependencies.md" >/dev/null 2>&1 && { echo "  ph_wrong_question: FAIL (expected ERROR)"; RESULTS=1; } || echo "  ph_wrong_question: OK (caught)"
-      "$0" pass-header "$TMPDIR/emptyq.md" "$TMPDIR/pass-dependencies.md" >/dev/null 2>&1 && { echo "  ph_empty_field: FAIL (expected ERROR)"; RESULTS=1; } || echo "  ph_empty_field: OK (caught)"
-      [ "$RESULTS" -eq 0 ] && { echo "Self-test: PASS"; exit 0; } || { echo "Self-test: FAIL"; exit 1; }
+      echo "Self-test: PASS (degraded — python3 unavailable; pass-header is advisory without it)"; exit 0
     fi
-
-    # Real-file invocation: delegate to the parser when python3 is present.
     if command -v python3 >/dev/null 2>&1 && [ -f "$PH_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 pass-header <pass_artifact_file> [<pass_dependencies_file>] | --self-test"; exit 2; fi
       python3 "$PH_HELPER" pass-header "$@"; exit $?
     fi
-
-    # Degraded path (no python3): bash implementation.
-    if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
-    PH_ART="$1"
-    PH_PD="${2:-}"
-    if [ -z "$PH_PD" ]; then
-      PH_ART_DIR=$(dirname "$PH_ART")
-      if [ -f "$PH_ART_DIR/pass-dependencies.md" ]; then
-        PH_PD="$PH_ART_DIR/pass-dependencies.md"
-      else
-        PH_PD="$PH_ART_DIR/../skills/core-editor/references/pass-dependencies.md"
-      fi
-    fi
-    if [ ! -f "$PH_PD" ]; then
-      echo "ERROR: pass-dependencies.md (§3 source of truth) not found at '${PH_PD}'. pass-header cannot validate without §3." >&2
-      exit 2
-    fi
-
-    # Parse §3 into pass→block and block→question maps (awk, scoped to the §3 section).
-    PH_S3=$(awk '
-      /^##[ \t]+§3([. ]|$)/ { in3=1; next }
-      in3 && /^##[ \t]/ { exit }
-      in3 && /^\|/ { print }
-    ' "$PH_PD")
-    # pass→block lines: "<pass>\t<block>"; block→question lines: "<block>\t<question>".
-    PH_MAP=$(echo "$PH_S3" | awk -F'|' '
-      {
-        b=$2; p=$3; q=$4;
-        gsub(/^[ \t]+|[ \t]+$/, "", b); gsub(/^[ \t]+|[ \t]+$/, "", p); gsub(/^[ \t]+|[ \t]+$/, "", q);
-        gsub(/^"|"$/, "", q);
-        if (b=="" || b=="Macro Block" || b ~ /^[-: ]+$/) next;
-        n=split(p, ids, /[^0-9]+/);
-        for (i=1;i<=n;i++) if (ids[i] != "") print "P\t" ids[i] "\t" b;
-        print "Q\t" b "\t" q;
-      }
-    ')
-    if [ -z "$PH_MAP" ]; then
-      echo "ERROR: could not parse §3 Macro Block Definitions from '${PH_PD}' — no blocks extracted." >&2
-      exit 2
-    fi
-
-    # Locate the header line (leading anchor).
-    PH_LINE=$(grep -nE '^[[:space:]]*>[[:space:]]*\*\*Macro block:\*\*' "$PH_ART" | head -1 | cut -d: -f2-)
-    if [ -z "$PH_LINE" ]; then
-      echo "WARN: '${PH_ART}' — no §3 pass header found (H1). A header-less legacy artifact is tolerated; new pass artifacts must carry the § 3 header."
-      exit 0
-    fi
-
-    # Extract the three fields.
-    PH_BLOCK=$(echo "$PH_LINE" | sed -E 's/.*\*\*Macro block:\*\*[[:space:]]*//; s/[[:space:]]*(·|\|)[[:space:]]*\*\*Writer question:\*\*.*//')
-    PH_Q=$(echo "$PH_LINE" | sed -E 's/.*\*\*Writer question:\*\*[[:space:]]*//; s/[[:space:]]*(·|\|)[[:space:]]*\*\*Legacy pass id:\*\*.*//')
-    PH_PASS=$(echo "$PH_LINE" | sed -E 's/.*\*\*Legacy pass id:\*\*[[:space:]]*Pass[[:space:]]*//; s/[[:space:]]*$//')
-    if [ -z "$PH_BLOCK" ] || [ -z "$PH_Q" ] || [ -z "$PH_PASS" ]; then
-      echo "ERROR: '${PH_ART}' — pass header has an empty field (H3): block='${PH_BLOCK}' question='${PH_Q}' pass='${PH_PASS}'."
-      exit 1
-    fi
-
-    PH_ERRORS=0
-    PH_BLOCKS=$(echo "$PH_MAP" | awk -F'\t' '$1=="Q"{print $2}')
-    if ! echo "$PH_BLOCKS" | grep -qxF "$PH_BLOCK"; then
-      echo "ERROR: '${PH_ART}' — Macro block '${PH_BLOCK}' is not one of the 8 §3 blocks (H2)."
-      PH_ERRORS=$((PH_ERRORS + 1))
-    else
-      PH_CANON=$(echo "$PH_MAP" | awk -F'\t' -v p="$PH_PASS" '$1=="P" && $2==p {print $3; exit}')
-      if [ -z "$PH_CANON" ]; then
-        echo "WARN: '${PH_ART}' — Legacy pass id 'Pass ${PH_PASS}' is not mapped to a macro block in §3; cannot verify block↔pass agreement (H2)."
-      elif [ "$PH_CANON" != "$PH_BLOCK" ]; then
-        echo "ERROR: '${PH_ART}' — Macro block '${PH_BLOCK}' does not match §3's canonical block for Pass ${PH_PASS}, which is '${PH_CANON}' (H2)."
-        PH_ERRORS=$((PH_ERRORS + 1))
-      fi
-      PH_EXPQ=$(echo "$PH_MAP" | awk -F'\t' -v b="$PH_BLOCK" '$1=="Q" && $2==b {print $3; exit}')
-      if [ -n "$PH_EXPQ" ] && [ "$PH_EXPQ" != "$PH_Q" ]; then
-        echo "ERROR: '${PH_ART}' — Writer question '${PH_Q}' does not match §3's User Question for block '${PH_BLOCK}', which is '${PH_EXPQ}' (H2)."
-        PH_ERRORS=$((PH_ERRORS + 1))
-      fi
-    fi
-
-    if [ "$PH_ERRORS" -gt 0 ]; then
-      echo ""
-      echo "FAILED: ${PH_ERRORS} pass-header failure(s). §3 (Macro Block Definitions) in pass-dependencies.md is the single source of truth."
-      exit 1
-    fi
-    echo "OK: pass header for '${PH_ART}' agrees with §3 (block ∈ 8, block↔pass map, User Question)."
+    echo "WARN: python3 unavailable — pass-header skipped; check inline that the header's block/question/pass id agree with pass-dependencies.md §3 (block ∈ the 8, the block↔pass map is by pass not by run, and the Writer question is §3's User Question — never authored). See references/example-pass-artifact-header.md."
     exit 0
     ;;
 
