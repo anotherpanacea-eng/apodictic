@@ -611,7 +611,39 @@ def bible(text, strict=False):
         overridden = any(pair <= idset for pair in all_pair_overrides)
         return cstate.derive_state(True, overridden)  # a written ledger row is always a collision
 
-    errs.extend(cstate.check_row_states(cstate.state_rows(text, _WF_REF_RE), _derived_state))
+    # X1(b) — ledger-row referential integrity (R1(b), the register-neutral leg). Over EVERY ledger
+    # data row (ALL rows, pre-axis included — the check does not depend on the State column): each row
+    # must pair >=2 DISTINCT WF ids AND every id must resolve to a real, well-formed world_fact block.
+    # A fabricated id (WF-88 for a fact that does not exist) or a single-id row would otherwise pass to
+    # the conflicting-rollup and cite a phantom contradiction into the editorial letter. This is the
+    # id-EXISTENCE leg only — it does NOT adjudicate whether the two facts truly collide (that would
+    # author the tension the arms deliberately leave to the author); it only proves the row points at
+    # real, distinct facts (mirrors continuity_bible C3's referential-integrity legs). ERRORs here fail
+    # the file BEFORE the rollup runs (the rollup only runs on an empty errs list), so a bad row never
+    # reaches the letter.
+    valid_ids = {obj.get("id") for obj in valid}
+    for ids, _token, _cells in cstate.state_rows(text, _WF_REF_RE):
+        uniq = sorted(set(ids))
+        tag = "+".join(uniq) if uniq else "<no ids>"
+        if len(uniq) < 2:
+            errs.append("X1 ledger integrity: Contradiction-Ledger row [%s] references fewer than 2 "
+                        "distinct world_fact ids (a contradiction pairs at least two stated facts)" % tag)
+            continue
+        missing = [i for i in uniq if i not in valid_ids]
+        if missing:
+            errs.append("X1 ledger integrity: Contradiction-Ledger row [%s] references id(s) %s that "
+                        "resolve to no well-formed world_fact block (a ledger row must cite real, "
+                        "parsed facts)" % (tag, ", ".join(missing)))
+
+    # Loud absence (adopted P3) — a ledger with data rows but NO `State` column is a pre-axis form; the
+    # column is additive and NOT required, so this is a WARN (rc stays 0), not an ERROR. Silence would
+    # let a bible sit indefinitely without the fact-state axis; the WARN nudges the author to add it.
+    _wf_rows = cstate.state_rows(text, _WF_REF_RE)
+    if _wf_rows and not cstate.has_state_column(text):
+        warns.append("Contradiction Ledger has %d row(s) but no State column — pre-axis form; add the "
+                     "State column per the reference module" % len(_wf_rows))
+
+    errs.extend(cstate.check_row_states(_wf_rows, _derived_state))
     if cstate.severity_leak(text):
         errs.append("X1 firewall: the Contradiction Ledger carries an editorial Must/Should/Could-Fix "
                     "token — a contradiction is a fact-state, not a defect (severity is orthogonal; "
@@ -1007,6 +1039,24 @@ def run_self_test():
                         + "| Karth | place | WF-10, WF-11 | conflicting | surfaced |\n")
     chk("x1_world_conflicting_rollup",
         code == 0 and any("CONFLICTING WF-10+WF-11" in ln for ln in lines))
+    # X1(b) ledger-row referential integrity (R1(b)) — a row that cites FABRICATED ids (no such facts)
+    # must FAIL, and must NOT reach the conflicting rollup (a phantom contradiction must never be cited
+    # into the editorial letter). Fail-before-fix: pre-fold this row PASSed (code 0) and emitted a
+    # CONFLICTING line for ids that resolve to nothing.
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-88, WF-89 | conflicting | fabricated ids |\n")
+    chk("x1_world_fabricated_id_row_fails",
+        code == 1 and any("X1 ledger integrity" in ln for ln in lines))
+    chk("x1_world_fabricated_id_row_not_rolled_up",
+        not any("CONFLICTING" in ln for ln in lines))
+    # a SINGLE-id row (fewer than 2 distinct facts) must FAIL and must NOT roll up (a contradiction
+    # pairs at least two stated facts).
+    code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
+                        + "| Karth | place | WF-10 | conflicting | single id |\n")
+    chk("x1_world_single_id_row_fails",
+        code == 1 and any("X1 ledger integrity" in ln and "fewer than 2" in ln for ln in lines))
+    chk("x1_world_single_id_row_not_rolled_up",
+        not any("CONFLICTING" in ln for ln in lines))
     # HOSTILE: that same un-overridden pair asserted `apparent` -> derives conflicting -> mismatch FAIL
     code, lines = bible(pl1 + "\n" + pl2 + W_LEDGER
                         + "| Karth | place | WF-10, WF-11 | apparent | claims staged |\n")
@@ -1043,11 +1093,19 @@ def run_self_test():
     #  State parse sees NO live override -> derives conflicting, so the apparent label mismatches too)
     chk("x1_world_codespan_override_does_not_silence",
         code == 1 and (any("X1 State agreement" in ln for ln in lines) or any("WB-R1" in ln for ln in lines)))
-    # a pre-axis ledger (no State column) is still accepted — the column is additive
-    chk("x1_world_preaxis_ledger_ok",
+    # a pre-axis ledger (no State column) is still accepted (rc 0 — the column is additive) but now
+    # WARNs loudly (adopted P3: silence would let a bible sit indefinitely without the fact-state axis).
+    _pre_code, _pre_lines = bible(pl1 + "\n" + pl2 + "\n## Contradiction Ledger\n\n"
+                                  "| Subject | Arm | Conflicting facts | Author's note |\n|---|---|---|---|\n"
+                                  "| Karth | place | WF-10, WF-11 | surfaced |\n")
+    chk("x1_world_preaxis_ledger_ok", _pre_code == 0)
+    chk("x1_world_preaxis_ledger_warns_no_state",
+        any("no State column" in ln for ln in _pre_lines))
+    # ...and under --strict the additive-column nudge escalates to an ERROR (rc 1), like the other warns.
+    chk("x1_world_preaxis_ledger_strict_fails",
         bible(pl1 + "\n" + pl2 + "\n## Contradiction Ledger\n\n"
               "| Subject | Arm | Conflicting facts | Author's note |\n|---|---|---|---|\n"
-              "| Karth | place | WF-10, WF-11 | surfaced |\n")[0] == 0)
+              "| Karth | place | WF-10, WF-11 | surfaced |\n", strict=True)[0] == 1)
 
     # no blocks -> no-op
     chk("no_facts_noop", bible("# Notes\nnothing structured\n")[0] == 0)

@@ -122,6 +122,36 @@ def state_rows(text, id_re):
     return out
 
 
+def has_state_column(text):
+    """True iff a `## Contradiction Ledger` table carries a `State` column (an exact-`state` header
+    cell, the same detection state_rows uses to locate `state_idx`). A caller uses this WITH the row
+    count to distinguish a *pre-axis* ledger (data rows but no State column — the additive column was
+    never added) from a State-axis ledger whose cells merely happen to be blank (token=None per row):
+    only the former warrants the loud pre-axis WARN. Mirrors the state_rows section-scan + header
+    detection exactly so the two never disagree."""
+    in_section, header_seen = False, False
+    for ln in (text or "").split("\n"):
+        if re.match(r"^##\s+.*Contradiction\s+Ledger", ln, re.IGNORECASE):
+            in_section, header_seen = True, False
+            continue
+        if in_section and re.match(r"^##\s", ln):
+            break
+        if not in_section or not ln.lstrip().startswith("|"):
+            continue
+        cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+        if _is_alignment_row(cells):
+            continue
+        low = [c.lower() for c in cells]
+        is_header = (not header_seen) and (
+            "state" in low
+            or (any("entity" == c or "subject" == c for c in low)
+                and any(c in ("attribute", "arm", "conflicting facts") for c in low)))
+        if is_header:
+            header_seen = True
+            return "state" in low
+    return False
+
+
 def check_row_states(rows, derived_for):
     """Cross-check each parsed ledger row's author-written `State` token against the mechanically
     derived state. `rows` is state_rows(...) output; `derived_for(ids)` returns EITHER the derived
@@ -222,6 +252,14 @@ def _self_test():
                "|---|---|---|---|\n"
                "| Mara | age | CF-03, CF-04 | 30 vs 32 |\n")
     chk("preaxis_token_none", state_rows(preaxis, CF)[0][1] is None)
+
+    # has_state_column — distinguishes a State-axis ledger from a pre-axis one (the adopted-P3
+    # loud-absence WARN keys on this). A blank-celled State column is STILL a State column (has it);
+    # a decoy `Statement` header is NOT the State column; a pre-axis ledger has none.
+    chk("has_state_column_true", has_state_column(cont) is True)
+    chk("has_state_column_preaxis_false", has_state_column(preaxis) is False)
+    chk("has_state_column_statement_decoy_false", has_state_column(decoy) is False)
+    chk("has_state_column_no_ledger_false", has_state_column("# no ledger here\n") is False)
 
     # the ledger section ends at the next ## heading
     scoped = cont + "\n## Notes\n\n| not | a | ledger | row | here |\n"

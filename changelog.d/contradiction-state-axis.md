@@ -31,6 +31,18 @@ a bad enum token (FAIL), and a code-span-quoted override that must not silence (
 mirror byte-identical; the self-testable validator count is unchanged (arms-on-existing, not a new
 validator).
 
+**Fold hardening (review + code-scan follow-up).** The `X1` arm now also enforces **ledger-row
+referential integrity**: over every ledger data row (all rows, pre-axis included), each row must pair
+at least two *distinct* `WF-NN` / `CF-NN` ids that each resolve to a real, well-formed `world_fact` /
+`canon_fact` block — a fabricated id or a single-id row FAILs (`X1 ledger integrity`) and, crucially,
+never reaches the `conflicting`-row prose rollup, so a phantom contradiction can no longer be cited
+into the editorial letter. This is the id-existence leg only (the register-neutral one): it does not
+adjudicate whether the two facts truly collide (that stays the author's call). A ledger with data rows
+but **no `State` column** is now a **loud pre-axis WARN** (ERROR under `--strict`) rather than silent —
+the additive column is nudged, not forced. And the shared `contradiction_state.py --self-test` (the
+truth-table / State-column-parse / `Statement`-decoy / X1-regex cases), previously invoked by nothing
+in CI, is now wired into `continuity-bible --self-test`, so it runs under `--self-test-all`.
+
 Anchors the axis on *Lost in Stories: Consistency Bugs in Long Story Generation by LLMs*
 (Li, Guo, Wu, Lee, Li, Xie), **arXiv:2603.05890** (ConStory-Bench / ConStory-Checker — the
 factual/temporal, mid-narrative contradiction taxonomy that confirms a contradiction is a locatable
