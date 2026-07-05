@@ -73,6 +73,35 @@ author-facing sections (Cast, Places, World Rules, Objects, Chronology) plus a
 A contradiction is recorded as one `canon_fact` per conflicting value, plus a Contradiction-Ledger
 row pairing their ids — the row names ≥2 ids that share entity+attribute but assert different values.
 
+The ledger table carries a **`State` column** — the contradiction axis, orthogonal to editorial
+severity (the shared `contradiction_state` helper, also used by the [worldbuilding
+bible](worldbuilding-bible.md)):
+
+| State | Meaning | When |
+|---|---|---|
+| `conflicting` | a live, un-explained collision | the default for any written ledger row |
+| `apparent` | a collision the author marks intentional / explained in-world | the pair carries a `<!-- override: bible-contradiction CF-NN/CF-MM — <in-world rationale> -->` marker (order-insensitive) |
+| `consistent` | no collision | **never written as a row** — a consistent fact needs no ledger entry |
+
+The state is **mechanically derived, never judged**: the validator computes it from the literal
+collision + the override presence and rejects a `State` value that disagrees (X1). The override slug is
+`bible-contradiction` — distinct from `bible-rederive` (the C4 chronology-consume escape hatch, not a
+contradiction resolution). Every ledger row must pair **at least two distinct `CF-NN` ids that each
+resolve to a real, well-formed `canon_fact` block** — a fabricated or single id FAILs X1 referential
+integrity (a row must cite real, distinct facts). The register **never** carries an editorial-severity token or an
+`apodictic:finding` block — a contradiction is a fact-state, not a defect (X1 firewall, the
+Content-Advisory A3 precedent). A ledger with data rows but no `State` column is the pre-axis form:
+accepted (the column is additive) but WARNed loudly (ERROR under `--strict`).
+
+### Feeding the letter (Stage A — prose citation)
+
+When the Bible runs inside a dev-edit, the editorial letter references each `conflicting` row **by
+prose citation** (the Legal-Risk / Content-Advisory / Setup–Payoff precedent), so an unresolved
+self-contradiction reaches the author's revision plan. The validator emits the conflicting rows (the
+id-pair) for the letter to cite. An `apparent` (overridden) row is intentional and is **not** cited.
+No other validator consumes the register — promoting a `conflicting` row into a severity-bearing
+finding is a rejected anti-pattern (a contradiction has its own axis, not the Must/Should/Could scale).
+
 ## How to extract (the model's job)
 
 1. **Consume first.** Read the Timeline (scene ids, settings), the Pass-5 character portraits
@@ -83,7 +112,11 @@ row pairing their ids — the row names ≥2 ids that share entity+attribute but
    aliases), named objects of significance, and place details no upstream artifact owns. Quote every
    numeric value. Cite the locus for each.
 3. **Build the Contradiction Ledger.** Wherever the text asserts two different values for the same
-   entity+attribute, record both facts and pair them in a ledger row. Do not adjudicate.
+   entity+attribute, record both facts and pair them in a ledger row with a `State` of `conflicting`.
+   Do not adjudicate. If (and only if) the author has explicitly staged the collision as intentional
+   (a repaint, a name change in story time), add a `<!-- override: bible-contradiction CF-NN/CF-MM —
+   <in-world rationale> -->` marker and set that row's `State` to `apparent`. Never invent an override
+   to silence a real conflict — the validator rejects a `State` that disagrees with the override reality.
 
 ## What it is not
 
