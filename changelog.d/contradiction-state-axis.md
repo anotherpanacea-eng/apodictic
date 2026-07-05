@@ -36,7 +36,16 @@ referential integrity**: over every ledger data row (all rows, pre-axis included
 at least two *distinct* `WF-NN` / `CF-NN` ids that each resolve to a real, well-formed `world_fact` /
 `canon_fact` block — a fabricated id or a single-id row FAILs (`X1 ledger integrity`) and, crucially,
 never reaches the `conflicting`-row prose rollup, so a phantom contradiction can no longer be cited
-into the editorial letter. This is the id-existence leg only (the register-neutral one): it does not
+into the editorial letter. **Codex-P1 hardening (world-bible):** the `X1` ledger-integrity check now
+also runs the C3-parity legs as a pure field recompute over the parsed `world_fact` blocks — the cited
+facts must share the same `subject` AND record DIFFERENT declarations (the normalized value / polarity /
+cost triple the arms read). A row that cites two facts about different subjects, or two facts recording
+identical declarations (Codex's exact repro: two identical `place` facts labeled `conflicting`),
+previously passed clean and rolled up a phantom contradiction into the letter; it now FAILs
+(`X1 ledger integrity`) and never reaches the rollup. No arm restructuring and no semantic judgment
+(same-subject/different-declaration pairs stay legal regardless of polarity — a declared tension the
+literal arms can't see is the author's call), exactly the class continuity C3 already enforces via its
+same-entity + differing-value legs. This is still the register-neutral leg set: it does not
 adjudicate whether the two facts truly collide (that stays the author's call). A ledger with data rows
 but **no `State` column** is now a **loud pre-axis WARN** (ERROR under `--strict`) rather than silent —
 the additive column is nudged, not forced. And the shared `contradiction_state.py --self-test` (the
