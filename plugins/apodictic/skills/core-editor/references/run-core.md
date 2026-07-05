@@ -42,6 +42,8 @@ FORMAT: [novel / novella / collection / composite novel]
 
 **For composite works:** Note whether text has unified arc or functions as discrete pieces.
 
+**For narrative nonfiction** (constraint resolves to narrative nonfiction per `nonfiction-intake-routing.md`): additionally draft the optional narrative-nonfiction block — `CENTRAL QUESTION:` (what the reader wants answered) and `PROMISE TYPE: [Reveal / Explain / Verdict / Portrait / Lesson]` (what kind of answer the piece offers) — and confirm both with the author in Step 2 alongside the rest of the draft schema. Field definitions and vocabulary: `contract-template.md` §Contract Schema (narrative-nonfiction block), grounded in the Central Question & Promise Map (`specialized-audits/references/genre/narrative-nonfiction.md` §Step 2). LC/E lead-contract codes are audit-time diagnostics and reach the run only as Findings-Ledger entries, never as contract fields.
+
 ### Controlling Idea
 
 Format: [Value] + [Cause]
