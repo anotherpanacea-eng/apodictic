@@ -153,6 +153,8 @@ Use these filenames within run folders:
 - `[Project]_Annotation_Manifest_[runlabel].md` — Annotated-Manuscript deliverable, **offered at run-end** (only when a `*_DE_Synthesis_*` letter was written; see `run-synthesis.md §Annotated Manuscript + Crosslinked Letter`)
 - `[Project]_Annotated_Manuscript_[runlabel].md` — the snapshot with CriticMarkup margin comments (one per finding)
 - `[Project]_Crosslinked_Letter_[runlabel].md` — the editorial letter back-linked to the margin comments
+- `[Project]_Contract_Map_[runlabel].md` — Reader-Contract Reverse Outline plumbing: one `apodictic.contract_map.v1` block (ids-only clause→scene localization), gated before the outline projector consumes it (**offered at run-end** with the outline; see `run-synthesis.md §Reader-Contract Reverse Outline`)
+- `[Project]_Reader_Contract_Outline_[runlabel].md` — the book scene by scene, mapped against its reader contract; a byte-deterministic projection of Pass 0 + Contract + Ledger + the gated Contract Map (see `references/reader-contract-outline.md`)
 
 **Full DE (additional):**
 - `[Project]_Pass3_Rhythm_Modulation_[runlabel].md`
