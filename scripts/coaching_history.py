@@ -700,10 +700,20 @@ def _h5_scan(project_root, sidecar_obj, strict, self_history_text=None):
             errs.append("H5.i single-home: %s carries an apodictic:coaching_observation block — "
                         "observations live ONLY in the Coaching History artifact (no projection)"
                         % name)
-        # (ii) the literal schema-id string outside the artifact — ALL .md, no manuscript exclusion.
-        if _SCHEMA_ID in body:
-            errs.append("H5.ii single-home: %s carries the literal schema-id %r outside the "
-                        "Coaching History artifact" % (name, _SCHEMA_ID))
+        # (ii) the schema-id INSIDE an apodictic block comment outside the artifact — a malformed
+        #      block that (i)'s JSON parser rejected but that still carries the id (a real projection).
+        #      Scoped to the block-comment carrier (apodictic_artifacts.BLOCK_RE, the SSoT) so a
+        #      BARE-PROSE mention of the schema name — e.g. a project whose subject IS apodictic —
+        #      is NOT a false projection (it carries no observation). A de-structured raw paste with
+        #      no comment wrapper is caught by (iii)'s evidence grammar. (ii) is non-overridable, so
+        #      it must not fire on legitimate prose that merely names the schema.
+        if art is not None:
+            _id_in_block = any(_SCHEMA_ID in payload for _bt, payload in art.BLOCK_RE.findall(body))
+        else:
+            _id_in_block = _SCHEMA_ID in body  # degraded (no BLOCK_RE): conservative substring
+        if _id_in_block:
+            errs.append("H5.ii single-home: %s carries the schema-id %r inside an apodictic block "
+                        "comment outside the Coaching History artifact" % (name, _SCHEMA_ID))
         # (iii)/(CH-token) carry manuscript false-positive risk — SKIP the frozen manuscript snapshot.
         if ap in manuscript_abs:
             continue
@@ -1261,6 +1271,23 @@ def run_self_test():
         with open(os.path.join(d, "P_Manuscript_Snapshot_run5.md"), "w", encoding="utf-8", newline="\n") as fh:
             fh.write("# Chapter 12\n\n" + obs() + "\n")
         chk("f1_manuscript_block_still_caught", run([d])[0] == 1)
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+    # (F1-d) a BARE-PROSE mention of the schema-id (a project whose subject IS apodictic — design
+    #        notes naming the schema) must NOT trip the non-overridable H5.ii; a schema-id inside an
+    #        apodictic block comment (a real, if malformed, projection) still MUST.
+    d = tempfile.mkdtemp()
+    try:
+        build_project(d)
+        with open(os.path.join(d, "Design_Notes.md"), "w", encoding="utf-8", newline="\n") as fh:
+            fh.write("# Notes on the tool\n\nThe `apodictic.coaching_observation.v1` schema is a "
+                     "closed-key block; this document merely discusses it.\n")
+        chk("f1_bare_schema_mention_not_tripped", run([d], strict=True)[0] == 0)
+        with open(os.path.join(d, "Design_Notes.md"), "w", encoding="utf-8", newline="\n") as fh:
+            fh.write("# Notes\n\n<!-- apodictic:coaching_observation\n{bad json \"schema\": "
+                     "\"apodictic.coaching_observation.v1\"}\n-->\n")
+        chk("f1_malformed_block_schema_id_caught", run([d])[0] == 1)
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
