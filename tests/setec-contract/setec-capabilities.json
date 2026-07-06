@@ -1,5 +1,5 @@
 {
-  "setec_version": "1.118.0",
+  "setec_version": "1.122.0",
   "manifest_schema_version": "0.3.0",
   "entries": [
     {
@@ -477,6 +477,128 @@
       "calibration_status": "literature_anchored"
     },
     {
+      "id": "position_pair_register",
+      "script_path": "plugins/setec-voiceprint/scripts/position_pair_register.py",
+      "surface": "position_pair_register",
+      "status": "literature_anchored",
+      "handoff": "experimental",
+      "consumers": [
+        "apodictic"
+      ],
+      "min_setec_version": "1.121.0",
+      "json_delivery": "stdout",
+      "family": "argument-consistency",
+      "purpose": "Register of passage PAIRS in one long nonfiction argument-shaped work that address the SAME question Q (LLM-judge), each pair carrying a neutral interrogative Q and both passages' verbatim loci (doc, start_char, end_char, quote), emitted in DOCUMENT ORDER. It asserts NO relation between the paired passages — not agreement, not conflict, not contradiction, not tension, not which passage is right. The model only points at two passages that share a question; the HUMAN reads both and owns 100% of the conflict call. This is the deliberate NON-step across the content-verdict wall (the task is split so the model cannot assert opposition). Two mechanical, posture-critical gates carry the firewall: the F4 Q-string gate (a surfaced question must be interrogative in FORM and free of relation vocabulary — a case-folded substring scan — else the pair is REFUSED, counted, and disclosed; the form check is SYNTAX-ONLY and gives zero protection against loaded/presuppositional questions, so the human terminus is the guarantee) and the F3 runtime banned-key walk (RAISES on any relation key anywhere in the envelope, or any generic verdict key inside results.pairs, before the envelope is returned). Pair caps (default 12/question, 60/work, operator-tunable) are a DISCLOSURE: over-cap survivors are the first by document order and dropped loci are logged — never a tension/confidence ranking. Uncalibrated; no run-to-run determinism guarantee for live backends (mock/manifest are deterministic by construction). Register scope v1: nonfiction-argument only (declared in the claim surface, not gated). Anchors: ContraDoc (arXiv:2311.09182) contradiction-type taxonomy; BeliefShift (arXiv:2603.23848) position-drift framing.\n",
+      "use_when": [
+        "You have one long nonfiction argument-shaped work and want a human-facing register of passages that address the same question, as a reading aid (you decide any conflict)",
+        "You want passage pairs surfaced relation-free, with verbatim loci, so a human can check whether an author's stated position drifts across a work",
+        "You have an LLM judge (or a pre-computed pair manifest) and want the deterministic mock/manifest backend for CI"
+      ],
+      "do_not_use_when": [
+        "You want the tool to decide whether two passages conflict, contradict, or which is right (it refuses — the register asserts no relation; the human owns that call)",
+        "You are working on fiction or a narrator/character's beliefs (v1 is nonfiction-argument register only; a fiction arc can license a stated change, making false positives severe)",
+        "You need an exhaustive contradiction sweep or a clean bill of health (absence of a pair is NOT evidence of consistency)"
+      ],
+      "inputs": [
+        {
+          "flag": "target",
+          "type": "path",
+          "required": true
+        },
+        {
+          "flag": "--judge",
+          "type": "enum",
+          "required": false,
+          "values": [
+            "manifest",
+            "mock",
+            "anthropic",
+            "openai",
+            "gemini",
+            "agent_host"
+          ]
+        },
+        {
+          "flag": "--judge-manifest",
+          "type": "path",
+          "required": false
+        },
+        {
+          "flag": "--judge-model",
+          "type": "string",
+          "required": false
+        },
+        {
+          "flag": "--judge-temperature",
+          "type": "float",
+          "required": false
+        },
+        {
+          "flag": "--judge-max-tokens",
+          "type": "int",
+          "required": false
+        },
+        {
+          "flag": "--cap-per-question",
+          "type": "int",
+          "required": false
+        },
+        {
+          "flag": "--cap-per-work",
+          "type": "int",
+          "required": false
+        },
+        {
+          "flag": "--out",
+          "type": "path",
+          "required": false
+        },
+        {
+          "flag": "--out-md",
+          "type": "path",
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "type": "bool",
+          "required": false
+        }
+      ],
+      "outputs": {
+        "schema_version": "1.0",
+        "artifacts": [
+          "stdout markdown report (default), --json envelope, --out PATH, --out-md PATH"
+        ]
+      },
+      "compute": {
+        "tier": "api_llm",
+        "cost_note": "LLM judge per doc (per-work pairing) via Anthropic / OpenAI / Gemini; free with --judge manifest (pre-computed pairs); key-free with --judge agent_host (delegates to the host runtime's model). The mock backend is deterministic and CI-safe.",
+        "length_floor_words": 300
+      },
+      "registers": [
+        "blog_essay",
+        "testimony_policy"
+      ],
+      "dependencies": {
+        "python": []
+      },
+      "examples": [
+        {
+          "description": "Position-pair register with pre-computed pairs (JSON envelope)",
+          "cmd": "python3 plugins/setec-voiceprint/scripts/position_pair_register.py work.txt --judge manifest --judge-manifest pairs.json --json"
+        },
+        {
+          "description": "Direct API spot-check, markdown report to a file",
+          "cmd": "python3 plugins/setec-voiceprint/scripts/position_pair_register.py work.txt --judge anthropic --judge-model claude-sonnet-4-6 --out-md register.md"
+        }
+      ],
+      "references": [
+        "ContraDoc: Understanding Self-Contradictions in Documents with Large Language Models (Li, Raheja & Kumar), arXiv:2311.09182: https://arxiv.org/abs/2311.09182",
+        "BeliefShift: Benchmarking Temporal Belief Consistency and Opinion Drift in LLM Agents (Myakala, Agrawal & Manche), arXiv:2603.23848: https://arxiv.org/abs/2603.23848"
+      ],
+      "calibration_status": "literature_anchored"
+    },
+    {
       "id": "pov_voice_profile",
       "script_path": "plugins/setec-voiceprint/scripts/pov_voice_profile.py",
       "surface": "voice_coherence",
@@ -825,7 +947,8 @@
       "status": "empirically_oriented",
       "handoff": "stable",
       "consumers": [
-        "apodictic"
+        "apodictic",
+        "setec-voicewright"
       ],
       "min_setec_version": "1.86.0",
       "json_delivery": "stdout",
