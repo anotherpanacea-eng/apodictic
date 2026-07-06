@@ -399,7 +399,7 @@ Continuing the v0.5 vision: the plugin should be organized around writer questio
 
 - **Instrumentation.** APODICTIC-Gemini has a Cloud Run backend that could support event logging, but there's no current need for telemetry. Revisit when external users are active.
 - **Filename renames.** Keep pass-numbered filenames on disk. The Results Guide is the primary macro-block organizer. Bulk renames deferred unless usage shows writers navigate by detail files.
-- **Skill merges or renames.** Five-skill architecture stays. Skill loading is invisible to users. Evaluate only if handoff pain surfaces.
+- **Skill merges or renames.** The current six-skill architecture stays. Skill loading is invisible to users. Evaluate only if handoff pain surfaces.
 - **Editorial Letter renaming.** `Core_DE_Synthesis` and `Full_DE_Synthesis` work. Don't alias.
 
 ---
