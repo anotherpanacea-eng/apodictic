@@ -62,6 +62,8 @@ import re
 import sys
 import tempfile
 
+from severity_vocab import SEVERITY_TOKEN_RE  # SSoT: the editorial Must/Should/Could-Fix leak token
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -82,10 +84,11 @@ _SP_SCHEMA_ID = "apodictic.setup_payoff.v1"
 _PO_SCHEMA_ID = "apodictic.payoff.v1"
 _LEDGER_GLOB = "*_Setup_Payoff_Ledger_*.md"
 
-# X1 firewall — the ledger is a fact register, not a defect list. Mirrors content_advisory._SEVERITY_RE
-# (the A3 firewall applied here); an apodictic:finding block is caught by the parsed-block check, so a
-# file that merely NAMES the token in prose still FAILs (severity must never leak into the register).
-_SEVERITY_RE = re.compile(r"\b(?:Must|Should|Could)-Fix\b")
+# X1 firewall — the ledger is a fact register, not a defect list. The pattern is the shared
+# severity_vocab SSoT (M8), the A3 firewall applied here; an apodictic:finding block is caught by the
+# parsed-block check, so a file that merely NAMES the token in prose still FAILs (severity must never
+# leak into the register).
+_SEVERITY_RE = SEVERITY_TOKEN_RE
 
 _VALID_STATES = ("paid_off", "open", "abandoned")
 
