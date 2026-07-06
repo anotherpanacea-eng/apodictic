@@ -43,6 +43,8 @@ import os
 import re
 import sys
 
+from severity_vocab import SEVERITY_TOKEN_RE  # SSoT: the editorial Must/Should/Could-Fix leak token
+
 try:
     import apodictic_artifacts as art
 except ImportError:
@@ -50,9 +52,9 @@ except ImportError:
 
 # Guide filename glob (SKILL.md naming: `[Project]_Results_Guide_[runlabel].md`).
 _GUIDE_GLOB = "*_Results_Guide_*.md"
-# A3-style editorial-severity leak guard — copied from content_advisory._SEVERITY_RE. The guide is a
+# A3-style editorial-severity leak guard — the shared severity_vocab SSoT (M8). The guide is a
 # navigation index, not a defect list: a Must/Should/Could-Fix token means it started diagnosing.
-_SEVERITY_RE = re.compile(r"\b(?:Must|Should|Could)-Fix\b")
+_SEVERITY_RE = SEVERITY_TOKEN_RE
 # A backtick token is a run-folder CITATION only when it ends in a run-artifact extension (.md/.json).
 # This EXTENSION GUARD is deliberate: the "What to do next" section legitimately carries command
 # tokens in backticks — `/coach`, `/audit [name]` — which are NOT files and must not be traced as

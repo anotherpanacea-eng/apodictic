@@ -46,6 +46,7 @@ import re
 import sys
 
 from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+from severity_vocab import SEVERITY_TOKEN_RE  # SSoT: the editorial Must/Should/Could-Fix leak token
 
 try:
     import apodictic_artifacts as art
@@ -59,7 +60,8 @@ _VF_REF_RE = re.compile(r"\bVF-[A-Za-z0-9-]+\b")
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 _LOCAL_ONLY_RE = re.compile(r"<!--\s*author-voice-profile:\s*local-only\s*-->", re.IGNORECASE)
 _EXTERNAL_URL_RE = re.compile(r"https?://", re.IGNORECASE)
-_SEVERITY_RE = re.compile(r"\b(?:Must|Should|Could)-Fix\b")
+# The editorial Must/Should/Could-Fix leak token; the shared severity_vocab SSoT (M8).
+_SEVERITY_RE = SEVERITY_TOKEN_RE
 # F4 — a prescriptive directive aimed at the author's voice (the module describes, never prescribes).
 _PRESCRIPTIVE_RE = re.compile(
     r"\byou\s+(?:should|must|need\s+to|ought\s+to|have\s+to|'?d\s+better)\b"
