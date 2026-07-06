@@ -1,0 +1,93 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": null,
+  "claim_license": {
+    "additional_caveats": [
+      "Determinism: there is NO run-to-run determinism guarantee for live backends; an LLM extraction surface is not bit-deterministic. Human re-review absorbs the drift. CI determinism rides the mock/manifest backend (deterministic by construction).",
+      "Caps are a DISCLOSURE, not a judgment: over-cap survivors are the FIRST N pairs by document order and every dropped pair's loci are logged (results.pairs_dropped_cap_loci). There is no tension/confidence/model-order ranking anywhere.",
+      "The Q-gate's banned-vocabulary scan is a case-folded SUBSTRING match, so it conservatively refuses some legitimate topics that contain a banned stem ('counterargument', 'incompatibilist', 'conflict of interest', 'encounter'). This over-refusal is accepted by design — a word-boundary rule would weaken the guard.",
+      "Judge backend is `mock` — a deterministic TEST stub, not a real reader. Do not infer anything about the work from a mock run."
+    ],
+    "comparison_set": {
+      "judge_kind": "mock",
+      "judge_model": "(unspecified)",
+      "mode": "same_question_pairs_uncalibrated",
+      "prompt_fingerprint_sha256": "example-fixture-fingerprint",
+      "register_scope": "nonfiction-argument only (v1)"
+    },
+    "confidence_interval_95": null,
+    "does_not_license": "It does NOT license any claim that the two passages ARE in conflict, contradiction, tension, or opposition — the register asserts no relation whatsoever; the human reads both passages and owns 100% of that call. It does NOT license which passage is correct, better, or which the author 'really' holds. It is NOT exhaustive: the absence of a pair is NOT evidence of consistency and confers no clean bill of health. It does NOT license application to fiction or a narrator/character's beliefs — v1 is the nonfiction-argument register only (a fiction arc can license a stated change, making false positives severe).",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "a register of passage PAIRS in one nonfiction argument-shaped work that address the SAME question Q, each pair carrying a neutral interrogative Q and both passages' verbatim loci (doc, start_char, end_char, quote), emitted in DOCUMENT ORDER. It licenses ONLY the observation that the two passages both speak to the same question — a pointer for a human to read both, nothing more.",
+    "references": [
+      "ContraDoc: Understanding Self-Contradictions in Documents with Large Language Models (Li, Raheja & Kumar), arXiv:2311.09182 — the contradiction-type taxonomy informs what 'same question' pairing must catch; https://arxiv.org/abs/2311.09182",
+      "BeliefShift (opinion-drift / belief-consistency benchmark), arXiv:2603.23848 — the position-drift framing; https://arxiv.org/abs/2603.23848 (sweep-sourced id, Mar 2026)."
+    ],
+    "register_match": [
+      "argument-shaped nonfiction (op-ed / policy / testimony)"
+    ],
+    "task_surface": "position_pair_register"
+  },
+  "results": {
+    "calibration_status": "uncalibrated",
+    "caps": {
+      "per_question": 12,
+      "per_work": 60
+    },
+    "judge": {
+      "judge_identity": {
+        "kind": "mock"
+      }
+    },
+    "pairs": [
+      {
+        "a": {
+          "doc": "target",
+          "end_char": 85,
+          "quote": "A well-designed carbon price is the most efficient lever available to a modern state.",
+          "start_char": 0
+        },
+        "b": {
+          "doc": "target",
+          "end_char": 253,
+          "quote": "Pricing carbon directly is the single most effective policy a government can adopt.",
+          "start_char": 170
+        },
+        "question": "What is the author's position on carbon pricing?"
+      },
+      {
+        "a": {
+          "doc": "target",
+          "end_char": 392,
+          "quote": "Dedicated fuel levies should underwrite the bulk of new transit capacity.",
+          "start_char": 319
+        },
+        "b": {
+          "doc": "target",
+          "end_char": 510,
+          "quote": "General revenue, not user fees, ought to carry the cost of expanding transit.",
+          "start_char": 433
+        },
+        "question": "How should new transit capacity be funded?"
+      }
+    ],
+    "pairs_dropped_cap": 0,
+    "pairs_dropped_cap_loci": [],
+    "pairs_refused_q_gate": 0,
+    "pairs_refused_q_gate_reasons": [],
+    "prompt_fingerprint_sha256": "example-fixture-fingerprint",
+    "run_timestamp_utc": "2026-07-06T00:00:00Z"
+  },
+  "schema_version": "1.0",
+  "target": {
+    "path": "manuscript.txt",
+    "words": 84
+  },
+  "task_surface": "position_pair_register",
+  "tool": "position_pair_register",
+  "version": "0.1.0",
+  "warnings": []
+}
