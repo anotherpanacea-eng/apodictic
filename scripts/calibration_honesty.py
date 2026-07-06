@@ -93,7 +93,12 @@ _CS1 = re.compile(
 # CS2 — calibrated / verdict assertion (two patterns).
 _CS2 = (
     re.compile(r"\bcalibrated\s+(?:verdict|band|score|result|threshold)s?\b", re.IGNORECASE),
-    re.compile(r"\bverdict\s*[:=]"),  # `verdict:` / `verdict =` — a rendered verdict field
+    # `verdict:` / `verdict =` — a rendered verdict field. DELIBERATELY case-SENSITIVE (no IGNORECASE):
+    # a capitalized `**Verdict:**` / `## Readiness Verdict:` is a submission-readiness/severity-floor
+    # heading (severity-floor's turf, D5) and legitimately out-of-scope for the calibration-band check;
+    # only a lower-case decision-audit `verdict:` field is CS2's target. IGNORECASE here would false-fire
+    # on every readiness verdict heading. See the `**Verdict:**`-shaped negative fixture in run_self_test.
+    re.compile(r"\bverdict\s*[:=]"),
 )
 # CS3 — threshold claim on a thresholds-null surface (two patterns).
 _CS3 = (
@@ -337,6 +342,15 @@ def run_self_test():
                   "This lands in the Highest Band for submission readiness.",
                   "Excellent Fit for the target market."):
         chk("fx7_readiness_disjoint::%s" % ready[:20], warns_of(ready) == [])
+
+    # Fixture 7b — capitalized verdict headings stay CLEAN (records CS2's deliberate case-sensitivity):
+    # a `**Verdict:**` / `## Readiness Verdict:` heading is a readiness/severity-floor field, out-of-scope
+    # for the calibration-band check. CS2's `verdict:` arm is case-sensitive by design so these do NOT fire
+    # (IGNORECASE would false-fire on every readiness verdict heading). If someone "fixes" the case, this
+    # fixture fails — the intended tripwire.
+    for cap_verdict in ("**Verdict:** Excellent Fit for the target market.",
+                        "## Readiness Verdict: publishable as-is."):
+        chk("fx7b_capital_verdict_clean::%s" % cap_verdict[:22], warns_of(cap_verdict) == [])
 
     # Fixture 8 — cross-contamination (PASS+WARN, attributed): one letter with a CLEAN narrative-decision
     # paragraph AND a VIOLATING argument-decision paragraph. Exactly one WARN, attributed to the violating
