@@ -63,6 +63,7 @@ import re
 import sys
 
 from override_marker import override_targets, override_payloads  # SSoT: code-span-stripped override scan
+from severity_vocab import SEVERITY_TOKEN_RE  # SSoT: the editorial Must/Should/Could-Fix leak token
 
 try:
     import apodictic_artifacts as art
@@ -76,7 +77,8 @@ _SL_REF_RE = re.compile(r"\bSL-[0-9]+\b")
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 _LOCAL_ONLY_RE = re.compile(r"<!--\s*author-style-explanation:\s*local-only\s*-->", re.IGNORECASE)
 _EXTERNAL_URL_RE = re.compile(r"https?://", re.IGNORECASE)
-_SEVERITY_RE = re.compile(r"\b(?:Must|Should|Could)-Fix\b")
+# X3 — the editorial Must/Should/Could-Fix leak token; the shared severity_vocab SSoT (M8).
+_SEVERITY_RE = SEVERITY_TOKEN_RE
 
 # X4 — a PRESCRIPTIVE construction aimed at the author's voice: a modal/imperative verb governing a
 # STYLE change ("you should vary your function-word profile", "tighten your sentences"). This is the

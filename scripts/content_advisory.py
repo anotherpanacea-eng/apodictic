@@ -49,6 +49,7 @@ import re
 import sys
 
 from override_marker import override_targets  # SSoT: code-span-stripped, boundary-matched override scan
+from severity_vocab import SEVERITY_TOKEN_RE  # SSoT: the editorial Must/Should/Could-Fix leak token
 
 try:
     import apodictic_artifacts as art
@@ -62,8 +63,9 @@ _ADVISORY_GLOB = "*_Content_Advisory_*.md"
 _LOCUS_RE = re.compile(
     r"\bch(?:apter)?\.?\s*\d+|§|¶|\blines?\s+\d+|\bp(?:g|ag\.?|\.)?\s*\d+|\bpara(?:graph)?\.?\s*\d+",
     re.IGNORECASE)
-# A3 — editorial severity tokens must not leak into the advisory (it is not a defect list).
-_SEVERITY_RE = re.compile(r"\b(?:Must|Should|Could)-Fix\b")
+# A3 — editorial severity tokens must not leak into the advisory (it is not a defect list). The pattern
+# is the shared severity_vocab SSoT (M8); the local alias keeps the A3 call sites byte-identical.
+_SEVERITY_RE = SEVERITY_TOKEN_RE
 # W1 — a PRESCRIPTIVE construction: a modal/recommend verb governing a revision action ("should cut
 # this scene") — NOT a bare descriptive adjective ("excessive blood loss"). `_PRESCRIPTIVE_RE` finds
 # the bare `<modal> … <action>` shape; `_prescribes()` then drops NEGATED instances. Negation scope is
