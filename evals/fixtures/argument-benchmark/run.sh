@@ -214,6 +214,9 @@ if [ "$#" -gt 0 ]; then SLUGS=("$@"); else SLUGS=($(printf '%s\n' "$PAIRS" | awk
 # by the same anchors a run uses, writes it to $SRC/<slug>.md, and verifies the
 # recorded SHA-256. This is the "ship a fetch-list, reconstitute locally" path:
 # copyrighted/public-domain text is never stored in the repo, only fetched here.
+# PDF sources (URL ends in .pdf, e.g. SOURCE_PDF fixtures) reconstitute only when
+# `pdftotext` (poppler) is installed; without it the PDF fixture fails loudly with
+# a manual path (blindness/hash discipline is identical — see the loop below).
 if [ "$FETCH_ONLY" -eq 1 ]; then
   command -v curl >/dev/null 2>&1 || die "curl not found (needed for --fetch)"
   echo "mode=fetch"; echo "src=$SRC"; echo
@@ -227,11 +230,23 @@ if [ "$FETCH_ONLY" -eq 1 ]; then
       else echo "SKIP  $s  (no URL in SOURCES.md — stored/manual fixture)"; fi
       continue
     fi
-    case "$url" in
-      *.pdf|*.PDF) echo "FAIL  $s  (analyzed text is a PDF: $url — --fetch's plain-text pipeline can't reconstitute it; fetch + convert (e.g. pdftotext) and place the body at \$SRC/$s.md manually)"; ffail=1; continue;;
-    esac
+    # PDF sources need a text-extraction step before the shared anchor/hash tail.
+    # If `pdftotext` (poppler) is present, fetch → convert → carve by the same
+    # anchors as an HTML fetch; otherwise keep the loud manual path, naming the
+    # `pdftotext` option so the operator knows the one dependency that unblocks it.
+    is_pdf=0
+    case "$url" in *.pdf|*.PDF) is_pdf=1;; esac
+    if [ "$is_pdf" -eq 1 ] && ! command -v pdftotext >/dev/null 2>&1; then
+      echo "FAIL  $s  (analyzed text is a PDF: $url — --fetch's plain-text pipeline needs \`pdftotext\` (poppler) to reconstitute it; install it (brew install poppler / apt-get install poppler-utils) and re-run, or fetch + convert and place the body at \$SRC/$s.md manually)"; ffail=1; continue
+    fi
     tmp="$(mktemp)"
     if ! curl -fsSL --max-time 90 "$url" -o "$tmp"; then echo "FAIL  $s  (fetch error: $url)"; rm -f "$tmp"; ffail=1; continue; fi
+    if [ "$is_pdf" -eq 1 ]; then
+      txt="$(mktemp)"
+      # -layout keeps reading order closest to the visible page; -q silences poppler notices.
+      if ! pdftotext -layout -q "$tmp" "$txt"; then echo "FAIL  $s  (pdftotext conversion failed: $url)"; rm -f "$tmp" "$txt"; ffail=1; continue; fi
+      rm -f "$tmp"; tmp="$txt"
+    fi
     body="$(extract_body "$tmp" "$s")"; rm -f "$tmp"
     [ -n "$body" ] || { echo "FAIL  $s  (empty after extract — check anchors)"; ffail=1; continue; }
     dest="$SRC/$s.md"; printf '%s\n' "$body" > "$dest"
