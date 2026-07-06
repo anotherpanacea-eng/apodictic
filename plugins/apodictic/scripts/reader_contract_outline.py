@@ -48,7 +48,9 @@ Validator (`reader-contract-outline`), gates R1-R7 (SPEC v3.1 §5):
   R4 no fabricated gap   every gap cell is `none logged` or a verbatim projection of the Ledger entry
                          whose finding_id the Map names; `none logged` is a valid, non-degraded state.
   R5 author-facing       no untranslated framework shorthand in the rendered outline (reuses the
-                         letter's author-facing-lint families).
+     (advisory WARN)     letter's author-facing-lint families, at the letter's warn-only tier; ERROR
+                         --strict; NO override slug — every content section is a verbatim projection,
+                         so a hit means the UPSTREAM artifact carried the shorthand: fix it there).
   R6 contract coverage   every recomputed clause (denominator from the Contract, per §4a) appears in
      (advisory WARN)     the Map/outline or carries the literal `not localizable to a scene`. WARN
                          marks ABSENCE only — a present-but-wrong entry is R7's ERROR. ERROR --strict.
@@ -59,6 +61,9 @@ Validator (`reader-contract-outline`), gates R1-R7 (SPEC v3.1 §5):
                          verbatim substring of its named source_field, every source_field present in
                          the Contract; not_localizable ⇒ empty scene lists; every gap_finding_id
                          resolves in the Ledger; clause denominator recomputed from the Contract.
+                         NON-NEGOTIABLES items are `;`-separated — the shipped contract convention
+                         (example-quality-risk-contract.md separates items whose prose carries
+                         internal commas with `;`); the denominator counts one clause per item.
 
 Reuses apodictic_artifacts (block grammar + closed-key schema engine), letter_checks
 (author-facing-lint families), override_marker (the override SSoT). See docs/reader-contract-outline.md.
@@ -248,6 +253,17 @@ def scene_knows_map(pass0_text):
 
 # ---------------------------------------------------------------- Ledger parsing
 
+def _fid(value):
+    """art.fid_key when the shared lib is available, else the same trivial coercion inline — so the
+    R7/gap-cell finding-id joins DEGRADE (never AttributeError) when apodictic_artifacts is absent,
+    consistent with the module's never-traceback posture (`_read` -> None, `parse_map` -> block-missing).
+    The coercion is fid_key's own: a malformed non-string id (JSON list/object/number) is str()-coerced
+    so it can never crash a dict key — the swept non-hashable-id crash class."""
+    if art is not None:
+        return art.fid_key(value)
+    return value if value is None or isinstance(value, str) else str(value)
+
+
 def ledger_findings(ledger_text):
     """{finding_id: finding_obj} for every apodictic.finding.v1 block. fid_key-normalized keys so a
     malformed non-string id never crashes the dict (the swept crash class)."""
@@ -408,7 +424,7 @@ def check_map_integrity(map_obj, schema_errs, pass0_text, contract_text, ledger_
                 errs.append("R7 map integrity: %s cites scene id %r, which is not a Pass 0 scene"
                             % (where, sid))
         gfid = cl.get("gap_finding_id")
-        if gfid is not None and art.fid_key(gfid) not in led:
+        if gfid is not None and _fid(gfid) not in led:
             errs.append("R7 map integrity: %s gap_finding_id %r does not resolve in the Findings Ledger"
                         % (where, gfid))
 
@@ -441,8 +457,8 @@ def check_map_integrity(map_obj, schema_errs, pass0_text, contract_text, ledger_
                     % (n_idea, idea_field))
     if n_nonneg != len(denom["nonneg_items"]):
         errs.append("R7 map integrity: %d NON-NEGOTIABLES clause(s); the Contract enumerates %d "
-                    "non-negotiable item(s) (recomputed from the artifact, never the Map)"
-                    % (n_nonneg, len(denom["nonneg_items"])))
+                    "non-negotiable item(s) (items are `;`-separated; recomputed from the artifact, "
+                    "never the Map)" % (n_nonneg, len(denom["nonneg_items"])))
     # ordering: promise block, then the single idea row, then the nonneg rows
     expected_order = ([_PROMISE_FIELD] * n_promise + [idea_field] * min(n_idea, 1)
                       + [_NONNEG_FIELD] * n_nonneg)
@@ -510,7 +526,7 @@ def render_outline(pass0_text, contract_text, ledger_text, map_obj, project, run
         if gfid is None:
             out.append("- gap: %s" % _NONE_LOGGED)
         else:
-            f = led.get(art.fid_key(gfid))
+            f = led.get(_fid(gfid))
             out.append("- gap: %s" % (gap_projection(f) if f else gfid))
         out.append("")
     # §5 Coverage note (advisory; every clause mapped or explicitly not-localizable)
@@ -628,7 +644,7 @@ def check(pass0_text, contract_text, ledger_text, map_text, outline_text, strict
         gfid = cl.get("gap_finding_id")
         if gfid is None:
             continue
-        f = led.get(art.fid_key(gfid))
+        f = led.get(_fid(gfid))
         if f is None:
             errs.append("R4 no fabricated gap: clause %s names gap_finding_id %r, absent from the "
                         "Ledger (a gap cell must project a real finding or be `%s`)"
@@ -639,14 +655,21 @@ def check(pass0_text, contract_text, ledger_text, map_text, outline_text, strict
             errs.append("R4 no fabricated gap: clause %s gap cell is not the verbatim projection of "
                         "finding %s (paraphrase is fabrication)" % (cl.get("clause_id"), gfid))
 
-    # ---- R5 author-facing language: no untranslated framework shorthand in the rendered outline
+    # ---- R5 author-facing language (advisory WARN; ERROR --strict; NO override slug): untranslated
+    #      framework shorthand in the rendered outline, via the letter's author-facing-lint families —
+    #      the spec's words are "reuse the letter's check", and the letter's lint is warn-only BY
+    #      DESIGN. Every content section of this outline is a VERBATIM PROJECTION of upstream artifacts
+    #      (contract fields via R2, spine via R1, evidence lines via R3, gap cells via R4), so a lint
+    #      hit here always means the UPSTREAM artifact contained the shorthand — a legibility advisory
+    #      this deliverable cannot fix and did not author, never a Firewall breach (R1-R4/R7 own
+    #      integrity). A hard ERROR here would deadlock a legitimate run whose Ledger mechanism names a
+    #      pass ("Pass 5 found…") with no escape. Deliberately NO override slug: the fix is to gloss or
+    #      reword the shorthand in the upstream artifact, not to silence the flag at the projection.
     if lc is not None:
-        _e, afl_w = lc.author_facing_lint(outline_text)[:2]
-        # author_facing_lint is warn-only by design; here framework shorthand in a DELIVERABLE is a hard
-        # firewall (the outline is pure projection — shorthand means a leaked contract/Pass-0 code), so
-        # we promote its warnings to R5 ERRORs (mirrors the letter's intent, applied to a projection).
+        _e5, afl_w = lc.author_facing_lint(outline_text)[:2]
         for w in afl_w:
-            errs.append("R5 author-facing language: %s" % w)
+            # the lint's own messages open with "WARN: " — strip it so the tier prefix isn't doubled
+            warns.append("R5 author-facing language: %s" % (w[6:] if w.startswith("WARN: ") else w))
 
     # ---- R6 contract coverage (advisory WARN; ERROR --strict). This is the SPLIT-completeness question
     #      §4a explicitly assigns to R6, NOT R7: the field-level floors (>=1 promise row, exactly 1 idea,
@@ -690,7 +713,7 @@ def check(pass0_text, contract_text, ledger_text, map_text, outline_text, strict
                      % (len(errs), ", %d strict warn(s)" % len(warns) if (strict and warns) else ""))
         return 1, lines
     if warns:
-        lines.append("WARN: reader-contract-outline: %d advisory coverage flag(s) — see R6 above" % len(warns))
+        lines.append("WARN: reader-contract-outline: %d advisory flag(s) — see R5/R6 above" % len(warns))
     else:
         lines.append("reader-contract-outline: PASS (spine + contract fidelity + map round-trip + "
                      "no fabricated gap + map integrity)")
@@ -864,6 +887,9 @@ def build(folder, out_stream=None):
     if out_stream is not None:
         out_stream.write(outline)
         return 0
+    # Containment invariant: `project` and `runlabel` derive from os.path.basename(p0) BEFORE any
+    # splitting, and a basename cannot contain a path separator — so neither component can carry one
+    # and this join cannot escape `folder` (no traversal surface; no sanitization needed).
     out_path = os.path.join(folder, "%s_Reader_Contract_Outline_%s.md" % (project, runlabel))
     with open(out_path, "w", encoding="utf-8", newline="") as fh:
         fh.write(outline)
@@ -965,6 +991,22 @@ def run_self_test():
     # R7 clean
     chk("r7_clean", check_map_integrity(map_obj, schema_errs, pass0, contract, ledger) == [])
 
+    # regression (Fable-review fold, 2026-07-06): the R7/gap finding-id joins must DEGRADE (never
+    # AttributeError) when apodictic_artifacts is unavailable — _fid falls back to the inline coercion.
+    # parse_map and ledger_findings already guard `art is None`; these were the three unguarded sites.
+    _saved_art = globals()["art"]
+    globals()["art"] = None
+    try:
+        chk("fid_degrades_without_art", _fid("F-X-01") == "F-X-01" and _fid([1, 2]) == "[1, 2]"
+            and _fid(None) is None)
+        try:
+            _r7na = check_map_integrity(map_obj, [], pass0, contract, ledger)
+            chk("r7_no_traceback_without_art", isinstance(_r7na, list))
+        except AttributeError:
+            chk("r7_no_traceback_without_art", False)
+    finally:
+        globals()["art"] = _saved_art
+
     # build -> render, then validate the fresh outline is clean + deterministic
     outline = render_outline(pass0, contract, ledger, map_obj, "Example", "r")
     code, ls = check(pass0, contract, ledger, map_text, outline)
@@ -1062,11 +1104,25 @@ def run_self_test():
     code, ls = check(pass0, contract, ledger, map_text, para_gap)
     chk("r4_paraphrased_gap", code == 1 and any("R4 no fabricated gap" in x for x in ls))
 
-    # ---- R5 hostile: framework shorthand leaked into the rendered outline
+    # ---- R5: framework shorthand arriving VERBATIM from an upstream artifact — the only way shorthand
+    #      can legitimately appear in a projection — is a WARN by default, ERROR under --strict, with NO
+    #      override slug (Fable-review fold, 2026-07-06: R5 reuses the letter's warn-only lint
+    #      semantics; R1-R4/R7 own integrity, so a lint hit is a legibility advisory about the upstream
+    #      artifact, not a breach). Mirror of the R6 arm's shape: default exit 0 + WARN, --strict exit 1.
     if lc is not None:
+        con5 = contract.replace("TONE COMPS: quiet, elegiac", "TONE COMPS: quiet, per Pass 11F")
+        map5 = contract_map(clauses, inputs={
+            "pass0_sha256": sha256(pass0), "contract_sha256": sha256(con5), "ledger_sha256": sha256(ledger)})
+        mo5 = parse_map(map5)[0]
+        out5 = render_outline(pass0, con5, ledger, mo5, "Example", "r")
+        code5, ls5 = check(pass0, con5, ledger, map5, out5)
+        chk("r5_upstream_shorthand_warns", code5 == 0 and any("R5 author-facing" in x for x in ls5))
+        chk("r5_strict_fails", check(pass0, con5, ledger, map5, out5, strict=True)[0] == 1)
+        # shorthand INJECTED into the rendered outline (not from an input) is not R5's business — the
+        # byte-determinism gate owns authored-in-the-deliverable text and still hard-fails it.
         leaked = good_outline.replace("## Coverage note", "## Coverage note\n\nPass 11F flagged this.")
         code, ls = check(pass0, contract, ledger, map_text, leaked)
-        chk("r5_shorthand_leak", code == 1 and any("R5 author-facing" in x for x in ls))
+        chk("r5_injected_prose_fails_determinism", code == 1 and any("byte-exact projection" in x for x in ls))
 
     # ---- R6 hostile: a DROPPED PROMISE CLAUSE leaves the promise prose partly unmapped -> WARN by
     #      default, FAIL under --strict. This stays R7-clean: dropping the 2nd promise clause (and

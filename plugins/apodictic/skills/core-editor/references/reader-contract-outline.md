@@ -21,7 +21,10 @@ Spec + rule detail: [`docs/reader-contract-outline.md`](../../../../docs/reader-
    `contract_sha256` / `ledger_sha256`) and lists one clause per contract clause `{clause_id,
    source_field, clause_text, established[], paid_off[], not_localizable, gap_finding_id}`. `clause_text`
    is a **verbatim substring** of the named Contract field; `established`/`paid_off` are Pass 0 scene ids;
-   `gap_finding_id` names a Findings-Ledger entry or is `null`.
+   `gap_finding_id` names a Findings-Ledger entry or is `null`. `NON-NEGOTIABLES` items are
+   **`;`-separated** — the shipped contract convention (`example-quality-risk-contract.md` uses `;`
+   between items whose prose carries internal commas) — and the Map carries exactly one clause per item;
+   R7 recounts them from the Contract, so a Map authored against a comma-split reading will miscount.
 2. **Reverse outline** — `[Project]_Reader_Contract_Outline_[runlabel].md`: the author-facing document,
    fixed section order — the reader contract (every Contract field, verbatim), the scene spine (every
    Pass 0 scene: `id · what happens · what the reader now knows`), the contract map (each clause,
