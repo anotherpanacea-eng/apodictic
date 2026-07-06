@@ -37,6 +37,15 @@ those conventions so the classes cannot recur: a validator that validates the va
                          `override_marker.strip_code_spans` (the single state-machine SSoT). Catches the
                          "helper exists but isn't used" drift that bypassable hand-rolled strippers
                          (the form #128 removed from timeline_checks / honesty_check) re-introduce.
+  M7 single-Firewall     exactly one file in the plugin tree carries the canonical Firewall DEFINITION
+                         (the `## The Firewall` heading + the FORBIDDEN-content rule text within a short
+                         window) — a second file re-inlining the full definition immediately drifts from
+                         the canonical source. Prose mentions / pointers ("see firewall.md") do not count.
+  M8 severity-vocab      no validator RE-DEFINES the editorial-severity leak token — a `re.compile` whose
+                         literal carries the `(?:Must|Should|Could)-Fix` modal-alternation shape — instead
+                         of importing `severity_vocab.SEVERITY_TOKEN_RE` (the SSoT). Catches the hand-
+                         synced-copy class (six byte-identical copies had accumulated by 2026-07-06). The
+                         fleet's other, legitimately-different severity patterns are not flagged.
 
 It reads validate.sh and the sibling `*.py` from its own directory and the schemas via the shared
 resolver. No artifact input. See docs/validator-conventions.md.
@@ -48,6 +57,7 @@ Exit: 0 clean, 1 violation(s), 2 usage.
 """
 import ast
 import io
+import itertools
 import os
 import re
 import sys
@@ -298,6 +308,45 @@ _M6_PY_RE = re.compile(r"""\bre\.(?:compile|sub|search|match|fullmatch|findall|f
 # override_marker.py legitimately DEFINES the canonical stripper; meta_lint.py carries the M6 literal.
 _M6_EXEMPT = {"override_marker.py", "meta_lint.py"}
 
+# ---- M8 severity-vocab SSoT ---------------------------------------------------------------------
+# `severity_vocab.SEVERITY_TOKEN_RE` (`\b(?:Must|Should|Could)-Fix\b`) is the SINGLE source of truth for
+# the editorial-severity leak token — the A3 Content-Advisory firewall vocabulary reused by the X-gate
+# Author-Style / Author-Voice firewalls, the results-guide navigation-index guard, and the setup-payoff /
+# contradiction-state fact-register guards. That one-line pattern had been hand-copied into SIX byte-
+# identical `_SEVERITY_RE = re.compile(...)` definitions (2026-07-06), kept in sync only by "copied from
+# content_advisory._SEVERITY_RE" comments — the hand-synced-copy class the meta-linter exists to prevent
+# (a second copy is the signal to abstract). M8 fails any validator that RE-DEFINES the pattern locally
+# instead of importing `severity_vocab.SEVERITY_TOKEN_RE`.
+#
+# Detection: a `re.compile` whose literal carries a GROUPED alternation of the three bare severity MODALS
+# — `Must`, `Should`, `Could` — in any order (the `(?:Must|Should|Could)` SSoT shape and its plausible
+# re-spellings: a capturing `(Must|Should|Could)` group, a reordered `(?:Should|Must|Could)`, …). This is
+# the distinguishing signature of the leak-token pattern. It is DELIBERATELY narrow to the modal-
+# alternation form so the fleet's other, legitimately-DIFFERENT severity-shaped patterns are NOT flagged:
+#   * editor_scaffolding.SEVERITY_RE      — `(Must-Fix|Should-Fix|Could-Fix)`: alternates full TOKENS
+#                                           (each arm carries `-Fix`), not bare modals → no match.
+#   * disposition_check._CAVEAT_LINE_RE   — `(Declined|Deferred) Must-Fixes`: a different alternation.
+#   * letter_checks / honesty_check / structured_findings — single literals or two-modal / context-
+#                                           prefixed forms → no three-bare-modal group → no match.
+# Prose mentions of "Must-Fix" in a docstring / string / comment do NOT trip M8 — it is scanned with
+# comments + docstrings stripped, and it requires a `re.compile(...)` of the modal-alternation shape, not
+# a bare token mention. `severity_vocab.py` (the SSoT definition) and `meta_lint.py` (this literal) are
+# exempt. `_M8_MODALS` requires all three modals to appear inside ONE group so a lone `re.compile(r"Must-
+# Fix")` (letter_checks) is not the SSoT pattern and is not flagged.
+# A grouped alternation whose three arms are exactly the three bare severity modals, in any order: an
+# opening `(` (capturing) or `(?:` (non-capturing), then `Must`, `Should`, `Could` `|`-separated in some
+# permutation, then `)`. The group content is one of the six orderings — each ordering is wrapped as its
+# OWN alternative (so the inner `|`s that separate the three modals never blur into the outer `|`s that
+# separate the six orderings). This matches `(?:Must|Should|Could)` (the SSoT) and its re-spellings (a
+# capturing `(Must|Should|Could)`, a reordered `(?:Should|Must|Could)`, …) but NOT a token-level
+# alternation like `(Must-Fix|Should-Fix|Could-Fix)` (its arms are not bare modals) nor a single literal.
+_M8_ORDERINGS = "|".join("(?:%s)" % "\\|".join(p)
+                         for p in itertools.permutations(("Must", "Should", "Could")))
+_M8_GROUP = r"\((?:\?:)?(?:" + _M8_ORDERINGS + r")\)"
+_M8_PY_RE = re.compile(r"""\bre\.compile\s*\(\s*""" + _OV_PFX + _Q + r"""[^"'\n]*?""" + _M8_GROUP)
+# severity_vocab.py legitimately DEFINES the canonical pattern; meta_lint.py carries the M8 literal.
+_M8_EXEMPT = {"severity_vocab.py", "meta_lint.py"}
+
 
 def agg_validators(sh_text):
     m = _AGG_RE.search(sh_text or "")
@@ -460,6 +509,28 @@ def check_m6_py(py_name, py_text):
     return []
 
 
+def check_m8_py(py_name, py_text):
+    """A validator that RE-DEFINES the editorial-severity leak token locally instead of importing the
+    shared `severity_vocab.SEVERITY_TOKEN_RE`.
+
+    Flags a `re.compile` whose pattern literal carries a GROUPED alternation of the three bare severity
+    modals (`Must` / `Should` / `Could`, any order) — the `(?:Must|Should|Could)` SSoT shape and its
+    re-spellings. That one-line pattern had accumulated six byte-identical hand-synced copies (2026-07-06);
+    the SSoT lives in `severity_vocab.py`, so every leak-guard imports it. Scanned with comments/docstrings
+    stripped, so a "Must-Fix" NAMED in prose is not a false positive; deliberately narrow to the modal-
+    alternation form so the fleet's other, legitimately-different severity patterns
+    (editor_scaffolding's `(Must-Fix|Should-Fix|Could-Fix)` token alternation, disposition_check's caveat
+    line, letter_checks' single literals) are NOT flagged. `severity_vocab.py` (the SSoT) is exempt."""
+    if py_name in _M8_EXEMPT:
+        return []
+    if _M8_PY_RE.search(_strip_comments_keep_source(py_text or "")):
+        return ["M8 severity-vocab: %s re-defines the editorial-severity leak token by a local "
+                "re.compile of the (?:Must|Should|Could)-Fix modal alternation — that one-line pattern is "
+                "the severity_vocab SSoT; `from severity_vocab import SEVERITY_TOKEN_RE` instead of a "
+                "hand-synced copy" % py_name]
+    return []
+
+
 # ---- M7 single-Firewall -------------------------------------------------------------------------
 # Exactly one file in the plugin tree may carry the canonical Firewall *definition* — the
 # `## The Firewall` heading PLUS the no-content-invention rule text (the "FORBIDDEN — Content
@@ -610,6 +681,10 @@ def run():
     # M7 single-Firewall — exactly one file in the plugin tree carries the canonical Firewall
     # definition (## The Firewall heading + FORBIDDEN-content rule text). Prose mentions are fine.
     viol += check_m7(d)
+    # M8 severity-vocab SSoT — no validator re-defines the editorial-severity leak token by a local
+    # re.compile of the (?:Must|Should|Could)-Fix modal alternation; import severity_vocab.SEVERITY_TOKEN_RE.
+    for name, text in py_files.items():
+        viol += check_m8_py(name, text)
 
     lines = ["validator-conventions: %d validator(s), %d schema(s) checked"
              % (len(agg_validators(sh_text)), len(schema_ids))]
@@ -621,7 +696,8 @@ def run():
         lines.append("validator-conventions: FAIL (%d violation(s))" % len(viol))
         return 1, lines
     lines.append("validator-conventions: PASS (dispatch+self-test + resolver hygiene + derived count "
-                 "+ no orphan schema + override hygiene + code-span hygiene + single-Firewall%s)"
+                 "+ no orphan schema + override hygiene + code-span hygiene + single-Firewall "
+                 "+ severity-vocab SSoT%s)"
                  % (" — M4 degraded/skipped, see WARN" if m4_degraded else ""))
     return 0, lines
 
@@ -854,6 +930,45 @@ def run_self_test():
     FW_FAR = "## The Firewall\n" + "\n" * 16 + "**FORBIDDEN — Content Invention:**\n"
     chk("m7_forbidden_too_far_not_def",
         check_m7(None, [("a/firewall.md", FW_DEF), ("b/far.md", FW_FAR)]) == [])
+
+    # M8 severity-vocab SSoT: a local re.compile of the (?:Must|Should|Could)-Fix modal alternation must
+    # be flagged; the shared severity_vocab import is clean; the fleet's other severity-shaped patterns
+    # and prose mentions must NOT be flagged. TEETH: the doctored source is the exact byte-shape of the
+    # six hand-synced copies this rule retires.
+    chk("m8_local_ssot_copy_flagged",  # the exact byte-shape of the six retired copies -> the teeth
+        check_m8_py("bad.py", 'import re\n_SEVERITY_RE = re.compile(r"\\b(?:Must|Should|Could)-Fix\\b")\n') != [])
+    chk("m8_capturing_group_respelling_flagged",  # a re-spelling with a capturing group -> still the SSoT
+        check_m8_py("bad.py", 'import re\n_S = re.compile(r"(Must|Should|Could)-Fix")\n') != [])
+    chk("m8_reordered_modals_flagged",  # a re-spelling that reorders the modals -> still the SSoT
+        check_m8_py("bad.py", 'import re\n_S = re.compile(r"\\b(?:Could|Should|Must)-Fix\\b")\n') != [])
+    chk("m8_import_clean",  # the adopted form (import the SSoT, alias it) has no local re.compile -> clean
+        check_m8_py("good.py",
+                    'from severity_vocab import SEVERITY_TOKEN_RE\n_SEVERITY_RE = SEVERITY_TOKEN_RE\n'
+                    'if _SEVERITY_RE.search(t):\n    pass\n') == [])
+    # the SSoT definition file itself is exempt (it MUST carry the pattern)
+    chk("m8_severity_vocab_exempt",
+        check_m8_py("severity_vocab.py", 'import re\nSEVERITY_TOKEN_RE = re.compile(r"\\b(?:Must|Should|Could)-Fix\\b")\n') == [])
+    # editor_scaffolding's TOKEN-level alternation (arms carry `-Fix`, not bare modals) is a DIFFERENT
+    # pattern with its own grammar -> NOT flagged (M8 is narrow to the modal-alternation shape).
+    chk("m8_token_alternation_not_flagged",
+        check_m8_py("editor_scaffolding.py",
+                    'import re\nSEVERITY_RE = re.compile(r"(?<![\\w-])(Must-Fix|Should-Fix|Could-Fix)(?![\\w-])")\n') == [])
+    # disposition_check's caveat-line alternation (Declined|Deferred) is unrelated -> NOT flagged
+    chk("m8_caveat_line_not_flagged",
+        check_m8_py("disposition_check.py",
+                    'import re\n_C = re.compile(r"^\\*\\*(Declined|Deferred) Must-Fixes:\\*\\*(.*)$", re.MULTILINE)\n') == [])
+    # letter_checks' single-literal IGNORECASE forms (no three-modal group) -> NOT flagged
+    chk("m8_single_literal_not_flagged",
+        check_m8_py("letter_checks.py", 'import re\n_M = re.compile(r"Must-Fix", re.IGNORECASE)\n') == [])
+    # a two-modal context-prefixed form (honesty_check / structured_findings PROSE_SEVERITY_RE) -> NOT flagged
+    chk("m8_two_modal_not_flagged",
+        check_m8_py("honesty_check.py",
+                    'import re\n_P = re.compile(r"(?:\\*\\*\\s*|Severity[:\\s]+)(Must-Fix|Should-Fix)\\b")\n') == [])
+    # a "Must-Fix" NAMED in a docstring / comment (not a re.compile of the modal alternation) -> NOT flagged
+    chk("m8_docstring_mention_ok",
+        check_m8_py("g.py", '"""Fails on a Must-Fix / Should-Fix / Could-Fix leak."""\ndef f(t):\n    return has_severity(t)\n') == [])
+    chk("m8_comment_mention_ok",
+        check_m8_py("g.py", 'def f(t):\n    # a (?:Must|Should|Could)-Fix token means it started diagnosing\n    return has_severity(t)\n') == [])
 
     # _read_text: a non-UTF-8 byte sequence must not crash the linter (UnicodeDecodeError is a
     # ValueError, not an OSError); errors="replace" keeps the ASCII references scannable.
