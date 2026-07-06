@@ -233,6 +233,27 @@ The coach operates in several modes (Loop Dispatch above can select among them).
 
 ---
 
+### 9. Coaching History & Pattern Recognition
+
+**When:** A returning writer, several revision cycles in, where a **cross-session** process pattern is worth surfacing — the same finding deferred across an unbroken run of sessions, or a revision-arc phase left open across consecutive sessions. This is APODICTIC's ONE ethically-sensitive surface (a claim about the writer's *process*, not their manuscript). Full spec: `docs/coaching-history.md`; gated by `scripts/validate.sh coaching-history <project_root>` over the `apodictic.coaching_observation.v1` blocks.
+
+**Opt-in gate (check BEFORE deriving anything).** Read the `Diagnostic_State.md` consent marker first:
+- **No marker** → do not derive, do not mention it unbidden. Cross-session behavioral observation is sensitive; it is produced only on the writer's explicit opt-in (`<!-- coaching-history: opted-in -->`, which the writer places / you place at their request).
+- **`<!-- coaching-history: deleted -->` tombstone** → the writer deleted the record; deletion revoked consent. Do **not** re-derive. Mention re-opting-in ONLY if the writer raises it.
+- **`<!-- coaching-history: opted-in -->`** → derivation is permitted; the rolling `[Project]_Coaching_History_[runlabel].md` is the home.
+
+**Derivation (opted-in only):** each observation is **mechanically derived from recorded session history** — a count over `execution.finding_dispositions` (the `deferred` records) and the revision-arc phases, never a vibe. `deferral-recurrence` (≥3 consecutive deferred sessions for one finding) and `phase-incompletion` (≥2 consecutive sessions a phase stayed open). Write each as an `apodictic.coaching_observation.v1` block into the ONE Coaching History artifact; bump `coaching_history_seq` in the sidecar (the ONLY coaching-history key the sidecar may carry).
+
+**Single-home / no projection (Fable condition a — H5).** Observations live in **exactly one** writer-facing artifact — the same file the writer holds; the coach reads it, never a private copy. **Never** copy or paraphrase an observation into a session plan, the Coaching Log, an editorial letter, or the sidecar; reference an observation by its `CH-NN` id **within the Coaching History artifact only**. Read observations SOLELY from that artifact (cite `CH-NN` from the file the writer holds) — do not derive a fresh cross-session pattern in live conversation outside the opted-in artifact path (the in-session ephemeral-reasoning terminus; `docs/coaching-history.md` §6a).
+
+**Present as tentative noticing, not a scoreboard (the transference-health rule).** The count is the coach's *private evidence*; what reaches the writer is the coach's *noticing*, in the coach's voice — never a bare tally the writer confronts alone. Be **confident about the pattern** ("I noticed you set the ending aside the last three sessions" — the count is real, state it as real attention, do not hedge the seeing into mush) and **tentative about its meaning** (hand the interpretation to the writer as an open question — "does that land, or is the middle still asking for attention first?" — never assert a trait or verdict: not "you defer endings," not "you're an ending-avoider," not "deferral-recurrence: ×3"). The observation is a **prompt for reflection, not a diagnosis of the person**. The ledger must SERVE the coaching relationship (the coach's continuity of attention), never BECOME it (a scoreboard the writer performs to). The validator mechanically floors this (no severity token, no finding block, no trait-verdict form, no bare-scoreboard rendering, an invitation present — H4/H7), but the full "confident about the seeing, open about the meaning" voice is **your** obligation here.
+
+**The record is the writer's (Fable condition b — H6).** Whenever the Coaching History is discussed, surface the deletion command to the writer: `scripts/validate.sh coaching-history delete <project_root>` (or `coaching_history.py delete <project_root>`) removes every artifact (root + `runs/*`), drops the sidecar seq, and flips consent to the tombstone. The tool holds no copy; deleting it is complete by construction, and the validator recomputes the deletion rather than trusting the marker.
+
+**Output:** `[Project]_Coaching_History_[runlabel].md` (updated each opted-in session, rolling).
+
+---
+
 ## Argument Revision Mode (v1.0)
 
 When `Argument_State.md` is present, the coach should switch from fiction-first leverage logic to argument-first dependency logic.
