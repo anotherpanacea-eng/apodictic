@@ -346,21 +346,46 @@ def check(artifact_text, envelope, manuscript_text, envelope_err=None,
                     "free pointer must not masquerade as an editorial finding")
 
     # F5 — presentation-prose gate: the consumer's framing text must carry no relation vocabulary.
-    # Scan the artifact EXCLUDING the verbatim-quote spans (blockquote lines beginning `>`): the
-    # quotes are the author's evidence and may legitimately carry these words.
-    framing_lines = [ln for ln in artifact_text.split("\n") if not ln.lstrip().startswith(">")]
-    framing = " ".join(framing_lines).casefold()
+    # A `>`-blockquote line is exempt ONLY if its folded text is a verbatim substring of the folded
+    # manuscript — i.e. it really is the author's quoted evidence. A `>` line that is NOT verbatim
+    # manuscript text is FRAMING DRESSED AS EVIDENCE and falls back into the scan (else a fabricated
+    # "> these passages plainly contradict each other" line would be both F5-exempt and Q2-unverified
+    # — the review-panel P1). Empty `>` separators are harmless and stay exempt.
+    framing_parts = []
+    for ln in artifact_text.split("\n"):
+        stripped = ln.lstrip()
+        if stripped.startswith(">"):
+            quoted_text = stripped.lstrip(">").strip()
+            # The canonical template labels evidence lines `> A: <quote>` / `> B: <quote>` —
+            # strip that side label before the verbatim match (the label is renderer scaffolding,
+            # not manuscript text).
+            label = re.match(r"^[AB]:\s*(.*)$", quoted_text)
+            candidate = label.group(1) if label else quoted_text
+            if not candidate or _fold(candidate) in folded_manuscript:
+                continue  # a real (verbatim) evidence line, or an empty separator — exempt
+            # not manuscript text: scan it as framing (and say so if it trips)
+        framing_parts.append(ln)
+    framing = " ".join(framing_parts).casefold()
     for vocab in _RELATION_VOCAB:
         if vocab in framing:
-            errs.append("F5 presentation prose: the register's own framing text carries the relation "
-                        "term %r — the consumer's terminus prose must assert NO relation (only the "
-                        "quoted evidence, on `>`-blockquote lines, may carry such words)" % vocab.strip())
+            errs.append("F5 presentation prose: the register's framing text carries the relation "
+                        "term %r — the consumer's terminus prose must assert NO relation. (Only "
+                        "`>`-blockquote lines whose text is verbatim manuscript evidence are exempt; "
+                        "a non-verbatim blockquote line is framing dressed as evidence and is "
+                        "scanned.)" % vocab.strip())
 
-    # Order — the artifact presents pairs in envelope (document) order.
+    # Order — the artifact presents pairs in envelope (document) order. When the artifact carries
+    # NO parseable `### <n>. Q:` headings but the envelope has pairs, the order is UNVERIFIABLE —
+    # that is a WARN (surfaced, --strict-escalated), never a silent skip (the silent-skip was the
+    # review panel's P2: the document-order guarantee held only when the renderer matched one regex).
     env_qs = [p.get("question") for p in pairs
               if isinstance(p, dict) and isinstance(p.get("question"), str)]
     art_qs = _artifact_question_list(artifact_text)
-    if art_qs and env_qs and art_qs != env_qs:
+    if env_qs and not art_qs:
+        warns.append("Order unverifiable: the artifact carries no parseable `### <n>. Q: <question>` "
+                     "headings, so document order cannot be checked against the envelope — render "
+                     "with the canonical heading form (see position-pair-register.md)")
+    elif art_qs and env_qs and art_qs != env_qs:
         errs.append("Order: the register artifact presents pairs in a DIFFERENT order than the "
                     "envelope (document order) — re-ranking is a judgment channel the posture forbids. "
                     "Artifact Q order: %r; envelope Q order: %r" % (art_qs, env_qs))
@@ -569,6 +594,13 @@ def run_self_test():
     code, lines = check(artifact(ev_pairs), envelope(ev_pairs), conflict_quote_ms)
     check_case("relation_word_in_blockquote_exempt",
                code == 0 and any("PASS" in ln for ln in lines))
+    # ------- THE PANEL P1 REPRO: a FABRICATED `>` line (not verbatim manuscript text) carrying a
+    # relation assertion is NOT exempt — it is framing dressed as evidence and F5 catches it.
+    fabricated = ("\n> NOTE: these two passages plainly contradict each other and the author "
+                  "reverses position.\n")
+    code, lines = check(artifact(HAPPY_PAIRS) + fabricated, envelope(HAPPY_PAIRS), MANUSCRIPT)
+    check_case("fabricated_blockquote_framing_f5_fail",
+               code == 1 and any("F5 presentation prose" in ln for ln in lines))
 
     # ------- re-ranked pairs (artifact order != envelope order) -> FAIL
     env = envelope(HAPPY_PAIRS)  # envelope: Q1 then Q2
@@ -576,6 +608,15 @@ def run_self_test():
     code, lines = check(artifact(reranked), env, MANUSCRIPT)
     check_case("reranked_order_fail",
                code == 1 and any("Order:" in ln for ln in lines))
+    # ------- THE PANEL P2 REPRO: headings not in the canonical `### <n>. Q:` form -> order is
+    # UNVERIFIABLE -> WARN (never a silent skip), escalating to FAIL under --strict.
+    unparseable = artifact(HAPPY_PAIRS).replace("### 1. Q: ", "## First question — ").replace(
+        "### 2. Q: ", "## Second question — ")
+    code, lines = check(unparseable, envelope(HAPPY_PAIRS), MANUSCRIPT)
+    check_case("order_unverifiable_warns",
+               code == 0 and any("Order unverifiable" in ln and "WARN" in ln for ln in lines))
+    code, lines = check(unparseable, envelope(HAPPY_PAIRS), MANUSCRIPT, strict=True)
+    check_case("order_unverifiable_strict_fails", code == 1)
 
     # ------- unreadable manuscript -> fail-closed
     code, lines = check(artifact(HAPPY_PAIRS), envelope(HAPPY_PAIRS), None,
