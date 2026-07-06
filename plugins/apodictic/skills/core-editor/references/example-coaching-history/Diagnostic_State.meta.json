@@ -1,0 +1,36 @@
+{
+  "$comment": "Coaching-History fixture sidecar (docs/coaching-history.md) — a NON-governed project (no execution.gate_events), so execution.finding_dispositions was written by the direct writer. It carries the recorded 'deferred' dispositions the Coaching History artifact's H2 provenance resolves against: F-P2-03 deferred across the unbroken session run 1-2-3 (the folded last-event-wins record keeps session=3, with the full deferral history in `sessions` for the consecutive-run proof). coaching_history_seq is the ONE permitted coaching-history sidecar key (H5.v) — a scalar-in-sidecar, like execution.state_version; it is dropped on `delete` (H6). NO other coaching material lives here (the machine-facing sidecar is where a coach-only shadow would accumulate — H5.v walks it).",
+  "project": "Example",
+  "mode": "diagnostic",
+  "last_session": {
+    "date": "2026-03-01",
+    "focus": "revision coaching",
+    "runlabel": "2026-03-01_opus48"
+  },
+  "triage_summary": {
+    "must_fix": 1,
+    "should_fix": 2,
+    "could_fix": 0
+  },
+  "session_count": 6,
+  "coaching_history_seq": 2,
+  "execution": {
+    "finding_states": {
+      "F-P2-03": "delivered",
+      "F-DP-02": "delivered"
+    },
+    "finding_dispositions": {
+      "F-P2-03": {
+        "schema": "apodictic.finding_disposition.v1",
+        "id": "F-P2-03",
+        "disposition": "deferred",
+        "reason": "the antagonist-motive rework needs the middle to settle first",
+        "source": "author",
+        "session": 3,
+        "ts": "2026-03-01T15:04:00Z",
+        "trigger": "after the midpoint reversal lands",
+        "sessions": [1, 2, 3]
+      }
+    }
+  }
+}
