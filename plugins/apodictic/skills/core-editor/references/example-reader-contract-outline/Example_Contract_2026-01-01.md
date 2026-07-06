@@ -10,7 +10,7 @@ state (`HEAT LEVEL: —`) — it is never dropped.
 GENRE/SUBGENRE: literary fiction
 READER PROMISE: a woman escapes a dying town; the town's buried secret is exposed
 CONTROLLING IDEA: leaving costs more than staying, but staying costs the truth
-HEAT LEVEL: 
+HEAT LEVEL:
 DARKNESS LEVEL: moderate
 PRIMARY TENSION TYPE: moral
 ENDING TYPE: open
