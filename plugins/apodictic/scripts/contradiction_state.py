@@ -33,17 +33,19 @@ See docs/worldbuilding-bible.md / docs/continuity-bible.md (§State axis).
 import re
 import sys
 
+from severity_vocab import SEVERITY_TOKEN_RE  # SSoT: the editorial Must/Should/Could-Fix leak token
+
 # The three states, in the order the derivation prefers them. A `consistent` row is never WRITTEN
 # (no collision -> no ledger row), so in practice only `conflicting` / `apparent` appear in a real
 # ledger; `consistent` is still a valid enum token so an author who explicitly records a resolved-clean
 # row is not forced to lie. `derive_state` returns it for the no-collision case.
 VALID_STATES = ("conflicting", "apparent", "consistent")
 
-# X1 firewall — the Contradiction Ledger is a fact register, not a defect list. Mirrors
-# content_advisory._SEVERITY_RE / setup_payoff_checks._SEVERITY_RE (the Content-Advisory A3 firewall
-# applied here); an apodictic:finding block is caught by the caller's parsed-block check (so a file that
-# merely NAMES the token in prose still FAILs — severity must never leak into the register).
-_SEVERITY_RE = re.compile(r"\b(?:Must|Should|Could)-Fix\b")
+# X1 firewall — the Contradiction Ledger is a fact register, not a defect list. The pattern is the
+# shared severity_vocab SSoT (M8), the Content-Advisory A3 firewall applied here; an apodictic:finding
+# block is caught by the caller's parsed-block check (so a file that merely NAMES the token in prose
+# still FAILs — severity must never leak into the register).
+_SEVERITY_RE = SEVERITY_TOKEN_RE
 
 
 def derive_state(collides, overridden):
