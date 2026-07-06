@@ -18,6 +18,21 @@ All DE outputs are author-facing documents. Framework shorthand — pass numbers
 - ❌ "[HIGH CONFIDENCE]"
 - ✅ "All three evaluative lenses agree on this point, and the diagnosis survived a deliberate attempt to refute it against the text"
 
+### Skill slugs are internal — name the command or the workflow move
+
+Which skill the framework loads is an implementation detail the writer never needs. In **writer-rendered prose and all generated author-facing output**, name the **command** (`/coach`, `/audit`, `/plot-coach`) or the **workflow move** ("run an audit next," "plan revision next"), never the skill slug. A backtick code-span naming a *command* is fine; a backtick code-span naming a *skill slug* in writer-facing prose is the leak — and a backticked slug wrapped inside a workflow noun ("the `specialized-audits` workflow") is still a slug.
+
+| Instead of (skill-name) | Use (workflow move) |
+|---|---|
+| "…via specialized-audits" | "…via the specialized audits" / "run a focused audit" |
+| "the commands sit on five skills: **core-editor** (…)" | "the commands sit on six capability areas: the diagnostic engine…" (name workflows, not slugs) |
+| "load specialized-audits" / "load the X skill" | "run an audit next" |
+| "the `specialized-audits` workflow" (noun form) | "the specialized audits workflow" / "the audit workflow" — de-slug the noun |
+| "load revision-coach" | "plan revision next" |
+| "load plot-architecture" | "diagnose the plot spine next" |
+
+**Boundary — this is not the `author-facing-lint` rule.** The skill-slug rule governs authored SKILL/reference source and generated author-facing prose; it is distinct from the framework-code glossing rule that `author-facing-lint` enforces on the generated letter body (`scripts/letter_checks.py`, WARN-only, appendix-exempt). One scans framework *codes* (pass numbers, quality codes) in the letter; this convention scans skill *slugs* in authored + generated author-facing prose. **Scope note:** agent-routing/delegation prose the model reads to dispatch — the Delegation Rules zone, Genre Module Routing activation notes, `commands/*.md` load-directives, inter-skill reference lists, run-flow load instructions — legitimately names skills and is *not* governed by this rule.
+
 ---
 
 ## Output Constraints
