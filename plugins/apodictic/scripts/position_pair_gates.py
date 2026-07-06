@@ -81,11 +81,13 @@ try:
 except ImportError:
     art = None
 
+from severity_vocab import SEVERITY_TOKEN_RE  # SSoT: the editorial Must/Should/Could-Fix leak token
+
 # ---------------------------------------------------------------- A3 / X-gate idioms (content_advisory)
-# A3-style editorial-severity leak guard — copied byte-for-byte from content_advisory._SEVERITY_RE
-# (content_advisory.py:66). The register is a relation-free pointer, not a defect list: a
+# A3-style editorial-severity leak guard — the shared severity_vocab SSoT (M8); the local alias keeps
+# the A3 call sites byte-identical. The register is a relation-free pointer, not a defect list: a
 # Must/Should/Could-Fix token means it started diagnosing.
-_SEVERITY_RE = re.compile(r"\b(?:Must|Should|Could)-Fix\b")
+_SEVERITY_RE = SEVERITY_TOKEN_RE
 
 # ---------------------------------------------------------------- Q1 the banned-key frozensets (F3)
 # (i) RELATION keys — never legitimate ANYWHERE in the envelope (whole-envelope walk). Case-folded
