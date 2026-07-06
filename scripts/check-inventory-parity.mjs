@@ -109,6 +109,14 @@ const NOT_CARDED = new Set([
   "craft/idiolect-preservation.md",
   "craft/pov-voice-profile.md",
   "craft/punctuation-cadence.md",
+  // (3) Position-Pair Register (stance-consistency consumer) — a `handoff:
+  //     experimental`, uncalibrated SETEC-consumer surface. Its sibling
+  //     Argument-Decision (ArgScope) is carded, but web-marketing an
+  //     experimental/uncalibrated surface is deferred until it graduates
+  //     (same posture as category (2)); allowlisted, not carded, meanwhile.
+  //     The worked example is a fixture (wired into `--check-all`), never a card.
+  "craft/position-pair-register.md",
+  "example-position-pair-register/Example_Position_Pair_Register_run.md",
 ]);
 
 // Recursively collect every `*.md` under `dir`, returned as POSIX-style paths
