@@ -23,6 +23,15 @@ mechanized here as the load-bearing gates, "mechanical, or don't build":
                       disposition=='deferred' exists at the cited session; len(evidence) >= count; the
                       cited session ordinals are ACTUALLY CONSECUTIVE (a gap fails). No fabricated
                       streak. (The author_fingerprint F2 anti-fabrication posture.)
+                      SCOPE (Codex review F2): the anti-fabrication GUARANTEE is fabrication-RESISTANT
+                      ONLY on GOVERNED projects — the multi-session run is reconstructed from the
+                      independent per-session `gate_events[].disposition_deltas` event records the
+                      engine wrote at each clear. On NON-GOVERNED projects the session history is
+                      SELF-REPORTED by /coach (the folded record's `sessions` list) and is NOT
+                      independently verified; so a non-governed deferral-recurrence must carry a
+                      VISIBLE honesty caveat that its streak is from the coach's own notes, not a
+                      checked record (WARN, ERROR --strict, per-id override) — the writer is never
+                      shown an unverified pattern as if it were verified (the H7 principle).
   H3 descriptive,     the observation prose carries a prescriptive directive (author_fingerprint
      not judgmental   _PRESCRIPTIVE_RE) OR a trait-blame construction ("you always / you avoid / you
                       fail to / you're bad at …"). WARN; ERROR --strict; per-id override
@@ -199,19 +208,42 @@ _EV_PHASE_RE = re.compile(
 
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 
-# The APODICTIC-authored artifacts H5 scans (project root + runs/* archives), by glob. The manuscript
-# is deliberately NOT here (the firewall scans tool outputs, never the writer's prose). Session_Plan is
-# both the bare and project-prefixed name; the others follow output-structure.md naming.
-_AUTHORED_GLOBS = (
-    "Session_Plan_*.md", "*_Session_Plan_*.md",
-    _STATE_MD,
-    "*_Revision_Report_*.md",
-    "*_Feedback_Triage_*.md",
-    "*_Editorial_Letter_*.md", "*_Letter_*.md",
-    "*_Revision_Arc_*.md",
-    "*_Vocabulary_Guide_*.md",
-    "*_Coaching_Log_*.md", "Coaching_Log*.md",
-)
+# F2 (Codex review) — H2's anti-fabrication GUARANTEE holds only on GOVERNED projects (the per-session
+# gate_events[].disposition_deltas are independent event records the engine wrote at each clear). On
+# NON-GOVERNED projects the multi-session history is a self-reported field on the folded record (the
+# `sessions` list /coach persists) — NOT independently verified (the mode-11 recorded-field-without-
+# verifier antipattern the spec itself forbids for H6's recompute). So a non-governed `deferral-
+# recurrence` observation must carry a VISIBLE honest caveat that its streak came from the coach's own
+# session notes, not an independently checked record — the writer must never be shown an unverified
+# pattern as if it were verified (the H7 transference-health principle). Cleanly mechanizable as a
+# shape check (WARN + per-id override): the observation prose OR the artifact carries a caveat token.
+_NONGOVERNED_CAVEAT_RE = re.compile(
+    r"from\s+(?:my|the\s+coach'?s?)\s+(?:own\s+)?(?:session\s+)?notes"
+    r"|not\s+(?:an?\s+)?independently\s+(?:verified|checked)"
+    r"|coach'?s?\s+(?:own\s+)?record|my\s+own\s+notes|unverified\s+(?:against|by)"
+    r"|(?:i\s+)?(?:have\s+)?been\s+tracking|from\s+what\s+i(?:'?ve)?\s+(?:been\s+)?track"
+    r"|from\s+my\s+notes\s+across",
+    re.IGNORECASE)
+
+# H5 scan scope (Codex review F1 — the projection-ban is only as good as its coverage). A project root
+# has ~46 tool-authored artifact types (output-structure.md: the pass artifacts, SYNTHESIS.md,
+# *_Core_DE_Synthesis_*, *_Editorial_Letter_*, README.md, session plans, …). An allowlist of a handful
+# of globs let a projection into any UNLISTED artifact (the editorial letter, the synthesis) escape H5
+# AND survive `delete` — a false "deletion honored" — breaking BOTH Fable gates. So:
+#
+#   (i) parsed apodictic:coaching_observation block + (ii) the literal schema-id string are
+#   SELF-IDENTIFYING apodictic markers with ZERO false-positive risk on any legitimate non-coaching
+#   file (no editorial letter / session plan / manuscript legitimately carries a coaching_observation
+#   block or the schema-id). These are scanned over EVERY *.md in scope, minus the one Coaching_History
+#   artifact — the exhaustive net that catches the real projection (a projected block carries both).
+#
+#   (iii) the evidence-grammar (`@ session <n>`) standalone scan + the bare CH-NN WARN token DO carry
+#   manuscript false-positive risk (chapter "CH-12" refs; prose "@ session"), so they stay MANUSCRIPT-
+#   EXCLUDED — but the manuscript is excluded POSITIVELY (the frozen `*_Manuscript_Snapshot_*.md` the
+#   intake protocol persists; annotation_manifest._SNAPSHOT_GLOB), NOT via an authored-artifact
+#   allowlist. A real projection is already caught by (i)/(ii) over all .md; (iii) is the secondary net
+#   for grammar-without-block leakage (the §6a paraphrase class).
+_MANUSCRIPT_SNAPSHOT_GLOB = "*_Manuscript_Snapshot_*.md"  # the persisted frozen manuscript (positive id)
 
 
 def _read(path):
@@ -330,6 +362,17 @@ def _sidecar_seq(sidecar_obj):
 
 # --------------------------------------------------------------------------- H2 provenance
 
+def _is_governed(sidecar_obj):
+    """True iff the sidecar carries a non-empty execution.gate_events log (the state-lifecycle dual-
+    writer split; the same test disposition_check.check uses). On a governed project the per-session
+    disposition_deltas are independent event records — H2's anti-fabrication guarantee holds; on a
+    non-governed project the multi-session history is self-reported (F2)."""
+    if not isinstance(sidecar_obj, dict):
+        return False
+    ex = sidecar_obj.get("execution")
+    return isinstance(ex, dict) and bool(ex.get("gate_events"))
+
+
 def _deferred_history(sidecar_obj):
     """{F-id: set(session ordinals at which the finding was `deferred`)} — reconstructed from BOTH
     disposition surfaces (spec §4):
@@ -428,6 +471,26 @@ def check(text, project_root=None, sidecar_obj=None, strict=False, *, scan_root=
     deferred_hist = _deferred_history(sidecar_obj)
     for obj, _idx in valid:
         errs.extend(_h2_check(obj, deferred_hist))
+
+    # ---- H2 non-governed honesty caveat (Codex F2). On a NON-governed project the deferral streak's
+    #      multi-session history is self-reported (not independently verified), so a `deferral-recurrence`
+    #      observation must carry a VISIBLE caveat that the streak is from the coach's own notes — the
+    #      writer must never see an unverified pattern as if it were checked (the H7 principle). WARN;
+    #      ERROR --strict; per-id override (shares the coaching-observation slug). Governed projects are
+    #      exempt (their per-session event records ARE the independent verification).
+    ov_caveat_ids = _overrides(text, "coaching-observation", r"(CH-[0-9]+)")
+    if not _is_governed(sidecar_obj):
+        for obj, _idx in valid:
+            cid = obj.get("id")
+            if obj.get("pattern") != "deferral-recurrence" or cid in ov_caveat_ids:
+                continue
+            carrier = (obj.get("observation") or "") + "\n" + (text or "")
+            if not _NONGOVERNED_CAVEAT_RE.search(carrier):
+                warns.append("H2 non-governed caveat: %s is a deferral-recurrence on a NON-governed "
+                             "project (no gate_events) — its streak is from the coach's own session "
+                             "notes, not an independently verified record. State that honestly in the "
+                             "observation (e.g. 'from what I've been tracking across sessions') so the "
+                             "writer never sees an unverified pattern as if it were checked" % cid)
 
     # ---- H4 — no editorial-severity leak (the observation is off the editorial scale)
     #      Scan the WHOLE artifact (blocks + prose): a severity token or a finding block anywhere leaks.
@@ -594,10 +657,20 @@ def _is_scoreboard(prose):
 # --------------------------------------------------------------------------- H5 single-home scan
 
 def _h5_scan(project_root, sidecar_obj, strict, self_history_text=None):
-    """H5 (Fable condition a): scan project root + runs/* over the APODICTIC-authored artifacts + the
-    sidecar; ERROR (non-overridable) on a projected observation, and WARN (overridable) on a bare
-    CH-token. Returns (errs, warns). `self_history_text` is the ONE Coaching_History artifact being
-    validated — its own blocks/grammar are exempt (it IS the single home)."""
+    """H5 (Fable condition a): scan project root + runs/* for a projected coaching observation, plus the
+    sidecar. Returns (errs, warns). `self_history_text` is unused here — the ONE Coaching_History
+    artifact is identified by the glob and excluded from the projection scan (it IS the single home).
+
+    Codex F1: the projection scan covers EVERY *.md in scope (not a fragile authored-artifact allowlist
+    that let a projection into the editorial letter / synthesis escape and survive `delete`):
+      * (i) a parsed apodictic:coaching_observation block and (ii) the literal schema-id string are
+        self-identifying apodictic markers — scanned over ALL *.md minus the one Coaching_History file
+        (incl. the frozen manuscript snapshot: the writer's prose never legitimately carries a
+        coaching_observation block or the schema-id, so a hit there IS a pasted projection). ERROR.
+      * (iii) the evidence-grammar standalone scan + the bare CH-NN WARN token carry manuscript
+        false-positive risk (chapter "CH-12"; prose "@ session"), so they are scanned over all *.md
+        MINUS the positively-identified manuscript snapshot(s). A real projection is already caught by
+        (i)/(ii); (iii) is the secondary net for grammar-without-block leakage (§6a paraphrase)."""
     errs, warns = [], []
     dirs = _scan_dirs(project_root)
 
@@ -608,39 +681,43 @@ def _h5_scan(project_root, sidecar_obj, strict, self_history_text=None):
                     "means exactly one; a second file is the shadow artifact"
                     % (len(hist_files), ", ".join(os.path.basename(f) for f in hist_files)))
 
-    # Scan the authored artifacts (NOT the history file itself, NOT the manuscript) for a projection.
-    hist_basenames = {os.path.abspath(f) for f in hist_files}
-    scanned = set()
-    for g in _AUTHORED_GLOBS:
-        for path in _glob_multi(dirs, g):
-            ap = os.path.abspath(path)
-            if ap in hist_basenames or ap in scanned:
-                continue
-            scanned.add(ap)
-            body = _read(path)
-            if body is None:
-                continue
-            name = os.path.basename(path)
-            # (i) a parsed coaching_observation block anywhere but the one history file
-            if _has_block(body, "coaching_observation"):
-                errs.append("H5.i single-home: %s carries an apodictic:coaching_observation block — "
-                            "observations live ONLY in the Coaching History artifact (no projection)"
-                            % name)
-            # (ii) the literal schema-id string outside the artifact
-            if _SCHEMA_ID in body:
-                errs.append("H5.ii single-home: %s carries the literal schema-id %r outside the "
-                            "Coaching History artifact" % (name, _SCHEMA_ID))
-            # (iii) an evidence-grammar string outside the artifact
-            if _EVIDENCE_GRAMMAR_RE.search(body):
-                errs.append("H5.iii single-home: %s carries a coaching-history evidence-grammar string "
-                            "(`… @ session <n>`) outside the Coaching History artifact" % name)
-            # WARN (overridable) — a bare boundary-guarded CH-NN token (chapter-shorthand false-positive)
-            for tok in set(_CH_TOKEN_RE.findall(body)):
-                if not override_targets(body, "coaching-residue", re.escape(tok)):
-                    warns.append("H5 bare CH-token: %s references %s outside the Coaching History "
-                                 "artifact (bare-token; chapter-shorthand false-positive risk — "
-                                 "override <!-- override: coaching-residue %s — <why> --> if intended)"
-                                 % (name, tok, tok))
+    hist_abs = {os.path.abspath(f) for f in hist_files}
+    manuscript_abs = {os.path.abspath(f) for f in _glob_multi(dirs, _MANUSCRIPT_SNAPSHOT_GLOB)}
+
+    # EVERY *.md in scope, minus the one Coaching_History artifact (the single home is exempt from its
+    # own content). This is the exhaustive net Codex F1 requires — no artifact-type escapes it.
+    for path in _glob_multi(dirs, "*.md"):
+        ap = os.path.abspath(path)
+        if ap in hist_abs:
+            continue
+        body = _read(path)
+        if body is None:
+            continue
+        name = os.path.basename(path)
+        # (i) a parsed coaching_observation block anywhere but the one history file — ALL .md, no
+        #     manuscript exclusion (a block in the manuscript snapshot IS a pasted projection).
+        if _has_block(body, "coaching_observation"):
+            errs.append("H5.i single-home: %s carries an apodictic:coaching_observation block — "
+                        "observations live ONLY in the Coaching History artifact (no projection)"
+                        % name)
+        # (ii) the literal schema-id string outside the artifact — ALL .md, no manuscript exclusion.
+        if _SCHEMA_ID in body:
+            errs.append("H5.ii single-home: %s carries the literal schema-id %r outside the "
+                        "Coaching History artifact" % (name, _SCHEMA_ID))
+        # (iii)/(CH-token) carry manuscript false-positive risk — SKIP the frozen manuscript snapshot.
+        if ap in manuscript_abs:
+            continue
+        # (iii) an evidence-grammar string outside the artifact (the secondary grammar-leak net)
+        if _EVIDENCE_GRAMMAR_RE.search(body):
+            errs.append("H5.iii single-home: %s carries a coaching-history evidence-grammar string "
+                        "(`… @ session <n>`) outside the Coaching History artifact" % name)
+        # WARN (overridable) — a bare boundary-guarded CH-NN token (chapter-shorthand false-positive)
+        for tok in set(_CH_TOKEN_RE.findall(body)):
+            if not override_targets(body, "coaching-residue", re.escape(tok)):
+                warns.append("H5 bare CH-token: %s references %s outside the Coaching History "
+                             "artifact (bare-token; chapter-shorthand false-positive risk — "
+                             "override <!-- override: coaching-residue %s — <why> --> if intended)"
+                             % (name, tok, tok))
 
     # (v) — sidecar walk: NO coaching material beyond exactly `coaching_history_seq: <int>`.
     if sidecar_obj is not None:
@@ -911,9 +988,10 @@ def run_self_test():
     OPT = "<!-- coaching-history: opted-in -->\n\n"
 
     def obs(cid="CH-01", pattern="deferral-recurrence", count=3,
-            evidence=None, observation="I noticed the same thread got set aside the last three sessions "
-                                        "running. Does that match how it feels from where you sit, or is "
-                                        "something else pulling first?"):
+            evidence=None, observation="From what I've been tracking across our sessions, the same "
+                                        "thread got set aside the last three running. Does that match "
+                                        "how it feels from where you sit, or is something else pulling "
+                                        "first?"):
         if evidence is None:
             evidence = ["F-P5-01 deferred @ session 1", "F-P5-01 deferred @ session 2",
                         "F-P5-01 deferred @ session 3"]
@@ -1000,6 +1078,30 @@ def run_self_test():
     chk("h2_governed_gate_events_reconstructs_streak",
         check(OPT + obs(), sidecar_obj=gov_sidecar())[0] == 0)
 
+    # ---- F2 — the non-governed honesty caveat. A non-governed deferral-recurrence WITHOUT a caveat
+    #      WARNs (its streak is self-reported, not independently verified); WITH the caveat is clean;
+    #      a GOVERNED project is exempt; a per-id override silences it.
+    no_caveat = obs(observation="The same thread got set aside the last three sessions running. "
+                                "Does that track for you?")  # confident + invitation, but NO caveat
+    code, lines = check(OPT + no_caveat, sidecar_obj=sidecar(deferred=DEF3))
+    chk("f2_nongoverned_no_caveat_warns", code == 0 and any("H2 non-governed caveat" in ln for ln in lines))
+    chk("f2_nongoverned_no_caveat_strict_fails",
+        check(OPT + no_caveat, sidecar_obj=sidecar(deferred=DEF3), strict=True)[0] == 1)
+    # WITH the caveat (the default obs() carries "From what I've been tracking across our sessions") clean
+    chk("f2_nongoverned_with_caveat_clean",
+        not any("H2 non-governed caveat" in ln for ln in check(OPT + obs(), sidecar_obj=sidecar(deferred=DEF3))[1]))
+    # GOVERNED project: the caveat is NOT required (the per-session event records ARE the verification)
+    chk("f2_governed_exempt_from_caveat",
+        not any("H2 non-governed caveat" in ln for ln in check(OPT + no_caveat, sidecar_obj=gov_sidecar())[1]))
+    # a per-id override silences the caveat WARN (the writer accepted the honest framing another way)
+    ovc = "<!-- override: coaching-observation CH-01 — caveat stated in the artifact preamble -->\n"
+    chk("f2_caveat_override_silences",
+        not any("H2 non-governed caveat" in ln for ln in
+                check(OPT + ovc + no_caveat, sidecar_obj=sidecar(deferred=DEF3), strict=True)[1]))
+    # phase-incompletion is NOT subject to the deferral caveat (it's not a deferral streak)
+    chk("f2_phase_incompletion_no_caveat_needed",
+        not any("H2 non-governed caveat" in ln for ln in check(OPT + phase_obs, sidecar_obj=sidecar(deferred=DEF3))[1]))
+
     # ---- H3 — descriptive, not judgmental (WARN; ERROR --strict; per-id override)
     blame = obs(observation="You always avoid the hard structural work — you fail to finish it.")
     code, lines = check(OPT + blame, sidecar_obj=sidecar(deferred=DEF3))
@@ -1045,18 +1147,21 @@ def run_self_test():
     noinvite = obs(observation="The same thread was set aside three sessions running.")
     chk("h7_no_invitation_warn",
         any("H7 tentative-framing" in ln for ln in check(OPT + noinvite, sidecar_obj=sidecar(deferred=DEF3))[1]))
-    # the canonical confident-observation + open-question form is CLEAN (no H7 warn)
+    # the canonical confident-observation + open-question form (with the caveat) is CLEAN (no H7 warn)
     chk("h7_tentative_form_clean",
-        not any("H7" in ln for ln in check(OPT + obs(), sidecar_obj=sidecar(deferred=DEF3))[1]))
+        not any("H7 " in ln for ln in check(OPT + obs(), sidecar_obj=sidecar(deferred=DEF3))[1]))
     # the H3 per-id override also silences an H7 framing warn (one framing override per observation)
     ovh7 = "<!-- override: coaching-observation CH-01 — the writer asked for the raw count -->\n"
     chk("h7_override_silences",
-        not any("H7" in ln for ln in
+        not any("H7 " in ln for ln in
                 check(OPT + ovh7 + board, sidecar_obj=sidecar(deferred=DEF3), strict=True)[1]))
-    # a brief-but-real observation with an invitation must NOT be punished as a scoreboard
+    # a brief-but-real observation with an invitation (+ the non-governed caveat) must NOT be punished
+    # as a scoreboard. Match the H7 finding-LINE ("H7 " with the trailing space), not the summary line
+    # "see H3/H7/W1/H5 above" (which always contains "H7" as a substring).
     chk("h7_brief_real_prose_clean",
-        not any("H7" in ln for ln in
-                check(OPT + obs(observation="Set aside three sessions running — does that track?"),
+        not any("H7 " in ln for ln in
+                check(OPT + obs(observation="From my notes across our sessions, it slid three times "
+                                            "running — does that track?"),
                       sidecar_obj=sidecar(deferred=DEF3))[1]))
 
     # =========================================================================================
@@ -1108,6 +1213,54 @@ def run_self_test():
             fh.write("# Session Plan\n\nRecall: F-P5-01 deferred @ session 2, keep it in mind.\n")
         code, lines = run([d])
         chk("h5iii_evidence_grammar_leak_fails", code == 1 and any("H5.iii" in ln for ln in lines))
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+    # ==== Codex F1 REGRESSION: a projection into an UNLISTED artifact type (editorial letter, the
+    #      synthesis) must FAIL H5 — the old authored-artifact allowlist let these escape and survive
+    #      `delete`. Now every *.md in scope is scanned for (i)/(ii). ====
+    # (F1-a) an observation block projected into *_Core_DE_Synthesis_* FAILS H5 (was escaping)
+    d = tempfile.mkdtemp()
+    try:
+        build_project(d)
+        with open(os.path.join(d, "P_Core_DE_Synthesis_run5.md"), "w", encoding="utf-8", newline="\n") as fh:
+            fh.write("# Core DE Synthesis\n\n" + obs() + "\n")
+        code, lines = run([d])
+        chk("f1_synthesis_projection_fails", code == 1
+            and any("H5.i" in ln and "Synthesis" in ln for ln in lines))
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+    # (F1-b) an observation block projected into the editorial letter FAILS H5, AND after `delete` the
+    #        H6 recompute CATCHES the surviving projection (does NOT falsely report "deletion honored").
+    d = tempfile.mkdtemp()
+    try:
+        build_project(d)
+        with open(os.path.join(d, "P_Editorial_Letter_run5.md"), "w", encoding="utf-8", newline="\n") as fh:
+            fh.write("# Editorial Letter\n\n" + obs() + "\n")
+        chk("f1_letter_projection_fails", run([d])[0] == 1)
+        # delete removes the Coaching_History file + seq + tombstone, but NOT the letter projection
+        delete(d)
+        code, lines = run([d])
+        chk("f1_letter_projection_caught_by_h6_recompute",
+            code == 1 and any("H6 residue" in ln for ln in lines)
+            and not any("deletion honored" in ln for ln in lines))
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+    # (F1-c) the frozen manuscript snapshot is POSITIVELY excluded from (iii)/CH-token — a chapter
+    #        "CH-12" ref and prose "@ session" in the writer's manuscript must NOT trip H5 (--strict).
+    #        (i)/(ii) still apply to it — but a real manuscript carries neither a block nor the schema-id.
+    d = tempfile.mkdtemp()
+    try:
+        build_project(d)
+        with open(os.path.join(d, "P_Manuscript_Snapshot_run5.md"), "w", encoding="utf-8", newline="\n") as fh:
+            fh.write("# Chapter 12\n\nThe council met CH-12. He arrived @ session's end at the hall.\n")
+        chk("f1_manuscript_snapshot_not_tripped", run([d], strict=True)[0] == 0)
+        # …but a block ACTUALLY pasted into the snapshot (a projection, not prose) IS caught (i)
+        with open(os.path.join(d, "P_Manuscript_Snapshot_run5.md"), "w", encoding="utf-8", newline="\n") as fh:
+            fh.write("# Chapter 12\n\n" + obs() + "\n")
+        chk("f1_manuscript_block_still_caught", run([d])[0] == 1)
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
