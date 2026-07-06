@@ -503,6 +503,16 @@ if [ "$1" = "--check-all" ]; then
       printf '# Session Plan\n\n<!-- apodictic:coaching_observation\n{"schema": "apodictic.coaching_observation.v1", "id": "CH-01", "pattern": "deferral-recurrence", "count": 3, "evidence": ["F-P2-03 deferred @ session 1", "F-P2-03 deferred @ session 2", "F-P2-03 deferred @ session 3"], "observation": "leaked"}\n-->\n' > "$CHH_T/Session_Plan_01.md"
       if "$0" coaching-history "$CHH_T" >/dev/null 2>&1; then echo "ERROR: H5.i projection leak (Session_Plan observation block) did not FAIL"; CA_FAIL=1; else echo "  H5.i projection-leak fixture: FAIL as required (OK)"; fi
       rm -rf "$CHH_T"
+      # (Codex F1 REGRESSION) a projection into an UNLISTED artifact type (the editorial letter — the old
+      # authored-artifact allowlist covered 6 of ~46 types, so this ESCAPED H5 and survived `delete`).
+      # Now every *.md in scope is scanned: the projection must FAIL H5, and after `delete` the H6
+      # recompute must CATCH the surviving projection (NOT falsely report "deletion honored").
+      CHH_T=$(mktemp -d); cp -R "$CA_BASE/example-coaching-history/." "$CHH_T/"
+      printf '# Editorial Letter\n\n<!-- apodictic:coaching_observation\n{"schema": "apodictic.coaching_observation.v1", "id": "CH-01", "pattern": "deferral-recurrence", "count": 3, "evidence": ["F-P2-03 deferred @ session 1", "F-P2-03 deferred @ session 2", "F-P2-03 deferred @ session 3"], "observation": "leaked into the letter"}\n-->\n' > "$CHH_T/Example_Editorial_Letter_2026-03-01_opus48.md"
+      if "$0" coaching-history "$CHH_T" >/dev/null 2>&1; then echo "ERROR: F1 editorial-letter projection did not FAIL H5"; CA_FAIL=1; else echo "  F1 editorial-letter projection: FAIL as required (OK)"; fi
+      "$0" coaching-history delete "$CHH_T" >/dev/null 2>&1 || true   # delete removes the artifact+seq+tombstone, NOT the letter projection
+      if "$0" coaching-history "$CHH_T" >/dev/null 2>&1; then echo "ERROR: F1 H6 recompute falsely reported deletion honored with a surviving letter projection"; CA_FAIL=1; else echo "  F1 H6 recompute catches surviving letter projection: FAIL as required (OK)"; fi
+      rm -rf "$CHH_T"
       # (H5.v) a sidecar coach-only shadow field — execution.coaching_notes
       CHH_T=$(mktemp -d); cp -R "$CA_BASE/example-coaching-history/." "$CHH_T/"
       python3 - "$CHH_T/Diagnostic_State.meta.json" <<'PY' 2>/dev/null || true
