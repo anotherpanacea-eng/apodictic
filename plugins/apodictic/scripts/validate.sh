@@ -1167,6 +1167,31 @@ PY
         else
           echo "gate run_synthesis (temp copy): FAIL"; CA_FAIL=1
         fi
+        # FLI increment 4 M1a — the finding-trace row in run_spot_check. ROUTE (spec OQ #6): the
+        # committed example letter is a deliberately-minimal gate-state fixture (11 missing §-headings),
+        # so run_spot_check's letter-shape rows (synthesis-sections / decision-layer-check) block the
+        # WHOLE gate regardless of M1a — topping the fixture up to a full canonical letter is the heavy
+        # path the docs/revision-round-gate.md:7 precedent declined. So we assert the NEW ROW SPECIFICALLY:
+        # `gate run_spot_check` runs `finding-trace` and it reports `ok` (referential integrity holds —
+        # F-P5-01 cited + locked, no dangling/phantom), with NO finding-trace ERROR line. The row's full
+        # E1/E2/E3/W1 matrix is carried by the run_gate.py --self-test m1a_* cases (run here via
+        # --self-test-all). We also confirm `gate --attest run_spot_check` runs finding-trace fresh.
+        # || true: the WHOLE gate exits 1 (BLOCKED) on the minimal fixture's letter-shape rows;
+        # under `set -euo pipefail` an assignment from a failing command-sub aborts the script, so
+        # swallow the exit and assert on the captured finding-trace ROW line instead.
+        SPOT_OUT=$("$0" gate run_spot_check "$CA_TMP" 2>&1 || true)
+        if printf '%s' "$SPOT_OUT" | grep -qE 'finding-trace +ok' \
+           && ! printf '%s' "$SPOT_OUT" | grep -qE 'finding-trace +ERROR'; then
+          echo "gate run_spot_check finding-trace row (temp copy): PASS (integrity ok; other letter rows fail on the minimal fixture by design)"
+        else
+          echo "gate run_spot_check finding-trace row (temp copy): FAIL"; CA_FAIL=1
+        fi
+        ATTEST_OUT=$("$0" gate --attest run_spot_check "$CA_TMP" 2>&1 || true)
+        if printf '%s' "$ATTEST_OUT" | grep -qE 'finding-trace +ok'; then
+          echo "gate --attest run_spot_check finding-trace row (temp copy): PASS"
+        else
+          echo "gate --attest run_spot_check finding-trace row (temp copy): FAIL"; CA_FAIL=1
+        fi
         rm -rf "$CA_TMP"
       fi
     else
