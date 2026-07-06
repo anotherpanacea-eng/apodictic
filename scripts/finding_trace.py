@@ -172,8 +172,50 @@ def sidecar_state(sidecar_text):
     return (fs if isinstance(fs, dict) else {}), ex.get("phase"), True
 
 
+def event_advanced_revised_ids(sidecar_text, run_folder, sidecar_path):
+    """M1c — the event-scoped extension of E5's in-scope set (docs/finding-lifecycle-ids.md:112).
+
+    On a GOVERNED sidecar (state_version >= 2 with a gate_events[] log), return the ledger ids that
+    a CLEARING event of THIS run advanced to `revised` — i.e. events whose recorded run_folder
+    resolves to `run_folder` and whose finding_deltas set an id to `revised`. On an ungoverned
+    sidecar (no gate_events / state_version < 2), or when the run folder can't be matched, return an
+    EMPTY set — so trace() stays byte-identical to today for ungoverned inputs.
+
+    run_folder events store the path RELATIVE to the sidecar's dir (run_gate._rel_run_folder), so a
+    match is by realpath equality against the run folder under trace. This reads the log only; it
+    never re-derives finding_states (W1/E2/E3 still key on the folded execution.finding_states)."""
+    ids = set()
+    if not sidecar_text or run_folder is None or sidecar_path is None:
+        return ids
+    try:
+        meta = json.loads(sidecar_text)
+    except (ValueError, TypeError):
+        return ids
+    ex = meta.get("execution", {}) if isinstance(meta, dict) else {}
+    if not isinstance(ex, dict) or ex.get("state_version", 1) < 2:
+        return ids
+    events = ex.get("gate_events")
+    if not isinstance(events, list):
+        return ids
+    sc_dir = os.path.dirname(os.path.abspath(sidecar_path))
+    target = os.path.realpath(os.path.abspath(run_folder))
+    for e in events:
+        if not isinstance(e, dict):
+            continue
+        rf = e.get("run_folder")
+        deltas = e.get("finding_deltas")
+        if not isinstance(rf, str) or not isinstance(deltas, dict):
+            continue
+        if os.path.realpath(os.path.join(sc_dir, rf)) != target:
+            continue
+        for fid, st in deltas.items():
+            if st == "revised":
+                ids.add(fid)
+    return ids
+
+
 def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completion_texts=None,
-          retcon_texts=None, strict=False):
+          retcon_texts=None, strict=False, event_advanced=None):
     """Run the cross-artifact trace. Returns (code, lines).
 
     revision_texts   = ALL revision-stage artifacts (session plans + completed revisions) — the
@@ -183,6 +225,11 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completio
                        invariant completion_texts ⊆ revision_texts.
     retcon_texts     = Retcon Plan artifacts (F3) — the surface for E6 (a retcon_item `source`
                        finding-ref that is not in the ledger).
+    event_advanced   = M1c — ids advanced to `revised` by a CLEARING event of THIS run (governed
+                       sidecars only; event_advanced_revised_ids). WIDENS E5's in-scope set from
+                       comp_mentioned to comp_mentioned ∪ event_advanced. The E5 PREDICATE and the
+                       resolved_ids union are unchanged — only the iteration set grows. None/empty
+                       (the ungoverned default) leaves behaviour byte-identical.
     """
     lines, errs, warns = [], [], []
 
@@ -211,6 +258,7 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completio
     for rt in retcon_texts:
         retcon_sources |= retcon_source_ids(rt)
     finding_states, phase, sc_ok = sidecar_state(sidecar_text) if have_sidecar else ({}, None, True)
+    event_advanced = set(event_advanced or ())  # M1c: governed event-scope extension of E5 (empty by default)
 
     # E1 — dangling reference (letter cites an ID not in the ledger)
     if have_letter:
@@ -259,8 +307,13 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completio
     # the current report actually mentions (comp_mentioned): the sidecar's finding_states is a
     # rolling all-session map, so a finding resolved in an EARLIER (out-of-scope) round is durably
     # `revised` but simply won't appear in this report — and must not be flagged (PR #32 review P1).
+    # M1c widens the SCOPE (not the predicate) on governed sidecars: an id advanced to `revised` by
+    # THIS run's clearing event (event_advanced) is in scope too — so a marker removed AFTER the
+    # clear (post-clear tampering, the incoherence E5 exists to catch) is surfaced even if the id is
+    # not bare-mentioned in the current report. The resolved_ids union across ALL completion
+    # artifacts of the run is unchanged, so a marker living in a SIBLING artifact still clears it.
     if have_sidecar and sc_ok:
-        for fid in sorted(comp_mentioned):
+        for fid in sorted(comp_mentioned | event_advanced):
             if finding_states.get(fid) == "revised" and fid in inv and fid not in resolved_ids:
                 errs.append("E5 phantom completion: finding_states[%s]=revised but the completed-"
                             "revision artifact mentions it without a <!-- resolved: %s --> marker "
@@ -378,9 +431,13 @@ def classify_files(paths):
 
 def run(paths, strict=False):
     if len(paths) == 1 and os.path.isdir(paths[0]):
+        run_folder = paths[0]
         ledger, letter, sidecar, revisions, completions, retcons = resolve_run_folder(paths[0])
     else:
         ledger, letter, sidecar, revisions, completions, retcons = classify_files(paths)
+        # Explicit-file mode: the run folder under trace is the dir the ledger lives in (the
+        # completion artifacts sit beside it) — the anchor event_advanced matches events against.
+        run_folder = os.path.dirname(os.path.abspath(ledger)) if ledger else None
     if not ledger:
         return 2, ["finding-trace: no Findings Ledger found (need a *_Findings_Ledger_*.md or a "
                    "file with apodictic:finding blocks)"]
@@ -392,9 +449,11 @@ def run(paths, strict=False):
     revision_texts = [t for t in (_read(r) for r in revisions) if t is not None]
     completion_texts = [t for t in (_read(c) for c in completions) if t is not None]
     retcon_texts = [t for t in (_read(r) for r in retcons) if t is not None]
+    # M1c — governed event-scope extension of E5 (empty for ungoverned sidecars → byte-identical).
+    event_advanced = event_advanced_revised_ids(sidecar_text, run_folder, sidecar) if sidecar else set()
     return trace(_read(ledger), _read(letter) if letter else None, sidecar_text,
                  revision_texts=revision_texts, completion_texts=completion_texts,
-                 retcon_texts=retcon_texts, strict=strict)
+                 retcon_texts=retcon_texts, strict=strict, event_advanced=event_advanced)
 
 
 # ---------------------------------------------------------------- self-test
@@ -522,6 +581,49 @@ def run_self_test():
     code, _ = trace(ledger, letter_clean, sc_revised)
     check("e5_skipped_without_completion", code == 0)
 
+    # --- M1c: event-scoped E5 (docs/finding-lifecycle-ids.md:112) ---
+    # The widened set is comp_mentioned ∪ event_advanced; the predicate is unchanged.
+
+    # (i) POSITIVE — post-clear tampering. A governed clearing event advanced F-P5-01 to revised,
+    # its resolved marker has since been REMOVED, and the id is mentioned NOWHERE in the current
+    # report. Silent under the old comp-mention scope; caught once F-P5-01 is event_advanced.
+    rev_no_mention = "# Revision Report\n## Flags resolved\nStakes reworked. <!-- resolved: F-P5-02 -->"
+    code, lines = trace(ledger, letter_clean, sc_revised,
+                        revision_texts=[rev_no_mention], completion_texts=[rev_no_mention],
+                        event_advanced={"F-P5-01"})
+    check("m1c_e5_event_scope_positive",
+          code == 1 and any("E5 phantom" in ln and "F-P5-01" in ln for ln in lines))
+    # ...and WITHOUT event_advanced (ungoverned) the same inputs stay silent — byte-identical today.
+    code0, lines0 = trace(ledger, letter_clean, sc_revised,
+                          revision_texts=[rev_no_mention], completion_texts=[rev_no_mention])
+    check("m1c_e5_ungoverned_silent",
+          code0 == 0 and not any("E5 phantom" in ln for ln in lines0))
+
+    # (ii) INTRA-RUN CROSS-ARTIFACT (pinned): F-P5-01 is event_advanced AND bare-mentioned in
+    # completion artifact B, but its <!-- resolved --> marker lives in SIBLING completion artifact A
+    # of the same run. The resolved_ids union across ALL completion artifacts sees the marker -> the
+    # id is in resolved_ids -> stays PASS even under the widened scope.
+    comp_a_marker = "# Revision Report A\n## Flags resolved\n<!-- resolved: F-P5-01 -->"
+    comp_b_mention = "# Revision Report B\n## Notes\nF-P5-01 came up again in discussion.\n"
+    code, lines = trace(ledger, letter_clean, sc_revised,
+                        revision_texts=[comp_a_marker, comp_b_mention],
+                        completion_texts=[comp_a_marker, comp_b_mention],
+                        event_advanced={"F-P5-01"})
+    check("m1c_e5_intra_run_cross_artifact_pass",
+          code == 0 and not any("E5 phantom" in ln for ln in lines))
+
+    # (iii) event_advanced but state NOT revised (e.g. still delivered) -> predicate unchanged, no E5
+    code, lines = trace(ledger, letter_clean, sc_delivered,
+                        revision_texts=[rev_no_mention], completion_texts=[rev_no_mention],
+                        event_advanced={"F-P5-01"})
+    check("m1c_e5_event_scope_needs_revised_state",
+          code == 0 and not any("E5 phantom" in ln for ln in lines))
+
+    # event_advanced_revised_ids: ungoverned sidecar (no gate_events) -> empty set (byte-identity guard)
+    ung = json.dumps({"execution": {"finding_states": {"F-P5-01": "revised"}}})
+    check("m1c_event_advanced_ungoverned_empty",
+          event_advanced_revised_ids(ung, os.getcwd(), os.path.join(os.getcwd(), "Diagnostic_State.meta.json")) == set())
+
     # revised + explicitly marked resolved -> clean (no E5, no W3)
     code, _ = trace(ledger, letter_clean, sc_revised,
                     revision_texts=[rev_done_01], completion_texts=[rev_done_01])
@@ -621,6 +723,35 @@ def run_self_test():
           not any("rev=done" in ln for ln in run([os.path.join(d, "Proj_Findings_Ledger_run.md"),
                                                   os.path.join(d, "Proj_Revision_Calendar_run.md")])[1]))
     check("missing_ledger_usage_error", run([os.path.join(d, "Diagnostic_State.meta.json")])[0] == 2)
+
+    # --- M1c integration: a governed run folder whose clearing event advanced F-P5-01 to revised,
+    # marker since removed and the id mentioned nowhere -> run([folder]) surfaces E5 (event-scoped).
+    dm = tempfile.mkdtemp()
+    made.append(dm)
+    with open(os.path.join(dm, "Proj_Findings_Ledger_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write(ledger)
+    # governed sidecar: state_version 2 + a clearing revision_round event for THIS run folder ("."),
+    # finding_deltas advancing F-P5-01 to revised; folded finding_states carries revised.
+    gov = {"execution": {"state_version": 2, "phase": "revision_round",
+                         "finding_states": {"F-P5-01": "revised"},
+                         "gate_events": [
+                             {"gate": "revision_round", "result": "passed", "provenance": "mechanical",
+                              "run_folder": ".", "attested_contract": [], "attested_items": [],
+                              "checks": [{"validator": "x", "result": "ok"}],
+                              "finding_deltas": {"F-P5-01": "revised"}}]}}
+    with open(os.path.join(dm, "Diagnostic_State.meta.json"), "w", encoding="utf-8", newline="") as fh:
+        json.dump(gov, fh)
+    # a completion report that mentions F-P5-02 only (F-P5-01 marker removed, not mentioned)
+    with open(os.path.join(dm, "Proj_Revision_Report_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Revision Report\n## Flags resolved\n<!-- resolved: F-P5-02 -->\n")
+    mc_code, mc_lines = run([dm])
+    check("m1c_run_folder_event_scope_e5",
+          mc_code == 1 and any("E5 phantom" in ln and "F-P5-01" in ln for ln in mc_lines))
+    # sibling artifact carrying the F-P5-01 marker clears it (resolved_ids union) -> back to PASS
+    with open(os.path.join(dm, "Proj_Revision_Report_sibling.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Revision Report (sibling)\n<!-- resolved: F-P5-01 -->\n")
+    mc2_code, _ = run([dm])
+    check("m1c_run_folder_sibling_marker_clears", mc2_code == 0)
 
     for d in made:
         shutil.rmtree(d, ignore_errors=True)
