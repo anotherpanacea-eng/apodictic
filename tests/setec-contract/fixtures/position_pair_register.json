@@ -1,0 +1,94 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": null,
+  "claim_license": {
+    "additional_caveats": [
+      "Determinism: there is NO run-to-run determinism guarantee for live backends; an LLM extraction surface is not bit-deterministic. Human re-review absorbs the drift. CI determinism rides the mock/manifest backend (deterministic by construction).",
+      "Caps are a DISCLOSURE, not a judgment: over-cap survivors are the FIRST N pairs by document order and every dropped pair's loci are logged (results.pairs_dropped_cap_loci). There is no tension/confidence/model-order ranking anywhere.",
+      "The Q-gate's banned-vocabulary scan is a case-folded SUBSTRING match, so it conservatively refuses some legitimate topics that contain a banned stem ('counterargument', 'incompatibilist', 'conflict of interest', 'encounter'). This over-refusal is accepted by design — a word-boundary rule would weaken the guard.",
+      "Judge backend is `mock` — a deterministic TEST stub, not a real reader. Do not infer anything about the work from a mock run."
+    ],
+    "comparison_set": {
+      "judge_kind": "mock",
+      "judge_model": "(unspecified)",
+      "mode": "same_question_pairs_uncalibrated",
+      "prompt_fingerprint_sha256": "05301e03a6f9e0fd7fb2dca37ac405d717b0d94dd75b297afab65292e82408f9",
+      "register_scope": "nonfiction-argument only (v1)"
+    },
+    "confidence_interval_95": null,
+    "does_not_license": "It does NOT license any claim that the two passages ARE in conflict, contradiction, tension, or opposition — the register asserts no relation whatsoever; the human reads both passages and owns 100% of that call. It does NOT license which passage is correct, better, or which the author 'really' holds. It is NOT exhaustive: the absence of a pair is NOT evidence of consistency and confers no clean bill of health. It does NOT license application to fiction or a narrator/character's beliefs — v1 is the nonfiction-argument register only (a fiction arc can license a stated change, making false positives severe). The Q-string gate is SYNTAX ONLY: it requires interrogative form and refuses relation vocabulary, but gives ZERO protection against a loaded or presuppositional question (e.g. 'Why does the author abandon X in Ch 9?' passes both gates) — the human terminus, not the form gate, is the guarantee. There is no stance / relation / tension / conflict / agreement / polarity / verdict / label / score key anywhere in the envelope. Refusal disclosures (results.pairs_refused_q_gate_reasons) echo the REJECTED question verbatim in the JSON envelope so the gate is auditable; a rejected question may itself be framed as a relation — that echo is a record of what was refused, NOT an assertion by this surface, and it is omitted from the markdown report.",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "a register of passage PAIRS in one nonfiction argument-shaped work that address the SAME question Q, each pair carrying a neutral interrogative Q and both passages' verbatim loci (doc, start_char, end_char, quote), emitted in DOCUMENT ORDER. It licenses ONLY the observation that the two passages both speak to the same question — a pointer for a human to read both, nothing more.",
+    "references": [
+      "ContraDoc: Understanding Self-Contradictions in Documents with Large Language Models (Li, Raheja & Kumar), arXiv:2311.09182 — the contradiction-type taxonomy informs what 'same question' pairing must catch; https://arxiv.org/abs/2311.09182",
+      "BeliefShift: Benchmarking Temporal Belief Consistency and Opinion Drift in LLM Agents (Myakala, Agrawal & Manche), arXiv:2603.23848 — the position-drift framing; https://arxiv.org/abs/2603.23848"
+    ],
+    "register_match": [
+      "argument-shaped nonfiction (op-ed / policy / testimony)"
+    ],
+    "task_surface": "position_pair_register"
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** passage pairs in a long nonfiction work that address the same question Q, emitted relation-free with verbatim loci and in document order — NOT a conflict/contradiction claim, NOT which passage is right, NOT exhaustive (absence of a pair is not consistency), NOT for fiction; the human reads both passages and owns the entire conflict call\n\n**Reports:** a register of passage PAIRS in one nonfiction argument-shaped work that address the SAME question Q, each pair carrying a neutral interrogative Q and both passages' verbatim loci (doc, start_char, end_char, quote), emitted in DOCUMENT ORDER. It licenses ONLY the observation that the two passages both speak to the same question — a pointer for a human to read both, nothing more.\n\n**Does NOT report:** It does NOT license any claim that the two passages ARE in conflict, contradiction, tension, or opposition — the register asserts no relation whatsoever; the human reads both passages and owns 100% of that call. It does NOT license which passage is correct, better, or which the author 'really' holds. It is NOT exhaustive: the absence of a pair is NOT evidence of consistency and confers no clean bill of health. It does NOT license application to fiction or a narrator/character's beliefs — v1 is the nonfiction-argument register only (a fiction arc can license a stated change, making false positives severe). The Q-string gate is SYNTAX ONLY: it requires interrogative form and refuses relation vocabulary, but gives ZERO protection against a loaded or presuppositional question (e.g. 'Why does the author abandon X in Ch 9?' passes both gates) — the human terminus, not the form gate, is the guarantee. There is no stance / relation / tension / conflict / agreement / polarity / verdict / label / score key anywhere in the envelope. Refusal disclosures (results.pairs_refused_q_gate_reasons) echo the REJECTED question verbatim in the JSON envelope so the gate is auditable; a rejected question may itself be framed as a relation — that echo is a record of what was refused, NOT an assertion by this surface, and it is omitted from the markdown report.\n\n### Comparison context\n\n- **judge kind:** mock\n- **judge model:** (unspecified)\n- **mode:** same_question_pairs_uncalibrated\n- **prompt fingerprint sha256:** 05301e03a6f9e0fd7fb2dca37ac405d717b0d94dd75b297afab65292e82408f9\n- **register scope:** nonfiction-argument only (v1)\n- **Register match:** `argument-shaped nonfiction (op-ed / policy / testimony)`\n\n### Caveats\n\n- Determinism: there is NO run-to-run determinism guarantee for live backends; an LLM extraction surface is not bit-deterministic. Human re-review absorbs the drift. CI determinism rides the mock/manifest backend (deterministic by construction).\n- Caps are a DISCLOSURE, not a judgment: over-cap survivors are the FIRST N pairs by document order and every dropped pair's loci are logged (results.pairs_dropped_cap_loci). There is no tension/confidence/model-order ranking anywhere.\n- The Q-gate's banned-vocabulary scan is a case-folded SUBSTRING match, so it conservatively refuses some legitimate topics that contain a banned stem ('counterargument', 'incompatibilist', 'conflict of interest', 'encounter'). This over-refusal is accepted by design — a word-boundary rule would weaken the guard.\n- Judge backend is `mock` — a deterministic TEST stub, not a real reader. Do not infer anything about the work from a mock run.\n\n### References\n\n- ContraDoc: Understanding Self-Contradictions in Documents with Large Language Models (Li, Raheja & Kumar), arXiv:2311.09182 — the contradiction-type taxonomy informs what 'same question' pairing must catch; https://arxiv.org/abs/2311.09182\n- BeliefShift: Benchmarking Temporal Belief Consistency and Opinion Drift in LLM Agents (Myakala, Agrawal & Manche), arXiv:2603.23848 — the position-drift framing; https://arxiv.org/abs/2603.23848",
+  "results": {
+    "calibration_status": "uncalibrated",
+    "caps": {
+      "per_question": 12,
+      "per_work": 60
+    },
+    "judge": {
+      "judge_identity": {
+        "kind": "mock"
+      }
+    },
+    "pairs": [
+      {
+        "a": {
+          "doc": "target",
+          "end_char": 155,
+          "quote": "A well-designed carbon price is the most efficient lever available to a modern state.",
+          "start_char": 70
+        },
+        "b": {
+          "doc": "target",
+          "end_char": 309,
+          "quote": "Pricing carbon directly is the single most effective policy a government can adopt.",
+          "start_char": 226
+        },
+        "question": "What is the author's position on carbon pricing?"
+      },
+      {
+        "a": {
+          "doc": "target",
+          "end_char": 447,
+          "quote": "Dedicated fuel levies should underwrite the bulk of new transit capacity.",
+          "start_char": 374
+        },
+        "b": {
+          "doc": "target",
+          "end_char": 589,
+          "quote": "General revenue, not user fees, ought to carry the cost of expanding transit.",
+          "start_char": 512
+        },
+        "question": "How should new transit capacity be funded?"
+      }
+    ],
+    "pairs_dropped_cap": 0,
+    "pairs_dropped_cap_loci": [],
+    "pairs_refused_q_gate": 0,
+    "pairs_refused_q_gate_reasons": [],
+    "prompt_fingerprint_sha256": "<fixture-sha256>",
+    "run_timestamp_utc": "<fixture-timestamp>"
+  },
+  "schema_version": "1.0",
+  "target": {
+    "path": "<fixture>",
+    "words": 102
+  },
+  "task_surface": "position_pair_register",
+  "tool": "position_pair_register",
+  "version": "<fixture>",
+  "warnings": []
+}
