@@ -1,0 +1,13 @@
+{
+  "$id": "apodictic.contract_map.v1",
+  "$comment": "Source of truth for the apodictic:contract_map block (Reader-Contract Reverse Outline, SPEC v3.1 D5). The Contract Map is the ONE piece of judgment the reverse-outline deliverable needs that exists in no other artifact: the ids-only localization of each contract clause to the scenes that establish and pay it off. The model authors it at offer time from artifacts already in the run folder — closed-key, ids only, NO free prose — and it is an UNTRUSTED input (Mode-11): scripts/reader_contract_outline.py's R7 gate binds it to the staged Pass 0 / Contract / Ledger by sha256 (a stale Map fails loudly), checks every clause_text is a verbatim substring of its named Contract source_field, and RECOMPUTES the clause denominator from the Contract artifact, never trusting the Map's claimed completeness. The CLOSED-KEY check (additionalProperties:false, non-overridable) is what makes 'the Map has no free-prose field' a real guarantee and not a false one — the subset engine silently allows unknown keys otherwise (the persona.v1 D5 precedent). The subset engine only types `clauses` and `inputs` as their container type; reader_contract_outline.py hand-checks each nested clause object's closed key set + shape (the annotation.v1 annotations[] / divergence.v1 experiences precedent). Rendered outline cells carry each cited scene's Pass 0 'what the reader now knows' line verbatim as displayed evidence, so a wrong localization is visible evidence, never a trusted assertion. Validated by scripts/reader_contract_outline.py. See docs/reader-contract-outline.md.",
+  "title": "APODICTIC contract map (apodictic.contract_map.v1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "inputs", "clauses"],
+  "properties": {
+    "schema": {"const": "apodictic.contract_map.v1"},
+    "inputs": {"type": "object", "$comment": "Closed nested object {pass0_sha256, contract_sha256, ledger_sha256} — each a 64-hex sha256 of the staged artifact. The subset engine types this as an object only; reader_contract_outline.py R7 recomputes each hash from the staged artifact and compares (a stale Map fails loudly)."},
+    "clauses": {"type": "array", "minItems": 1, "$comment": "One entry per contract clause, ids only. Each clause object carries the CLOSED key set {clause_id, source_field, clause_text, established, paid_off, not_localizable, gap_finding_id}; reader_contract_outline.py R7 hand-checks the per-clause shape (the subset engine only types the container as array)."}
+  }
+}

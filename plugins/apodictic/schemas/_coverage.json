@@ -42,6 +42,7 @@
     {"schema": "apodictic.genre_profile.v1", "validators": ["argument-spine"], "canonical_gate": "example-argument-state-genre-grant.md", "closed_keys": false},
     {"schema": "apodictic.finding_disposition.v1", "validators": ["disposition-check"], "canonical_gate": "example-run-folder-dispositions", "closed_keys": true},
     {"schema": "apodictic.refutation.v1", "validators": ["refutation-coverage", "refutation-evidence", "refutation-write-scope"], "canonical_gate": "example-run-folder", "closed_keys": false},
-    {"schema": "apodictic.refutation_budget.v1", "validators": ["refutation-coverage", "refutation-evidence"], "canonical_gate": "example-run-folder", "closed_keys": true}
+    {"schema": "apodictic.refutation_budget.v1", "validators": ["refutation-coverage", "refutation-evidence"], "canonical_gate": "example-run-folder", "closed_keys": true},
+    {"schema": "apodictic.contract_map.v1", "validators": ["reader-contract-outline"], "canonical_gate": "example-reader-contract-outline", "closed_keys": true}
   ]
 }

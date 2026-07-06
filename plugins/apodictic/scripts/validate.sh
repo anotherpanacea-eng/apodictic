@@ -178,7 +178,7 @@ set -euo pipefail
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).
-AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion pass-header argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff revision-arc regression-diff legal-risk promise-contract continuity-bible setup-payoff world-bible intake-interview author-fingerprint content-advisory style-explanation persona-divergence argument-spine scene-ethics argument-groundtruth-check registry-check schema-coverage lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor roundtrip-disposition disposition-check synthesis-coverage specificity-floor refutation-coverage refutation-evidence refutation-write-scope obsidian-export html-export docx-export pdf-export results-guide position-pair-register validator-conventions argument-carve-behavior-preservation check-mirror"
+AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion pass-header argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff revision-arc regression-diff legal-risk promise-contract continuity-bible setup-payoff world-bible intake-interview author-fingerprint content-advisory style-explanation persona-divergence argument-spine scene-ethics argument-groundtruth-check registry-check schema-coverage lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor roundtrip-disposition disposition-check synthesis-coverage specificity-floor refutation-coverage refutation-evidence refutation-write-scope obsidian-export html-export docx-export pdf-export results-guide position-pair-register reader-contract-outline validator-conventions argument-carve-behavior-preservation check-mirror"
 # shellcheck disable=SC2086  # intentional word-splitting to count list entries
 AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 
@@ -228,7 +228,7 @@ _has_override() {
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, pass-header, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, revision-arc, regression-diff, legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, intake-interview, author-fingerprint, content-advisory, style-explanation, persona-divergence, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, schema-coverage, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, disposition-check, synthesis-coverage, specificity-floor, refutation-coverage, refutation-evidence, refutation-write-scope, obsidian-export, html-export, docx-export, pdf-export, results-guide, position-pair-register, validator-conventions, argument-carve-behavior-preservation, check-mirror"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, pass-header, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, revision-arc, regression-diff, legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, intake-interview, author-fingerprint, content-advisory, style-explanation, persona-divergence, argument-spine, scene-ethics, argument-groundtruth-check, registry-check, schema-coverage, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, disposition-check, synthesis-coverage, specificity-floor, refutation-coverage, refutation-evidence, refutation-write-scope, obsidian-export, html-export, docx-export, pdf-export, results-guide, position-pair-register, reader-contract-outline, validator-conventions, argument-carve-behavior-preservation, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
   echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, pass-header vs the canonical example-pass-artifact-header.md checked against the real pass-dependencies.md §3, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage paired with its Findings Ledger under --strict (contract + conflict integrity + the Increment-2 maps_to cross-check: FB-01.maps_to=F-RR-01 resolves E5-clean, no fully-validated item left unmapped W4-clean), editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter (plus the editor↔author dual-output pair — editor-scaffolding --dual over the scaffolded letter + its author-facing companion: D1 editor side E1-E4, D2 author register no-leak + Revision Checklist anchor, D3 top-severity-band consistency; plus the per-pass arm — editor-scaffolding --per-pass over the canonical scaffolded PASS artifact under --strict: P1 Editor Note addressee, P2 What-You-Might-Have-Missed, clean W1 firewall), diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, revision-arc vs the canonical Revision Arc + its Findings Ledger (A1 schema/nested-phase shape, A2 provenance closure, A3 self-consistency — one-phase-per-finding + Must-Fix-root-cause-not-in-polish, A4 non-empty rationale; clean W1 firewall-drift + W2 orphan under --strict), regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), setup-payoff vs the canonical Setup–Payoff Ledger example (SP1 schema over both block kinds, SP2 referential integrity — SP-01.payoff_ref=PO-03 resolves, SP3 open rationale — SP-02 carries one, SP4 derived-state agreement, clean X1 firewall; the three valid states pass and the abandoned SP-03 row is surfaced for prose citation), world-bible vs the canonical Worldbuilding Bible example (W1 schema + closed-key, WD unique ids, WB-R1 rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a unit class, WB-G2 chronology cycle + anchor-drift, and the WF surface-don't-resolve firewall scan — clean under --strict with the staged contradictions overridden), intake-interview vs the canonical Intake Interview example + its Ledger (I1 schema, I2 no-contract-dup, I3 grounded ambiguity via ref + source_note, I4 calibrate-not-suppress under --strict), author-fingerprint vs the canonical Author Voice Profile (F1 schema, F2 provenance, F3 same-register comparison, F4 descriptive-not-prescriptive, clean W1/W2 under --strict), content-advisory vs the canonical Content Advisory (A1 schema, A2 locus shape, A3 no-severity-leak, descriptive W1, opt-in W2 under --strict), style-explanation vs the canonical Author Style Explanation (X1 schema, X2 provenance, X3 no-severity-leak, X4 descriptive-not-prescriptive incl. the comparison-to-emulate firewall, X5 same-register cluster, clean X6/W1 under --strict), persona-divergence vs the canonical Persona Divergence Map + its Ledger (D1 schema incl. nested experiences enum, D2 grounded prediction, D3 target-severity anchoring, D4 anti-fabrication, D5 closed-key persona under --strict), argument-spine vs the canonical pre-draft Argument_State + the three genre-profiled Argument_States (Increment 5: B1-B4 + W4-W5 over grant / academic / pitch, --strict; the genre examples each carry a non-empty reviewer_objections pre-list so W5 stays green), scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources + the pre-draft Argument_State spine (the claim-ladder X1/X5/X6/X7 gates) + the scene-roster producer (the co-presence X2 gate), annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), roundtrip-disposition vs the canonical Roundtrip Disposition record + companion Revision Report staged with the glue-chain fixtures (RT1 recompute alignment + RT2 confirmation-record + RT3 confirmed-writes-only + RT4 partition coverage, plus hostile arms — a token-stripped copy must FAIL RT2, an extra unconfirmed resolved marker must FAIL RT3, and a copy with one finding's disposition row dropped must WARN RT4 by default and FAIL under --strict), disposition-check vs the canonical example-run-folder-dispositions (a non-governed sidecar + Coaching Log markers + readiness-caveat excerpt: DP0 record shape incl. trigger-iff-deferred, DP1 declined/deferred-Must-Fix caveat coverage, DP2 no-laundering incl. the bidirectional marker/sidecar sync — plus hostile arms: an assessment stripped of its Declined caveat line must FAIL DP1 (the severity-laundering attempt), a deferred record stripped of its trigger must FAIL DP0, a sidecar with one record dropped must WARN DP2.5 by default and FAIL under --strict, and a declined id's finding_states flipped to 'revised' with no corroborating completion artifact must FAIL DP1 + name DP2.6 — supersedence is recomputed from resolved markers, never trusted), synthesis-coverage vs the canonical coverage run folders (green hybrid dispatch-derived + degraded-and-disclosed, both PASS incl. --strict — V1 presence, V2 disk<->manifest row bijection, V3 note/sidecar/marker projection, V4 provenance/mode agreement, V5 D1-D4 degrade recompute; plus hostile arms — a manifest row removed for an on-disk pass artifact must FAIL V2, a letter marker flipped against the sidecar must FAIL V3, and a degraded run masked to ok in marker+sidecar must WARN V5 by default and FAIL under --strict), specificity-floor vs the canonical re-grounded letter<->ledger pair (docs/synthesis-regrounding.md M2: the restored 'nine belief failures' + Ch 12 anchor letter PASSES clean incl. --strict; plus hostile arms — decaying 'nine' to 'several' must FAIL the count floor, stripping the Ch 12 anchor from the Must-Fix window must FAIL the anchor floor, and removing the <!-- regrounding: done --> marker must WARN by default and FAIL under --strict; the smuggled-finding reverse-ID check is finding-trace E1's, not re-fixtured here), refutation-coverage + refutation-evidence + refutation-write-scope vs the canonical example-run-folder Refutation Record (docs/finding-disconfirmation.md §8: V1 no-HIGH-without-survived-refutation incl. the cap-bound disclosure-marker rules, V2 verbatim single-line snapshot-anchored counter-evidence + snapshot_sha256 binding + budget arithmetic, V3 no-severity-channel + exact confidence transcription per the outcome caps; plus hostile arms — a record stripped of its survived block must FAIL refutation-coverage, a fabricated not-in-snapshot quote must FAIL refutation-evidence, an injected severity key must FAIL refutation-write-scope, and a fabricated bound:true budget with eligible/processed numbers that don't recompute from the ledger/record must FAIL refutation-coverage (the cap-bound exemption recomputes, never trusts) + refutation-evidence), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), pdf-export vs the canonical manifest projected to a self-contained .pdf (hand-written PDF objects, base-14 Helvetica, an inline [finding_id] marker at each locus + a Findings section — P1 artifact integrity + P2 text round-trip + P3 comment resolution, asserting the fresh byte-deterministic pdf/ export is byte-identical to the committed fixture), results-guide vs the canonical example-results-guide run folder (the navigation-index integrity arm — R1 every `### question` heading is a canonical §3 User Question resolved against the real pass-dependencies.md, R2 every backtick .md/.json citation resolves to a run-folder file and no un-substituted `[…]` placeholder survives while `/coach` / `/audit [name]` command tokens are exempt, R3 no Must/Should/Could-Fix severity leak and no apodictic:finding block — the guide indexes, never diagnoses), position-pair-register vs the canonical example-position-pair-register fixture (artifact + envelope + manuscript under --strict — Q1 the two-layer banned-key walk (relation keys whole-envelope, generic verdict keys scoped to results.pairs; claim_license VALUES with relation words do NOT trip it), Q2 the verbatim re-check with the F1 punctuation-fold (a paraphrased quote DROPS the pair with an inspectable log + WARN, --strict FAILs), A3 no severity/finding leak, F5 the framing-prose relation-vocabulary scan excluding `>`-blockquote evidence lines, and the document-order check), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, quality-risk-triggers vs the canonical clean Contract (example-quality-risk-contract.md raises no Q1-Q5 pre-pass trigger, plus a hostile arm — a darkness rating flipped to the top setting must raise the Q1 consent/governance trigger and exit non-zero), schema-coverage vs the real schemas/ dir (every apodictic.*.schema.json bound + canonically exercised + closed-key table<->file agreement — Harness Contracts v2), plus validator-conventions (the fleet meta-linter — M1 every AGG validator has a --self-test dispatcher case, M2 resolvers classify on parsed blocks not raw apodictic:<type> marker scans, M3 derived count, M4 no orphan schema, M5 no bare/compiled override-marker scan + M6 no local code-span stripper — overrides use the override_marker SSoT, M7 exactly one canonical Firewall definition in the plugin tree, M8 no local re.compile of the Must/Should/Could-Fix severity token — leak-guards import severity_vocab.SEVERITY_TOKEN_RE), plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
@@ -1014,6 +1014,132 @@ PY
       rm -rf "$CA_PXE"
     else
       echo "ERROR: $CA_BASE/example-annotated-manuscript not found (pdf-export)"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical reader-contract-outline (R1-R7 over fiction + narrative-nf fixtures; producer chain; hostile arms) =="
+    # Reader-Contract Reverse Outline deliverable (docs/reader-contract-outline.md, SPEC v3.1): the book
+    # scene by scene mapped against its reader contract — a byte-deterministic PROJECTION of four inputs
+    # (Pass 0, Contract, Ledger, Map), the model's only authored bytes the gated ids-only Contract Map.
+    # The fixture dir holds TWO projects (Example = fiction, ExampleNF = narrative nf), so each is
+    # validated on its own single-project staging copy (a real run folder holds one project; staging
+    # keeps the newest-glob resolver from mixing the two). The canonical `example-reader-contract-outline`
+    # token is passed to the `reader-contract-outline` validator (schema-coverage C5 reachability).
+    if [ -d "$CA_BASE/example-reader-contract-outline" ] && command -v python3 >/dev/null 2>&1; then
+      CA_RCO_SRC="$CA_BASE/example-reader-contract-outline"
+      CA_RCO_OK=1
+      CA_RCO_HELPER="$CA_SCRIPT_DIR/reader_contract_outline.py"
+      # Canonical gate against the committed fixture, addressed through the canonical
+      # `example-reader-contract-outline` path component (schema-coverage C5 reachability — the token
+      # must reach a real, SINGLE-LINE invocation of the bound `reader-contract-outline` validator).
+      # The validator's run resolver is project-aware, so pointing it at the two-project fixture dir
+      # validates the fiction (Example) project deterministically without the ExampleNF files colliding.
+      "$0" reader-contract-outline "$CA_RCO_SRC" >/dev/null 2>&1 || CA_RCO_OK=0
+      for CA_RCO_PROJ in Example ExampleNF; do
+        CA_RCO=$(mktemp -d)
+        # stage only THIS project's four inputs (no committed outline — build regenerates it)
+        cp "$CA_RCO_SRC/${CA_RCO_PROJ}_Pass0_Reverse_Outline_2026-01-01.md" \
+           "$CA_RCO_SRC/${CA_RCO_PROJ}_Contract_2026-01-01.md" \
+           "$CA_RCO_SRC/${CA_RCO_PROJ}_Findings_Ledger_2026-01-01.md" \
+           "$CA_RCO_SRC/${CA_RCO_PROJ}_Contract_Map_2026-01-01.md" "$CA_RCO"/ 2>/dev/null
+        # build (R7-gate the Map, then project the outline) + validate the fresh outline
+        python3 "$CA_RCO_HELPER" build "$CA_RCO" >/dev/null 2>&1 || CA_RCO_OK=0
+        "$0" reader-contract-outline "$CA_RCO" >/dev/null 2>&1 || CA_RCO_OK=0
+        # fresh build == committed outline, byte-for-byte (proves the committed fixture is what a fresh
+        # build emits — no hand drift)
+        if [ -f "$CA_RCO/${CA_RCO_PROJ}_Reader_Contract_Outline_2026-01-01.md" ]; then
+          cmp -s "$CA_RCO/${CA_RCO_PROJ}_Reader_Contract_Outline_2026-01-01.md" \
+                 "$CA_RCO_SRC/${CA_RCO_PROJ}_Reader_Contract_Outline_2026-01-01.md" || CA_RCO_OK=0
+        else
+          CA_RCO_OK=0
+        fi
+        rm -rf "$CA_RCO"
+      done
+      # Also drive the C5 canonical-gate token through the validator against the fiction project via a
+      # single-project staging dir under the canonical basename (the token schema-coverage C5 requires).
+      # Hostile arms (derived in-place from the fiction fixture; never committed — the disposition-check
+      # precedent). Each MUST fail; a passing hostile means the gate went blind.
+      CA_RCO_H=$(mktemp -d)
+      cp "$CA_RCO_SRC"/Example_Pass0_Reverse_Outline_2026-01-01.md \
+         "$CA_RCO_SRC"/Example_Contract_2026-01-01.md \
+         "$CA_RCO_SRC"/Example_Findings_Ledger_2026-01-01.md \
+         "$CA_RCO_SRC"/Example_Contract_Map_2026-01-01.md \
+         "$CA_RCO_SRC"/Example_Reader_Contract_Outline_2026-01-01.md "$CA_RCO_H"/ 2>/dev/null
+      # clean baseline passes (via the canonical example-reader-contract-outline dir token for C5)
+      "$0" reader-contract-outline "$CA_RCO_H" >/dev/null 2>&1 || CA_RCO_OK=0
+      CA_RCO_MAP="$CA_RCO_H/Example_Contract_Map_2026-01-01.md"
+      CA_RCO_OUT="$CA_RCO_H/Example_Reader_Contract_Outline_2026-01-01.md"
+      # Hostile R7: doctor inputs.contract_sha256 -> stale Map must FAIL (recompute-not-trust)
+      CA_RCO_H7=$(mktemp -d); cp "$CA_RCO_H"/* "$CA_RCO_H7"/ 2>/dev/null
+      python3 - "$CA_RCO_H7/Example_Contract_Map_2026-01-01.md" <<'PY'
+import re, sys
+p = sys.argv[1]
+s = open(p).read()
+s = re.sub(r'"contract_sha256": "[0-9a-f]{64}"', '"contract_sha256": "%s"' % ("0"*64), s)
+open(p, "w").write(s)
+PY
+      if "$0" reader-contract-outline "$CA_RCO_H7" >/dev/null 2>&1; then
+        echo "reader-contract-outline hostile R7 (stale sha256) did NOT fail"; CA_RCO_OK=0
+      fi
+      rm -rf "$CA_RCO_H7"
+      # Hostile R3/R7: cite a nonexistent scene id in the Map -> must FAIL
+      CA_RCO_H3=$(mktemp -d); cp "$CA_RCO_H"/* "$CA_RCO_H3"/ 2>/dev/null
+      python3 - "$CA_RCO_H3/Example_Contract_Map_2026-01-01.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p).read().replace('"established": ["S1"],', '"established": ["S99"],', 1)
+open(p, "w").write(s)
+PY
+      if "$0" reader-contract-outline "$CA_RCO_H3" >/dev/null 2>&1; then
+        echo "reader-contract-outline hostile R3 (nonexistent scene) did NOT fail"; CA_RCO_OK=0
+      fi
+      rm -rf "$CA_RCO_H3"
+      # Hostile R4: paraphrase a gap cell in the rendered outline (not byte-matching the Ledger) -> FAIL
+      CA_RCO_H4=$(mktemp -d); cp "$CA_RCO_H"/* "$CA_RCO_H4"/ 2>/dev/null
+      python3 - "$CA_RCO_H4/Example_Reader_Contract_Outline_2026-01-01.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p).read().replace("stated in the keeper's dialogue but never dramatized",
+                           "not shown on the page", 1)
+open(p, "w").write(s)
+PY
+      if "$0" reader-contract-outline "$CA_RCO_H4" >/dev/null 2>&1; then
+        echo "reader-contract-outline hostile R4 (paraphrased gap) did NOT fail"; CA_RCO_OK=0
+      fi
+      rm -rf "$CA_RCO_H4"
+      # Hostile R6: drop the 2nd READER PROMISE clause (renumber C1..C4) -> promise split incomplete;
+      # WARN by default (exit 0), FAIL under --strict. Rebuild the outline from the mutated Map first.
+      CA_RCO_H6=$(mktemp -d); cp "$CA_RCO_H"/* "$CA_RCO_H6"/ 2>/dev/null
+      rm -f "$CA_RCO_H6/Example_Reader_Contract_Outline_2026-01-01.md"
+      python3 - "$CA_RCO_H6/Example_Contract_Map_2026-01-01.md" <<'PY'
+import json, re, sys
+p = sys.argv[1]
+s = open(p).read()
+m = re.search(r"<!-- apodictic:contract_map\n(.*?)\n-->", s, re.DOTALL)
+obj = json.loads(m.group(1))
+obj["clauses"] = [c for c in obj["clauses"] if c["clause_id"] != "C2"]
+for i, c in enumerate(obj["clauses"]):
+    c["clause_id"] = "C%d" % (i + 1)
+s = s[:m.start(1)] + json.dumps(obj, indent=2) + s[m.end(1):]
+open(p, "w").write(s)
+PY
+      python3 "$CA_RCO_HELPER" build "$CA_RCO_H6" >/dev/null 2>&1 || CA_RCO_OK=0
+      if "$0" reader-contract-outline "$CA_RCO_H6" >/dev/null 2>&1; then
+        : # default WARN -> exit 0 expected
+      else
+        echo "reader-contract-outline hostile R6 (dropped promise clause) FAILED by default (should WARN)"; CA_RCO_OK=0
+      fi
+      if "$0" reader-contract-outline --strict "$CA_RCO_H6" >/dev/null 2>&1; then
+        echo "reader-contract-outline hostile R6 did NOT fail under --strict"; CA_RCO_OK=0
+      fi
+      rm -rf "$CA_RCO_H6"
+      rm -rf "$CA_RCO_H"
+      if [ "$CA_RCO_OK" -eq 1 ]; then
+        echo "reader-contract-outline (fiction + narrative-nf + producer chain + hostile arms): PASS"
+      else
+        echo "reader-contract-outline (fiction + narrative-nf + producer chain + hostile arms): FAIL"; CA_FAIL=1
+      fi
+    elif [ ! -d "$CA_BASE/example-reader-contract-outline" ]; then
+      echo "ERROR: $CA_BASE/example-reader-contract-outline not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical Timeline (timeline-arithmetic, timeline-anchor-conflict, timeline-diff self) =="
@@ -6394,6 +6520,39 @@ EOF
       python3 "$AM_HELPER" annotated-manuscript "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — annotated-manuscript skipped; check inline that the annotated copy mutates no prose (deleting every {>> ... <<} span reproduces the snapshot), each comment is a verbatim finding-field projection, and every Must-Fix appears as a margin comment span. See docs/annotated-manuscript.md."
+    exit 0
+    ;;
+
+  reader-contract-outline)
+    # Reader-Contract Reverse Outline Deliverable (SPEC v3.1; docs/reader-contract-outline.md): the book
+    # scene by scene, mapped against the reader contract it implicitly makes. A byte-deterministic
+    # PROJECTION of four inputs (Pass 0 reverse outline, Contract, Findings Ledger, and the gated
+    # Contract Map) — the model's ONLY authored bytes anywhere in the deliverable are the Map's ids-only
+    # localization (apodictic.contract_map.v1, closed-key). Validates R1 spine projection round-trips to
+    # Pass 0 (ids+count+text verbatim), R2 two-sided contract-field fidelity (none dropped/invented,
+    # empty fields render their literal state), R3 the rendered Contract Map <-> Map-block bijection with
+    # every evidence line byte-matching the cited scene's Pass 0 "what the reader now knows" line, R4 no
+    # fabricated gap (each gap cell is `none logged` or the verbatim Ledger projection), R5 no
+    # untranslated framework shorthand in the deliverable (the letter's author-facing families), R6
+    # contract coverage (advisory WARN; ERROR --strict; the READER-PROMISE split-completeness question,
+    # override `<!-- override: reader-contract-coverage — ... -->` via the override_marker SSoT), and R7
+    # map integrity (Mode-11 untrusted input: closed-key schema, inputs.*_sha256 bound to the staged
+    # artifacts so a stale Map fails loudly, every clause_text a verbatim substring of its named Contract
+    # source_field, the clause denominator recomputed from the Contract — never trusted from the Map).
+    # Takes a run folder (globs Pass 0 + Contract + Ledger + Map + the rendered outline) or explicit
+    # files. Delegates to scripts/reader_contract_outline.py; degrades to an advisory WARN without
+    # python3. (`reader_contract_outline.py build <staging>` R7-gates the Map then projects the outline.)
+    RCO_DIR=$(cd "$(dirname "$0")" && pwd)
+    RCO_HELPER="$RCO_DIR/reader_contract_outline.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$RCO_HELPER" ]; then python3 "$RCO_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; reader-contract-outline is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$RCO_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 reader-contract-outline <run_folder|files...> [--strict] | --self-test"; exit 2; fi
+      python3 "$RCO_HELPER" reader-contract-outline "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — reader-contract-outline skipped; check inline that §Scene Spine round-trips to the Pass 0 reverse outline verbatim, §The Reader Contract projects every Contract schema field two-sided, each Contract-Map evidence line byte-matches the cited scene's Pass 0 'what the reader now knows' line, each gap cell is `none logged` or the verbatim Ledger entry, and the Map's inputs.*_sha256 bind to the staged Pass 0/Contract/Ledger. See docs/reader-contract-outline.md."
     exit 0
     ;;
 
