@@ -88,10 +88,13 @@ import re
 import sys
 
 try:
-    from override_marker import override_payloads
+    from override_marker import override_payloads, strip_code_spans
 except ImportError:  # degraded: no override scan (in-repo the shared helper always ships)
     def override_payloads(body, slug):
         return []
+
+    def strip_code_spans(body):
+        return body
 
 # ---------------------------------------------------------------- pinned vocabulary
 
@@ -586,8 +589,11 @@ def run_report(project_dir):
                 qro_count += 1
                 if _BUDGET_RE.search(payload or ""):
                     qro_budget += 1
-        # (b) run-metadata / intake-notes token form: `quality_risk_override: Q[n] — <rationale>`
-        for m in _QRO_TOKEN_RE.finditer(body):
+        # (b) run-metadata / intake-notes token form: `quality_risk_override: Q[n] — <rationale>`.
+        # Strip code spans first (the shared SSoT, as the marker form does via override_payloads) so a
+        # doc that merely QUOTES `quality_risk_override: Q3 — …` as an example is not miscounted as a
+        # real declined-escalation record.
+        for m in _QRO_TOKEN_RE.finditer(strip_code_spans(body)):
             qro_count += 1
             if _BUDGET_RE.search(m.group(1) or ""):
                 qro_budget += 1
@@ -861,10 +867,16 @@ def run_self_test():
                "notes\n<!-- override: quality-risk-Q2 — budget constraint, exploratory -->\n")
         _write(os.path.join(r2, "run-meta.md"),
                "quality_risk_override: Q5 — time pressure this round\n")
+        # a doc that merely QUOTES the token form in a code span must NOT count (code-span strip) —
+        # the count stays 2, not 3.
+        _write(os.path.join(r2, "how-to.md"),
+               "To decline for cost, write `quality_risk_override: Q3 — budget` in run metadata.\n")
         code, lines = run_report(proj)
         chk("report_runs_scanned", code == 0 and has(lines, "runs scanned"))
         chk("report_tag_tally_opus", any("opus46" in ln and "2" in ln for ln in lines))
         chk("report_qro_count", any("quality_risk_override records: 2" in ln for ln in lines))
+        chk("report_quoted_token_not_counted",  # the code-span-quoted example did not inflate to 3
+            not any("quality_risk_override records: 3" in ln for ln in lines))
         chk("report_budget_flavored", any("budget-flavored rationale: 1" in ln for ln in lines))
 
     print("Self-test: %s" % ("PASS" if rc == 0 else "FAIL"))
