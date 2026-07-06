@@ -8,9 +8,9 @@ CENTRAL QUESTION drives the deliverable's single idea clause in place of CONTROL
 
 GENRE/SUBGENRE: narrative nonfiction / investigative
 READER PROMISE: the reader learns how the dam failed and who chose to bury the warning
-CONTROLLING IDEA: 
-HEAT LEVEL: 
-DARKNESS LEVEL: 
+CONTROLLING IDEA:
+HEAT LEVEL:
+DARKNESS LEVEL:
 PRIMARY TENSION TYPE: epistemic
 ENDING TYPE: closed
 TONE COMPS: measured, investigative

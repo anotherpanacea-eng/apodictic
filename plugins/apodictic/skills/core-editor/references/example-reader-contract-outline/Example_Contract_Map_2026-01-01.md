@@ -7,7 +7,7 @@ This file is machine-read plumbing for the reader-contract reverse outline. It c
   "schema": "apodictic.contract_map.v1",
   "inputs": {
     "pass0_sha256": "86e9942973c0f662e36e2768192324c8574390ebbfbd6927a72a923b933446f5",
-    "contract_sha256": "b850fa290214d47e69b67616312f0613f68b25bcf8759435d4b5378bff5c4f8e",
+    "contract_sha256": "f3e1a0de6f8ceb380e5f39350119d0ddf8e5d3dd2cfe64c7cb6ea306952add95",
     "ledger_sha256": "bb61c2f090264098c6ab68e0326ad7681bea4113c8d78a7eedba409d07267cc2"
   },
   "clauses": [
