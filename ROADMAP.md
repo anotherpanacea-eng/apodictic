@@ -112,6 +112,7 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 8. Adversarial Evidence Review (v1.0) + level-setting research — three-protocol adversarial pressure test (ACH, legal cross-exam, severe testing), HX/LX/SX code families, domain packs (GRADE, RoB 2, ROBINS-I, FRE 702), two-tier severity with convergence, survivability judgments, Adversarial_Evidence_Preparation_Guide.md artifact. Adversarial collaboration: Claude Opus 4.6 + Codex o3.
 9. Nonfiction routing in intake (runtime + design docs)
 9. Revision Coach argument mode (8 coaching tracks + argument session plan template)
+10. Position-Pair Register (v0.1) — consumer of SETEC's `position_pair_register` surface: a relation-free register of passage PAIRS in a nonfiction work that address the same question Q, in document order; the human reads both and owns the entire conflict call (the fleet's deliberate NON-step across the content-verdict wall — the consumer derives nothing, runs gates only). Vendor/pin/drift-gate + the Q1 banned-key walk / Q2 verbatim-with-F1-fold / A3 firewall / F5 framing-prose / document-order validator. Anchored to ContraDoc (arXiv:2311.09182) + BeliefShift (arXiv:2603.23848). Consumer gated on SETEC v1.121.0.
 
 **In progress**
 
