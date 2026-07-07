@@ -21,5 +21,11 @@
     "spans_outside_active_context": ["Ch 1-2", "Ch 4-11"],
     "verification_excerpt_count": 2,
     "estimated_context_utilization": null
-  }
+  },
+  "dispatch_log": [
+    { "seq": 1, "step": "pass0+1", "model_tag": "opus46", "execution_mode": "hybrid", "max_turns": 32, "provenance": "dispatch-derived" },
+    { "seq": 2, "step": "pass5", "model_tag": "opus46", "execution_mode": "hybrid", "max_turns": null, "provenance": "dispatch-derived" },
+    { "seq": 3, "step": "pass8", "model_tag": "opus46", "execution_mode": "hybrid", "max_turns": null, "provenance": "dispatch-derived" },
+    { "seq": 4, "step": "synthesis", "model_tag": "opus46", "execution_mode": "hybrid", "max_turns": null, "provenance": "dispatch-derived" }
+  ]
 }
