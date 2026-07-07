@@ -170,7 +170,15 @@ Options change based on the Artifact answer.
 - **Q4 — Prior thin synthesis:** prior-run `Diagnostic_State.meta.json` shows Underdiagnosis Retry Loop fired in prior runs; OR user states "last round felt thin."
 - **Q5 — Submission readiness:** Q2 goal = `submit`; OR Pass 11 in resolved pass set.
 
-When any trigger fires, the router pre-fills its mode recommendation at the trigger's escalation target (per `run-core.md` §Quality-Risk Mode Selection) and surfaces the rationale to the user *before* §2b's recommendation table. Stacking triggers cap at swarm. The user retains the override path (explicit acknowledgment recorded in run metadata as `quality_risk_override`). See `run-core.md` §Quality-Risk Mode Selection for the canonical rationale per trigger and `scripts/validate.sh quality-risk-triggers` for the mechanical check.
+When any trigger fires, the router pre-fills its mode recommendation at the trigger's escalation target (per `run-core.md` §Quality-Risk Mode Selection) and surfaces the rationale to the user *before* §2b's recommendation table. Stacking triggers cap at swarm. The user retains the override path (explicit acknowledgment recorded in run metadata as `quality_risk_override`; and, to cap *below* the floor, the sibling `cost_floor_override` — see the below-floor recording step next). See `run-core.md` §Quality-Risk Mode Selection for the canonical rationale per trigger and `scripts/validate.sh quality-risk-triggers` for the mechanical check.
+
+**Below-floor pick → the gated cost-floor front door (router-side recording).** A §2b selection strictly **below** the token-fit floor (e.g. the user picks "standard read"/sequential on a >100K-word standard-context manuscript whose floor is swarm) is NOT a frictionless `execution:<mode>` write — it is the *same* recorded artifact as a hand-authored cap, routed through the same gate. On detecting `selected_mode < token-fit-floor`, the router:
+
+1. **Records** a `cost_floor_override` marker + token — `<!-- override: cost-floor-<mode> — <rationale> -->` plus `cost_floor_override: <mode>[; context_tier: standard|large] — <rationale>` (the `context_tier` sub-field is required when `<mode> = single-agent`) — per `run-core.md` §Cost-Floor Override (Budget Cap).
+2. **Runs the three-part disclosure** (the numbers from the preflight `## Per-Mode Token Cost Estimate`; the named trade typed correctly — safety if below the token-fit floor, quality if it demotes a fired Q-target, which additionally needs the paired `quality-risk-Q[n]` marker; and the honest N=1-hedged framing of what swarm buys).
+3. **Proceeds**, routing the pick through `scripts/validate.sh cost-floor` (CF3 viability / CF4 no-silent-demotion) exactly like a hand-authored cap.
+
+An **at-or-above-floor** §2b pick keeps its unchanged frictionless `execution:<mode>` path — no cap is recorded, so there is nothing to gate. There is thus no informal below-floor affordance that escapes the validator.
 
 ---
 

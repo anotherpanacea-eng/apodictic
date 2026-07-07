@@ -130,6 +130,22 @@ _TAG_CELL_RE = re.compile(r"`([A-Za-z0-9._-]+)`")
 _QRO_TOKEN_RE = re.compile(r"quality_risk_override:\s*Q\d+\s*[—–-]\s*(.+)", re.IGNORECASE)
 _BUDGET_RE = re.compile(r"\b(budget|cost|token|expensive|cheap|afford|spend|price|pric)\w*",
                         re.IGNORECASE)
+# cost_floor_override records (CR-6 detectability): a run-metadata token sibling of _QRO_TOKEN_RE.
+# The marker form is counted via the shared override_marker helper (M5-clean, over the three
+# cost-floor-* slugs); this token form is a plain field read (not an override-marker scan, so it does
+# not trip M5), code-span stripped so a documentation example is not miscounted. The token GRAMMAR is
+# the single SSoT in config_checks (imported here so the two copies cannot drift when it tightens —
+# e.g. the mode/tier right-boundary that rejects `sequential-lite`/`large-window`). The fallback
+# keeps --report working if config_checks is somehow unimportable (in-repo it always ships
+# alongside); KEEP THE FALLBACK IN SYNC with config_checks._CFO_TOKEN_RE.
+try:
+    from config_checks import _CFO_TOKEN_RE
+except ImportError:  # degraded: config_checks (token-grammar SSoT) not importable
+    _CFO_TOKEN_RE = re.compile(
+        r"cost_floor_override:\s*(single-agent|sequential|hybrid)(?=[\s;—–]|$)"
+        r"(?:\s*;\s*context_tier:\s*(standard|large)(?=[\s;—–]|$))?"
+        r"\s*[—–-]\s*(.+)", re.IGNORECASE)
+_CFO_SLUGS = ("cost-floor-single-agent", "cost-floor-sequential", "cost-floor-hybrid")
 
 
 # ---------------------------------------------------------------- io helpers
@@ -548,6 +564,7 @@ def run_report(project_dir):
     tag_tally = {}
     qro_count = 0
     qro_budget = 0
+    cfo_count = 0
 
     # quality_risk_override lives in run metadata / intake notes — scan every .md in each run
     # folder plus the sidecar's own JSON string (the run-metadata token form).
@@ -597,6 +614,17 @@ def run_report(project_dir):
             qro_count += 1
             if _BUDGET_RE.search(m.group(1) or ""):
                 qro_budget += 1
+        # cost_floor_override records (CR-6 detectability): nothing else reads these across runs, so
+        # without this line a recorded cost cap would be recorded-but-invisible. A well-formed cap
+        # carries BOTH a marker AND a token in the SAME body (CF1/CF2), so counting each form
+        # separately double-counts one logical cap; dedupe per body to the logical-cap count (the max
+        # of the two form-tallies — one cap = one record, matching quality_risk_override semantics).
+        # Marker form via the shared override_marker helper (code spans stripped) over the three slugs;
+        # token form via _CFO_TOKEN_RE over strip_code_spans, so a code-span-quoted example is not
+        # counted.
+        n_cfo_marker = sum(len(override_payloads(body, slug)) for slug in _CFO_SLUGS)
+        n_cfo_token = sum(1 for _ in _CFO_TOKEN_RE.finditer(strip_code_spans(body)))
+        cfo_count += max(n_cfo_marker, n_cfo_token)
 
     lines.append("dispatch-record --report (read-only cross-run; gates nothing)")
     lines.append("  project: %s" % os.path.abspath(project_dir))
@@ -609,6 +637,8 @@ def run_report(project_dir):
         lines.append("  per-model-tag dispatch tallies: (none — no populated dispatch_log found)")
     lines.append("  M2 demand signal — quality_risk_override records: %d (of which "
                  "budget-flavored rationale: %d)" % (qro_count, qro_budget))
+    lines.append("  cost_floor_override records: %d (deduped marker+token per body — one logical cap = "
+                 "one record; a code-span-quoted example is not counted)" % cfo_count)
     lines.append("  (dispatch_log provenance is dispatch-derived = parent-requested, NOT "
                  "platform-verified.)")
     return 0, lines
@@ -862,15 +892,21 @@ def run_self_test():
         _write(os.path.join(r2, "Diagnostic_State.meta.json"),
                json.dumps({"dispatch_log": [_entry(1, "all-passes", tag="opus46",
                                                    mode="single-agent")]}))
-        # a budget-flavored override marker + a plain token form
+        # r1: a budget-flavored QRO marker, PLUS a well-formed cost-floor cap carrying BOTH halves in
+        # ONE body (marker + token) — the CF1/CF2 well-formed shape. It must count as ONE logical cap,
+        # not two (the CR-6 double-count fix; before the fix this body tallied marker+token = 2).
         _write(os.path.join(r1, "Contract.md"),
-               "notes\n<!-- override: quality-risk-Q2 — budget constraint, exploratory -->\n")
+               "notes\n<!-- override: quality-risk-Q2 — budget constraint, exploratory -->\n"
+               "<!-- override: cost-floor-sequential — $20-plan usage window -->\n"
+               "cost_floor_override: sequential — $20-plan usage window\n")
+        # r2: a QRO token, plus an orphan cost-floor token (token half only) — one logical cap.
         _write(os.path.join(r2, "run-meta.md"),
-               "quality_risk_override: Q5 — time pressure this round\n")
-        # a doc that merely QUOTES the token form in a code span must NOT count (code-span strip) —
-        # the count stays 2, not 3.
+               "quality_risk_override: Q5 — time pressure this round\n"
+               "cost_floor_override: sequential — $20-plan usage window\n")
+        # a doc that merely QUOTES the token forms in a code span must NOT count (code-span strip).
         _write(os.path.join(r2, "how-to.md"),
-               "To decline for cost, write `quality_risk_override: Q3 — budget` in run metadata.\n")
+               "To decline for cost, write `quality_risk_override: Q3 — budget` in run metadata.\n"
+               "To cap below the floor, write `cost_floor_override: hybrid — budget window` instead.\n")
         code, lines = run_report(proj)
         chk("report_runs_scanned", code == 0 and has(lines, "runs scanned"))
         chk("report_tag_tally_opus", any("opus46" in ln and "2" in ln for ln in lines))
@@ -878,6 +914,10 @@ def run_self_test():
         chk("report_quoted_token_not_counted",  # the code-span-quoted example did not inflate to 3
             not any("quality_risk_override records: 3" in ln for ln in lines))
         chk("report_budget_flavored", any("budget-flavored rationale: 1" in ln for ln in lines))
+        chk("report_cfo_count",  # r1 both-halves-in-one-body = 1 logical cap (NOT 2) + r2 orphan token = 1
+            any("cost_floor_override records: 2" in ln for ln in lines))
+        chk("report_cfo_dedup_not_double_counted",  # before the dedup fix r1 tallied marker+token=2 -> total 3
+            not any("cost_floor_override records: 3" in ln for ln in lines))
 
     print("Self-test: %s" % ("PASS" if rc == 0 else "FAIL"))
     return rc
