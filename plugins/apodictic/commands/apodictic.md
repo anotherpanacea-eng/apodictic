@@ -47,7 +47,7 @@ A developmental editor that **listens before diagnosing**: it infers the manuscr
 **Projects**
 - `/projects` — list and tidy your registered projects (the registry surface).
 
-The commands sit on five skills: **core-editor** (the diagnostic engine and its passes), **specialized-audits** (the deep-dive audits and internet-research modes), **plot-architecture** (the spine library), **pre-writing-pathway**, and **revision-coach**.
+The commands sit on six capability areas: the diagnostic engine and its passes, the deep-dive audits and internet-research modes, the nonfiction argument engine, the spine library, the pre-writing pathway, and the revision coach.
 
 ## Where am I / what's next
 
