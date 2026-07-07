@@ -8,7 +8,7 @@ description: >
   Evidence Review, Field Reconnaissance, and Citation Verifier as companion audits.
   Also covers nonfiction argument coaching and nonfiction pre-draft argument spine work.
   Invoked when intake resolves constraint=nonfiction + persuasive-argument form.
-version: 2.8.0
+version: 2.9.0
 ---
 
 # Nonfiction Argument Engine
