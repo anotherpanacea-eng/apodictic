@@ -84,6 +84,19 @@ ESTIMATED_MANUSCRIPT_TOKENS=$(( (TOTAL_WORDS * 4 + 2) / 3 ))
 # Single-agent overhead: pass specs (~20k) + contract (~5k) + ledger growth (~30k) + synthesis (~20k)
 ESTIMATED_SINGLE_AGENT_LOAD=$(( ESTIMATED_MANUSCRIPT_TOKENS + 75000 ))
 
+# Per-mode token cost estimate. Calibration source: run-core.md §Token Cost — its published bands
+# anchor on the 118K-word / ESTIMATED_MANUSCRIPT_TOKENS≈157,333 point (×3/×4/×7 land in the
+# 400-500K / 500-690K / 1.0-1.2M bands). Integer bash arithmetic, no new deps. NOT ratio-comparable:
+# the single-agent figure is OVERHEAD-LOADED (manuscript + the +75K analytical overhead already in
+# ESTIMATED_SINGLE_AGENT_LOAD), while sequential/hybrid/swarm are overhead-STRIPPED ×3/×4/×7 of the
+# bare manuscript-token estimate — so the four numbers are order-of-magnitude budget signals, not a
+# clean cost ratio. Preflight prints them; the orchestrator (which alone knows its context tier)
+# picks the cheapest viable mode at dispatch.
+EST_MODE_SINGLE=$ESTIMATED_SINGLE_AGENT_LOAD
+EST_MODE_SEQUENTIAL=$(( ESTIMATED_MANUSCRIPT_TOKENS * 3 ))
+EST_MODE_HYBRID=$(( ESTIMATED_MANUSCRIPT_TOKENS * 4 ))
+EST_MODE_SWARM=$(( ESTIMATED_MANUSCRIPT_TOKENS * 7 ))
+
 # Execution mode recommendation
 # Two tiers: large-context (>=1M tokens) and standard-context (<1M)
 # The parent orchestrator determines which tier applies based on its own context window.
@@ -145,6 +158,19 @@ $(sample_pov "End (lines ${END_START}-$((END_START+200)))" "$END_START" 200)
 ## Token Load Estimate
 - **Estimated manuscript tokens:** ${ESTIMATED_MANUSCRIPT_TOKENS}
 - **Estimated single-agent load:** ${ESTIMATED_SINGLE_AGENT_LOAD} (manuscript + ~75K overhead)
+
+## Per-Mode Token Cost Estimate
+- **Single-agent:** ${EST_MODE_SINGLE} (manuscript + ~75K overhead, loaded once)
+- **Sequential:** ${EST_MODE_SEQUENTIAL} (manuscript tokens ×3)
+- **Hybrid:** ${EST_MODE_HYBRID} (manuscript tokens ×4)
+- **Swarm:** ${EST_MODE_SWARM} (manuscript tokens ×7)
+- **Notes:** Order-of-magnitude budget signals, **NOT a clean cost ratio** — the single-agent figure
+  is overhead-loaded (+75K baked in) while the ×3/×4/×7 figures are overhead-stripped multiples of
+  the bare manuscript-token estimate, so do not read them as a strict ratio. The swarm estimate
+  excludes orchestration overhead; the measured end-to-end single→swarm gap ran ~8.5× on the 2026-06
+  pilot (\`docs/swarm-vs-single-eval.md\`). Calibration source: \`run-core.md\` §Token Cost. Preflight
+  prints the numbers; the orchestrator (which alone knows its context tier) picks the cheapest viable
+  mode at dispatch — this section does not print a "cheapest viable mode" verdict.
 
 ## Dispatch Recommendations
 - **Large-context mode (>=1M tokens):** ${RECOMMENDED_MODE_LARGE_CONTEXT}
