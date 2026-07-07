@@ -42,6 +42,21 @@
         "estimated_context_utilization": {"type": ["number", "null"]}
       }
     },
+    "dispatch_log": {
+      "type": "array",
+      "$comment": "Model-Capacity Exploitation M1 — dispatch observability (docs/model-capacity-dispatch-log.md; complexity_signals / synthesis_coverage additive pattern — no new schema file, no version bump). One entry per delegated-agent dispatch the parent orchestrator issued during the run (Execution Protocol steps 7 and 10, run-core.md): it records WHICH model each dispatched step was issued to — the single join key between model identity and every outcome signal already on disk. PROVENANCE HONESTY, binding on all consumers (prose, `dispatch-record --report`, any future M2/M3): `provenance: dispatch-derived` attests the dispatch INSTRUCTION — the model parameter the parent requested — it is PARENT-REQUESTED, NOT PLATFORM-VERIFIED; no host API attests which model actually served the subagent. This is deliberately WEAKER than synthesis_coverage's dispatch-derived manifest (whose rows are checkable file paths reconciled by V2-V4); dispatch_log has no equivalent reconciliation substrate, and neither the schema nor `dispatch-record` claims one. `provenance: declared` = a step that ran inline with no dispatch event (no-shell hosts, run-core.md:392; or a genuinely inline step) — legitimate under any execution_mode, since provenance tracks the host's per-entry dispatch capability, NOT the run's mode. `model_tag` is a tag from the output-structure.md model-tag table, or the literal `unknown` (the documented derivation fallback, output-structure.md:183 — a sanctioned value, never a lie). The log records the model TAG, never a 'tier' label (tier<->model mapping is a judgment that belongs in future M3, not the durable record). Reconciled by `validate.sh dispatch-record <run_folder>` (R1 presence advisory-first; R2 pass-artifact + synthesis-letter coverage per the step satisfaction map; R3 tag vocabulary; R4 shape; R5 escalation cross-check) — advisory-first (WARN), --strict escalates; key-absent = pre-adoption grandfather (silent pass), present-but-[] = a post-adoption recording failure (R1 fires). Additive: leave absent on runs that do not record dispatches.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "seq": {"type": "integer", "$comment": "1-based, strictly increasing dispatch order."},
+          "step": {"type": "string", "$comment": "v1 grammar: pass<N> | pass0+1 (combined triage subagent, run-core.md:292) | synthesis | all-passes (single-agent's one subagent). Deferred extension (accepted-if-recorded, NOT reconciled by R2): audit:<audit-id>, prerequisite:<audit-id>, refutation. Any id outside both sets = unknown step kind (R4 WARN)."},
+          "model_tag": {"type": "string", "$comment": "a tag from the output-structure.md model-tag table, or the literal `unknown`."},
+          "execution_mode": {"type": "string", "$comment": "single-agent | sequential | hybrid | swarm — the mode AT dispatch (may change once, at the Tier-1/2 escalation seam)."},
+          "max_turns": {"type": ["integer", "null"], "$comment": "host-dependent turn budget; null when the host exposes none."},
+          "provenance": {"type": "string", "$comment": "dispatch-derived (parent-requested, not platform-verified) | declared (inline, no dispatch event)."}
+        }
+      }
+    },
     "execution": {
       "type": "object",
       "$comment": "Runner-Governed Execution state. Increment 5 (state_version 2): gate_events[] is the canonical append-only gate-decision log; phase/allowed_next/pending_gate/finding_states are a recomputable resume pointer (== fold(gate_events), asserted by run_gate.py --check-state). gates (per-phase result map) is DEPRECATED — read only when state_version < 2 (legacy fallback).",
