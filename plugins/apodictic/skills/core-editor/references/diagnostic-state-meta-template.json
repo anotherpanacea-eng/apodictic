@@ -44,6 +44,8 @@
     "estimated_context_utilization": null
   },
 
+  "$comment_dispatch_log": "Model-Capacity Exploitation M1 — dispatch observability (docs/model-capacity-dispatch-log.md): the OPTIONAL `dispatch_log` array records one entry per delegated-agent dispatch the parent issued (Execution Protocol steps 7 and 10) — {seq, step, model_tag, execution_mode, max_turns, provenance}. It is APPEND-AT-DISPATCH: the parent adds an entry at the moment it issues each dispatch, so unlike synthesis_coverage this template ships NO empty stub — the field's ABSENCE is the pre-adoption grandfather marker (a silent PASS), whereas a present-but-EMPTY [] is a post-adoption recording failure that `dispatch-record` R1 flags. Add the key only when recording begins. provenance `dispatch-derived` is PARENT-REQUESTED, NOT PLATFORM-VERIFIED. Audited by validate.sh dispatch-record; see the schema $comment for the full contract.",
+
   "$comment_structured": "Phase 3 — optional machine-readable arrays mirroring the embedded apodictic:* blocks in ledger/letter artifacts. Validated by scripts/structured_findings.py (validate.sh structured-findings). When findings[] is populated, its severities must tally to triage_summary; omit any array to keep older sidecars valid.",
   "findings": [],
   "audit_triggers": [],
