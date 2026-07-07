@@ -48,7 +48,9 @@
           {"validator": "refutation-coverage",       "targets": ["editorial_letter", "findings_ledger", "refutation_record"]},
           {"validator": "refutation-evidence",       "targets": ["refutation_record"],
            "$comment": "Finding disconfirmation V2 (docs/finding-disconfirmation.md §8). The gate row passes only the record: the validator resolves each record's snapshot_path beside the record (realpath-contained, read-only) and auto-requires the snapshot when the folder holds a *_Core_DE_Synthesis_*/*_Full_DE_Synthesis_* letter — the same run-shape rule as the explicit Step 10 `--require-snapshot` invocation, so a core-de/full-de run with a missing snapshot BLOCKS here too; elsewhere missing = WARN (pass-with-warn) with every demotion in the record void."},
-          {"validator": "refutation-write-scope",    "targets": ["findings_ledger", "refutation_record"]}
+          {"validator": "refutation-write-scope",    "targets": ["findings_ledger", "refutation_record"]},
+          {"validator": "finding-trace",             "targets": ["run_folder"],
+           "$comment": "FLI increment 4 (M1a): mechanizes the prose-invoked smuggled-finding gate (run-synthesis.md Step 10). E1 dangling letter ref / E2 phantom sidecar key / E3 invalid state / E0 unparseable sidecar block the clear (exit 1). This row asserts referential integrity at delivery time, NOT order: W1 is gated on the folded pointer having reached a synth-cleared phase (finding_trace.py:245-246), so on an out-of-order spot-check W1 self-skips — ordering enforcement is the M2 host layer's job, not this row's. When W1 DOES warn here (pointer at run_synthesis/run_spot_check but a Must/Should-Fix ledger id lacks a finding_states entry), the usual cause is a finding added to the ledger AFTER the synthesis lock — a real post-lock signal, surfaced as pass-with-warn (run_gate.py maps any GATE-WARN to pass-with-warn, exit 0)."}
         ],
         "attested": [
           {"id": "spot-a1", "text": "each root cause cites >= 1 specific ledger finding (findings integration)"},

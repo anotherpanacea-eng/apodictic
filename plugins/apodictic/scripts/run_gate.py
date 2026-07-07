@@ -560,6 +560,69 @@ def _disposition_deltas(phase, run_folder, manifest, resolved, sidecar, exclude_
     return deltas
 
 
+# ---------------------------------------------------------------- clearing report (M1b/M1d)
+
+def _clearing_report_lines(run_folder):
+    """Display-only trace lines appended to a CLEARING gate output (M1b) plus the T4-watch
+    marker-count line (M1d). No state written, no event fields, no schema touched — a pure read of
+    the run folder. Never raises: any failure to import/resolve degrades to an empty list (a broken
+    trace must not brick a legitimate clear).
+
+    M1b: the per-ID `severity · sidecar state · cited? · rev=` journey (finding_trace's own report,
+    reused — not re-implemented). M1d: `T4-watch: N deferred orchestrator-pull-interface marker(s)`,
+    the CR-6-detectable surface for defer-trigger T4."""
+    lines = []
+    try:
+        import re as _re
+        import finding_trace as _ft
+    except ImportError:
+        return lines
+
+    # M1b — reuse finding_trace's cross-artifact report (the same lines `validate.sh finding-trace`
+    # prints), so the clearing output and the standalone validator never drift.
+    try:
+        ledger, letter, sidecar, revisions, completions, retcons = _ft.resolve_run_folder(run_folder)
+        if ledger:
+            sidecar_text = None
+            if sidecar:
+                sidecar_text = _ft._read(sidecar)
+                if sidecar_text is None:
+                    sidecar_text = ""
+            revision_texts = [t for t in (_ft._read(r) for r in revisions) if t is not None]
+            completion_texts = [t for t in (_ft._read(c) for c in completions) if t is not None]
+            retcon_texts = [t for t in (_ft._read(r) for r in retcons) if t is not None]
+            ev_adv = (_ft.event_advanced_revised_ids(sidecar_text, run_folder, sidecar)
+                      if sidecar else set())
+            _code, ft_lines = _ft.trace(_ft._read(ledger),
+                                        _ft._read(letter) if letter else None,
+                                        sidecar_text, revision_texts=revision_texts,
+                                        completion_texts=completion_texts,
+                                        retcon_texts=retcon_texts, event_advanced=ev_adv)
+            lines.append("  finding-ID trace (display only; the gate row already enforced integrity):")
+            for ln in ft_lines:
+                lines.append("  " + ln)
+    except Exception:
+        pass  # display-only; never block a legitimate clear on a trace-report failure
+
+    # M1d — T4-watch marker count. Whole-run-folder scan (OQ #5: the marker rides the coverage
+    # note / manifest whose exact filename varies), comment-body scoped.
+    try:
+        marker_re = _re.compile(r"<!--\s*deferred:\s*orchestrator-pull-interface\b", _re.IGNORECASE)
+        n = 0
+        for name in sorted(os.listdir(run_folder)):
+            p = os.path.join(run_folder, name)
+            if not os.path.isfile(p):
+                continue
+            text = _ft._read(p)
+            if text:
+                n += len(marker_re.findall(text))
+        lines.append("  T4-watch: %d deferred orchestrator-pull-interface marker(s) in this run" % n)
+    except OSError:
+        pass
+
+    return lines
+
+
 # ---------------------------------------------------------------- commands
 
 def cmd_gate(phase, run_folder, manifest, strict_warnings=False, write=False, validate_sh=None):
@@ -613,7 +676,11 @@ def cmd_gate(phase, run_folder, manifest, strict_warnings=False, write=False, va
     elif result == "pass-with-warn":
         lines.append("gate %s: PASS-WITH-WARN — resolve or acknowledge each GATE-WARN before transitioning" % phase)
     else:
+        # result == "passed": a no-attest gate clears directly. Append the finding-ID trace + T4-watch
+        # report (M1b/M1d) — the clearing outputs only, never the mechanical-passed intermediate
+        # (attestation still owed there; a trace then reports pre-advance state and invites misreading).
         lines.append("gate %s: PASS (no attested items; cleared)" % phase)
+        lines.extend(_clearing_report_lines(run_folder))
     return 0, lines
 
 
@@ -663,6 +730,8 @@ def cmd_attest(phase, run_folder, manifest, write=False, validate_sh=None):
                 lines.append("  (recorded execution.gate_events += %s/passed [cleared %d attest item(s)] in %s)"
                              % (phase, len(contract), os.path.basename(sidecar)))
     lines.append("gate --attest %s: CLEARED (mechanical checks fresh + %d attest item(s) confirmed)" % (phase, len(contract)))
+    # M1b/M1d — the clearing --attest output carries the per-ID finding trace + the T4-watch line.
+    lines.extend(_clearing_report_lines(run_folder))
     return 0, lines
 
 
@@ -850,6 +919,21 @@ def check_state(sidecar, manifest, strict=False):
                         if g is not None
                         and not is_clearing(events, max(i for i, e in enumerate(events) if _ev(e).get("gate") == g)))
 
+    # T2 defer-trigger surface (M1 — CR-6 detectable): a count line broken down by the LATEST
+    # non-clearing result per open gate. Same open-exception fold as `open_gates` above; the number
+    # (N > 0 at release time on a governed project, recurring) is the T2 watch condition made
+    # mechanical (docs/runner-governed-execution.md open-exceptions). Read-only; no state written.
+    _latest_idx = {}
+    for _i, _e in enumerate(events):
+        _g = _ev(_e).get("gate")
+        if _g is not None:
+            _latest_idx[_g] = _i
+    _breakdown = {"skipped": 0, "deferred": 0, "pass-with-warn": 0, "mechanical-passed": 0, "blocked": 0}
+    for _g in open_gates:
+        _res = _ev(events[_latest_idx[_g]]).get("result")
+        if _res in _breakdown:
+            _breakdown[_res] += 1
+
     for e in errs:
         lines.append("  ERROR: %s" % e)
     if errs:
@@ -857,6 +941,10 @@ def check_state(sidecar, manifest, strict=False):
         return 1, lines
     lines.append("check-state: OK (%d event(s); frontier=%s; open=%s)"
                  % (len(events), ptr["phase"], ",".join(open_gates) or "none"))
+    lines.append("open exceptions: %d (skipped %d · deferred %d · pass-with-warn %d · "
+                 "mechanical-passed %d · blocked %d)"
+                 % (len(open_gates), _breakdown["skipped"], _breakdown["deferred"],
+                    _breakdown["pass-with-warn"], _breakdown["mechanical-passed"], _breakdown["blocked"]))
     if strict and open_gates:
         lines.append("check-state: STRICT FAIL — open exception(s): %s" % ", ".join(open_gates))
         return 1, lines
@@ -988,6 +1076,142 @@ def run_self_test():
     check("warn_pending_is_spot_check",
           exw.get("phase") == "run_synthesis" and exw.get("pending_gate") == "run_spot_check"
           and exw.get("allowed_next") == [])
+
+    # --- M1a: finding-trace is now a run_spot_check gate row (referential integrity, NOT ordering).
+    # Isolate the row's contribution via run_checks (the other letter-shape checks fail on the
+    # minimal fixture; asserting the whole gate clears would need a full canonical letter — the
+    # docs/revision-round-gate.md:7 route). We assert the finding-trace CHECK's own result.
+    def _ftrace_result(rf):
+        _s, _l, cks, _r, _d = run_checks("run_spot_check", rf, manifest, validate_sh=vs)
+        for c in cks:
+            if c.get("validator") == "finding-trace":
+                return c.get("result")
+        return None
+
+    def _spot_folder(sidecar_ex, letter_body):
+        """A run_spot_check-shaped folder: ledger + editorial letter + governed sidecar."""
+        dd = tempfile.mkdtemp()
+        made.append(dd)
+        with open(os.path.join(dd, "Proj_Findings_Ledger_run.md"), "w", encoding="utf-8", newline="") as fh:
+            fh.write(ledger_ok)
+        with open(os.path.join(dd, "Proj_Core_DE_Synthesis_run.md"), "w", encoding="utf-8", newline="") as fh:
+            fh.write(letter_body)
+        with open(os.path.join(dd, "Diagnostic_State.meta.json"), "w", encoding="utf-8", newline="") as fh:
+            json.dump({"project": "Proj", "execution": sidecar_ex}, fh)
+        return dd
+
+    # sidecar shapes for the M1a matrix
+    _synth_cleared_ex = {"state_version": 2, "phase": "run_synthesis",
+                         "finding_states": {"F-P5-01": "locked"},
+                         "gate_events": [{"gate": "run_synthesis", "result": "passed",
+                                          "provenance": "mechanical", "run_folder": ".",
+                                          "attested_contract": [], "attested_items": [],
+                                          "checks": [{"validator": "x", "result": "ok"}],
+                                          "finding_deltas": {"F-P5-01": "locked"}}]}
+    _letter_clean = ("# Edit\n<!-- finding: F-P5-01 -->\nThe pacing collapses (Ch 9).\n")
+    _letter_phantom = _letter_clean + "Typo'd ref <!-- finding: F-XX-99 -->\n"
+
+    # (a) E1 dangling letter ref -> the finding-trace row ERRORS (would block the clear, exit 1)
+    check("m1a_e1_phantom_blocks",
+          _ftrace_result(_spot_folder(_synth_cleared_ex, _letter_phantom)) == "error")
+
+    # (b) clean letter + coherent sidecar -> the row is green (ok)
+    check("m1a_clean_row_ok",
+          _ftrace_result(_spot_folder(_synth_cleared_ex, _letter_clean)) == "ok")
+
+    # (c) OUT-OF-ORDER HONESTY (spec §0 P1): run_spot_check with NO prior run_synthesis clear ->
+    # the folded phase is un-advanced, so finding-trace's W1 SELF-SKIPS and the row contributes NO
+    # order signal (clean letter -> ok). The E-checks still bind: the SAME out-of-order sidecar with
+    # a planted phantom id still ERRORS. Ordering is NOT enforced by this row.
+    _ungoverned_ex = {}  # no execution block at all -> phase un-advanced, finding_states empty
+    check("m1a_out_of_order_no_signal",
+          _ftrace_result(_spot_folder(_ungoverned_ex, _letter_clean)) == "ok")
+    check("m1a_out_of_order_e1_still_binds",
+          _ftrace_result(_spot_folder(_ungoverned_ex, _letter_phantom)) == "error")
+
+    # (d) POST-LOCK LEDGER ADDITION: the folded phase is run_synthesis (synth cleared) but a
+    # Must-Fix ledger id has NO finding_states entry -> W1 fires -> the row is a GATE-WARN
+    # (pass-with-warn, exit 0). Ledger carries F-P5-01 AND F-PL-02; sidecar only knows F-P5-01.
+    _ledger_two = ledger_ok.rstrip() + "\n" + (
+        '<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"F-PL-02",'
+        '"mechanism":"added after the lock","severity":"Must-Fix","confidence":"HIGH",'
+        '"evidence_refs":["Ch. 3"],"fix_class":"x","risk_if_fixed":"y"}\n-->\n')
+    dpl = tempfile.mkdtemp()
+    made.append(dpl)
+    with open(os.path.join(dpl, "Proj_Findings_Ledger_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write(_ledger_two)
+    with open(os.path.join(dpl, "Proj_Core_DE_Synthesis_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write(_letter_clean)
+    with open(os.path.join(dpl, "Diagnostic_State.meta.json"), "w", encoding="utf-8", newline="") as fh:
+        json.dump({"project": "Proj", "execution": _synth_cleared_ex}, fh)
+    check("m1a_post_lock_addition_warns",
+          _ftrace_result(dpl) == "warn")
+
+    # (e) STALE/UNGOVERNED POINTER: (i) an ungoverned sidecar makes W1 inactive but E1 still binds
+    # (covered by m1a_out_of_order_*); (ii) a governed pointer hand-set to run_spot_check with empty
+    # finding_states -> the row surfaces W1 warns (the pointer/fold discrepancy itself is
+    # gate-state's to catch, not this row's).
+    _handset_ex = {"state_version": 2, "phase": "run_spot_check", "finding_states": {}}
+    check("m1a_handset_pointer_warns",
+          _ftrace_result(_spot_folder(_handset_ex, _letter_clean)) == "warn")
+
+    # (f) M1b/M1d: the CLEARING output carries the trace + T4-watch; mechanical-passed carries
+    # neither. run_spot_check has attest items, so its clear is via --attest; but the minimal letter
+    # can't clear it. Exercise the surfaces on a NO-ATTEST clearing path instead — a temp manifest
+    # phase with only the finding-trace row (so cmd_gate takes the `passed` clearing branch) — which
+    # is exactly the code path M1b hooks. (Real-gate coverage: the --check-all spot-check arm.)
+    ft_only_manifest = {"artifact_keys": manifest.get("artifact_keys", {}),
+                        "phases": {"ft_only": {"entry_requires": {
+                            "artifacts": ["findings_ledger"],
+                            "checks": [{"validator": "finding-trace", "targets": ["run_folder"]}],
+                            "attested": []}, "allowed_next": []}}}
+    dclr = _spot_folder(_synth_cleared_ex, _letter_clean)
+    # plant a deferred pull-interface marker so T4-watch counts 1
+    with open(os.path.join(dclr, "Proj_Coverage_Note_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write("# Coverage\n<!-- deferred: orchestrator-pull-interface (Runner-Governed Execution Increment 4) -->\n")
+    ccode, clines = cmd_gate("ft_only", dclr, ft_only_manifest, write=True, validate_sh=vs)
+    check("m1b_clearing_carries_trace",
+          ccode == 0 and any("finding-ID trace" in ln for ln in clines)
+          and any("F-P5-01" in ln and "sev=" in ln for ln in clines))
+    check("m1d_clearing_carries_t4watch",
+          any("T4-watch: 1 deferred orchestrator-pull-interface" in ln for ln in clines))
+
+    # mechanical-passed carries NEITHER: a phase WITH an attest item stops at mechanical-passed.
+    ft_attest_manifest = {"artifact_keys": manifest.get("artifact_keys", {}),
+                          "phases": {"ft_att": {"entry_requires": {
+                              "artifacts": ["findings_ledger"],
+                              "checks": [{"validator": "finding-trace", "targets": ["run_folder"]}],
+                              "attested": [{"id": "a1", "text": "confirm"}]}, "allowed_next": []}}}
+    dmp = _spot_folder(_synth_cleared_ex, _letter_clean)
+    mcode, mlines = cmd_gate("ft_att", dmp, ft_attest_manifest, write=True, validate_sh=vs)
+    check("m1b_mechanical_passed_no_trace",
+          mcode == 0 and read_ex(dmp)["gate_events"][-1]["result"] == "mechanical-passed"
+          and not any("finding-ID trace" in ln for ln in mlines)
+          and not any("T4-watch" in ln for ln in mlines))
+
+    # (mid-run upgrade boundary, spec §4-Fixtures item 4): a mechanical-passed recorded under a
+    # PRE-M1a manifest (finding-trace row absent), then --attest under the NEW manifest with a
+    # phantom id planted -> --attest re-runs against the LIVE manifest and records `blocked` (a clean
+    # block, not a crash, not a false clear). Modeled with the ft_att manifest as "new": record a
+    # mechanical-passed with the clean letter, then swap in a phantom letter and --attest.
+    dmu = _spot_folder(_synth_cleared_ex, _letter_clean)
+    cmd_gate("ft_att", dmu, ft_attest_manifest, write=True, validate_sh=vs)  # mechanical-passed (clean)
+    with open(os.path.join(dmu, "Proj_Core_DE_Synthesis_run.md"), "w", encoding="utf-8", newline="") as fh:
+        fh.write(_letter_phantom)  # phantom planted before the attest re-check
+    ucode, _ = cmd_attest("ft_att", dmu, ft_attest_manifest, write=True, validate_sh=vs)
+    check("m1a_mid_upgrade_attest_blocks",
+          ucode == 1 and read_ex(dmu)["gate_events"][-1]["result"] == "blocked")
+
+    # (T2 count line): check_state prints an `open exceptions: N (...)` line. Reuse `ds` (a folder
+    # with a recorded `skipped` run_synthesis event — pointer written fold-consistently by
+    # append_event) so no pointer-drift error short-circuits the OK path: N == 1, skipped 1.
+    _tc, t2lines = check_state(os.path.join(ds, "Diagnostic_State.meta.json"), manifest)
+    check("t2_open_exceptions_line",
+          any(ln.startswith("open exceptions: 1 ") and "skipped 1" in ln for ln in t2lines))
+    # zero open exceptions on a cleanly-cleared folder -> `open exceptions: 0 (...)`
+    _tc0, t2lines0 = check_state(os.path.join(d, "Diagnostic_State.meta.json"), manifest)
+    check("t2_open_exceptions_zero",
+          any(ln.startswith("open exceptions: 0 ") for ln in t2lines0))
 
     # --- gate-state catches a migrated bypass injected after real work (Codex P1)
     bypass = {"project": "Proj", "execution": {"state_version": 2, "gate_events": [
