@@ -8,6 +8,14 @@ they live here rather than in letter_checks.py:
 
   * quality-risk-triggers      — pre-pass mode selection from a CONTRACT artifact (+ optional
                                  Diagnostic_State.meta.json sidecar). Five triggers Q1-Q5.
+  * cost-floor                 — record-integrity gate for a user-declared budget cap that caps the
+                                 run BELOW the token-fit floor (CF1 marker integrity incl. the
+                                 bidirectional orphan-token check, CF2 marker<->token sync, CF3
+                                 single-agent context-tier + mandatory-packet load bound, CF4 no
+                                 silent quality-risk demotion). Shares the Q1-Q5 detection SSoT
+                                 (`_fired_triggers`) with quality-risk-triggers. Reports + gates
+                                 record integrity; it does NOT select the mode (the orchestrator owns
+                                 selection). run-core.md §Cost-floor override (budget cap).
   * audit-tier-criterion       — pass-dependencies.md §4a/§4b high-tier rows must point at an
                                  audit reference file that documents hard gates / Must-Fix
                                  floors (criterion 1). Walks an audits directory tree.
@@ -29,6 +37,7 @@ prefixes and exit codes (0 ok, 1 fail, 2 usage).
 
 CLI:
   config_checks.py quality-risk-triggers <contract_file> [<meta_json>]
+  config_checks.py cost-floor <contract_or_run_metadata_file> [<preflight_packet.md>] [<meta_json>] [--strict]
   config_checks.py audit-tier-criterion <pass_dependencies_file> [<audits_root_dir>]
   config_checks.py argument-recon-prerequisite <run_folder> [<editorial_letter_file>]
   config_checks.py artifact-names <output_dir> <project> <runlabel>
@@ -41,7 +50,7 @@ import os
 import re
 import sys
 
-from override_marker import has_override
+from override_marker import has_override, override_payloads, strip_code_spans
 
 
 def _read(path):
@@ -62,20 +71,15 @@ def _raise_escalation(current, target):
     return "swarm"  # ceiling
 
 
-def quality_risk_triggers(contract_path, meta_path=None):
-    contract = _read(contract_path)
-    lines, errors, fired, escalation = [], 0, [], "none"
-    ov = {q: has_override(contract, "quality-risk-Q%d" % q) for q in range(1, 6)}
-
-    def fire(q, hit, rationale, target):
-        nonlocal errors, escalation
-        if ov[q]:
-            lines.append("WARN: %s — fired: %s (override marker present)." % (_QR_LABEL[q], hit))
-        else:
-            lines.append("ERROR: %s — fired: %s. %s" % (_QR_LABEL[q], hit, rationale))
-            errors += 1
-        fired.append("Q%d" % q)
-        escalation = _raise_escalation(escalation, target)
+def _fired_triggers(contract, meta_path=None):
+    """The fired quality-risk triggers as `(q, target, hit, rationale)` tuples in Q1..Q5 order — the
+    SHARED detection SSoT that both `quality_risk_triggers` (which aggregates via `_raise_escalation`
+    and renders the WARN/ERROR lines) and `cost_floor` (CF4, which reads the per-trigger `(q, target)`
+    mapping) call. The leading `(q, target)` of each tuple IS the spec's shared-enumerator contract;
+    `hit`/`rationale` ride alongside so `quality_risk_triggers` renders byte-identical output without
+    a second detection copy (the extract is behavior-preserving). `contract` is the contract TEXT;
+    `meta_path` the optional Diagnostic_State.meta.json path (Q4's sidecar branch)."""
+    out = []
 
     # Q1: consent/governance risk.
     q1 = []
@@ -88,9 +92,9 @@ def quality_risk_triggers(contract_path, meta_path=None):
     if re.search(r"power[ -]dynamics.*central", contract, re.IGNORECASE):
         q1.append("power-dynamics-central")
     if q1:
-        fire(1, "; ".join(q1),
-             "Recommended escalation: hybrid. Rationale: structural+reception lenses warrant "
-             "architectural isolation.", "hybrid")
+        out.append((1, "hybrid", "; ".join(q1),
+                    "Recommended escalation: hybrid. Rationale: structural+reception lenses warrant "
+                    "architectural isolation."))
 
     # Q2: argument-shaped nonfiction with high stakes.
     q2 = []
@@ -105,9 +109,9 @@ def quality_risk_triggers(contract_path, meta_path=None):
             and re.search(r"(submission readiness|GOAL:\s*submit|goal:\s*submit)", contract, re.IGNORECASE)):
         q2.append("Dialectical Clarity + submission readiness")
     if q2:
-        fire(2, "; ".join(q2),
-             "Recommended escalation: hybrid (swarm if Field Recon required). Rationale: "
-             "claim/evidence/audience lenses warrant independent stress-testing.", "hybrid")
+        out.append((2, "hybrid", "; ".join(q2),
+                    "Recommended escalation: hybrid (swarm if Field Recon required). Rationale: "
+                    "claim/evidence/audience lenses warrant independent stress-testing."))
 
     # Q3: many POVs or non-linear structure.
     q3, pov_count = [], 0
@@ -123,9 +127,9 @@ def quality_risk_triggers(contract_path, meta_path=None):
         q3.append("non-linear/fragmented structure")
     if q3:
         target = "swarm" if pov_count >= 6 else "hybrid"
-        fire(3, "; ".join(q3),
-             "Recommended escalation: %s. Rationale: cross-POV coherence and information-flow "
-             "tracking degrade under single-context analysis." % target, target)
+        out.append((3, target, "; ".join(q3),
+                    "Recommended escalation: %s. Rationale: cross-POV coherence and information-flow "
+                    "tracking degrade under single-context analysis." % target))
 
     # Q4: prior thin synthesis (sidecar meta JSON, grep-faithful).
     q4 = []
@@ -138,9 +142,9 @@ def quality_risk_triggers(contract_path, meta_path=None):
     if re.search(r"(last round.*(thin|soft|underdiagnosed)|prior thin synthesis)", contract, re.IGNORECASE):
         q4.append("user-stated prior-round thinness")
     if q4:
-        fire(4, "; ".join(q4),
-             "Recommended escalation: swarm. Rationale: prior-run thinness is direct evidence the "
-             "previously selected mode underdiagnoses this manuscript class.", "swarm")
+        out.append((4, "swarm", "; ".join(q4),
+                    "Recommended escalation: swarm. Rationale: prior-run thinness is direct evidence the "
+                    "previously selected mode underdiagnoses this manuscript class."))
 
     # Q5: submission readiness.
     q5 = []
@@ -151,9 +155,27 @@ def quality_risk_triggers(contract_path, meta_path=None):
     if re.search(r"final round before submission", contract, re.IGNORECASE):
         q5.append("contract: final round before submission")
     if q5:
-        fire(5, "; ".join(q5),
-             "Recommended escalation: swarm. Rationale: highest-stakes diagnosis class; cost "
-             "differential justified by consequence of missed finding.", "swarm")
+        out.append((5, "swarm", "; ".join(q5),
+                    "Recommended escalation: swarm. Rationale: highest-stakes diagnosis class; cost "
+                    "differential justified by consequence of missed finding."))
+
+    return out
+
+
+def quality_risk_triggers(contract_path, meta_path=None):
+    contract = _read(contract_path)
+    lines, errors, fired, escalation = [], 0, [], "none"
+    ov = {q: has_override(contract, "quality-risk-Q%d" % q) for q in range(1, 6)}
+
+    # Enumerate via the shared SSoT, then aggregate/render exactly as the inline `fire()` closure did.
+    for q, target, hit, rationale in _fired_triggers(contract, meta_path):
+        if ov[q]:
+            lines.append("WARN: %s — fired: %s (override marker present)." % (_QR_LABEL[q], hit))
+        else:
+            lines.append("ERROR: %s — fired: %s. %s" % (_QR_LABEL[q], hit, rationale))
+            errors += 1
+        fired.append("Q%d" % q)
+        escalation = _raise_escalation(escalation, target)
 
     fired_str = "".join(f + " " for f in fired)
     if errors > 0:
@@ -179,6 +201,208 @@ _QR_LABEL = {
     4: "Q4 (prior thin synthesis)",
     5: "Q5 (submission readiness)",
 }
+
+
+# --------------------------------------------------------------------------
+# cost-floor — run-core.md §Cost-floor override (budget cap).
+#
+# A user-declared cap that caps the run BELOW the token-fit floor at the cheapest
+# load-viable mode with honest tradeoff disclosure. This validator gates RECORD
+# INTEGRITY (marker<->token sync, viability bound, no silent quality-risk demotion);
+# it does NOT select the mode — the orchestrator owns selection, exactly as the
+# quality-risk-triggers sibling. Four mechanical predicates over parsed artifacts:
+#
+#   CF1  marker integrity (bidirectional)  — scan the three slugs via override_marker
+#        (SSoT, never a local marker regex — meta-lint M5/M6) + the token via
+#        _CFO_TOKEN_RE over strip_code_spans output. Zero markers AND zero live tokens
+#        -> inert PASS. >1 distinct mode slug -> ERROR (conflicting caps). Empty
+#        rationale -> ERROR. A bare/unsuffixed `cost-floor` marker -> ERROR + hint.
+#        Reverse orphan-token check (DP2.5 precedent): a live token with NO matching
+#        live marker -> WARN default / ERROR under --strict.
+#   CF2  marker<->record sync (forward)     — when a live marker exists, the
+#        `cost_floor_override: <mode> … — <rationale>` token must be present (code-span
+#        stripped) and its mode must equal the marker's mode. Missing/mismatched -> ERROR.
+#   CF3  viability bound (single-agent)     — a single-agent cap must declare
+#        `context_tier: large` (standard OR absent -> ERROR) AND its MANDATORY preflight
+#        packet's `Estimated single-agent load:` must be < 600000 (packet-absent -> ERROR,
+#        load >= bound -> ERROR). Sequential/hybrid carry no context/load requirement, but a
+#        sequential/hybrid cap below the packet's own token-fit floor -> below-floor WARN.
+#   CF4  no silent quality-risk demotion    — recompute fired Q1-Q5 via _fired_triggers
+#        (from artifacts, never a recorded field — the 7085daa rule). Every fired trigger
+#        whose per-trigger target exceeds the cap under the total mode order
+#        single-agent < sequential < hybrid < swarm requires the matching
+#        `<!-- override: quality-risk-Q[n] — … -->` marker; missing -> ERROR naming the
+#        trigger. When the optional meta sidecar is withheld and the cap is below swarm,
+#        Q4's meta branch is unevaluable -> WARN (CF4-unevaluable).
+#
+# `context_tier` is DECLARED, not platform-verified (like dispatch_log provenance): the
+# validator gates the declaration's presence + consistency, not the true host window.
+# --------------------------------------------------------------------------
+
+_MODE_ORDER = {"single-agent": 0, "sequential": 1, "hybrid": 2, "swarm": 3}
+_CF_MODES = ("single-agent", "sequential", "hybrid")  # no cost-floor-swarm slug (swarm is the ceiling)
+_CF_SINGLE_AGENT_LOAD_CEILING = 600000  # the published run-core/preflight bound
+
+# A field-read token modeled on dispatch_record._QRO_TOKEN_RE: it reads the metadata TOKEN
+# (`cost_floor_override: …`), NOT an override marker (`<!-- override: … -->`), so it is
+# meta-lint M5-inert. Captures the mode, the OPTIONAL context_tier sub-field (a
+# sequential/hybrid token with no context_tier still parses — the field is inert there), and
+# the rationale.
+_CFO_TOKEN_RE = re.compile(
+    r"cost_floor_override:\s*(single-agent|sequential|hybrid)"
+    r"(?:\s*;\s*context_tier:\s*(standard|large))?"
+    r"\s*[—–-]\s*(.+)", re.IGNORECASE)
+# preflight-packet field reads (the single-agent load bound + the standard-context floor line
+# the packet already prints). Plain field reads, not marker scans.
+_CF_LOAD_RE = re.compile(r"Estimated single-agent load:\D*([0-9][0-9,]*)", re.IGNORECASE)
+_CF_FLOOR_RE = re.compile(r"Standard-context mode[^:\n]*:\s*\**\s*(single-agent|sequential|hybrid|swarm)",
+                          re.IGNORECASE)
+
+
+def _cfo_tokens(contract):
+    """[(mode, context_tier_or_None)] for each LIVE cost_floor_override token — code spans stripped
+    via the override_marker SSoT, so a token quoted as a documentation example is not honored."""
+    out = []
+    for m in _CFO_TOKEN_RE.finditer(strip_code_spans(contract)):
+        out.append((m.group(1).lower(), m.group(2).lower() if m.group(2) else None))
+    return out
+
+
+def cost_floor(contract_path, preflight_path=None, meta_path=None, strict=False):
+    """CF1-CF4 over a contract / run-metadata artifact carrying a cost-floor cap. Reports + gates
+    record integrity; does NOT select the mode. Returns (rc, lines)."""
+    contract = _read(contract_path)
+    errors, warns, orphan_warns = [], [], []
+
+    # ---- CF1 marker + token scan (all marker reads via the override_marker SSoT) --------------
+    marker_modes = [m for m in _CF_MODES if has_override(contract, "cost-floor-%s" % m)]
+    bare_marker = has_override(contract, "cost-floor")  # a truly bare/unsuffixed slug (boundary-matched)
+    tokens = _cfo_tokens(contract)
+    token_modes = sorted({mode for (mode, _ctx) in tokens})
+    token_ctx = {}
+    for (mode, ctx) in tokens:
+        token_ctx.setdefault(mode, ctx)
+
+    # Inert: nothing recorded -> the arm passes clean on an uncapped run.
+    if not marker_modes and not bare_marker and not token_modes:
+        return 0, ["OK: no cost-floor cap recorded (arm inert on an uncapped run)."]
+
+    if bare_marker:
+        errors.append("CF1: bare/unsuffixed `<!-- override: cost-floor -->` marker — the cap target "
+                      "must be machine-readable; use a mode-suffixed slug (cost-floor-single-agent, "
+                      "cost-floor-sequential, or cost-floor-hybrid; no cost-floor-swarm — swarm is the "
+                      "ceiling).")
+
+    if len(marker_modes) > 1:
+        errors.append("CF1: conflicting cost-floor caps — %d distinct mode slugs present (%s); exactly "
+                      "one cap may be honored." % (len(marker_modes), ", ".join(marker_modes)))
+
+    for m in marker_modes:
+        payloads = override_payloads(contract, "cost-floor-%s" % m)
+        if any(not p.strip().lstrip("—–-").strip() for p in payloads):
+            errors.append("CF1: cost-floor-%s marker carries an empty rationale — the override rationale "
+                          "should reference a specific reason (budget window, exploratory round)." % m)
+
+    cap_mode = marker_modes[0] if len(marker_modes) == 1 else None
+
+    if cap_mode is not None:
+        # ---- CF2 forward marker<->token sync ---------------------------------------------------
+        if not token_modes:
+            errors.append("CF2: cost-floor-%s marker present but no `cost_floor_override: %s — "
+                          "<rationale>` token found — both records are required and must agree on the "
+                          "mode." % (cap_mode, cap_mode))
+        elif cap_mode not in token_modes:
+            errors.append("CF2: marker mode (%s) does not match token mode(s) (%s) — the marker and the "
+                          "cost_floor_override token must agree on the capped mode."
+                          % (cap_mode, ", ".join(token_modes)))
+        elif token_modes != [cap_mode]:
+            errors.append("CF2: extra cost_floor_override token mode(s) (%s) disagree with the "
+                          "cost-floor-%s marker." % (", ".join(token_modes), cap_mode))
+
+        # ---- CF3 viability bound (single-agent) ------------------------------------------------
+        if cap_mode == "single-agent":
+            ctx = token_ctx.get("single-agent")
+            if ctx is None:
+                errors.append("CF3: single-agent cap does not declare `context_tier` — single-agent "
+                              "viability is unevaluable without it; declare `context_tier: large` (a "
+                              "single-agent cap is only viable on a >=1M-context host).")
+            elif ctx == "standard":
+                errors.append("CF3: single-agent cap declares `context_tier: standard` — single-agent is "
+                              "the compaction-prone config below a 1M window; a single-agent cap requires "
+                              "`context_tier: large`.")
+            if preflight_path and os.path.isfile(preflight_path):
+                pf = _read(preflight_path)
+                lm = _CF_LOAD_RE.search(pf)
+                if lm:
+                    load = int(lm.group(1).replace(",", ""))
+                    if load >= _CF_SINGLE_AGENT_LOAD_CEILING:
+                        errors.append("CF3: single-agent cap but the preflight `Estimated single-agent "
+                                      "load` (%d) is >= the %d bound — single-agent is not load-viable; the "
+                                      "token-fit floor is sequential or higher."
+                                      % (load, _CF_SINGLE_AGENT_LOAD_CEILING))
+                else:
+                    errors.append("CF3: single-agent cap but the preflight packet carries no `Estimated "
+                                  "single-agent load:` line to bound the load against %d."
+                                  % _CF_SINGLE_AGENT_LOAD_CEILING)
+            else:
+                errors.append("CF3: single-agent cap but NO preflight packet provided — the packet is "
+                              "MANDATORY for a single-agent cap (its `Estimated single-agent load` must be "
+                              "< %d)." % _CF_SINGLE_AGENT_LOAD_CEILING)
+
+        # ---- CF3 below-floor WARN (sequential / hybrid caps) -----------------------------------
+        if cap_mode in ("sequential", "hybrid") and preflight_path and os.path.isfile(preflight_path):
+            fm = _CF_FLOOR_RE.search(_read(preflight_path))
+            if fm:
+                floor = fm.group(1).lower()
+                if floor in _MODE_ORDER and _MODE_ORDER[cap_mode] < _MODE_ORDER[floor]:
+                    warns.append("CF3: cost-floor-%s cap sits below the packet's token-fit floor (%s) — "
+                                 "compaction/salience trade accepted per disclosure." % (cap_mode, floor))
+
+        # ---- CF4 no silent quality-risk demotion -----------------------------------------------
+        for (q, target, _hit, _rat) in _fired_triggers(contract, meta_path):
+            if _MODE_ORDER.get(target, 0) > _MODE_ORDER[cap_mode]:
+                if not has_override(contract, "quality-risk-Q%d" % q):
+                    errors.append("CF4: quality-risk Q%d fired (target %s) exceeds the cost-floor cap "
+                                  "(%s) but carries no `<!-- override: quality-risk-Q%d — … -->` marker — "
+                                  "a cost cap may not silently demote a fired quality-risk decision; walk "
+                                  "the named-acknowledgment path for Q%d or raise the cap."
+                                  % (q, target, cap_mode, q, q))
+        # CF4-unevaluable: Q4's meta branch is invisible without the sidecar.
+        if (meta_path is None or not os.path.isfile(meta_path)) \
+                and _MODE_ORDER[cap_mode] < _MODE_ORDER["swarm"]:
+            warns.append("CF4: Q4 (prior-thin->swarm) unevaluable — meta sidecar withheld; confirm no "
+                         "prior-thin escalation is being demoted by the %s cap." % cap_mode)
+
+    # ---- CF1 reverse orphan-token check (token present, no live marker) -----------------------
+    if token_modes and not marker_modes and not bare_marker:
+        orphan_warns.append("CF1: cost_floor_override token(s) present (%s) with NO matching live "
+                            "cost-floor marker — a recorded cap must not silently vanish because the "
+                            "marker half is missing." % ", ".join(token_modes))
+
+    # ---- assemble -----------------------------------------------------------------------------
+    lines = []
+    for e in errors:
+        lines.append("ERROR: %s" % e)
+    for w in orphan_warns:
+        lines.append("%s: %s" % ("ERROR" if strict else "WARN", w))
+    for w in warns:
+        lines.append("WARN: %s" % w)
+
+    n_err = len(errors) + (len(orphan_warns) if strict else 0)
+    cap_str = cap_mode if cap_mode else (", ".join(token_modes) or "unresolved")
+    if n_err:
+        lines.append("")
+        lines.append("FAILED: %d cost-floor integrity error(s). See run-core.md §Cost-floor override "
+                     "(budget cap) + docs/cost-floor-dispatch.md." % n_err)
+        return 1, lines
+    n_warn = len(orphan_warns) + len(warns)
+    if n_warn:
+        lines.append("OK: cost-floor cap (%s) — record integrity holds; %d advisory warning(s) surfaced."
+                     % (cap_str, n_warn))
+    else:
+        lines.append("OK: cost-floor cap (%s) — CF1-CF4 clean (marker<->token sync, viability bound, no "
+                     "silent quality-risk demotion)." % cap_str)
+    return 0, lines
 
 
 # --------------------------------------------------------------------------
@@ -762,12 +986,131 @@ def run_self_test(which=None):
             expect("ph_empty_field", pass_header(emptyq, pd)[0], 1)
             expect("ph_pass_not_mapped", pass_header(notmapped, pd)[0], 1)
 
+    if which in (None, "cost-floor"):
+        with tempfile.TemporaryDirectory() as td:
+            def wc(n, s):
+                p = os.path.join(td, n)
+                with open(p, "w", encoding="utf-8", newline="") as fh:
+                    fh.write(s)
+                return p
+
+            def cf_has(res, needle):
+                return any(needle in ln for ln in res[1])
+
+            # A preflight packet whose standard-context floor is `sequential` and single-agent load is
+            # well under the 600K bound (so a sequential cap is AT the floor and a single-agent cap is
+            # load-viable).
+            pf = wc("pf.md",
+                    "# Pre-flight\n## Token Load Estimate\n"
+                    "- **Estimated manuscript tokens:** 65000\n"
+                    "- **Estimated single-agent load:** 140000 (manuscript + ~75K overhead)\n\n"
+                    "## Dispatch Recommendations\n"
+                    "- **Large-context mode (>=1M tokens):** single-agent\n"
+                    "- **Standard-context mode (<1M tokens):** sequential\n")
+            # A preflight whose standard-context floor is `swarm` (so a sequential cap is BELOW it) and
+            # whose single-agent load exceeds the bound (so a single-agent cap is not load-viable).
+            pf_swarm = wc("pf_swarm.md",
+                          "# Pre-flight\n## Token Load Estimate\n"
+                          "- **Estimated single-agent load:** 720000 (manuscript + ~75K overhead)\n\n"
+                          "## Dispatch Recommendations\n"
+                          "- **Standard-context mode (<1M tokens):** swarm\n")
+            benign_meta = wc("benign.json", '{"underdiagnosis_flag": "cleared"}\n')
+
+            hdr = "# Contract / run-metadata\nGENRE/SUBGENRE: Literary fiction\nDARKNESS LEVEL: Low\nPOV count: 1\n"
+            seq = wc("seq.md", hdr + "GOAL: repair\n"
+                     "<!-- override: cost-floor-sequential — $20-plan usage window; exploratory mid-draft round -->\n"
+                     "cost_floor_override: sequential — $20-plan usage window; exploratory mid-draft round\n")
+            # inert: no cap recorded at all
+            inert = wc("inert.md", hdr + "GOAL: repair\n")
+            # code-span decoy: the marker is quoted inside a code span (no live token) — must NOT be
+            # honored (if it were, CF2 would fire for the missing token).
+            decoy = wc("decoy.md", hdr + "GOAL: repair\n"
+                       "Use `<!-- override: cost-floor-sequential — reason -->` to cap.\n")
+            # suffix collision: cost-floor-single-agentx must NOT satisfy cost-floor-single-agent.
+            suffix = wc("suffix.md", hdr + "GOAL: repair\n"
+                        "<!-- override: cost-floor-single-agentx — decoy -->\n")
+            # Q5 fires (goal=submit) + cap sequential + no Q5 marker -> CF4 ERROR naming Q5.
+            q5 = wc("q5.md", "# Contract\nGENRE/SUBGENRE: Literary fiction\nPOV count: 1\nGOAL: submit\n"
+                    "<!-- override: cost-floor-sequential — budget window -->\n"
+                    "cost_floor_override: sequential — budget window\n")
+            # …same but with the paired Q5 override marker -> exit 0.
+            q5_ok = wc("q5_ok.md", "# Contract\nGENRE/SUBGENRE: Literary fiction\nPOV count: 1\nGOAL: submit\n"
+                       "<!-- override: cost-floor-sequential — budget window -->\n"
+                       "cost_floor_override: sequential — budget window\n"
+                       "<!-- override: quality-risk-Q5 — final polish; accept single-context risk -->\n")
+            # orphan token, no marker.
+            orphan = wc("orphan.md", "# run-metadata\ncost_floor_override: sequential — budget window\n")
+            # single-agent caps.
+            sa_std = wc("sa_std.md", hdr + "GOAL: repair\n"
+                        "<!-- override: cost-floor-single-agent — 1M host, cheap run -->\n"
+                        "cost_floor_override: single-agent; context_tier: standard — 1M host, cheap run\n")
+            sa_noctx = wc("sa_noctx.md", hdr + "GOAL: repair\n"
+                          "<!-- override: cost-floor-single-agent — cheap run -->\n"
+                          "cost_floor_override: single-agent — cheap run\n")
+            sa_large = wc("sa_large.md", hdr + "GOAL: repair\n"
+                          "<!-- override: cost-floor-single-agent — 1M host -->\n"
+                          "cost_floor_override: single-agent; context_tier: large — 1M host\n")
+            # conflicting dual-mode markers.
+            conflict = wc("conflict.md", hdr + "GOAL: repair\n"
+                          "<!-- override: cost-floor-sequential — a -->\n"
+                          "<!-- override: cost-floor-hybrid — b -->\n"
+                          "cost_floor_override: sequential — a\n")
+            # empty rationale on the marker.
+            empty = wc("empty.md", hdr + "GOAL: repair\n"
+                       "<!-- override: cost-floor-sequential -->\n"
+                       "cost_floor_override: sequential — reason\n")
+            # marker<->token mode mismatch.
+            mismatch = wc("mismatch.md", hdr + "GOAL: repair\n"
+                          "<!-- override: cost-floor-sequential — a -->\n"
+                          "cost_floor_override: hybrid — a\n")
+            # bare/unsuffixed marker.
+            bare = wc("bare.md", hdr + "GOAL: repair\n"
+                      "<!-- override: cost-floor — no mode -->\n")
+
+            expect("cf_clean", cost_floor(seq, pf, benign_meta)[0], 0)
+            expect("cf_inert", cost_floor(inert)[0], 0)
+            expect("cf_codespan_decoy_not_honored", cost_floor(decoy)[0], 0)
+            expect("cf_suffix_collision_not_honored", cost_floor(suffix)[0], 0)
+            expect("cf_q5_demotion_errors", cost_floor(q5, pf)[0], 1)
+            expect("cf_q5_names_q5", cf_has(cost_floor(q5, pf), "Q5"), True)
+            expect("cf_q5_with_marker_ok", cost_floor(q5_ok, pf)[0], 0)
+            expect("cf_orphan_warn_default", cost_floor(orphan)[0], 0)
+            expect("cf_orphan_error_strict", cost_floor(orphan, strict=True)[0], 1)
+            expect("cf_sa_context_standard_errors", cost_floor(sa_std, pf)[0], 1)
+            expect("cf_sa_context_absent_errors", cost_floor(sa_noctx, pf)[0], 1)
+            expect("cf_sa_no_packet_errors", cost_floor(sa_large, None)[0], 1)
+            expect("cf_sa_large_ok", cost_floor(sa_large, pf)[0], 0)
+            expect("cf_sa_heavy_load_errors", cost_floor(sa_large, pf_swarm)[0], 1)
+            expect("cf_seq_below_floor_warn",
+                   cf_has(cost_floor(seq, pf_swarm, benign_meta), "below the packet's token-fit floor"), True)
+            expect("cf_seq_below_floor_still_pass", cost_floor(seq, pf_swarm, benign_meta)[0], 0)
+            expect("cf_q4_unevaluable_warn", cf_has(cost_floor(seq, pf), "Q4 (prior-thin"), True)
+            expect("cf_conflict_errors", cost_floor(conflict)[0], 1)
+            expect("cf_empty_rationale_errors", cost_floor(empty)[0], 1)
+            expect("cf_mismatch_errors", cost_floor(mismatch)[0], 1)
+            expect("cf_bare_marker_errors", cost_floor(bare)[0], 1)
+
+            # _fired_triggers per-trigger (q, target) mapping — CF4 is driven by THESE, never the
+            # aggregate escalation string or parsed report text.
+            def qt(text):
+                return [(q, t) for (q, t, _h, _r) in _fired_triggers(text)]
+            expect("ft_q1_hybrid",
+                   qt("GENRE/SUBGENRE: Horror\nDARKNESS LEVEL: HIGH\nPOV count: 1\nGOAL: repair\n"),
+                   [(1, "hybrid")])
+            expect("ft_q5_swarm",
+                   qt("GENRE/SUBGENRE: Literary fiction\nPOV count: 1\nGOAL: submit\n"), [(5, "swarm")])
+            expect("ft_q3_swarm_6pov",
+                   (3, "swarm") in qt("GENRE/SUBGENRE: Literary fiction\nPOV count: 7\nGOAL: repair\n"),
+                   True)
+
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
 
 
 _CHECKS = {
     "quality-risk-triggers": (quality_risk_triggers, True),       # (fn, file-must-exist)
+    "cost-floor": (cost_floor, True),   # registered for the dispatch map; multi-arg (preflight + meta
+                                        # + --strict) is handled by the dedicated main() branch below.
     "audit-tier-criterion": (audit_tier_criterion, True),
     "argument-recon-prerequisite": (argument_recon_prerequisite, False),  # arg is a directory
     "pass-header": (pass_header, True),
@@ -776,11 +1119,28 @@ _CHECKS = {
 
 def main(argv):
     if len(argv) < 2:
-        sys.stderr.write("Usage: config_checks.py <quality-risk-triggers|audit-tier-criterion|"
-                         "argument-recon-prerequisite|pass-header|--self-test> ...\n")
+        sys.stderr.write("Usage: config_checks.py <quality-risk-triggers|cost-floor|"
+                         "audit-tier-criterion|argument-recon-prerequisite|pass-header|--self-test> ...\n")
         return 2
     if argv[1] == "--self-test":
         return run_self_test(argv[2] if len(argv) > 2 else None)
+    if argv[1] == "cost-floor":
+        # Dedicated multi-arg branch (the generic _CHECKS dispatch passes a single extra arg, which
+        # cannot carry both the preflight packet and the meta sidecar plus --strict).
+        rest = argv[2:]
+        strict = "--strict" in rest
+        pos = [a for a in rest if not a.startswith("--")]
+        if not pos:
+            sys.stderr.write("Usage: config_checks.py cost-floor <contract_or_run_metadata_file> "
+                             "[<preflight_packet.md>] [<diagnostic_state_meta.json>] [--strict]\n")
+            return 2
+        contract = pos[0]
+        if not os.path.isfile(contract):
+            sys.stderr.write("Error: File not found: %s\n" % contract)
+            return 2
+        preflight = pos[1] if len(pos) > 1 else None
+        meta = pos[2] if len(pos) > 2 else None
+        return _emit(*cost_floor(contract, preflight, meta, strict=strict))
     if argv[1] == "artifact-names":
         if len(argv) < 5:
             sys.stderr.write("Usage: config_checks.py artifact-names <output_dir> <project> <runlabel>\n")
