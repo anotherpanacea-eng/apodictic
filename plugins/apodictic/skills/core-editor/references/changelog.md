@@ -5,6 +5,391 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.8.0 - 2026-07-07
+
+### Nonfiction Argument Engine — Reviewer-Anticipation (genre layer, Increment 2)
+
+The genre layer's reviewer-anticipation surface (**W5**) now rides the `argument-spine` validator. When a `genre_profile` block is present and its `reviewer_objections` array is empty or absent, W5 surfaces the empty required class as a WARN (ERROR under `--strict`), directing the writer to pre-list the evaluator's likely objections — which seed §6, The Strongest Case Against — before drafting. The Firewall holds: W5 checks only that the writer's list is **non-empty**; it never authors, suggests, or validates the *content* of an objection. Overridable via `<!-- override: argument-spine-reviewer <genre> — <rationale> -->` (a W5-specific slug, decoupled from W4's `argument-spine-genre`). W5 adds **no** validator — the derived self-testable count is unchanged. The three canonical genre worked examples (grant / academic / pitch) each carry a `reviewer_objections` pre-list seeded into a §6 *Reviewer-anticipation* block, so they pass `--check-all` under `--strict`; a per-genre reviewer-anticipation calibration table (evaluator stance · top objection classes · W5 pre-list → §6 mapping) lands in Dialectical Clarity's *Genre & Audience Calibration*.
+
+### Validators — cross-surface uncalibrated-band `calibration-honesty` guard + decision-audit doc fixes
+
+Both consumer decision-audit surfaces — `narrative_decision_audit` (StoryScope) and `argument_decision_audit` (ArgScope) — ship an `uncalibrated` verdict band with null thresholds; the discipline that the band is surfaced as **provenance only, never as a calibrated verdict** was enforced entirely in prose (the audit docs' anti-verdict sections + four `pass-dependencies.md` rows), with no mechanical check that a reader-facing rendering doesn't present the uncalibrated band as calibrated. New `AGG_VALIDATORS` arm **`calibration-honesty`** closes that gap: a **whole-letter, per-paragraph** scan (region-scoping was a false foundation — the only per-audit sectioner scopes appendix bodies only, decision-audit findings land in the unscoped synthesis body, and the canonical scaffolded letter carries no decision-audit region) that flags a paragraph only when a **claim shape** matches **and** no **qualifier** is co-present — CS1 band-placement (`… scores in the … band`), CS2 calibrated-verdict, CS3 threshold-claim on a thresholds-null surface, CS4 aggregate-as-verdict; a co-present `uncalibrated` / `provenance-only` / `advisory` / `not a verdict` qualifier quenches the flag, so the mandated clean-path boilerplate, the seven vendored StoryScope bundle labels (`"AI-elevated: Structural streamlining"` …), ArgScope's two bundle labels, and the doc's own "fair" summary sentence all PASS. **WARN by default, ERROR under `--strict`** (the honest class — an open natural-language co-presence check, `content_advisory` W1 / stance-consistency F4, failure direction toward NOT firing): the guard closes the enumerated claim shapes; residual semantic leakage no vocabulary can close is presented to a human who owns the reading. **Disjoint from `severity-floor`** (D5): the submission-readiness band vocabulary (`Strong Fit` / `Highest Band` / …) is excised from CS1, so a legal readiness verdict does not fire here, and calibration-honesty never reads flag counts. Per-paragraph override via the shared `override_marker` SSoT (`<!-- override: calibration-honesty — <why> -->`, code-span-stripped, boundary-matched). Cross-surface + surface-agnostic — a future uncalibrated `handoff: experimental` consumer inherits it by construction. A dedicated canonical `example-decision-audit-letter.md` (a clean narrative-decision finding + a violating argument-decision finding coexisting) exercises the arm non-vacuously in `--check-all`. The CS shapes / qualifier set / allowlist are this guard's own new vocabulary (not the Must/Should/Could-Fix severity token, so `severity_vocab`/M8 does not apply). Firewall-hardening chore; no paper cite.
+
+Also two docs-only decision-audit fixes: `narrative-decision-audit.md`'s Version-floor line still described a consumer-side `resolve_floor` pre-check (pre-R2 language, contradicting the same file's corrected line and the shim it documents) — rewritten to the post-R2 runtime-dispatcher enforcement matching the ArgScope sibling; and `AUDIT_SELECTION_MATRIX.md`'s Narrative-Decision cell described a non-existent choice-and-consequence propagation lens — rewritten to describe StoryScope feature scoring.
+
+### Coaching Deepening — Coaching History & Pattern Recognition (the ethics-sensitive surface)
+
+Over multiple revision cycles the coach can now surface a **cross-session process pattern** — the same finding deferred across an unbroken run of sessions (`deferral-recurrence`, floor ≥3), or a revision-arc phase left open across consecutive sessions (`phase-incompletion`, floor ≥2) — as a **rolling, opt-in, local-only** `[Project]_Coaching_History_[runlabel].md` of `apodictic.coaching_observation.v1` blocks, each **mechanically derived from the recorded finding-disposition / revision-arc records** (a count, never a vibe) and carrying **no editorial severity** (no Must/Should/Could token, no `apodictic:finding` block). This is APODICTIC's ONE ethically-sensitive surface; the two Fable conditions (2026-07-05) are mechanized as the load-bearing gates.
+
+New `coaching-history` validator (`scripts/coaching_history.py`, dual-mirror) + the `apodictic.coaching_observation.v1` schema: **H1** schema + unique `CH-NN` + per-pattern count floor, **H2** provenance/anti-fabrication (every `<F-id> deferred @ session <n>` resolves to a recorded deferred disposition; `len(evidence) ≥ count`; the cited sessions are **actually consecutive** — a gap fails), **H3** descriptive-not-judgmental (reuses `author_fingerprint._PRESCRIPTIVE_RE` + a trait-blame lexicon), **H4** no-severity-leak (`severity_vocab.SEVERITY_TOKEN_RE`), **H7** tentative-framing (no trait verdict / no bare-scoreboard rendering / an invitation present — the transference-health floor), **W1** local-only. The two ethics gates: **H5** single-home / no coach-only shadow and **H6 + the `delete <project_root>` subcommand** deletion-honored (RECOMPUTE-not-trust per the PR #161 recorded-field rule / `disposition_check` DP2.6 — under the `<!-- coaching-history: deleted -->` tombstone the full H5 scan must be empty + no surviving artifact + no seq; residue = ERROR with **no** override; `opted-in`+`deleted` = ERROR). `delete` removes every artifact (root + `runs/*`), drops the sidecar seq, and flips consent to the tombstone. Opt-in gate (home: `Diagnostic_State.md`; no marker → no-op exit 2). `revision-coach/SKILL.md` §9 carries the human-terminus contract (opt-in gate, single-home / no-projection, read-by-id, tentative-noticing presentation, surface-the-delete). Spec: [`docs/coaching-history.md`](docs/coaching-history.md).
+
+**H5 scan coverage (Opus review F1, P1).** The projection-ban is only as good as its coverage: an early draft scanned a 6-glob authored-artifact allowlist, so a coaching observation projected into an **unlisted** type (the editorial letter, `*_Core_DE_Synthesis_*`) escaped H5 **and** survived `delete` — a false "deletion honored" that broke *both* Fable gates (H6 rests on H5's projection ban). Fixed: the self-identifying (i) parsed `coaching_observation` block + (ii) schema-id signatures are now scanned over **every `*.md` in scope** (minus the one Coaching_History artifact — zero false-positive risk, no legitimate file carries either); the (iii) evidence-grammar + bare-`CH-NN` scans (which *do* carry manuscript false-positive risk) stay manuscript-excluded, but the manuscript is now identified **positively** via the persisted `*_Manuscript_Snapshot_*.md` (`annotation_manifest._SNAPSHOT_GLOB`), not an allowlist. Regression fixtures (self-test + `--check-all`): an editorial-letter projection FAILs H5 and, after `delete`, is CAUGHT by the H6 recompute; a manuscript snapshot carrying "CH-12" / prose "@ session" does not false-trip.
+
+**H2 anti-fabrication honestly scoped (Opus review F2).** The guarantee is fabrication-resistant ONLY on **governed** projects (the independent per-session `gate_events[].disposition_deltas` records). On **non-governed** projects the multi-session history is self-reported by `/coach` (the folded record's `sessions` list), so H2 now requires a non-governed `deferral-recurrence` observation to carry a **visible honesty caveat** that its streak is from the coach's own notes, not an independently verified record (WARN, ERROR `--strict`, per-id override — the writer is never shown an unverified pattern as if it were checked; the H7 principle). SKILL §9 now instructs `/coach` to persist the `sessions` list at disposition time and to state the caveat; the canonical fixture teaches both.
+
+**Completeness sweep — the incomplete-verification class, closed across ALL patterns and ALL depths (Codex round-1 P1 + P2 + the class sweep).** The same "checked the known locations, not all of them" class that produced F1/F2 recurred twice more; swept whole:
+- **P1 (phase-incompletion verification, BLOCKING).** `phase-incompletion` evidence was shape-checked only — a fabricated streak at non-existent sessions (101/102) passed `--strict`. Grepped exhaustively: **no per-session revision-arc-phase completion is recorded anywhere** (`finding_states` is a rolling last-write map; `finding_deltas` carry no session ordinal; the arc is a stateless overwriting re-plan). So phase-incompletion has **no governed verification path on any project** — it is inherently self-reported. H2 now (a) does not claim a verification it cannot perform, (b) requires the honesty caveat on **every** phase-incompletion observation, governed or not. Pattern-by-pattern status is documented: `deferral-recurrence` = verified-on-governed / caveated-on-non-governed; `phase-incompletion` = caveated-always. No pattern is shape-checked-only.
+- **P2 (recursive seq residue).** A `coaching_history_seq` nested under a non-home key survived `delete` (two-home strip) while H6 reported "deletion honored." Now `delete` strips the seq **recursively at any depth**, and the H6 recompute + H5.v search for it **recursively** (residue anywhere = ERROR); a seq at any non-home depth is itself flagged.
+- **Depth-complete `.md` scan (class sweep item 3).** The H5 signature scan + Coaching_History enumeration now walk the project root **recursively** (`os.walk`), not `glob(root/*.md)+glob(runs/*/*.md)` — a projection or shadow Coaching_History file nested in a subdir (`drafts/ch3/`, `runs/r2/artifacts/`) no longer escapes, and `delete`/H6 reach the same depths.
+
+Regression fixtures (self-test + `--check-all`): fabricated phase-incompletion (101/102, no caveat) FAILs `--strict`; a nested-depth `coaching_history_seq` survives the naive strip and is CAUGHT by the H6 recompute (not "deletion honored"); a projection at `drafts/ch3/`, `runs/r2/artifacts/`, `a/b/c/d/` is caught; a deep shadow Coaching_History file is counted by H5.iv and removed by `delete`. The canonical `example-coaching-history/` project is wired into `--check-all` under `--strict` with a positive run + the full hostile ethics-gate arm set + a delete round-trip.
+
+### Intake — contract artifact name reconciled
+
+`run-core.md` §Output: Contract Document instructed the bare `Contract_and_Controlling_Idea.md` filename while `output-structure.md` declares `[Project]_Contract_[runlabel].md` — and the qualified name is load-bearing: `/start`'s Step 0.5 contract-hash precondition locates the contract via the `runs/*/[Project]_Contract_*.md` glob, and the shipped coverage fixtures already use `Example_Contract_…`. A run following the old instruction silently broke zero-question dispatch. The qualified name is now emitted at intake. Sibling of the Pass 0 reverse-outline name reconciliation (same drifted-emitter class, same file).
+
+### Contract Schema — narrative-nonfiction block
+
+The Contract schema (`contract-template.md`) gains an **optional narrative-nonfiction block** — `CENTRAL QUESTION:` + `PROMISE TYPE: [Reveal / Explain / Verdict / Portrait / Lesson]` — appended when intake resolves the constraint to narrative nonfiction (`nonfiction-intake-routing.md` §Route to Narrative Nonfiction Craft). Until now `narrative-nonfiction.md`'s Central Question & Promise Map existed only as a diagnostic *procedure*; a narrative-nonfiction run had no stored contract form for its promise fields. The intake draft-then-validate step (`run-core.md` §Contract Schema) now drafts and author-confirms both fields alongside the fiction schema. LC/E lead-contract codes remain audit-time diagnostics (Findings-Ledger entries), never contract fields. This is upstream prerequisite B of the reader-contract-outline deliverable (the outline's §2 header projects these fields verbatim for narrative-nonfiction runs).
+
+### Validators — the contradiction State axis (world-bible + continuity-bible)
+
+Both bible Contradiction Ledgers now carry a **`State` column** — the contradiction *fact-state*
+axis, orthogonal to the editorial Must/Should/Could severity scale: a self-contradiction is a
+fact-state, not a defect, so it is never forced onto the severity scale (the same discipline Legal
+Risk's escalation tier and Content Advisory's intensity follow). Values: `conflicting` (a live,
+un-explained collision), `apparent` (a collision an override marks intentional), `consistent` (no
+collision — never written as a row). **No new schema** — the column rides the existing plain-markdown
+`## Contradiction Ledger`, parsed like continuity-bible's bespoke `C3` table parse.
+
+The state is **mechanically derived, never model-judged**: a new shared helper
+`scripts/contradiction_state.py` (`derive_state` — no collision → `consistent`; collision + matching
+override → `apparent`; else → `conflicting`), imported by both `world_bible.py` and
+`continuity_bible.py`. World-bible reuses its live `world-rule` / `world-cost` / `world-geo` per-pair
+override markers; continuity-bible gains a new `bible-contradiction CF-NN/CF-MM` pair override (order-
+insensitive, code-span-hardened via the `override_marker` SSoT; distinct from the `bible-rederive` C4
+escape hatch). A new **`X1` firewall arm on the existing `world-bible` / `continuity-bible` validators**
+(no new `AGG_VALIDATORS` entry) proves the register carries no `apodictic:finding` block and no
+editorial-severity token, and that each `State` value is a valid enum token that **matches** the
+mechanical derivation — an author-asserted state disagreeing with the fire/override reality FAILs
+(ERROR). `conflicting` rows are surfaced for the editorial letter to cite **in prose** (Stage A wiring
+— the Legal-Risk / Content-Advisory / Setup–Payoff precedent), so an unresolved self-contradiction
+reaches the author's revision plan; an `apparent` (overridden) row is intentional and is not cited.
+
+Both canonical `--check-all` fixtures now exercise the axis: `example-continuity-bible.md` carries a
+`conflicting` Mara-age row and an `apparent` overridden kitchen-repaint row;
+`example-worldbuilding-bible.md`'s two staged rows both derive `apparent`. Hostile self-test negatives
+on both validators: a planted severity token (X1 FAIL), a planted `apodictic:finding` block (X1 FAIL),
+an author-asserted State contradicting the derivation (FAIL), a `consistent` row written at all (FAIL),
+a bad enum token (FAIL), and a code-span-quoted override that must not silence (FAIL). Dual-script
+mirror byte-identical; the self-testable validator count is unchanged (arms-on-existing, not a new
+validator).
+
+**Fold hardening (review + code-scan follow-up).** The `X1` arm now also enforces **ledger-row
+referential integrity**: over every ledger data row (all rows, pre-axis included), each row must pair
+at least two *distinct* `WF-NN` / `CF-NN` ids that each resolve to a real, well-formed `world_fact` /
+`canon_fact` block — a fabricated id or a single-id row FAILs (`X1 ledger integrity`) and, crucially,
+never reaches the `conflicting`-row prose rollup, so a phantom contradiction can no longer be cited
+into the editorial letter. **Codex-P1 hardening (world-bible), R1(b″):** the `X1` ledger-integrity
+check now runs a single **identity** leg as a pure field recompute over the parsed `world_fact` blocks —
+a row FAILs only when its cited facts all record the SAME normalized `(subject, value, polarity, cost)`
+tuple (Codex's exact repro: two identical `place` facts labeled `conflicting`, which previously passed
+clean and rolled up a phantom contradiction into the letter; it now FAILs `X1 ledger integrity` and
+never reaches the rollup). **A world's collision universe is arm-defined, not subject-defined**, so
+**cross-subject rows are LEGAL** — the geo arm already collides facts about different subjects (WB-G1's
+reversed-distance edge `A→B` vs `B→A`, WB-G2's chronology cycle `A→B→C→A`). Round-1 (R1(b′)) added a
+same-subject leg that wrongly imported continuity C3's schema and rejected both of those legitimate geo
+shapes; R1(b″) **drops the same-subject leg entirely** (a round-2 Codex P1 — the round-1 fix's own
+tests had encoded the overcorrection by pinning cross-subject-FAILs). Identity is the only relation
+that mechanically precludes a collision; every non-identical pairing is the author's declared tension.
+No arm restructuring and no semantic judgment — the register-neutral leg does not adjudicate whether
+the facts truly collide (that stays the author's call). A ledger with data rows
+but **no `State` column** is now a **loud pre-axis WARN** (ERROR under `--strict`) rather than silent —
+the additive column is nudged, not forced. And the shared `contradiction_state.py --self-test` (the
+truth-table / State-column-parse / `Statement`-decoy / X1-regex cases), previously invoked by nothing
+in CI, is now wired into `continuity-bible --self-test`, so it runs under `--self-test-all`.
+
+Anchors the axis on *Lost in Stories: Consistency Bugs in Long Story Generation by LLMs*
+(Li, Guo, Wu, Lee, Li, Xie), **arXiv:2603.05890** (ConStory-Bench / ConStory-Checker — the
+factual/temporal, mid-narrative contradiction taxonomy that confirms a contradiction is a locatable
+fact-state) and *DOME* (**arXiv:2412.13575**) — taxonomy and benchmark only: APODICTIC's detection
+stays mechanical (literal collision + override), never LLM-as-judge, the same "cite the benchmark,
+don't glassbox the method" line drawn for StoryScope and Setup–Payoff. Stage B (single-substrate
+merge, one fact schema, a structured `contradiction_ref` on `finding.v1`) and Stage C (the Timeline
+fold) are explicitly deferred — the pre-draft *intent* vs post-draft *reality* split is load-bearing,
+and Timeline's model-authored LOW/UNCERTAIN confidence rows do not fit a mechanical register.
+
+### Evals — Corpus-expansion synthetic fixtures
+
+Three behavioral-eval fixture sets author-added under `evals/fixtures/`, each carrying a
+pre-registered `expected.md` ground-truth key (the argument-benchmark registration
+discipline): **`ai-prose-calibration/`** — a synthetic AI-heavy prose sample that fires the
+four previously-unexercised AI-Prose Calibration families (AIC-2 Velvet Fog, AIC-4 Register
+Seams, AIC-6 Continuity Smear, AIC-8 Unearned Fluency) with named-flag invocation targets,
+plus a voiced clean-control for false-positive scoring; **`tag-audits/`** — one ~500-word
+scene each exercising the queer-romance-erotica, cozy, and philosophical tag audits, plus a
+no-tag negative baseline; and **`execution-mode-ab/`** — a single-agent vs. multi-agent
+(swarm) A/B pair sharing one manuscript with a registered real-issue-recall set and the
+`docs/swarm-vs-single-eval.md` decision rule. All three are **pure data** — no mechanical
+`validate.sh` arm parses them (the `argument-groundtruth-check` gate walks only
+`argument-benchmark/`), and they live under repo-root `evals/` so the `codex/` + `antigravity/`
+host builds are unaffected. The downstream model-run eval-coverage confirmation report is
+**deferred** (per the corpus-expansion survey): these are the fixtures only, not the sign-off run.
+
+### Editor Scaffolding — Blind-Spot Ordering
+
+The Editor Scaffolding "What You Might Have Missed" section can now be **ordered**, closing the deferred blind-spot-ranking increment (`docs/editor-scaffolding.md` §Future increments). Opt in with a `<!-- blindspot-ranked -->` marker in the letter's E2 section: its items become an ordered, `F-…`-anchored list, verified against the run folder's Findings Ledger by four checks on the existing `editor-scaffolding` validator — **B1** every item anchors a resolvable ledger finding (a marked section with no resolvable Ledger is a hard ERROR, never a silent pass), **B2** the order is the declared key — severity band descending, then the model's **`salience`** (a new optional `apodictic.finding.v1` enum — `prominent`/`moderate`/`subtle`, read from the *ledger* finding — where `subtle` = most easily missed and leads its band), then `evidence_refs` footprint, then finding-id, **B3** severity fidelity (a restated severity token must match the anchored finding's locked ledger band **exactly** — a lower token softens/launders, a higher one inflates; both fail — the Deficit Lock holds), **B4** no duplicate anchor (WARN / ERROR under `--strict`). Salience and footprint order **only within a severity band** — the band stays dominant, so a Must-Fix can never fall below a Should-Fix whatever its salience, and salience (a descriptive judgment, never a severity input) cannot touch the Deficit Lock. Findings without `salience` order by footprint exactly as before (additive, backward-compatible). The Firewall holds: the validator invents nothing, authors no content, and changes no severity — it checks author-listed, id-anchored items against a transparent key. Ranked mode is letter/run_folder-path only (the `--per-pass` and `--dual` arms have no Ledger channel); the marker is absent by default, so every existing scaffolded letter stays green. **No** new validator (the derived self-testable count is unchanged); a canonical `example-blindspot-ranked/` run folder (letter + Findings Ledger) is exercised by `--check-all` under `--strict`.
+
+### Operators — Editor Scaffolding dual-output
+
+Editor Scaffolding now supports **editor ↔ author dual-output**: one diagnosis emitted as *both* the editor-scaffolded letter and its author-facing companion, for an editor who wants both. A new two-file arm on the same validator — `validate.sh editor-scaffolding --dual <editor_letter> <author_letter>` — enforces D1 (the editor letter declares the mode and passes E1–E4), D2 (the author letter is in author register: no editor marker, no Editor Brief / What You Might Have Missed / Intervention Menu, and it carries a Revision Checklist anchor — the framework never authors the prescription content, so the Firewall holds), and D3 (the top severity band matches across both letters, so the verdict class can't soften on either side). A canonical editor+author worked-example pair (`example-editorial-letter-scaffolded.md` + `example-editorial-letter-dual-author.md`) is gated under `--check-all`. No new validator — the self-testable validator count is unchanged.
+
+### Operators — Editor Scaffolding per-pass
+
+Editor Scaffolding now reframes **individual pass artifacts** for the editor audience, not just the synthesis letter. A new single-file arm on the same validator — `validate.sh editor-scaffolding --per-pass <pass_artifact>` — applies the operator-mode reframe to a Core DE pass artifact (`[Project]_Pass<N>_<Name>_<runlabel>.md`). A pass is a single diagnostic lens, so the contract is a right-sized subset of the letter's E1–E4: P1 (the mode marker plus a non-empty **Editor Note** addressee section — a distinct heading from the letter's Editor Brief), P2 (a non-empty **What You Might Have Missed** blind-spot section — not ranked; ranking stays deferred), and the reused W1 author-directed prescription firewall (advisory; ERROR under `--strict`). A pass has no Revision Checklist to reframe into an Intervention Menu, so there is no positive per-pass E3, and a pass may legitimately be severity-free (a Pass 0 reverse outline), so there is no mandatory per-pass severity token — severity honesty stays owned downstream by `softness-check` / `deficit-lock`. Marker-conditional exactly like the letter path (a pass artifact without the marker is a no-op), and body-scoped (before Appendix A). A canonical scaffolded Pass 2 worked example (`example-pass-scaffolded.md`) is gated under `--check-all --strict`. No new validator — the self-testable validator count is unchanged.
+
+### Workflows — Feedback Triage structured `maps_to` (Increment 2)
+
+A feedback item can now carry an optional **`maps_to`** field — a Finding-Lifecycle id (`F-<ORIGIN>-<NN>`) linking a triaged claim to its finding in the Findings Ledger, the structured successor to Increment 1's prose "maps to F-…" note. The field is additive: every pre-existing feedback item without it stays valid.
+
+`feedback-triage` grows a paired-artifact cross-check (an **optional second file — the Findings Ledger**, resolved from a run folder's `*_Findings_Ledger_*.md` or an explicit file, exactly like `finding-trace` / `ledger-consolidation`). When the ledger is present it enforces two new invariants: **E5 (dangling `maps_to`)** — a hard ERROR when an item's `maps_to` names a finding that is not in the ledger (assessment-independent referential integrity, mirroring `finding-trace` E1) — and **W4 (unmapped validated)** — an advisory WARN (ERROR under `--strict`) when a `validated` item carries no `maps_to`, the checkable form of the spec's "a validated feedback item must point at a real F-…". W4 is advisory by default so a claim marked `validated` ahead of its ledger entry stays valid; `--strict` is the finalize/CI gate. Without a ledger the cross-check is skipped and single-file behavior is unchanged.
+
+The canonical worked example is now paired with the example Findings Ledger under `--check-all --strict` (FB-01 `maps_to: F-RR-01` resolves E5-clean; no fully-validated item is left unmapped). No new validator — the self-testable validator count is unchanged (67).
+
+### Validators — Fiction Structural Fault-Injection Benchmark (M1)
+
+The fiction sibling of the argument-engine benchmark now ships its M1 scaffolding: a corpus-based validation harness for the Core Development Editor's structural fiction passes, scoped to a defensible construct — does the engine recover pre-registered **local** structural defects (POV break, continuity contradiction, dropped setup, orphan scene), name the mechanism, calibrate severity/repair, and leave registered intentional devices alone — explicitly NOT whole-manuscript, theme, or reader-help diagnosis. New validator `fiction-groundtruth-check` (`scripts/fiction_groundtruth.py`, dual-script mirror) is a **key-conformance gate, never a semantic judge and never a run scorer**: it checks the pre-registered answer keys for FGT1–FGT7 coverage, the multi-lane tag discipline (the architecture guardrail — `gt_class: C` may never `gate`; `gate` requires `deterministic`/`panel_confirmed` reliability, so α licenses gating rather than the author; a Lane-2 anchor must be banded with an `alpha_metric`), broken-member completeness (plant record + well-shaped locus + defect family + `Paired-with` sibling, per the mandatory matched-pair rule), the OPEN-namespace expected-surface shape + family consistency (F-P&lt;n&gt; findings validate by shape/family; `CF-NN`/`SP-NN` are disjoint cross-artifact ids recognized only for continuity/reveal, and a CF/SP-only surface is conformant — with the negated/PASS decoy masks re-grammared to the fiction surface tokens, not ported from the argument regex), FGT4 severity tokens (via the `severity_vocab` SSoT, with a severity-free `presence-delta` regime for firewalled artifact rows), and FGT7 classification (`SOUND`/`INTENTIONAL-AND-EFFECTIVE`/`DEFECT-AS-PLANTED`). The M1 kit ships `docs/fiction-benchmark-spec.md`, the FGT template, the `fiction-benchmark` rubric, and an 11-member fixture set — 4 matched clean/broken PD-derived pairs (each clean member is its bucket's airtight specificity control) + 3 standalone intentional-device controls (*The Yellow Wallpaper*, *The Gift of the Magi* stored; *A Christmas Carol* referenced via `SOURCES.md` + `run.sh --fetch`, SHA-pinned, no bytes in-repo) — all pre-registered and `--check-all`-gated. Model-convergence runs (M2a) and the ≥3-editor α-licensing panel (M2b) are doc-only, not built.
+
+### Workflows — Legal Risk Register content-detection auto-recommend
+
+The Legal Risk Register is now **auto-offered** for memoir / autofiction / nonfiction
+portraying identifiable real people **without** an explicit `constraint:risk` flag. The
+model reads the manuscript for the memoir / real-people signals (a mode signal — first-person
+lived-experience retrospective, autofictional author-surrogate, or nonfiction naming/depicting
+identifiable living people — plus at least one real-people content signal drawn from the module's
+§Detection guidance: a reputational statement of fact about a living person; intimate private facts
+about an identifiable private person; recognizable changed-name portrayal; quoted
+lyrics/poetry/unpublished third-party writing; NDA/settlement-covered disclosure) and **offers**
+the register. Per the maintainer's decision this is **prompt/router-only** — model-side detection
+in the synthesis/routing prose, deliberately **not** a mechanical validator arm (no new validator,
+no validator-count change). Offer-then-attach with an explicit confirm, and the
+**flag-don't-practice-law** firewall is intact end to end: it flags/offers, never adjudicates, and
+never auto-produces the register without confirm. Prose homes: `run-synthesis.md`
+§Content-detection auto-recommend, `references/legal-risk-register.md` §Auto-recommend,
+`intake-router-runtime.md` §3 D / §6 Table B, `pass-dependencies.md` §4a.
+
+### Harness — Model-Capacity Exploitation M1 (dispatch observability)
+
+The first increment of Model-Capacity Exploitation ships **observability-first, no allocator** (the repo's build-nothing-without-a-forcing-function default; the repo's own eval scorecards show no measured model-tier differential, so an allocator now would be speculation). The single missing join key — *which model each dispatched step was issued to* — is now recorded in an additive `dispatch_log` array on `apodictic.diagnostic-state.v1` (the `complexity_signals` / `synthesis_coverage` precedent: property + `$comment`, no version bump, no new schema file). Each entry is `{seq, step, model_tag, execution_mode, max_turns, provenance}`; the `step` grammar is `pass<N>` / `pass0+1` (combined triage subagent) / `synthesis` / `all-passes` (single-agent's one subagent), with `audit:*` / `prerequisite:*` / `refutation` a stated deferred extension (accepted-if-recorded, not reconciled). **Provenance honesty is pinned in the schema `$comment` and binding on every consumer:** a `dispatch-derived` entry attests the dispatch *instruction* — the model parameter the parent requested — it is **parent-requested, not platform-verified** (no host API attests which model actually served the subagent), deliberately weaker than `synthesis_coverage`'s manifest-reconciled coverage; `declared` marks an inline step with no dispatch event, and provenance tracks the host's per-entry dispatch capability, **not** the run's mode (a no-shell host legitimately records all-`declared` entries under `execution_mode: sequential`). New validator `dispatch-record` (`scripts/dispatch_record.py`, dual-script mirror, bash-degrades-to-advisory) runs R1–R5: R1 presence (advisory-first; key-absent = pre-adoption grandfather / silent PASS, present-but-`[]` = a post-adoption recording failure that fires); R2 pass-artifact + synthesis-letter coverage per the satisfaction map (`pass0+1` satisfies both Tier-1 artifacts, `all-passes` is exclusive; artifact-with-no-entry FAILs only under `--strict`, entry-with-no-artifact WARNs never FAILs); R3 tag vocabulary parsed from the `output-structure.md` model-tag table (SSoT-by-reference; the literal `unknown` is a sanctioned PASS; a zero-row table parse exits 2 `model-tag-table-unparseable`, never accept-everything); R4 per-entry shape (no mode-based provenance FAIL); and R5 escalation cross-check (at most one mode transition; final entry mode == `last_session.execution_mode`), WARN-first with `--strict` promotion. `dispatch-record --report <project_dir>` is a read-only cross-run scan that gates nothing and surfaces the **M2 demand signal** — the count of `quality_risk_override` records (matched via the shared `override_marker` SSoT, meta-lint M5) and how many carry a budget-flavored rationale — so the M2 tier-experiment trigger is mechanically visible rather than recorded-but-invisible (the CR-6 detectability discipline). Two false claims in `output-structure.md` are **corrected** (not merely clarified): the per-file / per-output model-tag claims are structurally false under the single-`runlabel` filename grammar — every pass file in a run shares one runlabel, so per-file tags cannot exist in filenames; `dispatch_log` is now named the per-dispatch SSoT. `run-core.md` gains recording sentences at Execution Protocol steps 7 (both branches, plus the single-agent declared variant) and 10 — zero behavioral change. The two canonical coverage run folders (`references/example-run-folder-coverage` / `-degraded`) gain populated `dispatch_log` arrays so R1–R4 run against real data in `--check-all`, alongside a parser-has-teeth proof (the R3 table parse extracts the six known tags from the shipped `output-structure.md`) and an R5 stale-mode hostile arm (WARN by default, FAIL under `--strict`). M2 (the pre-registered tier experiment) and M3 (contract-time advisory allocation) remain evidence-gated with named triggers.
+
+### Writer-Question Surface Hardening — macro-map SSoT + pass headers
+
+Locked `pass-dependencies.md §3` (Macro Block Definitions) as the **single source of truth** for the 8 macro blocks, the pass→block map, and each block's writer-facing `User Question`. The §2 concern resolver, the `core-editor/SKILL.md` pass-header mapping, and the per-pass artifact header all now read from §3, never re-author it (Writer-Question Surface Hardening #3). `audit-signal-propagation` / `audit-tier-criterion` read §4 and are unaffected — ripple-verified unchanged.
+
+Each Core DE pass artifact now begins with a §3-sourced blockquote header — `> **Macro block:** … · **Writer question:** … · **Legacy pass id:** Pass N` — so a directly-opened detail file is legible without framework knowledge (#4). The values are read from §3, and a concern-driven run that pulls a dependency pass outside its usual block still declares the pass's **own** canonical §3 block (the map is by pass, not by run). New `pass-header` validator (`config_checks.py`, dual-mirrored): **H1** header present (a header-less legacy artifact WARNs, not ERRORs); **H2** the Macro block is one of the 8 and matches §3's pass→block map for the Legacy pass id, and the Writer question matches §3's User Question; **H3** all three fields non-empty. A Legacy pass id that §3 does not map is a present-but-wrong value and **ERRORs** (either the header is wrong or §3 must be updated in the same change) — WARN marks absence only, never a wrong value. Absent python3 the arm degrades to the fleet advisory-WARN convention (skip + inline-check guidance), not a bash reimplementation of the §3 parse. Wired into `--check-all` against the real `pass-dependencies.md §3` via the canonical `example-pass-artifact-header.md`, and header emission added to `run-core.md`'s pass-emission instructions.
+
+### Pass 0 — reverse-outline artifact name reconciled
+
+`run-core.md` §Pass 0 was the last emitter of the bare `Reverse_Outline.md` filename while `output-structure.md`, `pass-dependencies.md`, and `partial-manuscript.md` all declare `[Project]_Pass0_Reverse_Outline_[runlabel].md`. The project-qualified name is now canonical everywhere (it matches the runlabel convention every other run artifact uses); no script read either name. This is upstream prerequisite A of the reader-contract-outline deliverable, whose scene spine is located by the `*_Pass0_Reverse_Outline_*` glob.
+
+### Annotated-Manuscript Export — PDF Proofing Target (`pdf-export`, P1–P3)
+
+Added a **4th projection** of the gated annotation manifest beside the shipped Obsidian / HTML / DOCX
+targets: a self-contained, **byte-deterministic `.pdf`** (`scripts/annotation_export.py pdf`) the writer
+opens in any PDF reader — the proofing/annotation deliverable. Written **by hand from raw PDF objects,
+stdlib only** (no reportlab/fpdf): a `%PDF-1.4` header, numbered `/Catalog` → `/Pages` → per-page
+`/Page` + uncompressed `/Contents` objects, a base-14 `/Helvetica` `/WinAnsiEncoding` font, an `xref`
+table, and a trailer. The snapshot prose renders as text with a `[<finding_id>]` marker spliced at each
+anchor locus (the HTML `<sup>` precedent, via the same `_insertion_offset` splice) and each verbatim
+comment lands in a trailing **Findings** section, char-wrapped so the chunks concatenate back exactly.
+
+**Byte-determinism** (the DOCX discipline, for a different binary): **no `/Info` dict** (so no
+`/CreationDate`/`/ModDate`), **no `/ID`** array, **no stream compression** (no zlib drift), all shown
+text emitted as **octal-escaped ASCII** (`\247` → §, interpreted by `/WinAnsiEncoding`), fixed object
+order, xref offsets from byte lengths — no wall clock, no random. Two renders are byte-identical.
+
+New **`pdf-export`** validator gating the on-disk artifact: **P1** artifact integrity (on-disk == fresh
+build byte-for-byte — the authoritative lock), **P2** text round-trip (manuscript runs, markers stripped,
+reproduce the snapshot), **P3** marker resolution + comment fidelity (markers ↔ manifest set bijection;
+each Findings chunk group concatenates to the verbatim comment). Ships the canonical
+`example-annotated-manuscript/pdf/` fixture wired into `--check-all` (byte-identical to a fresh render;
+`*.pdf binary` added to `.gitattributes`), a `--self-test` with a hostile `( ) \ §` escape/offset case,
+and the degrade-to-`WARN`-without-python3 arm. **Validators +1 → 68** (the count stays DERIVED from
+`AGG_VALIDATORS`). Docs: `docs/annotated-manuscript-export.md` §Increment 5.
+
+### Specialized Audits — Position-Pair Register consumer wired
+
+Wired the **Position-Pair Register** consumer of SETEC's `position_pair_register` surface (stance-consistency PR 2). The surface reads one long nonfiction argument-shaped work and emits a register of passage PAIRS that address the SAME question Q — each pair a neutral interrogative question + both passages' verbatim loci, in DOCUMENT ORDER. It asserts NO relation between the passages (not agreement, conflict, contradiction, or tension) and does not rank by disagreement; the HUMAN reads both and owns 100% of the conflict call. This is the fleet's deliberate NON-step across the content-verdict wall: the model points at two passages sharing a question; the writer decides whether they conflict, evolved, or were mischaracterized. It sits further from the Firewall than any other consumer — where ArgScope's consumer derives an editorial signal mechanically, this one derives nothing and runs gates only.
+
+New shim `scripts/ai_prose_position_pair_register.py` (`SURFACE = "position_pair_register"`), mirroring the argument-decision consumer: floor-from-manifest (`min_setec_version: 1.121.0`, the first release tag carrying the surface — the first-tag convention), the R2 dispatcher enforcing the floor at runtime (no redundant consumer-side pre-check), `handoff: experimental`, `calibration_status: uncalibrated` (an LLM extraction surface is not bit-deterministic — human re-review absorbs the drift). It pins the `results.pairs` payload + the refusal/cap disclosures and the `claim_license`, never a verdict, relation, or aggregate (there is none).
+
+New `position-pair-register` validator (`position_pair_gates.py`, dual-mirrored) — the "claim-surface-asserts-it" firewall for the register artifact, over three inputs (the rendered artifact, the JSON envelope, the manuscript the consumer holds): **Q1** a two-layer recursive banned-KEY walk over the envelope (relation keys never legitimate anywhere; generic verdict keys scoped to `results.pairs` — KEYS only, since `claim_license` VALUES legitimately carry relation words; the walk shape from setec-voiceprint PR #298's `test_envelope_carries_no_verdict_keys_recursive`, not its key list); **Q2** a verbatim re-check of every quote against the manuscript with the F1 punctuation-fold (NFC → typographic quotes to straight → all Unicode dashes to `-` → `…` to `...` → Zs spaces to U+0020 → newline to space → whitespace-run collapse) — a fabricated or paraphrased quote DROPS the pair with an inspectable log line + a counted `pairs_dropped_quote_mismatch` disclosure + WARN (a drop is a disclosure, not an error; `--strict` FAILs); **A3** no `Must/Should/Could-Fix` severity leak and no `apodictic:finding` block (the content_advisory A3 firewall); **F5** the framing-prose relation-vocabulary scan over the consumer's OWN text, exempting a `>`-blockquote line ONLY when its text (after an optional `A:`/`B:` side label) fold-matches the manuscript verbatim — the author's quotes may carry such words, but a non-verbatim blockquote is framing dressed as evidence and is scanned (the exemption is verbatim-bound, never merely structural or a per-token allowlist); and a document-order check (the artifact must present pairs in envelope order — re-ranking is a judgment channel the posture forbids; an artifact with no parseable `### <n>. Q:` headings makes the order UNVERIFIABLE → WARN, never a silent skip). Unreadable inputs fail closed. Canonical `example-position-pair-register` fixture (manuscript + envelope + rendered register) wired into `--check-all` under `--strict`; hostile self-test matrix covers the paraphrased-quote drop, the F1 smart-quote/em-dash/ellipsis/NBSP fold, a planted Must-Fix / finding block, an injected relation key (whole-envelope) and verdict key (pairs-scoped), a relation-vocabulary framing line, re-ranked pairs, and each fail-closed path.
+
+Rooted in **ContraDoc: Understanding Self-Contradictions in Documents with Large Language Models** (Li, Raheja & Kumar; arXiv:2311.09182 — the contradiction-type taxonomy informs what "same question" pairing must catch) and **BeliefShift** (Myakala, Agrawal & Manche; arXiv:2603.23848 — the position-drift framing).
+
+### Validators — Canonical Release Gate
+
+`quality-risk-triggers` now runs as a canonical release gate. Added
+`core-editor/references/example-quality-risk-contract.md` — a clean, well-formed,
+low-risk Contract worked example (single-POV literary family drama, moderate
+darkness, mid-draft developmental goal) that raises none of the five pre-pass
+quality-risk triggers (Q1-Q5) — and wired it into `validate.sh --check-all`: a
+clean arm asserts the canonical contract exits 0, plus a hostile arm that flips
+its darkness rating to the top setting on a throwaway copy and asserts the Q1
+consent/governance trigger fires and exits non-zero (gate proven to have teeth).
+This closes the last gap in the "canonical-framework validator runs as release
+gate" track — every validator with a single-artifact canonical target is now
+gated against the shipped framework, not only its own synthetic fixtures.
+Validator count unchanged (67); no new validator.
+
+### Deliverables — Reader-Contract Reverse Outline
+
+The third finalized third-party developmental-edit deliverable now ships (alongside the editorial letter and the Annotated Manuscript): a reverse outline that lays the book out **scene by scene** and maps it against the **reader contract** it implicitly makes — where each promise is established, where it's paid off, and where it breaks. Like the Annotated Manuscript, it is a **byte-deterministic projection** of artifacts that already exist (the Pass 0 reverse outline, the Contract, the Findings Ledger); the model's only authored contribution anywhere in the deliverable is a gated, ids-only **Contract Map** (`apodictic.contract_map.v1`, closed-key), which localizes each contract clause to the scenes that establish and pay it off. New validator `reader-contract-outline` (`scripts/reader_contract_outline.py`, dual-script mirror) runs the R1–R7 gate: R1 scene-spine round-trips to Pass 0 verbatim; R2 two-sided contract-field fidelity (empty fields render their literal state, none dropped/invented); R3 the rendered Contract Map ↔ Map-block bijection with every evidence line byte-matching the cited scene's Pass 0 "what the reader now knows" line; R4 no fabricated gap (each gap cell is `none logged` or the verbatim Ledger projection); R5 no untranslated framework shorthand in the deliverable; R6 the READER-PROMISE split-completeness coverage (advisory WARN, ERROR under `--strict`, override via the `override_marker` SSoT slug `reader-contract-coverage`); and R7 map integrity (Mode-11 untrusted input — closed-key schema, `inputs.*_sha256` bound to the staged artifacts so a stale Map fails loudly, every `clause_text` a verbatim substring of its named Contract field, the clause denominator recomputed from the Contract, never trusted from the Map). Offered at run-end (sibling to the Annotated Manuscript, gated on a `*_DE_Synthesis_*` letter + `*_Pass0_Reverse_Outline_*` + `*_Contract_*`) and regenerable from `/start`'s `diagnosed` node. Scope: fiction (the full 10-field contract schema) and narrative nonfiction (the optional `CENTRAL QUESTION` / `PROMISE TYPE` block drives the idea clause); argument-shaped nonfiction is deferred. Canonical fiction + narrative-nonfiction fixtures ship under `references/example-reader-contract-outline/` (the repo's first artifacts using the reconciled Pass 0 name), exercised with hostile arms in `--check-all`.
+
+### Research — Reliability Layer strict halt + sidecar (OQ-1, OQ-3)
+
+Two additive, stdlib-only follow-ons to the Research / API Reliability Layer, both
+off by default so existing (non-strict) behavior and the AC-1..AC-13 contract are
+unchanged. **OQ-1 (`--strict` halt):** `academic_apis.py batch --strict` (and
+`resolve_batch(..., strict=True)`) now HALTS a high-stakes run — non-zero exit
+(`STRICT_HALT_EXIT_CODE` = 3) plus a `reliability.strict` sub-block
+(`{enabled, halt, reason, degraded_providers, not_checked}`) — iff coverage ended
+DEGRADED (≥1 degraded provider) **and** ≥1 citation was NOT-CHECKED, so a degraded
+verdict can no longer be emitted as a clean not-found. The halt is one-directional:
+a clean run, a non-strict run, or a genuine all-healthy NOT-FOUND (NOT-FOUND ≠
+NOT-CHECKED) never fires it, and with `APODICTIC_RELIABILITY=off` there is no
+degradation signal to trip it. **OQ-3 (`Citation_Reliability.json` sidecar):** a
+pure serializer `build_reliability_sidecar` + writer `write_reliability_sidecar`
+(schema `apodictic.citation_reliability.v1`, deterministic `sort_keys` order)
+persist budget-spent, circuit states, coverage/degraded_providers, per-provider
+snapshot, events, and the resolved/not_found/not_checked summary; opt-in via
+`batch --sidecar-dir DIR`, and it never mutates the in-`output` `reliability` block.
+Both modules' `--self-test` gained coverage (halt fires only on genuine degradation;
+sidecar shape, determinism, and disk round-trip); OQ-2 (telemetry-tuned budgets)
+stays open.
+
+### Writer-Question Surface Hardening — Results Guide wired + validated
+
+Wired the **Results Guide** deliverable (`[Project]_Results_Guide_[runlabel].md`, Writer-Question Surface Hardening #5) into the run flow and added a validator for it. The Guide is a plain-language **navigation index** — the first file after the editorial letter — mapping each writer question the run produced (the §3 `User Question` for each macro block that ran) to the run-folder artifacts, specialized audits, and state files behind it, so a writer can navigate their results without framework knowledge. Its template already lived in `core-editor/SKILL.md §Results Guide Artifact`; this change wires its emission (a standard deliverable, not an offer) into `run-synthesis.md §Core DE Deliverables` — the template is emitted as-is, never re-authored.
+
+New `results-guide` validator (`results_guide.py`, dual-mirrored) — **one arm, three checks, R2 load-bearing**: **R1** membership (every `### <question>` heading matches a canonical §3 User Question, reusing `config_checks._parse_section3` against the real `pass-dependencies.md §3` — an invented block ERRORs; a run that produced only some blocks is legal, so listing fewer questions is fine, inventing one is the defect); **R2** referential integrity (every backtick `.md`/`.json` citation resolves to a run-folder file; citations must not escape the run folder — an absolute or traversal/subdir path (`../outside.md`, `/etc/x`) FAILS; an un-substituted `[…]` placeholder or a dangling citation ERRORs; the "What to do next" `/coach` / `/audit [name]` command tokens are exempt via the `.md`/`.json` extension guard so they never false-fail); **R3** hygiene (no `Must/Should/Could-Fix` severity leak — the same posture `content_advisory` A3 enforces — and no `apodictic:finding` block, so the index never masquerades as a second letter). R1/R3 ride along inside the single arm as cheap checks; there are no standalone arms. R1 degrades to a skip when §3 is unavailable, and an unreadable run folder fails closed with a named error. Absent python3 the arm degrades to the fleet advisory-WARN convention (skip + inline-check guidance), not a bash reimplementation. Wired into `--check-all` against the canonical `example-results-guide` run folder.
+
+### Harness — Runner-Governed Execution + Finding Lifecycle IDs increment 4 (cooperative slice)
+
+`finding-trace` is now a **mechanical row in the `run_spot_check` gate** (`schemas/execution-gates.v1.json`), closing the live gap where the letter-ID-must-exist-in-ledger (smuggled-finding) gate was prose-invoked while the manifest pointed at `finding-trace` as its owner without running it. E0 (unparseable sidecar) / E1 (dangling letter ref) / E2 (phantom `finding_states` key) / E3 (invalid state) now **block the clear** (exit 1). The row asserts **referential integrity at delivery time, NOT ordering**: W1 is gated on the folded pointer having reached a synth-cleared phase, so on an out-of-order spot-check it self-skips and the row produces no order signal — external ordering enforcement stays the deferred host layer's job.
+
+**In-flight-run note:** a governed run with a `run_spot_check` `mechanical-passed` pending from before this release will now re-check `finding-trace` at `--attest` time; a letter that cites a phantom `F-…` id blocks cleanly (never a crash or a false clear).
+
+The clearing event (`gate --attest` / a no-attest clearing `passed`) now prints the **per-ID finding trace** (`severity · state · cited? · rev=`) and a **`T4-watch: N deferred orchestrator-pull-interface marker(s)`** line — the mechanical, per-clear surface for a Runner-Governed Execution defer-trigger (CR-6 detectability). `gate --check-state` prints an **`open exceptions: N (skipped · deferred · pass-with-warn · mechanical-passed · blocked)`** count line.
+
+On **governed** sidecars, `finding-trace`'s E5 (phantom completion) widens its in-scope set to the ids a clearing event of *this run* advanced to `revised` — so a resolved marker removed *after* the gate cleared (post-clear tampering) is now caught. The E5 predicate and the resolved-marker union across all completion artifacts are unchanged; ungoverned sidecars keep today's mention-scope behaviour byte-identically.
+
+The **external host orchestrator (M2)** — a Claude Code plugin-hook set that would refuse an out-of-order write — is **deferred with four detectable triggers**: no post-v2.1.0 skipped-gate incident is recorded, so the revisit clause has not fired. The chosen shape, the rejected shapes, and the parked cooperative alternative are recorded in the spec. No new validator, no validator-count change.
+
+### Audit-Signal Propagation — §4e is now the source of truth
+
+`pass-dependencies.md §4e` (Audit-Signal Propagation Table) now formalizes an explicit **six-column contract** — *Audit · Audit-internal signal · Synthesis severity (required-severity) · Context modifier · Source · Override (override-modifier)* — with each column's semantics named in prose so the table is machine-parseable. The Override column gains a formalized per-audit **override-modifier directive** (`propagate-override: <signal-class> → <synthesis-severity>`) that reassigns the required synthesis severity for an audit's strong signal class without editing Python. The `audit-signal-propagation` validator (`letter_checks.py`) is now **driven by §4e**: it parses the signal-class → synthesis-severity mapping from the `#### Default mapping` block instead of a hardcoded in-Python default map, applies per-audit `propagate-override:` directives, and reports a **malformed §4e mapping** (unrecognized severity, missing strong-signal class, or malformed directive) as an ERROR rather than silently defaulting. On the real committed §4e the parsed mapping reproduces the historical hardcode exactly, so the port is **oracle-identical** — `audit-signal-propagation --check-registry`, the byte-identical §4e diff, and `argument-carve-behavior-preservation` all pass unchanged. Two hostile self-test fixtures were added (a per-audit modifier that reassigns the required severity is honored; a malformed §4e row/directive is caught). No new validator — the derived self-testable count is unchanged (67).
+
+### Validators — Setup–Payoff Ledger (referential completeness for foreshadowing)
+
+New `setup-payoff` validator arm + the `apodictic.setup_payoff.v1` (foreshadow) and
+`apodictic.payoff.v1` (resolving payoff) schemas — the mechanical home for ConStory-Bench's
+**"Abandoned Plot Elements"** row (introduced narrative expectations never resolved). The model
+extracts the author-marked **Foreshadow → Trigger → Payoff** triples; the validator DERIVES each
+foreshadow's `state` (`paid_off` / `open` / `abandoned`) deterministically and checks referential
+completeness — **SP1** schema (SP-NN / PO-NN ids, required fields, state enum), **SP2** referential
+integrity (a non-empty `payoff_ref` must resolve to a real payoff block; forward-only, N:1 allowed;
+a phantom ref FAILs), **SP3** open rationale (an `open` state must carry a non-empty
+`open_rationale`), **SP4** derived-state agreement (a declared state that disagrees with the refs
+FAILs — no model in the gate), **X1** firewall (no `apodictic:finding` block, no editorial-severity
+token — the register is a fact list, not a defect list). An `abandoned` row is a surfaced fact the
+editorial letter cites in prose (Stage A wiring; the Legal-Risk / Content-Advisory precedent), never
+a validation failure. Shipped with `scripts/setup_payoff_checks.py`,
+`core-editor/references/setup-payoff-ledger.md`, and the canonical `example-setup-payoff-ledger.md`
+wired into `--check-all` under `--strict`. The self-testable validator count is derived from
+`AGG_VALIDATORS` (adding `setup-payoff` is the whole count change).
+
+Anchors the concept on *Codified Foreshadowing-Payoff Text Generation* (Yun, Zhou, Hou, Peng, Shang),
+**arXiv:2601.07033** (the F→T→P triple + the causal-debt / abandoned framing) — but takes the schema
+only, **not** CFPG's LLM-judged detection method: the gate is mechanical referential-completeness, the
+model marks the triple and never renders the verdict. Cross-repo sibling: voicewright
+`specs/31-foreshadow-payoff-checker.md` is the generation-side counterpart (same CFPG root, different
+consumer — declare-and-lint vs. extract-and-audit). Deferred (Stage B): promoting `abandoned` to a
+structured promise-contract finding, and the semantic "does this passage actually pay off the setup?"
+judgment (a future SETEC-consumer surface).
+
+### Validators — severity-token vocabulary SSoT (`severity_vocab`) + meta-lint M8
+
+The editorial-severity leak token `\b(?:Must|Should|Could)-Fix\b` — the A3 Content-Advisory firewall vocabulary reused by the X-gate Author-Style / Author-Voice firewalls, the Results-Guide navigation-index guard, and the Setup-Payoff / Contradiction-State fact-register guards — had accumulated **six byte-identical hand-synced copies** (`_SEVERITY_RE = re.compile(...)` in `content_advisory`, `results_guide`, `contradiction_state`, `setup_payoff_checks`, `style_explanation`, `author_fingerprint`), kept in sync only by "copied from `content_advisory._SEVERITY_RE`" comments, with a seventh forming on an open PR. The pattern now lives once, in `severity_vocab.SEVERITY_TOKEN_RE`; every leak-guard imports it (the local `_SEVERITY_RE` is an alias binding, so all `.search()` call sites are byte-identical and every validator's self-test passes unchanged — the adoption is provably faithful: `content_advisory._SEVERITY_RE is severity_vocab.SEVERITY_TOKEN_RE`). New meta-lint rule **M8** bans a local re-definition — it flags a `re.compile` whose literal carries the grouped three-modal `(?:Must|Should|Could)` alternation (and its re-spellings: a capturing group, a reordered alternation), directing the author to `from severity_vocab import SEVERITY_TOKEN_RE`. M8 is deliberately narrow to the modal-alternation shape, so the fleet's other legitimately-different severity patterns — `editor_scaffolding`'s `(Must-Fix|Should-Fix|Could-Fix)` token alternation, `disposition_check`'s `(Declined|Deferred) Must-Fixes` caveat line, `letter_checks`' single literals — are not flagged, and a `Must-Fix` named in prose / a docstring is not flagged (comments + docstrings stripped first). `severity_vocab.py` (the SSoT) is exempt; the meta-lint self-test proves M8's teeth with a doctored source. `docs/validator-conventions.md` is brought current to **M1–M8** (it had drifted, documenting only M1–M5 while M6 code-span hygiene and M7 single-Firewall were already live). No behavior change to any validator; no new `AGG_VALIDATORS` entry.
+
+### Validators — Architecture Hardening (Increment 8)
+
+Ported the last four bash-regex prose/filename validators onto the shared
+parsers, completing the editorial-letter / ledger family. `ledger-check`,
+`synthesis-sections`, and `tone-check` now run through `letter_checks.py`
+(heading-anchored section matching that kills the mid-heading substring
+false-positive; body-only, code-span-stripped, blockquote-skipped superlative
+scanning so a superlative quoted in an appendix, a code fence, or an author
+blurb no longer false-fails); `artifact-names` runs through `config_checks.py`
+with the project/runlabel matched as literals. Each keeps its exact legacy
+output contract (verified byte-identical against the pre-port arm) and its bash
+implementation as the no-`python3` degrade path, and gains fixture-driven
+negative tests.
+
+### Manuscript Visualizations — Beat-Map Against Spine (chart 7-fiction)
+
+Built the beat-map-against-spine (chart 7-fiction) over a new `apodictic.story_spine.v1` **producer**:
+the chosen fiction spine and its ordered beats (`beats: [{beat, scene_id, anchor}]` + a top-level
+`spine_framework`). The `spine_framework` is a token in the **closed 50-spine plot-coach taxonomy** —
+`plot-architecture/SKILL.md` §Spine Families (50 Spines, 12 Families) — and each spine's own named,
+ordered beats live in its "On the page" line in `plot-architecture-audit.md` (e.g. Seven-Point (Dan
+Wells): Hook → Plot Turn 1 → Pinch 1 → Midpoint → Pinch 2 → Plot Turn 2 → Resolution). The `beat` name
+stays a **free non-empty string** because beats are open per framework and are not exhaustively
+enumerated (the `scene_roster.v1` character-name precedent). The `manuscript-viz` gate gains **X9**
+(beats byte-checked against the producer + Timeline: beat → producer beat; manifest scene_id == producer
+scene_id and resolves to a Timeline row; producer spine_framework ∈ closed 50-spine enum; producer beat
++ anchor non-empty and, when line-range-shaped, overlapping the scene's Timeline line-range), and the
+**X8** producer-present rule so a present `beats[]` is legitimate iff it byte-checks against the
+producer — **retiring the last producer-gated chart** (no producer-gated chart remains). The renderer
+draws a deterministic beat-map along a single spine rail (one node per beat, in spine order, at its
+mapped scene, with the framework as caption — no style in the manifest, no time/random). Beats are keyed
+directly on `scene_id` (per-scene, like scene_roster/scene_function/tension_point) — no `evidence_ref →
+scene_id` resolution. Adds the `apodictic.story_spine.v1` schema + its `_coverage.json` binding
+(`closed_keys:true`), the new `beats[]` manifest array on `apodictic.viz_manifest.v1`, and the worked
+`example-story-spine.md` fixture (paired to `example-timeline.md`), gated by `--check-all`. No new
+validator — the count stays DERIVED.
+
+### Manuscript Visualizations — Reveal-Economy / Tension Timeline (chart 4)
+
+Built the reveal-economy / tension timeline (chart 4) over a new `apodictic.tension_point.v1`
+**producer**: a per-scene reader-tension pass (`points: [{scene_id, tension, anchor}]`) whose `tension`
+is a token on the closed reader-dynamics **Pass 1 (Reader Experience) 1–5 intensity scale** — the Pacing
+Heat Map's "intensity level (1-5 scale derived from Pass 1 emotional tracking)" (1 = flat, 5 = peak). The
+`manuscript-viz` gate gains **X4** (reveal_points byte-checked against the producer + Timeline: scene_id
+→ producer + Timeline row; manifest tension == producer level; producer tension ∈ closed 1–5 enum;
+producer anchor non-empty and, when line-range-shaped, overlapping the scene's Timeline line-range), and
+the **X8 flip** so a present `reveal_points[]` is legitimate iff it byte-checks against the producer —
+retiring the last producer-gated hard-fail array (only chart 7-fiction's beat-map remains gated, and it
+has no manifest array). The renderer draws a deterministic tension-over-scene-order timeline (tension
+level on the y-axis, scene order on the x-axis, a polyline through one point per scene at its declared
+level, from a hardcoded level → y-position map — no style in the manifest, no time/random). Tension
+points are keyed directly on `scene_id` (per-scene, like scene_roster/scene_function) — no
+`evidence_ref → scene_id` resolution, so that overlay stays explicitly out of scope. Adds the
+`apodictic.tension_point.v1` schema + its `_coverage.json` binding (`closed_keys:true`) and the worked
+`example-tension-points.md` fixture (paired to `example-timeline.md`), gated by `--check-all`. No new
+validator — the count stays DERIVED.
+
+### Manuscript Visualizations — Scene-Function Heatmap (chart 6)
+
+Built the scene-function heatmap (chart 6) over a new `apodictic.scene_function.v1` **producer**: a
+per-scene structural-function pass (`functions: [{scene_id, function, anchor}]`) whose `function` is the
+scene-turn audit's Step-1 Unit Classification — the closed set `scene | sequel | hybrid | non-unit`. The
+`manuscript-viz` gate gains **X3** (scene_functions byte-checked against the producer + Timeline:
+scene_id → producer + Timeline row; manifest function == producer classification; producer function ∈
+closed enum; producer anchor non-empty and, when line-range-shaped, overlapping the scene's Timeline
+line-range), and the **X8 flip** so a present `scene_functions[]` is legitimate iff it byte-checks
+against the producer (`reveal_points` stays producer-gated). The renderer draws a deterministic
+scenes × functions grid (one shaded cell per scene at its declared function column, from a hardcoded
+function → colour band — no style in the manifest). Adds the `apodictic.scene_function.v1` schema + its
+`_coverage.json` binding (`closed_keys:true`) and the worked `example-scene-function.md` fixture (paired
+to `example-timeline.md`), gated by `--check-all`. No new validator — the count stays DERIVED.
+
+### Writer-Question Surface Hardening — skill names scrubbed, handoff convention codified
+
+Closed the last two Writer-Question Surface Hardening items (#6 skill-name scrub, #7 handoff-language standardization). A completed inventory across the committed tree found the writer-facing surfaces near-clean already: the one residual writer-rendered leak — the `/apodictic` capability-index body — was rewritten from "the commands sit on five skills: **core-editor** (…)" to workflow language naming **six capability areas**, which also fixed a stale five-vs-six count that had omitted the nonfiction argument engine. The classification rule is the firewall: scrub **writer-rendered prose only**; agent-routing/delegation prose the model reads to dispatch (the Delegation Rules zone, Genre Module Routing activation notes, `commands/*.md` load-directives, inter-skill reference lists, run-flow load instructions) legitimately names skills and stays untouched — rewording it would risk breaking routing for zero writer-visible gain.
+
+The durable #7 guarantee is a convention, not the single edit: a new **§Author-Facing Language** subsection in `core-editor/references/output-policy.md` now requires writer-rendered and all generated author-facing prose to name the **command** (`/coach`, `/audit`, `/plot-coach`) or the **workflow move** ("run an audit next," "plan revision next"), never the skill slug — a backticked slug wrapped inside a workflow noun ("the `specialized-audits` workflow") is still a slug — with a boundary note distinguishing it from the framework-*code* glossing that `author-facing-lint` enforces on the generated letter body. No new validator: the committed scrub set is one line wide and the ROADMAP itself records "no user-facing pain found" and "skill loading is invisible to users," so a `skill-name-lint` arm is deferred until a demonstrated regression need. The vendored siblings (APODICTIC-Gemini, apodictic-tauri) carry the old prose byte-for-byte and pick up the fix via the next `sync:plugin` machine re-vendor after a release.
+
 ## v2.7.0 - 2026-07-02
 
 ### Disposition supersedence is recomputed, never trusted (disposition-check DP2.6)
