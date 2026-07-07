@@ -73,10 +73,17 @@ mechanized here as the load-bearing gates, "mechanical, or don't build":
                       ERROR, NO override accepted. `opted-in` + `deleted` both present = ERROR.
 
 The `delete <project_root>` subcommand honors the deletion in one move: removes every
-Coaching_History file (root + runs/*), drops coaching_history_seq from the sidecar, and flips the
+Coaching_History file (root + ALL subdirs, recursive), drops coaching_history_seq from the sidecar at
+EVERY depth (recursive strip — not just the top-level/execution.* homes), and flips the
 Diagnostic_State.md consent marker to `<!-- coaching-history: deleted -->` (deletion revokes consent
 — no silent re-derivation). Because H5's always-on projection ban means observations only ever live
 in the one deletable artifact, deleting it is complete BY CONSTRUCTION — and H6 re-verifies anyway.
+
+COMPLETENESS (the incomplete-verification class the reviews keep catching — F1, F2, and Codex round-1
+twice more): every scan/recompute here is complete across ALL patterns and ALL depths. The .md scan +
+Coaching_History enumeration walk the tree recursively (os.walk); the sidecar walk + seq residue
+search recurse to every depth; each v1 pattern's evidence is either verified-against-record or
+self-reported-and-caveated (never shape-checked-only). Check every location, not the known ones.
 
 Opt-in: the artifact is only produced under `<!-- coaching-history: opted-in -->`, whose home is
 Diagnostic_State.md (writer-visible; the coach reads it at session start); the artifact also
@@ -126,6 +133,23 @@ _SEQ_KEY = "coaching_history_seq"
 # Per-pattern count floors (Fable verdict 2026-07-05; ROADMAP §8.2 CLOSED). The schema keeps only the
 # global minimum >=2; H1 enforces these.
 _COUNT_FLOOR = {"deferral-recurrence": 3, "phase-incompletion": 2}
+
+# Which patterns HAVE a governed verification path — a recorded, independent, per-session ground truth
+# the evidence can be checked against (Codex round-1 P1 + the incomplete-verification-class sweep). The
+# rule for EVERY pattern: evidence is either verified-against-record (governed) or self-reported (then
+# it MUST carry the honesty caveat — the writer never sees an unverified pattern as if it were checked).
+#   * deferral-recurrence — YES. The independent per-session record is `gate_events[].disposition_deltas`
+#     (each delta carries its own `session`; run_gate._disposition_deltas). H2 verifies each cited
+#     session against _deferred_history(); governed observations need no caveat.
+#   * phase-incompletion — NO. Grepped exhaustively (2026-07-07): per-session revision-arc PHASE
+#     completion is recorded NOWHERE. `finding_states` is a rolling last-write map ("finding_states is a
+#     rolling all-session map" — finding_trace E5); `finding_deltas` carry NO session ordinal (only
+#     disposition_deltas do); the revision arc is a STATELESS re-plan that OVERWRITES the prior arc each
+#     run (revision_arc.v1 schema $comment) — it keeps no per-session history. So the
+#     `phase <label> incomplete @ session <n>` evidence has NO recorded ground truth to check against on
+#     ANY project — it is self-reported EVERYWHERE. H2 does not claim a verification it cannot perform;
+#     instead it requires the honesty caveat on EVERY phase-incompletion observation (governed or not).
+_GOVERNED_VERIFIED_PATTERNS = frozenset({"deferral-recurrence"})
 
 # Consent markers (home: Diagnostic_State.md; the artifact self-carries the opt-in too). The opt-in
 # pattern mirrors content_advisory._OPT_IN_RE.
@@ -269,15 +293,33 @@ def _glob_multi(dirs, pattern):
 
 def _scan_dirs(project_root):
     """The H5/H6 scan scope: the project root + each runs/* archive dir (the disposition_check DP2.6
-    reachable-evidence scope)."""
+    reachable-evidence scope). NOTE: the .md SIGNATURE scan and the Coaching_History enumeration walk
+    the tree RECURSIVELY via _all_md_files / _history_files — this dir list is retained only for the
+    doc-comment scope description; the completeness of the scan is the guarantee (Codex round-1 class:
+    check every depth, not the known ones)."""
     dirs = [project_root]
     dirs.extend(sorted(d for d in glob.glob(os.path.join(project_root, "runs", "*")) if os.path.isdir(d)))
     return dirs
 
 
+def _all_md_files(project_root):
+    """EVERY *.md anywhere under the project root, at ANY depth (recursive — os.walk). The depth-complete
+    H5/H6 scan surface (Codex round-1 class sweep, item 3): a projection or a shadow Coaching_History
+    file hidden in a nested subdir (`drafts/ch3/notes.md`, `runs/r2/artifacts/x.md`) must NOT escape.
+    Symlinked dirs are not followed (os.walk default) so a cycle can't hang the walk."""
+    out = []
+    for dirpath, _dirnames, filenames in os.walk(project_root):
+        for fn in filenames:
+            if fn.endswith(".md"):
+                out.append(os.path.join(dirpath, fn))
+    return sorted(set(out))
+
+
 def _history_files(project_root):
-    """Every *_Coaching_History_*.md in scope (root + runs/*), sorted+deduped."""
-    return _glob_multi(_scan_dirs(project_root), _HISTORY_GLOB)
+    """Every *_Coaching_History_*.md under the project root at ANY depth (recursive), sorted+deduped —
+    so a shadow Coaching_History file nested in a subdir is counted (H5.iv) and removed (delete)."""
+    return [f for f in _all_md_files(project_root)
+            if re.search(r"_Coaching_History_", os.path.basename(f))]
 
 
 # --------------------------------------------------------------------------- parsing
@@ -346,17 +388,52 @@ def _walk_json_keys(node):
             yield from _walk_json_keys(v)
 
 
+def _find_key_values(node, key):
+    """Yield the VALUE of every `key` occurrence anywhere in a parsed-JSON tree (recursive, all depths).
+    The depth-complete residue finder (Codex round-1 P2): a `coaching_history_seq` nested under ANY key
+    — not just the two known homes — must be found, so the H6 recompute's completeness is the guarantee,
+    never a trust that delete cleaned the known homes."""
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if k == key:
+                yield v
+            yield from _find_key_values(v, key)
+    elif isinstance(node, list):
+        for v in node:
+            yield from _find_key_values(v, key)
+
+
+def _strip_key_recursive(node, key):
+    """Remove EVERY occurrence of `key` anywhere in a parsed-JSON tree (recursive, all depths, in place).
+    Returns True if at least one was removed. The depth-complete `delete` (Codex round-1 P2): drop
+    `coaching_history_seq` wherever it hides, not just top-level + execution.*."""
+    removed = False
+    if isinstance(node, dict):
+        if key in node:
+            del node[key]
+            removed = True
+        for v in list(node.values()):
+            if _strip_key_recursive(v, key):
+                removed = True
+    elif isinstance(node, list):
+        for v in node:
+            if _strip_key_recursive(v, key):
+                removed = True
+    return removed
+
+
 def _sidecar_seq(sidecar_obj):
-    """The recorded coaching_history_seq (an int) if present anywhere the loaders write it, else None.
-    v1 home: top-level `coaching_history_seq`. Also accept execution.coaching_history_seq (a governed
-    sidecar may nest scalars under execution, like state_version) — either is the ONE permitted key."""
+    """The recorded coaching_history_seq value if present ANYWHERE in the sidecar (depth-complete), else
+    None. v1 legitimate homes are top-level and execution.* (a governed sidecar nests scalars under
+    execution, like state_version), but the H6 recompute must find the key at ANY depth (Codex round-1
+    P2 — a seq nested under a non-execution key survived delete and the recompute falsely reported
+    "deletion honored"). RECOMPUTE-not-trust: completeness is the guarantee. Returns the first value
+    found (any type — a non-int under the blessed name is itself a smuggled shadow H5.v flags), or None
+    if the key is absent everywhere."""
     if not isinstance(sidecar_obj, dict):
         return None
-    if isinstance(sidecar_obj.get(_SEQ_KEY), int) and not isinstance(sidecar_obj.get(_SEQ_KEY), bool):
-        return sidecar_obj[_SEQ_KEY]
-    ex = sidecar_obj.get("execution")
-    if isinstance(ex, dict) and isinstance(ex.get(_SEQ_KEY), int) and not isinstance(ex.get(_SEQ_KEY), bool):
-        return ex[_SEQ_KEY]
+    for v in _find_key_values(sidecar_obj, _SEQ_KEY):
+        return v
     return None
 
 
@@ -472,25 +549,37 @@ def check(text, project_root=None, sidecar_obj=None, strict=False, *, scan_root=
     for obj, _idx in valid:
         errs.extend(_h2_check(obj, deferred_hist))
 
-    # ---- H2 non-governed honesty caveat (Codex F2). On a NON-governed project the deferral streak's
-    #      multi-session history is self-reported (not independently verified), so a `deferral-recurrence`
-    #      observation must carry a VISIBLE caveat that the streak is from the coach's own notes — the
-    #      writer must never see an unverified pattern as if it were checked (the H7 principle). WARN;
-    #      ERROR --strict; per-id override (shares the coaching-observation slug). Governed projects are
-    #      exempt (their per-session event records ARE the independent verification).
+    # ---- H2 self-reported honesty caveat (Codex F2 + round-1 P1 + the class sweep). EVERY pattern's
+    #      evidence is either verified-against-record or self-reported; a SELF-REPORTED streak must carry
+    #      a VISIBLE caveat that it is from the coach's own notes, not an independently verified record —
+    #      the writer must never see an unverified pattern as if it were checked (the H7 principle). WARN;
+    #      ERROR --strict; per-id override (shares the coaching-observation slug). An observation is
+    #      self-reported when its pattern has no governed verification path (phase-incompletion — ALWAYS,
+    #      no per-session ground truth exists anywhere), OR its pattern is governed-verifiable but this is
+    #      a NON-governed project (deferral-recurrence without gate_events). Governed deferral-recurrence
+    #      is exempt (its per-session event records ARE the independent verification).
     ov_caveat_ids = _overrides(text, "coaching-observation", r"(CH-[0-9]+)")
-    if not _is_governed(sidecar_obj):
-        for obj, _idx in valid:
-            cid = obj.get("id")
-            if obj.get("pattern") != "deferral-recurrence" or cid in ov_caveat_ids:
-                continue
-            carrier = (obj.get("observation") or "") + "\n" + (text or "")
-            if not _NONGOVERNED_CAVEAT_RE.search(carrier):
-                warns.append("H2 non-governed caveat: %s is a deferral-recurrence on a NON-governed "
-                             "project (no gate_events) — its streak is from the coach's own session "
-                             "notes, not an independently verified record. State that honestly in the "
-                             "observation (e.g. 'from what I've been tracking across sessions') so the "
-                             "writer never sees an unverified pattern as if it were checked" % cid)
+    governed = _is_governed(sidecar_obj)
+    for obj, _idx in valid:
+        cid = obj.get("id")
+        pattern = obj.get("pattern")
+        if cid in ov_caveat_ids:
+            continue
+        has_governed_path = pattern in _GOVERNED_VERIFIED_PATTERNS
+        self_reported = (not has_governed_path) or (not governed)
+        if not self_reported:
+            continue
+        carrier = (obj.get("observation") or "") + "\n" + (text or "")
+        if not _NONGOVERNED_CAVEAT_RE.search(carrier):
+            why = ("has no recorded per-session ground truth on ANY project (per-session phase "
+                   "completion is not persisted anywhere) — it is inherently self-reported"
+                   if not has_governed_path else
+                   "is on a NON-governed project (no gate_events), so its streak is self-reported")
+            warns.append("H2 self-reported caveat: %s (%s) %s. Its streak is from the coach's own "
+                         "session notes, not an independently verified record — state that honestly in "
+                         "the observation (e.g. 'from what I've been tracking across sessions') so the "
+                         "writer never sees an unverified pattern as if it were checked"
+                         % (cid, pattern, why))
 
     # ---- H4 — no editorial-severity leak (the observation is off the editorial scale)
     #      Scan the WHOLE artifact (blocks + prose): a severity token or a finding block anywhere leaks.
@@ -576,10 +665,18 @@ def check(text, project_root=None, sidecar_obj=None, strict=False, *, scan_root=
 
 
 def _h2_check(obj, deferred_hist):
-    """H2 for one valid observation: len(evidence) >= count, each reference resolves and (for
-    deferral-recurrence) corroborates a recorded deferred disposition at the cited session
-    (`deferred_hist` = {F-id: set(sessions)} from _deferred_history), and the cited sessions are
-    ACTUALLY CONSECUTIVE (a gap fails). Returns a list of error strings."""
+    """H2 for one valid observation: len(evidence) >= count, grammar-valid evidence, cited sessions
+    ACTUALLY CONSECUTIVE (a gap fails). Anti-fabrication VERIFICATION against a record is per-pattern:
+      * deferral-recurrence — VERIFIED: each cited session must corroborate a recorded deferred
+        disposition (`deferred_hist` = {F-id: set(sessions)} from _deferred_history). A fabricated
+        session fails here.
+      * phase-incompletion — NOT verifiable against any record (no per-session phase-completion history
+        is persisted anywhere — see _GOVERNED_VERIFIED_PATTERNS). H2 does the shape + consecutive checks
+        it CAN do and does NOT claim a record verification it cannot perform; the self-reported nature is
+        surfaced to the writer by the MANDATORY H2 self-reported caveat (in check(), not here). A
+        fabricated phase-incompletion (e.g. sessions 101/102) is shape-valid — the caveat is what keeps
+        it honest, since there is no ground truth to reject it against.
+    Returns a list of error strings."""
     errs = []
     cid = obj.get("id")
     pattern = obj.get("pattern")
@@ -617,6 +714,10 @@ def _h2_check(obj, deferred_hist):
                 errs.append("H2 provenance: %s evidence %r does not match the grammar "
                             "`phase <label> incomplete @ session <n>`" % (cid, item))
                 continue
+            # NO record verification is possible: per-session phase-completion is persisted nowhere
+            # (see _GOVERNED_VERIFIED_PATTERNS). We do the shape + consecutive checks only; the
+            # self-reported nature is made honest to the writer by the MANDATORY caveat in check(). We
+            # deliberately do NOT invent a fake "verified" here — a shape-check is not a verification.
             sessions.append(int(m.group(2)))
         else:
             continue  # pattern already refused by H1
@@ -672,21 +773,25 @@ def _h5_scan(project_root, sidecar_obj, strict, self_history_text=None):
         MINUS the positively-identified manuscript snapshot(s). A real projection is already caught by
         (i)/(ii); (iii) is the secondary net for grammar-without-block leakage (§6a paraphrase)."""
     errs, warns = [], []
-    dirs = _scan_dirs(project_root)
 
-    # (iv) — exactly one Coaching_History file in scope. A second file IS the shadow artifact.
-    hist_files = _glob_multi(dirs, _HISTORY_GLOB)
+    # Every *.md anywhere under the project root, at ANY DEPTH (recursive — Codex round-1 class sweep
+    # item 3: a projection or shadow Coaching_History file nested in a subdir must not escape).
+    all_md = _all_md_files(project_root)
+
+    # (iv) — exactly one Coaching_History file in scope. A second file (at any depth) IS the shadow.
+    hist_files = [f for f in all_md if re.search(r"_Coaching_History_", os.path.basename(f))]
     if len(hist_files) > 1:
         errs.append("H5.iv single-home: %d *_Coaching_History_*.md files in scope (%s) — single-home "
                     "means exactly one; a second file is the shadow artifact"
                     % (len(hist_files), ", ".join(os.path.basename(f) for f in hist_files)))
 
     hist_abs = {os.path.abspath(f) for f in hist_files}
-    manuscript_abs = {os.path.abspath(f) for f in _glob_multi(dirs, _MANUSCRIPT_SNAPSHOT_GLOB)}
+    manuscript_abs = {os.path.abspath(f) for f in all_md
+                      if re.search(r"_Manuscript_Snapshot_", os.path.basename(f))}
 
-    # EVERY *.md in scope, minus the one Coaching_History artifact (the single home is exempt from its
-    # own content). This is the exhaustive net Codex F1 requires — no artifact-type escapes it.
-    for path in _glob_multi(dirs, "*.md"):
+    # EVERY *.md in scope (all depths), minus the one Coaching_History artifact (the single home is
+    # exempt from its own content). The exhaustive net Codex F1 requires — no type, no depth escapes it.
+    for path in all_md:
         ap = os.path.abspath(path)
         if ap in hist_abs:
             continue
@@ -737,28 +842,41 @@ def _h5_scan(project_root, sidecar_obj, strict, self_history_text=None):
 
 
 def _h5_sidecar_walk(sidecar_obj):
-    """H5 (v): a recursive key/value walk over the parsed sidecar JSON. The machine-facing sidecar is
-    exactly where a coach-only shadow would accumulate invisibly, so this is strict: ERROR on any key
-    matching `coaching*` OTHER than exactly `coaching_history_seq` (an int), or any string VALUE anywhere
-    matching the CH-id regex, the schema-id, or the evidence grammar. Returns a list of errors."""
+    """H5 (v): a DEPTH-COMPLETE recursive key/value walk over the parsed sidecar JSON. The machine-facing
+    sidecar is exactly where a coach-only shadow would accumulate invisibly, so this is strict — and the
+    walk must be complete across ALL depths (the incomplete-verification class the reviews keep catching:
+    check every location, not the known ones). ERROR on any of:
+      * a `coaching*` key anywhere OTHER than exactly `coaching_history_seq`;
+      * `coaching_history_seq` whose VALUE (at any depth) is not an integer — a non-int under the blessed
+        name is a smuggled shadow payload;
+      * `coaching_history_seq` sitting at a NON-HOME depth — its only legitimate homes are top-level and
+        `execution.*` (the scalar-in-sidecar precedent). At any deeper/other key it is itself a shadow,
+        whatever its value;
+      * any string VALUE anywhere matching the CH-id regex, the schema-id, or the evidence grammar.
+    Returns a list of errors."""
     errs = []
     for key in _walk_json_keys(sidecar_obj):
-        low = key.lower()
-        if low.startswith("coaching") and key != _SEQ_KEY:
+        if key.lower().startswith("coaching") and key != _SEQ_KEY:
             errs.append("H5.v sidecar shadow: the sidecar carries a coaching-shaped key %r — the ONLY "
                         "permitted coaching-history key is %r (an int)" % (key, _SEQ_KEY))
-    # the permitted key, if present, must be an int (not a shadow payload smuggled under the blessed name)
-    seq_holders = []
+    # Every `coaching_history_seq` value at ANY depth must be an integer (depth-complete — Codex P2 class).
+    for v in _find_key_values(sidecar_obj, _SEQ_KEY):
+        if not (isinstance(v, int) and not isinstance(v, bool)):
+            errs.append("H5.v sidecar shadow: %r has a non-integer value %r somewhere in the sidecar — a "
+                        "non-int under the blessed key is a smuggled shadow" % (_SEQ_KEY, v))
+    # `coaching_history_seq` is legitimate ONLY at top-level or execution.*; anywhere else it is a shadow.
+    legit = 0
     if isinstance(sidecar_obj, dict):
         if _SEQ_KEY in sidecar_obj:
-            seq_holders.append(sidecar_obj[_SEQ_KEY])
+            legit += 1
         ex = sidecar_obj.get("execution")
         if isinstance(ex, dict) and _SEQ_KEY in ex:
-            seq_holders.append(ex[_SEQ_KEY])
-    for v in seq_holders:
-        if not (isinstance(v, int) and not isinstance(v, bool)):
-            errs.append("H5.v sidecar shadow: %r must be an integer, not %r (a non-int under the "
-                        "blessed key is a smuggled shadow)" % (_SEQ_KEY, v))
+            legit += 1
+    total = sum(1 for _ in _find_key_values(sidecar_obj, _SEQ_KEY))
+    if total > legit:
+        errs.append("H5.v sidecar shadow: %r appears at a NON-HOME depth in the sidecar (its only "
+                    "legitimate homes are top-level and execution.*) — a seq nested elsewhere is a "
+                    "coach-only shadow / re-derivation seed" % _SEQ_KEY)
     for val in _walk_json_strings(sidecar_obj):
         if _CH_TOKEN_RE.search(val) or (_SCHEMA_ID in val) or _EVIDENCE_GRAMMAR_RE.search(val):
             errs.append("H5.v sidecar shadow: the sidecar carries coaching-observation material in a "
@@ -778,13 +896,11 @@ def _h6_recompute(project_root, sidecar_obj, strict):
     lines, errs = [], []
     lines.append("coaching-history: tombstone present — RECOMPUTING deletion from artifacts "
                  "(marker not trusted)")
-    dirs = _scan_dirs(project_root)
 
-    # (1) no surviving Coaching_History file
-    hist = _glob_multi(dirs, _HISTORY_GLOB)
-    for f in hist:
+    # (1) no surviving Coaching_History file (recursive — any depth)
+    for f in _history_files(project_root):
         errs.append("H6 residue: a Coaching History artifact survives deletion — %s (delete removes "
-                    "every *_Coaching_History_*.md from the root and runs/*)" % os.path.basename(f))
+                    "every *_Coaching_History_*.md from the root and all subdirs)" % os.path.basename(f))
 
     # (2) no coaching_history_seq in the sidecar
     if sidecar_obj is not None:
@@ -910,11 +1026,10 @@ def delete(project_root):
     lines = []
     if not os.path.isdir(project_root):
         return 2, ["coaching-history delete: %s is not a directory" % project_root]
-    dirs = _scan_dirs(project_root)
 
-    # (1) remove the artifact(s)
+    # (1) remove the artifact(s) — recursive, ANY depth (a shadow file nested in a subdir must go too)
     removed = []
-    for f in _glob_multi(dirs, _HISTORY_GLOB):
+    for f in _history_files(project_root):
         try:
             os.remove(f)
             removed.append(os.path.basename(f))
@@ -934,15 +1049,9 @@ def delete(project_root):
         except json.JSONDecodeError as ex:
             return 1, ["coaching-history delete: FAIL — %s is not valid JSON (%s); refusing to write"
                        % (_SIDECAR_NAME, ex)]
-        dropped = False
-        if isinstance(sc, dict):
-            if _SEQ_KEY in sc:
-                del sc[_SEQ_KEY]
-                dropped = True
-            ex = sc.get("execution")
-            if isinstance(ex, dict) and _SEQ_KEY in ex:
-                del ex[_SEQ_KEY]
-                dropped = True
+        # Strip coaching_history_seq RECURSIVELY, at ANY depth (Codex round-1 P2) — not just the two
+        # known homes (top-level + execution.*). A seq nested under a non-execution key must not survive.
+        dropped = _strip_key_recursive(sc, _SEQ_KEY) if isinstance(sc, (dict, list)) else False
         if dropped:
             with open(sc_path, "w", encoding="utf-8", newline="\n") as fh:
                 json.dump(sc, fh, indent=2, ensure_ascii=False)
@@ -1033,10 +1142,11 @@ def run_self_test():
     phase_obs = obs(cid="CH-02", pattern="phase-incompletion", count=2,
                     evidence=["phase Structural Root Causes incomplete @ session 4",
                               "phase Structural Root Causes incomplete @ session 5"],
-                    observation="The structural-root-causes phase has stayed open the last two "
-                                "sessions. Does that reflect the plan, or is it asking for attention?")
+                    observation="From my notes across sessions, the structural-root-causes phase has "
+                                "stayed open the last two. Does that reflect the plan, or is it asking "
+                                "for attention?")  # phase-incompletion is self-reported -> caveat required
     chk("clean_phase_incompletion",
-        check(OPT + phase_obs, sidecar_obj=sidecar(deferred=DEF3))[0] == 0)
+        check(OPT + phase_obs, sidecar_obj=sidecar(deferred=DEF3), strict=True)[0] == 0)
 
     # ---- H1 — schema
     chk("h1_bad_pattern", check(OPT + obs(pattern="stuck-point-cluster"), sidecar_obj=sidecar(deferred=DEF3))[0] == 1)
@@ -1088,29 +1198,52 @@ def run_self_test():
     chk("h2_governed_gate_events_reconstructs_streak",
         check(OPT + obs(), sidecar_obj=gov_sidecar())[0] == 0)
 
-    # ---- F2 — the non-governed honesty caveat. A non-governed deferral-recurrence WITHOUT a caveat
-    #      WARNs (its streak is self-reported, not independently verified); WITH the caveat is clean;
-    #      a GOVERNED project is exempt; a per-id override silences it.
+    # ---- F2 / P1 — the SELF-REPORTED honesty caveat. A self-reported streak WITHOUT a caveat WARNs
+    #      (ERROR --strict); WITH the caveat is clean; a GOVERNED deferral-recurrence is exempt; a per-id
+    #      override silences it. "Self-reported" = non-governed deferral-recurrence, OR phase-incompletion
+    #      on ANY project (it has no governed verification path — no per-session phase-completion record).
     no_caveat = obs(observation="The same thread got set aside the last three sessions running. "
                                 "Does that track for you?")  # confident + invitation, but NO caveat
     code, lines = check(OPT + no_caveat, sidecar_obj=sidecar(deferred=DEF3))
-    chk("f2_nongoverned_no_caveat_warns", code == 0 and any("H2 non-governed caveat" in ln for ln in lines))
+    chk("f2_nongoverned_no_caveat_warns", code == 0 and any("H2 self-reported caveat" in ln for ln in lines))
     chk("f2_nongoverned_no_caveat_strict_fails",
         check(OPT + no_caveat, sidecar_obj=sidecar(deferred=DEF3), strict=True)[0] == 1)
     # WITH the caveat (the default obs() carries "From what I've been tracking across our sessions") clean
     chk("f2_nongoverned_with_caveat_clean",
-        not any("H2 non-governed caveat" in ln for ln in check(OPT + obs(), sidecar_obj=sidecar(deferred=DEF3))[1]))
-    # GOVERNED project: the caveat is NOT required (the per-session event records ARE the verification)
-    chk("f2_governed_exempt_from_caveat",
-        not any("H2 non-governed caveat" in ln for ln in check(OPT + no_caveat, sidecar_obj=gov_sidecar())[1]))
+        not any("H2 self-reported caveat" in ln for ln in check(OPT + obs(), sidecar_obj=sidecar(deferred=DEF3))[1]))
+    # GOVERNED deferral-recurrence: the caveat is NOT required (the per-session event records verify it)
+    chk("f2_governed_deferral_exempt_from_caveat",
+        not any("H2 self-reported caveat" in ln for ln in check(OPT + no_caveat, sidecar_obj=gov_sidecar())[1]))
     # a per-id override silences the caveat WARN (the writer accepted the honest framing another way)
     ovc = "<!-- override: coaching-observation CH-01 — caveat stated in the artifact preamble -->\n"
     chk("f2_caveat_override_silences",
-        not any("H2 non-governed caveat" in ln for ln in
+        not any("H2 self-reported caveat" in ln for ln in
                 check(OPT + ovc + no_caveat, sidecar_obj=sidecar(deferred=DEF3), strict=True)[1]))
-    # phase-incompletion is NOT subject to the deferral caveat (it's not a deferral streak)
-    chk("f2_phase_incompletion_no_caveat_needed",
-        not any("H2 non-governed caveat" in ln for ln in check(OPT + phase_obs, sidecar_obj=sidecar(deferred=DEF3))[1]))
+
+    # ---- P1 (Codex round-1) — phase-incompletion has NO governed verification path, so it is
+    #      SELF-REPORTED on ANY project and MUST carry the caveat (even governed). The exact repro: a
+    #      FABRICATED phase-incompletion at non-existent sessions (101/102) without a caveat FAILs
+    #      --strict — a shape-check is not a verification.
+    def phase_ob(sessions, observation, cid="CH-01"):
+        ev = ["phase Structural Root Causes incomplete @ session %d" % s for s in sessions]
+        o = {"schema": _SCHEMA_ID, "id": cid, "pattern": "phase-incompletion", "count": len(sessions),
+             "evidence": ev, "observation": observation}
+        return "<!-- apodictic:coaching_observation\n%s\n-->" % _j.dumps(o)
+    fab = phase_ob([101, 102], "The structural phase stayed open. Does that track?")  # no caveat, fabricated
+    code, lines = check(OPT + fab, sidecar_obj=gov_sidecar())  # even GOVERNED
+    chk("p1_fabricated_phase_governed_warns_no_caveat",
+        code == 0 and any("H2 self-reported caveat" in ln for ln in lines))
+    chk("p1_fabricated_phase_governed_strict_fails",
+        check(OPT + fab, sidecar_obj=gov_sidecar(), strict=True)[0] == 1)  # the exact Codex repro caught
+    chk("p1_fabricated_phase_nongoverned_strict_fails",
+        check(OPT + fab, sidecar_obj=sidecar(deferred=DEF3), strict=True)[0] == 1)
+    # with the honest caveat, a phase-incompletion is WARN-clean (honestly self-reported) on any project
+    fab_caveat = phase_ob([101, 102], "From what I've been tracking across sessions, the structural "
+                                       "phase stayed open. Does that track?")
+    chk("p1_phase_with_caveat_governed_clean",
+        check(OPT + fab_caveat, sidecar_obj=gov_sidecar(), strict=True)[0] == 0)
+    chk("p1_phase_with_caveat_nongoverned_clean",
+        check(OPT + fab_caveat, sidecar_obj=sidecar(deferred=DEF3), strict=True)[0] == 0)
 
     # ---- H3 — descriptive, not judgmental (WARN; ERROR --strict; per-id override)
     blame = obs(observation="You always avoid the hard structural work — you fail to finish it.")
@@ -1274,6 +1407,44 @@ def run_self_test():
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
+    # (Codex round-1 class sweep item 3) DEPTH-COMPLETE .md scan: a projection nested in a subdir at
+    # ANY depth (drafts/ch3/, runs/r2/artifacts/, a/b/c/d/) must be caught — the .md scan is recursive
+    # (os.walk), not glob(root/*.md)+glob(runs/*/*.md). A nested SHADOW Coaching_History file counts too.
+    d = tempfile.mkdtemp()
+    try:
+        build_project(d)
+        for depth in ("drafts/ch3", "runs/r2/artifacts", "x/y/z/w"):
+            sub = os.path.join(d, *depth.split("/"))
+            os.makedirs(sub, exist_ok=True)
+            p = os.path.join(sub, "leak.md")
+            with open(p, "w", encoding="utf-8", newline="\n") as fh:
+                fh.write("# nested\n" + obs() + "\n")
+            chk("f3sweep_deep_projection_caught::%s" % depth.replace("/", "_"), run([d])[0] == 1)
+            os.remove(p)
+        # a nested SHADOW Coaching_History file (H5.iv counts it recursively)
+        sub = os.path.join(d, "drafts")
+        os.makedirs(sub, exist_ok=True)
+        with open(os.path.join(sub, "P_Coaching_History_old.md"), "w", encoding="utf-8", newline="\n") as fh:
+            fh.write("<!-- coaching-history: opted-in -->\n" + obs() + "\n")
+        code, lines = run([d])
+        chk("f3sweep_nested_shadow_history_caught",
+            code == 1 and any("H5.iv" in ln for ln in lines))
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    # …and `delete` + the H6 recompute reach the same depths: a deep shadow must not survive deletion.
+    d = tempfile.mkdtemp()
+    try:
+        build_project(d)
+        sub = os.path.join(d, "runs", "r9", "deep")
+        os.makedirs(sub, exist_ok=True)
+        with open(os.path.join(sub, "P_Coaching_History_archived.md"), "w", encoding="utf-8", newline="\n") as fh:
+            fh.write("<!-- coaching-history: opted-in -->\n" + obs() + "\n")
+        delete(d)
+        chk("f3sweep_delete_reaches_deep_shadow", len(_history_files(d)) == 0)
+        chk("f3sweep_deep_delete_then_recompute_honored", run([d])[0] == 0)
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
     # (F1-d) a BARE-PROSE mention of the schema-id (a project whose subject IS apodictic — design
     #        notes naming the schema) must NOT trip the non-overridable H5.ii; a schema-id inside an
     #        apodictic block comment (a real, if malformed, projection) still MUST.
@@ -1392,6 +1563,70 @@ def run_self_test():
         os.remove(os.path.join(d, "P_Coaching_History_run5.md"))
         code, lines = run([d])
         chk("h6_surviving_seq_fails", code == 1 and any("coaching_history_seq" in ln for ln in lines))
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+    # ---- P2 (Codex round-1) DEPTH-COMPLETE seq residue. A coaching_history_seq nested under a NON-HOME
+    #      key (e.g. last_session.*) survived delete + the H6 recompute falsely honored — the F1/F2
+    #      known-location-not-all-locations class, recurring at depth.
+    # (P2-a) a tombstoned project with a nested seq surviving -> the H6 recompute CATCHES it (not honored)
+    d = tempfile.mkdtemp()
+    try:
+        build_project(d, tombstone=True, opted=False)
+        os.remove(os.path.join(d, "P_Coaching_History_run5.md"))
+        sc_path = os.path.join(d, _SIDECAR_NAME)
+        sc = _j.loads(_read(sc_path))
+        sc.pop(_SEQ_KEY, None)  # drop the legit home…
+        sc.setdefault("last_session", {})["coaching_history_seq"] = 9  # …but nest one at a non-home depth
+        with open(sc_path, "w", encoding="utf-8", newline="\n") as fh:
+            _j.dump(sc, fh, indent=2)
+        code, lines = run([d])
+        chk("p2_nested_seq_caught_by_h6_recompute",
+            code == 1 and any("coaching_history_seq" in ln for ln in lines)
+            and not any("deletion honored" in ln for ln in lines))
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    # (P2-b) `delete` strips the nested seq RECURSIVELY (any depth), so the recompute then honors
+    d = tempfile.mkdtemp()
+    try:
+        build_project(d, seq=3)
+        sc_path = os.path.join(d, _SIDECAR_NAME)
+        sc = _j.loads(_read(sc_path))
+        sc.setdefault("last_session", {})["coaching_history_seq"] = 9  # a nested seq beside the home one
+        sc.setdefault("complexity_signals", {})["coaching_history_seq"] = 2  # and a second nesting
+        with open(sc_path, "w", encoding="utf-8", newline="\n") as fh:
+            _j.dump(sc, fh, indent=2)
+        delete(d)
+        sc2 = _j.loads(_read(sc_path))
+        # NO coaching_history_seq survives at ANY depth
+        chk("p2_delete_strips_nested_seq_recursively",
+            sum(1 for _ in _find_key_values(sc2, _SEQ_KEY)) == 0)
+        chk("p2_delete_then_recompute_honored", run([d])[0] == 0)
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    # (P2-c) H5.v flags a nested seq at a non-home depth on a LIVE (opted-in) project too (not just H6)
+    d = tempfile.mkdtemp()
+    try:
+        build_project(d)
+        sc_path = os.path.join(d, _SIDECAR_NAME)
+        sc = _j.loads(_read(sc_path))
+        sc.setdefault("last_session", {})["coaching_history_seq"] = 9  # non-home nesting
+        with open(sc_path, "w", encoding="utf-8", newline="\n") as fh:
+            _j.dump(sc, fh, indent=2)
+        code, lines = run([d])
+        chk("p2_h5v_flags_nonhome_nested_seq", code == 1 and any("H5.v" in ln and "NON-HOME" in ln for ln in lines))
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    # (P2-d) a nested seq with a NON-INT value anywhere is caught (depth-complete type check)
+    d = tempfile.mkdtemp()
+    try:
+        build_project(d)
+        sc_path = os.path.join(d, _SIDECAR_NAME)
+        sc = _j.loads(_read(sc_path))
+        sc.setdefault("last_session", {})["coaching_history_seq"] = {"CH-01": "shadow payload"}
+        with open(sc_path, "w", encoding="utf-8", newline="\n") as fh:
+            _j.dump(sc, fh, indent=2)
+        chk("p2_h5v_flags_nonint_nested_seq", run([d])[0] == 1)
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
