@@ -247,14 +247,25 @@ _CF_SINGLE_AGENT_LOAD_CEILING = 600000  # the published run-core/preflight bound
 # (`cost_floor_override: …`), NOT an override marker (`<!-- override: … -->`), so it is
 # meta-lint M5-inert. Captures the mode, the OPTIONAL context_tier sub-field (a
 # sequential/hybrid token with no context_tier still parses — the field is inert there), and
-# the rationale.
+# the rationale. The mode and tier each carry a RIGHT boundary `(?=[\s;—–]|$)` so a SUFFIXED
+# value (`sequential-lite`, `context_tier: large-window`) does NOT bind as the base slug — the
+# `[—–-]` rationale separator would otherwise let a trailing hyphen-minus read as the dash and
+# launder the suffix off. dispatch_record imports THIS regex (single SSoT; no drift).
 _CFO_TOKEN_RE = re.compile(
-    r"cost_floor_override:\s*(single-agent|sequential|hybrid)"
-    r"(?:\s*;\s*context_tier:\s*(standard|large))?"
+    r"cost_floor_override:\s*(single-agent|sequential|hybrid)(?=[\s;—–]|$)"
+    r"(?:\s*;\s*context_tier:\s*(standard|large)(?=[\s;—–]|$))?"
     r"\s*[—–-]\s*(.+)", re.IGNORECASE)
-# preflight-packet field reads (the single-agent load bound + the standard-context floor line
-# the packet already prints). Plain field reads, not marker scans.
-_CF_LOAD_RE = re.compile(r"Estimated single-agent load:\D*([0-9][0-9,]*)", re.IGNORECASE)
+# Any line that INTENDS a cost_floor_override (carries the prefix). Used to surface a cap line whose
+# mode/tier does not parse as a well-formed _CFO_TOKEN_RE match as an ERROR — never silently invisible.
+_CFO_PREFIX_RE = re.compile(r"cost_floor_override:", re.IGNORECASE)
+# preflight-packet field reads (the single-agent load bound + the standard-context floor line the
+# packet already prints). Plain field reads, not marker scans. The load pre-number gap is SAME-LINE
+# non-digits (`[^\n\d]*`, NOT `\D*` — `\D*` crosses the newline and captures the NEXT line's number),
+# and the captured integer must not be alpha/decimal-suffixed (`(?![0-9A-Za-z.])`), so a `~750K` /
+# decimal / absent value fails to match and falls closed into the CF3 no-load ERROR (never a silent
+# below-bound pass on an unparseable load).
+_CF_LOAD_RE = re.compile(r"Estimated single-agent load:[^\n\d]*([0-9][0-9,]*)(?![0-9A-Za-z.])",
+                         re.IGNORECASE)
 _CF_FLOOR_RE = re.compile(r"Standard-context mode[^:\n]*:\s*\**\s*(single-agent|sequential|hybrid|swarm)",
                           re.IGNORECASE)
 
@@ -268,6 +279,18 @@ def _cfo_tokens(contract):
     return out
 
 
+def _cfo_malformed(contract):
+    """Raw cost_floor_override lines that INTEND a cap (carry the prefix, code spans stripped) but do
+    NOT parse as a well-formed token — an unrecognized mode or context_tier (e.g. `sequential-lite`,
+    `context_tier: large-window`). Returned so `cost_floor` can surface them as an ERROR rather than
+    letting an off-grammar cap vanish silently (never silently invisible)."""
+    bad = []
+    for ln in strip_code_spans(contract).split("\n"):
+        if _CFO_PREFIX_RE.search(ln) and not _CFO_TOKEN_RE.search(ln):
+            bad.append(ln.strip())
+    return bad
+
+
 def cost_floor(contract_path, preflight_path=None, meta_path=None, strict=False):
     """CF1-CF4 over a contract / run-metadata artifact carrying a cost-floor cap. Reports + gates
     record integrity; does NOT select the mode. Returns (rc, lines)."""
@@ -279,13 +302,36 @@ def cost_floor(contract_path, preflight_path=None, meta_path=None, strict=False)
     bare_marker = has_override(contract, "cost-floor")  # a truly bare/unsuffixed slug (boundary-matched)
     tokens = _cfo_tokens(contract)
     token_modes = sorted({mode for (mode, _ctx) in tokens})
-    token_ctx = {}
+    token_ctx, token_ctx_all = {}, {}
     for (mode, ctx) in tokens:
-        token_ctx.setdefault(mode, ctx)
+        token_ctx.setdefault(mode, ctx)          # first-seen tier (honored only once conflict-checked)
+        token_ctx_all.setdefault(mode, []).append(ctx)
+    # A `cost_floor_override:` line carrying an UNRECOGNIZED mode/tier does not parse as a token, so it
+    # must be surfaced as an ERROR here rather than vanishing (silently invisible).
+    malformed_tokens = _cfo_malformed(contract)
 
-    # Inert: nothing recorded -> the arm passes clean on an uncapped run.
-    if not marker_modes and not bare_marker and not token_modes:
+    # Inert: nothing recorded -> the arm passes clean on an uncapped run. A malformed cap line is NOT
+    # inert — it intends a cap and must fail loud.
+    if not marker_modes and not bare_marker and not token_modes and not malformed_tokens:
         return 0, ["OK: no cost-floor cap recorded (arm inert on an uncapped run)."]
+
+    for badln in malformed_tokens:
+        errors.append("CF1: `cost_floor_override:` line does not parse as a well-formed token — an "
+                      "unrecognized mode or context_tier: %r. The mode must be exactly one of "
+                      "single-agent/sequential/hybrid and context_tier exactly standard|large; a cap "
+                      "that intends to record must not be silently ignored." % badln)
+
+    # CF1 tier-laundering guard: conflicting context_tier declarations for the SAME mode must not be
+    # silently reduced to first-wins (a leading `large` would launder a later `standard` past the CF3
+    # viability bound). Mirror the conflicting-mode posture — ERROR, order-independent.
+    for mode in sorted(token_ctx_all):
+        distinct = set(token_ctx_all[mode])
+        if len(distinct) > 1:
+            shown = ", ".join(sorted("absent" if c is None else c for c in distinct))
+            errors.append("CF1: conflicting context_tier declarations for the %s cost_floor_override "
+                          "token(s) (%s) — duplicate tokens for one mode must agree on context_tier; a "
+                          "leading tier must not launder a conflicting one past the CF3 viability bound."
+                          % (mode, shown))
 
     if bare_marker:
         errors.append("CF1: bare/unsuffixed `<!-- override: cost-floor -->` marker — the cap target "
@@ -341,9 +387,11 @@ def cost_floor(contract_path, preflight_path=None, meta_path=None, strict=False)
                                       "token-fit floor is sequential or higher."
                                       % (load, _CF_SINGLE_AGENT_LOAD_CEILING))
                 else:
-                    errors.append("CF3: single-agent cap but the preflight packet carries no `Estimated "
-                                  "single-agent load:` line to bound the load against %d."
-                                  % _CF_SINGLE_AGENT_LOAD_CEILING)
+                    errors.append("CF3: single-agent cap but the preflight packet carries no parseable "
+                                  "`Estimated single-agent load:` bare-integer line to bound against %d "
+                                  "— a K/M-suffixed, decimal, or absent value fails closed (the load must "
+                                  "be a plain integer on the load line, never a capture reached across a "
+                                  "newline)." % _CF_SINGLE_AGENT_LOAD_CEILING)
             else:
                 errors.append("CF3: single-agent cap but NO preflight packet provided — the packet is "
                               "MANDATORY for a single-agent cap (its `Estimated single-agent load` must be "
@@ -367,9 +415,10 @@ def cost_floor(contract_path, preflight_path=None, meta_path=None, strict=False)
                                   "a cost cap may not silently demote a fired quality-risk decision; walk "
                                   "the named-acknowledgment path for Q%d or raise the cap."
                                   % (q, target, cap_mode, q, q))
-        # CF4-unevaluable: Q4's meta branch is invisible without the sidecar.
-        if (meta_path is None or not os.path.isfile(meta_path)) \
-                and _MODE_ORDER[cap_mode] < _MODE_ORDER["swarm"]:
+        # CF4-unevaluable: Q4's meta branch is invisible without the sidecar. (No mode guard: cap_mode
+        # is always below swarm — swarm is never a cap mode — so the old `< _MODE_ORDER["swarm"]`
+        # clause was dead. WARN behavior unchanged.)
+        if meta_path is None or not os.path.isfile(meta_path):
             warns.append("CF4: Q4 (prior-thin->swarm) unevaluable — meta sidecar withheld; confirm no "
                          "prior-thin escalation is being demoted by the %s cap." % cap_mode)
 
@@ -1089,6 +1138,69 @@ def run_self_test(which=None):
             expect("cf_empty_rationale_errors", cost_floor(empty)[0], 1)
             expect("cf_mismatch_errors", cost_floor(mismatch)[0], 1)
             expect("cf_bare_marker_errors", cost_floor(bare)[0], 1)
+
+            # ---- Fold 2026-07-07: confirmed pre-Codex review findings ---------------------------
+            # Fix 1 — CF3 load gate: a same-line bare integer ONLY. A K/M-suffixed value, a value that
+            # is absent so `\D*` would cross the newline and grab the next line's number, a decimal —
+            # all fail closed into the CF3 no-load ERROR. All arms use the sa_large cap (marker +
+            # large-tier token) so the ONLY variable is the packet load line.
+            pf_750k = wc("pf_750k.md",
+                         "# Pre-flight\n## Token Load Estimate\n"
+                         "- **Estimated single-agent load:** ~750K (manuscript + overhead)\n\n"
+                         "## Dispatch Recommendations\n- **Standard-context mode (<1M tokens):** swarm\n")
+            pf_nonum = wc("pf_nonum.md",
+                          "# Pre-flight\n## Token Load Estimate\n"
+                          "- **Estimated single-agent load:** (deferred; see triage)\n"
+                          "- **Triage subagent max_turns:** 34\n\n"
+                          "## Dispatch Recommendations\n- **Standard-context mode (<1M tokens):** swarm\n")
+            pf_232k = wc("pf_232k.md",
+                         "# Pre-flight\n## Token Load Estimate\n"
+                         "- **Estimated single-agent load:** 232000 (manuscript + ~75K overhead)\n\n"
+                         "## Dispatch Recommendations\n- **Standard-context mode (<1M tokens):** swarm\n")
+            pf_599999 = wc("pf_599999.md",
+                           "# Pre-flight\n## Token Load Estimate\n"
+                           "- **Estimated single-agent load:** 599999 (manuscript + overhead)\n\n"
+                           "## Dispatch Recommendations\n- **Standard-context mode (<1M tokens):** swarm\n")
+            pf_600000 = wc("pf_600000.md",
+                           "# Pre-flight\n## Token Load Estimate\n"
+                           "- **Estimated single-agent load:** 600000 (manuscript + overhead)\n\n"
+                           "## Dispatch Recommendations\n- **Standard-context mode (<1M tokens):** swarm\n")
+            expect("cf_load_suffix_K_errors", cost_floor(sa_large, pf_750k)[0], 1)
+            expect("cf_load_nonnumeric_errors", cost_floor(sa_large, pf_nonum)[0], 1)
+            expect("cf_load_nonnumeric_no_nextline_capture",  # must NOT grab the next line's `34`
+                   cf_has(cost_floor(sa_large, pf_nonum), "no parseable"), True)
+            expect("cf_load_232000_ok", cost_floor(sa_large, pf_232k)[0], 0)
+            expect("cf_load_599999_ok", cost_floor(sa_large, pf_599999)[0], 0)
+            expect("cf_load_600000_boundary_errors", cost_floor(sa_large, pf_600000)[0], 1)
+
+            # Fix 2 — tier-laundering: conflicting context_tier for the SAME mode ERRORs, order-
+            # independent (was silently first-wins via setdefault).
+            launder_ls = wc("launder_ls.md", hdr + "GOAL: repair\n"
+                            "<!-- override: cost-floor-single-agent — 1M host -->\n"
+                            "cost_floor_override: single-agent; context_tier: large — 1M host\n"
+                            "cost_floor_override: single-agent; context_tier: standard — cheaper really\n")
+            launder_sl = wc("launder_sl.md", hdr + "GOAL: repair\n"
+                            "<!-- override: cost-floor-single-agent — 1M host -->\n"
+                            "cost_floor_override: single-agent; context_tier: standard — cheaper really\n"
+                            "cost_floor_override: single-agent; context_tier: large — 1M host\n")
+            expect("cf_tier_conflict_large_then_standard_errors", cost_floor(launder_ls, pf)[0], 1)
+            expect("cf_tier_conflict_standard_then_large_errors", cost_floor(launder_sl, pf)[0], 1)
+            expect("cf_tier_conflict_names_conflict",
+                   cf_has(cost_floor(launder_ls, pf), "conflicting context_tier"), True)
+            expect("cf_single_valid_tier_token_ok", cost_floor(sa_large, pf)[0], 0)  # unchanged
+
+            # Fix 3 — dash-suffix misparse: a suffixed mode/tier must NOT bind as the base slug, and the
+            # off-grammar cap line is surfaced (ERROR), never silently invisible.
+            seqlite = wc("seqlite.md", hdr + "GOAL: repair\n"
+                         "cost_floor_override: sequential-lite — some reason\n")
+            largewin = wc("largewin.md", hdr + "GOAL: repair\n"
+                          "<!-- override: cost-floor-single-agent — 1M host -->\n"
+                          "cost_floor_override: single-agent; context_tier: large-window — host\n")
+            expect("cf_mode_suffix_sequential_lite_errors", cost_floor(seqlite, pf)[0], 1)
+            expect("cf_mode_suffix_not_bound_as_sequential",  # not honored as a clean `sequential` cap
+                   _cfo_tokens(_read(seqlite)), [])
+            expect("cf_tier_suffix_large_window_errors", cost_floor(largewin, pf)[0], 1)
+            expect("cf_tier_suffix_not_bound_as_large", _cfo_tokens(_read(largewin)), [])
 
             # _fired_triggers per-trigger (q, target) mapping — CF4 is driven by THESE, never the
             # aggregate escalation string or parsed report text.
