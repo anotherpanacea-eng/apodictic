@@ -22,10 +22,12 @@ you sit, or is the middle still asking for attention first, so the motive work g
 {"schema": "apodictic.coaching_observation.v1", "id": "CH-01", "pattern": "deferral-recurrence", "count": 3, "evidence": ["F-P2-03 deferred @ session 1", "F-P2-03 deferred @ session 2", "F-P2-03 deferred @ session 3"], "observation": "From what I've been tracking across our sessions, the antagonist-motive thread got set aside the last three running. Does that match how it feels from where you sit, or is the middle still asking for attention first?"}
 -->
 
-The structural-root-causes phase has also stayed open across the last two sessions — the plan put it
-first, and it's still first. Does that reflect where the leverage really is, or has the plan drifted
-from where your energy actually wants to go?
+From what I've been tracking across our sessions, the structural-root-causes phase has also stayed
+open the last two — the plan put it first, and it's still first. (Phase completion isn't recorded
+session-by-session anywhere, so this one is from my own running notes, not a checked log.) Does that
+reflect where the leverage really is, or has the plan drifted from where your energy actually wants to
+go?
 
 <!-- apodictic:coaching_observation
-{"schema": "apodictic.coaching_observation.v1", "id": "CH-02", "pattern": "phase-incompletion", "count": 2, "evidence": ["phase Structural Root Causes incomplete @ session 5", "phase Structural Root Causes incomplete @ session 6"], "observation": "The structural-root-causes phase has stayed open across the last two sessions. Does that reflect where the leverage really is, or has the plan drifted from where your energy wants to go?"}
+{"schema": "apodictic.coaching_observation.v1", "id": "CH-02", "pattern": "phase-incompletion", "count": 2, "evidence": ["phase Structural Root Causes incomplete @ session 5", "phase Structural Root Causes incomplete @ session 6"], "observation": "From what I've been tracking across our sessions, the structural-root-causes phase has stayed open the last two. Does that reflect where the leverage really is, or has the plan drifted from where your energy wants to go?"}
 -->
