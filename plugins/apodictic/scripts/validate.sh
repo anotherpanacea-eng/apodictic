@@ -550,6 +550,27 @@ PY
       "$0" coaching-history delete "$CHH_T" >/dev/null 2>&1 || { echo "ERROR: coaching-history delete failed"; CA_FAIL=1; }
       "$0" coaching-history "$CHH_T" >/dev/null 2>&1 && echo "  H6 delete-round-trip recompute: PASS as required (OK)" || { echo "ERROR: H6 recompute after delete did not PASS (a clean deletion must recompute honored)"; CA_FAIL=1; }
       rm -rf "$CHH_T"
+      # (Codex round-1 P1) a FABRICATED phase-incompletion at non-existent sessions 101/102 with NO
+      # honesty caveat — phase-incompletion has no governed verification path, so it is self-reported and
+      # MUST carry the caveat. Without it, --strict must FAIL (the exact Codex repro).
+      CHH_T=$(mktemp -d); cp -R "$CA_BASE/example-coaching-history/." "$CHH_T/"
+      printf '# Coaching History\n<!-- coaching-history: opted-in -->\n<!-- apodictic:coaching_observation\n{"schema": "apodictic.coaching_observation.v1", "id": "CH-01", "pattern": "phase-incompletion", "count": 2, "evidence": ["phase Structural Root Causes incomplete @ session 101", "phase Structural Root Causes incomplete @ session 102"], "observation": "The structural phase stayed open. Does that track?"}\n-->\n' > "$CHH_T/$CHH_HIST"
+      if "$0" coaching-history "$CHH_T" --strict >/dev/null 2>&1; then echo "ERROR: P1 fabricated phase-incompletion (101/102, no caveat) did not FAIL --strict"; CA_FAIL=1; else echo "  P1 fabricated phase-incompletion (no caveat): FAIL --strict as required (OK)"; fi
+      rm -rf "$CHH_T"
+      # (Codex round-1 P2) a coaching_history_seq nested at a NON-HOME depth (last_session.*) survives
+      # `delete` in the naive two-home strip and the H6 recompute falsely honors. The recursive strip +
+      # depth-complete recompute must (a) remove it on delete and (b) CATCH it if it survives.
+      CHH_T=$(mktemp -d); cp -R "$CA_BASE/example-coaching-history/." "$CHH_T/"
+      python3 - "$CHH_T/Diagnostic_State.md" "$CHH_T/Diagnostic_State.meta.json" "$CHH_T/$CHH_HIST" <<'PY' 2>/dev/null || true
+import json,re,sys
+sm=sys.argv[1]; t=open(sm).read()
+open(sm,"w").write(re.sub(r"<!--\s*coaching-history:\s*opted-in\s*-->","<!-- coaching-history: deleted -->",t))
+p=sys.argv[2]; sc=json.load(open(p)); sc.pop("coaching_history_seq",None); sc.setdefault("last_session",{})["coaching_history_seq"]=9
+json.dump(sc,open(p,"w"),indent=2)
+import os; os.remove(sys.argv[3])
+PY
+      if "$0" coaching-history "$CHH_T" >/dev/null 2>&1; then echo "ERROR: P2 nested-depth seq residue survived delete and H6 falsely honored"; CA_FAIL=1; else echo "  P2 nested-depth seq residue caught by H6 recompute: FAIL as required (OK)"; fi
+      rm -rf "$CHH_T"
     else
       echo "ERROR: $CA_BASE/example-coaching-history not found"; CA_FAIL=1
     fi
