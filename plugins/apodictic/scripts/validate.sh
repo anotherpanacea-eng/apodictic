@@ -178,7 +178,7 @@ set -euo pipefail
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).
-AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion pass-header argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff revision-arc regression-diff legal-risk promise-contract continuity-bible setup-payoff world-bible intake-interview author-fingerprint content-advisory style-explanation persona-divergence argument-spine scene-ethics argument-groundtruth-check fiction-groundtruth-check registry-check schema-coverage lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor roundtrip-disposition disposition-check synthesis-coverage dispatch-record specificity-floor refutation-coverage refutation-evidence refutation-write-scope obsidian-export html-export docx-export pdf-export results-guide position-pair-register reader-contract-outline calibration-honesty validator-conventions argument-carve-behavior-preservation check-mirror"
+AGG_VALIDATORS="contract-hash contract-check ledger-check artifact-names synthesis-sections tone-check state-lines severity-floor audit-signal-propagation underdiagnosis-triggers ledger-consolidation decision-layer-check author-facing-lint quality-risk-triggers timeline-diff timeline-arithmetic timeline-anchor-conflict audit-tier-criterion pass-header argument-recon-prerequisite structured-findings softness-check deficit-lock artifacts-schema gate gate-state finding-trace escalation-check feedback-triage editor-scaffolding diagnostic-vocabulary retcon-plan state-card-diff revision-arc regression-diff legal-risk promise-contract continuity-bible setup-payoff world-bible intake-interview author-fingerprint content-advisory coaching-history style-explanation persona-divergence argument-spine scene-ethics argument-groundtruth-check fiction-groundtruth-check registry-check schema-coverage lifecycle-node reader-instrument manuscript-viz annotated-manuscript crosslink reanchor roundtrip-disposition disposition-check synthesis-coverage dispatch-record specificity-floor refutation-coverage refutation-evidence refutation-write-scope obsidian-export html-export docx-export pdf-export results-guide position-pair-register reader-contract-outline calibration-honesty validator-conventions argument-carve-behavior-preservation check-mirror"
 # shellcheck disable=SC2086  # intentional word-splitting to count list entries
 AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)
 
@@ -228,7 +228,7 @@ _has_override() {
 
 usage() {
   echo "Usage: $0 <command> [args...]"
-  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, pass-header, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, revision-arc, regression-diff, legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, intake-interview, author-fingerprint, content-advisory, style-explanation, persona-divergence, argument-spine, scene-ethics, argument-groundtruth-check, fiction-groundtruth-check, registry-check, schema-coverage, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, disposition-check, synthesis-coverage, dispatch-record, specificity-floor, refutation-coverage, refutation-evidence, refutation-write-scope, obsidian-export, html-export, docx-export, pdf-export, results-guide, position-pair-register, reader-contract-outline, calibration-honesty, validator-conventions, argument-carve-behavior-preservation, check-mirror"
+  echo "Commands: contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines, severity-floor, audit-signal-propagation, underdiagnosis-triggers, ledger-consolidation, decision-layer-check, author-facing-lint, quality-risk-triggers, timeline-diff, timeline-arithmetic, timeline-anchor-conflict, audit-tier-criterion, pass-header, argument-recon-prerequisite, structured-findings, softness-check, deficit-lock, artifacts-schema, gate, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary, retcon-plan, state-card-diff, revision-arc, regression-diff, legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, intake-interview, author-fingerprint, content-advisory, coaching-history, style-explanation, persona-divergence, argument-spine, scene-ethics, argument-groundtruth-check, fiction-groundtruth-check, registry-check, schema-coverage, lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, disposition-check, synthesis-coverage, dispatch-record, specificity-floor, refutation-coverage, refutation-evidence, refutation-write-scope, obsidian-export, html-export, docx-export, pdf-export, results-guide, position-pair-register, reader-contract-outline, calibration-honesty, validator-conventions, argument-carve-behavior-preservation, check-mirror"
   echo "Aggregate: --self-test-all (runs --self-test on all $AGG_COUNT self-testable validators; exit 0 only if every validator's self-test passes)"
   echo "Aggregate: --check-all (runs --self-test-all PLUS real-file invariants: audit-signal-propagation --check-registry, structured-findings on the shipped templates, audit-tier-criterion vs the real pass-dependencies.md, pass-header vs the canonical example-pass-artifact-header.md checked against the real pass-dependencies.md §3, the ported letter/timeline validators vs the canonical worked examples (incl. underdiagnosis-triggers + ledger-consolidation), finding-trace + softness-check + deficit-lock vs the canonical example ledger<->letter pair (both directions), feedback-triage vs the canonical example Feedback Triage paired with its Findings Ledger under --strict (contract + conflict integrity + the Increment-2 maps_to cross-check: FB-01.maps_to=F-RR-01 resolves E5-clean, no fully-validated item left unmapped W4-clean), editor-scaffolding + decision-layer-check + severity-floor vs the canonical scaffolded editorial letter (plus the editor↔author dual-output pair — editor-scaffolding --dual over the scaffolded letter + its author-facing companion: D1 editor side E1-E4, D2 author register no-leak + Revision Checklist anchor, D3 top-severity-band consistency; plus the per-pass arm — editor-scaffolding --per-pass over the canonical scaffolded PASS artifact under --strict: P1 Editor Note addressee, P2 What-You-Might-Have-Missed, clean W1 firewall), diagnostic-vocabulary vs the canonical Vocabulary Guide, retcon-plan vs the canonical Retcon Plan, state-card-diff vs the canonical State Card, revision-arc vs the canonical Revision Arc + its Findings Ledger (A1 schema/nested-phase shape, A2 provenance closure, A3 self-consistency — one-phase-per-finding + Must-Fix-root-cause-not-in-polish, A4 non-empty rationale; clean W1 firewall-drift + W2 orphan under --strict), regression-diff vs the paired two-round example run folders (round linkage + the recurrence / quiet-chapter candidates under --strict), legal-risk vs the canonical Legal Risk Register, promise-contract vs the canonical Promise-Contract Fidelity example (two-sided-ref integrity P1, copy typing P2, the disclosing-synopsis-does-not-raise-PCF2 negative P3, and a clean firewall substring scan W1), continuity-bible vs the canonical Continuity Bible example + its Timeline (C1 schema, C2 locus shape, C3 contradiction integrity, a clean C4 chronology-consume + W1 coverage under --strict), setup-payoff vs the canonical Setup–Payoff Ledger example (SP1 schema over both block kinds, SP2 referential integrity — SP-01.payoff_ref=PO-03 resolves, SP3 open rationale — SP-02 carries one, SP4 derived-state agreement, clean X1 firewall; the three valid states pass and the abandoned SP-03 row is surfaced for prose citation), world-bible vs the canonical Worldbuilding Bible example (W1 schema + closed-key, WD unique ids, WB-R1 rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a unit class, WB-G2 chronology cycle + anchor-drift, and the WF surface-don't-resolve firewall scan — clean under --strict with the staged contradictions overridden), intake-interview vs the canonical Intake Interview example + its Ledger (I1 schema, I2 no-contract-dup, I3 grounded ambiguity via ref + source_note, I4 calibrate-not-suppress under --strict), author-fingerprint vs the canonical Author Voice Profile (F1 schema, F2 provenance, F3 same-register comparison, F4 descriptive-not-prescriptive, clean W1/W2 under --strict), content-advisory vs the canonical Content Advisory (A1 schema, A2 locus shape, A3 no-severity-leak, descriptive W1, opt-in W2 under --strict), style-explanation vs the canonical Author Style Explanation (X1 schema, X2 provenance, X3 no-severity-leak, X4 descriptive-not-prescriptive incl. the comparison-to-emulate firewall, X5 same-register cluster, clean X6/W1 under --strict), persona-divergence vs the canonical Persona Divergence Map + its Ledger (D1 schema incl. nested experiences enum, D2 grounded prediction, D3 target-severity anchoring, D4 anti-fabrication, D5 closed-key persona under --strict), argument-spine vs the canonical pre-draft Argument_State + the three genre-profiled Argument_States (Increment 5: B1-B4 + W4-W5 over grant / academic / pitch, --strict; the genre examples each carry a non-empty reviewer_objections pre-list so W5 stays green), scene-ethics vs the canonical Scene-Ethics Plan, reader-instrument vs the canonical Beta-Reader Instrument + paired uncertainty ledger, manuscript-viz vs the canonical Structure Map manifest + its Timeline/Ledger sources + the pre-draft Argument_State spine (the claim-ladder X1/X5/X6/X7 gates) + the scene-roster producer (the co-presence X2 gate), annotated-manuscript vs the canonical annotated-manuscript fixture (snapshot + manifest + annotated copy + Ledger/Timeline), crosslink vs the canonical letter + crosslinked letter + manifest, the producer chain (build -> A1-A6 -> render -> X1-X4 on a temp copy of the canonical inputs, asserting the fresh build is byte-identical to the committed fixture), reanchor vs the canonical manifest re-anchored onto a revised-draft snapshot (held / moved / vanished / ambiguous / not-re-anchorable; RA1-RA3 + W1/W2 under --strict), roundtrip-disposition vs the canonical Roundtrip Disposition record + companion Revision Report staged with the glue-chain fixtures (RT1 recompute alignment + RT2 confirmation-record + RT3 confirmed-writes-only + RT4 partition coverage, plus hostile arms — a token-stripped copy must FAIL RT2, an extra unconfirmed resolved marker must FAIL RT3, and a copy with one finding's disposition row dropped must WARN RT4 by default and FAIL under --strict), disposition-check vs the canonical example-run-folder-dispositions (a non-governed sidecar + Coaching Log markers + readiness-caveat excerpt: DP0 record shape incl. trigger-iff-deferred, DP1 declined/deferred-Must-Fix caveat coverage, DP2 no-laundering incl. the bidirectional marker/sidecar sync — plus hostile arms: an assessment stripped of its Declined caveat line must FAIL DP1 (the severity-laundering attempt), a deferred record stripped of its trigger must FAIL DP0, a sidecar with one record dropped must WARN DP2.5 by default and FAIL under --strict, and a declined id's finding_states flipped to 'revised' with no corroborating completion artifact must FAIL DP1 + name DP2.6 — supersedence is recomputed from resolved markers, never trusted), synthesis-coverage vs the canonical coverage run folders (green hybrid dispatch-derived + degraded-and-disclosed, both PASS incl. --strict — V1 presence, V2 disk<->manifest row bijection, V3 note/sidecar/marker projection, V4 provenance/mode agreement, V5 D1-D4 degrade recompute; plus hostile arms — a manifest row removed for an on-disk pass artifact must FAIL V2, a letter marker flipped against the sidecar must FAIL V3, and a degraded run masked to ok in marker+sidecar must WARN V5 by default and FAIL under --strict), specificity-floor vs the canonical re-grounded letter<->ledger pair (docs/synthesis-regrounding.md M2: the restored 'nine belief failures' + Ch 12 anchor letter PASSES clean incl. --strict; plus hostile arms — decaying 'nine' to 'several' must FAIL the count floor, stripping the Ch 12 anchor from the Must-Fix window must FAIL the anchor floor, and removing the <!-- regrounding: done --> marker must WARN by default and FAIL under --strict; the smuggled-finding reverse-ID check is finding-trace E1's, not re-fixtured here), refutation-coverage + refutation-evidence + refutation-write-scope vs the canonical example-run-folder Refutation Record (docs/finding-disconfirmation.md §8: V1 no-HIGH-without-survived-refutation incl. the cap-bound disclosure-marker rules, V2 verbatim single-line snapshot-anchored counter-evidence + snapshot_sha256 binding + budget arithmetic, V3 no-severity-channel + exact confidence transcription per the outcome caps; plus hostile arms — a record stripped of its survived block must FAIL refutation-coverage, a fabricated not-in-snapshot quote must FAIL refutation-evidence, an injected severity key must FAIL refutation-write-scope, and a fabricated bound:true budget with eligible/processed numbers that don't recompute from the ledger/record must FAIL refutation-coverage (the cap-bound exemption recomputes, never trusts) + refutation-evidence), obsidian-export vs the canonical manifest projected to native footnotes — copy + Inc-2 letter (O1 round-trip + O2 footnote resolution + O3 comment fidelity + O4 link resolution + O5 letter prose fidelity, asserting both fresh Obsidian outputs are byte-identical to the committed obsidian/ fixtures), html-export vs the canonical manifest projected to a self-contained read-only HTML (H1 round-trip + H2 anchor resolution + H3 comment fidelity, asserting the fresh html/ export is byte-identical to the committed fixture), docx-export vs the canonical manifest projected to a .docx with anchored comments (D1 artifact integrity + D2 text round-trip + D3 comment resolution, asserting the fresh byte-deterministic docx/ export is byte-identical to the committed fixture), pdf-export vs the canonical manifest projected to a self-contained .pdf (hand-written PDF objects, base-14 Helvetica, an inline [finding_id] marker at each locus + a Findings section — P1 artifact integrity + P2 text round-trip + P3 comment resolution, asserting the fresh byte-deterministic pdf/ export is byte-identical to the committed fixture), results-guide vs the canonical example-results-guide run folder (the navigation-index integrity arm — R1 every `### question` heading is a canonical §3 User Question resolved against the real pass-dependencies.md, R2 every backtick .md/.json citation resolves to a run-folder file and no un-substituted `[…]` placeholder survives while `/coach` / `/audit [name]` command tokens are exempt, R3 no Must/Should/Could-Fix severity leak and no apodictic:finding block — the guide indexes, never diagnoses), position-pair-register vs the canonical example-position-pair-register fixture (artifact + envelope + manuscript under --strict — Q1 the two-layer banned-key walk (relation keys whole-envelope, generic verdict keys scoped to results.pairs; claim_license VALUES with relation words do NOT trip it), Q2 the verbatim re-check with the F1 punctuation-fold (a paraphrased quote DROPS the pair with an inspectable log + WARN, --strict FAILs), A3 no severity/finding leak, F5 the framing-prose relation-vocabulary scan excluding `>`-blockquote evidence lines, and the document-order check), and the run-folder validators (gate-state, escalation-check, argument-recon-prerequisite, and the gate engine on a temp copy) vs the canonical example run folder, quality-risk-triggers vs the canonical clean Contract (example-quality-risk-contract.md raises no Q1-Q5 pre-pass trigger, plus a hostile arm — a darkness rating flipped to the top setting must raise the Q1 consent/governance trigger and exit non-zero), schema-coverage vs the real schemas/ dir (every apodictic.*.schema.json bound + canonically exercised + closed-key table<->file agreement — Harness Contracts v2), calibration-honesty vs a canonical decision-audit editorial letter (whole-letter paragraph scan: CS1-CS4 claim shapes fire WARN / --strict-ERROR when an uncalibrated SETEC band is rendered as a verdict with no uncalibrated/provenance-only qualifier co-present; the mandated boilerplate + vendored bundle labels + the :157 fair-summary sentence PASS; a severity-floor readiness verdict does not fire — D5 disjoint; the override marker silences per-paragraph), plus validator-conventions (the fleet meta-linter — M1 every AGG validator has a --self-test dispatcher case, M2 resolvers classify on parsed blocks not raw apodictic:<type> marker scans, M3 derived count, M4 no orphan schema, M5 no bare/compiled override-marker scan + M6 no local code-span stripper — overrides use the override_marker SSoT, M7 exactly one canonical Firewall definition in the plugin tree, M8 no local re.compile of the Must/Should/Could-Fix severity token — leak-guards import severity_vocab.SEVERITY_TOKEN_RE), plus check-mirror — scripts/ <-> plugins/apodictic/scripts/ byte-identical for the mirrored set)"
   exit 2
@@ -487,6 +487,92 @@ if [ "$1" = "--check-all" ]; then
       "$0" content-advisory "$CA_BASE/example-content-advisory.md" --strict || CA_FAIL=1
     else
       echo "ERROR: $CA_BASE/example-content-advisory.md not found"; CA_FAIL=1
+    fi
+    echo ""
+    echo "== canonical Coaching History (coaching-history: H1 schema+floor + H2 provenance/consecutive + H3 descriptive + H4 no-severity-leak + H7 tentative-framing + H5 single-home + H6 deletion-honored, under --strict) =="
+    if [ -d "$CA_BASE/example-coaching-history" ]; then
+      # Positive: the opted-in project (one Coaching_History artifact, grounded observations, clean
+      # sidecar) PASSES clean under --strict — this is the C5 canonical-gate invocation.
+      "$0" coaching-history "$CA_BASE/example-coaching-history" --strict || { echo "ERROR: canonical coaching-history did not PASS"; CA_FAIL=1; }
+      # Hostile arms — the two Fable ethics gates against the spec's hostile fixtures, built as temp
+      # copies of the canonical project and mutated (the disposition-check hostile-arm pattern). Each
+      # MUST FAIL; a PASS is a firewall breach. `|| true` guards the intended-nonzero exit under set -e.
+      CHH_HIST="Example_Coaching_History_2026-03-01_opus48.md"
+      # (H5.i) a Session_Plan carrying a projected observation block — the projection leak
+      CHH_T=$(mktemp -d); cp -R "$CA_BASE/example-coaching-history/." "$CHH_T/"
+      printf '# Session Plan\n\n<!-- apodictic:coaching_observation\n{"schema": "apodictic.coaching_observation.v1", "id": "CH-01", "pattern": "deferral-recurrence", "count": 3, "evidence": ["F-P2-03 deferred @ session 1", "F-P2-03 deferred @ session 2", "F-P2-03 deferred @ session 3"], "observation": "leaked"}\n-->\n' > "$CHH_T/Session_Plan_01.md"
+      if "$0" coaching-history "$CHH_T" >/dev/null 2>&1; then echo "ERROR: H5.i projection leak (Session_Plan observation block) did not FAIL"; CA_FAIL=1; else echo "  H5.i projection-leak fixture: FAIL as required (OK)"; fi
+      rm -rf "$CHH_T"
+      # (Codex F1 REGRESSION) a projection into an UNLISTED artifact type (the editorial letter — the old
+      # authored-artifact allowlist covered 6 of ~46 types, so this ESCAPED H5 and survived `delete`).
+      # Now every *.md in scope is scanned: the projection must FAIL H5, and after `delete` the H6
+      # recompute must CATCH the surviving projection (NOT falsely report "deletion honored").
+      CHH_T=$(mktemp -d); cp -R "$CA_BASE/example-coaching-history/." "$CHH_T/"
+      printf '# Editorial Letter\n\n<!-- apodictic:coaching_observation\n{"schema": "apodictic.coaching_observation.v1", "id": "CH-01", "pattern": "deferral-recurrence", "count": 3, "evidence": ["F-P2-03 deferred @ session 1", "F-P2-03 deferred @ session 2", "F-P2-03 deferred @ session 3"], "observation": "leaked into the letter"}\n-->\n' > "$CHH_T/Example_Editorial_Letter_2026-03-01_opus48.md"
+      if "$0" coaching-history "$CHH_T" >/dev/null 2>&1; then echo "ERROR: F1 editorial-letter projection did not FAIL H5"; CA_FAIL=1; else echo "  F1 editorial-letter projection: FAIL as required (OK)"; fi
+      "$0" coaching-history delete "$CHH_T" >/dev/null 2>&1 || true   # delete removes the artifact+seq+tombstone, NOT the letter projection
+      if "$0" coaching-history "$CHH_T" >/dev/null 2>&1; then echo "ERROR: F1 H6 recompute falsely reported deletion honored with a surviving letter projection"; CA_FAIL=1; else echo "  F1 H6 recompute catches surviving letter projection: FAIL as required (OK)"; fi
+      rm -rf "$CHH_T"
+      # (H5.v) a sidecar coach-only shadow field — execution.coaching_notes
+      CHH_T=$(mktemp -d); cp -R "$CA_BASE/example-coaching-history/." "$CHH_T/"
+      python3 - "$CHH_T/Diagnostic_State.meta.json" <<'PY' 2>/dev/null || true
+import json,sys
+p=sys.argv[1]; sc=json.load(open(p)); sc.setdefault("execution",{})["coaching_notes"]={"CH-01":"the writer keeps deferring"}
+json.dump(sc,open(p,"w"),indent=2)
+PY
+      if "$0" coaching-history "$CHH_T" >/dev/null 2>&1; then echo "ERROR: H5.v sidecar shadow field (coaching_notes) did not FAIL"; CA_FAIL=1; else echo "  H5.v sidecar-shadow fixture: FAIL as required (OK)"; fi
+      rm -rf "$CHH_T"
+      # (H5.iv) TWO Coaching_History artifacts — the shadow artifact
+      CHH_T=$(mktemp -d); cp -R "$CA_BASE/example-coaching-history/." "$CHH_T/"
+      cp "$CHH_T/$CHH_HIST" "$CHH_T/Example_Coaching_History_2026-02-01_opus47.md"
+      if "$0" coaching-history "$CHH_T" >/dev/null 2>&1; then echo "ERROR: H5.iv two Coaching_History artifacts did not FAIL"; CA_FAIL=1; else echo "  H5.iv two-artifact fixture: FAIL as required (OK)"; fi
+      rm -rf "$CHH_T"
+      # (H6) a tombstoned project with an archived session plan still carrying the evidence grammar
+      CHH_T=$(mktemp -d); cp -R "$CA_BASE/example-coaching-history/." "$CHH_T/"
+      rm -f "$CHH_T/$CHH_HIST"
+      python3 - "$CHH_T/Diagnostic_State.md" "$CHH_T/Diagnostic_State.meta.json" <<'PY' 2>/dev/null || true
+import json,re,sys
+sm=sys.argv[1]; t=open(sm).read()
+open(sm,"w").write(re.sub(r"<!--\s*coaching-history:\s*opted-in\s*-->","<!-- coaching-history: deleted -->",t))
+p=sys.argv[2]; sc=json.load(open(p)); sc.pop("coaching_history_seq",None); json.dump(sc,open(p,"w"),indent=2)
+PY
+      mkdir -p "$CHH_T/runs/r4_coaching"
+      printf '# Archived Session Plan\n\nF-P2-03 deferred @ session 2\n' > "$CHH_T/runs/r4_coaching/Session_Plan_03.md"
+      if "$0" coaching-history "$CHH_T" >/dev/null 2>&1; then echo "ERROR: H6 archived deletion-residue did not FAIL"; CA_FAIL=1; else echo "  H6 archived-residue fixture: FAIL as required (OK)"; fi
+      rm -rf "$CHH_T"
+      # (H6) opted-in + deleted both present = contradictory consent state
+      CHH_T=$(mktemp -d); cp -R "$CA_BASE/example-coaching-history/." "$CHH_T/"
+      printf '\n<!-- coaching-history: deleted -->\n' >> "$CHH_T/Diagnostic_State.md"
+      if "$0" coaching-history "$CHH_T" >/dev/null 2>&1; then echo "ERROR: H6 opted-in+deleted contradiction did not FAIL"; CA_FAIL=1; else echo "  H6 consent-contradiction fixture: FAIL as required (OK)"; fi
+      rm -rf "$CHH_T"
+      # (H6 positive + delete round-trip) run `delete` on a fresh copy, then the recompute must PASS
+      CHH_T=$(mktemp -d); cp -R "$CA_BASE/example-coaching-history/." "$CHH_T/"
+      "$0" coaching-history delete "$CHH_T" >/dev/null 2>&1 || { echo "ERROR: coaching-history delete failed"; CA_FAIL=1; }
+      "$0" coaching-history "$CHH_T" >/dev/null 2>&1 && echo "  H6 delete-round-trip recompute: PASS as required (OK)" || { echo "ERROR: H6 recompute after delete did not PASS (a clean deletion must recompute honored)"; CA_FAIL=1; }
+      rm -rf "$CHH_T"
+      # (Codex round-1 P1) a FABRICATED phase-incompletion at non-existent sessions 101/102 with NO
+      # honesty caveat — phase-incompletion has no governed verification path, so it is self-reported and
+      # MUST carry the caveat. Without it, --strict must FAIL (the exact Codex repro).
+      CHH_T=$(mktemp -d); cp -R "$CA_BASE/example-coaching-history/." "$CHH_T/"
+      printf '# Coaching History\n<!-- coaching-history: opted-in -->\n<!-- apodictic:coaching_observation\n{"schema": "apodictic.coaching_observation.v1", "id": "CH-01", "pattern": "phase-incompletion", "count": 2, "evidence": ["phase Structural Root Causes incomplete @ session 101", "phase Structural Root Causes incomplete @ session 102"], "observation": "The structural phase stayed open. Does that track?"}\n-->\n' > "$CHH_T/$CHH_HIST"
+      if "$0" coaching-history "$CHH_T" --strict >/dev/null 2>&1; then echo "ERROR: P1 fabricated phase-incompletion (101/102, no caveat) did not FAIL --strict"; CA_FAIL=1; else echo "  P1 fabricated phase-incompletion (no caveat): FAIL --strict as required (OK)"; fi
+      rm -rf "$CHH_T"
+      # (Codex round-1 P2) a coaching_history_seq nested at a NON-HOME depth (last_session.*) survives
+      # `delete` in the naive two-home strip and the H6 recompute falsely honors. The recursive strip +
+      # depth-complete recompute must (a) remove it on delete and (b) CATCH it if it survives.
+      CHH_T=$(mktemp -d); cp -R "$CA_BASE/example-coaching-history/." "$CHH_T/"
+      python3 - "$CHH_T/Diagnostic_State.md" "$CHH_T/Diagnostic_State.meta.json" "$CHH_T/$CHH_HIST" <<'PY' 2>/dev/null || true
+import json,re,sys
+sm=sys.argv[1]; t=open(sm).read()
+open(sm,"w").write(re.sub(r"<!--\s*coaching-history:\s*opted-in\s*-->","<!-- coaching-history: deleted -->",t))
+p=sys.argv[2]; sc=json.load(open(p)); sc.pop("coaching_history_seq",None); sc.setdefault("last_session",{})["coaching_history_seq"]=9
+json.dump(sc,open(p,"w"),indent=2)
+import os; os.remove(sys.argv[3])
+PY
+      if "$0" coaching-history "$CHH_T" >/dev/null 2>&1; then echo "ERROR: P2 nested-depth seq residue survived delete and H6 falsely honored"; CA_FAIL=1; else echo "  P2 nested-depth seq residue caught by H6 recompute: FAIL as required (OK)"; fi
+      rm -rf "$CHH_T"
+    else
+      echo "ERROR: $CA_BASE/example-coaching-history not found"; CA_FAIL=1
     fi
     echo ""
     echo "== canonical Author Style Explanation (style-explanation: schema X1 + provenance X2 + no-severity X3 + descriptive-not-prescriptive X4 + same-register cluster X5 + clean X6/W1, under --strict) =="
@@ -6322,6 +6408,48 @@ EOF
       python3 "$CAD_HELPER" content-advisory "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — content-advisory skipped; check inline that every content_note carries a well-shaped locus, the advisory is descriptive (no Must/Should/Could, no 'should cut/soften'), carries no apodictic:finding block, and has the opt-in marker. See docs/content-advisory.md."
+    exit 0
+    ;;
+
+  coaching-history)
+    # Coaching History & Pattern Recognition (docs/coaching-history.md; ROADMAP §Coaching Deepening):
+    # APODICTIC's ONE ethically-sensitive surface. Over multiple revision cycles the coach can surface
+    # a cross-session PROCESS pattern — the same finding deferred across an unbroken run of sessions, or
+    # a revision-arc phase left open across consecutive sessions — as a rolling, OPT-IN, local-only
+    # artifact of DESCRIPTIVE observations, each MECHANICALLY derived from the recorded finding-
+    # disposition / finding_states records (a count, never a vibe) and carrying NO editorial severity
+    # (no Must/Should/Could token, no apodictic:finding block). Structural checks over the
+    # apodictic.coaching_observation.v1 blocks in the ONE *_Coaching_History_*.md — H1 schema + unique
+    # CH-NN + per-pattern count floor (deferral-recurrence >=3, phase-incompletion >=2), H2 provenance/
+    # anti-fabrication (every `<F-id> deferred @ session <n>` resolves to a recorded deferred
+    # disposition; len(evidence)>=count; the cited sessions are ACTUALLY CONSECUTIVE), H3 descriptive-
+    # not-judgmental (reuses author_fingerprint._PRESCRIPTIVE_RE + a trait-blame lexicon; WARN, ERROR
+    # --strict; per-id override <!-- override: coaching-observation CH-NN — … -->), H4 no-severity-leak,
+    # H7 tentative-framing (no trait VERDICT / no bare-scoreboard rendering / carries an invitation —
+    # the transference-health floor; WARN, ERROR --strict), W1 local-only. Plus the TWO Fable ethics
+    # gates: H5 single-home / no coach-only shadow (scan project root + runs/* + the sidecar; a
+    # projected observation block / schema-id / evidence-grammar string outside the one artifact, a
+    # second artifact, or sidecar coaching material beyond `coaching_history_seq` = non-overridable
+    # ERROR; a bare CH-NN token elsewhere = WARN + override), and H6 deletion-honored (under the
+    # <!-- coaching-history: deleted --> tombstone, RECOMPUTE deletion from artifacts — the full H5 scan
+    # empty + no surviving artifact + no seq; residue = ERROR, NO override; opted-in+deleted = ERROR).
+    # The `delete <project_root>` subcommand removes every artifact (root + runs/*), drops the seq, and
+    # flips the Diagnostic_State.md consent marker to the tombstone (deletion revokes consent). OPT-IN:
+    # produced only under `<!-- coaching-history: opted-in -->` (home: Diagnostic_State.md); no marker →
+    # no-op (exit 2). Takes the PROJECT ROOT (H5/H6 scan scope), not just the artifact. Delegates to
+    # scripts/coaching_history.py; degrades to an advisory WARN without python3.
+    CHH_DIR=$(cd "$(dirname "$0")" && pwd)
+    CHH_HELPER="$CHH_DIR/coaching_history.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$CHH_HELPER" ]; then python3 "$CHH_HELPER" --self-test; exit $?; fi
+      echo "Self-test: PASS (degraded — python3 unavailable; coaching-history is advisory without it)"; exit 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$CHH_HELPER" ]; then
+      if [ $# -lt 1 ]; then echo "Usage: $0 coaching-history <project_root|files...> [--strict] | coaching-history delete <project_root> | --self-test"; exit 2; fi
+      if [ "${1:-}" = "delete" ]; then python3 "$CHH_HELPER" delete "$2"; exit $?; fi
+      python3 "$CHH_HELPER" coaching-history "$@"; exit $?
+    fi
+    echo "WARN: python3 unavailable — coaching-history skipped; check inline that observations live in exactly ONE opted-in *_Coaching_History_*.md (no projection into session plans / the sidecar), every observation resolves to recorded consecutive deferrals, none carries a Must/Should/Could token or a trait verdict, and a tombstoned project has no surviving artifact/seq. See docs/coaching-history.md."
     exit 0
     ;;
 
