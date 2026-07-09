@@ -48,8 +48,8 @@ Therefore:
 |---------|--------|------|------------------------------|
 | `op-ed-warrant-leap/` | 1 op-ed | failure detection | FM-A6 Warrant Leap — support is sound, the **bridge** is missing (Q2: SUPPORT vs WARRANT) |
 | `policy-brief-uncompared/` | 2 policy brief | failure detection + Q5/Q6 anchor | FM-A10 Uncompared Proposal + BP5 + FM-A18 — benefits evidenced, **comparative burden** unmet |
-| `personal-essay-narrative-arg/` | 4 personal essay | **positive control** | UNCONVENTIONAL-BUT-EFFECTIVE — argument recoverable through juxtaposition; no-thesis "failure" must be downgraded |
-| `modest-proposal-satire/` | 6 / Q7 hard case | **positive control, referenced** | UNCONVENTIONAL-BUT-EFFECTIVE — Swift, *A Modest Proposal* (1729); sustained irony; text not stored |
+| `personal-essay-narrative-arg/` | 4 personal essay | **positive control** | UNCONVENTIONAL-BUT-WARRANTED — argument recoverable through juxtaposition; no-thesis "failure" must be downgraded |
+| `modest-proposal-satire/` | 6 / Q7 hard case | **positive control, referenced** | UNCONVENTIONAL-BUT-WARRANTED — Swift, *A Modest Proposal* (1729); sustained irony; text not stored |
 
 The two broken fixtures test **sensitivity** (does the engine catch real
 failures and locate them in the right layer?). The two positive controls test

@@ -39,7 +39,7 @@
 
 - **N/A — positive control.** No repair sequence is warranted. Correct coaching output is to affirm the form and (at most) offer advisory, non-prescriptive notes.
 
-## GT7 — Warrant verdict *(Q7; §1 Distinguish / Step 9)* — **PRIMARY METRIC**
+## GT7 — Warrant verdict *(Q7; §1 Warrant verdict / Step 9)* — **PRIMARY METRIC**
 
 - **Expected warrant verdict:** UNCONVENTIONAL-BUT-WARRANTED
 - **Form name:** narrative argumentation (conclusion emerges through juxtaposition of events and thematic reflection rather than an explicit thesis; recognized form per Dialectical Clarity Step 9).

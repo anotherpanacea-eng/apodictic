@@ -40,7 +40,7 @@
 
 - **N/A — the surface argument must not be red-teamed or repair-sequenced on a literal reading.**
 
-## GT7 — Warrant verdict *(Q7; §1 Distinguish / Step 9)* — **PRIMARY METRIC**
+## GT7 — Warrant verdict *(Q7; §1 Warrant verdict / Step 9)* — **PRIMARY METRIC**
 
 - **Expected warrant verdict:** UNCONVENTIONAL-BUT-WARRANTED
 - **Form name:** sustained irony / Juvenalian satire (the real argument is the inverse of the literal proposition; meaning is carried by the gap between surface and intent).

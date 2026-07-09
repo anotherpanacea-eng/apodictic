@@ -6,7 +6,8 @@ GT8 = Premise-plausibility flags).
 Copy this file to `evals/fixtures/argument-benchmark/<fixture-slug>/groundtruth.md`
 and fill in every in-scope field. Ground truth must be registered **before**
 any engine run is scored against it (`groundtruth.md` written after seeing the
-run output is void). Fields map to the eight roadmap test questions and to
+run output is void). Fields map to the seven scored roadmap test questions
+(Q1–Q7) plus the GT8 contract surface, and to
 `Argument_State.md` sections; see
 [../docs/argument-benchmark-spec.md](../docs/argument-benchmark-spec.md) for
 the schema rationale and
@@ -28,7 +29,7 @@ premise's acceptability is separately registered.
 - **Authored or adapted by:**
 - **Registered (date):**
 - **Ground-truth authority:** who established the diagnosis; adjudication notes if interpretive
-- **Scope:** dimensions in scope for this fixture (e.g., "all eight" or "Q1, Q4, Q7 — positive control")
+- **Scope:** dimensions in scope for this fixture (e.g., "all seven + GT8" or "Q1, Q4, Q7 — positive control")
 
 ## GT1 — Main claim *(Q1; `Argument_State` §2 C0)*
 
@@ -64,7 +65,7 @@ premise's acceptability is separately registered.
 - **Correct first repair target:** claim / warrant / support / definition / objection
 - **Dependency rule the order must respect:** [e.g., warrant repair before evidence acquisition]
 
-## GT7 — Warrant verdict *(Q7; §1 Distinguish / Step 9)*
+## GT7 — Warrant verdict *(Q7; §1 Warrant verdict / Step 9)*
 
 - **Expected warrant verdict:** WARRANTED / UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED
 - **If unconventional:** form name + the form-dependent code(s) that MUST be downgraded to advisory
@@ -74,10 +75,13 @@ premise's acceptability is separately registered.
 
 - **Expected premise flags:** NONE_REGISTERED | P1, P2, … *(leading token authoritative; a trailing `(provisional migration default)` is parser-ignored commentary)*
 - **Flag details (one row per registered premise; omit entirely when NONE_REGISTERED):**
-  - P1: <premise as used + location> | <load-bearing role: C0 / subclaim / warrant / scope limiter / comparison / objection / definition / stakes> | <flag type(s), joined by ` + `: CONTESTABLE / UNEARNED / OVERLOADED / EXTERNAL-VERIFY / DEFINITIONAL> | <why a careful reviewer would not let it pass silently> | <Firewall boundary — the truth question NOT being adjudicated>
+  - P1: <premise as used + location> | <load-bearing role: C0 / ground / subclaim / warrant / scope limiter / comparison / objection / definition / stakes> | <flag type(s), joined by ` + `: CONTESTABLE / UNEARNED / OVERLOADED / EXTERNAL-VERIFY / DEFINITIONAL> | <why a careful reviewer would not let it pass silently> | <Firewall boundary — the truth question NOT being adjudicated>
+  *(Row shape is strict: exactly 5 `|`-cells; each ` + `-joined flag-type part must be exactly one enum token. Under an `UNCONVENTIONAL-BUT-WARRANTED` verdict, flags attach to the premises of the RECOVERED argument, not the surface/ironic one.)*
 - **Must not adjudicate:** <the truth question the engine must not settle>
 
 > **Firewall.** GT8 is a paper-reviewer flag, not a truth vote. It records that a load-bearing premise's *acceptability* is contestable; it never rules the premise true or false, and it never changes the GT7 warrant verdict by itself. For M1, GT8 is a required contract/firewall check; a scored premise-flag dimension is deferred to M2 (after keys are second-editor-confirmed).
+>
+> **Ownership boundary (do not double-register).** A GT8 flag MUST NOT duplicate a phenomenon a Dialectical Clarity code already carries: if the concern is that a premise is smuggled, unbacked, or ill-defined *as a warrant move*, the code owns it (it feeds the warrant verdict) — GT8 registers only the *residual acceptability* concern the codes do not own. When both could apply, the code takes it and GT8 stays `NONE_REGISTERED`.
 
 ## Notes
 

@@ -210,8 +210,11 @@ the five multi-lane tags on the line under its heading; the full field-by-field
 template is [evals/fiction-groundtruth-template.md](../evals/fiction-groundtruth-template.md).
 
 FGT7 uses `SOUND / INTENTIONAL-AND-EFFECTIVE / DEFECT-AS-PLANTED` (a deliberate
-divergence from the argument schema's `SOUND / UNCONVENTIONAL-BUT-EFFECTIVE /
-UNSOUND` — "unsound" is an argument predicate; "defect-as-planted" says what a
+divergence from the argument schema's verdict enum — historically
+`SOUND / UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND`, since renamed to
+`WARRANTED / UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED` in Argument Benchmark GT
+schema v0.2.0; the fiction enum is unaffected by that rename — "unsound"/"unwarranted"
+are argument predicates; "defect-as-planted" says what a
 broken fiction fixture is). The middle token keeps the FQ7 downgrade role. The
 validator's Check 6 is parameterized on the three tokens, so reuse is a one-line
 switch if a later reviewer prefers it.

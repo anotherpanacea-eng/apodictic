@@ -528,7 +528,7 @@ After the full diagnostic runs, this terminal step asks: did this text fail beca
 
 | Warrant verdict | Meaning | Action |
 |----------------|---------|--------|
-| **WARRANTED** | The claim, support, scope, and disagreement handling remain evaluable by whatever form the piece uses, even if codes (including Must-Fix codes) fired. The reasoning warrants the conclusion; the codes are its repair agenda | Report all codes as issued, ranked by severity. The priority repair is the highest-severity soft spot, not an UNWARRANTED verdict |
+| **WARRANTED** | The claim, support, scope, and disagreement handling remain evaluable by whatever form the piece uses, even if codes (including Hard-Gate codes) fired. The reasoning warrants the conclusion; the codes are its repair agenda | Report all codes as issued, ranked by severity. The priority repair is the highest-severity soft spot, not an UNWARRANTED verdict |
 | **UNCONVENTIONAL-BUT-WARRANTED** | The piece does not follow thesis-evidence-objection form, but a careful reader can recover and test the argument | Retroactively downgrade form-dependent failures (missing thesis sentence, absent formal concession paragraph, non-linear structure) to advisory notes rather than structural diagnoses |
 | **UNWARRANTED** | The reader cannot reliably identify, evaluate, or pressure the argument regardless of form | Report all codes as issued; note that form does not explain the failures |
 
@@ -545,7 +545,7 @@ After the full diagnostic runs, this terminal step asks: did this text fail beca
 
 **Warrant-verdict decision rule (apply in order):**
 
-1. **Default to WARRANTED.** Firing codes, including Hard-Gate (Must-Fix) codes, does not by itself make an argument UNWARRANTED. Codes are the repair agenda; the warrant verdict is a separate, higher-order judgment about evaluability.
+1. **Default to WARRANTED.** Firing codes, including Hard-Gate codes, does not by itself make an argument UNWARRANTED. Codes are the repair agenda; the warrant verdict is a separate, higher-order judgment about evaluability. (Hard-Gate names a code *family*; Must-Fix is a severity *tier* a code reaches only through the Severity Floor — see §Severity definitions.)
 2. **UNWARRANTED requires a defeat, not a weakness.** Return UNWARRANTED only when at least one decision test above fails as a *defeat*: the reader genuinely cannot identify the claim, find or assess the evidence, recover the inferential bridge, judge the scope, or see that objections exist. A recoverable-but-unstated warrant, a strong objection thinned rather than absent, scope tightened toward the conclusion, or an alternative gestured at but not engaged are soft spots in a warranted argument, not structural breaks.
    - **2a. The uncompared recommendation is a defeat, not a soft spot (AT3 only).** For an argument whose C0 is a *recommendation to act* (AT3 — "X should do Y"), the comparative dimension is **constitutive of the claim, not peripheral to it**: a reader cannot evaluate "do Y" without "rather than the alternatives that target the same goal." So when an AT3 recommendation discharges *none* of its comparative burden — **BP5** primary (no alternative engaged at all) **+ OB3** (the dominated-alternative / opportunity-cost objection wholly unaddressed), with no costing or funding mechanism — that is a **defeat** under decision test two (Evidence-evaluability) above: a recommendation's support *is* its comparative case, so with none discharged the reader cannot assess the adequacy of what supports "do Y" — it is *not evaluable as a recommendation* — and the verdict is **UNWARRANTED** (FM-A10, The Uncompared Proposal). (The claim itself stays statable, so decision test one / Claim-accessibility is *not* the failing test here.) This is the one place rule 2's "an alternative gestured at but not engaged is a soft spot" does **not** apply — and only here, because for a recommendation the comparison is the test, not an enrichment of it. **Scope guard — the defeat is for *zero comparison*, not *bad comparison*:** the line is *wholly absent* (defeat → UNWARRANTED) vs. *partially discharged* (an alternative named, costed, or weighed even thinly → soft spot → WARRANTED, per rule 2). **Naming *any* alternative at all counts as partially discharged — including a single one, and including a weak, strawmanned, or adversarially-framed alternative** (e.g., presenting only an extreme foil — "the only other option is X" where X is a caricatured or discredited position). That is a recommendation that engages one alternative badly → a Should-Fix in a *warranted* argument, not a defeat. The defeat (→ UNWARRANTED) requires the comparative dimension to be *wholly absent*: no alternative named, gestured at, costed, or even strawmanned anywhere in the text. **Do not read "the named alternative is a strawman / unfairly dismissed / not a serious option" as "no alternative engaged"** — the fairness and quality of the comparison is a separate Should-Fix (raise BP/OB severity), never the trigger for this defeat. A recommendation that engages one alternative badly is a Should-Fix in a warranted argument; a recommendation that engages *none at all* is UNWARRANTED *as a recommendation*. **Anti-gaming clause:** naming an alternative disables only the *automatic* FM-A10 defeat — it does not immunize the argument. A *merely decorative* foil (named, but with no comparative substance anywhere — no mechanism, criteria, costs, or tradeoff reasoning) can still be classified UNWARRANTED through the **general** evaluability test (rule 2 / decision test two) as an ordinary recommendation-evaluation failure — *not* via this AT3 automatic trigger. Bright line: any named/gestured alternative removes the automatic 2a defeat; egregious token-foil cases route through ordinary evaluability. This carve-out fires for AT3 recommendations only — never for descriptive/explanatory/interpretive theses, where rule 2 stands unmodified.
 3. **UNCONVENTIONAL-BUT-WARRANTED** applies when the *form* is non-standard but a careful reader can still recover and test the argument (downgrade form-dependent failures to advisory).
@@ -557,14 +557,14 @@ After the full diagnostic runs, this terminal step asks: did this text fail beca
 
 If yes: **WARRANTED**, regardless of whether the premises are ultimately true. If no: name the first defeated test and return **UNWARRANTED**. Then, separately, flag any contestable or unearned premises (see below).
 
-**Premise-plausibility flags (the second axis — never a verdict).** The warrant verdict answers whether the reasoning warrants the conclusion on the text's own terms (the inference axis — Local Relevance + Local Sufficiency). It deliberately brackets whether the premises are *true* (Local Acceptability); the Firewall forbids the engine from adjudicating premise truth. A premise can be contestable, overloaded, or doing unearned work while the inference from it remains valid. When that is the case, register a **premise-plausibility flag** — never a second verdict. Each flag names the premise in the manuscript's own terms and its location, its load-bearing role, one or more flag types (`CONTESTABLE`, `UNEARNED`, `OVERLOADED`, `EXTERNAL-VERIFY`, `DEFINITIONAL` — joined by ` + ` when several apply, or the standalone `NONE_REGISTERED`), why a careful reviewer would not let it pass silently, the Firewall boundary (what is *not* being adjudicated), and the repair implication (support / qualify / disclose / compare / define / cite). A flag never changes the warrant verdict by itself; only a structural/warrant defeat produces `UNWARRANTED`.
+**Premise-plausibility flags (the second axis — never a verdict).** The warrant verdict answers whether the reasoning warrants the conclusion on the text's own terms (the inference axis — Local Relevance + Local Sufficiency). It deliberately brackets whether the premises are *true* (Local Acceptability); the Firewall forbids the engine from adjudicating premise truth. A premise can be contestable, overloaded, or doing unearned work while the inference from it remains valid. When that is the case, register a **premise-plausibility flag** — never a second verdict. Each flag names the premise in the manuscript's own terms and its location, its load-bearing role, one or more flag types (`CONTESTABLE`, `UNEARNED`, `OVERLOADED`, `EXTERNAL-VERIFY`, `DEFINITIONAL` — joined by ` + ` when several apply, or the standalone `NONE_REGISTERED`), why a careful reviewer would not let it pass silently, the Firewall boundary (what is *not* being adjudicated), and the repair implication (support / qualify / disclose / compare / define / cite). A flag never changes the warrant verdict by itself; only a structural/warrant defeat produces `UNWARRANTED`. Two boundary rules: **(a)** the automatic FM-A10 defeat is never a premise flag — do not convert a BP5/OB3 comparative-burden defeat into a `CONTESTABLE` flag on the uncompared premise (the defeat is the warrant verdict's business, and the codes already carry it); **(b)** under `UNCONVENTIONAL-BUT-WARRANTED`, flags attach to the premises of the **recovered** argument, not the surface/ironic one — flagging a satire's deliberately monstrous literal premises is the same category error as evaluating the literal proposal.
 
 **Boundary example (valid inference, contestable premise).** "The moon is made of cheese; cheese is edible; therefore the moon is edible" is **WARRANTED** — the inference holds on its own terms — while its load-bearing premise is flagged:
 
 ```
 Warrant verdict: WARRANTED
 Premise-plausibility flags:
-  P1 | "the moon is made of cheese" | load-bearing premise | CONTESTABLE + EXTERNAL-VERIFY
+  P1 | "the moon is made of cheese" | ground | CONTESTABLE + EXTERNAL-VERIFY
   Firewall boundary: The engine flags the premise as contestable and load-bearing; it does not adjudicate lunar composition.
 ```
 
@@ -828,7 +828,7 @@ Premise-plausibility flags (the acceptability axis — surfaced, never adjudicat
 
 | Premise ID | Premise as used | Load-bearing role | Flag type(s) | Why flagged | Firewall boundary | Repair implication |
 |-----------|-----------------|-------------------|--------------|-------------|-------------------|--------------------|
-| [P1] | [premise in the text's own terms + location] | [C0 / subclaim / warrant / scope limiter / comparison / objection / definition / stakes] | [CONTESTABLE / UNEARNED / OVERLOADED / EXTERNAL-VERIFY / DEFINITIONAL, joined by ` + ` — or NONE_REGISTERED] | [why a careful reviewer would not let it pass] | [what is *not* being adjudicated] | [support / qualify / disclose / compare / define / cite] |
+| [P1] | [premise in the text's own terms + location] | [C0 / ground / subclaim / warrant / scope limiter / comparison / objection / definition / stakes] | [CONTESTABLE / UNEARNED / OVERLOADED / EXTERNAL-VERIFY / DEFINITIONAL, joined by ` + ` — or NONE_REGISTERED] | [why a careful reviewer would not let it pass] | [what is *not* being adjudicated] | [support / qualify / disclose / compare / define / cite] |
 
 If none are found or registered, the table collapses to a single `NONE_REGISTERED` row with a Firewall note that this is not a truth clearance.
 
@@ -844,7 +844,7 @@ These do not replace judgment. They identify failures that should default to top
 
 These tiers are referenced throughout (artifacts, Hard Gates) and are defined here:
 
-- **Must-Fix:** the failure *defeats* evaluability or warrant of **C0**. The main claim cannot be identified or is unstable; its central inferential bridge is *unrecoverable* (warrant MISSING, not merely RECOVERABLE-but-unstated); or the conclusion asserts something the evidence cannot reach at all. A Must-Fix code forces an UNWARRANTED verdict in Step 9.
+- **Must-Fix:** the failure *defeats* evaluability or warrant of **C0**. The main claim cannot be identified or is unstable; its central inferential bridge is *unrecoverable* (warrant MISSING, not merely RECOVERABLE-but-unstated); or the conclusion asserts something the evidence cannot reach at all. A code *correctly escalated* to Must-Fix has, by this definition, already registered a defeat of C0's evaluability — which is what forces an UNWARRANTED verdict in Step 9. (The Severity Floor, not the code family, is what escalates: a Hard-Gate code that fires without defeating evaluability caps at Should-Fix and does not touch the verdict.)
 - **Should-Fix:** a real weakness a competent reader can route around: a recoverable-but-understated warrant, a strong objection thinned rather than absent, scope tightened toward the conclusion, an alternative gestured at but not engaged. This is the **default tier for soft spots in an otherwise-warranted argument** and is the priority repair agenda; it does not force UNWARRANTED.
 - **Could-Fix:** improves rigor; does not affect whether C0 holds.
 
@@ -1031,7 +1031,7 @@ For F5 (Argument with embedded narrative) material, both audits may run:
 - **This audit** handles the argument structure: claim ladder, support map, warrant bridge, burden of proof, objection handling, dialectical integrity.
 - **Narrative Nonfiction Craft** handles the reader experience: lead contract (LC-codes), question management (QS-codes for embedded questions), ending payoff (E-codes), and meaning line (SW-codes — though in argument, the meaning line IS the argument, so SW-codes recede).
 
-They are complementary. This audit asks "is the argument valid?" Nonfiction Craft asks "does the reader stay engaged?"
+They are complementary. This audit asks "is the argument warranted?" Nonfiction Craft asks "does the reader stay engaged?"
 
 ### Relationship to Character Architecture Part 9
 
@@ -1056,7 +1056,7 @@ The v2.0 enrichment gives Emotional Craft cleaner handoff points:
 - AC3 identifies when emotional affinity substitutes for burden
 - WR0 identifies when a passionate paragraph still lacks an inferential bridge
 
-An argument can be logically sound but emotionally dead, or emotionally powerful but logically empty. If Emotional Craft shows flat affect in argument-shaped sections (S-codes firing), the issue may be that the writer is suppressing voice to sound "objective." If Emotional Craft shows high emotional transmission alongside NE3 (emotional override), the issue is the opposite: feeling is substituting for reasoning.
+An argument can be fully warranted but emotionally dead, or emotionally powerful but logically empty. If Emotional Craft shows flat affect in argument-shaped sections (S-codes firing), the issue may be that the writer is suppressing voice to sound "objective." If Emotional Craft shows high emotional transmission alongside NE3 (emotional override), the issue is the opposite: feeling is substituting for reasoning.
 
 ### Relationship to Scene Turn Diagnostics
 
@@ -1070,7 +1070,7 @@ Scene Turn handles fiction scene mechanics. For Classification 3 material, embed
 
 ### Orchestration with Other Audits
 
-**With Narrative Nonfiction Craft:** For F5 material, run both. This audit handles argumentative validity; Nonfiction Craft handles reader contract and engagement.
+**With Narrative Nonfiction Craft:** For F5 material, run both. This audit handles argumentative warrant; Nonfiction Craft handles reader contract and engagement.
 
 **With Scene Turn Diagnostics:** For Classification 3 material with embedded scenes, Scene Turn handles goal-conflict-outcome mechanics; this audit handles the argument frame containing them.
 
@@ -1091,7 +1091,7 @@ The diagnostic procedure identifies structural failures with specific codes. Whe
 If yes: the argument is **WARRANTED**, regardless of whether its premises are ultimately true (premise acceptability is surfaced separately as non-adjudicative flags).
 If no: name which step breaks first. That's the priority diagnosis.
 
-This is the operative test for the Step 9 warrant verdict: if it returns "yes," return **WARRANTED** even when Hard-Gate (Must-Fix) codes fired. The codes become the Should-Fix repair agenda, not an UNWARRANTED verdict. **One bounded exception (see the warrant-verdict decision rule 2a):** for an AT3 *recommendation*, "evaluate the evidence … and determine whether disagreement has been handled honestly" includes the comparative test — so a recommendation that engages *no* alternative at all — naming even a single or strawmanned foil does **not** qualify (that is a soft spot, per rule 2a's scope guard) — and discharges *none* of its comparative burden (BP5 + OB3, no funding mechanism) returns **"no"** on this test *as a recommendation* and is **UNWARRANTED** (FM-A10), even though its benefit-claims are individually evaluable.
+This is the operative test for the Step 9 warrant verdict: if it returns "yes," return **WARRANTED** even when Hard-Gate codes fired. The codes become the Should-Fix repair agenda, not an UNWARRANTED verdict. **One bounded exception (see the warrant-verdict decision rule 2a):** for an AT3 *recommendation*, "evaluate the evidence … and determine whether disagreement has been handled honestly" includes the comparative test — so a recommendation that engages *no* alternative at all — naming even a single or strawmanned foil does **not** qualify (that is a soft spot, per rule 2a's scope guard) — and discharges *none* of its comparative burden (BP5 + OB3, no funding mechanism) returns **"no"** on this test *as a recommendation* and is **UNWARRANTED** (FM-A10), even though its benefit-claims are individually evaluable.
 
 ---
 

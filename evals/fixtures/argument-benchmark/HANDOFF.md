@@ -93,7 +93,7 @@ The full convergence runs + the decoy-resistance engine fix landed in **PR #37**
 Suite → **Next round**:
 
 - **Substantive (engine/key — next calibration round):** (1) strengthen **Test A** (genre-genericity decoy filter) — `ppi` partial cross-vendor, GPT's objection stayed on the public-safety decoy; (2) **`policy-brief-uncompared` under-fire** — AT3 + no comparative defense should drive Must-Fix → UNWARRANTED (Step-9 default overrides the floor). #1 + #2 pair.
-- **Human-gated (ready, needs people):** (3) recruit one **second editor** (GT4–GT8 personal independence) — blind packet ready in Dropbox `argument-benchmark-second-editor-packet/` (see below); (4) **`current-affairs` GT2** recall-suspect — resolves via #3 or a second vendor.
+- **Human-gated (needs people; packet REGENERATION required first):** ⚠️ the built Dropbox blind packet predates GT schema v0.2.0 — its registration form solicits the retired `SOUND/UNSOUND` vocabulary (which the validator now actively rejects) and has no GT8 premise-flags field. Regenerate the packet to the warrant vocabulary + GT8 before recruiting. Then: (3) recruit one **second editor** (GT4–GT8 personal independence) — blind packet ready in Dropbox `argument-benchmark-second-editor-packet/` (see below); (4) **`current-affairs` GT2** recall-suspect — resolves via #3 or a second vendor.
 - **Minor / optional:** (5) PDF `--fetch` (AECF) → add a `pdftotext` branch if PDFs multiply; (6) a second cross-vendor GPT pass on `roosevelt` (kills the n=1 "variance" objection); (7) housekeeping — the merged `claude/benchmark-corpus-round2` branch can be deleted.
 
 The list below predates the PR #37 merge and is kept for historical context.

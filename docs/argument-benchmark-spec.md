@@ -373,22 +373,32 @@ corpus by `--check-all`). It checks:
   controls (`N/A — positive control`) are exempt.
 - GT7's warrant verdict (field `Expected warrant verdict`) is one of WARRANTED /
   UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED. A GT7 section present but carrying **no** parseable
-  verdict field is an **ERROR** (not a silent skip), and the retired v0.1 field label
-  (`Expected classification`) and retired tokens (SOUND / UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND)
-  are **actively rejected** so an unmigrated fixture cannot pass vacuously. An
+  verdict field is an **ERROR** (not a silent skip), and residue of **all three** retired v0.1
+  encodings is actively rejected — the standalone field label (`Expected classification`), the
+  combined-block sub-line (`GT7 Distinguish:`), and the inline variant (case-insensitive
+  `expected classification`) — as are the retired tokens
+  (SOUND / UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND), so an unmigrated encoding cannot pass
+  vacuously beside a pasted-in new field. An
   UNCONVENTIONAL-BUT-WARRANTED verdict must name ≥1 form-dependent code to downgrade — specific
   (`SM0`, `FM-A1`) or family-level (`DI codes`, `SM/WR on the cost accounting`) references both
   count.
 - GT8's premise-plausibility flags (field `Expected premise flags`) are **leading-token parsed**:
-  the value is `NONE_REGISTERED` or one or more `P<n>` rows, with a trailing
-  `(provisional migration default)` treated as parser-ignored commentary. Each registered
-  flag-detail row validates its flag-type cell against the enum (`CONTESTABLE / UNEARNED /
-  OVERLOADED / EXTERNAL-VERIFY / DEFINITIONAL / NONE_REGISTERED`; multiple flags joined by ` + `),
-  and the flag-type cell must not smuggle a truth verdict — a standalone uppercase
-  `TRUE / FALSE / PROVEN / DISPROVEN / CORRECT / INCORRECT` fails the Firewall check
-  (case-sensitive; the `Why flagged` / `Firewall boundary` prose fields, whose natural sentence is
-  lowercase "true or false", are exempt). GT8 is a contract/firewall check in M1, not a scored
-  dimension.
+  the value is `NONE_REGISTERED` or a `P<n>` id list, with a trailing
+  `(provisional migration default)` treated as parser-ignored commentary. The registered path is
+  **strict, not advisory** (a firewall nothing cross-checks is vacuous): `NONE_REGISTERED` can
+  never combine with any other flag or id and forbids detail rows; a `P<n>` list requires detail
+  rows whose ids match the expected list exactly, both directions. Each detail row (bolded ids
+  like `- **P1:**` are matched, not skipped) must have **exactly 5** `|`-cells
+  (premise | role | flag-type(s) | why flagged | Firewall boundary — a `|` inside the premise
+  text is rejected rather than allowed to shift cells past validation), and each ` + `-joined
+  part of the flag cell must be **exactly** one of `CONTESTABLE / UNEARNED / OVERLOADED /
+  EXTERNAL-VERIFY / DEFINITIONAL` (full-match; `NONE_REGISTERED` is field-level only; leading
+  tokens are boundary-checked so `P1a`/`WARRANTEDx` cannot truncate-parse). The flag-type cell
+  must not smuggle a truth verdict — a standalone uppercase `TRUE / FALSE / PROVEN / DISPROVEN /
+  CORRECT / INCORRECT` fails the Firewall check by name (case-sensitive; the `Why flagged` /
+  `Firewall boundary` prose fields, whose natural sentence is lowercase "true or false", are
+  exempt — and the full-match enum backstops any lower/mixed-case adjudication smuggled into the
+  flag cell). GT8 is a contract/firewall check in M1, not a scored dimension.
 
 **Calibration note.** The five checks were tuned against the full registered corpus (16 GT
 files across both the Increment-1 full fixtures and the Increment-2 provisional/derive-on-run
