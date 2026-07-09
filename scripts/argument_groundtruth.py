@@ -4,7 +4,7 @@
 
 Backs `validate.sh argument-groundtruth-check <groundtruth_file>` (docs/argument-benchmark-spec.md
 §Mechanical validator). Checks a registered `groundtruth.md` answer key against Argument Benchmark
-GT schema v0.2.0:
+GT schema v0.3.0:
 
   1. GT1-GT8 sections are present and non-empty.
   2. Every referenced code resolves to the Dialectical Clarity namespace
@@ -33,12 +33,29 @@ GT schema v0.2.0:
      premise acceptability, it never adjudicates premise truth. The `Why flagged` /
      `Firewall boundary` prose cells are exempt (their natural sentence "does not rule the
      premise true or false" is lowercase prose, not a verdict).
+  6. GT schema v0.3.0 Reliability ledger: one machine-parsed `- **Reliability:**` line in the
+     Provenance block assigning every GT anchor a STATUS
+     (authoritative / provisional / panel-licensed / low-agreement) and a DECISION-USE
+     (gate / confirm / report). Enforces ledger-internal consistency — the group grammar
+     (`GT<a>(–GT<b>)?: <status>, <use>`, `(?![0-9])` boundary-guarded, `|`/`/` copied-guidance
+     trap rejected), exactly-GT1-GT8 coverage (no gaps/overlaps), and the enforcement matrix
+     (`gate` requires a licensed status — authoritative/panel-licensed; `provisional` may only
+     confirm/report; `low-agreement` may only report). A heading marked PROVISIONAL whose ledger
+     claims a licensed status is a stale-marker ERROR (the M2-promotion tripwire — this consumes
+     the formerly-dead heading `provisional` bool). Inter-rater agreement LICENSES a label; it
+     never scores the engine (the psychometric frame).
 
 Output keeps the legacy WARN: / ERROR: / OK: / FAILED: prefixes and exit codes (0 ok, 1 fail,
 2 usage) so it slots into --self-test-all alongside the other self-testable validators.
 
+The round-record conformance mode is the one mechanical guard at the run-side attribution seam:
+it asserts every booked ENGINE-fault in a calibration-round record cites an anchor whose ledger
+licenses that booking (a `gate` anchor licenses any booking; a `confirm` anchor licenses a booking
+only with an explicit `OVER-FIRE` tag — the asymmetric ruling; a `report` anchor licenses none).
+
 CLI:
     argument_groundtruth.py argument-groundtruth-check <groundtruth_file>
+    argument_groundtruth.py argument-groundtruth-check --round-record <record.md> --fixtures-dir <dir>
     argument_groundtruth.py --self-test
 """
 
@@ -64,6 +81,18 @@ _GT7_LEGACY_CLASSES = {"SOUND", "UNCONVENTIONAL-BUT-EFFECTIVE", "UNSOUND"}
 # is a FIELD-level sentinel only — it can never combine with another flag and never appears in a
 # detail row (a row exists precisely because a flag IS registered).
 _GT8_ROW_FLAG_TYPES = {"CONTESTABLE", "UNEARNED", "OVERLOADED", "EXTERNAL-VERIFY", "DEFINITIONAL"}
+
+# Reliability ledger (GT schema v0.3.0). Each GT anchor carries a per-section reliability
+# STATUS and a DECISION-USE, encoded as one machine-parsed Reliability line in Provenance.
+# Inter-rater agreement LICENSES a label; it never scores the engine (the psychometric frame —
+# fiction_groundtruth.py's _RELIABILITY, with a deliberately different, domain-honest token set).
+_RELIABILITY_STATUSES = {"authoritative", "provisional", "panel-licensed", "low-agreement"}
+# Statuses that MAY back a `gate` decision-use (label-adjudicating; a miss may be booked an
+# engine failure). `authoritative` = licensed by construction or by the objective-core
+# convention (pre-registered GT1-GT3-grade diagnosis); `panel-licensed` = promoted by measured
+# >=3-editor agreement (alpha over threshold). `provisional`/`low-agreement` may never gate.
+_LICENSED_STATUSES = {"authoritative", "panel-licensed"}
+_DECISION_USES = {"gate", "confirm", "report"}
 
 _CODE_RE = re.compile(r"\b([A-Z]{2})([0-9]+)\b")
 _FM_A_RE = re.compile(r"\bFM-A([0-9]+)\b")
@@ -92,6 +121,19 @@ _TRUTH_TOKEN_RE = re.compile(r"\b(TRUE|FALSE|PROVEN|DISPROVEN|CORRECT|INCORRECT)
 _NEGATED_CODES_RE = re.compile(r"\b[Nn][Oo][Tt]\s+((?:[A-Z]{2}[0-9]+(?:\s*[/,]\s*)?)+)")
 _PASS_CODE_RE = re.compile(
     r"\b(?:[A-Z]{2}[0-9]+\s*[/,]\s*)*[A-Z]{2}[0-9]+\s*(?:=\s*PASS\b|\(\s*PASS\s*\))")
+# The Reliability ledger field line (in Provenance). Value runs to end of line.
+_RELIABILITY_FIELD_RE = re.compile(r"Reliability:\*\*\s*(.+)")
+# One ledger group: `GT<a>(–GT<b>)?: <status>, <use>` — full-match per group. Hyphen/en-dash/
+# em-dash tolerated in the range (mirrors _gt_numbers_in_heading's `[-–—]` class). `(?![0-9])`
+# boundary guards so `GT10` cannot truncate-parse as GT1. Status/use tokens are captured lowercase
+# and enum-checked by the caller (so `authoritativex` is captured whole, then rejected).
+_RELIABILITY_GROUP_RE = re.compile(
+    r"^GT([1-8])(?![0-9])(?:\s*[-–—]\s*GT([1-8])(?![0-9]))?:\s*([a-z][a-z-]*),\s*([a-z]+)$")
+# A booked engine-fault line in a calibration-round record (round-record conformance mode). Any
+# `- BOOKED:` line is claimed for validation (so a malformed/out-of-range booking is a loud ERROR,
+# not a silent skip); lines WITHOUT the prefix stay prose-tolerant and are ignored.
+_BOOKED_LINE_RE = re.compile(r"^\s*-\s*BOOKED:\s*(.*?)\s*$", re.MULTILINE)
+_BOOKED_BODY_RE = re.compile(r"^ENGINE-FAULT\s+(\S+)\s+GT([0-9]+)(\s+OVER-FIRE)?$")
 
 
 def _positive_code_text(text):
@@ -147,6 +189,124 @@ def _codes_in(text):
 def _has_family(text, prefixes):
     codes = _codes_in(text)
     return any(c[:2] in prefixes for c in codes)
+
+
+def _reliability_values(text):
+    """All Reliability ledger field values in `text` (one per matching line). Exactly one is
+    required; zero or two+ are ERRORs surfaced by the caller."""
+    return [m.strip() for m in _RELIABILITY_FIELD_RE.findall(text)]
+
+
+def _parse_reliability_groups(value):
+    """Parse one Reliability ledger value into ({n: (status, use)}, errors). Enforces the group
+    grammar, the status/use enums, the `|`/`/` copied-guidance trap, overlap, and the
+    gate/confirm/report enforcement matrix — but NOT coverage-completeness or the stale-heading
+    cross-check (those need the caller's section context). Shared by Check 6 and the round-record
+    conformance mode."""
+    mapping, errors = {}, []
+    if "|" in value or "/" in value:
+        errors.append("Check 6 (reliability) — ledger value contains a '|' or '/' alternation "
+                      "(a template guidance line copied verbatim is not a legal value): %r" % value)
+        return mapping, errors
+    for raw_group in value.split(";"):
+        group = raw_group.strip()
+        if not group:
+            errors.append("Check 6 (reliability) — empty ledger group (stray ';').")
+            continue
+        gm = _RELIABILITY_GROUP_RE.match(group)
+        if not gm:
+            errors.append("Check 6 (reliability) — ledger group %r does not match the grammar "
+                          "`GT<a>(–GT<b>)?: <status>, <use>`." % group)
+            continue
+        a, b, status, use = gm.group(1), gm.group(2), gm.group(3), gm.group(4)
+        if status not in _RELIABILITY_STATUSES:
+            errors.append("Check 6 (reliability) — unknown status %r in group %r (expected one of "
+                          "authoritative / provisional / panel-licensed / low-agreement)."
+                          % (status, group))
+            continue
+        if use not in _DECISION_USES:
+            errors.append("Check 6 (reliability) — unknown decision-use %r in group %r (expected "
+                          "one of gate / confirm / report)." % (use, group))
+            continue
+        # Enforcement matrix: gate requires a licensed status; provisional may only confirm/report;
+        # low-agreement may only report. (Licensed statuses may take any use — a licensed anchor
+        # can still be report-only by design, e.g. GT8.)
+        if use == "gate" and status not in _LICENSED_STATUSES:
+            errors.append("Check 6 (reliability) — group %r uses `gate` but status %r is not "
+                          "licensed (gate requires authoritative or panel-licensed)."
+                          % (group, status))
+        if status == "provisional" and use not in ("confirm", "report"):
+            errors.append("Check 6 (reliability) — group %r is `provisional` but its use is %r "
+                          "(provisional anchors may only confirm or report)." % (group, use))
+        if status == "low-agreement" and use != "report":
+            errors.append("Check 6 (reliability) — group %r is `low-agreement` but its use is %r "
+                          "(a low-agreement anchor is report-only)." % (group, use))
+        lo = int(a)
+        hi = int(b) if b else lo
+        if hi < lo:
+            errors.append("Check 6 (reliability) — group %r has a descending range." % group)
+            continue
+        for n in range(lo, hi + 1):
+            if n in mapping:
+                errors.append("Check 6 (reliability) — GT%d is covered by more than one ledger "
+                              "group (overlap)." % n)
+            mapping[n] = (status, use)
+    return mapping, errors
+
+
+def round_record_check(record_text, resolve_fixture):
+    """Round-record conformance: assert every booked ENGINE-fault line cites an anchor whose
+    Reliability ledger LICENSES that booking. `resolve_fixture(slug)` returns the fixture's
+    groundtruth text, or None if the slug is unknown. A `gate` anchor licenses any ENGINE-fault
+    booking; a `confirm` anchor licenses a booking ONLY when it carries the explicit `OVER-FIRE`
+    tag (the asymmetric ruling — false negatives on a one-editor label go to KEY-REVIEW, not the
+    engine); a `report` anchor licenses none. This is the one mechanical guard at the run-side
+    seam; the rest of run adjudication is RUN-PROTOCOL prose."""
+    errors = []
+    for m in _BOOKED_LINE_RE.finditer(record_text):
+        body = m.group(1).strip()
+        bm = _BOOKED_BODY_RE.match(body)
+        if not bm:
+            errors.append("round-record — malformed BOOKED line %r (expected "
+                          "`ENGINE-FAULT <fixture-slug> GT<n>[ OVER-FIRE]`)." % body)
+            continue
+        slug, n_str, overfire = bm.group(1), bm.group(2), bool(bm.group(3))
+        n = int(n_str)
+        if not (1 <= n <= 8):
+            errors.append("round-record — booking on %s cites GT%d, out of range (GT1-GT8)."
+                          % (slug, n))
+            continue
+        gt_text = resolve_fixture(slug)
+        if gt_text is None:
+            errors.append("round-record — booked fixture %r not found in the fixtures dir." % slug)
+            continue
+        values = _reliability_values(gt_text)
+        if len(values) != 1:
+            errors.append("round-record — fixture %r carries %d Reliability ledgers (need exactly "
+                          "one) — cannot adjudicate its bookings." % (slug, len(values)))
+            continue
+        mapping, gerrs = _parse_reliability_groups(values[0])
+        if gerrs:
+            errors.append("round-record — fixture %r has an unparseable Reliability ledger; run "
+                          "argument-groundtruth-check on it first." % slug)
+            continue
+        if n not in mapping:
+            errors.append("round-record — booking on %s cites GT%d, which its Reliability ledger "
+                          "does not cover." % (slug, n))
+            continue
+        status, use = mapping[n]
+        if use == "gate":
+            continue  # licensed for any ENGINE-fault booking
+        if use == "confirm":
+            if overfire:
+                continue  # asymmetric ruling: an over-fire licenses a confirm-anchor booking
+            errors.append("round-record — %s GT%d is `confirm`; an ENGINE-FAULT booking WITHOUT "
+                          "the OVER-FIRE tag is unlicensed (a false-negative miss on a one-editor "
+                          "label routes to KEY-REVIEW, not an engine regression)." % (slug, n))
+            continue
+        errors.append("round-record — %s GT%d is `%s`; it licenses no ENGINE-FAULT booking."
+                      % (slug, n, use))
+    return errors
 
 
 def argument_groundtruth_check(text):
@@ -309,7 +469,43 @@ def argument_groundtruth_check(text):
                                   "is field-level only and never appears in a detail row)."
                                   % part.strip())
 
-    ok = "OK: Argument ground-truth contract satisfied (GT1-GT8 present; codes resolve; locus consistent; warrant verdict + premise flags well-formed)."
+    # Check 6: Reliability ledger (GT schema v0.3.0). One machine-parsed ledger line in Provenance
+    # (full-text posture — the ledger lives outside the GT sections _parse_gt_sections captures,
+    # same as Check 2 at the code scan). Enforces ledger-internal consistency: the group grammar,
+    # the status/use enums, the gate/confirm/report enforcement matrix, exact GT1-GT8 coverage
+    # (no gaps, no overlaps), and the stale-heading cross-check that consumes the (formerly dead)
+    # `sections[n]["provisional"]` bool. Run-side adjudication is RUN-PROTOCOL prose, with the
+    # round-record conformance mode as its one mechanical guard (see round_record_check).
+    values = _reliability_values(text)
+    if not values:
+        errors.append("Check 6 (reliability) — no Reliability ledger line "
+                      "(`- **Reliability:** GT1–GT3: authoritative, gate; …`); GT schema v0.3.0 "
+                      "requires one in the Provenance block.")
+    elif len(values) > 1:
+        errors.append("Check 6 (reliability) — %d Reliability ledger lines found; exactly one is "
+                      "allowed." % len(values))
+    else:
+        mapping, rel_errors = _parse_reliability_groups(values[0])
+        errors.extend(rel_errors)
+        covered = set(mapping)
+        missing = [n for n in range(1, 9) if n not in covered]
+        if missing:
+            errors.append("Check 6 (reliability) — ledger coverage is incomplete; GT%s "
+                          "not covered (coverage must be exactly GT1-GT8)."
+                          % ", GT".join(str(n) for n in missing))
+        # Stale-heading cross-check (makes the dead `provisional` bool live): a heading marked
+        # PROVISIONAL whose ledger claims a licensed status is a stale marker — promotion must
+        # clean the heading or the ledger is wrong. One-way by design: a `provisional` ledger
+        # status does NOT require a heading marker (the marker is optional human emphasis).
+        for n, (status, _use) in mapping.items():
+            sec = sections.get(n)
+            if sec and sec.get("provisional") and status not in ("provisional", "low-agreement"):
+                errors.append("Check 6 (reliability) — GT%d's heading is marked PROVISIONAL but "
+                              "its ledger status is %r (a licensed status under a PROVISIONAL "
+                              "heading is a stale marker — promotion must clean the heading, or "
+                              "the ledger is wrong)." % (n, status))
+
+    ok = "OK: Argument ground-truth contract satisfied (GT1-GT8 present; codes resolve; locus consistent; warrant verdict + premise flags well-formed; reliability ledger licensed)."
     failed = ("FAILED: %d argument-groundtruth-check failure(s). Canonical home: "
               "docs/argument-benchmark-spec.md §Mechanical validator + evals/argument-groundtruth-template.md."
               % len(errors))
@@ -337,6 +533,7 @@ _VALID_GT = """# Ground Truth: self-test
 
 ## Provenance
 - **Fixture slug:** self-test
+- **Reliability:** GT1–GT7: authoritative, gate; GT8: authoritative, report
 
 ## GT1 — Main claim *(Q1; §2 C0)*
 - **Expected C0:** "X should do Y."
@@ -394,6 +591,7 @@ _COMBINED_GT = """# Ground Truth: self-test combined
 
 ## Provenance
 - **Fixture slug:** self-test-combined
+- **Reliability:** GT1–GT3: authoritative, gate; GT4–GT7: provisional, confirm; GT8: provisional, report
 
 ## GT1 — Main claim *(Q1; §2 C0)*
 - **Expected C0:** "X should do Y."
@@ -571,6 +769,85 @@ def run_self_test(which=None):
     check("gt_heading_large_number", errs_of(_VALID_GT.replace(
         "## Notes", "## GT78 appendix\nfree-form appendix prose.\n\n## Notes")), True)
 
+    # ---- Check 6: Reliability ledger (GT schema v0.3.0). The `valid`/`combined_gt4_gt8_heading`
+    # arms already exercise the clean paths (_VALID_GT + _COMBINED_GT now carry ledgers); below,
+    # each failing branch gets an arm, plus the two clean-but-suspicious paths.
+    _VG_LEDGER = "- **Reliability:** GT1–GT7: authoritative, gate; GT8: authoritative, report"
+    # No ledger at all → ERROR (v0.3.0 requires one).
+    check("reliability_missing", errs_of(_VALID_GT.replace(_VG_LEDGER + "\n", "")), False)
+    # Two ledgers → ERROR (exactly one allowed).
+    check("reliability_duplicate", errs_of(_VALID_GT.replace(
+        _VG_LEDGER + "\n",
+        _VG_LEDGER + "\n- **Reliability:** GT1–GT8: authoritative, report\n")), False)
+    # Coverage gap: GT4 absent.
+    check("reliability_coverage_gap", errs_of(_VALID_GT.replace(
+        "GT1–GT7: authoritative, gate",
+        "GT1–GT3: authoritative, gate; GT5–GT7: authoritative, gate")), False)
+    # Overlap: GT3 covered by two groups.
+    check("reliability_overlap", errs_of(_VALID_GT.replace(
+        "GT1–GT7: authoritative, gate",
+        "GT1–GT3: authoritative, gate; GT3–GT7: authoritative, gate")), False)
+    # Unknown status token.
+    check("reliability_bad_status", errs_of(_VALID_GT.replace(
+        "GT1–GT7: authoritative, gate", "GT1–GT7: wobbly, gate")), False)
+    # Unknown decision-use token.
+    check("reliability_bad_use", errs_of(_VALID_GT.replace(
+        "GT8: authoritative, report", "GT8: authoritative, broadcast")), False)
+    # The core licensing refusal: `gate` on a `provisional` status.
+    check("reliability_gate_on_provisional", errs_of(_COMBINED_GT.replace(
+        "GT4–GT7: provisional, confirm", "GT4–GT7: provisional, gate")), False)
+    # `confirm` on a `low-agreement` status (low-agreement is report-only).
+    check("reliability_confirm_on_low_agreement", errs_of(_COMBINED_GT.replace(
+        "GT8: provisional, report", "GT8: low-agreement, confirm")), False)
+    # Clean: `low-agreement, report` is the allowed report-only path.
+    check("reliability_low_agreement_report", errs_of(_COMBINED_GT.replace(
+        "GT8: provisional, report", "GT8: low-agreement, report")), True)
+    # Clean: the promotion path — `panel-licensed` may gate (under non-provisional headings).
+    check("reliability_panel_licensed_gate", errs_of(_VALID_GT.replace(
+        "GT1–GT7: authoritative, gate", "GT1–GT7: panel-licensed, gate")), True)
+    # Stale heading marker: a licensed status under a PROVISIONAL-marked heading (the promotion
+    # tripwire) — _COMBINED_GT's GT4–GT7 sits under `## GT4–GT8 — *(PROVISIONAL)*`.
+    check("reliability_stale_heading_marker", errs_of(_COMBINED_GT.replace(
+        "GT4–GT7: provisional, confirm", "GT4–GT7: authoritative, gate")), False)
+    # Copied template guidance: a `|` alternation in the value is not a legal ledger.
+    check("reliability_template_guidance_copied", errs_of(_VALID_GT.replace(
+        "GT1–GT7: authoritative, gate", "GT1–GT7: authoritative | provisional, gate")), False)
+    # Token boundary: `GT1–GT10` must not truncate-parse as GT1.
+    check("reliability_token_boundary", errs_of(_VALID_GT.replace(
+        "GT1–GT7: authoritative, gate", "GT1–GT10: authoritative, gate")), False)
+
+    # ---- Round-record conformance mode (the one mechanical guard on run-side attribution).
+    # Hermetic in-memory fixtures — round_record_check only reads each fixture's Reliability ledger.
+    _RR_FIXTURES = {
+        "gate-fix": "## Provenance\n- **Reliability:** GT1–GT7: authoritative, gate; "
+                    "GT8: authoritative, report\n",
+        "confirm-fix": "## Provenance\n- **Reliability:** GT1–GT3: authoritative, gate; "
+                       "GT4–GT7: provisional, confirm; GT8: provisional, report\n",
+    }
+    _rr = lambda slug: _RR_FIXTURES.get(slug)
+    # An ENGINE-FAULT booked on a `gate` anchor is licensed → clean.
+    check("roundrec_gate_booking",
+          round_record_check("- BOOKED: ENGINE-FAULT gate-fix GT2\n", _rr), True)
+    # Booked on a `confirm` anchor WITHOUT the OVER-FIRE tag → FAIL (the guard's core refusal).
+    check("roundrec_confirm_unmarked",
+          round_record_check("- BOOKED: ENGINE-FAULT confirm-fix GT7\n", _rr), False)
+    # Booked on a `confirm` anchor WITH OVER-FIRE → clean (the asymmetric ruling).
+    check("roundrec_confirm_overfire",
+          round_record_check("- BOOKED: ENGINE-FAULT confirm-fix GT7 OVER-FIRE\n", _rr), True)
+    # Booked on a `report` anchor → FAIL (a report anchor licenses no booking).
+    check("roundrec_report_anchor",
+          round_record_check("- BOOKED: ENGINE-FAULT confirm-fix GT8\n", _rr), False)
+    # An unknown fixture slug → FAIL.
+    check("roundrec_unknown_fixture",
+          round_record_check("- BOOKED: ENGINE-FAULT nonexistent-fix GT2\n", _rr), False)
+    # Prose-tolerance: a record with no BOOKED lines is vacuously clean (today's calibration doc).
+    check("roundrec_prose_ignored",
+          round_record_check("The engine over-fired on some fixture; see notes.\n- a bullet\n", _rr),
+          True)
+    # A BOOKED line that is out of GT range is a loud ERROR, not a silent skip.
+    check("roundrec_out_of_range",
+          round_record_check("- BOOKED: ENGINE-FAULT gate-fix GT9\n", _rr), False)
+
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 
@@ -582,6 +859,9 @@ def main(argv):
     if argv[1] == "--self-test":
         return run_self_test()
     if argv[1] == "argument-groundtruth-check":
+        # Round-record conformance mode: --round-record <record.md> --fixtures-dir <dir>.
+        if len(argv) >= 3 and argv[2] == "--round-record":
+            return _run_round_record(argv[2:])
         if len(argv) < 3:
             sys.stderr.write("Usage: argument_groundtruth.py argument-groundtruth-check <groundtruth_file>\n")
             return 2
@@ -592,6 +872,50 @@ def main(argv):
             return _emit(*argument_groundtruth_check(fh.read()))
     sys.stderr.write("Error: unknown command: %s\n" % argv[1])
     return 2
+
+
+def _run_round_record(args):
+    """CLI wrapper for the round-record conformance mode. `args` starts at `--round-record`."""
+    record_path, fixtures_dir = None, None
+    i = 0
+    while i < len(args):
+        if args[i] == "--round-record" and i + 1 < len(args):
+            record_path = args[i + 1]; i += 2; continue
+        if args[i] == "--fixtures-dir" and i + 1 < len(args):
+            fixtures_dir = args[i + 1]; i += 2; continue
+        sys.stderr.write("Usage: argument_groundtruth.py argument-groundtruth-check "
+                         "--round-record <record.md> --fixtures-dir <dir>\n")
+        return 2
+    if not record_path or not fixtures_dir:
+        sys.stderr.write("Usage: argument_groundtruth.py argument-groundtruth-check "
+                         "--round-record <record.md> --fixtures-dir <dir>\n")
+        return 2
+    if not os.path.isfile(record_path):
+        sys.stderr.write("Error: round record not found: %s\n" % record_path)
+        return 2
+    if not os.path.isdir(fixtures_dir):
+        sys.stderr.write("Error: fixtures dir not found: %s\n" % fixtures_dir)
+        return 2
+
+    def resolve(slug):
+        path = os.path.join(fixtures_dir, slug, "groundtruth.md")
+        if not os.path.isfile(path):
+            return None
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            return fh.read()
+
+    with open(record_path, "r", encoding="utf-8", errors="replace") as fh:
+        errors = round_record_check(fh.read(), resolve)
+    for e in errors:
+        print(e)
+    if errors:
+        print("")
+        print("FAILED: %d round-record conformance failure(s). A booked ENGINE-fault must cite an "
+              "anchor whose Reliability ledger licenses it (gate: any; confirm: OVER-FIRE only; "
+              "report: none)." % len(errors))
+        return 1
+    print("OK: round-record conformance satisfied (every booked ENGINE-fault is ledger-licensed).")
+    return 0
 
 
 if __name__ == "__main__":

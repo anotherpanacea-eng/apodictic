@@ -10,6 +10,7 @@
 - **Quotation policy:** paraphrase only — do not reproduce the source text.
 - **Ground-truth authority:** Joshua A. Miller (editor), independent diagnosis registered 2026-05-30, before any engine run.
 - **Scope:** GT1–GT3 authoritative. **GT4–GT8 PROVISIONAL** (confirm on run or by a second editor).
+- **Reliability:** GT1–GT3: authoritative, gate; GT4–GT6: provisional, confirm; GT7: provisional, confirm; GT8: provisional, report
 
 ## GT1 — Main claim *(Q1)*
 

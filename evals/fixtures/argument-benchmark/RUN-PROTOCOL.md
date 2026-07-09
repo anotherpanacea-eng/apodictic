@@ -139,6 +139,22 @@ test: same causal-warrant family, opposite correct severity.
   fixture even if the two runs agree with each other —
   agreement on a wrong diagnosis is not convergence.
 
+**Asymmetric attribution (Reliability ledger, GT schema v0.3.0).** The convergence *criteria* above
+are unchanged; *attribution* reads the fixture's Reliability ledger and is asymmetric. A `gate`
+(licensed) anchor's miss is adjudicated as an **ENGINE failure**. A `confirm` anchor's disagreement
+is attributed **by direction**: an **over-fire** (an `UNWARRANTED` verdict on a WARRANTED-keyed
+piece; the registered Should-Fix soft spot escalated to Must-Fix; a Must-Fix flood) is booked
+**ENGINE-FAULT** — the specificity gate does not soften during the M1→M2 window; a **false-negative**
+(the registered soft spot, locus, or objection zone missed) downgrades the fixture outcome from
+ENGINE-FAIL to **KEY-REVIEW**: record `key-suspect (ground-truth ambiguity)`, route the anchor to
+run-blind re-registration or the blind M2 panel (the re-registering editor must NOT see the run
+output), and book no engine regression against it. A `report` anchor never enters convergence. The
+five-anchor rule's text is unchanged; GT7's row in it resolves per the fixture's ledger — `gate` on
+the controls (`federalist-10`, `douglass-fourth-of-july`), `confirm`-with-asymmetric-attribution on
+the real corpus. When an ENGINE-FAULT is booked into the round record, use the machine-checkable
+grammar `- BOOKED: ENGINE-FAULT <fixture-slug> GT<n>[ OVER-FIRE]` so the round-record conformance
+mode (`validate.sh argument-groundtruth-check --round-record …`) can audit it against the ledger.
+
 ### Reporting the verdict: two axes, not one binary
 
 "Converged?" collapses two orthogonal questions. Report them separately — the
@@ -157,7 +173,7 @@ are diagnostic:
 
 | | Accurate (both runs hit the key) | Inaccurate (a run misses the key) |
 |---|---|---|
-| **Reliable** (runs agree) | **Converged** — trustworthy. | **Shared blind spot** — both runs make the *same wrong* call (e.g. both take a registered decoy). High agreement, both wrong → **engine fault; freeze the key.** |
+| **Reliable** (runs agree) | **Converged** — trustworthy. | **Shared blind spot** — both runs make the *same wrong* call (e.g. both take a registered decoy). High agreement, both wrong → **engine fault; freeze the key** *for a licensed (`gate`) anchor*. For a `confirm` anchor, split by direction: a shared **over-fire** (both flood Must-Fix on a WARRANTED piece) stays **engine fault**; a shared **false-negative** (both runs agree *against* a one-editor provisional label) is evidence the *label* lacks license → **key-suspect, not engine fault** (the psychometric frame). |
 | **Unreliable** (runs differ) | *(impossible — two all-anchor hits agree)* | **Variance / key-ambiguity** — runs disagree. If they disagree with the key but the *interesting* agreement is on a locus the key never registered, suspect the **key**, not the engine. |
 
 Two cautions on the axes:
@@ -167,6 +183,10 @@ Two cautions on the axes:
   really shared *recall*) and share blind spots (a *shared-blind-spot* cell that
   reads as reliability). Treat config-pair reliability as a floor; genuine
   independence needs a different vendor or a second human editor.
+  **Promotion firewall:** run confirmation NEVER promotes a Reliability-ledger status. Promotion is
+  exclusively the M2 editor-panel workflow (Krippendorff's α over the pre-registered threshold).
+  Config-pair agreement is a floor, not a license — it blocks the laundering path where "the models
+  agree" is used to mark an anchor licensed.
 - **"Accurate" can be recall, not diagnosis.** A run that recognized the piece
   and recited the canonical critique can hit the anchors without diagnosing.
   Flag recall-susceptible runs (Step 2b) and read their accuracy as provisional.
@@ -179,7 +199,12 @@ Two cautions on the axes:
    source's `RECORDED` block in [SOURCES.md](SOURCES.md) (kept out of `groundtruth.md`).
 - Log convergence/score disagreements with a cause class (engine fault /
   ground-truth ambiguity / reviewer error). Ground-truth ambiguity → sharpen the
-  key; that is a valid and expected outcome.
+  key; that is a valid and expected outcome. **`key-suspect`/KEY-REVIEW is not a fourth cause
+  class** — it is the reliability-aware name for **ground-truth ambiguity**: a `confirm`-anchor
+  false-negative logs as `key-suspect (ground-truth ambiguity)` and routes to the same
+  sharpen-the-key path, now explicitly **run-blind** (the re-registering editor must not see the run
+  output). Any booked engine fault uses the `- BOOKED: ENGINE-FAULT <fixture-slug> GT<n>[ OVER-FIRE]`
+  grammar so the round-record conformance mode can audit the record against each fixture's ledger.
 
 ## Worked example (already run)
 

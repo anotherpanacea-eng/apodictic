@@ -11,6 +11,7 @@
 - **Registered (date):** 2026-05-30
 - **Ground-truth authority:** author-registered; this is a **positive control** for the Q7 specificity gate
 - **Scope:** Q1, Q4, Q7 (Q2/Q3/Q5/Q6 = N/A — positive control; there is no planted structural failure to locate, attack, or sequence-repair)
+- **Reliability:** GT1–GT7: authoritative, gate; GT8: authoritative, report
 
 ## GT1 — Main claim *(Q1; §2 C0)*
 

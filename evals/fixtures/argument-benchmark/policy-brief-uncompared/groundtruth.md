@@ -11,6 +11,7 @@
 - **Registered (date):** 2026-05-30
 - **Ground-truth authority:** author-registered; deterministic by construction (the comparative-burden and implementation gaps are planted; benefit evidence is intentionally adequate)
 - **Scope:** all seven dimensions. This is the slice's designated Q5/Q6 fixture — Red Team and the argument session plan should be run.
+- **Reliability:** GT1–GT7: authoritative, gate; GT8: authoritative, report
 
 ## GT1 — Main claim *(Q1; §2 C0)*
 

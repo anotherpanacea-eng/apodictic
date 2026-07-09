@@ -17,6 +17,7 @@
 - **Retrieval date of pinned source:** 2026-06-04 (curl, gutenberg.org eBook #1080)
 - **Ground-truth authority:** author-registered against the established scholarly reading of the text as Juvenalian satire; the ironic structure is not interpretively contested
 - **Scope:** Q1, Q7 (primary). Q2/Q3/Q5/Q6 = N/A — the surface argument is intentionally monstrous; scoring its support/warrant on a literal reading is a category error the Distinguish protocol must prevent.
+- **Reliability:** GT1–GT7: authoritative, gate; GT8: authoritative, report
 
 ## GT1 — Main claim *(Q1; §2 C0)*
 
