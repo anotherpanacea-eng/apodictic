@@ -46,15 +46,21 @@ Therefore:
 
 | Fixture | Bucket | Role | Planted diagnosis (primary) |
 |---------|--------|------|------------------------------|
-| `op-ed-warrant-leap/` | 1 op-ed | failure detection | FM-A6 Warrant Leap — support is sound, the **bridge** is missing (Q2: SUPPORT vs WARRANT) |
-| `policy-brief-uncompared/` | 2 policy brief | failure detection + Q5/Q6 anchor | FM-A10 Uncompared Proposal + BP5 + FM-A18 — benefits evidenced, **comparative burden** unmet |
+| `op-ed-warrant-leap/{broken,clean}` | 1 op-ed | **matched pair** (sensitivity + within-work specificity) | FM-A6 Warrant Leap, **double** (causal + remedy) — `broken` plants it; `clean` supplies both warrants (rate/confounders + remedy proportionality) |
+| `policy-brief-uncompared/{broken,clean}` | 2 policy brief | **matched pair** + Q5/Q6 anchor | FM-A10 Uncompared Proposal + BP5 + FM-A18 — `broken` plants it; `clean` discharges the comparative + feasibility burden (alternative comparison + cost + funding) |
 | `personal-essay-narrative-arg/` | 4 personal essay | **positive control** | UNCONVENTIONAL-BUT-WARRANTED — argument recoverable through juxtaposition; no-thesis "failure" must be downgraded |
 | `modest-proposal-satire/` | 6 / Q7 hard case | **positive control, referenced** | UNCONVENTIONAL-BUT-WARRANTED — Swift, *A Modest Proposal* (1729); sustained irony; text not stored |
 
-The two broken fixtures test **sensitivity** (does the engine catch real
-failures and locate them in the right layer?). The two positive controls test
-**specificity** (does it leave sound-but-unconventional arguments alone?). A
-false-positive trap fired on a control is Q7 = 0 and blocks the bucket.
+The two synthetic planted-defect fixtures are now **matched clean/broken pairs**: the `broken`
+member tests **sensitivity** (does the engine catch the real failure and locate it in the right
+layer?) and its derived `clean` twin — near-identical prose modulo the enumerated repair — tests
+**within-work specificity** (does the engine leave the *same argument* alone once the planted
+defect is discharged?). The two flat positive controls above test cross-work specificity
+(sound-but-unconventional arguments the engine must not attack). A false-positive trap fired on a
+control **or on a clean twin** is Q7 = 0 and blocks the bucket; the pair **delta** (broken fires
+the discriminator, clean does not) is the measurement that isolates the planted defect from the
+fixture's own authored roughness. See [RUN-PROTOCOL.md §Step 4](RUN-PROTOCOL.md) for the pair
+convergence rule.
 
 ### Referenced real corpus (severity calibration)
 
@@ -76,13 +82,31 @@ to your setup.
 
 ## Layout per fixture
 
+The corpus is **mixed-depth**: unpaired fixtures (flat controls, referenced corpus) stay one
+level deep; matched clean/broken pairs nest their two members one level deeper (exactly like
+`evals/fixtures/fiction-benchmark/`). `validate.sh --check-all` globs both depths.
+
 ```
-<fixture-slug>/
+<fixture-slug>/              # unpaired fixture (flat)
   fixture.md       # verbatim engine input: argument text ONLY, no metadata/comments
                    #   (omitted when text is referenced, not stored)
   groundtruth.md   # pre-registered answer key + provenance — GT1–GT8 (GT schema v0.2.0); never fed to the engine
                    #   see ../../argument-groundtruth-template.md
+
+<pair-slug>/                 # matched clean/broken pair (nested — keeps the historical pair slug)
+  broken/
+    fixture.md     # the planted-defect member
+    groundtruth.md #   GT7 = UNWARRANTED; + Matched-pair member / Paired-with provenance fields
+  clean/
+    fixture.md     # the derived twin: same prose modulo the enumerated repair edits
+    groundtruth.md #   GT7 = WARRANTED positive control; + Base text + repair record
 ```
+
+**Migration note (matched-pairs retrofit).** `op-ed-warrant-leap` (pre-pairing) is today's
+`op-ed-warrant-leap/broken`, and likewise `policy-brief-uncompared` → `policy-brief-uncompared/broken`
+(history-preserving `git mv`). The pair *slug* is unchanged, so slug-level references stay valid;
+only path-shaped references to the old `<slug>/fixture.md` moved. Gitignored historical scorecards
+under `evals/results/` refer to the slug and are untouched.
 
 ## Running a fixture
 

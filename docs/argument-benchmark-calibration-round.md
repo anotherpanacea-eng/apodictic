@@ -98,3 +98,25 @@ If 1 passes but 2 or 3 regress, narrow the carve-out's trigger (tighten "wholly 
 - premise flags never become stealth verdict defeats (a flagged premise can coexist with `WARRANTED`).
 
 Record the run (model configs, per-fixture warrant verdicts, GT8 observations, pass/fail) here before merge. Do not claim validation from gitignored outputs alone.
+
+## §Matched clean/broken pairs (2026-07-09)
+
+**Increment:** the matched-pairs specificity retrofit (spec `apo-argument-benchmark-matched-pairs`, v0.2). The two synthetic planted-defect fixtures become matched clean/broken pairs: `op-ed-warrant-leap` and `policy-brief-uncompared` each move to `<pair>/broken/` (history-preserving) and gain a derived `clean` twin authored by an enumerated minimal repair. Adds parser **Check 7** (matched-pair provenance), the `--check-all` two-depth corpus glob + orphan-twin completeness pass, the scripted repair-diff acceptance gate, and the §Step 4 matched-pair convergence class. Scoring is unchanged (protocol-level only).
+
+**Mechanical acceptance — ✅ PASS (2026-07-09).**
+- `argument_groundtruth.py --self-test`: PASS — 11 new Check-7 arms (paired broken/clean accepted; `Paired-with: n/a` on a broken member rejected; `Paired-with` without `Matched-pair member` rejected; non-complement `clean↔.../clean` rejected; bad member token rejected; `cleanX` boundary near-miss rejected; legacy no-fields fixture accepted; clean member with missing/N/A repair record rejected; clean member with a substantive (non-positive-control) GT2 rejected; `Paired-with` slug contradicting the key's own `Fixture slug` pair rejected), no existing arm removed or weakened.
+- `validate.sh --check-all`: PASS — all **18** argument-benchmark GT files `ok` (14 flat + the 4 nested pair members printed by `<pair>/<member>` slug); round-record conformance `ok`; the two-depth glob visits both depths and the orphan-twin check fails loudly when a member is removed (verified in a scratch worktree, restored).
+- **Repair-diff gate:** each pair's `diff -U0 broken/fixture.md clean/fixture.md` is **pure-additive** (0 deletions) with exactly **2 hunks**, mapping 1:1 to the two enumerated `Base text + repair record` loci both directions:
+  - `op-ed-warrant-leap`: hunk `@@ -21,0 +22,16 @@` = locus 1 (causal warrant: rate/denominator + confounders); hunk `@@ -24,0 +41,13 @@` = locus 2 (remedy warrant: proportionality vs lighter remedies).
+  - `policy-brief-uncompared`: hunk `@@ -40,0 +41,29 @@` = locus 1 (comparative burden: service-investment comparison); hunk `@@ -47,0 +77,17 @@` = locus 2 (feasibility burden: cost + funding mechanism).
+- `--self-test-all` (79/79 validators), `check-mirror` (both `scripts/` ↔ `plugins/apodictic/scripts/` mirror pairs byte-identical), `check-status-drift`, `check-inventory-parity`, `assemble-changelog --check`, `schema-coverage`, `validator-conventions`: all green.
+- Each clean twin passed the anti-gaming red-team (rule-2a general-evaluability standard) before registration — recorded in each clean key's Notes.
+
+**Behavioral acceptance — ⏳ PENDING (pre-merge gate; operator/engine-gated; run-before-merge discipline).** The pair delta has no mechanical `--check-all` gate on *verdict behavior*; correctness is established by a recorded convergence run over both pairs — **4 members × 2 model configs = 8 blind runs**, separate runner sessions per member, neutral labels, no twin disclosure (synthetic — no fetch needed) — confirming per §Step 4:
+- each broken member converges under the failure-bearing rule with its planted discriminator fired (WR0/FM-A6 for op-ed; BP5/FM-A10 for policy-brief);
+- each clean member converges under the Must-Fix-qualified positive-control rule (GT7 = WARRANTED; no registered-trap fire; advisory/Could-Fix mentions allowed);
+- the **pair delta** holds **per config** (opus-broken vs opus-clean; sonnet-broken vs sonnet-clean) — the discriminator fires as a structural failure in the broken run and NOT in the clean run;
+- no Q7 trap fires on either clean member;
+- the existing `ppi-one-size-fits-none` ↔ `op-ed` contrast is preserved (`ppi` still converges as a WARRANTED real-calibration fixture; the retrofit adds the family gradient's third corner without perturbing the other two).
+
+Record the run (model configs, per-member verdicts + fired codes, per-config delta, GT8 observations, pass/fail) here before merge. Do not claim validation from gitignored outputs alone.

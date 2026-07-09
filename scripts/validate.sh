@@ -1700,9 +1700,30 @@ PY
   done
   if [ -n "$CA_EVALS" ]; then
     echo "== argument-groundtruth-check (registered GT corpus) =="
-    for gt in "$CA_EVALS"/*/groundtruth.md; do
+    # Matched pairs nest one level deeper (<pair>/{clean,broken}/groundtruth.md) than the flat
+    # fixtures (<slug>/groundtruth.md), so glob BOTH depths (mirrors the fiction loop below) — else
+    # nested pair members are silently unvalidated by --check-all. Flat fixtures print by slug;
+    # nested members print by <pair>/<member>.
+    for gt in "$CA_EVALS"/*/groundtruth.md "$CA_EVALS"/*/*/groundtruth.md; do
       [ -f "$gt" ] || continue
-      "$0" argument-groundtruth-check "$gt" >/dev/null 2>&1 && echo "  ok $(basename "$(dirname "$gt")")" || { echo "  FAIL $(basename "$(dirname "$gt")")"; "$0" argument-groundtruth-check "$gt"; CA_FAIL=1; }
+      CA_ADIR="$(basename "$(dirname "$gt")")"
+      CA_APARENT="$(basename "$(dirname "$(dirname "$gt")")")"
+      if [ "$CA_APARENT" = "argument-benchmark" ]; then CA_ASLUG="$CA_ADIR"; else CA_ASLUG="$CA_APARENT/$CA_ADIR"; fi
+      "$0" argument-groundtruth-check "$gt" >/dev/null 2>&1 && echo "  ok $CA_ASLUG" || { echo "  FAIL $CA_ASLUG"; "$0" argument-groundtruth-check "$gt"; CA_FAIL=1; }
+    done
+    # Orphan-twin completeness (the corpus-level half of the pairing contract; Check 7 rule 5 closes
+    # the wrong-twin hole in-file, this closes the missing-twin hole): every matched-pair member
+    # requires its complement (<pair>/clean ⇄ <pair>/broken). A missing twin is a loud FAIL. (This
+    # completeness pass is the argument-side addition the fiction loop lacks — backport is a separate
+    # chore, out of scope here.)
+    for CA_MGT in "$CA_EVALS"/*/clean/groundtruth.md "$CA_EVALS"/*/broken/groundtruth.md; do
+      [ -f "$CA_MGT" ] || continue
+      CA_PAIRDIR="$(dirname "$(dirname "$CA_MGT")")"
+      CA_MEMBER="$(basename "$(dirname "$CA_MGT")")"
+      if [ "$CA_MEMBER" = "clean" ]; then CA_TWIN="broken"; else CA_TWIN="clean"; fi
+      if [ ! -f "$CA_PAIRDIR/$CA_TWIN/groundtruth.md" ]; then
+        echo "  FAIL $(basename "$CA_PAIRDIR")/$CA_MEMBER — orphan twin: missing sibling $CA_TWIN/groundtruth.md"; CA_FAIL=1
+      fi
     done
     # Round-record conformance (Check 6's run-side seam): every booked ENGINE-fault in the
     # calibration round must cite an anchor its Reliability ledger licenses. The doc lives at repo
@@ -7050,8 +7071,11 @@ EOF
     # GT8 premise-plausibility flags (leading-token parse + flag-type/Firewall check); Check 6 the
     # GT schema v0.3.0 Reliability ledger (per-anchor status + decision-use; gate requires a licensed status;
     # provisional confirm/report-only; low-agreement report-only; exact GT1-GT8 coverage; the
-    # stale-heading cross-check that consumes the formerly-dead PROVISIONAL bool). This case also
-    # hosts the round-record conformance mode (--round-record <record.md> --fixtures-dir <dir>):
+    # stale-heading cross-check that consumes the formerly-dead PROVISIONAL bool); Check 7 the
+    # matched-pair provenance fields (Matched-pair member / Paired-with — the leading-token member
+    # parse, the clean-side derivation-record + GT2 gates, and slug self-consistency; a deliberate
+    # stricter superset of fiction's pairing grammar, absent-both-fields = unpaired legacy no-op).
+    # This case also hosts the round-record conformance mode (--round-record <record.md> --fixtures-dir <dir>):
     # every booked ENGINE-fault must cite an anchor whose ledger licenses it (gate: any; confirm:
     # OVER-FIRE only; report: none). Delegates to scripts/argument_groundtruth.py; degrades to an
     # advisory WARN without python3 (the GT contract is prose in the template + spec).

@@ -70,9 +70,12 @@ based on current `main`); land it after its dependencies #20 and #21.
   7 test questions → 0–3 scoring, three convergence classes (failure-bearing /
   pure positive control / WARRANTED-real-calibration), recognition-contamination
   handling.
-- **Synthetic fixtures** (text in-repo): `op-ed-warrant-leap`,
-  `policy-brief-uncompared` (sensitivity); `personal-essay-narrative-arg`,
-  `modest-proposal-satire` (specificity / Q7 controls).
+- **Synthetic fixtures** (text in-repo): the two planted-defect fixtures are now **matched
+  clean/broken pairs** — `op-ed-warrant-leap/{broken,clean}` and
+  `policy-brief-uncompared/{broken,clean}` (broken = sensitivity; the derived `clean` twin =
+  within-work specificity, **author-deterministic** by the enumerated minimal repair, so it adds
+  **no new second-editor ask**); plus `personal-essay-narrative-arg`, `modest-proposal-satire`
+  (cross-work specificity / Q7 controls).
 - **Referenced real corpus** (10 pieces, text NOT stored — see `CORPUS.md`),
   each with a `groundtruth.md` whose GT1–GT3 are an editor's pre-registered
   diagnosis; GT4–GT8 provisional (GT8 premise-plausibility flags are
