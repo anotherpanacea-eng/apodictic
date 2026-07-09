@@ -67,6 +67,7 @@ other self-testable validators.
 
 import csv
 import io
+import math
 import random
 import sys
 
@@ -92,6 +93,7 @@ def read_ratings(text):
     reader = csv.reader(io.StringIO(text))
     header_seen = False
     rows = []
+    seen_keys = set()
     for raw in reader:
         # Skip truly blank lines (csv yields [] for an empty line; tolerate a lone whitespace cell).
         if len(raw) == 0 or (len(raw) == 1 and raw[0].strip() == ""):
@@ -111,6 +113,20 @@ def read_ratings(text):
         if rater == "" or unit == "":
             return None, ("ERROR: line %d: malformed row — `rater` and `unit` may not be empty."
                           % ln)
+        # A literal repeat of the header row mid-file is unambiguous evidence of concatenated
+        # CSVs — reject loudly rather than ingest a phantom rater named "rater".
+        if [rater, unit, value] == _REQUIRED_HEADER:
+            return None, ("ERROR: line %d: repeated header row `rater,unit,value` mid-file — "
+                          "looks like two CSVs concatenated; merge the data rows under one "
+                          "header." % ln)
+        # A duplicate (rater, unit) key silently manufactures pairable self-agreement (rater
+        # identity is ignored in pairing), shifting alpha on a LICENSING input from the most
+        # plausible panel data-entry accident (a double-pasted row). Loud ERROR, never silent.
+        key = (rater, unit)
+        if key in seen_keys:
+            return None, ("ERROR: line %d: duplicate rating — rater %r already rated unit %r "
+                          "earlier in the file; one rating per (rater, unit)." % (ln, rater, unit))
+        seen_keys.add(key)
         rows.append((rater, unit, value if value != "" else None))
     if not header_seen:
         return None, "ERROR: empty input — required header row `rater,unit,value` not found."
@@ -233,8 +249,10 @@ def alpha_from_unit_values(unit_values, metric):
 def _coerce_for_metric(by_unit, order, metric):
     """Return a list of per-unit value-lists coerced for the metric.
 
-    nominal: values stay as strings. ordinal: every present value must parse as a float (numeric
-    ordering); a non-numeric token raises ValueError naming the offender.
+    nominal: values stay as strings. ordinal: every present value must parse as a FINITE float
+    (numeric ordering); a non-numeric or non-finite token raises ValueError naming the offender —
+    two `nan` tokens would otherwise become two DISTINCT value classes (nan != nan), silently
+    shifting alpha, and `inf` has no defensible rank position.
     """
     out = []
     if metric == "ordinal":
@@ -242,10 +260,14 @@ def _coerce_for_metric(by_unit, order, metric):
             vals = []
             for v in by_unit[u]:
                 try:
-                    vals.append(float(v))
+                    f = float(v)
                 except (TypeError, ValueError):
                     raise ValueError("ordinal metric requires numeric values; got non-numeric "
                                      "%r in unit %r" % (v, u))
+                if not math.isfinite(f):
+                    raise ValueError("ordinal metric requires FINITE numeric values; got %r "
+                                     "in unit %r (nan/inf have no defensible rank)." % (v, u))
+                vals.append(f)
             out.append(vals)
     else:
         for u in order:
@@ -398,6 +420,15 @@ def _compute_and_emit(text, metric, seed, resamples):
     else:
         ci_str = "CI95=[%s, %s] (%d/%d resamples defined)" % (_fmt(lo), _fmt(hi), n_def, resamples)
     print("alpha=%s  %s  %s" % (_fmt(alpha), head, ci_str))
+    # Degenerate-interval guard: at tiny n the bootstrap collapses (zero-width survivorship-only
+    # intervals, large undefined-resample fractions) and would otherwise print with the same
+    # authoritative OK line as a healthy run. The docstring's small-n caveat must reach the
+    # OUTPUT when it actually applies.
+    pairable_units = sum(1 for vals in unit_values if len(vals) >= 2)
+    if lo is not None and ((hi - lo) == 0.0 or n_def < 0.9 * resamples or pairable_units < 4):
+        print("WARN: bootstrap CI is unstable at this n (zero-width interval, <90%% defined "
+              "resamples, or <%d pairable units) — treat the interval as unreliable and do not "
+              "license from it without more units." % 4)
     print("OK: Krippendorff's alpha computed. License on the CI LOWER BOUND, not the point "
           "estimate (small-n false-promotion guard): >= .800 -> panel-licensed, .667-.800 -> "
           "provisional, < .667 -> low-agreement.")
@@ -595,6 +626,31 @@ def run_self_test():
     out, code = _capture("rater,unit,value\nA,u1,1\nB,u1,1\nA,u2,\nB,u2,2\nA,u3,2\nB,u3,2\n",
                          "nominal")
     truth("cli_blank_value_missing", code == 0 and out.startswith("alpha="),
+          "code=%d out=%r" % (code, out))
+
+    # A duplicate (rater, unit) row manufactures pairable self-agreement -> loud ERROR
+    # (licensing-input hardening; the most plausible panel data-entry accident).
+    out, code = _capture("rater,unit,value\nA,u1,1\nA,u1,1\nB,u2,2\nC,u2,2\n", "nominal")
+    truth("cli_duplicate_rater_unit", code == 1 and "ERROR:" in out and "duplicate" in out,
+          "code=%d out=%r" % (code, out))
+    # A repeated header row mid-file (two CSVs concatenated) -> loud ERROR, not a phantom
+    # rater named "rater".
+    out, code = _capture("rater,unit,value\nA,u1,1\nB,u1,1\nrater,unit,value\nA,u2,2\n",
+                         "nominal")
+    truth("cli_repeated_header", code == 1 and "ERROR:" in out and "repeated header" in out,
+          "code=%d out=%r" % (code, out))
+    # Non-finite ordinal values -> loud ERROR (two `nan` tokens must not become two DISTINCT
+    # value classes; `inf` has no defensible rank).
+    out, code = _capture("rater,unit,value\nA,u1,nan\nB,u1,nan\nA,u2,1\nB,u2,1\n", "ordinal")
+    truth("cli_ordinal_nan_rejected", code == 1 and "ERROR:" in out and "FINITE" in out,
+          "code=%d out=%r" % (code, out))
+    out, code = _capture("rater,unit,value\nA,u1,inf\nB,u1,inf\nA,u2,1\nB,u2,1\n", "ordinal")
+    truth("cli_ordinal_inf_rejected", code == 1 and "ERROR:" in out and "FINITE" in out,
+          "code=%d out=%r" % (code, out))
+    # A degenerate tiny-n CI (zero-width / survivorship-only / <4 pairable units) must carry
+    # the instability WARN, not just the authoritative OK line.
+    out, code = _capture("rater,unit,value\nA,u1,1\nB,u1,1\nA,u2,2\nB,u2,2\n", "nominal")
+    truth("cli_tiny_n_ci_warned", code == 0 and "WARN:" in out and "unstable" in out,
           "code=%d out=%r" % (code, out))
 
     # Bootstrap contract: >= 1000 default; --resamples may only raise.
