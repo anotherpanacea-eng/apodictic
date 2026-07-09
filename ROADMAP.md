@@ -139,7 +139,7 @@ Validate that the engine works on real argument-shaped nonfiction, not just in t
 2. ~~**`policy-brief-uncompared` under-fire fix.**~~ **DONE / benchmark-validated 2026-06-11 (PR #72):** added classification **rule 2a** (an AT3 recommendation with wholly-undischarged comparative burden → Structurally Unsound, FM-A10), then narrowed it post-benchmark so a strawman foil counts as partial discharge (soft spot), not a defeat. See `docs/argument-benchmark-calibration-round.md` → Status.
 
 *Human-gated (ready — just needs people):*
-3. **Recruit one second editor** — the GT4–GT7 / personal-independence upgrade. The blind packet is built and waiting in Dropbox (`argument-benchmark-second-editor-packet/`, with its own `TODO.md`); pointer in `evals/fixtures/argument-benchmark/HANDOFF.md`.
+3. **Recruit one second editor** — the GT4–GT8 / personal-independence upgrade. The blind packet is built and waiting in Dropbox (`argument-benchmark-second-editor-packet/`, with its own `TODO.md`); pointer in `evals/fixtures/argument-benchmark/HANDOFF.md`.
 4. **`current-affairs` GT2** (flagged recall-suspect on a cross-vendor split) — resolves via #3, or via a second vendor.
 
 *Minor / optional:*
