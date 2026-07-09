@@ -129,11 +129,18 @@ _RELIABILITY_FIELD_RE = re.compile(r"Reliability:\*\*\s*(.+)")
 # and enum-checked by the caller (so `authoritativex` is captured whole, then rejected).
 _RELIABILITY_GROUP_RE = re.compile(
     r"^GT([1-8])(?![0-9])(?:\s*[-–—]\s*GT([1-8])(?![0-9]))?:\s*([a-z][a-z-]*),\s*([a-z]+)$")
-# A booked engine-fault line in a calibration-round record (round-record conformance mode). Any
-# `- BOOKED:` line is claimed for validation (so a malformed/out-of-range booking is a loud ERROR,
-# not a silent skip); lines WITHOUT the prefix stay prose-tolerant and are ignored.
-_BOOKED_LINE_RE = re.compile(r"^\s*-\s*BOOKED:\s*(.*?)\s*$", re.MULTILINE)
-_BOOKED_BODY_RE = re.compile(r"^ENGINE-FAULT\s+(\S+)\s+GT([0-9]+)(\s+OVER-FIRE)?$")
+# A booked engine-fault line in a calibration-round record (round-record conformance mode). The
+# CLAIM is deliberately broad — any bullet ( - * + ), any case, bolded or not, colon or bare
+# ENGINE-FAULT — so a near-miss dialect can never silently escape adjudication (an unlicensed
+# booking hiding behind `- **BOOKED:**` house-bold or `- booked:` would otherwise read green).
+# The canonical forms accepted for VALIDATION are `- BOOKED: …` and the house-bold
+# `- **BOOKED:** …` (mirroring _GT8_ROW_RE's bolded-id acceptance); every other claimed dialect
+# is a loud malformed ERROR. Lines without a BOOKED-shaped bullet stay prose-tolerant and are
+# ignored. GT numbers reject zero-padding (`GT07`), consistent with the ledger grammar.
+_BOOKED_CLAIM_RE = re.compile(
+    r"^\s*[-*+]\s*\**\s*BOOKED\s*\**\s*(?::|(?=ENGINE-FAULT\b))", re.IGNORECASE)
+_BOOKED_LINE_RE = re.compile(r"^\s*-\s*\**BOOKED[:*]+\s*(.*?)\s*$")
+_BOOKED_BODY_RE = re.compile(r"^ENGINE-FAULT\s+(\S+)\s+GT([1-9][0-9]*)(\s+OVER-FIRE)?$")
 
 
 def _positive_code_text(text):
@@ -263,8 +270,17 @@ def round_record_check(record_text, resolve_fixture):
     engine); a `report` anchor licenses none. This is the one mechanical guard at the run-side
     seam; the rest of run adjudication is RUN-PROTOCOL prose."""
     errors = []
-    for m in _BOOKED_LINE_RE.finditer(record_text):
-        body = m.group(1).strip()
+    for raw_line in record_text.split("\n"):
+        if not _BOOKED_CLAIM_RE.match(raw_line):
+            continue  # prose-tolerant: not a BOOKED-shaped bullet at all
+        lm = _BOOKED_LINE_RE.match(raw_line)
+        if not lm:
+            errors.append("round-record — BOOKED line in an unrecognized dialect %r; canonical "
+                          "form is `- BOOKED: ENGINE-FAULT <fixture-slug> GT<n>[ OVER-FIRE]` "
+                          "(house-bold `- **BOOKED:**` also accepted). Near-miss dialects are "
+                          "rejected loudly, never silently skipped." % raw_line.strip())
+            continue
+        body = lm.group(1).strip()
         bm = _BOOKED_BODY_RE.match(body)
         if not bm:
             errors.append("round-record — malformed BOOKED line %r (expected "
@@ -480,7 +496,8 @@ def argument_groundtruth_check(text):
     if not values:
         errors.append("Check 6 (reliability) — no Reliability ledger line "
                       "(`- **Reliability:** GT1–GT3: authoritative, gate; …`); GT schema v0.3.0 "
-                      "requires one in the Provenance block.")
+                      "requires exactly one (by convention in Provenance; matched anywhere "
+                      "in the key).")
     elif len(values) > 1:
         errors.append("Check 6 (reliability) — %d Reliability ledger lines found; exactly one is "
                       "allowed." % len(values))
@@ -787,6 +804,10 @@ def run_self_test(which=None):
     check("reliability_overlap", errs_of(_VALID_GT.replace(
         "GT1–GT7: authoritative, gate",
         "GT1–GT3: authoritative, gate; GT3–GT7: authoritative, gate")), False)
+    # Descending range → ERROR (pins the loud branch).
+    check("reliability_descending_range", errs_of(_VALID_GT.replace(
+        "GT1–GT7: authoritative, gate",
+        "GT7–GT1: authoritative, gate")), False)
     # Unknown status token.
     check("reliability_bad_status", errs_of(_VALID_GT.replace(
         "GT1–GT7: authoritative, gate", "GT1–GT7: wobbly, gate")), False)
@@ -847,6 +868,25 @@ def run_self_test(which=None):
     # A BOOKED line that is out of GT range is a loud ERROR, not a silent skip.
     check("roundrec_out_of_range",
           round_record_check("- BOOKED: ENGINE-FAULT gate-fix GT9\n", _rr), False)
+    # House-bold `- **BOOKED:**` is LEGAL and validated (mirrors _GT8_ROW_RE's bolded-id rule)…
+    check("roundrec_bold_legal",
+          round_record_check("- **BOOKED:** ENGINE-FAULT gate-fix GT2\n", _rr), True)
+    # …so an unlicensed booking cannot hide behind the bold form (the near-miss probe's P2).
+    check("roundrec_bold_unlicensed",
+          round_record_check("- **BOOKED:** ENGINE-FAULT confirm-fix GT7\n", _rr), False)
+    # Near-miss dialects are claimed and rejected loudly, never silently skipped.
+    check("roundrec_dialect_lowercase",
+          round_record_check("- booked: ENGINE-FAULT gate-fix GT2\n", _rr), False)
+    check("roundrec_dialect_asterisk",
+          round_record_check("* BOOKED: ENGINE-FAULT gate-fix GT2\n", _rr), False)
+    check("roundrec_dialect_missing_colon",
+          round_record_check("- BOOKED ENGINE-FAULT gate-fix GT2\n", _rr), False)
+    # A grammatical BOOKED line with a free-prose body is a malformed ERROR (pins the loud claim).
+    check("roundrec_malformed_booking",
+          round_record_check("- BOOKED: the engine broke on the tuesday run\n", _rr), False)
+    # Zero-padded GT numbers are rejected, consistent with the ledger grammar's strictness.
+    check("roundrec_zero_padded",
+          round_record_check("- BOOKED: ENGINE-FAULT gate-fix GT07\n", _rr), False)
 
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
