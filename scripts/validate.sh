@@ -1704,6 +1704,16 @@ PY
       [ -f "$gt" ] || continue
       "$0" argument-groundtruth-check "$gt" >/dev/null 2>&1 && echo "  ok $(basename "$(dirname "$gt")")" || { echo "  FAIL $(basename "$(dirname "$gt")")"; "$0" argument-groundtruth-check "$gt"; CA_FAIL=1; }
     done
+    # Round-record conformance (Check 6's run-side seam): every booked ENGINE-fault in the
+    # calibration round must cite an anchor its Reliability ledger licenses. The doc lives at repo
+    # root (docs/, not shipped to host workspaces) — resolve-and-skip when absent, same convention
+    # as the corpus above. Vacuously green until the first post-M1 round books a fault.
+    CA_ROUND="$CA_EVALS/../../../docs/argument-benchmark-calibration-round.md"
+    if [ -f "$CA_ROUND" ]; then
+      "$0" argument-groundtruth-check --round-record "$CA_ROUND" --fixtures-dir "$CA_EVALS" >/dev/null 2>&1 \
+        && echo "  ok round-record (argument-benchmark-calibration-round.md)" \
+        || { echo "  FAIL round-record"; "$0" argument-groundtruth-check --round-record "$CA_ROUND" --fixtures-dir "$CA_EVALS"; CA_FAIL=1; }
+    fi
     echo ""
   fi
 
@@ -7037,9 +7047,14 @@ EOF
     # Argument Benchmark ground-truth answer-key validator (docs/argument-benchmark-spec.md
     # §Mechanical validator): GT1-GT8 presence; DC code-namespace resolution; GT2 locus<->code
     # consistency; GT7 warrant verdict (GT schema v0.2.0 enum, retired-label/token rejection);
-    # GT8 premise-plausibility flags (leading-token parse + flag-type/Firewall check). Delegates to
-    # scripts/argument_groundtruth.py; degrades to an advisory WARN without python3 (the GT
-    # contract is prose in the template + spec).
+    # GT8 premise-plausibility flags (leading-token parse + flag-type/Firewall check); Check 6 the
+    # GT schema v0.3.0 Reliability ledger (per-anchor status + decision-use; gate requires a licensed status;
+    # provisional confirm/report-only; low-agreement report-only; exact GT1-GT8 coverage; the
+    # stale-heading cross-check that consumes the formerly-dead PROVISIONAL bool). This case also
+    # hosts the round-record conformance mode (--round-record <record.md> --fixtures-dir <dir>):
+    # every booked ENGINE-fault must cite an anchor whose ledger licenses it (gate: any; confirm:
+    # OVER-FIRE only; report: none). Delegates to scripts/argument_groundtruth.py; degrades to an
+    # advisory WARN without python3 (the GT contract is prose in the template + spec).
     AGT_DIR=$(cd "$(dirname "$0")" && pwd)
     AGT_HELPER="$AGT_DIR/argument_groundtruth.py"
     if [ "${1:-}" = "--self-test" ]; then
@@ -7047,7 +7062,7 @@ EOF
       echo "Self-test: PASS (degraded — python3 unavailable; argument-groundtruth-check is advisory without it)"; exit 0
     fi
     if command -v python3 >/dev/null 2>&1 && [ -f "$AGT_HELPER" ]; then
-      if [ $# -lt 1 ]; then echo "Usage: $0 argument-groundtruth-check <groundtruth_file> | --self-test"; exit 2; fi
+      if [ $# -lt 1 ]; then echo "Usage: $0 argument-groundtruth-check <groundtruth_file> | --round-record <record.md> --fixtures-dir <dir> | --self-test"; exit 2; fi
       python3 "$AGT_HELPER" argument-groundtruth-check "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — argument-groundtruth-check skipped; the GT template + spec define the contract. Install python3 for the mechanical check."
