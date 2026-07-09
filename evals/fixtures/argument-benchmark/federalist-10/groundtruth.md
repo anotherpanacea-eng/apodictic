@@ -53,16 +53,20 @@
 - **Correct first repair target:** **warrant backing** — supply or flag the empirical/comparative backing for the extent→effect mechanism (the GT2 WR1 soft spot) *before* anything cosmetic. There is no claim, support-existence, or definition repair owed; the claim is stable, support exists and is relevant, terms are stable.
 - **Dependency rule the order must respect:** **warrant backing precedes any objection-handling polish.** Strengthening backing for the extent mechanism is upstream of further engaging the elite-insulation inversion (GT3); resolving *why* extent reliably selects the good branch is what would let the already-named inversion objection be closed rather than merely raised. Do not reorder to "address the objection first" — the objection's force depends on the warrant gap, so the warrant is the upstream target.
 
-## GT7 — Distinguish classification *(Q7; §1 Distinguish / Step 9)* — **PRIMARY METRIC (specificity gate)**
+## GT7 — Warrant verdict *(Q7; §1 Distinguish / Step 9)* — **PRIMARY METRIC (specificity gate)**
 
-- **Expected classification:** **SOUND** (structurally sound). The claim is accessible, the support is identifiable and relevant, the warrant is **explicit** (the "remove causes vs. control effects" fork and the "extend the sphere" principle are stated, not smuggled), the scope is honestly probabilistic ("less probable," "more difficult," not "always"), and objections (the representative-inversion, the permanence of causes) are surfaced by the text itself. Whatever soft-spot codes fire (WR1 / advisory WR3) are its **repair agenda, not a verdict** — the priority repair is the GT2 warrant backing, not an unsound finding.
-- **If unsound were claimed:** that would be the error. Per the Step 9 decision rule, **unsound requires a defeat, not a weakness**; a thinly-backed-but-explicit warrant is a soft spot in a sound argument, not a structural break.
+- **Expected warrant verdict:** **WARRANTED** (structurally sound). The claim is accessible, the support is identifiable and relevant, the warrant is **explicit** (the "remove causes vs. control effects" fork and the "extend the sphere" principle are stated, not smuggled), the scope is honestly probabilistic ("less probable," "more difficult," not "always"), and objections (the representative-inversion, the permanence of causes) are surfaced by the text itself. Whatever soft-spot codes fire (WR1 / advisory WR3) are its **repair agenda, not a verdict** — the priority repair is the GT2 warrant backing, not an unsound finding.
+- **If unwarranted were claimed:** that would be the error. Per the Step 9 decision rule, **unwarranted requires a defeat, not a weakness**; a thinly-backed-but-explicit warrant is a soft spot in a sound argument, not a structural break.
 - **False-positive trap (the calibration target):** the named over-pathologizing traps an engine must NOT fire as structural failures here are —
   - **FM-A15 / WR2+BP1 (Intermediate Outcome Fallacy):** firing "he proves extent→variety but assumes variety→safety" as a *fallacy*. It is not: Madison *argues* the variety→safety link (dispersal raises the cost of concert and communication "in proportion to the number whose concurrence is necessary"). At most this is the GT2 *backing* soft spot, never a missing-link fallacy.
   - **BP5 / FM-A10 (Uncompared Proposal / Missing Alternatives):** firing "no alternatives considered." Wrong — pure democracy, the small republic, and both methods of *removing* causes are explicitly compared and rejected.
   - **OB0 / OB3 (no / central objection unaddressed):** firing "Madison engages no objections." Wrong — the representative-inversion objection is raised in his own text.
   - **DI0 (starting-point smuggling):** firing on the confident ratification register toward a hostile audience.
   - Any of these fired **as a Must-Fix structural failure** on Federalist No. 10 is **Q7 = 0 for this fixture regardless of Q1–Q6**, and blocks the bucket from passing. The form-dependent / over-eager codes must be downgraded to advisory.
+
+## GT8 — Premise-plausibility flags
+- **Expected premise flags:** NONE_REGISTERED
+- **Must not adjudicate:** whether the causes of faction can in fact be removed only at the cost of destroying the liberty essential to political life.
 
 ## Notes
 

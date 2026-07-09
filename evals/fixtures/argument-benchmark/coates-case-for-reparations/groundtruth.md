@@ -9,7 +9,7 @@
 - **Pinned source:** https://www.theatlantic.com/magazine/archive/2014/06/the-case-for-reparations/361631/ (record retrieval date + content hash on first authoritative run; analyzed-text extraction anchors (START / END / EXCLUDE) in [../SOURCES.md](../SOURCES.md); note possible paywall — use an accessible copy or library access).
 - **Quotation policy:** paraphrase only — do not reproduce the source text.
 - **Ground-truth authority:** Joshua A. Miller (editor), independent diagnosis registered 2026-05-30, before any engine run.
-- **Scope:** GT1–GT3 authoritative. **GT4–GT7 PROVISIONAL.**
+- **Scope:** GT1–GT3 authoritative. **GT4–GT8 PROVISIONAL.**
 
 ## GT1 — Main claim *(Q1)*
 
@@ -28,12 +28,14 @@
 - **Objection zone (authority):** the essay proves the **debt** more clearly than it specifies **institutional design** — the "what, exactly, and how" gap. (Partly by design: Coates argues for an HR-40-style *study*, not a specific scheme — a run should weigh whether the design gap is a bounded scope choice or a real hole.)
 - **Provisional codes:** OB3 / FM-A18 (Implementation Blindspot)-adjacent.
 
-## GT4–GT7 — *(PROVISIONAL)*
+## GT4–GT8 — *(PROVISIONAL)*
 
 - **GT4 audience:** GENERAL-MIXED · MIXED→HOSTILE (contested topic) · HIGH. Hostile-audience defense is the calibration burden.
 - **GT5 red-team:** load-bearing = the national-remedy warrant + design gap. Decoy = disputing individual historical examples (the documentation is the strong part).
 - **GT6 repair order:** first target = the **warrant/scope bridge** from predation to national obligation, before more historical evidence.
-- **GT7 Distinguish:** SOUND — a landmark argument whose narrative method is legitimate; design gap is Should-Fix. **Calibration trap:** over-pathologizing the embedded-narrative method, or treating the (partly intentional) design gap as UNSOUND. Bucket-7 dual-audit: also exercises the Narrative Nonfiction Craft ↔ Dialectical Clarity handoff.
+- **Expected warrant verdict:** WARRANTED — a landmark argument whose narrative method is legitimate; design gap is Should-Fix. **Calibration trap:** over-pathologizing the embedded-narrative method, or treating the (partly intentional) design gap as UNWARRANTED. Bucket-7 dual-audit: also exercises the Narrative Nonfiction Craft ↔ Dialectical Clarity handoff.
+- **Expected premise flags:** NONE_REGISTERED (provisional migration default)
+- **GT8 Must not adjudicate:** whether reparations are in fact owed as a national moral reckoning for legally structured 20th-century theft.
 
 ## Notes
 

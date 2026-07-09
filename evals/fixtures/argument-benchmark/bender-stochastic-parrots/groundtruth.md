@@ -9,7 +9,7 @@
 - **Pinned source:** https://dl.acm.org/doi/10.1145/3442188.3445922 (record retrieval date + content hash on first authoritative run; analyzed-text extraction anchors (START / END / EXCLUDE) in [../SOURCES.md](../SOURCES.md); ACM may gate — use an open author copy if needed).
 - **Quotation policy:** paraphrase only.
 - **Ground-truth authority:** Joshua A. Miller (editor), diagnosis registered 2026-05-30, before any run.
-- **Scope:** GT1–GT3 authoritative. **GT4–GT7 PROVISIONAL.**
+- **Scope:** GT1–GT3 authoritative. **GT4–GT8 PROVISIONAL.**
 
 ## GT1 — Main claim *(Q1)*
 
@@ -27,12 +27,14 @@
 - **Objection zone (authority):** the piece **develops harms more fully than benefit tradeoffs or institutional alternatives** — the cost side is richer than the comparative/tradeoff side.
 - **Provisional codes:** OB3 (the tradeoff/alternatives objection underengaged); cross-ref FM-A2.
 
-## GT4–GT7 — *(PROVISIONAL)*
+## GT4–GT8 — *(PROVISIONAL)*
 
 - **GT4 audience:** EXPERT · SYMPATHETIC→MIXED (ML/ethics community) · MEDIUM-HIGH. Expert-audience warrant/citation norms apply.
 - **GT5 red-team:** load-bearing = the umbrella-frame looseness + one-sided cost development. Decoy = disputing a single environmental figure.
 - **GT6 repair order:** first target = **disaggregate the risk subclaims** (or tighten the umbrella) before deepening any one harm; then engage tradeoffs.
-- **GT7 Distinguish:** SOUND — a rigorous, peer-reviewed argument; the soft spot is framing/bundling + one-sidedness (Should-Fix). **Calibration trap:** over-pathologizing a careful academic paper, or missing that the unifying frame is looser than its parts.
+- **Expected warrant verdict:** WARRANTED — a rigorous, peer-reviewed argument; the soft spot is framing/bundling + one-sidedness (Should-Fix). **Calibration trap:** over-pathologizing a careful academic paper, or missing that the unifying frame is looser than its parts.
+- **Expected premise flags:** NONE_REGISTERED (provisional migration default)
+- **GT8 Must not adjudicate:** whether ever-larger language models' environmental, bias, opacity, and misuse risks in fact outweigh the benefits of continued scaling.
 
 ## Notes
 
