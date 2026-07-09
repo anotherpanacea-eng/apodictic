@@ -7046,7 +7046,7 @@ EOF
   argument-groundtruth-check)
     # Argument Benchmark ground-truth answer-key validator (docs/argument-benchmark-spec.md
     # §Mechanical validator): GT1-GT8 presence; DC code-namespace resolution; GT2 locus<->code
-    # consistency; GT7 warrant verdict (GT schema v0.2.0 enum, retired-label/token rejection);
+    # consistency; GT7 warrant verdict (the warrant-verdict enum introduced in GT schema v0.2.0; retired-label/token rejection);
     # GT8 premise-plausibility flags (leading-token parse + flag-type/Firewall check); Check 6 the
     # GT schema v0.3.0 Reliability ledger (per-anchor status + decision-use; gate requires a licensed status;
     # provisional confirm/report-only; low-agreement report-only; exact GT1-GT8 coverage; the
