@@ -278,6 +278,19 @@ def argument_groundtruth_check(text):
                                   "NONE_REGISTERED or P<n> (got %r)." % raw)
         rows = _GT8_ROW_RE.findall(gt8)
         row_ids = [rid for rid, _ in rows]
+        # Reject duplicate ids on EITHER side BEFORE the coverage compare. Field <-> detail-row
+        # agreement is a MULTISET relation: collapsing both sides to sets below would let a doubled
+        # field id (`Expected premise flags: P1, P1`) or two `P1` detail rows (conflicting duplicate
+        # registrations for one premise) slip through a coverage check they must fail.
+        dup_expected = sorted({i for i in expected_ids if expected_ids.count(i) > 1})
+        if dup_expected:
+            errors.append("Check 5 (GT8) — 'Expected premise flags' repeats id(s) %s; each premise "
+                          "id may be registered at most once." % ", ".join(dup_expected))
+        dup_rows = sorted({i for i in row_ids if row_ids.count(i) > 1})
+        if dup_rows:
+            errors.append("Check 5 (GT8) — duplicate flag-detail row(s) for id(s) %s; each premise "
+                          "id must have exactly one detail row (conflicting duplicate rows)."
+                          % ", ".join(dup_rows))
         # Field <-> detail-row agreement (both directions).
         if none_registered and rows:
             errors.append("Check 5 (GT8) — expected NONE_REGISTERED but %d flag-detail row(s) "
@@ -540,6 +553,37 @@ def run_self_test(which=None):
     # Check 5: expected ids and row ids must match exactly (P1 expected, P2 registered).
     check("gt8_row_id_mismatch", errs_of(_MOON_CHEESE_GT.replace(
         "  - P1: \"the moon is made of cheese\"", "  - P2: \"the moon is made of cheese\"")), False)
+    # Check 5: a doubled expected id (`P1, P1`) against one detail row must FAIL — set-collapse
+    # would have let this pass (PR #192 review); multiplicity is preserved on the field side.
+    check("gt8_duplicate_expected_id", errs_of(_MOON_CHEESE_GT.replace(
+        "- **Expected premise flags:** P1\n",
+        "- **Expected premise flags:** P1, P1\n")), False)
+    # Check 5: two `P1` detail rows against one expected `P1` must FAIL — a conflicting/duplicate
+    # registration for the same premise id (set-collapse would have hidden it; PR #192 review).
+    check("gt8_duplicate_detail_row", errs_of(_MOON_CHEESE_GT.replace(
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
+        "| a careful reviewer would not let the composition claim pass silently "
+        "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.\n",
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
+        "| a careful reviewer would not let the composition claim pass silently "
+        "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.\n"
+        "  - P1: \"the moon is also green\" | ground | CONTESTABLE "
+        "| a second conflicting registration for the same id "
+        "| The engine flags the premise as contestable; it does not rule the premise true or false.\n")), False)
+    # Check 5: two DISTINCT ids (`P1, P2`) with one detail row each is CLEAN — the multiplicity
+    # guard must not over-reject a legitimate multi-premise registration.
+    check("gt8_two_distinct_ids_ok", errs_of(_MOON_CHEESE_GT.replace(
+        "- **Expected premise flags:** P1\n",
+        "- **Expected premise flags:** P1, P2\n").replace(
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
+        "| a careful reviewer would not let the composition claim pass silently "
+        "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.\n",
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
+        "| a careful reviewer would not let the composition claim pass silently "
+        "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.\n"
+        "  - P2: \"the moon is green\" | ground | CONTESTABLE "
+        "| a distinct second registered premise "
+        "| The engine flags the premise as contestable; it does not rule the premise true or false.\n")), True)
     # Check 5: a BOLDED row id (`- **P1:** …`) is validated, not silently skipped — the same
     # moon-cheese row bolded must still be accepted (and thus enum/truth-checked).
     check("gt8_bold_row_id", errs_of(_MOON_CHEESE_GT.replace(
