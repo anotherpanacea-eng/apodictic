@@ -39,7 +39,7 @@
 ### V1 — Finding correctness, not just structural conformance
 
 The mechanical layer (~59 validators) gates artifact structure, severity propagation, ledger integrity, and export correctness. None of it can tell whether a finding is *right, relevant, or helpful* — that is editorial judgment, and a system asked to hunt structural defects can always name one. The argument engine is furthest along on closing this (the [Benchmark Suite](#benchmark-suite): ground-truth diagnoses, sensitivity fixtures, specificity positive controls, the two-run convergence protocol). Gaps:
-- **Second-editor confirmation** of the provisional ground-truth (GT4–GT7; GT1–GT3 authoritative) — the blind packet is built and waiting (`evals/fixtures/argument-benchmark/HANDOFF.md`).
+- **Second-editor confirmation** of the provisional ground-truth (GT4–GT8; GT1–GT3 authoritative) — the blind packet is built and waiting (`evals/fixtures/argument-benchmark/HANDOFF.md`).
 - **The fiction passes/audits have no equivalent ground-truth benchmark.** Breadth (11 passes, dozens of audits) is the least-validated surface; the positive-control / specificity-guard design has not yet earned confidence across it. The bar is inter-rater agreement against human developmental editors on a labeled corpus.
 
 ### V2 — Auditable scorecard
