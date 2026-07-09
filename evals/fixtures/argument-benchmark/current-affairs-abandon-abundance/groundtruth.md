@@ -9,7 +9,7 @@
 - **Pinned source:** https://www.currentaffairs.org/news/abandon-abundance (record retrieval date + content hash on first authoritative run; analyzed-text extraction anchors (START / END / EXCLUDE) in [../SOURCES.md](../SOURCES.md)).
 - **Quotation policy:** paraphrase only — do not reproduce the source text.
 - **Ground-truth authority:** Joshua A. Miller (editor), independent diagnosis registered 2026-05-30, before any engine run.
-- **Scope:** GT1–GT3 authoritative. **GT4–GT7 PROVISIONAL** (confirm on run or by a second editor).
+- **Scope:** GT1–GT3 authoritative. **GT4–GT8 PROVISIONAL** (confirm on run or by a second editor).
 
 ## GT1 — Main claim *(Q1)*
 
@@ -39,10 +39,14 @@
 - **GT5 red-team:** load-bearing vulnerability = separability (GT3) + the target-substitution itself. Decoy = tone/snark.
 - **GT6 repair order:** first target = re-aim the **support** at specific policy claims (close the target mismatch) before sharpening the brand critique.
 
-## GT7 — Distinguish classification *(Q7 — PROVISIONAL; calibration anchor)*
+## GT7 — Warrant verdict *(Q7 — PROVISIONAL; calibration anchor)*
 
-- **Expected classification:** SOUND — a real polemic with a Should-Fix target-substitution weakness. Borderline toward FM-A3 if the association-work fully replaces argument; a run should test which.
+- **Expected warrant verdict:** WARRANTED — a real polemic with a Should-Fix target-substitution weakness. Borderline toward FM-A3 if the association-work fully replaces argument; a run should test which.
 - **Calibration trap:** over-pathologizing a vigorous polemic, *or* under-calling a genuine FM-A3 because the prose is energetic. Both are calibration failures.
+
+## GT8 — Premise-plausibility flags
+- **Expected premise flags:** NONE_REGISTERED (provisional migration default)
+- **Must not adjudicate:** whether "abundance" actually functions as an overbroad elite political brand rather than a neutral governance fix.
 
 ## Notes
 

@@ -39,7 +39,7 @@
 ### V1 — Finding correctness, not just structural conformance
 
 The mechanical layer (~59 validators) gates artifact structure, severity propagation, ledger integrity, and export correctness. None of it can tell whether a finding is *right, relevant, or helpful* — that is editorial judgment, and a system asked to hunt structural defects can always name one. The argument engine is furthest along on closing this (the [Benchmark Suite](#benchmark-suite): ground-truth diagnoses, sensitivity fixtures, specificity positive controls, the two-run convergence protocol). Gaps:
-- **Second-editor confirmation** of the provisional ground-truth (GT4–GT7; GT1–GT3 authoritative) — the blind packet is built and waiting (`evals/fixtures/argument-benchmark/HANDOFF.md`).
+- **Second-editor confirmation** of the provisional ground-truth (GT4–GT8; GT1–GT3 authoritative) — the blind packet is built and waiting (`evals/fixtures/argument-benchmark/HANDOFF.md`).
 - **The fiction passes/audits have no equivalent ground-truth benchmark.** Breadth (11 passes, dozens of audits) is the least-validated surface; the positive-control / specificity-guard design has not yet earned confidence across it. The bar is inter-rater agreement against human developmental editors on a labeled corpus.
 
 ### V2 — Auditable scorecard
@@ -129,8 +129,8 @@ Validate that the engine works on real argument-shaped nonfiction, not just in t
 **Direction — shippable kit (the distribution model).** The copyrighted source *bytes* are the only thing that can't ship; the keys, harness, protocol, and method all can. So the benchmark ships as a kit and reconstitutes copyrighted texts locally (URL + extraction anchor + SHA-256; never the bytes).
 - ✓ **Public-domain core** (fetchable, not stored): *Federalist* No. 10 (bucket 5 positive control, Gutenberg) and Douglass, *What to the Slave Is the Fourth of July?* (bucket 3 / testimony + Q7 unconventional-form control, archive.org pinned). Both verified via `run.sh --fetch`.
 - ✓ **`run.sh --fetch`** reconstitution mode — pulls each referenced source from its pinned URL and verifies the recorded hash.
-- ✓ **`validate.sh argument-groundtruth-check`** key-conformance validator (`scripts/argument_groundtruth.py`, shipped v2.1/2.2): GT1–GT7 coverage, DC code-namespace resolution, GT2 locus↔code consistency, GT7 Distinguish classification — **extended to FM-A20** for the decoy-resistance pattern.
-- **Remaining:** second-editor confirmation of GT4–GT7 (GT1–GT3 authoritative; GT4–GT7 provisional) — see **Next round** below.
+- ✓ **`validate.sh argument-groundtruth-check`** key-conformance validator (`scripts/argument_groundtruth.py`, shipped v2.1/2.2): GT1–GT8 coverage (GT schema v0.2.0), DC code-namespace resolution, GT2 locus↔code consistency, GT7 warrant verdict + GT8 premise-plausibility flags — **extended to FM-A20** for the decoy-resistance pattern.
+- **Remaining:** second-editor confirmation of GT4–GT8 (GT1–GT3 authoritative; GT4–GT8 provisional) — see **Next round** below.
 
 **Next round (after the convergence runs, PR #37).** Grouped by what each needs:
 
@@ -139,7 +139,7 @@ Validate that the engine works on real argument-shaped nonfiction, not just in t
 2. ~~**`policy-brief-uncompared` under-fire fix.**~~ **DONE / benchmark-validated 2026-06-11 (PR #72):** added classification **rule 2a** (an AT3 recommendation with wholly-undischarged comparative burden → Structurally Unsound, FM-A10), then narrowed it post-benchmark so a strawman foil counts as partial discharge (soft spot), not a defeat. See `docs/argument-benchmark-calibration-round.md` → Status.
 
 *Human-gated (ready — just needs people):*
-3. **Recruit one second editor** — the GT4–GT7 / personal-independence upgrade. The blind packet is built and waiting in Dropbox (`argument-benchmark-second-editor-packet/`, with its own `TODO.md`); pointer in `evals/fixtures/argument-benchmark/HANDOFF.md`.
+3. **Recruit one second editor** — the GT4–GT8 / personal-independence upgrade. The blind packet is built and waiting in Dropbox (`argument-benchmark-second-editor-packet/`, with its own `TODO.md`); pointer in `evals/fixtures/argument-benchmark/HANDOFF.md`.
 4. **`current-affairs` GT2** (flagged recall-suspect on a cross-vendor split) — resolves via #3, or via a second vendor.
 
 *Minor / optional:*

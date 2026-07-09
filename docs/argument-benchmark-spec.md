@@ -130,7 +130,7 @@ A benchmark that only contains broken arguments measures sensitivity but not
 specificity — it cannot catch an engine that "finds" failures everywhere.
 **Every bucket must include at least one positive control**: a
 structurally sound (or soundly unconventional) piece whose correct diagnosis
-is PASS or UNCONVENTIONAL-BUT-EFFECTIVE. The Q7 dimension is scored
+is WARRANTED or UNCONVENTIONAL-BUT-WARRANTED. The Q7 dimension is scored
 *primarily* on these controls. Swift's *A Modest Proposal* and the unconventional
 personal essay are the slice's positive controls.
 
@@ -182,11 +182,26 @@ sections and the Dialectical Clarity code namespace.
 - Correct first repair target: <claim | warrant | support | definition | objection>
 - Dependency rule the order must respect: <e.g., warrant before support>
 
-## GT7 — Distinguish classification (Q7; §1 Distinguish, Step 9)
-- Expected classification: SOUND | UNCONVENTIONAL-BUT-EFFECTIVE | UNSOUND
+## GT7 — Warrant verdict (Q7; §1 Distinguish, Step 9)
+- Expected warrant verdict: WARRANTED | UNCONVENTIONAL-BUT-WARRANTED | UNWARRANTED
 - If unconventional: form name + which form-dependent codes MUST be downgraded
 - False-positive trap: <the structural code a naive audit fires that is WRONG here>
+
+## GT8 — Premise-plausibility flags (Q8; §1 / Step 9 — acceptability axis)
+- Expected premise flags: NONE_REGISTERED | P1, P2, … (leading token authoritative; a trailing `(provisional migration default)` is parser-ignored commentary)
+- Flag details (one row per registered premise; omit when NONE_REGISTERED):
+    P<n>: <premise as used> | <load-bearing role> | <flag type(s), joined by ` + `: CONTESTABLE / UNEARNED / OVERLOADED / EXTERNAL-VERIFY / DEFINITIONAL> | <why flagged> | <Firewall boundary>
+- Must not adjudicate: <the truth question the engine must not settle>
 ```
+
+GT7 (warrant verdict) is the inference axis — whether the reasoning warrants the
+conclusion on the text's own terms (Wachsmuth cogency's Local Relevance + Local
+Sufficiency). GT8 (premise-plausibility flags) is the acceptability axis (Local
+Acceptability), **surfaced but never adjudicated**: the Firewall forbids ruling a
+premise true or false, so GT8 is a flag, not a verdict. In M1, GT8 is a required
+contract/firewall check (see §Mechanical validator), **not** a scored dimension; a
+scored premise-flag dimension is deferred to M2 after keys are second-editor-confirmed.
+This is **Argument Benchmark GT schema v0.2.0** (GT1–GT8).
 
 The schema is deliberately *thin*: it records structure, not a model answer
 essay. A fixture's ground truth should fit in well under a page.
@@ -208,7 +223,7 @@ band definitions and binary checks live in
 | Q4 | Audience calibration improved rather than distorted? | calibration surfaced GT4's "improve" item without the "distort" failure | calibration produced an audience-pleasing distortion or was ignored |
 | Q5 | Red-team surfaced genuinely dangerous weaknesses? | hit ≥1 pre-registered vulnerability, ranked above decoys | surfaced only decoys / cosmetic attacks |
 | Q6 | Coaching produced a useful repair order? | first target + dependency rule match GT6 | repair order violates the dependency (e.g., adds evidence before fixing the warrant) |
-| Q7 | Avoided penalizing unconventional but effective form? | Distinguish classification matches GT7; trap code downgraded | fired the false-positive trap code as a structural failure |
+| Q7 | Avoided penalizing unconventional but effective form? | Warrant verdict matches GT7; trap code downgraded | fired the false-positive trap code as a structural failure |
 
 **Q7 is scored primarily on positive controls** and is the benchmark's
 specificity check. A false-positive trap fired on a control is a 0 regardless
@@ -263,8 +278,8 @@ Positive controls have no planted failure, so three of the four anchors above
 cannot be computed. Controls converge on a **control-specific anchor set**:
 
 1. **Claim (GT1)** — both runs recover the claim within the GT1 paraphrase band.
-2. **Distinguish classification (GT7)** — both runs return the GT7
-   classification (SOUND or UNCONVENTIONAL-BUT-EFFECTIVE).
+2. **Warrant verdict (GT7)** — both runs return the GT7
+   verdict (WARRANTED or UNCONVENTIONAL-BUT-WARRANTED).
 3. **No invented failure** — *neither* run fires the GT7 false-positive trap
    code or fabricates a Must-Fix structural failure, objection, or burden gap.
 
@@ -275,14 +290,14 @@ controls — `personal-essay-narrative-arg` and the referenced
 `modest-proposal-satire` — score on this set; their `groundtruth.md` marks
 GT2/GT3/GT5/GT6 as N/A.)
 
-**SOUND-but-with-a-soft-spot is not a pure control.** The referenced real
-fixtures (`CORPUS.md`) are SOUND *and carry a registered Should-Fix soft spot* —
+**WARRANTED-but-with-a-soft-spot is not a pure control.** The referenced real
+fixtures (`CORPUS.md`) are WARRANTED *and carry a registered Should-Fix soft spot* —
 their whole purpose is severity calibration. The three-anchor control rule above
-is **insufficient** for them: two runs could both say SOUND, miss the registered
+is **insufficient** for them: two runs could both say WARRANTED, miss the registered
 failure locus and objection, and falsely "converge." They use the
 **calibration-fixture convergence rule** instead: agreement on GT1 (claim),
 GT2 failure *locus/layer*, GT3 objection zone, a severity check (soft spot named
-at Should-Fix with no over-firing), and GT7 = SOUND. See
+at Should-Fix with no over-firing), and GT7 = WARRANTED. See
 `evals/fixtures/argument-benchmark/RUN-PROTOCOL.md` §Step 4. Pure controls (no
 registered soft spot) keep the three-anchor rule.
 
@@ -344,9 +359,9 @@ for this benchmark — the 17th self-testable validator (`scripts/argument_groun
 a no-`python3` advisory degrade path; wired into `--self-test-all` and run over the registered
 corpus by `--check-all`). It checks:
 
-- All seven GT sections (GT1–GT7) are **covered** by a heading and non-empty. Corpus fixtures
-  legitimately combine sections under one heading (`## GT4–GT7 — *(PROVISIONAL)*`, `## GT5 / GT6
-  — …`); the parser expands ranges and lists so each number is accounted for.
+- All eight GT sections (GT1–GT8) are **covered** by a heading and non-empty. Corpus fixtures
+  legitimately combine sections under one heading (`## GT4–GT8 — *(PROVISIONAL)*`, `## GT7–GT8
+  — …`, `## GT5 / GT6 — …`); the parser expands ranges and lists so each number is accounted for.
 - Every code referenced resolves to the Dialectical Clarity namespace
   (`AT / CL / SM / WR / BP / OB / DI / NE / AC`) or a valid `FM-Ax` pattern (x ∈ 1–20). The
   `GT` section-label prefix is excluded.
@@ -356,18 +371,43 @@ corpus by `--check-all`). It checks:
   spec's example error (a warrant break mis-coded as a support break) while tolerating the
   corpus's richer/compound loci (`WARRANT / OBJECTION`, `SCOPE / CLAIM`, `… / FORM`). Positive
   controls (`N/A — positive control`) are exempt.
-- GT7's Distinguish classification is one of SOUND / UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND
-  (validated when the field is present; provisional/derive-on-run fixtures may omit it); an
-  UNCONVENTIONAL classification must name ≥1 form-dependent code to downgrade — specific
+- GT7's warrant verdict (field `Expected warrant verdict`) is one of WARRANTED /
+  UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED. A GT7 section present but carrying **no** parseable
+  verdict field is an **ERROR** (not a silent skip), and residue of **all three** retired v0.1
+  encodings is actively rejected — the standalone field label (`Expected classification`), the
+  combined-block sub-line (`GT7 Distinguish:`), and the inline variant (case-insensitive
+  `expected classification`) — as are the retired tokens
+  (SOUND / UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND), so an unmigrated encoding cannot pass
+  vacuously beside a pasted-in new field. An
+  UNCONVENTIONAL-BUT-WARRANTED verdict must name ≥1 form-dependent code to downgrade — specific
   (`SM0`, `FM-A1`) or family-level (`DI codes`, `SM/WR on the cost accounting`) references both
   count.
+- GT8's premise-plausibility flags (field `Expected premise flags`) are **leading-token parsed**:
+  the value is `NONE_REGISTERED` or a `P<n>` id list, with a trailing
+  `(provisional migration default)` treated as parser-ignored commentary. The registered path is
+  **strict, not advisory** (a firewall nothing cross-checks is vacuous): `NONE_REGISTERED` can
+  never combine with any other flag or id and forbids detail rows; a `P<n>` list requires detail
+  rows whose ids match the expected list exactly, both directions. Each detail row (bolded ids
+  like `- **P1:**` are matched, not skipped) must have **exactly 5** `|`-cells
+  (premise | role | flag-type(s) | why flagged | Firewall boundary — a `|` inside the premise
+  text is rejected rather than allowed to shift cells past validation), and each ` + `-joined
+  part of the flag cell must be **exactly** one of `CONTESTABLE / UNEARNED / OVERLOADED /
+  EXTERNAL-VERIFY / DEFINITIONAL` (full-match; `NONE_REGISTERED` is field-level only; leading
+  tokens are boundary-checked so `P1a`/`WARRANTEDx` cannot truncate-parse). The flag-type cell
+  must not smuggle a truth verdict — a standalone uppercase `TRUE / FALSE / PROVEN / DISPROVEN /
+  CORRECT / INCORRECT` fails the Firewall check by name (case-sensitive; the `Why flagged` /
+  `Firewall boundary` prose fields, whose natural sentence is lowercase "true or false", are
+  exempt — and the full-match enum backstops any lower/mixed-case adjudication smuggled into the
+  flag cell). GT8 is a contract/firewall check in M1, not a scored dimension.
 
-**Calibration note.** The four checks were tuned against the full registered corpus (14 GT
+**Calibration note.** The five checks were tuned against the full registered corpus (16 GT
 files across both the Increment-1 full fixtures and the Increment-2 provisional/derive-on-run
-fixtures) so the validator passes every registered ground truth and catches malformed/edited
-ones. The original spec assumed a fixed GT2 locus enum and fully-populated GT7s; the realized
-corpus is richer, so the checks validate *consistency and resolution* rather than strict enum
-membership.
+fixtures, all migrated to GT schema v0.2.0) so the validator passes every registered ground
+truth and catches malformed/edited ones. The original spec assumed a fixed GT2 locus enum and
+fully-populated GT7s; the realized corpus is richer, so the checks validate *consistency and
+resolution* rather than strict enum membership. GT8 (v0.2.0) is contract-shaped: the whole
+registered corpus takes `NONE_REGISTERED` (10 of 16 as the provisional migration default), so the
+registered-flag path is exercised by the parser's moon-cheese self-test rather than the corpus.
 
 ---
 
@@ -421,7 +461,7 @@ decoy-resistance gap (6a two-test procedure + FM-A20). The
 and the `run.sh --fetch` reconstitution mode are now **built** (2026-06-04);
 `federalist-10` and `douglass-fourth-of-july` added as fetchable public-domain
 controls (bucket 5 + bucket 3 / Q7). Remaining: second-editor confirmation of
-GT4–GT7.
+GT4–GT8.
 
 ---
 
@@ -447,4 +487,4 @@ GT4–GT7.
 *This benchmark is infrastructure for trusting the engine, not a deliverable
 for writers. It tells us whether the Nonfiction Argument Engine recovers
 diagnoses a competent editor already knows — and, just as importantly,
-whether it knows when to leave a sound but unconventional argument alone.*
+whether it knows when to leave a warranted but unconventional argument alone.*

@@ -46,11 +46,15 @@
 - **Correct first repair target:** warrant (establish causation with a rate/denominator and address confounders) before anything else.
 - **Dependency rule the order must respect:** warrant repair precedes both adding evidence and defending the remedy. Adding more raw-count data first (support acquisition) is the wrong move; comparing remedies is moot until causation is warranted.
 
-## GT7 — Distinguish classification *(Q7; §1 Distinguish / Step 9)*
+## GT7 — Warrant verdict *(Q7; §1 Warrant verdict / Step 9)*
 
-- **Expected classification:** UNSOUND
+- **Expected warrant verdict:** UNWARRANTED
 - **If unconventional:** N/A — this is conventional thesis-evidence op-ed form; the form does not explain the failure.
-- **False-positive trap:** do *not* downgrade the warrant finding by mistaking confident, well-sourced prose for inferential soundness. The piece reads rigorous (real data, named sources) precisely where it is weakest. The trap is calling it SOUND because it cites evidence.
+- **False-positive trap:** do *not* downgrade the warrant finding by mistaking confident, well-sourced prose for inferential soundness. The piece reads rigorous (real data, named sources) precisely where it is weakest. The trap is calling it WARRANTED because it cites evidence.
+
+## GT8 — Premise-plausibility flags
+- **Expected premise flags:** NONE_REGISTERED
+- **Must not adjudicate:** whether rental e-scooters are in fact the cause of Westhaven's rising ED injury counts.
 
 ## Notes
 

@@ -93,7 +93,7 @@ Currently applied to roosevelt-GT2, cato-GT3, ppi-GT3 (clarification) — see
 Unlike the synthetic fixtures (which plant a catastrophic, unambiguous
 failure), these are competent published arguments with *one* identifiable
 structural soft spot. Their primary benchmark value is **severity calibration /
-not over-pathologizing**: the engine should diagnose a SOUND argument with a
+not over-pathologizing**: the engine should diagnose a WARRANTED argument with a
 Should-Fix weakness, not a flood of Must-Fix codes. This is the real-world
 analog of the Q7 specificity gate.
 
