@@ -73,6 +73,8 @@ import sys
 
 _DEFAULT_SEED = 20260709      # pinned so two auditors reproduce the same CI byte-for-byte
 _DEFAULT_RESAMPLES = 1000     # Hayes & Krippendorff (2007) floor; --resamples may only raise it
+_PANEL_FLOOR = 3              # panel-licensing needs a >=3-editor panel (docs/argument-benchmark-spec.md
+                             # §GT schema: "panel-licensed | Promoted by measured >=3-editor agreement")
 _METRICS = ("nominal", "ordinal")
 
 _REQUIRED_HEADER = ["rater", "unit", "value"]
@@ -429,6 +431,20 @@ def _compute_and_emit(text, metric, seed, resamples):
         print("WARN: bootstrap CI is unstable at this n (zero-width interval, <90%% defined "
               "resamples, or <%d pairable units) — treat the interval as unreliable and do not "
               "license from it without more units." % 4)
+    # Panel floor: the benchmark contract (docs/argument-benchmark-spec.md §GT schema —
+    # "panel-licensed | Promoted by measured >=3-editor agreement") licenses a band only from a
+    # panel of at least three editors. Alpha is well-defined for two raters, so it is computed and
+    # printed above for information — but a two-rater run, however high its agreement, must not emit
+    # a clearing verdict the promotion path could act on. Count PARTICIPATING editors (>=1 non-missing
+    # rating); an all-blank column is a listed-but-absent editor, not a rating one, and does not count.
+    n_rating_editors = len({r for (r, _u, v) in rows if v is not None})
+    if n_rating_editors < _PANEL_FLOOR:
+        print("FAILED: panel-licensing requires a >= %d-editor panel "
+              "(docs/argument-benchmark-spec.md §GT schema); got %d editor(s) with ratings. The "
+              "alpha above is informational only and clears NO licensing threshold — a sub-panel "
+              "high-agreement run must not promote. Recruit at least %d independent editors and "
+              "re-run." % (_PANEL_FLOOR, n_rating_editors, _PANEL_FLOOR))
+        return 2
     print("OK: Krippendorff's alpha computed. License on the CI LOWER BOUND, not the point "
           "estimate (small-n false-promotion guard): >= .800 -> panel-licensed, .667-.800 -> "
           "provisional, < .667 -> low-agreement.")
@@ -586,11 +602,51 @@ def run_self_test():
         truth("ordinal_non_numeric_rejected", True)
 
     # ---- CSV-contract arms (through the CLI path) ----
+    # A two-rater run still COMPUTES and prints alpha (informational), but must NOT clear the panel
+    # floor — panel-licensing needs a >=3-editor panel (docs/argument-benchmark-spec.md §GT schema).
+    # Non-clearing: exit 2, no "OK:" licensing line.
     good = "rater,unit,value\nA,u1,1\nB,u1,1\nA,u2,1\nB,u2,2\nA,u3,2\nB,u3,2\nA,u4,2\nB,u4,2\n"
     out, code = _capture(good, "nominal")
-    truth("cli_good_ok", code == 0 and out.startswith("alpha=") and "OK:" in out,
+    truth("cli_two_rater_not_licensable",
+          code == 2 and out.startswith("alpha=") and "panel" in out.lower() and "OK:" not in out,
           "code=%d out=%r" % (code, out))
     truth("cli_good_matches_hand", ("alpha=%s" % _fmt(_H1_ALPHA)) in out, "out=%r" % out)
+
+    # A >=3-editor panel with a small disagreement CLEARS the floor: alpha prints + the OK license line.
+    good3 = ("rater,unit,value\n"
+             "A,u1,1\nB,u1,1\nC,u1,1\n"
+             "A,u2,2\nB,u2,2\nC,u2,2\n"
+             "A,u3,1\nB,u3,1\nC,u3,1\n"
+             "A,u4,2\nB,u4,2\nC,u4,1\n"
+             "A,u5,1\nB,u5,1\nC,u5,1\n")
+    out, code = _capture(good3, "nominal")
+    truth("cli_three_rater_licenses", code == 0 and out.startswith("alpha=") and "OK:" in out,
+          "code=%d out=%r" % (code, out))
+
+    # PR #194 P1 regression (the reviewer's repro): two raters, 100 units, two planted disagreements
+    # -> a very high alpha with a >= .800 CI lower bound. It must NOT license: non-clearing, exit 2.
+    _two = ["rater,unit,value"]
+    for _i in range(1, 101):
+        _cls = "2" if _i <= 50 else "1"                    # both classes present -> De > 0
+        _two.append("A,u%d,%s" % (_i, _cls))
+        _bcls = ("1" if _cls == "2" else "2") if _i in (10, 60) else _cls
+        _two.append("B,u%d,%s" % (_i, _bcls))
+    out, code = _capture("\n".join(_two) + "\n", "nominal")
+    truth("cli_two_rater_high_agreement_not_licensed",
+          code == 2 and out.startswith("alpha=") and "panel" in out.lower() and "OK:" not in out,
+          "code=%d out=%r" % (code, out))
+
+    # PR #194 P1 regression: an editor listed with only BLANK ratings is not a participating editor,
+    # so 2 real + 1 all-blank editor is a 2-editor panel and must not license (non-missing count only).
+    out, code = _capture(
+        "rater,unit,value\n"
+        "A,u1,1\nB,u1,1\nC,u1,\n"
+        "A,u2,2\nB,u2,2\nC,u2,\n"
+        "A,u3,1\nB,u3,1\nC,u3,\n"
+        "A,u4,2\nB,u4,2\nC,u4,\n", "nominal")
+    truth("cli_all_blank_editor_not_counted",
+          code == 2 and out.startswith("alpha=") and "panel" in out.lower() and "OK:" not in out,
+          "code=%d out=%r" % (code, out))
 
     # Missing header -> ERROR.
     out, code = _capture("A,u1,1\nB,u1,1\n", "nominal")
@@ -621,10 +677,11 @@ def run_self_test():
     truth("cli_single_unit", code == 2 and "ERROR:" in out and "units" in out,
           "code=%d out=%r" % (code, out))
 
-    # Blank value = missing data (not an error): u2 has one present value -> unpairable, alpha
-    # still computes from u1/u3.
-    out, code = _capture("rater,unit,value\nA,u1,1\nB,u1,1\nA,u2,\nB,u2,2\nA,u3,2\nB,u3,2\n",
-                         "nominal")
+    # Blank value = missing data (not an error): A's u2 value is blank and drops; alpha still computes
+    # from the rest. Three participating editors, so it also clears the panel floor.
+    out, code = _capture(
+        "rater,unit,value\nA,u1,1\nB,u1,1\nC,u1,1\nA,u2,\nB,u2,2\nC,u2,2\nA,u3,2\nB,u3,2\nC,u3,2\n",
+        "nominal")
     truth("cli_blank_value_missing", code == 0 and out.startswith("alpha="),
           "code=%d out=%r" % (code, out))
 
@@ -647,9 +704,10 @@ def run_self_test():
     out, code = _capture("rater,unit,value\nA,u1,inf\nB,u1,inf\nA,u2,1\nB,u2,1\n", "ordinal")
     truth("cli_ordinal_inf_rejected", code == 1 and "ERROR:" in out and "FINITE" in out,
           "code=%d out=%r" % (code, out))
-    # A degenerate tiny-n CI (zero-width / survivorship-only / <4 pairable units) must carry
-    # the instability WARN, not just the authoritative OK line.
-    out, code = _capture("rater,unit,value\nA,u1,1\nB,u1,1\nA,u2,2\nB,u2,2\n", "nominal")
+    # A degenerate tiny-n CI (zero-width / survivorship-only / <4 pairable units) must carry the
+    # instability WARN, not just the authoritative OK line. Three editors so the panel floor clears.
+    out, code = _capture("rater,unit,value\nA,u1,1\nB,u1,1\nC,u1,1\nA,u2,2\nB,u2,2\nC,u2,2\n",
+                         "nominal")
     truth("cli_tiny_n_ci_warned", code == 0 and "WARN:" in out and "unstable" in out,
           "code=%d out=%r" % (code, out))
 
