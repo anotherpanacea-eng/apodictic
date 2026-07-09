@@ -26,7 +26,7 @@ See also: [the benchmark spec](../../../docs/argument-benchmark-spec.md)
    (e.g., Opus + Sonnet) or two editors. Two reviewers scoring *one* output is
    reliability, not convergence.
 3. **Score after**, against `groundtruth.md`, using the rubric. GT1–GT3 are
-   authoritative; for referenced real pieces GT4–GT7 are provisional.
+   authoritative; for referenced real pieces GT4–GT8 are provisional.
 4. **Record provenance.** For referenced sources, the *preparer* records the
    retrieval date + SHA-256 of the extracted text into [SOURCES.md](SOURCES.md)
    (not `groundtruth.md`, which the preparer never opens).
@@ -66,11 +66,11 @@ Done by the **preparer**, in a session separate from the runner.
 > **Submission (neutral label "Submission X"):**
 > [PASTE THE ARGUMENT TEXT HERE]
 >
-> **Return:** the 9 steps with concrete codes, a Step-9 Distinguish
-> classification (SOUND / UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND), and a
-> priority diagnosis (primary structural break, FM-A pattern(s), severity
-> ranking, first repair target). For GT5 run Argument Red Team; for GT6 run the
-> Revision Coach argument mode.
+> **Return:** the 9 steps with concrete codes, a Step-9 warrant verdict
+> (WARRANTED / UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED) with any
+> premise-plausibility flags (or NONE_REGISTERED), and a priority diagnosis
+> (primary structural break, FM-A pattern(s), severity ranking, first repair
+> target). For GT5 run Argument Red Team; for GT6 run the Revision Coach argument mode.
 
 Run this twice with two different model configs (the two runs are independent
 productions). Keep each run's full output.
@@ -104,12 +104,13 @@ rubric's 0–3 bands:
 | Q4 | GT4 "improve" surfaced; "distort" avoided |
 | Q5 | hit ≥1 pre-registered vulnerability above the decoys (if Red Team run) |
 | Q6 | correct first repair target + dependency respected (if coaching run) |
-| Q7 | Distinguish classification matches GT7 |
+| Q7 | Warrant verdict matches GT7 |
+| GT8 | premise-plausibility flags present (`NONE_REGISTERED` or `P<n>`); no premise adjudicated true/false (M1 contract check, not scored) |
 
 **Calibration emphasis for referenced real pieces (CORPUS.md).** These are
 competent arguments with one Should-Fix soft spot. The scored event is whether
 the engine names that one soft spot at **Should-Fix** severity and **resists
-over-firing** (a flood of Must-Fix codes on a SOUND argument is the failure to
+over-firing** (a flood of Must-Fix codes on a WARRANTED argument is the failure to
 catch). The `ppi-one-size-fits-none` ↔ `op-ed-warrant-leap` pair is the sharpest
 test: same causal-warrant family, opposite correct severity.
 
@@ -119,11 +120,11 @@ test: same causal-warrant family, opposite correct severity.
   anchors (claim, top failures, burden mismatch, objection zone), claim
   mandatory.
 - **Pure positive controls** (no registered soft spot — `personal-essay-narrative-arg`,
-  `modest-proposal-satire`): converge if both agree on claim (GT1) + Distinguish
-  classification (GT7) + no invented failure.
-- **SOUND real calibration fixtures** (the CORPUS.md pieces — SOUND *with* a
+  `modest-proposal-satire`): converge if both agree on claim (GT1) + warrant
+  verdict (GT7) + no invented failure.
+- **WARRANTED real calibration fixtures** (the CORPUS.md pieces — WARRANTED *with* a
   registered Should-Fix soft spot): the positive-control rule is **not enough**,
-  because two runs could both say `SOUND`, miss the registered failure locus and
+  because two runs could both say `WARRANTED`, miss the registered failure locus and
   objection, and still "converge" — passing a calibration fixture without testing
   the calibration. These converge only when **both runs agree on all five**:
   1. **GT1** claim,
@@ -131,9 +132,9 @@ test: same causal-warrant family, opposite correct severity.
   3. **GT3** objection zone (authoritative for these fixtures),
   4. **severity calibration:** the soft spot is named at **Should-Fix** (not
      Must-Fix) **and** the run does not over-fire (no flood of Must-Fix codes on a
-     SOUND argument), and
-  5. **GT7 = SOUND.**
-  All five are required (no either/or). A run that says SOUND but misses the
+     WARRANTED argument), and
+  5. **GT7 = WARRANTED.**
+  All five are required (no either/or). A run that says WARRANTED but misses the
   locus or the objection zone, or fires the soft spot as Must-Fix, **fails** the
   fixture even if the two runs agree with each other —
   agreement on a wrong diagnosis is not convergence.

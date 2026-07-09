@@ -9,7 +9,7 @@ design, and the convergence protocol are in
 ## Inputs Required
 
 - Fixture text (in-repo, or referenced source for text-not-stored fixtures)
-- Pre-registered `groundtruth.md` for the fixture (GT1–GT7)
+- Pre-registered `groundtruth.md` for the fixture (GT1–GT8, GT schema v0.2.0)
 - `Argument_State.md` from the run (§§1–9 populated)
 - Editorial letter / Dialectical Clarity output
 - `Red_Team_Memo.md` (required to score Q5)
@@ -31,7 +31,7 @@ Dimensions map to the seven roadmap test questions and to
 - **Q4 — Audience calibration** (§1 + AC vs GT4): 0 ignored audience or produced an audience-pleasing distortion · 1 audience noted, not used · 2 surfaced GT4's "improve" item · 3 surfaced it *and* avoided the named "distort" failure.
 - **Q5 — Red-team danger** (§10.4 vs GT5): 0 only decoys/cosmetic attacks · 1 one real vulnerability buried below decoys · 2 hit a pre-registered vulnerability · 3 hit ≥1 and ranked it above the decoys.
 - **Q6 — Repair order** (§10.5 vs GT6): 0 order violates the dependency rule · 1 right targets, wrong order · 2 correct first target · 3 correct first target *and* respects GT6's dependency rule.
-- **Q7 — Form fairness** (§1 Distinguish / Step 9 vs GT7): 0 fired the false-positive trap code as a structural failure · 1 fired it but hedged · 2 correct classification, trap noted but not cleanly downgraded · 3 classification matches GT7 and the form-dependent code is downgraded to advisory.
+- **Q7 — Warrant verdict / form fairness** (§1 Warrant verdict / Step 9 vs GT7): 0 fired the false-positive trap code as a structural failure · 1 fired it but hedged · 2 correct warrant verdict, trap noted but not cleanly downgraded · 3 warrant verdict matches GT7 and the form-dependent code is downgraded to advisory. *(GT8 premise-plausibility flags are an M1 contract/firewall check, not a scored dimension; a scored Q8 is deferred to M2.)*
 
 ## Binary Checks
 
@@ -41,8 +41,11 @@ argument subset:
 - **No invented content (Firewall):** no claim, subclaim, warrant, objection,
   definition, or stakes added that the text does not contain. A single
   invented argumentative object voids the run.
-- **Distinguish protocol ran:** Step 9 / §1 Distinguish classification is
+- **Distinguish protocol ran:** Step 9 / §1 warrant verdict is
   present for every fixture, including the broken ones.
+- **Premise-plausibility flags emitted:** the §1 / Step 9 premise-flags line is
+  present (`NONE_REGISTERED` or registered `P<n>` rows) and adjudicates no premise
+  as true or false.
 - **`Argument_State.md` emitted:** §§1–9 populated; §10 initialized.
 - **Companion-module presence:** `Red_Team_Memo.md` present when Q5 is in
   scope; argument session plan present when Q6 is in scope.
@@ -51,11 +54,11 @@ argument subset:
 ## Q7 Is the Specificity Gate
 
 Q7 is scored *primarily on positive controls* (fixtures whose correct
-diagnosis is SOUND or UNCONVENTIONAL-BUT-EFFECTIVE). A false-positive trap
+diagnosis is WARRANTED or UNCONVENTIONAL-BUT-WARRANTED). A false-positive trap
 code fired on a positive control is **Q7 = 0 for that fixture regardless of
 Q1–Q6**, and blocks the bucket from passing (per
 [argument-benchmark-spec.md §Convergence](../../docs/argument-benchmark-spec.md#convergence-protocol-the-success-condition)).
-Sensitivity (catching real failures) without specificity (leaving sound
+Sensitivity (catching real failures) without specificity (leaving warranted
 arguments alone) is not a passing engine.
 
 ## Convergence
@@ -67,13 +70,13 @@ There are three convergence classes:
   burden mismatch, and objection zone; agreement = both runs land in the same
   ground-truth band on ≥3 of 4 anchors, core claim mandatory.
 - **Pure positive controls** (no registered soft spot) — claim (GT1) +
-  Distinguish classification (GT7) + no invented failure; all three required.
-- **SOUND real calibration fixtures** (the referenced `CORPUS.md` pieces — SOUND
+  warrant verdict (GT7) + no invented failure; all three required.
+- **WARRANTED real calibration fixtures** (the referenced `CORPUS.md` pieces — WARRANTED
   *with* a registered Should-Fix soft spot) — both runs must agree on **all
   five**: GT1 claim, GT2 failure locus/layer, GT3 objection zone, the
   severity-calibration check (soft spot named at Should-Fix, no over-firing), and
-  GT7 = SOUND. The pure-control rule is insufficient here (two runs could agree
-  on SOUND yet miss the registered soft spot). Full rule + role separation:
+  GT7 = WARRANTED. The pure-control rule is insufficient here (two runs could agree
+  on WARRANTED yet miss the registered soft spot). Full rule + role separation:
   [RUN-PROTOCOL.md §Step 4](../fixtures/argument-benchmark/RUN-PROTOCOL.md).
 
 Two reviewers scoring one output is reliability, not convergence. See

@@ -7035,9 +7035,11 @@ EOF
 
   argument-groundtruth-check)
     # Argument Benchmark ground-truth answer-key validator (docs/argument-benchmark-spec.md
-    # §Mechanical validator): GT1-GT7 presence; DC code-namespace resolution; GT2 locus<->code
-    # consistency; GT7 Distinguish classification. Delegates to scripts/argument_groundtruth.py;
-    # degrades to an advisory WARN without python3 (the GT contract is prose in the template + spec).
+    # §Mechanical validator): GT1-GT8 presence; DC code-namespace resolution; GT2 locus<->code
+    # consistency; GT7 warrant verdict (GT schema v0.2.0 enum, retired-label/token rejection);
+    # GT8 premise-plausibility flags (leading-token parse + flag-type/Firewall check). Delegates to
+    # scripts/argument_groundtruth.py; degrades to an advisory WARN without python3 (the GT
+    # contract is prose in the template + spec).
     AGT_DIR=$(cd "$(dirname "$0")" && pwd)
     AGT_HELPER="$AGT_DIR/argument_groundtruth.py"
     if [ "${1:-}" = "--self-test" ]; then

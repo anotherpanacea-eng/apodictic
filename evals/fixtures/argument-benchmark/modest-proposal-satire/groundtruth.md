@@ -40,12 +40,16 @@
 
 - **N/A — the surface argument must not be red-teamed or repair-sequenced on a literal reading.**
 
-## GT7 — Distinguish classification *(Q7; §1 Distinguish / Step 9)* — **PRIMARY METRIC**
+## GT7 — Warrant verdict *(Q7; §1 Warrant verdict / Step 9)* — **PRIMARY METRIC**
 
-- **Expected classification:** UNCONVENTIONAL-BUT-EFFECTIVE
+- **Expected warrant verdict:** UNCONVENTIONAL-BUT-WARRANTED
 - **Form name:** sustained irony / Juvenalian satire (the real argument is the inverse of the literal proposition; meaning is carried by the gap between surface and intent).
 - **Form-dependent codes that MUST be downgraded / suspended:** every code that would fire on a literal reading — DI codes for "monstrous standpoint," BP/scope codes, SM/WR on the cost accounting. None describe a real defect; all are artifacts of reading irony literally.
 - **False-positive trap (the hardest in the slice):** (a) reporting the literal proposal as the claim and failing it as monstrous/unsound; or worse, (b) *evaluating whether the literal argument is correct* — a Firewall and Distinguish double-failure. An engine that does either scores **Q7 = 0**. The catastrophic failure mode is treating the most famous satire in English as a sincere policy argument.
+
+## GT8 — Premise-plausibility flags
+- **Expected premise flags:** NONE_REGISTERED
+- **Must not adjudicate:** whether English policy and the propertied class's indifference toward the Irish poor were in fact as callous as the status-quo comparison suggests.
 
 ## Notes
 

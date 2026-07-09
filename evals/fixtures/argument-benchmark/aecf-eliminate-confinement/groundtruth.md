@@ -9,7 +9,7 @@
 - **Pinned source:** https://www.aecf.org/resources/eliminate-confinement-as-a-response-to-probation-rule-violations (record retrieval date + content hash on first authoritative run; analyzed-text extraction anchors (START / END / EXCLUDE) in [../SOURCES.md](../SOURCES.md)).
 - **Quotation policy:** paraphrase only.
 - **Ground-truth authority:** Joshua A. Miller (editor), diagnosis registered 2026-05-30, before any run.
-- **Scope:** GT1–GT3 authoritative. **GT4–GT7 PROVISIONAL.**
+- **Scope:** GT1–GT3 authoritative. **GT4–GT8 PROVISIONAL.**
 
 ## GT1 — Main claim *(Q1)*
 
@@ -27,12 +27,14 @@
 - **Objection zone (authority):** what to do with **repeated, high-risk noncriminal violations** short of confinement — the hard-case the categorical ask must address.
 - **Provisional codes:** OB3 + FM-A18 (Implementation Blindspot — the alternative for the hard case); AT3 → BP5 (alternatives) adjacency.
 
-## GT4–GT7 — *(PROVISIONAL)*
+## GT4–GT8 — *(PROVISIONAL)*
 
 - **GT4 audience:** MIXED (policymakers + practitioners) · SYMPATHETIC→MIXED · HIGH.
 - **GT5 red-team:** load-bearing = the high-risk-recidivism hard case + which support line actually bears the ask. Decoy = disputing one statistic.
 - **GT6 repair order:** first target = **sequence/prioritize the four support lines** and address the hard-case alternative, before adding more disparity data.
-- **GT7 Distinguish:** SOUND — a competent advocacy brief; soft spots are compression + unaddressed hard case (Should-Fix). **Calibration trap:** over-pathologizing a clear advocacy ask, or missing the categorical claim's edge-case gap.
+- **Expected warrant verdict:** WARRANTED — a competent advocacy brief; soft spots are compression + unaddressed hard case (Should-Fix). **Calibration trap:** over-pathologizing a clear advocacy ask, or missing the categorical claim's edge-case gap.
+- **Expected premise flags:** NONE_REGISTERED (provisional migration default)
+- **GT8 Must not adjudicate:** whether ending confinement as a response to technical probation violations reduces harm to youth without increasing risk from unaddressed high-risk violations.
 
 ## Notes
 

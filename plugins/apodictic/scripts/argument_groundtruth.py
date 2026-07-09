@@ -3,9 +3,10 @@
 """Mechanical-honesty validator for APODICTIC Argument Benchmark ground-truth files.
 
 Backs `validate.sh argument-groundtruth-check <groundtruth_file>` (docs/argument-benchmark-spec.md
-§Mechanical validator). Checks a registered `groundtruth.md` answer key:
+§Mechanical validator). Checks a registered `groundtruth.md` answer key against Argument Benchmark
+GT schema v0.2.0:
 
-  1. GT1-GT7 sections are present and non-empty.
+  1. GT1-GT8 sections are present and non-empty.
   2. Every referenced code resolves to the Dialectical Clarity namespace
      (AT / CL / SM / WR / BP / OB / DI / NE / AC) or a valid FM-A<x> pattern (x in 1-20).
   3. GT2's failure locus is consistent with its codes: a WARRANT locus carries a WR* code, a
@@ -14,9 +15,24 @@ Backs `validate.sh argument-groundtruth-check <groundtruth_file>` (docs/argument
      marked "N/A — positive control" are exempt. (The locus vocabulary in the corpus is richer
      than a fixed enum — SCOPE / CLAIM-LADDER / FORM / QUALIFIER appear — so the check enforces
      code-consistency for the canonical four loci rather than strict enum membership.)
-  4. GT7's Distinguish classification is one of SOUND / UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND;
-     an UNCONVENTIONAL-BUT-EFFECTIVE classification must name >=1 form-dependent code to
-     downgrade to advisory.
+  4. GT7's Warrant verdict is one of WARRANTED / UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED;
+     an UNCONVENTIONAL-BUT-WARRANTED verdict must name >=1 form-dependent code to downgrade to
+     advisory. The retired field label (`Expected classification`) and the retired v0.1 tokens
+     (SOUND / UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND) are actively rejected, and a GT7 section
+     with no parseable verdict field is an ERROR (not a silent skip).
+  5. GT8's Premise-plausibility flags: the `Expected premise flags` value is leading-token parsed
+     (NONE_REGISTERED or a P<n> id list; a trailing parenthetical such as
+     `(provisional migration default)` is commentary; NONE_REGISTERED can never combine with
+     anything else). The expected id list and the flag-detail rows must AGREE both ways
+     (NONE_REGISTERED forbids rows; a P-list requires exactly-matching rows). Every detail row is
+     strict: exactly 5 `|`-cells (premise | role | flag-type(s) | why flagged | Firewall
+     boundary), and each ` + `-joined part of the flag cell must be EXACTLY one of CONTESTABLE /
+     UNEARNED / OVERLOADED / EXTERNAL-VERIFY / DEFINITIONAL (full-match; NONE_REGISTERED is
+     field-level only). The flag-type cell must not smuggle a truth verdict (a standalone
+     uppercase TRUE / FALSE / PROVEN / DISPROVEN / CORRECT / INCORRECT) — the engine flags
+     premise acceptability, it never adjudicates premise truth. The `Why flagged` /
+     `Firewall boundary` prose cells are exempt (their natural sentence "does not rule the
+     premise true or false" is lowercase prose, not a verdict).
 
 Output keeps the legacy WARN: / ERROR: / OK: / FAILED: prefixes and exit codes (0 ok, 1 fail,
 2 usage) so it slots into --self-test-all alongside the other self-testable validators.
@@ -32,21 +48,42 @@ import sys
 
 # Dialectical Clarity code namespace (docs/argument-benchmark-spec.md §Mechanical validator).
 _NAMESPACE = {"AT", "CL", "SM", "WR", "BP", "OB", "DI", "NE", "AC"}
-# 2-letter prefixes that are NOT codes (ground-truth section labels GT1..GT7).
+# 2-letter prefixes that are NOT codes (ground-truth section labels GT1..GT8).
 _NON_CODE_PREFIXES = {"GT"}
 _FM_A_MAX = 20  # FM-A20 = Self-Undermining Remedy (Step-6 decoy-resistance pattern)
 
 # Canonical failure loci -> the code family GT2 must carry for that locus.
 _LOCUS_FAMILY = {"SUPPORT": ("SM",), "WARRANT": ("WR",), "BURDEN": ("BP",),
                  "OBJECTION": ("OB", "DI")}
-_GT7_CLASSES = ["UNCONVENTIONAL-BUT-EFFECTIVE", "UNSOUND", "SOUND"]  # longest-first
+# GT7 warrant-verdict enum (GT schema v0.2.0). Membership is exact; the inference axis of
+# Wachsmuth cogency (Local Relevance + Local Sufficiency), premise acceptability bracketed.
+_GT7_CLASSES = ["UNCONVENTIONAL-BUT-WARRANTED", "UNWARRANTED", "WARRANTED"]
+# Retired v0.1 tokens — actively rejected so an unmigrated fixture cannot pass vacuously.
+_GT7_LEGACY_CLASSES = {"SOUND", "UNCONVENTIONAL-BUT-EFFECTIVE", "UNSOUND"}
+# GT8 premise-plausibility flag types valid in a DETAIL ROW (GT schema v0.2.0). NONE_REGISTERED
+# is a FIELD-level sentinel only — it can never combine with another flag and never appears in a
+# detail row (a row exists precisely because a flag IS registered).
+_GT8_ROW_FLAG_TYPES = {"CONTESTABLE", "UNEARNED", "OVERLOADED", "EXTERNAL-VERIFY", "DEFINITIONAL"}
 
 _CODE_RE = re.compile(r"\b([A-Z]{2})([0-9]+)\b")
 _FM_A_RE = re.compile(r"\bFM-A([0-9]+)\b")
 _HEADING_RE = re.compile(r"^#{1,4}\s")
 _BARE_PREFIX_RE = re.compile(r"\b(?:AT|CL|SM|WR|BP|OB|DI|NE|AC)\b")
-# Leading verdict token of a GT7 "Expected classification" value, skipping markdown emphasis.
-_GT7_VERDICT_RE = re.compile(r"[\s*`]*([A-Z][A-Z-]*)")
+# Leading verdict token of a GT7 "Expected warrant verdict" value, skipping markdown emphasis.
+# The warrant tokens are all-uppercase with hyphens (no underscores). The trailing lookahead
+# requires a token boundary so a near-miss like `WARRANTEDx` cannot truncate-parse as WARRANTED.
+_GT7_VERDICT_RE = re.compile(r"[\s*`]*([A-Z][A-Z-]*)(?![A-Za-z0-9])")
+# Leading token of a GT8 "Expected premise flags" value — NONE_REGISTERED (underscore) or P<n>;
+# a trailing `(provisional migration default)` parenthetical is commentary, not part of the token.
+# Boundary lookahead: `P1a` must not truncate-parse as P1.
+_GT8_FLAGS_RE = re.compile(r"[\s*`]*([A-Z][A-Z0-9_-]*)(?![A-Za-z0-9])")
+# A GT8 premise-flag detail row: `- P1: premise | role | flag-type(s) | why | firewall`.
+# Accepts the corpus's bolded-field variants (`- **P1:** …`, `- **P1**: …`) — a bolded id must
+# not silently escape row validation. Captures (id, rest).
+_GT8_ROW_RE = re.compile(r"^\s*-\s*\**(P[0-9]+)[:*]+\s*(.+)$", re.MULTILINE)
+# A truth verdict smuggled into a flag cell: a standalone UPPERCASE token. Case-sensitive on
+# purpose — the exempt prose fields say lowercase "true or false", which must NOT trip this.
+_TRUTH_TOKEN_RE = re.compile(r"\b(TRUE|FALSE|PROVEN|DISPROVEN|CORRECT|INCORRECT)\b")
 # Decoy code mentions that do NOT name the diagnosed family: explicitly negated ("not WR0",
 # "not WR0/WR2") or marked passing ("WR0 = PASS", "WR0/WR2 (PASS)"). Masked before the GT2
 # locus<->code-family check so a correct family named only to deny it can't satisfy the check.
@@ -65,12 +102,15 @@ def _positive_code_text(text):
 
 def _gt_numbers_in_heading(line):
     """All GT section numbers a heading covers — corpus fixtures combine sections under one
-    heading, e.g. `## GT4–GT7 — *(PROVISIONAL)*` (a range) or `## GT5 / GT6 — …` (a list)."""
+    heading, e.g. `## GT4–GT8 — *(PROVISIONAL)*` (a range), `## GT7–GT8 — …`, or `## GT5 / GT6`
+    (a list)."""
     nums = set()
-    for a, b in re.findall(r"GT([1-7])\s*[-–—]\s*(?:GT\s*)?([1-7])", line):
+    # (?![0-9]) — `GT10`/`GT78` in an appendix heading must not read as GT1/GT7 and silently
+    # capture (or overwrite) a real section's body.
+    for a, b in re.findall(r"GT([1-8])(?![0-9])\s*[-–—]\s*(?:GT\s*)?([1-8])(?![0-9])", line):
         if int(a) <= int(b):
             nums.update(range(int(a), int(b) + 1))
-    nums.update(int(n) for n in re.findall(r"GT([1-7])", line))
+    nums.update(int(n) for n in re.findall(r"GT([1-8])(?![0-9])", line))
     return sorted(nums)
 
 
@@ -113,8 +153,8 @@ def argument_groundtruth_check(text):
     errors, warnings = [], []
     sections = _parse_gt_sections(text)
 
-    # Check 1: GT1-GT7 each covered by a heading (combined headings OK) + non-empty.
-    for n in range(1, 8):
+    # Check 1: GT1-GT8 each covered by a heading (combined headings OK) + non-empty.
+    for n in range(1, 9):
         sec = sections.get(n)
         if sec is None:
             errors.append("Check 1 (sections) — GT%d not covered by any heading." % n)
@@ -155,30 +195,134 @@ def argument_groundtruth_check(text):
                 errors.append("Check 3 (GT2 locus) — locus names %s but GT2 carries no matching "
                               "code (expected one of: %s)." % ("/".join(named), want))
 
-    # Check 4: GT7 Distinguish classification — validated when the field is present (provisional /
-    # derive-on-run fixtures legitimately omit it).
+    # Check 4: GT7 Warrant verdict. A GT7 section present but with no parseable verdict field is
+    # an ERROR (not a silent skip); the retired field label + retired v0.1 tokens are rejected.
     gt7 = sections.get(7, {}).get("body", "")
-    m = re.search(r"Expected classification:\*\*\s*(.+)", gt7)
-    if m:
-        cls_line = m.group(1)
-        # The verdict is the field value at the *start* of the line; a trailing parenthetical,
-        # dash-set-off rationale, or "..., not UNSOUND" gloss is commentary, not the
-        # classification. Parse the leading token so "SOUND — ... not UNSOUND" reads as SOUND
-        # (not UNSOUND) and "BROKEN, not UNSOUND" is correctly rejected.
-        vm = _GT7_VERDICT_RE.match(cls_line)
-        verdict = vm.group(1) if vm else ""
-        cls = verdict if verdict in _GT7_CLASSES else None
-        if cls is None:
-            errors.append("Check 4 (GT7) — classification is not one of SOUND / "
-                          "UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND (got %r)." % cls_line.strip())
-        elif cls == "UNCONVENTIONAL-BUT-EFFECTIVE":
-            # Must identify the form-dependent codes to downgrade — specific (SM0 / FM-A1) or
-            # family-level ("DI codes", "SM/WR on the cost accounting") references both count.
-            if not (_codes_in(gt7) or _FM_A_RE.search(gt7) or _BARE_PREFIX_RE.search(gt7)):
-                errors.append("Check 4 (GT7) — UNCONVENTIONAL-BUT-EFFECTIVE must name >=1 "
-                              "form-dependent code to downgrade to advisory, but GT7 names none.")
+    if gt7:
+        if re.search(r"Expected classification:\*\*", gt7):
+            errors.append("Check 4 (GT7) — uses the retired field label 'Expected classification' "
+                          "(GT schema <v0.2.0); rename to 'Expected warrant verdict'.")
+        # Reject residue of ALL THREE retired v0.1 GT7 encodings, not just the standalone field
+        # label: the combined-block sub-line (`- **GT7 Distinguish:** …`) and the inline variant
+        # (`… — expected classification: …`) must not survive beside a migrated field, or an
+        # unmigrated encoding can pass clean next to a pasted-in new field.
+        if re.search(r"GT7 Distinguish", gt7) or re.search(r"[Ee]xpected classification", gt7):
+            errors.append("Check 4 (GT7) — retired v0.1 GT7 encoding residue ('GT7 Distinguish' "
+                          "or 'expected classification') survives in the GT7 body; migrate the "
+                          "whole section to the 'Expected warrant verdict' field.")
+        m = re.search(r"Expected warrant verdict:\*\*\s*(.+)", gt7)
+        if not m:
+            errors.append("Check 4 (GT7) — GT7 section present but no parseable "
+                          "'Expected warrant verdict:' field.")
+        else:
+            cls_line = m.group(1)
+            # The verdict is the field value at the *start* of the line; a trailing parenthetical,
+            # dash-set-off rationale, or "..., not UNWARRANTED" gloss is commentary. The leading
+            # token is enum-gated, which is strictly stronger than the standalone-truth-token guard
+            # (a TRUE/FALSE verdict here is already out-of-enum), so no separate truth check is
+            # needed on GT7; the explicit truth-token scan guards the GT8 free-text flag cell.
+            vm = _GT7_VERDICT_RE.match(cls_line)
+            verdict = vm.group(1) if vm else ""
+            if verdict in _GT7_LEGACY_CLASSES:
+                errors.append("Check 4 (GT7) — retired v0.1 verdict token %r (SOUND / "
+                              "UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND); migrate to WARRANTED / "
+                              "UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED." % verdict)
+            elif verdict not in _GT7_CLASSES:
+                errors.append("Check 4 (GT7) — warrant verdict is not one of WARRANTED / "
+                              "UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED (got %r)." % cls_line.strip())
+            elif verdict == "UNCONVENTIONAL-BUT-WARRANTED":
+                # Must identify the form-dependent codes to downgrade — specific (SM0 / FM-A1) or
+                # family-level ("DI codes", "SM/WR on the cost accounting") references both count.
+                if not (_codes_in(gt7) or _FM_A_RE.search(gt7) or _BARE_PREFIX_RE.search(gt7)):
+                    errors.append("Check 4 (GT7) — UNCONVENTIONAL-BUT-WARRANTED must name >=1 "
+                                  "form-dependent code to downgrade to advisory, but GT7 names none.")
 
-    ok = "OK: Argument ground-truth contract satisfied (GT1-GT7 present; codes resolve; locus consistent)."
+    # Check 5: GT8 Premise-plausibility flags (GT schema v0.2.0). Leading-token parse of the
+    # `Expected premise flags` value (NONE_REGISTERED or a P<n> id list; a trailing parenthetical
+    # such as `(provisional migration default)` is commentary). The expected id list and the
+    # flag-detail rows must AGREE — a registered path nothing cross-checks is a vacuous firewall.
+    # Every detail row is strict: exactly 5 `|`-cells, each ` + `-part of the flag cell EXACTLY an
+    # enum token (full-match — no parentheticals, no prose, no no-space joiner), and no truth
+    # verdict smuggled into the flag column.
+    gt8 = sections.get(8, {}).get("body", "")
+    if gt8:
+        expected_ids, none_registered = [], False
+        fm = re.search(r"Expected premise flags:\*\*\s*(.+)", gt8)
+        if not fm:
+            errors.append("Check 5 (GT8) — GT8 section present but no parseable "
+                          "'Expected premise flags:' field.")
+        else:
+            raw = fm.group(1).strip()
+            if "|" in raw:
+                errors.append("Check 5 (GT8) — 'Expected premise flags' value contains a '|' "
+                              "alternation (a template guidance line copied verbatim is not a "
+                              "legal value).")
+            else:
+                lead_m = _GT8_FLAGS_RE.match(raw)
+                lead = lead_m.group(1) if lead_m else ""
+                # Commentary is a trailing parenthetical; the value proper precedes it.
+                value = raw.split("(", 1)[0].strip().rstrip("*` ")
+                if lead == "NONE_REGISTERED":
+                    none_registered = True
+                    if value.strip("*` ") != "NONE_REGISTERED":
+                        errors.append("Check 5 (GT8) — NONE_REGISTERED cannot combine with any "
+                                      "other flag or id (got %r)." % raw)
+                elif re.match(r"P[0-9]+$", lead):
+                    expected_ids = re.findall(r"\bP[0-9]+\b", value)
+                    leftover = re.sub(r"\bP[0-9]+\b", "", value).strip("*` ,;…")
+                    if leftover:
+                        errors.append("Check 5 (GT8) — 'Expected premise flags' P-id list carries "
+                                      "unexpected content %r." % leftover)
+                else:
+                    errors.append("Check 5 (GT8) — 'Expected premise flags' leading token must be "
+                                  "NONE_REGISTERED or P<n> (got %r)." % raw)
+        rows = _GT8_ROW_RE.findall(gt8)
+        row_ids = [rid for rid, _ in rows]
+        # Reject duplicate ids on EITHER side BEFORE the coverage compare. Field <-> detail-row
+        # agreement is a MULTISET relation: collapsing both sides to sets below would let a doubled
+        # field id (`Expected premise flags: P1, P1`) or two `P1` detail rows (conflicting duplicate
+        # registrations for one premise) slip through a coverage check they must fail.
+        dup_expected = sorted({i for i in expected_ids if expected_ids.count(i) > 1})
+        if dup_expected:
+            errors.append("Check 5 (GT8) — 'Expected premise flags' repeats id(s) %s; each premise "
+                          "id may be registered at most once." % ", ".join(dup_expected))
+        dup_rows = sorted({i for i in row_ids if row_ids.count(i) > 1})
+        if dup_rows:
+            errors.append("Check 5 (GT8) — duplicate flag-detail row(s) for id(s) %s; each premise "
+                          "id must have exactly one detail row (conflicting duplicate rows)."
+                          % ", ".join(dup_rows))
+        # Field <-> detail-row agreement (both directions).
+        if none_registered and rows:
+            errors.append("Check 5 (GT8) — expected NONE_REGISTERED but %d flag-detail row(s) "
+                          "are registered (%s)." % (len(rows), ", ".join(row_ids)))
+        if expected_ids and sorted(set(row_ids)) != sorted(set(expected_ids)):
+            errors.append("Check 5 (GT8) — expected flag ids %s do not match detail-row ids %s."
+                          % (", ".join(expected_ids), ", ".join(row_ids) if row_ids else "(none)"))
+        for rid, row in rows:
+            cells = [c.strip() for c in row.split("|")]
+            if len(cells) != 5:
+                errors.append("Check 5 (GT8) — %s detail row must have exactly 5 '|'-cells "
+                              "(premise | role | flag-type(s) | why flagged | Firewall boundary); "
+                              "got %d. A '|' inside the premise text must be reworded — cell "
+                              "shifting would let a flag escape validation." % (rid, len(cells)))
+                continue
+            flag_cell = cells[2]
+            tt = _TRUTH_TOKEN_RE.search(flag_cell)
+            if tt:
+                errors.append("Check 5 (GT8) — flag-type cell smuggles a truth verdict %r; the "
+                              "engine flags acceptability, it does not adjudicate premise truth."
+                              % tt.group(1))
+                continue
+            for part in flag_cell.split(" + "):
+                tok = part.strip().strip("*`")
+                if tok not in _GT8_ROW_FLAG_TYPES:
+                    errors.append("Check 5 (GT8) — flag-type cell part %r is not exactly one of "
+                                  "CONTESTABLE / UNEARNED / OVERLOADED / EXTERNAL-VERIFY / "
+                                  "DEFINITIONAL (join multiple flags with ' + '; NONE_REGISTERED "
+                                  "is field-level only and never appears in a detail row)."
+                                  % part.strip())
+
+    ok = "OK: Argument ground-truth contract satisfied (GT1-GT8 present; codes resolve; locus consistent; warrant verdict + premise flags well-formed)."
     failed = ("FAILED: %d argument-groundtruth-check failure(s). Canonical home: "
               "docs/argument-benchmark-spec.md §Mechanical validator + evals/argument-groundtruth-template.md."
               % len(errors))
@@ -226,9 +370,61 @@ _VALID_GT = """# Ground Truth: self-test
 ## GT6 — Repair order *(Q6; §10.5)*
 - **Correct first repair target:** warrant.
 
-## GT7 — Distinguish classification *(Q7; §1 Distinguish / Step 9)*
-- **Expected classification:** UNSOUND
-- **False-positive trap:** calling it SOUND because it cites evidence.
+## GT7 — Warrant verdict *(Q7; §1 Distinguish / Step 9)*
+- **Expected warrant verdict:** UNWARRANTED
+- **False-positive trap:** calling it WARRANTED because it cites evidence.
+
+## GT8 — Premise-plausibility flags
+- **Expected premise flags:** NONE_REGISTERED
+- **Must not adjudicate:** whether the underlying empirical claim is true.
+
+## Notes
+free-form.
+"""
+
+# GT7 = WARRANTED coexisting with a registered, two-flag GT8 premise flag — the classic
+# valid-inference / contestable-premise boundary case. The Firewall-boundary cell deliberately
+# says lowercase "true or false" (legitimate prose) and MUST still pass the truth-token check.
+_MOON_CHEESE_GT = _VALID_GT.replace(
+    "- **Expected warrant verdict:** UNWARRANTED\n"
+    "- **False-positive trap:** calling it WARRANTED because it cites evidence.",
+    "- **Expected warrant verdict:** WARRANTED\n"
+    "- **False-positive trap:** calling it UNWARRANTED merely because a premise is flagged."
+).replace(
+    "- **Expected premise flags:** NONE_REGISTERED\n"
+    "- **Must not adjudicate:** whether the underlying empirical claim is true.",
+    "- **Expected premise flags:** P1\n"
+    "- **Flag details:**\n"
+    "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
+    "| a careful reviewer would not let the composition claim pass silently "
+    "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.\n"
+    "- **Must not adjudicate:** lunar composition."
+)
+
+# A combined GT4–GT8 provisional block using the canonical `Expected warrant verdict` /
+# `Expected premise flags` field labels the renamed parser matcher reads.
+_COMBINED_GT = """# Ground Truth: self-test combined
+
+## Provenance
+- **Fixture slug:** self-test-combined
+
+## GT1 — Main claim *(Q1; §2 C0)*
+- **Expected C0:** "X should do Y."
+
+## GT2 — Failure locus *(Q2; §3 Support vs §4 Warrant)*
+- **N/A — positive control.** No planted failure.
+
+## GT3 — Strongest real objection *(Q3; §6)*
+- **Expected OB / DI codes:** OB3.
+
+## GT4–GT8 — *(PROVISIONAL)*
+- **GT4 Audience profile:** Expertise GENERAL · Receptivity MIXED · Consequence MEDIUM (AC1).
+- **GT5 Pre-registered vulnerabilities:** no denominator.
+- **GT6 Correct first repair target:** warrant.
+- **Expected warrant verdict:** WARRANTED — a competent piece; the soft spot is Should-Fix.
+- **False-positive trap:** over-pathologizing a competent piece.
+- **Expected premise flags:** NONE_REGISTERED (provisional migration default)
+- **Must not adjudicate:** whether the framing assumption holds.
 
 ## Notes
 free-form.
@@ -261,48 +457,163 @@ def run_self_test(which=None):
     # Check 3: WARRANT locus with no WR code (only SM) — the spec's example error.
     check("warrant_without_wr", errs_of(_VALID_GT.replace(
         "WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.", "SM0 (assertion gap).")), False)
-    # Check 4: GT7 classification not one of the three.
-    check("bad_gt7_class", errs_of(_VALID_GT.replace("Expected classification:** UNSOUND",
-                                                     "Expected classification:** BROKEN")), False)
-    # Check 4: UNCONVENTIONAL with no downgraded code named.
+    # Check 4: GT7 warrant verdict not one of the three.
+    check("bad_gt7_class", errs_of(_VALID_GT.replace("Expected warrant verdict:** UNWARRANTED",
+                                                     "Expected warrant verdict:** BROKEN")), False)
+    # Check 4: UNCONVENTIONAL-BUT-WARRANTED with no downgraded code named.
     check("unconventional_no_code", errs_of(_VALID_GT.replace(
-        "## GT7 — Distinguish classification *(Q7; §1 Distinguish / Step 9)*\n"
-        "- **Expected classification:** UNSOUND\n"
-        "- **False-positive trap:** calling it SOUND because it cites evidence.",
-        "## GT7 — Distinguish classification *(Q7; §1 Distinguish / Step 9)*\n"
-        "- **Expected classification:** UNCONVENTIONAL-BUT-EFFECTIVE\n"
+        "## GT7 — Warrant verdict *(Q7; §1 Distinguish / Step 9)*\n"
+        "- **Expected warrant verdict:** UNWARRANTED\n"
+        "- **False-positive trap:** calling it WARRANTED because it cites evidence.",
+        "## GT7 — Warrant verdict *(Q7; §1 Distinguish / Step 9)*\n"
+        "- **Expected warrant verdict:** UNCONVENTIONAL-BUT-WARRANTED\n"
         "- **False-positive trap:** none.")), False)
     # Positive-control GT2 (N/A) is exempt from Check 3.
     check("positive_control_gt2_na", errs_of(_VALID_GT.replace(
         "- **Primary failure layer:** WARRANT\n- **Expected codes:** WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
         "- **N/A — positive control.** No planted failure.")), True)
-    # Check 4: the verdict is the leading token — a SOUND key glossed "..., not UNSOUND" must
-    # parse as SOUND (clean), and must NOT be misread as UNSOUND off the explanatory token.
-    check("gt7_sound_not_unsound", errs_of(_VALID_GT.replace(
-        "Expected classification:** UNSOUND",
-        "Expected classification:** SOUND — a competent essay, not UNSOUND")), True)
+    # Check 4: the verdict is the leading token — a WARRANTED key glossed "..., not UNWARRANTED"
+    # must parse as WARRANTED (clean), and must NOT be misread as UNWARRANTED off the gloss.
+    check("gt7_warranted_not_unwarranted", errs_of(_VALID_GT.replace(
+        "Expected warrant verdict:** UNWARRANTED\n"
+        "- **False-positive trap:** calling it WARRANTED because it cites evidence.",
+        "Expected warrant verdict:** WARRANTED — a competent essay, not UNWARRANTED\n"
+        "- **False-positive trap:** none.")), True)
     # Check 4: an out-of-enum verdict followed by a valid token in the gloss is still rejected.
-    check("gt7_broken_not_unsound", errs_of(_VALID_GT.replace(
-        "Expected classification:** UNSOUND",
-        "Expected classification:** BROKEN, not UNSOUND")), False)
-    # Check 3: the correct family named only as a negation ("not WR0") must not satisfy a
-    # WARRANT locus — the "warrant break mis-coded as support" error must still fire.
-    check("gt2_negated_family", errs_of(_VALID_GT.replace(
-        "- **Expected codes:** WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
-        "- **Expected codes:** SM0 (assertion gap); not WR0.")), False)
-    # Check 3: the correct family named only as PASS ("WR0 = PASS") must not satisfy the locus.
-    check("gt2_pass_decoy_family", errs_of(_VALID_GT.replace(
-        "- **Expected codes:** WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
-        "- **Expected codes:** SM0 (assertion gap); WR0 = PASS.")), False)
-    # Check 3: a grouped PASS list ("WR0/WR2 = PASS") must mask the *whole* group — a leading
-    # positive token ("WR0/") must not survive to satisfy the WARRANT locus.
-    check("gt2_pass_decoy_grouped_eq", errs_of(_VALID_GT.replace(
-        "- **Expected codes:** WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
-        "- **Expected codes:** SM0 (assertion gap); WR0/WR2 = PASS.")), False)
-    # Check 3: grouped PASS with spaced separator + paren form ("WR0 / WR2 (PASS)") likewise.
-    check("gt2_pass_decoy_grouped_paren", errs_of(_VALID_GT.replace(
-        "- **Expected codes:** WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
-        "- **Expected codes:** SM0 (assertion gap); WR0 / WR2 (PASS).")), False)
+    check("gt7_broken_not_unwarranted", errs_of(_VALID_GT.replace(
+        "Expected warrant verdict:** UNWARRANTED",
+        "Expected warrant verdict:** BROKEN, not UNWARRANTED")), False)
+    # Check 4: the retired FIELD LABEL is rejected even when the token is a valid new one.
+    check("gt7_old_field_label", errs_of(_VALID_GT.replace(
+        "- **Expected warrant verdict:** UNWARRANTED",
+        "- **Expected classification:** UNWARRANTED")), False)
+    # Check 4: a retired v0.1 TOKEN is rejected even under the new field label.
+    check("gt7_old_token", errs_of(_VALID_GT.replace(
+        "Expected warrant verdict:** UNWARRANTED", "Expected warrant verdict:** UNSOUND")), False)
+    # Check 4: a GT7 section present but stripped of its verdict field is an ERROR, not a skip.
+    check("gt7_missing_field", errs_of(_VALID_GT.replace(
+        "- **Expected warrant verdict:** UNWARRANTED\n", "")), False)
+    # Check 5: GT8 with NONE_REGISTERED (provisional migration default) is accepted.
+    check("gt8_provisional_default", errs_of(_VALID_GT.replace(
+        "- **Expected premise flags:** NONE_REGISTERED",
+        "- **Expected premise flags:** NONE_REGISTERED (provisional migration default)")), True)
+    # Check 5: a missing GT8 section is rejected.
+    check("gt8_missing_section", errs_of(_VALID_GT.replace(
+        "## GT8 — Premise-plausibility flags\n"
+        "- **Expected premise flags:** NONE_REGISTERED\n"
+        "- **Must not adjudicate:** whether the underlying empirical claim is true.\n", "")), False)
+    # Check 5: a GT8 section present but with no premise-flags field is rejected.
+    check("gt8_missing_field", errs_of(_VALID_GT.replace(
+        "- **Expected premise flags:** NONE_REGISTERED\n", "")), False)
+    # Check 5: a malformed premise flag type is rejected.
+    check("gt8_bad_flag_type", errs_of(_MOON_CHEESE_GT.replace(
+        "CONTESTABLE + EXTERNAL-VERIFY", "CONTESTABLE + NONSENSE-FLAG")), False)
+    # Check 5: a truth verdict smuggled into the flag cell is rejected (field-scoped,
+    # case-sensitive) — even as a parenthetical the enum check alone would miss.
+    check("gt8_truth_token_in_flag", errs_of(_MOON_CHEESE_GT.replace(
+        "CONTESTABLE + EXTERNAL-VERIFY", "CONTESTABLE (FALSE)")), False)
+    # Check 5 + Check 4: the moon-cheese WARRANTED + P1 two-flag row is accepted, AND its
+    # Firewall-boundary sentence contains lowercase "true or false" without tripping the check.
+    check("moon_cheese_warranted_p1", errs_of(_MOON_CHEESE_GT), True)
+    # Check 1/4/5: a combined GT4–GT8 provisional heading covers GT4-GT8 and is accepted.
+    check("combined_gt4_gt8_heading", errs_of(_COMBINED_GT), True)
+    # Check 4: a near-miss verdict token must not truncate-parse as a valid one.
+    check("gt7_token_boundary", errs_of(_VALID_GT.replace(
+        "Expected warrant verdict:** UNWARRANTED", "Expected warrant verdict:** UNWARRANTEDx")), False)
+    # Check 4: combined-block legacy residue (`GT7 Distinguish:`) beside a migrated field.
+    check("gt7_legacy_distinguish_residue", errs_of(_VALID_GT.replace(
+        "- **False-positive trap:** calling it WARRANTED because it cites evidence.",
+        "- **False-positive trap:** calling it WARRANTED because it cites evidence.\n"
+        "- **GT7 Distinguish:** UNWARRANTED — leftover of the old combined encoding.")), False)
+    # Check 4: inline legacy residue (lowercase `expected classification`) beside a migrated field.
+    check("gt7_legacy_inline_residue", errs_of(_VALID_GT.replace(
+        "- **False-positive trap:** calling it WARRANTED because it cites evidence.",
+        "- **False-positive trap:** calling it WARRANTED because it cites evidence.\n"
+        "- **GT7 Distinguish — expected classification: UNWARRANTED**")), False)
+    # Check 5: a near-miss premise id must not truncate-parse (`P1a` is not P1).
+    check("gt8_lead_boundary", errs_of(_VALID_GT.replace(
+        "Expected premise flags:** NONE_REGISTERED", "Expected premise flags:** P1a")), False)
+    # Check 5: NONE_REGISTERED can never combine with another flag.
+    check("gt8_none_registered_combined", errs_of(_VALID_GT.replace(
+        "Expected premise flags:** NONE_REGISTERED",
+        "Expected premise flags:** NONE_REGISTERED + CONTESTABLE")), False)
+    # Check 5: the template's guidance line copied verbatim (contains `|`) is not a legal value.
+    check("gt8_template_guidance_copied", errs_of(_VALID_GT.replace(
+        "Expected premise flags:** NONE_REGISTERED",
+        "Expected premise flags:** NONE_REGISTERED | P1, P2, ...")), False)
+    # Check 5: an expected P-id with ZERO detail rows is a vacuous registration — rejected.
+    check("gt8_expected_p1_no_rows", errs_of(_VALID_GT.replace(
+        "Expected premise flags:** NONE_REGISTERED", "Expected premise flags:** P1")), False)
+    # Check 5: NONE_REGISTERED with a registered detail row — field/rows disagreement.
+    check("gt8_row_under_none_registered", errs_of(_VALID_GT.replace(
+        "- **Must not adjudicate:** whether the underlying empirical claim is true.",
+        "- **Flag details:**\n"
+        "  - P1: \"a premise\" | ground | CONTESTABLE | why | The engine does not adjudicate.\n"
+        "- **Must not adjudicate:** whether the underlying empirical claim is true.")), False)
+    # Check 5: expected ids and row ids must match exactly (P1 expected, P2 registered).
+    check("gt8_row_id_mismatch", errs_of(_MOON_CHEESE_GT.replace(
+        "  - P1: \"the moon is made of cheese\"", "  - P2: \"the moon is made of cheese\"")), False)
+    # Check 5: a doubled expected id (`P1, P1`) against one detail row must FAIL — set-collapse
+    # would have let this pass (PR #192 review); multiplicity is preserved on the field side.
+    check("gt8_duplicate_expected_id", errs_of(_MOON_CHEESE_GT.replace(
+        "- **Expected premise flags:** P1\n",
+        "- **Expected premise flags:** P1, P1\n")), False)
+    # Check 5: two `P1` detail rows against one expected `P1` must FAIL — a conflicting/duplicate
+    # registration for the same premise id (set-collapse would have hidden it; PR #192 review).
+    check("gt8_duplicate_detail_row", errs_of(_MOON_CHEESE_GT.replace(
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
+        "| a careful reviewer would not let the composition claim pass silently "
+        "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.\n",
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
+        "| a careful reviewer would not let the composition claim pass silently "
+        "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.\n"
+        "  - P1: \"the moon is also green\" | ground | CONTESTABLE "
+        "| a second conflicting registration for the same id "
+        "| The engine flags the premise as contestable; it does not rule the premise true or false.\n")), False)
+    # Check 5: two DISTINCT ids (`P1, P2`) with one detail row each is CLEAN — the multiplicity
+    # guard must not over-reject a legitimate multi-premise registration.
+    check("gt8_two_distinct_ids_ok", errs_of(_MOON_CHEESE_GT.replace(
+        "- **Expected premise flags:** P1\n",
+        "- **Expected premise flags:** P1, P2\n").replace(
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
+        "| a careful reviewer would not let the composition claim pass silently "
+        "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.\n",
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
+        "| a careful reviewer would not let the composition claim pass silently "
+        "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.\n"
+        "  - P2: \"the moon is green\" | ground | CONTESTABLE "
+        "| a distinct second registered premise "
+        "| The engine flags the premise as contestable; it does not rule the premise true or false.\n")), True)
+    # Check 5: a BOLDED row id (`- **P1:** …`) is validated, not silently skipped — the same
+    # moon-cheese row bolded must still be accepted (and thus enum/truth-checked).
+    check("gt8_bold_row_id", errs_of(_MOON_CHEESE_GT.replace(
+        "  - P1: \"the moon is made of cheese\"",
+        "  - **P1:** \"the moon is made of cheese\"")), True)
+    # Check 5: a `|` inside the premise text shifts cells — must fail the 5-cell contract, not
+    # let the shifted flag cell escape validation.
+    check("gt8_pipe_in_premise", errs_of(_MOON_CHEESE_GT.replace(
+        "\"the moon is made of cheese\"", "\"the moon | is made of cheese\"")), False)
+    # Check 5: a 3-cell row (missing why-flagged + Firewall boundary) is rejected.
+    check("gt8_three_cell_row", errs_of(_MOON_CHEESE_GT.replace(
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
+        "| a careful reviewer would not let the composition claim pass silently "
+        "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.",
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY")), False)
+    # Check 5: the no-space joiner must not smuggle a bogus flag past the full-match.
+    check("gt8_nospace_plus", errs_of(_MOON_CHEESE_GT.replace(
+        "CONTESTABLE + EXTERNAL-VERIFY", "CONTESTABLE+NONSENSE-FLAG")), False)
+    # Check 5: a mixed-case truth verdict in a parenthetical is caught by the full-match (the
+    # uppercase-only truth-token scan is deliberately narrow; the enum full-match backstops it).
+    check("gt8_mixedcase_truth_parenthetical", errs_of(_MOON_CHEESE_GT.replace(
+        "CONTESTABLE + EXTERNAL-VERIFY", "CONTESTABLE (False)")), False)
+    # Check 5: prose adjudication inside the flag cell is rejected by the full-match.
+    check("gt8_prose_in_flag_cell", errs_of(_MOON_CHEESE_GT.replace(
+        "CONTESTABLE + EXTERNAL-VERIFY",
+        "CONTESTABLE and frankly the premise is false")), False)
+    # Check 1: a large-numbered appendix heading (`GT78`) must not read as GT7/GT8 and must not
+    # capture or overwrite a real section's body — the file stays clean.
+    check("gt_heading_large_number", errs_of(_VALID_GT.replace(
+        "## Notes", "## GT78 appendix\nfree-form appendix prose.\n\n## Notes")), True)
 
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]

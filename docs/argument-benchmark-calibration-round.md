@@ -2,6 +2,16 @@
 
 **Status:** ✅ **VALIDATED 2026-06-11 — gate satisfied; ready to merge.** *(Was: Proposal, gated on a benchmark convergence run — the behavioral change has no mechanical `--check-all` gate, so correctness is established by running the benchmark and scoring.)*
 
+> **Vocabulary migration note (2026-07-09, GT schema v0.2.0).** This record documents the
+> 2026-06-11 rule-2a calibration round in the **pre-split vocabulary**, when the Step-9 verdict
+> enum was `SOUND / UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND`. Under the warrant/premise split
+> (spec `apo-argument-validity-premise-split`), read every historical verdict token below by the
+> mapping `SOUND → WARRANTED`, `UNCONVENTIONAL-BUT-EFFECTIVE → UNCONVENTIONAL-BUT-WARRANTED`,
+> `UNSOUND → UNWARRANTED`. The rule-2a FM-A10 evaluability defeat is **unchanged** — only the token
+> name changed (the defeat now yields `UNWARRANTED`). This historical record is **not re-scored**.
+> The M1 vocabulary migration itself is gated on a fresh convergence run before merge — see
+> **§M1 warrant/premise split (2026-07-09)** at the end of this doc.
+
 Run complete: Opus + Sonnet blind runs, scored in a separate pass (outputs in gitignored `evals/results/run-20260611-*`).
 - **Criteria 1 / 2 / 4 — PASS (converged).** `policy-brief-uncompared` flips SOUND→UNSOUND via the rule-2a evaluability defeat (BP5+OB3, FM-A10). `ppi-one-size-fits-none` stays SOUND with public-safety scored **OB5** and the carve-out correctly **not** firing. UNSOUND is reached *through* rule 2a, not a forced Must-Fix — proven by `ppi` staying SOUND despite a Must-Fix code firing.
 - **Criterion 3 — 12/13 sweep fixtures clean.** The sweep surfaced rule 2a **over-firing** on `andreessen-techno-optimist-manifesto` (a strawman "the only alternative is Communism" foil misread as *zero* comparison). **Fixed in this branch** by tightening the scope guard — naming *any* alternative, even a strawman/weak foil, = partial discharge → soft spot; only *wholly-absent* comparison defeats — plus an anti-gaming clause (a merely decorative foil can still be Unsound via the general evaluability test, not the AT3 auto-trigger). Re-validated under the narrowed engine: andreessen's rule-2a auto-defeat is now blocked, while `policy-brief-uncompared` and `op-ed-warrant-leap` stay UNSOUND.
@@ -66,3 +76,47 @@ If 1 passes but 2 or 3 regress, narrow the carve-out's trigger (tighten "wholly 
 - `changelog.d/argument-engine-uncompared-recommendation.md` — the fragment for the rule-2a behavior change (in the PR, not deferred to the merge commit).
 - Ground truth unchanged — `policy-brief-uncompared` GT7 already says UNSOUND and `ppi` GT3 already names the decoy; the keys encode the targets, the engine is being brought into line with them.
 - No validator/schema change; no count bump (this round touches engine guidance, not the validator set).
+
+---
+
+## §M1 warrant/premise split (2026-07-09)
+
+**Increment:** move 1 of the argument-taxonomy re-grounding (spec `apo-argument-validity-premise-split`, v0.4). Renames the Step-9 verdict axis to the warrant vocabulary and adds the flag-only GT8 premise-plausibility surface (Argument Benchmark GT schema v0.2.0). Verdict remap: `SOUND → WARRANTED`, `UNCONVENTIONAL-BUT-EFFECTIVE → UNCONVENTIONAL-BUT-WARRANTED`, `UNSOUND → UNWARRANTED`. The FM-A10 rule-2a calibration (documented above) is preserved exactly — only the token name changed.
+
+**Mechanical acceptance — ✅ PASS (2026-07-09; re-verified after the Fable-5 three-lens review fold, same day).**
+- A Fable-5 review panel (anchor/parity, conceptual/firewall, adversarial/edge-case) over spec v0.4 + the built branch found 2 P1 + 8 P2 (+P3s), all folded: legacy verdict tokens swept from the fixture scoring prose / README / run.sh prompt / CORPUS.md; the GT8 registered path hardened from leading-token-only to a strict contract (field↔row id agreement both directions, bolded-id rows matched, exactly-5-cell rows, full-match flag enum, token boundaries, all three retired GT7 encodings rejected as residue); rule-1/Severity-definition Hard-Gate-vs-Must-Fix conflation fixed behavior-preservingly; `ground` added to the role enum; ownership boundary added to the template; second-editor packet flagged stale pending regeneration. Spec bumped to v0.5.
+- `argument_groundtruth.py --self-test`: PASS (40 arms, incl. retired-label + retired-token + all-three-retired-encodings rejection, present-but-unparseable-GT7 ERROR, `NONE_REGISTERED (provisional migration default)` acceptance, missing-GT8 rejection, malformed-flag rejection, truth-token-in-flag rejection, field↔row agreement both directions **as a multiset** — a doubled expected id or two conflicting detail rows for one premise id are rejected before the coverage compare (PR-review fold `fdb848f`), bolded-row acceptance, 5-cell strictness, token-boundary and heading-number-boundary arms, the moon-cheese `WARRANTED + P1` two-flag acceptance with a lowercase "true or false" Firewall-boundary that passes, and combined `GT4–GT8` heading coverage).
+- `validate.sh --check-all`: PASS — all 16 argument-benchmark fixtures `ok`; `--self-test-all`, `check-mirror` (both `scripts/` and `plugins/apodictic/scripts/` mirror pairs byte-identical), `schema-coverage`, and `validator-conventions` all green.
+- `build-codex.mjs --self-check` / `build-antigravity.mjs --self-check`: PASS. `release-generate --check`, `assemble-changelog --check`, `check-status-drift`, `check-inventory-parity`: PASS.
+- Corpus GT8: 16/16 `NONE_REGISTERED` (10 as `provisional migration default`); the registered-flag path is exercised by the parser's moon-cheese self-test, not the corpus (the corpus is real published nonfiction — a logic-toy would never be scored/convergence-run).
+
+**Behavioral acceptance — ✅ PASS-WITH-CAVEATS (convergence run 2026-07-09; independent Opus scorer).** Two independent blind engine runs over a decisive 4-fixture subset, cross-vendor.
+
+- **Engines (model configs):** Engine 1 = **Fable** (Claude Code subagent, blind — given only the fixture text + `dialectical-clarity.md`, never the keys). Engine 2 = **Codex 5.6** (`gpt-5.6-sol`, high reasoning, Codex CLI 0.144.0, `codex exec` in an isolated read-only dir containing only the input + audit reference). Referenced fixture (andreessen) reconstituted from the out-of-tree source cache, SHA-verified against `SOURCES.md` (`1ba70593…`); the 3 synthetic fixtures are text-in-repo. Blind-run + separate-scorer discipline per `RUN-PROTOCOL.md` §Principles.
+- **Fixture selection (each witnesses an M1 acceptance bullet):** `policy-brief-uncompared` (UNWARRANTED-via-FM-A10, the marquee), `op-ed-warrant-leap` (UNWARRANTED), `personal-essay-narrative-arg` (UBW positive control), `andreessen-techno-optimist-manifesto` (the FM-A10 strawman-guard non-regression witness — the exact fixture that over-fired in the 2026-06-11 round).
+
+**Per-fixture warrant verdicts (Fable / Codex 5.6 · key target):**
+
+| Fixture | Fable | Codex 5.6 | Key GT7 | FM-A (both) | Result |
+|---|---|---|---|---|---|
+| policy-brief-uncompared | UNWARRANTED | UNWARRANTED | UNWARRANTED | FM-A10, BP5+OB3, BURDEN | ✅ converged, on target |
+| op-ed-warrant-leap | UNWARRANTED | UNWARRANTED | UNWARRANTED | FM-A10 (both) | ✅ verdict on target (locus caveat below) |
+| personal-essay-narrative-arg | WARRANTED | UNCONVENTIONAL-BUT-WARRANTED | UBW | — | ✅ both non-UNWARRANTED (Q7-control latitude: WARRANTED/UBW both pass) |
+| andreessen | UNCONVENTIONAL-BUT-WARRANTED | WARRANTED | WARRANTED (pinned) | FM-A20/OB5 | ✅ both non-UNWARRANTED; Codex hit the pin; rule-2a guard **held** on both |
+
+**M1 acceptance — bullet by bullet:**
+- **(a) GT7 old→new mapping preserved — PASS.** Verdict *sign* perfectly reliable: both failure-bearing fixtures → UNWARRANTED on both engines; both warranted-family fixtures → non-UNWARRANTED on both engines. All three tokens exercised and correctly produced. The two within-family token variances (Fable-B WARRANTED, Fable-D UBW) are inside documented Q7-form-control / recall latitude; neither is the UNWARRANTED trap direction.
+- **(b) policy-brief UNWARRANTED via FM-A10 (BP5 primary + OB3 + comparative discriminator) — PASS (both engines)**, reached through the rule-2a evaluability defeat, not a forced Must-Fix or "premise false."
+- **(c) FM-A10 guardrails do not regress — PASS.** Direct witness: on andreessen, Fable explicitly recorded "foils = partial-discharge → the zero-comparison defeat is NOT triggered," and both engines kept it warranted-family. The 2026-06-11 over-fire stays fixed under the new vocabulary, cross-vendor. (Corroborating: the op-ed genuinely names zero remedy-alternatives, so FM-A10 firing *there* is correct guard behavior, not an over-fire.)
+- **(d) Positive controls do not regress — PASS-WITH-CAVEAT.** Neither engine returned UNWARRANTED on the control (hard regression avoided); Fable clean (traps → Could-Fix advisory). Caveat: Codex softened on B — fired FM-A17/WR0/BP2 on the narrative-argument control (the over-diagnosis this fixture guards against); noted-but-not-cleanly-downgraded, verdict still held warranted-family.
+- **(e) Premise flags never become stealth verdict defeats — PASS (strongly witnessed).** Both engines registered P1–P5 on andreessen and still returned warranted-family verdicts; on A/C the flags coexist with a structurally-driven (FM-A10) UNWARRANTED. Firewall spot-check of the actual flag rows (orchestrator, 2026-07-09): every registered flag carries an explicit Firewall boundary ("the audit does not adjudicate the figures' truth"); a scan for a truth token (TRUE/FALSE/PROVEN/…) in any flag cell found **none**. No flag flipped or drove a verdict.
+
+**Verdict (independent Opus scorer): PASS-WITH-CAVEATS — the SOUND→WARRANTED migration is behavior-preserving; safe to un-draft #192.** A FAIL would require a warranted↔unwarranted boundary flip, a flag-driven stealth defeat, or a positive control going UNWARRANTED — none occurred.
+
+**Caveats / known-issues (orthogonal to the migrated axis — identical under the old vocab; not merge blockers):**
+1. **op-ed-warrant-leap shared locus mis-rank** — both engines diagnosed it as FM-A10/BURDEN (uncompared AT3 ban) rather than the key's FM-A6/WARRANT (causal warrant leap). Both *did* fire WR0 but subordinated it. The op-ed genuinely has two defeaters (a bare uncompared ban + a causal leap), so this is part rule-2a FM-A10 over-capture, part key ambiguity. Follow-up: rule-2a-scope review / consider GT2-as-set for this fixture. The verdict (UNWARRANTED) is correct; only Q2-locus/Q3-zone diverge.
+2. **andreessen** recognition = yes on both engines (recall-susceptible, GT4–GT8 provisional per CORPUS.md); Fable UBW is failure-mode-(a) under the strict key but within established recall latitude and strictly better than the ratified 2026-06-11 baseline (Opus=UNSOUND/Sonnet=UBE).
+3. **GT8 over-flagging** — engines registered premise flags where the corpus default is `NONE_REGISTERED`; flags did not drive verdicts and the Firewall held (see (e)). GT8 remains a non-scored contract surface in M1.
+4. **Scope:** decisive 4-fixture subset, not all 16. Judged sufficient for *this* gate by the scorer: the change is a token rename + FM-A10 rule-2a preserved exactly + additive GT8, altering no scoring/code logic; mechanical acceptance already showed 16/16 fixtures green; the subset spans all three verdict tokens and both verdict-family boundaries, produced by two independent engines. Full-16 exhaustive sweep remains an available extension.
+
+Run outputs are in the session scratchpad (gitignored); this record is the durable, self-contained artifact.

@@ -9,7 +9,7 @@
 - **Pinned source:** https://www.prisonpolicy.org/reports/probation_conditions.html (record retrieval date + content hash on first authoritative run; analyzed-text extraction anchors (START / END / EXCLUDE) in [../SOURCES.md](../SOURCES.md)).
 - **Quotation policy:** paraphrase only.
 - **Ground-truth authority:** Joshua A. Miller (editor), diagnosis registered 2026-05-30, before any run.
-- **Scope:** GT1–GT3 authoritative. **GT4–GT7 PROVISIONAL.**
+- **Scope:** GT1–GT3 authoritative. **GT4–GT8 PROVISIONAL.**
 
 ## GT1 — Main claim *(Q1)*
 
@@ -33,12 +33,14 @@
 - **Provisional codes:** OB3 (the fairness/notice–or–discretion counter unengaged); OB5 if the run substitutes the public-safety decoy.
 - **Amended 2026-06-04 (ratified, post-run):** decoy and zone unchanged; the discretion facet (already implied by "constrain officer discretion") made explicit as in-zone per [../PROPOSAL-gt-sets-20260604.md](../PROPOSAL-gt-sets-20260604.md).
 
-## GT4–GT7 — *(PROVISIONAL)*
+## GT4–GT8 — *(PROVISIONAL)*
 
 - **GT4 audience:** MIXED (policy/reform) · SYMPATHETIC→MIXED · MEDIUM-HIGH.
 - **GT5 red-team:** load-bearing = the confounders (supervision culture / client need) + the fairness/notice function. Decoy = disputing one jurisdiction's condition list.
 - **GT6 repair order:** first target = **shore up the causal warrant** (isolate overbreadth from confounders) before expanding the catalog of bad conditions.
-- **GT7 Distinguish:** SOUND — a careful report; the causal-attribution soft spot is Should-Fix. **Calibration trap (key for this fixture):** this is the *same family* of weakness as the synthetic `op-ed-warrant-leap` (a causal warrant), but here it must be called **Should-Fix in a competent report**, not Must-Fix. An engine that grades them identically has failed severity calibration.
+- **Expected warrant verdict:** WARRANTED — a careful report; the causal-attribution soft spot is Should-Fix. **Calibration trap (key for this fixture):** this is the *same family* of weakness as the synthetic `op-ed-warrant-leap` (a causal warrant), but here it must be called **Should-Fix in a competent report**, not Must-Fix. An engine that grades them identically has failed severity calibration.
+- **Expected premise flags:** NONE_REGISTERED (provisional migration default)
+- **GT8 Must not adjudicate:** whether standardized probation conditions, rather than supervision culture or individual client circumstances, are the actual cause of technical violations and revocation risk.
 
 ## Notes
 

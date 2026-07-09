@@ -65,8 +65,10 @@ Audience:
   Receptivity: [SYMPATHETIC / MIXED / HOSTILE]
   Consequence context: [LOW / MEDIUM / HIGH]
 
-Distinguish classification: [SOUND / UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND]
-  Form notes: [if unconventional, name the form and the basis for classification]
+Warrant verdict: [WARRANTED / UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED]
+  Form notes: [if unconventional, name the form and the basis for the verdict]
+Premise-plausibility flags: [NONE_REGISTERED / P1, P2, …]
+  Flag notes: [per flagged premise — role + flag type(s) + Firewall boundary; never a truth verdict]
 
 Fired codes: [AT-codes, AC-codes, or PASS]
 ```
@@ -79,7 +81,22 @@ Fired codes: [AT-codes, AC-codes, or PASS]
 | Goal | Step 1 | Yes | One sentence; extracted from the text, not invented |
 | Argument type | Step 1 | Yes | AT0–AT4 |
 | Audience | Step 1 | Yes | Three dimensions; drives calibration in all later sections |
-| Distinguish classification | Step 9 | Yes | Backfilled after terminal step; may retroactively adjust codes |
+| Warrant verdict | Step 9 | Yes | Backfilled after terminal step; may retroactively adjust codes. The inference axis (Local Relevance + Local Sufficiency); does not adjudicate premise truth |
+| Premise-plausibility flags | Step 9 | Yes | Backfilled after terminal step; the acceptability axis (Local Acceptability), surfaced as flags only — never a truth verdict, never alters the warrant verdict by itself |
+
+**Premise-plausibility flags — detail (non-adjudicative; companion modules may annotate but may not convert to truth verdicts):**
+
+| Field | Contract |
+|-------|----------|
+| Premise ID | Stable local id (`P1`, `P2`, …) |
+| Premise as used | The premise in the manuscript's own terms, with location. No new evidence |
+| Load-bearing role | `C0` / subclaim / warrant / scope limiter / comparison / objection / definition / stakes |
+| Flag type(s) | One or more of `CONTESTABLE` / `UNEARNED` / `OVERLOADED` / `EXTERNAL-VERIFY` / `DEFINITIONAL` (joined by ` + `), or the standalone `NONE_REGISTERED` |
+| Why flagged | Why a careful reviewer would not let the premise pass silently |
+| Firewall boundary | What is *not* being adjudicated |
+| Repair implication | support / qualify / disclose / compare / define / cite |
+
+This detail lives in § 1 alongside the summary line so downstream section numbers stay stable. It mirrors Dialectical Clarity Artifact E; a flag never becomes a warrant defeat.
 
 ---
 
@@ -484,7 +501,7 @@ The editorial letter is a *deliverable* written for the writer. It uses natural 
 
 ### Versus tracking artifacts (A–E in the v2.0 audit)
 
-The five tracking artifacts defined in the Dialectical Clarity v2.0 spec (Argument Architecture Table, Audience Calibration Matrix, Failure Mode Inventory, Cross-Section Tracking, Distinguish Classification) are *subsets* of the Argument State. They can be generated from the state; they do not replace it. The tracking artifacts are formatted for inclusion in the editorial letter. The state is formatted for module consumption.
+The five tracking artifacts defined in the Dialectical Clarity v2.0 spec (Argument Architecture Table, Audience Calibration Matrix, Failure Mode Inventory, Cross-Section Tracking, Warrant Verdict + Premise-Plausibility Flags) are *subsets* of the Argument State. They can be generated from the state; they do not replace it. The tracking artifacts are formatted for inclusion in the editorial letter. The state is formatted for module consumption.
 
 ### Versus the diagnostic-state.md (fiction DE)
 
@@ -506,7 +523,7 @@ When the intake router classifies material as nonfiction / argument-shaped (Fran
 The audit is the primary producer. It populates §§ 1–9 during its run. It should:
 1. Create `Argument_State.md` at the start of Step 1
 2. Populate each section as the corresponding step completes
-3. Backfill the Distinguish classification in § 1 after Step 9
+3. Backfill the warrant verdict + premise-plausibility flags in § 1 after Step 9
 4. Populate § 9 (Diagnostic Summary) after all steps
 5. Initialize § 10 with empty subsections
 

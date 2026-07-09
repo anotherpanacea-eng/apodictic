@@ -63,20 +63,21 @@ based on current `main`); land it after its dependencies #20 and #21.
 
 - **Engine itself:** Dialectical Clarity v2.0 + `Argument_State.md` + 8 companion
   modules. The benchmark *tests* it; the first run surfaced a severity over-firing
-  bug now fixed in PR #22 (a Step-9 default-to-SOUND rule + a Hard-Gate Severity
+  bug now fixed in PR #22 (a Step-9 default-to-WARRANTED rule + a Hard-Gate Severity
   Floor, plus the Step-6 `6a`/`OB5` objection-discrimination round).
 - **Benchmark scaffolding** (`docs/argument-benchmark-spec.md`,
   `evals/rubrics/argument-benchmark.md`, `evals/argument-groundtruth-template.md`):
   7 test questions → 0–3 scoring, three convergence classes (failure-bearing /
-  pure positive control / SOUND-real-calibration), recognition-contamination
+  pure positive control / WARRANTED-real-calibration), recognition-contamination
   handling.
 - **Synthetic fixtures** (text in-repo): `op-ed-warrant-leap`,
   `policy-brief-uncompared` (sensitivity); `personal-essay-narrative-arg`,
   `modest-proposal-satire` (specificity / Q7 controls).
 - **Referenced real corpus** (10 pieces, text NOT stored — see `CORPUS.md`),
   each with a `groundtruth.md` whose GT1–GT3 are an editor's pre-registered
-  diagnosis; GT4–GT7 provisional. All 10 fetched, hashed, and anchored in
-  `SOURCES.md`.
+  diagnosis; GT4–GT8 provisional (GT8 premise-plausibility flags are
+  `NONE_REGISTERED` across the whole corpus — a flag-only M1 contract check, a
+  scored M2 candidate). All 10 fetched, hashed, and anchored in `SOURCES.md`.
 - **`run.sh`** verified statically: `bash -n` clean; the SOURCES.md hash parser
   extracts all 10 slug→hash pairs and resolves Coates to the **corrected** hash
   (`d4407650…`), not the superseded one.
@@ -91,8 +92,8 @@ The full convergence runs + the decoy-resistance engine fix landed in **PR #37**
 `main`). The current next-round list (with rationale) is tracked in `ROADMAP.md` → §Benchmark
 Suite → **Next round**:
 
-- **Substantive (engine/key — next calibration round):** (1) strengthen **Test A** (genre-genericity decoy filter) — `ppi` partial cross-vendor, GPT's objection stayed on the public-safety decoy; (2) **`policy-brief-uncompared` under-fire** — AT3 + no comparative defense should drive Must-Fix → UNSOUND (Step-9 default overrides the floor). #1 + #2 pair.
-- **Human-gated (ready, needs people):** (3) recruit one **second editor** (GT4–GT7 personal independence) — blind packet ready in Dropbox `argument-benchmark-second-editor-packet/` (see below); (4) **`current-affairs` GT2** recall-suspect — resolves via #3 or a second vendor.
+- **Substantive (engine/key — next calibration round):** (1) strengthen **Test A** (genre-genericity decoy filter) — `ppi` partial cross-vendor, GPT's objection stayed on the public-safety decoy; (2) **`policy-brief-uncompared` under-fire** — AT3 + no comparative defense should drive Must-Fix → UNWARRANTED (Step-9 default overrides the floor). #1 + #2 pair.
+- **Human-gated (needs people; packet REGENERATION required first):** ⚠️ the built Dropbox blind packet predates GT schema v0.2.0 — its registration form solicits the retired `SOUND/UNSOUND` vocabulary (which the validator now actively rejects) and has no GT8 premise-flags field. Regenerate the packet to the warrant vocabulary + GT8 before recruiting. Then: (3) recruit one **second editor** (GT4–GT8 personal independence) — blind packet ready in Dropbox `argument-benchmark-second-editor-packet/` (see below); (4) **`current-affairs` GT2** recall-suspect — resolves via #3 or a second vendor.
 - **Minor / optional:** (5) PDF `--fetch` (AECF) → add a `pdftotext` branch if PDFs multiply; (6) a second cross-vendor GPT pass on `roosevelt` (kills the n=1 "variance" objection); (7) housekeeping — the merged `claude/benchmark-corpus-round2` branch can be deleted.
 
 The list below predates the PR #37 merge and is kept for historical context.
@@ -113,8 +114,8 @@ calibration fix landed in **PR #22**. See `evals/results/*/SCORECARD.md` plus th
 3. **Recognition re-test.** With the masthead + trailing-bio leaks closed,
    re-confirm the recognition picture (ppi already flipped to "not recognized");
    the lower-recognition fixtures now carry the construct validity.
-4. **GT4–GT7 second-editor confirmation (the one human-gated item).** GT1–GT3 are
-   editor-pre-registered (temporally independent); GT4–GT7 are provisional and want
+4. **GT4–GT8 second-editor confirmation (the one human-gated item).** GT1–GT3 are
+   editor-pre-registered (temporally independent); GT4–GT8 are provisional and want
    a *second* human editor diagnosing blind for personal independence. A ready-to-hand
    **blind packet is built** at Dropbox `…/Development Editor/argument-benchmark-second-editor-packet/`
    (5 load-bearing pieces, stripped + neutral-labeled, README + registration form;
