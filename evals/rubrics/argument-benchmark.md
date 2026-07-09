@@ -31,7 +31,7 @@ Dimensions map to the seven roadmap test questions and to
 - **Q4 — Audience calibration** (§1 + AC vs GT4): 0 ignored audience or produced an audience-pleasing distortion · 1 audience noted, not used · 2 surfaced GT4's "improve" item · 3 surfaced it *and* avoided the named "distort" failure.
 - **Q5 — Red-team danger** (§10.4 vs GT5): 0 only decoys/cosmetic attacks · 1 one real vulnerability buried below decoys · 2 hit a pre-registered vulnerability · 3 hit ≥1 and ranked it above the decoys.
 - **Q6 — Repair order** (§10.5 vs GT6): 0 order violates the dependency rule · 1 right targets, wrong order · 2 correct first target · 3 correct first target *and* respects GT6's dependency rule.
-- **Q7 — Warrant verdict / form fairness** (§1 Distinguish / Step 9 vs GT7): 0 fired the false-positive trap code as a structural failure · 1 fired it but hedged · 2 correct warrant verdict, trap noted but not cleanly downgraded · 3 warrant verdict matches GT7 and the form-dependent code is downgraded to advisory. *(GT8 premise-plausibility flags are an M1 contract/firewall check, not a scored dimension; a scored Q8 is deferred to M2.)*
+- **Q7 — Warrant verdict / form fairness** (§1 Warrant verdict / Step 9 vs GT7): 0 fired the false-positive trap code as a structural failure · 1 fired it but hedged · 2 correct warrant verdict, trap noted but not cleanly downgraded · 3 warrant verdict matches GT7 and the form-dependent code is downgraded to advisory. *(GT8 premise-plausibility flags are an M1 contract/firewall check, not a scored dimension; a scored Q8 is deferred to M2.)*
 
 ## Binary Checks
 

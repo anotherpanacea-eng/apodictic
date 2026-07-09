@@ -21,14 +21,18 @@ GT schema v0.2.0:
      (SOUND / UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND) are actively rejected, and a GT7 section
      with no parseable verdict field is an ERROR (not a silent skip).
   5. GT8's Premise-plausibility flags: the `Expected premise flags` value is leading-token parsed
-     (NONE_REGISTERED or P<n>; a trailing parenthetical such as `(provisional migration default)`
-     is commentary). Every registered flag-detail row validates its flag-type cell against the
-     GT8 enum (CONTESTABLE / UNEARNED / OVERLOADED / EXTERNAL-VERIFY / DEFINITIONAL /
-     NONE_REGISTERED; multiple flags joined by ` + `). The flag-type cell must not smuggle a
-     truth verdict (a standalone uppercase TRUE / FALSE / PROVEN / DISPROVEN / CORRECT /
-     INCORRECT) — the engine flags premise acceptability, it never adjudicates premise truth.
-     The `Why flagged` / `Firewall boundary` prose cells are exempt (their natural sentence
-     "does not rule the premise true or false" is lowercase prose, not a verdict).
+     (NONE_REGISTERED or a P<n> id list; a trailing parenthetical such as
+     `(provisional migration default)` is commentary; NONE_REGISTERED can never combine with
+     anything else). The expected id list and the flag-detail rows must AGREE both ways
+     (NONE_REGISTERED forbids rows; a P-list requires exactly-matching rows). Every detail row is
+     strict: exactly 5 `|`-cells (premise | role | flag-type(s) | why flagged | Firewall
+     boundary), and each ` + `-joined part of the flag cell must be EXACTLY one of CONTESTABLE /
+     UNEARNED / OVERLOADED / EXTERNAL-VERIFY / DEFINITIONAL (full-match; NONE_REGISTERED is
+     field-level only). The flag-type cell must not smuggle a truth verdict (a standalone
+     uppercase TRUE / FALSE / PROVEN / DISPROVEN / CORRECT / INCORRECT) — the engine flags
+     premise acceptability, it never adjudicates premise truth. The `Why flagged` /
+     `Firewall boundary` prose cells are exempt (their natural sentence "does not rule the
+     premise true or false" is lowercase prose, not a verdict).
 
 Output keeps the legacy WARN: / ERROR: / OK: / FAILED: prefixes and exit codes (0 ok, 1 fail,
 2 usage) so it slots into --self-test-all alongside the other self-testable validators.
@@ -56,22 +60,27 @@ _LOCUS_FAMILY = {"SUPPORT": ("SM",), "WARRANT": ("WR",), "BURDEN": ("BP",),
 _GT7_CLASSES = ["UNCONVENTIONAL-BUT-WARRANTED", "UNWARRANTED", "WARRANTED"]
 # Retired v0.1 tokens — actively rejected so an unmigrated fixture cannot pass vacuously.
 _GT7_LEGACY_CLASSES = {"SOUND", "UNCONVENTIONAL-BUT-EFFECTIVE", "UNSOUND"}
-# GT8 premise-plausibility flag types (GT schema v0.2.0). NONE_REGISTERED is the no-flag sentinel.
-_GT8_FLAG_TYPES = {"CONTESTABLE", "UNEARNED", "OVERLOADED", "EXTERNAL-VERIFY", "DEFINITIONAL",
-                   "NONE_REGISTERED"}
+# GT8 premise-plausibility flag types valid in a DETAIL ROW (GT schema v0.2.0). NONE_REGISTERED
+# is a FIELD-level sentinel only — it can never combine with another flag and never appears in a
+# detail row (a row exists precisely because a flag IS registered).
+_GT8_ROW_FLAG_TYPES = {"CONTESTABLE", "UNEARNED", "OVERLOADED", "EXTERNAL-VERIFY", "DEFINITIONAL"}
 
 _CODE_RE = re.compile(r"\b([A-Z]{2})([0-9]+)\b")
 _FM_A_RE = re.compile(r"\bFM-A([0-9]+)\b")
 _HEADING_RE = re.compile(r"^#{1,4}\s")
 _BARE_PREFIX_RE = re.compile(r"\b(?:AT|CL|SM|WR|BP|OB|DI|NE|AC)\b")
 # Leading verdict token of a GT7 "Expected warrant verdict" value, skipping markdown emphasis.
-# The warrant tokens are all-uppercase with hyphens (no underscores).
-_GT7_VERDICT_RE = re.compile(r"[\s*`]*([A-Z][A-Z-]*)")
+# The warrant tokens are all-uppercase with hyphens (no underscores). The trailing lookahead
+# requires a token boundary so a near-miss like `WARRANTEDx` cannot truncate-parse as WARRANTED.
+_GT7_VERDICT_RE = re.compile(r"[\s*`]*([A-Z][A-Z-]*)(?![A-Za-z0-9])")
 # Leading token of a GT8 "Expected premise flags" value — NONE_REGISTERED (underscore) or P<n>;
 # a trailing `(provisional migration default)` parenthetical is commentary, not part of the token.
-_GT8_FLAGS_RE = re.compile(r"[\s*`]*([A-Z][A-Z0-9_-]*)")
+# Boundary lookahead: `P1a` must not truncate-parse as P1.
+_GT8_FLAGS_RE = re.compile(r"[\s*`]*([A-Z][A-Z0-9_-]*)(?![A-Za-z0-9])")
 # A GT8 premise-flag detail row: `- P1: premise | role | flag-type(s) | why | firewall`.
-_GT8_ROW_RE = re.compile(r"^\s*-\s*P[0-9]+:\s*(.+)$", re.MULTILINE)
+# Accepts the corpus's bolded-field variants (`- **P1:** …`, `- **P1**: …`) — a bolded id must
+# not silently escape row validation. Captures (id, rest).
+_GT8_ROW_RE = re.compile(r"^\s*-\s*\**(P[0-9]+)[:*]+\s*(.+)$", re.MULTILINE)
 # A truth verdict smuggled into a flag cell: a standalone UPPERCASE token. Case-sensitive on
 # purpose — the exempt prose fields say lowercase "true or false", which must NOT trip this.
 _TRUTH_TOKEN_RE = re.compile(r"\b(TRUE|FALSE|PROVEN|DISPROVEN|CORRECT|INCORRECT)\b")
@@ -96,10 +105,12 @@ def _gt_numbers_in_heading(line):
     heading, e.g. `## GT4–GT8 — *(PROVISIONAL)*` (a range), `## GT7–GT8 — …`, or `## GT5 / GT6`
     (a list)."""
     nums = set()
-    for a, b in re.findall(r"GT([1-8])\s*[-–—]\s*(?:GT\s*)?([1-8])", line):
+    # (?![0-9]) — `GT10`/`GT78` in an appendix heading must not read as GT1/GT7 and silently
+    # capture (or overwrite) a real section's body.
+    for a, b in re.findall(r"GT([1-8])(?![0-9])\s*[-–—]\s*(?:GT\s*)?([1-8])(?![0-9])", line):
         if int(a) <= int(b):
             nums.update(range(int(a), int(b) + 1))
-    nums.update(int(n) for n in re.findall(r"GT([1-8])", line))
+    nums.update(int(n) for n in re.findall(r"GT([1-8])(?![0-9])", line))
     return sorted(nums)
 
 
@@ -136,18 +147,6 @@ def _codes_in(text):
 def _has_family(text, prefixes):
     codes = _codes_in(text)
     return any(c[:2] in prefixes for c in codes)
-
-
-def _flag_tokens(cell):
-    """Flag-type tokens in a GT8 flag cell. Multiple flags are joined by ` + ` (space-plus-space),
-    distinct from the ` / ` used to enumerate the enum alternatives. Each part's leading uppercase
-    token (e.g. EXTERNAL-VERIFY) is returned for enum-membership checking."""
-    toks = []
-    for part in cell.split(" + "):
-        m = re.match(r"[\s*`]*([A-Z][A-Z0-9_-]*)", part)
-        if m:
-            toks.append(m.group(1))
-    return toks
 
 
 def argument_groundtruth_check(text):
@@ -203,6 +202,14 @@ def argument_groundtruth_check(text):
         if re.search(r"Expected classification:\*\*", gt7):
             errors.append("Check 4 (GT7) — uses the retired field label 'Expected classification' "
                           "(GT schema <v0.2.0); rename to 'Expected warrant verdict'.")
+        # Reject residue of ALL THREE retired v0.1 GT7 encodings, not just the standalone field
+        # label: the combined-block sub-line (`- **GT7 Distinguish:** …`) and the inline variant
+        # (`… — expected classification: …`) must not survive beside a migrated field, or an
+        # unmigrated encoding can pass clean next to a pasted-in new field.
+        if re.search(r"GT7 Distinguish", gt7) or re.search(r"[Ee]xpected classification", gt7):
+            errors.append("Check 4 (GT7) — retired v0.1 GT7 encoding residue ('GT7 Distinguish' "
+                          "or 'expected classification') survives in the GT7 body; migrate the "
+                          "whole section to the 'Expected warrant verdict' field.")
         m = re.search(r"Expected warrant verdict:\*\*\s*(.+)", gt7)
         if not m:
             errors.append("Check 4 (GT7) — GT7 section present but no parseable "
@@ -231,29 +238,60 @@ def argument_groundtruth_check(text):
                                   "form-dependent code to downgrade to advisory, but GT7 names none.")
 
     # Check 5: GT8 Premise-plausibility flags (GT schema v0.2.0). Leading-token parse of the
-    # `Expected premise flags` value (NONE_REGISTERED or P<n>, trailing parenthetical = commentary);
-    # every registered flag row validates its flag-type cell against the enum and the Firewall
-    # (no truth verdict smuggled into the flag column).
+    # `Expected premise flags` value (NONE_REGISTERED or a P<n> id list; a trailing parenthetical
+    # such as `(provisional migration default)` is commentary). The expected id list and the
+    # flag-detail rows must AGREE — a registered path nothing cross-checks is a vacuous firewall.
+    # Every detail row is strict: exactly 5 `|`-cells, each ` + `-part of the flag cell EXACTLY an
+    # enum token (full-match — no parentheticals, no prose, no no-space joiner), and no truth
+    # verdict smuggled into the flag column.
     gt8 = sections.get(8, {}).get("body", "")
     if gt8:
+        expected_ids, none_registered = [], False
         fm = re.search(r"Expected premise flags:\*\*\s*(.+)", gt8)
         if not fm:
             errors.append("Check 5 (GT8) — GT8 section present but no parseable "
                           "'Expected premise flags:' field.")
         else:
-            lead_m = _GT8_FLAGS_RE.match(fm.group(1))
-            lead = lead_m.group(1) if lead_m else ""
-            if lead != "NONE_REGISTERED" and not re.match(r"P[0-9]+$", lead):
-                errors.append("Check 5 (GT8) — 'Expected premise flags' leading token must be "
-                              "NONE_REGISTERED or P<n> (got %r)." % fm.group(1).strip())
-        # Validate each registered flag-detail row's flag-type cell (real corpus is all
-        # NONE_REGISTERED; the registered path is exercised by the moon-cheese self-test).
-        for row in _GT8_ROW_RE.findall(gt8):
+            raw = fm.group(1).strip()
+            if "|" in raw:
+                errors.append("Check 5 (GT8) — 'Expected premise flags' value contains a '|' "
+                              "alternation (a template guidance line copied verbatim is not a "
+                              "legal value).")
+            else:
+                lead_m = _GT8_FLAGS_RE.match(raw)
+                lead = lead_m.group(1) if lead_m else ""
+                # Commentary is a trailing parenthetical; the value proper precedes it.
+                value = raw.split("(", 1)[0].strip().rstrip("*` ")
+                if lead == "NONE_REGISTERED":
+                    none_registered = True
+                    if value.strip("*` ") != "NONE_REGISTERED":
+                        errors.append("Check 5 (GT8) — NONE_REGISTERED cannot combine with any "
+                                      "other flag or id (got %r)." % raw)
+                elif re.match(r"P[0-9]+$", lead):
+                    expected_ids = re.findall(r"\bP[0-9]+\b", value)
+                    leftover = re.sub(r"\bP[0-9]+\b", "", value).strip("*` ,;…")
+                    if leftover:
+                        errors.append("Check 5 (GT8) — 'Expected premise flags' P-id list carries "
+                                      "unexpected content %r." % leftover)
+                else:
+                    errors.append("Check 5 (GT8) — 'Expected premise flags' leading token must be "
+                                  "NONE_REGISTERED or P<n> (got %r)." % raw)
+        rows = _GT8_ROW_RE.findall(gt8)
+        row_ids = [rid for rid, _ in rows]
+        # Field <-> detail-row agreement (both directions).
+        if none_registered and rows:
+            errors.append("Check 5 (GT8) — expected NONE_REGISTERED but %d flag-detail row(s) "
+                          "are registered (%s)." % (len(rows), ", ".join(row_ids)))
+        if expected_ids and sorted(set(row_ids)) != sorted(set(expected_ids)):
+            errors.append("Check 5 (GT8) — expected flag ids %s do not match detail-row ids %s."
+                          % (", ".join(expected_ids), ", ".join(row_ids) if row_ids else "(none)"))
+        for rid, row in rows:
             cells = [c.strip() for c in row.split("|")]
-            if len(cells) < 3:
-                errors.append("Check 5 (GT8) — premise-flag detail row has fewer than 3 "
-                              "'|'-separated cells (need premise | role | flag-type(s) …): %r"
-                              % row.strip())
+            if len(cells) != 5:
+                errors.append("Check 5 (GT8) — %s detail row must have exactly 5 '|'-cells "
+                              "(premise | role | flag-type(s) | why flagged | Firewall boundary); "
+                              "got %d. A '|' inside the premise text must be reworded — cell "
+                              "shifting would let a flag escape validation." % (rid, len(cells)))
                 continue
             flag_cell = cells[2]
             tt = _TRUTH_TOKEN_RE.search(flag_cell)
@@ -261,11 +299,15 @@ def argument_groundtruth_check(text):
                 errors.append("Check 5 (GT8) — flag-type cell smuggles a truth verdict %r; the "
                               "engine flags acceptability, it does not adjudicate premise truth."
                               % tt.group(1))
-            for tok in _flag_tokens(flag_cell):
-                if tok not in _GT8_FLAG_TYPES:
-                    errors.append("Check 5 (GT8) — unrecognized premise flag type %r (not in "
+                continue
+            for part in flag_cell.split(" + "):
+                tok = part.strip().strip("*`")
+                if tok not in _GT8_ROW_FLAG_TYPES:
+                    errors.append("Check 5 (GT8) — flag-type cell part %r is not exactly one of "
                                   "CONTESTABLE / UNEARNED / OVERLOADED / EXTERNAL-VERIFY / "
-                                  "DEFINITIONAL / NONE_REGISTERED)." % tok)
+                                  "DEFINITIONAL (join multiple flags with ' + '; NONE_REGISTERED "
+                                  "is field-level only and never appears in a detail row)."
+                                  % part.strip())
 
     ok = "OK: Argument ground-truth contract satisfied (GT1-GT8 present; codes resolve; locus consistent; warrant verdict + premise flags well-formed)."
     failed = ("FAILED: %d argument-groundtruth-check failure(s). Canonical home: "
@@ -340,7 +382,7 @@ _MOON_CHEESE_GT = _VALID_GT.replace(
     "- **Must not adjudicate:** whether the underlying empirical claim is true.",
     "- **Expected premise flags:** P1\n"
     "- **Flag details:**\n"
-    "  - P1: \"the moon is made of cheese\" | load-bearing premise | CONTESTABLE + EXTERNAL-VERIFY "
+    "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
     "| a careful reviewer would not let the composition claim pass silently "
     "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.\n"
     "- **Must not adjudicate:** lunar composition."
@@ -462,6 +504,72 @@ def run_self_test(which=None):
     check("moon_cheese_warranted_p1", errs_of(_MOON_CHEESE_GT), True)
     # Check 1/4/5: a combined GT4–GT8 provisional heading covers GT4-GT8 and is accepted.
     check("combined_gt4_gt8_heading", errs_of(_COMBINED_GT), True)
+    # Check 4: a near-miss verdict token must not truncate-parse as a valid one.
+    check("gt7_token_boundary", errs_of(_VALID_GT.replace(
+        "Expected warrant verdict:** UNWARRANTED", "Expected warrant verdict:** UNWARRANTEDx")), False)
+    # Check 4: combined-block legacy residue (`GT7 Distinguish:`) beside a migrated field.
+    check("gt7_legacy_distinguish_residue", errs_of(_VALID_GT.replace(
+        "- **False-positive trap:** calling it WARRANTED because it cites evidence.",
+        "- **False-positive trap:** calling it WARRANTED because it cites evidence.\n"
+        "- **GT7 Distinguish:** UNWARRANTED — leftover of the old combined encoding.")), False)
+    # Check 4: inline legacy residue (lowercase `expected classification`) beside a migrated field.
+    check("gt7_legacy_inline_residue", errs_of(_VALID_GT.replace(
+        "- **False-positive trap:** calling it WARRANTED because it cites evidence.",
+        "- **False-positive trap:** calling it WARRANTED because it cites evidence.\n"
+        "- **GT7 Distinguish — expected classification: UNWARRANTED**")), False)
+    # Check 5: a near-miss premise id must not truncate-parse (`P1a` is not P1).
+    check("gt8_lead_boundary", errs_of(_VALID_GT.replace(
+        "Expected premise flags:** NONE_REGISTERED", "Expected premise flags:** P1a")), False)
+    # Check 5: NONE_REGISTERED can never combine with another flag.
+    check("gt8_none_registered_combined", errs_of(_VALID_GT.replace(
+        "Expected premise flags:** NONE_REGISTERED",
+        "Expected premise flags:** NONE_REGISTERED + CONTESTABLE")), False)
+    # Check 5: the template's guidance line copied verbatim (contains `|`) is not a legal value.
+    check("gt8_template_guidance_copied", errs_of(_VALID_GT.replace(
+        "Expected premise flags:** NONE_REGISTERED",
+        "Expected premise flags:** NONE_REGISTERED | P1, P2, ...")), False)
+    # Check 5: an expected P-id with ZERO detail rows is a vacuous registration — rejected.
+    check("gt8_expected_p1_no_rows", errs_of(_VALID_GT.replace(
+        "Expected premise flags:** NONE_REGISTERED", "Expected premise flags:** P1")), False)
+    # Check 5: NONE_REGISTERED with a registered detail row — field/rows disagreement.
+    check("gt8_row_under_none_registered", errs_of(_VALID_GT.replace(
+        "- **Must not adjudicate:** whether the underlying empirical claim is true.",
+        "- **Flag details:**\n"
+        "  - P1: \"a premise\" | ground | CONTESTABLE | why | The engine does not adjudicate.\n"
+        "- **Must not adjudicate:** whether the underlying empirical claim is true.")), False)
+    # Check 5: expected ids and row ids must match exactly (P1 expected, P2 registered).
+    check("gt8_row_id_mismatch", errs_of(_MOON_CHEESE_GT.replace(
+        "  - P1: \"the moon is made of cheese\"", "  - P2: \"the moon is made of cheese\"")), False)
+    # Check 5: a BOLDED row id (`- **P1:** …`) is validated, not silently skipped — the same
+    # moon-cheese row bolded must still be accepted (and thus enum/truth-checked).
+    check("gt8_bold_row_id", errs_of(_MOON_CHEESE_GT.replace(
+        "  - P1: \"the moon is made of cheese\"",
+        "  - **P1:** \"the moon is made of cheese\"")), True)
+    # Check 5: a `|` inside the premise text shifts cells — must fail the 5-cell contract, not
+    # let the shifted flag cell escape validation.
+    check("gt8_pipe_in_premise", errs_of(_MOON_CHEESE_GT.replace(
+        "\"the moon is made of cheese\"", "\"the moon | is made of cheese\"")), False)
+    # Check 5: a 3-cell row (missing why-flagged + Firewall boundary) is rejected.
+    check("gt8_three_cell_row", errs_of(_MOON_CHEESE_GT.replace(
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
+        "| a careful reviewer would not let the composition claim pass silently "
+        "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.",
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY")), False)
+    # Check 5: the no-space joiner must not smuggle a bogus flag past the full-match.
+    check("gt8_nospace_plus", errs_of(_MOON_CHEESE_GT.replace(
+        "CONTESTABLE + EXTERNAL-VERIFY", "CONTESTABLE+NONSENSE-FLAG")), False)
+    # Check 5: a mixed-case truth verdict in a parenthetical is caught by the full-match (the
+    # uppercase-only truth-token scan is deliberately narrow; the enum full-match backstops it).
+    check("gt8_mixedcase_truth_parenthetical", errs_of(_MOON_CHEESE_GT.replace(
+        "CONTESTABLE + EXTERNAL-VERIFY", "CONTESTABLE (False)")), False)
+    # Check 5: prose adjudication inside the flag cell is rejected by the full-match.
+    check("gt8_prose_in_flag_cell", errs_of(_MOON_CHEESE_GT.replace(
+        "CONTESTABLE + EXTERNAL-VERIFY",
+        "CONTESTABLE and frankly the premise is false")), False)
+    # Check 1: a large-numbered appendix heading (`GT78`) must not read as GT7/GT8 and must not
+    # capture or overwrite a real section's body — the file stays clean.
+    check("gt_heading_large_number", errs_of(_VALID_GT.replace(
+        "## Notes", "## GT78 appendix\nfree-form appendix prose.\n\n## Notes")), True)
 
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]

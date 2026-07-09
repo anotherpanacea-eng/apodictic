@@ -129,8 +129,8 @@ Validate that the engine works on real argument-shaped nonfiction, not just in t
 **Direction — shippable kit (the distribution model).** The copyrighted source *bytes* are the only thing that can't ship; the keys, harness, protocol, and method all can. So the benchmark ships as a kit and reconstitutes copyrighted texts locally (URL + extraction anchor + SHA-256; never the bytes).
 - ✓ **Public-domain core** (fetchable, not stored): *Federalist* No. 10 (bucket 5 positive control, Gutenberg) and Douglass, *What to the Slave Is the Fourth of July?* (bucket 3 / testimony + Q7 unconventional-form control, archive.org pinned). Both verified via `run.sh --fetch`.
 - ✓ **`run.sh --fetch`** reconstitution mode — pulls each referenced source from its pinned URL and verifies the recorded hash.
-- ✓ **`validate.sh argument-groundtruth-check`** key-conformance validator (`scripts/argument_groundtruth.py`, shipped v2.1/2.2): GT1–GT7 coverage, DC code-namespace resolution, GT2 locus↔code consistency, GT7 Distinguish classification — **extended to FM-A20** for the decoy-resistance pattern.
-- **Remaining:** second-editor confirmation of GT4–GT7 (GT1–GT3 authoritative; GT4–GT7 provisional) — see **Next round** below.
+- ✓ **`validate.sh argument-groundtruth-check`** key-conformance validator (`scripts/argument_groundtruth.py`, shipped v2.1/2.2): GT1–GT8 coverage (GT schema v0.2.0), DC code-namespace resolution, GT2 locus↔code consistency, GT7 warrant verdict + GT8 premise-plausibility flags — **extended to FM-A20** for the decoy-resistance pattern.
+- **Remaining:** second-editor confirmation of GT4–GT8 (GT1–GT3 authoritative; GT4–GT8 provisional) — see **Next round** below.
 
 **Next round (after the convergence runs, PR #37).** Grouped by what each needs:
 

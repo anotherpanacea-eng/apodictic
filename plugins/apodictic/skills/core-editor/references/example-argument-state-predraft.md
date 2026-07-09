@@ -31,7 +31,8 @@ Argument type: AT3 — policy recommendation
 Audience:
   Expertise: MIXED
   Receptivity: HOSTILE
-Distinguish classification: _pending — backfilled by Dialectical Clarity Step 9 once a draft exists_
+Warrant verdict: _pending — backfilled by Dialectical Clarity Step 9 once a draft exists_
+Premise-plausibility flags: _pending — backfilled by Step 9; flags are surfaced, never adjudicated_
 
 ## 2. Claim Architecture
 

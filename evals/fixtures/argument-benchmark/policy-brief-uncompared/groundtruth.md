@@ -46,7 +46,7 @@
 - **Correct first repair target:** burden — discharge the comparative + feasibility burden (cost the policy, name a funding source, compare to ≥1 alternative aimed at the same goals) before strengthening the benefit case.
 - **Dependency rule the order must respect:** comparative/feasibility burden before further support acquisition. Adding more benefit evidence first leaves the decisive gap (is this the *best* use of the money, and can the city pay for it?) untouched.
 
-## GT7 — Warrant verdict *(Q7; §1 Distinguish / Step 9)*
+## GT7 — Warrant verdict *(Q7; §1 Warrant verdict / Step 9)*
 
 - **Expected warrant verdict:** UNWARRANTED
 - **If unconventional:** N/A — conventional policy-brief form; the form does not explain the failure.

@@ -185,8 +185,10 @@ argument-shaped nonfiction. Diagnose ONLY from the text inside <submission>.
 Produce a structural diagnosis; never rewrite or invent content (the Editor's
 Firewall). Apply the audit reference inside <audit_reference>: run all 9 steps;
 use its code families (AT, AC, CL, SM, WR, BP, OB, DI, NE) and named patterns
-(FM-A1..FM-A20); end with Step 9 (Distinguish: SOUND / UNCONVENTIONAL-BUT-
-EFFECTIVE / UNSOUND) and a priority diagnosis (primary structural break, FM-A
+(FM-A1..FM-A20); end with Step 9 (warrant verdict: WARRANTED /
+UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED, plus premise-plausibility flags —
+NONE_REGISTERED or P<n> rows, never a truth adjudication) and a priority
+diagnosis (primary structural break, FM-A
 pattern(s), severity ranking, first repair target). Do not open any files; the
 text is all here. Finish with a line beginning "RECOGNITION:" stating yes/no
 whether you recognized the author/title or its standard published critiques,

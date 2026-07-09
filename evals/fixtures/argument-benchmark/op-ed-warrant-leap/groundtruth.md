@@ -46,7 +46,7 @@
 - **Correct first repair target:** warrant (establish causation with a rate/denominator and address confounders) before anything else.
 - **Dependency rule the order must respect:** warrant repair precedes both adding evidence and defending the remedy. Adding more raw-count data first (support acquisition) is the wrong move; comparing remedies is moot until causation is warranted.
 
-## GT7 — Warrant verdict *(Q7; §1 Distinguish / Step 9)*
+## GT7 — Warrant verdict *(Q7; §1 Warrant verdict / Step 9)*
 
 - **Expected warrant verdict:** UNWARRANTED
 - **If unconventional:** N/A — this is conventional thesis-evidence op-ed form; the form does not explain the failure.
