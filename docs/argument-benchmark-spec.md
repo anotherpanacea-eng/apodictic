@@ -134,6 +134,15 @@ is WARRANTED or UNCONVENTIONAL-BUT-WARRANTED. The Q7 dimension is scored
 *primarily* on these controls. Swift's *A Modest Proposal* and the unconventional
 personal essay are the slice's positive controls.
 
+**Matched pairs sharpen the guard within-work.** The flat positive controls are *different works*
+from the broken fixtures, so "correctly specific" is confounded with "the control is just
+different prose." The two synthetic planted-defect fixtures therefore ship as **matched
+clean/broken pairs**: each broken member's derived **clean twin** (near-identical prose modulo the
+enumerated repair — see §Matched pairs) is the synthetic buckets' *strongest* positive control,
+because a false fire on it cannot be excused as "the twin's prose invited it." The pair delta
+(broken fires the planted discriminator, clean does not, on the same prose) isolates the planted
+defect from the fixture's own authored roughness.
+
 ---
 
 ## Ground-truth answer-key schema
@@ -355,6 +364,40 @@ at Should-Fix with no over-firing), and GT7 = WARRANTED. See
 `evals/fixtures/argument-benchmark/RUN-PROTOCOL.md` §Step 4. Pure controls (no
 registered soft spot) keep the three-anchor rule.
 
+### Matched clean/broken pairs (specificity retrofit)
+
+The two synthetic planted-defect fixtures ship as **matched clean/broken pairs** — the
+within-work specificity control described under §Anti-overfit guard. Each pair is one base text
+in two members: the `broken` member (the planted defect) and a `clean` twin **derived from it by
+an enumerated, minimal repair-edit set** that discharges exactly the broken key's registered GT2
+defect and nothing else (every other byte identical). The derivation is recorded in the clean
+key's `Base text + repair record` provenance field (locus + before → after + which defect each
+edit discharges); the mutation diff *is* the answer key, and that claim holds exactly as far as
+**two mechanical gates** enforce it: `argument_groundtruth.py` **Check 7** (clean-side
+derivation-record + GT2-positive-control gates, complement pairing, slug self-consistency) and the
+scripted **repair-diff acceptance gate** (`diff` of the two `fixture.md` files must map 1:1 to the
+enumerated loci). The anti-gaming authoring bar (parent-spec rule 2a) is preserved: a repair must
+discharge its burden to the *general-evaluability* standard (mechanism, criteria, costs,
+tradeoffs), not the foil-naming standard.
+
+- **Directory shape:** `evals/fixtures/argument-benchmark/<pair>/{clean,broken}/`, each member
+  holding its own `fixture.md` + `groundtruth.md` (mirrors the fiction benchmark; unpaired
+  fixtures stay flat — the corpus is mixed-depth).
+- **Provenance fields (optional, pairs only; fiction spelling):** `Matched-pair member`
+  (`clean` | `broken` | `n/a`) and `Paired-with` (`<pair-slug>/<complement-member>`). Absent on
+  every unpaired fixture — Check 7 is a no-op there.
+- **Convergence:** a broken member converges under the failure-bearing rule and its clean twin
+  under the (Must-Fix-qualified) positive-control rule; the pair then adds a **delta** conjunct —
+  the planted discriminator fires as a structural failure in the broken run and NOT in the clean
+  run, on the same prose, per config. Full rule:
+  [`RUN-PROTOCOL.md` §Step 4](../evals/fixtures/argument-benchmark/RUN-PROTOCOL.md).
+- **Pairing N/A + M2.** Tier-3 fetched-copyrighted fixtures cannot be paired (no authorable clean
+  base; see `CORPUS.md` §Pairing N/A), and PD controls have no planted defect to twin. A PD
+  **broken** twin of `federalist-10` (broken *derived from* the real clean base, carrying
+  `Base text + plant record` — the fiction direction) is the specified M2 deliverable, not built
+  in M1; `douglass-fourth-of-july` is excluded (a planted defect in an unconventional-but-warranted
+  form-control would score sensitivity by pathologizing the form).
+
 ### Attribution is reliability-aware (asymmetric)
 
 The **convergence criteria above are unchanged** by the Reliability ledger — the anchor sets and
@@ -493,14 +536,16 @@ corpus by `--check-all`). It checks:
   asymmetric ruling; `report`: none); `--check-all` runs it over
   `docs/argument-benchmark-calibration-round.md`.
 
-**Calibration note.** The six checks were tuned against the full registered corpus (16 GT
-files across both the Increment-1 full fixtures and the Increment-2 provisional/derive-on-run
-fixtures, all migrated to GT schema v0.3.0) so the validator passes every registered ground
-truth and catches malformed/edited ones. The original spec assumed a fixed GT2 locus enum and
-fully-populated GT7s; the realized corpus is richer, so the checks validate *consistency and
-resolution* rather than strict enum membership. GT8 (v0.3.0) is contract-shaped: the whole
-registered corpus takes `NONE_REGISTERED` (10 of 16 as the provisional migration default), so the
-registered-flag path is exercised by the parser's moon-cheese self-test rather than the corpus.
+**Calibration note.** The seven checks were tuned against the full registered corpus (18 GT
+files — the Increment-1 full fixtures, the Increment-2 provisional/derive-on-run fixtures, and
+the two matched clean/broken pairs' four members, all on GT schema v0.3.0) so the validator
+passes every registered ground truth and catches malformed/edited ones. The original spec assumed
+a fixed GT2 locus enum and fully-populated GT7s; the realized corpus is richer, so the checks
+validate *consistency and resolution* rather than strict enum membership. GT8 (v0.3.0) is
+contract-shaped: the whole registered corpus takes `NONE_REGISTERED` (10 of 18 as the provisional
+migration default — the two clean twins take bare `NONE_REGISTERED`, synthetic-clean by
+construction), so the registered-flag path is exercised by the parser's moon-cheese self-test
+rather than the corpus.
 
 ---
 
@@ -555,6 +600,21 @@ and the `run.sh --fetch` reconstitution mode are now **built** (2026-06-04);
 `federalist-10` and `douglass-fourth-of-july` added as fetchable public-domain
 controls (bucket 5 + bucket 3 / Q7). Remaining: second-editor confirmation of
 GT4–GT8.
+
+### Increment 4 — Matched clean/broken pairs (specificity retrofit)
+
+The two synthetic planted-defect fixtures (`op-ed-warrant-leap`, `policy-brief-uncompared`) are
+retrofitted into **matched clean/broken pairs** (see §Matched pairs): each `broken` member moved
+to `<pair>/broken/` (history-preserving), its derived `clean` twin authored by an enumerated
+minimal repair, and both members born on GT schema v0.3.0 with the Reliability ledger. Added:
+`argument_groundtruth.py` **Check 7** (matched-pair provenance — a stricter superset of fiction's
+pairing grammar), the `validate.sh --check-all` two-depth corpus glob + orphan-twin completeness
+pass, the scripted repair-diff acceptance gate, and the §Step 4 matched-pair convergence class.
+**Behavioral gate (pre-merge, run-before-merge discipline):** a recorded convergence run over both
+pairs (4 members × 2 configs, blind, separate runner sessions) proving the pair delta holds per
+config — tracked in `docs/argument-benchmark-calibration-round.md`. Non-goals: pairing any
+tier-3 fetched fixture (impossible by construction) and any PD broken twin in M1 (`federalist-10`
+= the specified M2 deliverable; `douglass-fourth-of-july` excluded).
 
 ---
 

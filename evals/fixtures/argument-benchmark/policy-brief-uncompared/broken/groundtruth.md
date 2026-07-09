@@ -1,8 +1,10 @@
-# Ground Truth: policy-brief-uncompared
+# Ground Truth: policy-brief-uncompared/broken
 
 ## Provenance
 
-- **Fixture slug:** policy-brief-uncompared
+- **Fixture slug:** policy-brief-uncompared/broken
+- **Matched-pair member:** broken
+- **Paired-with:** policy-brief-uncompared/clean
 - **Bucket:** 2 policy brief
 - **Source class:** synthetic-or-derived
 - **Text stored in-repo?:** yes — `fixture.md` is the verbatim engine input: argument text only, no metadata or comments (so nothing leaks the answer key into the run). All provenance/diagnosis lives here, never in the input file.

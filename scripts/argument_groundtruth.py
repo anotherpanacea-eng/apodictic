@@ -44,6 +44,19 @@ GT schema v0.3.0:
      claims a licensed status is a stale-marker ERROR (the M2-promotion tripwire — this consumes
      the formerly-dead heading `provisional` bool). Inter-rater agreement LICENSES a label; it
      never scores the engine (the psychometric frame).
+  7. Matched-pair provenance (GT schema v0.3.0 OPTIONAL fields; the argument-side superset of
+     fiction's pairing grammar — docs/argument-benchmark-spec.md §Matched pairs): absence of BOTH
+     `Matched-pair member` + `Paired-with` = unpaired legacy fixture, zero behavior change. When
+     present, they must appear together (rule 2); the `Matched-pair member` leading token is
+     clean/broken/n/a, leading-token parsed with a NEW lowercase regex (_PAIR_MEMBER_RE — NOT
+     fiction's substring parse, and the uppercase GT7/GT8 regexes are neither touched nor reused);
+     a clean/broken member REQUIRES a `Paired-with` naming its COMPLEMENT (rule 4); the key's own
+     `Fixture slug` must read `<slug>/<member>` agreeing with both the member token and the
+     `Paired-with` slug (rule 5 — the wrong-twin gate); a clean member REQUIRES a non-N/A
+     `Base text + repair record` and a GT2 marked `N/A — positive control` (rule 6 — the
+     determinism half the parser can enforce, inverse of fiction's broken-plant-record gate); a
+     standalone (`n/a`) member may not carry a non-n/a `Paired-with` (rule 7). Cross-file twin
+     existence is the corpus loop's job (validate.sh orphan-twin check), not this single-file check.
 
 Output keeps the legacy WARN: / ERROR: / OK: / FAILED: prefixes and exit codes (0 ok, 1 fail,
 2 usage) so it slots into --self-test-all alongside the other self-testable validators.
@@ -141,6 +154,18 @@ _BOOKED_CLAIM_RE = re.compile(
     r"^\s*[-*+]\s*\**\s*BOOKED\s*\**\s*(?::|(?=ENGINE-FAULT\b))", re.IGNORECASE)
 _BOOKED_LINE_RE = re.compile(r"^\s*-\s*\**BOOKED[:*]+\s*(.*?)\s*$")
 _BOOKED_BODY_RE = re.compile(r"^ENGINE-FAULT\s+(\S+)\s+GT([1-9][0-9]*)(\s+OVER-FIRE)?$")
+# Check 7 (matched pairs). Leading token of a `Matched-pair member` value: clean / broken / n/a.
+# Lowercase-only, with the same hostile boundary-lookahead POSTURE as _GT7_VERDICT_RE /
+# _GT8_FLAGS_RE (a `cleanX` near-miss must not truncate-parse) but a NEW pattern — those are
+# uppercase-only (`[A-Z][A-Z-]*`) and are neither touched nor reused. NOT fiction's substring parse.
+_PAIR_MEMBER_RE = re.compile(r"[\s*`]*([a-z][a-z/-]*)(?![A-Za-z0-9])")
+# Full-match a `Paired-with` value: `<slug>/<member>` (member ∈ clean|broken). The slug is the
+# lowercase-hyphen fixture-family name; the caller complement-checks the member component and
+# cross-checks the slug against this key's own `Fixture slug` (rule 5, the wrong-twin gate).
+_PAIR_WITH_RE = re.compile(r"[\s*`]*([a-z0-9][a-z0-9-]*)/(clean|broken)[\s*`]*$")
+# This key's own `Fixture slug` when it is a pair member: `<slug>/<member>` (member is validated by
+# _PAIR_MEMBER_RE's enum, so this just splits — a lowercase-token member component is enough).
+_FIXTURE_SLUG_PAIR_RE = re.compile(r"[\s*`]*([a-z0-9][a-z0-9-]*)/([a-z][a-z-]*)")
 
 
 def _positive_code_text(text):
@@ -202,6 +227,14 @@ def _reliability_values(text):
     """All Reliability ledger field values in `text` (one per matching line). Exactly one is
     required; zero or two+ are ERRORs surfaced by the caller."""
     return [m.strip() for m in _RELIABILITY_FIELD_RE.findall(text)]
+
+
+def _provenance_field(text, label):
+    """Value of a `- **<label>:** value` Provenance line (first match), else ''. Deliberately the
+    same spelling as fiction_groundtruth.py's helper — the fiction wing owns the shared pairing
+    grammar; this helper reads the same field NAMES (Check 7)."""
+    m = re.search(r"\*\*\s*%s\s*:?\s*\*\*\s*(.+)" % re.escape(label), text)
+    return m.group(1).strip() if m else ""
 
 
 def _parse_reliability_groups(value):
@@ -522,7 +555,92 @@ def argument_groundtruth_check(text):
                               "heading is a stale marker — promotion must clean the heading, or "
                               "the ledger is wrong)." % (n, status))
 
-    ok = "OK: Argument ground-truth contract satisfied (GT1-GT8 present; codes resolve; locus consistent; warrant verdict + premise flags well-formed; reliability ledger licensed)."
+    # Check 7: Matched-pair provenance (GT schema v0.3.0 OPTIONAL fields). Absence of BOTH pairing
+    # fields = unpaired legacy fixture, zero behavior change (all 14 non-pair keys are byte-stable).
+    # The fiction wing (fiction_groundtruth.py, fiction-GT #187) OWNS the shared pairing grammar —
+    # the field names, the `<pair-slug>/<member>` value shape, the directory layout. The argument-
+    # side divergences below (leading-token member parse, the clean-side derivation-record + GT2
+    # gates, the slug self-consistency check) are a DELIBERATE stricter superset, NOT drift to
+    # reconcile: both validators stay single-file stdlib, and neither is ported to the other.
+    member_val = _provenance_field(text, "Matched-pair member")
+    paired_val = _provenance_field(text, "Paired-with")
+    has_member, has_paired = bool(member_val), bool(paired_val)
+    if has_member or has_paired:
+        # Rule 2: both pairing fields are required together (or both absent).
+        if has_member != has_paired:
+            missing = "Paired-with" if has_member else "Matched-pair member"
+            errors.append("Check 7 (matched pair) — one pairing field is present but %r is "
+                          "missing; `Matched-pair member` and `Paired-with` are required together "
+                          "(or both absent for an unpaired fixture)." % missing)
+        else:
+            # Rule 3: leading-token member parse (lowercase; hostile boundary). NOT a substring parse.
+            mm = _PAIR_MEMBER_RE.match(member_val)
+            member = mm.group(1) if mm else ""
+            if member not in ("clean", "broken", "n/a"):
+                errors.append("Check 7 (matched pair) — `Matched-pair member` leading token must be "
+                              "one of clean / broken / n/a (got %r; a near-miss like `cleanX` is "
+                              "rejected by the boundary lookahead)." % member_val.strip())
+            elif member in ("clean", "broken"):
+                complement = "clean" if member == "broken" else "broken"
+                paired_is_na = paired_val.lower().startswith("n/a")
+                # Rule 4: a clean/broken member REQUIRES a non-n/a `Paired-with` naming its complement.
+                if paired_is_na:
+                    errors.append("Check 7 (matched pair) — `%s` member requires a non-n/a "
+                                  "`Paired-with` naming its complement (`<slug>/%s`); got %r."
+                                  % (member, complement, paired_val.strip()))
+                else:
+                    pw = _PAIR_WITH_RE.match(paired_val)
+                    if not pw:
+                        errors.append("Check 7 (matched pair) — `Paired-with` value %r is not a "
+                                      "well-formed `<slug>/<clean|broken>` reference."
+                                      % paired_val.strip())
+                    else:
+                        paired_slug, paired_member = pw.group(1), pw.group(2)
+                        if paired_member != complement:
+                            errors.append("Check 7 (matched pair) — `%s` member is paired with a "
+                                          "`%s` member but must be paired with its complement `%s` "
+                                          "(a member paired with its own kind is an error)."
+                                          % (member, paired_member, complement))
+                        # Rule 5: slug self-consistency (the wrong-twin gate). The key's own
+                        # `Fixture slug` must read `<slug>/<member>` with <member> == the member
+                        # token, and `Paired-with`'s slug must equal that same <slug>.
+                        fslug_val = _provenance_field(text, "Fixture slug")
+                        fs = _FIXTURE_SLUG_PAIR_RE.match(fslug_val)
+                        if not fs:
+                            errors.append("Check 7 (matched pair) — a pair member's `Fixture slug` "
+                                          "must read `<slug>/<member>` (got %r)." % fslug_val.strip())
+                        else:
+                            own_slug, own_member = fs.group(1), fs.group(2)
+                            if own_member != member:
+                                errors.append("Check 7 (matched pair) — `Fixture slug` member %r "
+                                              "disagrees with `Matched-pair member` %r."
+                                              % (own_member, member))
+                            if paired_slug != own_slug:
+                                errors.append("Check 7 (matched pair) — `Paired-with` names pair "
+                                              "%r but this key's `Fixture slug` pair is %r (a "
+                                              "`Paired-with` pointing at a different pair's twin is "
+                                              "a wrong-twin error)." % (paired_slug, own_slug))
+                # Rule 6: clean-side derivation gates (the determinism half the parser can enforce).
+                if member == "clean":
+                    repair = _provenance_field(text, "Base text + repair record")
+                    if not repair or repair.lower().startswith("n/a"):
+                        errors.append("Check 7 (matched pair) — `clean` member requires a non-empty, "
+                                      "non-N/A `Base text + repair record` provenance field (the "
+                                      "argument-side inversion of fiction's broken-plant-record gate "
+                                      "— here the CLEAN member is the derived text).")
+                    gt2_body = sections.get(2, {}).get("body", "")
+                    if "positive control" not in gt2_body.lower():
+                        errors.append("Check 7 (matched pair) — `clean` member's GT2 must be marked "
+                                      "`N/A — positive control` (it is the pair's pure positive "
+                                      "control — no planted defect to locate).")
+            else:  # member == "n/a" (standalone)
+                # Rule 7: a standalone member may not carry a non-n/a `Paired-with`.
+                if not paired_val.lower().startswith("n/a"):
+                    errors.append("Check 7 (matched pair) — `n/a` (standalone) member carries a "
+                                  "non-n/a `Paired-with` %r; a standalone fixture has no twin."
+                                  % paired_val.strip())
+
+    ok = "OK: Argument ground-truth contract satisfied (GT1-GT8 present; codes resolve; locus consistent; warrant verdict + premise flags well-formed; reliability ledger licensed; matched-pair provenance consistent)."
     failed = ("FAILED: %d argument-groundtruth-check failure(s). Canonical home: "
               "docs/argument-benchmark-spec.md §Mechanical validator + evals/argument-groundtruth-template.md."
               % len(errors))
@@ -631,6 +749,27 @@ _COMBINED_GT = """# Ground Truth: self-test combined
 ## Notes
 free-form.
 """
+
+# Matched-pair members (Check 7). A paired BROKEN member: WARRANT GT2 kept, the two pairing fields
+# added, `Fixture slug` deepened to `<slug>/broken`, complement-paired with `<slug>/clean`.
+_PAIR_BROKEN_GT = _VALID_GT.replace(
+    "- **Fixture slug:** self-test",
+    "- **Fixture slug:** self-test/broken\n"
+    "- **Matched-pair member:** broken\n"
+    "- **Paired-with:** self-test/clean")
+# A paired CLEAN member: GT2 marked positive-control N/A, a non-empty `Base text + repair record`,
+# complement-paired with `<slug>/broken`, slug-consistent. (GT7 stays UNWARRANTED from _VALID_GT —
+# Check 7 does not cross-check GT7 against member; the arm isolates the pairing gates.)
+_PAIR_CLEAN_GT = _VALID_GT.replace(
+    "- **Fixture slug:** self-test",
+    "- **Fixture slug:** self-test/clean\n"
+    "- **Matched-pair member:** clean\n"
+    "- **Paired-with:** self-test/broken\n"
+    "- **Base text + repair record:** derived from self-test/broken by one warrant insertion; "
+    "discharges WR0.").replace(
+    "- **Primary failure layer:** WARRANT\n"
+    "- **Expected codes:** WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
+    "- **N/A — positive control.** No planted failure; the warrant is supplied.")
 
 
 def run_self_test(which=None):
@@ -836,6 +975,49 @@ def run_self_test(which=None):
     # Token boundary: `GT1–GT10` must not truncate-parse as GT1.
     check("reliability_token_boundary", errs_of(_VALID_GT.replace(
         "GT1–GT7: authoritative, gate", "GT1–GT10: authoritative, gate")), False)
+
+    # ---- Check 7: Matched-pair provenance (GT schema v0.3.0 optional fields). Eleven arms; none is
+    # weakened to match fiction_groundtruth.py's looser behavior (substring member parse, no
+    # derivation-record gate on the derived member, no slug self-consistency) — the superset is
+    # deliberate.
+    # (a) a paired BROKEN member (WARRANT GT2 + complement pairing + slug-consistent) is accepted.
+    check("pair_broken_accepted", errs_of(_PAIR_BROKEN_GT), True)
+    # (b) a paired CLEAN member (repair record + GT2 positive-control N/A + slug-consistent) accepted.
+    check("pair_clean_accepted", errs_of(_PAIR_CLEAN_GT), True)
+    # (c) a broken member with `Paired-with: n/a` is rejected (rule 4 — complement required).
+    check("pair_broken_paired_na", errs_of(_PAIR_BROKEN_GT.replace(
+        "- **Paired-with:** self-test/clean", "- **Paired-with:** n/a")), False)
+    # (d) `Paired-with` present without `Matched-pair member` is rejected (rule 2).
+    check("pair_paired_without_member", errs_of(_VALID_GT.replace(
+        "- **Fixture slug:** self-test",
+        "- **Fixture slug:** self-test\n- **Paired-with:** self-test/clean")), False)
+    # (e) non-complement pairing (`clean` ↔ `.../clean`) is rejected (rule 4).
+    check("pair_non_complement", errs_of(_PAIR_CLEAN_GT.replace(
+        "- **Paired-with:** self-test/broken", "- **Paired-with:** self-test/clean")), False)
+    # (f) a bad member token is rejected (rule 3).
+    check("pair_bad_member_token", errs_of(_PAIR_BROKEN_GT.replace(
+        "- **Matched-pair member:** broken", "- **Matched-pair member:** sideways")), False)
+    # (g) a member-token boundary near-miss (`cleanX`) is rejected (rule 3 boundary lookahead) — the
+    # exact hostile-boundary posture the uppercase _GT7_VERDICT_RE/_GT8_FLAGS_RE use, on a new regex.
+    check("pair_member_boundary", errs_of(_PAIR_CLEAN_GT.replace(
+        "- **Matched-pair member:** clean", "- **Matched-pair member:** cleanX")), False)
+    # (h) the legacy no-pairing-fields fixture is accepted unchanged — both fields absent = no check
+    # runs (the top-of-suite `valid` arm is the same regression guard; this pins it for Check 7).
+    check("pair_legacy_no_fields", errs_of(_VALID_GT), True)
+    # (i) a clean member with a missing / N/A `Base text + repair record` is rejected (rule 6i — the
+    # argument-side inversion of fiction's broken-plant-record gate).
+    check("pair_clean_no_repair_record", errs_of(_PAIR_CLEAN_GT.replace(
+        "- **Base text + repair record:** derived from self-test/broken by one warrant insertion; "
+        "discharges WR0.", "- **Base text + repair record:** N/A")), False)
+    # (j) a clean member whose GT2 is substantive (not positive-control N/A) is rejected (rule 6ii).
+    check("pair_clean_substantive_gt2", errs_of(_PAIR_CLEAN_GT.replace(
+        "- **N/A — positive control.** No planted failure; the warrant is supplied.",
+        "- **Primary failure layer:** WARRANT\n"
+        "- **Expected codes:** WR0 (warrant gap). SM = PASS.")), False)
+    # (k) a `Paired-with` slug that contradicts the key's own `Fixture slug` pair is rejected
+    # (rule 5 — the wrong-twin gate; passes rule 4 AND the corpus orphan check without it).
+    check("pair_wrong_twin_slug", errs_of(_PAIR_BROKEN_GT.replace(
+        "- **Paired-with:** self-test/clean", "- **Paired-with:** other-pair/clean")), False)
 
     # ---- Round-record conformance mode (the one mechanical guard on run-side attribution).
     # Hermetic in-memory fixtures — round_record_check only reads each fixture's Reliability ledger.
