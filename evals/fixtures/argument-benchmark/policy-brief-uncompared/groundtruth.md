@@ -46,11 +46,15 @@
 - **Correct first repair target:** burden — discharge the comparative + feasibility burden (cost the policy, name a funding source, compare to ≥1 alternative aimed at the same goals) before strengthening the benefit case.
 - **Dependency rule the order must respect:** comparative/feasibility burden before further support acquisition. Adding more benefit evidence first leaves the decisive gap (is this the *best* use of the money, and can the city pay for it?) untouched.
 
-## GT7 — Distinguish classification *(Q7; §1 Distinguish / Step 9)*
+## GT7 — Warrant verdict *(Q7; §1 Distinguish / Step 9)*
 
-- **Expected classification:** UNSOUND
+- **Expected warrant verdict:** UNWARRANTED
 - **If unconventional:** N/A — conventional policy-brief form; the form does not explain the failure.
-- **False-positive trap:** do not call this SOUND because the prose is competent, the structure is clean, and every benefit claim is supported. The one-directional evidence pile is the tell, not a strength.
+- **False-positive trap:** do not call this WARRANTED because the prose is competent, the structure is clean, and every benefit claim is supported. The one-directional evidence pile is the tell, not a strength.
+
+## GT8 — Premise-plausibility flags
+- **Expected premise flags:** NONE_REGISTERED
+- **Must not adjudicate:** whether fare-free transit would in fact produce the claimed ridership, emissions, and equity benefits for Rivermont.
 
 ## Notes
 

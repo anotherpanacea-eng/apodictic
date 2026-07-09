@@ -2,6 +2,16 @@
 
 **Status:** ✅ **VALIDATED 2026-06-11 — gate satisfied; ready to merge.** *(Was: Proposal, gated on a benchmark convergence run — the behavioral change has no mechanical `--check-all` gate, so correctness is established by running the benchmark and scoring.)*
 
+> **Vocabulary migration note (2026-07-09, GT schema v0.2.0).** This record documents the
+> 2026-06-11 rule-2a calibration round in the **pre-split vocabulary**, when the Step-9 verdict
+> enum was `SOUND / UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND`. Under the warrant/premise split
+> (spec `apo-argument-validity-premise-split`), read every historical verdict token below by the
+> mapping `SOUND → WARRANTED`, `UNCONVENTIONAL-BUT-EFFECTIVE → UNCONVENTIONAL-BUT-WARRANTED`,
+> `UNSOUND → UNWARRANTED`. The rule-2a FM-A10 evaluability defeat is **unchanged** — only the token
+> name changed (the defeat now yields `UNWARRANTED`). This historical record is **not re-scored**.
+> The M1 vocabulary migration itself is gated on a fresh convergence run before merge — see
+> **§M1 warrant/premise split (2026-07-09)** at the end of this doc.
+
 Run complete: Opus + Sonnet blind runs, scored in a separate pass (outputs in gitignored `evals/results/run-20260611-*`).
 - **Criteria 1 / 2 / 4 — PASS (converged).** `policy-brief-uncompared` flips SOUND→UNSOUND via the rule-2a evaluability defeat (BP5+OB3, FM-A10). `ppi-one-size-fits-none` stays SOUND with public-safety scored **OB5** and the carve-out correctly **not** firing. UNSOUND is reached *through* rule 2a, not a forced Must-Fix — proven by `ppi` staying SOUND despite a Must-Fix code firing.
 - **Criterion 3 — 12/13 sweep fixtures clean.** The sweep surfaced rule 2a **over-firing** on `andreessen-techno-optimist-manifesto` (a strawman "the only alternative is Communism" foil misread as *zero* comparison). **Fixed in this branch** by tightening the scope guard — naming *any* alternative, even a strawman/weak foil, = partial discharge → soft spot; only *wholly-absent* comparison defeats — plus an anti-gaming clause (a merely decorative foil can still be Unsound via the general evaluability test, not the AT3 auto-trigger). Re-validated under the narrowed engine: andreessen's rule-2a auto-defeat is now blocked, while `policy-brief-uncompared` and `op-ed-warrant-leap` stay UNSOUND.
@@ -66,3 +76,24 @@ If 1 passes but 2 or 3 regress, narrow the carve-out's trigger (tighten "wholly 
 - `changelog.d/argument-engine-uncompared-recommendation.md` — the fragment for the rule-2a behavior change (in the PR, not deferred to the merge commit).
 - Ground truth unchanged — `policy-brief-uncompared` GT7 already says UNSOUND and `ppi` GT3 already names the decoy; the keys encode the targets, the engine is being brought into line with them.
 - No validator/schema change; no count bump (this round touches engine guidance, not the validator set).
+
+---
+
+## §M1 warrant/premise split (2026-07-09)
+
+**Increment:** move 1 of the argument-taxonomy re-grounding (spec `apo-argument-validity-premise-split`, v0.4). Renames the Step-9 verdict axis to the warrant vocabulary and adds the flag-only GT8 premise-plausibility surface (Argument Benchmark GT schema v0.2.0). Verdict remap: `SOUND → WARRANTED`, `UNCONVENTIONAL-BUT-EFFECTIVE → UNCONVENTIONAL-BUT-WARRANTED`, `UNSOUND → UNWARRANTED`. The FM-A10 rule-2a calibration (documented above) is preserved exactly — only the token name changed.
+
+**Mechanical acceptance — ✅ PASS (2026-07-09).**
+- `argument_groundtruth.py --self-test`: PASS (21 arms, incl. retired-label + retired-token rejection, present-but-unparseable-GT7 ERROR, `NONE_REGISTERED (provisional migration default)` acceptance, missing-GT8 rejection, malformed-flag rejection, truth-token-in-flag rejection, the moon-cheese `WARRANTED + P1` two-flag acceptance with a lowercase "true or false" Firewall-boundary that passes, and combined `GT4–GT8` heading coverage).
+- `validate.sh --check-all`: PASS — all 16 argument-benchmark fixtures `ok`; `--self-test-all`, `check-mirror` (both `scripts/` and `plugins/apodictic/scripts/` mirror pairs byte-identical), `schema-coverage`, and `validator-conventions` all green.
+- `build-codex.mjs --self-check` / `build-antigravity.mjs --self-check`: PASS. `release-generate --check`, `assemble-changelog --check`, `check-status-drift`, `check-inventory-parity`: PASS.
+- Corpus GT8: 16/16 `NONE_REGISTERED` (10 as `provisional migration default`); the registered-flag path is exercised by the parser's moon-cheese self-test, not the corpus (the corpus is real published nonfiction — a logic-toy would never be scored/convergence-run).
+
+**Behavioral acceptance — ⏳ PENDING (pre-merge gate; operator/engine-gated).** The vocabulary migration has no mechanical `--check-all` gate on *verdict behavior*; correctness of the remap is established by a fresh two-independent-engine-run convergence pass over the migrated corpus (per `RUN-PROTOCOL.md`), confirming:
+- every fixture's GT7 behavior matches the old→new mapping;
+- `policy-brief-uncompared` remains `UNWARRANTED` **via FM-A10 rule 2a** (BP5 primary + OB3, comparative-burden discriminator named) — not via a generic "premise false" or forced Must-Fix;
+- FM-A10 guardrails do not regress (partial-discharge stays `WARRANTED` + Should-Fix; strawman alternatives not misread as zero comparison; decorative foils route through the general evaluability test);
+- positive controls do not regress (form-dependent traps stay advisory under `UNCONVENTIONAL-BUT-WARRANTED`);
+- premise flags never become stealth verdict defeats (a flagged premise can coexist with `WARRANTED`).
+
+Record the run (model configs, per-fixture warrant verdicts, GT8 observations, pass/fail) here before merge. Do not claim validation from gitignored outputs alone.

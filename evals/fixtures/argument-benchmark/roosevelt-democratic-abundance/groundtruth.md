@@ -9,7 +9,7 @@
 - **Pinned source:** https://rooseveltinstitute.org/publications/democratic-abundance/ (record retrieval date + a content hash of the fetched text on first authoritative run; analyzed-text extraction anchors (START / END / EXCLUDE) in [../SOURCES.md](../SOURCES.md)).
 - **Quotation policy:** paraphrase only — do not reproduce the source text.
 - **Ground-truth authority:** Joshua A. Miller (editor), independent diagnosis registered 2026-05-30, before any engine run.
-- **Scope:** GT1–GT3 are authoritative (from the registered diagnosis). **GT4–GT7 are PROVISIONAL** (benchmark-author mapping; confirm on run or by a second editor).
+- **Scope:** GT1–GT3 are authoritative (from the registered diagnosis). **GT4–GT8 are PROVISIONAL** (benchmark-author mapping; confirm on run or by a second editor).
 
 ## GT1 — Main claim *(Q1)*
 
@@ -43,10 +43,14 @@
 - **GT5 red-team:** load-bearing vulnerability = the safeguards/veto-point regress (GT3). Decoy = quibbles over specific program names.
 - **GT6 repair order:** first target = the reconciling **warrant** (how participation and speed coexist) before adding more benefit/feasibility evidence.
 
-## GT7 — Distinguish classification *(Q7 — PROVISIONAL; calibration anchor)*
+## GT7 — Warrant verdict *(Q7 — PROVISIONAL; calibration anchor)*
 
-- **Expected classification:** SOUND (a competent reframe with a real internal tension = Should-Fix), **not UNSOUND.**
+- **Expected warrant verdict:** WARRANTED (a competent reframe with a real internal tension = Should-Fix), **not UNWARRANTED.**
 - **Calibration trap:** over-pathologizing — firing the participation/speed tension as a systemic Must-Fix or declaring the argument incoherent. The tension is a genuine soft spot, not a collapse.
+
+## GT8 — Premise-plausibility flags
+- **Expected premise flags:** NONE_REGISTERED (provisional migration default)
+- **Must not adjudicate:** whether abundance can, in practice, be delivered by centering democracy, labor, and public capacity rather than deregulation.
 
 ## Notes
 

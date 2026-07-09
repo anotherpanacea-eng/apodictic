@@ -9,7 +9,7 @@
 - **Pinned source:** https://reason.com/2023/03/03/the-problem-with-the-abundance-agenda/ (record retrieval date + content hash on first authoritative run; analyzed-text extraction anchors (START / END / EXCLUDE) in [../SOURCES.md](../SOURCES.md)).
 - **Quotation policy:** paraphrase only — do not reproduce the source text.
 - **Ground-truth authority:** Joshua A. Miller (editor), independent diagnosis registered 2026-05-30, before any engine run.
-- **Scope:** GT1–GT3 authoritative. **GT4–GT7 PROVISIONAL** (confirm on run or by a second editor).
+- **Scope:** GT1–GT3 authoritative. **GT4–GT8 PROVISIONAL** (confirm on run or by a second editor).
 
 ## GT1 — Main claim *(Q1)*
 
@@ -39,10 +39,14 @@
 - **GT5 red-team:** load-bearing vulnerability = the unargued frame assumption (markets-as-measure) and the state-capacity counter. Decoy = disputes over individual examples.
 - **GT6 repair order:** first target = surface and defend the **warrant/frame** (why markets are the right measure) or engage the liberal position on its own terms, before adding market-success examples.
 
-## GT7 — Distinguish classification *(Q7 — PROVISIONAL; calibration anchor)*
+## GT7 — Warrant verdict *(Q7 — PROVISIONAL; calibration anchor)*
 
-- **Expected classification:** SOUND — a competent position piece with a Should-Fix frame-assumption weakness, not UNSOUND.
+- **Expected warrant verdict:** WARRANTED — a competent position piece with a Should-Fix frame-assumption weakness, not UNWARRANTED.
 - **Calibration trap:** over-pathologizing a normal opinion-section frame, *or* missing the DI0 because the market premises feel self-evident to the reader.
+
+## GT8 — Premise-plausibility flags
+- **Expected premise flags:** NONE_REGISTERED (provisional migration default)
+- **Must not adjudicate:** whether free markets and a minimal state, rather than supply-side progressivism, actually deliver abundance.
 
 ## Notes
 

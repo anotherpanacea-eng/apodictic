@@ -41,7 +41,12 @@ Argument editing = diagnosing inferential structure, not authoring claims.*
 See `core-editor/references/firewall.md` for the full definition. In argument context:
 the Firewall means the engine diagnoses warrant gaps, objection architecture, and claim
 integrity — it does NOT author new claims, invent evidence, or fill in the argument for
-the writer.
+the writer. It also draws the line the warrant/premise split depends on: the engine returns
+a **warrant verdict** (whether the reasoning warrants the conclusion — the inference axis,
+Local Relevance + Local Sufficiency) and, separately, **premise-plausibility flags** (whether
+a load-bearing premise is contestable — the acceptability axis, Local Acceptability). The flags
+surface a premise for the writer to earn; they never rule it true or false, and they never
+change the warrant verdict by themselves.
 
 ---
 
@@ -172,6 +177,10 @@ All core-editor QA guardrails apply (see `core-editor/SKILL.md §QA Guardrails`)
    before any Tier 2 evaluative pass. A declined Hard Prerequisite cannot proceed silently.
 4. **Firewall in argument context.** The engine diagnoses inferential structure; it does NOT author
    claims, invent evidence, or complete the argument. See `core-editor/references/firewall.md`.
+5. **Premise-plausibility flags are not truth adjudications.** A Step-9 / GT8 premise flag records
+   that a load-bearing premise's *acceptability* is contestable, overloaded, or unearned; it never
+   rules the premise true or false, supplies missing evidence, or alters the warrant verdict. Any
+   output that adjudicates a flagged premise as true or false fails the Firewall check.
 
 ---
 

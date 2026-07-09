@@ -8,7 +8,7 @@
 
 ## Purpose
 
-Diagnose argumentative structure in non-narrative material: essays, op-eds, policy briefs, testimony, reports, scholarly articles, grant proposals, white papers, legal briefs, book reviews, advocacy journalism, open letters, crisis communications, and argument-with-embedded-narrative hybrids. This audit tests whether the argument is identifiable, supported, inferentially sound, honestly scoped, fair to disagreement, and evaluable by its intended audience.
+Diagnose argumentative structure in non-narrative material: essays, op-eds, policy briefs, testimony, reports, scholarly articles, grant proposals, white papers, legal briefs, book reviews, advocacy journalism, open letters, crisis communications, and argument-with-embedded-narrative hybrids. This audit tests whether the argument is identifiable, supported, inferentially warranted, honestly scoped, fair to disagreement, and evaluable by its intended audience.
 
 **Core claim:** Material whose dominant function is claim-and-support cannot be meaningfully audited by story-spine tools. Forcing narrative diagnostics on argument-shaped writing produces false failures ("no protagonist," "no inciting incident") that are technically true and practically useless. This audit provides what story-spine tools cannot: structural diagnosis of argumentative clarity, inferential integrity, and dialectical honesty.
 
@@ -16,7 +16,7 @@ Diagnose argumentative structure in non-narrative material: essays, op-eds, poli
 
 **What this audit is:** The diagnostic engine for all argument-shaped nonfiction entering the APODICTIC system. It asks whether the reader can identify the claim, evaluate the evidence, test the inferential bridge between them, judge whether the scope is honest, determine whether disagreement has been handled fairly, and assess whether narrative does argumentative work or replaces it. It calibrates all of these by audience and genre.
 
-**What this audit is not:** Rhetoric coaching. It does not teach persuasion, suggest hooks, recommend "counterargument paragraphs," or optimize for audience manipulation. It does not catalog named fallacies as an end in themselves. It diagnoses whether the argument is structurally clear, inferentially sound, and evidentially honest. The writer decides what to argue; this audit tests whether the argument holds together.
+**What this audit is not:** Rhetoric coaching. It does not teach persuasion, suggest hooks, recommend "counterargument paragraphs," or optimize for audience manipulation. It does not catalog named fallacies as an end in themselves. It diagnoses whether the argument is structurally clear, inferentially warranted, and evidentially honest. The writer decides what to argue; this audit tests whether the argument holds together.
 
 **Named for:** The dialectical tradition in philosophy, in which argument is tested through objection, scope, and evidence, not the rhetorical tradition (which optimizes for persuasion) and not the informal-logic tradition (which catalogs named fallacies).
 
@@ -46,7 +46,7 @@ This audit operates within the Editor's firewall by producing diagnostic classif
 - Classifying audience and calibrating structural requirements accordingly
 - Tagging narrative vignettes by argumentative function and testimonial position
 - Tracking cross-section drift in claims, definitions, qualifications, and scope
-- Distinguishing structurally unsound arguments from unconventional but effective argument forms
+- Distinguishing unwarranted arguments from unconventional but warranted argument forms
 - Flagging structural gaps in the support chain, inferential bridge, or dialectical procedure
 
 ### Not Allowed
@@ -57,7 +57,7 @@ This audit operates within the Editor's firewall by producing diagnostic classif
 - Writing or rewriting argument sections
 - Supplying alternate definitions the manuscript never signals
 - Converting the audit into persuasion coaching or audience manipulation advice
-- Evaluating whether the argument is *correct* — only whether it is *structurally clear, inferentially sound, and evidentially supported*
+- Evaluating whether the argument is *correct* — only whether it is *structurally clear, inferentially warranted, and evidentially supported*
 - Treating a structurally weak argument as strong because the reviewer agrees with it
 
 ### The Distinction in Practice
@@ -518,17 +518,19 @@ Certain failures are invisible within any single section and only become visible
 
 ### Step 9: Distinguish Protocol
 
-After the full diagnostic runs, this terminal step asks: did this text fail because it's structurally unsound, or because it's operating in an argument form that the previous steps aren't calibrated for?
+After the full diagnostic runs, this terminal step asks: did this text fail because its reasoning does not **warrant** its conclusion, or because it's operating in an argument form that the previous steps aren't calibrated for? The verdict is about *warrant* — whether the inference holds on the text's own terms — not about whether the premises are true (that is the separate premise-plausibility axis; see below).
 
-**The cultural charity principle:** When a text fails Western structural expectations, presume unconventional form before diagnosing structural failure. Test whether the form is doing real argumentative work. Only classify as unsound when the form itself blocks evaluability.
+**The cultural charity principle:** When a text fails Western structural expectations, presume unconventional form before diagnosing structural failure. Test whether the form is doing real argumentative work. Only return **UNWARRANTED** when the form itself blocks evaluability.
 
-**Three-way classification:**
+**Three-way warrant verdict:**
 
-| Classification | Meaning | Action |
+*(Migration note: earlier versions labeled these Structurally Sound / Unconventional-but-Effective / Unsound. The verdict axis is renamed to the warrant vocabulary — Argument Benchmark GT schema v0.2.0 — because the audit measures inferential **warrant** (whether the reasoning supports the conclusion on the text's own terms: Local Relevance + Local Sufficiency), not **soundness** (which additionally requires true premises — a judgment the Firewall forbids). Premise acceptability is surfaced separately as non-adjudicative flags. Historical scorecards may retain the old labels.)*
+
+| Warrant verdict | Meaning | Action |
 |----------------|---------|--------|
-| **Structurally Sound** | The claim, support, scope, and disagreement handling remain evaluable by whatever form the piece uses, even if codes (including Must-Fix codes) fired. The argument is sound; the codes are its repair agenda | Report all codes as issued, ranked by severity. The priority repair is the highest-severity soft spot, not an unsound verdict |
-| **Structurally Unconventional but Effective** | The piece does not follow thesis-evidence-objection form, but a careful reader can recover and test the argument | Retroactively downgrade form-dependent failures (missing thesis sentence, absent formal concession paragraph, non-linear structure) to advisory notes rather than structural diagnoses |
-| **Structurally Unsound** | The reader cannot reliably identify, evaluate, or pressure the argument regardless of form | Report all codes as issued; note that form does not explain the failures |
+| **WARRANTED** | The claim, support, scope, and disagreement handling remain evaluable by whatever form the piece uses, even if codes (including Must-Fix codes) fired. The reasoning warrants the conclusion; the codes are its repair agenda | Report all codes as issued, ranked by severity. The priority repair is the highest-severity soft spot, not an UNWARRANTED verdict |
+| **UNCONVENTIONAL-BUT-WARRANTED** | The piece does not follow thesis-evidence-objection form, but a careful reader can recover and test the argument | Retroactively downgrade form-dependent failures (missing thesis sentence, absent formal concession paragraph, non-linear structure) to advisory notes rather than structural diagnoses |
+| **UNWARRANTED** | The reader cannot reliably identify, evaluate, or pressure the argument regardless of form | Report all codes as issued; note that form does not explain the failures |
 
 **Decision tests for classification:**
 
@@ -541,13 +543,32 @@ After the full diagnostic runs, this terminal step asks: did this text fail beca
 | **Objection-awareness** | Does the manuscript show that alternative positions exist and matter? |
 | **Form-fit** | Is the unconventional form doing real argumentative work, or shielding weakness? |
 
-**Classification decision rule (apply in order):**
+**Warrant-verdict decision rule (apply in order):**
 
-1. **Default to Structurally Sound.** Firing codes, including Hard-Gate (Must-Fix) codes, does not by itself make an argument unsound. Codes are the repair agenda; the classification is a separate, higher-order judgment about evaluability.
-2. **Unsound requires a defeat, not a weakness.** Classify Structurally Unsound only when at least one decision test above fails as a *defeat*: the reader genuinely cannot identify the claim, find or assess the evidence, recover the inferential bridge, judge the scope, or see that objections exist. A recoverable-but-unstated warrant, a strong objection thinned rather than absent, scope tightened toward the conclusion, or an alternative gestured at but not engaged are soft spots in a sound argument, not structural breaks.
-   - **2a. The uncompared recommendation is a defeat, not a soft spot (AT3 only).** For an argument whose C0 is a *recommendation to act* (AT3 — "X should do Y"), the comparative dimension is **constitutive of the claim, not peripheral to it**: a reader cannot evaluate "do Y" without "rather than the alternatives that target the same goal." So when an AT3 recommendation discharges *none* of its comparative burden — **BP5** primary (no alternative engaged at all) **+ OB3** (the dominated-alternative / opportunity-cost objection wholly unaddressed), with no costing or funding mechanism — that is a **defeat** under decision test two (Evidence-evaluability) above: a recommendation's support *is* its comparative case, so with none discharged the reader cannot assess the adequacy of what supports "do Y" — it is *not evaluable as a recommendation* — and the verdict is **Structurally Unsound** (FM-A10, The Uncompared Proposal). (The claim itself stays statable, so decision test one / Claim-accessibility is *not* the failing test here.) This is the one place rule 2's "an alternative gestured at but not engaged is a soft spot" does **not** apply — and only here, because for a recommendation the comparison is the test, not an enrichment of it. **Scope guard — the defeat is for *zero comparison*, not *bad comparison*:** the line is *wholly absent* (defeat → Unsound) vs. *partially discharged* (an alternative named, costed, or weighed even thinly → soft spot → Sound, per rule 2). **Naming *any* alternative at all counts as partially discharged — including a single one, and including a weak, strawmanned, or adversarially-framed alternative** (e.g., presenting only an extreme foil — "the only other option is X" where X is a caricatured or discredited position). That is a recommendation that engages one alternative badly → a Should-Fix in a *sound* argument, not a defeat. The defeat (→ Unsound) requires the comparative dimension to be *wholly absent*: no alternative named, gestured at, costed, or even strawmanned anywhere in the text. **Do not read "the named alternative is a strawman / unfairly dismissed / not a serious option" as "no alternative engaged"** — the fairness and quality of the comparison is a separate Should-Fix (raise BP/OB severity), never the trigger for this defeat. A recommendation that engages one alternative badly is a Should-Fix in a sound argument; a recommendation that engages *none at all* is unsound *as a recommendation*. **Anti-gaming clause:** naming an alternative disables only the *automatic* FM-A10 defeat — it does not immunize the argument. A *merely decorative* foil (named, but with no comparative substance anywhere — no mechanism, criteria, costs, or tradeoff reasoning) can still be classified Unsound through the **general** evaluability test (rule 2 / decision test two) as an ordinary recommendation-evaluation failure — *not* via this AT3 automatic trigger. Bright line: any named/gestured alternative removes the automatic 2a defeat; egregious token-foil cases route through ordinary evaluability. This carve-out fires for AT3 recommendations only — never for descriptive/explanatory/interpretive theses, where rule 2 stands unmodified.
-3. **Unconventional-but-Effective** applies when the *form* is non-standard but a careful reader can still recover and test the argument (downgrade form-dependent failures to advisory).
-4. **When in doubt between a soft spot and a structural break, default to Sound** and carry the issue as the priority Should-Fix repair. Over-firing an unsound verdict on a competent argument is as serious an error as missing a real break.
+1. **Default to WARRANTED.** Firing codes, including Hard-Gate (Must-Fix) codes, does not by itself make an argument UNWARRANTED. Codes are the repair agenda; the warrant verdict is a separate, higher-order judgment about evaluability.
+2. **UNWARRANTED requires a defeat, not a weakness.** Return UNWARRANTED only when at least one decision test above fails as a *defeat*: the reader genuinely cannot identify the claim, find or assess the evidence, recover the inferential bridge, judge the scope, or see that objections exist. A recoverable-but-unstated warrant, a strong objection thinned rather than absent, scope tightened toward the conclusion, or an alternative gestured at but not engaged are soft spots in a warranted argument, not structural breaks.
+   - **2a. The uncompared recommendation is a defeat, not a soft spot (AT3 only).** For an argument whose C0 is a *recommendation to act* (AT3 — "X should do Y"), the comparative dimension is **constitutive of the claim, not peripheral to it**: a reader cannot evaluate "do Y" without "rather than the alternatives that target the same goal." So when an AT3 recommendation discharges *none* of its comparative burden — **BP5** primary (no alternative engaged at all) **+ OB3** (the dominated-alternative / opportunity-cost objection wholly unaddressed), with no costing or funding mechanism — that is a **defeat** under decision test two (Evidence-evaluability) above: a recommendation's support *is* its comparative case, so with none discharged the reader cannot assess the adequacy of what supports "do Y" — it is *not evaluable as a recommendation* — and the verdict is **UNWARRANTED** (FM-A10, The Uncompared Proposal). (The claim itself stays statable, so decision test one / Claim-accessibility is *not* the failing test here.) This is the one place rule 2's "an alternative gestured at but not engaged is a soft spot" does **not** apply — and only here, because for a recommendation the comparison is the test, not an enrichment of it. **Scope guard — the defeat is for *zero comparison*, not *bad comparison*:** the line is *wholly absent* (defeat → UNWARRANTED) vs. *partially discharged* (an alternative named, costed, or weighed even thinly → soft spot → WARRANTED, per rule 2). **Naming *any* alternative at all counts as partially discharged — including a single one, and including a weak, strawmanned, or adversarially-framed alternative** (e.g., presenting only an extreme foil — "the only other option is X" where X is a caricatured or discredited position). That is a recommendation that engages one alternative badly → a Should-Fix in a *warranted* argument, not a defeat. The defeat (→ UNWARRANTED) requires the comparative dimension to be *wholly absent*: no alternative named, gestured at, costed, or even strawmanned anywhere in the text. **Do not read "the named alternative is a strawman / unfairly dismissed / not a serious option" as "no alternative engaged"** — the fairness and quality of the comparison is a separate Should-Fix (raise BP/OB severity), never the trigger for this defeat. A recommendation that engages one alternative badly is a Should-Fix in a warranted argument; a recommendation that engages *none at all* is UNWARRANTED *as a recommendation*. **Anti-gaming clause:** naming an alternative disables only the *automatic* FM-A10 defeat — it does not immunize the argument. A *merely decorative* foil (named, but with no comparative substance anywhere — no mechanism, criteria, costs, or tradeoff reasoning) can still be classified UNWARRANTED through the **general** evaluability test (rule 2 / decision test two) as an ordinary recommendation-evaluation failure — *not* via this AT3 automatic trigger. Bright line: any named/gestured alternative removes the automatic 2a defeat; egregious token-foil cases route through ordinary evaluability. This carve-out fires for AT3 recommendations only — never for descriptive/explanatory/interpretive theses, where rule 2 stands unmodified.
+3. **UNCONVENTIONAL-BUT-WARRANTED** applies when the *form* is non-standard but a careful reader can still recover and test the argument (downgrade form-dependent failures to advisory).
+4. **When in doubt between a soft spot and a structural break, default to WARRANTED** and carry the issue as the priority Should-Fix repair. Over-firing an UNWARRANTED verdict on a competent argument is as serious an error as missing a real break.
+
+**The Step-9 Final Diagnostic Question:**
+
+> Can a careful reader who does not already agree with this argument identify what is being claimed, evaluate the evidence, test the inferential bridge, judge the scope, and determine whether disagreement has been handled honestly?
+
+If yes: **WARRANTED**, regardless of whether the premises are ultimately true. If no: name the first defeated test and return **UNWARRANTED**. Then, separately, flag any contestable or unearned premises (see below).
+
+**Premise-plausibility flags (the second axis — never a verdict).** The warrant verdict answers whether the reasoning warrants the conclusion on the text's own terms (the inference axis — Local Relevance + Local Sufficiency). It deliberately brackets whether the premises are *true* (Local Acceptability); the Firewall forbids the engine from adjudicating premise truth. A premise can be contestable, overloaded, or doing unearned work while the inference from it remains valid. When that is the case, register a **premise-plausibility flag** — never a second verdict. Each flag names the premise in the manuscript's own terms and its location, its load-bearing role, one or more flag types (`CONTESTABLE`, `UNEARNED`, `OVERLOADED`, `EXTERNAL-VERIFY`, `DEFINITIONAL` — joined by ` + ` when several apply, or the standalone `NONE_REGISTERED`), why a careful reviewer would not let it pass silently, the Firewall boundary (what is *not* being adjudicated), and the repair implication (support / qualify / disclose / compare / define / cite). A flag never changes the warrant verdict by itself; only a structural/warrant defeat produces `UNWARRANTED`.
+
+**Boundary example (valid inference, contestable premise).** "The moon is made of cheese; cheese is edible; therefore the moon is edible" is **WARRANTED** — the inference holds on its own terms — while its load-bearing premise is flagged:
+
+```
+Warrant verdict: WARRANTED
+Premise-plausibility flags:
+  P1 | "the moon is made of cheese" | load-bearing premise | CONTESTABLE + EXTERNAL-VERIFY
+  Firewall boundary: The engine flags the premise as contestable and load-bearing; it does not adjudicate lunar composition.
+```
+
+That is the split: a warranted inference can coexist with a flagged premise. The engine reports both; it never collapses the flag into the verdict. If no premise is flagged, the flags line reads `NONE_REGISTERED` and states plainly that this is not a truth clearance.
 
 **Recognized unconventional argument forms:**
 
@@ -560,7 +581,7 @@ After the full diagnostic runs, this terminal step asks: did this text fail beca
 
 **Practical rule:** Do not fail a personal essay, testimony sequence, dialogic structure, or recursive essay merely because it does not announce a thesis sentence early. Fail it when the form blocks evaluability.
 
-**Output:** Three-way classification + decision test results + any retroactive adjustments to prior codes.
+**Output:** Warrant verdict + decision test results + premise-plausibility flags + any retroactive adjustments to prior codes.
 
 **Charity-gate (Deficit Lock).** Retroactively downgrading a prior code to an advisory note via the cultural-charity principle is a charity downgrade: legitimate, but it must be *legible*. Record the original code and the downgrade rationale so the deficit carries forward to synthesis as a marked adjustment rather than a silent disappearance — at synthesis it is locked at Triage and any further softening requires a body override marker (`core-editor/references/output-policy.md §Severity Honesty Protocol → Deficit Lock`). Never use the Distinguish Protocol to avoid recording the original finding.
 
@@ -790,7 +811,7 @@ Purpose: Master inventory of all fired codes. Cluster column tells the reviewer 
 
 Purpose: Makes dynamic failures visible. If the qualification level decreases from "hedged" to "confident" without new evidence, that's FM-A16. If key term definitions shift, that's CL4. If the claim broadens, that's BP2.
 
-### Artifact E: Distinguish Classification
+### Artifact E: Warrant Verdict + Premise-Plausibility Flags
 
 | Decision Test | Result | Notes |
 |--------------|--------|-------|
@@ -800,10 +821,18 @@ Purpose: Makes dynamic failures visible. If the qualification level decreases fr
 | Scope-honesty | [pass/fail] | [detail] |
 | Objection-awareness | [pass/fail] | [detail] |
 | Form-fit | [pass/fail] | [detail] |
-| **Classification** | [Sound / Unconventional-but-Effective / Unsound] | |
+| **Warrant verdict** | [WARRANTED / UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED] | |
 | **Retroactive adjustments** | [codes downgraded/upgraded] | |
 
-Purpose: Documents the Distinguish Protocol's reasoning. When prior codes are retroactively adjusted, the editorial letter can explain why.
+Premise-plausibility flags (the acceptability axis — surfaced, never adjudicated):
+
+| Premise ID | Premise as used | Load-bearing role | Flag type(s) | Why flagged | Firewall boundary | Repair implication |
+|-----------|-----------------|-------------------|--------------|-------------|-------------------|--------------------|
+| [P1] | [premise in the text's own terms + location] | [C0 / subclaim / warrant / scope limiter / comparison / objection / definition / stakes] | [CONTESTABLE / UNEARNED / OVERLOADED / EXTERNAL-VERIFY / DEFINITIONAL, joined by ` + ` — or NONE_REGISTERED] | [why a careful reviewer would not let it pass] | [what is *not* being adjudicated] | [support / qualify / disclose / compare / define / cite] |
+
+If none are found or registered, the table collapses to a single `NONE_REGISTERED` row with a Firewall note that this is not a truth clearance.
+
+Purpose: Documents the Distinguish Protocol's reasoning and separates the inferential warrant verdict from the (non-adjudicative) premise-acceptability flags. When prior codes are retroactively adjusted, the editorial letter can explain why. A premise flag never becomes a stealth warrant defeat.
 
 ---
 
@@ -815,8 +844,8 @@ These do not replace judgment. They identify failures that should default to top
 
 These tiers are referenced throughout (artifacts, Hard Gates) and are defined here:
 
-- **Must-Fix:** the failure *defeats* evaluability or soundness of **C0**. The main claim cannot be identified or is unstable; its central inferential bridge is *unrecoverable* (warrant MISSING, not merely RECOVERABLE-but-unstated); or the conclusion asserts something the evidence cannot reach at all. A Must-Fix code forces an Unsound classification in Step 9.
-- **Should-Fix:** a real weakness a competent reader can route around: a recoverable-but-understated warrant, a strong objection thinned rather than absent, scope tightened toward the conclusion, an alternative gestured at but not engaged. This is the **default tier for soft spots in an otherwise-sound argument** and is the priority repair agenda; it does not force Unsound.
+- **Must-Fix:** the failure *defeats* evaluability or warrant of **C0**. The main claim cannot be identified or is unstable; its central inferential bridge is *unrecoverable* (warrant MISSING, not merely RECOVERABLE-but-unstated); or the conclusion asserts something the evidence cannot reach at all. A Must-Fix code forces an UNWARRANTED verdict in Step 9.
+- **Should-Fix:** a real weakness a competent reader can route around: a recoverable-but-understated warrant, a strong objection thinned rather than absent, scope tightened toward the conclusion, an alternative gestured at but not engaged. This is the **default tier for soft spots in an otherwise-warranted argument** and is the priority repair agenda; it does not force UNWARRANTED.
 - **Could-Fix:** improves rigor; does not affect whether C0 holds.
 
 ### Severity Floor
@@ -832,7 +861,7 @@ A Hard-Gate code that fires but does not meet the Must-Fix definition caps at **
 
 ### Specificity guard (anti-over-firing)
 
-Deficit-hunting is calibrated against a *competent* baseline. A published, edited argument typically carries one or two genuine soft spots, not a flood of structural breaks. If the diagnosis returns **three or more Must-Fix codes** on a piece that passes Claim-accessibility, Evidence-evaluability, and Form-fit, treat that as a **re-examination trigger** (not an automatic downgrade): re-test each Must-Fix against the Severity Floor before classifying Unsound. Firing an unsound verdict on a competent argument is as serious a failure as missing a real break; leaving sound arguments classified sound is a pass condition, not a courtesy.
+Deficit-hunting is calibrated against a *competent* baseline. A published, edited argument typically carries one or two genuine soft spots, not a flood of structural breaks. If the diagnosis returns **three or more Must-Fix codes** on a piece that passes Claim-accessibility, Evidence-evaluability, and Form-fit, treat that as a **re-examination trigger** (not an automatic downgrade): re-test each Must-Fix against the Severity Floor before returning UNWARRANTED. Firing an UNWARRANTED verdict on a competent argument is as serious a failure as missing a real break; leaving warranted arguments classified WARRANTED is a pass condition, not a courtesy.
 
 ### Default Must-Fix
 
@@ -892,7 +921,8 @@ Steps 1 and 2 run on the whole piece. Steps 3–7 sample strategically within th
 Dialectical Clarity v2.0:
   Argument type: [AT-code]
   Audience calibration: [AC-code or PASS]
-  Distinguish outcome: [SOUND / UNCONVENTIONAL-BUT-EFFECTIVE / UNSOUND]
+  Warrant verdict: [WARRANTED / UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED]
+  Premise-plausibility flags: [NONE_REGISTERED / P1, P2, ...]
   Severity summary: [top 3 risks]
   Pattern matches: [FM-A codes]
 ```
@@ -1058,11 +1088,11 @@ The diagnostic procedure identifies structural failures with specific codes. Whe
 
 *Can a careful reader who does not already agree with this argument identify what is being claimed, evaluate the evidence, test the inferential bridge, judge the scope, and determine whether disagreement has been handled honestly?*
 
-If yes: the argument is structurally sound, regardless of whether it's correct.
+If yes: the argument is **WARRANTED**, regardless of whether its premises are ultimately true (premise acceptability is surfaced separately as non-adjudicative flags).
 If no: name which step breaks first. That's the priority diagnosis.
 
-This is the operative test for the Step 9 classification: if it returns "yes," classify the argument **Structurally Sound** even when Hard-Gate (Must-Fix) codes fired. The codes become the Should-Fix repair agenda, not an Unsound verdict. **One bounded exception (see Classification decision rule 2a):** for an AT3 *recommendation*, "evaluate the evidence … and determine whether disagreement has been handled honestly" includes the comparative test — so a recommendation that engages *no* alternative at all — naming even a single or strawmanned foil does **not** qualify (that is a soft spot, per rule 2a's scope guard) — and discharges *none* of its comparative burden (BP5 + OB3, no funding mechanism) returns **"no"** on this test *as a recommendation* and is Structurally Unsound (FM-A10), even though its benefit-claims are individually evaluable.
+This is the operative test for the Step 9 warrant verdict: if it returns "yes," return **WARRANTED** even when Hard-Gate (Must-Fix) codes fired. The codes become the Should-Fix repair agenda, not an UNWARRANTED verdict. **One bounded exception (see the warrant-verdict decision rule 2a):** for an AT3 *recommendation*, "evaluate the evidence … and determine whether disagreement has been handled honestly" includes the comparative test — so a recommendation that engages *no* alternative at all — naming even a single or strawmanned foil does **not** qualify (that is a soft spot, per rule 2a's scope guard) — and discharges *none* of its comparative burden (BP5 + OB3, no funding mechanism) returns **"no"** on this test *as a recommendation* and is **UNWARRANTED** (FM-A10), even though its benefit-claims are individually evaluable.
 
 ---
 
-*This audit diagnoses argumentative structure in non-narrative material — whether the claim is identifiable, the evidence supports it, the inferential bridge holds, the scope is honest, the objections are engaged fairly, and narrative does argumentative work rather than substituting for it. It calibrates by audience and genre, tracks dynamic failures across sections, and distinguishes structurally unsound arguments from unconventional but effective argument forms. It extends the Editor's coverage from story-spine diagnosis to argument-spine diagnosis, providing the most comprehensive structural diagnostic in the APODICTIC system for any text whose dominant function is claim and support. The system diagnoses the argument's structure; the writer provides the claims, the evidence, and the intellectual honesty.*
+*This audit diagnoses argumentative structure in non-narrative material — whether the claim is identifiable, the evidence supports it, the inferential bridge holds, the scope is honest, the objections are engaged fairly, and narrative does argumentative work rather than substituting for it. It calibrates by audience and genre, tracks dynamic failures across sections, and distinguishes unwarranted arguments from unconventional but warranted argument forms. It extends the Editor's coverage from story-spine diagnosis to argument-spine diagnosis, providing the most comprehensive structural diagnostic in the APODICTIC system for any text whose dominant function is claim and support. The system diagnoses the argument's structure; the writer provides the claims, the evidence, and the intellectual honesty.*
