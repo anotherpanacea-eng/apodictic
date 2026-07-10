@@ -9,7 +9,7 @@ editor's diagnosis.
   **pre-registered 2026-05-30, before any engine run.** The independence here is
   **temporal, not personal**: the editor is also the benchmark author, so this
   is *single-editor pre-registration*, not an external cross-check. A genuine
-  external authority requires a second editor — which GT4–GT7 explicitly await.
+  external authority requires a second editor — which GT4–GT8 explicitly await.
 - **Registered:** 2026-05-30.
 - **Source texts:** all 10 fetched + hashed (preparer, 2026-05-30); SHA-256 +
   method + byte count recorded per source in [SOURCES.md](SOURCES.md). Full text
@@ -74,7 +74,7 @@ the most prominent fixtures.
 For these referenced fixtures, the editor's **prose diagnosis is authoritative**
 — GT1 (claim), GT2's *named structural problem* and failure *locus*, and GT3's
 *objection zone*. The **code and layer mappings** under GT2 (e.g., "Provisional
-codes: …") and **all of GT4–GT7** are provisional benchmark-author scaffolding
+codes: …") and **all of GT4–GT8** are provisional benchmark-author scaffolding
 pending a run or a second editor. **Score Q2 on the failure locus/layer, not the
 exact code** for these fixtures (see RUN-PROTOCOL Step 3).
 
@@ -112,7 +112,7 @@ fixtures (`op-ed-warrant-leap`, `policy-brief-uncompared`); the referenced PD po
 ## The corpus (10 pieces, 4 clusters)
 
 `✓ key built` = full `groundtruth.md` exists for the slug. All ten keys are
-built; GT1–GT3 are authoritative from the registered diagnosis, GT4–GT7 are
+built; GT1–GT3 are authoritative from the registered diagnosis, GT4–GT8 are
 provisional pending a run or a second editor.
 
 ### Cluster A — The "abundance" debate (topic-controlled; 4 stances)
@@ -158,7 +158,7 @@ structural weaknesses while topic is held constant.
    `groundtruth.md` keys.
 2. **Score against the registered diagnosis**, which fixes GT1 (claim),
    GT2 (main structural problem → failure locus), and GT3 (strongest
-   objection). GT4–GT7 in each built key are *provisional* mappings pending a
+   objection). GT4–GT8 in each built key are *provisional* mappings pending a
    run or a second editor's confirmation.
 3. **Watch the calibration dimension.** For these competent published pieces,
    a correct run names the single structural soft spot at Should-Fix severity
