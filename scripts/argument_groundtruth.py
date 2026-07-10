@@ -124,11 +124,12 @@ _PASS_CODE_RE = re.compile(
 # The Reliability ledger field line: a bullet + the EXACT bold `**Reliability:**` label at line
 # start, so a near-label like `- **Not Reliability:**` does NOT substring-match. Value runs to EOL.
 _RELIABILITY_FIELD_RE = re.compile(r"^\s*-\s*\*\*Reliability:\*\*\s*(.+)$", re.MULTILINE)
-# The Provenance block: the EXACT `## Provenance` heading (trailing whitespace only, no suffix —
-# so a lookalike like `## Provenance Notes` does NOT match) to the next `## ` heading. The ledger
-# MUST live here (docs/argument-benchmark-spec.md §Mechanical validator) — a ledger under `## Notes`
-# (or a lookalike heading) is misplaced and must not satisfy the contract.
-_PROVENANCE_RE = re.compile(r"^##\s+Provenance[ \t]*$(.*?)(?=^##\s|\Z)", re.MULTILINE | re.DOTALL)
+# The Provenance block: the EXACT single-line `## Provenance` heading to the next `## ` heading.
+# `[ \t]` (NOT `\s`, which matches newlines) both before and after `Provenance` so a suffix
+# lookalike (`## Provenance Notes`) AND a newline-split malformation (`##\nProvenance`) are both
+# rejected. The ledger MUST live in this block (docs/argument-benchmark-spec.md §Mechanical
+# validator) — a ledger under `## Notes` or a lookalike heading is misplaced and does not count.
+_PROVENANCE_RE = re.compile(r"^##[ \t]+Provenance[ \t]*$(.*?)(?=^##\s|\Z)", re.MULTILINE | re.DOTALL)
 # One ledger group: `GT<a>(–GT<b>)?: <status>, <use>` — full-match per group. Hyphen/en-dash/
 # em-dash tolerated in the range (mirrors _gt_numbers_in_heading's `[-–—]` class). `(?![0-9])`
 # boundary guards so `GT10` cannot truncate-parse as GT1. Status/use tokens are captured lowercase
@@ -910,6 +911,10 @@ def run_self_test(which=None):
     # exact-`## Provenance` placement guard — the ledger under it is invisible → "no ledger".
     check("reliability_provenance_lookalike", errs_of(
         _VALID_GT.replace("## Provenance", "## Provenance Notes")), False)
+    # [Codex #193 confirm P2] A newline-split malformation (`##\nProvenance`) must NOT satisfy the
+    # single-line heading guard (`[ \t]` before `Provenance`, not `\s` which crosses newlines).
+    check("reliability_provenance_newline_split", errs_of(
+        _VALID_GT.replace("## Provenance", "##\nProvenance")), False)
     # [Codex #193 P2] A later duplicate GT heading must NOT clear an earlier PROVISIONAL marker
     # and thereby evade the stale-heading tripwire (provisional is sticky-true across headings).
     check("reliability_dup_heading_keeps_provisional", errs_of(
