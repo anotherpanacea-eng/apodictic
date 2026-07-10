@@ -201,10 +201,64 @@ Acceptability), **surfaced but never adjudicated**: the Firewall forbids ruling 
 premise true or false, so GT8 is a flag, not a verdict. In M1, GT8 is a required
 contract/firewall check (see §Mechanical validator), **not** a scored dimension; a
 scored premise-flag dimension is deferred to M2 after keys are second-editor-confirmed.
-This is **Argument Benchmark GT schema v0.2.0** (GT1–GT8).
+This is **Argument Benchmark GT schema v0.3.0** (GT1–GT8, plus a required per-anchor
+Reliability ledger — below).
 
 The schema is deliberately *thin*: it records structure, not a model answer
 essay. A fixture's ground truth should fit in well under a page.
+
+### The Reliability ledger (agreement-as-license)
+
+The ground truth carries a trust distinction — GT1–GT3 authoritative, GT4–GT8
+provisional on real pieces — that was previously prose-only. v0.3.0 mechanizes it as one
+**Reliability ledger line** in each fixture's Provenance block, assigning every GT anchor a
+**status** and a **decision-use**:
+
+| Status | Meaning | May `gate`? |
+|---|---|---|
+| `authoritative` | Licensed **by construction** (synthetic planted defect) or **by the objective-core convention** (a pre-registered GT1–GT3-grade diagnosis, temporally independent of any run; the controls' GT7 against uncontested scholarly readings) | yes |
+| `provisional` | One editor's registration on a genuinely-judgment anchor (GT4–GT8 on real pieces); awaiting confirmation | no — `confirm`/`report` only |
+| `panel-licensed` | Promoted by measured ≥3-editor agreement (Krippendorff's α over the gate threshold) — the M2 outcome | yes |
+| `low-agreement` | The panel measured poor agreement; the construct is unstable — reclassify or widen the band, **never** score the engine against it | no — `report` only |
+
+Decision-use: **`gate`** (a run's miss may be booked an engine failure; requires a licensed
+status), **`confirm`** (scored against the key and named in convergence where the class rules
+already name it; a disagreement is attributed by direction — see §Convergence), **`report`**
+(recorded for completeness; no accuracy claim; never part of convergence).
+
+**Enforcement (parser-checked, Check 6):** `gate` ⇒ status ∈ {`authoritative`,
+`panel-licensed`}; `provisional` ⇒ use ∈ {`confirm`, `report`}; `low-agreement` ⇒ use =
+`report`. Coverage must be exactly GT1–GT8 with no gaps or overlaps. A heading still marked
+`(PROVISIONAL)` whose ledger claims a licensed status is a stale-marker error (the M2-promotion
+tripwire). The grammar is section-level; sub-field provisionality (e.g. GT2's authoritative
+*locus* vs provisional *codes*) stays a prose convention.
+
+The licensing model is the psychometric frame the fiction benchmark already ships
+(`scripts/fiction_groundtruth.py`): inter-rater agreement **licenses** whether a label may
+gate; it never scores the engine, and poor agreement means *the construct is unstable*, never
+*the engine failed*. The token sets stay domain-honest (argument's `authoritative` names an
+objective-core convention fiction has no analog for), mapped here — **documentation only; no
+drift guard ships**, and the table is hand-updated if either vocabulary ever changes:
+
+| argument | fiction | note |
+|---|---|---|
+| `authoritative` | `deterministic` ∪ (no analog) | argument adds the editor-preregistered objective core |
+| `provisional` | `provisional_author` | same rung |
+| `panel-licensed` | `panel_confirmed` | same rung, same α machinery |
+| `low-agreement` | `low_agreement` | same rung |
+
+**Pre-registered promotion thresholds (Krippendorff's own canonical cutoffs, registered before
+any panel data exists — registering thresholds after seeing α is the same sin as writing keys
+after seeing runs):** α ≥ .800 → promote to `panel-licensed` (may gate); .667 ≤ α < .800 →
+remains `provisional` (reportable with a "tentative" caveat); α < .667 → `low-agreement`
+(report-only; reclassify/widen/repair the coding scheme). Metric per dimension:
+**ordinal-weighted α** for the GT4 sub-scales (three ordinal items), **nominal α** for GT2
+layer, GT6 first-repair target, GT7 verdict (three tokens treated as nominal, with a secondary
+collapsed warranted-family-vs-`UNWARRANTED` binary reported), and GT8 flag presence. With
+small n (10 real-corpus units), license on the **bootstrap-CI lower bound** clearing the
+threshold; a multi-subscale section promotes only if **every** in-scope subscale clears (min-of-
+subscales). α is computed by the audited `agreement-alpha` CLI (shipped separately); model-run
+agreement is a floor, **never** a license — only the M2 editor panel promotes a status.
 
 ---
 
@@ -300,6 +354,32 @@ GT2 failure *locus/layer*, GT3 objection zone, a severity check (soft spot named
 at Should-Fix with no over-firing), and GT7 = WARRANTED. See
 `evals/fixtures/argument-benchmark/RUN-PROTOCOL.md` §Step 4. Pure controls (no
 registered soft spot) keep the three-anchor rule.
+
+### Attribution is reliability-aware (asymmetric)
+
+The **convergence criteria above are unchanged** by the Reliability ledger — the anchor sets and
+the ≥3-of-4 / calibration rules are byte-stable. What the ledger changes is **attribution**, and
+only in one direction, on the real-corpus fixtures during the M1→M2 window (where GT7 and GT4–GT6
+are `provisional, confirm`, not licensed):
+
+- A **`gate` (licensed) anchor's** miss is adjudicated as an **engine failure**, as before.
+- A **`confirm` anchor's** disagreement is attributed **by direction**. An **over-fire** (an
+  `UNWARRANTED` verdict on a WARRANTED-keyed piece; a registered Should-Fix soft spot escalated to
+  Must-Fix; a Must-Fix flood) is booked **ENGINE-FAULT** — the specificity gate does **not** soften,
+  because catching over-fire is exactly what the calibration fixtures exist to test. A
+  **false-negative** (the run misses the registered soft spot, locus, or objection zone) downgrades
+  the fixture outcome from ENGINE-FAIL to **KEY-REVIEW**: record `key-suspect (ground-truth
+  ambiguity)`, route the anchor to run-blind re-registration or the blind M2 panel, and book no
+  engine regression against it.
+- A **`report` anchor** never enters convergence.
+
+So M1 weakens the specificity gate **nowhere** and relaxes false-negative attribution on one-editor
+labels **only** — deliberately, per the psychometric frame (a one-editor provisional label lacks the
+license to convict the engine of a miss). Run agreement is a **floor, not a license**: two runs
+agreeing against a one-editor label is evidence the *label* lacks license (key-suspect), never a
+promotion — only the M2 editor panel promotes a status. Full mechanics in
+`evals/fixtures/argument-benchmark/RUN-PROTOCOL.md` §Step 4, and the one mechanical guard (the
+round-record conformance mode) is in §Mechanical validator → Check 6.
 
 ### Reviewer reliability is a separate layer, not a convergence path
 
@@ -399,13 +479,26 @@ corpus by `--check-all`). It checks:
   `Firewall boundary` prose fields, whose natural sentence is lowercase "true or false", are
   exempt — and the full-match enum backstops any lower/mixed-case adjudication smuggled into the
   flag cell). GT8 is a contract/firewall check in M1, not a scored dimension.
+- **Check 6 — the Reliability ledger (GT schema v0.3.0).** Exactly one `- **Reliability:**` line
+  in Provenance, assigning every GT anchor a status + decision-use (see §GT schema → The
+  Reliability ledger). The group grammar (`GT<a>(–GT<b>)?: <status>, <use>`, `(?![0-9])`
+  boundary-guarded so `GT10` cannot truncate-parse, `|`/`/`-in-value rejected as copied guidance),
+  exact GT1–GT8 coverage (no gaps/overlaps), and the enforcement matrix (`gate` ⇒ licensed;
+  `provisional` ⇒ confirm/report; `low-agreement` ⇒ report) are all machine-checked. The
+  formerly-dead heading `(PROVISIONAL)` bool is now **consumed**: a licensed status under a
+  PROVISIONAL-marked heading is a stale-marker ERROR (the promotion tripwire). A sibling
+  **round-record conformance mode** (`--round-record <record.md> --fixtures-dir <dir>`) is the one
+  mechanical guard at the run-side seam — every booked ENGINE-fault must cite an anchor whose
+  ledger licenses it (`gate`: any booking; `confirm`: only with an explicit `OVER-FIRE` tag — the
+  asymmetric ruling; `report`: none); `--check-all` runs it over
+  `docs/argument-benchmark-calibration-round.md`.
 
-**Calibration note.** The five checks were tuned against the full registered corpus (16 GT
+**Calibration note.** The six checks were tuned against the full registered corpus (16 GT
 files across both the Increment-1 full fixtures and the Increment-2 provisional/derive-on-run
-fixtures, all migrated to GT schema v0.2.0) so the validator passes every registered ground
+fixtures, all migrated to GT schema v0.3.0) so the validator passes every registered ground
 truth and catches malformed/edited ones. The original spec assumed a fixed GT2 locus enum and
 fully-populated GT7s; the realized corpus is richer, so the checks validate *consistency and
-resolution* rather than strict enum membership. GT8 (v0.2.0) is contract-shaped: the whole
+resolution* rather than strict enum membership. GT8 (v0.3.0) is contract-shaped: the whole
 registered corpus takes `NONE_REGISTERED` (10 of 16 as the provisional migration default), so the
 registered-flag path is exercised by the parser's moon-cheese self-test rather than the corpus.
 

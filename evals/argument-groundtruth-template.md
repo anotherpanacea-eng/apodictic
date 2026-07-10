@@ -1,7 +1,7 @@
 # Argument Ground-Truth Template
 
-**Schema: Argument Benchmark GT schema v0.2.0** (GT1–GT8; GT7 = Warrant verdict,
-GT8 = Premise-plausibility flags).
+**Schema: Argument Benchmark GT schema v0.3.0** (GT1–GT8; GT7 = Warrant verdict,
+GT8 = Premise-plausibility flags; a required per-anchor Reliability ledger in Provenance).
 
 Copy this file to `evals/fixtures/argument-benchmark/<fixture-slug>/groundtruth.md`
 and fill in every in-scope field. Ground truth must be registered **before**
@@ -30,6 +30,7 @@ premise's acceptability is separately registered.
 - **Registered (date):**
 - **Ground-truth authority:** who established the diagnosis; adjudication notes if interpretive
 - **Scope:** dimensions in scope for this fixture (e.g., "all seven + GT8" or "Q1, Q4, Q7 — positive control")
+- **Reliability:** GT1–GT3: authoritative, gate; GT4–GT8: provisional, confirm *(one machine-parsed ledger line, GT schema v0.3.0. Groups split on `;`; each is `GT<a>(–GT<b>)?: <status>, <use>`; status ∈ authoritative | provisional | panel-licensed | low-agreement; use ∈ gate | confirm | report; coverage exactly GT1–GT8, no gaps/overlaps. Enforcement: `gate` requires a licensed status — authoritative or panel-licensed; `provisional` may only confirm/report; `low-agreement` may only report. A `|` or `/` in the ACTUAL value is rejected as copied guidance; a heading marked `(PROVISIONAL)` whose ledger claims a licensed status is a stale-marker error. Inter-rater agreement LICENSES a label — it never scores the engine; see [../docs/argument-benchmark-spec.md](../docs/argument-benchmark-spec.md) §GT schema for the ladder + pre-registered α thresholds.)*
 
 ## GT1 — Main claim *(Q1; `Argument_State` §2 C0)*
 

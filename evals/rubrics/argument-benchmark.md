@@ -9,7 +9,7 @@ design, and the convergence protocol are in
 ## Inputs Required
 
 - Fixture text (in-repo, or referenced source for text-not-stored fixtures)
-- Pre-registered `groundtruth.md` for the fixture (GT1–GT8, GT schema v0.2.0)
+- Pre-registered `groundtruth.md` for the fixture (GT1–GT8 + Reliability ledger, GT schema v0.3.0)
 - `Argument_State.md` from the run (§§1–9 populated)
 - Editorial letter / Dialectical Clarity output
 - `Red_Team_Memo.md` (required to score Q5)
@@ -61,6 +61,15 @@ Q1–Q6**, and blocks the bucket from passing (per
 Sensitivity (catching real failures) without specificity (leaving warranted
 arguments alone) is not a passing engine.
 
+Q7's **gate authority on a fixture comes from that fixture's Reliability ledger** — it is
+`authoritative, gate` on all current positive/PD controls (`federalist-10`,
+`douglass-fourth-of-july`, and the synthetic controls), and `provisional, confirm` on the real
+corpus. **Over-fire attribution is ledger-independent**: an over-fire on any fixture (an
+`UNWARRANTED` verdict on a WARRANTED-keyed piece, a Must-Fix escalation/flood) is booked
+ENGINE-FAULT even where GT7 is only `confirm` — the specificity gate does not soften. Only a
+`confirm`-anchor **false-negative** downgrades to KEY-REVIEW (see §Convergence and the ledger in
+[argument-benchmark-spec.md §GT schema](../../docs/argument-benchmark-spec.md)).
+
 ## Convergence
 
 Score per-run, then assess convergence across two independent **engine** runs.
@@ -82,6 +91,16 @@ There are three convergence classes:
 Two reviewers scoring one output is reliability, not convergence. See
 [argument-benchmark-spec.md §Convergence](../../docs/argument-benchmark-spec.md#convergence-protocol-the-success-condition),
 §Positive-control convergence, and the calibration-fixture note.
+
+**Asymmetric attribution (the Reliability ledger, GT schema v0.3.0).** The convergence *criteria*
+above are unchanged; *attribution* is now ledger-aware and asymmetric. On real-corpus fixtures
+during the M1→M2 window, GT4–GT6 and GT7 are `provisional, confirm`, not licensed. A `confirm`
+anchor's **over-fire** disagreement is still booked ENGINE-FAULT (the specificity gate holds); only
+a **false-negative** disagreement (the run misses the registered soft spot, locus, or objection
+zone) downgrades the outcome from ENGINE-FAIL to `key-suspect (ground-truth ambiguity)` — routed to
+run-blind re-registration or the blind M2 panel, with no engine regression booked. Run agreement
+never *promotes* a status (that is the M2 panel's α gate alone). The per-anchor status/use lives in
+each fixture's Reliability ledger; over-fire attribution is ledger-independent.
 
 ## Decision Rules And Failure Attribution
 

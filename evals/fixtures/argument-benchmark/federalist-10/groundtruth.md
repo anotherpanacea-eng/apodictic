@@ -14,7 +14,8 @@
 - **Authored or adapted by:** James Madison (1787); ground truth registered by APODICTIC benchmark.
 - **Registered (date):** 2026-06-04
 - **Ground-truth authority:** APODICTIC benchmark, against the standard scholarly reading of Federalist No. 10 as a canonical, tightly-argued extended-republic argument. The argument's soundness and its explicit warrant structure ("remove the causes vs. control the effects"; representation + extent of the sphere as the cure) are not interpretively contested.
-- **Scope:** **Positive control.** The scored dimensions are **GT1 (claim recovery)**, **GT2 / GT3 (the thinnest spot + the strongest objection a competent skeptic would still press)**, and **GT7 = WARRANTED** (the specificity gate). **GT4–GT8 are provisional / advisory** (GT4 audience profile and GT5/GT6 are recorded for completeness but not separately scored in this slice). The calibration point of this fixture is that an engine must NOT over-fire on a canonical, well-warranted argument: no Must-Fix code is correct here.
+- **Scope:** **Positive control.** The scored dimensions are **GT1 (claim recovery)**, **GT2 / GT3 (the thinnest spot + the strongest objection a competent skeptic would still press)**, and **GT7 = WARRANTED** (the specificity gate). **GT4–GT6 and GT8 are provisional / advisory** (GT4 audience profile and GT5/GT6 are recorded for completeness but not separately scored in this slice). The calibration point of this fixture is that an engine must NOT over-fire on a canonical, well-warranted argument: no Must-Fix code is correct here.
+- **Reliability:** GT1–GT3: authoritative, gate; GT4–GT6: provisional, report; GT7: authoritative, gate; GT8: provisional, report
 
 ## GT1 — Main claim *(Q1; `Argument_State` §2 C0)*
 
