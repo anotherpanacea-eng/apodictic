@@ -80,7 +80,7 @@ to your setup.
 <fixture-slug>/
   fixture.md       # verbatim engine input: argument text ONLY, no metadata/comments
                    #   (omitted when text is referenced, not stored)
-  groundtruth.md   # pre-registered answer key + provenance — GT1–GT8 (GT schema v0.2.0); never fed to the engine
+  groundtruth.md   # pre-registered answer key + provenance — GT1–GT8 (GT schema v0.3.0); never fed to the engine
                    #   see ../../argument-groundtruth-template.md
 ```
 
