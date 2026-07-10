@@ -11,6 +11,7 @@
 - **Registered (date):** 2026-05-30
 - **Ground-truth authority:** author-registered; deterministic by construction (the warrant gap is planted)
 - **Scope:** all seven dimensions (Q5/Q6 scored if Red Team + session plan are run; otherwise Q1–Q4, Q7)
+- **Reliability:** GT1–GT7: authoritative, gate; GT8: authoritative, report
 
 ## GT1 — Main claim *(Q1; §2 C0)*
 
