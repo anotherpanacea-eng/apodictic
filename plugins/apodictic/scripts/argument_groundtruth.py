@@ -121,8 +121,15 @@ _TRUTH_TOKEN_RE = re.compile(r"\b(TRUE|FALSE|PROVEN|DISPROVEN|CORRECT|INCORRECT)
 _NEGATED_CODES_RE = re.compile(r"\b[Nn][Oo][Tt]\s+((?:[A-Z]{2}[0-9]+(?:\s*[/,]\s*)?)+)")
 _PASS_CODE_RE = re.compile(
     r"\b(?:[A-Z]{2}[0-9]+\s*[/,]\s*)*[A-Z]{2}[0-9]+\s*(?:=\s*PASS\b|\(\s*PASS\s*\))")
-# The Reliability ledger field line (in Provenance). Value runs to end of line.
-_RELIABILITY_FIELD_RE = re.compile(r"Reliability:\*\*\s*(.+)")
+# The Reliability ledger field line: a bullet + the EXACT bold `**Reliability:**` label at line
+# start, so a near-label like `- **Not Reliability:**` does NOT substring-match. Value runs to EOL.
+_RELIABILITY_FIELD_RE = re.compile(r"^\s*-\s*\*\*Reliability:\*\*\s*(.+)$", re.MULTILINE)
+# The Provenance block: the EXACT single-line `## Provenance` heading to the next `## ` heading.
+# `[ \t]` (NOT `\s`, which matches newlines) both before and after `Provenance` so a suffix
+# lookalike (`## Provenance Notes`) AND a newline-split malformation (`##\nProvenance`) are both
+# rejected. The ledger MUST live in this block (docs/argument-benchmark-spec.md §Mechanical
+# validator) — a ledger under `## Notes` or a lookalike heading is misplaced and does not count.
+_PROVENANCE_RE = re.compile(r"^##[ \t]+Provenance[ \t]*$(.*?)(?=^##\s|\Z)", re.MULTILINE | re.DOTALL)
 # One ledger group: `GT<a>(–GT<b>)?: <status>, <use>` — full-match per group. Hyphen/en-dash/
 # em-dash tolerated in the range (mirrors _gt_numbers_in_heading's `[-–—]` class). `(?![0-9])`
 # boundary guards so `GT10` cannot truncate-parse as GT1. Status/use tokens are captured lowercase
@@ -137,9 +144,13 @@ _RELIABILITY_GROUP_RE = re.compile(
 # `- **BOOKED:** …` (mirroring _GT8_ROW_RE's bolded-id acceptance); every other claimed dialect
 # is a loud malformed ERROR. Lines without a BOOKED-shaped bullet stay prose-tolerant and are
 # ignored. GT numbers reject zero-padding (`GT07`), consistent with the ledger grammar.
-_BOOKED_CLAIM_RE = re.compile(
-    r"^\s*[-*+]\s*\**\s*BOOKED\s*\**\s*(?::|(?=ENGINE-FAULT\b))", re.IGNORECASE)
-_BOOKED_LINE_RE = re.compile(r"^\s*-\s*\**BOOKED[:*]+\s*(.*?)\s*$")
+# CLAIM = any BOOKED-shaped bullet at all (any bullet char, optional bold, `BOOKED` as a word,
+# whatever follows), so NO near-miss dialect can silently escape adjudication. Deliberately broad.
+_BOOKED_CLAIM_RE = re.compile(r"^\s*[-*+]\s*\**\s*BOOKED\b", re.IGNORECASE)
+# A claimed line is VALID only in the two canonical forms `- BOOKED: …` / `- **BOOKED:** …`
+# (exactly one colon, hyphen bullet, a space before the body). Everything else claimed is a loud
+# "unrecognized dialect" ERROR — `- BOOKED:: …`, `- BOOKED* …`, `* BOOKED: …`, `- **BOOKED** — …`.
+_BOOKED_LINE_RE = re.compile(r"^\s*-\s+(?:\*\*BOOKED:\*\*|BOOKED:)\s+(.+?)\s*$")
 _BOOKED_BODY_RE = re.compile(r"^ENGINE-FAULT\s+(\S+)\s+GT([1-9][0-9]*)(\s+OVER-FIRE)?$")
 
 
@@ -174,7 +185,12 @@ def _parse_gt_sections(text):
         if cur:
             body = "\n".join(buf).strip()
             for n in cur:
-                sections[n] = {"body": body, "provisional": prov}
+                # OR-in provisional across every heading covering n: a later heading (even a prose
+                # `## Appendix … GT4–GT8`) must NOT clear an earlier PROVISIONAL marker and thereby
+                # evade the Check-6 stale-heading tripwire. Body keeps last-writer (used by other
+                # checks); provisional is sticky-true.
+                prior = sections.get(n, {}).get("provisional", False)
+                sections[n] = {"body": body, "provisional": prov or prior}
 
     for ln in text.split("\n"):
         if _HEADING_RE.match(ln):
@@ -199,9 +215,12 @@ def _has_family(text, prefixes):
 
 
 def _reliability_values(text):
-    """All Reliability ledger field values in `text` (one per matching line). Exactly one is
-    required; zero or two+ are ERRORs surfaced by the caller."""
-    return [m.strip() for m in _RELIABILITY_FIELD_RE.findall(text)]
+    """Reliability ledger field values found IN THE PROVENANCE BLOCK (one per matching line).
+    Scoping to Provenance is the placement contract: a ledger under `## Notes` or elsewhere is
+    invisible here and surfaces as the caller's 'no ledger' error. Exactly one is required."""
+    m = _PROVENANCE_RE.search(text)
+    scope = m.group(1) if m else ""
+    return [v.strip() for v in _RELIABILITY_FIELD_RE.findall(scope)]
 
 
 def _parse_reliability_groups(value):
@@ -454,6 +473,19 @@ def argument_groundtruth_check(text):
                                   "NONE_REGISTERED or P<n> (got %r)." % raw)
         rows = _GT8_ROW_RE.findall(gt8)
         row_ids = [rid for rid, _ in rows]
+        # Reject duplicate ids on EITHER side BEFORE the coverage compare. Field <-> detail-row
+        # agreement is a MULTISET relation: collapsing both sides to sets below would let a doubled
+        # field id (`Expected premise flags: P1, P1`) or two `P1` detail rows (conflicting duplicate
+        # registrations for one premise) slip through a coverage check they must fail.
+        dup_expected = sorted({i for i in expected_ids if expected_ids.count(i) > 1})
+        if dup_expected:
+            errors.append("Check 5 (GT8) — 'Expected premise flags' repeats id(s) %s; each premise "
+                          "id may be registered at most once." % ", ".join(dup_expected))
+        dup_rows = sorted({i for i in row_ids if row_ids.count(i) > 1})
+        if dup_rows:
+            errors.append("Check 5 (GT8) — duplicate flag-detail row(s) for id(s) %s; each premise "
+                          "id must have exactly one detail row (conflicting duplicate rows)."
+                          % ", ".join(dup_rows))
         # Field <-> detail-row agreement (both directions).
         if none_registered and rows:
             errors.append("Check 5 (GT8) — expected NONE_REGISTERED but %d flag-detail row(s) "
@@ -485,9 +517,9 @@ def argument_groundtruth_check(text):
                                   "is field-level only and never appears in a detail row)."
                                   % part.strip())
 
-    # Check 6: Reliability ledger (GT schema v0.3.0). One machine-parsed ledger line in Provenance
-    # (full-text posture — the ledger lives outside the GT sections _parse_gt_sections captures,
-    # same as Check 2 at the code scan). Enforces ledger-internal consistency: the group grammar,
+    # Check 6: Reliability ledger (GT schema v0.3.0). Exactly one machine-parsed ledger line,
+    # anchored to the exact `- **Reliability:**` field WITHIN the `## Provenance` block (a
+    # misplaced ledger or a near-label does not count). Enforces ledger-internal consistency: the group grammar,
     # the status/use enums, the gate/confirm/report enforcement matrix, exact GT1-GT8 coverage
     # (no gaps, no overlaps), and the stale-heading cross-check that consumes the (formerly dead)
     # `sections[n]["provisional"]` bool. Run-side adjudication is RUN-PROTOCOL prose, with the
@@ -495,9 +527,9 @@ def argument_groundtruth_check(text):
     values = _reliability_values(text)
     if not values:
         errors.append("Check 6 (reliability) — no Reliability ledger line "
-                      "(`- **Reliability:** GT1–GT3: authoritative, gate; …`); GT schema v0.3.0 "
-                      "requires exactly one (by convention in Provenance; matched anywhere "
-                      "in the key).")
+                      "(`- **Reliability:** GT1–GT3: authoritative, gate; …`) in the "
+                      "`## Provenance` block; GT schema v0.3.0 requires exactly one there (a "
+                      "ledger under another heading, or a near-label, does not count).")
     elif len(values) > 1:
         errors.append("Check 6 (reliability) — %d Reliability ledger lines found; exactly one is "
                       "allowed." % len(values))
@@ -755,6 +787,37 @@ def run_self_test(which=None):
     # Check 5: expected ids and row ids must match exactly (P1 expected, P2 registered).
     check("gt8_row_id_mismatch", errs_of(_MOON_CHEESE_GT.replace(
         "  - P1: \"the moon is made of cheese\"", "  - P2: \"the moon is made of cheese\"")), False)
+    # Check 5: a doubled expected id (`P1, P1`) against one detail row must FAIL — set-collapse
+    # would have let this pass (PR #192 review); multiplicity is preserved on the field side.
+    check("gt8_duplicate_expected_id", errs_of(_MOON_CHEESE_GT.replace(
+        "- **Expected premise flags:** P1\n",
+        "- **Expected premise flags:** P1, P1\n")), False)
+    # Check 5: two `P1` detail rows against one expected `P1` must FAIL — a conflicting/duplicate
+    # registration for the same premise id (set-collapse would have hidden it; PR #192 review).
+    check("gt8_duplicate_detail_row", errs_of(_MOON_CHEESE_GT.replace(
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
+        "| a careful reviewer would not let the composition claim pass silently "
+        "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.\n",
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
+        "| a careful reviewer would not let the composition claim pass silently "
+        "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.\n"
+        "  - P1: \"the moon is also green\" | ground | CONTESTABLE "
+        "| a second conflicting registration for the same id "
+        "| The engine flags the premise as contestable; it does not rule the premise true or false.\n")), False)
+    # Check 5: two DISTINCT ids (`P1, P2`) with one detail row each is CLEAN — the multiplicity
+    # guard must not over-reject a legitimate multi-premise registration.
+    check("gt8_two_distinct_ids_ok", errs_of(_MOON_CHEESE_GT.replace(
+        "- **Expected premise flags:** P1\n",
+        "- **Expected premise flags:** P1, P2\n").replace(
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
+        "| a careful reviewer would not let the composition claim pass silently "
+        "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.\n",
+        "  - P1: \"the moon is made of cheese\" | ground | CONTESTABLE + EXTERNAL-VERIFY "
+        "| a careful reviewer would not let the composition claim pass silently "
+        "| The engine flags the premise as contestable and load-bearing; it does not rule the premise true or false.\n"
+        "  - P2: \"the moon is green\" | ground | CONTESTABLE "
+        "| a distinct second registered premise "
+        "| The engine flags the premise as contestable; it does not rule the premise true or false.\n")), True)
     # Check 5: a BOLDED row id (`- **P1:** …`) is validated, not silently skipped — the same
     # moon-cheese row bolded must still be accepted (and thus enum/truth-checked).
     check("gt8_bold_row_id", errs_of(_MOON_CHEESE_GT.replace(
@@ -836,6 +899,27 @@ def run_self_test(which=None):
     # Token boundary: `GT1–GT10` must not truncate-parse as GT1.
     check("reliability_token_boundary", errs_of(_VALID_GT.replace(
         "GT1–GT7: authoritative, gate", "GT1–GT10: authoritative, gate")), False)
+    # [Codex #193 P1] Near-label: `- **Not Reliability:**` must NOT substring-match the field.
+    check("reliability_near_label_rejected", errs_of(_VALID_GT.replace(
+        "- **Reliability:**", "- **Not Reliability:**")), False)
+    # [Codex #193 P1] Misplaced ledger: a valid ledger moved OUT of Provenance (into ## Notes)
+    # does not satisfy the contract — the Provenance scope makes it invisible → "no ledger".
+    check("reliability_misplaced_ledger", errs_of(
+        _VALID_GT.replace(_VG_LEDGER + "\n", "").replace(
+            "## Notes\n", "## Notes\n" + _VG_LEDGER + "\n")), False)
+    # [Codex #193 re-check P2] A lookalike heading (`## Provenance Notes`) must NOT satisfy the
+    # exact-`## Provenance` placement guard — the ledger under it is invisible → "no ledger".
+    check("reliability_provenance_lookalike", errs_of(
+        _VALID_GT.replace("## Provenance", "## Provenance Notes")), False)
+    # [Codex #193 confirm P2] A newline-split malformation (`##\nProvenance`) must NOT satisfy the
+    # single-line heading guard (`[ \t]` before `Provenance`, not `\s` which crosses newlines).
+    check("reliability_provenance_newline_split", errs_of(
+        _VALID_GT.replace("## Provenance", "##\nProvenance")), False)
+    # [Codex #193 P2] A later duplicate GT heading must NOT clear an earlier PROVISIONAL marker
+    # and thereby evade the stale-heading tripwire (provisional is sticky-true across headings).
+    check("reliability_dup_heading_keeps_provisional", errs_of(
+        _COMBINED_GT.replace("GT4–GT7: provisional, confirm", "GT4–GT7: authoritative, gate")
+        + "\n## Appendix — GT4–GT8 recap (non-provisional heading)\nrecap prose.\n"), False)
 
     # ---- Round-record conformance mode (the one mechanical guard on run-side attribution).
     # Hermetic in-memory fixtures — round_record_check only reads each fixture's Reliability ledger.
@@ -887,6 +971,16 @@ def run_self_test(which=None):
     # Zero-padded GT numbers are rejected, consistent with the ledger grammar's strictness.
     check("roundrec_zero_padded",
           round_record_check("- BOOKED: ENGINE-FAULT gate-fix GT07\n", _rr), False)
+    # [Codex #193 P2] Em-dash / no-colon bold form is CLAIMED (broad) and rejected loudly, not
+    # silently skipped — an unlicensed booking cannot hide behind `- **BOOKED** — ENGINE-FAULT`.
+    check("roundrec_dialect_emdash_nocolon",
+          round_record_check("- **BOOKED** — ENGINE-FAULT confirm-fix GT7\n", _rr), False)
+    # [Codex #193 P2] Double-colon / trailing-asterisk near-misses must NOT over-match the
+    # canonical line (they are claimed, then fail the strict `- BOOKED:` / `- **BOOKED:**` form).
+    check("roundrec_dialect_double_colon",
+          round_record_check("- BOOKED:: ENGINE-FAULT gate-fix GT2\n", _rr), False)
+    check("roundrec_dialect_trailing_star",
+          round_record_check("- BOOKED* ENGINE-FAULT gate-fix GT2\n", _rr), False)
 
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
