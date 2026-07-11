@@ -1714,23 +1714,23 @@ PY
     # Orphan-twin completeness (the corpus-level half of the pairing contract; Check 7 rule 5 closes
     # the wrong-twin hole in-file, this closes the missing-twin hole): every matched-pair member
     # requires BOTH its own artifacts (fixture.md + groundtruth.md) AND a complete complement twin
-    # (<pair>/clean ⇄ <pair>/broken, each carrying both files). A missing artifact or missing twin is
-    # a loud FAIL — the repair-diff gate below needs both members' fixture.md, so a member carrying
-    # only a groundtruth.md would otherwise slip through here and misfire there (Codex #196 P2). (This
-    # completeness pass is the argument-side addition the fiction loop lacks — backport is a separate
-    # chore, out of scope here.)
-    for CA_MGT in "$CA_EVALS"/*/clean/groundtruth.md "$CA_EVALS"/*/broken/groundtruth.md; do
-      [ -f "$CA_MGT" ] || continue
-      CA_MDIR="$(dirname "$CA_MGT")"
+    # (<pair>/clean ⇄ <pair>/broken, each carrying both files). Driven off the member DIRECTORIES
+    # (`<pair>/{clean,broken}`), NOT off a groundtruth.md glob: every other corpus loop is keyed on
+    # groundtruth.md, so a FIXTURE-ONLY member directory (a fixture.md with no groundtruth.md) would
+    # otherwise be invisible to all of them and evade completeness validation entirely (Codex #196
+    # P1). A missing artifact or missing/incomplete twin is a loud FAIL. (This completeness pass is
+    # the argument-side addition the fiction loop lacks — backport is a separate chore, out of scope.)
+    for CA_MDIR in "$CA_EVALS"/*/clean "$CA_EVALS"/*/broken; do
+      [ -d "$CA_MDIR" ] || continue
       CA_PAIRDIR="$(dirname "$CA_MDIR")"
       CA_MEMBER="$(basename "$CA_MDIR")"
       if [ "$CA_MEMBER" = "clean" ]; then CA_TWIN="broken"; else CA_TWIN="clean"; fi
-      # This member must carry BOTH artifacts...
-      if [ ! -f "$CA_MDIR/fixture.md" ]; then
-        echo "  FAIL $(basename "$CA_PAIRDIR")/$CA_MEMBER — incomplete member: missing fixture.md"; CA_FAIL=1
-      fi
+      # This member directory must carry BOTH artifacts (a fixture-only OR groundtruth-only member
+      # is incomplete and would otherwise slip past the groundtruth-keyed loops above/below).
+      [ -f "$CA_MDIR/fixture.md" ] || { echo "  FAIL $(basename "$CA_PAIRDIR")/$CA_MEMBER — incomplete member: missing fixture.md"; CA_FAIL=1; }
+      [ -f "$CA_MDIR/groundtruth.md" ] || { echo "  FAIL $(basename "$CA_PAIRDIR")/$CA_MEMBER — incomplete member: missing groundtruth.md"; CA_FAIL=1; }
       # ...and its complement twin must exist with BOTH artifacts.
-      if [ ! -f "$CA_PAIRDIR/$CA_TWIN/groundtruth.md" ] || [ ! -f "$CA_PAIRDIR/$CA_TWIN/fixture.md" ]; then
+      if [ ! -f "$CA_PAIRDIR/$CA_TWIN/fixture.md" ] || [ ! -f "$CA_PAIRDIR/$CA_TWIN/groundtruth.md" ]; then
         echo "  FAIL $(basename "$CA_PAIRDIR")/$CA_MEMBER — orphan twin: complement $CA_TWIN/ missing fixture.md or groundtruth.md"; CA_FAIL=1
       fi
     done
