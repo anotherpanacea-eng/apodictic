@@ -39,6 +39,12 @@ WALTON_SCHEMES = {
     "Practical Reasoning", "Sign", "Popular Opinion", "Slippery Slope",
     "Ad Hominem", "Verbal Classification",
 }
+# Schemes whose `#CQ<n>` critical-question suffix is bounded (Walton & Macagno). A scheme
+# absent from this map rejects ANY `#` suffix — so `Expert Opinion#CQ999` / `#garbage` / a bare
+# trailing `#` fail rather than silently pass. Argument from Expert Opinion has six basic CQs
+# (Expertise / Field / Opinion / Trustworthiness / Consistency / Backup-Evidence).
+WALTON_CQ_MAX = {"Expert Opinion": 6}
+_WALTON_CQ_RE = re.compile(r"CQ(\d+)$")
 
 SF_REFS = {
     "family:vagueness", "family:ambiguity", "family:relevance", "family:vacuity",
@@ -66,17 +72,36 @@ NONPREFIX_FAMILIES = {"SCHEME", "VERDICT", "PREMISE-FLAG"}
 # Structural registry parse (drift-binding, bounded leaf tokens)
 # --------------------------------------------------------------------------
 _DC_ROW_RE = re.compile(r"^\|\s*\*\*(" + "|".join(DC_PREFIXES) + r")(\d+)\*\*")
+# A canonical code-definition table has `Code` as its FIRST column. Two header shapes exist:
+# the 8 failure-code families + AT0 use `| Code | Name | Description |`, and the argument-type
+# table (AT1-AT4) uses `| Code | Type | Promise to Reader | Burden Level |`. Anchoring on the
+# first column being exactly `Code` captures both while excluding the support-type
+# (`| Support Type | ... |`), scheme-hint, and objection-expectation (`| Type | ... |`) tables.
+_CODE_TABLE_HEADER_RE = re.compile(r"^\|\s*Code\s*\|", re.IGNORECASE)
 _SCHEME_HEADER_RE = re.compile(r"^\|\s*Scheme Hint\s*\|", re.IGNORECASE)
 _TABLE_CELL1_BOLD_RE = re.compile(r"^\|\s*\*\*([^*|]+?)\*\*\s*\|")
 
 
 def parse_dc_codes(registry_text):
-    """Structural: DC code = a bolded leaf token at a table-row start. Returns a set."""
+    """Structural table walk: a DC code is a bolded leaf token at the start of a row
+    INSIDE a canonical code-definition table (one whose FIRST column header is `Code`).
+    Scoping to that header excludes the support-type and scheme tables that also carry
+    bold column-1 tokens (e.g. a stray `| **AC5** |` row in an unrelated table is NOT
+    counted). Check 9's exact-contiguous-set assertion backstops any residual tamper.
+    Returns a set."""
     codes = set()
+    in_code_table = False
     for line in registry_text.splitlines():
-        m = _DC_ROW_RE.match(line)
-        if m:
-            codes.add(m.group(1) + m.group(2))
+        if _CODE_TABLE_HEADER_RE.match(line):
+            in_code_table = True
+            continue
+        if in_code_table:
+            if not line.lstrip().startswith("|"):
+                in_code_table = False          # table ended at the first non-table line
+                continue
+            m = _DC_ROW_RE.match(line)
+            if m:
+                codes.add(m.group(1) + m.group(2))
     return codes
 
 
@@ -134,8 +159,15 @@ def _ref_ok(vocab, ref):
     if vocab == "AIF":
         return ref in AIF_NODES
     if vocab == "WALTON":
-        scheme = ref.split("#", 1)[0]
-        return scheme in WALTON_SCHEMES
+        scheme, sep, cq = ref.partition("#")
+        if scheme not in WALTON_SCHEMES:
+            return False
+        if not sep:
+            return True                              # bare scheme
+        m = _WALTON_CQ_RE.fullmatch(cq)              # a `#` suffix must be a bounded CQ<n>
+        if not m:
+            return False
+        return 1 <= int(m.group(1)) <= WALTON_CQ_MAX.get(scheme, 0)
     if vocab == "SF":
         return ref in SF_REFS
     if vocab == "WACHSMUTH":
@@ -163,10 +195,11 @@ def validate(cross, dc_codes, schemes, verdicts, flags, fm_max):
     ids = []
     for r in entries:
         cid = r.get("id") if isinstance(r, dict) else None
-        ids.append(cid)
         if not isinstance(cid, str) or not cid.strip():
-            errors.append("Check 1 (membership) — every entry needs a non-empty string id (got %r)." % cid)
+            errors.append("Check 1 (membership) — every entry needs a non-empty string id (got %r)." % (cid,))
+            ids.append(None)            # hashable proxy: a JSON list/dict id must not crash set()/sorted
             continue
+        ids.append(cid)
         if re.fullmatch(r"P\d+", cid):
             errors.append("Check 1 (membership) — %r is a premise-INSTANCE label, not a "
                           "premise-flag TYPE; valid PREMISE-FLAG ids are the five types." % cid)
@@ -201,8 +234,9 @@ def validate(cross, dc_codes, schemes, verdicts, flags, fm_max):
         elif fam != exp_fam:
             errors.append("Check 2 (family) — id %r has family %r, expected %r." % (cid, fam, exp_fam))
 
-        # Check 3 — cardinality enum (row)
-        if card not in ROW_CARDS:
+        # Check 3 — cardinality enum (row) — isinstance-guard so an unhashable JSON scalar
+        # (e.g. a list) yields a clean error instead of a `TypeError: unhashable type`.
+        if not isinstance(card, str) or card not in ROW_CARDS:
             errors.append("Check 3 (cardinality) — id %r row cardinality %r not in enum." % (cid, card))
         if not isinstance(targets, list):
             errors.append("Check 10 (JSON hygiene) — id %r 'targets' must be a list." % cid)
@@ -222,7 +256,8 @@ def validate(cross, dc_codes, schemes, verdicts, flags, fm_max):
             if not targets:
                 errors.append("Check 4 (roll-up) — id %r is %r but has no targets (should be 'unmapped')." % (cid, card))
             else:
-                present = [tt.get("cardinality") for tt in targets if tt.get("cardinality") in _CARD_PREC]
+                present = [tt.get("cardinality") for tt in targets
+                           if isinstance(tt.get("cardinality"), str) and tt.get("cardinality") in _CARD_PREC]
                 if present:
                     strongest = max(present, key=lambda c: _CARD_PREC[c])
                     if card != strongest:
@@ -235,17 +270,19 @@ def validate(cross, dc_codes, schemes, verdicts, flags, fm_max):
             ref = tt.get("ref")
             tcard = tt.get("cardinality")
             prov = tt.get("prov")
-            if tcard not in TARGET_CARDS:
+            if not isinstance(tcard, str) or tcard not in TARGET_CARDS:
                 errors.append("Check 3 (cardinality) — id %r target cardinality %r not in target enum." % (cid, tcard))
-            # Check 6 — target well-formedness
-            if vocab not in VOCABS:
+            # Check 6 — target well-formedness (isinstance-guard so a non-string vocab/ref can't crash)
+            if not isinstance(vocab, str) or vocab not in VOCABS:
                 errors.append("Check 6 (target) — id %r target vocab %r not in {AIF,WALTON,SF,WACHSMUTH}." % (cid, vocab))
             elif not (isinstance(ref, str) and _ref_ok(vocab, ref)):
                 errors.append("Check 6 (target) — id %r %s ref %r outside the closed value-space." % (cid, vocab, ref))
-            # Check 8a — provenance locator present
-            if not (isinstance(prov, dict) and prov.get("work") and prov.get("loc") and prov.get("id")):
-                errors.append("Check 8a (provenance) — id %r target (%s %r) lacks a full prov {work,loc,id}." % (cid, vocab, ref))
-            if vocab in VOCABS and isinstance(ref, str):
+            # Check 8a — provenance locator: all three fields must be NON-EMPTY STRINGS
+            # (a numeric/boolean/empty locator is unusable and must not pass on truthiness alone).
+            if not (isinstance(prov, dict) and all(
+                    isinstance(prov.get(k), str) and prov.get(k).strip() for k in ("work", "loc", "id"))):
+                errors.append("Check 8a (provenance) — id %r target (%s %r) lacks a full string prov {work,loc,id}." % (cid, vocab, ref))
+            if isinstance(vocab, str) and vocab in VOCABS and isinstance(ref, str):
                 seen_refs.setdefault((vocab, ref), set()).add(cid)
 
     # Check 7 — no dangling Walton + every scheme-hint row maps to a Walton scheme
@@ -266,22 +303,31 @@ def validate(cross, dc_codes, schemes, verdicts, flags, fm_max):
         errors.append("Check 8b (arity) — no external ref is the target of >=2 internal rows; "
                       "a globally 1:1 crosswalk is the exact overclaim the ADR forbids.")
 
-    # Check 9 — count tripwires (guard the source docs' stale self-counts)
-    if len(dc_codes) != 46:
-        errors.append("Check 9 (tripwire) — derived DC code count is %d, expected 46 "
-                      "(registry header's stale '45' must not propagate)." % len(dc_codes))
-    if "OB5" not in dc_codes:
-        errors.append("Check 9 (tripwire) — OB5 (Decoy strongest objection) missing from the derived DC set.")
-    for fam, n in DC_FAMILY_COUNTS.items():
-        got = sum(1 for c in dc_codes if c[:2] == fam)
-        if got != n:
-            errors.append("Check 9 (tripwire) — DC family %s has %d codes, expected %d." % (fam, got, n))
+    # Check 9 — shape tripwires. The derived set must match the canonical taxonomy shape, so a parse
+    # miscount OR a registry tamper (a code renamed within its table, a stray code-shaped row elsewhere,
+    # a duplicated scheme) fails LOUDLY instead of silently certifying the wrong 82-set.
+    # (a) DC codes must be EXACTLY the canonical contiguous per-family set — this catches e.g. AC4->AC5
+    #     (AC4 missing + AC5 extra), which a per-family COUNT check would have missed.
+    expected_dc = {"%s%d" % (fam, i) for fam, n in DC_FAMILY_COUNTS.items() for i in range(n)}
+    if dc_codes != expected_dc:
+        missing = sorted(expected_dc - dc_codes)
+        extra = sorted(dc_codes - expected_dc)
+        errors.append("Check 9 (tripwire) — derived DC set is not the canonical contiguous set "
+                      "(missing=%s extra=%s); the registry's stale '45' or a renamed/stray code must not "
+                      "propagate. Expected 46 incl. OB5." % (missing, extra))
+    # (b) FM-A owner
     if fm_max != 20:
         errors.append("Check 9 (tripwire) — _FM_A_MAX is %r, expected 20 (intro's stale 'nineteen' must not propagate)." % fm_max)
     if "FM-A20" not in derived:
         errors.append("Check 9 (tripwire) — FM-A20 (Self-Undermining Remedy) missing from the derived set.")
-    if len(schemes) != 8:
-        errors.append("Check 9 (tripwire) — derived scheme-hint count is %d, expected 8." % len(schemes))
+    # (c) schemes — 8 and UNIQUE (parse_schemes returns a list; a duplicated scheme dedups in the set
+    #     union and would otherwise pass a bare length check).
+    if len(schemes) != 8 or len(set(schemes)) != 8:
+        errors.append("Check 9 (tripwire) — expected 8 unique scheme hints, got %d (%d unique): %r."
+                      % (len(schemes), len(set(schemes)), schemes))
+    # (d) the unique derived union must total exactly 82 (backstops any slice miscount).
+    if len(derived) != 82:
+        errors.append("Check 9 (tripwire) — derived unique id union is %d, expected 82." % len(derived))
 
     return errors
 
@@ -534,7 +580,7 @@ def _selftest():
     check("hostile: FM max 19 -> Check 9",
           any("_FM_A_MAX" in e for e in validate(valid, dc_codes, schemes, verdicts, flags, 19)))
     check("hostile: 7 schemes -> Check 9",
-          any("scheme-hint count" in e for e in validate(
+          any("unique scheme hints" in e for e in validate(
               valid, dc_codes, schemes[:7], verdicts, flags, fm_max)))
 
     # Check 10 — shape
@@ -568,6 +614,49 @@ def _selftest():
           any("Check 6" in e for e in mutate(
               lambda c: first_scheme(c)["targets"].__setitem__(0, {"vocab": "WACHSMUTH", "ref": "logic:",
                                                "cardinality": "related", "prov": prov("logic:")}))))
+
+    # ---- Codex round arms (PR #200): P1 drift-binding scoping + P2/P3 hardening ----
+    # P1a — parse_dc_codes must SCOPE to canonical `| Code | Name | Description |` tables; a
+    # code-shaped row in an UNRELATED table must NOT be counted as a DC code.
+    stray_reg = "\n".join([
+        "| Support Type | Meaning |", "|----|----|",
+        "| **AC5** | a support-type row that is NOT a DC code |",
+        "prose gap",
+        "| Code | Name | Description |", "|----|----|----|",
+        "| **OB0** | a real code | x |", "| **OB1** | another | y |",
+    ])
+    dc_scoped = parse_dc_codes(stray_reg)
+    check("P1a: stray AC5 outside a code table is NOT counted", dc_scoped == {"OB0", "OB1"})
+    # P1a — a code renamed within its family (AC4->AC5) breaks the canonical contiguous set.
+    check("P1a: AC4->AC5 -> Check 9 canonical-set",
+          any("canonical contiguous set" in e for e in validate(
+              valid, (dc_codes - {"AC4"}) | {"AC5"}, schemes, verdicts, flags, fm_max)))
+    # P1b — a DUPLICATED scheme (list len 8 but 7 unique) must fail, though the set-union dedups.
+    check("P1b: duplicate scheme (Sign->Authority) -> Check 9",
+          any("unique scheme hints" in e for e in validate(
+              valid, dc_codes, schemes[:7] + ["Authority"], verdicts, flags, fm_max)))
+    check("P1b: derived-union tripwire fires at !=82",
+          any("expected 82" in e for e in validate(
+              valid, dc_codes, schemes[:7], verdicts, flags, fm_max)))
+    # P2a — unhashable JSON scalars (a list where a string is expected) must yield a clean error, not a TypeError.
+    check("P2a: list id -> clean error (no crash)",
+          any("non-empty string id" in e for e in mutate(lambda c: c["entries"][0].update({"id": []}))))
+    check("P2a: list cardinality -> clean error (no crash)",
+          any("Check 3" in e for e in mutate(lambda c: c["entries"][0].update({"cardinality": []}))))
+    check("P2a: list vocab -> clean error (no crash)",
+          any("Check 6" in e for e in mutate(lambda c: first_scheme(c)["targets"][0].update({"vocab": []}))))
+    # P2b — Walton `#CQ<n>` suffix is bounded; bare scheme ok, over-max/garbage/empty/unmapped-scheme suffix rejected.
+    check("P2b: walton bare scheme ok", _ref_ok("WALTON", "Expert Opinion"))
+    check("P2b: walton valid CQ2 ok", _ref_ok("WALTON", "Expert Opinion#CQ2"))
+    check("P2b: walton CQ over max rejected", not _ref_ok("WALTON", "Expert Opinion#CQ999"))
+    check("P2b: walton garbage suffix rejected", not _ref_ok("WALTON", "Expert Opinion#garbage"))
+    check("P2b: walton empty suffix rejected", not _ref_ok("WALTON", "Expert Opinion#"))
+    check("P2b: walton CQ on scheme w/o CQ map rejected", not _ref_ok("WALTON", "Practical Reasoning#CQ2"))
+    check("P2b: walton bare Practical Reasoning ok", _ref_ok("WALTON", "Practical Reasoning"))
+    # P3 — Check 8a requires non-empty STRING prov fields (numeric locators are unusable).
+    check("P3: numeric prov -> Check 8a",
+          any("Check 8a" in e for e in mutate(
+              lambda c: first_scheme(c)["targets"][0].update({"prov": {"work": 1, "loc": 2, "id": 3}}))))
 
     if fails:
         print("Self-test: FAIL")

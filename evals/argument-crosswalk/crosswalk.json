@@ -279,12 +279,12 @@
       "targets": [
         {
           "vocab": "WALTON",
-          "ref": "Practical Reasoning#CQ",
+          "ref": "Practical Reasoning",
           "cardinality": "related",
           "prov": {
             "work": "Walton-Reed-Macagno-2008",
             "loc": "PR critical question: are there better alternatives?",
-            "id": "Practical Reasoning#CQ"
+            "id": "Practical Reasoning"
           }
         }
       ],
@@ -595,12 +595,12 @@
       "targets": [
         {
           "vocab": "WALTON",
-          "ref": "Practical Reasoning#CQ",
+          "ref": "Practical Reasoning",
           "cardinality": "related",
           "prov": {
             "work": "Walton-Reed-Macagno-2008",
             "loc": "PR critical question: alternatives weighed?",
-            "id": "Practical Reasoning#CQ"
+            "id": "Practical Reasoning"
           }
         },
         {
@@ -724,12 +724,12 @@
       "targets": [
         {
           "vocab": "WALTON",
-          "ref": "Practical Reasoning#CQ",
+          "ref": "Practical Reasoning",
           "cardinality": "related",
           "prov": {
             "work": "Walton-Reed-Macagno-2008",
             "loc": "PR critical question: feasibility / side-effects",
-            "id": "Practical Reasoning#CQ"
+            "id": "Practical Reasoning"
           }
         }
       ],
@@ -785,7 +785,7 @@
           "cardinality": "exact",
           "prov": {
             "work": "Walton-Reed-Macagno-2008",
-            "loc": "Argument from Expert Opinion (CQ1-5)",
+            "loc": "Argument from Expert Opinion (CQ1-6)",
             "id": "Expert Opinion"
           }
         },
