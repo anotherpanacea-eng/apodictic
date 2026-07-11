@@ -381,7 +381,11 @@ inserted at a **distinct seam** — two loci at the same contiguous insertion po
 diff hunk and cannot be told apart, so the gate rejects them (a loud FAIL, never a silent pass);
 author co-located edits as one locus, or separate the seams. Each locus must also carry a **distinct
 identifier** (`Locus 1`, `Locus 2`, …): a repeated `Locus <n>` inflates the loci count and could
-spuriously match the hunk total, so the gate rejects duplicate ids as well. The anti-gaming authoring bar
+spuriously match the hunk total, so the gate rejects duplicate ids as well. Each locus bullet must be
+**well-formed** — `- **Locus <n> — …` with a title-case `Locus` and an integer id; a case variant
+(`LOCUS 1`), a number-less `Locus`, or `Locus1` is rejected as malformed rather than silently
+dropped — and a clean key carries **exactly one** `Base text + repair record` field (a second block's
+loci would be invisible to the map). The anti-gaming authoring bar
 (parent-spec rule 2a) is preserved: a repair must discharge its burden to the *general-evaluability*
 standard (mechanism, criteria, costs, tradeoffs), not the foil-naming standard.
 
@@ -548,11 +552,14 @@ corpus by `--check-all`). It checks:
   pair equals the `Paired-with` pair — the wrong-twin gate), and **clean-side derivation gates** (a
   `clean` member requires a non-N/A `Base text + repair record` and a GT2 that *opens with* the
   exact `N/A — positive control` marker — a structural leading-line match, not a body substring).
-  A file physically under a `clean/`/`broken/` directory may **not** opt out by dropping its
-  fields — the directory (the path-derived `member_hint`) is the source of truth (the nested
-  opt-out closure). Absence of both fields on a *flat* fixture is a zero-behavior no-op. Two
-  corpus-level gates run in `--check-all`: an **orphan-twin completeness pass** (every member needs
-  a complete complement twin — both `fixture.md` and `groundtruth.md`) and the scripted
+  The file path and the in-file pairing fields must **agree in both directions**: a file physically
+  under a `clean/`/`broken/` directory may not opt out by dropping its fields, AND a file that
+  *declares* membership must physically live in such a directory (a flat member declaration would
+  escape the corpus completeness pass). The directory (the path-derived `member_hint`) is the source
+  of truth. Absence of both fields on a *flat* fixture is a zero-behavior no-op. Two corpus-level
+  gates run in `--check-all`: an **orphan-twin completeness pass** — enumerated over the member
+  *directories* (`<pair>/{clean,broken}`), so a fixture-only member is caught — requiring every
+  member and its complement twin to carry both `fixture.md` and `groundtruth.md`; and the scripted
   **repair-diff acceptance gate** (`--repair-diff`: the clean `fixture.md` is the broken with
   insertions only — zero deletions — and the insertion-hunk count maps 1:1 to the clean key's
   enumerated `Base text + repair record` loci, parsed by a structural line walk).
