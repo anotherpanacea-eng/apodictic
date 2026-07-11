@@ -222,6 +222,10 @@ def validate(cross, dc_codes, schemes, verdicts, flags, fm_max):
             errors.append("Check 10 (JSON hygiene) — every entry must be an object (got %r)." % type(r).__name__)
             continue
         cid = r.get("id", "<no-id>")
+        if not isinstance(cid, str):
+            # hashable proxy: a JSON list/dict id must not crash downstream set inserts
+            # (seen_refs). Check 1 already reported the real bad value.
+            cid = "<non-string-id>"
         fam = r.get("family")
         card = r.get("cardinality")
         targets = r.get("targets", [])
@@ -641,6 +645,10 @@ def _selftest():
     # P2a — unhashable JSON scalars (a list where a string is expected) must yield a clean error, not a TypeError.
     check("P2a: list id -> clean error (no crash)",
           any("non-empty string id" in e for e in mutate(lambda c: c["entries"][0].update({"id": []}))))
+    # P2a (Codex re-review) — a POPULATED row (with targets) whose id is a list must not crash
+    # the per-target seen_refs set insert. entries[0] above is unmapped/no-targets, so it missed this.
+    check("P2a: list id on POPULATED row -> clean error (no crash)",
+          any("non-empty string id" in e for e in mutate(lambda c: first_scheme(c).update({"id": []}))))
     check("P2a: list cardinality -> clean error (no crash)",
           any("Check 3" in e for e in mutate(lambda c: c["entries"][0].update({"cardinality": []}))))
     check("P2a: list vocab -> clean error (no crash)",
