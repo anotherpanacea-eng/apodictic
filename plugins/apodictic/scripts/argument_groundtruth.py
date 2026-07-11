@@ -180,17 +180,20 @@ _FIXTURE_SLUG_PAIR_RE = re.compile(r"[\s*`]*([a-z0-9][a-z0-9-]*)/([a-z][a-z-]*)[
 # canonical `N/A — positive control` opener (hyphen/en-dash/em-dash tolerated; case-insensitive).
 _GT2_POSCTRL_MARKER_RE = re.compile(
     r"^[\s*`>_-]*N/A\s*[-–—]\s*positive control\b", re.IGNORECASE)
-# Check 7 repair-diff gate — the enumerated repair loci under `Base text + repair record`. Both are
-# bounded single-line LEAF tokens; the SCOPE (which lines are the field's sub-bullets) is walked
-# structurally in _repair_record_loci, never with a `(.*?)`/multi-line `\s*` block regex — so an
-# empty/blank line inside the field cannot let a scope match run on and swallow the next locus
-# (Codex #196 P2). `_REPAIR_FIELD_LINE_RE` = the field's column-0 bullet; `_LOCUS_LEAF_RE` = one
-# indented `- **Locus <n> — …` sub-bullet.
+# Check 7 repair-diff gate — the enumerated repair loci under `Base text + repair record`. The SCOPE
+# (which lines are the field's sub-bullets) is walked structurally in _repair_record_loci, never with
+# a `(.*?)`/multi-line `\s*` block regex — so an empty/blank line inside the field cannot let a scope
+# match run on and swallow the next locus. `_REPAIR_FIELD_LINE_RE` = the field's column-0 bullet.
+# Within the block, locus bullets follow the claim-broad / validate-strict pattern (mirrors the BOOKED
+# matcher) so a malformed locus can never be SILENTLY dropped (Codex #196 fresh-head P2):
+#   `_LOCUS_CLAIM_RE` = any indented bullet whose text opens with `Locus` as a token (case-insensitive,
+#     with/without a number) — the broad claim, so a case variant (`LOCUS 1`) or a number-less `Locus`
+#     is SEEN, not skipped; and
+#   `_LOCUS_LEAF_RE` = the strict VALID form `- **Locus <n> — …` (title-case `Locus`, a space, an
+#     integer id). A claim that is not a valid leaf is a loud "malformed locus" error.
 _REPAIR_FIELD_LINE_RE = re.compile(r"^-\s+\*\*\s*Base text \+ repair record\b")
-# Loci are integer-labeled by convention (`Locus 1`, `Locus 2`, …); the count, not the label value,
-# drives the 1:1 hunk map. A letter-suffixed label (`Locus 1a`) is not counted — which fails loud
-# (hunk<->loci mismatch), never silent — so the integer convention stays enforced by construction.
-_LOCUS_LEAF_RE = re.compile(r"^\s+-\s+\*{0,2}Locus\s+([0-9]+)\b")
+_LOCUS_CLAIM_RE = re.compile(r"^\s+-\s+\*{0,2}\s*Locus(?![A-Za-z])", re.IGNORECASE)
+_LOCUS_LEAF_RE = re.compile(r"^\s+-\s+\*{0,2}\s*Locus\s+([0-9]+)\b")
 
 
 def _positive_code_text(text):
@@ -518,11 +521,13 @@ def round_record_check(record_text, resolve_fixture):
 
 
 def argument_groundtruth_check(text, member_hint=None):
-    """`member_hint` is the pair-member directory this file physically lives in (`clean` / `broken`,
-    else None), supplied by the CLI from the file path. It is the source of truth for the nested
-    opt-out closure (Check 7 rule 1): a file under a `<pair>/clean|broken/` directory may not escape
-    Check 7 by deleting its pairing fields. None for the flat unpaired fixtures and for all in-memory
-    self-test text, so their behavior is unchanged."""
+    """`member_hint` is the basename of the file's parent directory, supplied by the CLI from the file
+    path — `clean`/`broken` for a nested member, the pair/fixture slug for a flat file, or None only
+    for the in-memory self-test text (which asserts nothing about path). It drives Check 7 rule 1's
+    bidirectional path<->declaration agreement: a file under `<pair>/clean|broken/` must declare a
+    matching member (no opt-out by dropping fields), AND a file that declares membership must live in
+    such a directory (no flat member declaration escaping the corpus orphan-twin completeness pass).
+    member_hint=None asserts neither, so the in-memory self-test text keeps its exact behavior."""
     errors, warnings = [], []
     sections = _parse_gt_sections(text)
 
@@ -742,12 +747,17 @@ def argument_groundtruth_check(text, member_hint=None):
     member_val = _provenance_field(text, "Matched-pair member")
     paired_val = _provenance_field(text, "Paired-with")
     has_member, has_paired = bool(member_val), bool(paired_val)
-    # Rule 1 (nested opt-out closure; Codex #196 P1): a file that PHYSICALLY lives in a
-    # `<pair>/clean/` or `<pair>/broken/` directory is a pair member BY LOCATION — it may not opt out
-    # of Check 7 by dropping its pairing fields (which would otherwise read as an unpaired legacy
-    # no-op). `member_hint` (from the file path) is the source of truth: require both fields present
-    # AND `Matched-pair member` == the directory member. Path-blind callers (member_hint=None) are
-    # untouched, so the flat fixtures and the in-memory self-test text keep their exact behavior.
+    # Rule 1 (directory<->declaration agreement; Codex #196 P1 + fresh-head): the file path and the
+    # in-file pairing fields must AGREE, in BOTH directions. `member_hint` is the basename of the
+    # file's parent directory (from the CLI): `clean`/`broken` for a nested member, the pair/fixture
+    # slug for a flat file, or None only for the in-memory self-test text (no path). Two failure modes:
+    #   (a) a file that PHYSICALLY lives in a `<pair>/clean|broken/` directory must DECLARE both
+    #       pairing fields with a matching `Matched-pair member` — it may not opt out by dropping them
+    #       (which would otherwise read as an unpaired legacy no-op); and
+    #   (b) a file that DECLARES itself a matched-pair member must physically LIVE in a
+    #       `<pair>/clean|broken/` directory — a flat member declaration escapes the corpus-level
+    #       orphan-twin completeness pass (which enumerates member directories), so its missing twin
+    #       is never caught. member_hint=None (self-test) is untouched: it asserts nothing about path.
     if member_hint in ("clean", "broken"):
         if not (has_member and has_paired):
             errors.append("Check 7 (matched pair) — this key lives in a `%s/` pair directory but is "
@@ -760,6 +770,12 @@ def argument_groundtruth_check(text, member_hint=None):
                 errors.append("Check 7 (matched pair) — `Matched-pair member` %r disagrees with the "
                               "`%s/` member directory this key lives in (the directory is the source "
                               "of truth)." % (member_val.strip(), member_hint))
+    elif member_hint is not None and (has_member or has_paired):
+        errors.append("Check 7 (matched pair) — this key declares a pairing field but lives at a flat "
+                      "path (its directory is `%s/`, not `clean`/`broken`); a declared matched-pair "
+                      "member must physically live in a `<pair>/clean/` or `<pair>/broken/` directory "
+                      "(else the corpus orphan-twin completeness pass cannot see its missing twin)."
+                      % member_hint)
     if has_member or has_paired:
         # Rule 2: both pairing fields are required together (or both absent).
         if has_member != has_paired:
@@ -851,31 +867,45 @@ def argument_groundtruth_check(text, member_hint=None):
 
 
 def _repair_record_loci(clean_gt_text):
-    """The enumerated repair loci (`- **Locus <n> — …`) under a clean key's `Base text + repair
-    record` Provenance field, as a list of their declared numbers. STRUCTURAL: find the field's
-    column-0 bullet line, then walk the CONTIGUOUS run of more-indented sub-bullet lines that follow
-    (stopping at the next column-0 line or a `##` heading), collecting the ones that declare a
-    `Locus <n>` leaf. A line walk — never a `(.*?)`/multi-line `\\s*` block regex — so a blank or
-    empty line inside the field cannot let the scope run on and swallow the following locus
-    (Codex #196 P2). Returns [] when there is no repair-record field or no locus sub-bullet."""
+    """Parse a clean key's `Base text + repair record` provenance field. Returns
+    `(loci, malformed, field_count)`:
+      - `loci`      — the integer ids of the VALID `- **Locus <n> — …` sub-bullets in the FIRST field
+                      block, in order;
+      - `malformed` — the (stripped) text of any locus-shaped bullet in that block that is NOT a valid
+                      leaf (a case variant like `LOCUS 1`, a number-less `Locus`, `Locus1`, …), so a
+                      malformed locus is surfaced loudly instead of silently dropped;
+      - `field_count` — how many `Base text + repair record` fields the key carries (exactly one is
+                      allowed; a second block's loci are otherwise invisible to the 1:1 map).
+    STRUCTURAL: a whole-file line walk that scopes the first block by indentation (the sub-bullet run
+    after the field line, up to the next column-0 line or `##` heading) — never a `(.*?)`/multi-line
+    `\\s*` block regex, so a blank line inside the field cannot let the scope run on and swallow the
+    next locus. Scanning continues past the first block only to count any stray extra field."""
     lines = clean_gt_text.split("\n")
-    loci = []
-    in_field = False
+    loci, malformed = [], []
+    field_count = 0
+    in_first_block = False
     for ln in lines:
-        if not in_field:
-            if _REPAIR_FIELD_LINE_RE.match(ln):
-                in_field = True
+        if _REPAIR_FIELD_LINE_RE.match(ln):
+            field_count += 1
+            in_first_block = (field_count == 1)
+            continue
+        if not in_first_block:
             continue
         if _is_h2_scope(ln):
-            break  # next section — the field's block is over
+            in_first_block = False  # next section — first block over; keep scanning for stray fields
+            continue
         if ln.strip() == "":
             continue  # tolerate a blank line inside the block without ending it
         if not ln[:1].isspace():
-            break  # a column-0 line (the next top-level bullet / prose) ends the block
-        lm = _LOCUS_LEAF_RE.match(ln)
-        if lm:
-            loci.append(int(lm.group(1)))
-    return loci
+            in_first_block = False  # a column-0 line ends the block; keep scanning for stray fields
+            continue
+        if _LOCUS_CLAIM_RE.match(ln):  # claim-broad: any locus-shaped sub-bullet is SEEN
+            lm = _LOCUS_LEAF_RE.match(ln)  # validate-strict: `- **Locus <n> — …` with an integer id
+            if lm:
+                loci.append(int(lm.group(1)))
+            else:
+                malformed.append(ln.strip())
+    return loci, malformed, field_count
 
 
 def repair_diff_check(broken_text, clean_text, clean_gt_text):
@@ -906,7 +936,18 @@ def repair_diff_check(broken_text, clean_text, clean_gt_text):
             errors.append("repair-diff — non-additive %s edit (broken[%d:%d] -> clean[%d:%d]); the "
                           "clean twin must be the broken fixture with insertions ONLY (zero "
                           "deletions/replacements, every other byte identical)." % (tag, i1, i2, j1, j2))
-    loci = _repair_record_loci(clean_gt_text)
+    loci, malformed, field_count = _repair_record_loci(clean_gt_text)
+    # Exactly one `Base text + repair record` field: a second block's loci are invisible to the map.
+    if field_count > 1:
+        errors.append("repair-diff — %d `Base text + repair record` provenance fields; exactly one is "
+                      "allowed (a second field's repair loci are invisible to the 1:1 hunk map)."
+                      % field_count)
+    # Malformed locus bullets are surfaced, never silently dropped (a case variant, a number-less
+    # `Locus`, `Locus1`, … would otherwise sit in the record uncounted and unflagged).
+    if malformed:
+        errors.append("repair-diff — malformed repair-locus bullet(s) %s; each locus must read "
+                      "`- **Locus <n> — …` (title-case `Locus`, a space, an integer id)."
+                      % "; ".join(repr(m[:70]) for m in malformed))
     if not loci:
         errors.append("repair-diff — the clean key enumerates no `- **Locus <n> — …` repair loci "
                       "under `Base text + repair record`; the 1:1 hunk<->locus map is unverifiable.")
@@ -1375,6 +1416,13 @@ def run_self_test(which=None):
     # (o) [P1] a directory member that agrees with its directory + declares both fields is accepted
     # (the positive control for rule 1 — path-derived hint plus in-file fields, no contradiction).
     check("pair_dir_member_consistent", errs_of_hint(_PAIR_CLEAN_GT, "clean"), True)
+    # (o2) [P1 fresh-head] the reverse direction: a file that DECLARES membership but lives at a FLAT
+    # path (member_hint = a slug, not clean/broken) is rejected — a flat member declaration escapes
+    # the corpus orphan-twin completeness pass, so its missing twin would never be caught.
+    check("pair_flat_declares_member", errs_of_hint(_PAIR_CLEAN_GT, "op-ed-warrant-leap"), False)
+    # (o3) [P1 fresh-head] a flat fixture with NO pairing fields under a slug hint stays clean (the 14
+    # unpaired fixtures — a slug member_hint must not, by itself, trip rule 1).
+    check("pair_flat_no_fields_ok", errs_of_hint(_VALID_GT, "andreessen-techno-optimist-manifesto"), True)
     # (p) [P2] a `Fixture slug` with trailing garbage no longer truncate-parses — the end-anchored
     # _FIXTURE_SLUG_PAIR_RE rejects `self-test/broken EXTRA` instead of silently dropping the suffix.
     check("pair_fixture_slug_suffix_garbage", errs_of(_PAIR_BROKEN_GT.replace(
@@ -1415,6 +1463,23 @@ def run_self_test(which=None):
         _RD_BROKEN, _RD_CLEAN_ADDITIVE,
         _RD_CLEANGT_2LOCI.replace("  - **Locus 2 — b.** inserted.\n",
                                   "  - **Locus 1 — b.** inserted.\n")), False)
+    # [Codex #196 fresh-head P2] Malformed locus bullets are surfaced, not silently dropped: a
+    # case-variant `LOCUS 1` extra bullet is rejected (claim-broad sees it; strict leaf fails it).
+    check("repair_diff_case_variant_locus", rd_errs(
+        _RD_BROKEN, _RD_CLEAN_ADDITIVE,
+        _RD_CLEANGT_2LOCI.replace("  - **Locus 2 — b.** inserted.\n",
+                                  "  - **Locus 2 — b.** inserted.\n  - **LOCUS 1 — c.** inserted.\n")), False)
+    # A `Locus` bullet with no integer id is rejected (was silently uncounted before).
+    check("repair_diff_locus_no_number", rd_errs(
+        _RD_BROKEN, _RD_CLEAN_ADDITIVE,
+        _RD_CLEANGT_2LOCI.replace("  - **Locus 2 — b.** inserted.\n",
+                                  "  - **Locus 2 — b.** inserted.\n  - **Locus — c.** inserted.\n")), False)
+    # A second `Base text + repair record` field is rejected — its loci are invisible to the map.
+    check("repair_diff_second_field", rd_errs(
+        _RD_BROKEN, _RD_CLEAN_ADDITIVE,
+        _RD_CLEANGT_2LOCI.replace("## GT2 — x\n",
+                                  "- **Base text + repair record:** stray second field.\n"
+                                  "  - **Locus 1 — dup.** x.\n## GT2 — x\n")), False)
 
     # ---- Round-record conformance mode (the one mechanical guard on run-side attribution).
     # Hermetic in-memory fixtures — round_record_check only reads each fixture's Reliability ledger.
@@ -1500,11 +1565,12 @@ def main(argv):
         if not os.path.isfile(argv[2]):
             sys.stderr.write("Error: File not found: %s\n" % argv[2])
             return 2
-        # The nested opt-out closure needs to know the pair-member directory this file lives in:
-        # `<pair>/clean/groundtruth.md` -> 'clean', `<pair>/broken/…` -> 'broken', else None (flat
-        # fixtures). The directory is the source of truth (a nested member cannot drop its fields).
-        parent = os.path.basename(os.path.dirname(argv[2]))
-        member_hint = parent if parent in ("clean", "broken") else None
+        # Check 7 rule 1 needs the file's parent-directory basename (the path<->declaration agreement
+        # is bidirectional): `<pair>/clean/groundtruth.md` -> 'clean', `<pair>/broken/…` -> 'broken',
+        # a flat fixture `<slug>/groundtruth.md` -> the slug. Pass the raw basename so a flat file that
+        # DECLARES membership (which `clean`/`broken` alone would not distinguish from a real slug) is
+        # caught. None is reserved for the in-memory self-test (no path); a real file always has one.
+        member_hint = os.path.basename(os.path.dirname(argv[2]))
         with open(argv[2], "r", encoding="utf-8", errors="replace") as fh:
             return _emit(*argument_groundtruth_check(fh.read(), member_hint=member_hint))
     sys.stderr.write("Error: unknown command: %s\n" % argv[1])
