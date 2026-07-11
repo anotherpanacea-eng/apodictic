@@ -114,7 +114,7 @@ If 1 passes but 2 or 3 regress, narrow the carve-out's trigger (tighten "wholly 
 **Verdict (independent Opus scorer): PASS-WITH-CAVEATS — the SOUND→WARRANTED migration is behavior-preserving; safe to un-draft #192.** A FAIL would require a warranted↔unwarranted boundary flip, a flag-driven stealth defeat, or a positive control going UNWARRANTED — none occurred.
 
 **Caveats / known-issues (orthogonal to the migrated axis — identical under the old vocab; not merge blockers):**
-1. **op-ed-warrant-leap shared locus mis-rank** — both engines diagnosed it as FM-A10/BURDEN (uncompared AT3 ban) rather than the key's FM-A6/WARRANT (causal warrant leap). Both *did* fire WR0 but subordinated it. The op-ed genuinely has two defeaters (a bare uncompared ban + a causal leap), so this is part rule-2a FM-A10 over-capture, part key ambiguity. Follow-up: rule-2a-scope review / consider GT2-as-set for this fixture. The verdict (UNWARRANTED) is correct; only Q2-locus/Q3-zone diverge. **→ RESOLVED (pending gate), 2026-07-10 — see §M1-followup (warrant-leap primacy) below: fixed engine-side via rule 2a's primacy-override + a GT2 key sharpening; the GT2-as-set option was *rejected*. Gated on a convergence re-run.**
+1. **op-ed-warrant-leap shared locus mis-rank** — both engines diagnosed it as FM-A10/BURDEN (uncompared AT3 ban) rather than the key's FM-A6/WARRANT (causal warrant leap). Both *did* fire WR0 but subordinated it. The op-ed genuinely has two defeaters (a bare uncompared ban + a causal leap), so this is part rule-2a FM-A10 over-capture, part key ambiguity. Follow-up: rule-2a-scope review / consider GT2-as-set for this fixture. The verdict (UNWARRANTED) is correct; only Q2-locus/Q3-zone diverge. **→ RESOLVED 2026-07-11 (convergence re-run PASSED, 4/4 cross-vendor) — see §M1-followup (warrant-leap primacy) below: fixed engine-side via rule 2a's primacy-override + a GT2 key sharpening; the GT2-as-set option was *rejected*.**
 2. **andreessen** recognition = yes on both engines (recall-susceptible, GT4–GT8 provisional per CORPUS.md); Fable UBW is failure-mode-(a) under the strict key but within established recall latitude and strictly better than the ratified 2026-06-11 baseline (Opus=UNSOUND/Sonnet=UBE).
 3. **GT8 over-flagging** — engines registered premise flags where the corpus default is `NONE_REGISTERED`; flags did not drive verdicts and the Firewall held (see (e)). GT8 remains a non-scored contract surface in M1.
 4. **Scope:** decisive 4-fixture subset, not all 16. Judged sufficient for *this* gate by the scorer: the change is a token rename + FM-A10 rule-2a preserved exactly + additive GT8, altering no scoring/code logic; mechanical acceptance already showed 16/16 fixtures green; the subset spans all three verdict tokens and both verdict-family boundaries, produced by two independent engines. Full-16 exhaustive sweep remains an available extension.
@@ -125,9 +125,26 @@ Run outputs are in the session scratchpad (gitignored); this record is the durab
 
 ## §M1-followup — warrant-leap primacy (2026-07-10)
 
-**Status:** 🚧 **PROPOSED — GATED on a blind convergence re-run; DO NOT MERGE until it passes.** Resolves M1
+**Status:** ✅ **VALIDATED — convergence re-run PASSED (2026-07-11); ready to merge.** Resolves M1
 caveat #1 (the `op-ed-warrant-leap` shared locus mis-rank). Branch `feat/argument-warrant-leap-primacy`
-(stacked on `feat/argument-warrant-premise-split`).
+(rebased onto `main` after #192 merged).
+
+**Convergence re-run — ✅ PASS (2026-07-11; independent, blind, cross-vendor).** Two independent engines
+(Fable + Codex 5.6 / `gpt-5.6-sol`, isolated read-only, given only the fixture text + this branch's
+`dialectical-clarity.md`) over the discriminating pair — the override witness (`op-ed-warrant-leap`) and its
+negative test (`policy-brief-uncompared`):
+
+| Fixture | Fable | Codex 5.6 | Target | Override |
+|---|---|---|---|---|
+| op-ed-warrant-leap | UNWARRANTED · **WARRANT / FM-A6** primary (FM-A10 subordinate) | UNWARRANTED · **WARRANT / FM-A6** primary (FM-A10 subordinate) | FM-A6 primary | **fires** ✓ |
+| policy-brief-uncompared | UNWARRANTED · **BURDEN / FM-A10** primary | UNWARRANTED · **BURDEN / FM-A10** primary | FM-A10 primary | correctly **withheld** ✓ |
+
+4/4 on target, cross-vendor. The override promotes the causal warrant leap to primary on the op-ed (both engines
+cited the L2-presupposes-L1 dependency) and the negative test holds on policy-brief (both engines: the localized
+emissions warrant gap is a benefit-subclaim soft spot, not a MISSING causal leap on C0, so FM-A10 stays primary).
+**Verdict unchanged (UNWARRANTED) everywhere** — only the primary locus/pattern moves, and only on the co-defeat
+case. No regression: the ordinary uncompared-proposal stays FM-A10-primary. Run outputs in the session scratchpad
+(gitignored); this table is the durable record.
 
 **Finding restated.** On `op-ed-warrant-leap`, both blind engines (Fable + Codex 5.6) returned the correct
 verdict (UNWARRANTED) but ranked **FM-A10 / BURDEN / the uncompared ban** as the *primary* locus, subordinating
