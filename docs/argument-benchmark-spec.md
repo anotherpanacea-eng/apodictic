@@ -379,7 +379,9 @@ scripted **repair-diff acceptance gate** (`diff` of the two `fixture.md` files m
 enumerated loci). For that 1:1 map to be mechanically checkable each enumerated locus must be
 inserted at a **distinct seam** — two loci at the same contiguous insertion point coalesce into one
 diff hunk and cannot be told apart, so the gate rejects them (a loud FAIL, never a silent pass);
-author co-located edits as one locus, or separate the seams. The anti-gaming authoring bar
+author co-located edits as one locus, or separate the seams. Each locus must also carry a **distinct
+identifier** (`Locus 1`, `Locus 2`, …): a repeated `Locus <n>` inflates the loci count and could
+spuriously match the hunk total, so the gate rejects duplicate ids as well. The anti-gaming authoring bar
 (parent-spec rule 2a) is preserved: a repair must discharge its burden to the *general-evaluability*
 standard (mechanism, criteria, costs, tradeoffs), not the foil-naming standard.
 

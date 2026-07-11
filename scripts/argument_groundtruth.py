@@ -910,10 +910,20 @@ def repair_diff_check(broken_text, clean_text, clean_gt_text):
     if not loci:
         errors.append("repair-diff — the clean key enumerates no `- **Locus <n> — …` repair loci "
                       "under `Base text + repair record`; the 1:1 hunk<->locus map is unverifiable.")
-    elif inserts != len(loci):
-        errors.append("repair-diff — %d insertion hunk(s) in the fixture diff but %d enumerated "
-                      "repair locus/loci; the diff must map 1:1 to the clean key's repair record "
-                      "(loci declared: %s)." % (inserts, len(loci), ", ".join(str(n) for n in loci)))
+    else:
+        # Distinct-identifier requirement: a repeated `Locus <n>` inflates len(loci) and can
+        # spuriously match the hunk total, purporting a 1:1 map that isn't one (Codex #196 P2). Each
+        # enumerated locus must carry a DISTINCT number.
+        dup_loci = sorted({n for n in loci if loci.count(n) > 1})
+        if dup_loci:
+            errors.append("repair-diff — duplicate repair-locus identifier(s) %s; each enumerated "
+                          "`Locus <n>` must carry a DISTINCT number for the hunk<->locus map to be "
+                          "1:1 (a repeated id inflates the count and can spuriously match the hunk "
+                          "total)." % ", ".join("Locus %d" % n for n in dup_loci))
+        if inserts != len(loci):
+            errors.append("repair-diff — %d insertion hunk(s) in the fixture diff but %d enumerated "
+                          "repair locus/loci; the diff must map 1:1 to the clean key's repair record "
+                          "(loci declared: %s)." % (inserts, len(loci), ", ".join(str(n) for n in loci)))
     ok = ("OK: repair-diff — clean twin is a pure-additive derivation of the broken fixture; "
           "%d insertion hunk(s) map 1:1 to %d enumerated repair locus/loci." % (inserts, len(loci)))
     failed = "FAILED: %d repair-diff failure(s)." % len(errors)
@@ -1393,11 +1403,18 @@ def run_self_test(which=None):
     # A repair record with no enumerated `Locus <n>` sub-bullets is rejected (map is unverifiable).
     check("repair_diff_no_enumerated_loci", rd_errs(_RD_BROKEN, _RD_CLEAN_ADDITIVE, _RD_CLEANGT_0LOCI), False)
     # A blank line inside the repair-record block does not let the scope swallow the next locus
-    # (Codex #196 P2 — the structural line walk still counts both loci across the blank line).
+    # (the structural line walk still counts both loci across the blank line).
     check("repair_diff_blank_line_in_block", rd_errs(
         _RD_BROKEN, _RD_CLEAN_ADDITIVE,
         _RD_CLEANGT_2LOCI.replace("  - **Locus 2 — b.** inserted.\n",
                                   "\n  - **Locus 2 — b.** inserted.\n")), True)
+    # Duplicate repair-locus identifiers (`Locus 1` twice) are rejected even when the inflated count
+    # happens to match the hunk total — a repeated id is not a distinct 1:1 mapping (Codex #196
+    # fresh-head P2).
+    check("repair_diff_duplicate_locus_id", rd_errs(
+        _RD_BROKEN, _RD_CLEAN_ADDITIVE,
+        _RD_CLEANGT_2LOCI.replace("  - **Locus 2 — b.** inserted.\n",
+                                  "  - **Locus 1 — b.** inserted.\n")), False)
 
     # ---- Round-record conformance mode (the one mechanical guard on run-side attribution).
     # Hermetic in-memory fixtures — round_record_check only reads each fixture's Reliability ledger.
