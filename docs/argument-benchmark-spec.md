@@ -376,9 +376,12 @@ edit discharges); the mutation diff *is* the answer key, and that claim holds ex
 **two mechanical gates** enforce it: `argument_groundtruth.py` **Check 7** (clean-side
 derivation-record + GT2-positive-control gates, complement pairing, slug self-consistency) and the
 scripted **repair-diff acceptance gate** (`diff` of the two `fixture.md` files must map 1:1 to the
-enumerated loci). The anti-gaming authoring bar (parent-spec rule 2a) is preserved: a repair must
-discharge its burden to the *general-evaluability* standard (mechanism, criteria, costs,
-tradeoffs), not the foil-naming standard.
+enumerated loci). For that 1:1 map to be mechanically checkable each enumerated locus must be
+inserted at a **distinct seam** — two loci at the same contiguous insertion point coalesce into one
+diff hunk and cannot be told apart, so the gate rejects them (a loud FAIL, never a silent pass);
+author co-located edits as one locus, or separate the seams. The anti-gaming authoring bar
+(parent-spec rule 2a) is preserved: a repair must discharge its burden to the *general-evaluability*
+standard (mechanism, criteria, costs, tradeoffs), not the foil-naming standard.
 
 - **Directory shape:** `evals/fixtures/argument-benchmark/<pair>/{clean,broken}/`, each member
   holding its own `fixture.md` + `groundtruth.md` (mirrors the fiction benchmark; unpaired
@@ -535,6 +538,22 @@ corpus by `--check-all`). It checks:
   ledger licenses it (`gate`: any booking; `confirm`: only with an explicit `OVER-FIRE` tag — the
   asymmetric ruling; `report`: none); `--check-all` runs it over
   `docs/argument-benchmark-calibration-round.md`.
+- **Check 7 — matched-pair provenance (GT schema v0.3.0 optional fields).** For a `<pair>/{clean,
+  broken}/` member: both pairing fields present together (`Matched-pair member` + `Paired-with`),
+  the member a leading-token `clean`/`broken`/`n/a` (a `cleanX` near-miss rejected by boundary
+  lookahead — a new lowercase regex, not fiction's substring parse), complement pairing (a `clean`
+  names its `broken` twin and vice versa), **slug self-consistency** (the key's own `Fixture slug`
+  pair equals the `Paired-with` pair — the wrong-twin gate), and **clean-side derivation gates** (a
+  `clean` member requires a non-N/A `Base text + repair record` and a GT2 that *opens with* the
+  exact `N/A — positive control` marker — a structural leading-line match, not a body substring).
+  A file physically under a `clean/`/`broken/` directory may **not** opt out by dropping its
+  fields — the directory (the path-derived `member_hint`) is the source of truth (the nested
+  opt-out closure). Absence of both fields on a *flat* fixture is a zero-behavior no-op. Two
+  corpus-level gates run in `--check-all`: an **orphan-twin completeness pass** (every member needs
+  a complete complement twin — both `fixture.md` and `groundtruth.md`) and the scripted
+  **repair-diff acceptance gate** (`--repair-diff`: the clean `fixture.md` is the broken with
+  insertions only — zero deletions — and the insertion-hunk count maps 1:1 to the clean key's
+  enumerated `Base text + repair record` loci, parsed by a structural line walk).
 
 **Calibration note.** The seven checks were tuned against the full registered corpus (18 GT
 files — the Increment-1 full fixtures, the Increment-2 provisional/derive-on-run fixtures, and

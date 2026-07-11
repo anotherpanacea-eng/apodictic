@@ -1713,16 +1713,44 @@ PY
     done
     # Orphan-twin completeness (the corpus-level half of the pairing contract; Check 7 rule 5 closes
     # the wrong-twin hole in-file, this closes the missing-twin hole): every matched-pair member
-    # requires its complement (<pair>/clean ⇄ <pair>/broken). A missing twin is a loud FAIL. (This
+    # requires BOTH its own artifacts (fixture.md + groundtruth.md) AND a complete complement twin
+    # (<pair>/clean ⇄ <pair>/broken, each carrying both files). A missing artifact or missing twin is
+    # a loud FAIL — the repair-diff gate below needs both members' fixture.md, so a member carrying
+    # only a groundtruth.md would otherwise slip through here and misfire there (Codex #196 P2). (This
     # completeness pass is the argument-side addition the fiction loop lacks — backport is a separate
     # chore, out of scope here.)
     for CA_MGT in "$CA_EVALS"/*/clean/groundtruth.md "$CA_EVALS"/*/broken/groundtruth.md; do
       [ -f "$CA_MGT" ] || continue
-      CA_PAIRDIR="$(dirname "$(dirname "$CA_MGT")")"
-      CA_MEMBER="$(basename "$(dirname "$CA_MGT")")"
+      CA_MDIR="$(dirname "$CA_MGT")"
+      CA_PAIRDIR="$(dirname "$CA_MDIR")"
+      CA_MEMBER="$(basename "$CA_MDIR")"
       if [ "$CA_MEMBER" = "clean" ]; then CA_TWIN="broken"; else CA_TWIN="clean"; fi
-      if [ ! -f "$CA_PAIRDIR/$CA_TWIN/groundtruth.md" ]; then
-        echo "  FAIL $(basename "$CA_PAIRDIR")/$CA_MEMBER — orphan twin: missing sibling $CA_TWIN/groundtruth.md"; CA_FAIL=1
+      # This member must carry BOTH artifacts...
+      if [ ! -f "$CA_MDIR/fixture.md" ]; then
+        echo "  FAIL $(basename "$CA_PAIRDIR")/$CA_MEMBER — incomplete member: missing fixture.md"; CA_FAIL=1
+      fi
+      # ...and its complement twin must exist with BOTH artifacts.
+      if [ ! -f "$CA_PAIRDIR/$CA_TWIN/groundtruth.md" ] || [ ! -f "$CA_PAIRDIR/$CA_TWIN/fixture.md" ]; then
+        echo "  FAIL $(basename "$CA_PAIRDIR")/$CA_MEMBER — orphan twin: complement $CA_TWIN/ missing fixture.md or groundtruth.md"; CA_FAIL=1
+      fi
+    done
+    # Repair-diff acceptance gate (Check 7 build-step-8; the run-side seam of the matched-pair
+    # guarantee): for each pair, the clean fixture.md must be the broken fixture.md with insertions
+    # ONLY (zero deletions) and the insertion-hunk count must map 1:1 to the clean key's enumerated
+    # `Base text + repair record` loci. Prose-only until now (Codex #196 P1) — this wires it. Iterate
+    # the clean members (one per pair); the orphan pass above already guaranteed both fixtures exist.
+    for CA_CLEAN_GT in "$CA_EVALS"/*/clean/groundtruth.md; do
+      [ -f "$CA_CLEAN_GT" ] || continue
+      CA_PAIRDIR="$(dirname "$(dirname "$CA_CLEAN_GT")")"
+      CA_PSLUG="$(basename "$CA_PAIRDIR")"
+      CA_BF="$CA_PAIRDIR/broken/fixture.md"
+      CA_CF="$CA_PAIRDIR/clean/fixture.md"
+      if [ -f "$CA_BF" ] && [ -f "$CA_CF" ]; then
+        "$0" argument-groundtruth-check --repair-diff "$CA_BF" "$CA_CF" "$CA_CLEAN_GT" >/dev/null 2>&1 \
+          && echo "  ok $CA_PSLUG repair-diff" \
+          || { echo "  FAIL $CA_PSLUG repair-diff"; "$0" argument-groundtruth-check --repair-diff "$CA_BF" "$CA_CF" "$CA_CLEAN_GT"; CA_FAIL=1; }
+      else
+        echo "  FAIL $CA_PSLUG repair-diff — missing broken/clean fixture.md"; CA_FAIL=1
       fi
     done
     # Round-record conformance (Check 6's run-side seam): every booked ENGINE-fault in the
@@ -7077,8 +7105,11 @@ EOF
     # stricter superset of fiction's pairing grammar, absent-both-fields = unpaired legacy no-op).
     # This case also hosts the round-record conformance mode (--round-record <record.md> --fixtures-dir <dir>):
     # every booked ENGINE-fault must cite an anchor whose ledger licenses it (gate: any; confirm:
-    # OVER-FIRE only; report: none). Delegates to scripts/argument_groundtruth.py; degrades to an
-    # advisory WARN without python3 (the GT contract is prose in the template + spec).
+    # OVER-FIRE only; report: none). And the repair-diff acceptance gate
+    # (--repair-diff <broken/fixture.md> <clean/fixture.md> <clean/groundtruth.md>): the clean twin
+    # must be the broken fixture with insertions ONLY, mapping 1:1 to the clean key's enumerated
+    # repair loci. Delegates to scripts/argument_groundtruth.py; degrades to an advisory WARN without
+    # python3 (the GT contract is prose in the template + spec).
     AGT_DIR=$(cd "$(dirname "$0")" && pwd)
     AGT_HELPER="$AGT_DIR/argument_groundtruth.py"
     if [ "${1:-}" = "--self-test" ]; then
@@ -7086,7 +7117,7 @@ EOF
       echo "Self-test: PASS (degraded — python3 unavailable; argument-groundtruth-check is advisory without it)"; exit 0
     fi
     if command -v python3 >/dev/null 2>&1 && [ -f "$AGT_HELPER" ]; then
-      if [ $# -lt 1 ]; then echo "Usage: $0 argument-groundtruth-check <groundtruth_file> | --round-record <record.md> --fixtures-dir <dir> | --self-test"; exit 2; fi
+      if [ $# -lt 1 ]; then echo "Usage: $0 argument-groundtruth-check <groundtruth_file> | --round-record <record.md> --fixtures-dir <dir> | --repair-diff <broken/fixture.md> <clean/fixture.md> <clean/groundtruth.md> | --self-test"; exit 2; fi
       python3 "$AGT_HELPER" argument-groundtruth-check "$@"; exit $?
     fi
     echo "WARN: python3 unavailable — argument-groundtruth-check skipped; the GT template + spec define the contract. Install python3 for the mechanical check."
