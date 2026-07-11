@@ -114,7 +114,7 @@ If 1 passes but 2 or 3 regress, narrow the carve-out's trigger (tighten "wholly 
 **Verdict (independent Opus scorer): PASS-WITH-CAVEATS — the SOUND→WARRANTED migration is behavior-preserving; safe to un-draft #192.** A FAIL would require a warranted↔unwarranted boundary flip, a flag-driven stealth defeat, or a positive control going UNWARRANTED — none occurred.
 
 **Caveats / known-issues (orthogonal to the migrated axis — identical under the old vocab; not merge blockers):**
-1. **op-ed-warrant-leap shared locus mis-rank** — both engines diagnosed it as FM-A10/BURDEN (uncompared AT3 ban) rather than the key's FM-A6/WARRANT (causal warrant leap). Both *did* fire WR0 but subordinated it. The op-ed genuinely has two defeaters (a bare uncompared ban + a causal leap), so this is part rule-2a FM-A10 over-capture, part key ambiguity. Follow-up: rule-2a-scope review / consider GT2-as-set for this fixture. The verdict (UNWARRANTED) is correct; only Q2-locus/Q3-zone diverge.
+1. **op-ed-warrant-leap shared locus mis-rank** — both engines diagnosed it as FM-A10/BURDEN (uncompared AT3 ban) rather than the key's FM-A6/WARRANT (causal warrant leap). Both *did* fire WR0 but subordinated it. The op-ed genuinely has two defeaters (a bare uncompared ban + a causal leap), so this is part rule-2a FM-A10 over-capture, part key ambiguity. Follow-up: rule-2a-scope review / consider GT2-as-set for this fixture. The verdict (UNWARRANTED) is correct; only Q2-locus/Q3-zone diverge. **→ RESOLVED 2026-07-11 (convergence re-run PASSED, 4/4 cross-vendor) — see §M1-followup (warrant-leap primacy) below: fixed engine-side via rule 2a's primacy-override + a GT2 key sharpening; the GT2-as-set option was *rejected*.**
 2. **andreessen** recognition = yes on both engines (recall-susceptible, GT4–GT8 provisional per CORPUS.md); Fable UBW is failure-mode-(a) under the strict key but within established recall latitude and strictly better than the ratified 2026-06-11 baseline (Opus=UNSOUND/Sonnet=UBE).
 3. **GT8 over-flagging** — engines registered premise flags where the corpus default is `NONE_REGISTERED`; flags did not drive verdicts and the Firewall held (see (e)). GT8 remains a non-scored contract surface in M1.
 4. **Scope:** decisive 4-fixture subset, not all 16. Judged sufficient for *this* gate by the scorer: the change is a token rename + FM-A10 rule-2a preserved exactly + additive GT8, altering no scoring/code logic; mechanical acceptance already showed 16/16 fixtures green; the subset spans all three verdict tokens and both verdict-family boundaries, produced by two independent engines. Full-16 exhaustive sweep remains an available extension.
@@ -142,3 +142,91 @@ Run outputs are in the session scratchpad (gitignored); this record is the durab
 - the existing `ppi-one-size-fits-none` ↔ `op-ed` contrast is preserved (`ppi` still converges as a WARRANTED real-calibration fixture; the retrofit adds the family gradient's third corner without perturbing the other two).
 
 Record the run (model configs, per-member verdicts + fired codes, per-config delta, GT8 observations, pass/fail) here before merge. Do not claim validation from gitignored outputs alone.
+
+---
+
+## §M1-followup — warrant-leap primacy (2026-07-10)
+
+**Status:** ✅ **VALIDATED — convergence re-run PASSED (2026-07-11); ready to merge.** Resolves M1
+caveat #1 (the `op-ed-warrant-leap` shared locus mis-rank). Branch `feat/argument-warrant-leap-primacy`
+(rebased onto `main` after #192 merged).
+
+**Convergence re-run — ✅ PASS (2026-07-11; independent, blind, cross-vendor).** Two independent engines
+(Fable + Codex 5.6 / `gpt-5.6-sol`, isolated read-only, given only the fixture text + this branch's
+`dialectical-clarity.md`) over the discriminating pair — the override witness (`op-ed-warrant-leap`) and its
+negative test (`policy-brief-uncompared`):
+
+| Fixture | Fable | Codex 5.6 | Target | Override |
+|---|---|---|---|---|
+| op-ed-warrant-leap | UNWARRANTED · **WARRANT / FM-A6** primary (FM-A10 subordinate) | UNWARRANTED · **WARRANT / FM-A6** primary (FM-A10 subordinate) | FM-A6 primary | **fires** ✓ |
+| policy-brief-uncompared | UNWARRANTED · **BURDEN / FM-A10** primary | UNWARRANTED · **BURDEN / FM-A10** primary | FM-A10 primary | correctly **withheld** ✓ |
+
+4/4 on target, cross-vendor. The override promotes the causal warrant leap to primary on the op-ed (both engines
+cited the L2-presupposes-L1 dependency) and the negative test holds on policy-brief (both engines: the localized
+emissions warrant gap is a benefit-subclaim soft spot, not a MISSING causal leap on C0, so FM-A10 stays primary).
+**Verdict unchanged (UNWARRANTED) everywhere** — only the primary locus/pattern moves, and only on the co-defeat
+case. No regression: the ordinary uncompared-proposal stays FM-A10-primary. Run outputs in the session scratchpad
+(gitignored); this table is the durable record.
+
+**Finding restated.** On `op-ed-warrant-leap`, both blind engines (Fable + Codex 5.6) returned the correct
+verdict (UNWARRANTED) but ranked **FM-A10 / BURDEN / the uncompared ban** as the *primary* locus, subordinating
+the key's registered primary **FM-A6 / WARRANT / WR0** (the causal warrant leap). Both *fired* WR0; both
+mis-ranked it. Only the Q2 failure-locus and Q3 objection-zone diverge — the verdict is right on both.
+
+**Root cause (not "salience").** The engine already owns a primacy rule — "name the *first* defeated test"
+(rule 2 / the Final Diagnostic Question), against the fixed decision-test order. Rule 2a plants the FM-A10
+defeat at **decision test two (Evidence-evaluability)**; the causal warrant leap is a **test three
+(Warrant-recoverability)** defeat. So "first defeated test" *currently resolves to FM-A10* — the generic table
+order ranks the comparison break ahead of the deeper warrant break. There was no gap for salience to fill; the
+tie-break existed and resolved *against* FM-A6.
+
+**Decision.**
+- **Sub-question 1 (rule-2a FM-A10 over-capture?) — YES, on *primacy* (not the verdict).** Fix the engine.
+- **Sub-question 2 (key too strict → GT2-as-set?) — NO.** Freeze the registered primary (FM-A6); *sharpen* the
+  key. A co-equal *FM-A6-OR-FM-A10* set is **rejected** under the GT-as-a-set discipline: guard #1 (a member
+  must be structurally *prior*, not merely salient/reliably-found — FM-A10 is *downstream* of the causal
+  warrant, since the remedy comparison L2 presupposes the causal warrant L1, per GT6) and guard #4 (no
+  expansion that flips a fixture to "pass" by blessing a run's ranking error — a co-equal set would let a
+  warrant-leap-*blind* run score Q2 = 3, dissolving the SUPPORT-vs-WARRANT discriminator this fixture isolates).
+- **Sub-question 3 (ppi ↔ op-ed pairing holds?) — YES, and it is *sharpened*.** ppi is a *critique* (not AT3),
+  so rule 2a never fires on it; `policy-brief-uncompared` is an AT3 rec whose problem-warrant is fine and whose
+  *sole* defeat is the missing comparison (**no co-present WR0 leap**), so it keeps FM-A10 primary. The
+  primacy-override fires **only** on a co-present test-three MISSING causal/diagnostic warrant leap — exactly
+  the discriminator that separates op-ed (WARRANT-primary) from policy-brief (BURDEN-primary). No verdict moves
+  (op-ed / policy-brief UNWARRANTED; ppi WARRANTED).
+
+**Changes (this branch).**
+- **Engine** — `dialectical-clarity.md` rule 2a gains a **primacy-override**: when the FM-A10 zero-comparison
+  defeat co-occurs with a **MISSING** causal/diagnostic WR0 leap on C0, the warrant leap is the primary
+  structural break (FM-A6) and FM-A10 is co-reported as subordinate (rationale: L2 presupposes L1). A negative
+  test keeps the ordinary Uncompared-Proposal case FM-A10-primary. Cross-pointers added at the Step-9 Final
+  Diagnostic Question ("name the first defeated test" / "name which step breaks first") / the operative-test
+  FM-A10 note. *Verdict logic unchanged everywhere; only ranking, only
+  for the co-defeat case.*
+- **Key** — `op-ed-warrant-leap/groundtruth.md` GT2: `Primary failure layer: WARRANT` frozen; FM-A10 → BP5
+  registered as a **subordinate** second defeater (its objection left *uncoded* so it cannot collide with GT3's
+  confounding-zone central-objection code); a split **Q2 primacy boundary** — a run that *surfaces* WR0/the
+  WARRANT locus but subordinates it caps at **Q2 = 2** (mis-ranked discriminator), while a run that *omits* the
+  causal warrant leap is **Q2 = 0** (miss; Deficit-Lock — no laundering the locked locus miss into partial
+  credit).
+- **Changelog** — `changelog.d/argument-engine-warrant-leap-primacy.md`.
+- Spec-reviewed (Opus swarm: 3 P1 + 3 P2, all folded — the false "salience vacuum" premise corrected to the
+  decision-test-order override, the "omits → partial" Deficit-Lock breach split out, the OB3 referent collision
+  removed).
+
+**Validation.**
+- **Mechanical (necessary, NOT sufficient).** `argument-groundtruth-check` green on op-ed + policy-brief + ppi;
+  `--check-all` (mirrors regenerated + `check-mirror`, `assemble-changelog --check`,
+  `argument-carve-behavior-preservation`) green. **No AGG_VALIDATOR covers the ranking flip** —
+  `argument-groundtruth-check` is shape-only and there is **no run-vs-key scorer**. Green `--check-all` attests
+  key well-formedness + mirror/changelog hygiene only; it is *not* non-regression evidence for the behavioral
+  change.
+- **Behavioral gate (HARD — the real merge blocker).** ≥2 cross-vendor blind runs (RUN-PROTOCOL disjoint
+  roles), independently scored, must show **all three**:
+  1. **op-ed-warrant-leap** now ranks **FM-A6 / WR0 / WARRANT primary** (FM-A10 co-reported subordinate);
+     verdict UNWARRANTED; the mis-rank scores **Q2 = 2** only if WR0 was surfaced.
+  2. **policy-brief-uncompared** keeps **FM-A10 / BP5 / BURDEN primary**; verdict UNWARRANTED (no regression).
+  3. **ppi-one-size-fits-none** stays **WARRANTED**; GT3 = the fairness/discretion text-internal objection.
+  Record per RUN-PROTOCOL Step 5. On pass, flip this Status to VALIDATED with the run date + model configs +
+  per-fixture ranks. **Not runnable in the offline build sandbox** (this section was authored there).
+- **Codex PR gate** before merge; no merge without operator sign-off.

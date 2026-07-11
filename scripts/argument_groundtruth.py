@@ -137,34 +137,24 @@ _PASS_CODE_RE = re.compile(
 # The Reliability ledger field line: a bullet + the EXACT bold `**Reliability:**` label at line
 # start, so a near-label like `- **Not Reliability:**` does NOT substring-match. Value runs to EOL.
 _RELIABILITY_FIELD_RE = re.compile(r"^\s*-\s*\*\*Reliability:\*\*\s*(.+)$", re.MULTILINE)
-# The Provenance block: the EXACT single-line `## Provenance` heading to the next `## ` heading.
-# `[ \t]` (NOT `\s`, which matches newlines) both before and after `Provenance` so a suffix
-# lookalike (`## Provenance Notes`) AND a newline-split malformation (`##\nProvenance`) are both
-# rejected. The ledger MUST live in this block (docs/argument-benchmark-spec.md §Mechanical
-# validator) — a ledger under `## Notes` or a lookalike heading is misplaced and does not count.
-_PROVENANCE_RE = re.compile(r"^##[ \t]+Provenance[ \t]*$(.*?)(?=^##\s|\Z)", re.MULTILINE | re.DOTALL)
+# The `## Provenance` block is sliced structurally by `_provenance_block` (a heading walk that
+# mirrors `_parse_gt_sections`), NOT a multi-line block regex — see that helper for why (the retired
+# `^##[ \t]+Provenance…(.*?)(?=^##\s)` regex took three review rounds to stop matching
+# `## Provenance Notes` and `##\nProvenance`). The ledger MUST live in that block
+# (docs/argument-benchmark-spec.md §Mechanical validator); a ledger under `## Notes` or a lookalike
+# heading is misplaced and does not count.
 # One ledger group: `GT<a>(–GT<b>)?: <status>, <use>` — full-match per group. Hyphen/en-dash/
 # em-dash tolerated in the range (mirrors _gt_numbers_in_heading's `[-–—]` class). `(?![0-9])`
 # boundary guards so `GT10` cannot truncate-parse as GT1. Status/use tokens are captured lowercase
 # and enum-checked by the caller (so `authoritativex` is captured whole, then rejected).
 _RELIABILITY_GROUP_RE = re.compile(
     r"^GT([1-8])(?![0-9])(?:\s*[-–—]\s*GT([1-8])(?![0-9]))?:\s*([a-z][a-z-]*),\s*([a-z]+)$")
-# A booked engine-fault line in a calibration-round record (round-record conformance mode). The
-# CLAIM is deliberately broad — any bullet ( - * + ), any case, bolded or not, colon or bare
-# ENGINE-FAULT — so a near-miss dialect can never silently escape adjudication (an unlicensed
-# booking hiding behind `- **BOOKED:**` house-bold or `- booked:` would otherwise read green).
-# The canonical forms accepted for VALIDATION are `- BOOKED: …` and the house-bold
-# `- **BOOKED:** …` (mirroring _GT8_ROW_RE's bolded-id acceptance); every other claimed dialect
-# is a loud malformed ERROR. Lines without a BOOKED-shaped bullet stay prose-tolerant and are
-# ignored. GT numbers reject zero-padding (`GT07`), consistent with the ledger grammar.
-# CLAIM = any BOOKED-shaped bullet at all (any bullet char, optional bold, `BOOKED` as a word,
-# whatever follows), so NO near-miss dialect can silently escape adjudication. Deliberately broad.
-_BOOKED_CLAIM_RE = re.compile(r"^\s*[-*+]\s*\**\s*BOOKED\b", re.IGNORECASE)
-# A claimed line is VALID only in the two canonical forms `- BOOKED: …` / `- **BOOKED:** …`
-# (exactly one colon, hyphen bullet, a space before the body). Everything else claimed is a loud
-# "unrecognized dialect" ERROR — `- BOOKED:: …`, `- BOOKED* …`, `* BOOKED: …`, `- **BOOKED** — …`.
-_BOOKED_LINE_RE = re.compile(r"^\s*-\s+(?:\*\*BOOKED:\*\*|BOOKED:)\s+(.+?)\s*$")
-_BOOKED_BODY_RE = re.compile(r"^ENGINE-FAULT\s+(\S+)\s+GT([1-9][0-9]*)(\s+OVER-FIRE)?$")
+# The round-record BOOKED matcher is a structural token parse (`_parse_booked`, near
+# round_record_check), NOT the retired claim-broad / validate-strict / body regex trio. That trio
+# was correct in the end, but only after review rounds hand-tuned it to reject the near-miss dialects
+# (`- **BOOKED** — ENGINE-FAULT`, `- BOOKED::`, `- BOOKED*`, `* BOOKED:`); the structural form rejects
+# them by construction. The CLAIM stays deliberately broad (so no near-miss dialect silently escapes)
+# and the VALID form stays strict (`- BOOKED:` / `- **BOOKED:**`); both are now string slicing.
 # Check 7 (matched pairs). Leading token of a `Matched-pair member` value: clean / broken / n/a.
 # Lowercase-only, with the same hostile boundary-lookahead POSTURE as _GT7_VERDICT_RE /
 # _GT8_FLAGS_RE (a `cleanX` near-miss must not truncate-parse) but a NEW pattern — those are
@@ -229,6 +219,35 @@ def _parse_gt_sections(text):
     return sections
 
 
+def _is_h2_scope(ln):
+    """True when `ln` opens (or is) an ATX level-2 section — `##` at column 0 followed by a
+    whitespace char OR a bare `##` (an empty H2). This is exactly the shape the retired `^##\\s`
+    scope lookahead matched: on the split line the whitespace is a 3rd char, and a bare `##` line
+    matched because the newline that terminated it satisfied `\\s`. Evaluated per already-split line
+    so no whitespace class can cross a newline. `### `/`# ` (other levels) and `##x` are non-matches."""
+    return ln[:2] == "##" and (ln[2:3] == "" or ln[2:3].isspace())
+
+
+def _provenance_block(text):
+    """Body under the EXACT `## Provenance` heading, up to the next `##`-level heading (or EOF).
+    A structural line walk — mirrors _parse_gt_sections' heading loop — rather than a `(.*?)` block
+    regex: the heading is matched by exact title equality (`Provenance`, column-0, one-or-more
+    space/tab, no suffix), so `## Provenance Notes` (suffix lookalike) and `##\\nProvenance` (newline
+    split) are both non-matches with no `\\b`/`\\s`-across-newline boundary games. Returns "" when no
+    `## Provenance` heading is present — so a misplaced ledger (e.g. under `## Notes`) is invisible
+    here and surfaces as the caller's 'no ledger' error. First occurrence only (a later
+    `## Provenance` is itself an H2 heading and closes the block), matching the retired `.search`."""
+    body, inside = [], False
+    for ln in text.split("\n"):
+        if inside:
+            if _is_h2_scope(ln):
+                break                                     # next `##` heading closes the block
+            body.append(ln)
+        elif _is_h2_scope(ln) and ln[2:].strip(" \t") == "Provenance":
+            inside = True                                 # exact single-line `## Provenance`, col-0
+    return "\n".join(body)
+
+
 def _codes_in(text):
     """Set of namespace codes (e.g. 'WR0') present in text, excluding non-code prefixes."""
     return {p + d for p, d in _CODE_RE.findall(text) if p not in _NON_CODE_PREFIXES}
@@ -243,8 +262,7 @@ def _reliability_values(text):
     """Reliability ledger field values found IN THE PROVENANCE BLOCK (one per matching line).
     Scoping to Provenance is the placement contract: a ledger under `## Notes` or elsewhere is
     invisible here and surfaces as the caller's 'no ledger' error. Exactly one is required."""
-    m = _PROVENANCE_RE.search(text)
-    scope = m.group(1) if m else ""
+    scope = _provenance_block(text)
     return [v.strip() for v in _RELIABILITY_FIELD_RE.findall(scope)]
 
 
@@ -313,6 +331,106 @@ def _parse_reliability_groups(value):
     return mapping, errors
 
 
+def _starts_with_word(s, word):
+    """True when `s` begins with `word` (case-insensitive) followed by a word boundary — end of
+    string or a non-`[A-Za-z0-9_]` char. A structural stand-in for a leading `\\bword\\b`: `BOOKEDx`
+    is not a match; `BOOKED:` / `BOOKED*` / `BOOKED ` / a bare `BOOKED` are."""
+    if s[:len(word)].upper() != word.upper():
+        return False
+    nxt = s[len(word):len(word) + 1]
+    return not (nxt.isalnum() or nxt == "_")
+
+
+def _is_booked_bullet(line):
+    """CLAIM (deliberately broad): is `line` a BOOKED-shaped bullet at all? Any bullet char
+    (`-`/`*`/`+`), optional whitespace and bold markers, then the word BOOKED in any case. Broad on
+    purpose — every near-miss dialect is CLAIMED here so it is rejected LOUDLY downstream rather than
+    silently skipped as prose. Reproduces the retired `^\\s*[-*+]\\s*\\**\\s*BOOKED\\b` (IGNORECASE)."""
+    s = line.lstrip()
+    if not s or s[0] not in "-*+":
+        return False
+    s = s[1:].lstrip().lstrip("*").lstrip()               # drop bullet, then optional bold markers
+    return _starts_with_word(s, "BOOKED")
+
+
+def _canonical_booked_body(line):
+    """The body of a canonical BOOKED line, or None when an already-claimed line is NOT canonical.
+    Canonical (the strict half of the retired claim-broad/validate-strict pair): leading whitespace,
+    a HYPHEN bullet, one-or-more spaces, the field label EXACTLY `BOOKED:` (plain) or `**BOOKED:**`
+    (house-bold), one-or-more spaces, then a non-empty body. Pure string slicing, so `* BOOKED:`
+    (non-hyphen bullet), `- booked:` (case), `- BOOKED` (no colon), `- BOOKED::` (double colon),
+    `- BOOKED*` (trailing star) and `- **BOOKED** — …` (no inner colon) all return None → a loud
+    dialect error upstream."""
+    s = line.lstrip()                                     # ^\s*
+    if not s.startswith("-"):                             # hyphen bullet only (not * / +)
+        return None
+    s = s[1:]
+    if not s[:1].isspace():                               # \s+ after the bullet
+        return None
+    s = s.lstrip()
+    for label in ("**BOOKED:**", "BOOKED:"):              # field label EXACTLY one of these
+        if s.startswith(label):
+            after = s[len(label):]
+            break
+    else:
+        return None
+    if not after[:1].isspace():                           # \s+ before the body
+        return None
+    return after.strip() or None                          # a non-empty body (the retired `(.+?)`)
+
+
+def _parse_gt_token(tok):
+    """`GT<n>` -> int n, or None. `n` is an unpadded positive integer (first digit 1-9), mirroring
+    the ledger grammar's `GT([1-9][0-9]*)`: `GT0`/`GT07` (zero-padded), `GT` (no number) and `GT2a`
+    are all rejected. ASCII-digit only (so a stray non-ASCII digit cannot reach `int()`)."""
+    if not tok.startswith("GT"):
+        return None
+    digits = tok[2:]
+    if not digits or digits[0] == "0" or not all("0" <= c <= "9" for c in digits):
+        return None
+    return int(digits)
+
+
+def _parse_booked_body(body):
+    """Token-split validation of a canonical BOOKED body. Returns (slug, n, overfire) or None when
+    malformed. Shape: `ENGINE-FAULT <slug> GT<n>[ OVER-FIRE]` — split on whitespace (so any run of
+    spaces/tabs between fields is tolerated, like the retired `\\s+`), then the fixed tokens are
+    checked. `n` may fall outside GT1-GT8 here (the caller range-checks it)."""
+    toks = body.split()
+    overfire = False
+    if len(toks) == 4 and toks[3] == "OVER-FIRE":
+        overfire, toks = True, toks[:3]
+    if len(toks) != 3 or toks[0] != "ENGINE-FAULT":
+        return None
+    n = _parse_gt_token(toks[2])
+    if n is None:
+        return None
+    return (toks[1], n, overfire)
+
+
+def _parse_booked(line):
+    """Structural parse of one round-record line at the BOOKED seam. Returns:
+        None                          — not a BOOKED-shaped bullet (prose; ignored)
+        ("dialect", None)             — a BOOKED-shaped bullet NOT in a canonical
+                                        `- BOOKED:` / `- **BOOKED:**` form (loud error)
+        ("malformed", body)           — canonical line whose body is not
+                                        `ENGINE-FAULT <slug> GT<n>[ OVER-FIRE]`
+        ("ok", (slug, n, overfire))   — a well-formed booking
+
+    Replaces the retired claim-broad / validate-strict / body regex trio: the CLAIM stays broad
+    (`_is_booked_bullet`) so no near-miss dialect silently escapes, the VALID form stays strict
+    (`_canonical_booked_body`), and the body is token-split (`_parse_booked_body`)."""
+    if not _is_booked_bullet(line):
+        return None
+    body = _canonical_booked_body(line)
+    if body is None:
+        return ("dialect", None)
+    parsed = _parse_booked_body(body)
+    if parsed is None:
+        return ("malformed", body)
+    return ("ok", parsed)
+
+
 def round_record_check(record_text, resolve_fixture):
     """Round-record conformance: assert every booked ENGINE-fault line cites an anchor whose
     Reliability ledger LICENSES that booking. `resolve_fixture(slug)` returns the fixture's
@@ -323,23 +441,21 @@ def round_record_check(record_text, resolve_fixture):
     seam; the rest of run adjudication is RUN-PROTOCOL prose."""
     errors = []
     for raw_line in record_text.split("\n"):
-        if not _BOOKED_CLAIM_RE.match(raw_line):
+        parsed = _parse_booked(raw_line)
+        if parsed is None:
             continue  # prose-tolerant: not a BOOKED-shaped bullet at all
-        lm = _BOOKED_LINE_RE.match(raw_line)
-        if not lm:
+        kind, payload = parsed
+        if kind == "dialect":
             errors.append("round-record — BOOKED line in an unrecognized dialect %r; canonical "
                           "form is `- BOOKED: ENGINE-FAULT <fixture-slug> GT<n>[ OVER-FIRE]` "
                           "(house-bold `- **BOOKED:**` also accepted). Near-miss dialects are "
                           "rejected loudly, never silently skipped." % raw_line.strip())
             continue
-        body = lm.group(1).strip()
-        bm = _BOOKED_BODY_RE.match(body)
-        if not bm:
+        if kind == "malformed":
             errors.append("round-record — malformed BOOKED line %r (expected "
-                          "`ENGINE-FAULT <fixture-slug> GT<n>[ OVER-FIRE]`)." % body)
+                          "`ENGINE-FAULT <fixture-slug> GT<n>[ OVER-FIRE]`)." % payload)
             continue
-        slug, n_str, overfire = bm.group(1), bm.group(2), bool(bm.group(3))
-        n = int(n_str)
+        slug, n, overfire = payload
         if not (1 <= n <= 8):
             errors.append("round-record — booking on %s cites GT%d, out of range (GT1-GT8)."
                           % (slug, n))
