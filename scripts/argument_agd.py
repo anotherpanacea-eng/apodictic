@@ -564,9 +564,10 @@ def _selftest():
     check("missing manifest", any("no Span: lines" in e for e in errs))
     errs, _ = v(block([rec()], completion="PARTIAL"))
     check("partial needs excluded", any("PARTIAL requires" in e for e in errs))
-    _, warns = v(block([rec()], completion="PARTIAL",
-                       excluded="Excluded: C2.support — quoted-source span, out of audit scope"))
-    check("partial warns", any("PARTIAL" in w for w in warns))
+    errs, warns = v(block([rec()], completion="PARTIAL",
+                          excluded="Excluded: C2.support — quoted-source span, out of audit scope"),
+                    ladder={"C1", "C2"})
+    check("valid partial warns without errors", errs == [] and any("PARTIAL" in w for w in warns))
     errs, _ = v(block([rec()], spans=["Span: C0 — the thesis paragraph"], completion="PARTIAL",
                       excluded="Excluded: C99 — unrelated"), ladder={"C1"})
     check("partial rejects unknown exclusion and omitted ladder claim",
