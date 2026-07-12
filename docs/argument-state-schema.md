@@ -1,6 +1,6 @@
 # Argument State Schema
 ## Nonfiction Argument Engine — Shared Artifact Specification
-*Version: 0.1.1*
+*Version: 0.2.0*
 *Status: Active*
 *Last updated: March 19, 2026*
 *Depends on: Dialectical Clarity v2.0*
@@ -175,7 +175,7 @@ C3: [subclaim]
 
 ### § 4. Warrant and Inference Map
 
-Populated by: Dialectical Clarity Step 4.
+Populated by: Dialectical Clarity Step 4 (except the `Defeater refs` projection, populated by Step 6).
 
 ```markdown
 ## 4. Warrant and Inference Map
@@ -185,6 +185,7 @@ C1: [subclaim]
   Warrant status: [EXPLICIT / RECOVERABLE / MISSING / CONTESTED]
   Backing: [PRESENT / THIN / ABSENT]
   Qualifier: [MATCHED / OVERCONFIDENT / UNDERCLAIMED]
+  Defeater refs: [O1, O3 | NO-MATERIAL-TEXT-INTERNAL-DEFEATER-IDENTIFIED — <review_basis> | line absent = not yet swept]
   Codes: [WR-codes or PASS]
 
 C2: [subclaim]
@@ -199,8 +200,9 @@ C2: [subclaim]
 | Warrant status | Step 4 | Yes | Calibrates against audience from § 1 |
 | Backing | Step 4 | Yes | Whether the warrant itself is supported |
 | Qualifier | Step 4 | Yes | Whether the conclusion's confidence matches the support chain |
+| Defeater refs | **Step 6** (projection) | No (absent = not yet swept) | PROJECTION ONLY — within-run pointers into this run's § 6 `WARRANT-DEFEATER` records (non-stable across reruns; resolved by no validator; Step 4 never authors it). `NO-MATERIAL-TEXT-INTERNAL-DEFEATER-IDENTIFIED — <review_basis>` is an open-world search result (found nothing material for the § 1 audience by this procedure; the review_basis must state the materiality bar applied) — never a warrant-soundness assurance, never folded into Warrant status or the verdict |
 
-**Downstream consumers:** The red-team module attacks the weakest warrants. The persuasion module identifies which warrants need to be made explicit for the target audience. The revision coach sequences warrant repair before support repair (fixing the bridge before adding more evidence).
+**Downstream consumers:** The red-team module attacks the weakest warrants — the § 6 `WARRANT-DEFEATER` records this section's Defeater refs point at are its ready-made warrant-directed attack surface. The persuasion module identifies which warrants need to be made explicit for the target audience. The revision coach sequences warrant repair before support repair (fixing the bridge before adding more evidence).
 
 ---
 
@@ -244,6 +246,11 @@ Populated by: Dialectical Clarity Step 6.
 ## 6. Objection and Dialectical Integrity Map
 
 Objection 1: [what the strongest objection would be]
+  Target: [C0 | Cn | Cn.warrant | Cn.support | argument-wide]
+  Relation: [WARRANT-DEFEATER | CLAIM-CHALLENGE | EVIDENCE-CHALLENGE | VALUE-CONFLICT | ALTERNATIVE]
+  Basis: [TEXT-INTERNAL | IMPORTED]
+  Condition: [WARRANT-DEFEATER only — the "unless …" clause]
+  Derivation anchors: [TEXT-INTERNAL only — the warrant/grounds locations the condition is derived from]
   Engaged: [Y/N]
   Quality: [SUBSTANTIVE / STRAWMAN / EVASION / COSMETIC]
   Dialectical integrity: [FAIR / code]
@@ -263,8 +270,10 @@ Objection 3: [...]
 | Objection | Step 6 | 2–4 required | The strongest objections a careful skeptic would raise |
 | Quality | Step 6 | Yes, if engaged | Four-level classification |
 | Dialectical integrity | Step 6 | Yes | DI0–DI4 or FAIR |
+| Target / Relation / Basis | Step 6 | New runs (legacy untyped records stay valid) | The objection-typing vocabulary (R2). `Relation` = what the objection targets; **`WARRANT-DEFEATER`** = an "unless …" exception on a specific `Cn.warrant`'s connecting principle, holding that warrant fixed (Toulmin's rebuttal). `Basis` = derivation provenance, DECOUPLED from Relation: `TEXT-INTERNAL` = derived from the argument's own warrant/grounds (the Step 6a Test B discipline); `IMPORTED` = genre-generic/canonical (Test A's class). A Test-B-derived objection is NOT automatically a WARRANT-DEFEATER — a self-undermining remedy is TEXT-INTERNAL but CLAIM-CHALLENGE/ALTERNATIVE; a generic warrant exception is WARRANT-DEFEATER + IMPORTED |
+| Condition / Derivation anchors | Step 6 | Condition: every WARRANT-DEFEATER. Anchors: iff Basis TEXT-INTERNAL | The "unless …" clause, and (TEXT-INTERNAL only) the warrant/grounds locations it is derived from — engine-surfaced, author-adjudicated diagnosis, never an asserted validity constraint. An IMPORTED warrant-defeater carries no anchors and is flagged non-adjudicable-by-anchors. Convention-governed on production runs (no per-run validator) |
 
-**Downstream consumers:** The red-team module expands this section substantially: it generates the full objection set, produces cross-examination questions, and writes the opposition memo. The persuasion module identifies where concessions should be placed and what costly concession looks like for this argument.
+**Downstream consumers:** The red-team module expands this section substantially: it generates the full objection set, produces cross-examination questions, and writes the opposition memo — and it INHERITS the typing vocabulary (Target/Relation/Basis) for records it writes here, giving it warrant-directed attack routing; Red-Team-authored and legacy records may remain untyped (valid). The persuasion module identifies where concessions should be placed and what costly concession looks like for this argument.
 
 ---
 
@@ -558,7 +567,7 @@ Schema version does not change when:
 - Companion modules are added (they get new subsections in § 10)
 - Field descriptions are clarified without changing the field's meaning
 
-Current schema version: **0.1.1**
+Current schema version: **0.2.0** (R2: §6 objection-typing fields — Target/Relation/Basis/Condition/Derivation anchors — + the §4 Defeater-refs projection; additive, legacy untyped records stay valid)
 Depends on: Dialectical Clarity v2.0
 
 ---
