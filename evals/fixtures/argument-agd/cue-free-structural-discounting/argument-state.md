@@ -14,7 +14,7 @@ C2: retention alone justifies it
 
 ## 6. Objection and Dialectical Integrity Map
 
-Objection 1: fifth-day childcare shifts real costs onto families least able to absorb them
+OBJECTION 1: fifth-day childcare shifts real costs onto families least able to absorb them
   Target: C0
   Relation: VALUE-CONFLICT
   Basis: TEXT-INTERNAL
@@ -22,7 +22,7 @@ Objection 1: fifth-day childcare shifts real costs onto families least able to a
   Dialectical integrity: FAIR
   Codes: OB3
 
-Objection 2: bus-schedule disruption
+OBJECTION 2: bus-schedule disruption
   Target: C0
   Relation: EVIDENCE-CHALLENGE
   Basis: TEXT-INTERNAL
