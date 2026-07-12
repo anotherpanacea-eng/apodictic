@@ -1,0 +1,36 @@
+{
+  "fixture_id": "legit-guarded-generalization",
+  "vendor": "fable",
+  "model_id": "claude-fable-5",
+  "prompt_fingerprint_sha256": "f07f8f4adafaf9eebb47ff72dca640042c5bc4c576044d9f1d79002733c2bcf5",
+  "rep": 2,
+  "acquired_at": "2026-07-12T19:33:17+00:00",
+  "values": {
+    "observations": [
+      {
+        "family": "GUARDING",
+        "span": "Some households may lapse in winter",
+        "paragraph_index": 2,
+        "cue": "some \u2026 may"
+      },
+      {
+        "family": "GUARDING",
+        "span": "the program tends to work best where bins sit within a short walk",
+        "paragraph_index": 2,
+        "cue": "tends to"
+      },
+      {
+        "family": "DISCOUNTING",
+        "span": "Although a citywide rollout would strain the current fleet, the pilot's contractor has already priced staged expansion",
+        "paragraph_index": 2,
+        "cue": "although"
+      },
+      {
+        "family": "ASSURING",
+        "span": "the budget office confirmed",
+        "paragraph_index": 2,
+        "cue": "confirmed"
+      }
+    ]
+  }
+}

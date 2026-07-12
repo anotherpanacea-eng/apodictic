@@ -1,0 +1,30 @@
+{
+  "fixture_id": "cue-free-structural-discounting",
+  "vendor": "fable",
+  "model_id": "claude-fable-5",
+  "prompt_fingerprint_sha256": "f07f8f4adafaf9eebb47ff72dca640042c5bc4c576044d9f1d79002733c2bcf5",
+  "rep": 1,
+  "acquired_at": "2026-07-12T19:33:17+00:00",
+  "values": {
+    "observations": [
+      {
+        "family": "DISCOUNTING",
+        "span": "Parents at the spring forum, several of whom asked how younger children would be supervised on the fifth day, mostly wanted to talk about bus schedules.",
+        "paragraph_index": 1,
+        "cue": null
+      },
+      {
+        "family": "ASSURING",
+        "span": "The pilot districts report higher teacher retention, lower substitute spending, and steady test scores across two years.",
+        "paragraph_index": 2,
+        "cue": "The pilot districts report"
+      },
+      {
+        "family": "ASSURING",
+        "span": "exit interviews name schedule flexibility as the top reason teachers stay",
+        "paragraph_index": 2,
+        "cue": "exit interviews name"
+      }
+    ]
+  }
+}

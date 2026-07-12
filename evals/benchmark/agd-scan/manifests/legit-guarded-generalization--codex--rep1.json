@@ -1,0 +1,36 @@
+{
+  "fixture_id": "legit-guarded-generalization",
+  "vendor": "codex",
+  "model_id": "gpt-5.6-sol",
+  "prompt_fingerprint_sha256": "f07f8f4adafaf9eebb47ff72dca640042c5bc4c576044d9f1d79002733c2bcf5",
+  "rep": 1,
+  "acquired_at": "2026-07-12T19:32:20+00:00",
+  "values": {
+    "observations": [
+      {
+        "family": "GUARDING",
+        "span": "Some households may lapse in winter",
+        "paragraph_index": 2,
+        "cue": "Some households may"
+      },
+      {
+        "family": "GUARDING",
+        "span": "the program tends to work best where bins sit within a short walk",
+        "paragraph_index": 2,
+        "cue": "tends to"
+      },
+      {
+        "family": "DISCOUNTING",
+        "span": "Although a citywide rollout would strain the current fleet, the pilot's contractor has already priced staged expansion, and the budget office confirmed the surplus covers year one.",
+        "paragraph_index": 2,
+        "cue": "Although"
+      },
+      {
+        "family": "ASSURING",
+        "span": "the budget office confirmed",
+        "paragraph_index": 2,
+        "cue": "confirmed"
+      }
+    ]
+  }
+}
