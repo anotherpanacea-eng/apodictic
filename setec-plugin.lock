@@ -1,11 +1,11 @@
 {
   "repo": "anotherpanacea-eng/setec-voiceprint",
   "subdir": "plugins/setec-voiceprint",
-  "tag": "v1.122.0",
-  "commit": "c067a9f09ba46540d4e84db544416e3edde912b9",
-  "plugin_version": "1.122.0",
-  "setec_version": "1.122.0",
+  "tag": "v1.124.0",
+  "commit": "43138034e1017961758b90187b9fe0bed10fae54",
+  "plugin_version": "1.124.0",
+  "setec_version": "1.124.0",
   "manifest_schema_version": "0.3.0",
-  "source": "https://github.com/anotherpanacea-eng/setec-voiceprint/releases/tag/v1.122.0",
+  "source": "https://github.com/anotherpanacea-eng/setec-voiceprint/releases/tag/v1.124.0",
   "provisional": false
 }

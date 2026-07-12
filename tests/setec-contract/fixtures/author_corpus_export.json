@@ -1,0 +1,80 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": null,
+  "claim_license": {
+    "additional_caveats": [
+      "The receipt is no-prose metadata; inspect the private package locally.",
+      "record_atomic_degraded packages are train-only and non-comparative."
+    ],
+    "comparison_set": {
+      "records": 1
+    },
+    "confidence_interval_95": null,
+    "does_not_license": "Does not verify authorship or consent, license safe model-weight export, or support an AI/human, quality, or provenance verdict.",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "Confirms that SETEC locally exported a private author-corpus package whose records and delivery receipt passed the named mechanical checks.",
+    "references": [],
+    "register_match": [
+      "email.personal"
+    ],
+    "task_surface": "voice_coherence_acquisition"
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** voice-coherence corpus acquisition\n\n**Reports:** Confirms that SETEC locally exported a private author-corpus package whose records and delivery receipt passed the named mechanical checks.\n\n**Does NOT report:** Does not verify authorship or consent, license safe model-weight export, or support an AI/human, quality, or provenance verdict.\n\n### Comparison context\n\n- **records:** 1\n- **Register match:** `email.personal`\n\n### Caveats\n\n- The receipt is no-prose metadata; inspect the private package locally.\n- record_atomic_degraded packages are train-only and non-comparative.",
+  "results": {
+    "producer_receipt": {
+      "allowed_ai_status": [
+        "pre_ai_human"
+      ],
+      "counts": {
+        "by_ai_status": {
+          "pre_ai_human": 1
+        },
+        "by_era": {
+          "pre_chatgpt": 1
+        },
+        "by_register": {
+          "email.personal": 1
+        },
+        "by_source_kind": {
+          "gmail_sent": 1
+        },
+        "records": 1
+      },
+      "document_attestation_hash": null,
+      "document_map_hash": null,
+      "entries": [
+        {
+          "record_id": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "source_entry_fingerprint": "src:hmac-sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "source_group": "grp:hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222"
+        }
+      ],
+      "hmac_key_id": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "package_hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "producer_revision": "0000000000000000000000000000000000000000",
+      "record_atomic_degraded": false,
+      "record_ids": [
+        "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "register_map": {
+        "gmail_sent:personal": "email.personal"
+      },
+      "schema": "setec-author-corpus-export/1",
+      "source_snapshot_sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "surface": "author_corpus_export",
+      "surface_version": "1"
+    }
+  },
+  "schema_version": "1.0",
+  "target": {
+    "path": null,
+    "words": 0
+  },
+  "task_surface": "voice_coherence_acquisition",
+  "tool": "author_corpus_export",
+  "version": "<fixture>",
+  "warnings": []
+}
