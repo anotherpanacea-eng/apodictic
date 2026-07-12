@@ -14,6 +14,16 @@ A companion audit for argument-shaped nonfiction. It inventories the text's **pe
 
 Identify moves **functionally at a locus**. **Identification requires an independently identifiable transition/span** — a segment whose removal or transformation leaves the surrounding argument intact enough to compare. That requirement is what makes the Layer-2 challenge well-defined, and it is the firewall against vibes-identification. Cues are evidence, never criteria: identify cue-free moves wherever a transition is identifiable without a cue word; never inventory a cue word that is not performing the function.
 
+**Scan pre-pass (optional; the R3B AGD producer/consumer seam).** Before building the move inventory, if `agd_move_scan.json` is present in the run folder, read `results.observations` from it — SETEC's `agd_move_scan` surface (min SETEC **1.124.0**; `handoff: experimental`, `calibration_status: heuristic`) reports **LOCATED, verbatim-anchored candidate move observations** (family + span + `paragraph_index` + cue; `cue: null` = cue-free). **The scan is a POINTER, never a finding (R4A ADR D5):** it seeds and cross-checks this audit's own Layer-1 identification; identification authority stays with the audit, and codes are assigned by the audit alone (Layer 3 + the reconciliation contract), never read off the scan. Observation **count is location data, not a quality signal**.
+
+- *Transport is orchestration, not a code path in this audit.* The consumer shim `scripts/ai_prose_agd_move_scan.py` is a stdout-only forwarder (`run_surface_cli`; it persists no file). The run instruction produces the artifact by redirecting the shim's stdout into the run folder **before** the audit begins:
+  ```
+  python3 <skill>/scripts/ai_prose_agd_move_scan.py <source.md> --judge <manifest|api-backend> --json > <run folder>/agd_move_scan.json
+  ```
+  A non-zero shim exit or an unparseable capture ⇒ the artifact is **absent/malformed**.
+- *Absent or malformed → proceed* with the ordinary inventory and record **`Scan: not consulted (<absent|error>)`** in the §10.9 coverage manifest — loud, never silent.
+- *Cross-check (the actual consumption).* For **each** scan observation the audit either **(a) inventories** it — there is (or the audit adds) an M-record at that locus — or **(b) declines** it with a one-clause reason ("not a functional transition — cue without function"; "a cited data report, not a strippable assurance"). For an audit-found move the scan missed, **nothing is required** (scan recall is calibration data). **The comparison coordinate is the M-record's resolved `Source anchor`:** resolve the anchor in the source, derive its paragraph index from that resolution, and match a scan observation by **normalized span overlap within that derived paragraph** (the paragraph-scoped dedup rule — the audit-side span is the resolved anchor). **The prose locus label is never a comparison operand** — M-records carry no paragraph index, and the label and the anchor may sit in different paragraphs; matching on the label would flip the verdict.
+
 | Family | The move | Canonical cues (NON-criterial) |
 |---|---|---|
 | **ASSURING** | authority/certainty supplied in place of support — there must be a **strippable span** (a cited-authority phrase, a credential appositive, a stated-as-known basis). No strippable span → not an ASSURING move | "studies show," "clearly," "everyone knows," "no one disputes" |
@@ -71,6 +81,8 @@ Span: C1.warrant — [locus]
 Excluded: [span] — [one-clause reason]        (only when Completion: PARTIAL)
 Move count: [N]
 Completion: [COMPLETE | PARTIAL]
+Scan: consulted (<n> observations; <k> inventoried, <m> declined)   (optional — the R3B scan pre-pass; OR: not consulted (absent|error); OMIT the line entirely pre-R3B)
+  Declined: "[span fragment]" — [one-clause reason]        (one per declined observation, only under a consulted Scan)
 
 M1: [ASSURING | GUARDING | DISCOUNTING] at [locus]
   Source anchor: ["<verbatim quote>" @ locus]
@@ -88,6 +100,7 @@ M2: ...
 ```
 
 - **Coverage manifest** heads the section: one `Span:` line per included span (`C0` + each `Cn`'s warrant/support locus, matching the §2 claim ladder), `Excluded:` lines with reasons, `Move count:`, `Completion:`. `PARTIAL` = ≥1 ladder span deliberately excluded (each with a reason); an audit whose records fall outside its declared spans is invalid.
+- **`Scan:` (optional — the R3B scan pre-pass)** records the outcome of consuming `agd_move_scan.json`: `Scan: consulted (<n> observations; <k> inventoried, <m> declined)` with one indented `Declined: "<span fragment>" — <one-clause reason>` line per declined observation; OR `Scan: not consulted (<absent|error>)` (that two-value reason enum ONLY). An **absent** `Scan:` line (not a reason value) is the valid pre-R3B case. The validator shape-checks the line: integers; `k + m = n`; `m` = the count of `Declined:` lines; and — with the scan artifact supplied (`validate.sh argument-agd … --scan agd_move_scan.json`, as `--check-all` does) — `n = len(results.observations)`. It validates the coverage bookkeeping only; the M-records, never the scan, carry the adjudication (R4A ADR D5).
 - **`Source anchor` must resolve** in the source text (normalized substring: whitespace runs folded, quote characters/dashes normalized, otherwise case-sensitive). The **constructed challenge is NOT expected in the source** — it is a construction.
 - **Cross-ref contract (DISCOUNTING):** `COLLAPSES-DECOY` requires `Displaced strongest:` resolving to §6's recorded STRONGEST OBJECTION (6a records it even when the piece never raises it). `COLLAPSES-COSTLESS` requires `Discounted:` to resolve to an inventoried §6 objection — if not yet inventoried, Step 6's sweep adds it (the append-after-core rule), because the grading delegation must have a target. `NOT-INVENTORIED` is legal only on `SURVIVES`/`INDETERMINATE` records.
 
@@ -97,6 +110,6 @@ M2: ...
 
 **Allowed:** identifying moves at loci with verbatim anchors; constructing the subtractive STRIP and de-hedge-only COMMITMENT forms of the text's own sentences; referencing §6 objection records; recording challenge results with assessment bases; flagging candidate codes `PENDING` for adjudication; documenting genuine indeterminacy.
 
-**Not allowed:** coding a move for being a move; inventing an assurance, guard, or objection the text lacks; adding specificity, thresholds, mechanisms, or quantities the text lacks to any constructed challenge; asserting a constructed challenge as a standard the argument must meet (it is engine-surfaced, author-adjudicated diagnosis); re-grading §6 engagement quality; writing anything outside §10.9; promoting a candidate to a code (that is the reconciliation writer's act, never this audit's); treating `NONE`-candidate records as praise or `INDETERMINATE` as a defect.
+**Not allowed:** coding a move for being a move; inventing an assurance, guard, or objection the text lacks; adding specificity, thresholds, mechanisms, or quantities the text lacks to any constructed challenge; asserting a constructed challenge as a standard the argument must meet (it is engine-surfaced, author-adjudicated diagnosis); re-grading §6 engagement quality; writing anything outside §10.9; promoting a candidate to a code (that is the reconciliation writer's act, never this audit's); treating `NONE`-candidate records as praise or `INDETERMINATE` as a defect; **reading a diagnosis, code, verdict, or quality signal off an `agd_move_scan` observation, or treating the observation count as one — a scan observation is a located pointer for this audit's own identification pass, and every challenge, result, and code is the audit's (R4A ADR D5).**
 
 **Output:** the §10.9 block (coverage manifest + typed M-records), signed `argument-agd-audit` with timestamp per the annotation protocol.
