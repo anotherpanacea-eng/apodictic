@@ -5,9 +5,12 @@ Validates an `Argument_State.md` §10.9 "AGD Move Audit" block (the companion au
 plugins/apodictic/skills/specialized-audits/references/craft/argument-agd-audit.md): the coverage
 manifest, the typed M-records, the total family×challenge×result matrix, the neutrality firewall
 (candidates licensed ONLY by failed function), the candidate namespace + reconciliation grammar,
-the DISCOUNTING cross-ref contract, and — when a source text is supplied — Source-anchor
-resolution via NORMALIZED substring matching (greenfield: whitespace runs folded, quote chars and
-dashes normalized, otherwise case-sensitive; near-misses like paraphrase or elision must FAIL).
+the DISCOUNTING cross-ref contract, the OPTIONAL §1b `Scan:` scan-consumption coverage line (R3B
+AGD producer/consumer seam — integers; k+m=n; m == the count of `Declined:` lines; the not-consulted
+reason enum is `absent | error` only; and, with `--scan <agd_move_scan.json>`, n ==
+len(results.observations)), and — when a source text is supplied — Source-anchor resolution via
+NORMALIZED substring matching (greenfield: whitespace runs folded, quote chars and dashes
+normalized, otherwise case-sensitive; near-misses like paraphrase or elision must FAIL).
 
 Structural parse throughout (heading walk + line grammar) — no doc-wide regex scope. The candidate
 namespace is DERIVED, never hardcoded: the Dialectical Clarity codes come from argument_crosswalk's
@@ -16,8 +19,9 @@ diagnoses; AT0 stays), plus FM-A1..FM-A20 from argument_groundtruth._FM_A_MAX = 
 
 Usage:
   argument_agd.py --self-test
-  argument_agd.py argument-agd <argument_state.md> [--source <source.md>] [--strict]
+  argument_agd.py argument-agd <argument_state.md> [--source <source.md>] [--scan <agd_move_scan.json>] [--strict]
 """
+import json
 import os
 import re
 import sys
@@ -58,6 +62,57 @@ _OBJ_REF_RE = re.compile(r"^→\s*Objection\s+\d+$")
 _DISAPPEARING_RE = re.compile(r"^DISAPPEARING\s+\((.+?)\s+→\s+(.+?)\)$")
 _CAND_RE = re.compile(r"^([A-Z][A-Z0-9-]*)\s+\((PENDING|CONFIRMED\s+—\s+[^,]+,\s+[^)]+|"
                       r"DECLINED\s+—\s+[^)]+)\)$")
+
+# --------------------------------------------------------------------------
+# §1b scan-consumption coverage line (R3B AGD producer/consumer seam). The
+# AGD Move Scan (setec agd_move_scan) emits LOCATED observations; the audit
+# consumes them in its Layer-1 pre-pass and records the outcome as a §10.9
+# coverage line. Structural line parse throughout; bounded leaf regexes on the
+# count / reason tokens ONLY (the fleet gt-validator rule). The audit alone
+# assigns codes (R4A ADR D5) — a scan observation is a pointer, never a finding.
+# --------------------------------------------------------------------------
+_SCAN_CONSULTED_RE = re.compile(
+    r"^consulted \((\d+) observations?; (\d+) inventoried, (\d+) declined\)$")
+_SCAN_NOT_CONSULTED_RE = re.compile(r"^not consulted \((absent|error)\)$")
+_DECLINED_LINE_RE = re.compile(r'^Declined:\s+"(.+)"\s+—\s+(.+)$')
+
+
+def _parse_scan_line(s, manifest, errs):
+    """Recognize + shape-parse the §10.9 'Scan:' coverage line. Today an
+    unrecognized column-0 line is silently ignored; this teaches the manifest
+    parser the line so its counts are shape-checked (the two-value not-consulted
+    reason enum is `absent | error` ONLY)."""
+    rest = s[len("Scan:"):].strip()
+    cm = _SCAN_CONSULTED_RE.match(rest)
+    if cm:
+        manifest["scan"] = {"kind": "consulted", "n": int(cm.group(1)),
+                            "k": int(cm.group(2)), "m": int(cm.group(3))}
+        return
+    nm = _SCAN_NOT_CONSULTED_RE.match(rest)
+    if nm:
+        manifest["scan"] = {"kind": "not_consulted", "reason": nm.group(1)}
+        return
+    manifest["scan"] = {"kind": "malformed"}
+    if rest.startswith("not consulted"):
+        errs.append("Scan: not-consulted reason must be exactly (absent) or (error) — that "
+                    "two-value enum only (got %r)." % s)
+    else:
+        errs.append("Scan: line malformed — expected 'Scan: consulted (<n> observations; "
+                    "<k> inventoried, <m> declined)' or 'Scan: not consulted (absent|error)' "
+                    "(got %r)." % s)
+
+
+def _parse_declined_line(s, manifest, errs):
+    """Recognize + shape-parse an indented 'Declined:' line under a consulted
+    Scan. Every 'Declined:' line counts toward m (well-formed or not); a
+    malformed one also raises its own error."""
+    dm = _DECLINED_LINE_RE.match(s)
+    if dm:
+        manifest["scan_declined"].append((dm.group(1).strip(), dm.group(2).strip()))
+    else:
+        manifest["scan_declined"].append(None)
+        errs.append('Scan: %r malformed — expected \'Declined: "<span fragment>" — '
+                    "<one-clause reason>'." % s)
 
 
 # --------------------------------------------------------------------------
@@ -153,7 +208,8 @@ def parse_objections(text):
 
 def parse_block(body):
     """(manifest, records, parse_errs). Manifest = dict; records = list of dicts (ordered fields)."""
-    manifest = {"spans": [], "excluded": [], "move_count": None, "completion": None}
+    manifest = {"spans": [], "excluded": [], "move_count": None, "completion": None,
+                "scan": None, "scan_declined": []}
     records, errs = [], []
     cur = None
     for raw in body.splitlines():
@@ -195,14 +251,22 @@ def parse_block(body):
                 manifest["move_count"] = int(v) if re.fullmatch(r"\d+", v) else v
             elif s.startswith("Completion:"):
                 manifest["completion"] = s[len("Completion:"):].strip()
+            elif s.startswith("Scan:"):
+                _parse_scan_line(s, manifest, errs)
+            elif s.startswith("Declined:"):
+                _parse_declined_line(s, manifest, errs)
     return manifest, records, errs
 
 
 # --------------------------------------------------------------------------
 # Core validation (pure over inputs)
 # --------------------------------------------------------------------------
-def validate(body, namespace, ladder_cns=None, source_text=None, objection_idxs=None):
-    """Returns (errors, warns)."""
+def validate(body, namespace, ladder_cns=None, source_text=None, objection_idxs=None,
+             scan_observations=None):
+    """Returns (errors, warns). `scan_observations` (int | None) is the number
+    of observations in the consumed agd_move_scan artifact, supplied in
+    fixture/--check-all mode so `Scan: consulted (<n> …)` can be cross-checked
+    against `len(results.observations)`; None leaves that one arm unchecked."""
     errors, warns = [], []
     manifest, records, perrs = parse_block(body)
     errors.extend(perrs)
@@ -258,6 +322,34 @@ def validate(body, namespace, ladder_cns=None, source_text=None, objection_idxs=
     elif ladder_cns is None:
         warns.append("Check 5 (coverage) — no §2 Claim Architecture in the artifact; "
                      "ladder cross-check SKIPPED (degrade, not fail).")
+
+    # ---- Check 5c: §1b scan-consumption coverage line (R3B AGD seam) ----
+    # OPTIONAL: an absent Scan: line is the valid pre-R3B case (no check). A
+    # present line is shape-checked: integers (guaranteed by the leaf regex);
+    # k + m == n; m == the count of Declined: lines; and — with the scan
+    # artifact supplied (fixture/--check-all) — n == len(results.observations).
+    # The scan is a POINTER: this validates the coverage bookkeeping only; it
+    # never adjudicates a move (the audit's own M-records do that, R4A ADR D5).
+    scan = manifest.get("scan")
+    declined_lines = manifest.get("scan_declined", [])
+    if scan is not None and scan.get("kind") == "consulted":
+        n, k, m = scan["n"], scan["k"], scan["m"]
+        if k + m != n:
+            errors.append("Check 5 (scan) — inventoried + declined must equal observations "
+                          "(%d inventoried + %d declined != %d observations)." % (k, m, n))
+        if m != len(declined_lines):
+            errors.append("Check 5 (scan) — declined count %d != %d 'Declined:' line(s)."
+                          % (m, len(declined_lines)))
+        if scan_observations is not None and n != scan_observations:
+            errors.append("Check 5 (scan) — Scan: reports %d observations but the scan artifact "
+                          "carries %d (results.observations)." % (n, scan_observations))
+    elif scan is not None and scan.get("kind") == "not_consulted":
+        if declined_lines:
+            errors.append("Check 5 (scan) — 'not consulted' carries %d 'Declined:' line(s); "
+                          "declines belong only to a consulted scan." % len(declined_lines))
+    elif scan is None and declined_lines:
+        errors.append("Check 5 (scan) — 'Declined:' line(s) present with no 'Scan:' line.")
+    # scan.kind == "malformed": _parse_scan_line already appended the parse error.
 
     seen_idx = set()
     for r in records:
@@ -416,7 +508,7 @@ def validate(body, namespace, ladder_cns=None, source_text=None, objection_idxs=
 # --------------------------------------------------------------------------
 # CLI + real-file mode
 # --------------------------------------------------------------------------
-def run_check(state_path, source_path=None, strict=False):
+def run_check(state_path, source_path=None, strict=False, scan_path=None):
     if not os.path.exists(state_path):
         print("ERROR: artifact not found: %s" % state_path)
         return 1
@@ -433,6 +525,27 @@ def run_check(state_path, source_path=None, strict=False):
             return 1
         with open(source_path, "r", encoding="utf-8") as fh:
             source_text = fh.read()
+    # --scan: the consumed agd_move_scan artifact. Read results.observations
+    # only (the count); the audit's §10.9 M-records — never the scan — carry the
+    # adjudication. A present-but-unparseable artifact degrades to a WARN (the
+    # audit would itself have recorded 'not consulted (error)').
+    scan_observations = None
+    if scan_path:
+        if not os.path.exists(scan_path):
+            print("ERROR: scan artifact not found: %s" % scan_path)
+            return 1
+        try:
+            with open(scan_path, "r", encoding="utf-8") as fh:
+                scan_env = json.load(fh)
+            obs = (scan_env.get("results") or {}).get("observations")
+            if isinstance(obs, list):
+                scan_observations = len(obs)
+            else:
+                print("WARN: scan artifact %s has no results.observations list; the Scan: "
+                      "count cross-check is skipped." % scan_path)
+        except (ValueError, OSError) as exc:
+            print("WARN: scan artifact %s could not be parsed (%s); the Scan: count "
+                  "cross-check is skipped." % (scan_path, exc))
     try:
         ns = candidate_namespace()
     except Exception as exc:
@@ -441,7 +554,7 @@ def run_check(state_path, source_path=None, strict=False):
     ladder = parse_ladder(text)
     objs = parse_objections(text)
     errors, warns = validate(body, ns, ladder_cns=ladder, source_text=source_text,
-                             objection_idxs=objs)
+                             objection_idxs=objs, scan_observations=scan_observations)
     if objs is None:
         warns.append("Check 6 — no §6 inventory in the artifact; objection-ref resolution "
                      "SKIPPED (degrade, not fail).")
@@ -477,12 +590,14 @@ def _selftest():
            'reduce injuries — and some residents may benefit within a year. '
            'Although opponents cite cost, the budget already covers it.')
 
-    def block(records, spans=None, completion="COMPLETE", count=None, excluded=""):
+    def block(records, spans=None, completion="COMPLETE", count=None, excluded="", scan=""):
         spans = spans if spans is not None else ["Span: C0 — the thesis paragraph",
                                                  "Span: C1.warrant — the studies sentence"]
         n = count if count is not None else len(records)
         head = "\n".join(spans) + ("\n" + excluded if excluded else "")
-        return "%s\nMove count: %d\nCompletion: %s\n\n%s" % (head, n, completion, "\n\n".join(records))
+        tail = ("\n" + scan) if scan else ""
+        return "%s\nMove count: %d\nCompletion: %s%s\n\n%s" % (
+            head, n, completion, tail, "\n\n".join(records))
 
     def rec(idx=1, fam="ASSURING", locus="the studies sentence", anchor='"Studies have shown" @ the studies sentence',
             cue="studies have shown", challenge=None, result="COLLAPSES",
@@ -582,6 +697,49 @@ def _selftest():
     check("complete ladder uncovered", any("neither included nor excluded: ['C2']" in e for e in errs))
     errs, _ = v(block([rec(locus="an undeclared locus")]))
     check("record locus outside spans", any("not a declared Span locus" in e for e in errs))
+    # Check 5c: the §1b scan-consumption coverage line (R3B AGD seam)
+    SCAN_OK = ('Scan: consulted (2 observations; 1 inventoried, 1 declined)\n'
+               '  Declined: "the studies sentence" — descriptive data report, no strippable assurance span')
+    errs, _ = v(block([rec()], scan=SCAN_OK))
+    check("valid consulted scan clean", errs == [])
+    errs, _ = v(block([rec()], scan="Scan: not consulted (absent)"))
+    check("valid not-consulted (absent) clean", errs == [])
+    errs, _ = v(block([rec()], scan="Scan: not consulted (error)"))
+    check("valid not-consulted (error) clean", errs == [])
+    # absent Scan: line (the pre-R3B case) is valid — no scan key, no error
+    errs, _ = v(block([rec()]))
+    check("absent Scan: line clean (pre-R3B)", not any("scan" in e.lower() for e in errs))
+    # hostile: k + m != n
+    errs, _ = v(block([rec()], scan=('Scan: consulted (2 observations; 1 inventoried, 2 declined)\n'
+                                     '  Declined: "x" — a\n  Declined: "y" — b')))
+    check("scan k+m != n rejected", any("must equal observations" in e for e in errs))
+    # hostile: m != count of Declined: lines
+    errs, _ = v(block([rec()], scan="Scan: consulted (2 observations; 1 inventoried, 1 declined)"))
+    check("scan m != Declined-lines rejected", any("declined count 1 != 0" in e for e in errs))
+    # hostile: bad not-consulted reason value (the enum is absent|error ONLY)
+    errs, _ = v(block([rec()], scan="Scan: not consulted (pre-R3B)"))
+    check("scan bad reason value rejected", any("reason must be exactly" in e for e in errs))
+    # hostile: malformed Declined line (no quoted span fragment)
+    errs, _ = v(block([rec()], scan=('Scan: consulted (1 observations; 0 inventoried, 1 declined)\n'
+                                     '  Declined: missing the quoted span and separator')))
+    check("scan malformed Declined line rejected",
+          any("malformed" in e and "Declined" in e for e in errs))
+    # hostile: bad counts (non-integer token) => malformed Scan line
+    errs, _ = v(block([rec()], scan="Scan: consulted (two observations; 1 inventoried, 1 declined)"))
+    check("scan non-integer counts rejected", any("line malformed" in e for e in errs))
+    # hostile: a Declined: line with no Scan: line
+    errs, _ = v(block([rec()], scan='  Declined: "x" — a'))
+    check("Declined without Scan rejected", any("no 'Scan:' line" in e for e in errs))
+    # hostile: a not-consulted scan carrying a Declined: line
+    errs, _ = v(block([rec()], scan='Scan: not consulted (error)\n  Declined: "x" — a'))
+    check("not-consulted with Declined rejected",
+          any("declines belong only to a consulted" in e for e in errs))
+    # the artifact cross-check: n == len(results.observations) when the scan artifact is supplied
+    errs, _ = validate(block([rec()], scan=SCAN_OK), NS, scan_observations=2)
+    check("scan n == observations clean", errs == [])
+    errs, _ = validate(block([rec()], scan=SCAN_OK), NS, scan_observations=3)
+    check("scan n != artifact-observations rejected",
+          any("Scan: reports 2 observations but the scan artifact carries 3" in e for e in errs))
     # Check 6: per-family fields + cross-ref contract
     errs, _ = v(block([rec(extra=("Trajectory: STABLE",))]))
     check("trajectory on assuring rejected", any("GUARDING-only" in e for e in errs))
@@ -660,7 +818,7 @@ def _selftest():
             print("  - %s" % f)
         return 1
     print("Self-test: PASS (argument-agd; matrix totality + firewall + namespace + anchors + "
-          "coverage + cross-ref contract, hostile arms)")
+          "coverage + cross-ref contract + scan-consumption line, hostile arms)")
     return 0
 
 
@@ -673,10 +831,12 @@ def main(argv):
         return _selftest()
     if not argv:
         sys.stderr.write("Usage: argument_agd.py argument-agd <argument_state.md> "
-                         "[--source <source.md>] [--strict] | --self-test\n")
+                         "[--source <source.md>] [--scan <agd_move_scan.json>] [--strict] "
+                         "| --self-test\n")
         return 2
     state = argv[0]
     source = None
+    scan = None
     strict = "--strict" in argv
     if "--source" in argv:
         i = argv.index("--source")
@@ -684,7 +844,13 @@ def main(argv):
             sys.stderr.write("--source needs a path\n")
             return 2
         source = argv[i + 1]
-    return run_check(state, source_path=source, strict=strict)
+    if "--scan" in argv:
+        i = argv.index("--scan")
+        if i + 1 >= len(argv):
+            sys.stderr.write("--scan needs a path\n")
+            return 2
+        scan = argv[i + 1]
+    return run_check(state, source_path=source, strict=strict, scan_path=scan)
 
 
 if __name__ == "__main__":
