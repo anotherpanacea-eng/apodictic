@@ -9,7 +9,9 @@ the DISCOUNTING cross-ref contract, the OPTIONAL §1b `Scan:` scan-consumption c
 AGD producer/consumer seam — integers; k+m=n; m == the count of `Declined:` lines; the not-consulted
 reason enum is `absent | error` only; lookalike spellings and duplicate `Scan:` lines are errors,
 never silently ignored; and, with `--scan <agd_move_scan.json>`, n == len(results.observations),
-FAILING CLOSED on an unreadable artifact), and — when a source text is supplied — Source-anchor resolution via
+FAILING CLOSED on an unreadable artifact — while a READABLE supplied artifact REQUIRES a
+consulted line: a denied or missing line with the artifact present would skip the cross-check
+entirely), and — when a source text is supplied — Source-anchor resolution via
 NORMALIZED substring matching (greenfield: whitespace runs folded, quote chars and dashes
 normalized, otherwise case-sensitive; near-misses like paraphrase or elision must FAIL).
 
@@ -344,6 +346,21 @@ def validate(body, namespace, ladder_cns=None, source_text=None, objection_idxs=
     # never adjudicates a move (the audit's own M-records do that, R4A ADR D5).
     scan = manifest.get("scan")
     declined_lines = manifest.get("scan_declined", [])
+    # A supplied, READABLE artifact requires a consulted line: §1b routes a
+    # readable artifact to the cross-check, and 'not consulted (error)' is
+    # reserved for an absent/malformed capture (which --scan fails closed on
+    # before reaching here). A denied or missing line with the artifact present
+    # would let a fixture ship the artifact and skip the cross-check entirely —
+    # defeating the consumption gate. (kind == "malformed" already errored in
+    # the parser; real audit runs without --scan are unaffected.)
+    if scan_observations is not None and (
+            scan is None or scan.get("kind") == "not_consulted"):
+        errors.append("Check 5 (scan) — a readable scan artifact was supplied (%d observations) "
+                      "but the manifest %s; with the artifact present and parseable the coverage "
+                      "line must be 'Scan: consulted (…)' recording the cross-check."
+                      % (scan_observations,
+                         "claims 'Scan: not consulted'" if scan is not None
+                         else "carries no 'Scan:' line"))
     if scan is not None and scan.get("kind") == "consulted":
         n, k, m = scan["n"], scan["k"], scan["m"]
         if k + m != n:
@@ -757,6 +774,22 @@ def _selftest():
     errs, _ = validate(block([rec()], scan=SCAN_OK), NS, scan_observations=3)
     check("scan n != artifact-observations rejected",
           any("Scan: reports 2 observations but the scan artifact carries 3" in e for e in errs))
+    # hostile (Codex P1): a readable artifact was supplied but the manifest
+    # DENIES consumption — 'not consulted' is reserved for an absent/malformed
+    # capture, so a denied line with the artifact present skips the cross-check
+    # and defeats the consumption gate. Both reason values, and the silent
+    # sibling (no Scan: line at all), must fail.
+    errs, _ = validate(block([rec()], scan="Scan: not consulted (error)"), NS,
+                       scan_observations=2)
+    check("supplied artifact + 'not consulted (error)' rejected",
+          any("must be 'Scan: consulted" in e for e in errs))
+    errs, _ = validate(block([rec()], scan="Scan: not consulted (absent)"), NS,
+                       scan_observations=2)
+    check("supplied artifact + 'not consulted (absent)' rejected",
+          any("must be 'Scan: consulted" in e for e in errs))
+    errs, _ = validate(block([rec()]), NS, scan_observations=2)
+    check("supplied artifact + missing Scan: line rejected",
+          any("carries no 'Scan:' line" in e for e in errs))
     # hostile: lookalike spellings must ERROR, not vanish as ignored lines (an
     # absent Scan: line is VALID pre-R3B, so a silently-dropped variant would
     # masquerade as that case)

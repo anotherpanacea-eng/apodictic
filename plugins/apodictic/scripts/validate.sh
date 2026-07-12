@@ -1792,8 +1792,14 @@ PY
       [ -f "$fx/argument-state.md" ] || continue
       # R3B AGD seam: when a fixture ships a consumed agd_move_scan.json, pass it so the §10.9
       # Scan: line's n is cross-checked against len(results.observations); absent for pre-R3B fixtures.
+      # The claim and the artifact must agree in BOTH directions: a shipped artifact with a denied/
+      # missing Scan: line fails inside the validator; a 'Scan: consulted' claim with NO shipped
+      # artifact fails here (otherwise the n-cross-check silently skips — the same defeat mirrored).
       CA_SCAN=""
       [ -f "$fx/agd_move_scan.json" ] && CA_SCAN="--scan $fx/agd_move_scan.json"
+      if [ -z "$CA_SCAN" ] && grep -q '^Scan: consulted' "$fx/argument-state.md"; then
+        echo "  FAIL $(basename "$fx") — 'Scan: consulted' claimed but no agd_move_scan.json shipped (the n-cross-check would silently skip)"; CA_FAIL=1; continue
+      fi
       "$0" argument-agd "$fx/argument-state.md" --source "$fx/source.md" $CA_SCAN --strict >/dev/null 2>&1         && echo "  ok $(basename "$fx")"         || { echo "  FAIL $(basename "$fx")"; "$0" argument-agd "$fx/argument-state.md" --source "$fx/source.md" $CA_SCAN --strict; CA_FAIL=1; }
     done
     echo ""
