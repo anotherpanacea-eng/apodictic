@@ -40,6 +40,8 @@ Span: C1.support — the pilot-districts sentence
 Span: C2.warrant — the retention sentence
 Move count: 1
 Completion: COMPLETE
+Scan: consulted (2 observations; 1 inventoried, 1 declined)
+  Declined: "The pilot districts report higher teacher retention" — a cited data report the argument relies on as evidence, not a strippable assurance in place of support
 
 M1: DISCOUNTING at the adoption recommendation
   Source anchor: "several of whom asked how younger children would be supervised on the fifth day" @ the adoption recommendation
