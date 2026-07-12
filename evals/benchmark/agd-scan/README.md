@@ -112,6 +112,27 @@ and reads the model's JSON text back from stdout:
   `host_judge_cmd.py` fable branch is the standalone/headless path for any
   future re-acquisition.
 
+  **The exact procedure that produced the committed fable cells (2026-07-12)** —
+  a documented host-adapter procedure, not a re-runnable shell one-liner:
+  1. The five assembled judge inputs were generated from the producer AT THE
+     v1.124.0 TAG, byte-identical to what `agent_host` sends its transport:
+     `_SYSTEM_PREAMBLE + "\n\n" + <the judge_backends no_verdict line> + "\n\n"
+     + _build_user_content(render_prompt(), split_paragraphs(source.md))`
+     (all imported from `agd_move_scan_judge.py` / `agd_move_scan.py`).
+  2. One fresh Claude-Code subagent per rep (2 per fixture, 10 total) received
+     exactly this preface + the assembled input, nothing else:
+     > "You are acting as a text-labeling judge. Do NOT use any tools, do NOT
+     > read any files, do NOT explore anything — work ONLY from the task text
+     > below, and your entire final message must be ONLY the JSON object it
+     > requests (no prose, no code fences)."
+  3. Each subagent's final JSON was normalized through the producer's own
+     `normalize_observations(raw, split_paragraphs(source.md))` (same tag) and
+     wrapped into the pinned run-manifest schema with
+     `prompt_fingerprint_sha256 = fingerprint_prompt()` and
+     `model_id = claude-fable-5`; drops (none occurred) would have been logged
+     to `acquisition-log.md`, which records each cell as
+     `host=claude-code-subagent`.
+
 **Blindness measures — stated exactly.** Neither judge's prompt contains the
 fixture's §10.9 keys (`argument-state.md`), any file path, or any mention of a
 repository — the prompt is the producer's rendered judge input plus a minimal
@@ -253,8 +274,10 @@ offline and deterministic.
   `handoff: experimental`, `calibration_status: heuristic`).
 - **Prompt fingerprint:** `f07f8f4adafaf9eebb47ff72dca640042c5bc4c576044d9f1d79002733c2bcf5`.
 - **Consumer base:** `apodictic` **v2.9.0** (the R3B A-1 consumer shim + validator).
-- **Vendors:** `fable` = **claude-fable-5** via fresh Claude-Code subagents (no
-  tools, prompt-only); `codex` = **gpt-5.6-sol** at `model_reasoning_effort=xhigh`
-  via `codex exec` in an empty-cwd read-only sandbox. Both received the producer's
-  exact rendered judge prompt plus a minimal transport preface.
+- **Vendors:** `fable` = **claude-fable-5** via fresh Claude-Code subagents (the
+  spec-35 host adapter; no-tools-INSTRUCTED, **0 tool uses observed** on every
+  rep — see "Blindness measures" above for the exact claim); `codex` =
+  **gpt-5.6-sol** at `model_reasoning_effort=xhigh` via `codex exec` in an
+  empty-cwd read-only sandbox. Both received the producer's exact rendered judge
+  prompt plus a minimal transport preface.
 - **Acquisition:** 2026-07-12 (per-cell record in `acquisition-log.md`).
