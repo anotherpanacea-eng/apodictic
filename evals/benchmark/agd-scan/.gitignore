@@ -1,0 +1,4 @@
+# Phase-1 acquisition working area — raw per-cell envelopes (JSON + rendered
+# markdown). The committed run-manifests under manifests/ are the durable
+# artifacts; these scratch envelopes are regenerable and never scored.
+_scratch/

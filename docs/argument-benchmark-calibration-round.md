@@ -238,3 +238,64 @@ tie-break existed and resolved *against* FM-A6.
   Record per RUN-PROTOCOL Step 5. On pass, flip this Status to VALIDATED with the run date + model configs +
   per-fixture ranks. **Not runnable in the offline build sandbox** (this section was authored there).
 - **Codex PR gate** before merge; no merge without operator sign-off.
+
+## §M-AGD — AGD scan/audit agreement benchmark (2026-07-12)
+
+**Increment:** R3B §4 Phase-2 SCORING — the offline, deterministic half of the AGD producer/consumer behavioral benchmark. Each of the 20 committed Phase-1 run-manifests (5 R3A fixtures x {fable, codex} x rep{1,2}) is replayed through the consumer channel (`ai_prose_agd_move_scan.py --judge manifest`) and its located observations are compared to the fixture's §10.9 M-record inventory under the §1b coordinate + dedup rule. The scorer measures scan↔audit AGREEMENT only (R4A ADR D5: the producer observes, the audit alone adjudicates); observation COUNT is location data, never a quality signal, and there is no aggregate beyond this agreement bookkeeping.
+
+**Coordinate + match rule (mechanical §1b).** An M-record's coordinate is its resolved `Source anchor`: the anchor's verbatim quote is resolved in the source under argument_agd's normalization (whitespace folded, quote/dash chars normalized, case-sensitive), the source is split into the producer's blank-line paragraphs, and the one normalized paragraph containing the normalized anchor is the record's derived paragraph (zero or >1 = a loud error, never a guess). A scan observation matches iff **same derived paragraph AND same family AND normalized-span interval overlap** (first occurrence; adjacent-disjoint spans do not overlap). CORRECT = >=1 same-family overlapping observation; INCORRECT = >=1 overlapping observation, all a different family; SOFT = no overlapping observation. The prose locus label is never a comparison operand.
+
+**Results — 20 cells (per-M-record outcome + extras count).** Extras are observations overlapping no M-record coordinate: CALIBRATION DATA for the audit's decline path, never an error. Fixtures are named, never ordinal.
+
+| Fixture | Vendor | Rep | Obs | M-record outcomes | Extras |
+|---|---|---|---:|---|---:|
+| abusive-cued-assurance | fable | 1 | 4 | M1:CORRECT · M2:CORRECT | 2 |
+| abusive-cued-assurance | fable | 2 | 4 | M1:CORRECT · M2:CORRECT | 2 |
+| abusive-cued-assurance | codex | 1 | 4 | M1:CORRECT · M2:CORRECT | 2 |
+| abusive-cued-assurance | codex | 2 | 4 | M1:CORRECT · M2:CORRECT | 2 |
+| ambiguous | fable | 1 | 3 | M1:CORRECT | 2 |
+| ambiguous | fable | 2 | 3 | M1:CORRECT | 2 |
+| ambiguous | codex | 1 | 1 | M1:CORRECT | 0 |
+| ambiguous | codex | 2 | 3 | M1:CORRECT | 2 |
+| cue-free-structural-discounting | fable | 1 | 3 | M1:CORRECT | 2 |
+| cue-free-structural-discounting | fable | 2 | 4 | M1:CORRECT | 3 |
+| cue-free-structural-discounting | codex | 1 | 4 | M1:CORRECT | 3 |
+| cue-free-structural-discounting | codex | 2 | 2 | M1:CORRECT | 1 |
+| cue-only | fable | 1 | 0 | M1:SOFT · M2:SOFT | 0 |
+| cue-only | fable | 2 | 2 | M1:CORRECT · M2:CORRECT | 0 |
+| cue-only | codex | 1 | 2 | M1:CORRECT · M2:CORRECT | 0 |
+| cue-only | codex | 2 | 0 | M1:SOFT · M2:SOFT | 0 |
+| legit-guarded-generalization | fable | 1 | 4 | M1:CORRECT · M2:CORRECT | 2 |
+| legit-guarded-generalization | fable | 2 | 4 | M1:CORRECT · M2:CORRECT | 2 |
+| legit-guarded-generalization | codex | 1 | 4 | M1:CORRECT · M2:CORRECT | 2 |
+| legit-guarded-generalization | codex | 2 | 5 | M1:CORRECT · M2:CORRECT | 2 |
+
+**Misses and extras (per cell).** A miss = an M-record with no same-family overlapping observation (SOFT or INCORRECT); an extra = an observation overlapping no M-record coordinate.
+
+- `abusive-cued-assurance / fable / rep1` — extras: ASSURING "the research is unanimous" (¶0, cue "unanimous"); DISCOUNTING "Firms that cling to open layouts are simply ignoring the sc…" (¶0, cue "simply")
+- `abusive-cued-assurance / fable / rep2` — extras: ASSURING "the research is unanimous" (¶0, cue "unanimous"); DISCOUNTING "Firms that cling to open layouts are simply ignoring the sc…" (¶0, cue "simply")
+- `abusive-cued-assurance / codex / rep1` — extras: ASSURING "the research is unanimous" (¶0, cue "the research is unanimo…"); ASSURING "simply" (¶0, cue "simply")
+- `abusive-cued-assurance / codex / rep2` — extras: ASSURING "the research is unanimous" (¶0, cue "the research is unanimo…"); ASSURING "simply" (¶0, cue "simply")
+- `ambiguous / fable / rep1` — extras: ASSURING "The circulation manager attributes the jump to the amnesty" (¶1, cue-free); DISCOUNTING "though the same month saw the branch reopen its east entran…" (¶1, cue "though")
+- `ambiguous / fable / rep2` — extras: ASSURING "The circulation manager attributes the jump to the amnesty" (¶1, cue-free); DISCOUNTING "though the same month saw the branch reopen its east entran…" (¶1, cue "though")
+- `ambiguous / codex / rep2` — extras: ASSURING "The circulation manager attributes the jump to the amnesty" (¶1, cue "The circulation manager"); DISCOUNTING "though the same month saw the branch reopen its east entran…" (¶1, cue "though")
+- `cue-free-structural-discounting / fable / rep1` — extras: ASSURING "The pilot districts report higher teacher retention, lower…" (¶2, cue "The pilot districts rep…"); ASSURING "exit interviews name schedule flexibility as the top reason…" (¶2, cue "exit interviews name")
+- `cue-free-structural-discounting / fable / rep2` — extras: GUARDING "mostly wanted to talk about bus schedules" (¶1, cue "mostly"); ASSURING "The pilot districts report" (¶2, cue "report"); ASSURING "exit interviews name" (¶2, cue "name")
+- `cue-free-structural-discounting / codex / rep1` — extras: GUARDING "mostly" (¶1, cue "mostly"); ASSURING "The pilot districts report" (¶2, cue "report"); ASSURING "exit interviews name" (¶2, cue "exit interviews name")
+- `cue-free-structural-discounting / codex / rep2` — extras: GUARDING "mostly" (¶1, cue "mostly")
+- `cue-only / fable / rep1` — misses: M1 (ASSURING, SOFT), M2 (ASSURING, SOFT)
+- `cue-only / codex / rep2` — misses: M1 (ASSURING, SOFT), M2 (ASSURING, SOFT)
+- `legit-guarded-generalization / fable / rep1` — extras: GUARDING "the program tends to work best where bins sit within a shor…" (¶2, cue "tends to"); ASSURING "the budget office confirmed the surplus covers year one" (¶2, cue "confirmed")
+- `legit-guarded-generalization / fable / rep2` — extras: GUARDING "the program tends to work best where bins sit within a shor…" (¶2, cue "tends to"); ASSURING "the budget office confirmed" (¶2, cue "confirmed")
+- `legit-guarded-generalization / codex / rep1` — extras: GUARDING "the program tends to work best where bins sit within a shor…" (¶2, cue "tends to"); ASSURING "the budget office confirmed" (¶2, cue "confirmed")
+- `legit-guarded-generalization / codex / rep2` — extras: GUARDING "tends to work best where bins sit within a short walk" (¶2, cue "tends to"); ASSURING "the budget office confirmed" (¶2, cue "confirmed")
+
+**Hard gate (§4 pass criteria — the wedge claim).** Fixture `cue-free-structural-discounting`, M1 (family DISCOUNTING): >=1 CORRECT rep **per vendor** AND **0 INCORRECT** reps on that record across all reps of that fixture.
+
+- vendor **fable**: CORRECT rep present ✓
+- vendor **codex**: CORRECT rep present ✓
+- INCORRECT reps on the gated record across all reps: **0** ✓
+
+**HARD-GATE VERDICT: PASS ✅** — the scan finds the cue-free structural-discounting move (family DISCOUNTING) reliably per vendor with no family confusion on the gated record.
+
+**Provenance.** Producer **setec-voiceprint v1.124.0** (prompt fingerprint `f07f8f4adafaf9eebb47ff72dca640042c5bc4c576044d9f1d79002733c2bcf5`); consumer base **apodictic v2.9.0**. Phase-2 scoring replays each manifest OFFLINE through `ai_prose_agd_move_scan.py --judge manifest --judge-manifest <manifest> --expect-fingerprint <fp> --json` (`SETEC_VOICEPRINT_DIR` → the producer worktree), taking `results.observations` from the envelope; a non-available envelope or fingerprint drift is a scoring ERROR, never a silent skip. Vendors: **fable** = claude-fable-5 via fresh Claude-Code subagents (the spec-35 host adapter; no-tools-instructed, 0 tool uses observed on every rep; logged as host=claude-code-subagent); **codex** = gpt-5.6-sol at model_reasoning_effort=xhigh via codex exec in an empty-cwd read-only sandbox — both received the producer's exact rendered judge prompt plus a minimal transport preface. Acquisition 2026-07-12; the run-manifests are in `evals/benchmark/agd-scan/manifests/`, the per-cell acquisition audit (observation + span-integrity-drop counts, timestamps) in `evals/benchmark/agd-scan/acquisition-log.md`, and the transports + the full acquisition procedure — including the documented host-subagent-adapter procedure that produced the fable cells (not a re-runnable shell one-liner) — in the README and `acquire.py`/`host_judge_cmd.py` beside it. This section is generated by running `evals/benchmark/agd-scan/score.py --write-report`; the result cells are never hand-written.

@@ -1,0 +1,36 @@
+{
+  "fixture_id": "abusive-cued-assurance",
+  "vendor": "fable",
+  "model_id": "claude-fable-5",
+  "prompt_fingerprint_sha256": "f07f8f4adafaf9eebb47ff72dca640042c5bc4c576044d9f1d79002733c2bcf5",
+  "rep": 1,
+  "acquired_at": "2026-07-12T19:33:17+00:00",
+  "values": {
+    "observations": [
+      {
+        "family": "ASSURING",
+        "span": "Every serious person now accepts",
+        "paragraph_index": 0,
+        "cue": "Every serious person now accepts"
+      },
+      {
+        "family": "ASSURING",
+        "span": "Studies have\nshown",
+        "paragraph_index": 0,
+        "cue": "Studies have shown"
+      },
+      {
+        "family": "ASSURING",
+        "span": "the research is unanimous",
+        "paragraph_index": 0,
+        "cue": "unanimous"
+      },
+      {
+        "family": "DISCOUNTING",
+        "span": "Firms that\ncling to open layouts are simply ignoring the science.",
+        "paragraph_index": 0,
+        "cue": "simply"
+      }
+    ]
+  }
+}
