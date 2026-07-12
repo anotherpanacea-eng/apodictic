@@ -325,10 +325,10 @@ def _reviewer_objection_errs(obj, where):
         if not (isinstance(txt, str) and txt.strip()):
             errs.append("%s: object form requires a non-empty (non-whitespace) 'objection' string" % at)
         tgt = o.get("target")
-        if tgt is not None and not (isinstance(tgt, str) and _OBJECTION_TARGET_RE.match(tgt)):
+        if "target" in o and not (isinstance(tgt, str) and _OBJECTION_TARGET_RE.match(tgt)):
             errs.append("%s: 'target'=%r must match C<n>[.warrant|.support] or 'argument-wide'" % (at, tgt))
         rel = o.get("relation")
-        if rel is not None and rel not in _OBJECTION_RELATIONS:
+        if "relation" in o and rel not in _OBJECTION_RELATIONS:
             errs.append("%s: 'relation'=%r not in %s" % (at, rel, list(_OBJECTION_RELATIONS)))
         for k in o:
             if k in _OBJECTION_POSTDRAFT_KEYS:
@@ -990,9 +990,14 @@ def run_self_test():
     # hostile: bad target shape -> ERROR
     chk("r2_bad_target_shape", check(seededG("grant-proposal", objections=(
         {"objection": "x", "target": "warrant"},)))[0] == 1)
+    # hostile: an explicitly present JSON null is not the same as omitting the optional typed field
+    chk("r2_null_target", check(seededG("grant-proposal", objections=(
+        {"objection": "x", "target": None},)))[0] == 1)
     # hostile: bad relation enum -> ERROR
     chk("r2_bad_relation", check(seededG("grant-proposal", objections=(
         {"objection": "x", "relation": "MITIGATED"},)))[0] == 1)
+    chk("r2_null_relation", check(seededG("grant-proposal", objections=(
+        {"objection": "x", "relation": None},)))[0] == 1)
     # hostile: stray POST-DRAFT audit key on a pre-draft item -> ERROR (wrong-surface guard)
     code, lines = check(seededG("grant-proposal", objections=(
         {"objection": "x", "engaged": "N"},)))
