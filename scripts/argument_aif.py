@@ -62,6 +62,24 @@ BACKING = {"PRESENT", "THIN", "ABSENT"}
 QUALIFIER = {"MATCHED", "OVERCONFIDENT", "UNDERCLAIMED"}
 _CID = re.compile(r"C\d+")
 _ABS = re.compile(r"(?:^|[\s\"'])(?:/Users/|/home/|/private/tmp/|[A-Za-z]:\\)")
+# Reserved machine-seeded placeholder vocabulary. The pre-draft seeder (argument_spine.py) and the
+# Dialectical Clarity backfill mark a reserved-but-empty section with a fully-italic token whose inner
+# text opens with one of these keywords: `_seeded_`, `_seeded by support_plan blocks_`, `_pending_`,
+# `_pending — backfilled by Step 9 ..._`. Those are structural stubs, not authored content, so they
+# must NOT disclose an out-of-profile loss. Every OTHER line — including arbitrary italic authored
+# content such as `_smuggled real out-of-profile content_` — is real content that MUST disclose.
+_PLACEHOLDER_KEYWORDS = ("seeded", "pending")
+# Canonical key EMISSION order (mirrors build_export / _loss). run_check re-emits the parsed object in
+# this order and compares bytes, so a key-reordered artifact fails even without --source (validate_export
+# only checks membership via the order-blind *_KEYS sets). Kept beside those shape sets.
+_ORDER_TOP = ("schema", "source", "profile", "nodes", "edges", "losses")
+_ORDER_SOURCE = ("artifact", "sha256", "argument_state_schema", "schema_version_basis")
+_ORDER_PROFILE = ("name", "aif_reference", "loss_policy")
+_ORDER_NODE = {"I-node": ("id", "type", "text", "source_ref"),
+               "RA-node": ("id", "type", "scheme", "scheme_text", "source_ref"),
+               "CA-node": ("id", "type", "scheme", "source_ref")}
+_ORDER_EDGE = ("from", "to")
+_ORDER_LOSS = ("code", "source_ref", "subject_id", "detail", "blocking")
 
 
 class ExportError(Exception):
@@ -79,6 +97,36 @@ def _no_dupes(pairs):
 
 def canonical(obj):
     return json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=False) + "\n"
+
+
+def _canon_keys(order, d):
+    """Re-key `d` into `order` (known keys first, in canonical order), appending any unknown keys in
+    their original order so nothing is dropped — validate_export owns rejecting unknown keys."""
+    out = {k: d[k] for k in order if k in d}
+    for k in d:
+        if k not in out:
+            out[k] = d[k]
+    return out
+
+
+def _reorder_keys(obj):
+    """Reconstruct a parsed export with keys in build_export's canonical emission order. A shape the
+    validator has already rejected passes through untouched (the byte compare fails regardless)."""
+    if not isinstance(obj, dict):
+        return obj
+    out = _canon_keys(_ORDER_TOP, obj)
+    if isinstance(out.get("source"), dict):
+        out["source"] = _canon_keys(_ORDER_SOURCE, out["source"])
+    if isinstance(out.get("profile"), dict):
+        out["profile"] = _canon_keys(_ORDER_PROFILE, out["profile"])
+    if isinstance(out.get("nodes"), list):
+        out["nodes"] = [_canon_keys(_ORDER_NODE.get(n.get("type"), ()), n) if isinstance(n, dict) else n
+                        for n in out["nodes"]]
+    if isinstance(out.get("edges"), list):
+        out["edges"] = [_canon_keys(_ORDER_EDGE, e) if isinstance(e, dict) else e for e in out["edges"]]
+    if isinstance(out.get("losses"), list):
+        out["losses"] = [_canon_keys(_ORDER_LOSS, x) if isinstance(x, dict) else x for x in out["losses"]]
+    return out
 
 
 def _loss(code, source_ref, subject_id=None):
@@ -283,11 +331,25 @@ def _objections(sec):
     return out
 
 
+def _is_reserved_placeholder(line):
+    """True for a reserved machine-seeded stub only: a fully-italic `_seeded…_` / `_pending…_` (or an
+    empty `__`) marker, or a fully-bracketed `[…]` stub. ONLY these enumerated shapes count as
+    unpopulated; every other line — including arbitrary italic authored content — is real content that
+    must disclose a loss. Replaces the old `startswith('_')` heuristic that swallowed authored italics
+    (`_smuggled real out-of-profile content_`) as if the section were an empty placeholder (R4B fix)."""
+    if line.startswith("[") and line.endswith("]"):
+        return True
+    if len(line) >= 2 and line.startswith("_") and line.endswith("_"):
+        inner = line[1:-1].strip().lower()
+        return inner == "" or inner.split(" ", 1)[0] in _PLACEHOLDER_KEYWORDS
+    return False
+
+
 def _populated(sec):
     if sec is None: return False
     body = sec[1]
     lines = [x.strip() for x in body.splitlines() if x.strip()]
-    return any(not (x.startswith("_") or (x.startswith("[") and x.endswith("]"))) for x in lines)
+    return any(not _is_reserved_placeholder(x) for x in lines)
 
 
 def build_export(source, *, artifact="Argument_State.md", state_schema=STATE_SCHEMA):
@@ -469,12 +531,26 @@ def run_check(path, source=None):
     try: text = raw.decode("utf-8"); obj = json.loads(text, object_pairs_hook=_no_dupes)
     except (UnicodeError, ValueError, json.JSONDecodeError): print("argument-aif-check: FAIL [artifact-json]"); return 1
     errors = validate_export(obj)
+    # Byte-canonicality: sourceless too. The first compare catches indentation/whitespace/encoding
+    # drift; `sort_keys=False` preserves the parsed key order, so a key-reordered-but-otherwise-canonical
+    # artifact slips past it — the elif re-emits in the canonical key order and re-compares, so a
+    # reordered artifact fails even without --source. (Loss-set completeness still needs the source.)
     if canonical(obj).encode("utf-8") != raw: errors.append("non-canonical JSON bytes")
+    elif canonical(_reorder_keys(obj)).encode("utf-8") != raw: errors.append("non-canonical key order")
     if source:
-        try: source_raw = Path(source).read_bytes(); rebuilt = build_export(source_raw, artifact=obj.get("source", {}).get("artifact", "Argument_State.md"), state_schema=obj.get("source", {}).get("argument_state_schema"))
-        except (OSError, ExportError): errors.append("source rebuild")
+        src_obj = obj.get("source") if isinstance(obj, dict) else None
+        recorded = src_obj.get("artifact") if isinstance(src_obj, dict) else None
+        # Bind the export's self-attested artifact name to the supplied source. The rebuild adopts
+        # `recorded`, so without this an arbitrary/tampered basename would ride through (the sha256 is
+        # recomputed, so it is cosmetic provenance — but bind it so a mislabeled export cannot claim a
+        # clean source-closure check).
+        if not isinstance(recorded, str) or Path(recorded).name != Path(source).name:
+            errors.append("source artifact basename mismatch")
         else:
-            if canonical(rebuilt).encode("utf-8") != raw: errors.append("source-derived byte closure")
+            try: source_raw = Path(source).read_bytes(); rebuilt = build_export(source_raw, artifact=recorded, state_schema=src_obj.get("argument_state_schema"))
+            except (OSError, ExportError): errors.append("source rebuild")
+            else:
+                if canonical(rebuilt).encode("utf-8") != raw: errors.append("source-derived byte closure")
     if errors:
         print("argument-aif-check: FAIL (%d)" % len(errors)); [print("  - " + x) for x in errors]; return 1
     print("argument-aif-check: PASS — %d nodes, %d edges, %d disclosed losses" % (len(obj["nodes"]), len(obj["edges"]), len(obj["losses"]))); return 0
@@ -482,8 +558,9 @@ def run_check(path, source=None):
 
 def selftest():
     final = '''## 2. Claim Architecture\nC0 (main claim): root /Users/authored/path\n\nSubclaims:\n  C1: one\n\n## 3. Support Map\nC1: one\n  Support: because evidence\n  Support type: DATA\n  Scheme hint: SIGN\n\n## 4. Warrant and Inference Map\nC1: one\n  Warrant: evidence bears on the claim\n  Warrant status: EXPLICIT\n  Backing: PRESENT\n  Qualifier: MATCHED\n\n## 5. Burden, Scope, and Comparative Assessment\nClaim scope: LOCAL\n\n## 6. Objection and Dialectical Integrity Map\nObjection 1: unless the sample is biased\n  Target: C1.warrant\n  Relation: WARRANT-DEFEATER\n  Basis: IMPORTED\n'''
-    failures = []
+    failures, arms = [], []
     def check(name, condition):
+        arms.append(name)
         if not condition: failures.append(name)
     obj = build_export(final.encode())
     check("support", any(n["id"] == "i:C1.support" for n in obj["nodes"]))
@@ -521,11 +598,25 @@ def selftest():
           next(n for n in decoy_obj["nodes"] if n["id"] == "i:C0")["text"] == "root /Users/authored/path"
           and not any(n["id"] == "i:C99" for n in decoy_obj["nodes"]))
     incomplete = final.replace("  Support type: DATA\n", "")
-    try: build_export(incomplete.encode()); check("incomplete final", False)
-    except ExportError: pass
+    try: build_export(incomplete.encode()); raised = False
+    except ExportError: raised = True
+    check("incomplete final", raised)
+    # final-support-enum-invalid: a §3 support record with an out-of-enum Support type must fail at build.
+    bad_support = final.replace("  Support type: DATA\n", "  Support type: VIBES\n")
+    try: build_export(bad_support.encode()); enum_raised = False
+    except ExportError as exc: enum_raised = str(exc) == "final-support-enum-invalid"
+    check("final-support-enum-invalid", enum_raised)
+    # Out-of-profile under-disclosure (R4B): authored italic content in an out-of-profile section is
+    # disclosed, while a genuinely-seeded `_seeded…_` stub is NOT (no false OUT-OF-PROFILE loss).
+    smuggled = build_export((final + "\n## 7. Out Of Profile\n_smuggled real out-of-profile content_\n").encode())
+    check("out-of-profile italic authored content discloses loss",
+          any(x["code"] == "OUT-OF-PROFILE-SECTION" and x["source_ref"] == "§7" for x in smuggled["losses"]))
+    seeded_stub = build_export((final + "\n## 7. Out Of Profile\n_seeded by argument_spine_\n").encode())
+    check("reserved placeholder stays unpopulated",
+          not any(x["code"] == "OUT-OF-PROFILE-SECTION" and x["source_ref"] == "§7" for x in seeded_stub["losses"]))
     if failures:
         print("Self-test: FAIL"); [print("  - " + x) for x in failures]; return 1
-    print("Self-test: PASS (argument-aif; 13 focused arms)"); return 0
+    print("Self-test: PASS (argument-aif; %d focused arms)" % len(arms)); return 0
 
 
 def main(argv=None):
