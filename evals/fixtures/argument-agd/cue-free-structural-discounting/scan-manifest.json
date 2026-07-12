@@ -1,0 +1,20 @@
+{
+  "_comment": "The manifest that generates this fixture's committed agd_move_scan.json (the R3B worked fixture). Hand-authored located observations — NOT a real judge run; the fingerprint is a fixture token, not a SHA. Regenerate the artifact from the repo root with: python3 <setec-voiceprint>/plugins/setec-voiceprint/scripts/agd_move_scan.py evals/fixtures/argument-agd/cue-free-structural-discounting/source.md --judge manifest --judge-manifest evals/fixtures/argument-agd/cue-free-structural-discounting/scan-manifest.json --out evals/fixtures/argument-agd/cue-free-structural-discounting/agd_move_scan.json --out-md /tmp/agd_move_scan.md",
+  "prompt_fingerprint_sha256": "worked-fixture:cue-free-structural-discounting:agd_move_scan_v1",
+  "values": {
+    "observations": [
+      {
+        "family": "DISCOUNTING",
+        "span": "several of whom asked how younger children would be supervised on the fifth day",
+        "paragraph_index": 1,
+        "cue": null
+      },
+      {
+        "family": "ASSURING",
+        "span": "The pilot districts report higher teacher retention",
+        "paragraph_index": 2,
+        "cue": "report"
+      }
+    ]
+  }
+}

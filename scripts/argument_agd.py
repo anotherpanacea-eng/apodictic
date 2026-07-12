@@ -7,8 +7,9 @@ manifest, the typed M-records, the total family×challenge×result matrix, the n
 (candidates licensed ONLY by failed function), the candidate namespace + reconciliation grammar,
 the DISCOUNTING cross-ref contract, the OPTIONAL §1b `Scan:` scan-consumption coverage line (R3B
 AGD producer/consumer seam — integers; k+m=n; m == the count of `Declined:` lines; the not-consulted
-reason enum is `absent | error` only; and, with `--scan <agd_move_scan.json>`, n ==
-len(results.observations)), and — when a source text is supplied — Source-anchor resolution via
+reason enum is `absent | error` only; lookalike spellings and duplicate `Scan:` lines are errors,
+never silently ignored; and, with `--scan <agd_move_scan.json>`, n == len(results.observations),
+FAILING CLOSED on an unreadable artifact), and — when a source text is supplied — Source-anchor resolution via
 NORMALIZED substring matching (greenfield: whitespace runs folded, quote chars and dashes
 normalized, otherwise case-sensitive; near-misses like paraphrase or elision must FAIL).
 
@@ -252,9 +253,20 @@ def parse_block(body):
             elif s.startswith("Completion:"):
                 manifest["completion"] = s[len("Completion:"):].strip()
             elif s.startswith("Scan:"):
-                _parse_scan_line(s, manifest, errs)
+                if manifest["scan"] is not None:
+                    errs.append("Scan: duplicate line — the coverage manifest carries at most "
+                                "one 'Scan:' line (first kept, %r rejected)." % s)
+                else:
+                    _parse_scan_line(s, manifest, errs)
             elif s.startswith("Declined:"):
                 _parse_declined_line(s, manifest, errs)
+            elif re.match(r"(?i)(scan|declined)\s*:", s):
+                # Lookalike tripwire: an absent Scan: line is VALID (pre-R3B), so a
+                # case/spacing variant would otherwise vanish as an ignored
+                # unrecognized line — masquerading as the pre-R3B case.
+                errs.append("Scan: lookalike line %r — the canonical spellings are exactly "
+                            "'Scan:' and 'Declined:' (case-sensitive, no space before the "
+                            "colon); an absent Scan: line is the only valid omission." % s)
     return manifest, records, errs
 
 
@@ -527,8 +539,12 @@ def run_check(state_path, source_path=None, strict=False, scan_path=None):
             source_text = fh.read()
     # --scan: the consumed agd_move_scan artifact. Read results.observations
     # only (the count); the audit's §10.9 M-records — never the scan — carry the
-    # adjudication. A present-but-unparseable artifact degrades to a WARN (the
-    # audit would itself have recorded 'not consulted (error)').
+    # adjudication. FAIL CLOSED on a present-but-unreadable artifact: --scan is
+    # supplied exactly when the caller (a fixture / --check-all) expects a valid
+    # committed artifact, and the n-cross-check is a BLOCKING gate — degrading
+    # it to a warning would let a corrupted artifact pass. (An audit run that
+    # itself hit a malformed artifact records 'Scan: not consulted (error)' and
+    # is validated WITHOUT --scan.)
     scan_observations = None
     if scan_path:
         if not os.path.exists(scan_path):
@@ -537,15 +553,16 @@ def run_check(state_path, source_path=None, strict=False, scan_path=None):
         try:
             with open(scan_path, "r", encoding="utf-8") as fh:
                 scan_env = json.load(fh)
-            obs = (scan_env.get("results") or {}).get("observations")
-            if isinstance(obs, list):
-                scan_observations = len(obs)
-            else:
-                print("WARN: scan artifact %s has no results.observations list; the Scan: "
-                      "count cross-check is skipped." % scan_path)
         except (ValueError, OSError) as exc:
-            print("WARN: scan artifact %s could not be parsed (%s); the Scan: count "
-                  "cross-check is skipped." % (scan_path, exc))
+            print("ERROR: scan artifact %s could not be parsed (%s) — a malformed "
+                  "artifact fails the check; it is not an empty inventory." % (scan_path, exc))
+            return 1
+        obs = (scan_env.get("results") or {}).get("observations")
+        if not isinstance(obs, list):
+            print("ERROR: scan artifact %s has no results.observations list — a malformed "
+                  "artifact fails the check; it is not an empty inventory." % scan_path)
+            return 1
+        scan_observations = len(obs)
     try:
         ns = candidate_namespace()
     except Exception as exc:
@@ -740,6 +757,47 @@ def _selftest():
     errs, _ = validate(block([rec()], scan=SCAN_OK), NS, scan_observations=3)
     check("scan n != artifact-observations rejected",
           any("Scan: reports 2 observations but the scan artifact carries 3" in e for e in errs))
+    # hostile: lookalike spellings must ERROR, not vanish as ignored lines (an
+    # absent Scan: line is VALID pre-R3B, so a silently-dropped variant would
+    # masquerade as that case)
+    errs, _ = v(block([rec()], scan="scan: consulted (2 observations; 1 inventoried, 1 declined)"))
+    check("lowercase scan: lookalike rejected", any("lookalike" in e for e in errs))
+    errs, _ = v(block([rec()], scan="Scan : not consulted (absent)"))
+    check("spaced 'Scan :' lookalike rejected", any("lookalike" in e for e in errs))
+    errs, _ = v(block([rec()], scan=('Scan: consulted (1 observations; 1 inventoried, 0 declined)\n'
+                                     '  declined: "x" — a')))
+    check("lowercase declined: lookalike rejected", any("lookalike" in e for e in errs))
+    # hostile: duplicate Scan: lines (first kept, second rejected)
+    errs, _ = v(block([rec()], scan=('Scan: not consulted (absent)\n'
+                                     'Scan: consulted (0 observations; 0 inventoried, 0 declined)')))
+    check("duplicate Scan: line rejected", any("duplicate" in e for e in errs))
+    # file-level fail-closed: a present-but-unreadable scan artifact FAILS the
+    # check (exit 1 naming the artifact) — never degrades to a warning (the
+    # n-cross-check is a blocking gate; --scan is passed exactly when a valid
+    # committed artifact is expected)
+    import contextlib
+    import io
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix="agd_scan_selftest_") as td:
+        state_p = os.path.join(td, "argument-state.md")
+        with open(state_p, "w", encoding="utf-8") as fh:
+            fh.write("### 10.9 AGD Move Audit\n\nMove count: 0\nCompletion: COMPLETE\n")
+        corrupt_p = os.path.join(td, "corrupt.json")
+        with open(corrupt_p, "w", encoding="utf-8") as fh:
+            fh.write("{not json")
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = run_check(state_p, scan_path=corrupt_p)
+        check("corrupt scan artifact fails closed",
+              rc == 1 and "scan artifact" in buf.getvalue() and "could not be parsed" in buf.getvalue())
+        null_obs_p = os.path.join(td, "null-obs.json")
+        with open(null_obs_p, "w", encoding="utf-8") as fh:
+            fh.write('{"results": {"observations": null}}')
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = run_check(state_p, scan_path=null_obs_p)
+        check("scan artifact without observations list fails closed",
+              rc == 1 and "no results.observations list" in buf.getvalue())
     # Check 6: per-family fields + cross-ref contract
     errs, _ = v(block([rec(extra=("Trajectory: STABLE",))]))
     check("trajectory on assuring rejected", any("GUARDING-only" in e for e in errs))
