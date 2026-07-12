@@ -549,14 +549,17 @@ corpus by `--check-all`). It checks:
   the member a leading-token `clean`/`broken`/`n/a` (a `cleanX` near-miss rejected by boundary
   lookahead — a new lowercase regex, not fiction's substring parse), complement pairing (a `clean`
   names its `broken` twin and vice versa), **slug self-consistency** (the key's own `Fixture slug`
-  pair equals the `Paired-with` pair — the wrong-twin gate), and **clean-side derivation gates** (a
+  pair equals both the `Paired-with` pair and the actual parent pair directory — the wrong-twin and
+  wrong-path gates), and **clean-side derivation gates** (a
   `clean` member requires a non-N/A `Base text + repair record` and a GT2 that *opens with* the
   exact `N/A — positive control` marker — a structural leading-line match, not a body substring).
   The file path and the in-file pairing fields must **agree in both directions**: a file physically
   under a `clean/`/`broken/` directory may not opt out by dropping its fields, AND a file that
   *declares* membership must physically live in such a directory (a flat member declaration would
-  escape the corpus completeness pass). The directory (the path-derived `member_hint`) is the source
-  of truth. Absence of both fields on a *flat* fixture is a zero-behavior no-op. Two corpus-level
+  escape the corpus completeness pass). Pairing fields are parsed only from the exact `## Provenance`
+  block and must be unique, so a Notes lookalike or contradictory duplicate cannot satisfy the
+  contract. The directory (the path-derived member + pair-slug hints) is the source of truth.
+  Absence of both fields on a *flat* fixture is a zero-behavior no-op. Two corpus-level
   gates run in `--check-all`: an **orphan-twin completeness pass** — enumerated over the member
   *directories* (`<pair>/{clean,broken}`), so a fixture-only member is caught — requiring every
   member and its complement twin to carry both `fixture.md` and `groundtruth.md`; and the scripted
