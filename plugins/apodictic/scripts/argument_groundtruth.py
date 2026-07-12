@@ -180,6 +180,16 @@ _FIXTURE_SLUG_PAIR_RE = re.compile(r"[\s*`]*([a-z0-9][a-z0-9-]*)/([a-z][a-z-]*)[
 # canonical `N/A — positive control` opener (hyphen/en-dash/em-dash tolerated; case-insensitive).
 _GT2_POSCTRL_MARKER_RE = re.compile(
     r"^[\s*`>_-]*N/A\s*[-–—]\s*positive control\b", re.IGNORECASE)
+# Check 3 GT2-locus exemption — a LEADING-ANCHORED N/A-family marker on the GT2 section's first
+# non-blank line, the same structural posture as _GT2_POSCTRL_MARKER_RE but BROADER: it exempts any
+# GT2 that OPENS with `N/A` (bare `- **N/A.**` — e.g. the `modest-proposal-satire` fixture, whose
+# literal-support/warrant locus is legitimately N/A — as well as the `N/A — positive control`
+# controls, of which this is a superset). It replaces the retired substring exemption
+# (`re.search("N/A", gt2)` OR `"positive control" in gt2.lower()`) which let a real WARRANT-locus GT2
+# smuggle a locus<->code mismatch past Check 3 merely by MENTIONING either phrase in prose (the same
+# substring-vulnerability class Codex #196 fixed for Check 7 rule 6ii). A GT2 that opens with a real
+# `Primary failure layer` is checked regardless of any N/A / positive-control mention downstream.
+_GT2_NA_MARKER_RE = re.compile(r"^[\s*`>_-]*N/A\b", re.IGNORECASE)
 # Check 7 repair-diff gate — the enumerated repair loci under `Base text + repair record`. The SCOPE
 # (which lines are the field's sub-bullets) is walked structurally in _repair_record_loci, never with
 # a `(.*?)`/multi-line `\s*` block regex — so an empty/blank line inside the field cannot let a scope
@@ -562,13 +572,18 @@ def argument_groundtruth_check(text, member_hint=None, pair_slug_hint=None):
             errors.append("Check 2 (codes) — 'FM-A%s' is out of range (x must be 1-%d)."
                           % (digits, _FM_A_MAX))
 
-    # Check 3: GT2 locus <-> code-family consistency (positive controls exempt). The locus
+    # Check 3: GT2 locus <-> code-family consistency (N/A-family GT2s exempt). The locus
     # vocabulary is richer than a fixed enum and is often compound (e.g. "WARRANT / OBJECTION"),
     # so the rule is: when the locus names any of the canonical four loci, at least one of those
     # named loci's code families must be present in GT2. A single canonical locus whose only
     # codes are from another family (the spec's "WARRANT diagnosed as SUPPORT" error) still fails.
+    # Exemption is STRUCTURAL: a GT2 that OPENS with an `N/A` marker (bare N/A or `N/A — positive
+    # control`) has no locus to check. Not a body substring — a real WARRANT-locus GT2 that merely
+    # mentions "N/A" or "positive control" in prose is still checked (Codex follow-up to the #196
+    # rule-6ii fix; the retired `re.search("N/A") or "positive control" in gt2.lower()` exempted it).
     gt2 = sections.get(2, {}).get("body", "")
-    if gt2 and not re.search(r"N/A", gt2) and "positive control" not in gt2.lower():
+    gt2_first = next((ln for ln in gt2.split("\n") if ln.strip()), "")
+    if gt2 and not _GT2_NA_MARKER_RE.match(gt2_first):
         m = re.search(r"Primary failure layer:\*\*\s*(.+)", gt2)
         locus = m.group(1) if m else ""
         if not locus.strip():
@@ -1197,6 +1212,18 @@ def run_self_test(which=None):
     check("positive_control_gt2_na", errs_of(_VALID_GT.replace(
         "- **Primary failure layer:** WARRANT\n- **Expected codes:** WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
         "- **N/A — positive control.** No planted failure.")), True)
+    # Check 3 [Codex follow-up to #196 rule-6ii]: a real WARRANT-locus GT2 with only SUPPORT codes
+    # that MERELY MENTIONS "positive control" / "N/A" in prose must STILL FAIL — the structural
+    # leading-N/A exemption no longer lets a substring mention smuggle the locus<->code mismatch past
+    # Check 3 (the retired `re.search("N/A") or "positive control" in gt2.lower()` exempted it).
+    check("gt2_locus_mismatch_mentions_positive_control", errs_of(_VALID_GT.replace(
+        "WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
+        "SM0 (assertion gap). (Deliberately not a positive control, and the locus is not N/A.)")), False)
+    # Check 3: a BARE-`N/A` GT2 (no locus to check — the `modest-proposal-satire` shape, whose
+    # literal support/warrant audit is legitimately N/A, NOT a positive control) stays exempt.
+    check("gt2_bare_na_exempt", errs_of(_VALID_GT.replace(
+        "- **Primary failure layer:** WARRANT\n- **Expected codes:** WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
+        "- **N/A.** Auditing the literal support/warrant here is a category error (satire).")), True)
     # Check 4: the verdict is the leading token — a WARRANTED key glossed "..., not UNWARRANTED"
     # must parse as WARRANTED (clean), and must NOT be misread as UNWARRANTED off the gloss.
     check("gt7_warranted_not_unwarranted", errs_of(_VALID_GT.replace(
