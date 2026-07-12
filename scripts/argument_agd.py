@@ -42,12 +42,20 @@ RESULTS_OF = {
 # except the GUARDING Trajectory: DISAPPEARING whitelist below.
 FAILED_RESULTS = {"COLLAPSES", "SELF-SEALS", "COLLAPSES-DECOY", "COLLAPSES-COSTLESS"}
 DISAPPEARING_WHITELIST = {"FM-A16", "WR3", "BP4"}
+CANDIDATES_OF = {
+    ("ASSURING", "COLLAPSES"): {"WR1", "DI0", "FM-A19", "SM4", "FM-A11"},
+    ("GUARDING", "COLLAPSES"): {"DI3", "WR3"},
+    ("GUARDING", "SELF-SEALS"): {"DI3", "BP0"},
+    ("DISCOUNTING", "COLLAPSES-DECOY"): {"OB5", "OB1"},
+    ("DISCOUNTING", "COLLAPSES-COSTLESS"): {"OB4"},
+}
 COMPLETIONS = {"COMPLETE", "PARTIAL"}
 STATUSES = ("PENDING", "CONFIRMED", "DECLINED")
 
 _M_HEADER_RE = re.compile(r"^M(\d+):\s+([A-Z-]+)\s+at\s+(.+?)\s*$")
 _SPAN_TOKEN_RE = re.compile(r"^(C\d+(\.(warrant|support))?|C0)$")
 _OBJ_REF_RE = re.compile(r"^→\s*Objection\s+\d+$")
+_DISAPPEARING_RE = re.compile(r"^DISAPPEARING\s+\((.+?)\s+→\s+(.+?)\)$")
 _CAND_RE = re.compile(r"^([A-Z][A-Z0-9-]*)\s+\((PENDING|CONFIRMED\s+—\s+[^,]+,\s+[^)]+|"
                       r"DECLINED\s+—\s+[^)]+)\)$")
 
@@ -124,8 +132,8 @@ def parse_ladder(text):
 
 
 def parse_objections(text):
-    """Objection indices from '## 6. Objection and Dialectical Integrity Map' ('Objection N:'
-    lines). None if no §6 section (degrade-not-fail, the parse_ladder convention)."""
+    """Objection indices from §6 ('Objection N:' or producer-form 'OBJECTION N:').
+    None if no §6 section (degrade-not-fail, the parse_ladder convention)."""
     lines = text.splitlines()
     in6, found = False, False
     idxs = set()
@@ -137,7 +145,7 @@ def parse_objections(text):
         if in6 and s.startswith("## "):
             break
         if in6:
-            m = re.match(r"^Objection\s+(\d+)\s*:", s)
+            m = re.match(r"^Objection\s+(\d+)\s*:", s, re.IGNORECASE)
             if m:
                 idxs.add(int(m.group(1)))
     return idxs if found else None
@@ -211,23 +219,42 @@ def validate(body, namespace, ladder_cns=None, source_text=None, objection_idxs=
         warns.append("Check 5 (coverage) — Completion: PARTIAL (declared-scope audit; "
                      "excluded: %s)." % (", ".join(t for t, _ in manifest["excluded"]) or "?"))
     span_tokens = [t for t, _ in manifest["spans"]]
+    excluded_tokens = [t for t, _ in manifest["excluded"]]
     span_loci = {l for _, l in manifest["spans"]}
     for tok in span_tokens:
         if not _SPAN_TOKEN_RE.match(tok):
             errors.append("Check 5 (coverage) — bad span token %r (C0 | Cn[.warrant|.support])." % tok)
+    for tok in excluded_tokens:
+        if not _SPAN_TOKEN_RE.match(tok):
+            errors.append("Check 5 (coverage) — bad excluded token %r "
+                          "(C0 | Cn[.warrant|.support])." % tok)
     if isinstance(manifest["move_count"], int):
         if manifest["move_count"] != len(records):
             errors.append("Check 5 (coverage) — Move count %d != %d records present."
                           % (manifest["move_count"], len(records)))
     else:
         errors.append("Check 5 (coverage) — Move count must be an integer (got %r)." % manifest["move_count"])
-    if completion == "COMPLETE" and ladder_cns is not None:
-        covered = {t.split(".", 1)[0] for t in span_tokens}
-        missing = sorted(cn for cn in ladder_cns if cn not in covered)
+    if ladder_cns is not None:
+        expected = {"C0"} | set(ladder_cns)
+        covered = {t.split(".", 1)[0] for t in span_tokens if _SPAN_TOKEN_RE.match(t)}
+        excluded = {t.split(".", 1)[0] for t in excluded_tokens if _SPAN_TOKEN_RE.match(t)}
+        unknown = sorted((covered | excluded) - expected)
+        overlap = sorted(covered & excluded)
+        missing = sorted(expected - covered - excluded)
+        if unknown:
+            errors.append("Check 5 (coverage) — manifest names claims absent from the §2 ladder: %s."
+                          % unknown)
+        if overlap:
+            errors.append("Check 5 (coverage) — claims cannot be both included and excluded: %s."
+                          % overlap)
         if "C0" not in covered:
-            errors.append("Check 5 (coverage) — COMPLETE but C0 is not a declared span.")
+            errors.append("Check 5 (coverage) — C0 must be a declared included Span.")
         if missing:
-            errors.append("Check 5 (coverage) — COMPLETE but ladder subclaims uncovered: %s." % missing)
+            errors.append("Check 5 (coverage) — ladder claims neither included nor excluded: %s."
+                          % missing)
+        if completion == "COMPLETE" and excluded:
+            errors.append("Check 5 (coverage) — COMPLETE cannot carry Excluded claims: %s." %
+                          sorted(excluded))
     elif ladder_cns is None:
         warns.append("Check 5 (coverage) — no §2 Claim Architecture in the artifact; "
                      "ladder cross-check SKIPPED (degrade, not fail).")
@@ -276,7 +303,8 @@ def validate(body, namespace, ladder_cns=None, source_text=None, objection_idxs=
         constructed = f.get("Constructed challenge")
         basis = f.get("Assessment basis")
         trajectory = f.get("Trajectory")
-        disappearing = bool(trajectory and trajectory.startswith("DISAPPEARING"))
+        trajectory_match = _DISAPPEARING_RE.fullmatch(trajectory or "")
+        disappearing = bool(trajectory_match)
         cand_entries = []
         if cands_raw and cands_raw != "NONE":
             for part in cands_raw.split(";"):
@@ -290,15 +318,15 @@ def validate(body, namespace, ladder_cns=None, source_text=None, objection_idxs=
                                   "CODE (DECLINED — <basis>))." % (rid, part))
                 else:
                     cand_entries.append(cm.group(1))
-        if result in {"SURVIVES", "NOT-CHALLENGED", "INDETERMINATE"} and cand_entries:
-            if disappearing and fam == "GUARDING":
-                bad = [c for c in cand_entries if c not in DISAPPEARING_WHITELIST]
-                if bad:
-                    errors.append("%s (Check 2) — DISAPPEARING whitelist is exactly %s; %s not licensed."
-                                  % (rid, sorted(DISAPPEARING_WHITELIST), bad))
-            else:
-                errors.append("%s (Check 2) — Result %s licenses NO candidates (got %s); "
-                              "Candidates: NONE required." % (rid, result, cand_entries))
+        allowed_candidates = set(CANDIDATES_OF.get((fam, result), set()))
+        if disappearing and fam == "GUARDING":
+            allowed_candidates |= DISAPPEARING_WHITELIST
+        bad_candidates = [c for c in cand_entries if c not in allowed_candidates]
+        if bad_candidates:
+            errors.append("%s (Check 2) — %s × %s%s licenses only %s; got %s."
+                          % (rid, fam, result,
+                             " + DISAPPEARING" if disappearing and fam == "GUARDING" else "",
+                             sorted(allowed_candidates) or "NONE", bad_candidates))
         if not cands_raw:
             errors.append("%s (Check 2) — Candidates field is required (use NONE)." % rid)
         if result == "NOT-CHALLENGED" and constructed:
@@ -324,9 +352,18 @@ def validate(body, namespace, ladder_cns=None, source_text=None, objection_idxs=
                               "(DC minus AT1-AT4, plus FM-A1-20)." % (rid, c))
 
         # ---- Check 6: per-family fields + the DISCOUNTING cross-ref contract ----
-        if trajectory and not (trajectory == "STABLE" or trajectory.startswith("DISAPPEARING")):
+        if trajectory and not (trajectory == "STABLE" or trajectory_match):
             errors.append("%s (Check 6) — Trajectory must be STABLE or DISAPPEARING (early locus → "
                           "late locus); got %r." % (rid, trajectory))
+        if trajectory_match:
+            early, late = (trajectory_match.group(1).strip(), trajectory_match.group(2).strip())
+            if early == late:
+                errors.append("%s (Check 6) — DISAPPEARING trajectory needs distinct early and late "
+                              "loci." % rid)
+            unresolved = [loc for loc in (early, late) if span_loci and loc not in span_loci]
+            if unresolved:
+                errors.append("%s (Check 6) — DISAPPEARING trajectory loci are not declared Spans: %s."
+                              % (rid, unresolved))
         if trajectory and fam != "GUARDING":
             errors.append("%s (Check 6) — Trajectory is GUARDING-only." % rid)
         discounted = f.get("Discounted")
@@ -352,6 +389,12 @@ def validate(body, namespace, ladder_cns=None, source_text=None, objection_idxs=
                 if not displaced or not _OBJ_REF_RE.match(displaced):
                     errors.append("%s (Check 6) — COLLAPSES-DECOY requires Displaced strongest: "
                                   "→ Objection N (the §6 STRONGEST OBJECTION)." % rid)
+                elif objection_idxs is not None:
+                    displaced_n = int(re.search(r"(\d+)$", displaced).group(1))
+                    if displaced_n != 1:
+                        errors.append("%s (Check 6) — Displaced strongest must reference Objection 1, "
+                                      "the §6 strongest-objection slot (got Objection %d)."
+                                      % (rid, displaced_n))
             elif displaced:
                 errors.append("%s (Check 6) — Displaced strongest is COLLAPSES-DECOY-only." % rid)
             if result == "COLLAPSES-DECOY" and discounted == "NOT-INVENTORIED":
@@ -482,20 +525,20 @@ def _selftest():
     check("assuring commitment illegal", any("requires Challenge: STRIP" in e for e in errs))
     # Check 2: candidates on SURVIVES / INDETERMINATE rejected; NONE required field
     errs, _ = v(block([rec(result="SURVIVES")]))
-    check("candidates on survives rejected", any("licenses NO candidates" in e for e in errs))
+    check("candidates on survives rejected", any("licenses only NONE" in e for e in errs))
     errs, _ = v(block([rec(result="INDETERMINATE")]))
-    check("candidates on indeterminate rejected", any("licenses NO candidates" in e for e in errs))
+    check("candidates on indeterminate rejected", any("licenses only NONE" in e for e in errs))
     errs, _ = v(block([rec(result="SURVIVES", cands="NONE")]))
     check("survives with NONE clean", errs == [])
     # Check 2: DISAPPEARING whitelist (pass + reject), any result
-    g_extra = ("Trajectory: DISAPPEARING (para 2 → para 9)",)
+    g_extra = ("Trajectory: DISAPPEARING (the thesis paragraph → the studies sentence)",)
     errs, _ = v(block([rec(fam="GUARDING", result="SURVIVES", cue="may",
                            constructed="Residents WILL benefit within a year.",
                            extra=g_extra, cands="FM-A16 (PENDING); WR3 (PENDING)")]))
     check("disappearing whitelist passes", errs == [])
     errs, _ = v(block([rec(fam="GUARDING", result="SURVIVES", cue="may",
                            constructed="x", extra=g_extra, cands="OB5 (PENDING)")]))
-    check("disappearing non-whitelist rejected", any("whitelist is exactly" in e for e in errs))
+    check("disappearing non-whitelist rejected", any("licenses only" in e for e in errs))
     # Check 2: NOT-CHALLENGED with a construction; run STRIP missing construction
     errs, _ = v(block([rec(result="NOT-CHALLENGED", cands="NONE")]))
     check("not-challenged w/ construction rejected", any("no construction" in e for e in errs))
@@ -509,6 +552,9 @@ def _selftest():
     # Check 3: namespace + grammar
     errs, _ = v(block([rec(cands="AT2 (PENDING)")]))
     check("AT2 out of namespace", any("not in the derived" in e for e in errs))
+    errs, _ = v(block([rec(cands="OB4 (PENDING)")]))
+    check("valid-global wrong-cell candidate rejected",
+          any("ASSURING × COLLAPSES" in e and "OB4" in e for e in errs))
     errs, _ = v(block([rec(cands="WR1 (CONFIRMED)")]))
     check("confirmed needs adjudicator+target", any("bad candidate entry" in e for e in errs))
     errs, _ = v(block([rec(cands="WR1 (CONFIRMED — editor, §4 C1 Codes)")]))
@@ -521,10 +567,18 @@ def _selftest():
     _, warns = v(block([rec()], completion="PARTIAL",
                        excluded="Excluded: C2.support — quoted-source span, out of audit scope"))
     check("partial warns", any("PARTIAL" in w for w in warns))
+    errs, _ = v(block([rec()], spans=["Span: C0 — the thesis paragraph"], completion="PARTIAL",
+                      excluded="Excluded: C99 — unrelated"), ladder={"C1"})
+    check("partial rejects unknown exclusion and omitted ladder claim",
+          any("absent from the §2 ladder" in e for e in errs) and
+          any("neither included nor excluded" in e for e in errs))
+    errs, _ = v(block([rec()], completion="COMPLETE",
+                      excluded="Excluded: C2.support — out of scope"), ladder={"C1", "C2"})
+    check("complete rejects exclusions", any("COMPLETE cannot carry Excluded" in e for e in errs))
     errs, _ = v(block([rec()], count=5))
     check("move count mismatch", any("Move count 5 != 1" in e for e in errs))
     errs, _ = v(block([rec()]), ladder={"C1", "C2"})
-    check("complete ladder uncovered", any("uncovered: ['C2']" in e for e in errs))
+    check("complete ladder uncovered", any("neither included nor excluded: ['C2']" in e for e in errs))
     errs, _ = v(block([rec(locus="an undeclared locus")]))
     check("record locus outside spans", any("not a declared Span locus" in e for e in errs))
     # Check 6: per-family fields + cross-ref contract
@@ -541,6 +595,14 @@ def _selftest():
                            constructed=None, cands="OB5 (PENDING)",
                            extra=("Discounted: → Objection 2", "Displaced strongest: → Objection 1"))]))
     check("decoy full form clean", errs == [])
+    # Supply a real two-objection inventory directly: Objection 1 is the strongest slot.
+    errs, _ = validate(block([rec(fam="DISCOUNTING", cue="although", result="COLLAPSES-DECOY",
+                                  constructed=None, cands="OB5 (PENDING)",
+                                  extra=("Discounted: → Objection 1",
+                                         "Displaced strongest: → Objection 2"))]),
+                       NS, objection_idxs={1, 2})
+    check("decoy rejects non-strongest displaced ref",
+          any("must reference Objection 1" in e for e in errs))
     errs, _ = v(block([rec(fam="DISCOUNTING", cue="although", result="COLLAPSES-COSTLESS",
                            constructed=None, cands="OB4 (PENDING)",
                            extra=("Discounted: NOT-INVENTORIED",))]))
@@ -561,6 +623,17 @@ def _selftest():
     errs, _ = v(block([rec(fam="GUARDING", cue="may", result="COLLAPSES", constructed="x",
                            cands="DI3 (PENDING)", extra=("Trajectory: WOBBLY",))]))
     check("trajectory enum enforced", any("Trajectory must be STABLE or DISAPPEARING" in e for e in errs))
+    errs, _ = v(block([rec(fam="GUARDING", cue="may", result="INDETERMINATE", constructed="x",
+                           cands="FM-A16 (PENDING)", extra=("Trajectory: DISAPPEARING banana",))]))
+    check("malformed disappearing cannot license candidate",
+          any("Trajectory must be" in e for e in errs) and any("licenses only" in e for e in errs))
+    errs, _ = v(block([rec(fam="GUARDING", cue="may", result="INDETERMINATE", constructed="x",
+                           cands="FM-A16 (PENDING)",
+                           extra=("Trajectory: DISAPPEARING (unknown early → unknown late)",))]))
+    check("disappearing loci must resolve to declared spans",
+          any("not declared Spans" in e for e in errs))
+    producer_form = """## 6. Objection and Dialectical Integrity Map\n\nOBJECTION 1: first\nOBJECTION 2: second\n\n## 7. End\n"""
+    check("uppercase producer objections parsed", parse_objections(producer_form) == {1, 2})
     # §6 resolution: dangling ref rejected when inventory given; skipped when None
     errs, _ = validate(block([rec(fam="DISCOUNTING", cue="although", result="COLLAPSES-COSTLESS",
                                   constructed=None, cands="OB4 (PENDING)",
