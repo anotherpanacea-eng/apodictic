@@ -1,0 +1,109 @@
+{
+  "schema_version": "1.0",
+  "task_surface": "agd_move_scan",
+  "tool": "agd_move_scan",
+  "version": "0.1.0",
+  "available": true,
+  "target": {
+    "path": "evals/fixtures/argument-agd/cue-free-structural-discounting/source.md",
+    "words": 68
+  },
+  "baseline": null,
+  "results": {
+    "method_version": "agd_move_scan_v1",
+    "observations": [
+      {
+        "family": "DISCOUNTING",
+        "span": "several of whom asked how younger children would be supervised on the fifth day",
+        "paragraph_index": 1,
+        "cue": null
+      },
+      {
+        "family": "ASSURING",
+        "span": "The pilot districts report higher teacher retention",
+        "paragraph_index": 2,
+        "cue": "report"
+      }
+    ],
+    "n_paragraphs": 3,
+    "n_words": 68,
+    "register_warnings": [
+      "Passage is short (68 words, below ~120); a move scan over so little argument is low-confidence.",
+      "No inferential connectives (because/therefore/however/\u2026) detected \u2014 the passage may not be argument-shaped nonfiction; treat the inventory as low-confidence and check the register."
+    ],
+    "calibration_status": "heuristic",
+    "families": [
+      "ASSURING",
+      "GUARDING",
+      "DISCOUNTING"
+    ],
+    "judge": {
+      "values": {
+        "observations": [
+          {
+            "family": "DISCOUNTING",
+            "span": "several of whom asked how younger children would be supervised on the fifth day",
+            "paragraph_index": 1,
+            "cue": null
+          },
+          {
+            "family": "ASSURING",
+            "span": "The pilot districts report higher teacher retention",
+            "paragraph_index": 2,
+            "cue": "report"
+          }
+        ]
+      },
+      "judge_identity": {
+        "kind": "manifest",
+        "manifest_path": "evals/fixtures/argument-agd/cue-free-structural-discounting/scan-manifest.json",
+        "model": null,
+        "vendor": null,
+        "model_revision": null,
+        "prompt_version": null,
+        "prompt_fingerprint_sha256": "worked-fixture:cue-free-structural-discounting:agd_move_scan_v1"
+      },
+      "raw_response_truncated": null
+    },
+    "prompt_fingerprint_sha256": "worked-fixture:cue-free-structural-discounting:agd_move_scan_v1"
+  },
+  "claim_license": {
+    "task_surface": "agd_move_scan",
+    "licenses": "Reports LOCATED, verbatim-anchored candidate AGD move observations for an argument-shaped nonfiction passage: each performative move a pluggable LLM judge identifies \u2014 ASSURING (authority/certainty in place of support), GUARDING (a claim weakened to shrink its commitment), DISCOUNTING (an objection anticipated and set aside) \u2014 with its family, verbatim span, paragraph index, and surface cue (null = cue-free). Heuristic, uncalibrated location data for downstream audit consumption (apodictic's AGD Move Audit challenges each move and owns every diagnosis). Labels come from a pluggable LLM judge; read judge.judge_identity for provenance.",
+    "does_not_license": "Does NOT license assigning any apodictic diagnostic code (WR/DI/OB/FM-A or any other), adjudicating whether a move smuggles or is load-bearing, or any soundness / quality label, score, or aggregate \u2014 and emits NO aggregate: no counts, no tallies, no rollups (a consumer derives any tally it needs from the observations list itself). ALL THREE move families are LEGITIMATE and ubiquitous: an observation is a LOCATION, not a finding; observation COUNT is not a quality signal and must never be read as one. The consumer audit alone challenges moves and assigns codes (R4A ADR D5: the producer observes, the consumer adjudicates). Ships `heuristic`: no threshold, no operating point; the LLM judge is a candidate inventory for the audit's own identification pass, never a standalone detector (read judge.judge_identity; a `mock` judge is a test stub). Does not substitute for the audit reading the argument in context.",
+    "comparison_set": {
+      "move_families": "assuring / guarding / discounting (Sinnott-Armstrong & Fogelin, Understanding Arguments 9e, ch. 3; identification discipline aligned with apodictic's AGD Move Audit Layer 1)",
+      "judge_kind": "manifest",
+      "judge_model": "(unspecified)",
+      "judge_host": null,
+      "prompt_fingerprint_sha256": "worked-fixture:cue-free-structural-discounting:agd_move_scan_v1"
+    },
+    "length_range_words": [
+      120,
+      8000
+    ],
+    "register_match": [
+      "argument-shaped nonfiction (op-ed / policy / testimony)"
+    ],
+    "language_match": [],
+    "fpr_target": null,
+    "confidence_interval_95": null,
+    "additional_caveats": [
+      "Passage is short (68 words, below ~120); a move scan over so little argument is low-confidence.",
+      "No inferential connectives (because/therefore/however/\u2026) detected \u2014 the passage may not be argument-shaped nonfiction; treat the inventory as low-confidence and check the register.",
+      "Judge backend is `manifest` \u2014 the inventory is only as good as whatever produced the manifest, which this surface cannot verify.",
+      "OBSERVATIONS ONLY: all three move families are legitimate; an observation is a location for the downstream audit, never a finding, code, or score. The consumer audit alone adjudicates (R4A ADR D5)."
+    ],
+    "references": [
+      "Sinnott-Armstrong & Fogelin, Understanding Arguments, 9th ed., ch. 3 (assuring / guarding / discounting)"
+    ]
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** located AGD move observations (assuring / guarding / discounting; observations only \u2014 the consumer audit adjudicates)\n\n**Reports:** Reports LOCATED, verbatim-anchored candidate AGD move observations for an argument-shaped nonfiction passage: each performative move a pluggable LLM judge identifies \u2014 ASSURING (authority/certainty in place of support), GUARDING (a claim weakened to shrink its commitment), DISCOUNTING (an objection anticipated and set aside) \u2014 with its family, verbatim span, paragraph index, and surface cue (null = cue-free). Heuristic, uncalibrated location data for downstream audit consumption (apodictic's AGD Move Audit challenges each move and owns every diagnosis). Labels come from a pluggable LLM judge; read judge.judge_identity for provenance.\n\n**Does NOT report:** Does NOT license assigning any apodictic diagnostic code (WR/DI/OB/FM-A or any other), adjudicating whether a move smuggles or is load-bearing, or any soundness / quality label, score, or aggregate \u2014 and emits NO aggregate: no counts, no tallies, no rollups (a consumer derives any tally it needs from the observations list itself). ALL THREE move families are LEGITIMATE and ubiquitous: an observation is a LOCATION, not a finding; observation COUNT is not a quality signal and must never be read as one. The consumer audit alone challenges moves and assigns codes (R4A ADR D5: the producer observes, the consumer adjudicates). Ships `heuristic`: no threshold, no operating point; the LLM judge is a candidate inventory for the audit's own identification pass, never a standalone detector (read judge.judge_identity; a `mock` judge is a test stub). Does not substitute for the audit reading the argument in context.\n\n### Comparison context\n\n- **judge host:** None\n- **judge kind:** manifest\n- **judge model:** (unspecified)\n- **move families:** assuring / guarding / discounting (Sinnott-Armstrong & Fogelin, Understanding Arguments 9e, ch. 3; identification discipline aligned with apodictic's AGD Move Audit Layer 1)\n- **prompt fingerprint sha256:** worked-fixture:cue-free-structural-discounting:agd_move_scan_v1\n- **Length range (words):** 120\u20138,000\n- **Register match:** `argument-shaped nonfiction (op-ed / policy / testimony)`\n\n### Caveats\n\n- Passage is short (68 words, below ~120); a move scan over so little argument is low-confidence.\n- No inferential connectives (because/therefore/however/\u2026) detected \u2014 the passage may not be argument-shaped nonfiction; treat the inventory as low-confidence and check the register.\n- Judge backend is `manifest` \u2014 the inventory is only as good as whatever produced the manifest, which this surface cannot verify.\n- OBSERVATIONS ONLY: all three move families are legitimate; an observation is a location for the downstream audit, never a finding, code, or score. The consumer audit alone adjudicates (R4A ADR D5).\n\n### References\n\n- Sinnott-Armstrong & Fogelin, Understanding Arguments, 9th ed., ch. 3 (assuring / guarding / discounting)",
+  "warnings": [
+    "Passage is short (68 words, below ~120); a move scan over so little argument is low-confidence.",
+    "No inferential connectives (because/therefore/however/\u2026) detected \u2014 the passage may not be argument-shaped nonfiction; treat the inventory as low-confidence and check the register.",
+    "Judge backend is `manifest` \u2014 the inventory is only as good as whatever produced the manifest, which this surface cannot verify.",
+    "OBSERVATIONS ONLY: all three move families are legitimate; an observation is a location for the downstream audit, never a finding, code, or score. The consumer audit alone adjudicates (R4A ADR D5)."
+  ],
+  "ai_status": null
+}
