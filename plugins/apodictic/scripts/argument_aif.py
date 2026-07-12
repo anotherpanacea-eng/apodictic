@@ -340,8 +340,21 @@ def _is_reserved_placeholder(line):
     if line.startswith("[") and line.endswith("]"):
         return True
     if len(line) >= 2 and line.startswith("_") and line.endswith("_"):
-        inner = line[1:-1].strip().lower()
-        return inner == "" or inner.split(" ", 1)[0] in _PLACEHOLDER_KEYWORDS
+        # The reserved grammar, pinned from the live emitters (argument_spine's
+        # `_seeded_` / `_seeded by …_`; the Step-9 backfill's `_pending_` /
+        # `_pending — …_` / `_pending…_`): the keyword must be the WHOLE stub or
+        # be followed by its machine-annotation opener (` by ` / ` — `), never
+        # merely the first word — `_Pending litigation changes the stakes._` is
+        # authored prose and must disclose (Codex P2). Residual ambiguity: an
+        # authored italic line that itself opens `seeded by …` / `pending — …`
+        # collides with the annotation grammar and is swallowed; that collision
+        # is the convention's floor, not a matcher shortcut.
+        inner = line[1:-1].strip().lower().rstrip(".…").rstrip()
+        if inner == "":
+            return True
+        for kw in _PLACEHOLDER_KEYWORDS:
+            if inner == kw or inner.startswith(kw + " by ") or inner.startswith(kw + " — "):
+                return True
     return False
 
 
@@ -499,7 +512,9 @@ def validate_export(obj):
     for item in losses:
         if not isinstance(item, dict) or set(item) != LOSS_KEYS: errors.append("loss closed shape"); loss_shapes_ok = False; continue
         code = item.get("code")
-        if code not in LOSS_CODES or item.get("blocking") != (code in BLOCKING): errors.append("loss enum/blocking")
+        # type-exact bool: Python's `0 == False` would let a numeric 0/1 satisfy the recompute AND
+        # survive canonical re-emission byte-identically (json emits ints as digits) — Codex P2
+        if code not in LOSS_CODES or not isinstance(item.get("blocking"), bool) or item.get("blocking") != (code in BLOCKING): errors.append("loss enum/blocking")
         if code in LOSS_DETAILS and item.get("detail") != LOSS_DETAILS[code]: errors.append("loss detail")
         if not isinstance(item.get("source_ref"), str) or not item["source_ref"] or (item.get("subject_id") is not None and (not isinstance(item["subject_id"], str) or not item["subject_id"])): errors.append("loss fields")
         loss_keys.append(_loss_key(item))
@@ -537,7 +552,10 @@ def run_check(path, source=None):
     # reordered artifact fails even without --source. (Loss-set completeness still needs the source.)
     if canonical(obj).encode("utf-8") != raw: errors.append("non-canonical JSON bytes")
     elif canonical(_reorder_keys(obj)).encode("utf-8") != raw: errors.append("non-canonical key order")
-    if source:
+    # `is not None`, not truthiness: an explicit `--source ''` must FAIL the source-mode checks
+    # (basename mismatch — Path('').name is ''), never silently DOWNGRADE to a passing sourceless
+    # validation (Codex P2).
+    if source is not None:
         src_obj = obj.get("source") if isinstance(obj, dict) else None
         recorded = src_obj.get("artifact") if isinstance(src_obj, dict) else None
         # Bind the export's self-attested artifact name to the supplied source. The rebuild adopts
@@ -614,6 +632,39 @@ def selftest():
     seeded_stub = build_export((final + "\n## 7. Out Of Profile\n_seeded by argument_spine_\n").encode())
     check("reserved placeholder stays unpopulated",
           not any(x["code"] == "OUT-OF-PROFILE-SECTION" and x["source_ref"] == "§7" for x in seeded_stub["losses"]))
+    # Codex P2: the keyword must be the WHOLE stub or carry its machine-annotation opener — authored
+    # italic prose whose FIRST WORD happens to be seeded/pending must disclose.
+    for authored in ("_Pending litigation changes the stakes._",
+                     "_Seeded distrust changes how readers assess the claim._"):
+        got = build_export((final + "\n## 7. Out Of Profile\n%s\n" % authored).encode())
+        check("authored %s-led italic discloses" % authored[1:8].strip().lower(),
+              any(x["code"] == "OUT-OF-PROFILE-SECTION" and x["source_ref"] == "§7" for x in got["losses"]))
+    # …while the REAL annotation stubs stay suppressed.
+    for stub in ("_pending — backfilled by Step 9 ..._", "_seeded by support_plan blocks_", "_pending…_"):
+        got = build_export((final + "\n## 7. Out Of Profile\n%s\n" % stub).encode())
+        check("reserved stub %r stays unpopulated" % stub[1:9],
+              not any(x["code"] == "OUT-OF-PROFILE-SECTION" and x["source_ref"] == "§7" for x in got["losses"]))
+    # Codex P2: type-exact blocking — a numeric 0 satisfies `0 == False` and survives canonical
+    # re-emission byte-identically, so validate_export must reject non-bool blocking outright.
+    typed = build_export((final + "\n## 7. Out Of Profile\nReal content.\n").encode())
+    typed["losses"][0]["blocking"] = 0
+    check("numeric blocking rejected (bool-exact)",
+          any(e == "loss enum/blocking" for e in validate_export(typed)))
+    # Codex P2: an explicit --source '' must FAIL source-mode (basename mismatch), never silently
+    # downgrade to a passing sourceless check.
+    import contextlib, io, tempfile as _tf
+    with _tf.TemporaryDirectory(prefix="aif_selftest_") as td:
+        p = os.path.join(td, "export.json")
+        atomic_write(p, canonical(obj))
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc_empty = run_check(p, source="")
+        check("--source '' fails closed (no sourceless downgrade)",
+              rc_empty == 1 and "basename mismatch" in buf.getvalue())
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc_none = run_check(p, source=None)
+        check("sourceless check on a canonical artifact still passes", rc_none == 0)
     if failures:
         print("Self-test: FAIL"); [print("  - " + x) for x in failures]; return 1
     print("Self-test: PASS (argument-aif; %d focused arms)" % len(arms)); return 0
