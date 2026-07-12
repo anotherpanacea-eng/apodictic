@@ -114,8 +114,14 @@ def main() -> int:
     MANIFESTS.mkdir(parents=True, exist_ok=True)
     scratch = HERE / "_scratch"
     scratch.mkdir(exist_ok=True)
-    log_lines = []
     done = skipped = 0
+
+    def log_cell(lines):
+        # Per-cell append, INSIDE the loop: a later cell's failure must never
+        # orphan an already-written manifest's drop evidence (the manifest and
+        # its audit line land together, and a retry skips the manifest).
+        with LOG.open("a", encoding="utf-8") as fh:
+            fh.write("\n".join(lines) + "\n")
     for fixture in FIXTURES:
         if args.fixture and fixture != args.fixture:
             continue
@@ -135,15 +141,14 @@ def main() -> int:
                 path.write_text(json.dumps(cell["manifest"], indent=2) + "\n",
                                 encoding="utf-8")
                 stamp = cell["manifest"]["acquired_at"]
-                log_lines.append("- `%s` — %d observation(s), %d span-integrity drop(s)%s"
-                                 % (path.name, cell["n_obs"], len(cell["drops"]),
-                                    (":\n" + "\n".join("  - %s" % d for d in cell["drops"]))
-                                    if cell["drops"] else ""))
-                log_lines.append("  acquired_at %s" % stamp)
+                log_cell([
+                    "- `%s` — %d observation(s), %d span-integrity drop(s)%s"
+                    % (path.name, cell["n_obs"], len(cell["drops"]),
+                       (":\n" + "\n".join("  - %s" % d for d in cell["drops"]))
+                       if cell["drops"] else ""),
+                    "  acquired_at %s" % stamp,
+                ])
                 done += 1
-    if log_lines:
-        with LOG.open("a", encoding="utf-8") as fh:
-            fh.write("\n".join(log_lines) + "\n")
     print("acquired %d cell(s), skipped %d existing" % (done, skipped))
     return 0
 

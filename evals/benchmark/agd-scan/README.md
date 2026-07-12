@@ -45,7 +45,10 @@ Each `manifests/<fixture>--<vendor>--rep<1|2>.json` is exactly:
   "acquired_at": "<UTC ISO-8601 timestamp>",
   "values": { "observations": [
     { "family": "ASSURING" | "GUARDING" | "DISCOUNTING",
-      "span": "<verbatim substring of source.md>",
+      "span": "<substring of source.md, verbatim up to WHITESPACE FOLDING — the
+               producer's span-integrity containment folds whitespace runs, so a
+               judge's quote may fold the source's line-wrap newlines and still
+               anchor; many committed spans do>",
       "paragraph_index": <int, 0-based, blank-line paragraph>,
       "cue": "<surface cue>" | null }
   ] }
@@ -93,18 +96,33 @@ python3 plugins/apodictic/skills/specialized-audits/scripts/ai_prose_agd_move_sc
 pipes a request JSON (`{system, no_verdict, content}`) to the transport's stdin
 and reads the model's JSON text back from stdout:
 
-- `fable` → `claude -p --model claude-fable-5` (Claude Code CLI), a **fresh,
-  prompt-only** subprocess with no tools.
 - `codex` → `codex exec -m gpt-5.6-sol -c model_reasoning_effort="xhigh"
   -s read-only --skip-git-repo-check`, run with **cwd = an empty temp dir**
-  (never the repo).
+  (never the repo). *This is the transport that produced the committed codex
+  cells.*
+- `fable` → `claude -p --model claude-fable-5 --tools ""` (Claude Code CLI, all
+  built-in tools disabled). **This branch could NOT produce the committed fable
+  cells**: `claude` refuses to launch nested inside a running Claude Code
+  session, so the 2026-07-12 fable cells were acquired through the **host's
+  subagent adapter** instead — one fresh Claude-Code subagent per rep
+  (spec 35's host-adapter case), each given the identical assembled judge input
+  plus a do-not-use-tools/do-not-read-files preface, its raw JSON output then
+  normalized through the producer's own `normalize_observations` before the
+  manifest was written (drops logged; all cells recorded 0). The
+  `host_judge_cmd.py` fable branch is the standalone/headless path for any
+  future re-acquisition.
 
-**Blindness measures.** The judge sees only the producer's exact rendered prompt
-plus the numbered passage from `source.md` — never the fixture's §10.9 keys
-(`argument-state.md`). A fresh subprocess per rep buys the blind-runner
-discipline; Codex's empty read-only cwd guarantees it cannot read the in-repo
-keys even though it can touch the filesystem. Reps are independent fresh
-processes; identical reps are themselves calibration data.
+**Blindness measures — stated exactly.** Neither judge's prompt contains the
+fixture's §10.9 keys (`argument-state.md`), any file path, or any mention of a
+repository — the prompt is the producer's rendered judge input plus a minimal
+transport preface, nothing else. Mechanically: the codex sandbox is read-only
+with an **empty cwd**, so nothing key-shaped is in reach without a deliberate
+absolute-path hunt the prompt gives no basis for; the fable subagents HAD tools
+available but were instructed not to use them, and **0 tool uses were observed
+on every rep** (the per-rep usage counters; recorded here because an
+instruction is not an enforcement — the future CLI path closes this with
+`--tools ""`). Reps are independent fresh processes; identical reps are
+themselves calibration data.
 
 Every span-integrity drop from acquisition is appended to `acquisition-log.md`,
 so nothing is silently lost. (All 20 committed cells recorded **0 drops**.)
