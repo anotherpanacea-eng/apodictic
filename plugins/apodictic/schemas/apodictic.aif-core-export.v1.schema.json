@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "apodictic.aif-core-export.v1",
+  "type": "object",
+  "required": ["schema", "source", "profile", "nodes", "edges", "losses"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {"const": "apodictic.aif-core-export.v1"},
+    "source": {"type":"object","required":["artifact","sha256","argument_state_schema","schema_version_basis"],"additionalProperties":false,"properties":{"artifact":{"type":"string"},"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"argument_state_schema":{"const":"0.2.0"},"schema_version_basis":{"const":"operator-declared"}}},
+    "profile": {"type":"object","required":["name","aif_reference","loss_policy"],"additionalProperties":false,"properties":{"name":{"const":"aif-core-subset"},"aif_reference":{"const":"AIF Specification, Definition 1.1"},"loss_policy":{"const":"explicit"}}},
+    "nodes": {"type":"array","items":{"oneOf":[
+      {"type":"object","required":["id","type","text","source_ref"],"additionalProperties":false,"properties":{"id":{"type":"string"},"type":{"const":"I-node"},"text":{"type":"string"},"source_ref":{"type":"string"}}},
+      {"type":"object","required":["id","type","scheme","scheme_text","source_ref"],"additionalProperties":false,"properties":{"id":{"type":"string"},"type":{"const":"RA-node"},"scheme":{"const":"apodictic:warrant-application"},"scheme_text":{"type":"string","minLength":1},"source_ref":{"type":"string"}}},
+      {"type":"object","required":["id","type","scheme","source_ref"],"additionalProperties":false,"properties":{"id":{"type":"string"},"type":{"const":"CA-node"},"scheme":{"enum":["apodictic:warrant-defeater","apodictic:claim-challenge","apodictic:evidence-challenge","apodictic:value-conflict"]},"source_ref":{"type":"string"}}}
+    ]}},
+    "edges": {"type":"array","items":{"type":"object","required":["from","to"],"additionalProperties":false,"properties":{"from":{"type":"string"},"to":{"type":"string"}}}},
+    "losses": {"type":"array","items":{"type":"object","required":["code","source_ref","subject_id","detail","blocking"],"additionalProperties":false,"properties":{"code":{"enum":["CLAIM-LADDER-TOPOLOGY-UNDECLARED","UNMAPPED-PA","UNTYPED-OBJECTION","UNRESOLVED-TARGET","ALTERNATIVE-NO-CONFLICT-CRITERION","ARGUMENT-WIDE-PROJECTED-TO-C0","APODICTIC-METADATA","OUT-OF-PROFILE-SECTION","PREDRAFT-SUPERSEDED-BY-FINAL","MISSING-SUPPORT-TOPOLOGY","MISSING-WARRANT-TOPOLOGY","FINAL-SECTION-INCOMPLETE","SOURCE-ID-COLLISION"]},"source_ref":{"type":"string","minLength":1},"subject_id":{"type":["string","null"]},"detail":{"type":"string","minLength":1},"blocking":{"type":"boolean"}}}}
+  }
+}

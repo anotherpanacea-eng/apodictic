@@ -50,7 +50,9 @@ SF_REFS = {
     "family:vagueness", "family:ambiguity", "family:relevance", "family:vacuity",
     "refutation:premise", "refutation:conclusion", "refutation:inference", "refutation:begging",
     "standard:validity", "standard:strength", "standard:soundness",
+    "move:assuring", "move:guarding", "move:discounting",
 }
+TOULMIN_REFS = {"claim", "grounds", "warrant", "backing", "qualifier", "rebuttal"}
 
 WACHSMUTH_SUB = {
     "logic": {"LAc", "LRe", "LSu"},
@@ -58,7 +60,12 @@ WACHSMUTH_SUB = {
     "dialectic": {"GAc", "GRe", "GSu", "reasonableness"},
 }
 
-VOCABS = {"AIF", "WALTON", "SF", "WACHSMUTH"}
+VOCABS = {"AIF", "WALTON", "SF", "WACHSMUTH", "TOULMIN"}
+ENTRY_KEYS = {"id", "family", "internal_name", "cardinality", "targets", "rationale"}
+CONCEPT_KEYS = {"id", "kind", "cardinality", "targets", "rationale"}
+TARGET_REQUIRED_KEYS = {"vocab", "ref", "cardinality", "prov"}
+TARGET_ALLOWED_KEYS = TARGET_REQUIRED_KEYS | {"note"}
+PROV_KEYS = {"work", "loc", "id"}
 ROW_CARDS = {"exact", "broader", "narrower", "related", "unmapped"}
 TARGET_CARDS = {"exact", "broader", "narrower", "related"}
 _CARD_PREC = {"exact": 4, "narrower": 3, "broader": 2, "related": 1}
@@ -177,7 +184,59 @@ def _ref_ok(vocab, ref):
         if dim not in WACHSMUTH_SUB:
             return False
         return sub in WACHSMUTH_SUB[dim]         # a trailing colon with empty sub is rejected
+    if vocab == "TOULMIN":
+        return ref in TOULMIN_REFS
     return False
+
+
+def validate_concepts(cross, relations, agd_families):
+    """Validate R2/R3 concepts separately from the closed 82-code layer."""
+    errors = []
+    rows = cross.get("concept_entries") if isinstance(cross, dict) else None
+    if not isinstance(rows, list):
+        return ["Check 11 (concepts) — concept_entries must be a list."]
+    expected = {"R2:" + x for x in relations} | {"R3:" + x for x in agd_families}
+    ids = [r.get("id") for r in rows if isinstance(r, dict)]
+    string_ids = [x for x in ids if isinstance(x, str)]
+    if len(rows) != len(ids) or len(string_ids) != len(ids) or set(string_ids) != expected or len(string_ids) != len(set(string_ids)):
+        errors.append("Check 11 (concepts) — ids must equal the derived R2/R3 set (expected=%r got=%r)." % (sorted(expected), sorted(str(x) for x in ids)))
+    for r in rows:
+        if not isinstance(r, dict):
+            errors.append("Check 11 (concepts) — every concept row must be an object."); continue
+        if set(r) != CONCEPT_KEYS:
+            errors.append("Check 11 (concepts) — concept row %r must have the closed row shape." % r.get("id"))
+        cid = r.get("id"); kind = r.get("kind"); card = r.get("cardinality"); tgts = r.get("targets"); rationale = r.get("rationale")
+        exp_kind = "objection-relation" if isinstance(cid, str) and cid.startswith("R2:") else "agd-move"
+        if kind != exp_kind: errors.append("Check 11 (concepts) — %r kind must be %r." % (cid, exp_kind))
+        if not isinstance(card, str) or card not in ROW_CARDS: errors.append("Check 11 (concepts) — %r bad cardinality." % cid)
+        if not isinstance(tgts, list): errors.append("Check 11 (concepts) — %r targets must be a list." % cid); continue
+        if (card == "unmapped") != (not tgts): errors.append("Check 11 (concepts) — %r unmapped equivalence failed." % cid)
+        if card == "unmapped" and not (isinstance(rationale, str) and rationale.strip()): errors.append("Check 11 (concepts) — %r unmapped rationale required." % cid)
+        present = []
+        target_ids = []
+        for t in tgts:
+            if not isinstance(t, dict): errors.append("Check 11 (concepts) — %r target must be object." % cid); continue
+            if not TARGET_REQUIRED_KEYS <= set(t) <= TARGET_ALLOWED_KEYS: errors.append("Check 11 (concepts) — %r target must have the closed target shape." % cid)
+            v, ref, tc, prov = t.get("vocab"), t.get("ref"), t.get("cardinality"), t.get("prov")
+            target_ids.append((repr(v), repr(ref)))
+            if not isinstance(v, str) or v not in VOCABS or not isinstance(ref, str) or not _ref_ok(v, ref): errors.append("Check 11 (concepts) — %r target %r:%r outside closed refs." % (cid, v, ref))
+            if not isinstance(tc, str) or tc not in TARGET_CARDS: errors.append("Check 11 (concepts) — %r bad target cardinality." % cid)
+            else: present.append(tc)
+            if not (isinstance(prov, dict) and set(prov) == PROV_KEYS and all(isinstance(prov.get(k), str) and prov[k].strip() for k in PROV_KEYS)): errors.append("Check 11 (concepts) — %r target provenance must have the closed complete shape." % cid)
+            if isinstance(cid, str) and cid.startswith("R3:") and v == "AIF": errors.append("Check 11 (policy) — AGD moves are AIF-unmapped.")
+            if cid == "R2:ALTERNATIVE" and v == "AIF": errors.append("Check 11 (policy) — ALTERNATIVE has no AIF conflict criterion.")
+        if present and card != max(present, key=lambda c: _CARD_PREC[c]): errors.append("Check 11 (concepts) — %r roll-up mismatch." % cid)
+        if len(target_ids) != len(set(target_ids)): errors.append("Check 11 (concepts) — %r has a duplicate vocab/ref target." % cid)
+    return errors
+
+
+def validate_stable_rationales(cross):
+    errors = []
+    stale = re.compile(r"\bR(?:3|4B)\b|\brevisit\b|\badjudicat(?:e|ion)\b|\bdeferred\b", re.I)
+    for row in cross.get("entries", []) if isinstance(cross, dict) else []:
+        if isinstance(row, dict) and row.get("cardinality") == "unmapped" and stale.search(str(row.get("rationale", ""))):
+            errors.append("Check 13 (stable rationale) — %r retains a future-work placeholder." % row.get("id"))
+    return errors
 
 
 # --------------------------------------------------------------------------
@@ -188,6 +247,8 @@ def validate(cross, dc_codes, schemes, verdicts, flags, fm_max):
     errors = []
     if not isinstance(cross, dict) or not isinstance(cross.get("entries"), list):
         return ["Check 10 (JSON hygiene) — top-level must be an object with an 'entries' list."]
+    if cross.get("version") != "0.2.0":
+        errors.append("Check 10 (JSON hygiene) — crosswalk version must be exactly 0.2.0.")
     entries = cross["entries"]
     derived = derived_id_set(dc_codes, schemes, verdicts, flags, fm_max)
 
@@ -221,6 +282,8 @@ def validate(cross, dc_codes, schemes, verdicts, flags, fm_max):
         if not isinstance(r, dict):
             errors.append("Check 10 (JSON hygiene) — every entry must be an object (got %r)." % type(r).__name__)
             continue
+        if set(r) != ENTRY_KEYS:
+            errors.append("Check 10 (JSON hygiene) — entry %r must have the closed row shape." % r.get("id"))
         cid = r.get("id", "<no-id>")
         if not isinstance(cid, str):
             # hashable proxy: a JSON list/dict id must not crash downstream set inserts
@@ -269,9 +332,13 @@ def validate(cross, dc_codes, schemes, verdicts, flags, fm_max):
                                       % (cid, card, strongest))
 
         # Per-target checks (6, 8a) + ref hit accounting (8b)
+        target_ids = []
         for tt in targets:
+            if not TARGET_REQUIRED_KEYS <= set(tt) <= TARGET_ALLOWED_KEYS:
+                errors.append("Check 10 (JSON hygiene) — id %r target must have the closed target shape." % cid)
             vocab = tt.get("vocab")
             ref = tt.get("ref")
+            target_ids.append((repr(vocab), repr(ref)))
             tcard = tt.get("cardinality")
             prov = tt.get("prov")
             if not isinstance(tcard, str) or tcard not in TARGET_CARDS:
@@ -283,11 +350,13 @@ def validate(cross, dc_codes, schemes, verdicts, flags, fm_max):
                 errors.append("Check 6 (target) — id %r %s ref %r outside the closed value-space." % (cid, vocab, ref))
             # Check 8a — provenance locator: all three fields must be NON-EMPTY STRINGS
             # (a numeric/boolean/empty locator is unusable and must not pass on truthiness alone).
-            if not (isinstance(prov, dict) and all(
+            if not (isinstance(prov, dict) and set(prov) == PROV_KEYS and all(
                     isinstance(prov.get(k), str) and prov.get(k).strip() for k in ("work", "loc", "id"))):
-                errors.append("Check 8a (provenance) — id %r target (%s %r) lacks a full string prov {work,loc,id}." % (cid, vocab, ref))
+                errors.append("Check 8a (provenance) — id %r target (%s %r) lacks the closed string prov {work,loc,id}." % (cid, vocab, ref))
             if isinstance(vocab, str) and vocab in VOCABS and isinstance(ref, str):
                 seen_refs.setdefault((vocab, ref), set()).add(cid)
+        if len(target_ids) != len(set(target_ids)):
+            errors.append("Check 10 (JSON hygiene) — id %r has a duplicate vocab/ref target." % cid)
 
     # Check 7 — no dangling Walton + every scheme-hint row maps to a Walton scheme
     for r in entries:
@@ -384,7 +453,48 @@ def _load_owners():
     if _SCRIPT_DIR not in sys.path:
         sys.path.insert(0, _SCRIPT_DIR)
     from argument_groundtruth import _GT7_CLASSES, _GT8_ROW_FLAG_TYPES, _FM_A_MAX  # noqa
-    return list(_GT7_CLASSES), set(_GT8_ROW_FLAG_TYPES), int(_FM_A_MAX)
+    from argument_spine import _OBJECTION_RELATIONS  # noqa
+    from argument_agd import FAMILIES  # noqa
+    return list(_GT7_CLASSES), set(_GT8_ROW_FLAG_TYPES), int(_FM_A_MAX), tuple(_OBJECTION_RELATIONS), tuple(FAMILIES)
+
+
+def _vocabulary_migration_errors():
+    """R4B active-surface allowlist: preserve history, reject partial live migration."""
+    roots = [os.path.abspath(os.path.join(_SCRIPT_DIR, "..")),
+             os.path.abspath(os.path.join(_SCRIPT_DIR, "..", "..", ".."))]
+    root = next((r for r in roots if os.path.exists(os.path.join(r, "sample-dialectical-clarity-letter.html"))), None)
+    if root is None:
+        return []  # host bundle lacks repo-only active examples
+    rels = [
+        "plugins/apodictic/skills/specialized-audits/references/craft/dialectical-clarity.md",
+        "plugins/apodictic/skills/specialized-audits/references/craft/dialectical-clarity-level-setting.md",
+        "evals/fixtures/argument-benchmark/personal-essay-narrative-arg/groundtruth.md",
+        "docs/argument-benchmark-calibration-round.md",
+        "sample-dialectical-clarity-letter.html",
+    ]
+    errors = []
+    texts = {}
+    for rel in rels:
+        p = os.path.join(root, rel)
+        if not os.path.exists(p): errors.append("Check 12 (vocabulary) — active file missing: %s" % rel); continue
+        with open(p, encoding="utf-8") as fh: texts[rel] = fh.read()
+        if re.search(r"warrant-recoverability", texts[rel], re.I): errors.append("Check 12 (vocabulary) — retired token remains in %s" % rel)
+    main = texts.get(rels[0], "")
+    if not main.startswith("# Specialized Audit: Dialectical Clarity\n## Version 2.1\n*Previous version: 2.0 (March 2026)*"):
+        errors.append("Check 12 (vocabulary) — live v2.1/previous-v2.0 header mismatch.")
+    expected_counts = [3, 1, 1, 1, 1]
+    for rel, expected in zip(rels, expected_counts):
+        if len(re.findall(r"bridge-recoverability", texts.get(rel, ""), re.I)) != expected:
+            errors.append("Check 12 (vocabulary) — Bridge-recoverability occurrence count drifted in %s" % rel)
+    question = "Can the inferential bridge be recovered without importing a private argument the draft never gives?"
+    if main.count("| **Bridge-recoverability** | " + question + " |") != 1 or main.count("| Bridge-recoverability | [pass/fail] | [detail] |") != 1:
+        errors.append("Check 12 (vocabulary) — the two emitted Bridge-recoverability rows are not exact/unique.")
+    expected_rows = ["Claim-accessibility", "Evidence-evaluability", "Bridge-recoverability", "Scope-honesty", "Objection-awareness", "Form-fit"]
+    ordered = [name for name in re.findall(r"(?m)^\| \*\*([^*]+)\*\* \| (?:Can|Does|Is) ", main)
+               if name in expected_rows]
+    if ordered[:6] != expected_rows or len(ordered) != 6:
+        errors.append("Check 12 (vocabulary) — six decision-test rows are missing, duplicated, or out of order.")
+    return errors
 
 
 def run_check(path):
@@ -401,7 +511,7 @@ def run_check(path):
         print("ERROR: dialectical-clarity.md registry not found; cannot derive the drift-bound code set.")
         return 1
     try:
-        verdicts, flags, fm_max = _load_owners()
+        verdicts, flags, fm_max, relations, agd_families = _load_owners()
     except Exception as exc:  # pragma: no cover
         print("ERROR: could not import upstream owners from argument_groundtruth.py: %s" % exc)
         return 1
@@ -418,6 +528,9 @@ def run_check(path):
         print("Check 10 (JSON hygiene) — crosswalk.json does not parse: %s" % exc)
         return 1
     errors = validate(cross, dc_codes, schemes, verdicts, flags, fm_max)
+    errors.extend(validate_concepts(cross, relations, agd_families))
+    errors.extend(validate_stable_rationales(cross))
+    errors.extend(_vocabulary_migration_errors())
     if errors:
         print("argument-crosswalk-check: FAIL (%d)" % len(errors))
         for e in errors:
@@ -425,9 +538,9 @@ def run_check(path):
         return 1
     n = len(cross["entries"])
     unmapped = sum(1 for r in cross["entries"] if r.get("cardinality") == "unmapped")
-    print("argument-crosswalk-check: PASS — %d entries (%d populated, %d unmapped); "
+    print("argument-crosswalk-check: PASS — %d code entries (%d populated, %d unmapped) + %d concepts; "
           "derived set 46 DC + %d FM-A + %d schemes + %d verdicts + %d flags."
-          % (n, n - unmapped, unmapped, fm_max, len(schemes), len(verdicts), len(flags)))
+          % (n, n - unmapped, unmapped, len(cross["concept_entries"]), fm_max, len(schemes), len(verdicts), len(flags)))
     return 0
 
 
@@ -489,7 +602,7 @@ def _selftest():
                          ], "rationale": None})
         return ents
 
-    valid = {"version": "0.1.0", "entries": full_entries(dc_codes, schemes, verdicts, flags)}
+    valid = {"version": "0.2.0", "entries": full_entries(dc_codes, schemes, verdicts, flags)}
     # roll-up for scheme rows: strongest of exact/narrower = exact
     for r in valid["entries"]:
         if r["family"] == "SCHEME":
@@ -665,6 +778,22 @@ def _selftest():
     check("P3: numeric prov -> Check 8a",
           any("Check 8a" in e for e in mutate(
               lambda c: first_scheme(c)["targets"][0].update({"prov": {"work": 1, "loc": 2, "id": 3}}))))
+
+    concepts = [
+        {"id":"R2:"+x,"kind":"objection-relation","cardinality":"unmapped","targets":[],"rationale":"stable"}
+        for x in ("WARRANT-DEFEATER","CLAIM-CHALLENGE","EVIDENCE-CHALLENGE","VALUE-CONFLICT","ALTERNATIVE")
+    ] + [
+        {"id":"R3:"+x,"kind":"agd-move","cardinality":"narrower","targets":[{"vocab":"SF","ref":"move:"+x.lower(),"cardinality":"narrower","prov":prov("move:"+x.lower())}],"rationale":None}
+        for x in ("ASSURING","GUARDING","DISCOUNTING")
+    ]
+    cv = {"concept_entries": concepts}
+    check("R4B concepts: exact derived set passes", validate_concepts(cv, ("WARRANT-DEFEATER","CLAIM-CHALLENGE","EVIDENCE-CHALLENGE","VALUE-CONFLICT","ALTERNATIVE"), ("ASSURING","GUARDING","DISCOUNTING")) == [])
+    import copy
+    badc = copy.deepcopy(cv); badc["concept_entries"][5]["targets"] = [{"vocab":"AIF","ref":"RA-node","cardinality":"related","prov":prov("RA-node")}]; badc["concept_entries"][5]["cardinality"]="related"
+    check("R4B concepts: AGD->AIF rejected", any("AGD moves" in e for e in validate_concepts(badc, ("WARRANT-DEFEATER","CLAIM-CHALLENGE","EVIDENCE-CHALLENGE","VALUE-CONFLICT","ALTERNATIVE"), ("ASSURING","GUARDING","DISCOUNTING"))))
+    badc = copy.deepcopy(cv); badc["concept_entries"][4]["targets"] = [{"vocab":"AIF","ref":"CA-node","cardinality":"related","prov":prov("CA-node")}]; badc["concept_entries"][4]["cardinality"]="related"
+    check("R4B concepts: ALTERNATIVE->AIF rejected", any("ALTERNATIVE" in e for e in validate_concepts(badc, ("WARRANT-DEFEATER","CLAIM-CHALLENGE","EVIDENCE-CHALLENGE","VALUE-CONFLICT","ALTERNATIVE"), ("ASSURING","GUARDING","DISCOUNTING"))))
+    check("R4B rationales: future placeholder rejected", bool(validate_stable_rationales({"entries":[{"id":"X","cardinality":"unmapped","rationale":"revisit R4B"}]})))
 
     if fails:
         print("Self-test: FAIL")

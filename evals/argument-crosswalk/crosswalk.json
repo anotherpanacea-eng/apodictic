@@ -1,12 +1,13 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "artifact": "argument-taxonomy-crosswalk",
   "adr": "docs/adr/0001-argument-layer-boundary.md",
   "reference_vocabularies": {
     "AIF": "Argument Interchange Format (arg-tech.org)",
     "WALTON": "Walton, Reed & Macagno, Argumentation Schemes (2008)",
     "SF": "Sinnott-Armstrong & Fogelin, Understanding Arguments, 9th ed. (2015)",
-    "WACHSMUTH": "Wachsmuth et al. 2017 (ACL P17-2039); GAQCorpus (Lauscher et al. 2020)"
+    "WACHSMUTH": "Wachsmuth et al. 2017 (ACL P17-2039); GAQCorpus (Lauscher et al. 2020)",
+    "TOULMIN": "Toulmin, The Uses of Argument (1958)"
   },
   "cardinality_legend": {
     "exact": "internal code and external ref denote the same thing",
@@ -23,7 +24,7 @@
       "internal_name": "Type undeclared",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set — adjudicate against Walton dialogue types / S&F explanatory-vs-justificatory in R4B."
+      "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "AT1",
@@ -31,7 +32,7 @@
       "internal_name": "Explanatory",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set — adjudicate against Walton dialogue types / S&F explanatory-vs-justificatory in R4B."
+      "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "AT2",
@@ -39,7 +40,7 @@
       "internal_name": "Evaluative",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set — adjudicate against Walton dialogue types / S&F explanatory-vs-justificatory in R4B."
+      "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "AT3",
@@ -47,7 +48,7 @@
       "internal_name": "Propositional",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set — adjudicate against Walton dialogue types / S&F explanatory-vs-justificatory in R4B."
+      "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "AT4",
@@ -55,7 +56,7 @@
       "internal_name": "Testimonial",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set — adjudicate against Walton dialogue types / S&F explanatory-vs-justificatory in R4B."
+      "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "AC0",
@@ -63,7 +64,7 @@
       "internal_name": "Audience dependency undeclared",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "audience-calibration layer; apodictic-specific, no external argumentation-theory analogue in the reference set — revisit R4B."
+      "rationale": "audience-calibration layer; apodictic-specific, no external argumentation-theory analogue in the reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "AC1",
@@ -71,7 +72,7 @@
       "internal_name": "Shared-knowledge overestimate",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "audience-calibration layer; apodictic-specific, no external argumentation-theory analogue in the reference set — revisit R4B."
+      "rationale": "audience-calibration layer; apodictic-specific, no external argumentation-theory analogue in the reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "AC2",
@@ -79,7 +80,7 @@
       "internal_name": "Hostile-audience underdefense",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "audience-calibration layer; apodictic-specific, no external argumentation-theory analogue in the reference set — revisit R4B."
+      "rationale": "audience-calibration layer; apodictic-specific, no external argumentation-theory analogue in the reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "AC3",
@@ -87,7 +88,7 @@
       "internal_name": "Sympathetic-audience flattery drift",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "audience-calibration layer; apodictic-specific, no external argumentation-theory analogue in the reference set — revisit R4B."
+      "rationale": "audience-calibration layer; apodictic-specific, no external argumentation-theory analogue in the reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "AC4",
@@ -95,7 +96,7 @@
       "internal_name": "Compression-context mismatch",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "audience-calibration layer; apodictic-specific, no external argumentation-theory analogue in the reference set — revisit R4B."
+      "rationale": "audience-calibration layer; apodictic-specific, no external argumentation-theory analogue in the reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "CL0",
@@ -103,7 +104,7 @@
       "internal_name": "No identifiable main claim",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "claim-architecture code; no direct external analogue in the reference set — revisit R4B."
+      "rationale": "claim-architecture code; no direct external analogue in the reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "CL1",
@@ -111,7 +112,7 @@
       "internal_name": "Claim unstable",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "claim-architecture code; no direct external analogue in the reference set — revisit R4B."
+      "rationale": "claim-architecture code; no direct external analogue in the reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "CL2",
@@ -119,7 +120,7 @@
       "internal_name": "Subclaim gap",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "claim-architecture code; no direct external analogue in the reference set — revisit R4B."
+      "rationale": "claim-architecture code; no direct external analogue in the reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "CL3",
@@ -127,7 +128,7 @@
       "internal_name": "Circular subclaim",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "claim-architecture code; no direct external analogue in the reference set — revisit R4B."
+      "rationale": "claim-architecture code; no direct external analogue in the reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "CL4",
@@ -154,7 +155,7 @@
       "internal_name": "Missing support",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "support-mapping code; relates to Walton scheme critical-questions per support type — needs per-scheme adjudication in R3/R4B."
+      "rationale": "support-mapping code; relates to Walton scheme critical-questions per support type; no direct target in the reviewed reference set."
     },
     {
       "id": "SM1",
@@ -162,7 +163,7 @@
       "internal_name": "Irrelevant support",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "support-mapping code; relates to Walton scheme critical-questions per support type — needs per-scheme adjudication in R3/R4B."
+      "rationale": "support-mapping code; relates to Walton scheme critical-questions per support type; no direct target in the reviewed reference set."
     },
     {
       "id": "SM2",
@@ -170,7 +171,7 @@
       "internal_name": "Support proves different claim",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "support-mapping code; relates to Walton scheme critical-questions per support type — needs per-scheme adjudication in R3/R4B."
+      "rationale": "support-mapping code; relates to Walton scheme critical-questions per support type; no direct target in the reviewed reference set."
     },
     {
       "id": "SM3",
@@ -178,7 +179,7 @@
       "internal_name": "Single-type dependence",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "support-mapping code; relates to Walton scheme critical-questions per support type — needs per-scheme adjudication in R3/R4B."
+      "rationale": "support-mapping code; relates to Walton scheme critical-questions per support type; no direct target in the reviewed reference set."
     },
     {
       "id": "SM4",
@@ -186,7 +187,7 @@
       "internal_name": "Evidence laundering",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "support-mapping code; relates to Walton scheme critical-questions per support type — needs per-scheme adjudication in R3/R4B."
+      "rationale": "support-mapping code; relates to Walton scheme critical-questions per support type; no direct target in the reviewed reference set."
     },
     {
       "id": "WR0",
@@ -213,7 +214,7 @@
       "internal_name": "Missing backing",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "warrant/inference code; relates to the S&F inference-refutation axis — populate the specific pairing in R3/R4B."
+      "rationale": "warrant/inference code; relates to the S&F inference-refutation axis; no direct target in the reviewed reference set."
     },
     {
       "id": "WR2",
@@ -221,7 +222,7 @@
       "internal_name": "Scheme fragility",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "scheme-fragility is a generic Walton critical-question failure; the specific scheme#CQ pairing is code-instance-specific — populate in R3."
+      "rationale": "scheme-fragility is a generic Walton critical-question failure; the specific scheme#CQ pairing is code-instance-specific; no direct target in the reviewed reference set."
     },
     {
       "id": "WR3",
@@ -229,7 +230,7 @@
       "internal_name": "Qualifier mismatch",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "warrant/inference code; relates to the S&F inference-refutation axis — populate the specific pairing in R3/R4B."
+      "rationale": "warrant/inference code; relates to the S&F inference-refutation axis; no direct target in the reviewed reference set."
     },
     {
       "id": "BP0",
@@ -237,7 +238,7 @@
       "internal_name": "Scope undeclared",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set — revisit R4B."
+      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "BP1",
@@ -245,7 +246,7 @@
       "internal_name": "Evidence type mismatch",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set — revisit R4B."
+      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "BP2",
@@ -253,7 +254,7 @@
       "internal_name": "Scope creep",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set — revisit R4B."
+      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "BP3",
@@ -261,7 +262,7 @@
       "internal_name": "Burden shift",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set — revisit R4B."
+      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "BP4",
@@ -269,7 +270,7 @@
       "internal_name": "False precision",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set — revisit R4B."
+      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "BP5",
@@ -296,7 +297,7 @@
       "internal_name": "Testimonial overburden",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set — revisit R4B."
+      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set; no direct target in the reviewed reference set."
     },
     {
       "id": "OB0",
@@ -304,7 +305,7 @@
       "internal_name": "No objections engaged",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "objection-handling code; relates to Walton critical-question evasion and S&F relevance — needs adjudication in R3 (the AGD/objection move model)."
+      "rationale": "objection-handling code; relates to Walton critical-question evasion and S&F relevance; no direct target in the reviewed reference set."
     },
     {
       "id": "OB1",
@@ -312,7 +313,7 @@
       "internal_name": "Strawman",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "straw-man: S&F files misrepresentation under refutation/relevance but not as a named family member; adjudicate the exact target in R3 (objection move model)."
+      "rationale": "straw-man misrepresentation has no named member in the reviewed S&F/Walton reference subset."
     },
     {
       "id": "OB2",
@@ -320,7 +321,7 @@
       "internal_name": "Evasion",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "objection-handling code; relates to Walton critical-question evasion and S&F relevance — needs adjudication in R3 (the AGD/objection move model)."
+      "rationale": "objection-handling code; relates to Walton critical-question evasion and S&F relevance; no direct target in the reviewed reference set."
     },
     {
       "id": "OB3",
@@ -328,7 +329,7 @@
       "internal_name": "Central objection unaddressed",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "objection-handling code; relates to Walton critical-question evasion and S&F relevance — needs adjudication in R3 (the AGD/objection move model)."
+      "rationale": "objection-handling code; relates to Walton critical-question evasion and S&F relevance; no direct target in the reviewed reference set."
     },
     {
       "id": "OB4",
@@ -336,7 +337,7 @@
       "internal_name": "Concession without cost",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "objection-handling code; relates to Walton critical-question evasion and S&F relevance — needs adjudication in R3 (the AGD/objection move model)."
+      "rationale": "objection-handling code; relates to Walton critical-question evasion and S&F relevance; no direct target in the reviewed reference set."
     },
     {
       "id": "OB5",
@@ -344,7 +345,7 @@
       "internal_name": "Decoy strongest objection",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "objection-handling code; relates to Walton critical-question evasion and S&F relevance — needs adjudication in R3 (the AGD/objection move model)."
+      "rationale": "objection-handling code; relates to Walton critical-question evasion and S&F relevance; no direct target in the reviewed reference set."
     },
     {
       "id": "DI0",
@@ -381,7 +382,7 @@
       "internal_name": "Unexpressed-premise evasion",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "dialectical-integrity code; relates to S&F vacuity/ambiguity — populate the specific pairing in R3/R4B."
+      "rationale": "dialectical-integrity code; relates to S&F vacuity/ambiguity; no direct target in the reviewed reference set."
     },
     {
       "id": "DI2",
@@ -389,7 +390,7 @@
       "internal_name": "Pseudo-resolution",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "dialectical-integrity code; relates to S&F vacuity/ambiguity — populate the specific pairing in R3/R4B."
+      "rationale": "dialectical-integrity code; relates to S&F vacuity/ambiguity; no direct target in the reviewed reference set."
     },
     {
       "id": "DI3",
@@ -435,7 +436,7 @@
       "internal_name": "Unattached vignette",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "narrative-as-evidence code; relates to Walton Witness Testimony / Position to Know — adjudicate in R3/R4B."
+      "rationale": "narrative-as-evidence code; relates to Walton Witness Testimony / Position to Know; no direct target in the reviewed reference set."
     },
     {
       "id": "NE1",
@@ -443,7 +444,7 @@
       "internal_name": "Vignette as substitute",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "narrative-as-evidence code; relates to Walton Witness Testimony / Position to Know — adjudicate in R3/R4B."
+      "rationale": "narrative-as-evidence code; relates to Walton Witness Testimony / Position to Know; no direct target in the reviewed reference set."
     },
     {
       "id": "NE2",
@@ -451,7 +452,7 @@
       "internal_name": "Vignette-claim mismatch",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "narrative-as-evidence code; relates to Walton Witness Testimony / Position to Know — adjudicate in R3/R4B."
+      "rationale": "narrative-as-evidence code; relates to Walton Witness Testimony / Position to Know; no direct target in the reviewed reference set."
     },
     {
       "id": "NE3",
@@ -459,7 +460,7 @@
       "internal_name": "Emotional override",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "narrative-as-evidence code; relates to Walton Witness Testimony / Position to Know — adjudicate in R3/R4B."
+      "rationale": "narrative-as-evidence code; relates to Walton Witness Testimony / Position to Know; no direct target in the reviewed reference set."
     },
     {
       "id": "FM-A1",
@@ -467,7 +468,7 @@
       "internal_name": "The Drive-By Thesis",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "named composite pattern; its base-code mappings determine the external analogue — populate in R3/R4B."
+      "rationale": "named composite pattern; its base-code mappings determine the external analogue; no direct target in the reviewed reference set."
     },
     {
       "id": "FM-A2",
@@ -475,7 +476,7 @@
       "internal_name": "The Evidence Pile",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "named composite pattern; its base-code mappings determine the external analogue — populate in R3/R4B."
+      "rationale": "named composite pattern; its base-code mappings determine the external analogue; no direct target in the reviewed reference set."
     },
     {
       "id": "FM-A3",
@@ -483,7 +484,7 @@
       "internal_name": "The Persuasion Machine",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "named composite pattern; its base-code mappings determine the external analogue — populate in R3/R4B."
+      "rationale": "named composite pattern; its base-code mappings determine the external analogue; no direct target in the reviewed reference set."
     },
     {
       "id": "FM-A4",
@@ -491,7 +492,7 @@
       "internal_name": "Scope Inflation",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "named composite pattern; its base-code mappings determine the external analogue — populate in R3/R4B."
+      "rationale": "named composite pattern; its base-code mappings determine the external analogue; no direct target in the reviewed reference set."
     },
     {
       "id": "FM-A5",
@@ -499,7 +500,7 @@
       "internal_name": "The Hidden Argument",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "named composite pattern; its base-code mappings determine the external analogue — populate in R3/R4B."
+      "rationale": "named composite pattern; its base-code mappings determine the external analogue; no direct target in the reviewed reference set."
     },
     {
       "id": "FM-A6",
@@ -622,7 +623,7 @@
       "internal_name": "Evidence Laundering",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "evidence-laundering (mediated source as primary) has no clean S&F/Walton member; adjudicate in R4B."
+      "rationale": "evidence-laundering (mediated source as primary) has no clean S&F/Walton member in the reviewed reference set."
     },
     {
       "id": "FM-A12",
@@ -668,7 +669,7 @@
       "internal_name": "Epistemic Erasure",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "epistemic-erasure (authority silencing lived experience) is apodictic-specific; no reference-set analogue — R4B."
+      "rationale": "epistemic-erasure (authority silencing lived experience) is apodictic-specific; no reference-set analogue; no direct target in the reviewed reference set."
     },
     {
       "id": "FM-A15",
@@ -695,7 +696,7 @@
       "internal_name": "Qualification Erosion",
       "cardinality": "unmapped",
       "targets": [],
-      "rationale": "qualification-erosion maps to voiceprint's AGD hedging-drift signal — a cross-repo producer mapping deferred to R3B, not resolvable inside R4A."
+      "rationale": "qualification-erosion maps to voiceprint's AGD hedging-drift signal; the producer observation is not an external diagnostic-code equivalent."
     },
     {
       "id": "FM-A17",
@@ -1249,5 +1250,15 @@
       ],
       "rationale": null
     }
+  ],
+  "concept_entries": [
+    {"id":"R2:WARRANT-DEFEATER","kind":"objection-relation","cardinality":"narrower","targets":[{"vocab":"TOULMIN","ref":"rebuttal","cardinality":"narrower","prov":{"work":"Toulmin-1958","loc":"The layout of arguments: rebuttal","id":"rebuttal"}},{"vocab":"AIF","ref":"CA-node","cardinality":"related","prov":{"work":"AIF Specification","loc":"Definition 1.1 (AIF graph), conditions 3 and 6","id":"CA-node"}}],"rationale":null},
+    {"id":"R2:CLAIM-CHALLENGE","kind":"objection-relation","cardinality":"related","targets":[{"vocab":"AIF","ref":"CA-node","cardinality":"related","prov":{"work":"AIF Specification","loc":"Definition 1.1 (AIF graph), condition 6","id":"CA-node"}}],"rationale":null},
+    {"id":"R2:EVIDENCE-CHALLENGE","kind":"objection-relation","cardinality":"related","targets":[{"vocab":"AIF","ref":"CA-node","cardinality":"related","prov":{"work":"AIF Specification","loc":"Definition 1.1 (AIF graph), condition 6","id":"CA-node"}}],"rationale":null},
+    {"id":"R2:VALUE-CONFLICT","kind":"objection-relation","cardinality":"related","targets":[{"vocab":"AIF","ref":"CA-node","cardinality":"related","prov":{"work":"AIF Specification","loc":"Definition 1.1 (AIF graph), condition 6","id":"CA-node"}}],"rationale":null},
+    {"id":"R2:ALTERNATIVE","kind":"objection-relation","cardinality":"unmapped","targets":[],"rationale":"An alternative does not itself declare the conflict criterion required to license an AIF CA-node."},
+    {"id":"R3:ASSURING","kind":"agd-move","cardinality":"narrower","targets":[{"vocab":"SF","ref":"move:assuring","cardinality":"narrower","prov":{"work":"S&F-UA-9e","loc":"ch.5 assuring terms","id":"move:assuring"}}],"rationale":null},
+    {"id":"R3:GUARDING","kind":"agd-move","cardinality":"narrower","targets":[{"vocab":"SF","ref":"move:guarding","cardinality":"narrower","prov":{"work":"S&F-UA-9e","loc":"ch.16 guarding terms","id":"move:guarding"}}],"rationale":null},
+    {"id":"R3:DISCOUNTING","kind":"agd-move","cardinality":"narrower","targets":[{"vocab":"SF","ref":"move:discounting","cardinality":"narrower","prov":{"work":"S&F-UA-9e","loc":"ch.3 discounting terms","id":"move:discounting"}}],"rationale":null}
   ]
 }

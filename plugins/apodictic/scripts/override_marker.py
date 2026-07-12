@@ -82,6 +82,40 @@ def strip_code_spans(body):
     return _INLINE_SPAN_RE.sub(" ", "\n".join(out))
 
 
+def mask_code_spans(body):
+    """Return a positional mask of ``body`` using the shared code-span grammar.
+
+    Every non-newline character inside a fenced or inline code span becomes one space; all other
+    characters, every newline sequence, and the total string length are preserved exactly. This is
+    for parsers that locate active syntax in the mask and then slice verbatim values from the original
+    text at the same offsets. Unlike :func:`strip_code_spans`, this function never normalizes CRLF.
+    """
+    body = body or ""
+
+    def blank(region):
+        return "".join(char if char in "\r\n" else " " for char in region)
+
+    out, fence = [], None
+    for raw_line in body.splitlines(keepends=True):
+        line = raw_line.rstrip("\r\n")
+        if fence is None:
+            opener = _FENCE_OPEN_RE.match(line)
+            if opener and not (opener.group(1)[0] == "`" and "`" in opener.group(2)):
+                fence = (opener.group(1)[0], len(opener.group(1)))
+                out.append(blank(raw_line))
+            else:
+                out.append(raw_line)
+        else:
+            closer = _FENCE_CLOSE_RE.match(line)
+            if closer and closer.group(1)[0] == fence[0] and len(closer.group(1)) >= fence[1]:
+                fence = None
+            out.append(blank(raw_line))
+    # splitlines(keepends=True) returns no item only for the empty string; otherwise it includes a
+    # final unterminated line, so joining preserves the source byte-for-character shape.
+    fenced = "".join(out)
+    return _INLINE_SPAN_RE.sub(lambda match: blank(match.group(0)), fenced)
+
+
 def has_override(body, slug):
     """True iff a GENUINE `<!-- override: <slug> ... -->` marker is present in `body`.
 
@@ -213,6 +247,13 @@ def _self_test():
     # a MULTILINE inline span (a backtick run whose content spans lines) hides the marker too (Codex P1)
     chk("multiline_inline_rejected",
         not has_override("text `inline open\n<!-- override: my-slug -->\ninline close` more", S))
+    positional = "lead `inline\n## 2. decoy\nclose` tail\r\n~~~x\r\nfenced\r\n~~~\r\nlive"
+    positional_mask = mask_code_spans(positional)
+    chk("positional_mask_length", len(positional_mask) == len(positional))
+    chk("positional_mask_newlines",
+        re.findall(r"\r\n|\r|\n", positional_mask) == re.findall(r"\r\n|\r|\n", positional))
+    chk("positional_mask_multiline_inline_decoy",
+        "## 2. decoy" not in positional_mask and positional_mask.endswith("live"))
     # a ``` line INSIDE a ~~~ fence must NOT close the fence early and expose the marker (Codex P1)
     chk("tilde_fence_with_backtick_line_rejected",
         not has_override("~~~\n```\n<!-- override: my-slug -->\n```\n~~~", S))
