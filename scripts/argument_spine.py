@@ -58,6 +58,13 @@ under the canonical §1–§6 — no new top-level section, so argument-state-sc
                       Compatibility is normalized (lowercase, collapse spaces/hyphens) so the spaced
                       doc-enum spelling ('grant proposal') matches the hyphenated genre ('grant-proposal').
   B4 duplicate genre profile  more than one genre_profile block (the piece is one genre; parallels E2).
+  B5 dangling objection target (R2)  a typed reviewer_objections item's target names a Cn not declared
+                      in the spine's ladder (the A5/A8 machinery; skip-not-fail when no valid spine —
+                      the B3 precedent). Item SHAPE (bare string non-empty, or object with a required
+                      non-whitespace 'objection' + optional target/relation typed against the
+                      Argument_State §6 Relation vocabulary; post-draft keys rejected) is B1-class,
+                      hand-rolled in _reviewer_objection_errs (the schema's items is untyped — the
+                      subset validator has no union support).
   W4 thin genre skeleton  a declared genre's CANONICAL required section is missing from
                       required_sections (e.g. a grant-proposal that omits approach). Advisory (ERROR
                       --strict): the writer may be working a non-standard variant. Override:
@@ -128,6 +135,13 @@ _SUBCLAIM_ID_RE = re.compile(r"^\s*(C[0-9]+)\b")
 # subset validator type-checks array items but does not recurse into object items, so B1 enforces the
 # per-section {role, heading, seeded_by} shape here). Mirrors the schema's seeded_by enum.
 _GENRE_SEEDED_BY = ("C0+ladder", "stakes", "subclaim", "support_plan", "warrant_plan", "objection", "none")
+# R2 — the Argument_State §6 objection-typing vocabulary (docs/argument-state-schema.md §6). Mirrors
+# the schema $comments; the writer's OPTIONAL pre-draft target/relation metadata is checked against it.
+_OBJECTION_RELATIONS = ("WARRANT-DEFEATER", "CLAIM-CHALLENGE", "EVIDENCE-CHALLENGE",
+                        "VALUE-CONFLICT", "ALTERNATIVE")
+_OBJECTION_TARGET_RE = re.compile(r"^(C[0-9]+(\.warrant|\.support)?|argument-wide)$")
+# Post-draft audit-result keys that have no business on a PRE-DRAFT writer item (wrong-surface guard).
+_OBJECTION_POSTDRAFT_KEYS = ("basis", "condition", "derivation_anchors", "engaged", "quality", "codes")
 # The genre-canonical required-section ROLE sets — the small in-validator table W4 advises against
 # (a declared genre whose required_sections omit a canonical role). Roles, not headings (headings are
 # writer-declared per funder/venue; D2). Drawn from convention; deliberately MINIMAL (the writer may
@@ -279,6 +293,52 @@ def _genre_section_errs(obj, where):
     return errs
 
 
+def _reviewer_objection_errs(obj, where):
+    """Per-item shape validation for reviewer_objections (B1 class; R2). The schema's `items` is
+    deliberately UNTYPED — the subset validator has no union support, and a typed `items` would reject
+    the object form before this arm ever ran — so ALL per-item validation lives here (the
+    _genre_section_errs pattern). An item is either:
+      - a legacy bare string (the writer's objection text) — ANY string is shape-valid; blank-ness
+        stays W5's ADVISORY concern (the legacy contract, behavior-preserved); or
+      - an object {objection: REQUIRED non-whitespace string, target?: Cn[.warrant|.support] or
+        'argument-wide', relation?: the Argument_State §6 Relation vocabulary}.
+    Post-draft audit-result keys (basis/condition/derivation_anchors/engaged/quality/codes) are
+    REJECTED on a pre-draft item — those are Step-6 outputs, not writer plans (wrong-surface guard).
+    The writer owns every objection's CONTENT; this checks shape only, never authors or suggests.
+    Whether a `target`'s Cn resolves against the spine ladder is checked in check() (B5), where the
+    spine is available — skip-not-fail when no valid spine exists (the B3 precedent)."""
+    errs = []
+    objections = obj.get("reviewer_objections")
+    if objections is None or not isinstance(objections, list):
+        return errs  # absence / container type is the schema's concern (and W5's)
+    for i, o in enumerate(objections):
+        at = "%s reviewer_objections[%d]" % (where, i)
+        if isinstance(o, str):
+            # LEGACY CONTRACT: any string is shape-valid — blank-ness was never a schema error and
+            # remains W5's ADVISORY concern (the documented "whitespace-only still fires W5" arm).
+            # Hardening it to ERROR here would silently change W5's contract; don't.
+            continue
+        if not isinstance(o, dict):
+            errs.append("%s: must be a string or an object (got %s)" % (at, type(o).__name__))
+            continue
+        txt = o.get("objection")
+        if not (isinstance(txt, str) and txt.strip()):
+            errs.append("%s: object form requires a non-empty (non-whitespace) 'objection' string" % at)
+        tgt = o.get("target")
+        if "target" in o and not (isinstance(tgt, str) and _OBJECTION_TARGET_RE.match(tgt)):
+            errs.append("%s: 'target'=%r must match C<n>[.warrant|.support] or 'argument-wide'" % (at, tgt))
+        rel = o.get("relation")
+        if "relation" in o and rel not in _OBJECTION_RELATIONS:
+            errs.append("%s: 'relation'=%r not in %s" % (at, rel, list(_OBJECTION_RELATIONS)))
+        for k in o:
+            if k in _OBJECTION_POSTDRAFT_KEYS:
+                errs.append("%s: %r is a POST-DRAFT audit result (Argument_State §6, Step 6) — it has "
+                            "no business on a pre-draft writer item" % (at, k))
+            elif k not in ("objection", "target", "relation"):
+                errs.append("%s: unknown key %r (allowed: objection, target, relation)" % (at, k))
+    return errs
+
+
 def parse_genre_profiles(text):
     """[(obj_or_None, schema_errs, index), ...] for each apodictic:genre_profile block (Increment 5).
 
@@ -300,7 +360,9 @@ def parse_genre_profiles(text):
             continue
         serrs = art.validate_obj(obj, schema, where)
         if not serrs:
-            serrs = _genre_section_errs(obj, where)   # per-section shape, only when the container is valid
+            # per-section + per-objection shape, only when the container is valid (both hand-rolled —
+            # the subset validator does not recurse into object array items)
+            serrs = _genre_section_errs(obj, where) + _reviewer_objection_errs(obj, where)
         plans.append((obj, serrs, idx))
     return plans
 
@@ -442,6 +504,24 @@ def check(text, strict=False):
                 errs.append("B3 genre/form mismatch: genre_profile.genre=%r is incompatible with the "
                             "spine's form=%r — the genre and the spine disagree about what the piece is"
                             % (gobj.get("genre"), obj.get("form")))
+        # B5 — dangling objection target (R2): a typed reviewer_objections item whose target names a
+        # Cn must resolve against the spine's declared ladder (the A5/A8 machinery). SKIP-not-fail
+        # when no valid spine exists (the B3 precedent — a genre profile may predate the spine); the
+        # target's SHAPE was already checked in _reviewer_objection_errs regardless. 'argument-wide'
+        # and C0 need no ladder resolution (C0 is the thesis, always implicitly declared).
+        if obj is not None and not schema_errs:
+            declared_cn = spine_subclaim_ids(obj)
+            for oi, o in enumerate(gobj.get("reviewer_objections") or []):
+                if not isinstance(o, dict):
+                    continue
+                tgt = o.get("target")
+                if not (isinstance(tgt, str) and _OBJECTION_TARGET_RE.match(tgt)):
+                    continue  # bad shape already errored in _reviewer_objection_errs
+                cn = tgt.split(".", 1)[0]
+                if cn in ("argument-wide", "C0") or cn in declared_cn:
+                    continue
+                errs.append("B5 dangling objection target: reviewer_objections[%d] targets %s — %s is "
+                            "not a declared spine subclaim" % (oi, tgt, cn))
         # W4 — thin genre skeleton: a declared genre's CANONICAL required role is missing from
         # required_sections (advisory; ERROR --strict; override silences). Genre conventions vary, so
         # this only nudges; the hard B-codes carry structural integrity.
@@ -461,8 +541,14 @@ def check(text, strict=False):
         # W5-specific override slug (argument-spine-reviewer) keeps this decision decoupled from W4's.
         if not override_targets(text, "argument-spine-reviewer"):
             objections = gobj.get("reviewer_objections")
+            # An item counts as real if it is a non-whitespace bare string OR (R2) an object form
+            # carrying a non-whitespace 'objection' — an all-object-form list must NOT false-fire
+            # "declares no reviewer_objections" (that regression would ERROR under --strict).
             non_empty = isinstance(objections, list) and any(
-                isinstance(o, str) and o.strip() for o in objections)
+                (isinstance(o, str) and o.strip())
+                or (isinstance(o, dict) and isinstance(o.get("objection"), str)
+                    and o.get("objection").strip())
+                for o in objections)
             if not non_empty:
                 warns.append("W5 reviewer-anticipation: %s pre-draft declares no reviewer_objections — "
                              "pre-list the evaluator's likely objections (seeds §6, The Strongest Case "
@@ -871,6 +957,72 @@ def run_self_test():
         bool(w5_line) and "the engine never authors them" in w5_line
         and not any(term in w5_line for term in ("this is already known", "the gap isn't real",
                                                  "the method doesn't support")))
+
+    # ---- R2: typed reviewer_objections (bare-string OR object form) + anti_thesis sibling metadata ----
+    R2_OBJ = {"objection": "the eval design can't isolate the effect",
+              "target": "C1.warrant", "relation": "WARRANT-DEFEATER"}
+    # mixed bare + typed object -> clean (shape arm quiet, B5 quiet, W5 quiet)
+    code, lines = check(seededG("grant-proposal", objections=("a bare objection", R2_OBJ)))
+    chk("r2_mixed_clean", code == 0 and not any(
+        "reviewer_objections[" in ln or "B5" in ln or "W5" in ln for ln in lines))
+    # all valid object variants -> clean (objection-only / +target / +relation / all three)
+    code, lines = check(seededG("grant-proposal", objections=(
+        {"objection": "o1"}, {"objection": "o2", "target": "C1"},
+        {"objection": "o3", "relation": "ALTERNATIVE"}, R2_OBJ)))
+    chk("r2_object_variants_clean", code == 0 and not any("reviewer_objections[" in ln for ln in lines))
+    # W5 REGRESSION GUARD: an ALL-object-form list is real content — must stay W5-green under --strict
+    chk("r2_all_object_w5_green_strict",
+        check(seededG("pitch-deck", evaluator="investor", objections=(R2_OBJ,)), strict=True)[0] == 0)
+    # hostile: object missing 'objection' -> ERROR
+    chk("r2_missing_objection_key", check(seededG("grant-proposal", objections=(
+        {"target": "C1.warrant"},)))[0] == 1)
+    # hostile: whitespace-only 'objection' -> ERROR
+    chk("r2_blank_objection", check(seededG("grant-proposal", objections=(
+        {"objection": "   "},)))[0] == 1)
+    # hostile: a numeric item is neither string nor object -> ERROR
+    chk("r2_numeric_item", check(seededG("grant-proposal", objections=(42,)))[0] == 1)
+    # legacy bare-string blankness stays W5-ADVISORY, never a shape ERROR (behavior preservation:
+    # the pre-existing w5_whitespace_only_warn arm is the contract; a blank item alongside a real
+    # one was legacy-clean and must stay clean)
+    code, lines = check(seededG("grant-proposal", objections=("  ", R2_OBJ)))
+    chk("r2_blank_bare_string_stays_advisory",
+        code == 0 and not any("reviewer_objections[" in ln for ln in lines))
+    # hostile: bad target shape -> ERROR
+    chk("r2_bad_target_shape", check(seededG("grant-proposal", objections=(
+        {"objection": "x", "target": "warrant"},)))[0] == 1)
+    # hostile: an explicitly present JSON null is not the same as omitting the optional typed field
+    chk("r2_null_target", check(seededG("grant-proposal", objections=(
+        {"objection": "x", "target": None},)))[0] == 1)
+    # hostile: bad relation enum -> ERROR
+    chk("r2_bad_relation", check(seededG("grant-proposal", objections=(
+        {"objection": "x", "relation": "MITIGATED"},)))[0] == 1)
+    chk("r2_null_relation", check(seededG("grant-proposal", objections=(
+        {"objection": "x", "relation": None},)))[0] == 1)
+    # hostile: stray POST-DRAFT audit key on a pre-draft item -> ERROR (wrong-surface guard)
+    code, lines = check(seededG("grant-proposal", objections=(
+        {"objection": "x", "engaged": "N"},)))
+    chk("r2_postdraft_key_rejected", code == 1 and any("POST-DRAFT" in ln for ln in lines))
+    # hostile: unknown key -> ERROR (closed item shape)
+    chk("r2_unknown_key", check(seededG("grant-proposal", objections=(
+        {"objection": "x", "weight": 3},)))[0] == 1)
+    # B5: dangling target (spine present, C9 undeclared) -> ERROR naming B5
+    code, lines = check(seededG("grant-proposal", objections=(
+        {"objection": "x", "target": "C9.warrant"},)))
+    chk("r2_b5_dangling_target", code == 1 and any("B5 dangling objection target" in ln for ln in lines))
+    # B5 skip-not-fail: same dangling target with NO spine block -> B5 must NOT fire (B3 precedent)
+    _, lines = check(genre(objections=({"objection": "x", "target": "C9.warrant"},)))
+    chk("r2_b5_skip_without_spine", not any("B5" in ln for ln in lines))
+    # B5: C0 + argument-wide targets need no ladder resolution
+    code, lines = check(seededG("grant-proposal", objections=(
+        {"objection": "x", "target": "C0"}, {"objection": "y", "target": "argument-wide"})))
+    chk("r2_b5_c0_argumentwide_ok", code == 0 and not any("B5" in ln for ln in lines))
+    # anti_thesis sibling metadata: valid pair -> clean; bad values -> schema ERROR (pattern / enum)
+    chk("r2_anti_siblings_clean", check(seeded(block=spine(
+        anti_thesis_target="C1.warrant", anti_thesis_relation="WARRANT-DEFEATER")))[0] == 0)
+    code, lines = check(seeded(block=spine(anti_thesis_relation="MITIGATED")))
+    chk("r2_anti_relation_bad", code == 1 and any("anti_thesis_relation" in ln for ln in lines))
+    code, lines = check(seeded(block=spine(anti_thesis_target="the warrant")))
+    chk("r2_anti_target_bad", code == 1 and any("anti_thesis_target" in ln for ln in lines))
 
     # B1 blank/duplicate role|heading — a non-whitespace, unique contract, enforced at the gate.
     # The smallest-input-that-breaks: all four canonical grant roles but heading="" everywhere. B2

@@ -22,6 +22,6 @@
       }
     },
     "evaluator": {"enum": ["panel-reviewer", "peer-reviewer", "investor"]},
-    "reviewer_objections": {"type": "array", "items": {"type": "string"}}
+    "reviewer_objections": {"type": "array", "items": {}, "$comment": "Items are a legacy bare string (the writer's objection text) OR an object {objection: non-empty string (REQUIRED), target?: ^C[0-9]+(\\.warrant|\\.support)?$ or 'argument-wide', relation?: WARRANT-DEFEATER|CLAIM-CHALLENGE|EVIDENCE-CHALLENGE|VALUE-CONFLICT|ALTERNATIVE}. items is deliberately UNTYPED: the stdlib subset validator has no union support and its items.type check would reject object items before the hand-rolled arm runs \u2014 so ALL per-item validation (incl. the legacy string non-emptiness) lives in argument_spine.py _reviewer_objection_errs, the same pattern as required_sections. The writer owns every objection's CONTENT; the optional target/relation metadata types it against the Argument_State \u00a76 Relation vocabulary (docs/argument-state-schema.md \u00a76, R2)."}
   }
 }

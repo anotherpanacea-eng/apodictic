@@ -290,6 +290,7 @@ C1: [subclaim]
   Warrant status: [EXPLICIT / RECOVERABLE / MISSING / CONTESTED]
   Backing: [PRESENT / THIN / ABSENT]
   Qualifier: [MATCHED / OVERCONFIDENT / UNDERCLAIMED]
+  Defeater refs: [POPULATED BY STEP 6 — leave absent here; see the Step 6 per-warrant sweep]
   If testimony: [OBSERVATIONAL / INTERPRETIVE / REPRESENTATIVE / INSTITUTIONAL]
   Code: [WR-code or PASS]
 ```
@@ -392,8 +393,21 @@ Identify 2–4 objections the piece implicitly anticipates or conspicuously igno
 
 Then check scope: an objection to the proposed *alternative*, or to a *secondary* claim, is not a substitute for an objection to **C0 as actually argued**. Record the result as `STRONGEST OBJECTION` even if the piece never raises it, and let it anchor the inventory below. If a genre-generic objection occupies the strongest slot while Test B yielded a sharper text-internal one, fire **OB5**.
 
+**6a-type. Type every objection record (R2).** Each objection carries `Target` (what it aims at), `Relation`, and `Basis` — two DECOUPLED axes plus an address:
+
+- **`Relation`** is *what the objection targets*. **`WARRANT-DEFEATER`** — Toulmin's rebuttal — is an "unless …" exception on a specific `Cn.warrant`'s connecting principle, **holding that warrant fixed**: if the concern can be phrased as an "unless" clause appended to the warrant, it is a warrant-defeater; if it targets the claim's truth (`CLAIM-CHALLENGE`), the support (`EVIDENCE-CHALLENGE`), imports a competing value (`VALUE-CONFLICT`), or proposes a rival (`ALTERNATIVE` — the FM-A10 axis), it is not.
+- **`Basis`** is *derivation provenance*, and it is NOT the same axis: `TEXT-INTERNAL` = derived from the argument's own warrant/grounds (the Test B discipline); `IMPORTED` = genre-generic/canonical (Test A's class). **A Test-B-derived objection is not automatically a WARRANT-DEFEATER**: a self-undermining remedy (Test B's canonical output — see FM-A20) is `TEXT-INTERNAL` but its Relation is `CLAIM-CHALLENGE` or `ALTERNATIVE`, because it attacks the remedy, not the warrant's bridge. Conversely a generic warrant exception ("unless the sample is biased") is `WARRANT-DEFEATER` + `IMPORTED`.
+- Every `WARRANT-DEFEATER` records its `Condition` (the "unless …" clause). When `Basis: TEXT-INTERNAL`, it must also cite `Derivation anchors` — the warrant/grounds locations the condition is derived from. **Firewall discipline:** the condition is engine-surfaced, author-adjudicated *diagnosis* derived from the text's own machinery — never an invented counter-condition imported from outside the text, and never asserted as a validity rule the argument must satisfy. An `IMPORTED` warrant-defeater carries no anchors and is flagged non-adjudicable-by-anchors.
+
+**6a-sweep. The per-warrant defeater sweep (R2).** After the strongest objection is settled, run Test B once more, scoped per warrant: *for each `Cn` in the §4 warrant map, ask under what conditions that warrant's connecting principle fails to carry, holding it fixed.* Record any **material** result as a typed objection record (`Target: Cn.warrant`, `Relation: WARRANT-DEFEATER`) — the core inventory stays 2–4 strongest, and sweep-found records append after them. Then write the §4 projection: for each claim, set its `Defeater refs:` line to the within-run pointers of its warrant-defeater records (`O1, O3` — pointers into *this run's* §6 list; they renumber across reruns and are documentation, not a stable key), or to **`NO-MATERIAL-TEXT-INTERNAL-DEFEATER-IDENTIFIED — <review_basis>`** when the sweep found nothing material. The review_basis must state the materiality bar applied ("no exception a MIXED-expertise reader would treat as live"); this is an open-world *search result* — never a warrant-soundness assurance, never an input to Warrant status or the Step 9 verdict. A claim whose line is absent was not swept — absence is *unknown*, not clean. Do NOT promote a defeater to a failure code: an ignored material defeater reaches the author through the ordinary objection pathway (`Engaged: N` + the OB codes — OB3 when central).
+
 ```
 OBJECTION 1: [what the strongest objection would be]
+  Target: [C0 | Cn | Cn.warrant | Cn.support | argument-wide]
+  Relation: [WARRANT-DEFEATER | CLAIM-CHALLENGE | EVIDENCE-CHALLENGE | VALUE-CONFLICT | ALTERNATIVE]
+  Basis: [TEXT-INTERNAL | IMPORTED]
+  Condition: [WARRANT-DEFEATER only — the "unless …" clause]
+  Derivation anchors: [TEXT-INTERNAL only — the warrant/grounds locations the condition is derived from]
   Engaged: [Y/N]
   If Y — quality: [SUBSTANTIVE / STRAWMAN / EVASION / COSMETIC]
   If N — severity: [MINOR / SIGNIFICANT / CENTRAL]
@@ -438,7 +452,7 @@ OBJECTION 2: [...]
 
 **Working rule:** Mentioning disagreement is not the same thing as earning argumentative trust. OB4 and the DI family exist to catch drafts that *sound* fair without actually carrying the burden of fairness.
 
-**Output:** The named STRONGEST OBJECTION (6a) + objection inventory (2–4) + engagement quality + OB-codes + DI-codes for any failures.
+**Output:** The named STRONGEST OBJECTION (6a) + objection inventory (2–4, typed per 6a-type, plus any sweep-found WARRANT-DEFEATER records) + engagement quality + the §4 `Defeater refs:` projection (6a-sweep) + OB-codes + DI-codes for any failures.
 
 ---
 

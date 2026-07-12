@@ -23,7 +23,7 @@ reviewer_objections pre-list is non-empty (seeds §6; the genre layer never auth
 -->
 
 <!-- apodictic:genre_profile
-{"schema":"apodictic.genre_profile.v1","genre":"pitch-deck","required_sections":[{"role":"problem","heading":"Problem","seeded_by":"stakes"},{"role":"solution","heading":"Solution","seeded_by":"C0+ladder"},{"role":"traction","heading":"Traction","seeded_by":"support_plan"}],"evaluator":"investor","reviewer_objections":["the problem isn't urgent enough to switch","the solution doesn't follow from the problem","the traction is a vanity metric"]}
+{"schema":"apodictic.genre_profile.v1","genre":"pitch-deck","required_sections":[{"role":"problem","heading":"Problem","seeded_by":"stakes"},{"role":"solution","heading":"Solution","seeded_by":"C0+ladder"},{"role":"traction","heading":"Traction","seeded_by":"support_plan"}],"evaluator":"investor","reviewer_objections":[{"objection":"the problem isn't urgent enough to switch","target":"C1","relation":"CLAIM-CHALLENGE"},{"objection":"the solution doesn't follow from the problem","target":"C2.warrant","relation":"WARRANT-DEFEATER"},{"objection":"the traction is a vanity metric","target":"C3.support","relation":"EVIDENCE-CHALLENGE"}]}
 -->
 
 ## 1. Context and Classification
