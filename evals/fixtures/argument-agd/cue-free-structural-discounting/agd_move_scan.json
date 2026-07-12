@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "available": true,
   "target": {
-    "path": "/private/tmp/claude-501/-Users-anotherpanacea-Documents-Code-Mac/973b31ad-f10a-4c85-b16f-7dccc490bfff/scratchpad/wt-a1/evals/fixtures/argument-agd/cue-free-structural-discounting/source.md",
+    "path": "evals/fixtures/argument-agd/cue-free-structural-discounting/source.md",
     "words": 68
   },
   "baseline": null,
@@ -56,7 +56,7 @@
       },
       "judge_identity": {
         "kind": "manifest",
-        "manifest_path": "/private/tmp/claude-501/-Users-anotherpanacea-Documents-Code-Mac/973b31ad-f10a-4c85-b16f-7dccc490bfff/scratchpad/agd-scan-manifest-cuefree.json",
+        "manifest_path": "evals/fixtures/argument-agd/cue-free-structural-discounting/scan-manifest.json",
         "model": null,
         "vendor": null,
         "model_revision": null,
