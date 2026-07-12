@@ -1,0 +1,30 @@
+{
+  "fixture_id": "ambiguous",
+  "vendor": "fable",
+  "model_id": "claude-fable-5",
+  "prompt_fingerprint_sha256": "f07f8f4adafaf9eebb47ff72dca640042c5bc4c576044d9f1d79002733c2bcf5",
+  "rep": 1,
+  "acquired_at": "2026-07-12T19:33:17+00:00",
+  "values": {
+    "observations": [
+      {
+        "family": "GUARDING",
+        "span": "The library's late-fee amnesty arguably increased returns",
+        "paragraph_index": 0,
+        "cue": "arguably"
+      },
+      {
+        "family": "ASSURING",
+        "span": "The circulation manager attributes the jump to the amnesty",
+        "paragraph_index": 1,
+        "cue": null
+      },
+      {
+        "family": "DISCOUNTING",
+        "span": "though the same month saw the branch reopen its east entrance after renovation",
+        "paragraph_index": 1,
+        "cue": "though"
+      }
+    ]
+  }
+}

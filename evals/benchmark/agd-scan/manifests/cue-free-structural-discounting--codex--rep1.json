@@ -1,0 +1,36 @@
+{
+  "fixture_id": "cue-free-structural-discounting",
+  "vendor": "codex",
+  "model_id": "gpt-5.6-sol",
+  "prompt_fingerprint_sha256": "f07f8f4adafaf9eebb47ff72dca640042c5bc4c576044d9f1d79002733c2bcf5",
+  "rep": 1,
+  "acquired_at": "2026-07-12T19:31:12+00:00",
+  "values": {
+    "observations": [
+      {
+        "family": "DISCOUNTING",
+        "span": "several of whom asked how younger children would be supervised on\nthe fifth day, mostly wanted to talk about bus schedules",
+        "paragraph_index": 1,
+        "cue": null
+      },
+      {
+        "family": "GUARDING",
+        "span": "mostly",
+        "paragraph_index": 1,
+        "cue": "mostly"
+      },
+      {
+        "family": "ASSURING",
+        "span": "The pilot districts report",
+        "paragraph_index": 2,
+        "cue": "report"
+      },
+      {
+        "family": "ASSURING",
+        "span": "exit interviews name",
+        "paragraph_index": 2,
+        "cue": "exit interviews name"
+      }
+    ]
+  }
+}
