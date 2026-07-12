@@ -1,7 +1,109 @@
 {
-  "setec_version": "1.122.0",
+  "setec_version": "1.124.0",
   "manifest_schema_version": "0.3.0",
   "entries": [
+    {
+      "id": "agd_move_scan",
+      "script_path": "plugins/setec-voiceprint/scripts/agd_move_scan.py",
+      "surface": "agd_move_scan",
+      "status": "heuristic",
+      "handoff": "experimental",
+      "min_setec_version": "1.124.0",
+      "json_delivery": "stdout",
+      "consumers": [
+        "apodictic"
+      ],
+      "family": "argument-pattern",
+      "purpose": "Report LOCATED, verbatim-anchored candidate AGD move observations for an argument-shaped nonfiction passage: each performative move a pluggable LLM judge identifies — ASSURING (authority/certainty in place of support), GUARDING (a claim weakened to shrink its commitment), DISCOUNTING (an objection anticipated and set aside, including cue-free structural dismissal) — with its family, verbatim span, paragraph index, and surface cue (null = cue-free). Identification is FUNCTIONAL (at transitions; cues are evidence, never criteria), aligned with the consumer audit's Layer-1 discipline (apodictic AGD Move Audit; R4A ADR D5: the producer observes, the consumer alone assigns codes). All three families are LEGITIMATE moves: an observation is a location, never a finding, code, or score; emits no adjudication, no aggregate-as-quality (Sinnott-Armstrong & Fogelin 9e, ch. 3).\n",
+      "use_when": [
+        "You want a candidate inventory of assuring/guarding/discounting moves (with spans and paragraph loci) to seed or cross-check apodictic's AGD Move Audit Layer 1",
+        "Target is an argument-shaped nonfiction passage (op-ed / policy / testimony)",
+        "You want cue-free functional moves surfaced, not a cue-lexicon grep"
+      ],
+      "do_not_use_when": [
+        "You want a smuggling / soundness / quality adjudication or any diagnostic code (the surface refuses ALL of these — every observation is a legitimate move's location; the consumer audit alone challenges and codes)",
+        "You want to read observation COUNT as a quality signal (it is location data)",
+        "You don't have an LLM judge or a pre-computed observation manifest"
+      ],
+      "inputs": [
+        {
+          "flag": "target",
+          "type": "path",
+          "required": true
+        },
+        {
+          "flag": "--judge",
+          "type": "enum",
+          "required": true,
+          "values": [
+            "mock",
+            "manifest",
+            "anthropic",
+            "openai",
+            "gemini",
+            "agent_host"
+          ]
+        },
+        {
+          "flag": "--judge-manifest",
+          "type": "path",
+          "required": false
+        },
+        {
+          "flag": "--judge-model",
+          "type": "string",
+          "required": false
+        },
+        {
+          "flag": "--expect-fingerprint",
+          "type": "string",
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "type": "bool",
+          "required": false
+        }
+      ],
+      "outputs": {
+        "schema_version": "1.0",
+        "artifacts": [
+          ".agd_move_scan.json",
+          ".agd_move_scan.md"
+        ]
+      },
+      "compute": {
+        "tier": "api_llm",
+        "cost_note": "$0.01–0.10 per doc via Anthropic / OpenAI / Gemini (one labeling call); free with --judge manifest or --judge mock (a deterministic test stub); key-free with --judge agent_host (delegates to the host runtime's model; see spec 35)",
+        "length_floor_words": 120
+      },
+      "registers": [
+        "op-ed"
+      ],
+      "dependencies": {
+        "python": [],
+        "python_optional": [],
+        "sdks_optional": [
+          "anthropic",
+          "openai",
+          "google-genai"
+        ]
+      },
+      "examples": [
+        {
+          "description": "Located AGD move scan with a pre-computed observation manifest",
+          "cmd": "python3 plugins/setec-voiceprint/scripts/agd_move_scan.py essay.txt --judge manifest --judge-manifest observations.json"
+        },
+        {
+          "description": "Consumer-side normalized dispatch (apodictic shim path)",
+          "cmd": "setec run agd_move_scan essay.txt --judge agent_host --json"
+        }
+      ],
+      "references": [
+        "plugins/setec-voiceprint/references/signals-glossary.md"
+      ],
+      "calibration_status": "heuristic"
+    },
     {
       "id": "aic_pattern_audit",
       "script_path": "plugins/setec-voiceprint/scripts/aic_pattern_audit.py",

@@ -120,7 +120,7 @@ def t1_floor_resolution_from_vendored_manifest() -> None:
 
     # Every shim surface resolves to a floor, and the known floors match.
     shim_surfaces = discover_shim_surfaces(SHIM_DIR)
-    check(len(shim_surfaces) == 11, f"11 shim surfaces discovered (got {len(shim_surfaces)})")
+    check(len(shim_surfaces) == 12, f"12 shim surfaces discovered (got {len(shim_surfaces)})")
     expected = {
         "variance_audit": "1.86.0",
         "manuscript_audit": "1.86.0",
@@ -132,11 +132,13 @@ def t1_floor_resolution_from_vendored_manifest() -> None:
         "idiolect_detector": "1.86.0",
         "narrative_decision_audit": "1.107.0",
         "argument_decision_audit": "1.116.0",
-        # position_pair_register (stance-consistency PR 2): the shim ships in THIS PR, so the surface
-        # is discovered here; its vendored-manifest entry + golden arrive via `sync_setec` once SETEC
-        # v1.122.0 is tagged (the deferred adoption-ripple follow-up). Until that sync lands, the
-        # "resolves in vendored manifest" assertion below is EXPECTED-RED — do not hand-copy the golden.
         "position_pair_register": "1.121.0",
+        # agd_move_scan (R3B AGD producer/consumer seam): the shim ships in THIS PR and its
+        # vendored-manifest entry + golden arrive together via `sync_setec` from the tagged SETEC
+        # v1.124.0 release (the first release carrying the surface — de-circularized: the producer
+        # fragment ships `consumers: [apodictic]` from birth, so the projection sees it the moment
+        # the tag lands). Floor = 1.124.0.
+        "agd_move_scan": "1.124.0",
     }
     for surface in shim_surfaces:
         cap = manifest.surfaces.get(surface)
@@ -224,6 +226,44 @@ def t2_vendored_golden_through_runner() -> None:
         result.task_surface == "narrative_decision_audit",
         "narrative_decision golden task_surface parsed",
     )
+
+    # agd_move_scan golden (R3B AGD seam) — the POSITIVE runner-path assertion
+    # for the new surface: route the vendored golden through the consumer's
+    # run_supplement parse path (not a mere fixture-presence check), and assert
+    # it parses as the agd_move_scan surface AND that the located-observation
+    # payload APODICTIC pins (results.observations) survives the round trip.
+    with _fake_dispatcher_dir(
+        _golden_dispatcher_body("agd_move_scan.json")
+    ) as tmp:
+        result = setec_runner.run_supplement(
+            "agd_move_scan", ["op-ed.md"], location=_loc(tmp)
+        )
+    check(
+        result.task_surface == "agd_move_scan",
+        "agd_move_scan golden task_surface parsed through run_supplement",
+    )
+    check(result.tool == "agd_move_scan", "agd_move_scan golden tool parsed")
+    check(result.available is True, "agd_move_scan golden available flag parsed")
+    observations = (
+        result.results.get("observations") if isinstance(result.results, dict) else None
+    )
+    check(
+        isinstance(observations, list) and len(observations) > 0,
+        "agd_move_scan results.observations is a non-empty list (the located-observation "
+        "payload APODICTIC pins; a producer drop must fail HERE, not silently at runtime)",
+    )
+    if isinstance(observations, list) and observations:
+        obs0 = observations[0]
+        check(
+            isinstance(obs0, dict)
+            and obs0.get("family") in {"ASSURING", "GUARDING", "DISCOUNTING"}
+            and isinstance(obs0.get("span"), str)
+            and isinstance(obs0.get("paragraph_index"), int)
+            and not isinstance(obs0.get("paragraph_index"), bool)
+            and ("cue" in obs0),
+            "agd_move_scan observation carries {family∈AGD, span:str, paragraph_index:int, cue} "
+            "(the consume-side located-observation shape)",
+        )
 
     # A SETEC without the dispatcher (pre-R2) fails cleanly with an upgrade
     # message, not a crash.
