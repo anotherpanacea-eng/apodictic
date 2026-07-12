@@ -1,0 +1,1253 @@
+{
+  "version": "0.1.0",
+  "artifact": "argument-taxonomy-crosswalk",
+  "adr": "docs/adr/0001-argument-layer-boundary.md",
+  "reference_vocabularies": {
+    "AIF": "Argument Interchange Format (arg-tech.org)",
+    "WALTON": "Walton, Reed & Macagno, Argumentation Schemes (2008)",
+    "SF": "Sinnott-Armstrong & Fogelin, Understanding Arguments, 9th ed. (2015)",
+    "WACHSMUTH": "Wachsmuth et al. 2017 (ACL P17-2039); GAQCorpus (Lauscher et al. 2020)"
+  },
+  "cardinality_legend": {
+    "exact": "internal code and external ref denote the same thing",
+    "broader": "internal code is broader than the external ref",
+    "narrower": "internal code is a special case of the external ref",
+    "related": "genuine relation, neither containment nor identity",
+    "unmapped": "no external ref in the reference set applies (rationale required)"
+  },
+  "firewall": "Green certifies shape only. targets/cardinality/prov/rationale correctness is human/Codex-adjudicated, not mechanically proven. R2-R5 must treat content as reviewed, not proven.",
+  "entries": [
+    {
+      "id": "AT0",
+      "family": "AT",
+      "internal_name": "Type undeclared",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set — adjudicate against Walton dialogue types / S&F explanatory-vs-justificatory in R4B."
+    },
+    {
+      "id": "AT1",
+      "family": "AT",
+      "internal_name": "Explanatory",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set — adjudicate against Walton dialogue types / S&F explanatory-vs-justificatory in R4B."
+    },
+    {
+      "id": "AT2",
+      "family": "AT",
+      "internal_name": "Evaluative",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set — adjudicate against Walton dialogue types / S&F explanatory-vs-justificatory in R4B."
+    },
+    {
+      "id": "AT3",
+      "family": "AT",
+      "internal_name": "Propositional",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set — adjudicate against Walton dialogue types / S&F explanatory-vs-justificatory in R4B."
+    },
+    {
+      "id": "AT4",
+      "family": "AT",
+      "internal_name": "Testimonial",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set — adjudicate against Walton dialogue types / S&F explanatory-vs-justificatory in R4B."
+    },
+    {
+      "id": "AC0",
+      "family": "AC",
+      "internal_name": "Audience dependency undeclared",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "audience-calibration layer; apodictic-specific, no external argumentation-theory analogue in the reference set — revisit R4B."
+    },
+    {
+      "id": "AC1",
+      "family": "AC",
+      "internal_name": "Shared-knowledge overestimate",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "audience-calibration layer; apodictic-specific, no external argumentation-theory analogue in the reference set — revisit R4B."
+    },
+    {
+      "id": "AC2",
+      "family": "AC",
+      "internal_name": "Hostile-audience underdefense",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "audience-calibration layer; apodictic-specific, no external argumentation-theory analogue in the reference set — revisit R4B."
+    },
+    {
+      "id": "AC3",
+      "family": "AC",
+      "internal_name": "Sympathetic-audience flattery drift",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "audience-calibration layer; apodictic-specific, no external argumentation-theory analogue in the reference set — revisit R4B."
+    },
+    {
+      "id": "AC4",
+      "family": "AC",
+      "internal_name": "Compression-context mismatch",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "audience-calibration layer; apodictic-specific, no external argumentation-theory analogue in the reference set — revisit R4B."
+    },
+    {
+      "id": "CL0",
+      "family": "CL",
+      "internal_name": "No identifiable main claim",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "claim-architecture code; no direct external analogue in the reference set — revisit R4B."
+    },
+    {
+      "id": "CL1",
+      "family": "CL",
+      "internal_name": "Claim unstable",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "claim-architecture code; no direct external analogue in the reference set — revisit R4B."
+    },
+    {
+      "id": "CL2",
+      "family": "CL",
+      "internal_name": "Subclaim gap",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "claim-architecture code; no direct external analogue in the reference set — revisit R4B."
+    },
+    {
+      "id": "CL3",
+      "family": "CL",
+      "internal_name": "Circular subclaim",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "claim-architecture code; no direct external analogue in the reference set — revisit R4B."
+    },
+    {
+      "id": "CL4",
+      "family": "CL",
+      "internal_name": "Definitional smuggling",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "family:ambiguity",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "ch.14 precising definition, p.305",
+            "id": "family:ambiguity"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "SM0",
+      "family": "SM",
+      "internal_name": "Missing support",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "support-mapping code; relates to Walton scheme critical-questions per support type — needs per-scheme adjudication in R3/R4B."
+    },
+    {
+      "id": "SM1",
+      "family": "SM",
+      "internal_name": "Irrelevant support",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "support-mapping code; relates to Walton scheme critical-questions per support type — needs per-scheme adjudication in R3/R4B."
+    },
+    {
+      "id": "SM2",
+      "family": "SM",
+      "internal_name": "Support proves different claim",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "support-mapping code; relates to Walton scheme critical-questions per support type — needs per-scheme adjudication in R3/R4B."
+    },
+    {
+      "id": "SM3",
+      "family": "SM",
+      "internal_name": "Single-type dependence",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "support-mapping code; relates to Walton scheme critical-questions per support type — needs per-scheme adjudication in R3/R4B."
+    },
+    {
+      "id": "SM4",
+      "family": "SM",
+      "internal_name": "Evidence laundering",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "support-mapping code; relates to Walton scheme critical-questions per support type — needs per-scheme adjudication in R3/R4B."
+    },
+    {
+      "id": "WR0",
+      "family": "WR",
+      "internal_name": "Warrant gap",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "refutation:inference",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "p.333 the inference is refutable / gap",
+            "id": "refutation:inference"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "WR1",
+      "family": "WR",
+      "internal_name": "Missing backing",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "warrant/inference code; relates to the S&F inference-refutation axis — populate the specific pairing in R3/R4B."
+    },
+    {
+      "id": "WR2",
+      "family": "WR",
+      "internal_name": "Scheme fragility",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "scheme-fragility is a generic Walton critical-question failure; the specific scheme#CQ pairing is code-instance-specific — populate in R3."
+    },
+    {
+      "id": "WR3",
+      "family": "WR",
+      "internal_name": "Qualifier mismatch",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "warrant/inference code; relates to the S&F inference-refutation axis — populate the specific pairing in R3/R4B."
+    },
+    {
+      "id": "BP0",
+      "family": "BP",
+      "internal_name": "Scope undeclared",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set — revisit R4B."
+    },
+    {
+      "id": "BP1",
+      "family": "BP",
+      "internal_name": "Evidence type mismatch",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set — revisit R4B."
+    },
+    {
+      "id": "BP2",
+      "family": "BP",
+      "internal_name": "Scope creep",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set — revisit R4B."
+    },
+    {
+      "id": "BP3",
+      "family": "BP",
+      "internal_name": "Burden shift",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set — revisit R4B."
+    },
+    {
+      "id": "BP4",
+      "family": "BP",
+      "internal_name": "False precision",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set — revisit R4B."
+    },
+    {
+      "id": "BP5",
+      "family": "BP",
+      "internal_name": "Missing alternatives",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "WALTON",
+          "ref": "Practical Reasoning",
+          "cardinality": "related",
+          "prov": {
+            "work": "Walton-Reed-Macagno-2008",
+            "loc": "PR critical question: are there better alternatives?",
+            "id": "Practical Reasoning"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "BP6",
+      "family": "BP",
+      "internal_name": "Testimonial overburden",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "burden/scope code; relates to Walton burden-of-proof machinery not in the R4A reference set — revisit R4B."
+    },
+    {
+      "id": "OB0",
+      "family": "OB",
+      "internal_name": "No objections engaged",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "objection-handling code; relates to Walton critical-question evasion and S&F relevance — needs adjudication in R3 (the AGD/objection move model)."
+    },
+    {
+      "id": "OB1",
+      "family": "OB",
+      "internal_name": "Strawman",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "straw-man: S&F files misrepresentation under refutation/relevance but not as a named family member; adjudicate the exact target in R3 (objection move model)."
+    },
+    {
+      "id": "OB2",
+      "family": "OB",
+      "internal_name": "Evasion",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "objection-handling code; relates to Walton critical-question evasion and S&F relevance — needs adjudication in R3 (the AGD/objection move model)."
+    },
+    {
+      "id": "OB3",
+      "family": "OB",
+      "internal_name": "Central objection unaddressed",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "objection-handling code; relates to Walton critical-question evasion and S&F relevance — needs adjudication in R3 (the AGD/objection move model)."
+    },
+    {
+      "id": "OB4",
+      "family": "OB",
+      "internal_name": "Concession without cost",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "objection-handling code; relates to Walton critical-question evasion and S&F relevance — needs adjudication in R3 (the AGD/objection move model)."
+    },
+    {
+      "id": "OB5",
+      "family": "OB",
+      "internal_name": "Decoy strongest objection",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "objection-handling code; relates to Walton critical-question evasion and S&F relevance — needs adjudication in R3 (the AGD/objection move model)."
+    },
+    {
+      "id": "DI0",
+      "family": "DI",
+      "internal_name": "Starting-point smuggling",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "refutation:begging",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "ch.16 begging the question, p.324",
+            "id": "refutation:begging"
+          }
+        },
+        {
+          "vocab": "SF",
+          "ref": "family:vacuity",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "ch.16 vacuity family",
+            "id": "family:vacuity"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "DI1",
+      "family": "DI",
+      "internal_name": "Unexpressed-premise evasion",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "dialectical-integrity code; relates to S&F vacuity/ambiguity — populate the specific pairing in R3/R4B."
+    },
+    {
+      "id": "DI2",
+      "family": "DI",
+      "internal_name": "Pseudo-resolution",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "dialectical-integrity code; relates to S&F vacuity/ambiguity — populate the specific pairing in R3/R4B."
+    },
+    {
+      "id": "DI3",
+      "family": "DI",
+      "internal_name": "Ambiguity doing argumentative work",
+      "cardinality": "narrower",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "family:ambiguity",
+          "cardinality": "narrower",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "ch.14 equivocation, p.297",
+            "id": "family:ambiguity"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "DI4",
+      "family": "DI",
+      "internal_name": "Motte-and-bailey drift",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "family:ambiguity",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "ch.14 shifting meaning",
+            "id": "family:ambiguity"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "NE0",
+      "family": "NE",
+      "internal_name": "Unattached vignette",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "narrative-as-evidence code; relates to Walton Witness Testimony / Position to Know — adjudicate in R3/R4B."
+    },
+    {
+      "id": "NE1",
+      "family": "NE",
+      "internal_name": "Vignette as substitute",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "narrative-as-evidence code; relates to Walton Witness Testimony / Position to Know — adjudicate in R3/R4B."
+    },
+    {
+      "id": "NE2",
+      "family": "NE",
+      "internal_name": "Vignette-claim mismatch",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "narrative-as-evidence code; relates to Walton Witness Testimony / Position to Know — adjudicate in R3/R4B."
+    },
+    {
+      "id": "NE3",
+      "family": "NE",
+      "internal_name": "Emotional override",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "narrative-as-evidence code; relates to Walton Witness Testimony / Position to Know — adjudicate in R3/R4B."
+    },
+    {
+      "id": "FM-A1",
+      "family": "FM-A",
+      "internal_name": "The Drive-By Thesis",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "named composite pattern; its base-code mappings determine the external analogue — populate in R3/R4B."
+    },
+    {
+      "id": "FM-A2",
+      "family": "FM-A",
+      "internal_name": "The Evidence Pile",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "named composite pattern; its base-code mappings determine the external analogue — populate in R3/R4B."
+    },
+    {
+      "id": "FM-A3",
+      "family": "FM-A",
+      "internal_name": "The Persuasion Machine",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "named composite pattern; its base-code mappings determine the external analogue — populate in R3/R4B."
+    },
+    {
+      "id": "FM-A4",
+      "family": "FM-A",
+      "internal_name": "Scope Inflation",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "named composite pattern; its base-code mappings determine the external analogue — populate in R3/R4B."
+    },
+    {
+      "id": "FM-A5",
+      "family": "FM-A",
+      "internal_name": "The Hidden Argument",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "named composite pattern; its base-code mappings determine the external analogue — populate in R3/R4B."
+    },
+    {
+      "id": "FM-A6",
+      "family": "FM-A",
+      "internal_name": "The Warrant Leap",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "refutation:inference",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "p.333 the inference bridge is absent",
+            "id": "refutation:inference"
+          }
+        },
+        {
+          "vocab": "WACHSMUTH",
+          "ref": "logic:LRe",
+          "cardinality": "related",
+          "prov": {
+            "work": "Wachsmuth-2017-ACL-P17-2039",
+            "loc": "local relevance",
+            "id": "logic:LRe"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "FM-A7",
+      "family": "FM-A",
+      "internal_name": "Definitional Smuggling",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "family:ambiguity",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "ch.14 definitions",
+            "id": "family:ambiguity"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "FM-A8",
+      "family": "FM-A",
+      "internal_name": "False Precision Theater",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "WACHSMUTH",
+          "ref": "logic:LSu",
+          "cardinality": "related",
+          "prov": {
+            "work": "Wachsmuth-2017-ACL-P17-2039",
+            "loc": "unearned precision beyond the evidence",
+            "id": "logic:LSu"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "FM-A9",
+      "family": "FM-A",
+      "internal_name": "Concession Without Cost",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "WACHSMUTH",
+          "ref": "dialectic:reasonableness",
+          "cardinality": "related",
+          "prov": {
+            "work": "Wachsmuth-2017-ACL-P17-2039",
+            "loc": "engagement without genuine concession",
+            "id": "dialectic:reasonableness"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "FM-A10",
+      "family": "FM-A",
+      "internal_name": "The Uncompared Proposal",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "WALTON",
+          "ref": "Practical Reasoning",
+          "cardinality": "related",
+          "prov": {
+            "work": "Walton-Reed-Macagno-2008",
+            "loc": "PR critical question: alternatives weighed?",
+            "id": "Practical Reasoning"
+          }
+        },
+        {
+          "vocab": "WACHSMUTH",
+          "ref": "dialectic:GSu",
+          "cardinality": "related",
+          "prov": {
+            "work": "Wachsmuth-2017-ACL-P17-2039",
+            "loc": "global sufficiency of the case for the proposal",
+            "id": "dialectic:GSu"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "FM-A11",
+      "family": "FM-A",
+      "internal_name": "Evidence Laundering",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "evidence-laundering (mediated source as primary) has no clean S&F/Walton member; adjudicate in R4B."
+    },
+    {
+      "id": "FM-A12",
+      "family": "FM-A",
+      "internal_name": "Emotional Inflation",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "family:relevance",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "ch.15 appeal to emotion",
+            "id": "family:relevance"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "FM-A13",
+      "family": "FM-A",
+      "internal_name": "Structural Motte-and-Bailey",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "family:ambiguity",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "ch.14 motte-and-bailey as meaning-shift",
+            "id": "family:ambiguity"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "FM-A14",
+      "family": "FM-A",
+      "internal_name": "Epistemic Erasure",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "epistemic-erasure (authority silencing lived experience) is apodictic-specific; no reference-set analogue — R4B."
+    },
+    {
+      "id": "FM-A15",
+      "family": "FM-A",
+      "internal_name": "Intermediate Outcome Fallacy",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "refutation:inference",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "p.333 A->B->C inference gap",
+            "id": "refutation:inference"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "FM-A16",
+      "family": "FM-A",
+      "internal_name": "Qualification Erosion",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "qualification-erosion maps to voiceprint's AGD hedging-drift signal — a cross-repo producer mapping deferred to R3B, not resolvable inside R4A."
+    },
+    {
+      "id": "FM-A17",
+      "family": "FM-A",
+      "internal_name": "Anecdote-to-Principle Leap",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "WACHSMUTH",
+          "ref": "logic:LSu",
+          "cardinality": "related",
+          "prov": {
+            "work": "Wachsmuth-2017-ACL-P17-2039",
+            "loc": "local sufficiency: a single anecdote is an insufficient sample for a general principle",
+            "id": "logic:LSu"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "FM-A18",
+      "family": "FM-A",
+      "internal_name": "Implementation Blindspot",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "WALTON",
+          "ref": "Practical Reasoning",
+          "cardinality": "related",
+          "prov": {
+            "work": "Walton-Reed-Macagno-2008",
+            "loc": "PR critical question: feasibility / side-effects",
+            "id": "Practical Reasoning"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "FM-A19",
+      "family": "FM-A",
+      "internal_name": "Authority Overreach",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "WALTON",
+          "ref": "Expert Opinion#CQ2",
+          "cardinality": "related",
+          "prov": {
+            "work": "Walton-Reed-Macagno-2008",
+            "loc": "Expert-Opinion CQ2 (Field Question): is E an expert in the field the claim is in?",
+            "id": "Expert Opinion#CQ2"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "FM-A20",
+      "family": "FM-A",
+      "internal_name": "Self-Undermining Remedy",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "refutation:conclusion",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "p.333 refutation by reductio: the remedy's own consequence recreates the diagnosed problem",
+            "id": "refutation:conclusion"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "Authority",
+      "family": "SCHEME",
+      "internal_name": "Authority",
+      "cardinality": "exact",
+      "targets": [
+        {
+          "vocab": "WALTON",
+          "ref": "Expert Opinion",
+          "cardinality": "exact",
+          "prov": {
+            "work": "Walton-Reed-Macagno-2008",
+            "loc": "Argument from Expert Opinion (CQ1-6)",
+            "id": "Expert Opinion"
+          }
+        },
+        {
+          "vocab": "AIF",
+          "ref": "RA-node",
+          "cardinality": "narrower",
+          "prov": {
+            "work": "AIF-spec-argtech",
+            "loc": "AIF inference application (S-node/RA)",
+            "id": "RA-node"
+          },
+          "note": "a scheme hint is a specific inference application"
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "Consequence",
+      "family": "SCHEME",
+      "internal_name": "Consequence",
+      "cardinality": "exact",
+      "targets": [
+        {
+          "vocab": "WALTON",
+          "ref": "Consequences",
+          "cardinality": "exact",
+          "prov": {
+            "work": "Walton-Reed-Macagno-2008",
+            "loc": "Argument from Consequences",
+            "id": "Consequences"
+          }
+        },
+        {
+          "vocab": "AIF",
+          "ref": "RA-node",
+          "cardinality": "narrower",
+          "prov": {
+            "work": "AIF-spec-argtech",
+            "loc": "AIF inference application (S-node/RA)",
+            "id": "RA-node"
+          },
+          "note": "scheme = a specific RA"
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "Causal",
+      "family": "SCHEME",
+      "internal_name": "Causal",
+      "cardinality": "narrower",
+      "targets": [
+        {
+          "vocab": "WALTON",
+          "ref": "Cause to Effect",
+          "cardinality": "broader",
+          "prov": {
+            "work": "Walton-Reed-Macagno-2008",
+            "loc": "Argument from Cause to Effect",
+            "id": "Cause to Effect"
+          },
+          "note": "apodictic's coarse Causal hint subsumes both Walton causal schemes"
+        },
+        {
+          "vocab": "WALTON",
+          "ref": "Correlation to Cause",
+          "cardinality": "broader",
+          "prov": {
+            "work": "Walton-Reed-Macagno-2008",
+            "loc": "Argument from Correlation to Cause",
+            "id": "Correlation to Cause"
+          }
+        },
+        {
+          "vocab": "AIF",
+          "ref": "RA-node",
+          "cardinality": "narrower",
+          "prov": {
+            "work": "AIF-spec-argtech",
+            "loc": "AIF inference application (S-node/RA)",
+            "id": "RA-node"
+          },
+          "note": "scheme = a specific RA"
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "Analogy",
+      "family": "SCHEME",
+      "internal_name": "Analogy",
+      "cardinality": "exact",
+      "targets": [
+        {
+          "vocab": "WALTON",
+          "ref": "Analogy",
+          "cardinality": "exact",
+          "prov": {
+            "work": "Walton-Reed-Macagno-2008",
+            "loc": "Argument from Analogy",
+            "id": "Analogy"
+          }
+        },
+        {
+          "vocab": "AIF",
+          "ref": "RA-node",
+          "cardinality": "narrower",
+          "prov": {
+            "work": "AIF-spec-argtech",
+            "loc": "AIF inference application (S-node/RA)",
+            "id": "RA-node"
+          },
+          "note": "scheme = a specific RA"
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "Example",
+      "family": "SCHEME",
+      "internal_name": "Example",
+      "cardinality": "exact",
+      "targets": [
+        {
+          "vocab": "WALTON",
+          "ref": "Example",
+          "cardinality": "exact",
+          "prov": {
+            "work": "Walton-Reed-Macagno-2008",
+            "loc": "Argument from Example",
+            "id": "Example"
+          }
+        },
+        {
+          "vocab": "AIF",
+          "ref": "RA-node",
+          "cardinality": "narrower",
+          "prov": {
+            "work": "AIF-spec-argtech",
+            "loc": "AIF inference application (S-node/RA)",
+            "id": "RA-node"
+          },
+          "note": "scheme = a specific RA"
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "Testimony",
+      "family": "SCHEME",
+      "internal_name": "Testimony",
+      "cardinality": "exact",
+      "targets": [
+        {
+          "vocab": "WALTON",
+          "ref": "Witness Testimony",
+          "cardinality": "exact",
+          "prov": {
+            "work": "Walton-Reed-Macagno-2008",
+            "loc": "Argument from Witness Testimony",
+            "id": "Witness Testimony"
+          }
+        },
+        {
+          "vocab": "AIF",
+          "ref": "RA-node",
+          "cardinality": "narrower",
+          "prov": {
+            "work": "AIF-spec-argtech",
+            "loc": "AIF inference application (S-node/RA)",
+            "id": "RA-node"
+          },
+          "note": "scheme = a specific RA"
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "Practical Reasoning",
+      "family": "SCHEME",
+      "internal_name": "Practical Reasoning",
+      "cardinality": "exact",
+      "targets": [
+        {
+          "vocab": "WALTON",
+          "ref": "Practical Reasoning",
+          "cardinality": "exact",
+          "prov": {
+            "work": "Walton-Reed-Macagno-2008",
+            "loc": "Practical Reasoning scheme",
+            "id": "Practical Reasoning"
+          }
+        },
+        {
+          "vocab": "AIF",
+          "ref": "RA-node",
+          "cardinality": "narrower",
+          "prov": {
+            "work": "AIF-spec-argtech",
+            "loc": "AIF inference application (S-node/RA)",
+            "id": "RA-node"
+          },
+          "note": "scheme = a specific RA"
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "Sign",
+      "family": "SCHEME",
+      "internal_name": "Sign",
+      "cardinality": "exact",
+      "targets": [
+        {
+          "vocab": "WALTON",
+          "ref": "Sign",
+          "cardinality": "exact",
+          "prov": {
+            "work": "Walton-Reed-Macagno-2008",
+            "loc": "Argument from Sign",
+            "id": "Sign"
+          }
+        },
+        {
+          "vocab": "AIF",
+          "ref": "RA-node",
+          "cardinality": "narrower",
+          "prov": {
+            "work": "AIF-spec-argtech",
+            "loc": "AIF inference application (S-node/RA)",
+            "id": "RA-node"
+          },
+          "note": "scheme = a specific RA"
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "WARRANTED",
+      "family": "VERDICT",
+      "internal_name": "Warrant verdict: warranted",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "refutation:inference",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "p.333 inference-refutation (positive pole)",
+            "id": "refutation:inference"
+          },
+          "note": "the inference survives refutation on the relevance+sufficiency axis"
+        },
+        {
+          "vocab": "WACHSMUTH",
+          "ref": "logic:LRe",
+          "cardinality": "related",
+          "prov": {
+            "work": "Wachsmuth-2017-ACL-P17-2039",
+            "loc": "local relevance",
+            "id": "logic:LRe"
+          }
+        },
+        {
+          "vocab": "WACHSMUTH",
+          "ref": "logic:LSu",
+          "cardinality": "related",
+          "prov": {
+            "work": "Wachsmuth-2017-ACL-P17-2039",
+            "loc": "local sufficiency",
+            "id": "logic:LSu"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "UNCONVENTIONAL-BUT-WARRANTED",
+      "family": "VERDICT",
+      "internal_name": "Warrant verdict: unconventional but warranted",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "standard:strength",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "p.180 inductive strength is defeasible/degree",
+            "id": "standard:strength"
+          },
+          "note": "a form-dependent but strong inductive bridge"
+        },
+        {
+          "vocab": "WACHSMUTH",
+          "ref": "logic:LRe",
+          "cardinality": "related",
+          "prov": {
+            "work": "Wachsmuth-2017-ACL-P17-2039",
+            "loc": "local relevance",
+            "id": "logic:LRe"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "UNWARRANTED",
+      "family": "VERDICT",
+      "internal_name": "Warrant verdict: unwarranted",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "refutation:inference",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "p.333 refute-the-inference",
+            "id": "refutation:inference"
+          },
+          "note": "the inference fails on relevance or sufficiency"
+        },
+        {
+          "vocab": "WACHSMUTH",
+          "ref": "logic:LSu",
+          "cardinality": "related",
+          "prov": {
+            "work": "Wachsmuth-2017-ACL-P17-2039",
+            "loc": "local sufficiency",
+            "id": "logic:LSu"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "CONTESTABLE",
+      "family": "PREMISE-FLAG",
+      "internal_name": "Premise-plausibility flag: contestable",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "refutation:premise",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "p.333 refute-a-premise",
+            "id": "refutation:premise"
+          }
+        },
+        {
+          "vocab": "WACHSMUTH",
+          "ref": "logic:LAc",
+          "cardinality": "related",
+          "prov": {
+            "work": "Wachsmuth-2017-ACL-P17-2039",
+            "loc": "local acceptability",
+            "id": "logic:LAc"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "UNEARNED",
+      "family": "PREMISE-FLAG",
+      "internal_name": "Premise-plausibility flag: unearned",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "refutation:premise",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "p.333 refute-a-premise",
+            "id": "refutation:premise"
+          }
+        },
+        {
+          "vocab": "WACHSMUTH",
+          "ref": "logic:LAc",
+          "cardinality": "related",
+          "prov": {
+            "work": "Wachsmuth-2017-ACL-P17-2039",
+            "loc": "local acceptability",
+            "id": "logic:LAc"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "OVERLOADED",
+      "family": "PREMISE-FLAG",
+      "internal_name": "Premise-plausibility flag: overloaded",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "WACHSMUTH",
+          "ref": "logic:LAc",
+          "cardinality": "related",
+          "prov": {
+            "work": "Wachsmuth-2017-ACL-P17-2039",
+            "loc": "local acceptability",
+            "id": "logic:LAc"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "EXTERNAL-VERIFY",
+      "family": "PREMISE-FLAG",
+      "internal_name": "Premise-plausibility flag: external-verify",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "WACHSMUTH",
+          "ref": "logic:LAc",
+          "cardinality": "related",
+          "prov": {
+            "work": "Wachsmuth-2017-ACL-P17-2039",
+            "loc": "acceptability pending outside verification",
+            "id": "logic:LAc"
+          }
+        }
+      ],
+      "rationale": null
+    },
+    {
+      "id": "DEFINITIONAL",
+      "family": "PREMISE-FLAG",
+      "internal_name": "Premise-plausibility flag: definitional",
+      "cardinality": "related",
+      "targets": [
+        {
+          "vocab": "SF",
+          "ref": "family:ambiguity",
+          "cardinality": "related",
+          "prov": {
+            "work": "S&F-UA-9e",
+            "loc": "ch.14 precising-definition illegitimacy",
+            "id": "family:ambiguity"
+          }
+        },
+        {
+          "vocab": "WACHSMUTH",
+          "ref": "logic:LAc",
+          "cardinality": "related",
+          "prov": {
+            "work": "Wachsmuth-2017-ACL-P17-2039",
+            "loc": "local acceptability",
+            "id": "logic:LAc"
+          }
+        }
+      ],
+      "rationale": null
+    }
+  ]
+}
