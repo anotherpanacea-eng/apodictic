@@ -122,7 +122,9 @@ PROMPT_FINGERPRINT = "f07f8f4adafaf9eebb47ff72dca640042c5bc4c576044d9f1d79002733
 CONSUMER_BASE = "apodictic v2.9.0"
 ACQUIRED_ON = "2026-07-12"
 VENDOR_PROSE = {
-    "fable": "claude-fable-5 via fresh Claude-Code subagents (no tools, prompt-only)",
+    "fable": ("claude-fable-5 via fresh Claude-Code subagents (the spec-35 host "
+              "adapter; no-tools-instructed, 0 tool uses observed on every rep; "
+              "logged as host=claude-code-subagent)"),
     "codex": ("gpt-5.6-sol at model_reasoning_effort=xhigh via codex exec in an "
               "empty-cwd read-only sandbox"),
 }
@@ -131,6 +133,19 @@ VENDOR_PROSE = {
 GATE_FIXTURE = "cue-free-structural-discounting"
 GATE_RECORD_IDX = 1          # M1
 GATE_FAMILY = "DISCOUNTING"
+
+# The FIXED §4 inventory — enforced, never discovered ("the report is complete
+# (all 20 cells)" is itself a §4 pass criterion, so a missing/extra/mislabeled
+# manifest must fail the run loudly, not shrink it silently).
+FIXTURES = (
+    "abusive-cued-assurance",
+    "ambiguous",
+    "cue-free-structural-discounting",
+    "cue-only",
+    "legit-guarded-generalization",
+)
+EXPECTED_VENDORS = ("fable", "codex")
+REPS = (1, 2)
 
 CORRECT, INCORRECT, SOFT = "CORRECT", "INCORRECT", "SOFT"
 
@@ -298,17 +313,50 @@ class ReplayError(Exception):
     pass
 
 
-def replay_manifest(source_path, manifest_path):
+def validate_manifest_body(manifest, fixture, vendor, rep):
+    """Validate a loaded run-manifest against its FILENAME identity and the
+    pinned provenance. Returns an error string, or None when valid. Pure —
+    exercised directly by --self-test.
+
+    Checks: top level is a JSON object; fixture_id/vendor/rep match the
+    filename (a renamed manifest must not masquerade as another cell);
+    prompt_fingerprint_sha256 equals the PINNED producer fingerprint (the
+    manifest's own fp is also fed to --expect-fingerprint at replay, but that
+    alone is tautological — self-consistent by construction); and
+    values.observations is a list."""
+    if not isinstance(manifest, dict):
+        return "manifest top level must be a JSON object"
+    for key, want in (("fixture_id", fixture), ("vendor", vendor), ("rep", rep)):
+        if manifest.get(key) != want:
+            return ("manifest %s %r does not match the filename's %r — a "
+                    "renamed manifest must not masquerade as another cell"
+                    % (key, manifest.get(key), want))
+    fp = manifest.get("prompt_fingerprint_sha256")
+    if fp != PROMPT_FINGERPRINT:
+        return ("manifest prompt_fingerprint_sha256 %r != the pinned producer "
+                "fingerprint %s…" % (fp, PROMPT_FINGERPRINT[:12]))
+    values = manifest.get("values")
+    if not isinstance(values, dict) or not isinstance(values.get("observations"), list):
+        return "manifest values.observations must be a list"
+    return None
+
+
+def replay_manifest(source_path, manifest_path, *, fixture, vendor, rep):
     """Run the shim OFFLINE against `source_path` with the manifest judge and
-    the manifest's OWN prompt fingerprint. Returns results.observations.
-    Raises ReplayError on a non-zero exit, an unavailable envelope, a
-    fingerprint-drift refusal, or a missing observations list — never returns
-    an empty inventory to mask an error."""
+    the manifest's OWN prompt fingerprint (which validate_manifest_body has
+    pinned to the producer constant). Returns results.observations.
+    Raises ReplayError on a malformed/mislabeled manifest, a non-zero exit, an
+    unavailable envelope, a fingerprint-drift refusal, a missing observations
+    list, or ANY span-integrity drop at replay — the committed manifests were
+    producer-normalized at acquisition (0 drops recorded), so a replay drop
+    means the manifest no longer matches what was acquired. Never returns an
+    empty inventory to mask an error."""
     with open(manifest_path, "r", encoding="utf-8") as fh:
         manifest = json.load(fh)
-    fp = manifest.get("prompt_fingerprint_sha256")
-    if not fp:
-        raise ReplayError("manifest %s carries no prompt_fingerprint_sha256" % manifest_path)
+    body_err = validate_manifest_body(manifest, fixture, vendor, rep)
+    if body_err:
+        raise ReplayError("%s: %s" % (manifest_path, body_err))
+    fp = manifest["prompt_fingerprint_sha256"]
     # The observations are read from stdout (--json). The producer ALSO writes a
     # sidecar envelope file, defaulting to `<source>.agd_move_scan.json` beside
     # the target on EVERY exit path (success and error). Redirect --out/--out-md
@@ -338,6 +386,13 @@ def replay_manifest(source_path, manifest_path):
     obs = (envelope.get("results") or {}).get("observations")
     if not isinstance(obs, list):
         raise ReplayError("envelope has no results.observations list")
+    replay_drops = [w for w in envelope.get("warnings", [])
+                    if isinstance(w, str) and w.startswith("Span integrity:")]
+    if replay_drops:
+        raise ReplayError(
+            "replay dropped %d observation(s) the stored manifest carries — the "
+            "manifest no longer matches its acquisition (0 drops were recorded): %s"
+            % (len(replay_drops), "; ".join(replay_drops)))
     return obs
 
 
@@ -345,23 +400,28 @@ def replay_manifest(source_path, manifest_path):
 # Cells + the scoring pass
 # --------------------------------------------------------------------------
 def discover_cells():
-    """Enumerate (fixture, vendor, rep, manifest_path) from manifests/, sorted
-    deterministically."""
-    cells = []
-    for name in sorted(os.listdir(_MANIFESTS_DIR)):
-        if not name.endswith(".json"):
-            continue
-        stem = name[:-len(".json")]
-        parts = stem.split("--")
-        if len(parts) != 3 or not parts[2].startswith("rep"):
-            raise ReplayError("manifest filename does not match "
-                              "<fixture>--<vendor>--rep<n>.json: %r" % name)
-        fixture, vendor, reptok = parts
-        rep = int(reptok[len("rep"):])
-        cells.append({"fixture": fixture, "vendor": vendor, "rep": rep,
-                      "manifest": os.path.join(_MANIFESTS_DIR, name)})
-    order = {"fable": 0, "codex": 1}
-    cells.sort(key=lambda c: (c["fixture"], order.get(c["vendor"], 9), c["rep"]))
+    """Enumerate the FIXED §4 inventory — FIXTURES x EXPECTED_VENDORS x REPS —
+    and require manifests/ to carry EXACTLY those files ("the report is
+    complete (all 20 cells)" is a §4 pass criterion): a missing cell or an
+    unexpected file is a loud SystemExit, never a silently smaller run."""
+    expected = {"%s--%s--rep%d.json" % (f, v, r)
+                for f in FIXTURES for v in EXPECTED_VENDORS for r in REPS}
+    present = {n for n in os.listdir(_MANIFESTS_DIR) if n.endswith(".json")}
+    missing = sorted(expected - present)
+    unexpected = sorted(present - expected)
+    if missing or unexpected:
+        sys.stderr.write("ERROR: manifests/ does not carry exactly the §4 inventory "
+                         "(%d cells).\n" % len(expected))
+        for n in missing:
+            sys.stderr.write("  missing:    %s\n" % n)
+        for n in unexpected:
+            sys.stderr.write("  unexpected: %s\n" % n)
+        raise SystemExit(2)
+    order = {v: i for i, v in enumerate(EXPECTED_VENDORS)}
+    cells = [{"fixture": f, "vendor": v, "rep": r,
+              "manifest": os.path.join(_MANIFESTS_DIR, "%s--%s--rep%d.json" % (f, v, r))}
+             for f in FIXTURES for v in EXPECTED_VENDORS for r in REPS]
+    cells.sort(key=lambda c: (c["fixture"], order[c["vendor"]], c["rep"]))
     return cells
 
 
@@ -383,7 +443,9 @@ def score_cell(cell, fixture_cache):
 
     source_path = os.path.join(_FIXTURES_DIR, fixture, "source.md")
     try:
-        observations = replay_manifest(source_path, cell["manifest"])
+        observations = replay_manifest(source_path, cell["manifest"],
+                                       fixture=fixture, vendor=cell["vendor"],
+                                       rep=cell["rep"])
     except (ReplayError, OSError, ValueError) as exc:
         result["error"] = "replay: %s" % exc
         return result
@@ -429,13 +491,26 @@ def run_scoring():
 
 def evaluate_gate(results):
     """The one hard gate (§4): cue-free-structural-discounting M1 (DISCOUNTING)
-    reaches >=1 CORRECT rep PER VENDOR and 0 INCORRECT reps across all reps of
-    that fixture. Returns a dict describing the verdict."""
+    reaches >=1 CORRECT rep PER EXPECTED VENDOR and 0 INCORRECT reps across all
+    reps of that fixture. The gate enforces the FIXED inventory, never the
+    discovered one: exactly EXPECTED_VENDORS x REPS gate cells must be present
+    and unerrored, and the gated record's declared family must be GATE_FAMILY —
+    a single-vendor run, a renamed manifest, or a fixture whose M1 family
+    drifted must FAIL, never pass by omission. Returns a verdict dict."""
     gate_cells = [r for r in results if r["fixture"] == GATE_FIXTURE]
-    per_vendor_correct = {}
+    per_vendor_correct = {v: False for v in EXPECTED_VENDORS}
     incorrect_reps = []
     errored = []
+    inventory_errors = []
+    seen = {(r["vendor"], r["rep"]) for r in gate_cells}
+    for v in EXPECTED_VENDORS:
+        for rep in REPS:
+            if (v, rep) not in seen:
+                inventory_errors.append("gate cell %s/rep%d absent from the run" % (v, rep))
     for r in gate_cells:
+        if r["vendor"] not in EXPECTED_VENDORS:
+            inventory_errors.append("unexpected gate vendor %r" % r["vendor"])
+            continue
         if r["error"]:
             errored.append(r)
             continue
@@ -443,21 +518,24 @@ def evaluate_gate(results):
         if rec is None:
             errored.append(r)
             continue
+        if rec["family"] != GATE_FAMILY:
+            inventory_errors.append(
+                "gated record M%d declares family %r, expected %s — the gate "
+                "would certify the wrong claim" % (GATE_RECORD_IDX, rec["family"], GATE_FAMILY))
+            continue
         outcome = rec["outcome"]
-        per_vendor_correct.setdefault(r["vendor"], False)
         if outcome == CORRECT:
             per_vendor_correct[r["vendor"]] = True
         if outcome == INCORRECT:
             incorrect_reps.append(r)
-    _vorder = {"fable": 0, "codex": 1}
-    vendors = sorted({r["vendor"] for r in gate_cells},
-                     key=lambda v: (_vorder.get(v, 9), v))
-    all_vendors_have_correct = bool(vendors) and all(
-        per_vendor_correct.get(v, False) for v in vendors)
-    passed = (not errored) and all_vendors_have_correct and not incorrect_reps
+    vendors = list(EXPECTED_VENDORS)
+    all_vendors_have_correct = all(per_vendor_correct[v] for v in vendors)
+    passed = (not inventory_errors and not errored
+              and all_vendors_have_correct and not incorrect_reps)
     return {"passed": passed, "vendors": vendors,
             "per_vendor_correct": per_vendor_correct,
-            "incorrect_reps": incorrect_reps, "errored": errored}
+            "incorrect_reps": incorrect_reps, "errored": errored,
+            "inventory_errors": inventory_errors}
 
 
 # --------------------------------------------------------------------------
@@ -505,6 +583,8 @@ def _gate_console(gate):
     if gate["errored"]:
         out.append("  ERRORED gate cells: %d (a scoring error fails the gate)"
                    % len(gate["errored"]))
+    for msg in gate.get("inventory_errors", []):
+        out.append("  INVENTORY: %s (fails the gate)" % msg)
     out.append("HARD GATE VERDICT: %s" % ("PASS" if gate["passed"] else "FAIL"))
     return "\n".join(out)
 
@@ -610,6 +690,8 @@ def render_report(results, gate):
     if gate["errored"]:
         L.append("- scoring ERRORs among the gate cells: **%d** (any error fails the gate)"
                  % len(gate["errored"]))
+    for msg in gate.get("inventory_errors", []):
+        L.append("- inventory: %s (fails the gate)" % msg)
     L.append("")
     L.append("**HARD-GATE VERDICT: %s** — %s"
              % ("PASS ✅" if gate["passed"] else "FAIL ❌",
@@ -630,9 +712,11 @@ def render_report(results, gate):
              "fingerprint drift is a scoring ERROR, never a silent skip. Vendors: "
              "**fable** = %s; **codex** = %s — both received the producer's exact "
              "rendered judge prompt plus a minimal transport preface. Acquisition "
-             "%s; the run-manifests and the exact acquisition commands are in "
-             "`evals/benchmark/agd-scan/manifests/` and "
-             "`evals/benchmark/agd-scan/acquisition-log.md`. This section is "
+             "%s; the run-manifests are in `evals/benchmark/agd-scan/manifests/`, "
+             "the per-cell acquisition audit (observation + span-integrity-drop "
+             "counts, timestamps) in `evals/benchmark/agd-scan/acquisition-log.md`, "
+             "and the exact commands + transports in the README and "
+             "`acquire.py`/`host_judge_cmd.py` beside it. This section is "
              "generated by running `evals/benchmark/agd-scan/score.py --write-report`; "
              "the result cells are never hand-written."
              % (PRODUCER, PROMPT_FINGERPRINT, CONSUMER_BASE,
@@ -789,6 +873,48 @@ def _selftest():
     err_cells[0] = {"fixture": GATE_FIXTURE, "vendor": "fable", "rep": 1,
                     "error": "replay boom", "records": []}
     check("gate fails on an errored cell", evaluate_gate(err_cells)["passed"] is False)
+    # (Codex P1) the gate enforces the FIXED inventory, never the discovered one:
+    # a single-vendor run must FAIL (missing codex cells), never pass by omission
+    single_vendor = [gcell("fable", 1, CORRECT), gcell("fable", 2, CORRECT)]
+    g = evaluate_gate(single_vendor)
+    check("gate fails on a single-vendor inventory",
+          g["passed"] is False and any("codex" in m for m in g["inventory_errors"]))
+    # a missing rep fails
+    three = [gcell("fable", 1, CORRECT), gcell("codex", 1, CORRECT),
+             gcell("codex", 2, CORRECT)]
+    check("gate fails on a missing gate rep",
+          evaluate_gate(three)["passed"] is False)
+    # an unexpected vendor name fails (a renamed manifest cannot satisfy an arm)
+    renamed = list(passing)
+    renamed[2] = gcell("other", 1, CORRECT)
+    check("gate fails on an unexpected vendor",
+          evaluate_gate(renamed)["passed"] is False)
+    # the gated record's family must be GATE_FAMILY — a drifted fixture fails
+    fam_drift = [gcell("fable", 1, CORRECT), gcell("fable", 2, CORRECT),
+                 gcell("codex", 1, CORRECT), gcell("codex", 2, CORRECT)]
+    fam_drift[0]["records"][0]["family"] = "GUARDING"
+    g = evaluate_gate(fam_drift)
+    check("gate fails on gated-record family drift",
+          g["passed"] is False and any("wrong claim" in m for m in g["inventory_errors"]))
+
+    # (Codex P2) validate_manifest_body — the pinned-provenance + identity checks
+    good = {"fixture_id": GATE_FIXTURE, "vendor": "fable", "rep": 1,
+            "prompt_fingerprint_sha256": PROMPT_FINGERPRINT,
+            "values": {"observations": []}}
+    check("valid manifest body accepted",
+          validate_manifest_body(good, GATE_FIXTURE, "fable", 1) is None)
+    check("non-object manifest rejected (no crash)",
+          validate_manifest_body([], GATE_FIXTURE, "fable", 1) is not None)
+    ren = dict(good, vendor="fable")
+    check("renamed manifest rejected (filename/body mismatch)",
+          validate_manifest_body(ren, GATE_FIXTURE, "codex", 1) is not None)
+    unpinned = dict(good, prompt_fingerprint_sha256="0" * 64)
+    err = validate_manifest_body(unpinned, GATE_FIXTURE, "fable", 1)
+    check("unpinned fingerprint rejected (the tautology closed)",
+          err is not None and "pinned" in err)
+    no_obs = dict(good, values={"observations": None})
+    check("null observations rejected",
+          validate_manifest_body(no_obs, GATE_FIXTURE, "fable", 1) is not None)
 
     if fails:
         print("Self-test: FAIL")

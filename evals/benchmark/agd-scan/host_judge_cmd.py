@@ -32,8 +32,15 @@ def main() -> int:
         req.get("system", ""), req.get("no_verdict", ""), req.get("content", ""))
     vendor = os.environ.get("JUDGE_VENDOR", "")
     if vendor == "fable":
+        # --tools "" disables ALL built-in tools: the judge works from the
+        # prompt alone (mechanical blindness, not just an instruction). NOTE:
+        # `claude` refuses to launch NESTED inside a running Claude Code
+        # session — the committed 2026-07-12 manifests therefore used the
+        # host's subagent adapter instead (fresh no-tools-instructed subagents;
+        # 0 tool uses observed per rep — see acquisition-log.md + README).
+        # This branch is the standalone/headless path for future re-acquisition.
         proc = subprocess.run(
-            ["claude", "-p", "--model", "claude-fable-5"],
+            ["claude", "-p", "--model", "claude-fable-5", "--tools", ""],
             input=prompt, capture_output=True, text=True, timeout=SUBPROC_TIMEOUT)
         if proc.returncode != 0:
             sys.stderr.write((proc.stderr or proc.stdout)[:400])
