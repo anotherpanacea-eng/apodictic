@@ -15,6 +15,8 @@
     "thesis": {"type": "string"},
     "subclaims": {"type": "array", "items": {"type": "string"}, "minItems": 1},
     "anti_thesis": {"type": "string"},
+    "anti_thesis_target": {"type": "string", "pattern": "^(C[0-9]+(\\.warrant|\\.support)?|argument-wide)$", "$comment": "OPTIONAL (R2): what the anti-thesis targets, typed against Argument_State \u00a76. Flat scalar siblings (not an object promotion) so anti_thesis stays a required string and W1's _echo_norm consumer is untouched."},
+    "anti_thesis_relation": {"enum": ["WARRANT-DEFEATER", "CLAIM-CHALLENGE", "EVIDENCE-CHALLENGE", "VALUE-CONFLICT", "ALTERNATIVE"], "$comment": "OPTIONAL (R2): the \u00a76 Relation vocabulary."},
     "stakes": {"type": "string"},
     "stakes_type": {"enum": ["CONSEQUENTIAL", "MORAL", "EPISTEMIC", "PRACTICAL"]},
     "consequence_context": {"enum": ["LOW", "MEDIUM", "HIGH"]},

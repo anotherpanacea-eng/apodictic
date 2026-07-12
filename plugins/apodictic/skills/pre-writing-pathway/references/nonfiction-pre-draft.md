@@ -29,7 +29,7 @@ Plan the spine as one `apodictic.argument_spine.v1` block, then write the §1/§
 -->
 ```
 
-- **`thesis`** → §2 **C0 (main claim)**; **`subclaims`** → §2 claim ladder; **`anti_thesis`** → §6 **Objection 1**.
+- **`thesis`** → §2 **C0 (main claim)**; **`subclaims`** → §2 claim ladder; **`anti_thesis`** → §6 **Objection 1** (optionally typed via the flat siblings `anti_thesis_target` / `anti_thesis_relation` — Argument_State §6's Target/Relation vocabulary; R2).
 - **`argument_type`** AT0–AT4 · **`burden_level`** LOW/MEDIUM/HIGH · **`audience_expertise`** GENERAL/MIXED/EXPERT · **`audience_receptivity`** SYMPATHETIC/MIXED/HOSTILE → §1.
 - Leave the **draft-dependent** sections (§§3–5, 7–9) pending — the Dialectical Clarity audit fills them once a draft exists.
 

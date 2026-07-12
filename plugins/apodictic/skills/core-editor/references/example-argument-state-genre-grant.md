@@ -6,8 +6,8 @@ argument-spine Increment 5 — the genre layer; see docs/nonfiction-pre-draft.md
 not just "AT3 with a unique burden": it is a near-contract with named, reviewer-scored sections
 (Specific Aims / Significance / Innovation / Approach). The apodictic.genre_profile.v1 block names the
 genre and declares which genre-required section ROLES the pre-draft must seed; each is seeded here as a
-### sub-heading under the canonical §1–§6, so NO new top-level numbered section is added (the schema doc
-stays v0.1.1). The Firewall holds: the genre layer validates the writer's DECLARED structure and
+### sub-heading under the canonical §1–§6, so NO new top-level numbered section is added (the schema doc's
+section set is unchanged). The Firewall holds: the genre layer validates the writer's DECLARED structure and
 surfaces which genre-required section is missing or unseeded; it invents no aims, no significance, no
 approach. The draft-time diagnosis (does the Approach actually support the Aims?) is the LLM-driven
 Dialectical Clarity audit, unchanged.
@@ -26,7 +26,7 @@ are the audit's job.
 -->
 
 <!-- apodictic:genre_profile
-{"schema":"apodictic.genre_profile.v1","genre":"grant-proposal","required_sections":[{"role":"specific-aims","heading":"Specific Aims","seeded_by":"C0+ladder"},{"role":"significance","heading":"Significance","seeded_by":"stakes"},{"role":"innovation","heading":"Innovation","seeded_by":"subclaim"},{"role":"approach","heading":"Approach","seeded_by":"support_plan"}],"evaluator":"panel-reviewer","reviewer_objections":["the evaluation design cannot isolate the intervention's effect","the install timeline is optimistic given permitting"]}
+{"schema":"apodictic.genre_profile.v1","genre":"grant-proposal","required_sections":[{"role":"specific-aims","heading":"Specific Aims","seeded_by":"C0+ladder"},{"role":"significance","heading":"Significance","seeded_by":"stakes"},{"role":"innovation","heading":"Innovation","seeded_by":"subclaim"},{"role":"approach","heading":"Approach","seeded_by":"support_plan"}],"evaluator":"panel-reviewer","reviewer_objections":[{"objection":"the evaluation design cannot isolate the intervention's effect","target":"C2.warrant","relation":"WARRANT-DEFEATER"},"the install timeline is optimistic given permitting"]}
 -->
 
 ## 1. Context and Classification
