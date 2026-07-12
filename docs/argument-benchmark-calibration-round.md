@@ -184,7 +184,7 @@ mis-ranked it. Only the Q2 failure-locus and Q3 objection-zone diverge — the v
 **Root cause (not "salience").** The engine already owns a primacy rule — "name the *first* defeated test"
 (rule 2 / the Final Diagnostic Question), against the fixed decision-test order. Rule 2a plants the FM-A10
 defeat at **decision test two (Evidence-evaluability)**; the causal warrant leap is a **test three
-(Warrant-recoverability)** defeat. So "first defeated test" *currently resolves to FM-A10* — the generic table
+(Bridge-recoverability)** defeat. So "first defeated test" *currently resolves to FM-A10* — the generic table
 order ranks the comparison break ahead of the deeper warrant break. There was no gap for salience to fill; the
 tie-break existed and resolved *against* FM-A6.
 
