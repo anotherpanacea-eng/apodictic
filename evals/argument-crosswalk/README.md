@@ -1,8 +1,15 @@
-# Argument-taxonomy crosswalk (R4A)
+# Argument-taxonomy crosswalk (R4A + R4B)
 
 `crosswalk.json` maps APODICTIC's internal argument-taxonomy codes to external
 argumentation vocabularies, with explicit **mapping cardinality**. It is the machine-readable
 companion to [`docs/adr/0001-argument-layer-boundary.md`](../../docs/adr/0001-argument-layer-boundary.md).
+
+Version 0.2.0 preserves the exact 82-code `entries` set and adds a separately
+drift-bound `concept_entries` layer: five R2 objection relations and three R3 AGD
+moves. Concepts are not diagnostic codes. `ALTERNATIVE` and all three AGD moves
+remain AIF-unmapped where the source does not license a conflict/inference node.
+The 48 code rows left `unmapped` in v0.1 remain explicit present-tense conclusions,
+not a quota to force into false equivalences.
 
 ## What it covers
 
@@ -14,6 +21,7 @@ by design** (ADR D6).
 ## Reference vocabularies
 
 - **AIF** — Argument Interchange Format node ontology (`I-node` / `RA-node` / `CA-node` / `PA-node`); an *optional serialization adapter*, not the editorial vocabulary (ADR D2).
+- **TOULMIN** — claim / grounds / warrant / backing / qualifier / rebuttal, used for the reviewed R2 warrant-defeater analogy.
 - **WALTON** — argumentation schemes + critical questions (Walton, Reed & Macagno, *Argumentation Schemes*, 2008).
 - **SF** — S&F, *Understanding Arguments*, 9th ed.: the four fallacy families, the validity/strength/soundness axis, and the p.333 four-way refutation taxonomy.
 - **WACHSMUTH** — logic/rhetoric/dialectic argument-quality dimensions (Wachsmuth et al. 2017, ACL P17-2039; GAQCorpus, Lauscher et al. 2020) — the vocabulary voiceprint's `argquality` emits.
@@ -23,8 +31,9 @@ by design** (ADR D6).
 `exact` (same thing) · `broader` (internal ⊃ external) · `narrower` (internal ⊂ external) ·
 `related` (related, neither) · `unmapped` (no reference-set target applies — **rationale required**).
 
-The `unmapped` rows are the explicit **R4B/R2/R3 work-list**: a code with no confident external
-target today, named with the reason it is undecided, rather than a silent blank.
+An `unmapped` row is a reviewed present-tense conclusion that no confident target in the
+reference set denotes that diagnostic failure. It is visible rather than silently blank, but it
+is not a quota or an instruction to force a future equivalence.
 
 ## What "valid" means — and what it does not
 
