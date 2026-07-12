@@ -61,6 +61,15 @@ Q1–Q6**, and blocks the bucket from passing (per
 Sensitivity (catching real failures) without specificity (leaving warranted
 arguments alone) is not a passing engine.
 
+**Matched-pair clean members.** On the **clean** member of a matched clean/broken pair
+(`op-ed-warrant-leap/clean`, `policy-brief-uncompared/clean`), the registered false-positive
+trap **is the pair's planted-defect discriminator** — the broken key's GT2 primary code family
+(WR0/FM-A6, BP5/FM-A10). Firing it as a structural failure on the near-identical clean prose is
+**Q7 = 0 for the pair** (an advisory / Could-Fix mention is not a fire). This is the
+within-work specificity control the pair adds on top of the cross-work positive controls; the
+pair-delta convergence rule is in
+[RUN-PROTOCOL.md §Step 4](../fixtures/argument-benchmark/RUN-PROTOCOL.md).
+
 Q7's **gate authority on a fixture comes from that fixture's Reliability ledger** — it is
 `authoritative, gate` on all current positive/PD controls (`federalist-10`,
 `douglass-fourth-of-july`, and the synthetic controls), and `provisional, confirm` on the real

@@ -121,6 +121,36 @@ If 1 passes but 2 or 3 regress, narrow the carve-out's trigger (tighten "wholly 
 
 Run outputs are in the session scratchpad (gitignored); this record is the durable, self-contained artifact.
 
+## §Matched clean/broken pairs (2026-07-09)
+
+**Increment:** the matched-pairs specificity retrofit (spec `apo-argument-benchmark-matched-pairs`, v0.2). The two synthetic planted-defect fixtures become matched clean/broken pairs: `op-ed-warrant-leap` and `policy-brief-uncompared` each move to `<pair>/broken/` (history-preserving) and gain a derived `clean` twin authored by an enumerated minimal repair. Adds parser **Check 7** (matched-pair provenance), the `--check-all` two-depth corpus glob + orphan-twin completeness pass, the scripted repair-diff acceptance gate, and the §Step 4 matched-pair convergence class. Scoring is unchanged (protocol-level only).
+
+**Mechanical acceptance — ✅ PASS (2026-07-09; re-run green after the Codex #196 fold, 2026-07-11).**
+- `argument_groundtruth.py --self-test`: PASS — the 11 base Check-7 arms (paired broken/clean accepted; `Paired-with: n/a` on a broken member rejected; `Paired-with` without `Matched-pair member` rejected; non-complement `clean↔.../clean` rejected; bad member token rejected; `cleanX` boundary near-miss rejected; legacy no-fields fixture accepted; clean member with missing/N/A repair record rejected; clean member with a substantive (non-positive-control) GT2 rejected; `Paired-with` slug contradicting the key's own `Fixture slug` pair rejected) **plus the 10 Codex #196 hardening arms** (5 Check-7 + 5 repair-diff, below), no existing arm removed or weakened.
+- `validate.sh --check-all`: PASS — all **18** argument-benchmark GT files `ok` (14 flat + the 4 nested pair members printed by `<pair>/<member>` slug); the **repair-diff gate now runs in `--check-all`** (both pairs `ok`, was prose-only pre-fold); round-record conformance `ok`; the two-depth glob visits both depths and the orphan-twin + repair-diff gates fail loudly when a member's `fixture.md` is removed (verified in the worktree, restored).
+- `check-mirror` (both `scripts/` ↔ `plugins/apodictic/scripts/` mirror pairs byte-identical), `assemble-changelog --check`, `schema-coverage`, `validator-conventions`: all green.
+- Each clean twin passed the anti-gaming red-team (rule-2a general-evaluability standard) before registration — recorded in each clean key's Notes.
+
+**Codex #196 diff-review fold — ✅ (2026-07-11).** The behavioral gate had already passed (below); the diff review was folded before merge, refreshed onto current `main` (adopting #197's structural GT-validator refactor):
+- **[BLOCKING] clean-member GT2 marker** was a body substring (`"positive control" in gt2_body.lower()`) — a substantive GT2 that merely *mentioned* the phrase passed. Now a **structural leading-line match** on the GT2 section's first non-blank line against the canonical `N/A — positive control` marker (rule 6ii).
+- **[P1] repair-diff gate wired.** The scripted `diff broken/fixture.md vs clean/fixture.md` (pure-additive, 0 deletions, hunks 1:1 with the enumerated loci) is now a real `--repair-diff` mode run in `--check-all`, not prose in this doc. Loci are parsed by a structural line-walk (no `\s*` block regex).
+- **[P1] nested opt-out closed.** A file physically under `<pair>/{clean,broken}/` may no longer opt out of Check 7 by dropping its pairing fields; the directory (`member_hint`, from the file path) is the source of truth (rule 1).
+- **[P2] regex/structural holes.** `_FIXTURE_SLUG_PAIR_RE` end-anchored (suffix garbage no longer truncate-parses); the orphan-twin check now requires **both** `fixture.md` and `groundtruth.md` per member and twin; repair-loci parsed structurally (empty/blank line cannot swallow the next locus).
+- **Repair-diff (durable record):** each pair's `broken/fixture.md → clean/fixture.md` diff is **pure-additive** (0 deletions) with exactly **2 insertion hunks**, mapping 1:1 to the two enumerated `Base text + repair record` loci:
+  - `op-ed-warrant-leap`: locus 1 (causal warrant: rate/denominator + confounders); locus 2 (remedy warrant: proportionality vs lighter remedies).
+  - `policy-brief-uncompared`: locus 1 (comparative burden: service-investment comparison); locus 2 (feasibility burden: cost + funding mechanism).
+
+**Behavioral acceptance — ✅ PASS (recorded 2026-07-11; blind, cross-vendor; raw outputs gitignored/prior-session, this table is the durable record).** The pair delta has no mechanical `--check-all` gate on *verdict behavior*; correctness is established by a recorded convergence run over both pairs — **4 members × 2 model configs (Fable + Codex 5.6) = 8 blind runs**, separate runner sessions per member, neutral labels, no twin disclosure (synthetic — no fetch needed):
+
+| Pair | Member | Fable | Codex 5.6 | Target | Pair delta |
+|---|---|---|---|---|---|
+| op-ed-warrant-leap | broken | UNWARRANTED · WR0 / FM-A6 (warrant leap) | UNWARRANTED · WR0 / FM-A6 | UNWARRANTED | discriminator **fires** ✓ |
+| op-ed-warrant-leap | clean | WARRANTED · only FM-A8 (advisory Should-Fix) | WARRANTED · only FM-A8 | WARRANTED | discriminator **withheld** ✓ |
+| policy-brief-uncompared | broken | UNWARRANTED · BP5 / FM-A10 (uncompared burden) | UNWARRANTED · BP5 / FM-A10 | UNWARRANTED | discriminator **fires** ✓ |
+| policy-brief-uncompared | clean | WARRANTED · only FM-A15 (advisory Should-Fix) | WARRANTED · only FM-A15 | WARRANTED | discriminator **withheld** ✓ |
+
+**8/8 on target, cross-vendor.** Both broken members converge UNWARRANTED with the planted discriminator fired; both clean twins converge WARRANTED with **no registered trap** (WR0/FM-A6 for op-ed, BP5/FM-A10 for policy) firing — the only mentions are single **advisory Should-Fix** flags (op-ed clean = FM-A8; policy clean = FM-A15) that neither reach Must-Fix nor defeat the verdict, exactly the latitude the positive-control rule allows. The **pair delta holds per config** for both pairs (the discriminator is a structural failure in the broken run and absent in the clean run, on the same prose). The existing `ppi-one-size-fits-none` ↔ `op-ed` contrast is preserved (ppi stays WARRANTED; the retrofit adds the family gradient's third corner without perturbing the other two). No Q7 trap fired on either clean member.
+
 ---
 
 ## §M1-followup — warrant-leap primacy (2026-07-10)
