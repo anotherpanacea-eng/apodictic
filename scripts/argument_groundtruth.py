@@ -44,6 +44,19 @@ GT schema v0.3.0:
      claims a licensed status is a stale-marker ERROR (the M2-promotion tripwire — this consumes
      the formerly-dead heading `provisional` bool). Inter-rater agreement LICENSES a label; it
      never scores the engine (the psychometric frame).
+  7. Matched-pair provenance (GT schema v0.3.0 OPTIONAL fields; the argument-side superset of
+     fiction's pairing grammar — docs/argument-benchmark-spec.md §Matched pairs): absence of BOTH
+     `Matched-pair member` + `Paired-with` = unpaired legacy fixture, zero behavior change. When
+     present, they must appear together (rule 2); the `Matched-pair member` leading token is
+     clean/broken/n/a, leading-token parsed with a NEW lowercase regex (_PAIR_MEMBER_RE — NOT
+     fiction's substring parse, and the uppercase GT7/GT8 regexes are neither touched nor reused);
+     a clean/broken member REQUIRES a `Paired-with` naming its COMPLEMENT (rule 4); the key's own
+     `Fixture slug` must read `<slug>/<member>` agreeing with both the member token and the
+     `Paired-with` slug (rule 5 — the wrong-twin gate); a clean member REQUIRES a non-N/A
+     `Base text + repair record` and a GT2 marked `N/A — positive control` (rule 6 — the
+     determinism half the parser can enforce, inverse of fiction's broken-plant-record gate); a
+     standalone (`n/a`) member may not carry a non-n/a `Paired-with` (rule 7). Cross-file twin
+     existence is the corpus loop's job (validate.sh orphan-twin check), not this single-file check.
 
 Output keeps the legacy WARN: / ERROR: / OK: / FAILED: prefixes and exit codes (0 ok, 1 fail,
 2 usage) so it slots into --self-test-all alongside the other self-testable validators.
@@ -59,6 +72,7 @@ CLI:
     argument_groundtruth.py --self-test
 """
 
+import difflib
 import os
 import re
 import sys
@@ -142,6 +156,45 @@ _RELIABILITY_GROUP_RE = re.compile(
 # (`- **BOOKED** — ENGINE-FAULT`, `- BOOKED::`, `- BOOKED*`, `* BOOKED:`); the structural form rejects
 # them by construction. The CLAIM stays deliberately broad (so no near-miss dialect silently escapes)
 # and the VALID form stays strict (`- BOOKED:` / `- **BOOKED:**`); both are now string slicing.
+# Check 7 (matched pairs). Leading token of a `Matched-pair member` value: clean / broken / n/a.
+# Lowercase-only, with the same hostile boundary-lookahead POSTURE as _GT7_VERDICT_RE /
+# _GT8_FLAGS_RE (a `cleanX` near-miss must not truncate-parse) but a NEW pattern — those are
+# uppercase-only (`[A-Z][A-Z-]*`) and are neither touched nor reused. NOT fiction's substring parse.
+_PAIR_MEMBER_RE = re.compile(r"[\s*`]*([a-z][a-z/-]*)(?![A-Za-z0-9])")
+# Full-match a `Paired-with` value: `<slug>/<member>` (member ∈ clean|broken). The slug is the
+# lowercase-hyphen fixture-family name; the caller complement-checks the member component and
+# cross-checks the slug against this key's own `Fixture slug` (rule 5, the wrong-twin gate).
+_PAIR_WITH_RE = re.compile(r"[\s*`]*([a-z0-9][a-z0-9-]*)/(clean|broken)[\s*`]*$")
+# This key's own `Fixture slug` when it is a pair member: `<slug>/<member>` (member is validated by
+# _PAIR_MEMBER_RE's enum, so this just splits — a lowercase-token member component is enough).
+# END-ANCHORED (`[\s*`]*$`) — a `.match()` alone anchors only the START, so without the `$` a
+# `Fixture slug` like `op-ed/broken EXTRA` would truncate-parse to `op-ed/broken` and pass with the
+# trailing garbage silently dropped (Codex #196 P2). The trailing adornment class mirrors the leading
+# one. (`_PAIR_WITH_RE` above is already end-anchored; this is the sibling that was not.)
+_FIXTURE_SLUG_PAIR_RE = re.compile(r"[\s*`]*([a-z0-9][a-z0-9-]*)/([a-z][a-z-]*)[\s*`]*$")
+# Check 7 rule 6ii — the clean member's GT2 positive-control marker. A LEADING-ANCHORED leaf match
+# applied to the GT2 section's first non-blank line (extracted structurally by _parse_gt_sections),
+# NOT a body substring: the retired `"positive control" in gt2_body.lower()` test let a substantive
+# GT2 that merely MENTIONED the phrase (e.g. "this is not a positive control") pass as a control
+# (Codex #196 BLOCKING). Strips leading bullet/bold/backtick/blockquote adornment, then requires the
+# canonical `N/A — positive control` opener (hyphen/en-dash/em-dash tolerated; case-insensitive).
+_GT2_POSCTRL_MARKER_RE = re.compile(
+    r"^[\s*`>_-]*N/A\s*[-–—]\s*positive control\b", re.IGNORECASE)
+# Check 7 repair-diff gate — the enumerated repair loci under `Base text + repair record`. The SCOPE
+# (which lines are the field's sub-bullets) is walked structurally in _repair_record_loci, never with
+# a `(.*?)`/multi-line `\s*` block regex — so an empty/blank line inside the field cannot let a scope
+# match run on and swallow the next locus. `_REPAIR_FIELD_LINE_RE` = the field's column-0 bullet.
+# Within the block, locus bullets follow the claim-broad / validate-strict pattern (mirrors the BOOKED
+# matcher) so a malformed locus can never be SILENTLY dropped (Codex #196 fresh-head P2):
+#   `_LOCUS_CLAIM_RE` = any indented bullet whose text opens with `Locus` as a token (case-insensitive,
+#     with/without a number) — the broad claim, so a case variant (`LOCUS 1`) or a number-less `Locus`
+#     is SEEN, not skipped; and
+#   `_LOCUS_LEAF_RE` = the strict VALID form `- **Locus <n> — …` (title-case `Locus`, a space, an
+#     integer id). A claim that is not a valid leaf is a loud "malformed locus" error.
+_REPAIR_FIELD_LINE_RE = re.compile(r"^-\s+\*\*Base text \+ repair record:\*\*\s*.*$")
+_LOCUS_CLAIM_RE = re.compile(r"^\s+-\s+\*{0,2}\s*Locus(?![A-Za-z])", re.IGNORECASE)
+_LOCUS_LEAF_RE = re.compile(
+    r"^\s+-\s+\*\*Locus\s+([0-9]+)\s+[-–—]\s+\S.*?\*\*(?:\s+.*)?$")
 
 
 def _positive_code_text(text):
@@ -239,6 +292,22 @@ def _reliability_values(text):
     invisible here and surfaces as the caller's 'no ledger' error. Exactly one is required."""
     scope = _provenance_block(text)
     return [v.strip() for v in _RELIABILITY_FIELD_RE.findall(scope)]
+
+
+def _field_values(text, label):
+    """All canonical `- **<label>:** value` lines in `text`."""
+    pattern = re.compile(
+        r"^-\s+\*\*\s*%s\s*:\s*\*\*\s*(.+)$" % re.escape(label), re.MULTILINE)
+    return [v.strip() for v in pattern.findall(text)]
+
+
+def _provenance_values(text, label):
+    """All canonical `- **<label>:** value` lines in the exact `## Provenance` block.
+
+    Check 7 fields are provenance, not free-floating prose: a lookalike under `## Notes` must not
+    satisfy the pairing contract. Returning all values lets the caller reject contradictory
+    duplicates rather than silently trusting the first declaration."""
+    return _field_values(_provenance_block(text), label)
 
 
 def _parse_reliability_groups(value):
@@ -460,7 +529,16 @@ def round_record_check(record_text, resolve_fixture):
     return errors
 
 
-def argument_groundtruth_check(text):
+def argument_groundtruth_check(text, member_hint=None, pair_slug_hint=None):
+    """`member_hint` is the basename of the file's parent directory, supplied by the CLI from the file
+    path — `clean`/`broken` for a nested member, the pair/fixture slug for a flat file, or None only
+    for the in-memory self-test text (which asserts nothing about path). It drives Check 7 rule 1's
+    bidirectional path<->declaration agreement: a file under `<pair>/clean|broken/` must declare a
+    matching member (no opt-out by dropping fields), AND a file that declares membership must live in
+    such a directory (no flat member declaration escaping the corpus orphan-twin completeness pass).
+    `pair_slug_hint` is the basename of the member directory's parent for a nested pair, and binds
+    the in-file pair identity to the actual `<pair>/` directory. member_hint=None asserts neither,
+    so the in-memory self-test text keeps its exact behavior."""
     errors, warnings = [], []
     sections = _parse_gt_sections(text)
 
@@ -670,10 +748,274 @@ def argument_groundtruth_check(text):
                               "heading is a stale marker — promotion must clean the heading, or "
                               "the ledger is wrong)." % (n, status))
 
-    ok = "OK: Argument ground-truth contract satisfied (GT1-GT8 present; codes resolve; locus consistent; warrant verdict + premise flags well-formed; reliability ledger licensed)."
+    # Check 7: Matched-pair provenance (GT schema v0.3.0 OPTIONAL fields). Absence of BOTH pairing
+    # fields = unpaired legacy fixture, zero behavior change (all 14 non-pair keys are byte-stable).
+    # The fiction wing (fiction_groundtruth.py, fiction-GT #187) OWNS the shared pairing grammar —
+    # the field names, the `<pair-slug>/<member>` value shape, the directory layout. The argument-
+    # side divergences below (leading-token member parse, the clean-side derivation-record + GT2
+    # gates, the slug self-consistency check) are a DELIBERATE stricter superset, NOT drift to
+    # reconcile: both validators stay single-file stdlib, and neither is ported to the other.
+    member_vals = _provenance_values(text, "Matched-pair member")
+    paired_vals = _provenance_values(text, "Paired-with")
+    member_claims = _field_values(text, "Matched-pair member")
+    paired_claims = _field_values(text, "Paired-with")
+    if len(member_claims) != len(member_vals):
+        errors.append("Check 7 (matched pair) — `Matched-pair member` field outside the exact "
+                      "`## Provenance` block; pairing declarations may not be hidden under Notes "
+                      "or another section.")
+    if len(paired_claims) != len(paired_vals):
+        errors.append("Check 7 (matched pair) — `Paired-with` field outside the exact "
+                      "`## Provenance` block; pairing declarations may not be hidden under Notes "
+                      "or another section.")
+    if len(member_vals) > 1:
+        errors.append("Check 7 (matched pair) — %d `Matched-pair member` fields in `## Provenance`; "
+                      "exactly one is allowed for a paired declaration." % len(member_vals))
+    if len(paired_vals) > 1:
+        errors.append("Check 7 (matched pair) — %d `Paired-with` fields in `## Provenance`; exactly "
+                      "one is allowed for a paired declaration." % len(paired_vals))
+    member_val = member_vals[0] if member_vals else ""
+    paired_val = paired_vals[0] if paired_vals else ""
+    has_member, has_paired = bool(member_val), bool(paired_val)
+    # Rule 1 (directory<->declaration agreement; Codex #196 P1 + fresh-head): the file path and the
+    # in-file pairing fields must AGREE, in BOTH directions. `member_hint` is the basename of the
+    # file's parent directory (from the CLI): `clean`/`broken` for a nested member, the pair/fixture
+    # slug for a flat file, or None only for the in-memory self-test text (no path). Two failure modes:
+    #   (a) a file that PHYSICALLY lives in a `<pair>/clean|broken/` directory must DECLARE both
+    #       pairing fields with a matching `Matched-pair member` — it may not opt out by dropping them
+    #       (which would otherwise read as an unpaired legacy no-op); and
+    #   (b) a file that DECLARES itself a matched-pair member must physically LIVE in a
+    #       `<pair>/clean|broken/` directory — a flat member declaration escapes the corpus-level
+    #       orphan-twin completeness pass (which enumerates member directories), so its missing twin
+    #       is never caught. member_hint=None (self-test) is untouched: it asserts nothing about path.
+    if member_hint in ("clean", "broken"):
+        if not (has_member and has_paired):
+            errors.append("Check 7 (matched pair) — this key lives in a `%s/` pair directory but is "
+                          "missing a pairing field; `Matched-pair member` and `Paired-with` are both "
+                          "REQUIRED for a directory pair member (a nested member may not opt out of "
+                          "Check 7 by dropping them)." % member_hint)
+        else:
+            dm = _PAIR_MEMBER_RE.match(member_val)
+            if not dm or dm.group(1) != member_hint:
+                errors.append("Check 7 (matched pair) — `Matched-pair member` %r disagrees with the "
+                              "`%s/` member directory this key lives in (the directory is the source "
+                              "of truth)." % (member_val.strip(), member_hint))
+    elif member_hint is not None and (has_member or has_paired):
+        errors.append("Check 7 (matched pair) — this key declares a pairing field but lives at a flat "
+                      "path (its directory is `%s/`, not `clean`/`broken`); a declared matched-pair "
+                      "member must physically live in a `<pair>/clean/` or `<pair>/broken/` directory "
+                      "(else the corpus orphan-twin completeness pass cannot see its missing twin)."
+                      % member_hint)
+    if has_member or has_paired:
+        # Rule 2: both pairing fields are required together (or both absent).
+        if has_member != has_paired:
+            missing = "Paired-with" if has_member else "Matched-pair member"
+            errors.append("Check 7 (matched pair) — one pairing field is present but %r is "
+                          "missing; `Matched-pair member` and `Paired-with` are required together "
+                          "(or both absent for an unpaired fixture)." % missing)
+        else:
+            # Rule 3: leading-token member parse (lowercase; hostile boundary). NOT a substring parse.
+            mm = _PAIR_MEMBER_RE.match(member_val)
+            member = mm.group(1) if mm else ""
+            if member not in ("clean", "broken", "n/a"):
+                errors.append("Check 7 (matched pair) — `Matched-pair member` leading token must be "
+                              "one of clean / broken / n/a (got %r; a near-miss like `cleanX` is "
+                              "rejected by the boundary lookahead)." % member_val.strip())
+            elif member in ("clean", "broken"):
+                complement = "clean" if member == "broken" else "broken"
+                paired_is_na = paired_val.lower().startswith("n/a")
+                # Rule 4: a clean/broken member REQUIRES a non-n/a `Paired-with` naming its complement.
+                if paired_is_na:
+                    errors.append("Check 7 (matched pair) — `%s` member requires a non-n/a "
+                                  "`Paired-with` naming its complement (`<slug>/%s`); got %r."
+                                  % (member, complement, paired_val.strip()))
+                else:
+                    pw = _PAIR_WITH_RE.match(paired_val)
+                    if not pw:
+                        errors.append("Check 7 (matched pair) — `Paired-with` value %r is not a "
+                                      "well-formed `<slug>/<clean|broken>` reference."
+                                      % paired_val.strip())
+                    else:
+                        paired_slug, paired_member = pw.group(1), pw.group(2)
+                        if paired_member != complement:
+                            errors.append("Check 7 (matched pair) — `%s` member is paired with a "
+                                          "`%s` member but must be paired with its complement `%s` "
+                                          "(a member paired with its own kind is an error)."
+                                          % (member, paired_member, complement))
+                        # Rule 5: slug self-consistency (the wrong-twin gate). The key's own
+                        # `Fixture slug` must read `<slug>/<member>` with <member> == the member
+                        # token, and `Paired-with`'s slug must equal that same <slug>.
+                        fslug_vals = _provenance_values(text, "Fixture slug")
+                        if len(fslug_vals) != 1:
+                            errors.append("Check 7 (matched pair) — a pair member requires exactly "
+                                          "one `Fixture slug` field in `## Provenance` (found %d)."
+                                          % len(fslug_vals))
+                            fs = None
+                        else:
+                            fs = _FIXTURE_SLUG_PAIR_RE.match(fslug_vals[0])
+                        if len(fslug_vals) == 1 and not fs:
+                            errors.append("Check 7 (matched pair) — a pair member's `Fixture slug` "
+                                          "must read `<slug>/<member>` (got %r)."
+                                          % fslug_vals[0].strip())
+                        elif fs:
+                            own_slug, own_member = fs.group(1), fs.group(2)
+                            if own_member != member:
+                                errors.append("Check 7 (matched pair) — `Fixture slug` member %r "
+                                              "disagrees with `Matched-pair member` %r."
+                                              % (own_member, member))
+                            if paired_slug != own_slug:
+                                errors.append("Check 7 (matched pair) — `Paired-with` names pair "
+                                              "%r but this key's `Fixture slug` pair is %r (a "
+                                              "`Paired-with` pointing at a different pair's twin is "
+                                              "a wrong-twin error)." % (paired_slug, own_slug))
+                            if pair_slug_hint is not None and own_slug != pair_slug_hint:
+                                errors.append("Check 7 (matched pair) — `Fixture slug` pair %r "
+                                              "disagrees with the actual `%s/` pair directory "
+                                              "(the filesystem path is the source of truth)."
+                                              % (own_slug, pair_slug_hint))
+                # Rule 6: clean-side derivation gates (the determinism half the parser can enforce).
+                if member == "clean":
+                    repair_vals = _provenance_values(text, "Base text + repair record")
+                    repair = repair_vals[0] if repair_vals else ""
+                    if len(repair_vals) != 1:
+                        errors.append("Check 7 (matched pair) — `clean` member requires exactly one "
+                                      "`Base text + repair record` field in `## Provenance` (found "
+                                      "%d)." % len(repair_vals))
+                    elif repair.lower().startswith("n/a"):
+                        errors.append("Check 7 (matched pair) — `clean` member requires a non-empty, "
+                                      "non-N/A `Base text + repair record` provenance field (the "
+                                      "argument-side inversion of fiction's broken-plant-record gate "
+                                      "— here the CLEAN member is the derived text).")
+                    # Rule 6ii: the GT2 section must OPEN with the exact `N/A — positive control`
+                    # marker — a structural leading-line match, not a body substring (Codex #196
+                    # BLOCKING). Extract the GT2 section's first non-blank line (parsed structurally
+                    # by _parse_gt_sections) and leaf-match the canonical marker at its head, so a
+                    # substantive GT2 that merely mentions "positive control" in prose is rejected.
+                    gt2_body = sections.get(2, {}).get("body", "")
+                    gt2_first = next((ln for ln in gt2_body.split("\n") if ln.strip()), "")
+                    if not _GT2_POSCTRL_MARKER_RE.match(gt2_first):
+                        errors.append("Check 7 (matched pair) — `clean` member's GT2 must OPEN with "
+                                      "the exact `N/A — positive control` marker (it is the pair's "
+                                      "pure positive control — no planted defect to locate; a "
+                                      "substantive GT2 that merely mentions the phrase does not "
+                                      "satisfy this).")
+            else:  # member == "n/a" (standalone)
+                # Rule 7: a standalone member may not carry a non-n/a `Paired-with`.
+                if not paired_val.lower().startswith("n/a"):
+                    errors.append("Check 7 (matched pair) — `n/a` (standalone) member carries a "
+                                  "non-n/a `Paired-with` %r; a standalone fixture has no twin."
+                                  % paired_val.strip())
+
+    ok = "OK: Argument ground-truth contract satisfied (GT1-GT8 present; codes resolve; locus consistent; warrant verdict + premise flags well-formed; reliability ledger licensed; matched-pair provenance consistent)."
     failed = ("FAILED: %d argument-groundtruth-check failure(s). Canonical home: "
               "docs/argument-benchmark-spec.md §Mechanical validator + evals/argument-groundtruth-template.md."
               % len(errors))
+    return errors, warnings, ok, failed
+
+
+def _repair_record_loci(clean_gt_text):
+    """Parse a clean key's `Base text + repair record` provenance field. Returns
+    `(loci, malformed, field_count)`:
+      - `loci`      — the integer ids of the VALID `- **Locus <n> — …` sub-bullets in the FIRST field
+                      block, in order;
+      - `malformed` — the (stripped) text of any locus-shaped bullet in that block that is NOT a valid
+                      leaf (a case variant like `LOCUS 1`, a number-less `Locus`, `Locus1`, …), so a
+                      malformed locus is surfaced loudly instead of silently dropped;
+      - `field_count` — how many `Base text + repair record` fields the key carries (exactly one is
+                      allowed; a second block's loci are otherwise invisible to the 1:1 map).
+    STRUCTURAL: a whole-file line walk that scopes the first block by indentation (the sub-bullet run
+    after the field line, up to the next column-0 line or `##` heading) — never a `(.*?)`/multi-line
+    `\\s*` block regex, so a blank line inside the field cannot let the scope run on and swallow the
+    next locus. Scanning continues past the first block only to count any stray extra field."""
+    # Repair records are provenance fields. A lookalike under Notes (or any other section) must not
+    # supply loci to the mechanical answer-key map.
+    lines = _provenance_block(clean_gt_text).split("\n")
+    loci, malformed = [], []
+    field_count = 0
+    in_first_block = False
+    for ln in lines:
+        if _REPAIR_FIELD_LINE_RE.match(ln):
+            field_count += 1
+            in_first_block = (field_count == 1)
+            continue
+        if not in_first_block:
+            continue
+        if _is_h2_scope(ln):
+            in_first_block = False  # next section — first block over; keep scanning for stray fields
+            continue
+        if ln.strip() == "":
+            continue  # tolerate a blank line inside the block without ending it
+        if not ln[:1].isspace():
+            in_first_block = False  # a column-0 line ends the block; keep scanning for stray fields
+            continue
+        if _LOCUS_CLAIM_RE.match(ln):  # claim-broad: any locus-shaped sub-bullet is SEEN
+            lm = _LOCUS_LEAF_RE.match(ln)  # validate-strict: `- **Locus <n> — …` with an integer id
+            if lm:
+                loci.append(int(lm.group(1)))
+            else:
+                malformed.append(ln.strip())
+    return loci, malformed, field_count
+
+
+def repair_diff_check(broken_text, clean_text, clean_gt_text):
+    """The scripted repair-diff acceptance gate (spec §Matched clean/broken pairs): the clean
+    `fixture.md` must be the broken `fixture.md` with INSERTIONS ONLY (pure-additive — zero
+    deletions, zero replacements, every other byte identical), and the number of insertion hunks
+    must equal the number of enumerated repair loci in the clean key's `Base text + repair record`.
+    The mutation diff *is* the answer key; this gate makes that claim mechanical instead of prose.
+    Same 4-tuple shape as argument_groundtruth_check so _emit can render it.
+
+    Distinct-seam requirement: two loci inserted at the SAME contiguous seam coalesce into one
+    difflib insert hunk and cannot be told apart, so `inserts != len(loci)` fires (a loud FAIL, never
+    a silent pass — author co-located edits as one locus, or separate the seams; see spec §Matched
+    clean/broken pairs)."""
+    errors, warnings = [], []
+    broken_lines = broken_text.split("\n")
+    clean_lines = clean_text.split("\n")
+    # autojunk=False — never treat frequent lines (e.g. blank lines) as junk; a pure-additive
+    # derivation must diff exactly, with no heuristic line dropping.
+    sm = difflib.SequenceMatcher(None, broken_lines, clean_lines, autojunk=False)
+    inserts = 0
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        if tag == "equal":
+            continue
+        if tag == "insert":
+            inserts += 1
+        else:  # 'delete' or 'replace' — a non-additive edit breaks the every-other-byte-identical claim
+            errors.append("repair-diff — non-additive %s edit (broken[%d:%d] -> clean[%d:%d]); the "
+                          "clean twin must be the broken fixture with insertions ONLY (zero "
+                          "deletions/replacements, every other byte identical)." % (tag, i1, i2, j1, j2))
+    loci, malformed, field_count = _repair_record_loci(clean_gt_text)
+    # Exactly one `Base text + repair record` field: a second block's loci are invisible to the map.
+    if field_count > 1:
+        errors.append("repair-diff — %d `Base text + repair record` provenance fields; exactly one is "
+                      "allowed (a second field's repair loci are invisible to the 1:1 hunk map)."
+                      % field_count)
+    # Malformed locus bullets are surfaced, never silently dropped (a case variant, a number-less
+    # `Locus`, `Locus1`, … would otherwise sit in the record uncounted and unflagged).
+    if malformed:
+        errors.append("repair-diff — malformed repair-locus bullet(s) %s; each locus must read "
+                      "`- **Locus <n> — …` (title-case `Locus`, a space, an integer id)."
+                      % "; ".join(repr(m[:70]) for m in malformed))
+    if not loci:
+        errors.append("repair-diff — the clean key enumerates no `- **Locus <n> — …` repair loci "
+                      "under `Base text + repair record`; the 1:1 hunk<->locus map is unverifiable.")
+    else:
+        # Distinct-identifier requirement: a repeated `Locus <n>` inflates len(loci) and can
+        # spuriously match the hunk total, purporting a 1:1 map that isn't one (Codex #196 P2). Each
+        # enumerated locus must carry a DISTINCT number.
+        dup_loci = sorted({n for n in loci if loci.count(n) > 1})
+        if dup_loci:
+            errors.append("repair-diff — duplicate repair-locus identifier(s) %s; each enumerated "
+                          "`Locus <n>` must carry a DISTINCT number for the hunk<->locus map to be "
+                          "1:1 (a repeated id inflates the count and can spuriously match the hunk "
+                          "total)." % ", ".join("Locus %d" % n for n in dup_loci))
+        if inserts != len(loci):
+            errors.append("repair-diff — %d insertion hunk(s) in the fixture diff but %d enumerated "
+                          "repair locus/loci; the diff must map 1:1 to the clean key's repair record "
+                          "(loci declared: %s)." % (inserts, len(loci), ", ".join(str(n) for n in loci)))
+    ok = ("OK: repair-diff — clean twin is a pure-additive derivation of the broken fixture; "
+          "%d insertion hunk(s) map 1:1 to %d enumerated repair locus/loci." % (inserts, len(loci)))
+    failed = "FAILED: %d repair-diff failure(s)." % len(errors)
     return errors, warnings, ok, failed
 
 
@@ -780,6 +1122,27 @@ _COMBINED_GT = """# Ground Truth: self-test combined
 free-form.
 """
 
+# Matched-pair members (Check 7). A paired BROKEN member: WARRANT GT2 kept, the two pairing fields
+# added, `Fixture slug` deepened to `<slug>/broken`, complement-paired with `<slug>/clean`.
+_PAIR_BROKEN_GT = _VALID_GT.replace(
+    "- **Fixture slug:** self-test",
+    "- **Fixture slug:** self-test/broken\n"
+    "- **Matched-pair member:** broken\n"
+    "- **Paired-with:** self-test/clean")
+# A paired CLEAN member: GT2 marked positive-control N/A, a non-empty `Base text + repair record`,
+# complement-paired with `<slug>/broken`, slug-consistent. (GT7 stays UNWARRANTED from _VALID_GT —
+# Check 7 does not cross-check GT7 against member; the arm isolates the pairing gates.)
+_PAIR_CLEAN_GT = _VALID_GT.replace(
+    "- **Fixture slug:** self-test",
+    "- **Fixture slug:** self-test/clean\n"
+    "- **Matched-pair member:** clean\n"
+    "- **Paired-with:** self-test/broken\n"
+    "- **Base text + repair record:** derived from self-test/broken by one warrant insertion; "
+    "discharges WR0.").replace(
+    "- **Primary failure layer:** WARRANT\n"
+    "- **Expected codes:** WR0 (warrant gap) + WR2 (scheme fragility). SM = PASS.",
+    "- **N/A — positive control.** No planted failure; the warrant is supplied.")
+
 
 def run_self_test(which=None):
     rc = {"v": 0}
@@ -792,6 +1155,18 @@ def run_self_test(which=None):
 
     def errs_of(text):
         return argument_groundtruth_check(text)[0]
+
+    def errs_of_hint(text, member_hint):
+        # Exercises the nested opt-out closure (the CLI would derive member_hint from the file path).
+        return argument_groundtruth_check(text, member_hint=member_hint)[0]
+
+    def errs_of_path(text, member_hint, pair_slug_hint):
+        # Exercises the full nested path identity: `<pair>/<member>/groundtruth.md`.
+        return argument_groundtruth_check(
+            text, member_hint=member_hint, pair_slug_hint=pair_slug_hint)[0]
+
+    def rd_errs(broken, clean, clean_gt):
+        return repair_diff_check(broken, clean, clean_gt)[0]
 
     check("valid", errs_of(_VALID_GT), True)
     # Check 1: a missing GT section.
@@ -1037,6 +1412,160 @@ def run_self_test(which=None):
         _COMBINED_GT.replace("GT4–GT7: provisional, confirm", "GT4–GT7: authoritative, gate")
         + "\n## Appendix — GT4–GT8 recap (non-provisional heading)\nrecap prose.\n"), False)
 
+    # ---- Check 7: Matched-pair provenance (GT schema v0.3.0 optional fields). Eleven arms; none is
+    # weakened to match fiction_groundtruth.py's looser behavior (substring member parse, no
+    # derivation-record gate on the derived member, no slug self-consistency) — the superset is
+    # deliberate.
+    # (a) a paired BROKEN member (WARRANT GT2 + complement pairing + slug-consistent) is accepted.
+    check("pair_broken_accepted", errs_of(_PAIR_BROKEN_GT), True)
+    # (b) a paired CLEAN member (repair record + GT2 positive-control N/A + slug-consistent) accepted.
+    check("pair_clean_accepted", errs_of(_PAIR_CLEAN_GT), True)
+    # (c) a broken member with `Paired-with: n/a` is rejected (rule 4 — complement required).
+    check("pair_broken_paired_na", errs_of(_PAIR_BROKEN_GT.replace(
+        "- **Paired-with:** self-test/clean", "- **Paired-with:** n/a")), False)
+    # (d) `Paired-with` present without `Matched-pair member` is rejected (rule 2).
+    check("pair_paired_without_member", errs_of(_VALID_GT.replace(
+        "- **Fixture slug:** self-test",
+        "- **Fixture slug:** self-test\n- **Paired-with:** self-test/clean")), False)
+    # (e) non-complement pairing (`clean` ↔ `.../clean`) is rejected (rule 4).
+    check("pair_non_complement", errs_of(_PAIR_CLEAN_GT.replace(
+        "- **Paired-with:** self-test/broken", "- **Paired-with:** self-test/clean")), False)
+    # (f) a bad member token is rejected (rule 3).
+    check("pair_bad_member_token", errs_of(_PAIR_BROKEN_GT.replace(
+        "- **Matched-pair member:** broken", "- **Matched-pair member:** sideways")), False)
+    # (g) a member-token boundary near-miss (`cleanX`) is rejected (rule 3 boundary lookahead) — the
+    # exact hostile-boundary posture the uppercase _GT7_VERDICT_RE/_GT8_FLAGS_RE use, on a new regex.
+    check("pair_member_boundary", errs_of(_PAIR_CLEAN_GT.replace(
+        "- **Matched-pair member:** clean", "- **Matched-pair member:** cleanX")), False)
+    # (h) the legacy no-pairing-fields fixture is accepted unchanged — both fields absent = no check
+    # runs (the top-of-suite `valid` arm is the same regression guard; this pins it for Check 7).
+    check("pair_legacy_no_fields", errs_of(_VALID_GT), True)
+    # (i) a clean member with a missing / N/A `Base text + repair record` is rejected (rule 6i — the
+    # argument-side inversion of fiction's broken-plant-record gate).
+    check("pair_clean_no_repair_record", errs_of(_PAIR_CLEAN_GT.replace(
+        "- **Base text + repair record:** derived from self-test/broken by one warrant insertion; "
+        "discharges WR0.", "- **Base text + repair record:** N/A")), False)
+    # (j) a clean member whose GT2 is substantive (not positive-control N/A) is rejected (rule 6ii).
+    check("pair_clean_substantive_gt2", errs_of(_PAIR_CLEAN_GT.replace(
+        "- **N/A — positive control.** No planted failure; the warrant is supplied.",
+        "- **Primary failure layer:** WARRANT\n"
+        "- **Expected codes:** WR0 (warrant gap). SM = PASS.")), False)
+    # (k) a `Paired-with` slug that contradicts the key's own `Fixture slug` pair is rejected
+    # (rule 5 — the wrong-twin gate; passes rule 4 AND the corpus orphan check without it).
+    check("pair_wrong_twin_slug", errs_of(_PAIR_BROKEN_GT.replace(
+        "- **Paired-with:** self-test/clean", "- **Paired-with:** other-pair/clean")), False)
+    # ---- Check 7 hardening (Codex #196 fold).
+    # (l) [BLOCKING] a clean member whose GT2 is substantive prose that MERELY MENTIONS "positive
+    # control" (but does not OPEN with the marker) is rejected — the old substring test passed it.
+    check("pair_clean_gt2_mentions_phrase_only", errs_of(_PAIR_CLEAN_GT.replace(
+        "- **N/A — positive control.** No planted failure; the warrant is supplied.",
+        "- **Primary failure layer:** WARRANT. Unlike a positive control, this member plants a WR0 gap.\n"
+        "- **Expected codes:** WR0 (warrant gap). SM = PASS.")), False)
+    # (m) [P1] the nested opt-out is closed: a file living in a `clean/` directory (member_hint) that
+    # has DROPPED its pairing fields no longer reads as unpaired legacy — it is a loud FAIL (rule 1).
+    check("pair_dir_member_drops_fields", errs_of_hint(_VALID_GT, "clean"), False)
+    # (n) [P1] a directory member whose `Matched-pair member` disagrees with its directory is rejected.
+    check("pair_dir_member_mismatch", errs_of_hint(_PAIR_CLEAN_GT, "broken"), False)
+    # (o) [P1] a directory member that agrees with its directory + declares both fields is accepted
+    # (the positive control for rule 1 — path-derived hint plus in-file fields, no contradiction).
+    check("pair_dir_member_consistent", errs_of_hint(_PAIR_CLEAN_GT, "clean"), True)
+    # (o2) [P1 fresh-head] the reverse direction: a file that DECLARES membership but lives at a FLAT
+    # path (member_hint = a slug, not clean/broken) is rejected — a flat member declaration escapes
+    # the corpus orphan-twin completeness pass, so its missing twin would never be caught.
+    check("pair_flat_declares_member", errs_of_hint(_PAIR_CLEAN_GT, "op-ed-warrant-leap"), False)
+    # (o3) [P1 fresh-head] a flat fixture with NO pairing fields under a slug hint stays clean (the 14
+    # unpaired fixtures — a slug member_hint must not, by itself, trip rule 1).
+    check("pair_flat_no_fields_ok", errs_of_hint(_VALID_GT, "andreessen-techno-optimist-manifesto"), True)
+    # (p) [P2] a `Fixture slug` with trailing garbage no longer truncate-parses — the end-anchored
+    # _FIXTURE_SLUG_PAIR_RE rejects `self-test/broken EXTRA` instead of silently dropping the suffix.
+    check("pair_fixture_slug_suffix_garbage", errs_of(_PAIR_BROKEN_GT.replace(
+        "- **Fixture slug:** self-test/broken", "- **Fixture slug:** self-test/broken EXTRA")), False)
+    # (q) [Codex #196 residual P1] the in-file pair slug must agree with the actual parent pair
+    # directory, not merely agree with `Paired-with` inside the same key.
+    check("pair_path_slug_mismatch", errs_of_path(_PAIR_CLEAN_GT.replace(
+        "- **Fixture slug:** self-test/clean", "- **Fixture slug:** wrong-pair/clean").replace(
+        "- **Paired-with:** self-test/broken", "- **Paired-with:** wrong-pair/broken"),
+        "clean", "self-test"), False)
+    # (r) [Codex #196 residual P2] pairing fields are valid only inside the exact Provenance block;
+    # moving them under Notes must read as missing, not satisfy Check 7 through a whole-file search.
+    _PAIR_FIELDS = ("- **Fixture slug:** self-test/clean\n"
+                    "- **Matched-pair member:** clean\n"
+                    "- **Paired-with:** self-test/broken\n")
+    _PAIR_FIELDS_UNDER_NOTES = _PAIR_CLEAN_GT.replace(_PAIR_FIELDS, "").replace(
+        "## Notes\n", "## Notes\n" + _PAIR_FIELDS)
+    check("pair_fields_outside_provenance", errs_of_hint(
+        _PAIR_FIELDS_UNDER_NOTES, "clean"), False)
+    # The same misplaced declarations on a flat fixture must fail loudly rather than disappear and
+    # let the file masquerade as unpaired legacy.
+    _FLAT_PAIR_FIELDS_UNDER_NOTES = _VALID_GT.replace(
+        "## Notes\n", "## Notes\n- **Matched-pair member:** clean\n"
+        "- **Paired-with:** self-test/broken\n")
+    check("pair_flat_fields_outside_provenance", errs_of_hint(
+        _FLAT_PAIR_FIELDS_UNDER_NOTES, "self-test"), False)
+    # (s) A contradictory duplicate member declaration must not be silently hidden behind the first.
+    check("pair_duplicate_member_field", errs_of_hint(_PAIR_CLEAN_GT.replace(
+        "- **Matched-pair member:** clean",
+        "- **Matched-pair member:** clean\n- **Matched-pair member:** broken"), "clean"), False)
+
+    # ---- Check 7 repair-diff acceptance gate (build-step-8; Codex #196 P1 — now wired + self-tested).
+    _RD_BROKEN = "alpha\nbeta\ngamma\n"
+    _RD_CLEAN_ADDITIVE = "alpha\nINSERT-1\nbeta\ngamma\nINSERT-2\n"   # 2 insertion hunks, 0 deletions
+    _RD_CLEAN_DELETION = "alpha\nINSERT-1\nINSERT-2\n"                # beta + gamma removed → non-additive
+    _RD_CLEANGT_2LOCI = ("## Provenance\n"
+                         "- **Base text + repair record:** two insertions.\n"
+                         "  - **Locus 1 — a.** inserted.\n"
+                         "  - **Locus 2 — b.** inserted.\n"
+                         "## GT2 — x\n- **N/A — positive control.** none.\n")
+    _RD_CLEANGT_1LOCUS = _RD_CLEANGT_2LOCI.replace(
+        "  - **Locus 2 — b.** inserted.\n", "")
+    _RD_CLEANGT_0LOCI = ("## Provenance\n"
+                         "- **Base text + repair record:** described in prose, no enumerated loci.\n"
+                         "## GT2 — x\n- **N/A — positive control.** none.\n")
+    # Pure-additive with 2 insertion hunks mapping 1:1 to 2 enumerated loci → clean.
+    check("repair_diff_additive_2loci", rd_errs(_RD_BROKEN, _RD_CLEAN_ADDITIVE, _RD_CLEANGT_2LOCI), True)
+    # A deletion (not every-other-byte-identical) is rejected — the clean twin must only insert.
+    check("repair_diff_deletion_rejected", rd_errs(_RD_BROKEN, _RD_CLEAN_DELETION, _RD_CLEANGT_2LOCI), False)
+    # Hunk count != enumerated-loci count is rejected (2 insertion hunks vs 1 declared locus).
+    check("repair_diff_hunk_locus_mismatch", rd_errs(_RD_BROKEN, _RD_CLEAN_ADDITIVE, _RD_CLEANGT_1LOCUS), False)
+    # A repair record with no enumerated `Locus <n>` sub-bullets is rejected (map is unverifiable).
+    check("repair_diff_no_enumerated_loci", rd_errs(_RD_BROKEN, _RD_CLEAN_ADDITIVE, _RD_CLEANGT_0LOCI), False)
+    # A blank line inside the repair-record block does not let the scope swallow the next locus
+    # (the structural line walk still counts both loci across the blank line).
+    check("repair_diff_blank_line_in_block", rd_errs(
+        _RD_BROKEN, _RD_CLEAN_ADDITIVE,
+        _RD_CLEANGT_2LOCI.replace("  - **Locus 2 — b.** inserted.\n",
+                                  "\n  - **Locus 2 — b.** inserted.\n")), True)
+    # Duplicate repair-locus identifiers (`Locus 1` twice) are rejected even when the inflated count
+    # happens to match the hunk total — a repeated id is not a distinct 1:1 mapping (Codex #196
+    # fresh-head P2).
+    check("repair_diff_duplicate_locus_id", rd_errs(
+        _RD_BROKEN, _RD_CLEAN_ADDITIVE,
+        _RD_CLEANGT_2LOCI.replace("  - **Locus 2 — b.** inserted.\n",
+                                  "  - **Locus 1 — b.** inserted.\n")), False)
+    # [Codex #196 fresh-head P2] Malformed locus bullets are surfaced, not silently dropped: a
+    # case-variant `LOCUS 1` extra bullet is rejected (claim-broad sees it; strict leaf fails it).
+    check("repair_diff_case_variant_locus", rd_errs(
+        _RD_BROKEN, _RD_CLEAN_ADDITIVE,
+        _RD_CLEANGT_2LOCI.replace("  - **Locus 2 — b.** inserted.\n",
+                                  "  - **Locus 2 — b.** inserted.\n  - **LOCUS 1 — c.** inserted.\n")), False)
+    # A `Locus` bullet with no integer id is rejected (was silently uncounted before).
+    check("repair_diff_locus_no_number", rd_errs(
+        _RD_BROKEN, _RD_CLEAN_ADDITIVE,
+        _RD_CLEANGT_2LOCI.replace("  - **Locus 2 — b.** inserted.\n",
+                                  "  - **Locus 2 — b.** inserted.\n  - **Locus — c.** inserted.\n")), False)
+    # The strict locus leaf requires the documented bold title + dash grammar, not merely a `Locus
+    # <n>` prefix. A missing dash/bold closure used to count as a valid locus and certify the map.
+    check("repair_diff_locus_missing_dash", rd_errs(
+        _RD_BROKEN, _RD_CLEAN_ADDITIVE,
+        _RD_CLEANGT_2LOCI.replace("  - **Locus 2 — b.** inserted.\n",
+                                  "  - **Locus 2 missing-dash b.** inserted.\n")), False)
+    # A second `Base text + repair record` field is rejected — its loci are invisible to the map.
+    check("repair_diff_second_field", rd_errs(
+        _RD_BROKEN, _RD_CLEAN_ADDITIVE,
+        _RD_CLEANGT_2LOCI.replace("## GT2 — x\n",
+                                  "- **Base text + repair record:** stray second field.\n"
+                                  "  - **Locus 1 — dup.** x.\n## GT2 — x\n")), False)
+
     # ---- Round-record conformance mode (the one mechanical guard on run-side attribution).
     # Hermetic in-memory fixtures — round_record_check only reads each fixture's Reliability ledger.
     _RR_FIXTURES = {
@@ -1112,16 +1641,46 @@ def main(argv):
         # Round-record conformance mode: --round-record <record.md> --fixtures-dir <dir>.
         if len(argv) >= 3 and argv[2] == "--round-record":
             return _run_round_record(argv[2:])
+        # Repair-diff acceptance gate: --repair-diff <broken/fixture.md> <clean/fixture.md> <clean/groundtruth.md>.
+        if len(argv) >= 3 and argv[2] == "--repair-diff":
+            return _run_repair_diff(argv[3:])
         if len(argv) < 3:
             sys.stderr.write("Usage: argument_groundtruth.py argument-groundtruth-check <groundtruth_file>\n")
             return 2
         if not os.path.isfile(argv[2]):
             sys.stderr.write("Error: File not found: %s\n" % argv[2])
             return 2
+        # Check 7 rule 1 needs the file's parent-directory basename (the path<->declaration agreement
+        # is bidirectional): `<pair>/clean/groundtruth.md` -> 'clean', `<pair>/broken/…` -> 'broken',
+        # a flat fixture `<slug>/groundtruth.md` -> the slug. Pass the raw basename so a flat file that
+        # DECLARES membership (which `clean`/`broken` alone would not distinguish from a real slug) is
+        # caught. None is reserved for the in-memory self-test (no path); a real file always has one.
+        member_dir = os.path.dirname(argv[2])
+        member_hint = os.path.basename(member_dir)
+        pair_slug_hint = (os.path.basename(os.path.dirname(member_dir))
+                          if member_hint in ("clean", "broken") else None)
         with open(argv[2], "r", encoding="utf-8", errors="replace") as fh:
-            return _emit(*argument_groundtruth_check(fh.read()))
+            return _emit(*argument_groundtruth_check(
+                fh.read(), member_hint=member_hint, pair_slug_hint=pair_slug_hint))
     sys.stderr.write("Error: unknown command: %s\n" % argv[1])
     return 2
+
+
+def _run_repair_diff(args):
+    """CLI wrapper for the repair-diff acceptance gate. `args` = the three file paths after the
+    `--repair-diff` flag: <broken/fixture.md> <clean/fixture.md> <clean/groundtruth.md>."""
+    if len(args) != 3:
+        sys.stderr.write("Usage: argument_groundtruth.py argument-groundtruth-check --repair-diff "
+                         "<broken/fixture.md> <clean/fixture.md> <clean/groundtruth.md>\n")
+        return 2
+    texts = []
+    for p in args:
+        if not os.path.isfile(p):
+            sys.stderr.write("Error: File not found: %s\n" % p)
+            return 2
+        with open(p, "r", encoding="utf-8", errors="replace") as fh:
+            texts.append(fh.read())
+    return _emit(*repair_diff_check(texts[0], texts[1], texts[2]))
 
 
 def _run_round_record(args):

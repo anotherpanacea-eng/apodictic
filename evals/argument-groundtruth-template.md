@@ -16,13 +16,20 @@ the schema rationale and
 Positive controls (correct diagnosis = WARRANTED or UNCONVENTIONAL-BUT-WARRANTED)
 may mark GT2/GT3/GT5/GT6 as `N/A — positive control` and score Q1 + Q4 + Q7
 only. State that in §Scope below. GT8 uses `NONE_REGISTERED` unless a load-bearing
-premise's acceptability is separately registered.
+premise's acceptability is separately registered. The **clean member of a matched pair** is
+itself a positive control (same conventions); it additionally registers the pair's
+planted-defect discriminator as its GT7 false-positive trap and carries a
+`Base text + repair record` (see the pairing fields in §Provenance and
+[../docs/argument-benchmark-spec.md](../docs/argument-benchmark-spec.md) §Matched pairs).
 
 ---
 
 ## Provenance
 
-- **Fixture slug:**
+- **Fixture slug:** *(for a matched-pair member, deepen to `<pair-slug>/clean` or `<pair-slug>/broken`)*
+- **Matched-pair member:** *(OPTIONAL — pairs only. `clean` | `broken` | `n/a (standalone)`. Omit both this field and `Paired-with` for an unpaired fixture; Check 7 requires them together. Leading token is enum-checked.)*
+- **Paired-with:** *(OPTIONAL — pairs only. `<pair-slug>/<complement-member>` — a `clean` member names its `broken` twin and vice versa; must match this key's own `Fixture slug` pair. `n/a` for a standalone.)*
+- **Base text + repair record:** *(REQUIRED on a `clean` member of a matched pair — the derived twin carries the derivation record. First line non-empty/non-N/A. Enumerate each repair edit: locus + before → after + which registered GT2 defect it discharges. The mutation diff IS the answer key: Check 7 rule 6 + the scripted repair-diff gate require 1:1 hunk↔locus correspondence with the broken member's `fixture.md`. Omit on unpaired fixtures and on the broken member — a derived-broken PD twin would carry `Base text + plant record` instead, fiction spelling, an M2 shape.)*
 - **Bucket:** 1 op-ed / 2 policy brief / 3 testimony / 4 personal essay / 5 academic / 6 advocacy journalism / 7 hybrid
 - **Source class:** synthetic-or-derived / public-domain
 - **Text stored in-repo?:** yes / no (referenced — give citation + where the text is found)

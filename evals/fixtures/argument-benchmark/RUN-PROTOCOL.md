@@ -75,6 +75,13 @@ Done by the **preparer**, in a session separate from the runner.
 Run this twice with two different model configs (the two runs are independent
 productions). Keep each run's full output.
 
+**Matched-pair blindness (pairs only).** For a matched clean/broken pair, the two members are
+**separate blind submissions under independent neutral labels**, run in **separate runner
+sessions/contexts** — never hand both members to one runner, and **never tell the runner a
+submission has a twin.** A runner who sees both can diff the near-identical prose and convert the
+benchmark into a find-the-difference puzzle (the very confound the pair exists to kill). The
+**scorer** computes the pair delta afterward, once both members have been scored independently.
+
 ## Step 2b — Recognition probe (referenced real fixtures)
 
 The main validity threat for famous pieces is **recognition, not leakage**: the
@@ -138,6 +145,30 @@ test: same causal-warrant family, opposite correct severity.
   locus or the objection zone, or fires the soft spot as Must-Fix, **fails** the
   fixture even if the two runs agree with each other —
   agreement on a wrong diagnosis is not convergence.
+- **Matched clean/broken pairs** (`op-ed-warrant-leap/{broken,clean}`,
+  `policy-brief-uncompared/{broken,clean}`) — a broken member and its derived clean twin
+  (near-identical prose modulo the enumerated repair; see each clean key's
+  `Base text + repair record`). Each member first converges on **its own side**, then the
+  pair must clear a **delta** conjunct:
+  - **Broken member:** converges under the failure-bearing rule above (≥3 of 4 anchors, claim
+    mandatory).
+  - **Clean member:** converges under the **pure-positive-control rule as qualified by**
+    [`docs/argument-benchmark-spec.md` §Positive-control convergence](../../../docs/argument-benchmark-spec.md#positive-control-convergence)
+    — GT1 claim + GT7 = WARRANTED + the Must-Fix-qualified no-invented-failure test (neither run
+    fires the registered trap or fabricates a **Must-Fix** structural failure, objection, or
+    burden gap; an advisory or Could-Fix mention does **not** fail the member).
+  - **The pair delta (the new conjunct):** per model config, the pair's registered
+    planted-defect discriminator — the broken key's GT2 primary code family / FM-A pattern
+    (**WR0/FM-A6** for the op-ed pair, **BP5/FM-A10** for the policy-brief pair) — is fired as a
+    **structural failure** in the broken run **and NOT fired as a structural failure (Must-Fix or
+    verdict-bearing) in the clean run, on the same prose.** An advisory / Could-Fix mention in the
+    clean run (e.g. "the causal inference rests on the supplied rate data") does **not** break the
+    delta; a Must-Fix or a verdict defeat does, and also scores Q7 = 0 for the pair under the trap
+    rule.
+  - **A pair passes only when all three hold; either member failing its side fails the pair**
+    (a broken-member hit does not excuse a clean-member false fire, and vice versa). The delta is
+    computed **per config** (opus-broken vs opus-clean; sonnet-broken vs sonnet-clean) and must
+    hold for **both** configs.
 
 **Asymmetric attribution (Reliability ledger, GT schema v0.3.0).** The convergence *criteria* above
 are unchanged; *attribution* reads the fixture's Reliability ledger and is asymmetric. A `gate`
@@ -208,7 +239,11 @@ Two cautions on the axes:
 
 ## Worked example (already run)
 
-`op-ed-warrant-leap` was run with Opus + Sonnet (synthetic fixture, no fetch
-needed). Both converged on all four anchors and scored 3 across in-scope
-dimensions; the run also caught two ground-truth refinements (consequence level;
-support-map subclaim routing). That is the loop this protocol formalizes.
+`op-ed-warrant-leap` (now the pair's broken member — `op-ed-warrant-leap/broken` since the
+matched-pairs retrofit; the pre-pairing run predates the twin) was run with Opus + Sonnet
+(synthetic fixture, no fetch needed). Both converged on all four anchors and scored 3 across
+in-scope dimensions; the run also caught two ground-truth refinements (consequence level;
+support-map subclaim routing). That is the loop this protocol formalizes. The matched-pair
+**delta** run (broken vs its new clean twin, per config) is the next increment on top of it —
+see §Step 4's matched clean/broken pair class and
+[`docs/argument-benchmark-calibration-round.md`](../../../docs/argument-benchmark-calibration-round.md).

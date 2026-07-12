@@ -97,6 +97,16 @@ not over-pathologizing**: the engine should diagnose a WARRANTED argument with a
 Should-Fix weakness, not a flood of Must-Fix codes. This is the real-world
 analog of the Q7 specificity gate.
 
+**Pairing N/A.** These 10 tier-3 fixtures **cannot** be given matched clean/broken twins — by
+construction, not by deferral: a real published op-ed has no authorable clean base (you cannot
+un-break someone's argument without writing a derivative of copyrighted text, and neither the
+original nor a "repaired" derivative may be stored in-repo). They stay **single-fixture**, carry
+their specificity value through the WARRANTED-real-calibration five-anchor rule
+([RUN-PROTOCOL.md §Step 4](RUN-PROTOCOL.md)), and take the reliability-tier treatment from the
+agreement-as-license ledger. Matched pairs are a property of the *synthetic planted-defect*
+fixtures (`op-ed-warrant-leap`, `policy-brief-uncompared`); the referenced PD positive control
+`modest-proposal-satire` is likewise unpaired (a control has no planted defect to twin against).
+
 ---
 
 ## The corpus (10 pieces, 4 clusters)

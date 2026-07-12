@@ -1,8 +1,10 @@
-# Ground Truth: op-ed-warrant-leap
+# Ground Truth: op-ed-warrant-leap/broken
 
 ## Provenance
 
-- **Fixture slug:** op-ed-warrant-leap
+- **Fixture slug:** op-ed-warrant-leap/broken
+- **Matched-pair member:** broken
+- **Paired-with:** op-ed-warrant-leap/clean
 - **Bucket:** 1 op-ed
 - **Source class:** synthetic-or-derived
 - **Text stored in-repo?:** yes — `fixture.md` is the verbatim engine input: argument text only, no metadata or comments (so nothing leaks the answer key into the run). All provenance/diagnosis lives here, never in the input file.
