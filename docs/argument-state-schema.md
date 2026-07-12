@@ -402,6 +402,10 @@ _Status: not yet run_
 ### 10.8 Adversarial Evidence Review
 [Populated by adversarial-evidence-review module when it runs]
 _Status: not yet run_
+
+### 10.9 AGD Move Audit
+[Populated by argument-agd-audit module when it runs]
+_Status: not yet run_
 ```
 
 **Annotation protocol:** Each companion module writes into its designated subsection. Annotations are signed with the module name and timestamp. Annotations may reference any field in §§ 1–9 by section and field name. Annotations may not modify §§ 1–9 directly; they add interpretive layers, not corrections. If a companion module disagrees with a diagnostic finding, it notes the disagreement in its annotation block.
@@ -464,6 +468,13 @@ _Status: not yet run_
 - Domain-standard attack translations (GRADE, RoB 2, ROBINS-I, FRE 702, conceptual severity)
 - Hard gate triggers
 - Full results reference: Adversarial_Evidence_Preparation_Guide.md
+
+### 10.9 AGD Move Audit
+- Coverage manifest (declared spans, exclusions with reasons, move count, completion status)
+- Typed move records (ASSURING / GUARDING / DISCOUNTING) with verbatim source anchors
+- Per-family challenge results (STRIP / COMMITMENT / ENGAGEMENT; total result matrix)
+- Candidate diagnoses (flag-only, PENDING/CONFIRMED/DECLINED reconciliation; existing codes only — never a new code, never direct severity propagation)
+- Full contract reference: `craft/argument-agd-audit.md`; mechanical gate `validate.sh argument-agd`
 ```
 
 ---
@@ -472,7 +483,7 @@ _Status: not yet run_
 
 ### Creation
 
-The Dialectical Clarity audit creates `Argument_State.md` at the start of its run. Sections 1–8 are populated as each step completes. Section 9 is populated after all steps finish. Section 10 is initialized with empty subsections 10.1 through 10.8.
+The Dialectical Clarity audit creates `Argument_State.md` at the start of its run. Sections 1–8 are populated as each step completes. Section 9 is populated after all steps finish. Section 10 is initialized with empty subsections 10.1 through 10.9.
 
 ### Persistence
 
