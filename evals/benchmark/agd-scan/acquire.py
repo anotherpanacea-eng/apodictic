@@ -122,6 +122,18 @@ def main() -> int:
         # its audit line land together, and a retry skips the manifest).
         with LOG.open("a", encoding="utf-8") as fh:
             fh.write("\n".join(lines) + "\n")
+
+    def write_cell(path, manifest, log_lines):
+        # Audit-before-artifact, artifact via atomic rename: the manifest only
+        # reaches its final (retry-skipped) name AFTER its log entry is on
+        # disk, so no failure ordering can leave a manifest whose drop
+        # evidence never landed. The inverse residue — a log entry without a
+        # manifest — makes the retry RE-ACQUIRE the cell (a duplicate audit
+        # line is acceptable noise; orphaned evidence is not).
+        tmp = path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        log_cell(log_lines)
+        os.replace(tmp, path)
     for fixture in FIXTURES:
         if args.fixture and fixture != args.fixture:
             continue
@@ -138,10 +150,8 @@ def main() -> int:
                 print("acquiring %s--%s--rep%d ..." % (fixture, vendor, rep),
                       flush=True)
                 cell = acquire_cell(fixture, vendor, rep, scratch)
-                path.write_text(json.dumps(cell["manifest"], indent=2) + "\n",
-                                encoding="utf-8")
                 stamp = cell["manifest"]["acquired_at"]
-                log_cell([
+                write_cell(path, cell["manifest"], [
                     "- `%s` — %d observation(s), %d span-integrity drop(s)%s"
                     % (path.name, cell["n_obs"], len(cell["drops"]),
                        (":\n" + "\n".join("  - %s" % d for d in cell["drops"]))
