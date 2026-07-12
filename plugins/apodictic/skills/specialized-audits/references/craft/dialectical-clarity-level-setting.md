@@ -93,7 +93,7 @@ Western analytic argument follows a broadly linear structure: thesis, evidence, 
 
 - **Testimonial accumulation:** Multiple first-person accounts build a case through volume and pattern rather than through explicit claim-evidence structure. The claim emerges from the pattern across accounts, not from any single account's argument.
 
-**Implementation:** Step 9 applies the cultural charity principle: when a text fails Western structural expectations, presume unconventional form before diagnosing structural failure. The six decision tests (claim-accessibility, evidence-evaluability, warrant-recoverability, scope-honesty, objection-awareness, form-fit) are deliberately form-independent. They test whether the argument is evaluable, not whether it follows a specific template.
+**Implementation:** Step 9 applies the cultural charity principle: when a text fails Western structural expectations, presume unconventional form before diagnosing structural failure. The six decision tests (claim-accessibility, evidence-evaluability, bridge-recoverability, scope-honesty, objection-awareness, form-fit) are deliberately form-independent. They test whether the argument is evaluable, not whether it follows a specific template.
 
 **Genuinely unsettled [INFERENCE]:** The boundary between "unconventional form" and "structural weakness disguised as unconventional form" is not fully resolved. A poorly argued personal essay can hide behind "narrative argumentation." A vague manifesto can claim "prophetic address." The Form-fit test is the audit's best defense: is the form doing real argumentative work, or shielding weakness? But this test requires judgment that cannot be fully algorithmic.
 

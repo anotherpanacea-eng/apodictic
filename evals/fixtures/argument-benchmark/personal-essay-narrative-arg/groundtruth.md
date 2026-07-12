@@ -44,7 +44,7 @@
 
 - **Expected warrant verdict:** UNCONVENTIONAL-BUT-WARRANTED
 - **Form name:** narrative argumentation (conclusion emerges through juxtaposition of events and thematic reflection rather than an explicit thesis; recognized form per Dialectical Clarity Step 9).
-- **Form-dependent codes that MUST be downgraded to advisory:** FM-A1 The Drive-By Thesis (no early thesis sentence), SM0 (no formal evidence units), and any "missing concession paragraph" finding. Step 9's decision tests pass: claim-accessibility ✓ (recoverable), evidence-evaluability ✓ (the vignettes), warrant-recoverability ✓ (two-clocks principle is stated), objection-awareness ✓ (the "kindness to the living" concession). Form-fit ✓ — the form does real work; it is not shielding weakness.
+- **Form-dependent codes that MUST be downgraded to advisory:** FM-A1 The Drive-By Thesis (no early thesis sentence), SM0 (no formal evidence units), and any "missing concession paragraph" finding. Step 9's decision tests pass: claim-accessibility ✓ (recoverable), evidence-evaluability ✓ (the vignettes), bridge-recoverability ✓ (two-clocks principle is stated), objection-awareness ✓ (the "kindness to the living" concession). Form-fit ✓ — the form does real work; it is not shielding weakness.
 - **False-positive trap:** firing FM-A1 / SM0 as *structural failures* because the essay has no thesis sentence and no citations. That is the exact over-diagnosis the Distinguish protocol exists to prevent. An engine that fails this essay for "no clear thesis" scores **Q7 = 0** and blocks the bucket.
 
 ## GT8 — Premise-plausibility flags

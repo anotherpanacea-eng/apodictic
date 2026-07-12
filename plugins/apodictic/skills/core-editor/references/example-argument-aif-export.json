@@ -1,0 +1,189 @@
+{
+  "schema": "apodictic.aif-core-export.v1",
+  "source": {
+    "artifact": "example-argument-aif-state.md",
+    "sha256": "87867ce34eabfb4c6d1df88b22d825fef6894df1985bf831d2b56ef2a037e482",
+    "argument_state_schema": "0.2.0",
+    "schema_version_basis": "operator-declared"
+  },
+  "profile": {
+    "name": "aif-core-subset",
+    "aif_reference": "AIF Specification, Definition 1.1",
+    "loss_policy": "explicit"
+  },
+  "nodes": [
+    {
+      "id": "i:C0",
+      "type": "I-node",
+      "text": "The city should publish a heat-response plan at /Users/example/authored-path.",
+      "source_ref": "§2 C0"
+    },
+    {
+      "id": "i:C1",
+      "type": "I-node",
+      "text": "Heat emergencies are recurring public-health events.",
+      "source_ref": "§2 C1"
+    },
+    {
+      "id": "i:C1.support",
+      "type": "I-node",
+      "text": "Five years of emergency-department records show recurring heat spikes.",
+      "source_ref": "§3 C1"
+    },
+    {
+      "id": "i:C2",
+      "type": "I-node",
+      "text": "A published plan makes agency responsibilities inspectable.",
+      "source_ref": "§2 C2"
+    },
+    {
+      "id": "i:C2.support",
+      "type": "I-node",
+      "text": "The existing emergency plan already assigns named agency roles.",
+      "source_ref": "§3 C2"
+    },
+    {
+      "id": "i:O1",
+      "type": "I-node",
+      "text": "A short record may reflect one anomalous weather cycle.",
+      "source_ref": "§6 O1"
+    },
+    {
+      "id": "i:O2",
+      "type": "I-node",
+      "text": "Publication alone cannot guarantee compliance.",
+      "source_ref": "§6 O2"
+    },
+    {
+      "id": "i:O3",
+      "type": "I-node",
+      "text": "A cooling-center-only strategy is cheaper.",
+      "source_ref": "§6 O3"
+    },
+    {
+      "id": "s:CA:O1",
+      "type": "CA-node",
+      "scheme": "apodictic:warrant-defeater",
+      "source_ref": "§6 O1"
+    },
+    {
+      "id": "s:CA:O2",
+      "type": "CA-node",
+      "scheme": "apodictic:claim-challenge",
+      "source_ref": "§6 O2"
+    },
+    {
+      "id": "s:RA:C1",
+      "type": "RA-node",
+      "scheme": "apodictic:warrant-application",
+      "scheme_text": "A repeated measured pattern across five years supports treating the event as recurring.",
+      "source_ref": "§4 C1"
+    },
+    {
+      "id": "s:RA:C2",
+      "type": "RA-node",
+      "scheme": "apodictic:warrant-application",
+      "scheme_text": "Publishing named responsibilities lets residents compare promised duties with agency action.",
+      "source_ref": "§4 C2"
+    }
+  ],
+  "edges": [
+    {
+      "from": "i:C1.support",
+      "to": "s:RA:C1"
+    },
+    {
+      "from": "i:C2.support",
+      "to": "s:RA:C2"
+    },
+    {
+      "from": "i:O1",
+      "to": "s:CA:O1"
+    },
+    {
+      "from": "i:O2",
+      "to": "s:CA:O2"
+    },
+    {
+      "from": "s:CA:O1",
+      "to": "s:RA:C1"
+    },
+    {
+      "from": "s:CA:O2",
+      "to": "i:C2"
+    },
+    {
+      "from": "s:RA:C1",
+      "to": "i:C1"
+    },
+    {
+      "from": "s:RA:C2",
+      "to": "i:C2"
+    }
+  ],
+  "losses": [
+    {
+      "code": "ALTERNATIVE-NO-CONFLICT-CRITERION",
+      "source_ref": "§6 O3",
+      "subject_id": "O3",
+      "detail": "The alternative declares no conflict criterion; no CA-node was invented.",
+      "blocking": false
+    },
+    {
+      "code": "APODICTIC-METADATA",
+      "source_ref": "§3 C1",
+      "subject_id": "C1",
+      "detail": "APODICTIC metadata is not serialized as AIF graph semantics.",
+      "blocking": false
+    },
+    {
+      "code": "APODICTIC-METADATA",
+      "source_ref": "§3 C2",
+      "subject_id": "C2",
+      "detail": "APODICTIC metadata is not serialized as AIF graph semantics.",
+      "blocking": false
+    },
+    {
+      "code": "APODICTIC-METADATA",
+      "source_ref": "§4 C1",
+      "subject_id": "C1",
+      "detail": "APODICTIC metadata is not serialized as AIF graph semantics.",
+      "blocking": false
+    },
+    {
+      "code": "APODICTIC-METADATA",
+      "source_ref": "§4 C2",
+      "subject_id": "C2",
+      "detail": "APODICTIC metadata is not serialized as AIF graph semantics.",
+      "blocking": false
+    },
+    {
+      "code": "APODICTIC-METADATA",
+      "source_ref": "§6 O1",
+      "subject_id": "O1",
+      "detail": "APODICTIC metadata is not serialized as AIF graph semantics.",
+      "blocking": false
+    },
+    {
+      "code": "APODICTIC-METADATA",
+      "source_ref": "§6 O2",
+      "subject_id": "O2",
+      "detail": "APODICTIC metadata is not serialized as AIF graph semantics.",
+      "blocking": false
+    },
+    {
+      "code": "CLAIM-LADDER-TOPOLOGY-UNDECLARED",
+      "source_ref": "§2",
+      "subject_id": null,
+      "detail": "Argument_State declares no claim-ladder incidence; no RA-node was invented.",
+      "blocking": false
+    },
+    {
+      "code": "UNMAPPED-PA",
+      "source_ref": "§5",
+      "subject_id": null,
+      "detail": "No typed preference application is present; no PA-node was invented.",
+      "blocking": false
+    }
+  ]
+}
