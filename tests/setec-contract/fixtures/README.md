@@ -8,14 +8,12 @@ surface, plus a stdlib-only reference fake. Implements R5 of
 
 | File | Purpose |
 |---|---|
-| `<surface>.json` × 14 | One canonical envelope per consumer surface — the pinned contract. |
+| `<surface>.json` × 16 | One canonical envelope per consumer surface — the pinned contract. |
 | `fake_setec.py` | Stdlib-only CLI that prints a surface's golden envelope. The consumer vendors a pinned copy to test its parser without SETEC's heavy deps. |
 | `README.md` | This file. |
 
-The fourteen surfaces (the `capabilities.d/` fragments carrying
-`min_setec_version` + a non-empty `consumers:` list — ten consumed by
-apodictic, four added for setec-voicewright; `voice_distance` and
-`idiolect_detector` serve both):
+The sixteen surfaces (the `capabilities.d/` fragments carrying
+`min_setec_version` + a non-empty `consumers:` list; some serve both consumers):
 
 ```
 variance_audit  manuscript_audit  repetition_audit       (task_surface: smoothing_diagnosis)
@@ -24,6 +22,8 @@ punctuation_cadence_audit  idiolect_detector
 mimicry_cosplay_audit  general_imposters                 (task_surface: voice_coherence)
 narrative_decision_audit                                 (task_surface: narrative_decision_audit)
 argument_decision_audit                                  (task_surface: argument_decision_audit)
+position_pair_register                                   (task_surface: position_pair_register)
+author_corpus_export                                     (task_surface: voice_coherence_acquisition)
 voice_fingerprint                                        (task_surface: authorship_embedding)
 binoculars_audit                                         (task_surface: binoculars_discrimination)
 ```
@@ -68,7 +68,7 @@ envelope is byte-stable against the committed golden.
 | Field | Sentinel | Why volatile |
 |---|---|---|
 | `version` | `"<fixture>"` | the script's `SCRIPT_VERSION`; bumps per release |
-| `target.path` | `"<fixture>"` | absolute input path |
+| `target.path` when non-null | `"<fixture>"` | absolute input path |
 | `baseline.path` | `"<fixture>"` | idiolect reference path |
 | `baseline.files[].path` | `"<fixture>"` | per-file absolute paths |
 | `results.*.files[].path` | `"<fixture>"` | `corpus_summary` file paths |
