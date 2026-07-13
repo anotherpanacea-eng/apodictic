@@ -342,26 +342,26 @@ def _is_reserved_placeholder(line):
     if line.startswith("[") and line.endswith("]"):
         return True
     if len(line) >= 2 and line.startswith("_") and line.endswith("_"):
-        # PER-KEYWORD exact grammar (_PLACEHOLDER_GRAMMAR/_PLACEHOLDER_ELLIPSIS —
-        # the live emitters' forms only, no keyword×opener cross-product): the
-        # keyword must be the WHOLE stub, carry ITS OWN annotation opener
-        # (`seeded by …` / `pending — …`), or be a keyword with a live bare-
-        # ellipsis form (`pending…`). Authored prose that merely OPENS with a
-        # keyword (`_Pending litigation changes the stakes._`, `_pending by
-        # court order remains unresolved._`, `_seeded — the mistrust…_`,
-        # `_seeded…_`) must disclose (Codex P2 ×2). Residual ambiguity: an
-        # authored italic line that itself opens with a keyword's OWN grammar
-        # (`seeded by …` / `pending — …`) collides with the annotation form and
-        # is swallowed; that collision is the convention's floor, not a
-        # matcher shortcut.
-        inner = line[1:-1].strip().lower()
+        # BYTE-LITERAL per-keyword grammar — the live emitters' forms and
+        # nothing else: no case folding, no whitespace normalization, no
+        # open-ended dot-stripping (Codex P2 ×3: `_pending by …_`/`_seeded — …_`
+        # cross-products, then `_pending._`/case/padding variants were each
+        # swallowed by successive normalization generosity). Emitters write
+        # exactly `_seeded_`, `_seeded by …_`, `_pending_`, `_pending — …_`,
+        # `_pending…_`/`_pending..._` — lowercase, unpadded. Anything else in
+        # full italics is authored content and DISCLOSES (over-disclosure on a
+        # hand-cased stub is visible and fixable; a swallowed authored line is
+        # silent). Residual floor: authored prose that itself opens with an
+        # exact emitter prefix (`seeded by …` / `pending — …`) collides with
+        # the annotation grammar.
+        inner = line[1:-1]
         if inner == "":
             return True
         for kw, openers in _PLACEHOLDER_GRAMMAR.items():
             if inner == kw or any(inner.startswith(kw + op) for op in openers):
                 return True
         for kw in _PLACEHOLDER_ELLIPSIS:
-            if inner != kw and inner.rstrip(".…").rstrip() == kw:
+            if inner in (kw + "…", kw + "..."):
                 return True
     return False
 
@@ -647,12 +647,17 @@ def selftest():
                      # no keyword×opener cross-product: these are NOT emitter forms (Codex P2, round 2)
                      "_pending by court order remains unresolved._",
                      "_seeded — the mistrust changes the stakes._",
-                     "_seeded…_"):
+                     "_seeded…_",
+                     # byte-literal: no dot-rstrip, no case fold, no padding (Codex P2, round 3)
+                     "_pending._",
+                     "_Pending_",
+                     "_ pending _"):
         got = build_export((final + "\n## 7. Out Of Profile\n%s\n" % authored).encode())
         check("authored %s-led italic discloses" % authored[1:8].strip().lower(),
               any(x["code"] == "OUT-OF-PROFILE-SECTION" and x["source_ref"] == "§7" for x in got["losses"]))
     # …while the REAL annotation stubs stay suppressed.
-    for stub in ("_pending — backfilled by Step 9 ..._", "_seeded by support_plan blocks_", "_pending…_"):
+    for stub in ("_pending — backfilled by Step 9 ..._", "_seeded by support_plan blocks_",
+                 "_pending…_", "_pending..._"):
         got = build_export((final + "\n## 7. Out Of Profile\n%s\n" % stub).encode())
         check("reserved stub %r stays unpopulated" % stub[1:9],
               not any(x["code"] == "OUT-OF-PROFILE-SECTION" and x["source_ref"] == "§7" for x in got["losses"]))
