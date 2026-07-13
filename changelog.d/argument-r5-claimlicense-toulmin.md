@@ -1,3 +1,0 @@
-### ClaimLicense ↔ Toulmin crosswalk (R5)
-
-Documents the fleet's warrant/license resemblance as a cross-level analogy rather than an identity. A new field-by-field crosswalk distinguishes Toulmin's object-level argument roles from SETEC Voiceprint's meta-level `ClaimLicense`, fixes the current whole-object→warrant mapping as `unmapped`, and supplies hostile anti-equivalence cases plus a promotion test for any future explicit `entitlement_basis` / `inference_rule`. The snapshot is grounded in setec-voiceprint v1.124.0 and its `schema_version: 1.0` producer envelopes; this is documentation and ADR clarification only, with no SETEC edit, vend, dependency-floor change, schema, validator, or runtime behavior change.
