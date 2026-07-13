@@ -22,8 +22,17 @@ bash scripts/validate.sh argument-aif-check export.json [--source Argument_State
 There is one canonical UTF-8 JSON encoding. Export builds and validates fully in
 memory; blocking/strict failure writes no stdout JSON and never replaces `--out`.
 Successful file output uses a same-directory temporary file and atomic replace.
-With `--source`, the checker rebuilds the graph and loss ledger and requires byte
-identity.
+
+Sourceless `check` enforces the full canonical byte-form: the closed schema shape
+**and** the canonical JSON encoding, including canonical **key order** (the checker
+re-emits the parsed object in the exporter's key order and compares bytes, so a
+key-reordered artifact fails without a source). What sourceless `check` cannot
+verify is **loss-set completeness** — whether every loss the source *should* have
+disclosed is present — because that requires re-deriving the graph and loss ledger
+from the original `Argument_State`. With `--source`, the checker rebuilds the graph
+and loss ledger, binds the export's recorded `source.artifact` basename to the
+supplied source filename, and requires byte identity; that is the only mode that
+proves loss-set completeness.
 
 ## Loss contract
 
