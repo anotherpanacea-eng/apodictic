@@ -6,11 +6,11 @@
 
 ## Board
 
-*Reconciled 2026-07-02 against git tags + `fleet_inventory.py`: shipped capability lanes moved to their release versions in Done; In Progress / Planned now list only genuinely-open work.*
+*Reconciled 2026-07-14 against git tags, the current release changelog, benchmark handoffs, and `fleet_inventory.py`: shipped capability lanes moved to Done; In Progress / Planned list only genuinely-open work. Git tags and the release changelog remain authoritative.*
 
 | In Progress | Planned | Done | Backlog |
 |-------------|---------|------|---------|
-| [Argument Benchmark Suite](#benchmark-suite) | [Multi-Party Intake](#multi-party-intake) | **v2.7.0** · **v2.6.2** · **v2.6.1** · **v2.6.0** *(sections below stop at v2.4.0; see git tags / CHANGELOG)* | [Model-Capacity Exploitation](#model-capacity-exploitation) |
+| [Argument Benchmark Suite](#benchmark-suite) | [Multi-Party Intake](#multi-party-intake) | **v2.10.0** · **v2.9.0** · **v2.8.0** · **v2.7.0** · **v2.6.2** · **v2.6.1** · **v2.6.0** | [Model-Capacity Exploitation M2–M3](#model-capacity-exploitation) |
 | [Validation & External Evidence](#validation--external-evidence) | [Coaching Deepening](#coaching-deepening) | [**v2.4.0**](#v240--argument-engine-calibration-command-trim--legal-risk-wiring) | [Research / API Reliability Layer](#research--api-reliability-layer) *(M1 built; follow-ons deferred)* |
 | | [Genre Audit Expansion](#genre--audit-expansion) | [**v2.3.1**](#v231--decoupled-ui-generation--host-bundle-distribution) | [Episode Cadence](#episode-cadence) |
 | | | [**v2.3.0**](#v230--retcon-planning-legal-risk-register--nonfiction-pre-draft) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
@@ -26,9 +26,9 @@
 | | | [v1.1.3](#v113--coaching-deepening) · [v1.1.2](#v112--revision-coach) · [v1.1.1](#v111--series-continuity--pass-9) · [v1.1.0](#v110--token-aware-agent-usage) | |
 | | | [v1.0.9](#v109) · [v1.0.8](#v108) · [v1.0.4](#v104) · [v1.0](#v10--public-release) | |
 
-**Now backfilled below (v2.6.0–v2.7.0):** **v2.6.0** — the Horizon Tier-1 wave (the Annotated-Manuscript deliverable + all its exports, plus the Tier-1 extraction audits); **v2.6.1** — audit carding + persona-divergence severity hardening; **v2.6.2** — override-marker SSoT hardening; **v2.7.0** — the state-seams wave (round-trip resume, finding dispositions, finding disconfirmation, synthesis re-grounding) + Multi-Session Arc Planning + the co-presence-network chart. See the [Done](#done) sections; git tags remain authoritative. *(There is no v2.5.0.)*
+**Now backfilled below (v2.6.0–v2.10.0):** **v2.6.0** — the Horizon Tier-1 wave (the Annotated-Manuscript deliverable + all its exports, plus the Tier-1 extraction audits); **v2.6.1** — audit carding + persona-divergence severity hardening; **v2.6.2** — override-marker SSoT hardening; **v2.7.0** — the state-seams wave (round-trip resume, finding dispositions, finding disconfirmation, synthesis re-grounding) + Multi-Session Arc Planning + the co-presence-network chart; **v2.8.0** — reviewer-anticipation, calibration-honesty, and coaching-history hardening; **v2.9.0** — the argument re-grounding foundation; **v2.10.0** — R3B benchmark scoring plus R4B/R5 completion. *(There is no v2.5.0.)*
 
-**Recently shipped (through v2.4.0):** **v2.3.0** — Retcon Planning (revision-coaching track), the Nonfiction Pre-Draft Pathway, the Legal Risk Register, Adaptive Mode de-escalation, and the Horizon Capacities scan. **v2.3.1** — decoupled web-app UI generation and research modes 4 → 6. **v2.4.0** — Manuscript-Structure Visualizations, Beta-Reader Instrument generation, the Legal Risk Register detection layer + router wiring, the routing fork/overlay split + project addressability, the Capability Index command (command surface trimmed to 13), and the Argument-Decision (ArgScope) audit with the SETEC normalized-dispatcher integration (vendor/pin/drift-gate); the release pipeline was also decoupled from the APODICTIC-Gemini sibling. *(Earlier — v2.2.0: Editor Scaffolding + Diagnostic Vocabulary operators, Feedback Triage, Adaptive Mid-Run Mode Escalation, Finding Lifecycle IDs incr 2–3.)* **Done and folded into shipped releases:** Runner-Governed Execution (incr 1–3 + 5; incr 4 future), Finding Lifecycle IDs (incr 1–3; incr 4 future), Validator Architecture Hardening, Adaptive Mode Escalation, Editor Scaffolding, Diagnostic Vocabulary, Feedback Triage. Pre-Skill Context Compaction is resolved by platform (see below).
+**Earlier release detail (through v2.4.0):** **v2.3.0** — Retcon Planning (revision-coaching track), the Nonfiction Pre-Draft Pathway, the Legal Risk Register, Adaptive Mode de-escalation, and the Horizon Capacities scan. **v2.3.1** — decoupled web-app UI generation and research modes 4 → 6. **v2.4.0** — Manuscript-Structure Visualizations, Beta-Reader Instrument generation, the Legal Risk Register detection layer + router wiring, the routing fork/overlay split + project addressability, the Capability Index command (command surface trimmed to 13), and the Argument-Decision (ArgScope) audit with the SETEC normalized-dispatcher integration (vendor/pin/drift-gate); the release pipeline was also decoupled from the APODICTIC-Gemini sibling. *(Earlier — v2.2.0: Editor Scaffolding + Diagnostic Vocabulary operators, Feedback Triage, Adaptive Mid-Run Mode Escalation, Finding Lifecycle IDs incr 2–3.)* **Done and folded into shipped releases:** Runner-Governed Execution (incr 1–3 + 5; incr 4 future), Finding Lifecycle IDs (incr 1–3; incr 4 future), Validator Architecture Hardening, Adaptive Mode Escalation, Editor Scaffolding, Diagnostic Vocabulary, Feedback Triage. Pre-Skill Context Compaction is resolved by platform (see below).
 
 ---
 
@@ -39,8 +39,8 @@
 ### V1 — Finding correctness, not just structural conformance
 
 The mechanical layer (~59 validators) gates artifact structure, severity propagation, ledger integrity, and export correctness. None of it can tell whether a finding is *right, relevant, or helpful* — that is editorial judgment, and a system asked to hunt structural defects can always name one. The argument engine is furthest along on closing this (the [Benchmark Suite](#benchmark-suite): ground-truth diagnoses, sensitivity fixtures, specificity positive controls, the two-run convergence protocol). Gaps:
-- **Second-editor confirmation** of the provisional ground-truth (GT4–GT8; GT1–GT3 authoritative) — the blind packet is built and waiting (`evals/fixtures/argument-benchmark/HANDOFF.md`).
-- **The fiction passes/audits have no equivalent ground-truth benchmark.** Breadth (11 passes, dozens of audits) is the least-validated surface; the positive-control / specificity-guard design has not yet earned confidence across it. The bar is inter-rater agreement against human developmental editors on a labeled corpus.
+- **Argument benchmark panel confirmation** of provisional GT4–GT8 anchors (GT1–GT3 authoritative). The older Dropbox packet must first be regenerated to the v0.3.0 warrant vocabulary, GT8, Reliability ledger, and a closed-response form; then a shared **≥3-editor** panel can α-license (or demote) the anchors. See `evals/fixtures/argument-benchmark/HANDOFF.md`.
+- **Fiction benchmark execution and panel confirmation.** The M1 fixture/key/harness slice is built; its M2a two-configuration runs and M2b ≥3-editor panel are still open. Until then, its Lane-2/B anchors report rather than gate. Breadth (11 passes, dozens of audits) remains the least-validated surface; the bar is inter-rater agreement against human developmental editors on a labeled corpus.
 
 ### V2 — Auditable scorecard
 
@@ -102,8 +102,8 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 
 **Built**
 
-1. Dialectical Clarity v2.0 + level-setting research
-2. `docs/argument-state-schema.md` (v0.1.1, §§ 10.1–10.7)
+1. Dialectical Clarity v2.1 + level-setting research
+2. `docs/argument-state-schema.md` (v0.2.0, §§ 10.1–10.9)
 3. Argument Red Team (v1.0) + level-setting research
 4. Argument Persuasion + level-setting research
 5. Argument Evidence Deep-Dive
@@ -111,8 +111,13 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 7. Field Reconnaissance (v1.0) + level-setting research — counterevidence search with adaptive self-feedback loop, literature gap detection, source ecosystem health, domain-adaptive priority, Field_Reconnaissance_Report.md artifact
 8. Adversarial Evidence Review (v1.0) + level-setting research — three-protocol adversarial pressure test (ACH, legal cross-exam, severe testing), HX/LX/SX code families, domain packs (GRADE, RoB 2, ROBINS-I, FRE 702), two-tier severity with convergence, survivability judgments, Adversarial_Evidence_Preparation_Guide.md artifact. Adversarial collaboration: Claude Opus 4.6 + Codex o3.
 9. Nonfiction routing in intake (runtime + design docs)
-9. Revision Coach argument mode (8 coaching tracks + argument session plan template)
-10. Position-Pair Register (v0.1) — consumer of SETEC's `position_pair_register` surface: a relation-free register of passage PAIRS in a nonfiction work that address the same question Q, in document order; the human reads both and owns the entire conflict call (the fleet's deliberate NON-step across the content-verdict wall — the consumer derives nothing, runs gates only). Vendor/pin/drift-gate + the Q1 banned-key walk / Q2 verbatim-with-F1-fold / A3 firewall / F5 framing-prose / document-order validator. Anchored to ContraDoc (arXiv:2311.09182) + BeliefShift (arXiv:2603.23848). Consumer gated on SETEC v1.121.0.
+10. Revision Coach argument mode (8 coaching tracks + argument session plan template)
+11. Position-Pair Register (v0.1) — consumer of SETEC's `position_pair_register` surface: a relation-free register of passage PAIRS in a nonfiction work that address the same question Q, in document order; the human reads both and owns the entire conflict call (the fleet's deliberate NON-step across the content-verdict wall — the consumer derives nothing, runs gates only). Vendor/pin/drift-gate + the Q1 banned-key walk / Q2 verbatim-with-F1-fold / A3 firewall / F5 framing-prose / document-order validator. Anchored to ContraDoc (arXiv:2311.09182) + BeliefShift (arXiv:2603.23848). Consumer gated on SETEC v1.121.0.
+12. **R1 — warrant verdict / premise-plausibility split** (GT schema v0.3.0 reliability ledger and audited Krippendorff's-α promotion utility)
+13. **R2 — typed warrant-defeaters** as §6 objections, with the per-warrant sweep and §4 projection
+14. **R3A/R3B — AGD Move Audit** plus the Voiceprint scan consumer and deterministic scan↔audit agreement benchmark
+15. **R4A/R4B — argument-layer boundary ADR and crosswalk**, Bridge-recoverability migration, and the optional one-way AIF-Core export
+16. **R5 — ClaimLicense↔Toulmin docs-only crosswalk**, explicitly analogy rather than identity
 
 **In progress**
 
@@ -139,9 +144,9 @@ Validate that the engine works on real argument-shaped nonfiction, not just in t
 1. ~~**Strengthen Test A** (the genre-genericity decoy filter).~~ **Run-confirmed 2026-06-11 (PR #72):** mechanism was already complete; the benchmark run had both models downrank "but public safety" as the decoy (**OB5**) on `ppi`. No edit needed.
 2. ~~**`policy-brief-uncompared` under-fire fix.**~~ **DONE / benchmark-validated 2026-06-11 (PR #72):** added classification **rule 2a** (an AT3 recommendation with wholly-undischarged comparative burden → Structurally Unsound, FM-A10), then narrowed it post-benchmark so a strawman foil counts as partial discharge (soft spot), not a defeat. See `docs/argument-benchmark-calibration-round.md` → Status.
 
-*Human-gated (ready — just needs people):*
-3. **Recruit one second editor** — the GT4–GT8 / personal-independence upgrade. The blind packet is built and waiting in Dropbox (`argument-benchmark-second-editor-packet/`, with its own `TODO.md`); pointer in `evals/fixtures/argument-benchmark/HANDOFF.md`.
-4. **`current-affairs` GT2** (flagged recall-suspect on a cross-vendor split) — resolves via #3, or via a second vendor.
+*Human-gated (packet refresh, then people):*
+3. **Regenerate the argument packet, then recruit the shared ≥3-editor panel** — the existing Dropbox packet predates the GT v0.3.0 warrant vocabulary, GT8, Reliability ledger, and closed-response α form. The panel licenses (or demotes) GT4–GT8; it is shared with fiction M2b. See `evals/fixtures/argument-benchmark/HANDOFF.md` for the ordered promotion path.
+4. **`current-affairs` GT2** (flagged recall-suspect on a cross-vendor split) — resolves through #3, or via a second vendor.
 
 *Minor / optional:*
 5. **PDF `--fetch` (AECF)** — currently fails loudly with a manual path; add a `pdftotext` branch if PDF fixtures multiply (flagged in PR #37, non-blocking).
@@ -324,7 +329,7 @@ Give every material finding a durable ID that follows it across the whole pipeli
 
 ### Model-Capacity Exploitation
 
-The more ambitious sibling of [Adaptive Mid-Run Mode Escalation](#adaptive-mid-run-mode-escalation): workflows that lean on high-context / leading-model capacity — pass-driven retargeting, per-pass model-tier assignment, critic passes invoked only where uncertainty is high, and long-context re-grounding before synthesis. Where Adaptive Escalation *reacts* to mid-run signal, this would *plan* model and compute allocation up front from the contract and uncertainty profile.
+**Status: M1 built; M2–M3 empirically gated.** The more ambitious sibling of [Adaptive Mid-Run Mode Escalation](#adaptive-mid-run-mode-escalation): workflows that lean on high-context / leading-model capacity — pass-driven retargeting, per-pass model-tier assignment, critic passes invoked only where uncertainty is high, and long-context re-grounding before synthesis. M1 records per-dispatch model tags and exposes the demand signal. M2 is a pre-registered tier experiment only when a real cost forcing function appears; M3's contract-time advisory allocation requires M2 evidence of differential value. No allocator is currently warranted.
 
 ### Research / API Reliability Layer
 
@@ -457,7 +462,7 @@ Cross-field calibration: the visualization and annotated-manuscript gaps are val
 
 These invent nothing — they render, export, or extract what the engine already produces — and sit in gaps the plan does not touch.
 
-1. **Manuscript-Structure Visualizations — Increment 1 built (charts 1–3) + chart 7-nonfiction claim ladder built (render-only M1).** A *manuscript-specific* visual report. **Built:** the pacing/word-count curve, POV-time distribution, and finding-severity-by-chapter charts, plus the **nonfiction claim ladder** (C0 + subclaims + per-rung support coverage over `argument_spine.v1` + `support_plan.v1` — gates X1/X5/X6/X7/X8 + W3, no scene axis, no new schema or validator), as a render-only single-file SVG companion (`viz_manifest.py render`) over a provenance-closed `apodictic.viz_manifest.v1` manifest. **Producer-gated (future):** the character co-presence network, scene-function heatmap, reveal-economy timeline, and beat-map against the chosen spine (each gated on a producer increment that makes its upstream artifact machine-readable); a claim-to-scene overlay is a further producer increment, out of scope. **Distinct from** the planned [Framework Overview Dashboard](#framework-overview-dashboard), which visualizes the *plugin's* capabilities, not a book. Highest externally-validated gap (Fictionary's signature). Builds a new single-file SVG renderer in the static-HTML house pattern (no editorial-letter render pipeline exists to reuse); the data already lives, machine-readable, in the Findings Ledger (`apodictic.finding.v1` blocks) and `Timeline.md` (the Event Ledger's per-scene word-count/POV). Firewall-safe (it renders diagnosis, invents nothing). Spec: [`docs/manuscript-visualizations.md`](docs/manuscript-visualizations.md).
+1. **Manuscript-Structure Visualizations — Built through the full current chart set.** A *manuscript-specific* visual report. **Built:** pacing/word-count, POV-time distribution, finding-severity-by-chapter, reveal-economy/tension timeline, character co-presence network, scene-function heatmap, fiction beat-map-against-spine, and the nonfiction claim ladder — all as deterministic SVG renderings over provenance-closed structured producers. **No producer-gated chart remains.** Future optional overlays are claim-to-scene, draft-over-draft visual diff, and letter-embedded thumbnails. **Distinct from** the planned [Framework Overview Dashboard](#framework-overview-dashboard), which visualizes the *plugin's* capabilities, not a book. Firewall-safe (it renders diagnosis, invents nothing). Spec: [`docs/manuscript-visualizations.md`](docs/manuscript-visualizations.md).
 
 2. **Annotated-Manuscript Deliverable. — Built (Increment 1), 2026-06-16.** Promoted out of the Horizon scan and shipped the same day; see [§Annotated-Manuscript Deliverable](#annotated-manuscript-deliverable) for status + lineage, and [`docs/annotated-manuscript.md`](docs/annotated-manuscript.md) for the spec. (Number retained for stable cross-reference: locus-anchored margin notes — the #1 human-DE deliverable — exported as an annotated copy; an export/anchor problem over findings that already carry stable loci **and** durable IDs ([Finding Lifecycle IDs](#finding-lifecycle-ids)), comments only, firewall-clean. *Effort: low–medium.*)
 
@@ -719,7 +724,7 @@ remarkable to indispensable:
 1. **Published, reproducible validation.** The success condition is already written down (§Benchmark
    Suite: "two serious editors usually converge on the core claim, top failures, burden mismatch,
    strongest objection"). Measure and publish it — even at small N — for **fiction** (F1–F4) as well as
-   argument (gated today only on recruiting a second editor). A trust story of "here's the measured
+   argument (gated today on a regenerated packet and shared ≥3-editor panel). A trust story of "here's the measured
    inter-rater agreement" beats "trust the discipline." The #1 strategic item; it also matches the
    maintainer's settle-confusions-with-small-experiments workstyle.
 2. **Close the revision loop into the writer's editor. — Workflow glue Built, 2026-06-20.** v2.5.0 ships
@@ -736,17 +741,24 @@ remarkable to indispensable:
    *The remaining last mile is closed: surfaced as the `/start` round-trip resume offer at the
    bound-project `revising` and `diagnosed` nodes, with the operator-confirmed disposition round-close
    (`roundtrip-disposition`, RT1–RT4 + `rev-a4` — Increment 3), 2026-07-01.*
-3. **Finish the visualization leg.** Charts 1–3 ship (pacing, POV, severity-by-chapter), **and chart
-   7-nonfiction — the claim ladder — now ships render-only** (Manuscript-Visualization Completion M1:
-   C0 + subclaims + per-rung support coverage over `argument_spine.v1` + `support_plan.v1`, no scene
-   axis, no new schema/validator). The character co-presence network, scene-function heatmap,
-   reveal-economy timeline, and beat-map-against-spine (§Horizon Tier 1, item 1) remain producer-gated
-   — each is gated on a producer increment that makes its upstream artifact machine-readable. Highest-ROI
-   "render what you already produce" work after validation.
+3. **Visualization leg — current chart set built.** The complete chart set now renders from structured,
+   provenance-closed producers: pacing, POV, severity, tension, co-presence, scene function, fiction
+   beat-map, and nonfiction claim ladder. The remaining opportunities are optional overlays (claim-to-scene,
+   draft-over-draft diff, and letter thumbnails), not incomplete producer wiring. Validation remains the
+   higher-ROI investment.
 
 ---
 
 ## Done
+
+### v2.10.0 — Argument-Regrounding Completion
+Completes the R2–R5 descent begun in v2.9.0: **R3B §4** adds the deterministic, offline AGD scan↔audit agreement benchmark over 20 committed manifests; **R4B** migrates Warrant-recoverability to Bridge-recoverability, advances the crosswalk's concept layer, and adds a loss-aware, one-way AIF-Core export; **R5** records the ClaimLicense↔Toulmin relationship as a docs-only cross-level analogy. Review folds harden AIF source closure, canonical serialization, and loss disclosure. Released 2026-07-13.
+
+### v2.9.0 — Argument-Regrounding Foundation
+Establishes the shared argument-model foundation: the warrant verdict / premise-plausibility split, reliability-as-license ledger and audited Krippendorff's-α utility, R2 typed warrant-defeaters, R3A's functional AGD Move Audit, R3B's neutral Voiceprint scan consumer seam, and R4A's layer-boundary ADR plus machine-readable taxonomy crosswalk. Released 2026-07-12.
+
+### v2.8.0 — Reviewer-Anticipation, Calibration Honesty & Coaching-History Hardening
+Adds genre-layer reviewer anticipation, the cross-surface calibration-honesty guard, and opt-in local coaching-history with deletion and anti-fabrication hardening. Released 2026-07-07.
 
 ### v2.7.0 — State-Seams Wave, Multi-Session Arc Planning & Co-Presence Network
 Additive; no command/API break. The **state-seams wave** hardens the diagnose⇄revise loop's seams. **One-click round-trip resume** surfaces at `/start`'s `revising` + `diagnosed` nodes (Increment 1) with a `reanchor.py` disposition gate (RT1–RT4 + W1, Increment 2). **Finding dispositions** — a declined/deferred overlay that is explicitly *not* a lifecycle state (anti-laundering by construction: no disposition can improve on a declined Must-Fix), with a marker-grammar SSoT and the `disposition-check` validator. **Finding disconfirmation** — HIGH now means *survived a recorded refutation attempt* (the Step-6b Finding Disconfirmation Pass; `refutation_check.py` + three `validate.sh` arms; the refuter never sees severity or confidence — anti-anchoring). **Synthesis coverage disclosure** (M1 — the read manifest + letter coverage note + `synthesis_coverage` sidecar/validator) plus **pre-letter re-grounding** (M2 — re-read spans flip their manifest rows, so disclosure gets *better* on contact with the text). Also: **Multi-Session Revision Arc Planning** (the `revision-arc` validator + `apodictic.revision_arc.v1`, one arc per manuscript), **Manuscript-Structure Visualization chart 5** (character co-presence network — the first producer-gated chart to land), the **Validation & External Evidence** lane added to the roadmap, and the **SETEC contract re-sync** to v1.118.0. Hardening: a UnicodeDecodeError class-sweep across every OSError-only artifact reader, `specificity_floor` fail-*closed* on an unreadable required artifact, and disposition-supersedence recompute-don't-trust. Released `#166`, 2026-07-02.
