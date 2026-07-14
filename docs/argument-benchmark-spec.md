@@ -262,8 +262,13 @@ after seeing runs):** α ≥ .800 → promote to `panel-licensed` (may gate); .6
 remains `provisional` (reportable with a "tentative" caveat); α < .667 → `low-agreement`
 (report-only; reclassify/widen/repair the coding scheme). Metric per dimension:
 **ordinal-weighted α** for the GT4 sub-scales (three ordinal items), **nominal α** for GT2
-layer, GT6 first-repair target, GT7 verdict (three tokens treated as nominal, with a secondary
-collapsed warranted-family-vs-`UNWARRANTED` binary reported), and GT8 flag presence. With
+layer, GT5 vulnerability family, GT6 first-repair target + dependency, GT7 verdict (three tokens
+treated as nominal, with a secondary collapsed warranted-family-vs-`UNWARRANTED` binary
+reported), and GT8 flag presence/type. GT2/GT5/GT6/GT8 load-bearing loci use ordinal α over the
+pre-registered normalized paragraph-position transform. The exact closed response enums,
+numeric mappings, multi-locus slots, and key-compatibility predicates are frozen in
+`docs/shared-blind-editor-panel-spec.md` and
+`evals/panels/shared-blind-editor/key-projection.csv`. With
 small n (10 real-corpus units), license on the **bootstrap-CI lower bound** clearing the
 threshold; a multi-subscale section promotes only if **every** in-scope subscale clears (min-of-
 subscales). α is computed by the audited `agreement-alpha` CLI (shipped separately); model-run
@@ -654,7 +659,7 @@ tier-3 fetched fixture (impossible by construction) and any PD broken twin in M1
 - **Ground-truth authority.** The slice's synthetic ground truth is
   author-registered (deterministic by construction). For public-domain and
   real fixtures where the diagnosis is interpretive, the authority should be a
-  named editor's pre-registration, ideally adjudicated by a second editor.
+  named editor's pre-registration, ideally adjudicated by the registered panel.
   Multi-model consensus is a *candidate* generator for ground truth but must
   not be the authority that the engine is then scored against (circularity).
 - **Companion-module scoring depth.** Q5 (red-team) and Q6 (coaching) require

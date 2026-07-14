@@ -1,0 +1,79 @@
+model,fixture,bucket,member,fq,lane,decision_use,score,max_score,in_lane1_total,note
+terra,continuity-contradiction-broken,C,broken,FQ1,1,report,3,3,true,scene inventory
+terra,continuity-contradiction-broken,C,broken,FQ2,1,gate,3,3,true,registered loci recovered
+terra,continuity-contradiction-broken,C,broken,FQ3,1,gate,3,3,true,continuity mechanism
+terra,continuity-contradiction-broken,C,broken,FQ4,1,gate,3,3,true,in-band findings and positive delta
+terra,continuity-contradiction-broken,C,broken,FQ6,1,gate,3,3,true,reconcile after surfacing both facts
+terra,continuity-contradiction-broken,C,broken,FQ7,1,gate,3,3,true,defect as planted
+terra,continuity-contradiction-clean,C,clean,FQ1,1,report,3,3,true,scene inventory
+terra,continuity-contradiction-clean,C,clean,FQ7,1,gate,3,3,true,no registered continuity fire
+terra,orphan-scene-broken,S,broken,FQ1,1,report,3,3,true,scene inventory
+terra,orphan-scene-broken,S,broken,FQ2,1,gate,3,3,true,puppet scene located
+terra,orphan-scene-broken,S,broken,FQ3,1,gate,3,3,true,causal inertness named
+terra,orphan-scene-broken,S,broken,FQ4,1,gate,3,3,true,Should-Fix in band
+terra,orphan-scene-broken,S,broken,FQ6,1,gate,0,3,true,no first repair action supplied
+terra,orphan-scene-broken,S,broken,FQ7,1,gate,3,3,true,defect as planted
+terra,orphan-scene-clean,S,clean,FQ1,1,report,3,3,true,scene inventory
+terra,orphan-scene-clean,S,clean,FQ7,1,gate,3,3,true,no orphan-scene fire
+terra,pov-break-broken,P,broken,FQ1,1,report,3,3,true,scene inventory
+terra,pov-break-broken,P,broken,FQ2,1,gate,3,3,true,all three access violations cited
+terra,pov-break-broken,P,broken,FQ3,1,gate,3,3,true,POV access mechanism
+terra,pov-break-broken,P,broken,FQ4,1,gate,3,3,true,Should-Fix in band
+terra,pov-break-broken,P,broken,FQ6,1,gate,3,3,true,stabilize POV contract
+terra,pov-break-broken,P,broken,FQ7,1,gate,3,3,true,defect as planted
+terra,pov-break-clean,P,clean,FQ1,1,report,3,3,true,scene inventory
+terra,pov-break-clean,P,clean,FQ7,1,gate,3,3,true,no POV fire
+terra,unpaid-setup-broken,R,broken,FQ1,1,report,3,3,true,scene inventory
+terra,unpaid-setup-broken,R,broken,FQ2,1,gate,3,3,true,key setup locus recovered
+terra,unpaid-setup-broken,R,broken,FQ3,1,gate,3,3,true,unpaid setup mechanism
+terra,unpaid-setup-broken,R,broken,FQ4,1,gate,3,3,true,Must-Fix plus positive SP delta
+terra,unpaid-setup-broken,R,broken,FQ6,1,gate,3,3,true,restore payoff or reduce setup
+terra,unpaid-setup-broken,R,broken,FQ7,1,gate,3,3,true,defect as planted
+terra,unpaid-setup-clean,R,clean,FQ1,1,report,3,3,true,scene inventory
+terra,unpaid-setup-clean,R,clean,FQ7,1,gate,3,3,true,registered key setup paid
+terra,yellow-wallpaper-voice-control,P+S,control,FQ1,1,report,3,3,true,entry movement inventory
+terra,yellow-wallpaper-voice-control,P+S,control,FQ7,1,gate,3,3,true,intentional unreliable voice
+terra,gift-of-magi-reveal-control,R,control,FQ1,1,report,3,3,true,scene inventory
+terra,gift-of-magi-reveal-control,R,control,FQ7,1,gate,3,3,true,twin reveal fair
+terra,christmas-carol-arc-control,S,control,FQ1,1,report,3,3,true,five-stave inventory
+terra,christmas-carol-arc-control,S,control,FQ7,1,gate,3,3,true,registered devices not pathologized
+terra,christmas-carol-arc-control,S,control,FQ5,2,report,3,3,false,provisional arc band report only
+opus,continuity-contradiction-broken,C,broken,FQ1,1,report,3,3,true,scene inventory
+opus,continuity-contradiction-broken,C,broken,FQ2,1,gate,3,3,true,registered loci recovered
+opus,continuity-contradiction-broken,C,broken,FQ3,1,gate,3,3,true,continuity mechanism
+opus,continuity-contradiction-broken,C,broken,FQ4,1,gate,3,3,true,in-band findings and positive delta
+opus,continuity-contradiction-broken,C,broken,FQ6,1,gate,3,3,true,reconcile after surfacing both facts
+opus,continuity-contradiction-broken,C,broken,FQ7,1,gate,3,3,true,defect as planted
+opus,continuity-contradiction-clean,C,clean,FQ1,1,report,3,3,true,scene inventory
+opus,continuity-contradiction-clean,C,clean,FQ7,1,gate,0,3,true,spurious continuity over-inference
+opus,orphan-scene-broken,S,broken,FQ1,1,report,3,3,true,scene inventory
+opus,orphan-scene-broken,S,broken,FQ2,1,gate,3,3,true,puppet scene located
+opus,orphan-scene-broken,S,broken,FQ3,1,gate,3,3,true,causal inertness named
+opus,orphan-scene-broken,S,broken,FQ4,1,gate,3,3,true,Should-Fix in band
+opus,orphan-scene-broken,S,broken,FQ6,1,gate,3,3,true,braid outcome or retire props
+opus,orphan-scene-broken,S,broken,FQ7,1,gate,3,3,true,defect as planted
+opus,orphan-scene-clean,S,clean,FQ1,1,report,3,3,true,scene inventory
+opus,orphan-scene-clean,S,clean,FQ7,1,gate,3,3,true,no orphan-scene fire
+opus,pov-break-broken,P,broken,FQ1,1,report,3,3,true,scene inventory
+opus,pov-break-broken,P,broken,FQ2,1,gate,3,3,true,all three access violations cited
+opus,pov-break-broken,P,broken,FQ3,1,gate,3,3,true,POV access mechanism
+opus,pov-break-broken,P,broken,FQ4,1,gate,3,3,true,Must-Fix and Should-Fix in band
+opus,pov-break-broken,P,broken,FQ6,1,gate,3,3,true,restore or redeclare POV contract
+opus,pov-break-broken,P,broken,FQ7,1,gate,3,3,true,defect as planted
+opus,pov-break-clean,P,clean,FQ1,1,report,3,3,true,scene inventory
+opus,pov-break-clean,P,clean,FQ7,1,gate,3,3,true,no POV fire
+opus,unpaid-setup-broken,R,broken,FQ1,1,report,3,3,true,scene inventory
+opus,unpaid-setup-broken,R,broken,FQ2,1,gate,3,3,true,key setup locus recovered
+opus,unpaid-setup-broken,R,broken,FQ3,1,gate,3,3,true,unpaid setup mechanism
+opus,unpaid-setup-broken,R,broken,FQ4,1,gate,3,3,true,Must-Fix plus positive SP delta
+opus,unpaid-setup-broken,R,broken,FQ6,1,gate,3,3,true,restore payoff or reduce setup
+opus,unpaid-setup-broken,R,broken,FQ7,1,gate,3,3,true,defect as planted
+opus,unpaid-setup-clean,R,clean,FQ1,1,report,3,3,true,scene inventory
+opus,unpaid-setup-clean,R,clean,FQ7,1,gate,3,3,true,registered key setup paid
+opus,yellow-wallpaper-voice-control,P+S,control,FQ1,1,report,3,3,true,entry movement inventory
+opus,yellow-wallpaper-voice-control,P+S,control,FQ7,1,gate,3,3,true,intentional unreliable voice
+opus,gift-of-magi-reveal-control,R,control,FQ1,1,report,3,3,true,scene inventory
+opus,gift-of-magi-reveal-control,R,control,FQ7,1,gate,3,3,true,twin reveal fair
+opus,christmas-carol-arc-control,S,control,FQ1,1,report,3,3,true,five-stave inventory
+opus,christmas-carol-arc-control,S,control,FQ7,1,gate,3,3,true,registered devices not pathologized
+opus,christmas-carol-arc-control,S,control,FQ5,2,report,3,3,false,provisional arc band report only

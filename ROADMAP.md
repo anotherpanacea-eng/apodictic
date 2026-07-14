@@ -39,12 +39,33 @@
 ### V1 — Finding correctness, not just structural conformance
 
 The mechanical layer (~59 validators) gates artifact structure, severity propagation, ledger integrity, and export correctness. None of it can tell whether a finding is *right, relevant, or helpful* — that is editorial judgment, and a system asked to hunt structural defects can always name one. The argument engine is furthest along on closing this (the [Benchmark Suite](#benchmark-suite): ground-truth diagnoses, sensitivity fixtures, specificity positive controls, the two-run convergence protocol). Gaps:
-- **Argument benchmark panel confirmation** of provisional GT4–GT8 anchors (GT1–GT3 authoritative). The older Dropbox packet must first be regenerated to the v0.3.0 warrant vocabulary, GT8, Reliability ledger, and a closed-response form; then a shared **≥3-editor** panel can α-license (or demote) the anchors. See `evals/fixtures/argument-benchmark/HANDOFF.md`.
-- **Fiction benchmark execution and panel confirmation.** The M1 fixture/key/harness slice is built; its M2a two-configuration runs and M2b ≥3-editor panel are still open. Until then, its Lane-2/B anchors report rather than gate. Breadth (11 passes, dozens of audits) remains the least-validated surface; the bar is inter-rater agreement against human developmental editors on a labeled corpus.
+- **Argument benchmark panel confirmation** of provisional GT4–GT8 anchors
+  (GT1–GT3 authoritative). The stale one-editor packet was replaced on
+  2026-07-14 by the shared, closed-response argument + fiction packet with GT8,
+  a reliability ledger, exact α transforms, and seven independent fiction
+  units. Remaining human gate: recruit the same **≥3-editor** panel, compute α,
+  and license or demote only the covered anchors. See
+  `evals/fixtures/argument-benchmark/HANDOFF.md`.
+- **Fiction benchmark corrective retest and panel confirmation.** M2a ran on
+  2026-07-14 with the cross-vendor Terra + Opus pair: 3/4 matched pairs
+  converged, all three standalone traps cleared, and the Lane-1 suite failed on
+  Opus over-inferring a continuity contradiction in the reconciled clean
+  member. The locked-key corrective work is continuity-specificity repair plus
+  retest; Terra's orphan-scene repair-guidance omission is secondary. M2b's
+  ≥3-editor panel remains open, so Lane-2/B anchors still report rather than
+  gate. Breadth (11 passes, dozens of audits) remains the least-validated
+  surface; the bar is inter-rater agreement against human developmental editors
+  on a labeled corpus.
 
-### V2 — Auditable scorecard
+### V2 — Auditable scorecard ✓
 
-Eval scorecards exist (`evals/results/*/SCORECARD.md`), but the corpus *bytes* are largely gitignored — a deliberate provenance choice (copyrighted op-eds/manuscripts can't ship in-repo), not concealment. The cost is that the claimed performance is not straightforwardly externally auditable. Open work: publish a **committed, reconstructable scorecard** on the [shippable-kit model](#benchmark-suite) — keys + harness + protocol + SHA-pinned fetch instructions ship; the bytes reconstitute locally — so a third party can re-run and check the numbers without the repo hosting copyrighted text.
+The first committed reconstructable package is the 2026-07-14 fiction M2a
+Terra/Opus run under `evals/results/fiction-m2a-20260714-terra-opus/`: 22
+hash-bound raw outputs, tidy scores, the independently reviewed scorecard,
+provider/run manifest, and a verifier, backed by committed keys/harness/protocol
+plus SHA-pinned fetch instructions. Copyrighted argument bytes remain outside
+git; the shippable-kit model reconstructs sources locally rather than concealing
+or republishing them.
 
 ### V3 — Blind demonstration
 
@@ -145,7 +166,12 @@ Validate that the engine works on real argument-shaped nonfiction, not just in t
 2. ~~**`policy-brief-uncompared` under-fire fix.**~~ **DONE / benchmark-validated 2026-06-11 (PR #72):** added classification **rule 2a** (an AT3 recommendation with wholly-undischarged comparative burden → Structurally Unsound, FM-A10), then narrowed it post-benchmark so a strawman foil counts as partial discharge (soft spot), not a defeat. See `docs/argument-benchmark-calibration-round.md` → Status.
 
 *Human-gated (packet refresh, then people):*
-3. **Regenerate the argument packet, then recruit the shared ≥3-editor panel** — the existing Dropbox packet predates the GT v0.3.0 warrant vocabulary, GT8, Reliability ledger, and closed-response α form. The panel licenses (or demotes) GT4–GT8; it is shared with fiction M2b. See `evals/fixtures/argument-benchmark/HANDOFF.md` for the ordered promotion path.
+3. **Recruit the shared ≥3-editor panel** — packet regeneration is complete:
+   the current Dropbox packet uses the GT v0.3.0 warrant vocabulary, GT8,
+   Reliability ledger, closed responses, and shared fiction M2b units. The
+   remaining human step licenses or demotes only the covered GT4–GT8 anchors.
+   See `evals/fixtures/argument-benchmark/HANDOFF.md` for the ordered promotion
+   path.
 4. **`current-affairs` GT2** (flagged recall-suspect on a cross-vendor split) — resolves through #3, or via a second vendor.
 
 *Minor / optional:*

@@ -12,10 +12,10 @@ are in [../../../docs/fiction-benchmark-spec.md](../../../docs/fiction-benchmark
 
 Fixtures fall in four provenance tiers (the same numbering used in the spec):
 
-1. **Synthetic-or-derived** — text stored in-repo. The *derived-broken* fixtures
-   are a low-recognition public-domain base with one pre-registered defect
-   planted by minimal surgical edits; the clean member is the same base with no
-   mutation. Provenance and the mutation registry live in `groundtruth.md`
+1. **Synthetic-or-derived** — text stored in-repo. Increment 1's matched pairs
+   use original synthetic bases with one pre-registered defect planted by
+   minimal surgical edits; the clean member is the same base with no mutation.
+   Provenance and the mutation registry live in `groundtruth.md`
    (**not** in `fixture.md` — see input hygiene). No copyrighted bytes, ever.
 2. **Public-domain** — stored if short (Gilman, O. Henry), *referenced* by a
    pinned Gutenberg source + `run.sh --fetch` if long (Dickens). Key in-repo.
@@ -46,14 +46,16 @@ for controls / clean members, their control status), so the benchmark could
   which would silently un-plant the unpaid-setup defect. An excerpt-shaped
   fixture cannot fail.
 
-## Preparer step (deriving `fixture.md` at pin time)
+## Fixture construction and routine execution
 
-To keep the repo free of pre-pinned base bytes, the **stored** members ship the
-pre-registered `groundtruth.md` now; the preparer derives each `fixture.md` at
-first retrieval, records the SHA-256 in `SOURCES.md`, and hands only the
-extracted/mutated text to the blind runner — the same discipline the argument
-benchmark uses for referenced fixtures. `groundtruth.md` is never opened by the
-preparer or runner, only by the scorer, afterward. See
+At initial pin time, the preparer derived the stored `fixture.md` members,
+recorded their SHA-256 values in `SOURCES.md`, and reviewed the matched-pair
+mutations against the broken-member registries. Those short public-domain and
+synthetic fixtures are now committed and routine runs read them directly. The
+referenced Dickens control is the only member reconstituted into the local cache
+with `run.sh --fetch`. A preparer revisits mutation registries only when a fixture
+is deliberately rebuilt; the runner never opens a key, and the scorer opens keys
+only afterward. See
 [SOURCES.md](SOURCES.md) for the base pins and
 [RUN-PROTOCOL.md](RUN-PROTOCOL.md) for the three-role blindness discipline, the
 canonical pass-set, the recognition probe, and the matched-pair delta.
