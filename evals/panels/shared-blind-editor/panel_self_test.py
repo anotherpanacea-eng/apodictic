@@ -99,6 +99,7 @@ def main() -> int:
             ("flag-without-type", "A02", "gt8_flag_types", ""),
             ("none-plus-locus", "A01", "gt2_layer", "NONE"),
             ("missing-required-locus", "A01", "gt5_locus_1", ""),
+            ("noninteger-locus", "A01", "gt2_locus_1", "P3"),
             ("noncontiguous-boundary", "F03", "fgt1_boundary_1", ""),
         )
         with responses[0].open(newline="", encoding="utf-8") as handle:
