@@ -1,6 +1,6 @@
 # Handoff — Argument Engine Benchmark
 
-*Last updated: 2026-06-02. Pick up here later.*
+*Last updated: 2026-07-14. Pick up here later.*
 
 This is a resume point for the Nonfiction Argument Engine **benchmark suite**:
 what's done, what's on which branch, and the exact next action. Read this first,
@@ -10,19 +10,22 @@ then [`RUN-PROTOCOL.md`](RUN-PROTOCOL.md) for the run mechanics.
 
 ## TL;DR — the one next action
 
-The benchmark is **built, provenance-complete, and has been run and scored once**
-(that first cycle surfaced and fixed a Dialectical Clarity over-firing bug, now
-in **PR #22**). To re-run it you need a machine with the Claude CLI + the local
-source-text cache + web access (your Mac, not the cloud sandbox):
+The benchmark is built and its shared panel packet is current. The next action
+is human: recruit at least three qualified independent editors, give each an
+identical sealed copy of Dropbox
+`argument-benchmark-second-editor-packet/current/packet/`, and keep
+`current/operator-only/` private. After returns, compile ratings and run the
+frozen alpha/key-compatibility adjudicator before changing any Reliability
+ledger. The argument engine's model-run path remains available for a separate
+rerun on a machine with the source cache:
 
 ```bash
 # 1. find your apodictic clone (you are NOT in it by default)
 find ~ -type d -name apodictic 2>/dev/null
 
-# 2. cd into it, get the runner branch
+# 2. cd into the current clone
 cd /path/to/apodictic            # <- result of step 1
 git fetch origin
-git checkout claude/benchmark-runner-script
 
 # 3. point at the local source cache and DRY-CHECK first (no model calls)
 cd evals/fixtures/argument-benchmark
@@ -45,17 +48,13 @@ session *with* repo access, or paste them back to Claude) — scoring is a
 
 ---
 
-## Where everything lives (branches)
+## Where everything lives
 
-| Branch | State | Contents |
-|--------|-------|----------|
-| `main` | merged | The whole benchmark: spec, rubric, schema, synthetic fixtures, the 10-piece referenced corpus + answer keys, SOURCES.md with all 10 hashes (incl. corrected Coates). |
-| `claude/benchmark-runner-script` | **open as PR #22**, rebased onto current `main` | `run.sh` (blind-runner automation), this handoff, the SOURCES `BODY_START`/`BODY_END` anchors, and the Dialectical Clarity calibration + Step-6 (`6a`/`OB5`) edits with their codex/antigravity mirrors. |
-| `claude/stoic-gates-ooP11` | merged (was #7 + #8) | historical; nothing left to do here. |
-
-PRs **#7** (spec + synthetic slice) and **#8** (referenced corpus + protocol)
-are both merged. The runner branch is now **PR #22** (owner review addressed;
-based on current `main`); land it after its dependencies #20 and #21.
+The benchmark, runner, decoy-resistance work, and matched-pair convergence work
+are on `main`; PR #37 is the latest merged calibration baseline. PRs #7, #8, and
+#22 are historical and require no action. The access-controlled human packet
+lives only in Dropbox; its copyright-safe builder/compiler/adjudicator contract
+lives under `evals/panels/shared-blind-editor/` in this repo.
 
 ---
 
@@ -96,12 +95,26 @@ The full convergence runs + the decoy-resistance engine fix landed in **PR #37**
 Suite → **Next round**:
 
 - **Substantive (engine/key — next calibration round):** (1) strengthen **Test A** (genre-genericity decoy filter) — `ppi` partial cross-vendor, GPT's objection stayed on the public-safety decoy; (2) **`policy-brief-uncompared` under-fire** — AT3 + no comparative defense should drive Must-Fix → UNWARRANTED (Step-9 default overrides the floor). #1 + #2 pair.
-- **Human-gated (needs people; packet REGENERATION required first):** ⚠️ the built Dropbox blind packet predates GT schema v0.3.0 — its registration form solicits the retired `SOUND/UNSOUND` vocabulary (which the validator now actively rejects), has no GT8 premise-flags field, and predates the Reliability ledger. Regenerate the packet to the warrant vocabulary + GT8 + a **closed-response** form (α needs codable data) before recruiting. The M2 promotion sequence is now: **regenerate the packet → recruit the shared ≥3-editor panel (joint with fiction M2b) → compute Krippendorff's α per provisional dimension (`agreement-alpha`; thresholds pre-registered in `docs/argument-benchmark-spec.md` §GT schema: α ≥ .800 → `panel-licensed`, < .667 → `low-agreement`) → edit each promoted/demoted fixture's Reliability ledger (cleaning any stale `(PROVISIONAL)` heading marker in the same commit — Check 6's tripwire) and record the round in `docs/argument-benchmark-calibration-round.md`.** Then: (3) recruit the panel (GT4–GT8 personal independence) — blind packet home in Dropbox `argument-benchmark-second-editor-packet/` (see below); (4) **`current-affairs` GT2** recall-suspect — resolves via #3 or a second vendor.
+- **Human-gated (needs people; packet ready 2026-07-14):** packet regeneration
+  is complete at Dropbox `argument-benchmark-second-editor-packet/current/`.
+  The sendable form uses the warrant vocabulary + GT8, closed codable fields,
+  exact ordinal transforms, a panel Reliability ledger, and the same ≥3-editor
+  roster as fiction M2b. The older one-editor packet is preserved only under
+  `archive/`. Remaining M2 promotion sequence: **recruit the shared ≥3-editor
+  panel → compute Krippendorff's α per provisional dimension
+  (`agreement-alpha`; α ≥ .800 CI lower bound → `panel-licensed`, < .667 →
+  `low-agreement`) → reconcile clearing panel values to the frozen key
+  projection → independently review → edit each promoted/demoted fixture's
+  Reliability ledger (cleaning stale `(PROVISIONAL)` heading markers in the same
+  commit) and record the round in
+  `docs/argument-benchmark-calibration-round.md`.** The five argument units can
+  promote only their own GT4–GT8 anchors; `current-affairs` GT2 is the separately
+  registered recall-suspect check. Unpanelled fixtures remain provisional.
 - **Minor / optional:** (5) PDF `--fetch` (AECF) → add a `pdftotext` branch if PDFs multiply; (6) a second cross-vendor GPT pass on `roosevelt` (kills the n=1 "variance" objection); (7) housekeeping — the merged `claude/benchmark-corpus-round2` branch can be deleted.
 
 The list below predates the PR #37 merge and is kept for historical context.
 
-## What's NOT done (the actual remaining work)
+## Historical pre-PR-37 backlog (superseded; retained for context)
 
 The first full cycle is **done**: the blind runs executed (abundance cluster +
 ppi), were scored, and both the convergence findings and the Dialectical Clarity
@@ -117,14 +130,16 @@ calibration fix landed in **PR #22**. See `evals/results/*/SCORECARD.md` plus th
 3. **Recognition re-test.** With the masthead + trailing-bio leaks closed,
    re-confirm the recognition picture (ppi already flipped to "not recognized");
    the lower-recognition fixtures now carry the construct validity.
-4. **GT4–GT8 second-editor confirmation (the one human-gated item).** GT1–GT3 are
-   editor-pre-registered (temporally independent); GT4–GT8 are provisional and want
-   a *second* human editor diagnosing blind for personal independence. A ready-to-hand
-   **blind packet is built** at Dropbox `…/Development Editor/argument-benchmark-second-editor-packet/`
-   (5 load-bearing pieces, stripped + neutral-labeled, README + registration form;
-   the de-anon map + scoring steps in its `TODO.md`). Gitignored — the packet holds
-   third-party text, so it lives in Dropbox, never the repo. Recruit one editor and
-   hand them `packet/`.
+4. **GT4–GT8 panel confirmation (the one human-gated item).** GT1–GT3 are
+   editor-pre-registered (temporally independent); the covered GT4–GT8 anchors
+   remain provisional until a ≥3-editor panel clears the pre-registered α and
+   key-compatibility gates. The current shared packet is at Dropbox
+   `…/Development Editor/argument-benchmark-second-editor-packet/current/` (5
+   load-bearing argument pieces + 7 independent fiction units, neutral-labeled,
+   with sealed response and operator-only scoring surfaces). The packet holds
+   third-party text, so it lives in access-controlled Dropbox, never the repo.
+   Recruit at least three qualified editors and hand each an identical copy of
+   `current/packet/` only.
    *(The `validate.sh argument-groundtruth-check` validator is DONE — shipped in main
    v2.1/2.2 as `scripts/argument_groundtruth.py`, extended to FM-A20 here.)*
 

@@ -4,8 +4,8 @@
 - **Fixture slug:** continuity-contradiction/broken · **Bucket:** C · **Source class:** synthetic-or-derived
 - **Matched-pair member:** broken
 - **Paired-with:** continuity-contradiction/clean
-- **Text stored in-repo?:** yes (preparer-derived at pin time — no base bytes in repo)
-- **Base text + plant record:** base = a low-recognition public-domain short work that states an entity
+- **Text stored in-repo?:** yes (pinned original synthetic fixture)
+- **Base text + plant record:** base = an original synthetic short work that states an entity
   fact in two places and dates one event. Planted mutations (before→after recorded): (1) chapter 2 —
   set an entity attribute to a NOVEL value ("her brother Edmund was three years younger"); (2) chapter 7
   — set the SAME attribute to an incompatible NOVEL value ("Edmund, her elder by five years"). Both
@@ -13,7 +13,7 @@
   provides no shortcut; the contradiction is internal-only. (3) a timeline-arithmetic error: an event
   dated "the spring of 1841" is later referred to as "six years after her marriage in 1832" (would be
   1838, not 1841).
-- **Authored / adapted by:** APODICTIC fiction benchmark (derived) · **Registered (date):** 2026-07-06
+- **Authored / adapted by:** APODICTIC fiction benchmark (original synthetic; pinned 2026-07-14) · **Registered (date):** 2026-07-06
 - **Ground-truth authority:** author-registered; deterministic by construction (both loci mutated to conflicting novel values)
 - **Scope:** FQ1 (inventory), FQ2, FQ3, FQ4 (presence-delta), FQ6, FQ7 in scope; FQ5 N/A
 - **Run configuration:** complete-manuscript mode; canonical slice pass-set {0,1,2,5,7,8,10}
@@ -48,7 +48,7 @@
 - **Dependency rule (Lane-2 when present):** locate-the-contradiction MUST precede choosing-which-fact-wins (the continuity-bible firewall: surface, do not resolve)
 
 ## FGT7 — Form fairness *(FQ7)*
-   [gt_class: A][construct_lane: fault_injection][evidence_basis: public_domain_control][decision_use: gate][reliability_status: deterministic]
+   [gt_class: A][construct_lane: fault_injection][evidence_basis: planted_diff][decision_use: gate][reliability_status: deterministic]
 - **Expected classification:** DEFECT-AS-PLANTED
 - **False-positive trap:** N/A — the FQ7 specificity read is scored on the clean member of this pair
 

@@ -6,14 +6,11 @@ on one output). Mirrors the argument benchmark's RUN-PROTOCOL.
 
 ## The three roles (blindness discipline)
 
-1. **Preparer.** Reads **only** [SOURCES.md](SOURCES.md) — URL + carve anchors +
-   recorded hash. Derives each `fixture.md`: the carved PD body for controls /
-   clean members; the base **plus** the mutation registry (from the broken
-   member's `groundtruth.md §Base text + plant record`) for broken members.
-   Records the SHA-256 in SOURCES.md. Hands **only** the derived text to the
-   runner. **Never opens `groundtruth.md` for anything but the mutation registry
-   of a broken member** (and never passes any of it — provenance, slug, control
-   status — into the run).
+1. **Preparer (fixture construction / repinning only).** Reads `SOURCES.md` and,
+   for a broken member, only that member's mutation registry. Derives the stored
+   short fixture or referenced-cache body, records its SHA-256, and hands only
+   text to the runner. Routine runs use the committed short fixtures and fetch
+   only the referenced Dickens control; they do not reconstruct mutations.
 2. **Blind runner.** Receives only the fiction text + a **neutral label** (never
    the descriptive slug — `pov-break-broken` encodes the diagnosis). Runs the
    **pinned canonical pass-set** {0, 1, 2, 5, 7, 8, 10} + Synthesis, byte-identical
@@ -27,13 +24,14 @@ on one output). Mirrors the argument benchmark's RUN-PROTOCOL.
 
 ## Step 1–2 — Prepare and run (blind)
 
-Use [run.sh](run.sh). Point `SRC` at your local cache; `./run.sh --fetch` pulls
-the referenced PD texts (the Carol; the short controls at first pin) from their
-Gutenberg URLs and records hashes. Derived-broken members are produced from their
-base + mutation registry by the preparer, **not** fetched. `./run.sh --verify`
-checks the cache against recorded hashes. Two model configs (opus + sonnet) =
-two independent runs. The cross-vendor pass is optional but recommended — a
-same-vendor config pair carries a **shared-blind-spot caveat**.
+Use [run.sh](run.sh). Point `SRC` at your local cache; `./run.sh --fetch` can
+reconstitute the Gutenberg controls and is required for the referenced Dickens
+text. The ten short fixtures are committed and used as fallbacks when absent
+from `SRC`. `./run.sh --verify` checks selected inputs against recorded hashes.
+`./run.sh --prompt-only` materializes
+the exact blind prompts without making model calls. The pinned M2a pair is
+**Terra (`gpt-5.6-terra`, high reasoning) + Opus (`claude-opus-4-8`)**: two
+independent, cross-vendor runs over byte-identical benchmark prompts.
 
 ### Step 2b — the recognition probe (anti-recall)
 
@@ -44,9 +42,10 @@ recognizes the base may flag the mutation as a *deviation from the remembered
 original* rather than detecting an *internal* contradiction. The controls are
 maximally recognizable texts by design — for a *control*, recognition mostly
 biases toward the correct answer ("this is a masterpiece"), so control passes are
-**corroborating** specificity evidence, recall-flagged. The **derived-broken**
-fixtures use low-recognition bases precisely to keep recall from shortcutting the
-plant.
+**corroborating** specificity evidence, recall-flagged. The matched pairs use
+original synthetic or low-recognition bases precisely to keep recall from
+shortcutting the plant. Increment 1's matched pairs are original synthetic
+works.
 
 ## Step 3 — Score each member (human, per the rubric)
 

@@ -142,11 +142,13 @@ scores FQ7 = 0 for that fixture regardless of FQ1–FQ6 and blocks the bucket.
 
 Hand-writing a novella around a planted defect risks the fixture being globally
 bad prose (in which case flagging everything is correct behavior, and the
-fixture measures nothing). The sensitivity backbone is therefore **derived**:
-take a low-recognition public-domain base and plant one pre-registered defect via
-minimal surgical edits. Deterministic ground truth (the mutation diff *is* the
-answer-key locus), fully shippable (tier-1 synthetic-or-derived), realistic
-surround, one defect family per fixture.
+fixture measures nothing). The sensitivity backbone is therefore **matched and
+fault-injected**: take an original synthetic or low-recognition public-domain
+base and plant one pre-registered defect via minimal surgical edits.
+Deterministic ground truth (the mutation diff *is* the answer-key locus), fully
+shippable (tier-1 synthetic-or-derived), realistic surround, one defect family
+per fixture. Increment 1 uses original synthetic bases, pinned 2026-07-14; this
+removes source-recall risk while retaining the recognition probe.
 
 ### Validity threats (two)
 
@@ -163,7 +165,8 @@ scoring** (D-1, closes Threat 2) — a hit requires the defect flagged in `broke
 AND NOT flagged for that mechanism in `clean`; score the delta, not the bare
 hit; the surgery must be **craft-clean** (a build-time review criterion); (2)
 **dual mutation** for continuity (both loci to novel values, so recall of the
-original is no shortcut); (3) prefer **low-recognition bases**; (4) **recognition
+original is no shortcut); (3) prefer **original synthetic or low-recognition
+bases**; (4) **recognition
 probe** after every run (recall-susceptible runs weighted lightly); (5)
 **evidence-grounding requirement** — an FQ2 hit requires in-text loci AND a named
 mechanism; out-of-text justification = miss (recall), bare seam-detection = miss
@@ -333,13 +336,22 @@ markdown, so schema-coverage M4 is unaffected).
   they do NOT trigger Pass 7's SETEC voice-distinctiveness supplement (whose own
   validation lives in the voiceprint repo) — no cross-repo dependency in
   Increment 1.
-- **M2a — model-convergence runs (web + tokens, no humans):** the two-config
-  convergence protocol over the slice, scored per the rubric, recorded in
-  gitignored `evals/results/*/SCORECARD.md`. Outcomes feed engine work items —
-  never in-flight edits to keys to make runs pass.
+- **M2a — model-convergence runs (web + tokens, no editor panel):** the
+  two-config convergence protocol over the slice, scored afterward by a
+  separate rubric-trained scorer/session. The 2026-07-14 Terra/Opus run is
+  published as a committed reconstructable package at
+  `evals/results/fiction-m2a-20260714-terra-opus/`. Outcomes feed engine work items — never
+  in-flight edits to keys to make runs pass. This scorer separation is not the
+  ≥3-editor reliability/licensing panel reserved for M2b.
 - **M2b — the human gate (not buildable without editors):** a **≥3-editor
   panel** (D-2) that α-licenses every Lane-2/B band (FGT1 boundaries, FGT5 arc)
-  and supplies independent-editor convergence runs. Until M2b, Lane-2/B anchors
+  and supplies independent-editor convergence runs. Because three editors on
+  one work are still only one reliability unit, the shared closed-response
+  packet measures the coding dimensions across the seven independent works in
+  this slice (three standalone controls + four clean synthetic bases; no broken
+  twins), then reconciles the panel-derived Carol value to its frozen key
+  projection. Exact transforms and promotion rules live in
+  `docs/shared-blind-editor-panel-spec.md`. Until M2b, Lane-2/B anchors
   report but do not gate; the benchmark's public claims are scoped to Lane 1.
   Lane 3 / Class C requires a reader/preference study and is not unlocked by M2b
   either — it stays a named gap.
