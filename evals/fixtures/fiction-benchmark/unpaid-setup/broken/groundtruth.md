@@ -4,15 +4,15 @@
 - **Fixture slug:** unpaid-setup/broken · **Bucket:** R · **Source class:** synthetic-or-derived
 - **Matched-pair member:** broken
 - **Paired-with:** unpaid-setup/clean
-- **Text stored in-repo?:** yes (preparer-derived at pin time — no base bytes in repo)
-- **Base text + plant record:** base = a low-recognition public-domain short work with an emphatic early
+- **Text stored in-repo?:** yes (pinned original synthetic fixture)
+- **Base text + plant record:** base = an original synthetic short work with an emphatic early
   object-plant and a later scene that pays it off. Planted mutation (before→after recorded): the payoff
   **scene is excised** — the base's early emphatic setup (an object introduced with weight: "the small
   brass key she never let out of her sight") is retained at its original locus (~scene 2), but the later
   scene where the key is used is deleted, and the two adjoining scenes are re-stitched so the work still
   **reads complete** (beginning and ending on the page). One deletion + a re-stitch; the setup emphasis
   is untouched so the dropped thread, not a truncated draft, is what a hit must catch.
-- **Authored / adapted by:** APODICTIC fiction benchmark (derived) · **Registered (date):** 2026-07-06
+- **Authored / adapted by:** APODICTIC fiction benchmark (original synthetic; pinned 2026-07-14) · **Registered (date):** 2026-07-06
 - **Ground-truth authority:** author-registered; deterministic by construction (the payoff scene was excised)
 - **Scope:** FQ1 (inventory), FQ2, FQ3, FQ4 (presence-delta), FQ6, FQ7 in scope; FQ5 N/A
 - **Run configuration:** complete-manuscript mode; canonical slice pass-set {0,1,2,5,7,8,10}
@@ -47,7 +47,7 @@
 - **Dependency rule (Lane-2 when present):** N/A
 
 ## FGT7 — Form fairness *(FQ7)*
-   [gt_class: A][construct_lane: fault_injection][evidence_basis: public_domain_control][decision_use: gate][reliability_status: deterministic]
+   [gt_class: A][construct_lane: fault_injection][evidence_basis: planted_diff][decision_use: gate][reliability_status: deterministic]
 - **Expected classification:** DEFECT-AS-PLANTED
 - **False-positive trap:** N/A — the FQ7 specificity read is scored on the clean member of this pair
 

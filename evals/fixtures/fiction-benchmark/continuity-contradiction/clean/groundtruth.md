@@ -4,17 +4,17 @@
 - **Fixture slug:** continuity-contradiction/clean · **Bucket:** C · **Source class:** synthetic-or-derived
 - **Matched-pair member:** clean
 - **Paired-with:** continuity-contradiction/broken
-- **Text stored in-repo?:** yes (preparer-derived at pin time — no base bytes in repo)
+- **Text stored in-repo?:** yes (pinned original synthetic fixture)
 - **Base text + plant record:** no mutation — this IS the control. The same two entity-fact statements
   are made **mutually consistent** (Edmund is the younger brother in both chapter 2 and chapter 7) and
   the date arithmetic reconciles (marriage 1832, the event six years later = 1838, referred to as 1838).
-- **Authored / adapted by:** APODICTIC fiction benchmark (derived) · **Registered (date):** 2026-07-06
+- **Authored / adapted by:** APODICTIC fiction benchmark (original synthetic; pinned 2026-07-14) · **Registered (date):** 2026-07-06
 - **Ground-truth authority:** author-registered; the positive control for the continuity bucket
 - **Scope:** FQ1 (inventory) + FQ7 (specificity) in scope; FQ2/FQ3/FQ6 `N/A — positive control`; FQ5 N/A
 - **Run configuration:** complete-manuscript mode; canonical slice pass-set {0,1,2,5,7,8,10}
 
 ## FGT1 — Structure recovery *(FQ1; Pass 0 outline + Pass 2 beat map)*
-   [gt_class: A][construct_lane: fault_injection][evidence_basis: public_domain_control][decision_use: report][reliability_status: deterministic]
+   [gt_class: A][construct_lane: fault_injection][evidence_basis: planted_diff][decision_use: report][reliability_status: deterministic]
 - **Expected scene inventory:** identical to the broken member's inventory (same base; scene inventory only)
 
 ## FGT2 — Planted defect locus *(FQ2)*
@@ -34,7 +34,7 @@
 - **N/A — positive control.**
 
 ## FGT7 — Form fairness *(FQ7)*
-   [gt_class: A][construct_lane: fault_injection][evidence_basis: public_domain_control][decision_use: gate][reliability_status: deterministic]
+   [gt_class: A][construct_lane: fault_injection][evidence_basis: planted_diff][decision_use: gate][reliability_status: deterministic]
 - **Expected classification:** SOUND
 - **False-positive trap:** a spurious continuity contradiction "found" between the two now-consistent facts, or a timeline-arithmetic error asserted on the reconciled dates. Either fired here (the broken member minus the two value swaps + date fix) scores FQ7 = 0 and blocks the C bucket.
 
