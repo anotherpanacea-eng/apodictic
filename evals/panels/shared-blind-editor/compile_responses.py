@@ -26,6 +26,13 @@ def enum(value: str, allowed, field: str, where: str, blank: bool = False) -> st
     return value
 
 
+def locus(value: str, count: int, field: str, where: str) -> str:
+    try:
+        return normalized_locus(value, count)
+    except ValueError as exc:
+        die(f"{where}: {field}: {exc}")
+
+
 def load_counts(path: Path) -> dict[str, int]:
     with path.open(newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
@@ -100,7 +107,7 @@ def main() -> int:
                         for anchor in ("gt2", "gt5", "gt6", "gt8"):
                             field = f"{anchor}_locus_{slot}"
                             add(f"argument_{anchor}_locus_{slot}_ordinal", rater, unit,
-                                normalized_locus(row[field], count))
+                                locus(row[field], count, field, where))
                     add("argument_gt4_expertise_ordinal", rater, unit, enum(row["gt4_expertise"], EXPERTISE, "gt4_expertise", where) and EXPERTISE[row["gt4_expertise"]])
                     add("argument_gt4_receptivity_ordinal", rater, unit, enum(row["gt4_receptivity"], RECEPTIVITY, "gt4_receptivity", where) and RECEPTIVITY[row["gt4_receptivity"]])
                     add("argument_gt4_consequence_ordinal", rater, unit, enum(row["gt4_consequence"], CONSEQUENCE, "gt4_consequence", where) and CONSEQUENCE[row["gt4_consequence"]])
@@ -145,9 +152,9 @@ def main() -> int:
                     for slot in range(1, 9):
                         field = f"fgt1_boundary_{slot}"
                         add(f"fiction_fgt1_boundary_{slot}_ordinal", rater, unit,
-                            normalized_locus(row[field], count))
+                            locus(row[field], count, field, where))
                     add("fiction_fgt1_boundary_pattern_nominal", rater, unit,
-                        enum(row["fgt1_boundary_pattern"], BOUNDARY_PATTERN, field, where))
+                        enum(row["fgt1_boundary_pattern"], BOUNDARY_PATTERN, "fgt1_boundary_pattern", where))
                     add("fiction_fgt5_arc_nominal", rater, unit, enum(row["fgt5_arc"], ARC, "fgt5_arc", where))
 
     expected_units = set(ARGUMENT_UNITS + FICTION_UNITS)
