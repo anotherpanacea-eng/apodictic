@@ -8,12 +8,12 @@
 # runners exist to factor from.
 #
 # Implements RUN-PROTOCOL.md Steps 1–2 for the fiction slice:
-#   - PREPARER role: derives each fixture's text from the local cache
-#     (per SOURCES.md — a carved PD body for controls/clean members; the base
-#     plus the mutation registry for broken members), and (best-effort) checks
-#     the recorded SHA-256.
+#   - PREPARER role: already pinned the ten committed short fixtures and their
+#     hashes. At runtime, --fetch reconstitutes referenced Gutenberg bodies
+#     (required for Dickens), and strict verification checks every selected
+#     input against SOURCES.md.
 #   - BLIND RUNNER role: inlines the fiction text into a single prompt fed on
-#     STDIN, and runs it under two model configs (opus + sonnet) = two
+#     STDIN, and runs it under two cross-vendor configs (Terra + Opus) = two
 #     independent runs for convergence.
 #
 # Blindness guarantee: the fiction text is the ONLY thing in the prompt.
@@ -23,9 +23,8 @@
 # SEPARATE step (a fresh session with repo access, or hand the outputs to a
 # scorer) — never this script. See RUN-PROTOCOL.md §Step 3–4.
 #
-# Cached full texts live OUTSIDE the git tree (no copyrighted / base bytes in
-# repo); this script reads them from $SRC and writes model outputs to the
-# gitignored evals/results/.
+# Short pinned texts live in-repo; the referenced Dickens text lives in $SRC.
+# Model outputs go to the gitignored evals/results/.
 #
 # ---------------------------------------------------------------------------
 # USAGE
@@ -33,32 +32,32 @@
 #   ./run.sh pov-break-broken orphan-scene-clean   # a subset (by slug)
 #   ./run.sh --verify        # only check the cache against recorded hashes
 #   ./run.sh --fetch         # reconstitute referenced PD texts from pinned URLs
+#   ./run.sh --prompt-only   # verify hashes and materialize blind prompts only
 #
 # REQUIRED: point these at your machine (env-overridable, no edit needed):
 #   SRC   — dir holding the cached / derived <slug>.md texts
 #   REPO  — the apodictic clone (defaults to this script's repo)
 #
 # TUNABLE (only if your CLI/cache differ from the defaults):
-#   CLAUDE_BIN         claude binary           (default: claude)
-#   MODELS             space-separated configs (default: "opus sonnet")
-#   CLAUDE_TOOL_FLAGS  extra flags to harden blindness by disabling tools.
-#                      Default empty — blindness already holds because the text
-#                      is fully inlined and nothing instructs the model to read
-#                      files. To harden, set e.g.:
-#                        CLAUDE_TOOL_FLAGS='--allowed-tools ""'      (newer CLI)
-#                      Confirm your CLI's exact flag with `claude --help`.
+#   CONFIGS            space-separated configs (default: "terra opus")
+#   CODEX_BIN          Codex binary            (default: codex)
+#   TERRA_MODEL        Codex Terra model slug  (default: gpt-5.6-terra)
+#   TERRA_EFFORT       Terra reasoning effort  (default: high)
+#   CLAUDE_BIN         Claude binary           (default: claude)
+#   OPUS_MODEL         concrete Claude model   (default: claude-opus-4-8)
+#   RUN_CWD            optional neutral working directory override. By default,
+#                      each actual run creates a fresh directory under TMPDIR.
 #   STRIP_CMD          custom header-stripper, reads file on STDIN, writes the
 #                      fiction body to STDOUT. Default heuristic: drop everything
 #                      up to and including the second `---` line (a `---`-fenced
 #                      provenance header), then carve at BODY_START/BODY_END.
-#   REQUIRE_HASH       1 = refuse to run a fixture whose text fails hash check;
-#                      0 = warn and run anyway (default).
+#   REQUIRE_HASH       1 = refuse to run a fixture whose text fails hash check
+#                      (default); 0 = warn and run anyway.
 #
-# NOTE on hashing: identical best-effort discipline to the argument runner — a
-# mismatch does not affect run validity (blindness is structural), it only flags
-# that reproducibility provenance needs reconciling. Set REQUIRE_HASH=1 to be
-# strict. macOS ships bash 3.2 (no `declare -A`), so hashes are TAB-separated
-# lines, not an associative array — the blind runs happen on the Mac.
+# NOTE on hashing: benchmark runs are strict by default. REQUIRE_HASH=0 is a
+# troubleshooting escape hatch only and does not produce a valid M2a run.
+# macOS ships bash 3.2 (no `declare -A`), so hashes are TAB-separated lines,
+# not an associative array — the blind runs happen on the Mac.
 # ---------------------------------------------------------------------------
 
 set -uo pipefail
@@ -69,18 +68,23 @@ REPO="${REPO:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
 SRC="${SRC:-$HOME/Library/CloudStorage/Dropbox/Cowork/Development Editor/fiction-benchmark-sources}"
 SOURCES="$SCRIPT_DIR/SOURCES.md"
 
+CONFIGS="${CONFIGS:-terra opus}"
+CODEX_BIN="${CODEX_BIN:-codex}"
+TERRA_MODEL="${TERRA_MODEL:-gpt-5.6-terra}"
+TERRA_EFFORT="${TERRA_EFFORT:-high}"
 CLAUDE_BIN="${CLAUDE_BIN:-claude}"
-MODELS="${MODELS:-opus sonnet}"
-CLAUDE_TOOL_FLAGS="${CLAUDE_TOOL_FLAGS:-}"
-REQUIRE_HASH="${REQUIRE_HASH:-0}"
+OPUS_MODEL="${OPUS_MODEL:-claude-opus-4-8}"
+REQUIRE_HASH="${REQUIRE_HASH:-1}"
+RUN_CWD="${RUN_CWD:-}"
+RUN_CWD_OWNED=0
 
 OUT="$REPO/evals/results/fiction-run-$(date +%Y%m%d-%H%M%S)"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 [ -f "$SOURCES" ] || die "SOURCES.md not found: $SOURCES"
-# --fetch may bootstrap a fresh cache; --verify and model-run modes require it to exist.
+# --fetch may bootstrap a fresh cache; other modes can fall back to committed
+# short fixtures and report MISS only for a selected external source.
 [ "${1:-}" = "--fetch" ] && mkdir -p "$SRC" 2>/dev/null
-[ -d "$SRC" ]     || die "source cache dir not found: $SRC  (set SRC=...)"
 
 # --- parse slug -> recorded sha256 from SOURCES.md ------------------------
 # Each block: a `### <slug>` heading, then a `- **RECORDED...:** ...sha256: <hex>`.
@@ -102,6 +106,9 @@ src_file() {
   local s="$1"
   if   [ -f "$SRC/$s.md" ];  then echo "$SRC/$s.md"
   elif [ -f "$SRC/$s.txt" ]; then echo "$SRC/$s.txt"
+  elif [ -f "$SCRIPT_DIR/$s/fixture.md" ]; then echo "$SCRIPT_DIR/$s/fixture.md"
+  elif [[ "$s" == *-clean ]] && [ -f "$SCRIPT_DIR/${s%-clean}/clean/fixture.md" ]; then echo "$SCRIPT_DIR/${s%-clean}/clean/fixture.md"
+  elif [[ "$s" == *-broken ]] && [ -f "$SCRIPT_DIR/${s%-broken}/broken/fixture.md" ]; then echo "$SCRIPT_DIR/${s%-broken}/broken/fixture.md"
   else return 1; fi
 }
 
@@ -151,7 +158,8 @@ extract_body() {
       [ -n "$eln" ] && [ "$eln" -gt 1 ] && body="$(printf '%s\n' "$body" | sed "${eln},\$d")"
     fi
   fi
-  printf '%s\n' "$body"
+  # Pin logical text, not a transport-specific CRLF/LF representation.
+  printf '%s\n' "$body" | tr -d '\r'
 }
 
 # SHA-256 tool: macOS `shasum`, Linux/WSL `sha256sum`.
@@ -192,25 +200,81 @@ open any files; the text is all here. Finish with a line beginning
 if yes.
 EOF
 
+# --- provider adapters -----------------------------------------------------
+# Both adapters receive the exact same prompt bytes from STDIN. They run from a
+# neutral directory, ignore user/project instruction sources, and do not persist
+# sessions. The pinned HEADER above is the cross-provider Core-DE projection.
+run_config() {             # config prompt output stderr
+  local config="$1" prompt="$2" output="$3" err="$4"
+  case "$config" in
+    terra)
+      command -v "$CODEX_BIN" >/dev/null 2>&1 || { echo "Codex binary not found: $CODEX_BIN" > "$err"; return 1; }
+      (cd "$RUN_CWD" && "$CODEX_BIN" exec \
+        --model "$TERRA_MODEL" \
+        --ephemeral \
+        --ignore-user-config \
+        --ignore-rules \
+        --sandbox read-only \
+        --skip-git-repo-check \
+        -c "model_reasoning_effort=\"$TERRA_EFFORT\"" \
+        -) < "$prompt" > "$output" 2> "$err"
+      ;;
+    opus)
+      command -v "$CLAUDE_BIN" >/dev/null 2>&1 || { echo "Claude binary not found: $CLAUDE_BIN" > "$err"; return 1; }
+      (cd "$RUN_CWD" && "$CLAUDE_BIN" \
+        --print \
+        --no-session-persistence \
+        --permission-mode dontAsk \
+        --tools= \
+        --setting-sources "" \
+        --strict-mcp-config \
+        --mcp-config '{"mcpServers":{}}' \
+        --model "$OPUS_MODEL") < "$prompt" > "$output" 2> "$err"
+      ;;
+    *)
+      echo "Unknown benchmark config: $config" > "$err"
+      return 1
+      ;;
+  esac
+}
+
 # --- main -----------------------------------------------------------------
 VERIFY_ONLY=0
 [ "${1:-}" = "--verify" ] && { VERIFY_ONLY=1; shift; }
 FETCH_ONLY=0
 [ "${1:-}" = "--fetch" ] && { FETCH_ONLY=1; shift; }
+PROMPT_ONLY=0
+[ "${1:-}" = "--prompt-only" ] && { PROMPT_ONLY=1; shift; }
+
+if [ "$VERIFY_ONLY" -eq 0 ] && [ "$FETCH_ONLY" -eq 0 ] && [ "$PROMPT_ONLY" -eq 0 ]; then
+  if [ -z "$RUN_CWD" ]; then
+    RUN_CWD="$(mktemp -d "${TMPDIR:-/tmp}/apodictic-fiction-benchmark-runner.XXXXXX")" || die "could not create neutral run directory"
+    RUN_CWD_OWNED=1
+    cleanup_run_cwd() { [ "$RUN_CWD_OWNED" -eq 1 ] && rm -rf "$RUN_CWD"; }
+    trap cleanup_run_cwd EXIT
+  else
+    mkdir -p "$RUN_CWD" || die "could not create RUN_CWD: $RUN_CWD"
+  fi
+fi
 
 # slug -> recorded sha256, TAB-separated lines (bash 3.2 compatible).
 PAIRS="$(parse_hashes)"
 want_for() { printf '%s\n' "$PAIRS" | awk -F'\t' -v s="$1" '$1==s{print $2; exit}'; }
 
 # fixtures to process: CLI args, else all parsed slugs
-if [ "$#" -gt 0 ]; then SLUGS=("$@"); else SLUGS=($(printf '%s\n' "$PAIRS" | awk -F'\t' '{print $1}')); fi
+if [ "$#" -gt 0 ]; then
+  SLUGS=("$@")
+  for s in "${SLUGS[@]}"; do
+    [ -n "$(want_for "$s")" ] || die "unknown or unregistered fixture slug: $s"
+  done
+else
+  SLUGS=($(printf '%s\n' "$PAIRS" | awk -F'\t' '{print $1}'))
+fi
 
 # --- --fetch: reconstitute referenced PD texts from their pinned URLs -------
-# Only the REFERENCED sources have a URL (the Carol; the short stored controls
-# also carry a URL for first-pin derivation). Copyrighted / base bytes are never
-# stored in the repo, only fetched here. A source with no URL (a derived-broken
-# member) is SKIPPED by --fetch — it is produced from its base + mutation
-# registry by the preparer, not fetched.
+# The referenced Carol and the two stored public-domain controls have URLs.
+# Synthetic matched-pair members are already committed and have no URL, so
+# --fetch skips them; normal run/verify modes read their fixture.md files.
 if [ "$FETCH_ONLY" -eq 1 ]; then
   command -v curl >/dev/null 2>&1 || die "curl not found (needed for --fetch)"
   echo "mode=fetch"; echo "src=$SRC"; echo
@@ -223,7 +287,7 @@ if [ "$FETCH_ONLY" -eq 1 ]; then
     url="$(sources_url "$s")"
     want="$(want_for "$s")"
     if [ -z "$url" ]; then
-      echo "SKIP  $s  (no URL in SOURCES.md — derived-broken member or unpinned base)"
+      echo "SKIP  $s  (no URL in SOURCES.md — committed synthetic fixture)"
       continue
     fi
     tmp="$(mktemp)"
@@ -237,8 +301,7 @@ if [ "$FETCH_ONLY" -eq 1 ]; then
     else echo "HASH? $s  (got $got != recorded $want — reconcile anchors/source)"; ffail=1; fi
   done
   echo; echo "Fetch complete. Texts in: $SRC"
-  echo "NOTE: derived-broken members are produced from their base + the mutation"
-  echo "registry in the broken member's groundtruth.md — not fetched here."
+  echo "NOTE: committed synthetic pair members are used directly, not fetched."
   exit $ffail
 fi
 
@@ -266,21 +329,29 @@ for s in "${SLUGS[@]}"; do
   body="$(extract_body "$f" "$s")"
   [ -n "$body" ] || { echo "FAIL  $s  (empty body after extract)"; fail=1; continue; }
 
-  for m in $MODELS; do
+  for m in $CONFIGS; do
     outdir="$OUT/$s"; mkdir -p "$outdir"
     prompt="$outdir/prompt-$m.txt"
     {
       printf '%s\n\n' "$HEADER"
       printf '<submission>\n%s\n</submission>\n' "$body"
     } > "$prompt"
+    if [ "$PROMPT_ONLY" -eq 1 ]; then
+      echo "PROMPT $s  [$m]  -> ${prompt#$REPO/}"
+      continue
+    fi
     echo "RUN   $s  [$m]  -> ${outdir#$REPO/}/output-$m.md"
-    if ! $CLAUDE_BIN $CLAUDE_TOOL_FLAGS --model "$m" < "$prompt" > "$outdir/output-$m.md" 2>"$outdir/err-$m.txt"; then
+    if ! run_config "$m" "$prompt" "$outdir/output-$m.md" "$outdir/err-$m.txt"; then
       echo "  (model run failed for $s [$m]; see err-$m.txt)"; fail=1
+    elif [ ! -s "$outdir/output-$m.md" ]; then
+      echo "  (model run returned an empty output for $s [$m])"; fail=1
+    elif ! awk 'NF { last=$0 } END { exit(last ~ /^RECOGNITION:/ ? 0 : 1) }' "$outdir/output-$m.md"; then
+      echo "  (model output does not end with required RECOGNITION line for $s [$m])"; fail=1
     fi
   done
 done
 
 echo
-[ "$VERIFY_ONLY" -eq 1 ] && echo "Verify complete." || echo "Runs complete. Outputs in: $OUT"
+[ "$VERIFY_ONLY" -eq 1 ] && echo "Verify complete." || { [ "$PROMPT_ONLY" -eq 1 ] && echo "Prompt materialization complete. Outputs in: $OUT" || echo "Runs complete. Outputs in: $OUT"; }
 echo "Scoring is a SEPARATE step — never this script. See RUN-PROTOCOL.md §Step 3–4."
 exit $fail

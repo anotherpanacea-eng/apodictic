@@ -4,14 +4,14 @@
 - **Fixture slug:** orphan-scene/broken · **Bucket:** S · **Source class:** synthetic-or-derived
 - **Matched-pair member:** broken
 - **Paired-with:** orphan-scene/clean
-- **Text stored in-repo?:** yes (preparer-derived at pin time — no base bytes in repo)
-- **Base text + plant record:** base = a low-recognition public-domain short work with a clean causal
+- **Text stored in-repo?:** yes (pinned original synthetic fixture)
+- **Base text + plant record:** base = an original synthetic short work with a clean causal
   chain (each scene's outcome enables the next). Planted mutation (before→after recorded): **one
   causally-inert scene inserted** between the base's scene 3 and scene 4 — written in-register (the same
   voice, period, and diction), plausible on its surface, but **removable without breaking causality**
   (nothing in it is referenced or required downstream; the story's cause-and-effect is identical with it
   cut). One insertion; the surrounding scenes are unchanged.
-- **Authored / adapted by:** APODICTIC fiction benchmark (derived) · **Registered (date):** 2026-07-06
+- **Authored / adapted by:** APODICTIC fiction benchmark (original synthetic; pinned 2026-07-14) · **Registered (date):** 2026-07-06
 - **Ground-truth authority:** author-registered; deterministic by construction (the inserted scene is causally inert by design)
 - **Scope:** FQ1 (inventory), FQ2, FQ3, FQ4, FQ6, FQ7 in scope; FQ5 N/A
 - **Run configuration:** complete-manuscript mode; canonical slice pass-set {0,1,2,5,7,8,10}
@@ -47,7 +47,7 @@
 - **Dependency rule (Lane-2 when present):** N/A
 
 ## FGT7 — Form fairness *(FQ7)*
-   [gt_class: A][construct_lane: fault_injection][evidence_basis: public_domain_control][decision_use: gate][reliability_status: deterministic]
+   [gt_class: A][construct_lane: fault_injection][evidence_basis: planted_diff][decision_use: gate][reliability_status: deterministic]
 - **Expected classification:** DEFECT-AS-PLANTED
 - **False-positive trap:** N/A — the FQ7 specificity read is scored on the clean member of this pair
 

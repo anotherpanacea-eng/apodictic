@@ -4,16 +4,16 @@
 - **Fixture slug:** pov-break/broken · **Bucket:** P · **Source class:** synthetic-or-derived
 - **Matched-pair member:** broken
 - **Paired-with:** pov-break/clean
-- **Text stored in-repo?:** yes (preparer-derived at pin time — no base bytes in repo)
-- **Base text + plant record:** base = a low-recognition public-domain short story written in
-  consistent third-limited (single focal character), pinned in SOURCES.md at build. Planted mutations
+- **Text stored in-repo?:** yes (pinned original synthetic fixture)
+- **Base text + plant record:** base = an original synthetic short story written in consistent
+  third-limited (single focal character), pinned in SOURCES.md at build. Planted mutations
   (before→after recorded per locus): (1) ¶18 — insert one sentence rendering a NON-focal character's
   interiority ("She wondered whether he had ever loved her at all") = head-hop #1; (2) ¶24 — insert a
   second non-focal interiority beat = head-hop #2; (3) ¶31 — the focal narration states a fact the
   focal character could not know ("Across town, the letter still lay unopened on the hall table") =
   POV-knowledge leak. Three surgical inserts; no deletion; the surround is unchanged so the mutation,
   not bad prose, is what a hit must catch.
-- **Authored / adapted by:** APODICTIC fiction benchmark (derived) · **Registered (date):** 2026-07-06
+- **Authored / adapted by:** APODICTIC fiction benchmark (original synthetic; pinned 2026-07-14) · **Registered (date):** 2026-07-06
 - **Ground-truth authority:** author-registered; deterministic by construction (the POV breaks are planted)
 - **Scope:** FQ1 (inventory), FQ2, FQ3, FQ4, FQ6, FQ7 in scope; FQ5 N/A (not the arc pilot)
 - **Run configuration:** complete-manuscript mode; canonical slice pass-set {0,1,2,5,7,8,10}
@@ -51,10 +51,10 @@
 - **Dependency rule (Lane-2 when present):** N/A — a local discipline fix, no upstream dependency
 
 ## FGT7 — Form fairness *(FQ7)*
-   [gt_class: A][construct_lane: fault_injection][evidence_basis: public_domain_control][decision_use: gate][reliability_status: deterministic]
+   [gt_class: A][construct_lane: fault_injection][evidence_basis: planted_diff][decision_use: gate][reliability_status: deterministic]
 - **Expected classification:** DEFECT-AS-PLANTED
 - **False-positive trap:** N/A — the FQ7 specificity read is scored on the clean member of this pair
 
 ## Notes
-Recognition risk tier: LOW (low-recognition base). Seam-risk tier: MODERATE (three inserts; the
+Recognition risk tier: LOW (original synthetic base). Seam-risk tier: MODERATE (three inserts; the
 craft-clean-splice review criterion applies). The matched clean member is the specificity control.

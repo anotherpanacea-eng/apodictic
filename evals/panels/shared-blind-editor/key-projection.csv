@@ -1,0 +1,68 @@
+unit_id,anchor,subdimension,accepted_tokens,accepted_min,accepted_max,projection_note
+A01,GT2,layer,CLAIM|SCOPE,,,registered bundled universal claim
+A01,GT2,locus_1,,0,100,claim spans opening frame and conclusion
+A01,GT4,expertise,,2,2,MIXED
+A01,GT4,receptivity,,2,3,SYMPATHETIC-to-MIXED
+A01,GT4,consequence,,2,3,MEDIUM-HIGH
+A01,GT5,family,CLAIM|SCOPE|DEFINITION,,,heterogeneity and security exception
+A01,GT5,locus_1,,0,4,security and coordination exception in opening frame
+A01,GT6,target,CLAIM|SCOPE,,,disaggregate bundled claims
+A01,GT6,locus_1,,96,100,concluding universal verdict
+A01,GT6,dependency,BEFORE_SUPPORT,,,scope before more examples
+A01,GT7,verdict,WARRANTED,,,registered warrant verdict
+A01,GT8,presence,NONE_REGISTERED,,,no premise flag registered
+A02,GT2,layer,WARRANT,,,causal bridge from overbreadth to violations
+A02,GT2,locus_1,,35,39,central causal mechanism paragraphs
+A02,GT4,expertise,,2,2,MIXED
+A02,GT4,receptivity,,2,3,SYMPATHETIC-to-MIXED
+A02,GT4,consequence,,2,3,MEDIUM-HIGH
+A02,GT5,family,WARRANT|OBJECTION,,,confounders plus fairness-notice function
+A02,GT5,locus_1,,35,52,causal and discretion cluster
+A02,GT6,target,WARRANT,,,shore up causal warrant
+A02,GT6,locus_1,,35,39,central causal mechanism paragraphs
+A02,GT6,dependency,BEFORE_SUPPORT,,,warrant before expanding catalog
+A02,GT7,verdict,WARRANTED,,,registered warrant verdict
+A02,GT8,presence,NONE_REGISTERED,,,no premise flag registered
+A03,GT2,layer,WARRANT,,,labor-to-abundance bridge
+A03,GT2,locus_1,,7,62,claim and supporting bridge across report
+A03,GT4,expertise,,2,3,MIXED-EXPERT
+A03,GT4,receptivity,,2,3,SYMPATHETIC-to-MIXED
+A03,GT4,consequence,,2,3,MEDIUM-HIGH
+A03,GT5,family,WARRANT|OBJECTION,,,safeguards-veto-point regress
+A03,GT5,locus_1,,29,51,participation-speed and remedy tension
+A03,GT6,target,WARRANT,,,reconcile participation and speed
+A03,GT6,locus_1,,38,51,participation-speed bridge
+A03,GT6,dependency,BEFORE_SUPPORT,,,warrant before more feasibility evidence
+A03,GT7,verdict,WARRANTED,,,registered warrant verdict
+A03,GT8,presence,NONE_REGISTERED,,,no premise flag registered
+A04,GT2,layer,WARRANT|OBJECTION,,,market-frame assumption
+A04,GT2,locus_1,,27,100,frame stated through final warrant
+A04,GT4,expertise,,2,2,MIXED
+A04,GT4,receptivity,,2,3,SYMPATHETIC-to-MIXED
+A04,GT4,consequence,,2,2,MEDIUM
+A04,GT5,family,WARRANT|OBJECTION|DEFINITION,,,markets-as-measure and state-capacity counter
+A04,GT5,locus_1,,27,75,frame premise and asserted choice
+A04,GT6,target,WARRANT|OBJECTION,,,defend frame or engage opponent on own terms
+A04,GT6,locus_1,,27,75,frame premise and asserted choice
+A04,GT6,dependency,BEFORE_SUPPORT,,,frame before market-success examples
+A04,GT7,verdict,WARRANTED,,,registered warrant verdict
+A04,GT8,presence,NONE_REGISTERED,,,no premise flag registered
+A05,GT2,layer,SUPPORT,,,brand evidence does not establish policy verdict
+A05,GT2,locus_1,,8,45,brand-policy distinction and coalition evidence
+A05,GT4,expertise,,1,2,GENERAL-MIXED
+A05,GT4,receptivity,,3,3,SYMPATHETIC
+A05,GT4,consequence,,2,2,MEDIUM
+A05,GT5,family,SUPPORT|SCOPE|OBJECTION,,,separability and target substitution
+A05,GT5,locus_1,,8,45,brand-policy distinction and coalition evidence
+A05,GT6,target,SUPPORT,,,re-aim support at policy claims
+A05,GT6,locus_1,,21,45,policy and brand target split
+A05,GT6,dependency,BEFORE_SCOPE,,,policy support before sharpening brand critique
+A05,GT7,verdict,WARRANTED,,,registered warrant verdict
+A05,GT8,presence,NONE_REGISTERED,,,no premise flag registered
+F01,FGT1,movement_count,,4,6,five-stave inventory band plus-or-minus one split-merge
+F01,FGT1,boundary_pattern,FORMAL_DIVISIONS|HYBRID,,,five formal staves with visitation subdivision
+F01,FGT1,boundary_1,,23,25,Stave II opening normalized locus
+F01,FGT1,boundary_2,,45,47,Stave III opening normalized locus
+F01,FGT1,boundary_3,,66,68,Stave IV opening normalized locus
+F01,FGT1,boundary_4,,89,91,Stave V opening normalized locus
+F01,FGT5,arc,DENIAL_STAGED_CONFRONTATION_REVERSAL,,,registered Scrooge gross arc
