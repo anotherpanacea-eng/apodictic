@@ -143,6 +143,10 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 **In progress**
 
 1. Argument Engine Benchmark Suite — spec + vertical slice landed (see below)
+2. **Approval-Gated Reconstruction Phase 0** — deterministic contract hardening is in
+   progress before Increment 1: explicit lifecycle stages, separate node/edge shapes,
+   hash-chained event records, durable adjudication-session state, and a fail-closed I5
+   boundary. `approval_graph.py` remains unbuilt until this contract is reviewed.
 
 ### Benchmark Suite
 
