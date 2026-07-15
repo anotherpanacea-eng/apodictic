@@ -283,6 +283,45 @@ _OV_PY_SCAN_PAT = (r"""\.(?:find|rfind|index|rindex|count|startswith|endswith|pa
 _OV_PY_RE_PAT = (r"""\bre\.(?:search|match|fullmatch|findall|finditer|compile)\s*\(\s*""" + _OV_PFX + _Q + _OV_REGEX_MARK)
 _OV_PY_RE = re.compile("(?:%s)|(?:%s)|(?:%s)|(?:%s)"
                        % (_OV_PY_IN_PAT, _OV_PY_FMT_IN_PAT, _OV_PY_SCAN_PAT, _OV_PY_RE_PAT))
+# `<!--` anchor for the windowed M5 scan below.
+_OV_ANCHOR_RE = re.compile(r"<!--")
+# How many NON-WHITESPACE chars can sit between an `_OV_PY_RE` match start and its literal `<!--`.
+# Every alternative reaches `<!--` through a bounded run of non-whitespace — string-prefix flags (≤2)
+# + opening quote (≤3), plus for the scan/re-op forms a method name and `(` (≤14) — interleaved with
+# `\s*` runs that ARE unbounded: `_strip_comments_keep_source` blanks a comment to same-length
+# whitespace, so a commented line inside a call becomes a 70+ char `\s` gap the regex happily
+# crosses. The window therefore counts only non-whitespace (walking back over any amount of
+# whitespace); a fixed byte offset would be defeated by exactly that blanked-comment gap.
+_OV_WINDOW = 64
+
+
+def _ov_win_start(stripped, j):
+    """Lowest candidate match start for a `<!--` at offset `j`: walk back over unlimited whitespace
+    (incl. comment bytes blanked by `_strip_comments_keep_source`) and at most `_OV_WINDOW`
+    non-whitespace chars."""
+    s = j
+    nonws = 0
+    while s > 0 and nonws < _OV_WINDOW:
+        if not stripped[s - 1].isspace():
+            nonws += 1
+        s -= 1
+    return s
+
+
+def _ov_py_hit(stripped):
+    """Windowed equivalent of `_OV_PY_RE.search(stripped)`. A whole-file `.search` is quadratic-feeling
+    in practice: the format-`in` alternative opens with `\\(?\\s*` (both optional), so the 4-way
+    alternation does real work at EVERY position of every scanned file — ~13s of the canonical CI gate
+    was this one search across the sibling `.py` fleet, almost none of which carry the marker. Every
+    alternative requires the literal `<!--` within a bounded non-whitespace distance of the match
+    start, so it suffices to anchor on each `<!--` occurrence (rare in comment-stripped source) and
+    try `.match` at each start offset in the preceding window."""
+    for anchor in _OV_ANCHOR_RE.finditer(stripped):
+        j = anchor.start()
+        for s in range(_ov_win_start(stripped, j), j + 1):
+            if _OV_PY_RE.match(stripped, s):
+                return True
+    return False
 # bash: a grep over the bare `<!-- override:` prefix (any whitespace), the form #128 replaced.
 _OV_SH_RE = re.compile(r"""grep\b[^\n]*?['"]""" + _OV_MARK)
 # override_marker.py legitimately DEFINES the hardened helper; meta_lint.py carries the M5 pattern
@@ -468,7 +507,7 @@ def check_m5_py(py_name, py_text):
     or the helper's own regex is not flagged."""
     if py_name in _M5_EXEMPT:
         return []
-    if _OV_PY_RE.search(_strip_comments_keep_source(py_text or "")):
+    if _ov_py_hit(_strip_comments_keep_source(py_text or "")):
         return ["M5 override-hygiene: %s detects an override marker by a bare \"<!-- override: <slug>\" "
                 "substring scan/membership op — honors a suffixed slug and a backtick'd documentation "
                 "example; call override_marker.has_override (boundary-matched, code-spans stripped)"
@@ -829,6 +868,23 @@ def run_self_test():
         check_m5_py("g.py", 'if body.find("<!-- override: foo") >= 0:\n    pass\n') != [])
     chk("m5_py_re_findall_flagged",
         check_m5_py("g.py", 'import re\nxs = re.findall(r"<!-- override: ([a-z-]+)", body)\n') != [])
+    # windowed-scan guards (_ov_py_hit anchors on `<!--` and tries starts in the preceding
+    # _OV_WINDOW): a whitespace run between the scan op / re-op paren and its string literal — the
+    # only unbounded prefix an alternative admits — must stay inside the window and stay flagged.
+    chk("m5_py_spaced_find_flagged",
+        check_m5_py("g.py", 'if body.find(          "<!-- override: foo") >= 0:\n    pass\n') != [])
+    chk("m5_py_multiline_spaced_re_op_flagged",
+        check_m5_py("g.py", 'import re\nxs = re.findall(\n    r"<!-- override: ([a-z-]+)", body)\n') != [])
+    # a comment INSIDE the call is blanked to a same-length whitespace run by
+    # _strip_comments_keep_source — the gap the regex crosses via \s* can therefore exceed any fixed
+    # byte window. The non-whitespace walk-back must still anchor a match start before it.
+    chk("m5_py_comment_gap_re_op_flagged",
+        check_m5_py("g.py", 'xs = re.findall(\n'
+                            '    # legacy override matcher retained for compatibility with old artifacts\n'
+                            '    r"<!-- override: ([a-z-]+)", body)\n') != [])
+    # a marker deep in a large file (far from offset 0) is still anchored and flagged.
+    chk("m5_py_deep_offset_flagged",
+        check_m5_py("g.py", ("x = 1\n" * 400) + 'if "<!-- override: foo" in body:\n    pass\n') != [])
     # the hardened helper call is clean (it does not write the bare `<!-- override:` single-space form).
     chk("m5_py_has_override_call_ok",
         check_m5_py("g.py", 'from override_marker import has_override\nif has_override(body, "foo"):\n    pass\n') == [])
