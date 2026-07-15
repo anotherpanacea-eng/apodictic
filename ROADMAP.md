@@ -139,15 +139,14 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 14. **R3A/R3B — AGD Move Audit** plus the Voiceprint scan consumer and deterministic scan↔audit agreement benchmark
 15. **R4A/R4B — argument-layer boundary ADR and crosswalk**, Bridge-recoverability migration, and the optional one-way AIF-Core export
 16. **R5 — ClaimLicense↔Toulmin docs-only crosswalk**, explicitly analogy rather than identity
+17. **AT5 Argument Register + Rhetorical Stance Triage** — writer-confirmed generative routing,
+    GN0-GN4 diagnostics, per-cash-out asserted burden, pre-lock stance calibration, and the
+    `stance-calibration` shape gate. E1-E7 are green; E7 includes two independent strict blind
+    ledger/state pairs with canonical joins and passing validator records.
 
 **In progress**
 
 1. Argument Engine Benchmark Suite — spec + vertical slice landed (see below)
-2. **AT5 Argument Register + Rhetorical Stance Triage** — contract/reference build in
-   progress: AT5/GN0–GN4 routing, five optional finding fields, exact §1 high-stakes and
-   cash-out joins, and the `stance-calibration` shape gate are implemented locally. E7's
-   good-faith hybrid fixture is present; a strict machine-conformant rerun of its two blind
-   records remains a PR merge blocker and must pass before the spec can flip to Built.
 
 ### Benchmark Suite
 

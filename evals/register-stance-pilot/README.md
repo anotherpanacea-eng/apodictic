@@ -22,9 +22,12 @@ outcomes, or each other.
   available and must be refused on the merits). Bailey deliberately styled to tempt an S3
   productive-overstatement reading. Synthetic.
 - `machinery-addendum.md` — the blinded candidate machinery (spec Parts 1–2 stripped of worked
-  examples and expected outcomes) given to every machinery-arm auditor. Validated as
-  auditor-followable across four runs; this is the artifact to evolve into the real
-  dialectical-clarity.md changes.
+  examples and expected outcomes) given to every machinery-arm auditor. The E7 strict rerun
+  refreshes its severity and precedence language to the built contract.
+- `auditor-prompt.md` — the strict E7 prompt, including canonical Argument State and embedded
+  finding-block contracts.
+- `e7-strict-a/` and `e7-strict-b/` — independent blind E7 `Argument_State.md` /
+  `Findings_Ledger.md` pairs plus hash-bound run records; both pairs pass `stance-calibration`.
 
 ## Not vendored
 
@@ -72,15 +75,16 @@ needs its literal claim and collapses under detection. The S3 rescue was explici
 refused with demotion available (B6), so the construct's central failure mode — stance triage as a
 fallacy-laundering pathway — did not occur under deliberately tempting conditions.
 
-Eval-gate status: E1–E6 green; **E7 (good-faith hybrid, per-span stakes gate) specified in the
-spec's §Validation and must run before the reference-file merge.**
+Eval-gate status: **E1-E7 green.** E7's two strict blind runs independently kept the coherent,
+fertile journey in the generative register while applying full asserted burden to the one hard
+policy prescription. Both used canonical `CO#` joins and `UNWARRANTED` verdict tokens, and both
+vendored ledger/state pairs pass `stance-calibration`.
 
 **Post-review notes (2026-07-15).** The spec passed through the adversarial spec-review swarm
-(NEEDS-REWORK → reworked; see spec §Review Disposition). Two consequences for this directory:
-(1) all pilot ledgers use a run-harness-injected 4-band severity scale (MF/SF/Consider/Observational);
-the engine's canonical vocabulary is exactly Must-Fix/Should-Fix/Could-Fix — remap Consider and
-Observational to **Could-Fix** when comparing against future runs. (2) `machinery-addendum.md`
-predates the rework: it places stance triage at Step 9 and demotes to "Observational"; the reworked
-spec relocates calibration to Triage (upstream of the Deficit Lock) and demotes to Could-Fix. The
-addendum remains valid as the historical pilot artifact; derive build language from the spec, not
-the addendum. The evidentiary-function doctrine was ratified for build 2026-07-15.
+(NEEDS-REWORK → reworked; see spec §Review Disposition). Historical pilot ledgers use a
+run-harness-injected 4-band severity scale (MF/SF/Consider/Observational); the engine's canonical
+vocabulary is exactly Must-Fix/Should-Fix/Could-Fix, so remap Consider and Observational to
+**Could-Fix** when comparing those historical runs. The strict E7 machinery addendum now carries
+the built contract directly: Triage before the Deficit Lock, Could-Fix demotion, and high-stakes →
+prescriptive-cash-out → register → stance precedence. The evidentiary-function doctrine was
+ratified for build 2026-07-15.

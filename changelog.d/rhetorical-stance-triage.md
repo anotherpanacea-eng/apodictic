@@ -11,3 +11,6 @@
   while omitted joins and undeclared stance decisions remain auditor-owned.
 - Recognize realistic `GT8 …` mechanism identifiers, pin register-floor precedence over
   instance stance, and state why post-triage `Could-Fix` cannot prove a blocked demotion.
+- Reject finding-level generative floors under an asserted document, restrict actual
+  demotions to the declared WR/SM/BP and overstatement families, and parse `NONE` cash-out
+  and high-stakes source records exactly rather than by substring.
