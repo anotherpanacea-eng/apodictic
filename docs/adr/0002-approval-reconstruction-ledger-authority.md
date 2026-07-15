@@ -15,8 +15,10 @@ Adopt a single-authority model. Recovery stops being "reconcile three partially-
 - **D1 — `Approval_Events.jsonl` is the sole authoritative state.** Every approval fact lives in the ledger; nothing else is a source of truth.
 - **D2 — One complete decision bundle occupies one JSONL record**, including its ordered cascade events. A decision is therefore atomic by construction: the record is appended in full or not at all. There is no "valid prefix of a bundle" to classify.
 - **D3 — `Approval_Graph.md` is a deterministic, human-readable projection** rebuilt from the ledger. It is never authoritative and never hand-edited; author decisions enter only as ledger appends.
-- **D4 — `Adjudication_Session.json` is a reconstructible cursor/cache, never an authority.** It may be regenerated from the ledger at any time; losing it loses nothing.
-- **D5 — Recovery = truncate-and-replay.** A malformed trailing record is ignored or explicitly rejected; every complete record is replayed; graph and session are regenerated from the replay. Recovery **fails closed**: if the last authoritative record cannot be identified, the tool errors — never a silent advance, never `CLOSED`.
+- **D4 — `Adjudication_Session.json` is a reconstructible cursor/cache, never an authority.** It may be regenerated from the ledger at any time; losing it loses nothing. Live `OPEN` state is an ephemeral exclusive process lock, not a persisted cache fact.
+- **D5 — Recovery = verify, truncate only an uncommitted byte tail, and replay.** Every LF-terminated record carries a stored self-verifying bundle hash and is authoritative or an error. Only a final suffix lacking LF is torn and truncatable. Graph and session are regenerated from the verified replay. Recovery **fails closed**: if the last authoritative record cannot be identified, the tool errors — never a silent advance, never `CLOSED`.
+- **D6 — Replay owns all projection inputs.** Bundle context carries source filename/hash and Argument State identity; event `note` fields carry the optional human-readable Notes projection. The graph header and notes never supply facts back to the ledger.
+- **D7 — Novelty is a first-class ledger mutation.** S4 emits a `QUARANTINE` bundle of system `MINTED` events; it never appends directly to the graph projection.
 
 ## What this supersedes in #215
 
@@ -33,17 +35,19 @@ Survives, unchanged (this ADR is orthogonal to them):
 - Content-addressed **identity** (IDs from canonical node/edge content) — the ledger references these IDs; I1's "recompute ID from Text, fail on mismatch" moves into the ledger-write path (text only enters via a mint event), which is cleaner than guarding hand-edits to an authoritative graph.
 - Field-presence **matrices**, the **event grammar**, and the **drafting-packet** contract (I3) — now describing the *projection* and the ledger record, not an independently-authored file.
 
-## Consequences and open questions (resolve before rewriting #215)
+## Consequences and resolved design points
 
-1. **Bundle granularity vs. per-record History pointers.** Moving the atomic unit from one-event-per-line to one-bundle-per-record changes how a node/edge's `History:` references its events. A cascade on edge `e` now lives inside the bundle whose primary record is node `n`; the "an event referenced by zero or multiple records" rule and per-record History reconstruction must be re-expressed against bundle records. This is the one genuinely new design surface the redesign introduces — worth pinning in prose because it is a static grammar question, not a crash-timing one.
+1. **Bundle granularity vs. per-record History pointers — resolved.** Every event touched by a bundle projects one History line carrying the bundle's stored hash; the same hash may therefore appear on several records. The stored terminal hash makes even the final record independently verifiable.
 2. **Adjudication-on-projection fits I3 better, not worse.** The named cost ("graph no longer authoritative") is smaller than it looks: I3 already forbids the drafter from seeing the graph, and adjudication was always session-driven decision capture, not graph editing. A rebuilt projection *removes* the current tension where the graph is simultaneously the authoritative store and the human-readable surface.
 3. **Increment-1 scope shrinks.** `approval_graph.py` becomes: ledger validator + replay engine + deterministic projection generator + Stage A checks over the ledger. The three-artifact reconciliation logic leaves Increment 1 entirely. The Build-Increments list in the spec needs updating to match.
-4. **Fixtures still own the crash-prefix cases**, now much smaller: one family of "truncated trailing record" fixtures (partial line, malformed JSON, broken `prev_hash`, valid-but-incomplete-by-length) rather than a bundle-shape × prefix-length matrix.
+4. **Fixtures still own the crash-prefix cases**, now much smaller: missing-LF final suffixes are truncatable; newline-terminated malformed JSON, stored-hash failures, and `prev_hash` failures are committed-record errors.
+5. **Projection drift is recoverable cache drift.** A missing or hand-edited graph is atomically replaced from replay and optionally reported; treating it as an authority-tamper error would recreate the multi-authority model this ADR rejects.
+6. **Source identity, notes, and quarantine provenance are ledger-resident.** Bundle `context`, event `note`/`reason`, and bundle shape close the remaining cases where a projection otherwise held unreconstructible information.
 
 ## Recommended path
 
 1. Land this ADR (accept the authority decision).
-2. Revise `docs/approval-gated-reconstruction.md` to Rev 0.3.0: replace the recovery/reconciliation sections with D1–D5, resolve open question 1 (bundle-record History grammar) in prose, keep the invariant-level language and the fail-closed rule, and update Build Increments.
+2. Revise `docs/approval-gated-reconstruction.md` through Rev 0.3.1: implement D1–D7, resolve bundle-record History grammar, keep the invariant-level fail-closed rule, and update Build Increments.
 3. Increment 1 builds against the revised spec, with the truncate-and-replay fixture family as an explicit deliverable.
 
 This closes the recovery subsystem by deleting most of it, rather than hardening it for a fourth round.
