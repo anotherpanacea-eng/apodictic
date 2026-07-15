@@ -32,7 +32,14 @@ _CO_ROW_RE = re.compile(
     r"Consequence:\s*(LOW|MEDIUM|HIGH)\s*$",
     re.MULTILINE,
 )
-_CO_ATTEMPT_RE = re.compile(r"^\s*-\s*CO\S*.*$", re.MULTILINE)
+_REGISTER_FLOOR_MECHANISM_RE = re.compile(
+    r"^(?:WR|SM|BP)(?:\d|[-\s]|$)", re.IGNORECASE
+)
+_STANCE_MECHANISM_RE = re.compile(
+    r"^(?:CL4|SM4|BP4|FM-A8|FM-A12|FM-A14|FM-A17|FM-A19|FM-A13|"
+    r"DI4(?:/FM-A13)?|WR-ON-ANALOGY)\b",
+    re.IGNORECASE,
+)
 
 _EARNED = {"earned", "earned-by-frame"}
 _EFFECTS = {
@@ -50,6 +57,66 @@ def _is_premise_flag_mechanism(mechanism):
     return token.upper() in _PREMISE_FLAG_MECHANISMS or re.match(
         r"^GT8\b", token, re.IGNORECASE
     ) is not None
+
+
+def _is_register_floor_mechanism(mechanism):
+    return isinstance(mechanism, str) and _REGISTER_FLOOR_MECHANISM_RE.match(
+        mechanism.strip()
+    ) is not None
+
+
+def _is_stance_mechanism(mechanism):
+    return isinstance(mechanism, str) and _STANCE_MECHANISM_RE.match(
+        mechanism.strip()
+    ) is not None
+
+
+def _parse_cashouts(text):
+    """Parse the exact single-line cash-out grammar inside its named section."""
+    errors = []
+    lines = text.splitlines()
+    headers = [i for i, line in enumerate(lines) if line.rstrip() == "Cash-out inventory:"]
+    if len(headers) > 1:
+        return {}, False, ["S2 cash-out: expected at most one Cash-out inventory section"]
+    if not headers:
+        return {}, False, errors
+
+    section_lines = []
+    for line in lines[headers[0] + 1:]:
+        if not line.strip():
+            break
+        if not line.startswith((" ", "\t")):
+            break
+        section_lines.append(line)
+
+    cashouts = {}
+    none_count = 0
+    for line in section_lines:
+        if line == "  - NONE":
+            none_count += 1
+            continue
+        row = _CO_ROW_RE.fullmatch(line)
+        if row is None:
+            errors.append(
+                "S2 cash-out: malformed row; expected exact '- NONE' or "
+                "CO# | Location | Kind | Press | Consequence"
+            )
+            continue
+        cid, location, kind, press, consequence = row.groups()
+        if cid in cashouts:
+            errors.append("S2 cash-out: duplicate id %s" % cid)
+        cashouts[cid] = {
+            "location": location,
+            "kind": kind,
+            "press": press,
+            "consequence": consequence,
+        }
+
+    if none_count > 1:
+        errors.append("S2 cash-out: NONE sentinel must appear exactly once")
+    if none_count and cashouts:
+        errors.append("S2 cash-out: NONE sentinel cannot coexist with CO rows")
+    return cashouts, none_count == 1, errors
 
 
 def _read(path):
@@ -85,28 +152,14 @@ def parse_state(text):
     if confirmation == "FORCED-ASSERTED" and high_gate != "ACTIVE":
         errors.append("S1 state: FORCED-ASSERTED requires an ACTIVE high-stakes gate")
 
-    rows = list(_CO_ROW_RE.finditer(text))
-    attempts = _CO_ATTEMPT_RE.findall(text)
-    if len(attempts) != len(rows):
-        errors.append("S2 cash-out: malformed CO row; expected CO# | Location | Kind | Press | Consequence")
-    cashouts = {}
-    for row in rows:
-        cid, location, kind, press, consequence = row.groups()
-        if cid in cashouts:
-            errors.append("S2 cash-out: duplicate id %s" % cid)
-        cashouts[cid] = {
-            "location": location,
-            "kind": kind,
-            "press": press,
-            "consequence": consequence,
-        }
-    none_sentinel = "Cash-out inventory:\n  - NONE" in text
-    if none_sentinel and cashouts:
-        errors.append("S2 cash-out: NONE sentinel cannot coexist with CO rows")
+    cashouts, none_sentinel, cashout_errors = _parse_cashouts(text)
+    errors.extend(cashout_errors)
     if register == "generative" and not cashouts and not none_sentinel:
         errors.append("S2 cash-out: generative state requires an exact inventory or '- NONE'")
-    if high_gate == "ACTIVE" and len(high) == 1 and high[0][1].strip().upper() == "NONE":
-        errors.append("S1 state: ACTIVE high-stakes gate requires a non-NONE intake source")
+    if high_gate == "ACTIVE" and len(high) == 1:
+        source = high[0][1].strip()
+        if re.match(r"^NONE(?:\b|[^A-Z0-9])", source, re.IGNORECASE):
+            errors.append("S1 state: ACTIVE high-stakes gate requires a non-NONE intake source")
     return {
         "register": register,
         "confirmation": confirmation,
@@ -177,6 +230,8 @@ def check(ledger_text, state_text=None):
 
         if state is not None and state["high_gate"] == "ACTIVE" and register == "generative":
             errors.append("S6 %s: ACTIVE high-stakes gate forbids register=generative" % fid)
+        if state is not None and register == "generative" and state["register"] != "generative":
+            errors.append("S6 %s: finding register=generative contradicts the asserted document register" % fid)
 
         would_demote = verdict in _EARNED or effect in {"register-floor", "stance-demotion"}
         recorded_register_floor = register == "generative" and severity == "Could-Fix"
@@ -205,11 +260,17 @@ def check(ledger_text, state_text=None):
         if effect == "register-floor":
             if register != "generative" or severity != "Could-Fix":
                 errors.append("S7 %s: register-floor requires register=generative and severity=Could-Fix" % fid)
+            if state is None or state["register"] != "generative":
+                errors.append("S7 %s: register-floor requires a generative Argument_State" % fid)
+            if not _is_register_floor_mechanism(mechanism):
+                errors.append("S7 %s: register-floor is limited to WR/SM/BP mechanism families" % fid)
             if co is not None:
                 errors.append("S7 %s: register-floor is a non-cash-out mechanism and forbids cash_out_ref" % fid)
         if effect == "stance-demotion":
             if stance is None or verdict not in _EARNED or severity != "Could-Fix":
                 errors.append("S7 %s: stance-demotion requires stance + earned verdict + Could-Fix" % fid)
+            if not _is_stance_mechanism(mechanism):
+                errors.append("S7 %s: stance-demotion requires an enumerated overstatement mechanism" % fid)
         if verdict in _EARNED and not expected_block:
             applied_register = register or (state["register"] if state is not None else None)
             expected_effect = (
@@ -306,7 +367,13 @@ Cash-out inventory:
     expect("active_lowercase_none_source_rejected", finding(severity="Should-Fix",
            register="asserted", calibration_effect="blocked-high-stakes"),
            high_state.replace("testimony", "none"), False)
+    expect("active_none_suffix_source_rejected", finding(severity="Should-Fix",
+           register="asserted", calibration_effect="blocked-high-stakes"),
+           high_state.replace("testimony", "NONE (unspecified)"), False)
     expect("malformed_cashout_rejected", finding(), base_state.replace("Kind: PRESCRIPTION", "PRESCRIPTION"), False)
+    expect("malformed_none_suffix_rejected", finding(), base_state.replace(
+        "  - CO1 | Location: paragraph 9 | Kind: PRESCRIPTION | Press: HARD | Consequence: HIGH",
+        "  - NONE-extra"), False)
     expect("mistyped_cashout_id_rejected", finding(), base_state.replace("CO1", "COX"), False)
     expect("duplicate_cashout_rejected", finding(), base_state +
            "  - CO1 | Location: paragraph 10 | Kind: ASSERTION | Press: LIGHT | Consequence: LOW\n", False)
@@ -316,8 +383,17 @@ Cash-out inventory:
     assertion_state = base_state.replace("Register: generative", "Register: asserted").replace(
         "WRITER-CONFIRMED", "DEFAULT-ASSERTED").replace("Kind: PRESCRIPTION", "Kind: ASSERTION")
     expect("assertion_stance_demotion_valid",
-           finding(register="asserted", cash_out_ref="CO1", calibration_effect="stance-demotion"),
+           finding(mechanism="FM-A8 false precision", register="asserted", cash_out_ref="CO1",
+                   calibration_effect="stance-demotion"),
            assertion_state, True)
+    expect("asserted_generative_floor_rejected", finding(), asserted_prescriptive_state.replace(
+        "Kind: PRESCRIPTION", "Kind: ASSERTION"), False)
+    expect("ineligible_register_floor_rejected",
+           finding(mechanism="missing primary-source evidence"), base_state, False)
+    expect("ineligible_stance_demotion_rejected",
+           finding(mechanism="missing primary-source evidence", register="asserted",
+                   cash_out_ref="CO1", calibration_effect="stance-demotion"),
+           assertion_state, False)
     expect("earned_should_without_demotion_rejected",
            finding(severity="Should-Fix", register="asserted", calibration_effect=None),
            assertion_state, False)
