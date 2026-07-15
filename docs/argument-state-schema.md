@@ -3,7 +3,7 @@
 *Version: 0.3.0*
 *Status: Active*
 *Last updated: July 15, 2026*
-*Depends on: Dialectical Clarity v2.0*
+*Depends on: Dialectical Clarity v2.1*
 
 ---
 
@@ -589,8 +589,8 @@ Schema version does not change when:
 - Companion modules are added (they get new subsections in § 10)
 - Field descriptions are clarified without changing the field's meaning
 
-Current schema version: **0.2.0** (R2: §6 objection-typing fields — Target/Relation/Basis/Condition/Derivation anchors — + the §4 Defeater-refs projection; additive, legacy untyped records stay valid)
-Depends on: Dialectical Clarity v2.0
+Current schema version: **0.3.0** (AT5/register calibration: required register-confirmation and high-stakes fields for argument-shaped runs, plus the cash-out inventory; legacy finding records remain valid through optional extension fields)
+Depends on: Dialectical Clarity v2.1
 
 ---
 
