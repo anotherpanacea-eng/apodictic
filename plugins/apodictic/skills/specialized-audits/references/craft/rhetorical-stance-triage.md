@@ -44,12 +44,14 @@ Convergence yields the candidate `earned`, `unearned`, or `earned-by-frame`. Div
 yields `divergent`, with all test outputs returned to the writer. These are model/reader
 judgments, never mechanically certified. The writer remains the authority.
 
-An earned or earned-by-frame candidate may calibrate an eligible finding to Could-Fix at
+An earned or earned-by-frame candidate calibrates an eligible finding to Could-Fix at
 Triage. Unearned/divergent leaves severity unchanged. The committed severity is then
-locked. Under an active high-stakes gate record `calibration_effect: blocked-high-stakes`;
-at a prescriptive cash-out record `calibration_effect: blocked-cash-out`. Record the stance
-and verdict but do not demote. Premise-
-plausibility/GT8 flags are always excluded.
+locked. For an earned would-be demotion under an active high-stakes gate, record
+`calibration_effect: blocked-high-stakes`; for one joined to a prescriptive cash-out,
+record `calibration_effect: blocked-cash-out`. Unearned/divergent records retain their
+stance and full severity without a block effect because no demotion was attempted. The
+validator proves only supplied `cash_out_ref` joins; join completeness remains an auditor
+obligation. Premise-plausibility/GT8 flags are always excluded.
 
 ## Worked discriminators
 

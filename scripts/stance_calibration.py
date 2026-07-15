@@ -15,6 +15,8 @@ try:
 except ImportError:
     art = None
 
+from argument_groundtruth import _GT8_ROW_FLAG_TYPES as _PREMISE_FLAG_MECHANISMS
+
 
 _REGISTER_RE = re.compile(r"^Register:\s*(asserted|generative)\s*$", re.MULTILINE)
 _CONFIRM_RE = re.compile(
@@ -94,7 +96,7 @@ def parse_state(text):
         errors.append("S2 cash-out: NONE sentinel cannot coexist with CO rows")
     if register == "generative" and not cashouts and not none_sentinel:
         errors.append("S2 cash-out: generative state requires an exact inventory or '- NONE'")
-    if high_gate == "ACTIVE" and len(high) == 1 and high[0][1].strip() == "NONE":
+    if high_gate == "ACTIVE" and len(high) == 1 and high[0][1].strip().upper() == "NONE":
         errors.append("S1 state: ACTIVE high-stakes gate requires a non-NONE intake source")
     return {
         "register": register,
@@ -141,6 +143,7 @@ def check(ledger_text, state_text=None):
         effect = f.get("calibration_effect")
         co_ref = f.get("cash_out_ref")
         severity = f.get("severity")
+        mechanism = f.get("mechanism")
 
         if (stance is None) != (verdict is None):
             errors.append("S4 %s: stance and stance_verdict must appear together" % fid)
@@ -148,6 +151,10 @@ def check(ledger_text, state_text=None):
             errors.append("S4 %s: unknown calibration_effect %r" % (fid, effect))
         if effect is not None and state is None:
             errors.append("S4 %s: calibration_effect requires --argument-state" % fid)
+            continue
+        if mechanism in _PREMISE_FLAG_MECHANISMS and any(
+                value is not None for value in (register, stance, verdict, effect, co_ref)):
+            errors.append("S4 %s: GT8 premise-plausibility flags cannot carry stance calibration" % fid)
             continue
 
         co = None
@@ -162,12 +169,13 @@ def check(ledger_text, state_text=None):
         if state is not None and state["high_gate"] == "ACTIVE" and register == "generative":
             errors.append("S6 %s: ACTIVE high-stakes gate forbids register=generative" % fid)
 
+        would_demote = verdict in _EARNED or effect in {"register-floor", "stance-demotion"}
+        recorded_register_floor = register == "generative" and severity == "Could-Fix"
         expected_block = None
-        if state is not None and state["high_gate"] == "ACTIVE" and (stance or effect):
+        if state is not None and state["high_gate"] == "ACTIVE" and would_demote:
             expected_block = "blocked-high-stakes"
         elif co is not None and co["kind"] == "PRESCRIPTION" and (
-                register == "generative" or verdict in _EARNED
-                or effect in {"register-floor", "stance-demotion"}):
+                would_demote or recorded_register_floor):
             expected_block = "blocked-cash-out"
 
         if expected_block:
@@ -176,9 +184,9 @@ def check(ledger_text, state_text=None):
             if register == "generative" and severity == "Could-Fix":
                 errors.append("S6 %s: blocked finding cannot use the generative Could-Fix floor" % fid)
         elif effect == "blocked-high-stakes":
-            errors.append("S6 %s: blocked-high-stakes without an ACTIVE state gate" % fid)
+            errors.append("S6 %s: blocked-high-stakes requires an earned would-be demotion under an ACTIVE gate" % fid)
         elif effect == "blocked-cash-out":
-            errors.append("S6 %s: blocked-cash-out without a joined PRESCRIPTION row" % fid)
+            errors.append("S6 %s: blocked-cash-out requires an earned would-be demotion at a joined PRESCRIPTION row" % fid)
 
         if effect == "blocked-high-stakes" and (stance is None or verdict not in _EARNED):
             errors.append("S6 %s: blocked-high-stakes requires stance + earned verdict" % fid)
@@ -188,16 +196,21 @@ def check(ledger_text, state_text=None):
         if effect == "register-floor":
             if register != "generative" or severity != "Could-Fix":
                 errors.append("S7 %s: register-floor requires register=generative and severity=Could-Fix" % fid)
-            if co is not None and co["kind"] == "PRESCRIPTION":
-                errors.append("S7 %s: register-floor forbidden at a prescriptive cash-out" % fid)
+            if co is not None:
+                errors.append("S7 %s: register-floor is a non-cash-out mechanism and forbids cash_out_ref" % fid)
         if effect == "stance-demotion":
             if stance is None or verdict not in _EARNED or severity != "Could-Fix":
                 errors.append("S7 %s: stance-demotion requires stance + earned verdict + Could-Fix" % fid)
-        if severity == "Could-Fix" and verdict in _EARNED and effect not in {
-            "register-floor", "stance-demotion"
-        }:
-            errors.append("S7 %s: earned Could-Fix requires a recorded demotion/floor effect" % fid)
-        if register == "generative" and severity == "Could-Fix" and not expected_block \
+        if verdict in _EARNED and not expected_block:
+            applied_register = register or (state["register"] if state is not None else None)
+            expected_effect = (
+                "register-floor" if applied_register == "generative" and co is None
+                else "stance-demotion"
+            )
+            if severity != "Could-Fix" or effect != expected_effect:
+                errors.append("S7 %s: earned verdict requires severity=Could-Fix and calibration_effect=%s" %
+                              (fid, expected_effect))
+        if register == "generative" and severity == "Could-Fix" and co is None and not expected_block \
                 and effect != "register-floor":
             errors.append("S7 %s: generative Could-Fix requires calibration_effect=register-floor" % fid)
 
@@ -241,6 +254,9 @@ Cash-out inventory:
     expect("bad_enum_rejected", finding(stance="S9"), base_state, False)
     expect("unresolved_cashout_rejected", finding(cash_out_ref="CO9"), base_state, False)
     expect("prescriptive_demotion_rejected", finding(cash_out_ref="CO1"), base_state, False)
+    expect("bare_generative_floor_at_prescriptive_cashout_rejected",
+           finding(stance=None, stance_verdict=None, calibration_effect=None,
+                   cash_out_ref="CO1"), base_state, False)
     expect("prescriptive_block_valid",
            finding(severity="Should-Fix", cash_out_ref="CO1", calibration_effect="blocked-cash-out"),
            base_state, True)
@@ -260,6 +276,12 @@ Cash-out inventory:
            finding(severity="Should-Fix", register="asserted", calibration_effect="blocked-high-stakes"),
            high_state, True)
     expect("high_gate_wrong_effect_rejected", finding(), high_state, False)
+    expect("high_gate_unearned_full_strength_valid",
+           finding(severity="Should-Fix", register="asserted", stance="S3",
+                   stance_verdict="unearned", calibration_effect=None), high_state, True)
+    expect("high_gate_divergent_full_strength_valid",
+           finding(severity="Should-Fix", register="asserted", stance="S3",
+                   stance_verdict="divergent", calibration_effect=None), high_state, True)
     expect("high_gate_generative_finding_rejected",
            finding(severity="Should-Fix", register="generative",
                    calibration_effect="blocked-high-stakes"), high_state, False)
@@ -268,6 +290,9 @@ Cash-out inventory:
     expect("forced_asserted_inactive_rejected", finding(severity="Should-Fix", register="asserted",
            stance_verdict="unearned", calibration_effect=None), asserted_prescriptive_state.replace(
            "DEFAULT-ASSERTED", "FORCED-ASSERTED"), False)
+    expect("active_lowercase_none_source_rejected", finding(severity="Should-Fix",
+           register="asserted", calibration_effect="blocked-high-stakes"),
+           high_state.replace("testimony", "none"), False)
     expect("malformed_cashout_rejected", finding(), base_state.replace("Kind: PRESCRIPTION", "PRESCRIPTION"), False)
     expect("mistyped_cashout_id_rejected", finding(), base_state.replace("CO1", "COX"), False)
     expect("duplicate_cashout_rejected", finding(), base_state +
@@ -280,6 +305,18 @@ Cash-out inventory:
     expect("assertion_stance_demotion_valid",
            finding(register="asserted", cash_out_ref="CO1", calibration_effect="stance-demotion"),
            assertion_state, True)
+    expect("earned_should_without_demotion_rejected",
+           finding(severity="Should-Fix", register="asserted", calibration_effect=None),
+           assertion_state, False)
+    expect("earned_must_without_demotion_rejected",
+           finding(severity="Must-Fix", register="asserted", calibration_effect=None),
+           assertion_state, False)
+    expect("earned_by_frame_generative_should_without_floor_rejected",
+           finding(severity="Should-Fix", calibration_effect=None), base_state, False)
+    expect("register_floor_with_cashout_ref_rejected",
+           finding(cash_out_ref="CO1"), assertion_state, False)
+    expect("gt8_premise_flag_stance_rejected",
+           finding(mechanism="CONTESTABLE"), base_state, False)
     expect("effect_without_state_rejected", finding(), None, False)
     expect("cashout_ref_without_state_rejected",
            finding(severity="Should-Fix", register="asserted", stance="S3",

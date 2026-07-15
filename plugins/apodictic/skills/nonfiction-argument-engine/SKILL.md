@@ -191,7 +191,9 @@ All core-editor QA guardrails apply (see `core-editor/SKILL.md §QA Guardrails`)
    a QA failure. Intake-declared high stakes forces `register=asserted`.
 7. **Stance verdicts classify moves, never claims.** `earned` is not evidence that a claim is true;
    `unearned` is not evidence that it is false. Calibration occurs at Triage before the Deficit Lock,
-   and prescriptive cash-outs remain at asserted burden.
+   and prescriptive cash-outs remain at asserted burden. The shape gate validates recorded
+   verdicts/effects and supplied cash-out joins; the auditor still owns completeness because an
+   omitted optional join or undeclared stance cannot be inferred mechanically from prose location.
 
 ---
 
