@@ -1,8 +1,8 @@
 # Argument State Schema
 ## Nonfiction Argument Engine — Shared Artifact Specification
-*Version: 0.2.0*
+*Version: 0.3.0*
 *Status: Active*
-*Last updated: March 19, 2026*
+*Last updated: July 15, 2026*
 *Depends on: Dialectical Clarity v2.0*
 
 ---
