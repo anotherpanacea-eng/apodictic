@@ -1,13 +1,14 @@
 # Approval-Gated Reconstruction over a Provenance-Linked Claim Graph (spec)
 ## Nonfiction Argument Engine — Companion Module Specification
 
-*Version: 0.2.0*
+*Version: 0.2.1*
 
-**Status:** Proposed (unbuilt)
+**Status:** Phase 0 contract hardening in progress (implementation unbuilt)
 <!-- built-when: scripts/approval_graph.py -->
 
 *Depends on: Argument State Schema 0.2.0; Dialectical Clarity v2.0*
 *Revision 0.2.0 (2026-07-15) folds three independent spec-review passes — schema-compatibility, adversarial red-team, implementability. Reports: `docs/.local/review-log/2026-07-15_approval-gated-reconstruction-spec-review.md`.*
+*Revision 0.2.1 (2026-07-15) fixes the deterministic boundary needed before Increment 1: explicit stage selection, separate node/edge field matrices, a parseable event grammar, durable session state, the enforceable limit of rejection-history checks, and an Increment-4 dependency for I5 comparison.*
 
 ---
 
@@ -57,6 +58,52 @@ even if it matches every other sentence here.
   a configuration weaker (lower recall, older judge, smaller fixture set) than any earlier
   iteration in the same reconstruction; any relaxation requires an explicit, logged author
   decision recorded in the receipt.
+
+---
+
+## Phase 0 — Deterministic Boundary (normative for Increment 1)
+
+Increment 1 may not infer lifecycle intent or invent an ordering over semantic-gate
+configurations. Its command is explicit:
+
+```text
+validate.sh argument-reconstruction <PROJECT> --stage graph|draft-ready|acceptance
+```
+
+`--stage` is required. `graph` runs Stage A, `draft-ready` runs A–B, and `acceptance`
+runs A–C. Artifact presence is validated *after* stage selection; it never selects a
+stage. This prevents an incomplete draft or receipt from silently downgrading itself to a
+weaker check.
+
+Increment 1 owns graph parsing, identity, state-transition, reconciliation, and Stage A/B
+shape checks. It may parse the Stage C envelope, but `acceptance` must return
+`ACTION-REQUIRED (I5-COMPARATOR-UNAVAILABLE)` until Increment 4 lands both a structured
+gate-config schema and a product partial order with an explicit comparator for every
+field. A current config must be greater than or equal to every prior config; an
+incomparable field fails closed unless the receipt contains the author-relaxation record
+I5 requires. String summaries, judge-name recency, and fixture-set labels are not
+mechanically comparable.
+
+Adjudication state is durable in `Adjudication_Session.json`, with exactly these keys:
+`schema` (`approval-session/1`), `status` (`OPEN`, `SUSPENDED`, or `CLOSED`),
+`graph_sha256`, `opened_at`, `updated_at`, `next_record` (record ID or `null`), and
+`decision_count` (non-negative integer). Each decision is flushed to the graph and event
+ledger before `decision_count` and `next_record` advance. On resume, the tool validates
+the ledger chain and graph first. If a valid contiguous ledger suffix proves that one or
+more decisions were flushed after the session file's `graph_sha256`, those decisions are
+completed and the tool advances the pointers before presenting another record. A session
+is **stale** only when the current graph cannot be derived from that recorded hash by the
+valid ledger suffix; stale or malformed is an error, never equivalent to `CLOSED`.
+Reconciliation refuses `status: OPEN`; a `SUSPENDED` session may reconcile only after this
+recovery step leaves its `graph_sha256` equal to the pre-reconcile graph.
+
+I2 is enforced operationally and comparatively, not claimed as cryptographic persistence.
+All tool-owned mutations write an append-only `Approval_Events.jsonl`; each line is one
+canonical compact-JSON event under the grammar below. The validator rejects deletion of a
+REJECTED record when that record exists in the event ledger, any archived graph, or any
+prior receipt available in the project. With no retained prior artifact, deletion of both
+a record and all evidence of it is not detectable from a singleton current graph; the
+module must state that limit and may not advertise tamper-proof rejection history.
 
 ---
 
@@ -160,6 +207,8 @@ editorial letter.
 | Artifact | Role | Lifecycle |
 |---|---|---|
 | `Approval_Graph.md` | canonical persistent graph + adjudication state | persists across re-runs; reconciled, never re-minted |
+| `Approval_Events.jsonl` | canonical append-only transition/reconciliation ledger | persists for the project; never truncated or rewritten by module tooling |
+| `Adjudication_Session.json` | crash-recovery cursor bound to a graph hash | created on session open; retained as `SUSPENDED`; rewritten atomically per recovered/completed decision; retained as `CLOSED` until the next session replaces it |
 | drafting packet | the drafter's entire input (generated export, not hand-assembled) | regenerated from the graph per drafting run; not persisted |
 | `Reconstruction_Draft.md` | the fresh document | current unversioned; prior iterations archived as `Reconstruction_Draft_v[N].md` |
 | `Reconstruction_Receipt.md` | passage map + gate results + config | paired 1:1 with the draft; archived as `Reconstruction_Receipt_v[N].md` in lockstep |
@@ -203,7 +252,7 @@ Inclusion: —
 Flags: [premise-plausibility / warrant-status annotations carried from the state, or NONE]
 Notes: [optional; rejection reasons recommended — they sharpen gate adjudication]
 History:
-  [ISO timestamp] MINTED (normalizer, from Argument_State_v3)
+  event:<64 lowercase hex>
 ```
 
 Node types: `CLAIM` (C0/Cn, post-split), `SUPPORT` (§ 3 support units), `WARRANT` (§ 4),
@@ -222,7 +271,7 @@ Approval: PENDING
 Presence: CURRENT
 Notes: [optional]
 History:
-  [ISO timestamp] MINTED (normalizer, from Argument_State_v3)
+  event:<64 lowercase hex>
 ```
 
 Edge types: `SUPPORTS`, `WARRANTS`, `QUALIFIES`, `DEPENDS-ON`, `DEFINES`, `TARGETS`,
@@ -232,19 +281,50 @@ Edges are first-class approvable objects. Approving "costs fell" and "the lease 
 does not approve "costs fell *because* the lease ended" — that causal edge is adjudicated
 separately, and a drafter-asserted edge that was never approved is a gate violation.
 
-**Field-presence matrix** (R = required, O = optional, — = must be absent):
+**Node field-presence matrix** (R = required, O = optional, — = must be absent):
 
 | Field | PENDING | APPROVED | REJECTED | SUPERSEDED |
 |---|---|---|---|---|
-| Type / Text / Provenance / Origin / Presence / History | R | R | R | R |
+| Type / Text / Provenance / Origin / Approval / Presence / History | R | R | R | R |
 | Anchors | R for Origin: MANUSCRIPT; `NONE (novel)` for Origin: QUARANTINE or AUTHOR-REVISION | same | same | same |
 | Inclusion (nodes) | `—` | R (`REQUIRED` or `OPTIONAL`) | `—` | `—` |
 | Flags (nodes) | R (may be NONE) | R | R | R |
 | Notes | O | O | O (reasons recommended) | O |
 
-`History:` is append-only, one line per event (`MINTED`, adjudication decisions,
-reconciliation events, system cascades), each with timestamp and actor. It is the record
-the mechanical gate checks transition-legality against.
+**Edge field-presence matrix** (R = required, O = optional, — = must be absent):
+
+| Field | PENDING | APPROVED | REJECTED | SUPERSEDED |
+|---|---|---|---|---|
+| Type / Source / Target / Approval / Presence / History | R | R | R | R |
+| Carried typing | R; `—` unless Type is `TARGETS` | same | same | same |
+| Notes | O | O | O (reasons recommended) | O |
+| Text / Provenance / Origin / Anchors / Inclusion / Flags | — | — | — | — |
+
+`History:` contains event hashes, one per indented line, in append order:
+
+```text
+  event:<64 lowercase hex>
+```
+
+Each hash resolves to exactly one line in `Approval_Events.jsonl`. That line is canonical
+compact JSON (UTF-8, LF, keys in the order shown, no extra keys):
+
+```json
+{"timestamp":"2026-07-15T14:03:00Z","event":"DECISION","actor":"author","record_id":"n-3f8a2c91b04d","approval_from":"PENDING","approval_to":"APPROVED","presence_from":null,"presence_to":null,"reason":null,"prev_hash":"<64 lowercase hex or GENESIS>"}
+```
+
+The event hash is SHA-256 over that exact JSON line including neither LF nor a hash field.
+Allowed `event` values are `MINTED`, `DECISION`, `UNREJECT`, `WITHDRAWAL`, `REVISE`,
+`CASCADE`, and `RECONCILE`. `actor` is `normalizer`, `author`, `system`, or
+`reconciliation`. Approval and presence values are the enums in the State Model or
+`null`; exactly one axis changes except `MINTED`, which records `null → PENDING` and
+`null → CURRENT`, and `RECONCILE`, which changes only Presence or changes neither axis.
+A zero-axis `RECONCILE` event is legal only when the same atomic write appends a new local
+reference to `Provenance:` for an UNCHANGED record; its non-empty `reason` is that exact
+appended reference. `reason` is also required and non-empty for `UNREJECT`, otherwise
+string or `null`. `prev_hash` chains the whole project ledger. Unknown keys, missing keys, broken
+hashes, broken chain order, an event referenced by zero or multiple records, or a History
+sequence inconsistent with the ledger are Stage A errors.
 
 ### `Reconstruction_Receipt.md`
 
@@ -252,6 +332,9 @@ Emitted by the **gate runner** (pipeline step 5) per gate run. Contents:
 
 - Draft identity (filename + sha256 over raw UTF-8 bytes) and graph identity (filename +
   sha256 over raw UTF-8 bytes at gate time).
+- Event-ledger identity (line count + terminal event hash) and the sorted IDs of all
+  REJECTED records at gate time, so a retained prior receipt can prove exclusion-set
+  shrinkage even when an old graph snapshot is unavailable.
 - The **passage map** (drafter-produced, gate-verified — grammar below).
 - Coverage table: every `REQUIRED` node, with the passage(s) realizing it.
 - Semantic gate results in the recorded-output grammar (below): per-check verdicts,
@@ -377,7 +460,7 @@ it plus the manuscript, and the tool reconciles:
 
 | Case | Detection | Result |
 |---|---|---|
-| UNCHANGED | new atom's ID already in graph | Approval state carries; new local ref appended to `Provenance:` |
+| UNCHANGED | new atom's ID already in graph | Approval state carries; new local ref appended to `Provenance:` with a zero-axis `RECONCILE` event |
 | NEW | ID not in graph | node added as `PENDING` / `CURRENT` |
 | DISAPPEARED | a `MANUSCRIPT`-origin record's ID absent from the new normalization | `Presence: ORPHANED` (Approval untouched — a REJECTED record stays REJECTED and stays in the exclusion set, per I2) |
 | REAPPEARED | an ORPHANED record's ID present again | `Presence: CURRENT` (Approval untouched) |
@@ -513,8 +596,8 @@ prompt-driven audit with a mechanical `validate.sh` gate over its artifacts).
 
 Named `argument-reconstruction` (not `reconstruction`) to avoid colliding with the
 existing "recon = reconnaissance" namespace (`argument-recon-prerequisite`, Field Recon).
-Checks are staged by project lifecycle, auto-detected from which artifacts exist
-(the house pattern — run-folder-state detection):
+Checks are staged by the required `--stage graph|draft-ready|acceptance` option defined in
+Phase 0. Artifact presence never selects or weakens the requested stage:
 
 **Stage A — graph integrity** (whenever `Approval_Graph.md` exists):
 - Grammar parses (fixed field order; unknown lines are errors); header block complete.
@@ -522,6 +605,9 @@ Checks are staged by project lifecycle, auto-detected from which artifacts exist
 - ID uniqueness; referential integrity (edge endpoints exist).
 - Field-presence matrix satisfied per record state.
 - Every `History:` transition is legal per the State Model table.
+- Every History hash resolves against the complete, hash-chained `Approval_Events.jsonl`;
+  available archived graphs and prior receipts contain no REJECTED record missing from the
+  current graph unless its ledger shows an author `UNREJECT` transition.
 - Edge–endpoint approval coupling holds.
 - Origin/Anchors consistency (MANUSCRIPT records have resolvable anchors; QUARANTINE /
   AUTHOR-REVISION records carry `NONE (novel)`).
@@ -536,7 +622,9 @@ Checks are staged by project lifecycle, auto-detected from which artifacts exist
   gate's coverage); every `Realizes:` ID exists and is APPROVED.
 - Every `REQUIRED` node appears in some passage's `Realizes:`.
 - Receipt completeness: semantic-layer results present in the recorded-output grammar
-  with verdicts; config block present **and not weaker than any prior iteration's** (I5);
+  with verdicts; config block present **and not weaker than any prior iteration's** (I5).
+  Until Increment 4 defines the structured config and comparison order, this check fails
+  closed with `I5-COMPARATOR-UNAVAILABLE` as specified in Phase 0;
   draft and graph hashes in the receipt match the files on disk.
 - Zero open quarantine records; zero unresolved violations.
 
@@ -701,12 +789,15 @@ modifies §§ 1–9.
 
 1. **Deterministic validator + normalizer prompt contract + graph artifact.**
    - `scripts/approval_graph.py`: grammar parser, ID minting/recomputation, field-presence
-     and transition-legality checks, reconciliation by hash, staged checks A–C — the
-     deterministic half only; it makes no judgment calls. *This is the built-when target.*
+     and transition-legality checks, event-ledger/session validation, reconciliation by
+     hash, complete Stage A–B checks, and the fail-closed Stage C envelope described in
+     Phase 0 — the deterministic half only; it makes no judgment calls. *This is the
+     built-when target.*
    - The normalization **prompt contract** (atomization, referent resolution, qualifier
      extraction, edge re-homing — the model-judgment half), emitting `Approval_Graph.md`
      for the script to validate.
-   - `validate.sh argument-reconstruction` wiring, following the § 10.9 dispatch pattern:
+   - `validate.sh argument-reconstruction <PROJECT> --stage graph|draft-ready|acceptance`
+     wiring, following the § 10.9 dispatch pattern:
      thin `validate.sh` case → `approval_graph.py`; joins the single-sourced
      `AGG_VALIDATORS` list and the usage Commands string; ships a `--self-test` dispatcher
      case (CI's `validator-conventions` meta-linter and `--self-test-all` both require it).
