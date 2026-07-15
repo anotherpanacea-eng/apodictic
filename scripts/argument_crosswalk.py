@@ -11,7 +11,7 @@ a non-empty rationale on every unmapped row, a provenance locator on every popul
 target, a global non-injectivity floor, the closed external-ref value-spaces, and the
 drift-binding. The correctness of each mapping is human/Codex-adjudicated.
 
-Drift-binding (ADR): the authoritative 82-ID set is derived at check time — the verdict,
+Drift-binding (ADR): the authoritative 88-ID set is derived at check time — the verdict,
 premise-flag, and FM-A slices are imported from the live owners in argument_groundtruth.py
 (_GT7_CLASSES / _GT8_ROW_FLAG_TYPES / _FM_A_MAX); the 46 Dialectical Clarity codes and 8
 scheme hints — which have no machine-readable owner — are parsed structurally out of
@@ -70,9 +70,9 @@ ROW_CARDS = {"exact", "broader", "narrower", "related", "unmapped"}
 TARGET_CARDS = {"exact", "broader", "narrower", "related"}
 _CARD_PREC = {"exact": 4, "narrower": 3, "broader": 2, "related": 1}
 
-DC_PREFIXES = ("AT", "AC", "CL", "SM", "WR", "BP", "OB", "DI", "NE")
-DC_FAMILY_COUNTS = {"AT": 5, "AC": 5, "CL": 5, "SM": 5, "WR": 4,
-                    "BP": 7, "OB": 6, "DI": 5, "NE": 4}
+DC_PREFIXES = ("AT", "AC", "CL", "SM", "WR", "BP", "OB", "DI", "NE", "GN")
+DC_FAMILY_COUNTS = {"AT": 6, "AC": 5, "CL": 5, "SM": 5, "WR": 4,
+                    "BP": 7, "OB": 6, "DI": 5, "NE": 4, "GN": 5}
 NONPREFIX_FAMILIES = {"SCHEME", "VERDICT", "PREMISE-FLAG"}
 
 # --------------------------------------------------------------------------
@@ -81,7 +81,7 @@ NONPREFIX_FAMILIES = {"SCHEME", "VERDICT", "PREMISE-FLAG"}
 _DC_ROW_RE = re.compile(r"^\|\s*\*\*(" + "|".join(DC_PREFIXES) + r")(\d+)\*\*")
 # A canonical code-definition table has `Code` as its FIRST column. Two header shapes exist:
 # the 8 failure-code families + AT0 use `| Code | Name | Description |`, and the argument-type
-# table (AT1-AT4) uses `| Code | Type | Promise to Reader | Burden Level |`. Anchoring on the
+# table (AT1-AT5) uses `| Code | Type | Promise to Reader | Burden Level |`. Anchoring on the
 # first column being exactly `Code` captures both while excluding the support-type
 # (`| Support Type | ... |`), scheme-hint, and objection-expectation (`| Type | ... |`) tables.
 _CODE_TABLE_HEADER_RE = re.compile(r"^\|\s*Code\s*\|", re.IGNORECASE)
@@ -190,7 +190,7 @@ def _ref_ok(vocab, ref):
 
 
 def validate_concepts(cross, relations, agd_families):
-    """Validate R2/R3 concepts separately from the closed 82-code layer."""
+    """Validate R2/R3 concepts separately from the closed 88-code layer."""
     errors = []
     rows = cross.get("concept_entries") if isinstance(cross, dict) else None
     if not isinstance(rows, list):
@@ -378,7 +378,7 @@ def validate(cross, dc_codes, schemes, verdicts, flags, fm_max):
 
     # Check 9 — shape tripwires. The derived set must match the canonical taxonomy shape, so a parse
     # miscount OR a registry tamper (a code renamed within its table, a stray code-shaped row elsewhere,
-    # a duplicated scheme) fails LOUDLY instead of silently certifying the wrong 82-set.
+    # a duplicated scheme) fails LOUDLY instead of silently certifying the wrong 88-set.
     # (a) DC codes must be EXACTLY the canonical contiguous per-family set — this catches e.g. AC4->AC5
     #     (AC4 missing + AC5 extra), which a per-family COUNT check would have missed.
     expected_dc = {"%s%d" % (fam, i) for fam, n in DC_FAMILY_COUNTS.items() for i in range(n)}
@@ -398,9 +398,9 @@ def validate(cross, dc_codes, schemes, verdicts, flags, fm_max):
     if len(schemes) != 8 or len(set(schemes)) != 8:
         errors.append("Check 9 (tripwire) — expected 8 unique scheme hints, got %d (%d unique): %r."
                       % (len(schemes), len(set(schemes)), schemes))
-    # (d) the unique derived union must total exactly 82 (backstops any slice miscount).
-    if len(derived) != 82:
-        errors.append("Check 9 (tripwire) — derived unique id union is %d, expected 82." % len(derived))
+    # (d) the unique derived union must total exactly 88 (backstops any slice miscount).
+    if len(derived) != 88:
+        errors.append("Check 9 (tripwire) — derived unique id union is %d, expected 88." % len(derived))
 
     return errors
 
@@ -752,8 +752,8 @@ def _selftest():
     check("P1b: duplicate scheme (Sign->Authority) -> Check 9",
           any("unique scheme hints" in e for e in validate(
               valid, dc_codes, schemes[:7] + ["Authority"], verdicts, flags, fm_max)))
-    check("P1b: derived-union tripwire fires at !=82",
-          any("expected 82" in e for e in validate(
+    check("P1b: derived-union tripwire fires at !=88",
+          any("expected 88" in e for e in validate(
               valid, dc_codes, schemes[:7], verdicts, flags, fm_max)))
     # P2a — unhashable JSON scalars (a list where a string is expected) must yield a clean error, not a TypeError.
     check("P2a: list id -> clean error (no crash)",

@@ -17,8 +17,8 @@ normalized, otherwise case-sensitive; near-misses like paraphrase or elision mus
 
 Structural parse throughout (heading walk + line grammar) — no doc-wide regex scope. The candidate
 namespace is DERIVED, never hardcoded: the Dialectical Clarity codes come from argument_crosswalk's
-scoped table-walk of dialectical-clarity.md, minus the AT1-AT4 type labels (classifications, not
-diagnoses; AT0 stays), plus FM-A1..FM-A20 from argument_groundtruth._FM_A_MAX = 62 codes.
+scoped table-walk of dialectical-clarity.md, minus the AT1-AT5 type labels (classifications, not
+diagnoses; AT0 stays), plus FM-A1..FM-A20 from argument_groundtruth._FM_A_MAX = 67 codes.
 
 Usage:
   argument_agd.py --self-test
@@ -129,7 +129,7 @@ def candidate_namespace():
         raise RuntimeError("dialectical-clarity.md registry not found; cannot derive the namespace")
     with open(reg, "r", encoding="utf-8") as fh:
         dc = xw.parse_dc_codes(fh.read())
-    ns = (set(dc) - {"AT1", "AT2", "AT3", "AT4"}) | {"FM-A%d" % i for i in range(1, _FM_A_MAX + 1)}
+    ns = (set(dc) - {"AT1", "AT2", "AT3", "AT4", "AT5"}) | {"FM-A%d" % i for i in range(1, _FM_A_MAX + 1)}
     return ns
 
 
@@ -469,8 +469,8 @@ def validate(body, namespace, ladder_cns=None, source_text=None, objection_idxs=
         # ---- Check 3: candidate namespace ----
         for c in cand_entries:
             if c not in namespace:
-                errors.append("%s (Check 3) — candidate %r not in the derived 62-code namespace "
-                              "(DC minus AT1-AT4, plus FM-A1-20)." % (rid, c))
+                errors.append("%s (Check 3) — candidate %r not in the derived 67-code namespace "
+                              "(DC minus AT1-AT5, plus FM-A1-20)." % (rid, c))
 
         # ---- Check 6: per-family fields + the DISCOUNTING cross-ref contract ----
         if trajectory and not (trajectory == "STABLE" or trajectory_match):
@@ -898,7 +898,7 @@ def _selftest():
     # namespace derivation smoke (real repo files, when present)
     try:
         ns = candidate_namespace()
-        check("derived namespace = 62", len(ns) == 62)
+        check("derived namespace = 67", len(ns) == 67)
         check("derived excludes AT2", "AT2" not in ns and "AT0" in ns and "FM-A20" in ns)
     except Exception:
         check("derived namespace available", False)

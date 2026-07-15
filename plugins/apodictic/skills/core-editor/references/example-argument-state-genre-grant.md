@@ -35,9 +35,14 @@ Form: grant-proposal
 Goal: win R01 funding for a curb-cut mobility intervention and its evaluation
 Argument type: AT3 — propositional (fund this)
   Burden level: HIGH
+Register: asserted
+Register confirmation: DEFAULT-ASSERTED
+High-stakes gate: INACTIVE — NONE
 Audience:
   Expertise: EXPERT (study-section reviewers)
   Receptivity: MIXED
+Cash-out inventory:
+  - NONE
 Evaluator: panel-reviewer (scores Significance / Innovation / Approach against the rubric)
 
 ### Significance

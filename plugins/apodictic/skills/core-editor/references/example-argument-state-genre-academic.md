@@ -29,9 +29,14 @@ Form: academic-article
 Goal: establish a measurable peer-signaling diffusion mechanism the literature has not isolated
 Argument type: AT2 — evaluative/explanatory (with the contribution claim as C0)
   Burden level: HIGH
+Register: asserted
+Register confirmation: FORCED-ASSERTED
+High-stakes gate: ACTIVE — peer-reviewed publication
 Audience:
   Expertise: EXPERT (peer reviewers)
   Receptivity: HOSTILE
+Cash-out inventory:
+  - NONE
 Evaluator: peer-reviewer (strictest calibration; CL0 is disqualifying)
 
 ## 2. Claim Architecture

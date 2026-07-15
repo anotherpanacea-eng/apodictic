@@ -143,6 +143,11 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 **In progress**
 
 1. Argument Engine Benchmark Suite — spec + vertical slice landed (see below)
+2. **AT5 Argument Register + Rhetorical Stance Triage** — contract/reference build in
+   progress: AT5/GN0–GN4 routing, five optional finding fields, exact §1 high-stakes and
+   cash-out joins, and the `stance-calibration` shape gate are implemented locally. E7's
+   good-faith hybrid fixture is present; a strict machine-conformant rerun of its two blind
+   records remains before the spec can flip to Built.
 
 ### Benchmark Suite
 

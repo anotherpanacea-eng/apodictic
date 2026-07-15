@@ -59,6 +59,14 @@
       "rationale": "argument-type classification layer; no direct fallacy/scheme analogue in the R4A reference set; no direct target in the reviewed reference set."
     },
     {
+      "id": "AT5",
+      "family": "AT",
+      "internal_name": "Generative / Lens-Offering",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "argument-type classification layer for writer-confirmed lens essays; no direct fallacy/scheme analogue in the R4A reference set; no direct target in the reviewed reference set."
+    },
+    {
       "id": "AC0",
       "family": "AC",
       "internal_name": "Audience dependency undeclared",
@@ -461,6 +469,46 @@
       "cardinality": "unmapped",
       "targets": [],
       "rationale": "narrative-as-evidence code; relates to Walton Witness Testimony / Position to Know; no direct target in the reviewed reference set."
+    },
+    {
+      "id": "GN0",
+      "family": "GN",
+      "internal_name": "Register instability",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "generative-register calibration code; apodictic-specific document-register integrity diagnostic; no direct target in the reviewed reference set."
+    },
+    {
+      "id": "GN1",
+      "family": "GN",
+      "internal_name": "Inert lens",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "generative-register fertility diagnostic; no direct fallacy or argument-scheme analogue in the reviewed reference set."
+    },
+    {
+      "id": "GN2",
+      "family": "GN",
+      "internal_name": "Concealed cash-out",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "register-level journey-to-landing burden diagnostic; no direct target in the reviewed R4A reference set."
+    },
+    {
+      "id": "GN3",
+      "family": "GN",
+      "internal_name": "Broken lens",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "internal coherence failure of a generative frame; no direct target in the reviewed reference set."
+    },
+    {
+      "id": "GN4",
+      "family": "GN",
+      "internal_name": "Borrowed authority unreturned",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "technical texture converted into undisclosed warrant work at a generative landing; no direct target in the reviewed R4A reference set."
     },
     {
       "id": "FM-A1",

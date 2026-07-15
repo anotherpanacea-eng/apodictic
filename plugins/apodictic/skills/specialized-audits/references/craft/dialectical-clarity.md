@@ -137,6 +137,7 @@ Argument Type: [AT-code]
 | **AT2** | Evaluative | "Here's whether this is good/bad/working/broken" | Medium — must show criteria and apply them |
 | **AT3** | Propositional | "Here's what we should do" (policy/normative) | High — must show problem, solution, tradeoffs, and why alternatives fail |
 | **AT4** | Testimonial | "I witnessed this; here's what it means" | Split — observation is low-burden, interpretation is high-burden |
+| **AT5** | Generative / Lens-Offering | "Here's a lens; look through it and see what it reveals" | Split — coherence + fertility on the journey; asserted burden at each cash-out |
 
 **Argument type failure codes:**
 
@@ -150,7 +151,27 @@ Argument Type: [AT-code]
 2. **Interpretive burden** — what the testimony means beyond the observed event
 3. **Representative burden** — whether a personal or local account is being asked to stand for a wider population or system
 
+**AT5 burden split:** A writer-confirmed generative register changes the aim of diagnosis, not its coverage. Keep every finding in the ledger and assess three burdens:
+
+1. **Coherence burden** — the lens must survive its own development.
+2. **Fertility burden** — the lens must reveal, reframe, or connect something unavailable without it. If deleting the lens vocabulary leaves every conclusion unchanged, consider GN1.
+3. **Cash-out burden** — inventory every conversion of the lens into assertion or prescription. Each cash-out is assessed at asserted-register burden, scaled to how hard the landing is pressed. A prescriptive/action-demanding cash-out is never eligible for register or stance demotion.
+
+AT5 is declared or writer-confirmed at intake; never infer it silently. An intake-declared high-stakes signal forces `register=asserted` for the whole document. A content-resolved high-consequence landing forces asserted burden only at that cash-out span.
+
 **Why type classification matters:** All later steps calibrate by type. Flagging "no objections engaged" in an AT1 explanatory piece is a false positive: explanations don't require objection handling. Flagging "no objections engaged" in an AT3 propositional piece is a critical failure: proposals demand it.
+
+**Generative-register failure codes:**
+
+| Code | Name | Description | Severity |
+|------|------|-------------|----------|
+| **GN0** | Register instability | The piece oscillates between offering a lens and asserting without signaling which burden applies. | Should-Fix; Could-Fix only for a local wobble with a legible dominant register |
+| **GN1** | Inert lens | The lens decorates or relabels but reveals nothing that was unavailable without it. | Should-Fix when fertility is the operative success criterion; otherwise Could-Fix |
+| **GN2** | Concealed cash-out | An assertion or prescription is delivered at full force under exploratory cover. Cross-reference DI4/FM-A13. | Never demoted; floor at the equivalent asserted-register finding |
+| **GN3** | Broken lens | The metaphor or frame contradicts its own terms when extended. | Should-Fix |
+| **GN4** | Borrowed authority unreturned | Imported technical precision does warrant work at a cash-out rather than illustrative work in the lens. | Floor at the equivalent asserted-register finding |
+
+Under `register=generative`, WR/SM/BP findings on non-cash-out spans may calibrate to Could-Fix at Triage, with the finding's register, stance, verdict, and calibration effect recorded before the Deficit Lock. Definitional migration is the method of many lens essays: CL4 fires only when the migration is concealed and spent at a cash-out. GN2/GN4 and prescriptive cash-outs retain asserted burden.
 
 **Calibration with F5:** If the Narrative Nonfiction Craft audit has already classified the piece as F5 (Argument with embedded narrative), AT-codes add precision about *what kind* of argument. F5 says "argument dominates"; AT-codes say what the argument asks the reader to do.
 
@@ -534,6 +555,8 @@ Certain failures are invisible within any single section and only become visible
 
 After the full diagnostic runs, this terminal step asks: did this text fail because its reasoning does not **warrant** its conclusion, or because it's operating in an argument form that the previous steps aren't calibrated for? The verdict is about *warrant* — whether the inference holds on the text's own terms — not about whether the premises are true (that is the separate premise-plausibility axis; see below).
 
+**Triage/lock boundary:** rhetorical stance triage runs earlier, when Triage assigns severity, before the Deficit Lock. Step 9 may surface new stance evidence but may not silently soften a locked finding. Any post-lock change uses only the existing ID-scoped `softness-downgrade` override plus its Severity Calibration entry. Rhetorical stance never applies to the GT8 premise-plausibility axis: it classifies an argumentative move, never whether a premise is true. See `rhetorical-stance-triage.md`.
+
 **The cultural charity principle:** When a text fails Western structural expectations, presume unconventional form before diagnosing structural failure. Test whether the form is doing real argumentative work. Only return **UNWARRANTED** when the form itself blocks evaluability.
 
 **Three-way warrant verdict:**
@@ -721,6 +744,8 @@ The 20 patterns cluster into four diagnostic types that tell the reviewer *how* 
 ## Genre & Audience Calibration
 
 ### By Argument Form
+
+**Lens Essay / Exploratory Essay:** AT5 is primary, often with an AT2/AT3 tail. Load-test the journey for coherence and fertility and every cash-out at asserted burden. GN2/GN4 are signature risks. Definitional migration is not automatically CL4; it becomes a defect when concealed at the landing. WR0 on analogy spans may calibrate to Could-Fix, with the ledger naming what a reader who rejects the analogy loses. Vignettes are lens material rather than evidence until a cash-out spends them. Apply Distinguish aggressively to objections aimed at the lens, never to evade objections aimed at a landing.
 
 **Op-ed / Column (< 1,500 words):** Claim ladder must be tight: one C0, one or two subclaims. Support may be light but must be present. Compression is not an excuse for WR0, BP2, or OB4. AC4 is the high-risk code when short-form conventions are used to dodge necessary burden. NE-codes are high-value: at this length, a single vignette carries enormous weight.
 
