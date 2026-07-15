@@ -4,8 +4,10 @@ name: ci
 # carry a validator self-test harness (scripts/validate.sh). CI is a correctness
 # gate — byte-compile the canonical Python, confirm every plugin/marketplace
 # manifest is valid JSON, and run the validator self-tests plus the real-file
-# canonical-framework invariants (validate.sh --check-all). The eval fixtures
-# under evals/ are the behavioral ground-truth track, run separately.
+# canonical-framework invariants. Validator self-tests, canonical-file checks,
+# and lightweight static/build checks run in parallel behind one required
+# `validate` result. The eval fixtures under evals/ are the behavioral
+# ground-truth track, run separately.
 
 on:
   pull_request:
@@ -20,7 +22,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
+  static_checks:
+    name: static checks
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -54,13 +57,6 @@ jobs:
       # check (the build / --check-all gates already run as their own steps below).
       - name: Version parity across manifests
         run: node scripts/release-verify.mjs --versions-only
-
-      # --check-all subsumes --self-test-all (the validator self-tests) and
-      # adds the real-file invariants: the validators are run against the actual
-      # canonical framework files (pass-dependencies.md, the shipped templates,
-      # the canonical worked examples + run folder), not just their own fixtures.
-      - name: Validator self-tests + canonical-framework gate
-        run: bash scripts/validate.sh --check-all
 
       # Research reliability layer (docs/research-reliability-layer.md). These
       # research-dir modules are single-sourced (NOT in root scripts/, NOT in the
@@ -119,3 +115,50 @@ jobs:
       # surface + reference-module registry list, exactly as its siblings are.
       - name: Skill-registration discoverability guard
         run: python tests/skill-registration/test_content_advisory_registration.py
+
+  validator_self_tests:
+    name: validator self-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validator self-tests
+        run: bash scripts/validate.sh --self-test-all
+
+  canonical_framework:
+    name: canonical-framework gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Real-file invariants against the actual canonical framework files
+      # (pass-dependencies.md, shipped templates, worked examples, and run
+      # folders), separated from the hermetic self-tests so CI can run both.
+      - name: Canonical-framework gate
+        run: bash scripts/validate.sh --check-canonical
+
+  validate:
+    name: validate
+    if: ${{ always() }}
+    needs: [static_checks, validator_self_tests, canonical_framework]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every parallel gate
+        env:
+          STATIC_RESULT: ${{ needs.static_checks.result }}
+          SELF_TEST_RESULT: ${{ needs.validator_self_tests.result }}
+          CANONICAL_RESULT: ${{ needs.canonical_framework.result }}
+        run: |
+          test "$STATIC_RESULT" = success
+          test "$SELF_TEST_RESULT" = success
+          test "$CANONICAL_RESULT" = success
