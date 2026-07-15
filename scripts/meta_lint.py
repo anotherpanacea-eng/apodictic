@@ -285,12 +285,27 @@ _OV_PY_RE = re.compile("(?:%s)|(?:%s)|(?:%s)|(?:%s)"
                        % (_OV_PY_IN_PAT, _OV_PY_FMT_IN_PAT, _OV_PY_SCAN_PAT, _OV_PY_RE_PAT))
 # `<!--` anchor for the windowed M5 scan below.
 _OV_ANCHOR_RE = re.compile(r"<!--")
-# How far BEFORE a literal `<!--` an `_OV_PY_RE` match can start. Every alternative reaches `<!--`
-# through a bounded prefix — string-prefix flags (≤2) + opening quote (≤3), plus for the scan/re-op
-# forms a method name and `(`, plus for the format-`in` / call forms an optional `\s*` run. The
-# whitespace runs are the only unbounded part; 64 covers any plausible source formatting (a >50-char
-# whitespace run between an operator/call-paren and its string literal is not a real-world form).
+# How many NON-WHITESPACE chars can sit between an `_OV_PY_RE` match start and its literal `<!--`.
+# Every alternative reaches `<!--` through a bounded run of non-whitespace — string-prefix flags (≤2)
+# + opening quote (≤3), plus for the scan/re-op forms a method name and `(` (≤14) — interleaved with
+# `\s*` runs that ARE unbounded: `_strip_comments_keep_source` blanks a comment to same-length
+# whitespace, so a commented line inside a call becomes a 70+ char `\s` gap the regex happily
+# crosses. The window therefore counts only non-whitespace (walking back over any amount of
+# whitespace); a fixed byte offset would be defeated by exactly that blanked-comment gap.
 _OV_WINDOW = 64
+
+
+def _ov_win_start(stripped, j):
+    """Lowest candidate match start for a `<!--` at offset `j`: walk back over unlimited whitespace
+    (incl. comment bytes blanked by `_strip_comments_keep_source`) and at most `_OV_WINDOW`
+    non-whitespace chars."""
+    s = j
+    nonws = 0
+    while s > 0 and nonws < _OV_WINDOW:
+        if not stripped[s - 1].isspace():
+            nonws += 1
+        s -= 1
+    return s
 
 
 def _ov_py_hit(stripped):
@@ -298,12 +313,12 @@ def _ov_py_hit(stripped):
     in practice: the format-`in` alternative opens with `\\(?\\s*` (both optional), so the 4-way
     alternation does real work at EVERY position of every scanned file — ~13s of the canonical CI gate
     was this one search across the sibling `.py` fleet, almost none of which carry the marker. Every
-    alternative requires the literal `<!--` within `_OV_WINDOW` chars of the match start, so it
-    suffices to anchor on each `<!--` occurrence (rare in comment-stripped source) and try `.match`
-    at each start offset in the preceding window."""
+    alternative requires the literal `<!--` within a bounded non-whitespace distance of the match
+    start, so it suffices to anchor on each `<!--` occurrence (rare in comment-stripped source) and
+    try `.match` at each start offset in the preceding window."""
     for anchor in _OV_ANCHOR_RE.finditer(stripped):
         j = anchor.start()
-        for s in range(max(0, j - _OV_WINDOW), j + 1):
+        for s in range(_ov_win_start(stripped, j), j + 1):
             if _OV_PY_RE.match(stripped, s):
                 return True
     return False
@@ -860,6 +875,13 @@ def run_self_test():
         check_m5_py("g.py", 'if body.find(          "<!-- override: foo") >= 0:\n    pass\n') != [])
     chk("m5_py_multiline_spaced_re_op_flagged",
         check_m5_py("g.py", 'import re\nxs = re.findall(\n    r"<!-- override: ([a-z-]+)", body)\n') != [])
+    # a comment INSIDE the call is blanked to a same-length whitespace run by
+    # _strip_comments_keep_source — the gap the regex crosses via \s* can therefore exceed any fixed
+    # byte window. The non-whitespace walk-back must still anchor a match start before it.
+    chk("m5_py_comment_gap_re_op_flagged",
+        check_m5_py("g.py", 'xs = re.findall(\n'
+                            '    # legacy override matcher retained for compatibility with old artifacts\n'
+                            '    r"<!-- override: ([a-z-]+)", body)\n') != [])
     # a marker deep in a large file (far from offset 0) is still anchored and flagged.
     chk("m5_py_deep_offset_flagged",
         check_m5_py("g.py", ("x = 1\n" * 400) + 'if "<!-- override: foo" in body:\n    pass\n') != [])
