@@ -1,0 +1,27 @@
+The Feed Experiment
+
+Consider this a thought experiment, nothing more. I'm not here to tell anyone what to do. I just want to try on a lens and see what it shows us.
+
+The lens is this: the algorithmic feed is a slot machine we have installed in every teenager's pocket. Once you see it that way, you can't unsee it. The pull-to-refresh gesture is the lever. The variable-reward schedule is the payout table. The house always wins.
+
+Now, I know what you're thinking: that's just a metaphor. But is it? A 2019 Stanford study found that 43 percent of adolescents exhibit compulsive checking behaviors indistinguishable, at the neurological level, from the behaviors of problem gamblers. Indistinguishable. The dopamine pathways involved are the same pathways, the reinforcement schedules are the same schedules. At some point a metaphor that precise stops being a metaphor and starts being a diagnosis.
+
+My neighbor's daughter is sixteen. Last spring she stopped eating dinner with her family. Her mother found her at two in the morning, phone in hand, scrolling with the empty-eyed persistence of a machine. She had been averaging nine hours of screen time a day. Nine hours. When they took the phone away, she shook. She actually, physically shook. If a substance did that to a child, we would not be having a debate about it. We would be having arrests.
+
+That is what the lens shows us: an entire generation being conditioned, at industrial scale, by machines built by people who send their own children to screen-free schools. The executives know. The Silicon Valley Waldorf schools are full. That tells you everything you need to know about what these products really are.
+
+Some people will say the research is contested. And sure, if you go looking, you can find studies that claim the effects are small. But most of those studies were funded, directly or indirectly, by the platforms themselves, so I think we can set those aside. The independent research paints a consistent picture: a 2021 meta-analysis covering 1.2 million adolescents found that heavy users were 2.8 times more likely to report clinical-level anxiety. Those aren't my numbers. That's the science.
+
+I want to be careful here. I am not saying that phones cause depression. That would be an overclaim, and the causation-correlation crowd would eat me alive. I am simply asking: what would it mean to take seriously the possibility that we are running an uncontrolled experiment on a hundred million children? Just asking the question. Sit with it.
+
+Because here's the thing about uncontrolled experiments: you don't get to wait for perfect data. The tobacco companies wanted perfect data. The lead-paint industry wanted perfect data. Perfect data is what powerful industries demand precisely because they know the demand itself does the work of delay. Every year we spend asking for better studies is a year of nine-hour days for my neighbor's daughter and the millions like her.
+
+So let's follow the lens all the way through. If the feed is a slot machine, then we already know what to do, because we've done it before. We don't let sixteen-year-olds into casinos. We don't let them buy cigarettes. Not because we've proven every mechanism of harm to the satisfaction of every industry-funded skeptic, but because the asymmetry of risk is obvious to anyone who looks.
+
+Congress must ban algorithmic feeds for users under eighteen. Not warning labels, not screen-time dashboards, not another toothless design code. A ban. Chronological feeds only, verified age, real penalties. The platforms will scream that verification is impossible, but they verify age perfectly well when the advertisers require it, so we know the screaming is theater.
+
+And the objections write themselves, don't they? Free speech, parental rights, the nanny state. I'd take those objections more seriously if the people making them weren't the same people cashing the checks. When every "digital liberty" think tank in Washington runs on platform money, the objections aren't arguments anymore. They're invoices.
+
+Look, maybe I'm wrong. This is, as I said, just a lens, just one way of seeing it. I'm a writer, not a regulator. But I notice that when I offer this lens to parents, they don't argue with me. They nod. They've seen the shaking hands, the two a.m. glow under the bedroom door. The only people who argue are the ones being paid to. And at a certain point, the pattern of who argues is itself the strongest evidence we have.
+
+A thought experiment, then, with one thought at the end of it: we banned the slot machine from the corner store and put it in the child's bedroom. Every day we call that an open question is a day we chose the house over the child. History will not remember it as a debate. It will remember it as a delay.
