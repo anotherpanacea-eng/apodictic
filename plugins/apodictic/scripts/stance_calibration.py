@@ -43,6 +43,15 @@ _EFFECTS = {
 }
 
 
+def _is_premise_flag_mechanism(mechanism):
+    if not isinstance(mechanism, str):
+        return False
+    token = mechanism.strip()
+    return token.upper() in _PREMISE_FLAG_MECHANISMS or re.match(
+        r"^GT8\b", token, re.IGNORECASE
+    ) is not None
+
+
 def _read(path):
     try:
         return Path(path).read_text(encoding="utf-8")
@@ -152,7 +161,7 @@ def check(ledger_text, state_text=None):
         if effect is not None and state is None:
             errors.append("S4 %s: calibration_effect requires --argument-state" % fid)
             continue
-        if mechanism in _PREMISE_FLAG_MECHANISMS and any(
+        if _is_premise_flag_mechanism(mechanism) and any(
                 value is not None for value in (register, stance, verdict, effect, co_ref)):
             errors.append("S4 %s: GT8 premise-plausibility flags cannot carry stance calibration" % fid)
             continue
@@ -282,6 +291,10 @@ Cash-out inventory:
     expect("high_gate_divergent_full_strength_valid",
            finding(severity="Should-Fix", register="asserted", stance="S3",
                    stance_verdict="divergent", calibration_effect=None), high_state, True)
+    expect("high_gate_native_could_block_valid",
+           finding(severity="Could-Fix", register="asserted", stance="S3",
+                   stance_verdict="earned", calibration_effect="blocked-high-stakes"),
+           high_state, True)
     expect("high_gate_generative_finding_rejected",
            finding(severity="Should-Fix", register="generative",
                    calibration_effect="blocked-high-stakes"), high_state, False)
@@ -317,6 +330,13 @@ Cash-out inventory:
            finding(cash_out_ref="CO1"), assertion_state, False)
     expect("gt8_premise_flag_stance_rejected",
            finding(mechanism="CONTESTABLE"), base_state, False)
+    expect("gt8_prefixed_mechanism_stance_rejected",
+           finding(mechanism="GT8 — premise plausibility: contestable ground"),
+           base_state, False)
+    expect("generative_unearned_register_floor_valid",
+           finding(stance_verdict="unearned"), base_state, True)
+    expect("generative_earned_missing_register_rejected",
+           finding(register=None, calibration_effect="stance-demotion"), base_state, False)
     expect("effect_without_state_rejected", finding(), None, False)
     expect("cashout_ref_without_state_rejected",
            finding(severity="Should-Fix", register="asserted", stance="S3",

@@ -9,3 +9,5 @@
   divergent findings representable at full severity.
 - Document the validator's completeness boundary: supplied cash-out joins are checked,
   while omitted joins and undeclared stance decisions remain auditor-owned.
+- Recognize realistic `GT8 …` mechanism identifiers, pin register-floor precedence over
+  instance stance, and state why post-triage `Could-Fix` cannot prove a blocked demotion.
