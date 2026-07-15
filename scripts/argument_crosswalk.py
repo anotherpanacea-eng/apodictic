@@ -13,7 +13,7 @@ drift-binding. The correctness of each mapping is human/Codex-adjudicated.
 
 Drift-binding (ADR): the authoritative 88-ID set is derived at check time — the verdict,
 premise-flag, and FM-A slices are imported from the live owners in argument_groundtruth.py
-(_GT7_CLASSES / _GT8_ROW_FLAG_TYPES / _FM_A_MAX); the 46 Dialectical Clarity codes and 8
+(_GT7_CLASSES / _GT8_ROW_FLAG_TYPES / _FM_A_MAX); the 52 Dialectical Clarity codes and 8
 scheme hints — which have no machine-readable owner — are parsed structurally out of
 dialectical-clarity.md (heading/table walk, bounded leaf tokens; the structural discipline,
 not a doc-wide regex).
@@ -73,6 +73,7 @@ _CARD_PREC = {"exact": 4, "narrower": 3, "broader": 2, "related": 1}
 DC_PREFIXES = ("AT", "AC", "CL", "SM", "WR", "BP", "OB", "DI", "NE", "GN")
 DC_FAMILY_COUNTS = {"AT": 6, "AC": 5, "CL": 5, "SM": 5, "WR": 4,
                     "BP": 7, "OB": 6, "DI": 5, "NE": 4, "GN": 5}
+DC_CODE_COUNT = sum(DC_FAMILY_COUNTS.values())
 NONPREFIX_FAMILIES = {"SCHEME", "VERDICT", "PREMISE-FLAG"}
 
 # --------------------------------------------------------------------------
@@ -387,7 +388,7 @@ def validate(cross, dc_codes, schemes, verdicts, flags, fm_max):
         extra = sorted(dc_codes - expected_dc)
         errors.append("Check 9 (tripwire) — derived DC set is not the canonical contiguous set "
                       "(missing=%s extra=%s); the registry's stale '45' or a renamed/stray code must not "
-                      "propagate. Expected 46 incl. OB5." % (missing, extra))
+                      "propagate. Expected %d incl. OB5." % (missing, extra, DC_CODE_COUNT))
     # (b) FM-A owner
     if fm_max != 20:
         errors.append("Check 9 (tripwire) — _FM_A_MAX is %r, expected 20 (intro's stale 'nineteen' must not propagate)." % fm_max)
@@ -539,8 +540,9 @@ def run_check(path):
     n = len(cross["entries"])
     unmapped = sum(1 for r in cross["entries"] if r.get("cardinality") == "unmapped")
     print("argument-crosswalk-check: PASS — %d code entries (%d populated, %d unmapped) + %d concepts; "
-          "derived set 46 DC + %d FM-A + %d schemes + %d verdicts + %d flags."
-          % (n, n - unmapped, unmapped, len(cross["concept_entries"]), fm_max, len(schemes), len(verdicts), len(flags)))
+          "derived set %d DC + %d FM-A + %d schemes + %d verdicts + %d flags."
+          % (n, n - unmapped, unmapped, len(cross["concept_entries"]), DC_CODE_COUNT,
+             fm_max, len(schemes), len(verdicts), len(flags)))
     return 0
 
 
