@@ -124,7 +124,7 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 **Built**
 
 1. Dialectical Clarity v2.1 + level-setting research
-2. `docs/argument-state-schema.md` (v0.2.0, §§ 10.1–10.9)
+2. `docs/argument-state-schema.md` (v0.3.0, §§ 10.1–10.9)
 3. Argument Red Team (v1.0) + level-setting research
 4. Argument Persuasion + level-setting research
 5. Argument Evidence Deep-Dive

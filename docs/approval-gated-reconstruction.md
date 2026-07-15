@@ -6,7 +6,7 @@
 **Status:** Proposed (unbuilt)
 <!-- built-when: scripts/approval_graph.py -->
 
-*Depends on: Argument State Schema 0.2.0; Dialectical Clarity v2.0*
+*Depends on: Argument State Schema 0.3.0; Dialectical Clarity v2.0*
 *Revision 0.2.0 (2026-07-15) folds three independent spec-review passes — schema-compatibility, adversarial red-team, implementability. Reports: `docs/.local/review-log/2026-07-15_approval-gated-reconstruction-spec-review.md`.*
 
 ---

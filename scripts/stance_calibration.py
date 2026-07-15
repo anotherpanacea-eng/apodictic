@@ -30,7 +30,7 @@ _CO_ROW_RE = re.compile(
     r"Consequence:\s*(LOW|MEDIUM|HIGH)\s*$",
     re.MULTILINE,
 )
-_CO_ATTEMPT_RE = re.compile(r"^\s*-\s*CO[0-9]+\b.*$", re.MULTILINE)
+_CO_ATTEMPT_RE = re.compile(r"^\s*-\s*CO\S*.*$", re.MULTILINE)
 
 _EARNED = {"earned", "earned-by-frame"}
 _EFFECTS = {
@@ -71,6 +71,8 @@ def parse_state(text):
         errors.append("S1 state: ACTIVE high-stakes gate requires FORCED-ASSERTED")
     if confirmation == "FORCED-ASSERTED" and register != "asserted":
         errors.append("S1 state: FORCED-ASSERTED requires asserted register")
+    if confirmation == "FORCED-ASSERTED" and high_gate != "ACTIVE":
+        errors.append("S1 state: FORCED-ASSERTED requires an ACTIVE high-stakes gate")
 
     rows = list(_CO_ROW_RE.finditer(text))
     attempts = _CO_ATTEMPT_RE.findall(text)
@@ -157,10 +159,15 @@ def check(ledger_text, state_text=None):
             else:
                 co = state["cashouts"][co_ref]
 
+        if state is not None and state["high_gate"] == "ACTIVE" and register == "generative":
+            errors.append("S6 %s: ACTIVE high-stakes gate forbids register=generative" % fid)
+
         expected_block = None
         if state is not None and state["high_gate"] == "ACTIVE" and (stance or effect):
             expected_block = "blocked-high-stakes"
-        elif co is not None and co["kind"] == "PRESCRIPTION" and (stance or effect or register):
+        elif co is not None and co["kind"] == "PRESCRIPTION" and (
+                register == "generative" or verdict in _EARNED
+                or effect in {"register-floor", "stance-demotion"}):
             expected_block = "blocked-cash-out"
 
         if expected_block:
@@ -209,6 +216,7 @@ def run_self_test():
             "calibration_effect": "register-floor",
         }
         obj.update(updates)
+        obj = {key: value for key, value in obj.items() if value is not None}
         import json
         return "<!-- apodictic:finding\n%s\n-->" % json.dumps(obj)
 
@@ -236,15 +244,32 @@ Cash-out inventory:
     expect("prescriptive_block_valid",
            finding(severity="Should-Fix", cash_out_ref="CO1", calibration_effect="blocked-cash-out"),
            base_state, True)
+    asserted_prescriptive_state = base_state.replace("Register: generative", "Register: asserted").replace(
+        "WRITER-CONFIRMED", "DEFAULT-ASSERTED")
+    expect("asserted_unearned_prescriptive_full_strength_valid",
+           finding(severity="Should-Fix", register="asserted", stance="S3",
+                   stance_verdict="unearned", calibration_effect=None, cash_out_ref="CO1"),
+           asserted_prescriptive_state, True)
+    expect("asserted_earned_prescriptive_block_valid",
+           finding(severity="Should-Fix", register="asserted", stance="S3",
+                   stance_verdict="earned", calibration_effect="blocked-cash-out",
+                   cash_out_ref="CO1"), asserted_prescriptive_state, True)
     high_state = base_state.replace("Register: generative", "Register: asserted").replace(
         "WRITER-CONFIRMED", "FORCED-ASSERTED").replace("INACTIVE — NONE", "ACTIVE — testimony")
     expect("high_gate_block_valid",
            finding(severity="Should-Fix", register="asserted", calibration_effect="blocked-high-stakes"),
            high_state, True)
     expect("high_gate_wrong_effect_rejected", finding(), high_state, False)
+    expect("high_gate_generative_finding_rejected",
+           finding(severity="Should-Fix", register="generative",
+                   calibration_effect="blocked-high-stakes"), high_state, False)
     expect("generative_unconfirmed_rejected", finding(), base_state.replace(
         "WRITER-CONFIRMED", "DEFAULT-ASSERTED"), False)
+    expect("forced_asserted_inactive_rejected", finding(severity="Should-Fix", register="asserted",
+           stance_verdict="unearned", calibration_effect=None), asserted_prescriptive_state.replace(
+           "DEFAULT-ASSERTED", "FORCED-ASSERTED"), False)
     expect("malformed_cashout_rejected", finding(), base_state.replace("Kind: PRESCRIPTION", "PRESCRIPTION"), False)
+    expect("mistyped_cashout_id_rejected", finding(), base_state.replace("CO1", "COX"), False)
     expect("duplicate_cashout_rejected", finding(), base_state +
            "  - CO1 | Location: paragraph 10 | Kind: ASSERTION | Press: LIGHT | Consequence: LOW\n", False)
     expect("none_plus_row_rejected", finding(), base_state.replace(
@@ -255,6 +280,11 @@ Cash-out inventory:
     expect("assertion_stance_demotion_valid",
            finding(register="asserted", cash_out_ref="CO1", calibration_effect="stance-demotion"),
            assertion_state, True)
+    expect("effect_without_state_rejected", finding(), None, False)
+    expect("cashout_ref_without_state_rejected",
+           finding(severity="Should-Fix", register="asserted", stance="S3",
+                   stance_verdict="unearned", calibration_effect=None, cash_out_ref="CO1"),
+           None, False)
     legacy = finding()
     for field in ("register", "stance", "stance_verdict", "calibration_effect"):
         import json as _json
