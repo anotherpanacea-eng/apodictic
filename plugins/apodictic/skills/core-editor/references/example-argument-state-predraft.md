@@ -28,9 +28,14 @@ Form: op-ed
 Goal: persuade the city council to fund curb-cut ramps citywide in the next budget
 Argument type: AT3 — policy recommendation
   Burden level: HIGH
+Register: asserted
+Register confirmation: DEFAULT-ASSERTED
+High-stakes gate: INACTIVE — NONE
 Audience:
   Expertise: MIXED
   Receptivity: HOSTILE
+Cash-out inventory:
+  - NONE
 Warrant verdict: _pending — backfilled by Dialectical Clarity Step 9 once a draft exists_
 Premise-plausibility flags: _pending — backfilled by Step 9; flags are surfaced, never adjudicated_
 

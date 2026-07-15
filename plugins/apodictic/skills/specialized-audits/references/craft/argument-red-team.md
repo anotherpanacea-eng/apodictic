@@ -389,6 +389,12 @@ that support it]
 
 Red Team is a downstream consumer. It reads the Argument State and produces adversarial analysis the core audit cannot — because structural diagnosis and adversarial testing are different activities. An argument can pass Dialectical Clarity and fail Red Team (structurally sound but defenseless against the strongest objection). An argument can fail Dialectical Clarity and pass Red Team (structurally messy but practically robust because the adversary's attacks all target strengths). Both outcomes are informative.
 
+When rhetorical stance triage marks S3 productive overstatement or S4 strategic
+misreading, attack the move as its strongest sincere reconstruction rather than attacking
+only the surface excess. The question is whether the underlying argumentative work survives
+pressure once the move is detected. This calibration does not immunize the move: concealed
+warrant work, evidentiary misreading, and motte-and-bailey structure remain live attacks.
+
 ### With Adversarial Evidence Review
 
 Red Team builds the strongest opposing *case* (opposition memos, full countercases, audience-framed attacks). Adversarial Evidence Review conducts evidence-specific pressure tests on individual claim-evidence pairings under formal protocols (ACH, legal cross-exam, severe testing). Red Team identifies rhetorical and strategic vulnerabilities; Adversarial Evidence Review identifies evidential survivability failures. Adversarial Evidence Review may hand ADDRESS items to Red Team as evidence-side pressure points. Red Team may not ask Adversarial Evidence Review to generate countercases, opposition framing, or rhetorical attack material.

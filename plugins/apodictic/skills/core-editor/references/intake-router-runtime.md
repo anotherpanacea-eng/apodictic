@@ -302,10 +302,12 @@ The **cold-start** workflow-selection decisions — the path for a project with 
 | partial | repair (diagnostic) | — | Core DE (partial flag) | **Built** (v1.2.0) |
 | partial | repair (targeted) | — | Core DE (partial flag, targeted) | **Built** (v1.2.0) |
 | partial | repair | engine=nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) on available sections | **Built** (v1.0) |
+| partial | repair | engine=nonfiction (lens/exploratory; writer-confirmed) | Nonfiction Argument Engine (`register=generative`, AT5) on available sections | **Built** |
 | partial | draft (rethink) | — | Pre-Writing Pathway (re-entry) | **Built** |
 | partial | repair | workflow=time | Submission Triage | Gap: triage requires complete manuscript. Re-route to a targeted repair pass (goal=repair). |
 | full_draft | repair | — | Core DE | **Built** |
 | full_draft | repair | engine=nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) | **Built** (v1.0) |
+| full_draft | repair | engine=nonfiction (lens/exploratory; writer-confirmed) | Nonfiction Argument Engine (`register=generative`, AT5) | **Built** |
 | full_draft | repair | engine=nonfiction (scene-led) | Narrative Nonfiction Craft | **Built** |
 | full_draft | repair | engine=nonfiction (memoir / witness-led) | Memoir & CNF | **Built** |
 | full_draft | repair | workflow=time | Submission Triage | **Built** (v1.1) |

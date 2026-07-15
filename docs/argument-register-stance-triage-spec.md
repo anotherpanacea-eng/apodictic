@@ -1,9 +1,16 @@
 # Argument Register & Rhetorical Stance Triage — Build Spec
 ## APODICTIC Nonfiction Argument Engine Extension
 *Date: July 15, 2026 (reworked same day per spec review)*
-*Status: Reworked after adversarial spec review (six-lens swarm, verdict NEEDS-REWORK → all fixes applied; see §Review Disposition). Pilot validation complete (seven blind Opus auditors, three waves; see Appendix B). Ready for re-review or build.*
+*Status: Build in progress — shared schema, AT5/GN reference layer, routing/synthesis integration, and the stance-calibration shape gate are implemented; E7 has two convergent preliminary blind reads, but their records need a strict machine-conformant rerun before Built.*
 *Origin: Mediocratopia Ch. 7 probe (Rao, 2019). Two distinct gaps identified: a routing register for generative nonfiction, and a per-instance stance axis for productive overstatement. **Premise correction from pilot:** the base audit discriminates better than the origin probe suggested; the gap is aim, not volume — see Appendix B.*
 *Depends on: nonfiction-argument-engine skill, Dialectical Clarity v2.1, intake-router-runtime §6, nonfiction-intake-routing fragment, output-policy.md (severity vocabulary + Deficit Lock), apodictic.finding.v1 / apodictic.argument_spine.v1 schemas, Argument_State schema. Precedents: ai-prose-calibration.md Layer C source triage (in-repo), setec-voiceprint craft-restoration (upstream origin).*
+
+*Build clarification (2026-07-15): the initial file map's three optional finding fields
+could record a verdict but could not mechanically distinguish a demotion from an earned
+verdict recorded without demotion, or join a finding to a prescriptive cash-out. The build
+therefore adds `calibration_effect` and `cash_out_ref`, plus exact §1 high-stakes/cash-out
+records. This is the minimum data needed for the promised shape gate; it does not expand
+the engine's judgment authority.*
 
 ---
 
@@ -240,15 +247,15 @@ Named per house practice; these are accepted costs, not open questions.
 | `plugins/apodictic/skills/specialized-audits/references/craft/dialectical-clarity.md` | AT5 + burden split (Step 1); GN codes with severity tokens (new subsection); Lens Essay entry (§By Argument Form); Triage-time stance-triage integration with Step 9 boundary (§2.5); GT8 exclusion. |
 | `plugins/apodictic/skills/specialized-audits/references/craft/argument-red-team.md` | One calibration paragraph: attack the strongest sincere reconstruction of S3/S4 material. |
 | `plugins/apodictic/skills/specialized-audits/references/craft/ai-prose-calibration.md` | Cross-reference paragraph: stance triage as the argument-domain sibling of Layer C source triage; domain boundary. |
-| `plugins/apodictic/schemas/apodictic.finding.v1.schema.json` | Three **optional** properties, following the `salience` precedent: `register` (enum: `asserted`, `generative`), `stance` (enum: `S1`–`S5`), `stance_verdict` (enum: `earned`, `unearned`, `earned-by-frame`, `divergent`). Absent fields = pre-extension findings; validators must not require them. |
+| `plugins/apodictic/schemas/apodictic.finding.v1.schema.json` | Five **optional** properties, following the `salience` precedent: `register` (enum: `asserted`, `generative`), `stance` (enum: `S1`–`S5`), `stance_verdict` (enum: `earned`, `unearned`, `earned-by-frame`, `divergent`), `calibration_effect` (enum: `register-floor`, `stance-demotion`, `blocked-high-stakes`, `blocked-cash-out`), and `cash_out_ref` (`CO#`). Absent fields = pre-extension findings/no calibration effect. Precedence: high-stakes > cash-out > register > stance. |
 | `plugins/apodictic/schemas/apodictic.argument_spine.v1.schema.json` | Extend `argument_type` enum with `AT5`; update the AT0–AT4 `$comment` mirror. |
-| `plugins/apodictic/scripts/` (validate.sh + supporting script) | New `stance-calibration` check: (a) any finding with `stance_verdict` ∈ {earned, earned-by-frame} delivered below Should-Fix must carry the fields that justify it (`stance`, and `register` where the register floor applied); (b) any finding at a cash-out span flagged prescriptive in Argument_State must NOT carry a demoting verdict; (c) enum membership. Shape checks only — the check verifies record honesty, never verdict correctness. |
+| `plugins/apodictic/scripts/` (validate.sh + supporting script) | New `stance-calibration` check: (a) a calibration effect has its required register/stance/verdict fields; (b) `cash_out_ref` resolves to the exact §1 inventory and `Kind: PRESCRIPTION` forces `blocked-cash-out`; (c) an active high-stakes gate forces `blocked-high-stakes`; (d) enum membership. Shape checks only — the check verifies record honesty, never verdict correctness. |
 | `core-editor/references/nonfiction-intake-routing.md` | Fourth route (generative); default-activation row; register-confirmation + consequence-context-recording rule. |
 | `core-editor/references/intake-router-runtime.md` | §6 Table A form row(s) for lens/exploratory essay. |
 | `core-editor/references/argument-audits-routing.md` | `register` pass-through note; two-mechanism stakes-gate interaction (intake-declared document-wide; content-resolved per-span). |
 | `core-editor/references/synthesis-argument.md` | Letter opening frame states applied register; mixed-register ledger note (carry-forward flagged). |
 | `core-editor/references/run-synthesis.md` | §Step 5 Triage: register/stance calibration ordered before the Deficit Lock commit, mirroring the burden floor's position. |
-| `docs/argument-state-schema.md` + Argument_State examples | `register` field in spine block (§1, with AT5 row); consequence-context recording requirement for generative runs. |
+| `docs/argument-state-schema.md` + Argument_State examples | `register` + confirmation and exact `High-stakes gate` fields in §1 (with AT5 row); consequence-context recording; exact `CO# | Location | Kind | Press | Consequence` cash-out inventory for generative runs. |
 | `plugins/apodictic/skills/nonfiction-argument-engine/SKILL.md` | Run-shape field `register`; QA guardrails (register confirmation; consequence-context recording; stance-verdict Firewall line). |
 | `evals/register-stance-pilot/` + fixture manifest | E1–E7 fixtures + expected profiles in canonical tokens; auditor prompt templates; groundtruth-harness wiring. |
 | `changelog.d/` | Two entries (one per fix); minor version bump per plugin.json conventions. |
@@ -278,7 +285,7 @@ Net: six Must-Fix-adjacent findings become one genuine open question (GN4) plus 
 
 ## Appendix B: Pilot Runs (2026-07-15)
 
-Seven blind Opus auditors across three waves; none saw this spec, the expected outcomes, or each other. Machinery-arm auditors received a blinded addendum (this spec's Parts 1–2 stripped of examples and expectations). Fixtures, addendum, and full ledgers: `evals/register-stance-pilot/`. *(All pilot severity labels use the run-harness-injected 4-band scale — see §Validation for the canonical remap. The addendum predates the review rework: it placed triage at Step 9 and used "Observational"; those two mechanics are superseded by this spec's Triage-time/Could-Fix design, which is behaviorally equivalent for everything the pilot measured — the pilot tested aim, refusal, gating, and halo, none of which depend on the lock position or the band name.)*
+Seven blind Opus auditors across three waves; none saw this spec, the expected outcomes, or each other. Machinery-arm auditors received a blinded addendum (this spec's Parts 1–2 stripped of examples and expectations). Fixture texts, the addendum, and the run summary are vendored in `evals/register-stance-pilot/`; the full historical ledgers are not present in this checkout. *(All pilot severity labels use the run-harness-injected 4-band scale — see §Validation for the canonical remap. The addendum predates the review rework: it placed triage at Step 9 and used "Observational"; those two mechanics are superseded by this spec's Triage-time/Could-Fix design, which is behaviorally equivalent for everything the pilot measured — the pilot tested aim, refusal, gating, and halo, none of which depend on the lock position or the band name.)*
 
 ### Wave 1 — contrast pair (2×2)
 

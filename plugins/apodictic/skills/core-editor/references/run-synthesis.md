@@ -178,6 +178,16 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
    - **Should-Fix:** Significant diminishment (max 15)
    - **Could-Fix:** Polish (no cap, deprioritized)
 
+   **Argument register and stance calibration (argument-shaped runs only; before lock).**
+   Apply the declared/confirmed register and `rhetorical-stance-triage.md` while assigning
+   severity, before committing the finding below. Precedence is: active intake high-stakes
+   gate → prescriptive cash-out → register default → instance stance. The first two block
+   demotion; generative non-cash-out WR/SM/BP findings and earned/earned-by-frame eligible
+   stance findings may land at Could-Fix. Record `register`, `stance`, `stance_verdict`,
+   `calibration_effect`, and any exact `cash_out_ref` in the structured finding. GT8 premise-
+   plausibility flags are excluded. Run `stance-calibration` before delivery; the check
+   verifies the recorded decision shape and joins, never the rhetorical verdict.
+
    **Deficit Lock (required, generation-order).** The moment a finding is triaged Must-Fix or Should-Fix, commit it as a structured Finding (`apodictic.finding.v1`, see `findings-ledger-format.md`) at that severity in the Findings Ledger — **before** Step 6 (Adversarial Self-Check) or any later charity reframing runs. From here later steps may raise severity freely, but may only lower a locked severity (or drop a locked finding) by recording an **ID-scoped** body override marker `<!-- override: softness-downgrade F-… — <rationale> -->` — naming the finding's Lifecycle ID, so it acknowledges only that finding (a bare marker acknowledges nothing) — plus an Appendix B entry. Each locked finding keeps its **Finding Lifecycle ID** (`id`); when you deliver it in the letter, cite that ID in an HTML comment near the finding — in the **pinned canonical form `<!-- finding: F-… -->`** (see `output-policy.md §Deficit Lock`; this exact form is what the Annotated-Manuscript crosslink producer back-links against) — and in the Severity Calibration appendix so the gates can match locked→delivered by ID. Canonical rule: `output-policy.md §Severity Honesty Protocol → Deficit Lock`; enforced at Step 10 by `scripts/validate.sh softness-check <letter> <ledger>` and `deficit-lock <ledger>`.
 
 6. **Adversarial Self-Check (required before writing the letter).** Re-evaluate findings in both directions — test whether each severity is too soft (under-diagnosed) or too harsh (over-escalated). Adjust if the adversarial case is stronger than the original assignment. Record the results.

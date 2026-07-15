@@ -32,9 +32,14 @@ Form: pitch-deck
 Goal: win a seed investment for an accessibility-routing product
 Argument type: AT3 — propositional (back this), highly compressed
   Burden level: MEDIUM
+Register: asserted
+Register confirmation: DEFAULT-ASSERTED
+High-stakes gate: INACTIVE — NONE
 Audience:
   Expertise: MIXED (investor reading fast)
   Receptivity: MIXED
+Cash-out inventory:
+  - NONE
 Evaluator: investor (loosen on exhaustive support; tighten on the problem→solution warrant; FM-A8 is the signature risk)
 
 ### Problem
