@@ -142,7 +142,7 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 17. **AT5 Argument Register + Rhetorical Stance Triage** — writer-confirmed generative routing,
     GN0-GN4 diagnostics, per-cash-out asserted burden, pre-lock stance calibration, and the
     `stance-calibration` shape gate. E1-E7 are green; E7 includes two independent strict blind
-    ledger/state pairs with canonical joins and passing validator records.
+    ledger/state pairs with canonical joins, passing validator records, and `--check-all` wiring.
 
 **In progress**
 
