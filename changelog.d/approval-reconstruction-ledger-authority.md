@@ -1,4 +1,4 @@
-### Approval-Gated Reconstruction — ledger-authority redesign (Rev 0.3.1)
+### Approval-Gated Reconstruction — ledger-authority redesign (Rev 0.3.2)
 
 Adopt ADR 0002: `Approval_Events.jsonl` becomes the sole authoritative state, one decision
 bundle is one ledger record (carrying its `MINTED` content payload), and `Approval_Graph.md`
@@ -12,3 +12,6 @@ move to an Increment-1 truncate-and-replay fixture family. Still an unbuilt spec
   ledger-resident source context, a legal QUARANTINE bundle, carried-typing edge identity,
   newline-delimited torn-tail recovery, ledger-derived notes, cache rebuild semantics, and an
   ephemeral process lock for live-session state.
+- Pin canonical nested JSON key order, novel-origin mint payloads, current-draft version identity,
+  QUARANTINE Origin/provenance/context agreement, atomic anchors/flags refresh replay, and
+  distinct machine `reason` versus projected `note` roles.
