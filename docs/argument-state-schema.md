@@ -1,9 +1,9 @@
 # Argument State Schema
 ## Nonfiction Argument Engine — Shared Artifact Specification
-*Version: 0.2.0*
+*Version: 0.3.0*
 *Status: Active*
-*Last updated: March 19, 2026*
-*Depends on: Dialectical Clarity v2.0*
+*Last updated: July 15, 2026*
+*Depends on: Dialectical Clarity v2.1*
 
 ---
 
@@ -59,11 +59,18 @@ Goal: [what the piece is trying to accomplish — one sentence]
 Argument type: [AT-code] — [type name]
   Promise: [what the reader expects to receive]
   Burden level: [LOW / MEDIUM / HIGH]
+Register: [asserted / generative]
+Register confirmation: [DEFAULT-ASSERTED / WRITER-CONFIRMED / FORCED-ASSERTED]
+High-stakes gate: [ACTIVE / INACTIVE] — [intake source or NONE]
 
 Audience:
   Expertise: [GENERAL / MIXED / EXPERT]
   Receptivity: [SYMPATHETIC / MIXED / HOSTILE]
   Consequence context: [LOW / MEDIUM / HIGH]
+
+Cash-out inventory:
+  - CO1 | Location: [stable span] | Kind: [ASSERTION / PRESCRIPTION] | Press: [LIGHT / MEDIUM / HARD] | Consequence: [LOW / MEDIUM / HIGH]
+  - NONE
 
 Warrant verdict: [WARRANTED / UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED]
   Form notes: [if unconventional, name the form and the basis for the verdict]
@@ -79,8 +86,12 @@ Fired codes: [AT-codes, AC-codes, or PASS]
 |-------|-----------|----------|-------|
 | Form | Intake / Step 1 | Yes | From the genre calibration list; "other" allowed with explanation |
 | Goal | Step 1 | Yes | One sentence; extracted from the text, not invented |
-| Argument type | Step 1 | Yes | AT0–AT4 |
+| Argument type | Step 1 | Yes | AT0–AT5 |
+| Register | Intake / Step 1 | Yes for argument-shaped runs | `asserted` is the default; `generative` requires writer confirmation and AT5 routing |
+| Register confirmation | Intake / Step 1 | Yes for argument-shaped runs | Never infer `generative` silently; a high-stakes signal records `FORCED-ASSERTED` |
+| High-stakes gate | Intake / Step 1 | Yes for argument-shaped runs | `ACTIVE` forces asserted burden document-wide; the source after the dash makes the decision auditable |
 | Audience | Step 1 | Yes | Three dimensions; drives calibration in all later sections |
+| Cash-out inventory | Step 1 / Triage | Yes for AT5 or `generative`; otherwise optional | Stable `CO#` join keys. `Kind: PRESCRIPTION` is the mechanical backstop: findings joined by `cash_out_ref` cannot be demoted |
 | Warrant verdict | Step 9 | Yes | Backfilled after terminal step; may retroactively adjust codes. The inference axis (Local Relevance + Local Sufficiency); does not adjudicate premise truth |
 | Premise-plausibility flags | Step 9 | Yes | Backfilled after terminal step; the acceptability axis (Local Acceptability), surfaced as flags only — never a truth verdict, never alters the warrant verdict by itself |
 
@@ -578,8 +589,8 @@ Schema version does not change when:
 - Companion modules are added (they get new subsections in § 10)
 - Field descriptions are clarified without changing the field's meaning
 
-Current schema version: **0.2.0** (R2: §6 objection-typing fields — Target/Relation/Basis/Condition/Derivation anchors — + the §4 Defeater-refs projection; additive, legacy untyped records stay valid)
-Depends on: Dialectical Clarity v2.0
+Current schema version: **0.3.0** (AT5/register calibration: required register-confirmation and high-stakes fields for argument-shaped runs, plus the cash-out inventory; legacy finding records remain valid through optional extension fields)
+Depends on: Dialectical Clarity v2.1
 
 ---
 

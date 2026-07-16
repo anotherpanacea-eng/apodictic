@@ -22,6 +22,19 @@ do not treat nonfiction as a generic gap. Apply this triage:
 2. support, comparison, evaluation, proposal, or testimony dominates the structure
 3. the user is working on an op-ed, policy brief, testimony, academic argument, open letter, advocacy argument, recommendation memo, white paper, legal-style brief, or other claim-bearing prose
 
+### Route to the Nonfiction Argument Engine with `register=generative` when:
+
+1. the manuscript makes an extractable claim or offers an organizing lens
+2. the dominant mode is exploratory: associative development, metaphor extension,
+   thinking-in-public, or aphoristic/essayistic structure
+3. the writer confirms the proposed register at intake; it is never silently inferred
+4. no intake-declared high-stakes signal is present
+
+Record `Register`, `Register confirmation`, `High-stakes gate`, and consequence context in
+Argument_State §1. High-stakes forms force `register=asserted`. In a confirmed generative
+run, inventory every cash-out with a stable `CO#`; prescriptions retain asserted burden at
+that span.
+
 ### Route to Narrative Nonfiction Craft when:
 
 1. the material is primarily scene-led, reportorial, or chronologically narrative
@@ -47,6 +60,7 @@ If the manuscript is Franklin Classification 3:
 | Policy brief / recommendation memo / white paper | Dialectical Clarity; offer Red Team next |
 | Testimony | Dialectical Clarity; offer Red Team next |
 | Academic argument / review essay / legal brief | Dialectical Clarity |
+| Lens essay / exploratory essay / aphoristic sequence / blog-native serial essay | Dialectical Clarity with `register=generative`; offer Red Team on cash-out points only |
 | Reported feature / scene-led journalism | Narrative Nonfiction Craft |
 | Memoir / personal essay / witness-led CNF | Memoir & CNF; add Dialectical Clarity when explicit claim burden dominates |
 

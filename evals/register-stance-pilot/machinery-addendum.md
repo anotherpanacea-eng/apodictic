@@ -45,7 +45,7 @@ peer-reviewed publication force `asserted`).
 
 - GN2 and GN4 floor at the severity the equivalent asserted-register finding would carry.
 - GN0, GN1, GN3 calibrate by how much the piece asks of the lens.
-- WR / SM / BP findings on non-cash-out spans floor at **Observational**, recorded with
+- WR / SM / BP findings on non-cash-out spans floor at **Could-Fix**, recorded with
   `register: generative` in the finding block, with a note naming what a reader who rejects the
   lens loses.
 - CL4 / definitional-drift findings: a term migrating from technical to metaphorical sense is
@@ -98,12 +98,16 @@ outputs and return the verdict to the writer):
 
 ### Severity interaction
 
-- Earned or earned-by-frame → finding demotes to Observational, with `stance:` and
+- Run stance triage during severity assignment, before the Deficit Lock commits the finding.
+- Earned or earned-by-frame → finding demotes to Could-Fix, with `stance:` and
   `stance_verdict:` recorded in the finding block.
 - Unearned → severity unchanged.
 - **Stakes gate:** in high-stakes forms the triage still runs and records, but NO verdict demotes
   severity.
-- Precedence, highest first: stakes gate → register defaults → instance stance.
+- **Cash-out gate:** a finding joined to a prescriptive cash-out remains at full asserted burden;
+  no register floor or stance verdict demotes it.
+- Precedence, highest first: high-stakes gate → prescriptive cash-out → register floor → instance
+  stance.
 
 ### Firewall lines
 

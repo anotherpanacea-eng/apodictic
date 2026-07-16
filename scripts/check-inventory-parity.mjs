@@ -90,6 +90,7 @@ const NOT_CARDED = new Set([
   "craft/compression-audit-level-setting.md",
   "craft/decision-pressure-level-setting.md",
   "craft/dialectical-clarity-level-setting.md",
+  "craft/rhetorical-stance-triage.md",
   "craft/female-interiority-level-setting.md",
   "craft/force-architecture-level-setting.md",
   "craft/literary-craft-level-setting.md",

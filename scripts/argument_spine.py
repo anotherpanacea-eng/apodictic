@@ -684,6 +684,7 @@ def run_self_test():
 
     # clean: a well-formed spine that seeds Argument_State §1/§2 with a matching C0
     chk("clean", check(seeded())[0] == 0)
+    chk("a1_at5_generative_type_valid", check(seeded(block=spine(argument_type="AT5")))[0] == 0)
     # no block -> no-op
     chk("no_block_noop", check("# notes\nno spine yet\n")[0] == 0)
 

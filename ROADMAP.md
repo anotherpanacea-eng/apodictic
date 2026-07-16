@@ -124,7 +124,7 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 **Built**
 
 1. Dialectical Clarity v2.1 + level-setting research
-2. `docs/argument-state-schema.md` (v0.2.0, §§ 10.1–10.9)
+2. `docs/argument-state-schema.md` (v0.3.0, §§ 10.1–10.9)
 3. Argument Red Team (v1.0) + level-setting research
 4. Argument Persuasion + level-setting research
 5. Argument Evidence Deep-Dive
@@ -139,6 +139,10 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 14. **R3A/R3B — AGD Move Audit** plus the Voiceprint scan consumer and deterministic scan↔audit agreement benchmark
 15. **R4A/R4B — argument-layer boundary ADR and crosswalk**, Bridge-recoverability migration, and the optional one-way AIF-Core export
 16. **R5 — ClaimLicense↔Toulmin docs-only crosswalk**, explicitly analogy rather than identity
+17. **AT5 Argument Register + Rhetorical Stance Triage** — writer-confirmed generative routing,
+    GN0-GN4 diagnostics, per-cash-out asserted burden, pre-lock stance calibration, and the
+    `stance-calibration` shape gate. E1-E7 are green; E7 includes two independent strict blind
+    ledger/state pairs with canonical joins, passing validator records, and `--check-all` wiring.
 
 **In progress**
 

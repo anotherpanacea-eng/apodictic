@@ -5,6 +5,12 @@
 
 # Argument Audits — Signal Propagation Fragment
 
+The severity rows below are **asserted-register base severities**. For an argument-shaped
+run, Triage then applies the precedence defined in `run-synthesis.md`: active high-stakes
+gate → prescriptive cash-out → confirmed generative-register default → instance rhetorical
+stance. Calibration happens before the Deficit Lock and is recorded in the structured
+finding; these rows never authorize post-lock softening.
+
 *This fragment contains the argument-cluster rows from `pass-dependencies.md §4e` (Audit-Signal
 Propagation Table). The `audit-signal-propagation` validator loads both the main §4e table in
 `pass-dependencies.md` and this fragment when checking argument-shaped runs.*

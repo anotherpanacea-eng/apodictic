@@ -3,7 +3,7 @@ name: nonfiction-argument-engine
 description: >
   Argument-shaped nonfiction development engine for op-ed, policy brief, testimony,
   academic argument, open letter, white paper, advocacy argument, legal brief,
-  regulatory comment, and expert affidavit. Provides Dialectical Clarity audit,
+  regulatory comment, expert affidavit, and writer-confirmed lens/exploratory essays. Provides Dialectical Clarity audit,
   Argument Red Team, Argument Persuasion, Argument Evidence Deep-Dive, Adversarial
   Evidence Review, Field Reconnaissance, and Citation Verifier as companion audits.
   Also covers nonfiction argument coaching and nonfiction pre-draft argument spine work.
@@ -63,6 +63,8 @@ without a discernible persuasive claim ladder. Those route via their own §4a ro
 
 **Run-shape fields passed from core-editor:**
   - `form` — the specific argument form (op-ed, policy brief, etc.)
+  - `register` — `asserted` (default) or writer-confirmed `generative`
+  - `register_confirmation` — `DEFAULT-ASSERTED`, `WRITER-CONFIRMED`, or `FORCED-ASSERTED`
   - `audience_burden` — HIGH / MEDIUM / LOW per §Step 1 of Dialectical Clarity
   - `stakes` — moral / epistemic / practical / mixed
   - `high_stakes_flag` — boolean (triggers Hard Prerequisite tier for Field Recon)
@@ -116,6 +118,7 @@ This skill loads the following reference files:
 | `core-editor/references/intake-router-runtime.md` | Full intake routing (for §6 Table A / form identification) |
 | `core-editor/references/pass-dependencies.md` | Pass resolver + audit tier definitions + §4e table |
 | `core-editor/references/run-synthesis.md` | Synthesis spine (shared with fiction path) |
+| `specialized-audits/references/craft/rhetorical-stance-triage.md` | Argument-move stance taxonomy and pre-lock calibration protocol |
 
 ---
 
@@ -127,6 +130,8 @@ Load `core-editor/references/intake-router-runtime.md §6`. Run nonfiction triag
 the fragment `core-editor/references/nonfiction-intake-routing.md`:
 
 - Identify form, audience, stakes, constraint=high-stakes
+- Propose `generative` only for a lens/exploratory form and obtain writer confirmation;
+  otherwise record the asserted default. A high-stakes signal forces asserted.
 - Seed `Argument_State.md` with the initial `apodictic:argument_spine` block
 - Identify the Hard Prerequisite tier requirement (high-stakes signal → Field Recon first)
 
@@ -181,6 +186,14 @@ All core-editor QA guardrails apply (see `core-editor/SKILL.md §QA Guardrails`)
    that a load-bearing premise's *acceptability* is contestable, overloaded, or unearned; it never
    rules the premise true or false, supplies missing evidence, or alters the warrant verdict. Any
    output that adjudicates a flagged premise as true or false fails the Firewall check.
+6. **Register confirmation before calibration.** A generative run records writer confirmation,
+   consequence context, and the exact cash-out inventory in Argument_State §1. Silent inference is
+   a QA failure. Intake-declared high stakes forces `register=asserted`.
+7. **Stance verdicts classify moves, never claims.** `earned` is not evidence that a claim is true;
+   `unearned` is not evidence that it is false. Calibration occurs at Triage before the Deficit Lock,
+   and prescriptive cash-outs remain at asserted burden. The shape gate validates recorded
+   verdicts/effects and supplied cash-out joins; the auditor still owns completeness because an
+   omitted optional join or undeclared stance cannot be inferred mechanically from prose location.
 
 ---
 

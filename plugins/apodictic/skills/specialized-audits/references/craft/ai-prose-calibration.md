@@ -783,6 +783,13 @@ Note: Systemic + Keep is not a valid combination for AIC-7. If discourse leak is
 
 This translation is for interoperability with severity floors and revision checklist integration only. The audit's own outputs use Spot/Pattern/Systemic + Keep/Recast/Replace + source-triage verdicts because those three axes are more informative for the author's revision work.
 
+**Argument-domain sibling:** `rhetorical-stance-triage.md` deliberately reuses the
+earned / unearned / earned-by-frame vocabulary for argumentative moves. The domains stay
+separate: Layer C source triage adjudicates AIC voice/craft-pattern families using voice
+attribution and callback knowledge; rhetorical stance triage adjudicates overstatement-
+family argument codes using signaling, payoff, and function-under-detection. Neither
+module writes the other's verdict fields or treats its verdict as a truth judgment.
+
 ### The Surface-Tell Question
 
 Writers and editors often maintain lists of "AI words" and surface tells — em-dash frequency, "delve," "tapestry," the magic triple. These lists are useful but unstable: they decay as models change and as writers learn to avoid them. AIC-7 is designed to be more durable than a word list because it targets *discourse habits* rather than *vocabulary*. "Delve" will stop being a tell when models stop overusing it. But the tendency to hedge, to organize in threes, to throat-clear before revelations, to qualify every commitment — these reflect how language models process and present information, not which words they favor. The habits will evolve more slowly than the vocabulary.

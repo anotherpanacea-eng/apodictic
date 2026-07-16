@@ -24,6 +24,12 @@ decision-layer schema. The validator accepts variant heading names:
 The validator **skips** Check 3 (Control Questions) and Check 4 (Mandatory Appendices A/B/C) for
 argument-DE class letters — argument-DE class is not held to the fiction-DE structural contract.
 
+Open the letter by naming the rubric actually applied: `register=asserted` or
+writer-confirmed `register=generative`, plus any active high-stakes gate. For a mixed-
+register ledger, cluster findings by mechanism and explicitly separate journey findings
+from asserted cash-out findings; never make the author reverse-engineer why two similar
+flags received different Triage treatment.
+
 *Closes Phase 4 Wave 3 eval-coverage finding C3.*
 
 ### Argument-DE detection markers
