@@ -1921,6 +1921,25 @@ PY
   fi
   echo ""
 
+  # E7 strict evidence is ground truth for the built register/stance layer, not a one-off
+  # review artifact. Exercise both independently produced machine-conformant pairs so later
+  # validator or fixture drift cannot leave the declared E7 closure green by accident.
+  CA_E7_ROOT=""
+  for cand in "$CA_SCRIPT_DIR/../../../evals/register-stance-pilot" "$CA_SCRIPT_DIR/../evals/register-stance-pilot"; do
+    if [ -d "$cand" ]; then CA_E7_ROOT="$cand"; break; fi
+  done
+  echo "== stance-calibration (E7 strict blind pairs) =="
+  if [ -n "$CA_E7_ROOT" ]; then
+    for pair in e7-strict-a e7-strict-b; do
+      "$0" stance-calibration "$CA_E7_ROOT/$pair/Findings_Ledger.md" --argument-state "$CA_E7_ROOT/$pair/Argument_State.md" >/dev/null 2>&1 \
+        && echo "  ok $pair" \
+        || { echo "  FAIL $pair"; "$0" stance-calibration "$CA_E7_ROOT/$pair/Findings_Ledger.md" --argument-state "$CA_E7_ROOT/$pair/Argument_State.md" || true; CA_FAIL=1; }
+    done
+  else
+    echo "  FAIL (E7 strict fixture root not found)"; CA_FAIL=1
+  fi
+  echo ""
+
   # Fleet-convention invariant: the meta-linter gates the whole validator fleet against the recurring
   # bug classes (resolver-substring, count-drift, unwired self-test, orphan schema) found by the
   # 2026-06-20 sweep, so they cannot silently re-enter.
