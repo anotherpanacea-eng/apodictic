@@ -18,7 +18,7 @@ Adopt a single-authority model. Recovery stops being "reconcile three partially-
 - **D4 — `Adjudication_Session.json` is a reconstructible cursor/cache, never an authority.** It may be regenerated from the ledger at any time; losing it loses nothing. Live `OPEN` state is an ephemeral exclusive process lock, not a persisted cache fact.
 - **D5 — Recovery = verify, truncate only an uncommitted byte tail, and replay.** Every LF-terminated record carries a stored self-verifying bundle hash and is authoritative or an error. Only a final suffix lacking LF is torn and truncatable. Graph and session are regenerated from the verified replay. Recovery **fails closed**: if the last authoritative record cannot be identified, the tool errors — never a silent advance, never `CLOSED`.
 - **D6 — Replay owns all projection inputs.** Bundle context carries source filename/hash and Argument State identity; event `note` fields carry the optional human-readable Notes projection. The graph header and notes never supply facts back to the ledger.
-- **D7 — Novelty is a first-class ledger mutation.** S4 emits a `QUARANTINE` bundle of system `MINTED` events; it never appends directly to the graph projection.
+- **D7 — Novelty is a first-class ledger mutation.** S4 emits a `QUARANTINE` bundle of system `MINTED` events; it never appends directly to the graph projection. The bundle binds the current draft's logical version/hash, and each novel node carries the canonical empty-anchor, Origin, and S4-violation provenance payload needed to reproduce those bytes.
 
 ## What this supersedes in #215
 
@@ -47,7 +47,7 @@ Survives, unchanged (this ADR is orthogonal to them):
 ## Recommended path
 
 1. Land this ADR (accept the authority decision).
-2. Revise `docs/approval-gated-reconstruction.md` through Rev 0.3.1: implement D1–D7, resolve bundle-record History grammar, keep the invariant-level fail-closed rule, and update Build Increments.
+2. Revise `docs/approval-gated-reconstruction.md` through Rev 0.3.2: implement D1–D7, resolve bundle-record History grammar, pin canonical quarantine payload bytes, keep the invariant-level fail-closed rule, and update Build Increments.
 3. Increment 1 builds against the revised spec, with the truncate-and-replay fixture family as an explicit deliverable.
 
 This closes the recovery subsystem by deleting most of it, rather than hardening it for a fourth round.

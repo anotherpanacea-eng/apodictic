@@ -144,9 +144,10 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 
 1. Argument Engine Benchmark Suite — spec + vertical slice landed (see below)
 2. **Approval-Gated Reconstruction Phase 0** — deterministic contract hardening is in
-   progress before Increment 1. Rev 0.3.1 adopts one authoritative, stored-hash bundle ledger;
+   progress before Increment 1. Rev 0.3.2 adopts one authoritative, stored-hash bundle ledger;
    graph/session are rebuildable projections, source context and notes are replayable,
-   QUARANTINE is a legal bundle, edge identity includes carried typing, live-session state is
+   QUARANTINE is a legal bundle with byte-pinned novel-origin payloads and draft identity,
+   edge identity includes carried typing, live-session state is
    an ephemeral process lock, and recovery truncates only a missing-LF tail. The fail-closed
    I5 boundary remains. `approval_graph.py` remains unbuilt until this contract is reviewed.
 
