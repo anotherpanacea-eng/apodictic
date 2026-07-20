@@ -63,6 +63,7 @@
         "gmail_sent:personal": "email.personal"
       },
       "schema": "setec-author-corpus-export/1",
+      "source_persona_aliases": {},
       "source_snapshot_sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
       "surface": "author_corpus_export",
       "surface_version": "1"
