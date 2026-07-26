@@ -809,6 +809,129 @@ def t9b_consume_claim_matches_repo() -> None:
     )
 
 
+# --------------------------------------------------------------------------
+# T10 — voice_distance register-family migration sentinel.
+# --------------------------------------------------------------------------
+_LEGACY_VOICE_DISTANCE_PIN = "7d9df6831c819da9da4e40863df1601e3b526243"
+_REGISTER_FAMILIES_V2 = "register_families/v2"
+_REGISTER_MATCH_STRENGTHS = {"strong", "moderate", "weak", "mismatch"}
+
+
+def _voice_distance_contract_errors(
+    pin_commit: object, payload: object
+) -> list[str]:
+    """Return fail-closed migration errors for a pin/fixture pair.
+
+    The currently pinned producer predates ``register_families/v2`` and its
+    fixture intentionally retains the legacy ``verdict`` shape.  Once the pin
+    moves, the consumer must receive the complete replacement contract in the
+    same sync: both taxonomy markers, a closed ``strength`` value, and no
+    verdict.  This is an offline gate over committed metadata only.
+    """
+    errors: list[str] = []
+    if not isinstance(payload, dict):
+        return ["fixture root must be an object"]
+    results = payload.get("results")
+    if not isinstance(results, dict):
+        return ["results must be an object"]
+    register_match = results.get("register_match")
+    if not isinstance(register_match, dict):
+        return ["results.register_match must be an object"]
+    classification = register_match.get("target_classification")
+    match = register_match.get("match")
+    if not isinstance(classification, dict):
+        errors.append(
+            "results.register_match.target_classification must be an object"
+        )
+    if not isinstance(match, dict):
+        errors.append("results.register_match.match must be an object")
+    if errors:
+        return errors
+
+    assert isinstance(classification, dict)
+    assert isinstance(match, dict)
+    if pin_commit == _LEGACY_VOICE_DISTANCE_PIN:
+        if "taxonomy" in classification or "taxonomy" in match:
+            errors.append("legacy pin must retain the pre-v2 taxonomy shape")
+        if "strength" in match:
+            errors.append("legacy pin must retain verdict rather than strength")
+        if not isinstance(match.get("verdict"), str) or not match["verdict"]:
+            errors.append("legacy pin requires its non-empty verdict")
+        return errors
+
+    if classification.get("taxonomy") != _REGISTER_FAMILIES_V2:
+        errors.append(
+            "target_classification.taxonomy must be register_families/v2"
+        )
+    if match.get("taxonomy") != _REGISTER_FAMILIES_V2:
+        errors.append("match.taxonomy must be register_families/v2")
+    strength = match.get("strength")
+    if (
+        not isinstance(strength, str)
+        or strength not in _REGISTER_MATCH_STRENGTHS
+    ):
+        errors.append(
+            "match.strength must be one of strong/moderate/weak/mismatch"
+        )
+    if "verdict" in match:
+        errors.append("v2 match must not retain the legacy verdict")
+    return errors
+
+
+def t10_voice_distance_register_family_migration_sentinel() -> None:
+    print("T10: voice_distance register-family migration sentinel (offline)")
+    lock = json.loads((REPO_ROOT / "setec-plugin.lock").read_text(encoding="utf-8"))
+    fixture = json.loads(
+        (VENDORED_FIXTURES / "voice_distance.json").read_text(encoding="utf-8")
+    )
+    current_errors = _voice_distance_contract_errors(lock.get("commit"), fixture)
+    check(
+        not current_errors,
+        "current pin and vendored voice_distance fixture satisfy the matching "
+        f"legacy/v2 contract ({current_errors!r})",
+    )
+
+    moved_pin = "0" * 40
+    moved_legacy_errors = _voice_distance_contract_errors(moved_pin, fixture)
+    check(
+        bool(moved_legacy_errors),
+        "a moved producer pin with the legacy fixture fails closed",
+    )
+
+    v2 = json.loads(json.dumps(fixture))
+    match_block = v2["results"]["register_match"]
+    match_block["target_classification"]["taxonomy"] = _REGISTER_FAMILIES_V2
+    match = match_block["match"]
+    match.pop("verdict", None)
+    match["taxonomy"] = _REGISTER_FAMILIES_V2
+    match["strength"] = "strong"
+    check(
+        not _voice_distance_contract_errors(moved_pin, v2),
+        "a moved producer pin accepts the complete v2 register-family contract",
+    )
+
+    missing_taxonomy = json.loads(json.dumps(v2))
+    missing_taxonomy["results"]["register_match"]["match"].pop("taxonomy")
+    check(
+        bool(_voice_distance_contract_errors(moved_pin, missing_taxonomy)),
+        "a moved producer pin rejects a missing v2 taxonomy marker",
+    )
+
+    retained_verdict = json.loads(json.dumps(v2))
+    retained_verdict["results"]["register_match"]["match"]["verdict"] = "match"
+    check(
+        bool(_voice_distance_contract_errors(moved_pin, retained_verdict)),
+        "a moved producer pin rejects a retained legacy verdict",
+    )
+
+    invalid_strength = json.loads(json.dumps(v2))
+    invalid_strength["results"]["register_match"]["match"]["strength"] = "close"
+    check(
+        bool(_voice_distance_contract_errors(moved_pin, invalid_strength)),
+        "a moved producer pin rejects strength outside the closed vocabulary",
+    )
+
+
 def main() -> int:
     for fn in (
         t1_floor_resolution_from_vendored_manifest,
@@ -822,6 +945,7 @@ def main() -> int:
         t8_run_surface_cli_preserves_dispatcher_exit_code,
         t9_voice_profile_consume_contract,
         t9b_consume_claim_matches_repo,
+        t10_voice_distance_register_family_migration_sentinel,
     ):
         fn()
         setec_capabilities.clear_cache()
