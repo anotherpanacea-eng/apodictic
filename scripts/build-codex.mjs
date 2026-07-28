@@ -2,8 +2,8 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { createZipArchive, listZipEntries, listZipEntryMetadata } from "./zip-archive.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,7 +21,8 @@ if (!fs.existsSync(registryPath)) {
 }
 
 const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
-const { paths = {}, commands = [], codex } = registry;
+const { paths = {}, commands = [], archiveExecutableFiles = [], codex } = registry;
+const archiveExecutableSet = new Set(archiveExecutableFiles);
 
 if (!codex) {
   console.error("Missing codex section in release-registry.json.");
@@ -479,28 +480,33 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
     }
   }
 
-  execFileSync(
-    "zip",
-    [
-      "-X",
-      "-rq",
-      tempArchivePath,
-      "README.md",
-      "NON_PARITY_NOTES.md",
-      ".agents",
-      "plugins",
-      "-x",
-      "plugins/apodictic/.claude-plugin/*",
-      "-x",
-      "*/.DS_Store"
-    ],
-    { cwd: tempWorkspace }
-  );
+  const archiveSources = walkFiles(tempWorkspace)
+    .map((sourcePath) => ({
+      sourcePath,
+      archiveName: path.relative(tempWorkspace, sourcePath).split(path.sep).join("/"),
+      mode: archiveExecutableSet.has(
+        path.relative(tempWorkspace, sourcePath).split(path.sep).join("/")
+      ) ? 0o755 : 0o644
+    }))
+    .filter(({ archiveName }) =>
+      archiveName === "README.md" ||
+      archiveName === "NON_PARITY_NOTES.md" ||
+      archiveName.startsWith(".agents/") ||
+      archiveName.startsWith("plugins/")
+    )
+    .filter(({ archiveName }) => !archiveName.endsWith("/.DS_Store"))
+    .filter(({ archiveName }) => !archiveName.startsWith("plugins/apodictic/.claude-plugin/"));
+  createZipArchive(tempArchivePath, archiveSources);
 
-  const archiveEntries = execFileSync("unzip", ["-Z1", tempArchivePath], { encoding: "utf8" })
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const archiveEntries = listZipEntries(tempArchivePath);
+  const archiveModes = new Map(
+    listZipEntryMetadata(tempArchivePath).map(({ name, mode }) => [name, mode])
+  );
+  for (const entry of archiveExecutableSet) {
+    if (archiveModes.get(entry) !== 0o755) {
+      throw new Error(`Archive executable mode was not preserved: ${entry}`);
+    }
+  }
 
   const requiredArchiveEntries = [
     "README.md",

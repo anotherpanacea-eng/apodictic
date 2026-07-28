@@ -188,6 +188,10 @@
 
 set -euo pipefail
 
+# Keep validator output deterministic on Windows consoles and Unix hosts.
+export PYTHONUTF8=1
+export PYTHONIOENCODING=utf-8
+
 # Single source of truth for the self-testable validator set. Every displayed count below is
 # DERIVED from this list (AGG_COUNT) — never hard-code the number (a PR adding a validator edits
 # only this line, so the count strings can't go stale or collide on merge).

@@ -860,8 +860,9 @@ def run_self_test():
                                       + "\n" + budget_block() + "\n", tmp, snap_file)
         check("v2_ungrounded_alternative_warns", not e and any("grounding floor" in x for x in w),
               str(e + w))
-        # containment: absolute + escaping snapshot_path refused by name
-        e, _, _ = refutation_evidence("# R\n" + ref_block(snap_path="/etc/hosts") + "\n"
+        # containment: platform-native absolute + escaping snapshot_path refused by name
+        abs_outside = os.path.abspath(os.path.join(tmp, os.pardir, "outside.md")).replace(os.sep, "/")
+        e, _, _ = refutation_evidence("# R\n" + ref_block(snap_path=abs_outside) + "\n"
                                       + budget_block() + "\n", tmp, None)
         check("v2_absolute_snapshot_path_refused", any("absolute" in x for x in e), str(e))
         e, _, _ = refutation_evidence("# R\n" + ref_block(snap_path="../outside.md") + "\n"

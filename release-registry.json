@@ -1,4 +1,14 @@
 {
+  "archiveExecutableFiles": [
+    "plugins/apodictic/scripts/honesty_check.py",
+    "plugins/apodictic/scripts/preflight.sh",
+    "plugins/apodictic/scripts/refutation_check.py",
+    "plugins/apodictic/scripts/run_gate.py",
+    "plugins/apodictic/scripts/structured_findings.py",
+    "plugins/apodictic/scripts/validate.sh",
+    "plugins/apodictic/skills/specialized-audits/scripts/ai_prose_voice_distance.py",
+    "plugins/apodictic/skills/specialized-audits/scripts/ai_prose_voice_profile.py"
+  ],
   "paths": {
     "rootReadme": "README.md",
     "pluginJson": "plugins/apodictic/.claude-plugin/plugin.json",
