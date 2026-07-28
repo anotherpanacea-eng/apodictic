@@ -5,7 +5,7 @@ implemented" label was stale (caught in the 2026-06-19 Codex-down reconciliation
 The live implementation is in `run-full.md` §Pass 3 / §Pass 7, the intake question `run-core.md` Q14a, the
 `setec_runner.py` helper, and the §4e POV Voice Profile rows.
 **Predecessor work:** Phase 2 substrate swap + new audits, 2026-05-17 (see `project_apodictic_setec_integration.md` memory entry; `plugins/apodictic/skills/specialized-audits/scripts/setec_discovery.py` + ai_prose_* shims).
-**Required SETEC:** ≥ 1.86.0 per-surface floor, but the **effective** runtime floor is **1.114.0** (the R2 dispatcher bootstrap in `setec_discovery.py`); the vendored contract is `v1.117.0` (`setec-plugin.lock`).
+**Required SETEC:** ≥ 1.86.0 per-surface floor, but the **effective** runtime floor is **1.114.0** (the R2 dispatcher bootstrap in `setec_discovery.py`); the vendored contract is `v1.126.0` (`setec-plugin.lock`, refreshed 2026-07-27 — the line previously read `v1.117.0`, which the weekly sync had already moved past).
 
 > ## ⚠️ Reconciliation note — already built (2026-06-19, Codex-down independent review)
 >
@@ -20,6 +20,8 @@ The live implementation is in `run-full.md` §Pass 3 / §Pass 7, the intake ques
 > **Stale specifics in the body, do not trust them (the live code got them right):**
 > - §3 tables name two SETEC surfaces that **do not exist**: `sliding_window_heatmap` (it's only a
 >   `variance_audit --window-size` flag) and `voice_drift_tracker`. Neither is in the manifest/shims.
+>   — **⚠️ This bullet is wrong and is kept only as provenance. Both surfaces exist and predate this
+>   note; see the 2026-07-27 correction box immediately below.**
 > - §3 table typo `punctuation_cadence` → the real surface is **`punctuation_cadence_audit`**.
 > - §4 step 7 ("regenerate codex + antigravity host workspaces") is **stale**: those trees are no longer
 >   committed (AGENTS.md §Platform parity / GitHub #52 Option B) — `release.sh` cuts versions, it doesn't
@@ -32,6 +34,56 @@ The live implementation is in `run-full.md` §Pass 3 / §Pass 7, the intake ques
 > audit-signal-propagation`'s self-test doesn't exercise them yet. **That** (build a multi-POV fixture →
 > validate the convergence-ladder severities → promote off provisional + add self-test coverage) is the
 > only real remaining work, and it's code/tests → gated on Codex. See the fleet board.
+
+> ## ⚠️ Correction to the note above — both surfaces exist (2026-07-27, SETEC registry verification)
+>
+> The 2026-06-19 bullet asserting that `sliding_window_heatmap` and `voice_drift_tracker` **"do not
+> exist"** was already false when it was written. It is left in place above as provenance; **do not
+> act on it.** Both are shipped SETEC surfaces on `setec-voiceprint@origin/main`, with registry
+> fragments, implementations, and test suites:
+>
+> | Capability id | Script (repo-relative, LOC) | Registry fragment | First shipped | Latest touch |
+> |---|---|---|---|---|
+> | `sliding_window_heatmap` | `plugins/setec-voiceprint/scripts/sliding_window_heatmap.py` (902) | `plugins/setec-voiceprint/capabilities.d/sliding_window_heatmap.yaml` | `617f6f9`, 2026-05-10 (SETEC 1.29.0) | `2786731`, 2026-05-17 (schema_version 1.0 envelope) |
+> | `voice_drift_tracker` | `plugins/setec-voiceprint/scripts/voice_drift_tracker.py` (1,421) | `plugins/setec-voiceprint/capabilities.d/voice_drift_tracker.yaml` | `3442f9f`, 2026-05-08 | `86ce0f4`, 2026-07-26 |
+>
+> Test coverage on the producer side: `scripts/tests/test_sliding_window_heatmap.py` (687 lines) and
+> `test_voice_drift_tracker.py` + `_cache` + `_schema` (1,080 lines combined). Both are also
+> documented in SETEC's `scripts/README.md` surface tables — `sliding_window_heatmap` under
+> `smoothing_diagnosis`, `voice_drift_tracker` under `voice_coherence`.
+>
+> **Verify (producer repo, no network):**
+> ```
+> git show origin/main:plugins/setec-voiceprint/capabilities.d/sliding_window_heatmap.yaml
+> git show origin/main:plugins/setec-voiceprint/capabilities.d/voice_drift_tracker.yaml
+> python3 plugins/setec-voiceprint/scripts/capabilities.py show sliding_window_heatmap --format json
+> ```
+>
+> **The half of the old bullet that was right, restated correctly.** `sliding_window_heatmap` is not a
+> *measurement* — it renders `variance_audit`'s sliding-window output (sparkline, band tape, hot-zones
+> in word coordinates, per-signal × per-window grid). The measurement really is the
+> `variance_audit --window-size` run; the heatmap is the separate rendering surface over it. So §3's
+> Pass-3 row is right to list it as an **optional advanced output**, not as a second measurement.
+>
+> **Still true, for a different reason: neither is reachable from APODICTIC yet.** Not because they
+> don't exist, but because neither is *pinned*. Both fragments still carry `consumers: []` and
+> `status: todo` with seeded `TODO` metadata, and neither carries a `json_delivery` field. Three
+> consequences, each mechanical:
+> - `scripts/sync_setec.py` vendors an entry **iff** `"apodictic"` appears in its `consumers` list, so
+>   neither lands in `tests/setec-contract/setec-capabilities.json` (15 entries at SETEC v1.126.0).
+> - `setec_run.py`'s `consumer_entries()` promotes an entry to a dispatcher surface **iff** it carries
+>   `json_delivery`, so `setec_runner.run_supplement("voice_drift_tracker", …)` would resolve to an R3
+>   `bad_input` envelope today.
+> - There are no `ai_prose_*` shims for either.
+>
+> **Follow-up (producer-side; deliberately NOT done in this doc's PR).** Pinning is a
+> `setec-voiceprint` change plus a sync run, not an APODICTIC edit: fill both seeded fragments off
+> `status: todo`, add `consumers: ['apodictic']` and `json_delivery: stdout` (+ `min_setec_version`,
+> `dependencies`), regenerate each `scripts/tests/_golden_capabilities/<id>.json` per the standing
+> per-capability convention, then run `python3 scripts/sync_setec.py` here and commit the regenerated
+> `tests/setec-contract/setec-capabilities.json` + `setec-plugin.lock`. **Do not hand-edit the lock or
+> the vendored manifest** (AGENTS.md § Fleet / cross-repo context). Until that lands, the two §3 rows
+> below are **aspirational, not stale** — the surfaces are real; the pin is missing, and §3 now says so.
 
 ---
 
@@ -98,7 +150,7 @@ Constraint baked in: voice distinctiveness is most visible in high-stakes / emot
 | Active verb density | (no SETEC equivalent; LLM keeps doing this) | — |
 | Dialogue-to-prose ratio | (no SETEC equivalent; LLM keeps doing this — could be future work) | — |
 | Punctuation rhythm (new) | `punctuation_cadence_audit.py` | Adds a new measurement the pass didn't have: catches house-style regularization the rhythm-by-sentence-length view misses. |
-| Sliding-window pacing diagnosis | `sliding_window_heatmap.py` | Optional advanced output — visualizes variance localization across a long manuscript. Render only when manuscript ≥ 50,000 words. |
+| Sliding-window pacing diagnosis | `sliding_window_heatmap.py` (capability id `sliding_window_heatmap`) | Optional advanced output — visualizes variance localization across a long manuscript. Render only when manuscript ≥ 50,000 words. **Exists but is not pinned** (`consumers: []`, no `json_delivery`) — not in the vendored contract or the shims; see the 2026-07-27 correction box. |
 
 Where the supplementation runs in the pass: as **Step 1, before** the LLM produces the intensity map. The pass becomes:
 
@@ -120,7 +172,7 @@ Output document changes: the existing `[Project]_Pass3_Rhythm_Modulation_[runlab
 | Voice distinctiveness — full 6-dimension comparison | `pov_voice_profile.py` + `voice_distance.py` per POV | The pairwise distance matrix is the empirical version of the 6-dimension comparison table. SETEC adds Burrows-Delta and per-feature cosine; the LLM still reads the metaphor-domain / temporal-orientation / epistemic-style dimensions that aren't fully captured by stylometry. |
 | Voice-collapse verdict | `pov_voice_profile.py --collapse-threshold` | Empirical companion to the Blind Swap test. The LLM still runs the Blind Swap; SETEC's verdict goes in the evidence column. |
 | Signature features per POV (new) | `idiolect_detector.py` per POV slice (target = single-POV documents in manifest) | Adds a layer the existing pass doesn't have: per-POV preservation candidates (the specific words / phrases that distinguish each POV). |
-| Voice drift across the manuscript timeline (advanced) | `voice_drift_tracker.py` | Optional; only when the manuscript is a long-arc work where the writer drafted across many months and drift is a suspected confounder. |
+| Voice drift across the manuscript timeline (advanced) | `voice_drift_tracker.py` (capability id `voice_drift_tracker`) | Optional; only when the manuscript is a long-arc work where the writer drafted across many months and drift is a suspected confounder. **Exists but is not pinned** (`consumers: []`, no `json_delivery`) — not in the vendored contract or the shims; see the 2026-07-27 correction box. |
 
 Where the supplementation runs: as **Step 1 for multi-POV manuscripts**, before the voice-distinctiveness comparison. Single-POV manuscripts skip the POV-specific SETEC step but can still benefit from `voice_distance.py` against a writer's baseline if one is available (to test for register drift within a single POV).
 
@@ -294,4 +346,10 @@ No baseline-corpus intake question. Baseline is offered post-hoc per §6.3.
 - `plugins/apodictic/skills/specialized-audits/references/craft/punctuation-cadence.md` — Pass 3 punctuation-rhythm companion
 - `plugins/apodictic/skills/specialized-audits/references/craft/idiolect-preservation.md` — Pass 7 per-POV signature-feature companion
 - SETEC spec: `setec-voiceprint/internal/SPEC_output_schema_unification.md`
+- SETEC registry fragments for the two §3 surfaces this doc previously called nonexistent (2026-07-27):
+  `setec-voiceprint/plugins/setec-voiceprint/capabilities.d/sliding_window_heatmap.yaml`,
+  `.../capabilities.d/voice_drift_tracker.yaml` — both real, both unpinned; see the correction box.
+- The pin mechanism they are missing from: `scripts/sync_setec.py` (`consumers` filter) →
+  `tests/setec-contract/setec-capabilities.json`; `setec-voiceprint`'s `scripts/setec_run.py`
+  (`consumer_entries()`, `json_delivery` filter) → `setec_runner.run_supplement`.
 - Memory: `project_apodictic_setec_integration.md`
