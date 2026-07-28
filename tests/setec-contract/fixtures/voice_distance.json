@@ -15,9 +15,16 @@
     "n_files": 6,
     "personas": [],
     "privacy_values": [],
+    "register_tier_counts": {
+      "private_composed": 6,
+      "private_dyadic": 0,
+      "public_composed": 0,
+      "public_responsive": 0
+    },
     "registers": [
-      "literary_fiction"
+      "personal"
     ],
+    "unresolved_register_count": 0,
     "words": 48000
   },
   "claim_license": {
@@ -30,7 +37,7 @@
       "band": "Moderate drift",
       "baseline_words": 48000,
       "n_baseline_files": 6,
-      "register_match": "match",
+      "register_match": "strong",
       "target_words": 2500,
       "weighted_delta": 1.31
     },
@@ -44,7 +51,7 @@
     "register_match": [],
     "task_surface": "voice_coherence"
   },
-  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** voice-coherence comparison\n\n**Reports:** Stylometric distance from a target text to a writer / register baseline. Reports per-family distances (function words, character n-grams, POS trigrams, dependency n-grams) plus a weighted overall distance and a verbal drift band. The point of the audit is voice-coherence comparison: does this draft look like prior work from the same writer or the same register?\n\n**Does NOT report:** An AI-provenance verdict. High distance can come from register shift, audience shift, time drift, deliberate stylistic experiment, AI editing, or any combination. Bands are heuristic; the literature reference values for Burrows Delta and per-feature cosine apply to specific corpora and may not generalize to the user's comparison. The differential diagnosis of cause is the confounder audit's job.\n\n### Comparison context\n\n- **band:** Moderate drift\n- **baseline words:** 48000\n- **n baseline files:** 6\n- **register match:** match\n- **target words:** 2500\n- **weighted delta:** 1.31\n\n### Caveats\n\n- Voice distance is sensitive to baseline size. Below ~20K baseline words the variance bands widen and the comparison becomes less stable; pair small-baseline runs with `--bootstrap` to surface the uncertainty.\n- Register match is a heuristic indicator, not a validation. The register classifier is itself a heuristic; a register mismatch warning means the comparison is suspect, not that the score is wrong.\n- Per-family distances can disagree. When the function-word and character-n-gram families point opposite directions, the differential diagnosis matters more than the weighted overall.",
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** voice-coherence comparison\n\n**Reports:** Stylometric distance from a target text to a writer / register baseline. Reports per-family distances (function words, character n-grams, POS trigrams, dependency n-grams) plus a weighted overall distance and a verbal drift band. The point of the audit is voice-coherence comparison: does this draft look like prior work from the same writer or the same register?\n\n**Does NOT report:** An AI-provenance verdict. High distance can come from register shift, audience shift, time drift, deliberate stylistic experiment, AI editing, or any combination. Bands are heuristic; the literature reference values for Burrows Delta and per-feature cosine apply to specific corpora and may not generalize to the user's comparison. The differential diagnosis of cause is the confounder audit's job.\n\n### Comparison context\n\n- **band:** Moderate drift\n- **baseline words:** 48000\n- **n baseline files:** 6\n- **register match:** strong\n- **target words:** 2500\n- **weighted delta:** 1.31\n\n### Caveats\n\n- Voice distance is sensitive to baseline size. Below ~20K baseline words the variance bands widen and the comparison becomes less stable; pair small-baseline runs with `--bootstrap` to surface the uncertainty.\n- Register match is a heuristic indicator, not a validation. The register classifier is itself a heuristic; a register mismatch warning means the comparison is suspect, not that the score is wrong.\n- Per-family distances can disagree. When the function-word and character-n-gram families point opposite directions, the differential diagnosis matters more than the weighted overall.",
   "results": {
     "families": {
       "function_words": {
@@ -75,15 +82,23 @@
     },
     "register_match": {
       "match": {
-        "baseline_registers": [
-          "literary_fiction"
-        ],
-        "verdict": "match"
+        "baseline_distribution": {
+          "personal": 6
+        },
+        "baseline_family_distribution": {
+          "first_person_essay": 6
+        },
+        "rationale": "6/6 baseline entries match target register family `first_person_essay`. Family-level match: target and baseline resolve to `first_person_essay`; raw values represented here: `personal`; even a strong family match does not distinguish document types within the family.",
+        "strength": "strong",
+        "target": "first_person_essay",
+        "target_family": "first_person_essay",
+        "taxonomy": "register_families/v2"
       },
       "target_classification": {
-        "confidence": 0.71,
-        "primary": "literary_fiction",
-        "secondary": "blog_essay"
+        "confidence": 1.0,
+        "primary": "first_person_essay",
+        "secondary": [],
+        "taxonomy": "register_families/v2"
       }
     },
     "selected_features": {

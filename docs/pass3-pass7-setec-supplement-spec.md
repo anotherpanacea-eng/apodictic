@@ -5,7 +5,7 @@ implemented" label was stale (caught in the 2026-06-19 Codex-down reconciliation
 The live implementation is in `run-full.md` §Pass 3 / §Pass 7, the intake question `run-core.md` Q14a, the
 `setec_runner.py` helper, and the §4e POV Voice Profile rows.
 **Predecessor work:** Phase 2 substrate swap + new audits, 2026-05-17 (see `project_apodictic_setec_integration.md` memory entry; `plugins/apodictic/skills/specialized-audits/scripts/setec_discovery.py` + ai_prose_* shims).
-**Required SETEC:** ≥ 1.86.0 per-surface floor, but the **effective** runtime floor is **1.114.0** (the R2 dispatcher bootstrap in `setec_discovery.py`); the vendored contract is `v1.126.0` (`setec-plugin.lock`, refreshed 2026-07-27 — the line previously read `v1.117.0`, which the weekly sync had already moved past).
+**Required SETEC:** ≥ 1.86.0 per-surface floor, but the **effective** runtime floor is **1.114.0** (the R2 dispatcher bootstrap in `setec_discovery.py`); the vendored contract is `v1.127.0` (`setec-plugin.lock`, refreshed 2026-07-28).
 
 > ## ⚠️ Reconciliation note — already built (2026-06-19, Codex-down independent review)
 >
@@ -70,7 +70,7 @@ The live implementation is in `run-full.md` §Pass 3 / §Pass 7, the intake ques
 > `status: todo` with seeded `TODO` metadata, and neither carries a `json_delivery` field. Three
 > consequences, each mechanical:
 > - `scripts/sync_setec.py` vendors an entry **iff** `"apodictic"` appears in its `consumers` list, so
->   neither lands in `tests/setec-contract/setec-capabilities.json` (15 entries at SETEC v1.126.0).
+>   neither lands in `tests/setec-contract/setec-capabilities.json` (15 entries at SETEC v1.127.0).
 > - `setec_run.py`'s `consumer_entries()` promotes an entry to a dispatcher surface **iff** it carries
 >   `json_delivery`, so `setec_runner.run_supplement("voice_drift_tracker", …)` would resolve to an R3
 >   `bad_input` envelope today.

@@ -1,3 +1,3 @@
 ### SETEC contract safety
 
-- Fail closed on a producer-pin move unless the vendored `voice_distance` fixture migrates atomically to the `register_families/v2` taxonomy, its closed match-strength vocabulary, and the no-verdict contract.
+- Gate the vendored `voice_distance` fixture on SETEC's `register_families/v2` register-family contract: both taxonomy markers, a `strength` drawn from the closed `strong`/`moderate`/`weak`/`mismatch` vocabulary, and no legacy `verdict`. The check is unconditional, so a sync that re-vendored a pre-v2 fixture fails rather than passing on a grandfather clause. Rejection cases run against a hand-built payload, never the vendored golden — a negative arm fed by a producer artifact goes vacuous the moment that artifact legitimately changes.
