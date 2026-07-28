@@ -1665,7 +1665,7 @@ PY
       if RFU_OUT=$("$0" refutation-coverage "$CA_RFU/Example_Core_DE_Synthesis_2026-01-01_opus46.md" "$CA_RFU/Example_Findings_Ledger_2026-01-01_opus46.md" "$CA_RFU/record-h1.md" 2>&1); then
         echo "  h1 high-without-survived: FAIL (expected exit 1)"; CA_RFU_OK=0
       else
-        printf '%s' "$RFU_OUT" | grep -q "Must-Fix finding F-P5-01" && echo "  h1 high-without-survived: OK (caught)" \
+        [[ "$RFU_OUT" == *"Must-Fix finding F-P5-01"* ]] && echo "  h1 high-without-survived: OK (caught)" \
           || { echo "  h1 high-without-survived: FAIL (exit 1 but F-P5-01 not named)"; CA_RFU_OK=0; }
       fi
       # Hostile arm 2: fabricated quote (absent from the snapshot) -> refutation-evidence FAIL.
@@ -1674,7 +1674,7 @@ PY
       if RFU_OUT=$("$0" refutation-evidence "$CA_RFU/record-h2.md" "$CA_RFU/Example_Manuscript_Snapshot_2026-01-01_opus46.md" --require-snapshot 2>&1); then
         echo "  h2 fabricated-quote: FAIL (expected exit 1)"; CA_RFU_OK=0
       else
-        printf '%s' "$RFU_OUT" | grep -q "not found verbatim" && echo "  h2 fabricated-quote: OK (caught)" \
+        [[ "$RFU_OUT" == *"not found verbatim"* ]] && echo "  h2 fabricated-quote: OK (caught)" \
           || { echo "  h2 fabricated-quote: FAIL (exit 1 but no verbatim finding)"; CA_RFU_OK=0; }
       fi
       # Hostile arm 3: severity key injected into the refutation block -> write-scope FAIL.
@@ -1683,7 +1683,7 @@ PY
       if RFU_OUT=$("$0" refutation-write-scope "$CA_RFU/Example_Findings_Ledger_2026-01-01_opus46.md" "$CA_RFU/record-h3.md" 2>&1); then
         echo "  h3 severity-write: FAIL (expected exit 1)"; CA_RFU_OK=0
       else
-        printf '%s' "$RFU_OUT" | grep -q "severity key" && echo "  h3 severity-write: OK (caught)" \
+        [[ "$RFU_OUT" == *"severity key"* ]] && echo "  h3 severity-write: OK (caught)" \
           || { echo "  h3 severity-write: FAIL (exit 1 but no severity-key finding)"; CA_RFU_OK=0; }
       fi
       # Hostile arm 4: fabricated budget -> an untested HIGH must not ship as "cap-bound".
@@ -1700,13 +1700,13 @@ PY
       if RFU_OUT=$("$0" refutation-coverage "$CA_RFU/letter-h4.md" "$CA_RFU/ledger-h4.md" "$CA_RFU/record-h4.md" 2>&1); then
         echo "  h4 fabricated-budget: FAIL (expected exit 1)"; CA_RFU_OK=0
       else
-        printf '%s' "$RFU_OUT" | grep -q "does NOT bind" && echo "  h4 fabricated-budget: OK (caught)" \
+        [[ "$RFU_OUT" == *"does NOT bind"* ]] && echo "  h4 fabricated-budget: OK (caught)" \
           || { echo "  h4 fabricated-budget: FAIL (exit 1 but the recompute keystone not named)"; CA_RFU_OK=0; }
       fi
       if RFU_OUT=$("$0" refutation-evidence "$CA_RFU/record-h4.md" "$CA_RFU/Example_Manuscript_Snapshot_2026-01-01_opus46.md" --require-snapshot 2>&1); then
         echo "  h4 fabricated-budget (evidence): FAIL (expected exit 1)"; CA_RFU_OK=0
       else
-        printf '%s' "$RFU_OUT" | grep -q "schema-valid refutation block" && echo "  h4 fabricated-budget (evidence): OK (caught)" \
+        [[ "$RFU_OUT" == *"schema-valid refutation block"* ]] && echo "  h4 fabricated-budget (evidence): OK (caught)" \
           || { echo "  h4 fabricated-budget (evidence): FAIL (exit 1 but the processed/count pin not named)"; CA_RFU_OK=0; }
       fi
       rm -rf "$CA_RFU"
