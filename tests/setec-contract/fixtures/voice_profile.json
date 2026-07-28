@@ -43,10 +43,17 @@
       "n_files": 6,
       "personas": [],
       "privacy_values": [],
+      "register_tier_counts": {
+        "private_composed": 0,
+        "private_dyadic": 0,
+        "public_composed": 6,
+        "public_responsive": 0
+      },
       "registers": [
         "literary_fiction"
       ],
-      "total_words": 48000
+      "total_words": 48000,
+      "unresolved_register_count": 0
     },
     "families": {
       "function_words": {
