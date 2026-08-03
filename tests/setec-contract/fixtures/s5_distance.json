@@ -1,0 +1,78 @@
+{
+  "ai_status": null,
+  "available": true,
+  "baseline": {
+    "content_inventory_sha256": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "n_files": 3,
+    "words": 300
+  },
+  "claim_license": {
+    "additional_caveats": [],
+    "comparison_set": {},
+    "confidence_interval_95": null,
+    "does_not_license": "Any authorship, AI/human, quality, similarity, pass/fail, ranking, selection, or training-target judgment; any claim that this surface verified source text, corpus membership, parser provenance, or the supplied content hashes. No thresholds or verdicts.",
+    "fpr_target": null,
+    "language_match": [],
+    "length_range_words": null,
+    "licenses": "Six descriptive Burrows-Delta measurements over the caller-supplied normalized feature maps, plus their unweighted arithmetic mean.",
+    "references": [],
+    "register_match": [],
+    "task_surface": "voice_coherence"
+  },
+  "claim_license_rendered": "## What this result licenses\n\n**Task surface:** voice-coherence comparison\n\n**Reports:** Six descriptive Burrows-Delta measurements over the caller-supplied normalized feature maps, plus their unweighted arithmetic mean.\n\n**Does NOT report:** Any authorship, AI/human, quality, similarity, pass/fail, ranking, selection, or training-target judgment; any claim that this surface verified source text, corpus membership, parser provenance, or the supplied content hashes. No thresholds or verdicts.",
+  "results": {
+    "baseline_content_inventory_sha256": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "baseline_manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "family_burrows_delta": {
+      "char_ngrams_3": 2.0,
+      "char_ngrams_4": 2.0,
+      "char_ngrams_5": 2.0,
+      "dependency_ngrams": 2.0,
+      "pos_trigrams": 2.0,
+      "punctuation": 2.0
+    },
+    "family_limits": {
+      "char_ngrams_3": 200,
+      "char_ngrams_4": 200,
+      "char_ngrams_5": 200,
+      "dependency_ngrams": 300,
+      "pos_trigrams": 300,
+      "punctuation": null
+    },
+    "family_order": [
+      "char_ngrams_3",
+      "char_ngrams_4",
+      "char_ngrams_5",
+      "pos_trigrams",
+      "dependency_ngrams",
+      "punctuation"
+    ],
+    "implementation_sha256": "sha256:75fad649a7230f24b50d496f8b71b8166943e83e0feb22540baf49c667b53cc2",
+    "method": "unweighted mean of six family Burrows-Delta values",
+    "normalized_feature_inventory_sha256": "sha256:bdb22b940986ecfa86698395b5ac38ee0715fa2b74dc801982f93a410a398ba5",
+    "parser_inventory_sha256": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "request_sha256": "sha256:03e90f877e6d6c092c7c10e931ca4721960743b57150d3e0713dc54ea5299e46",
+    "s5_unweighted_mean": 2.0,
+    "selected_feature_counts": {
+      "char_ngrams_3": 1,
+      "char_ngrams_4": 1,
+      "char_ngrams_5": 1,
+      "dependency_ngrams": 1,
+      "pos_trigrams": 1,
+      "punctuation": 1
+    },
+    "target_content_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "schema_version": "1.0",
+  "target": {
+    "content_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "entry_id": "target",
+    "path": "<fixture>",
+    "words": 100
+  },
+  "task_surface": "voice_coherence",
+  "tool": "s5_distance",
+  "version": "<fixture>",
+  "warnings": []
+}
