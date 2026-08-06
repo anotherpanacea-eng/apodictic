@@ -1,5 +1,5 @@
 {
-  "setec_version": "1.128.1",
+  "setec_version": "1.129.0",
   "manifest_schema_version": "0.4.0",
   "contract": {
     "output_schema_version": "1.0",
