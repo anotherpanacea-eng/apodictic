@@ -1,5 +1,5 @@
 {
-  "setec_version": "1.129.0",
+  "setec_version": "1.128.1",
   "manifest_schema_version": "0.4.0",
   "contract": {
     "output_schema_version": "1.0",
@@ -56,11 +56,11 @@
     },
     "client": {
       "relative_path": "scripts/setec/consumer_client.py",
-    "sha256": "28aa3e05c31576ea437a5c23c1a2347e91e9bd69816512b66980a5f4be1310f8"
+      "sha256": "8d464d50c75388bb62b77ff09450d31b12ef93c1aed2b70a0e4e29d780e57b24"
     },
     "fixtures": {
       "semver_parser_sha256": "bde40af810df26ac89303117943f0b357e61285b90550ffb6e614e6db0d1c796",
-    "warning_classifier_coverage_sha256": "bed3563eb3ab7ee97f5049ce704445253404926ae4470b8dc86436ef99d9e0c3",
+      "warning_classifier_coverage_sha256": "bed3563eb3ab7ee97f5049ce704445253404926ae4470b8dc86436ef99d9e0c3",
       "warning_producer_emissions_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
     }
   },

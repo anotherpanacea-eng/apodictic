@@ -329,7 +329,11 @@ def _classify_warnings(warnings: list[str]) -> tuple[list[str], list[str]]:
     return reliability, cosmetic
 
 
-def _coerce_envelope(envelope: dict[str, Any]) -> None:
+def _coerce_envelope(envelope: Any) -> None:
+    if not isinstance(envelope, dict):
+        raise SetecRunnerError(
+            f"SETEC envelope must be a mapping, got {type(envelope).__name__}"
+        )
     sv = envelope.get("schema_version")
     if sv != EXPECTED_SCHEMA_VERSION:
         raise SetecRunnerError(
@@ -346,13 +350,43 @@ def _coerce_envelope(envelope: dict[str, Any]) -> None:
             f"keys present: {sorted(envelope.keys())!r}"
         )
 
+    typed_fields = {
+        "schema_version": str,
+        "tool": str,
+        "version": str,
+        "target": dict,
+        "results": dict,
+    }
+    for key, expected in typed_fields.items():
+        if not isinstance(envelope[key], expected):
+            raise SetecRunnerError(
+                f"SETEC envelope {key} must be {expected.__name__}"
+            )
+    if type(envelope["available"]) is not bool:
+        raise SetecRunnerError("SETEC envelope available must be bool")
+    for key in ("task_surface", "ai_status", "claim_license_rendered"):
+        if envelope[key] is not None and not isinstance(envelope[key], str):
+            raise SetecRunnerError(f"SETEC envelope {key} must be str or null")
+    for key in ("baseline", "claim_license"):
+        if envelope[key] is not None and not isinstance(envelope[key], dict):
+            raise SetecRunnerError(f"SETEC envelope {key} must be mapping or null")
+    warnings = envelope["warnings"]
+    if not isinstance(warnings, list) or not all(
+        isinstance(warning, str) for warning in warnings
+    ):
+        raise SetecRunnerError("SETEC envelope warnings must be a list of strings")
+    if envelope["available"] is False:
+        for key in _ERROR_ENVELOPE_KEYS:
+            if not isinstance(envelope[key], str):
+                raise SetecRunnerError(f"SETEC error envelope {key} must be str")
+
 
 def tier_envelope(envelope: dict[str, Any], *, returncode: int = 0) -> SupplementResult:
     """Parse + tier an already-decoded schema-1.0 envelope into a
     SupplementResult. Raises SetecRunnerError if it does not conform."""
     _coerce_envelope(envelope)
-    available = bool(envelope["available"])
-    warnings = list(envelope.get("warnings") or [])
+    available = envelope["available"]
+    warnings = envelope["warnings"]
     reason = envelope.get("reason")
     reason_category = envelope.get("reason_category")
 
@@ -377,9 +411,9 @@ def tier_envelope(envelope: dict[str, Any], *, returncode: int = 0) -> Supplemen
         available=available,
         target=envelope["target"],
         baseline=envelope.get("baseline"),
-        results=envelope.get("results") or {},
-        claim_license=envelope.get("claim_license"),
-        claim_license_rendered=envelope.get("claim_license_rendered"),
+        results=envelope["results"],
+        claim_license=envelope["claim_license"],
+        claim_license_rendered=envelope["claim_license_rendered"],
         blocking_warnings=blocking,
         reliability_warnings=reliability,
         cosmetic_warnings=cosmetic,

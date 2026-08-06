@@ -53,7 +53,7 @@
   },
   "client": {
     "relative_path": "scripts/setec/consumer_client.py",
-    "sha256": "28aa3e05c31576ea437a5c23c1a2347e91e9bd69816512b66980a5f4be1310f8"
+    "sha256": "8d464d50c75388bb62b77ff09450d31b12ef93c1aed2b70a0e4e29d780e57b24"
   },
   "fixtures": {
     "semver_parser_sha256": "bde40af810df26ac89303117943f0b357e61285b90550ffb6e614e6db0d1c796",
