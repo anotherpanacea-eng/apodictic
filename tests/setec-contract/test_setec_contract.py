@@ -39,6 +39,7 @@ fake_setec.py + goldens are the whole substrate.
 
 from __future__ import annotations
 
+import ast
 import json
 import subprocess
 import sys
@@ -117,6 +118,17 @@ def t1_floor_resolution_from_vendored_manifest() -> None:
     print("T1: floor resolution from vendored manifest (offline)")
     payload = json.loads(VENDORED_MANIFEST.read_text(encoding="utf-8"))
     manifest = setec_capabilities.parse_manifest_payload(payload, location=_Loc())
+
+    for bad_version in ("1.129.0\n", " 1.129.0 ", 129):
+        malformed = dict(payload)
+        malformed["setec_version"] = bad_version
+        try:
+            setec_capabilities.parse_manifest_payload(malformed, location=_Loc())
+        except setec_capabilities.SetecCapabilitiesError:
+            refused = True
+        else:
+            refused = False
+        check(refused, f"raw malformed setec_version refused: {bad_version!r}")
 
     # Every shim surface resolves to a floor, and the known floors match.
     shim_surfaces = discover_shim_surfaces(SHIM_DIR)
@@ -954,6 +966,272 @@ def t10_voice_distance_register_family_contract() -> None:
     )
 
 
+# --------------------------------------------------------------------------
+# T11 — C1.1: the corrected version parser matches the PRODUCER's closed
+# semver_parser_cases.json fixture, row for row. This is the fixture-driven
+# proof that setec_discovery's parser is behaviorally IDENTICAL to the
+# shared producer client (setec-voiceprint's scripts/setec/consumer_client.py)
+# ahead of C3 literally vendoring it — same grammar, same errors, same
+# fail-upward default on the classic bug case (`1.129.0-rc.1 < 1.129.0`).
+# --------------------------------------------------------------------------
+def t11_semver_parser_fixture_parity() -> None:
+    print("T11: version parser matches vendored semver_parser_cases.json")
+    fixture_path = VENDORED_FIXTURES / "semver_parser_cases.json"
+    check(fixture_path.is_file(), "semver_parser_cases.json fixture present")
+    if not fixture_path.is_file():
+        return
+    cases = json.loads(fixture_path.read_text(encoding="utf-8"))
+    check(isinstance(cases, list) and len(cases) > 0, "fixture is a non-empty array")
+    for row in cases:
+        input_str = row["input"]
+        expected_result = row.get("result")
+        expected_error = row.get("error")
+        check(
+            (expected_result is None) != (expected_error is None),
+            f"{input_str!r}: fixture row has exactly one of result/error non-null",
+        )
+        try:
+            parsed = setec_discovery.parse_version(input_str)
+        except setec_discovery.VersionParseError as exc:
+            check(
+                expected_error is not None and str(exc) == expected_error,
+                f"{input_str!r}: expected error {expected_error!r}, got {str(exc)!r}",
+            )
+            continue
+        check(
+            expected_result is not None and parsed == expected_result,
+            f"{input_str!r}: expected result {expected_result!r}, got {parsed!r}",
+        )
+
+    # The classic bug case, named explicitly (not just fixture parity): a
+    # prerelease of the SAME release as a floor must NOT satisfy it.
+    check(
+        setec_discovery.meets_floor("1.129.0-rc.1", (1, 129, 0)) is False,
+        "1.129.0-rc.1 does NOT meet floor 1.129.0 (SemVer precedence)",
+    )
+    check(
+        setec_discovery.meets_floor("1.129.0", (1, 129, 0)) is True,
+        "1.129.0 meets floor 1.129.0",
+    )
+    check(
+        setec_discovery.meets_floor("1.130.0", (1, 129, 0)) is True,
+        "1.130.0 meets floor 1.129.0",
+    )
+    raised = False
+    try:
+        setec_discovery.parse_version("garbage")
+    except setec_discovery.VersionParseError:
+        raised = True
+    check(raised, "the old silent-drop bug (_parse_version('garbage') == ()) is gone — it now raises")
+
+
+# --------------------------------------------------------------------------
+# T12 — C1.2: the permanent warning classifier reaches its pinned consumer
+# tier for every row in the PRODUCER's warning_classifier_coverage.json
+# (all 12 rows now expect "reliability" — the fail-upward default replaces
+# the retired "cosmetic" default), and every warning_producer_emissions.json
+# row (real strings emitted by production paths) resolves no lower than
+# reliability. This is the consumer half of the warning firewall (spec
+# §1.2 / Firewall risk): the classifier is retained permanently, but an
+# unmatched producer string is never presumed harmless.
+# --------------------------------------------------------------------------
+def t12_warning_classifier_fixture_parity() -> None:
+    print("T12: classify_warning matches vendored "
+          "warning_classifier_coverage.json + warning_producer_emissions.json")
+    coverage_path = VENDORED_FIXTURES / "warning_classifier_coverage.json"
+    emissions_path = VENDORED_FIXTURES / "warning_producer_emissions.json"
+    check(coverage_path.is_file(), "warning_classifier_coverage.json fixture present")
+    check(emissions_path.is_file(), "warning_producer_emissions.json fixture present")
+    if not (coverage_path.is_file() and emissions_path.is_file()):
+        return
+
+    coverage = json.loads(coverage_path.read_text(encoding="utf-8"))
+    check(len(coverage) == 12, f"coverage fixture has 12 rows (got {len(coverage)})")
+    unmatched_seen = False
+    for row in coverage:
+        got_tier = setec_runner.classify_warning(row["text"])
+        check(
+            got_tier == row["expected_consumer_tier"],
+            f"{row['case_id']!r}: classify_warning({row['text']!r}) "
+            f"== {row['expected_consumer_tier']!r} (got {got_tier!r})",
+        )
+        if row["case_id"] == "unmatched_prose_fails_upward":
+            unmatched_seen = True
+            check(
+                row["expected_consumer_tier"] == "reliability",
+                "the unmatched-prose row now expects 'reliability', not the "
+                "retired 'cosmetic' default",
+            )
+    check(unmatched_seen, "coverage fixture includes the unmatched-prose fail-upward case")
+
+    # F6 resync: the emissions fixture is now an HONEST EMPTY ARRAY — its one
+    # prior row was a "docstring decoy" (a hand-constructed input rather than
+    # an observed real production emission) that the producer's
+    # validate_producer_emissions_bound now detects and refuses. An empty
+    # live_emission set is spec-legal ("acceptable and honest"), so this no
+    # longer asserts non-emptiness — only that, IF any rows exist, each
+    # resolves no lower than reliability.
+    emissions = json.loads(emissions_path.read_text(encoding="utf-8"))
+    check(isinstance(emissions, list), "producer emissions fixture is a list")
+    check(
+        emissions == [],
+        "producer emissions fixture is the honest empty array (its one prior "
+        "row was a docstring-decoy bound test, now refused by the producer's "
+        "validate_producer_emissions_bound)",
+    )
+    for row in emissions:
+        got_tier = setec_runner.classify_warning(row["text"])
+        check(
+            got_tier == "reliability",
+            f"emission {row['case_id']!r} ({row['text']!r}) resolves no lower "
+            f"than reliability (got {got_tier!r})",
+        )
+
+
+# --------------------------------------------------------------------------
+# T13 — C3: symbol-inventory AST check. Every top-level PUBLIC symbol (no
+# leading underscore) across the three SETEC consumer wrapper modules must
+# be classified in setec-client-symbol-inventory.json as "shared" (now lives
+# in the runtime vendored client and is imported/re-exported here, not
+# re-implemented) or "apodictic_policy" (stays local). Refuses an
+# unclassified export — the guard the spec calls for pre-C3.
+#
+# Broader than the spec's literal "walk def/class/module-level Assign"
+# wording: post-C3, a SHARED symbol is no longer DEFINED in these modules —
+# it is IMPORTED (re-exported) from `_vendored_setec_client` or a sibling
+# wrapper. A check that only inspected def/class/Assign nodes would go
+# BLIND to every shared re-export the moment the C3 rewrite landed (it would
+# only ever see the apodictic_policy names that remain locally defined). So
+# this walk also collects top-level `from <sibling> import NAME` aliases
+# where `<sibling>` is one of this contract's own modules
+# (`_vendored_setec_client`, `setec_discovery`, `setec_runner`,
+# `setec_capabilities`) — ordinary stdlib/typing imports are excluded, since
+# those are not part of the setec-consumer-contract's own export surface.
+# --------------------------------------------------------------------------
+_SYMBOL_INVENTORY_MODULES = ("_vendored_setec_client", "setec_discovery", "setec_runner", "setec_capabilities")
+
+# F11: compound-statement node types whose BODY still executes at MODULE
+# scope (an `if`/`try`/`with`/`for`/`while` at module level binds names into
+# the module namespace exactly as if it were unindented) — walked into. A
+# FunctionDef/AsyncFunctionDef/ClassDef/Lambda is a NEW scope and is never
+# recursed INTO (only recorded itself, if it's module-level). A mutation
+# fixture (`if True: def conditionally_defined_export(): ...` /
+# `try: from x import y as z / except ImportError: z = None`) proved the
+# previous `tree.body`-only walk misses both — a real module-level export
+# defined inside a conditional block went unclassified and the check still
+# reported a clean bill.
+_TRANSPARENT_COMPOUND = (ast.If, ast.Try, ast.With, ast.For, ast.While)
+if hasattr(ast, "TryStar"):  # py3.11+
+    _TRANSPARENT_COMPOUND = _TRANSPARENT_COMPOUND + (ast.TryStar,)
+
+
+def _module_scope_statements(body: list) -> list:
+    """Yield every statement that executes at MODULE scope, recursing
+    through if/try/with/for/while blocks. Does not descend into a def/class
+    body (that's a nested scope, not the module's own namespace)."""
+    out: list = []
+    for node in body:
+        out.append(node)
+        if isinstance(node, _TRANSPARENT_COMPOUND):
+            out.extend(_module_scope_statements(node.body))
+            out.extend(_module_scope_statements(getattr(node, "orelse", []) or []))
+            out.extend(_module_scope_statements(getattr(node, "finalbody", []) or []))
+            for handler in getattr(node, "handlers", []) or []:
+                out.extend(_module_scope_statements(handler.body))
+    return out
+
+
+def _top_level_public_exports(path: Path) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    found: set[str] = set()
+    for node in _module_scope_statements(tree.body):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if not node.name.startswith("_"):
+                found.add(node.name)
+        elif isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and not target.id.startswith("_"):
+                    found.add(target.id)
+        elif isinstance(node, ast.AnnAssign):
+            if isinstance(node.target, ast.Name) and not node.target.id.startswith("_"):
+                found.add(node.target.id)
+        elif isinstance(node, ast.ImportFrom):
+            if node.module in _SYMBOL_INVENTORY_MODULES:
+                for alias in node.names:
+                    name = alias.asname or alias.name
+                    if not name.startswith("_") and name != "*":
+                        found.add(name)
+    return found
+
+
+def _derive_setec_wrapper_module_set() -> set[str]:
+    """F11: the set of wrapper modules requiring symbol-inventory coverage is
+    DERIVED from SHIM_DIR by globbing `setec_*.py` (the C3 thin-wrapper
+    naming convention: setec_discovery.py / setec_runner.py /
+    setec_capabilities.py) rather than a hardcoded 3-name tuple that would
+    silently stop catching a 4th wrapper module added later. SHIM_DIR also
+    holds dozens of unrelated `ai_prose_*.py` shims and other scripts, so
+    (unlike voicewright's dedicated `src/voicewright/setec/` package
+    directory) this cannot glob the whole directory for `*.py` — the
+    `setec_*` prefix is the narrower, still-self-updating equivalent.
+    `_vendored_setec_client.py` (leading underscore) is excluded: it is
+    producer-owned and not classified here, same as voicewright excludes
+    `__init__.py`."""
+    return {p.name for p in SHIM_DIR.glob("setec_*.py")}
+
+
+def t13_symbol_inventory_no_unclassified_exports() -> None:
+    print("T13: setec-client-symbol-inventory.json classifies every public "
+          "export of the three wrapper modules (no unclassified export)")
+    inventory_path = VENDOR_DIR / "setec-client-symbol-inventory.json"
+    check(inventory_path.is_file(), "setec-client-symbol-inventory.json present")
+    if not inventory_path.is_file():
+        return
+    inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+    valid_tiers = {"shared", "apodictic_policy"}
+
+    wrapper_modules = _derive_setec_wrapper_module_set()
+    inventoried_modules = {k for k in inventory.keys() if not k.startswith("_")}
+    missing_modules = sorted(wrapper_modules - inventoried_modules)
+    extra_modules = sorted(inventoried_modules - wrapper_modules)
+    check(
+        not missing_modules,
+        f"every setec_*.py wrapper module has an inventory entry "
+        f"(missing: {missing_modules!r})",
+    )
+    check(
+        not extra_modules,
+        f"no inventory entries for wrapper modules that no longer exist "
+        f"(extra: {extra_modules!r})",
+    )
+
+    for module_name in sorted(wrapper_modules):
+        module_inventory = inventory.get(module_name)
+        check(isinstance(module_inventory, dict), f"inventory has an entry for {module_name}")
+        if not isinstance(module_inventory, dict):
+            continue
+        found = _top_level_public_exports(SHIM_DIR / module_name)
+        classified = set(module_inventory.keys())
+        unclassified = found - classified
+        check(
+            not unclassified,
+            f"{module_name}: every public export is classified "
+            f"(unclassified: {sorted(unclassified)!r})",
+        )
+        stale = classified - found
+        check(
+            not stale,
+            f"{module_name}: inventory has no stale entries for symbols no "
+            f"longer exported (stale: {sorted(stale)!r})",
+        )
+        bad_tier = {k: v for k, v in module_inventory.items() if v not in valid_tiers}
+        check(
+            not bad_tier,
+            f"{module_name}: every inventory entry uses a valid tier "
+            f"(shared/apodictic_policy) (bad: {bad_tier!r})",
+        )
+
+
 def main() -> int:
     for fn in (
         t1_floor_resolution_from_vendored_manifest,
@@ -968,6 +1246,9 @@ def main() -> int:
         t9_voice_profile_consume_contract,
         t9b_consume_claim_matches_repo,
         t10_voice_distance_register_family_contract,
+        t11_semver_parser_fixture_parity,
+        t12_warning_classifier_fixture_parity,
+        t13_symbol_inventory_no_unclassified_exports,
     ):
         fn()
         setec_capabilities.clear_cache()

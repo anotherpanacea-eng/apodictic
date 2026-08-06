@@ -10,6 +10,10 @@ surface, plus a stdlib-only reference fake. Implements R5 of
 |---|---|
 | `<surface>.json` × 16 | One canonical envelope per consumer surface — the pinned contract. |
 | `fake_setec.py` | Stdlib-only CLI that prints a surface's golden envelope. The consumer vendors a pinned copy to test its parser without SETEC's heavy deps. |
+| `semver_parser_cases.json` | `setec-consumer-client-contract.md` C1.1 — closed `{input, result, error}` rows both consumers pin their shared-client version parser tests against. |
+| `warning_classifier_coverage.json` | C1.2 — closed `{case_id, text, expected_consumer_tier, producer_disposition}` rows: one per `RELIABILITY_PATTERNS` branch plus one unmatched case. `producer_disposition` is `live_emission` (bound to a real row in `warning_producer_emissions.json`) or honest `classifier_only` (synthetic text). |
+| `warning_producer_emissions.json` | C1.2 — a bounded `{case_id, text, producer_test}` regression set: only strings actually emitted by current production code, each bound to a real, passing producer pytest node that observes that exact text. |
+| `consumer_contract.json` | C2.1 — the worked exemplar of the manifest `contract` block (manifest_schema_version 0.4.0), for canonical-byte comparison. |
 | `README.md` | This file. |
 
 The sixteen surfaces (the `capabilities.d/` fragments carrying

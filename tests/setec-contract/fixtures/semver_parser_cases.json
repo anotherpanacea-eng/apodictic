@@ -1,0 +1,260 @@
+[
+  {
+    "input": "1",
+    "result": {
+      "release": [
+        1,
+        0,
+        0
+      ],
+      "prerelease": null
+    },
+    "error": null
+  },
+  {
+    "input": "1.2",
+    "result": {
+      "release": [
+        1,
+        2,
+        0
+      ],
+      "prerelease": null
+    },
+    "error": null
+  },
+  {
+    "input": "1.2.3",
+    "result": {
+      "release": [
+        1,
+        2,
+        3
+      ],
+      "prerelease": null
+    },
+    "error": null
+  },
+  {
+    "input": "1.2.3.4",
+    "result": null,
+    "error": "more than 3 release components in '1.2.3.4'"
+  },
+  {
+    "input": "",
+    "result": null,
+    "error": "empty version string"
+  },
+  {
+    "input": "garbage",
+    "result": null,
+    "error": "non-numeric release component 'garbage' in 'garbage'"
+  },
+  {
+    "input": "1.2.rc1",
+    "result": null,
+    "error": "non-numeric release component 'rc1' in '1.2.rc1'"
+  },
+  {
+    "input": "01.2.3",
+    "result": null,
+    "error": "release component '01' has a leading zero in '01.2.3'"
+  },
+  {
+    "input": "1.02.3",
+    "result": null,
+    "error": "release component '02' has a leading zero in '1.02.3'"
+  },
+  {
+    "input": "1.2.3-rc.1",
+    "result": {
+      "release": [
+        1,
+        2,
+        3
+      ],
+      "prerelease": [
+        "rc",
+        1
+      ]
+    },
+    "error": null
+  },
+  {
+    "input": "1.2.3-rc.01",
+    "result": null,
+    "error": "prerelease numeric identifier '01' has a leading zero in '1.2.3-rc.01'"
+  },
+  {
+    "input": "1.2.3-",
+    "result": null,
+    "error": "empty prerelease in '1.2.3-'"
+  },
+  {
+    "input": "1.2.3-rc..1",
+    "result": null,
+    "error": "malformed prerelease identifier '' in '1.2.3-rc..1'"
+  },
+  {
+    "input": "1.2.3+build.5",
+    "result": {
+      "release": [
+        1,
+        2,
+        3
+      ],
+      "prerelease": null
+    },
+    "error": null
+  },
+  {
+    "input": "1.2.3+",
+    "result": null,
+    "error": "empty build metadata in '1.2.3+'"
+  },
+  {
+    "input": "1.2.3-rc.1+build.5",
+    "result": {
+      "release": [
+        1,
+        2,
+        3
+      ],
+      "prerelease": [
+        "rc",
+        1
+      ]
+    },
+    "error": null
+  },
+  {
+    "input": "1.2.3-0",
+    "result": {
+      "release": [
+        1,
+        2,
+        3
+      ],
+      "prerelease": [
+        0
+      ]
+    },
+    "error": null
+  },
+  {
+    "input": "1.2.3-alpha",
+    "result": {
+      "release": [
+        1,
+        2,
+        3
+      ],
+      "prerelease": [
+        "alpha"
+      ]
+    },
+    "error": null
+  },
+  {
+    "input": "1.2.3-alpha.beta",
+    "result": {
+      "release": [
+        1,
+        2,
+        3
+      ],
+      "prerelease": [
+        "alpha",
+        "beta"
+      ]
+    },
+    "error": null
+  },
+  {
+    "input": "1.129.0-rc.1",
+    "result": {
+      "release": [
+        1,
+        129,
+        0
+      ],
+      "prerelease": [
+        "rc",
+        1
+      ]
+    },
+    "error": null
+  },
+  {
+    "input": "1.129.0",
+    "result": {
+      "release": [
+        1,
+        129,
+        0
+      ],
+      "prerelease": null
+    },
+    "error": null
+  },
+  {
+    "input": "0",
+    "result": {
+      "release": [
+        0,
+        0,
+        0
+      ],
+      "prerelease": null
+    },
+    "error": null
+  },
+  {
+    "input": "0.0.1",
+    "result": {
+      "release": [
+        0,
+        0,
+        1
+      ],
+      "prerelease": null
+    },
+    "error": null
+  },
+  {
+    "input": "1.2.3-rc.1.2",
+    "result": {
+      "release": [
+        1,
+        2,
+        3
+      ],
+      "prerelease": [
+        "rc",
+        1,
+        2
+      ]
+    },
+    "error": null
+  },
+  {
+    "input": "1.2.3-alpha_beta",
+    "result": null,
+    "error": "malformed prerelease identifier 'alpha_beta' in '1.2.3-alpha_beta'"
+  },
+  {
+    "input": "١٢٣.0.0",
+    "result": null,
+    "error": "non-numeric release component '١٢٣' in '١٢٣.0.0'"
+  },
+  {
+    "input": "1.2.3\n",
+    "result": null,
+    "error": "non-numeric release component '3\\n' in '1.2.3\\n'"
+  },
+  {
+    "input": "1.2.3-rc\n",
+    "result": null,
+    "error": "malformed prerelease identifier 'rc\\n' in '1.2.3-rc\\n'"
+  }
+]

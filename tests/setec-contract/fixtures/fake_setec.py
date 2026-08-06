@@ -38,11 +38,23 @@ from pathlib import Path
 
 FIXTURES_DIR = Path(__file__).resolve().parent
 
+# `setec-consumer-client-contract.md` C1/C2 test-contract fixtures that live
+# in this same directory but are NOT per-surface golden envelopes (no
+# `surface`/`schema_version: 1.0` shape) — excluded from surface enumeration
+# so they never masquerade as a runnable `fake_setec.py <surface>` target.
+NON_GOLDEN_FIXTURES = frozenset({
+    "consumer_contract",
+    "semver_parser_cases",
+    "warning_classifier_coverage",
+    "warning_producer_emissions",
+})
+
 
 def available_surfaces() -> list[str]:
     """Sorted list of surfaces with a committed golden in this directory."""
     return sorted(
         p.stem for p in FIXTURES_DIR.glob("*.json")
+        if p.stem not in NON_GOLDEN_FIXTURES
     )
 
 

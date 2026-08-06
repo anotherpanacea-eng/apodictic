@@ -47,6 +47,7 @@ Env:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -60,6 +61,24 @@ VENDORED_MANIFEST = VENDOR_DIR / "setec-capabilities.json"
 VENDORED_FIXTURES = VENDOR_DIR / "fixtures"
 LOCK_PATH = REPO_ROOT / "setec-plugin.lock"
 
+# The shim dir also holds the C3 thin wrappers over the runtime vendored
+# client (setec_discovery.py re-exports meets_floor/VersionParseError from
+# _vendored_setec_client.py). Reused here (not re-implemented) so the
+# contract-block gating below shares ONE SemVer parser with the runtime and
+# the drift gate.
+_SHIM_DIR = (
+    REPO_ROOT / "plugins" / "apodictic" / "skills" / "specialized-audits" / "scripts"
+)
+if str(_SHIM_DIR) not in sys.path:
+    sys.path.insert(0, str(_SHIM_DIR))
+
+from setec_discovery import (  # noqa: E402
+    SetecDiscoveryError,
+    VersionParseError,
+    discover_setec,
+    meets_floor,
+)
+
 # The surface the consumer filter keys on: an entry is vendored iff this
 # string appears in its `consumers` list.
 CONSUMER = "apodictic"
@@ -68,6 +87,34 @@ CONSUMER = "apodictic"
 SETEC_SCRIPTS_SUBDIR = "scripts"
 CAPABILITIES_SCRIPT = "capabilities.py"
 CONTRACT_FIXTURES_SUBDIR = Path("references") / "contract_fixtures"
+
+# C2.1/F5/F10: the PRODUCER's `setec_version` (the plugin release, e.g.
+# "1.129.0") at/above which the `emit` envelope's `contract` block is
+# REQUIRED (fleet-coordination/specs/setec-consumer-client-contract.md
+# C2.1). This is APODICTIC's OWN pin — mirrors voicewright's
+# CONTRACT_BLOCK_MIN_SETEC_VERSION (same value, independently held, per the
+# "consumer policy stays injected" design: each consumer, not the producer,
+# decides when IT starts requiring the block).
+#
+# F5/F10 fix: this used to be gated on `manifest_schema_version >= 0.4.0`
+# (CONTRACT_MANIFEST_SCHEMA_VERSION, now removed) — a review finding showed
+# that rule is producer-bypassable, since a producer could hold
+# manifest_schema_version below the floor while setec_version climbs
+# arbitrarily high, and the REQUIRED gate would never fire. The producer's
+# own EMISSION rule stays schema-based (a floor on manifest_schema_version,
+# unrelated to this constant) — that is about what the producer PUBLISHES,
+# not what this consumer REQUIRES. Requirement is keyed on setec_version via
+# `meets_floor`, which understands SemVer prerelease tags (unlike the
+# retired plain-integer manifest_schema_version comparison).
+CONTRACT_BLOCK_MIN_SETEC_VERSION = (1, 129, 0)
+
+# The runtime destination for the vendored, byte-identical shared client
+# (C2.2's per-consumer table; this is APODICTIC's row).
+CLIENT_SOURCE_RELATIVE = Path("scripts") / "setec" / "consumer_client.py"
+CLIENT_RUNTIME_DESTINATION = (
+    REPO_ROOT / "plugins" / "apodictic" / "skills" / "specialized-audits"
+    / "scripts" / "_vendored_setec_client.py"
+)
 
 JUNK = {".DS_Store", "__pycache__"}
 
@@ -78,30 +125,11 @@ class SyncError(RuntimeError):
 
 
 def _resolve_setec_root() -> Path:
-    """Resolve the SETEC plugin root from SETEC_VOICEPRINT_DIR, else the
-    marketplace install. The weekly workflow points SETEC_VOICEPRINT_DIR at a
-    checked-out release tag; release pinning is carried by SETEC_RELEASE_TAG in
-    build_lock, not by this resolver."""
-    env = os.environ.get("SETEC_VOICEPRINT_DIR")
-    if env:
-        root = Path(env).expanduser().resolve()
-        if not (root / ".claude-plugin" / "plugin.json").exists() and not (
-            root / "plugin.json"
-        ).exists():
-            raise SyncError(
-                f"SETEC_VOICEPRINT_DIR={root} is not a SETEC plugin root "
-                f"(no .claude-plugin/plugin.json)."
-            )
-        return root
-    base = Path.home() / ".claude" / "plugins" / "marketplaces"
-    candidates = sorted(base.glob("*/plugins/setec-voiceprint")) if base.is_dir() else []
-    for c in candidates:
-        if (c / ".claude-plugin" / "plugin.json").exists():
-            return c.resolve()
-    raise SyncError(
-        "Could not resolve a SETEC plugin root. Set SETEC_VOICEPRINT_DIR to a "
-        "local SETEC checkout (provisional pin source until the R1 release)."
-    )
+    """Use the runtime resolver so live drift and execution trust one root."""
+    try:
+        return discover_setec().plugin_root
+    except SetecDiscoveryError as exc:
+        raise SyncError(str(exc)) from exc
 
 
 def _read_plugin_version(root: Path) -> str:
@@ -165,24 +193,74 @@ def emit_manifest(setec_root: Path) -> dict:
 
 def project_consumer_manifest(full: dict) -> dict:
     """Project the full emit envelope to the APODICTIC-consumer slice:
-    {setec_version, manifest_schema_version, entries: [apodictic surfaces]}.
+    {setec_version, manifest_schema_version, [contract,] entries: [apodictic
+    surfaces]}. Entries are sorted by `id` so the vendored copy is
+    byte-stable across runs regardless of producer ordering.
 
-    Entries are sorted by `id` so the vendored copy is byte-stable across
-    runs regardless of producer ordering."""
+    F5/F10: the contract block is REQUIRED when the PRODUCER's live
+    `setec_version` (the plugin release, e.g. "1.129.0") is at/above
+    CONTRACT_BLOCK_MIN_SETEC_VERSION — NOT when manifest_schema_version
+    crosses a threshold. Gating on manifest_schema_version was
+    producer-bypassable: a producer could hold manifest_schema_version below
+    the floor while setec_version climbed arbitrarily high, and this
+    consumer would never require the block. The producer's own EMISSION
+    rule (when it PUBLISHES `contract` at all) remains schema-based — that
+    is a separate, producer-owned decision about what it ships, not what
+    this consumer demands.
+
+    F7: a missing, non-string, empty, or unparseable `setec_version` FAILS
+    CLOSED (raises SyncError) rather than silently skipping the floor check.
+    The old `isinstance(x, str) and meets_floor(...)`-shaped condition
+    short-circuited to False the moment `setec_version` was anything but a
+    valid version string — silently treating a malformed envelope as
+    legacy/no-contract-required, exactly the case this check exists to
+    catch. A malformed `setec_version` is not proof the release is below
+    the floor; we cannot parse it at all, so we never allow it to take the
+    legacy no-contract path."""
     entries = full.get("entries")
     if not isinstance(entries, list):
         raise SyncError("emit envelope has no `entries` list.")
+    setec_version = full.get("setec_version")
+    contract = full.get("contract")
+    if not isinstance(setec_version, str) or not setec_version:
+        raise SyncError(
+            f"emit envelope's `setec_version` is missing or not a non-empty "
+            f"string ({setec_version!r}) — cannot determine whether this "
+            f"release requires the C2.1 contract block, so refusing to "
+            f"proceed rather than silently allowing a missing `contract` "
+            f"through."
+        )
+    try:
+        meets = meets_floor(setec_version, CONTRACT_BLOCK_MIN_SETEC_VERSION)
+    except VersionParseError as exc:
+        raise SyncError(
+            f"emit envelope's `setec_version` {setec_version!r} does not "
+            f"parse ({exc}) — cannot determine whether this release "
+            f"requires the C2.1 contract block, so refusing to proceed."
+        ) from exc
+    if meets and contract is None:
+        raise SyncError(
+            f"SETEC {setec_version} is at/above "
+            f"CONTRACT_BLOCK_MIN_SETEC_VERSION "
+            f"({'.'.join(str(p) for p in CONTRACT_BLOCK_MIN_SETEC_VERSION)}) "
+            f"but its emit envelope has no `contract` block."
+        )
+
     consumer_entries = [
         e
         for e in entries
         if isinstance(e, dict) and CONSUMER in (e.get("consumers") or [])
     ]
     consumer_entries.sort(key=lambda e: e.get("id") or e.get("surface") or "")
-    return {
-        "setec_version": full.get("setec_version"),
+
+    projected: dict = {
+        "setec_version": setec_version,
         "manifest_schema_version": full.get("manifest_schema_version"),
-        "entries": consumer_entries,
     }
+    if contract is not None:
+        projected["contract"] = contract
+    projected["entries"] = consumer_entries
+    return projected
 
 
 def _serialize(manifest: dict) -> str:
@@ -257,7 +335,45 @@ def _copy_fixtures(
     return copied
 
 
-def build_lock(setec_root: Path, manifest: dict) -> dict:
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _display_path(path: Path) -> str:
+    """Render `path` relative to REPO_ROOT for messages when possible,
+    falling back to the absolute path. The module-level VENDOR_DIR /
+    LOCK_PATH / CLIENT_RUNTIME_DESTINATION constants are monkeypatchable (the
+    hermetic drift-tri-state self-test in tools/check_setec_contract.py
+    redirects them into a tempdir outside REPO_ROOT), so a bare
+    `.relative_to(REPO_ROOT)` would raise ValueError there."""
+    try:
+        return str(path.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
+
+
+def _read_client_source(setec_root: Path) -> bytes:
+    """Read the PRODUCER's shared client source bytes (spec C2.2). Raises
+    SyncError if this SETEC predates the shared client (no
+    scripts/setec/consumer_client.py) — a clean failure rather than a
+    confusing downstream hash mismatch."""
+    path = setec_root / CLIENT_SOURCE_RELATIVE
+    if not path.is_file():
+        raise SyncError(
+            f"SETEC has no {CLIENT_SOURCE_RELATIVE} at {setec_root} — this "
+            f"SETEC predates the C2 shared consumer client."
+        )
+    return path.read_bytes()
+
+
+def _copy_client(source_bytes: bytes, runtime_destination: Path) -> None:
+    """Write `source_bytes` VERBATIM to `runtime_destination` — byte-identical
+    vendoring, not a re-export shim (spec C2.2)."""
+    runtime_destination.parent.mkdir(parents=True, exist_ok=True)
+    runtime_destination.write_bytes(source_bytes)
+
+
+def build_lock(setec_root: Path, manifest: dict, client_source_bytes: bytes) -> dict:
     """Construct the pin record (mirrors apodictic-plugin.lock).
 
     FINALIZED path: when ``SETEC_RELEASE_TAG`` is set to a real release tag
@@ -266,8 +382,20 @@ def build_lock(setec_root: Path, manifest: dict) -> dict:
     ``sync-setec.yml`` resolves the release ref and passes it through this env
     var; a local finalization run sets it explicitly.
 
-    Provisional fallback (no release tag): pin to the branch + local worktree,
-    ``provisional: true`` — the pre-release bootstrap posture."""
+    Provisional fallback (no release tag): pin to the branch + a code-safe
+    local-worktree label; machine-local checkout paths are operational context,
+    not contract identity, and must not enter the committed lock.
+    ``provisional: true`` — the pre-release bootstrap posture.
+
+    ``client_sha256`` (spec C2.2) is hashed from the PRODUCER SOURCE bytes —
+    NEVER from the just-written runtime vendored copy. This is a deliberate
+    anti-drift design point: the lock's pin must reflect what the producer
+    actually shipped, so a byte-mutated runtime copy is caught by comparing
+    against this SOURCE-derived hash (`cmd_check`'s runtime-destination
+    re-hash), not by re-deriving from the (possibly mutated) copy itself,
+    which would make the check self-referential and unable to detect
+    corruption of the vendored file."""
+    client_sha256 = _sha256_bytes(client_source_bytes)
     commit = _git_commit(setec_root)
     release_tag = os.environ.get("SETEC_RELEASE_TAG")
     if release_tag:
@@ -279,6 +407,7 @@ def build_lock(setec_root: Path, manifest: dict) -> dict:
             "plugin_version": _read_plugin_version(setec_root),
             "setec_version": manifest.get("setec_version"),
             "manifest_schema_version": manifest.get("manifest_schema_version"),
+            "client_sha256": client_sha256,
             "source": (
                 "https://github.com/anotherpanacea-eng/setec-voiceprint/"
                 f"releases/tag/{release_tag}"
@@ -296,7 +425,8 @@ def build_lock(setec_root: Path, manifest: dict) -> dict:
         "plugin_version": _read_plugin_version(setec_root),
         "setec_version": manifest.get("setec_version"),
         "manifest_schema_version": manifest.get("manifest_schema_version"),
-        "source": f"local worktree: {setec_root}",
+        "client_sha256": client_sha256,
+        "source": "local worktree (provisional)",
         "provisional": True,
     }
 
@@ -305,30 +435,39 @@ def _serialize_lock(lock: dict) -> str:
     return json.dumps(lock, indent=2, ensure_ascii=False) + "\n"
 
 
-def derive(setec_root: Path) -> tuple[str, dict]:
-    """Re-derive the vendored manifest string + the lock dict from SETEC.
-    Pure (no writes); used by both --write and --check."""
+def derive(setec_root: Path) -> tuple[str, dict, bytes]:
+    """Re-derive the vendored manifest string + the lock dict + the producer
+    client SOURCE bytes from SETEC. Pure (no writes); used by both --write
+    and --check."""
     full = emit_manifest(setec_root)
     projected = project_consumer_manifest(full)
-    return _serialize(projected), build_lock(setec_root, projected)
+    client_source_bytes = _read_client_source(setec_root)
+    return (
+        _serialize(projected),
+        build_lock(setec_root, projected, client_source_bytes),
+        client_source_bytes,
+    )
 
 
 def cmd_write() -> int:
     setec_root = _resolve_setec_root()
-    manifest_str, lock = derive(setec_root)
+    manifest_str, lock, client_source_bytes = derive(setec_root)
     VENDOR_DIR.mkdir(parents=True, exist_ok=True)
     VENDORED_MANIFEST.write_text(manifest_str, encoding="utf-8")
     copied = _copy_fixtures(setec_root, VENDORED_FIXTURES)
+    _copy_client(client_source_bytes, CLIENT_RUNTIME_DESTINATION)
     LOCK_PATH.write_text(_serialize_lock(lock), encoding="utf-8")
     print(
         f"synced SETEC contract from {setec_root}\n"
         f"  setec_version={lock['setec_version']} "
         f"(plugin {lock['plugin_version']}, schema {lock['manifest_schema_version']})\n"
-        f"  manifest -> {VENDORED_MANIFEST.relative_to(REPO_ROOT)} "
+        f"  manifest -> {_display_path(VENDORED_MANIFEST)} "
         f"({len(json.loads(manifest_str)['entries'])} consumer surfaces)\n"
-        f"  fixtures -> {VENDORED_FIXTURES.relative_to(REPO_ROOT)} "
+        f"  fixtures -> {_display_path(VENDORED_FIXTURES)} "
         f"({len(copied)} files)\n"
-        f"  lock     -> {LOCK_PATH.relative_to(REPO_ROOT)} "
+        f"  client   -> {_display_path(CLIENT_RUNTIME_DESTINATION)} "
+        f"(sha256 {lock['client_sha256'][:12]}...)\n"
+        f"  lock     -> {_display_path(LOCK_PATH)} "
         f"({'provisional' if lock['provisional'] else 'release'} pin: "
         f"{lock['tag']})"
     )
@@ -338,21 +477,21 @@ def cmd_write() -> int:
 def cmd_check() -> int:
     """Re-derive and compare against the vendored copy. Exit 1 on staleness."""
     setec_root = _resolve_setec_root()
-    manifest_str, lock = derive(setec_root)
+    manifest_str, lock, client_source_bytes = derive(setec_root)
     stale: list[str] = []
 
     if not VENDORED_MANIFEST.exists():
-        stale.append(f"missing {VENDORED_MANIFEST.relative_to(REPO_ROOT)}")
+        stale.append(f"missing {_display_path(VENDORED_MANIFEST)}")
     elif VENDORED_MANIFEST.read_text(encoding="utf-8") != manifest_str:
         stale.append(
-            f"{VENDORED_MANIFEST.relative_to(REPO_ROOT)} diverges from live "
+            f"{_display_path(VENDORED_MANIFEST)} diverges from live "
             f"`capabilities emit` (consumer projection)"
         )
 
     # Fixtures: compare file-for-file against SETEC's contract_fixtures.
     src_fix = setec_root / CONTRACT_FIXTURES_SUBDIR
     if not VENDORED_FIXTURES.is_dir():
-        stale.append(f"missing {VENDORED_FIXTURES.relative_to(REPO_ROOT)}")
+        stale.append(f"missing {_display_path(VENDORED_FIXTURES)}")
     else:
         src_files = {
             p.name: p
@@ -372,16 +511,42 @@ def cmd_check() -> int:
             elif src_files[name].read_bytes() != dst_files[name].read_bytes():
                 stale.append(f"fixtures: {name} diverges from SETEC source")
 
-    # Lock: setec_version / plugin_version / commit are the load-bearing pin.
+    # Lock: setec_version / plugin_version / commit / client_sha256 are the
+    # load-bearing pin. client_sha256 (spec C2.2) is hashed from the
+    # PRODUCER SOURCE bytes (never the runtime copy) — see build_lock.
     if LOCK_PATH.exists():
         cur = json.loads(LOCK_PATH.read_text(encoding="utf-8"))
-        for key in ("setec_version", "plugin_version", "commit", "manifest_schema_version"):
+        for key in (
+            "setec_version", "plugin_version", "commit",
+            "manifest_schema_version", "client_sha256",
+        ):
             if cur.get(key) != lock.get(key):
                 stale.append(
                     f"lock: {key}={cur.get(key)!r} but source is {lock.get(key)!r}"
                 )
     else:
-        stale.append(f"missing {LOCK_PATH.relative_to(REPO_ROOT)}")
+        stale.append(f"missing {_display_path(LOCK_PATH)}")
+
+    # Runtime vendored client: re-hash the ACTUAL runtime destination file and
+    # compare against the producer-source hash. This is the check that fires
+    # on a byte-mutated (or deleted) vendored client even if the lock itself
+    # was left untouched — the lock-key compare above alone cannot catch a
+    # divergence confined to the runtime copy.
+    expected_client_sha256 = lock.get("client_sha256")
+    if not CLIENT_RUNTIME_DESTINATION.is_file():
+        stale.append(
+            f"missing runtime vendored client "
+            f"{_display_path(CLIENT_RUNTIME_DESTINATION)}"
+        )
+    else:
+        runtime_sha256 = _sha256_bytes(CLIENT_RUNTIME_DESTINATION.read_bytes())
+        if runtime_sha256 != expected_client_sha256:
+            stale.append(
+                f"runtime vendored client "
+                f"{_display_path(CLIENT_RUNTIME_DESTINATION)} diverges "
+                f"from the producer source (sha256 {runtime_sha256} != "
+                f"{expected_client_sha256})"
+            )
 
     if stale:
         print("sync_setec --check FAILED — vendored SETEC contract is stale:", file=sys.stderr)
