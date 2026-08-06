@@ -1,0 +1,74 @@
+[
+  {
+    "case_id": "text_too_short_reliability",
+    "text": "text too short",
+    "expected_consumer_tier": "reliability",
+    "producer_disposition": "classifier_only"
+  },
+  {
+    "case_id": "text_length_below_reliability",
+    "text": "text length is below the minimum for this signal",
+    "expected_consumer_tier": "reliability",
+    "producer_disposition": "classifier_only"
+  },
+  {
+    "case_id": "below_recommended_threshold_reliability",
+    "text": "input is below the recommended word threshold",
+    "expected_consumer_tier": "reliability",
+    "producer_disposition": "classifier_only"
+  },
+  {
+    "case_id": "signal_noisy_reliability",
+    "text": "signal is too noisy to score reliably",
+    "expected_consumer_tier": "reliability",
+    "producer_disposition": "classifier_only"
+  },
+  {
+    "case_id": "signals_skipped_reliability",
+    "text": "two signals skipped due to length",
+    "expected_consumer_tier": "reliability",
+    "producer_disposition": "classifier_only"
+  },
+  {
+    "case_id": "tier_n_skipped_reliability",
+    "text": "tier 2 skipped for this document",
+    "expected_consumer_tier": "reliability",
+    "producer_disposition": "classifier_only"
+  },
+  {
+    "case_id": "backend_unavailable_reliability",
+    "text": "spacy unavailable in this environment",
+    "expected_consumer_tier": "reliability",
+    "producer_disposition": "classifier_only"
+  },
+  {
+    "case_id": "fell_back_heuristic_reliability",
+    "text": "fell back to tf-idf scoring",
+    "expected_consumer_tier": "reliability",
+    "producer_disposition": "classifier_only"
+  },
+  {
+    "case_id": "insufficient_tokens_reliability",
+    "text": "insufficient tokens to compute a stable estimate",
+    "expected_consumer_tier": "reliability",
+    "producer_disposition": "classifier_only"
+  },
+  {
+    "case_id": "baseline_too_small_reliability",
+    "text": "baseline too small for a reliable comparison",
+    "expected_consumer_tier": "reliability",
+    "producer_disposition": "classifier_only"
+  },
+  {
+    "case_id": "dependency_missing_reliability",
+    "text": "optional dependency missing; skipping tier 3",
+    "expected_consumer_tier": "reliability",
+    "producer_disposition": "classifier_only"
+  },
+  {
+    "case_id": "unmatched_prose_fails_upward",
+    "text": "the sky is blue today",
+    "expected_consumer_tier": "reliability",
+    "producer_disposition": "classifier_only"
+  }
+]

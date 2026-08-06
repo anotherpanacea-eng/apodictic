@@ -115,7 +115,10 @@ jobs:
 
             - SETEC release: ${{ steps.setec.outputs.ref }}
             - setec_version: ${{ steps.lock.outputs.setec_version }} (plugin v${{ steps.lock.outputs.plugin_version }})
-            - Re-derived `tests/setec-contract/setec-capabilities.json` + `fixtures/`; re-pinned `setec-plugin.lock`.
+            - Re-derived `tests/setec-contract/setec-capabilities.json` (now including the C2.1 `contract` block at
+              manifest_schema_version >= 0.4.0) + `fixtures/`; re-vendored the byte-identical shared client to
+              `plugins/apodictic/skills/specialized-audits/scripts/_vendored_setec_client.py`; re-pinned
+              `setec-plugin.lock` (now including `client_sha256`, hashed from the producer source bytes).
 
             The drift gate (`check_setec_contract.py --require-live`) and the
             consumer contract tests passed before this PR. Review the manifest
@@ -128,3 +131,4 @@ jobs:
           add-paths: |
             tests/setec-contract/**
             setec-plugin.lock
+            plugins/apodictic/skills/specialized-audits/scripts/_vendored_setec_client.py
