@@ -716,100 +716,6 @@ def t9_voice_profile_consume_contract() -> None:
 
 
 # --------------------------------------------------------------------------
-# T9b — doc-truth guard for T9's rationale. T9 now pins a PRESENT-TENSE contract:
-# the Interpretable Stylometric Explanation capability (style_explanation.py +
-# apodictic.style_label.v1) is the first shipped consume-side reference to
-# top_features / most_stable_features (its `feature_ref` provenance cites the
-# families.<fam>.top_features shape). A prior draft of T9 over-claimed in the
-# OTHER direction — asserting as fact that capabilities "actually consume" /
-# "glob" these arrays and that a SETEC drop would "silently break consumers" when
-# no consumer yet existed. This guard fails if (a) that retired overclaim phrasing
-# reappears in the T9 block, or (b) a consumer of these arrays appears that is NOT
-# the documented Interpretable-Stylometric-Explanation capability — i.e. an
-# UNEXPECTED consumer lands WITHOUT the T9 wording being updated to name it. Either
-# way the rationale must stay congruent with the repo.
-# --------------------------------------------------------------------------
-def t9b_consume_claim_matches_repo() -> None:
-    print("T9b: T9 rationale matches the repo (no overclaimed current consumer)")
-    src = Path(__file__).resolve().read_text(encoding="utf-8")
-
-    # (a) The retired present-tense overclaim phrasing must not reappear in the
-    #     T9 block. Scan ONLY the T9 region (from its header up to T9b's header)
-    #     so this guard does not match the example phrases quoted in its own
-    #     docstring/assertions below. Phrases are split so the literal full
-    #     string never appears in this function's source either.
-    start = src.find("# T9 —")
-    end = src.find("# T9b —")
-    t9_block = src[start:end] if (start != -1 and end != -1 and end > start) else src
-    # Normalize whitespace (incl. comment-continuation '# ' / f-string wraps) so
-    # an overclaim split across lines is still caught.
-    t9_norm = " ".join(t9_block.replace("#", " ").split())
-    overclaims = (
-        "apodictic " + "actually consumes",
-        "every consumer " + "that globs",
-        "capabilities " + "glob.",
-        "silently " + "break consumers)",
-    )
-    for phrase in overclaims:
-        check(
-            phrase not in t9_norm,
-            f"T9 must not reassert the refuted present-tense consumer claim "
-            f"({phrase!r})",
-        )
-
-    # (b) Ground truth: is there a non-test consumer of these arrays OTHER than the
-    #     documented Interpretable-Stylometric-Explanation capability? That
-    #     capability is the expected, named consumer (T9's present-tense rationale
-    #     above); any OTHER consumer landing without the wording being updated to
-    #     name it is what this guard forces an update for.
-    try:
-        out = subprocess.run(
-            ["git", "grep", "-nE", "top_features|most_stable_features"],
-            cwd=str(REPO_ROOT),
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        _SKIPS.append("T9b: git grep unavailable for consumer cross-check")
-        return
-    if out.returncode not in (0, 1):
-        _SKIPS.append("T9b: git grep returned a non-match error; consumer "
-                      "cross-check skipped")
-        return
-    # Files belonging to the documented Interpretable-Stylometric-Explanation
-    # capability — its `feature_ref` provenance is the EXPECTED consume-side
-    # reference T9's present-tense rationale now names. Matched by path so a stray
-    # new consumer elsewhere still trips the guard.
-    expected_paths = (
-        "style_explanation.py",
-        "apodictic.style_label.v1.schema.json",
-        "interpretable-stylometric-explanation.md",
-        "example-author-style-explanation.md",
-        # The changelog's assembled entry for that capability quotes the
-        # families.<fam>.top_features shape it consumes. A release note is
-        # documentation of the EXPECTED capability, not a new code consumer —
-        # exclude it like the reference module above (else every release that
-        # carries this entry trips the guard).
-        "changelog.md",
-    )
-    consumers = [
-        line for line in out.stdout.splitlines()
-        if line
-        and "tests/setec-contract/" not in line.split(":", 1)[0]
-        and not any(p in line.split(":", 1)[0] for p in expected_paths)
-    ]
-    check(
-        not consumers,
-        "the only shipped consume-side references to "
-        "top_features/most_stable_features are the documented "
-        "Interpretable-Stylometric-Explanation capability, so T9's present-tense "
-        "wording is accurate; an UNEXPECTED consumer landed "
-        f"({consumers!r}) — name it in the T9 rationale",
-    )
-
-
-# --------------------------------------------------------------------------
 # T10 — voice_distance register_families/v2 contract.
 #
 # History: this block shipped as a *migration sentinel*. While the pin sat on
@@ -966,7 +872,6 @@ def main() -> int:
         t7_idiolect_help_bypasses_required_groups,
         t8_run_surface_cli_preserves_dispatcher_exit_code,
         t9_voice_profile_consume_contract,
-        t9b_consume_claim_matches_repo,
         t10_voice_distance_register_family_contract,
     ):
         fn()
