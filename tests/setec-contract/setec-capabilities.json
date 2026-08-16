@@ -1,6 +1,6 @@
 {
-  "setec_version": "1.128.1",
-  "manifest_schema_version": "0.3.0",
+  "setec_version": "1.131.0",
+  "manifest_schema_version": "0.4.0",
   "entries": [
     {
       "id": "agd_move_scan",

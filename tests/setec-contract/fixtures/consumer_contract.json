@@ -1,0 +1,63 @@
+{
+  "output_schema_version": "1.0",
+  "output_key_policy": {
+    "common_required": [
+      "ai_status",
+      "available",
+      "baseline",
+      "claim_license",
+      "claim_license_rendered",
+      "results",
+      "schema_version",
+      "target",
+      "task_surface",
+      "tool",
+      "version",
+      "warnings"
+    ],
+    "success_extensions": "surface_specific_allowed",
+    "error_required": [
+      "reason",
+      "reason_category"
+    ],
+    "error_extensions": "surface_specific_allowed",
+    "reserved_collision_refused": true
+  },
+  "reason_categories": [
+    "bad_input",
+    "internal_error",
+    "missing_dependency",
+    "policy_refused",
+    "text_too_short",
+    "version_floor"
+  ],
+  "contract_block_min_setec_version": "1.129.0",
+  "s5_identity": {
+    "method": "unweighted mean of six family Burrows-Delta values",
+    "family_order": [
+      "char_ngrams_3",
+      "char_ngrams_4",
+      "char_ngrams_5",
+      "pos_trigrams",
+      "dependency_ngrams",
+      "punctuation"
+    ],
+    "family_limits": {
+      "char_ngrams_3": 200,
+      "char_ngrams_4": 200,
+      "char_ngrams_5": 200,
+      "pos_trigrams": 300,
+      "dependency_ngrams": 300,
+      "punctuation": null
+    }
+  },
+  "client": {
+    "relative_path": "scripts/setec/consumer_client.py",
+    "sha256": "8d464d50c75388bb62b77ff09450d31b12ef93c1aed2b70a0e4e29d780e57b24"
+  },
+  "fixtures": {
+    "semver_parser_sha256": "bde40af810df26ac89303117943f0b357e61285b90550ffb6e614e6db0d1c796",
+    "warning_classifier_coverage_sha256": "bed3563eb3ab7ee97f5049ce704445253404926ae4470b8dc86436ef99d9e0c3",
+    "warning_producer_emissions_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  }
+}
