@@ -32,16 +32,46 @@ R1 and fails discovery with an upgrade message (computational surfaces
 hard-require SETEC — never a silent fallback). The bootstrap value lives
 in setec_capabilities.BOOTSTRAP_SETEC_VERSION and is re-exported here as
 the default floor for `discover_setec` / `run_setec_script`.
+
+--------------------------------------------------------------------------
+C3 thin-wrapper note (fleet-coordination/specs/setec-consumer-client-
+contract.md): this module is now a thin POLICY wrapper over the runtime
+vendored shared client, `_vendored_setec_client.py` (byte-identical to
+setec-voiceprint's `scripts/setec/consumer_client.py`, refreshed by
+`scripts/sync_setec.py`). The MECHANISM — the SemVer-subset parser/floor
+semantics, the envelope dataclasses, and the subprocess runner — lives
+there and is imported, not re-implemented. What stays LOCAL (consumer-
+owned, not moved, per the spec's decision line) is APODICTIC's OWN policy:
+  * the resolver order (SETEC_VOICEPRINT_DIR env var, then a marketplace
+    search) — voicewright's sibling-checkout candidate does not apply here;
+  * the BOOTSTRAP_SETEC_VERSION / MIN_SETEC_VERSION floor constants;
+  * the CLI shim glue (`_cli_main`).
+See tests/setec-contract/setec-client-symbol-inventory.json for the full
+shared vs. apodictic_policy classification of every public symbol across
+this module and its two siblings (setec_runner.py, setec_capabilities.py).
+--------------------------------------------------------------------------
 """
 
 from __future__ import annotations
 
 import json
 import os
-import subprocess
 import sys
-from dataclasses import dataclass
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _vendored_setec_client import (  # noqa: E402
+    SetecDiscoveryError,
+    SetecLocation,
+    VersionParseError,
+    build_location,
+    meets_floor,
+    parse_version,
+    read_plugin_manifest,
+    run_setec_script,
+    version_precedence_key,
+)
 
 # BOOTSTRAP_SETEC_VERSION is the single source of truth for the discovery
 # floor — "the version where `capabilities emit` + the R1 field bundle
@@ -52,6 +82,10 @@ from pathlib import Path
 # setec-plugin.lock (provisional: false). It lives here (not in
 # setec_capabilities) so this module has no import-time dependency on
 # setec_capabilities, which imports from this module.
+#
+# CONSUMER-OWNED, NOT MOVED (spec C3's decision line): the shared vendored
+# client never hardcodes a version floor, so this constant stays here even
+# though the client supplies the mechanism that checks it.
 BOOTSTRAP_SETEC_VERSION = (1, 114, 0)
 
 # Backward-compatible module constant: the framework-wide default discovery
@@ -87,58 +121,29 @@ Minimum required version: {min_ver}
 INSTALL_INSTRUCTIONS = _install_instructions()
 
 
-@dataclass
-class SetecLocation:
-    plugin_root: Path
-    scripts_dir: Path
-    version: tuple[int, ...]
-    version_str: str
-    source: str  # "env" | "marketplace"
-
-
-class SetecDiscoveryError(RuntimeError):
-    """Raised when SETEC cannot be located or fails the version check."""
-
-
-def _read_plugin_manifest(plugin_root: Path) -> dict | None:
-    """Return the parsed plugin.json for a SETEC plugin root, or None if
-    the manifest is missing or unreadable."""
-    candidates = [
-        plugin_root / ".claude-plugin" / "plugin.json",
-        plugin_root / "plugin.json",
-    ]
-    for path in candidates:
-        if path.exists():
-            try:
-                return json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
-                return None
-    return None
-
-
 def _parse_version(version_str: str) -> tuple[int, ...]:
-    """Parse a semver-ish version string into a tuple of ints. Non-numeric
-    suffixes are dropped (e.g. '1.66.0-beta' -> (1, 66, 0))."""
-    parts: list[int] = []
-    for component in version_str.split("."):
-        digits = ""
-        for ch in component:
-            if ch.isdigit():
-                digits += ch
-            else:
-                break
-        if not digits:
-            break
-        parts.append(int(digits))
-    return tuple(parts)
+    """Legacy release-only accessor kept for callers that only need the
+    release tuple for DISPLAY (never for a floor comparison — use
+    `meets_floor` for that). Raises VersionParseError on an unparseable
+    string; there is no more silent partial-parse ``()`` result. Thin
+    wrapper over the vendored client's `parse_version`."""
+    return tuple(parse_version(version_str)["release"])
 
 
 def _looks_like_setec_root(path: Path) -> bool:
+    """APODICTIC's own plugin-root recognition: requires BOTH a `scripts/`
+    subdirectory AND a plugin.json named `setec-voiceprint` at THIS exact
+    path (no nested-repo-root normalization — unlike the vendored client's
+    more permissive `normalize_to_plugin_root`, which also accepts a repo
+    root containing `plugins/setec-voiceprint`). Kept local + narrower than
+    the shared mechanism so `discover_setec`'s existing candidate-by-
+    candidate error behavior is unchanged by C3 (a refactor-in-place, not
+    a behavior broadening)."""
     if not path.is_dir():
         return False
     if not (path / "scripts").is_dir():
         return False
-    manifest = _read_plugin_manifest(path)
+    manifest = read_plugin_manifest(path)
     if not manifest:
         return False
     return manifest.get("name") == "setec-voiceprint"
@@ -160,7 +165,12 @@ def _candidates_from_marketplace() -> list[Path]:
 
 
 def discover_setec(min_version: tuple[int, ...] = MIN_SETEC_VERSION) -> SetecLocation:
-    """Locate SETEC. Raises SetecDiscoveryError on failure."""
+    """Locate SETEC using APODICTIC's OWN resolver order (env var, then
+    marketplace search — this repo's C3 policy, never moved into the shared
+    client). Raises SetecDiscoveryError on failure. Candidate VALIDATION
+    (recognizing a plugin root, parsing its version, checking the floor,
+    building the SetecLocation) delegates to the vendored client's
+    `build_location` mechanism."""
     env_root = _candidate_from_env()
     if env_root is not None:
         if not _looks_like_setec_root(env_root):
@@ -169,84 +179,22 @@ def discover_setec(min_version: tuple[int, ...] = MIN_SETEC_VERSION) -> SetecLoc
                 f"not a SETEC plugin root (missing scripts/ or plugin.json with "
                 f"name='setec-voiceprint').\n\n{_install_instructions(min_version)}"
             )
-        return _build_location(env_root, "env", min_version)
+        return build_location(
+            env_root, "env", min_version,
+            install_instructions=lambda: _install_instructions(min_version),
+        )
 
     for candidate in _candidates_from_marketplace():
         if _looks_like_setec_root(candidate):
-            return _build_location(candidate, "marketplace", min_version)
+            return build_location(
+                candidate, "marketplace", min_version,
+                install_instructions=lambda: _install_instructions(min_version),
+            )
 
     raise SetecDiscoveryError(
         "SETEC Voiceprint plugin not found. Searched: SETEC_VOICEPRINT_DIR "
         "env var, ~/.claude/plugins/marketplaces/*/plugins/setec-voiceprint."
         f"\n\n{_install_instructions(min_version)}"
-    )
-
-
-def _build_location(
-    plugin_root: Path, source: str, min_version: tuple[int, ...]
-) -> SetecLocation:
-    manifest = _read_plugin_manifest(plugin_root)
-    if not manifest:
-        raise SetecDiscoveryError(
-            f"Found SETEC plugin root at {plugin_root}, but plugin.json is "
-            f"unreadable.\n\n{_install_instructions(min_version)}"
-        )
-    version_str = str(manifest.get("version", ""))
-    version = _parse_version(version_str)
-    if not version:
-        raise SetecDiscoveryError(
-            f"SETEC plugin.json at {plugin_root} has missing or unparseable "
-            f"version: {version_str!r}.\n\n{_install_instructions(min_version)}"
-        )
-    if version < min_version:
-        min_str = ".".join(str(p) for p in min_version)
-        raise SetecDiscoveryError(
-            f"SETEC version {version_str} found at {plugin_root}, but APODICTIC "
-            f"requires {min_str} or newer.\n\n{_install_instructions(min_version)}"
-        )
-    return SetecLocation(
-        plugin_root=plugin_root,
-        scripts_dir=plugin_root / "scripts",
-        version=version,
-        version_str=version_str,
-        source=source,
-    )
-
-
-def run_setec_script(
-    script_name: str,
-    args: list[str],
-    *,
-    location: SetecLocation | None = None,
-    check: bool = False,
-    capture_output: bool = False,
-) -> subprocess.CompletedProcess:
-    """Run a SETEC script as a subprocess.
-
-    `script_name` is the bare filename inside SETEC's scripts/ dir
-    (e.g. 'variance_audit.py'). `args` is the argument list passed after it.
-
-    cwd is intentionally inherited from the caller so user-supplied
-    relative paths (the input file, --baseline-dir, --out, --anchors)
-    resolve where the user expects. SETEC scripts import sibling modules
-    via Python's automatic sys.path[0]=script-dir and read internal data
-    files via Path(__file__), so they don't need cwd at the plugin root.
-    """
-    if location is None:
-        location = discover_setec()
-    script_path = location.scripts_dir / script_name
-    if not script_path.is_file():
-        raise SetecDiscoveryError(
-            f"SETEC script {script_name} not found at {script_path}. "
-            f"SETEC version {location.version_str} may be missing this entry "
-            f"point; verify the script name or upgrade SETEC."
-        )
-    cmd = [sys.executable, str(script_path), *args]
-    return subprocess.run(
-        cmd,
-        check=check,
-        capture_output=capture_output,
-        text=True,
     )
 
 

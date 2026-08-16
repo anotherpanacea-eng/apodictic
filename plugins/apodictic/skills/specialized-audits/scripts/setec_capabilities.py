@@ -22,6 +22,19 @@ lands — the manifest is the single authority. The only constant kept is
 the bootstrap floor (setec_discovery.BOOTSTRAP_SETEC_VERSION, re-exported
 here): the version at which `capabilities emit` plus the R1 field bundle
 exist. # FINALIZATION on that constant lives in setec_discovery.py.
+
+--------------------------------------------------------------------------
+C3 thin-wrapper note (fleet-coordination/specs/setec-consumer-client-
+contract.md): every public symbol in THIS module is `apodictic_policy` in
+tests/setec-contract/setec-client-symbol-inventory.json — none of R1's
+manifest-parsing logic is shared with the producer client. Per the spec's
+decision line, `parse_manifest_payload` "remains an independent consumer
+parser" and S5 method/family pins stay consumer-authored; this module only
+imports the version-parsing PRIMITIVES it needs (`VersionParseError`,
+`meets_floor`, `_parse_version`) from `setec_discovery`, which itself
+re-exports them from the runtime vendored shared client
+(`_vendored_setec_client.py`) per C1.1/C3.
+--------------------------------------------------------------------------
 """
 
 from __future__ import annotations
@@ -38,8 +51,10 @@ from setec_discovery import (  # noqa: E402
     BOOTSTRAP_SETEC_VERSION,
     SetecDiscoveryError,
     SetecLocation,
+    VersionParseError,
     _parse_version,
     discover_setec,
+    meets_floor,
     run_setec_script,
 )
 
@@ -155,13 +170,19 @@ def parse_manifest_payload(
     (their floor is undiscoverable) but do not abort the parse — only a
     surface APODICTIC actually asks for must carry a floor, enforced at
     `require()` / `resolve_floor` time."""
-    version_str = str(payload.get("setec_version", "")).strip()
-    version = _parse_version(version_str)
-    if not version:
+    version_str = payload.get("setec_version")
+    if not isinstance(version_str, str):
+        raise SetecCapabilitiesError(
+            "SETEC capabilities manifest has a non-string setec_version: "
+            f"{version_str!r}."
+        )
+    try:
+        version = _parse_version(version_str)
+    except VersionParseError as exc:
         raise SetecCapabilitiesError(
             f"SETEC capabilities manifest has missing or unparseable "
-            f"setec_version: {version_str!r}."
-        )
+            f"setec_version: {version_str!r} ({exc})."
+        ) from exc
     entries = payload.get("entries")
     if not isinstance(entries, list):
         raise SetecCapabilitiesError(
@@ -181,8 +202,12 @@ def parse_manifest_payload(
             # Skip it from the floor table; require() raises if a consumer
             # asks for it.
             continue
-        floor = _parse_version(floor_str)
-        if not floor:
+        try:
+            floor = _parse_version(floor_str)
+        except VersionParseError:
+            # A floor that doesn't parse is undiscoverable, same as absent —
+            # skip it from the floor table rather than aborting the whole
+            # manifest parse over one malformed entry.
             continue
         inputs = entry.get("inputs")
         required_groups = entry.get("required_groups")
@@ -281,7 +306,10 @@ def resolve_floor(
     """
     manifest = query_capabilities(location=location)
     cap = manifest.require(surface)
-    if manifest.setec_version < cap.min_setec_version:
+    # Floor check uses the ORIGINAL setec_version string (meets_floor), not a
+    # release-only tuple compare — a prerelease of the same release as the
+    # surface's floor must NOT satisfy it (`1.129.0-rc.1 < 1.129.0`).
+    if not meets_floor(manifest.setec_version_str, cap.min_setec_version):
         # Reuse setec_discovery's floor-aware upgrade message so the user
         # sees the surface's required minimum.
         from setec_discovery import _install_instructions  # local import

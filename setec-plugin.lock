@@ -6,6 +6,7 @@
   "plugin_version": "1.131.0",
   "setec_version": "1.131.0",
   "manifest_schema_version": "0.4.0",
+  "client_sha256": "8d464d50c75388bb62b77ff09450d31b12ef93c1aed2b70a0e4e29d780e57b24",
   "source": "https://github.com/anotherpanacea-eng/setec-voiceprint/releases/tag/v1.131.0",
   "provisional": false
 }
