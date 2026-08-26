@@ -78,6 +78,45 @@ The spec/code reviews (steps 2, 4) earn their keep when the reviewer does more t
 - **Flip the status when you build.** A build PR flips its spec doc's `**Status:**` line (and its ROADMAP entry) in the same PR — status drift recurred across #66/#70/#74. New specs declare their deliverable with a `built-when` marker (syntax in `docs/qol-status-drift-lint.md` §Marker syntax) so `scripts/check-status-drift.mjs` catches the miss mechanically. (Keep any literal `built-when` comment *example* inside `docs/**` fenced, or it parses as a real marker.)
 - **Re-sync the inventory surfaces when the registry moves.** When you change the signal-emitting audit registry (`audit-routing-table.md`) or the research modes (`commands/research.md`), re-sync the dashboards/matrix inventory and bump their `inventory-synced` marker to the new signature (`check-inventory-parity` reports it). The check enforces the *signal* (registry changed since last sync), not the surface content — bumping the marker without actually re-syncing the inventory defeats it, so do both.
 
+## Test value convention
+
+Every test must justify its maintenance cost by protecting at least one of:
+observable behavior, a public or consumer contract, a reproduced bug, a
+safety/security property, or a stable architectural prohibition. Coverage,
+test count, and "this is how the source is written" are not sufficient reasons.
+
+Use this litmus test: **if behavior and contracts stay unchanged, could a
+reasonable refactor make the test fail?** If yes, the test is probably asserting
+implementation rather than behavior. Usually delete or rewrite tests that pin
+source/AST shape, hashes of implementation files, symbol location, exact internal
+inventories, workflow or documentation text, oversized internal snapshots, or a
+mock/monkeypatch seam that production would not otherwise need. Prefer black-box,
+metamorphic, adversarial, and bug-regression tests. Do not keep two tests that
+protect the same failure at different fidelity unless each catches a distinct
+regression class.
+
+Static inspection is justified only when it enforces a stable **negative** property
+that is impractical to observe dynamically--for example anti-Goodhart separation,
+held-out isolation, no forbidden dependency/network path, a security boundary, or
+canonical/generated parity. Such a test must name the prohibited coupling and
+should not pin incidental lines, helper names, or file layout. Frozen fixtures are
+appropriate for genuinely external compatibility contracts, not internal
+refactoring receipts.
+
+When deleting a test, inspect the production code for seams, wrappers, indirection,
+or exported helpers that existed only to satisfy it; simplify those in the same
+change when safe. Preserve or replace behavior coverage before deletion. In the PR,
+state why each deleted class was low-value and report the behavioral checks that
+remain.
+
+**Monthly sweep.** Once per month, audit the suite for source-reading tests, exact
+inventories/hashes, duplicate coverage, large brittle snapshots, and test-only
+production seams. Classify candidates as KEEP / REWRITE / DELETE with a one-line
+justification; there is no deletion quota. Make changes in a per-repo branch, run
+the relevant behavioral checks, and open a draft PR. Never merge sweep findings
+without review; after the required reviews and green checks, follow this repo's
+normal merge policy.
+
 ## Where work comes from: roadmap, briefs, and Issues
 
 Every change implements from a written contract, never from an unscoped
