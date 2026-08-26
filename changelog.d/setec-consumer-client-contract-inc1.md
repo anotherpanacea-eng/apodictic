@@ -1,8 +1,0 @@
-### SETEC consumer client contract (Increment 1)
-
-- Fixed the version parser's silent-partial-parse bug (`_parse_version("garbage") == ()`, and a prerelease like `1.129.0-rc.1` could satisfy a numerically-equal stable floor). `setec_discovery` / `setec_capabilities` now use a SemVer-subset parser + `meets_floor` that correctly rejects `1.129.0-rc.1 < 1.129.0`; an unparseable version always raises rather than silently truncating.
-- Changed the warning classifier's unmatched-prose fallback from `cosmetic` to `reliability` (fail-upward default) — the classifier itself is unchanged and permanent, only its default tier for text that matches none of the 11 reliability patterns.
-- Added a named drift tri-state (`offline_unresolved` / `resolved_match` / `resolved_drift`) to `tools/check_setec_contract.py`'s live-drift check, with a hermetic self-test proving all three states without a live SETEC checkout.
-- `scripts/sync_setec.py` now vendors SETEC's manifest `contract` block (schema 0.4.0+) and a byte-identical copy of the shared consumer client (`plugins/apodictic/skills/specialized-audits/scripts/_vendored_setec_client.py`), pinned by a source-derived `client_sha256` in `setec-plugin.lock`.
-- `setec_discovery.py` / `setec_runner.py` are now thin policy wrappers importing shared mechanism (version parsing, the warning classifier, envelope tiering, dispatcher invocation) from the vendored client; `setec_capabilities.py`'s R1 manifest parsing remains an independent consumer parser. `tests/setec-contract/setec-client-symbol-inventory.json` classifies every public symbol across the three modules; an AST check refuses an unclassified export.
-- Re-pinned the vendored SETEC contract to setec-voiceprint v1.129.0 (from v1.127.0) via `scripts/sync_setec.py`.
