@@ -17,6 +17,10 @@ if [ ! -d "$PLUGIN_DIR" ]; then
   exit 1
 fi
 
+echo "[0/7] Preflight host package builders before mutating release files"
+node "$REPO_ROOT/scripts/build-codex.mjs" --self-check
+node "$REPO_ROOT/scripts/build-antigravity.mjs" --self-check
+
 echo "Release pipeline starting for v${NEW_VERSION}"
 echo "────────────────────────────────────"
 
@@ -38,23 +42,24 @@ node "$REPO_ROOT/scripts/build-antigravity.mjs"
 echo "[6/7] Verify repository consistency"
 node "$REPO_ROOT/scripts/release-verify.mjs"
 
-echo "[7/7] Commit, tag + push"
+echo "[7/7] Owner merge + tag handoff"
 echo "  The generated codex/ + antigravity/ trees are NOT committed (GitHub #52);"
 echo "  the release workflow (.github/workflows/release.yml) rebuilds them on the"
 echo "  pushed tag and attaches the per-host bundles to the GitHub release, with"
 echo "  notes taken from the assembled changelog section."
 echo ""
-if [ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]; then
-  echo "  Working tree dirty. Commit the release changes, then run:"
-  echo "    git tag v${NEW_VERSION} && git push origin v${NEW_VERSION}"
-  echo "  The release workflow takes over from the pushed tag."
-elif git -C "$REPO_ROOT" rev-parse "v${NEW_VERSION}" >/dev/null 2>&1; then
-  echo "  Skipped: tag v${NEW_VERSION} already exists."
-else
-  git -C "$REPO_ROOT" tag "v${NEW_VERSION}"
-  git -C "$REPO_ROOT" push origin "v${NEW_VERSION}"
-  echo "  Pushed tag v${NEW_VERSION}. The release workflow will publish the bundles."
+if ! RELEASE_STATUS="$(git -C "$REPO_ROOT" status --porcelain)"; then
+  echo "REFUSED: unable to inspect the release working tree." >&2
+  exit 1
 fi
+if [ -n "$RELEASE_STATUS" ]; then
+  echo "  Working tree dirty. Commit the release changes and merge the release PR."
+else
+  echo "  Release files are already committed. Merge the release PR before tagging."
+fi
+echo "  After updating a clean main checkout to origin/main, the owner runs:"
+echo "    bash scripts/tag-release.sh ${NEW_VERSION}"
+echo "  The guarded tag helper verifies branch, remote-main identity, version, and tag absence."
 
 echo "────────────────────────────────────"
 echo "Release pipeline complete for v${NEW_VERSION}."

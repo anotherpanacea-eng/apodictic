@@ -2,8 +2,8 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { createZipArchive, listZipEntries, listZipEntryMetadata } from "./zip-archive.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,7 +21,8 @@ if (!fs.existsSync(registryPath)) {
 }
 
 const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
-const { paths = {}, commands = [], antigravity } = registry;
+const { paths = {}, commands = [], archiveExecutableFiles = [], antigravity } = registry;
+const archiveExecutableSet = new Set(archiveExecutableFiles);
 
 if (!antigravity) {
   console.error("Missing antigravity section in release-registry.json.");
@@ -61,13 +62,55 @@ function removePath(targetPath) {
 }
 
 function createArchive(workspaceRoot, archivePath) {
-  ensureDir(path.dirname(archivePath));
-  removePath(archivePath); // zip appends to an existing archive otherwise
-  execFileSync(
-    "zip",
-    ["-X", "-rq", archivePath, "README.md", "NON_PARITY_NOTES.md", ".agents", "plugins", "-x", "*/.DS_Store"],
-    { cwd: workspaceRoot }
+  const archiveSources = walkFiles(workspaceRoot)
+    .map((sourcePath) => ({
+      sourcePath,
+      archiveName: path.relative(workspaceRoot, sourcePath).split(path.sep).join("/"),
+      mode: archiveExecutableSet.has(
+        path.relative(workspaceRoot, sourcePath).split(path.sep).join("/")
+      ) ? 0o755 : 0o644
+    }))
+    .filter(({ archiveName }) =>
+      archiveName === "README.md" ||
+      archiveName === "NON_PARITY_NOTES.md" ||
+      archiveName.startsWith(".agents/") ||
+      archiveName.startsWith("plugins/")
+    )
+    .filter(({ archiveName }) => !archiveName.endsWith("/.DS_Store"));
+  createZipArchive(archivePath, archiveSources);
+}
+
+function validateArchive(archivePath) {
+  const archiveEntries = listZipEntries(archivePath);
+  const archiveModes = new Map(
+    listZipEntryMetadata(archivePath).map(({ name, mode }) => [name, mode])
   );
+  for (const entry of archiveExecutableSet) {
+    if (archiveModes.get(entry) !== 0o755) {
+      throw new Error(`Archive executable mode was not preserved: ${entry}`);
+    }
+  }
+  const requiredEntries = [
+    "README.md",
+    "NON_PARITY_NOTES.md",
+    ".agents/workflows/start.md",
+    "plugins/apodictic/plugin.json",
+    "plugins/apodictic/scripts/validate.sh"
+  ];
+  for (const entry of requiredEntries) {
+    if (!archiveEntries.includes(entry)) {
+      throw new Error(`Missing required archive entry: ${entry}`);
+    }
+  }
+  if (
+    archiveEntries.some((entry) =>
+      entry.startsWith("plugins/apodictic/.claude-plugin/") ||
+      entry.startsWith("plugins/apodictic/.codex-plugin/") ||
+      entry.endsWith("/.DS_Store")
+    )
+  ) {
+    throw new Error("Antigravity archive contains host-specific or ignored content.");
+  }
 }
 
 function walkFiles(dirPath) {
@@ -309,6 +352,7 @@ This file tracks the architectural alignment between the original APODICTIC fram
         const tempArchive = path.join(tempRoot, path.basename(archivePath));
         createArchive(tempWorkspace, tempArchive);
         mustExist(tempArchive);
+        validateArchive(tempArchive);
       }
       console.log("build-antigravity self-check passed.");
       return;
@@ -336,6 +380,7 @@ This file tracks the architectural alignment between the original APODICTIC fram
 
     if (archivePath) {
       createArchive(workspaceDir, archivePath);
+      validateArchive(archivePath);
       console.log(`Created archive: ${path.relative(repoRoot, archivePath)}`);
     }
 

@@ -1,4 +1,4 @@
-### Changed
+### Fiction calibration and editor-panel evidence
 
 - Pinned and executed the fiction M2a slice with cross-vendor Terra + Opus,
   including the 11-member reconstructable corpus, strict blind runner, and
