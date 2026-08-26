@@ -5,6 +5,139 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.11.0 - 2026-08-26
+
+### Specs — Approval-Gated Reconstruction
+
+New companion-module spec `docs/approval-gated-reconstruction.md` (v0.2.0, unbuilt):
+approval-gated reconstruction over a provenance-linked claim graph — normalize
+`Argument_State.md` + manuscript into a content-addressed approval graph, author
+adjudicates every node and edge, a drafter authors a fresh document from the approved
+subgraph only, and a two-layer conformance gate (mechanical `argument-reconstruction`
+validator + semantic exclusion/coverage/novelty-quarantine checks) proves it, emitting a
+reconstruction receipt that `/ready` validates. Five top-level invariants, including
+rejection-stickiness (no reconciliation or revision path may shrink the exclusion set).
+Spec folded three independent review passes before freeze; builds in five increments,
+starting with `scripts/approval_graph.py`.
+
+### Approval-Gated Reconstruction — ledger-authority redesign (Rev 0.3.2)
+
+Adopt ADR 0002: `Approval_Events.jsonl` becomes the sole authoritative state, one decision
+bundle is one ledger record (carrying its `MINTED` content payload), and `Approval_Graph.md`
+plus `Adjudication_Session.json` become deterministic projections rebuilt from the ledger.
+Crash recovery collapses to verify/truncate-uncommitted-tail/replay that fails closed, and the
+three-artifact cross-consistency checks reduce to deterministic projection rebuild. This supersedes the
+multi-artifact recovery/reconciliation machinery of Rev 0.2.1–0.2.3, whose crash-prefix cases
+move to an Increment-1 truncate-and-replay fixture family. Still an unbuilt spec; the
+`built-when` marker does not fire.
+- Close the authority gaps found after the redesign: stored terminal-verifiable bundle hashes,
+  ledger-resident source context, a legal QUARANTINE bundle, carried-typing edge identity,
+  newline-delimited torn-tail recovery, ledger-derived notes, cache rebuild semantics, and an
+  ephemeral process lock for live-session state.
+- Pin canonical nested JSON key order, novel-origin mint payloads, current-draft version identity,
+  QUARANTINE Origin/provenance/context agreement, atomic anchors/flags refresh replay, and
+  distinct machine `reason` versus projected `note` roles.
+
+### Approval-Gated Reconstruction Phase 0
+
+Harden the unbuilt companion-module specification before Increment 1: require explicit
+graph/draft-ready/acceptance stage selection, define separate node and edge field shapes,
+make History entries resolve to a canonical hash-chained event ledger, specify reconstructible
+session cache state plus an ephemeral live-process lock, state the limit of singleton
+rejection-history detection, and
+fail Stage C closed until Increment 4 defines a structured monotonic gate-config order.
+Bind event labels to transitions, ledger Inclusion changes and revision pairs, preserve
+human-readable History summaries, and pin Argument State 0.3 metadata handling. Define
+multi-event decision-bundle recovery, node-only Inclusion and per-axis ledger replay,
+canonical provenance entries, and the literal legacy-untyped edge representation.
+
+### Argument Register
+
+- Add writer-confirmed AT5 generative/lens routing with GN0–GN4 diagnostics, explicit
+  high-stakes precedence, and per-cash-out asserted-burden records.
+- Version Argument State Schema as v0.3.0 and extend argument-spine/Argument_State
+  contracts so register calibration remains inspectable and never silently bypasses the
+  Deficit Lock.
+- Close the E7 hybrid gate with two independent strict blind records whose canonical cash-out
+  joins preserve generative treatment for the journey and full asserted burden for the policy
+  landing; both vendored ledger/state pairs pass `stance-calibration` and are exercised by
+  `validate.sh --check-all`.
+
+### Fiction calibration and editor-panel evidence
+
+- Pinned and executed the fiction M2a slice with cross-vendor Terra + Opus,
+  including the 11-member reconstructable corpus, strict blind runner, and
+  committed audit package (22 hash-bound outputs, tidy scores, manifest,
+  scorecard, and verifier). The first run converged on 3/4 matched pairs and
+  correctly remains red on continuity clean-member specificity pending a
+  locked-key corrective retest; Lane-2 results remain report-only until M2b.
+- Regenerated the access-controlled blind-editor packet as one shared argument
+  M2 / fiction M2b closed-response panel: ≥3 sealed independent editors, GT8 and
+  Reliability-ledger coverage, exact α transforms, seven independent fiction
+  reliability units, frozen key projections, and judgment-free tidy-CSV
+  compilation. The packet is ready; recruitment and measured licensing remain
+  human-gated.
+
+### SETEC contract safety
+
+- Gate the vendored `voice_distance` fixture on SETEC's `register_families/v2` register-family contract: both taxonomy markers, a `strength` drawn from the closed `strong`/`moderate`/`weak`/`mismatch` vocabulary, and no legacy `verdict`. The check is unconditional, so a sync that re-vendored a pre-v2 fixture fails rather than passing on a grandfather clause. Rejection cases run against a hand-built payload, never the vendored golden — a negative arm fed by a producer artifact goes vacuous the moment that artifact legitimately changes.
+
+### Faster M5 override-hygiene scan
+
+Anchor validator-conventions' M5 Python scan on literal `<!--` occurrences instead of running the four-alternative override-marker regex from every position of every sibling script. Same verdicts (self-test cases guard the windowed semantics, including whitespace-gap and deep-offset forms); the canonical CI gate drops from ~28s to ~15s locally.
+
+### Faster CI without weaker gates
+
+Run validator self-tests, canonical-framework checks, and static/build checks in parallel behind the existing required `validate` result. The aggregate validator also avoids executing the shared `gate`/`gate-state` self-test suite twice.
+
+### Docs — SETEC supplement spec reconciliation
+
+Corrects `docs/pass3-pass7-setec-supplement-spec.md`: its 2026-06-19 reconciliation box asserted that the SETEC surfaces `sliding_window_heatmap` and `voice_drift_tracker` "do not exist," but both shipped in `setec-voiceprint` before that note was written (902 and 1,421 lines, with test suites and registry fragments). A dated correction box records the capability ids, shipping commits, and a verify command; the stale bullet is kept as provenance and flagged. The §3 rows and §8 cross-references now carry the capability ids plus the real reason neither is reachable from APODICTIC — both fragments carry `consumers: []` and no `json_delivery`, so they miss both the `sync_setec.py` vendoring filter and the `setec_run.py` dispatcher promotion. Pinning them is producer-side work, recorded as follow-up. Also refreshes the stale `v1.117.0` vendored-contract reference to the pinned `v1.126.0`.
+
+### Validation portability
+
+- Make the refutation hostile-test assertions robust under Bash `pipefail`, so a correctly rejected fabricated-budget fixture cannot be misreported as missing its diagnostic evidence.
+
+### Release safety and portability
+
+- Build Codex and Antigravity ZIP assets with a fail-closed, stdlib-only Node packager instead of requiring external Unix `zip` and `unzip` binaries.
+- Force validator-launched Python processes to emit UTF-8, keeping hostile-output assertions and release verification deterministic on Windows consoles.
+- Preflight both host package builders before mutating release files; the staging pipeline never creates tags, refuses when Git state cannot be inspected, and the separate owner-only tag helper only cuts from a clean `main` at freshly fetched `origin/main`.
+
+### Rhetorical Stance Triage
+
+- Add pre-lock earned/unearned stance triage for overstatement-family argument findings,
+  with explicit writer authority and Firewall boundaries.
+- Add a mechanical shape/join validator that proves recorded calibration effects and
+  blocks demotion at high-stakes or prescriptive cash-out spans without judging rhetoric.
+- Require every recorded earned verdict to carry its register-floor or stance-demotion
+  effect, reject stance metadata on GT8 premise flags, and keep blocked unearned or
+  divergent findings representable at full severity.
+- Document the validator's completeness boundary: supplied cash-out joins are checked,
+  while omitted joins and undeclared stance decisions remain auditor-owned.
+- Recognize realistic `GT8 …` mechanism identifiers, pin register-floor precedence over
+  instance stance, and state why post-triage `Could-Fix` cannot prove a blocked demotion.
+- Reject finding-level generative floors under an asserted document, restrict actual
+  demotions to the declared WR/SM/BP and overstatement families, and parse `NONE` cash-out
+  and high-stakes source records exactly rather than by substring.
+
+### Roadmap reconciliation
+
+Reconciles the strategic board to the released v2.8.0–v2.10.0 state: records the completed argument-regrounding descent and visualization chart set; preserves the genuinely open benchmark work; and corrects the editor-panel prerequisite to the current shared, regenerated ≥3-editor protocol.
+
+### SETEC consumer client contract (Increment 1)
+
+- Fixed the version parser's silent-partial-parse bug (`_parse_version("garbage") == ()`, and a prerelease like `1.129.0-rc.1` could satisfy a numerically-equal stable floor). `setec_discovery` / `setec_capabilities` now use a SemVer-subset parser + `meets_floor` that correctly rejects `1.129.0-rc.1 < 1.129.0`; an unparseable version always raises rather than silently truncating.
+- Changed the warning classifier's unmatched-prose fallback from `cosmetic` to `reliability` (fail-upward default) — the classifier itself is unchanged and permanent, only its default tier for text that matches none of the 11 reliability patterns.
+- Added a named drift tri-state (`offline_unresolved` / `resolved_match` / `resolved_drift`) to `tools/check_setec_contract.py`'s live-drift check, with a hermetic self-test proving all three states without a live SETEC checkout.
+- `scripts/sync_setec.py` now vendors SETEC's manifest `contract` block (schema 0.4.0+) and a byte-identical copy of the shared consumer client (`plugins/apodictic/skills/specialized-audits/scripts/_vendored_setec_client.py`), pinned by a source-derived `client_sha256` in `setec-plugin.lock`.
+- `setec_discovery.py` / `setec_runner.py` are now thin policy wrappers importing shared mechanism (version parsing, the warning classifier, envelope tiering, dispatcher invocation) from the vendored client; `setec_capabilities.py`'s R1 manifest parsing remains an independent consumer parser. `tests/setec-contract/setec-client-symbol-inventory.json` classifies every public symbol across the three modules; an AST check refuses an unclassified export.
+- Re-pinned the vendored SETEC contract to setec-voiceprint v1.129.0 (from v1.127.0) via `scripts/sync_setec.py`.
+
+### SETEC pin
+
+- Re-pinned the vendored SETEC contract to setec-voiceprint **v1.127.0** (from v1.126.0) via `scripts/sync_setec.py`. The producer's `voice_distance` golden completes the register-family migration — `results.register_match.{match,target_classification}` now carry `taxonomy: register_families/v2`, a `target_family`, a `baseline_family_distribution`, and a closed-vocabulary `strength` in place of the pre-v2 `verdict` — and the `voice_profile` golden gains `register_tier_counts` + `unresolved_register_count` on its baseline block. No consumed surface changed its `min_setec_version`, so the discovery bootstrap floor is unmoved.
+
 ## v2.10.0 - 2026-07-13
 
 ### Argument engine — AGD scan/audit agreement benchmark (R3B §4 Phase-2 scoring)

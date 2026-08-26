@@ -1,3 +1,0 @@
-### SETEC pin
-
-- Re-pinned the vendored SETEC contract to setec-voiceprint **v1.127.0** (from v1.126.0) via `scripts/sync_setec.py`. The producer's `voice_distance` golden completes the register-family migration — `results.register_match.{match,target_classification}` now carry `taxonomy: register_families/v2`, a `target_family`, a `baseline_family_distribution`, and a closed-vocabulary `strength` in place of the pre-v2 `verdict` — and the `voice_profile` golden gains `register_tier_counts` + `unresolved_register_count` on its baseline block. No consumed surface changed its `min_setec_version`, so the discovery bootstrap floor is unmoved.
