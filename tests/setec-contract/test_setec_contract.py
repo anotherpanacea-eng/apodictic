@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -524,13 +525,20 @@ def t4_below_surface_floor_fails_with_surface_floor() -> None:
 # T5 — drift gate self-consistency guard fires (delegated self-test).
 # --------------------------------------------------------------------------
 def t5_drift_gate_self_test() -> None:
-    print("T5: drift-gate self-consistency guard (--self-test)")
+    print("T5: drift-gate self-consistency guard (--self-test, workflow env preset)")
+    env = dict(os.environ)
+    env["SETEC_RELEASE_TAG"] = "v-test-workflow-release"
     proc = subprocess.run(
         [sys.executable, str(TOOLS_DIR / "check_setec_contract.py"), "--self-test"],
         capture_output=True,
+        env=env,
         text=True,
     )
-    check(proc.returncode == 0, f"check_setec_contract --self-test exits 0 (rc={proc.returncode})")
+    check(
+        proc.returncode == 0,
+        "check_setec_contract --self-test ignores inherited SETEC_RELEASE_TAG "
+        f"for its provisional fixture (rc={proc.returncode})",
+    )
     if proc.returncode != 0:
         print(proc.stdout)
         print(proc.stderr, file=sys.stderr)

@@ -668,12 +668,19 @@ def _self_test_drift_tristate() -> int:
             sync_setec.CLIENT_RUNTIME_DESTINATION,
         )
         orig_env = os.environ.get("SETEC_VOICEPRINT_DIR")
+        orig_release_tag = os.environ.get("SETEC_RELEASE_TAG")
         try:
             sync_setec.VENDOR_DIR = vendor_dir
             sync_setec.VENDORED_MANIFEST = vendored_manifest
             sync_setec.VENDORED_FIXTURES = vendored_fixtures
             sync_setec.LOCK_PATH = lock_path
             sync_setec.CLIENT_RUNTIME_DESTINATION = client_runtime_destination
+
+            # The weekly sync exports SETEC_RELEASE_TAG so its real re-pin is
+            # finalized. This synthetic arm deliberately exercises the
+            # provisional fallback, so inherited workflow state must not
+            # change the fixture's semantics.
+            os.environ.pop("SETEC_RELEASE_TAG", None)
 
             # --- offline_unresolved: SETEC_VOICEPRINT_DIR points at a path
             # with no plugin.json, so _resolve_setec_root raises immediately
@@ -758,6 +765,10 @@ def _self_test_drift_tristate() -> int:
                 os.environ.pop("SETEC_VOICEPRINT_DIR", None)
             else:
                 os.environ["SETEC_VOICEPRINT_DIR"] = orig_env
+            if orig_release_tag is None:
+                os.environ.pop("SETEC_RELEASE_TAG", None)
+            else:
+                os.environ["SETEC_RELEASE_TAG"] = orig_release_tag
 
     if failures:
         print(
