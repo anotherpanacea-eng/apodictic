@@ -11,6 +11,7 @@ name: ci
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
 
@@ -23,6 +24,7 @@ concurrency:
 
 jobs:
   static_checks:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     name: static checks
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -111,6 +113,7 @@ jobs:
         run: python tests/setec-contract/test_setec_contract.py
 
   validator_self_tests:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     name: validator self-tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -125,6 +128,7 @@ jobs:
         run: bash scripts/validate.sh --self-test-all
 
   canonical_framework:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     name: canonical-framework gate
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -143,7 +147,7 @@ jobs:
 
   validate:
     name: validate
-    if: ${{ always() }}
+    if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     needs: [static_checks, validator_self_tests, canonical_framework]
     runs-on: ubuntu-latest
     steps:
