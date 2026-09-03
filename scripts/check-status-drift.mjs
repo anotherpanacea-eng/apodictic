@@ -231,7 +231,8 @@ function selfTest() {
     "docs/a.md": "# A\n**Status:** Proposed (unbuilt)\n<!-- built-when: scripts/a.py -->\n",
     "scripts/a.py": "x\n",
   }));
-  check("stale_fires", r.stale.length === 1 && r.stale[0].includes("docs/a.md") && r.stale[0].includes("scripts/a.py"));
+  const staleMessage = r.stale[0]?.replaceAll("\\", "/") || "";
+  check("stale_fires", r.stale.length === 1 && staleMessage.includes("docs/a.md") && staleMessage.includes("scripts/a.py"));
 
   // 2. marker + missing path + unbuilt status → clean
   r = run(mk({ "docs/b.md": "**Status:** Proposed (unbuilt)\n<!-- built-when: scripts/missing.py -->\n" }));

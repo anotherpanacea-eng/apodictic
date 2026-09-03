@@ -1,6 +1,6 @@
 # Draft-first integration trains
 
-**Status:** Spec — ready for independent review; unbuilt.
+**Status:** Built — draft-first CI, train verification, and policy are implemented.
 <!-- built-when: tools/check_merge_train.py -->
 
 ## Decision

@@ -1,35 +1,59 @@
 name: ci
 
-# APODICTIC is a prompt/skill plugin: there is no pytest suite, but it does
-# carry a validator self-test harness (scripts/validate.sh). CI is a correctness
-# gate — byte-compile the canonical Python, confirm every plugin/marketplace
-# manifest is valid JSON, and run the validator self-tests plus the real-file
-# canonical-framework invariants. Validator self-tests, canonical-file checks,
-# and lightweight static/build checks run in parallel behind one required
-# `validate` result. The eval fixtures under evals/ are the behavioral
-# ground-truth track, run separately.
+# Ordinary work remains draft and unarmed. A disposable train, or an explicitly
+# authorized standalone exception, receives this one ordered validation job.
+
+run-name: >-
+  apodictic-ci pr=${{ github.event.pull_request.number }}
+  action=${{ github.event.action }}
+  train=${{ github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'train/') }}
+  ci-ready-event=${{ github.event.label.name == 'ci-ready' }}
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-  push:
-    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled, unlabeled, closed]
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: >-
+    apodictic-ci-${{ github.event.pull_request.number }}-${{ ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || (github.event.label.name == 'ci-ready' && !(github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'train/')))) && 'clearance' || github.run_id }}
   cancel-in-progress: true
 
 jobs:
-  static_checks:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    name: static checks
+  validate:
+    if: >-
+      ${{ github.event.pull_request.draft == false &&
+          ((github.event.pull_request.head.repo.full_name == github.repository &&
+            startsWith(github.event.pull_request.head.ref, 'train/') &&
+            contains(fromJSON('["opened","synchronize","reopened","ready_for_review"]'), github.event.action)) ||
+           (!(github.event.pull_request.head.repo.full_name == github.repository &&
+              startsWith(github.event.pull_request.head.ref, 'train/')) &&
+            !(github.event.pull_request.head.repo.full_name == github.repository &&
+              github.event.pull_request.head.ref == 'chore/sync-setec-contract') &&
+            contains(github.event.pull_request.labels.*.name, 'ci-ready') &&
+            (contains(fromJSON('["opened","synchronize","reopened","ready_for_review"]'), github.event.action) ||
+             (github.event.action == 'labeled' && github.event.label.name == 'ci-ready')))) }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
+      - name: Bind billed job to the exact pull-request merge
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_SHA: ${{ github.sha }}
+          JOB_NAME: ${{ github.job }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: >-
+          python tools/check_pr_merge_binding.py
+          --repository "$REPOSITORY"
+          --base "$BASE_SHA" --head "$HEAD_SHA" --github-sha "$MERGE_SHA"
+          --job "$JOB_NAME" --run-id "$RUN_ID" --run-attempt "$RUN_ATTEMPT"
 
       - uses: actions/setup-python@v5
         with:
@@ -38,6 +62,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      - name: Install policy test dependencies
+        run: python -m pip install pytest pyyaml
+
+      - name: Draft-first train policy self-tests
+        run: >-
+          python -m pytest
+          tests/test_ci_train_policy.py
+          tests/test_merge_train.py
+          tests/test_pr_merge_binding.py
+          tests/test_sync_pr_draft.py
+          tests/test_train_ci_receipts.py
+          -q
 
       - name: Byte-compile canonical Python (syntax gate)
         run: python -m compileall -q plugins scripts tools tests
@@ -53,28 +90,15 @@ jobs:
           done
           echo "all ${#files[@]} manifests parse"
 
-      # Cross-manifest version parity: the canonical version (3 plugin.json +
-      # 2 marketplace.json + 5 SKILL.md frontmatters) must all agree, so a
-      # partial / forgotten bump can't merge. --versions-only runs ONLY the parity
-      # check (the build / --check-all gates already run as their own steps below).
       - name: Version parity across manifests
         run: node scripts/release-verify.mjs --versions-only
 
-      # Research reliability layer (docs/research-reliability-layer.md). These
-      # research-dir modules are single-sourced (NOT in root scripts/, NOT in the
-      # validate.sh mirror pair), so their --self-test cannot route through an
-      # AGG_VALIDATORS dispatcher arm (a byte-identical arm can't reach the
-      # research dir — see the doc's P1 resolution). CI runs the self-tests
-      # directly instead. Static paths only; no workflow inputs are interpolated.
       - name: Research reliability self-tests
         run: |
           python3 plugins/apodictic/skills/specialized-audits/scripts/api_reliability.py --self-test
           python3 plugins/apodictic/skills/specialized-audits/scripts/response_cache.py --self-test
           python3 plugins/apodictic/skills/specialized-audits/scripts/academic_apis.py --self-test
 
-      # Generator + parity gates. The host trees are no longer committed
-      # (GitHub #52), so parity is verified by regenerating fresh and
-      # self-checking rather than diffing against committed copies.
       - name: Changelog fragments parse
         run: node scripts/assemble-changelog.mjs --check
 
@@ -83,10 +107,6 @@ jobs:
           node scripts/check-status-drift.mjs --self-test
           node scripts/check-status-drift.mjs
 
-      # Guards that the display surfaces (overview-dashboard.html,
-      # AUDIT_SELECTION_MATRIX.md) stay synced with the canonical audit/research
-      # inventory: a sync-marker + changed-since signal (the #79 status-drift
-      # pattern applied to inventory). Self-test proves it's non-vacuous.
       - name: Inventory-parity sync-marker check
         run: |
           node scripts/check-inventory-parity.mjs --self-test
@@ -100,63 +120,14 @@ jobs:
           node scripts/build-codex.mjs --self-check
           node scripts/build-antigravity.mjs --self-check
 
-      # SETEC contract gate (Increment 2 / R1 adoption). CHECK 1 (offline
-      # self-consistency: every ai_prose_*.py shim surface appears in the
-      # vendored manifest with a floor) runs here with no SETEC installed —
-      # the analog of Gemini's validateRegistry. CHECK 2 (live drift vs
-      # `capabilities emit`) is SKIPPED in CI (no SETEC checkout); the weekly
-      # sync-setec workflow enforces it against a real SETEC release.
       - name: SETEC contract drift gate (self-consistency)
         run: python tools/check_setec_contract.py
 
       - name: SETEC contract tests (floors + vendored-golden parse)
         run: python tests/setec-contract/test_setec_contract.py
 
-  validator_self_tests:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    name: validator self-tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       - name: Validator self-tests
         run: bash scripts/validate.sh --self-test-all
 
-  canonical_framework:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    name: canonical-framework gate
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      # Real-file invariants against the actual canonical framework files
-      # (pass-dependencies.md, shipped templates, worked examples, and run
-      # folders), separated from the hermetic self-tests so CI can run both.
       - name: Canonical-framework gate
         run: bash scripts/validate.sh --check-canonical
-
-  validate:
-    name: validate
-    if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
-    needs: [static_checks, validator_self_tests, canonical_framework]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require every parallel gate
-        env:
-          STATIC_RESULT: ${{ needs.static_checks.result }}
-          SELF_TEST_RESULT: ${{ needs.validator_self_tests.result }}
-          CANONICAL_RESULT: ${{ needs.canonical_framework.result }}
-        run: |
-          test "$STATIC_RESULT" = success
-          test "$SELF_TEST_RESULT" = success
-          test "$CANONICAL_RESULT" = success
