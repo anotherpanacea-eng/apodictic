@@ -267,7 +267,7 @@ def check_provisional_lock_warning(lock_path: Path = LOCK_PATH) -> "str | None":
 PINNED_WORKFLOWS: tuple[tuple[Path, str], ...] = (
     (
         REPO_ROOT / ".github" / "workflows" / "sync-setec.yml",
-        "aaa97835b4725134cde9f72881a1e456ce47f8ac6ca887552798b26bd7ab3220",
+        "cde7703720b7af625963c1bc99bfd0eb3977e72393bd326f9bdf30857faa4019",
     ),
 )
 

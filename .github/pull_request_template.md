@@ -2,6 +2,8 @@
 
 <!-- What changed. Cite the Issue (`Closes #N`) or ROADMAP item this implements. -->
 
+<!-- Ordinary changes stay draft and unarmed until admitted to a periodic train. -->
+
 ## Why
 
 <!--
@@ -23,3 +25,24 @@ Proof of correctness a reviewer can read against the diff:
 -->
 
 <!-- See AGENTS.md for the full workflow and conventions. -->
+
+## Train clearance (train PRs only)
+
+<!--
+Exact base:
+Exact head:
+
+Included (PR, title, exact 40-hex head, dependency order):
+
+Explicitly excluded:
+
+Conflict resolutions or separately reviewed train-only adjustments:
+
+Local validation and exact generic/fleet-posture review receipts:
+
+Promotion and landing protocol:
+- re-read unchanged main/base, train head, and constituent heads
+- promote this frozen train once
+- require the exact live `validate` receipt
+- land with the expected-head/CAS guard, then verify containment
+-->
