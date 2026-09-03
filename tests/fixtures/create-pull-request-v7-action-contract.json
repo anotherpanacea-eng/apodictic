@@ -1,0 +1,12 @@
+{
+  "schema": "github-action-contract/1",
+  "repository": "peter-evans/create-pull-request",
+  "commit": "22a9089034f40e5a961c8808d113e2c98fb63676",
+  "path": "action.yml",
+  "git_blob_sha": "9d28570cb5eeba6ff4850b6ea9a4bbe21bdbe46f",
+  "draft_input": {
+    "default": false,
+    "accepted_values": ["true", "always-true", "false"],
+    "always_true_behavior": "on create and update"
+  }
+}

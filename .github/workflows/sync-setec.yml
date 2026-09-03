@@ -3,7 +3,7 @@ name: Sync SETEC contract
 # Keeps APODICTIC's VENDORED SETEC contract (the projected capabilities
 # manifest + the R5 contract fixtures) current with the latest *released*
 # SETEC, re-derives via scripts/sync_setec.py, runs the drift gate, and opens
-# a bump PR. Python port of APODICTIC-Gemini's sync-apodictic-plugin.yml.
+# a draft bump PR. Python port of APODICTIC-Gemini's sync-apodictic-plugin.yml.
 #
 # Pure pull: SETEC publishes the manifest + fixtures; APODICTIC vendors a
 # pinned copy. APODICTIC does NOT serve SETEC's plugin — it invokes SETEC as a
@@ -101,10 +101,16 @@ jobs:
           echo "setec_version=$(python -c "import json;print(json.load(open('setec-plugin.lock'))['setec_version'])")" >> "$GITHUB_OUTPUT"
           echo "plugin_version=$(python -c "import json;print(json.load(open('setec-plugin.lock'))['plugin_version'])")" >> "$GITHUB_OUTPUT"
 
-      - name: Open bump PR
-        uses: peter-evans/create-pull-request@v6
+      - name: Disarm any existing sync PR before branch update
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python tools/ensure_sync_pr_draft.py --repository "$GITHUB_REPOSITORY"
+
+      - name: Open or update draft bump PR
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
         with:
           branch: chore/sync-setec-contract
+          draft: always-true
           commit-message: "Sync vendored SETEC contract to setec ${{ steps.lock.outputs.setec_version }} (release ${{ steps.setec.outputs.ref }})"
           title: "Sync SETEC contract to ${{ steps.lock.outputs.setec_version }} (${{ steps.setec.outputs.ref }})"
           body: |
@@ -132,3 +138,8 @@ jobs:
             tests/setec-contract/**
             setec-plugin.lock
             plugins/apodictic/skills/specialized-audits/scripts/_vendored_setec_client.py
+
+      - name: Enforce draft state after updater, including no-op updates
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python tools/ensure_sync_pr_draft.py --repository "$GITHUB_REPOSITORY"
