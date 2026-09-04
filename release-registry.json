@@ -28,8 +28,8 @@
     "auditCommand": "plugins/apodictic/commands/audit.md"
   },
   "counts": {
-    "availableAudits": 37,
-    "specializedAudits": 34,
+    "availableAudits": 38,
+    "specializedAudits": 35,
     "universalAudits": 3,
     "tagAudits": 5,
     "primaryTagAudits": 3,
@@ -528,6 +528,14 @@
           "summary": "runs the reader-dynamics lens through several declared reading dispositions and reports where audiences' experiences diverge",
           "files": [
             "craft/persona-divergence.md"
+          ]
+        },
+        {
+          "slug": "pov-voice-profile",
+          "name": "POV Voice Profile",
+          "summary": "per-POV voice signatures and distance discipline (opt-in)",
+          "files": [
+            "craft/pov-voice-profile.md"
           ]
         }
       ]
