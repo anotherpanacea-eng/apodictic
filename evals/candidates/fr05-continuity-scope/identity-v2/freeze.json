@@ -1,0 +1,53 @@
+{
+  "version": "identity-v2",
+  "status": "frozen-for-construction-screen-only",
+  "entries": [
+    {
+      "id": "glen",
+      "input": "inputs/glen.md",
+      "dispatch_prompt": "screening/prompts/glen.txt"
+    },
+    {
+      "id": "marsh",
+      "input": "inputs/marsh.md",
+      "dispatch_prompt": "screening/prompts/marsh.txt"
+    }
+  ],
+  "files": [
+    {
+      "path": "common-prompt.txt",
+      "bytes": 1255,
+      "sha256": "f02170b61f35d1d08f145f6c58ef2ad67cbc01935ed809f628405702c8cbe27b"
+    },
+    {
+      "path": "inputs/glen.md",
+      "bytes": 1734,
+      "sha256": "da31fd99638fc23a19471ab18728534be5f13772c865774c60fec3c6a5cc90b5"
+    },
+    {
+      "path": "inputs/marsh.md",
+      "bytes": 1733,
+      "sha256": "614f1cded5c8bedb5a04b42d8234d87bf30af77e625cd997045bd943161ae33b"
+    },
+    {
+      "path": "operator/criteria.md",
+      "bytes": 3703,
+      "sha256": "c8f83aaf5a5ec646a3a279b408422e3d2c16085d660704bf2b090ae0f32f01a4"
+    },
+    {
+      "path": "operator/intent.json",
+      "bytes": 2068,
+      "sha256": "bce250b5a8fb72083e933603faf8ecc4e5c1c4b566d2e24b60874632617e9c72"
+    },
+    {
+      "path": "screening/prompts/glen.txt",
+      "bytes": 3018,
+      "sha256": "de1ba02ebbaf2e5a4cadcd2dfef2855523529d26fdec470aac131a7940d3b077"
+    },
+    {
+      "path": "screening/prompts/marsh.txt",
+      "bytes": 3018,
+      "sha256": "31755a25595ce638730dcfbbebb8c15e0203ae5a8ecbae223d32e0ed5f5f0f5a"
+    }
+  ]
+}

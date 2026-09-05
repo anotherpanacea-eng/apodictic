@@ -1,0 +1,36 @@
+Read the following complete original short story as a developmental editor.
+Assess continuity only: whether the text establishes incompatible facts about
+the same entity, time, or event. The story may be consistent, inconsistent, or
+insufficiently determinate. Do not assume that an allegation is true, that two
+similar objects are identical, or that narration order is event order. Do not
+invent an off-page repair to reconcile facts explicitly fixed by the text.
+
+Return:
+1. Assessment: CONSISTENT, INCONSISTENT, or AMBIGUOUS.
+2. Evidence: quote the relevant passages and explain their relationship. If
+   there is no contradiction, explain the strongest apparent conflict and the
+   textual distinction that resolves it, or say no apparent conflict exists.
+3. Strongest alternative reading and whether the text supports it.
+4. Minimal repair if needed, preserving the story's intended events and voice.
+5. Any other plausible continuity problem or conspicuous editing seam. Do not
+   supply general style criticism or invent a defect to fill this field.
+6. Confidence and any limits on your reading.
+
+Use only the story provided. You have no repository task: do not use tools,
+inspect files, consult other versions, or search for external information.
+
+Neutral label: cove
+
+STORY
+
+At 18:10, Ada slid the opened envelope under the projection-room door. She had broken its wax seal at 18:05, standing at this same door, and had kept it in her hand continuously until sliding it underneath. Crimson fragments still clung to her thumb. The paper held her father's permission to sell the cinema.
+
+The film on the other side was one he had threaded a hundred times. Its music reached her through the door. He had died before the buyer's final offer arrived; the letter had been written while he could still hold a pen.
+
+At 18:08 that evening, two minutes before the handoff, the same envelope's original wax seal was still whole. Ada had been sitting on the stairs below the projection room, turning the envelope over without opening it. She knew what the letter might say. Until she read it, she could continue telling the buyer she was waiting for her father's instructions.
+
+Her brother had stepped past her carrying a reel. He had not asked about the envelope. He had asked whether she wanted to watch the final showing from the front row, where they used to sit when they were too small to reach the seats with their feet.
+
+Now, after the handoff, he opened the projection-room door. He had the letter in one hand and his glasses in the other. Their father had left the decision to them. Ada had expected either an order or a rescue; instead there was a short account of the debts and a sentence about paying people before keeping promises to a building.
+
+She and her brother finished the screening. In the dark, the screen's white light showed every patch on the empty seats. They agreed to meet the buyer in the morning. Before locking up, Ada put the broken wax in the envelope and took it home.

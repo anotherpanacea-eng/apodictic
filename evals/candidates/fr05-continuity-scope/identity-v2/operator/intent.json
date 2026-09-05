@@ -1,0 +1,41 @@
+{
+  "version": "identity-v2",
+  "status": "candidate-not-groundtruth",
+  "source_class": "original-synthetic",
+  "authored_by": "Codex",
+  "authored_date": "2026-09-05",
+  "parent_freeze_sha256": "8c4fd5befe9b11ad4786c839f22e4f773b6afef608ab7217b72729a4dbbcf8a3",
+  "parent_inputs": {
+    "moss": "26533fcf21a1ab405af0e617c4c50ba97975387cc8e90b2b9bcd8c75f05fe016",
+    "wren": "23e6c1633b6877d6af55faea39dba954a4a8c967ee8808ae5120854670981b94"
+  },
+  "parent_mapping": {
+    "glen": "moss",
+    "marsh": "wren"
+  },
+  "shared_repair": {
+    "before": "A pale flake of paint came away on her thumb.",
+    "after": "For a moment her hands stayed cupped around the empty space.",
+    "reason": "Remove the adjacent paint clue confirmed as a material-edit shortcut in v1; retain the custody conflict and one-word pair mutation."
+  },
+  "pairs": [
+    {
+      "pair": "identity",
+      "control": "glen",
+      "mutation": "marsh",
+      "before": "During the ceremony, Iona lifted the plaster swallow from the counter and placed it in the teacher's open bag.",
+      "after": "During the ceremony, Iona lifted the bronze swallow from the counter and placed it in the teacher's open bag.",
+      "mechanism": "A shared design name does not merge two physical objects into one token.",
+      "control_basis": "The bronze Return remains in its sealed case; the separately introduced plaster Return goes to school. Repeated name and appearance do not establish token identity.",
+      "mutation_basis": "The only bronze token is simultaneously asserted to remain sealed and to move from the counter to a bag during the same ceremony.",
+      "loci": [
+        1,
+        2,
+        5,
+        7
+      ],
+      "minimal_repair": "Restore 'plaster' in the handoff sentence. Preserve the shared name, the archive donation, and the separate school gift.",
+      "charitable_alternative": "A third bronze casting or an unreported removal/resealing would reconcile the transfer only by overriding the explicit two-object inventory and continuous intact-case statement."
+    }
+  ]
+}

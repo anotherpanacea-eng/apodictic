@@ -1,0 +1,143 @@
+{
+  "version": "v1",
+  "status": "frozen-for-construction-screen-only",
+  "entries": [
+    {
+      "id": "birch",
+      "input": "inputs/birch.md",
+      "dispatch_prompt": "screening/prompts/birch.txt"
+    },
+    {
+      "id": "cove",
+      "input": "inputs/cove.md",
+      "dispatch_prompt": "screening/prompts/cove.txt"
+    },
+    {
+      "id": "flint",
+      "input": "inputs/flint.md",
+      "dispatch_prompt": "screening/prompts/flint.txt"
+    },
+    {
+      "id": "larch",
+      "input": "inputs/larch.md",
+      "dispatch_prompt": "screening/prompts/larch.txt"
+    },
+    {
+      "id": "moss",
+      "input": "inputs/moss.md",
+      "dispatch_prompt": "screening/prompts/moss.txt"
+    },
+    {
+      "id": "reed",
+      "input": "inputs/reed.md",
+      "dispatch_prompt": "screening/prompts/reed.txt"
+    },
+    {
+      "id": "sable",
+      "input": "inputs/sable.md",
+      "dispatch_prompt": "screening/prompts/sable.txt"
+    },
+    {
+      "id": "wren",
+      "input": "inputs/wren.md",
+      "dispatch_prompt": "screening/prompts/wren.txt"
+    }
+  ],
+  "files": [
+    {
+      "path": "common-prompt.txt",
+      "bytes": 1255,
+      "sha256": "f02170b61f35d1d08f145f6c58ef2ad67cbc01935ed809f628405702c8cbe27b"
+    },
+    {
+      "path": "inputs/birch.md",
+      "bytes": 1763,
+      "sha256": "bd4b74921c4b569c7e83b4010b6996fc1f709481ad2daf2334a11331dff43a23"
+    },
+    {
+      "path": "inputs/cove.md",
+      "bytes": 1717,
+      "sha256": "6cc754f09a3ab77a64d1646c5d9737c06659ef8d86edcb977a33aac196ede5dc"
+    },
+    {
+      "path": "inputs/flint.md",
+      "bytes": 1774,
+      "sha256": "095142049aa54e7cba558e21bda7e0fe136b60fa072feb21760f1bc4cef28b92"
+    },
+    {
+      "path": "inputs/larch.md",
+      "bytes": 1720,
+      "sha256": "8918c1d1237805c3d2918fba066cf61ec6579a7a5bde6f8655490da9a4429301"
+    },
+    {
+      "path": "inputs/moss.md",
+      "bytes": 1719,
+      "sha256": "26533fcf21a1ab405af0e617c4c50ba97975387cc8e90b2b9bcd8c75f05fe016"
+    },
+    {
+      "path": "inputs/reed.md",
+      "bytes": 1686,
+      "sha256": "0a5180dde39eafbecbe0cebc1cbb25c772765976e1d45a28cbbf3708522f5414"
+    },
+    {
+      "path": "inputs/sable.md",
+      "bytes": 1721,
+      "sha256": "a5fad421b51aa0f37f94c7be65cd10b247b92424c1ef818eaabf6c8fe0739db7"
+    },
+    {
+      "path": "inputs/wren.md",
+      "bytes": 1718,
+      "sha256": "23e6c1633b6877d6af55faea39dba954a4a8c967ee8808ae5120854670981b94"
+    },
+    {
+      "path": "operator/criteria.md",
+      "bytes": 3440,
+      "sha256": "9cc68969923e6e2c08849ba0a85a4a0a28027bb7f85015df958a7f2db2cada3b"
+    },
+    {
+      "path": "operator/intent.json",
+      "bytes": 5434,
+      "sha256": "d12709bb2025199c033a967ca00b8eb6bd8ff32075c24a4f2816ac7cd6b99815"
+    },
+    {
+      "path": "screening/prompts/birch.txt",
+      "bytes": 3048,
+      "sha256": "5534398f9dafcf9ccf45555bb82a5861c06ffd0ff7aafcdb5d0381f30dc63e4c"
+    },
+    {
+      "path": "screening/prompts/cove.txt",
+      "bytes": 3001,
+      "sha256": "b3bb8a06949e8a237fd58a3fd265607619495c6193e56d9172b5c7443353e30c"
+    },
+    {
+      "path": "screening/prompts/flint.txt",
+      "bytes": 3059,
+      "sha256": "4ed98f6ea7bea2d5dd35cb7b7de1c4d71d36933af857b49483a15279e2ce7fb3"
+    },
+    {
+      "path": "screening/prompts/larch.txt",
+      "bytes": 3005,
+      "sha256": "5b2f1bee89e940ea1d481e9196a32ab12fce2657d8ba19c106434e1b94278131"
+    },
+    {
+      "path": "screening/prompts/moss.txt",
+      "bytes": 3003,
+      "sha256": "e3e26641532803ad92e84f517023f033332e4c0b33507aa972fff535d9754883"
+    },
+    {
+      "path": "screening/prompts/reed.txt",
+      "bytes": 2970,
+      "sha256": "e62d7ea62f5a129431e8fe2bf9255a0b5be3ef116214c4e77de7c867486fbd95"
+    },
+    {
+      "path": "screening/prompts/sable.txt",
+      "bytes": 3006,
+      "sha256": "262cc1b4de1084137126bdd00c6a6071cb36e775b4075749fa52856e3223bc94"
+    },
+    {
+      "path": "screening/prompts/wren.txt",
+      "bytes": 3002,
+      "sha256": "aa1f8d41c61116409b04b84e8e8a0c0b79c28561513e7a0ecf732dea7dd2850b"
+    }
+  ]
+}
