@@ -43,12 +43,14 @@ scope. ([history limit](https://github.com/anotherpanacea-eng/apodictic/blob/20b
 
 ## 2. Findings that require contract changes
 
-### R1 — Define packet eligibility and required-content conflicts together
+### R1: Define packet eligibility and required-content conflicts together
 
-**Evidence.** I3 excludes orphaned records. Reconciliation preserves Approval
-and changes only Presence. The packet clause exports approved nodes/edges;
-Stage B asks only for no pending records and Inclusion on approved nodes.
-Stage C requires every REQUIRED node to be realized.
+**Evidence.** I3 excludes orphaned records, and the Approval Protocol says
+SUPERSEDED and ORPHANED records are withheld from the drafter. Reconciliation
+preserves Approval and changes only Presence. The packet clause filters on
+Approval alone, exporting approved nodes/edges with no Presence test; Stage B
+asks only for no pending records and Inclusion on approved nodes. Stage C
+requires every REQUIRED node to be realized.
 ([I3](https://github.com/anotherpanacea-eng/apodictic/blob/20b8ca6219e649b2743866b9ffaba0e77ab208a5/docs/approval-gated-reconstruction.md#L56-L58),
 [reconcile](https://github.com/anotherpanacea-eng/apodictic/blob/20b8ca6219e649b2743866b9ffaba0e77ab208a5/docs/approval-gated-reconstruction.md#L719-L728),
 [withholding and packet](https://github.com/anotherpanacea-eng/apodictic/blob/20b8ca6219e649b2743866b9ffaba0e77ab208a5/docs/approval-gated-reconstruction.md#L830-L852),
@@ -92,7 +94,7 @@ preserving Approval. The approval-only coupling invariant remains true, so it
 cannot substitute for packet endpoint closure. E must not export a dangling
 reference to the withheld A. This is part of R1, not a separate counted finding.
 
-### R2 — Give edges a legal reconciliation lifecycle
+### R2: Give edges a legal reconciliation lifecycle
 
 **Evidence.** Edges must omit Provenance and Origin; their mint payload contains
 only type, endpoints, and carried typing. Yet the UNCHANGED reconciliation
@@ -126,7 +128,7 @@ provenance appends and anchors/flags refreshes for nodes. Define a no-change
 reconciliation as a no-op if no legal event is needed, rather than manufacturing
 an empty bundle (the existing grammar requires a nonempty events array).
 
-### R3 — Recovery may classify a tail only after excluding a live writer
+### R3: Recovery may classify a tail only after excluding a live writer
 
 **Evidence.** Recovery runs on any resume or gate run and may truncate a
 non-LF final suffix. An OS-held lock exists, and reconciliation is explicitly
@@ -158,7 +160,7 @@ under the lock before publishing results or appending quarantine. Changed
 inputs invalidate that result. Pin an acknowledgement/durability policy before
 claiming power-loss durability; do not infer it from JSONL framing.
 
-### R4 — Close existing-identity revision and quarantine paths without reminting
+### R4: Close existing-identity revision and quarantine paths without reminting
 
 **Evidence.** Canonically identical text denotes the same node. REVISE always
 mints a replacement starting PENDING, with a reciprocal AUTHOR-REVISION
@@ -192,7 +194,7 @@ SUPERSEDED. For S4, reference an existing record and retain the applicable
 violation instead of minting it again. Existing PENDING quarantine is reused
 on repeated runs. Define the no-new-novelty case without an empty bundle.
 
-### R5 — Empty is unstarted, yet the written readiness test passes vacuously
+### R5: Empty is unstarted, yet the written readiness test passes vacuously
 
 **Evidence.** An empty ledger is valid as unstarted/SUSPENDED and is expressly
 not CLOSED. Stage B nevertheless adds only zero PENDING records and Inclusion
@@ -214,7 +216,7 @@ for R1's required-but-withheld conflicts. Do not add a minimum approved-node
 count here: whether an author can reject everything is a separate policy choice.
 This finding came from the independent review and was adopted after source check.
 
-### R6 — Bind retained anchors to retained source versions
+### R6: Bind retained anchors to retained source versions
 
 Reconciliation replaces
 the graph's source header, retains disappeared nodes, and cannot refresh their
@@ -234,7 +236,7 @@ source. ([header](https://github.com/anotherpanacea-eng/apodictic/blob/20b8ca621
 
 ## 3. Important follow-ups, distinguished from the blockers
 
-**F1 — `/ready` opt-in detection must survive a missing receipt.** The
+**F1: `/ready` opt-in detection must survive a missing receipt.** The
 integration says a missing receipt runs ordinary `/ready`. A reconstruction
 project with its ledger and draft still present but its receipt missing must
 not be confused with a project that never opted in. Recommend recognizing
@@ -243,7 +245,7 @@ retains ordinary `/ready`. This is an Increment-5 integration requirement,
 not a claim that Increment 1 can PASS acceptance today.
 ([ready](https://github.com/anotherpanacea-eng/apodictic/blob/20b8ca6219e649b2743866b9ffaba0e77ab208a5/docs/approval-gated-reconstruction.md#L1059-L1077))
 
-**F2 — Do not mistake canonically serialized ledger JSON for a fully specified
+**F2: Do not mistake canonically serialized ledger JSON for a fully specified
 Markdown projection.** Anchors and other free strings can contain
 line-significant characters unless forbidden. Their ledger representation is
 JSON, while graph fields occupy grammar-controlled lines. Specify escaping/continuations for free strings and prove
