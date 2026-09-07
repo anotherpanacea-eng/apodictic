@@ -1,0 +1,100 @@
+{
+  "status": "provisional construction; not ground truth",
+  "baseline_author": "main Codex agent",
+  "mutation_proposer": "independent Codex 5.5 high reviewer fr02_protocol_review",
+  "families": [
+    {
+      "family": "reference-clocks",
+      "relevant": {
+        "before": "The clinic clock and the ferry-terminal clock showed the same time throughout that evening.",
+        "after": "The clinic clock ran ten minutes ahead of the ferry-terminal clock throughout that evening."
+      },
+      "provisional_mechanism": "Explicit common-clock commitments place arrival at 6:35 after the final 6:30 departure; an explicit ten-minute offset allows arrival at terminal 6:25.",
+      "construction_disposition": "provisionally constructible",
+      "irrelevant": {
+        "before": "The bench had a blue cushion.",
+        "after": "The bench had a faded blue cushion with a stitched canvas cover."
+      },
+      "superseded_control": {
+        "before": "The bench had a blue cushion.",
+        "after": "The bench had a gray cushion.",
+        "reason": "one-token color changes were substantially smaller than relevant changes; never screened"
+      },
+      "edit_distance": {
+        "tokenization": "case-sensitive regex \\w+|[^\\w\\s], Levenshtein unit cost",
+        "relevant": 9,
+        "irrelevant": 6
+      }
+    },
+    {
+      "family": "object-identity",
+      "relevant": {
+        "before": "On the table in front of the donors lay the original pumping-station key.",
+        "after": "On the table in front of the donors lay a brass replica modeled on the original pumping-station key."
+      },
+      "provisional_mechanism": "The sole original is continuously in the safe from nine to noon and also physically displayed at ten; a replica separates the referents.",
+      "construction_disposition": "provisionally constructible",
+      "irrelevant": {
+        "before": "The tablecloth was green.",
+        "after": "The tablecloth was pale green linen with a narrow hem."
+      },
+      "superseded_control": {
+        "before": "The tablecloth was green.",
+        "after": "The tablecloth was cream.",
+        "reason": "one-token color changes were substantially smaller than relevant changes; never screened"
+      },
+      "edit_distance": {
+        "tokenization": "case-sensitive regex \\w+|[^\\w\\s], Levenshtein unit cost",
+        "relevant": 5,
+        "irrelevant": 6
+      }
+    },
+    {
+      "family": "epistemic-authority",
+      "relevant": {
+        "before": "The side door stayed closed and locked from eight until nine; nobody opened it during that interval.",
+        "after": "Ravi believed the side door would stay closed and locked from eight until nine, and he did not see anyone open it during that interval."
+      },
+      "provisional_mechanism": "Narrator-level no-opening assertion contradicts ordinary entry through the sole route; attributing closure to limited belief and observation removes that assertion.",
+      "construction_disposition": "provisionally constructible",
+      "irrelevant": {
+        "before": "The kettle was white.",
+        "after": "The kettle was white enamel with a chipped black handle and a loose lid."
+      },
+      "superseded_control": {
+        "before": "The kettle was white.",
+        "after": "The kettle was steel.",
+        "reason": "one-token color changes were substantially smaller than relevant changes; never screened"
+      },
+      "edit_distance": {
+        "tokenization": "case-sensitive regex \\w+|[^\\w\\s], Levenshtein unit cost",
+        "relevant": 13,
+        "irrelevant": 10
+      }
+    },
+    {
+      "family": "quantifier-scope",
+      "relevant": {
+        "before": "No person entered the lighthouse at any time that Sunday.",
+        "after": "No person entered the lighthouse before eleven that Sunday."
+      },
+      "provisional_mechanism": "A Sunday-wide no-entry assertion contradicts the eleven oclock visit; restricting absence to before eleven allows the visit.",
+      "construction_disposition": "provisionally constructible",
+      "irrelevant": {
+        "before": "Her mug was red.",
+        "after": "Her mug was a red enamel cup."
+      },
+      "superseded_control": {
+        "before": "Her mug was red.",
+        "after": "Her mug was blue.",
+        "reason": "one-token color changes were substantially smaller than relevant changes; never screened"
+      },
+      "edit_distance": {
+        "tokenization": "case-sensitive regex \\w+|[^\\w\\s], Levenshtein unit cost",
+        "relevant": 3,
+        "irrelevant": 3
+      }
+    }
+  ],
+  "scope_limitation": "Intentionally explicit synthetic logic probes with anti-escape clauses, not naturalistic fiction validity. One sentence is changed in each variant; token edit extent is approximately, not exactly, matched."
+}

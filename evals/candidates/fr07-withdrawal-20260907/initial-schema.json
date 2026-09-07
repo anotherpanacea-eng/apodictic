@@ -1,0 +1,50 @@
+{
+  "type": "object",
+  "properties": {
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": [
+              "Must",
+              "Should",
+              "Could"
+            ]
+          },
+          "criticism": {
+            "type": "string"
+          },
+          "source_quotes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "mechanism": {
+            "type": "string"
+          },
+          "falsifier": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "severity",
+          "criticism",
+          "source_quotes",
+          "mechanism",
+          "falsifier"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "findings"
+  ],
+  "additionalProperties": false
+}
