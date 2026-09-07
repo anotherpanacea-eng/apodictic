@@ -5,6 +5,25 @@ with a small generic continuity-grounding instruction. See [PROTOCOL.md](PROTOCO
 for the decision rule and [SCORING.md](SCORING.md) for anonymous advisory grading.
 No production prompt, registered source, key, or existing candidate is modified.
 
+## Saved stopping point
+
+The 2026-09-07 production phase is complete: **64/64 sealed outputs**, with
+zero failed or contaminated receipts. The owner requested a stop here. **0/128
+advisory scoring calls have run**, so no corrective-effect result or model-quality
+comparison is claimed. The production controller has exited; raw diagnosis and
+key bodies have not been inspected by the orchestrator.
+
+[PRODUCTION-RECEIPT.json](PRODUCTION-RECEIPT.json) records requested model counts,
+reported usage, elapsed time, and whole-artifact hashes for the frozen manifest,
+completion index and accounting adapter. Raw outputs and per-cell mappings remain
+local in ignored results. Subscription invocation cost is unknown per call.
+
+On continuation, preserve these production bytes and the existing scoring anchors.
+The dated scorer launch deadline is 2026-09-08 01:45 UTC. A later continuation
+needs a reviewed new scoring freeze identity/window; never edit a frozen manifest
+or rerun completed productions to extend a deadline. Keep the independent scoring
+and final interpretation separate from this completed production phase.
+
 ## Run locally
 
 Use Python 3.12+ and an authenticated Codex subscription CLI that supports both
@@ -54,6 +73,7 @@ hashes. The full review and results will be linked here when complete.
 ```text
 python evals/experiments/fr02-corrective-retest-20260907/test_experiment.py
 python evals/experiments/fr02-corrective-retest-20260907/test_score.py
+python evals/experiments/fr02-corrective-retest-20260907/test_summarize.py
 bash scripts/validate.sh --check-all
 ```
 
