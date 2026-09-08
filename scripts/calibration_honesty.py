@@ -394,6 +394,9 @@ def run_self_test():
         pv = os.path.join(d, "Proj_Full_DE_Synthesis_run.md")
         with open(pv, "w", encoding="utf-8", newline="") as fh:
             fh.write("# Letter\n\nthe manuscript scores in the AI-elevated band\n")
+        # Order fixture mtimes so the newest-glob resolver exercises the violating letter.
+        os.utime(p, (1700000000, 1700000000))
+        os.utime(pv, (1700000002, 1700000002))
         chk("run_folder_violation_strict_fails", run([d], strict=True)[0] == 1)
     finally:
         shutil.rmtree(d, ignore_errors=True)

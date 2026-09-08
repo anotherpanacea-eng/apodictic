@@ -114,9 +114,12 @@ CLI 0.153.4. Per-call cost and served-model identity were unavailable.
 
 The experiment's 29 custody/behavior tests passed during tooling build review.
 Final repository validation reproduced a pre-existing timestamp-sensitive
-calibration-honesty self-test: equal file modification times can select the clean
-fixture instead of the intended newer violating fixture. Canonical checks pass,
-but the full gate is not yet cleared. A reviewed fixture-only timestamp correction
-is prepared separately; it does not affect frozen experiment inputs or results.
-Independent review cleared the completed interpretation; delivery still needs
-final validation and review of the exact committed head.
+calibration-honesty self-test: equal file modification times could select the clean
+fixture instead of the intended newer violating fixture. Explicit timestamps now
+order those two existing fixtures in both byte-identical validator copies; runtime
+validator behavior and frozen experiment inputs and results are unchanged.
+
+The complete `scripts/validate.sh --check-all` gate passed after that fixture
+correction, including validator self-tests, canonical checks and mirror parity.
+The changelog fragment check also passed. Independent review cleared the completed
+interpretation and the bounded fixture correction.
