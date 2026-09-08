@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "retain",
+        "withdraw",
+        "uncertain"
+      ]
+    },
+    "source_quotes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "mechanism": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "verdict",
+    "source_quotes",
+    "mechanism"
+  ],
+  "additionalProperties": false
+}
