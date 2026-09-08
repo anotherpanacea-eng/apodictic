@@ -394,6 +394,11 @@ def run_self_test():
         pv = os.path.join(d, "Proj_Full_DE_Synthesis_run.md")
         with open(pv, "w", encoding="utf-8", newline="") as fh:
             fh.write("# Letter\n\nthe manuscript scores in the AI-elevated band\n")
+        # Establish the "newest wins" precondition explicitly. Back-to-back
+        # writes can receive the same mtime on Windows, leaving the glob's
+        # earlier clean letter selected and making this self-test flaky.
+        prior_mtime = os.path.getmtime(p)
+        os.utime(pv, (prior_mtime + 1.0, prior_mtime + 1.0))
         chk("run_folder_violation_strict_fails", run([d], strict=True)[0] == 1)
     finally:
         shutil.rmtree(d, ignore_errors=True)
