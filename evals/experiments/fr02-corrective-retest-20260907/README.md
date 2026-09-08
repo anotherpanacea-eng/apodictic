@@ -5,24 +5,27 @@ with a small generic continuity-grounding instruction. See [PROTOCOL.md](PROTOCO
 for the decision rule and [SCORING.md](SCORING.md) for anonymous advisory grading.
 No production prompt, registered source, key, or existing candidate is modified.
 
-## Saved stopping point
+## Result
 
-The 2026-09-07 production phase is complete: **64/64 sealed outputs**, with
-zero failed or contaminated receipts. The owner requested a stop here. **0/128
-advisory scoring calls have run**, so no corrective-effect result or model-quality
-comparison is claimed. The production controller has exited; raw diagnosis and
-key bodies have not been inspected by the orchestrator.
+Execution is complete: **64/64 productions and 128/128 advisory scoring calls**.
+All calls finished within their original windows; the prepared continuation was
+not used. Scoring produced **105 valid grades and 23 invalid quote checks**.
+The frozen conservative outcome is **unresolved for both production models**.
+No production prompt change or corrective adoption is justified by this result.
 
-[PRODUCTION-RECEIPT.json](PRODUCTION-RECEIPT.json) records requested model counts,
-reported usage, elapsed time, and whole-artifact hashes for the frozen manifest,
-completion index and accounting adapter. Raw outputs and per-cell mappings remain
-local in ignored results. Subscription invocation cost is unknown per call.
+[RESULTS.md](RESULTS.md) reports the fixed-denominator primary outcome, scorer
+reliability, separate advisory adjudication and implementation disposition.
+[SCORING-RECEIPT.json](SCORING-RECEIPT.json) binds the completed scoring manifest,
+frozen aggregate, accounting adapter and per-scorer usage. The earlier
+[PRODUCTION-RECEIPT.json](PRODUCTION-RECEIPT.json) remains an unchanged historical
+receipt of the owner's first stopping point, when scoring had not started.
+The owner subsequently authorized adjudication and draft publication when ready.
 
-On continuation, preserve these production bytes and the existing scoring anchors.
-The dated scorer launch deadline is 2026-09-08 01:45 UTC. A later continuation
-needs a reviewed new scoring freeze identity/window; never edit a frozen manifest
-or rerun completed productions to extend a deadline. Keep the independent scoring
-and final interpretation separate from this completed production phase.
+Raw outputs, original grades, adjudication evidence and private mappings remain
+in ignored local results. Invalid grades were inspected and preserved without
+regeneration; later review does not rewrite the frozen conservative aggregate.
+Subscription invocation cost remains unknown per call. These exposed synthetic
+fixtures are development evidence, not a fresh holdout or human-licensed truth.
 
 ## Run locally
 
@@ -66,7 +69,7 @@ python evals/results/FR02-SCORES/frozen/score.py status --root evals/results/FR0
 Scorer identity and quote verification are mechanical checks, not correctness
 or human truth licenses. Keep raw outputs and private mappings in ignored
 results. Publish only the reviewed aggregate interpretation and whole-artifact
-hashes. The full review and results will be linked here when complete.
+hashes. The completed interpretation is linked above.
 
 ## Verification
 

@@ -1,6 +1,6 @@
 # FR-02 continuity corrective retest
 
-Status: independently reviewed for execution on 2026-09-07; immutable packet freeze precedes model runs.
+Status: execution complete on 2026-09-08 UTC; interpretation in RESULTS.md. The independently reviewed original protocol is preserved unchanged in the immutable production freeze.
 
 ## Question and scope
 
