@@ -1,0 +1,45 @@
+{
+  "schema": "fr02-production-account/1",
+  "account_adapter_sha256": "0c576a97d5b8b8f4a53dc3f1616da881455b3045c5061f3c1df73a9e9f92a6e5",
+  "phase": "production-complete-scoring-not-started",
+  "planned": 64,
+  "complete": 64,
+  "failed": 0,
+  "contaminated": 0,
+  "scorer_calls_launched": 0,
+  "scorer_calls_planned": 128,
+  "requested_effort": "high",
+  "cli_version": "codex-cli 0.153.4",
+  "models": [
+    {
+      "requested_model": "gpt-5.6-terra",
+      "complete": 32,
+      "usage_receipts": 32,
+      "reported_usage_totals": {
+        "input_tokens": 342304,
+        "cached_input_tokens": 208128,
+        "output_tokens": 88302
+      },
+      "sum_invocation_seconds": 1765.754
+    },
+    {
+      "requested_model": "gpt-6-astra",
+      "complete": 32,
+      "usage_receipts": 32,
+      "reported_usage_totals": {
+        "input_tokens": 383130,
+        "cached_input_tokens": 92544,
+        "output_tokens": 106288
+      },
+      "sum_invocation_seconds": 4991.261
+    }
+  ],
+  "wall_span_seconds": 3493.808,
+  "productions_per_wall_hour": 65.945,
+  "actual_cost_usd": null,
+  "cost_note": "Authenticated Codex subscription; no per-call invoice or paid API request",
+  "manifest_sha256": "2a08ffe1de58994547115846bad0b0452d2fdacfb1587b8daf59f7b1a9b74699",
+  "completion_index_sha256": "fad98be341f37a07df1d3820e2158c36384c6a0ccc5d2932dbc05144740b33a9",
+  "source_pin": "20b8ca6219e649b2743866b9ffaba0e77ab208a5",
+  "interpretation": "No scored comparison or corrective-effect result yet. Production diagnoses and key bodies have not been inspected by the orchestrator."
+}
