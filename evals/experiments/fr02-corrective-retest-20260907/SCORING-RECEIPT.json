@@ -1,0 +1,256 @@
+{
+  "schema": "fr02-public-scoring-account/1",
+  "account_adapter_sha256": "5d5ad1acbb6e28e0611334380b7b742b4cb68441dd34ec367b23ad1379467c93",
+  "scorer_manifest_sha256": "727d56716781404c754c1e16197f7d7c921822cea645d5c440be29c8120108a0",
+  "aggregate_sha256": "906463eb91d4c844ddb1b10621a2cff3b1caf893e168211765040d1214c5b136",
+  "planned_scores": 128,
+  "terminal_status_counts": {
+    "complete": 128
+  },
+  "valid_scores": 105,
+  "invalid_or_missing_scores": 23,
+  "outputs_with_metric_disagreement": 42,
+  "requested_effort": "high",
+  "cli_version": "codex-cli 0.153.4",
+  "launch_deadline_utc": "2026-09-08T01:45:00+00:00",
+  "last_call_started_utc": "2026-09-08T01:38:24.028112+00:00",
+  "last_call_completed_utc": "2026-09-08T01:39:03.589719+00:00",
+  "all_calls_launched_within_original_window": true,
+  "models": [
+    {
+      "requested_model": "gpt-5.5",
+      "terminal_calls": 64,
+      "valid_grades": 42,
+      "invalid_or_unavailable_grades": 22,
+      "usage_receipts": 64,
+      "reported_usage_totals": {
+        "input_tokens": 975612,
+        "cached_input_tokens": 414720,
+        "output_tokens": 75128
+      },
+      "sum_invocation_seconds": 1582.394
+    },
+    {
+      "requested_model": "gpt-6-astra",
+      "terminal_calls": 64,
+      "valid_grades": 63,
+      "invalid_or_unavailable_grades": 1,
+      "usage_receipts": 64,
+      "reported_usage_totals": {
+        "input_tokens": 1184188,
+        "cached_input_tokens": 279936,
+        "output_tokens": 87502
+      },
+      "sum_invocation_seconds": 3587.545
+    }
+  ],
+  "wall_span_seconds": 4388.82,
+  "decisions": {
+    "gpt-5.5": {
+      "gpt-6-astra": {
+        "counts": {
+          "baseline": {
+            "success": 1,
+            "failure": 0,
+            "unresolved": 1
+          },
+          "corrective": {
+            "success": 0,
+            "failure": 0,
+            "unresolved": 2
+          }
+        },
+        "delta": null,
+        "disposition": "hard_failure_observed",
+        "lost_baseline_hit_count": 0,
+        "increased_transfer_false_positive_count": 0,
+        "new_invention_flag_count": 1,
+        "unresolved_guard_count": 20
+      },
+      "gpt-5.6-terra": {
+        "counts": {
+          "baseline": {
+            "success": 0,
+            "failure": 0,
+            "unresolved": 2
+          },
+          "corrective": {
+            "success": 1,
+            "failure": 0,
+            "unresolved": 1
+          }
+        },
+        "delta": null,
+        "disposition": "incomplete_or_unresolved",
+        "lost_baseline_hit_count": 0,
+        "increased_transfer_false_positive_count": 0,
+        "new_invention_flag_count": 0,
+        "unresolved_guard_count": 19
+      }
+    },
+    "gpt-6-astra": {
+      "gpt-6-astra": {
+        "counts": {
+          "baseline": {
+            "success": 2,
+            "failure": 0,
+            "unresolved": 0
+          },
+          "corrective": {
+            "success": 2,
+            "failure": 0,
+            "unresolved": 0
+          }
+        },
+        "delta": 0,
+        "disposition": "hard_failure_observed",
+        "lost_baseline_hit_count": 0,
+        "increased_transfer_false_positive_count": 0,
+        "new_invention_flag_count": 1,
+        "unresolved_guard_count": 1
+      },
+      "gpt-5.6-terra": {
+        "counts": {
+          "baseline": {
+            "success": 1,
+            "failure": 0,
+            "unresolved": 1
+          },
+          "corrective": {
+            "success": 2,
+            "failure": 0,
+            "unresolved": 0
+          }
+        },
+        "delta": null,
+        "disposition": "hard_failure_observed",
+        "lost_baseline_hit_count": 0,
+        "increased_transfer_false_positive_count": 0,
+        "new_invention_flag_count": 2,
+        "unresolved_guard_count": 2
+      }
+    },
+    "agreement": {
+      "gpt-6-astra": {
+        "counts": {
+          "baseline": {
+            "success": 1,
+            "failure": 0,
+            "unresolved": 1
+          },
+          "corrective": {
+            "success": 0,
+            "failure": 0,
+            "unresolved": 2
+          }
+        },
+        "delta": null,
+        "disposition": "incomplete_or_unresolved",
+        "lost_baseline_hit_count": 0,
+        "increased_transfer_false_positive_count": 0,
+        "new_invention_flag_count": 0,
+        "unresolved_guard_count": 23
+      },
+      "gpt-5.6-terra": {
+        "counts": {
+          "baseline": {
+            "success": 0,
+            "failure": 0,
+            "unresolved": 2
+          },
+          "corrective": {
+            "success": 1,
+            "failure": 0,
+            "unresolved": 1
+          }
+        },
+        "delta": null,
+        "disposition": "incomplete_or_unresolved",
+        "lost_baseline_hit_count": 0,
+        "increased_transfer_false_positive_count": 0,
+        "new_invention_flag_count": 0,
+        "unresolved_guard_count": 25
+      }
+    }
+  },
+  "secondary_rubric": [
+    {
+      "scorer": "gpt-5.5",
+      "production_model": "gpt-5.6-terra",
+      "arm": "baseline",
+      "valid_grades": 9,
+      "planned_grades": 16,
+      "mean_total_of_valid_grades": 89.444
+    },
+    {
+      "scorer": "gpt-5.5",
+      "production_model": "gpt-5.6-terra",
+      "arm": "corrective",
+      "valid_grades": 14,
+      "planned_grades": 16,
+      "mean_total_of_valid_grades": 97.143
+    },
+    {
+      "scorer": "gpt-5.5",
+      "production_model": "gpt-6-astra",
+      "arm": "baseline",
+      "valid_grades": 11,
+      "planned_grades": 16,
+      "mean_total_of_valid_grades": 96.591
+    },
+    {
+      "scorer": "gpt-5.5",
+      "production_model": "gpt-6-astra",
+      "arm": "corrective",
+      "valid_grades": 8,
+      "planned_grades": 16,
+      "mean_total_of_valid_grades": 99.375
+    },
+    {
+      "scorer": "gpt-6-astra",
+      "production_model": "gpt-5.6-terra",
+      "arm": "baseline",
+      "valid_grades": 15,
+      "planned_grades": 16,
+      "mean_total_of_valid_grades": 75.0
+    },
+    {
+      "scorer": "gpt-6-astra",
+      "production_model": "gpt-5.6-terra",
+      "arm": "corrective",
+      "valid_grades": 16,
+      "planned_grades": 16,
+      "mean_total_of_valid_grades": 80.0
+    },
+    {
+      "scorer": "gpt-6-astra",
+      "production_model": "gpt-6-astra",
+      "arm": "baseline",
+      "valid_grades": 16,
+      "planned_grades": 16,
+      "mean_total_of_valid_grades": 91.719
+    },
+    {
+      "scorer": "gpt-6-astra",
+      "production_model": "gpt-6-astra",
+      "arm": "corrective",
+      "valid_grades": 16,
+      "planned_grades": 16,
+      "mean_total_of_valid_grades": 96.406
+    }
+  ],
+  "actual_cost_usd": null,
+  "cost_note": "Authenticated Codex subscription; per-call invoice unavailable. Cached input tokens are a subset of input tokens. Secondary means omit invalid grades and do not alter the fixed primary denominator or decision.",
+  "source_account_sha256": "bd0716251ba4b8e1584fe6b8694e68b004a9ed4208508ee038b6229a6e5d71c6",
+  "interpretation": "Execution and bounded advisory adjudication complete. Both production models retain unresolved frozen conservative outcomes. Advisory primary suggests Terra1/2to2/2 and Astra ceiling2/2to2/2, with invention and measurement concerns; no corrective adoption or groundtruth promotion.",
+  "advisory_adjudication": {
+    "primary_artifact_sha256": "2b784fd73b97e7f9f76cd23ff1960b2dcea88a969d75dcd095070f749f2a4bce",
+    "transfer_artifact_sha256": "dbc3d4b1a4bd6877167f196900f80c93a4a7bf26620c316e2f0fcf739971ea64",
+    "requested_reviewer_model": "gpt-5.5",
+    "requested_effort": "high",
+    "primary_scope": "All16 primary continuity outputs and32 original grades",
+    "transfer_scope": "All transfer grader summaries plus targeted output/grade inspection; not all48 transfer production bodies",
+    "original_aggregate_unchanged": true,
+    "human_groundtruth_license": false
+  }
+}
