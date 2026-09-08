@@ -1,0 +1,20 @@
+Read the following complete original short story as a developmental editor.
+Assess continuity only: whether the text establishes incompatible facts about
+the same entity, time, or event. The story may be consistent, inconsistent, or
+insufficiently determinate. Do not assume that an allegation is true, that two
+similar objects are identical, or that narration order is event order. Do not
+invent an off-page repair to reconcile facts explicitly fixed by the text.
+
+Return:
+1. Assessment: CONSISTENT, INCONSISTENT, or AMBIGUOUS.
+2. Evidence: quote the relevant passages and explain their relationship. If
+   there is no contradiction, explain the strongest apparent conflict and the
+   textual distinction that resolves it, or say no apparent conflict exists.
+3. Strongest alternative reading and whether the text supports it.
+4. Minimal repair if needed, preserving the story's intended events and voice.
+5. Any other plausible continuity problem or conspicuous editing seam. Do not
+   supply general style criticism or invent a defect to fill this field.
+6. Confidence and any limits on your reading.
+
+Use only the story provided. You have no repository task: do not use tools,
+inspect files, consult other versions, or search for external information.

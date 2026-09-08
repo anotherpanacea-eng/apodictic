@@ -1,0 +1,40 @@
+{
+  "freeze_sha256": "48119d1cd89563d9c8ade5c4ab6b3d82f6486a04688e846d785bd816d2170430",
+  "capture": "Response text captured from collaboration tool results; JSON preserves Markdown whitespace. Dispatch bindings are recorded by the root, not certified by the reviewer. Unknown invocation telemetry is null.",
+  "receipts": [
+    {
+      "neutral_id": "glen",
+      "model_argument": "gpt-5.5",
+      "reasoning_effort_argument": "xhigh",
+      "fork_turns": "none",
+      "task": "screen_glen",
+      "prompt_sha256": "de1ba02ebbaf2e5a4cadcd2dfef2855523529d26fdec470aac131a7940d3b077",
+      "input_sha256": "da31fd99638fc23a19471ab18728534be5f13772c865774c60fec3c6a5cc90b5",
+      "response_path": "screening/responses/glen.json",
+      "response_file_sha256": "569490857c6b91d4fc07503e2d726ee9f4a2d74ad9411394b936c2d138fe8249",
+      "captured_text_sha256": "bad8be4e104660734c63dc411d7390d6851db828e869a7314467bc866c0c416d",
+      "input_tokens": null,
+      "output_tokens": null,
+      "max_tokens": null,
+      "cost": null,
+      "elapsed_seconds": null
+    },
+    {
+      "neutral_id": "marsh",
+      "model_argument": "gpt-5.5",
+      "reasoning_effort_argument": "xhigh",
+      "fork_turns": "none",
+      "task": "screen_marsh",
+      "prompt_sha256": "31755a25595ce638730dcfbbebb8c15e0203ae5a8ecbae223d32e0ed5f5f0f5a",
+      "input_sha256": "614f1cded5c8bedb5a04b42d8234d87bf30af77e625cd997045bd943161ae33b",
+      "response_path": "screening/responses/marsh.json",
+      "response_file_sha256": "410aefa53e2ee9c439cc45af5907c72d84553905cd1b87057fd37f4823c559eb",
+      "captured_text_sha256": "52f69bf825be723c75b0cb3e4255437b50ca470394d37f7e4c5883720b320862",
+      "input_tokens": null,
+      "output_tokens": null,
+      "max_tokens": null,
+      "cost": null,
+      "elapsed_seconds": null
+    }
+  ]
+}

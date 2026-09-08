@@ -1,0 +1,80 @@
+{
+  "version": "v1",
+  "status": "candidate-not-groundtruth",
+  "source_class": "original-synthetic",
+  "authored_by": "Codex",
+  "authored_date": "2026-09-05",
+  "adapted_from": null,
+  "paragraph_numbering": "Blank-line-separated paragraphs, starting at one.",
+  "pairs": [
+    {
+      "pair": "testimony",
+      "control": "sable",
+      "mutation": "reed",
+      "before": "According to the signed inventory, throughout that morning the office held the only key to the tide room.",
+      "after": "Throughout that morning the office held the only key to the tide room.",
+      "mechanism": "A report's content is not automatically an authoritative narrator fact.",
+      "control_basis": "The framed inventory asserts uniqueness; a narrator-established spare exposes its inaccuracy. Halden's misleading records are part of the plot, not inconsistent world-state narration.",
+      "mutation_basis": "Removing attribution makes uniqueness a narrator assertion throughout the same morning that a second working key is continuously in Neri's possession.",
+      "loci": [
+        2,
+        3,
+        5
+      ],
+      "minimal_repair": "Restore attribution of the uniqueness claim to the inventory; do not remove the spare, Neri's investigation, or the deception plot.",
+      "charitable_alternative": "A reader may treat the bare sentence as implicit institutional viewpoint. That is not explicitly marked; a persuasive reading of it makes this a scope-ambiguity candidate rather than a deterministic key."
+    },
+    {
+      "pair": "quantifier",
+      "control": "flint",
+      "mutation": "birch",
+      "before": "Every red-tagged launch in the shed had spent the whole night and morning without an engine;",
+      "after": "Every launch in the shed had spent the whole night and morning without an engine;",
+      "mechanism": "A universal claim applies only within its stated referent set.",
+      "control_basis": "Only the two red-tagged launches lack engines. The green-tagged launch is explicitly outside that set and can conduct the rescue.",
+      "mutation_basis": "Deleting the red-tagged restriction includes the green launch in an all-morning engine-absence claim, conflicting with its never-removed sealed engine and the rescue in the same interval.",
+      "loci": [
+        2,
+        4,
+        6
+      ],
+      "minimal_repair": "Restore the maintenance-tag restriction, preserving the rescue and the green launch's engine history.",
+      "charitable_alternative": "A reader might assume 'every launch' silently excludes green or that an offstage installation occurred. The explicit three-launch inventory, all-morning scope, service seal, and no-installation statement disallow those repairs without changing text."
+    },
+    {
+      "pair": "identity",
+      "control": "moss",
+      "mutation": "wren",
+      "before": "During the ceremony, Iona lifted the plaster swallow from the counter and placed it in the teacher's open bag.",
+      "after": "During the ceremony, Iona lifted the bronze swallow from the counter and placed it in the teacher's open bag.",
+      "mechanism": "A shared design name does not merge two physical objects into one token.",
+      "control_basis": "The bronze Return remains in its sealed case; the separately introduced plaster Return goes to school. Repeated name and appearance do not establish token identity.",
+      "mutation_basis": "The only bronze token is simultaneously asserted to remain sealed and to move from the counter to a bag during the same ceremony.",
+      "loci": [
+        1,
+        2,
+        5,
+        7
+      ],
+      "minimal_repair": "Restore 'plaster' in the handoff sentence. Preserve the shared name, the archive donation, and the separate school gift.",
+      "charitable_alternative": "A third bronze casting or an unreported removal/resealing would reconcile the transfer only by overriding the explicit two-object inventory and continuous intact-case statement."
+    },
+    {
+      "pair": "time",
+      "control": "larch",
+      "mutation": "cove",
+      "before": "At 17:50 that evening, twenty minutes before the handoff, the same envelope's original wax seal was still whole.",
+      "after": "At 18:08 that evening, two minutes before the handoff, the same envelope's original wax seal was still whole.",
+      "mechanism": "Narration order and event time are independent; explicit event intervals decide compatibility.",
+      "control_basis": "The first paragraph narrates the 18:10 handoff and 18:05 opening; the later paragraph returns to 17:50, when the seal can still be whole. A flashback is not a state reset.",
+      "mutation_basis": "The same original seal is whole at 18:08 despite being broken at 18:05 and held continuously until 18:10. The changed relative duration remains arithmetically correct, so the conflict is event-state order, not merely mismatched clock arithmetic.",
+      "loci": [
+        1,
+        3,
+        5
+      ],
+      "minimal_repair": "Restore the earlier flashback timestamp and its matching relative duration; preserve the opening flash-forward and the decision to sell.",
+      "charitable_alternative": "Reading the third paragraph as an unmarked hypothetical or introducing a different envelope/replaceable seal conflicts with 'same envelope', 'original', and continuous custody. If a reviewer sustains that reading, retain ambiguity rather than declaring a model failure."
+    }
+  ]
+}
