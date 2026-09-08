@@ -1,9 +1,10 @@
 # FR-07: counterfactual withdrawal candidates
 
-Status: independently reviewed protocol; twelve texts constructed, four initial
-screens and independent eligibility reviews sealed; twelve followup cells pending
-at the owner-requested stopping point. Not registered ground truth.
-The initial freeze preserves the earlier pre-screen protocol bytes.
+Status: candidate construction and followup adjudication complete. Twelve texts,
+four initial diagnoses, four eligibility reviews and twelve followup cells are
+sealed. All four families satisfy this candidate contract under independent model
+review; none is promoted to registered ground truth. Frozen initial/followup roots
+preserve the protocol bytes that preceded their respective dispatches.
 
 ## Provenance
 

@@ -5,11 +5,16 @@ criticism when relevant textual evidence changes, while retaining that criticism
 after an irrelevant edit. Each family has baseline, relevant, and irrelevant texts.
 These are development candidates, not registered or human-licensed ground truth.
 
-The initial screen is complete. A fresh Astra-high context diagnosed each baseline;
-mechanical severity/order selection chose one finding per story. Independent
-Codex5.5-high review accepted all four selected findings as grounded, relevant,
-and appropriately severe. **No followup has run**, so withdrawal/retention behavior
-has not been measured. Work paused at the owner's requested session boundary.
+The candidate experiment is complete: four initial diagnoses, four independent
+eligibility decisions, and twelve fresh-context followups are sealed. All four
+families retained the criticism on baseline and irrelevant-control text and
+withdrew it on the relevant counterfactual. All twelve followups passed exact-quote
+checks; independent Codex 5.5-high review found the explanations supported that
+pattern. See [RESULTS.md](RESULTS.md) for the bounded conclusion and limitations.
+
+The tested behavior already worked in these explicit probes. This experiment
+justifies no production prompt or runtime change and does not promote candidates
+to registered ground truth.
 
 See [PROTOCOL.md](PROTOCOL.md) for the frozen design, [mutations.json](mutations.json)
 for exact independently proposed replacements and superseded controls, and
@@ -29,17 +34,15 @@ not equal. The texts use conspicuous explicit constraints and anti-escape clause
 they do not establish naturalistic fiction validity. Independent model agreement
 is advisory, and one initial call per family does not establish reliability.
 
-## Resume contract
+## Custody and future use
 
-Preserve the frozen initial sources, prompts, schemas and selected findings. The
-independent eligibility record is already sealed before any followup dispatch.
-For each eligible finding, create three fresh-context packets containing that
-finding unchanged and exactly one current text: baseline, relevant, or irrelevant.
-Randomize opaque row IDs and never expose variant labels or sibling packets.
-Use the same frozen common followup prompt and model/effort settings. Account for
-all twelve cells, failures and disagreements. Do not substitute findings or retry
-answer quality. Independently inspect the retained evidence before reporting an
-intended retain/withdraw/retain pattern; do not promote candidates automatically.
+The initial selection and independent eligibility decisions were sealed before
+followup dispatch. Each followup received that finding unchanged and exactly one
+current text. Opaque IDs and fresh contexts kept variant labels, sibling packets
+and adjudicator notes out of model inputs. No answer-quality retries were made.
 
-The machine-local handoff retains exact freeze and runner commands. No production
-plugin, registered fixture, benchmark key or other candidate package changes here.
+Keep all original candidates and outcomes as exposed development evidence.
+Naturalistic transfer or reliability claims require new untouched families and
+prospective acceptance rules. Human or otherwise licensed acceptance is still
+required for any groundtruth promotion. No production plugin, registered fixture,
+benchmark key or other candidate package changes here.

@@ -1,25 +1,44 @@
 {
   "schema": "fr07-construction-summary/1",
-  "status": "initial-screen-sealed-followups-not-started",
+  "status": "candidate-construction-and-followup-adjudication-complete",
   "families_constructed": 4,
   "text_variants": 12,
   "initial_calls_complete": 4,
   "eligible_findings": 4,
-  "followup_calls_launched": 0,
+  "followup_calls_launched": 12,
   "followup_calls_planned": 12,
   "model": "gpt-6-astra",
   "effort": "high",
   "cli_version": "codex-cli 0.153.4",
-  "usage": {
-    "input_tokens": 45502,
-    "cached_input_tokens": 0,
-    "output_tokens": 1488
-  },
-  "sum_invocation_seconds": 78.562,
-  "wall_span_seconds": 97.59,
   "actual_cost_usd": null,
   "cost_note": "Authenticated subscription calls; no per-call invoice or paid API request",
   "initial_manifest_sha256": "b8f076b388749bc8584e4043ee397c5c7b090444ed5a89187c6102370be75150",
   "selection_sha256": "849b8fa2b7c6d2941744a82eb3be59ada807971faff3bd50cded161087c16525",
-  "eligibility_sha256": "1ca19cee1c4b9db01bf6d710e80627f6bea04d0e86b1e9c85d25c97886e244e1"
+  "eligibility_sha256": "1ca19cee1c4b9db01bf6d710e80627f6bea04d0e86b1e9c85d25c97886e244e1",
+  "initial_usage": {
+    "input_tokens": 45502,
+    "cached_input_tokens": 0,
+    "output_tokens": 1488
+  },
+  "initial_sum_invocation_seconds": 78.562,
+  "initial_wall_span_seconds": 97.59,
+  "followup_calls_complete": 12,
+  "followup_evidence_valid": 12,
+  "families_with_intended_pattern": 4,
+  "families_adjudicated_as_satisfying_candidate_contract": 4,
+  "followup_manifest_sha256": "700bd3a6307766854f6887351b35ba318747385bb5808dcc64db8b96b41fbba7",
+  "inspection_sha256": "5a122c9d1f17d4bf45cb047114df5aa0ce6bca530c36ecffbefee9ea5684001b",
+  "adjudication_sha256": "9f5b5628a9be769f1a39533242b42d29e44349a8644866f63938e948b03b2680",
+  "followup_usage": {
+    "input_tokens": 138712,
+    "cached_input_tokens": 9856,
+    "output_tokens": 1865
+  },
+  "production_implementation": "No production change is justified by this candidate contract: the tested current-model behavior already meets the intended pattern.",
+  "limits": [
+    "Explicit synthetic logic probes with anti-escape clauses",
+    "One model configuration and one call per cell",
+    "Independent model review, not human groundtruth licensing",
+    "No naturalistic validity, general reliability or frontier rank claim"
+  ]
 }
