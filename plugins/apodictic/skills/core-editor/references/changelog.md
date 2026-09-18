@@ -5,6 +5,35 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.12.0 - 2026-09-18
+
+### ChatGPT installation
+
+- Document the ChatGPT workspace plugin import path using the existing GitHub marketplace, including admin setup, member installation, and a release-tag option.
+
+### Draft-first integration trains
+
+Default ordinary pull requests to unarmed drafts, consolidate hosted validation
+into one exact-head-bound train job, and add closed-topology plus live-receipt
+checks for periodic disposable merge trains without a paid ruleset dependency.
+Also make the status-drift self-test's path assertion portable to Windows.
+
+### Continuity experiment and validation stability
+
+Complete the exploratory continuity corrective experiment and preserve its unresolved
+conservative result alongside separate advisory adjudication. No production prompt
+change follows. Stabilize the calibration-honesty newest-file self-test with explicit
+fixture timestamps, without changing validator behavior.
+
+### Audit discovery — POV Voice Profile
+
+Registered the already-shipped `POV Voice Profile` craft audit in the release
+catalog and generated discovery surfaces.
+
+### Fixed
+
+- Isolated the hermetic SETEC drift self-test from the weekly sync workflow's release-tag environment so finalized production pins no longer break its provisional-lock fixture.
+
 ## v2.11.0 - 2026-08-26
 
 ### Specs — Approval-Gated Reconstruction
