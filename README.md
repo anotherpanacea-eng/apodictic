@@ -101,10 +101,11 @@ Pick the row for the app you'll actually run APODICTIC in — that's the only th
 |---|---|---|
 | **Antigravity** | [Antigravity (Native)](#antigravity-native) | Workspace Isolation — download the zip, open the folder, `/start` |
 | **Codex** | [Codex](#codex) | Download the zip, open the `codex/` folder, install from the local marketplace |
+| **ChatGPT workspace** | [ChatGPT](#chatgpt) | Ask a workspace admin to import this GitHub marketplace, then install APODICTIC |
 | **Claude Code (CLI / terminal)** | [Claude Code (CLI)](#claude-code-cli) | Two `/plugin` commands |
 | **Cowork (desktop app)** | [Cowork (Desktop App)](#cowork-desktop-app) | Add the marketplace from GitHub, then install |
 
-Whichever path you take, it ends the same way: start a fresh session and type `/start`.
+For Antigravity, Claude Code, and Cowork, start a fresh session and type `/start`. In Codex, run `apodictic-start`; in ChatGPT, select or mention the installed APODICTIC plugin.
 
 ### Antigravity (Native)
 
@@ -148,6 +149,18 @@ cp -r antigravity/.agents/workflows/* /path/to/your/workspace/.agents/workflows/
 If APODICTIC does not appear, the usual cause is opening the wrong folder. Codex must be opened on the generated `codex/` directory, not the repo root.
 
 Prefer to build from source? Clone the repo, run `node scripts/build-codex.mjs`, and open the generated `codex/` folder instead.
+
+### ChatGPT
+
+ChatGPT workspaces that allow plugin imports can use this repository's existing marketplace. A workspace admin:
+
+1. Opens **Workspace settings > Plugins > Add > Import marketplace**.
+2. Selects GitHub as the source and enters `https://github.com/anotherpanacea-eng/apodictic`. Leave the path blank so ChatGPT finds the root `.claude-plugin/marketplace.json`. To install a fixed release, select tag `v2.12.0` or a newer release tag when available; otherwise the marketplace follows the default branch and syncs daily.
+3. Reviews the import result, opens APODICTIC, and makes it **Available** or **Installed** for the intended members or roles.
+
+Members can then install APODICTIC from **Plugins** if it was made Available. In a new ChatGPT conversation, mention `@APODICTIC` or select it from **+ > More** when those controls are shown, and ask for a developmental edit or manuscript intake. Plugin availability and controls vary by plan, workspace, and role. APODICTIC's script-dependent checks have inline instructions for hosts without a shell; test a representative edit in the target workspace before relying on full workflow parity.
+
+See OpenAI's [plugin installation guide](https://help.openai.com/en/articles/20001256/) and [GitHub marketplace import guide](https://help.openai.com/en/articles/20001504/) for current controls. Existing Custom GPTs are a separate legacy route; this install does not create or update one.
 
 ### Claude Code & Cowork
 
