@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Executable Increment-1 acceptance candidates H1-H18.
+"""Executable Increment-1 acceptance candidates H1-H20.
 
 This is a black-box fixture runner.  It imports the public approval_graph module
 from ``--engine`` and creates disposable project directories; no fixture project
@@ -885,6 +885,48 @@ def run_cases(engine) -> list[dict[str, Any]]:
         assert result["verdict"] == "ACTION-REQUIRED" and result["head"] is None
         assert {f["code"] for f in result["findings"]} == {"PROJECT-MISSING", "I5-COMPARATOR-UNAVAILABLE"}
 
+    def h19(p):
+        # Presentation order: the session cursor sorted the merged node+edge list,
+        # so an eligible "e-" id always pre-empted a still-pending "n-" id.
+        head, ids, eids = mint(engine, p, texts=("A.", "B.", "C."),
+                               edges=(("SUPPORTS", 0, 1, "\u2014"),))
+        head = decisions(engine, p, head, [ids[0], ids[1]])["head"]
+        session = json.loads((p / "Adjudication_Session.json").read_text(encoding="utf-8"))
+        assert session["status"] == "SUSPENDED", session
+        assert session["next_record"] == ids[2], (session, ids, eids)
+        assert eids[0] < ids[2], "fixture must keep the edge id lexically first"
+        # The eligible edge is presented only once no pending node remains.
+        decisions(engine, p, head, [ids[2]])
+        session = json.loads((p / "Adjudication_Session.json").read_text(encoding="utf-8"))
+        assert session["next_record"] == eids[0], session
+
+    def h20(p):
+        # LOCK-UNSUPPORTED is raised inside the lock's try block but is not an
+        # OSError, so it used to escape without releasing the per-project RLock.
+        # The holding thread could not see it (an RLock is reentrant); any other
+        # thread then got PROJECT-BUSY forever, masking the real cause.
+        head, ids, _ = mint(engine, p)
+        saved = (engine.fcntl, engine.msvcrt)
+        engine.fcntl = None
+        engine.msvcrt = None
+        try:
+            expect_error(lambda: decisions(engine, p, head, ids), "LOCK-UNSUPPORTED")
+        finally:
+            engine.fcntl, engine.msvcrt = saved
+        # A different thread must still be able to take the lock afterwards.
+        outcome = {}
+        def worker():
+            try:
+                outcome["head"] = decisions(engine, p, head, ids)["head"]
+            except Exception as exc:  # noqa: BLE001 - recorded, asserted below
+                outcome["error"] = err_code(exc)
+        t = threading.Thread(target=worker)
+        t.start()
+        t.join(60)
+        assert not t.is_alive(), "second thread blocked on the leaked project lock"
+        assert "error" not in outcome, outcome
+        assert validate(engine, p, "graph")["verdict"] == "PASS"
+
     for name, fn in [("H1-required-orphan", h1), ("H2-edge-endpoint-eligibility", h2),
                      ("H3-unchanged-edge-no-provenance", h3), ("H4-novel-edge-origin", h4),
                      ("H5-live-lock-active-suffix", h5), ("H6-existing-identity-revision", h6),
@@ -893,7 +935,9 @@ def run_cases(engine) -> list[dict[str, Any]]:
                      ("H11-receipt-prefix-crossing", h11), ("H12-rejection-stickiness", h12),
                      ("H13-withdrawal-cascade", h13), ("H14-acceptance-envelope", h14),
                      ("H15-stale-receipt-head", h15), ("H16-missing-receipt", h16),
-                     ("H17-empty-readiness", h17), ("H18-source-custody", h18)]:
+                     ("H17-empty-readiness", h17), ("H18-source-custody", h18),
+                     ("H19-session-presentation-order", h19),
+                     ("H20-lock-unsupported-release", h20)]:
         case(name, fn)
     return outcomes
 

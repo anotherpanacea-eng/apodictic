@@ -116,3 +116,50 @@ checks on Windows and WSL and both independent re-reviews. Generator/status chec
 passed for this change. No hosted CI receipt, semantic calibration, end-to-end
 acceptance PASS or merge clearance is claimed. This final section is a review
 receipt only; it changes no implementation, fixtures or contract.
+
+## Train-admission review (2026-09-20)
+
+An independent read of the exact head
+`3428e24b2df172bd58d4e8ac98db84d9fc52d0b1`, taken before admitting this
+constituent to the v2.12.0 integration train, found three defects the earlier
+re-review did not. Each was reproduced against that head before it was repaired,
+and the two behavioral ones now carry executable cases that fail on the
+unrepaired engine.
+
+- **Session presentation order violated the contract.** `project_session` sorted
+  the merged node and edge lists, so `"e-…" < "n-…"` put every eligible edge
+  ahead of every still-pending node. The contract requires pending nodes in
+  lexical ID order, *then* eligible edges. Because `Adjudication_Session.json` is
+  the resume cursor, the session steered the author to an edge while claims were
+  still unadjudicated. Covered by **H19**.
+- **`_ProjectLock.__enter__` leaked the lock on the `LOCK-UNSUPPORTED` path.**
+  That error is raised inside a `try` whose only handler catches `OSError`, so
+  the per-project `RLock` was never released and the descriptor never closed. The
+  raising thread could not observe it (an `RLock` is reentrant); every other
+  thread then received `PROJECT-BUSY` permanently, masking the real cause on
+  exactly the platform the branch exists to serve. Covered by **H20**.
+- **Dead duplicated `raise` in `_receipt_identity`.** The identical
+  `RECEIPT-GRAMMAR` raise appeared on two consecutive lines; the second was
+  unreachable. Removed. Note that counting `Verdict: ` lines is *not* the missing
+  check it might look like: a conforming receipt carries a second `Verdict: ` line
+  inside each gate-run block, so such a guard would reject valid receipts.
+
+Two further findings were recorded and deliberately not repaired here, because
+neither is a correctness defect in the ledger and both are larger than a
+train-admission fix should be:
+
+- **Replay cost is quadratic.** Every append re-replays the whole ledger two or
+  three times and deep-copies the record map per bundle, so cost grows as
+  O(bundles² × records). Measured on a 250-node graph with one decision per node:
+  426.9s of CPU across the appends, against 1.79s for a single full
+  `validate_project` replay of the same finished ledger, on a 240 KB file. It is
+  algorithmic, not data volume.
+- **Torn-tail recovery discards an unbounded suffix and still reports `PASS`.**
+  This is contract-conformant and the receipt-prefix check correctly runs before
+  truncation, but a 5 015-byte LF-less ledger truncates to zero bytes with
+  `verdict: PASS` and exit 0, and the engine verdict enum has no
+  `PASS-WITH-RECOVERY` value for a shell caller to see.
+
+Disposition: **admitted to the v2.12.0 train with the three repairs above.** The
+combined gate `bash scripts/validate.sh --check-all` passes on the repaired head,
+including H1–H20 and `check-mirror`.

@@ -776,7 +776,15 @@ def project_session(state: dict) -> bytes:
             c = r.get("content", {})
             if records.get(c.get("source"), {}).get("approval") != "PENDING" and records.get(c.get("target"), {}).get("approval") != "PENDING":
                 pending_edges.append(r["id"])
-    next_record = sorted(pending_nodes + pending_edges)[0] if pending_nodes or pending_edges else None
+    # Presentation order is nodes first, then eligible edges (spec: approval-gated
+    # reconstruction, "pending nodes in lexical ID order, then lexical-ID edges").
+    # Sorting the merged list put every "e-" id ahead of every "n-" id.
+    if pending_nodes:
+        next_record = sorted(pending_nodes)[0]
+    elif pending_edges:
+        next_record = sorted(pending_edges)[0]
+    else:
+        next_record = None
     status = "SUSPENDED" if not records or any(r.get("approval") == "PENDING" for r in records.values()) else "CLOSED"
     return (canonical_json({"schema": "approval-session/1", "status": status, "next_record": next_record}) + "\n").encode("utf-8")
 
@@ -990,6 +998,15 @@ class _ProjectLock:
                 fcntl.flock(self.file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             else:
                 raise _err("LOCK-UNSUPPORTED", "platform does not provide an OS file lock")
+        except ApprovalGraphError:
+            # LOCK-UNSUPPORTED is raised inside this try but is not an OSError, so
+            # without this arm the fd and the per-project RLock both leaked and every
+            # later attempt reported PROJECT-BUSY instead of the real cause.
+            if self.file is not None:
+                self.file.close()
+                self.file = None
+            self.thread_lock.release()
+            raise
         except (OSError, IOError) as exc:
             if self.file is not None:
                 self.file.close()
@@ -1096,7 +1113,6 @@ def _receipt_identity(path: Path) -> dict[str, Any]:
     if len(lines) < 3 or lines[0] != "# Reconstruction Receipt" or not lines[1].startswith("Identity: ") or not lines[2].startswith("Verdict: "):
         raise _err("RECEIPT-GRAMMAR", f"invalid receipt envelope in {path.name}")
     if sum(1 for line in lines if line.startswith("Identity: ")) != 1:
-        raise _err("RECEIPT-GRAMMAR", f"duplicate receipt envelope field in {path.name}")
         raise _err("RECEIPT-GRAMMAR", f"duplicate receipt envelope field in {path.name}")
     identity_text = lines[1][10:]
     identity = _parse_json_field(identity_text, "Identity")
