@@ -99,3 +99,20 @@ The expanded histories pass on Windows Python 3.12 and WSL Python 3.10. Follow-u
 checks target the reproduced failures and their adjacent paths. Controlled hash
 collisions are injected for branch coverage; no natural SHA-256 collision is
 claimed. Re-review of the repaired head is recorded separately below.
+
+## Re-review disposition
+
+Both reviewers cleared repaired implementation head
+`354429e5532ae3990523537aaabaf7110b1e822d` with no remaining material P1/P2
+findings. Each independently reran H1–H18 and reproduced the relevant original
+failures against the repairs. The generic reviewer additionally checked syntax,
+self-test, mirror parity and true/null outcomes after cleanup failures. The fleet
+reviewer confirmed supplied provenance, collision refusals without ledger mutation,
+and the repaired H2/H7 coverage claims.
+
+Disposition: **reviewed for an unarmed draft constituent**. The full local combined
+gate passed on the initial review candidate; the repair received focused behavioral
+checks on Windows and WSL and both independent re-reviews. Generator/status checks
+passed for this change. No hosted CI receipt, semantic calibration, end-to-end
+acceptance PASS or merge clearance is claimed. This final section is a review
+receipt only; it changes no implementation, fixtures or contract.
