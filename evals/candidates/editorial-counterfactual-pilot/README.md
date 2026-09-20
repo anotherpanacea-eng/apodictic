@@ -52,8 +52,8 @@ Independent sibling readings do not show withdrawal or justified retention.
 Rework needs exist within the disputed families; zero primary rework dispositions
 does not mean no construction defects. There was no generation-to-agreement loop.
 Twelve distinct prose bodies span 338-377 words; exact within-batch duplication
-was checked, not corpus-wide originality or decontamination. All eight mutation
-ledgers reproduce their final passages exactly.
+was checked, not corpus-wide originality or decontamination. Applying each mutation ledger's exact replacements to its original reproduces
+the complete final passage in all eight cases.
 
 Prose, private briefs, condition maps, ledgers, full responses, judgments and local
 paths are deliberately absent from this repository. The local evidence manifest
