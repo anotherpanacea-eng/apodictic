@@ -3,7 +3,7 @@
 
 *Version: 0.3.3*
 
-**Status:** Phase 0 repaired contract; Increment 1 implementation in progress; Increments 2–5 unbuilt
+**Status:** Phase 0 repaired; Increment 1 built; Increments 2–5 unbuilt
 <!-- built-when: scripts/approval_graph.py -->
 
 *Depends on: Argument State Schema 0.2.0 or later; Dialectical Clarity v2.0*

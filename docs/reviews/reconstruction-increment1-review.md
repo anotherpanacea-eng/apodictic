@@ -39,3 +39,33 @@ envelope. Approval-session UX, packet/drafter production, semantic judging/compa
 and `/ready` integration remain Increments 2–5. H2/H5/H7/H15/H16 core checks cannot
 certify those later integrations. Keep the constituent PR draft and unarmed; reserve
 hosted clearance and merge for the normal integration train.
+
+## Build checkpoint — 2026-09-20
+
+The implementation and synthetic fixtures are complete at the deterministic
+Increment 1 boundary. Luna prepared the engine and histories; Terra completed
+transition, recovery and receipt validation after adversarial probes exposed
+incomplete guards. The mirrors are byte-identical.
+
+Local checks passed before independent build review:
+
+- `bash scripts/validate.sh --check-all` (validator self-tests, canonical
+  framework checks, reconstruction histories and mirror gate).
+- H1–H18 on native Windows Python 3.12 and WSL Python 3.10.
+- Standalone helper self-test from a directory without repository fixtures.
+- Generator self-checks for Codex and Antigravity; release-generation,
+  changelog, status-drift, inventory-parity and whitespace checks.
+- Independent real-file probes: corrupt committed prefix plus torn tail is
+  preserved; absent anchors refuse append; short writes retry; fsync uncertainty
+  reports `committed: null`; projection failure after append reports
+  `committed: true` and the next validation repairs projections; concurrent
+  threads and processes receive `PROJECT-BUSY` without consuming active bytes.
+
+The fixtures include independent known-answer identity/hash values. Their
+negative cases require domain errors rather than treating unexpected Python
+exceptions as successful refusals. Receipt shape validation can report only the
+expected I5 unavailability for an otherwise valid synthetic envelope; it cannot
+certify semantic judgments.
+
+Independent build-review disposition is recorded below after review. Hosted
+validation remains deferred to the integration train.

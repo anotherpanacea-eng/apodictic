@@ -417,6 +417,10 @@ _Status: not yet run_
 ### 10.9 AGD Move Audit
 [Populated by argument-agd-audit module when it runs]
 _Status: not yet run_
+
+### 10.10 Approval-Gated Reconstruction
+[Populated by approval-gated-reconstruction when it runs]
+_Status: not yet run_
 ```
 
 **Annotation protocol:** Each companion module writes into its designated subsection. Annotations are signed with the module name and timestamp. Annotations may reference any field in §§ 1–9 by section and field name. Annotations may not modify §§ 1–9 directly; they add interpretive layers, not corrections. If a companion module disagrees with a diagnostic finding, it notes the disagreement in its annotation block.
@@ -486,6 +490,15 @@ _Status: not yet run_
 - Per-family challenge results (STRIP / COMMITMENT / ENGAGEMENT; total result matrix)
 - Candidate diagnoses (flag-only, PENDING/CONFIRMED/DECLINED reconciliation; existing codes only — never a new code, never direct severity propagation)
 - Full contract reference: `craft/argument-agd-audit.md`; mechanical gate `validate.sh argument-agd`
+
+### 10.10 Approval-Gated Reconstruction
+- Normalization summary and adjudication progress/outcome
+- Gate verdicts per draft iteration (semantic acceptance unavailable before Increment 4)
+- Authority reference: Approval_Events.jsonl
+- Working artifacts: Approval_Graph.md, Adjudication_Session.json, Reconstruction_Receipt.md
+- Deterministic contract: `docs/approval-gated-reconstruction.md`; mechanical gate `validate.sh argument-reconstruction <PROJECT> --stage graph|draft-ready|acceptance`
+- The owning workflow/craft reference is assigned in Increment 2; Increment 1 does not run author adjudication or semantic judgment
+
 ```
 
 ---
@@ -494,7 +507,7 @@ _Status: not yet run_
 
 ### Creation
 
-The Dialectical Clarity audit creates `Argument_State.md` at the start of its run. Sections 1–8 are populated as each step completes. Section 9 is populated after all steps finish. Section 10 is initialized with empty subsections 10.1 through 10.9.
+The Dialectical Clarity audit creates `Argument_State.md` at the start of its run. Sections 1–8 are populated as each step completes. Section 9 is populated after all steps finish. Section 10 is initialized with empty subsections 10.1 through 10.10.
 
 ### Persistence
 
