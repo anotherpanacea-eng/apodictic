@@ -209,6 +209,17 @@ def run_cases(engine) -> list[dict[str, Any]]:
         assert engine.node_id("CLAIM", "A.") not in eligible and eids[0] not in eligible
         result = validate(engine, p, "graph")
         assert result["verdict"] == "PASS", result
+        write_receipt(p, engine)
+        receipt_path = p / "Reconstruction_Receipt.md"
+        template = receipt_path.read_text(encoding="utf-8")
+        for withheld in (ids[0], eids[0]):
+            passage = ("### Passage p-1\nSpan: paragraphs 1–1\nKind: MAPPED\n"
+                       + "Realizes: " + withheld + "\n\n")
+            receipt_path.write_text(template.replace("### Gate Run 1", passage + "### Gate Run 1"), encoding="utf-8", newline="\n")
+            result = validate(engine, p, "acceptance")
+            assert any(f["code"] == "PASSAGE-REALIZES-INELIGIBLE" and f["record_id"] == withheld
+                       for f in result["findings"]), result
+            assert "I5-COMPARATOR-UNAVAILABLE" in {f["code"] for f in result["findings"]}
     def h3(p):
         # Independent known-answer vector (synthetic smoke material): these
         # values are computed from the contract framing, not engine helpers.
@@ -271,7 +282,15 @@ def run_cases(engine) -> list[dict[str, Any]]:
             c2 = source(rq, "Refresh anchor.\nContext changed.\n")
             rr = engine.reconcile(str(rq), {"nodes": [node(engine, "Refresh anchor.")], "edges": []}, c2, rh, STAMP)
             assert rr["status"] == "COMMITTED"
+            assert state(engine, rq)["records"][rids[0]]["anchor_context"] == c2
             assert validate(engine, rq, "graph")["verdict"] == "PASS"
+            # Correcting evidence under the same context retains a supplied ref.
+            corrected = node(engine, "Refresh anchor.", location="corrected paragraph 1")
+            result = engine.reconcile(rq, {"nodes": [corrected], "edges": []}, c2, rr["head"], STAMP)
+            assert result["status"] == "COMMITTED"
+            final_event = ledger(rq)[-1]["events"][0]
+            assert final_event["reason"] in corrected["provenance"]
+            assert set(state(engine, rq)["records"][rids[0]]["content"]["provenance"]) == set(corrected["provenance"])
         finally:
             shutil.rmtree(q, ignore_errors=True)
     def h4(p):
@@ -376,6 +395,76 @@ def run_cases(engine) -> list[dict[str, Any]]:
         def superseded_target(q, h, ids):
             return engine.revise(str(q), ids[1], {"type": "CLAIM", "text": "C."}, h, STAMP)["head"]
         one("superseded", "B.", superseded_target)
+        # Controlled collisions exercise refusal without claiming a discovered hash collision.
+        from unittest.mock import patch
+        q = p / "node-collision"; q.mkdir()
+        ctx = source(q, "A.\nB.\n")
+        qh, qids, _ = mint(engine, q, texts=("A.",), context=ctx)
+        qh = decisions(engine, q, qh, qids)["head"]
+        before = (q / "Approval_Events.jsonl").read_bytes()
+        a = node(engine, "A."); b = node(engine, "B.")
+        original_node_id = engine.node_id
+        def collide_node(typ, text):
+            return qids[0] if text == "B." else original_node_id(typ, text)
+        with patch.object(engine, "node_id", side_effect=collide_node):
+            alias = node(engine, "  A.\n")
+            assert engine.classify_existing_novelty(state(engine, q), [alias])["existing"] == [
+                {"record_id": qids[0], "disposition": "AUTHORIZED"}]
+            duplicate = bundle(engine, "RECONCILE", qh["terminal_hash"], ctx,
+                               [event("MINTED", "reconciliation", qids[0], content=b, at="PENDING", pt="CURRENT")])
+            for operation in (
+                lambda: engine.classify_existing_novelty(state(engine, q), [b]),
+                lambda: engine.replay(ledger(q) + [duplicate]),
+                lambda: append(engine, q, duplicate, qh),
+                lambda: engine.revise(q, qids[0], {"type": "CLAIM", "text": "B."}, qh, STAMP),
+                lambda: engine.reconcile(q, {"nodes": [b], "edges": []}, ctx, qh, STAMP),
+                lambda: engine.reconcile(q, {"nodes": [a, b], "edges": []}, ctx, qh, STAMP),
+            ):
+                expect_error(operation, "ID-COLLISION")
+                assert (q / "Approval_Events.jsonl").read_bytes() == before
+        q = p / "edge-collision"; q.mkdir()
+        ctx = source(q, "A.\nB.\n")
+        qh, qids, qeids = mint(engine, q, texts=("A.", "B."), edges=(("SUPPORTS", 0, 1, "—"),), context=ctx)
+        qh = decisions(engine, q, qh, qids + qeids)["head"]
+        before = (q / "Approval_Events.jsonl").read_bytes()
+        existing = edge(engine, "SUPPORTS", qids[0], qids[1])
+        reversed_edge = edge(engine, "SUPPORTS", qids[1], qids[0])
+        original_edge_id = engine.edge_id
+        def collide_edge(typ, src, dst, typing):
+            if typ == "SUPPORTS" and src == qids[1] and dst == qids[0]:
+                return qeids[0]
+            return original_edge_id(typ, src, dst, typing)
+        with patch.object(engine, "edge_id", side_effect=collide_edge):
+            duplicate = bundle(engine, "RECONCILE", qh["terminal_hash"], ctx,
+                               [event("MINTED", "reconciliation", qeids[0], content=reversed_edge, at="PENDING", pt="CURRENT")])
+            for operation in (
+                lambda: engine.classify_existing_novelty(state(engine, q), [reversed_edge]),
+                lambda: engine.replay(ledger(q) + [duplicate]),
+                lambda: append(engine, q, duplicate, qh),
+                lambda: engine.reconcile(q, {"nodes": [node(engine, "A."), node(engine, "B.")], "edges": [reversed_edge]}, ctx, qh, STAMP),
+                lambda: engine.reconcile(q, {"nodes": [node(engine, "A."), node(engine, "B.")], "edges": [existing, reversed_edge]}, ctx, qh, STAMP),
+            ):
+                expect_error(operation, "ID-COLLISION")
+                assert (q / "Approval_Events.jsonl").read_bytes() == before
+        for origin_kind in ("revision", "quarantine"):
+            q = p / (origin_kind + "-collision"); q.mkdir()
+            ctx = source(q, "A.\nCollision.\n")
+            qh, qids, _ = mint(engine, q, texts=("A.",), context=ctx)
+            novel = node(engine, "Novel.")
+            novel_id = engine.node_id("CLAIM", "Novel.")
+            if origin_kind == "revision":
+                qh = engine.revise(q, qids[0], {"type": "CLAIM", "text": "Novel."}, qh, STAMP)["head"]
+            else:
+                draft = b"Novel draft.\n"; (q / "Reconstruction_Draft.md").write_bytes(draft)
+                novel.update(anchors=[], origin="QUARANTINE (draft v1)", provenance=["QUARANTINE:v1:x-01"])
+                qb = bundle(engine, "QUARANTINE", qh["terminal_hash"], {"draft_version": "v1", "draft_sha256": sha(draft)},
+                            [event("MINTED", "system", novel_id, content=novel, at="PENDING", pt="CURRENT")])
+                qh = append(engine, q, qb, qh)["head"]
+            before = (q / "Approval_Events.jsonl").read_bytes()
+            original_node_id = engine.node_id
+            with patch.object(engine, "node_id", side_effect=lambda typ, text: novel_id if text == "Collision." else original_node_id(typ, text)):
+                expect_error(lambda: engine.reconcile(q, {"nodes": [node(engine, "A."), node(engine, "Collision.")], "edges": []}, ctx, qh, STAMP), "ID-COLLISION")
+            assert (q / "Approval_Events.jsonl").read_bytes() == before
     def h7(p):
         head, ids, _ = mint(engine, p, texts=("A is present.",))
         st = state(engine, p)
@@ -385,6 +474,35 @@ def run_cases(engine) -> list[dict[str, Any]]:
         fresh = node(engine, "Brand new.")
         classified = engine.classify_existing_novelty(st, [fresh])
         assert classified["existing"] == [] and classified["new"] == [fresh]
+        # Repeated novelty preserves every prior disposition and cannot remint it.
+        for label, expected in (("pending", "PENDING"), ("rejected", "REJECTED"),
+                                ("approved", "AUTHORIZED"), ("orphan", "WITHHELD"),
+                                ("superseded", "WITHHELD")):
+            q = p / label; q.mkdir()
+            qh, qids, _ = mint(engine, q, texts=("Retained identity.",))
+            if label == "rejected":
+                qh = decisions(engine, q, qh, qids, approve=False)["head"]
+            elif label in {"approved", "orphan"}:
+                qh = decisions(engine, q, qh, qids, inclusion="OPTIONAL")["head"]
+                if label == "orphan":
+                    qh = engine.reconcile(q, {"nodes": [], "edges": []}, source(q, "Gone.\n"), qh, STAMP)["head"]
+            elif label == "superseded":
+                qh = engine.revise(q, qids[0], {"type": "CLAIM", "text": "Replacement."}, qh, STAMP)["head"]
+            before = (q / "Approval_Events.jsonl").read_bytes()
+            candidate = node(engine, "Retained identity.")
+            for _ in range(2):
+                classified = engine.classify_existing_novelty(state(engine, q), [candidate])
+                assert classified == {"new": [], "existing": [{"record_id": qids[0], "disposition": expected}]}
+            draft = b"Draft evidence.\n"; (q / "Reconstruction_Draft.md").write_bytes(draft)
+            candidate.update(anchors=[], origin="QUARANTINE (draft v1)", provenance=["QUARANTINE:v1:x-01"])
+            context = {"draft_version": "v1", "draft_sha256": sha(draft)}
+            duplicate = bundle(engine, "QUARANTINE", qh["terminal_hash"], context,
+                               [event("MINTED", "system", qids[0], content=candidate, at="PENDING", pt="CURRENT")])
+            expect_error(lambda: append(engine, q, duplicate, qh), "EXISTING-IDENTITY")
+            empty = {"shape": "QUARANTINE", "prev_hash": qh["terminal_hash"], "timestamp": STAMP,
+                     "context": context, "events": []}
+            expect_error(lambda: append(engine, q, empty, qh), "INVALID-BUNDLE")
+            assert (q / "Approval_Events.jsonl").read_bytes() == before
         # A valid split reference is accepted as provenance data when its source
         # anchor is present; the parser must still reject malformed split grammar.
         sq = p / "split"
@@ -513,6 +631,36 @@ def run_cases(engine) -> list[dict[str, Any]]:
             builtins.open = original_open
         assert (q / "Approval_Events.jsonl").read_bytes().startswith(before)
         assert validate(engine, q, "draft-ready")["verdict"] == "PASS"
+        # Releasing the OS lock can fail after a successful append; do not claim rollback.
+        from unittest.mock import patch
+        q = p / "unlock-failure"; q.mkdir()
+        qh, qids, _ = mint(engine, q)
+        if os.name == "nt":
+            import msvcrt as locking_api
+            operation_name, unlock_mode = "locking", locking_api.LK_UNLCK
+        else:
+            import fcntl as locking_api
+            operation_name, unlock_mode = "flock", locking_api.LOCK_UN
+        real_lock = getattr(locking_api, operation_name)
+        def unlock_failure(fd, mode, *args):
+            result = real_lock(fd, mode, *args)
+            if mode == unlock_mode:
+                raise OSError("injected lock-release failure")
+            return result
+        with patch.object(locking_api, operation_name, side_effect=unlock_failure):
+            exc = expect_error(lambda: decisions(engine, q, qh, qids))
+            assert exc.committed is True, (exc.code, exc.committed)
+        result = validate(engine, q, "graph")
+        assert result["verdict"] == "PASS" and result["head"]["bundle_count"] == qh["bundle_count"] + 1
+        # Cleanup must not turn an uncertain append into a claimed refusal.
+        q = p / "fsync-and-unlock-failure"; q.mkdir()
+        qh, qids, _ = mint(engine, q)
+        with patch.object(locking_api, operation_name, side_effect=unlock_failure), \
+                patch.object(engine.os, "fsync", side_effect=OSError("injected fsync failure")):
+            exc = expect_error(lambda: decisions(engine, q, qh, qids))
+            assert exc.committed is None, (exc.code, exc.committed)
+        result = validate(engine, q, "graph")
+        assert result["verdict"] == "PASS" and result["head"]["bundle_count"] == qh["bundle_count"] + 1
     def h10(p):
         def malformed(q):
             mint(engine, q); path = q / "Approval_Events.jsonl"; before = path.read_bytes()
@@ -698,6 +846,44 @@ def run_cases(engine) -> list[dict[str, Any]]:
         expect_error(lambda: engine.replay(ledger(q3) + [qb]), "QUARANTINE-PROVENANCE-MISMATCH")
         expect_error(lambda: append(engine, q3, qb, h3), "QUARANTINE-PROVENANCE-MISMATCH")
         assert (q3 / "Approval_Events.jsonl").read_bytes() == before3
+        # Existing custody failures block a later decision, before publication.
+        for damage in ("missing", "corrupt"):
+            q4 = p / ("prior-custody-" + damage); q4.mkdir()
+            h4, ids4, _ = mint(engine, q4, texts=("Historical evidence.",))
+            archive = q4 / "Approval_Sources" / (sha(b"Historical evidence.\n") + ".utf8")
+            if damage == "missing":
+                archive.unlink(); (q4 / "manuscript.md").unlink()
+            else:
+                archive.write_bytes(b"Wrong historical bytes.")
+            before = {name: (q4 / name).read_bytes() for name in
+                      ("Approval_Events.jsonl", "Approval_Graph.md", "Adjudication_Session.json")}
+            exc = expect_error(lambda: decisions(engine, q4, h4, ids4))
+            assert exc.committed is False
+            assert before == {name: (q4 / name).read_bytes() for name in before}
+        q5 = p / "invalid-utf8-source"; q5.mkdir()
+        raw = b"\xff"; (q5 / "manuscript.md").write_bytes(raw)
+        ctx = {"source_filename": "manuscript.md", "source_sha256": sha(raw), "argument_state": "Argument_State_v1"}
+        payload = node(engine, "Invalid source.")
+        rid = engine.node_id("CLAIM", payload["text"])
+        invalid = bundle(engine, "MINT", "GENESIS", ctx,
+                         [event("MINTED", "normalizer", rid, content=payload, at="PENDING", pt="CURRENT")])
+        exc = expect_error(lambda: append(engine, q5, invalid, {"bundle_count": 0, "terminal_hash": "GENESIS"}))
+        assert exc.committed is False
+        assert not (q5 / "Approval_Events.jsonl").exists()
+        # Native read failures are returned as validation findings, with I5 retained.
+        from unittest.mock import patch
+        real_read = pathlib.Path.read_bytes
+        def unreadable_ledger(path):
+            if path.name == "Approval_Events.jsonl":
+                raise PermissionError("injected ledger read denial")
+            return real_read(path)
+        with patch.object(pathlib.Path, "read_bytes", unreadable_ledger):
+            result = validate(engine, q3, "acceptance")
+        assert result["verdict"] == "ACTION-REQUIRED"
+        assert {f["code"] for f in result["findings"]} == {"OPERATION-FAILED", "I5-COMPARATOR-UNAVAILABLE"}
+        result = validate(engine, p / "absent-project", "acceptance")
+        assert result["verdict"] == "ACTION-REQUIRED" and result["head"] is None
+        assert {f["code"] for f in result["findings"]} == {"PROJECT-MISSING", "I5-COMPARATOR-UNAVAILABLE"}
 
     for name, fn in [("H1-required-orphan", h1), ("H2-edge-endpoint-eligibility", h2),
                      ("H3-unchanged-edge-no-provenance", h3), ("H4-novel-edge-origin", h4),

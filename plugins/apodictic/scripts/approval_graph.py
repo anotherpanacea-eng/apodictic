@@ -13,6 +13,7 @@ import argparse
 import copy
 import errno
 import hashlib
+from functools import wraps
 import json
 import math
 import os
@@ -416,6 +417,26 @@ def _mint_id(content: dict[str, Any]) -> str:
     return edge_id(content["type"], content["source"], content["target"], content["carried_typing"])
 
 
+def _canonical_identity_preimage(content: dict[str, Any]) -> str:
+    """Return the complete identity material, independent of the truncated ID."""
+    if "text" in content:
+        return canonical_json({"kind": "node", "type": _nfc(content["type"]), "text": _collapse(content["text"])})
+    return canonical_json({"kind": "edge", "type": _nfc(content["type"]), "source": content["source"],
+                           "target": content["target"], "carried_typing": _nfc(content["carried_typing"])})
+
+
+def _same_existing_identity(existing: dict[str, Any], record_id: str, content: dict[str, Any]) -> None:
+    """Reject a distinct full identity that happens to share a truncated ID."""
+    if _canonical_identity_preimage(existing["content"]) != _canonical_identity_preimage(content):
+        raise _err("ID-COLLISION", f"record {record_id} collides with a distinct canonical identity", record_id)
+
+
+def _guard_existing_identity(records: dict[str, Any], record_id: str, content: dict[str, Any]) -> None:
+    existing = records[record_id]
+    _same_existing_identity(existing, record_id, content)
+    raise _err("EXISTING-IDENTITY", f"record {record_id} was already minted", record_id)
+
+
 def _record_kind(record_id: str) -> str:
     return "node" if record_id.startswith("n-") else "edge"
 
@@ -485,8 +506,6 @@ def _apply_bundle(state: dict[str, Any], bundle: dict[str, Any], index: int) -> 
         if event["event"] not in {"RECONCILE", "MINTED"} and any(event[k] is not None for k in ("presence_from", "presence_to")):
             raise _err("ILLEGAL-TRANSITION", "only RECONCILE may mutate presence", rid)
         if event["event"] == "MINTED":
-            if rid in work["records"]:
-                raise _err("EXISTING-IDENTITY", f"record {rid} was already minted", rid)
             content = event["content"]
             if content is None:
                 raise _err("INVALID-MINT-CONTENT", "MINTED content is required", rid)
@@ -498,6 +517,7 @@ def _apply_bundle(state: dict[str, Any], bundle: dict[str, Any], index: int) -> 
                     origin_expected = None
                 if expected != rid:
                     raise _err("IDENTITY-MISMATCH", f"minted node id {rid} does not match content", rid)
+                _guard_existing_identity(work["records"], rid, content) if rid in work["records"] else None
                 if shape in {"MINT", "RECONCILE"} and content["origin"] != "MANUSCRIPT":
                     raise _err("INVALID-MINT-CONTENT", "source mints must be MANUSCRIPT", rid)
                 if shape in {"MINT", "RECONCILE"} and any(provenance.split(":", 2)[1] != bundle["context"]["argument_state"] for provenance in content["provenance"]):
@@ -517,6 +537,7 @@ def _apply_bundle(state: dict[str, Any], bundle: dict[str, Any], index: int) -> 
                 expected = edge_id(content["type"], content["source"], content["target"], content["carried_typing"])
                 if expected != rid:
                     raise _err("IDENTITY-MISMATCH", f"minted edge id {rid} does not match content", rid)
+                _guard_existing_identity(work["records"], rid, content) if rid in work["records"] else None
                 if content["source"] not in work["records"] or content["target"] not in work["records"]:
                     raise _err("UNKNOWN-ENDPOINT", f"edge {rid} has an unknown endpoint", rid)
                 record = {"id": rid, "kind": "edge", "content": content, "approval": "PENDING", "presence": "CURRENT",
@@ -861,6 +882,7 @@ def classify_existing_novelty(state: dict, candidates: list[dict]) -> dict:
             new.append(copy.deepcopy(payload))
             continue
         rec = records[rid]
+        _same_existing_identity(rec, rid, payload)
         if rec.get("approval") == "REJECTED":
             disposition = "REJECTED"
         elif rec.get("approval") == "PENDING":
@@ -1303,6 +1325,56 @@ def _publish(root: Path, state: dict) -> list[str]:
     return rebuilt
 
 
+def _preappend_custody(root: Path, bundles: list[dict], state: dict) -> None:
+    """Refuse every mutation if any retained evidence or bound anchor is broken."""
+    try:
+        for bundle in bundles:
+            _check_bundle_sources(root, bundle)
+            _check_quarantine_artifact(root, bundle)
+        findings = _check_sources(root, state)
+    except ApprovalGraphError:
+        raise
+    except (OSError, UnicodeError, TypeError, ValueError) as exc:
+        raise _err("SOURCE-EVIDENCE-UNAVAILABLE", str(exc)) from exc
+    if findings:
+        first = findings[0]
+        raise _err(first["code"], first["message"], first["record_id"])
+
+
+_operation_outcome = threading.local()
+_NO_OUTER_OPERATION = object()
+
+
+def _mark_append_uncertain() -> None:
+    if hasattr(_operation_outcome, "committed"):
+        _operation_outcome.committed = None
+
+
+def _mark_durable_append() -> None:
+    if hasattr(_operation_outcome, "committed"):
+        _operation_outcome.committed = True
+
+
+def _public_mutation(func):
+    """Translate native failures, retaining a known durable outcome through lock release."""
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        prior = getattr(_operation_outcome, "committed", _NO_OUTER_OPERATION)
+        _operation_outcome.committed = False
+        try:
+            return func(*args, **kwargs)
+        except ApprovalGraphError:
+            raise
+        except Exception as exc:
+            raise ApprovalGraphError("OPERATION-FAILED", str(exc), _operation_outcome.committed) from exc
+        finally:
+            if prior is _NO_OUTER_OPERATION:
+                delattr(_operation_outcome, "committed")
+            else:
+                _operation_outcome.committed = prior
+    return wrapped
+
+
 def _head_equal(expected: Any, actual: dict) -> None:
     if not isinstance(expected, dict) or tuple(expected.keys()) != ("bundle_count", "terminal_hash") or isinstance(expected["bundle_count"], bool) or not isinstance(expected["bundle_count"], int) or expected["bundle_count"] < 0:
         raise _err("INVALID-EXPECTED-HEAD", "expected_head must be bundle_count and terminal_hash")
@@ -1318,6 +1390,7 @@ def _append_locked(root: Path, bundle: dict, expected_head: dict, recovered: int
     bundles, more_recovered = _read_ledger(root, allow_missing=True)
     recovered += more_recovered
     state = replay(bundles)
+    _preappend_custody(root, bundles, state)
     _head_equal(expected_head, state["head"])
     bundle = seal_bundle(bundle) if "bundle_hash" not in bundle else _canonical_bundle(bundle)
     if bundle["prev_hash"] != state["head"]["terminal_hash"]:
@@ -1332,10 +1405,13 @@ def _append_locked(root: Path, bundle: dict, expected_head: dict, recovered: int
     try:
         ledger.parent.mkdir(parents=True, exist_ok=True)
         with open(ledger, "ab") as fh:
+            _mark_append_uncertain()
             _write_all(fh, canonical_json(bundle).encode("utf-8") + b"\n")
             fh.flush(); os.fsync(fh.fileno())
+            _mark_durable_append()
     except Exception as exc:
-        raise ApprovalGraphError("APPEND-OUTCOME-UNKNOWN", str(exc), None) from exc
+        outcome = getattr(_operation_outcome, "committed", None)
+        raise ApprovalGraphError("APPEND-OUTCOME-UNKNOWN", str(exc), outcome) from exc
     try:
         rebuilt = _publish(root, new_state)
     except Exception as exc:
@@ -1343,6 +1419,7 @@ def _append_locked(root: Path, bundle: dict, expected_head: dict, recovered: int
     return {"status": "COMMITTED", "head": new_state["head"], "findings": [], "projection_rebuilt": rebuilt, "recovered_bytes": recovered}
 
 
+@_public_mutation
 def append_bundle(project: str | Path, bundle: dict, expected_head: dict) -> dict:
     """Validate one complete bundle and append it under the project OS lock."""
     root = _project_root(project)
@@ -1361,18 +1438,22 @@ def _validate_node_inventory(items: Any) -> list[dict]:
         if prior is None:
             merged[rid] = content
         else:
+            if _canonical_identity_preimage(prior) != _canonical_identity_preimage(content):
+                raise _err("ID-COLLISION", f"normalized nodes collide at {rid}", rid)
             prior["anchors"] = prior["anchors"] + [a for a in content["anchors"] if a not in prior["anchors"]]
             prior["provenance"] = prior["provenance"] + [p for p in content["provenance"] if p not in prior["provenance"]]
             prior["flags"] = _flags(prior["flags"] + content["flags"])
     return list(merged.values())
 
 
+@_public_mutation
 def reconcile(project: str | Path, normalized_records: dict, context: dict, expected_head: dict, timestamp: str) -> dict:
     """Create one deterministic RECONCILE bundle for a full normalized inventory."""
     root = _project_root(project); _timestamp(timestamp)
     with _ProjectLock(root):
         bundles, recovered = _read_ledger(root, allow_missing=False)
         state = replay(bundles)
+        _preappend_custody(root, bundles, state)
         if not bundles or not any(b["shape"] == "MINT" for b in bundles): raise _err("RECONCILE-UNSTARTED", "reconciliation requires a nonempty MINT-derived state")
         _head_equal(expected_head, state["head"])
         ctx = _context(context, "RECONCILE")
@@ -1380,13 +1461,22 @@ def reconcile(project: str | Path, normalized_records: dict, context: dict, expe
         normalized_edges_raw = normalized_records.get("edges") if isinstance(normalized_records, dict) else None
         if not isinstance(normalized_edges_raw, list): raise _err("INVALID-NORMALIZED-RECORDS", "edges must be a list")
         normalized_edges = [_edge_content(e) for e in normalized_edges_raw]
-        node_map = {node_id(n["type"], n["text"]): n for n in normalized_nodes}
+        node_map = {}
+        for node in normalized_nodes:
+            rid = node_id(node["type"], node["text"])
+            if rid in node_map and _canonical_identity_preimage(node_map[rid]) != _canonical_identity_preimage(node):
+                raise _err("ID-COLLISION", f"normalized node collision at {rid}", rid)
+            if rid in state["records"]:
+                _same_existing_identity(state["records"][rid], rid, node)
+            node_map[rid] = node
         edge_map = {}
         for edge in normalized_edges:
             rid = edge_id(edge["type"], edge["source"], edge["target"], edge["carried_typing"])
             if edge["source"] not in node_map or edge["target"] not in node_map:
                 raise _err("UNKNOWN-ENDPOINT", f"normalized edge {rid} endpoint absent")
             if rid in edge_map and edge_map[rid] != edge: raise _err("ID-COLLISION", f"conflicting edge {rid}")
+            if rid in state["records"] and _canonical_identity_preimage(state["records"][rid]["content"]) != _canonical_identity_preimage(edge):
+                raise _err("ID-COLLISION", f"normalized edge collides with existing {rid}", rid)
             edge_map[rid] = edge
         events: list[dict] = []
         existing_ids = set(state["records"])
@@ -1399,13 +1489,14 @@ def reconcile(project: str | Path, normalized_records: dict, context: dict, expe
                     events.append({"event": "RECONCILE", "actor": "reconciliation", "record_id": rid, "related_record_id": None, "content": None, "approval_from": None, "approval_to": None, "presence_from": "CURRENT", "presence_to": "ORPHANED", "inclusion_from": None, "inclusion_to": None, "reason": None, "note": None})
                 elif present:
                     incoming = node_map[rid]
+                    _same_existing_identity(rec, rid, incoming)
                     if rec["presence"] == "ORPHANED":
                         events.append({"event": "RECONCILE", "actor": "reconciliation", "record_id": rid, "related_record_id": None, "content": None, "approval_from": None, "approval_to": None, "presence_from": "ORPHANED", "presence_to": "CURRENT", "inclusion_from": None, "inclusion_to": None, "reason": None, "note": None})
                     source_changed = ctx != state.get("context")
                     new_prov = [p for p in incoming["provenance"] if p not in rec["content"]["provenance"]]
                     refresh = source_changed or incoming["anchors"] != rec["content"]["anchors"] or incoming["flags"] != rec["content"]["flags"]
-                    forced_prov = incoming["provenance"][-1] if source_changed and not new_prov else f"STATE:{ctx['argument_state']}:REFRESH"
-                    for prov in new_prov or ([forced_prov] if refresh else []):
+                    refresh_prov = incoming["provenance"][-1] if incoming["provenance"] else None
+                    for prov in new_prov or ([refresh_prov] if refresh and refresh_prov else []):
                         _provenance_entry(prov)
                         content_refresh = {"anchors": incoming["anchors"], "flags": incoming["flags"]} if refresh else None
                         events.append({"event": "RECONCILE", "actor": "reconciliation", "record_id": rid, "related_record_id": None, "content": content_refresh, "approval_from": None, "approval_to": None, "presence_from": None, "presence_to": None, "inclusion_from": None, "inclusion_to": None, "reason": prov, "note": None})
@@ -1428,6 +1519,7 @@ def reconcile(project: str | Path, normalized_records: dict, context: dict, expe
         return _append_locked(root, bundle, expected_head, recovered)
 
 
+@_public_mutation
 def revise(project: str | Path, original_id: str, replacement: dict, expected_head: dict, timestamp: str, note=None) -> dict:
     """Atomically mint an AUTHOR-REVISION node and supersede its original."""
     root = _project_root(project); _timestamp(timestamp); _rid(original_id, "node")
@@ -1435,12 +1527,13 @@ def revise(project: str | Path, original_id: str, replacement: dict, expected_he
         raise _err("INVALID-REPLACEMENT", "replacement must be exactly type and text")
     rid = node_id(replacement["type"], replacement["text"])
     with _ProjectLock(root):
-        bundles, recovered = _read_ledger(root, allow_missing=False); state = replay(bundles); _head_equal(expected_head, state["head"])
+        bundles, recovered = _read_ledger(root, allow_missing=False); state = replay(bundles); _preappend_custody(root, bundles, state); _head_equal(expected_head, state["head"])
         original = state["records"].get(original_id)
         if not original: raise _err("UNKNOWN-RECORD", f"unknown original {original_id}", original_id)
         if original["kind"] != "node" or original["approval"] == "REJECTED": raise _err("INVALID-REVISION", "only non-rejected nodes may be revised", original_id)
-        if rid in state["records"]: raise ApprovalGraphError("EXISTING-IDENTITY", f"replacement identity {rid} already exists", False, rid)
         content = {"type": replacement["type"], "text": replacement["text"], "anchors": [], "origin": f"AUTHOR-REVISION (of {original_id})", "provenance": [f"AUTHOR-REVISION:{original_id}"], "flags": ["NONE"]}
+        if rid in state["records"]:
+            _guard_existing_identity(state["records"], rid, content)
         events = [{"event": "MINTED", "actor": "author", "record_id": rid, "related_record_id": original_id, "content": content, "approval_from": None, "approval_to": "PENDING", "presence_from": None, "presence_to": "CURRENT", "inclusion_from": None, "inclusion_to": None, "reason": None, "note": None},
                   {"event": "REVISE", "actor": "author", "record_id": original_id, "related_record_id": rid, "content": None, "approval_from": original["approval"], "approval_to": "SUPERSEDED", "presence_from": None, "presence_to": None, "inclusion_from": original["inclusion"] if original["approval"] == "APPROVED" else None, "inclusion_to": None, "reason": None, "note": note}]
         for edge in sorted(state["records"].values(), key=lambda r: r["id"]):
@@ -1782,8 +1875,17 @@ def _stage_c(root: Path, state: dict, findings: list[dict]) -> None:
 def validate_project(project: str | Path, stage: str) -> dict:
     """Validate/recover a project and return the stable validation result shape."""
     if stage not in {"graph", "draft-ready", "acceptance"}: raise _err("INVALID-STAGE", "stage must be graph, draft-ready, or acceptance")
-    root = _project_root(project)
     findings: list[dict] = []; rebuilt: list[str] = []; recovered = 0; state = None
+    try:
+        root = _project_root(project)
+    except ApprovalGraphError as exc:
+        findings.append(_finding(exc.code, exc.message, exc.record_id))
+        if stage == "acceptance": findings.append(_finding("I5-COMPARATOR-UNAVAILABLE", "structured gate configuration comparator is unavailable before Increment 4"))
+        return {"verdict": "ACTION-REQUIRED", "stage": stage, "head": None, "findings": findings, "projection_rebuilt": [], "recovered_bytes": 0}
+    except Exception as exc:
+        findings.append(_finding("OPERATION-FAILED", str(exc)))
+        if stage == "acceptance": findings.append(_finding("I5-COMPARATOR-UNAVAILABLE", "structured gate configuration comparator is unavailable before Increment 4"))
+        return {"verdict": "ACTION-REQUIRED", "stage": stage, "head": None, "findings": findings, "projection_rebuilt": [], "recovered_bytes": 0}
     try:
         with _ProjectLock(root):
             try:
@@ -1862,6 +1964,7 @@ def main(argv: list[str] | None = None) -> int:
             print(canonical_json({"error": exc.code, "message": exc.message, "committed": exc.committed, "record_id": exc.record_id})); return 1
     if "--append-bundle" in args:
         if len(args) != 7 or args[1] != "--append-bundle" or args[3] != "--expected-count" or args[5] != "--expected-hash": return _usage_error("append requires PROJECT --append-bundle FILE --expected-count N --expected-hash H")
+        result = None
         try:
             count = int(args[4]); digest = args[6]
             if count < 0 or (count == 0 and digest != "GENESIS") or (count > 0 and not HEX64.fullmatch(digest)):
@@ -1873,7 +1976,8 @@ def main(argv: list[str] | None = None) -> int:
         except ApprovalGraphError as exc:
             print(canonical_json({"error": exc.code, "message": exc.message, "committed": exc.committed, "record_id": exc.record_id})); return 1
         except Exception as exc:
-            print(canonical_json({"error": "OPERATION-FAILED", "message": str(exc), "committed": False, "record_id": None})); return 1
+            committed = True if isinstance(result, dict) and result.get("status") == "COMMITTED" else False
+            print(canonical_json({"error": "OPERATION-FAILED", "message": str(exc), "committed": committed, "record_id": None})); return 1
     return _usage_error("unknown operation")
 
 

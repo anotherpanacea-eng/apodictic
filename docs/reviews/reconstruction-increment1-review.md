@@ -69,3 +69,33 @@ certify semantic judgments.
 
 Independent build-review disposition is recorded below after review. Hosted
 validation remains deferred to the integration train.
+
+## Independent build review and repairs
+
+The generic review was dispatched with `gpt-5.5`; the separate fleet/authority
+review with `gpt-6-astra`. Both reviewed candidate
+`1092a926facd398e40cb1077c8149f517c5df81f` against the recorded base. The literal
+`/code-review` skill was unavailable; these were independent Codex agent reviews.
+The fleet reviewer read the complete BUILD-PREFLIGHT and sanitized checklist.
+Neither review claimed hosted clearance or permission to merge.
+
+Findings repaired in the follow-up:
+
+- Preserve supplied Argument State provenance when refreshing evidence; never
+  invent a `REFRESH` local reference.
+- Compare full canonical identity material at every existing-ID join. Distinct
+  controlled collisions now refuse with `ID-COLLISION` across replay, append,
+  revision, novelty and reconciliation, including novel-origin records.
+- Complete H2's known-ineligible map checks and H7's repeated-disposition,
+  duplicate-quarantine and empty-append refusals. Strengthen source-binding proof.
+- Validate retained source/draft custody before mutations, including no-op
+  reconciliation; missing or corrupt historical evidence cannot advance state.
+- Keep public errors within their documented envelopes. Native pre-append errors
+  refuse safely; validation errors retain I5. Preserve the append outcome through
+  lock cleanup and CLI output failures, including an uncertain fsync followed by
+  an unlock failure.
+
+The expanded histories pass on Windows Python 3.12 and WSL Python 3.10. Follow-up
+checks target the reproduced failures and their adjacent paths. Controlled hash
+collisions are injected for branch coverage; no natural SHA-256 collision is
+claimed. Re-review of the repaired head is recorded separately below.
