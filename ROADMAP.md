@@ -124,7 +124,7 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 **Built**
 
 1. Dialectical Clarity v2.1 + level-setting research
-2. `docs/argument-state-schema.md` (v0.3.0, §§ 10.1–10.9)
+2. `docs/argument-state-schema.md` (v0.3.0, §§ 10.1–10.10)
 3. Argument Red Team (v1.0) + level-setting research
 4. Argument Persuasion + level-setting research
 5. Argument Evidence Deep-Dive
@@ -147,13 +147,14 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
 **In progress**
 
 1. Argument Engine Benchmark Suite — spec + vertical slice landed (see below)
-2. **Approval-Gated Reconstruction Phase 0** — deterministic contract hardening is in
-   progress before Increment 1. Rev 0.3.2 adopts one authoritative, stored-hash bundle ledger;
-   graph/session are rebuildable projections, source context and notes are replayable,
-   QUARANTINE is a legal bundle with byte-pinned novel-origin payloads and draft identity,
-   edge identity includes carried typing, live-session state is
-   an ephemeral process lock, and recovery truncates only a missing-LF tail. The fail-closed
-   I5 boundary remains. `approval_graph.py` remains unbuilt until this contract is reviewed.
+2. **Approval-Gated Reconstruction Increment 1 — built.** Implements
+   the repaired Phase 0 contract (Rev 0.3.3 and the PR #235 ruling). The bounded
+   deliverable is the authoritative bundle ledger, OS-locked crash recovery,
+   source-evidence custody, deterministic graph/session projections, complete
+   graph/draft-ready validation and a fail-closed acceptance envelope. The H1–H18
+   synthetic cases trace core coverage separately from later workflow integration.
+   Approval workflow, drafting, semantic comparison and `/ready` integration remain
+   separate Increments 2–5; no end-to-end acceptance PASS is available here.
 
 ### Benchmark Suite
 

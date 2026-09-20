@@ -1,0 +1,39 @@
+{
+  "schema": "argument-reconstruction-fixtures/1",
+  "contract": "approval-gated-reconstruction/0.3.3",
+  "reliability_status": "deterministic",
+  "decision_use": "gate",
+  "truth_status": "synthetic-contract-controls",
+  "runner": "run_cases.py",
+  "engine_argument": "--engine <absolute path to approval_graph.py>",
+  "cases": [
+    {"id": "H1-required-orphan", "expected": "ACTION-REQUIRED", "coverage": "full"},
+    {"id": "H2-edge-endpoint-eligibility", "expected": "PASS", "coverage": "deterministic-firstslice"},
+    {"id": "H3-unchanged-edge-no-provenance", "expected": "PASS", "coverage": "full"},
+    {"id": "H4-novel-edge-origin", "expected": "PASS", "coverage": "full"},
+    {"id": "H5-live-lock-active-suffix", "expected": "ACTION-REQUIRED", "coverage": "deterministic-firstslice"},
+    {"id": "H6-existing-identity-revision", "expected": "ERROR-EXISTING-IDENTITY", "coverage": "full"},
+    {"id": "H7-existing-novelty-reuse", "expected": "REUSE-OR-REFUSE", "coverage": "deterministic-firstslice"},
+    {"id": "H8-projection-rebuild", "expected": "PASS", "coverage": "full"},
+    {"id": "H9-torn-tail-recovery", "expected": "PASS-WITH-RECOVERY", "coverage": "full"},
+    {"id": "H10-committed-corruption-fail-closed", "expected": "ACTION-REQUIRED", "coverage": "full"},
+    {"id": "H11-receipt-prefix-crossing", "expected": "ACTION-REQUIRED", "coverage": "full"},
+    {"id": "H12-rejection-stickiness", "expected": "REJECTED", "coverage": "full"},
+    {"id": "H13-withdrawal-cascade", "expected": "COMMITTED-WITH-CASCADE", "coverage": "full"},
+    {"id": "H14-acceptance-envelope", "expected": "ACTION-REQUIRED-I5", "coverage": "deterministic-firstslice"},
+    {"id": "H15-stale-receipt-head", "expected": "ACTION-REQUIRED-STALE", "coverage": "deterministic-firstslice"},
+    {"id": "H16-missing-receipt", "expected": "ACTION-REQUIRED-MISSING-RECEIPT", "coverage": "deterministic-firstslice"},
+    {"id": "H17-empty-readiness", "expected": "GRAPH-PASS-DRAFT-FAIL", "coverage": "full"},
+    {"id": "H18-source-custody", "expected": "ACTION-REQUIRED-SOURCE-EVIDENCE", "coverage": "full"},
+    {"id": "H19-session-presentation-order", "expected": "PASS", "coverage": "full"},
+    {"id": "H20-lock-unsupported-release", "expected": "PASS", "coverage": "full"},
+    {"id": "H21-incremental-append-equivalence", "expected": "PASS", "coverage": "full"}
+  ],
+  "deferred": [
+    "H2 packet emission and semantic authorization (Increment 3/4)",
+    "H5 semantic freeze/recheck (Increment 4)",
+    "H7 S1/S4 semantic judgments (Increment 4)",
+    "H15 /ready enforcement (Increment 5)",
+    "H16 ordinary-versus-reconstruction /ready dispatch (Increment 5)"
+  ]
+}
