@@ -13,7 +13,7 @@ The root cause is an authority decision made implicitly rather than on purpose. 
 Adopt a single-authority model. Recovery stops being "reconcile three partially-written artifacts" and becomes "find the last complete ledger record and rebuild the projections."
 
 - **D1 — `Approval_Events.jsonl` is the sole authoritative state.** Every approval fact lives in the ledger; nothing else is a source of truth.
-- **D2 — One complete decision bundle occupies one JSONL record**, including its ordered cascade events. A decision is therefore atomic by construction: the record is appended in full or not at all. There is no "valid prefix of a bundle" to classify.
+- **D2 — One complete decision bundle occupies one JSONL record**, including its ordered cascade events. Replay accepts a whole verified LF-terminated bundle or none of it. Physical appends can be partial; the shared project lock and fsync acknowledgement policy in contract 0.3.3 govern concurrency and recovery. There is no replayable event prefix of a bundle.
 - **D3 — `Approval_Graph.md` is a deterministic, human-readable projection** rebuilt from the ledger. It is never authoritative and never hand-edited; author decisions enter only as ledger appends.
 - **D4 — `Adjudication_Session.json` is a reconstructible cursor/cache, never an authority.** It may be regenerated from the ledger at any time; losing it loses nothing. Live `OPEN` state is an ephemeral exclusive process lock, not a persisted cache fact.
 - **D5 — Recovery = verify, truncate only an uncommitted byte tail, and replay.** Every LF-terminated record carries a stored self-verifying bundle hash and is authoritative or an error. Only a final suffix lacking LF is torn and truncatable. Graph and session are regenerated from the verified replay. Recovery **fails closed**: if the last authoritative record cannot be identified, the tool errors — never a silent advance, never `CLOSED`.
@@ -51,3 +51,16 @@ Survives, unchanged (this ADR is orthogonal to them):
 3. Increment 1 builds against the revised spec, with the truncate-and-replay fixture family as an explicit deliverable.
 
 This closes the recovery subsystem by deleting most of it, rather than hardening it for a fourth round.
+
+
+## Implementation clarification — 2026-09-20 (contract 0.3.3)
+
+D1–D7 remain accepted. FR-03 repairs do not add an authority: eligibility and edge origin
+are replay functions, graph/session remain rebuildable, and content-addressed source
+snapshots retain evidence whose hashes and per-node bindings derive from ledger contexts.
+Every ledger operation and projection publication shares one OS-held project lock. Acknowledged
+commitment follows complete write, flush and fsync; projection publication failure cannot roll
+back that commitment. LF is a recovery delimiter, not a claim of atomic filesystem writes.
+Retained receipt commitments check the exact historical prefix count/hash and replayed ID sets
+before recovery can truncate a tail. Contract 0.3.3 pins the receipt envelope, source custody,
+existing-identity refusal, and free-string projection escaping without changing ledger keys.

@@ -1,0 +1,10 @@
+{
+  "schema": "argument-reconstruction-expected/1",
+  "manifest": "manifest.json",
+  "runner_exit": 0,
+  "all_cases": "PASS",
+  "allowed_statuses": ["PASS", "ACTION-REQUIRED", "COMMITTED", "NO-CHANGE", "PASS-WITH-RECOVERY", "REUSE-OR-REFUSE"],
+  "case_results_are_behavioral": true,
+  "benchmark_truth": false,
+  "semantic_calibration": false
+}
