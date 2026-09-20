@@ -148,12 +148,9 @@ Two further findings were recorded and deliberately not repaired here, because
 neither is a correctness defect in the ledger and both are larger than a
 train-admission fix should be:
 
-- **Replay cost is quadratic.** Every append re-replays the whole ledger two or
-  three times and deep-copies the record map per bundle, so cost grows as
-  O(bundles² × records). Measured on a 250-node graph with one decision per node:
-  426.9s of CPU across the appends, against 1.79s for a single full
-  `validate_project` replay of the same finished ledger, on a 240 KB file. It is
-  algorithmic, not data volume.
+- **Replay cost was quadratic — now repaired, see below.** Every append
+  re-replayed the whole ledger two or three times and deep-copied the record map
+  per bundle, so cost grew as O(bundles² × records).
 - **Torn-tail recovery discards an unbounded suffix and still reports `PASS`.**
   This is contract-conformant and the receipt-prefix check correctly runs before
   truncation, but a 5 015-byte LF-less ledger truncates to zero bytes with
@@ -163,3 +160,61 @@ train-admission fix should be:
 Disposition: **admitted to the v2.12.0 train with the three repairs above.** The
 combined gate `bash scripts/validate.sh --check-all` passes on the repaired head,
 including H1–H20 and `check-mirror`.
+
+## Replay-cost repair (2026-09-20)
+
+The quadratic append cost recorded above is repaired. Three changes, none of
+which alters a single output byte:
+
+1. **`_apply_bundle` copies records on first write, not up front.** It used to
+   deep-copy the entire record map for every bundle, so a replay cost
+   O(bundles × records) even though a bundle touches a handful of records. The
+   private working map is now a shallow `dict`, and `_owned()` deep-copies a
+   record the first time that record is about to change. The guarantee the
+   up-front copy existed to provide is preserved exactly: a bundle that fails
+   part-way still mutates nothing the caller owns, because every mutation path
+   goes through `_owned()`.
+2. **`_append_locked` extends the state it already has.** It computed
+   `replay(bundles + [bundle])` immediately after computing `replay(bundles)`,
+   replaying the whole prefix twice per append. The new `_extend_state` advances
+   the state in hand by the one new bundle. It is equal to
+   `replay(bundles + [bundle])` by construction, and leaves the state it is given
+   untouched.
+3. **`validate_project` no longer repeats `_receipt_prefix_check`.** `_read_ledger`
+   already runs it over these exact bundles and returns before this point when it
+   fails, so the second call was a duplicate full replay per retained receipt.
+
+**Measured**, same machine, 250-node graph with one `DECISION` append per node,
+which is the documented adjudication workflow:
+
+| | before | after |
+|---|---|---|
+| 250 decision appends | 424.0s | **32.4s** |
+| first 25 | 6.5s | 2.5s |
+| first 100 | 71.3s | 11.2s |
+| final `validate_project` | 1.72s | 0.17s |
+
+13x on the workflow, and the growth curve flattens: 100 → 250 appends cost 5.9x
+before and 2.9x after, against 2.5x more work.
+
+**Equivalence evidence.** Across the whole run the outputs are byte-identical to
+the unoptimized engine: same ledger length (240,362 bytes), same terminal hash,
+same `Approval_Graph.md` and `Adjudication_Session.json` SHA-256, same replayed
+record map. Separately verified directly on `_extend_state`: it equals a full
+`replay` on records, head, context and bundle list, a bundle that fails part-way
+leaves the caller's state unchanged, and a bundle that succeeds does too.
+
+**H21** covers the seam through the public surface: after every append, across
+MINT, DECISION and RECONCILE, the projections the incremental path publishes must
+equal the ones a full replay rebuilds from the ledger, and the incremental head
+must equal the replayed head. Honest limit: H21 is an invariant, not a bug
+reproduction, so it passes against the pre-repair engine too. Mutation-checked —
+it catches a stale incremental head. It does **not** catch a shallow `_owned()`
+copy, because that guarantee is defensive: the only caller of `_apply_bundle` on
+a caller-owned state discards that state, so the leak has no observable effect
+through the public API. The deep copy is kept regardless, since the invariant is
+cheap here and load-bearing if a second caller ever appears.
+
+Left open: the unbounded torn-tail truncation recorded above. That one is
+contract-conformant, so changing it is a contract amendment rather than a repair,
+and it is deliberately not bundled into this release.

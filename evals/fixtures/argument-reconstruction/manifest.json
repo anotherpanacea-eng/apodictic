@@ -26,7 +26,8 @@
     {"id": "H17-empty-readiness", "expected": "GRAPH-PASS-DRAFT-FAIL", "coverage": "full"},
     {"id": "H18-source-custody", "expected": "ACTION-REQUIRED-SOURCE-EVIDENCE", "coverage": "full"},
     {"id": "H19-session-presentation-order", "expected": "PASS", "coverage": "full"},
-    {"id": "H20-lock-unsupported-release", "expected": "PASS", "coverage": "full"}
+    {"id": "H20-lock-unsupported-release", "expected": "PASS", "coverage": "full"},
+    {"id": "H21-incremental-append-equivalence", "expected": "PASS", "coverage": "full"}
   ],
   "deferred": [
     "H2 packet emission and semantic authorization (Increment 3/4)",

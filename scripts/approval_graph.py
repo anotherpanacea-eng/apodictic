@@ -495,8 +495,19 @@ def _apply_bundle(state: dict[str, Any], bundle: dict[str, Any], index: int) -> 
         raise _err("BUNDLE-SHAPE-MISMATCH", "RECONCILE events must precede MINTED events")
 
     # Apply on a private state so a failed multi-event bundle never mutates the caller.
-    work = {"records": {rid: _state_copy_record(r) for rid, r in records.items()}, "context": copy.deepcopy(state.get("context")),
+    # Records are copied on first write rather than up front: a bundle touches a
+    # handful of records while the map grows with the whole graph, so copying it
+    # per bundle made every replay O(bundles x records).  Nothing the caller owns
+    # is mutated on a failed bundle because every mutation goes through _owned().
+    owned: set[str] = set()
+    work = {"records": dict(records), "context": copy.deepcopy(state.get("context")),
             "head": copy.deepcopy(state.get("head"))}
+
+    def _owned(record_id: str) -> dict[str, Any]:
+        if record_id not in owned:
+            work["records"][record_id] = _state_copy_record(work["records"][record_id])
+            owned.add(record_id)
+        return work["records"][record_id]
     if (index == 0 and shape == "MINT") or shape == "RECONCILE":
         work["context"] = copy.deepcopy(bundle["context"])
     for pos, event in enumerate(events):
@@ -549,11 +560,12 @@ def _apply_bundle(state: dict[str, Any], bundle: dict[str, Any], index: int) -> 
             if event["note"] is not None:
                 record["notes"].append({"timestamp": bundle["timestamp"], "event": event["event"], "text": event["note"]})
             work["records"][rid] = record
+            owned.add(rid)
             continue
 
         if rid not in work["records"]:
             raise _err("UNKNOWN-RECORD", f"event references unknown record {rid}", rid)
-        record = work["records"][rid]
+        record = _owned(rid)
         kind = record["kind"]
         ev = event["event"]
         actor = event["actor"]
@@ -693,6 +705,25 @@ def replay(bundles: list[dict]) -> dict:
         previous = bundle["bundle_hash"]
         state["head"] = {"bundle_count": index + 1, "terminal_hash": previous}
     return state
+
+
+def _extend_state(state: dict[str, Any], bundle: dict[str, Any]) -> dict[str, Any]:
+    """Advance an already-replayed state by one canonical bundle.
+
+    Equal to ``replay(bundles + [bundle])`` whenever ``state == replay(bundles)``,
+    without replaying the prefix a second time.  ``state`` is left untouched: the
+    bundle list is copied shallowly (its entries are already state-owned deep
+    copies) and _apply_bundle commits only on success.
+    """
+    index = state["head"]["bundle_count"]
+    if bundle["prev_hash"] != state["head"]["terminal_hash"]:
+        raise _err("CHAIN-BROKEN", f"bundle {index + 1} prev_hash does not match prior hash")
+    extended: dict[str, Any] = {"records": state["records"], "context": state["context"],
+                                "head": state["head"], "bundles": list(state["bundles"])}
+    _apply_bundle(extended, bundle, index)
+    extended["bundles"].append(copy.deepcopy(bundle))
+    extended["head"] = {"bundle_count": index + 1, "terminal_hash": bundle["bundle_hash"]}
+    return extended
 
 
 def eligible_ids(state: dict) -> set[str]:
@@ -1413,7 +1444,7 @@ def _append_locked(root: Path, bundle: dict, expected_head: dict, recovered: int
         raise _err("STALE-HEAD", "proposed bundle prev_hash does not match expected head")
     if bundle["shape"] == "MINT" and state["head"]["bundle_count"] != 0:
         raise _err("LATE-MINT", "MINT is only legal for an empty ledger")
-    new_state = replay(bundles + [bundle])
+    new_state = _extend_state(state, bundle)
     _stage_source(root, bundle["context"])
     _check_bundle_sources(root, bundle)
     _check_quarantine_artifact(root, bundle)
@@ -1911,8 +1942,9 @@ def validate_project(project: str | Path, stage: str) -> dict:
                 if stage == "acceptance": findings.append(_finding("I5-COMPARATOR-UNAVAILABLE", "structured gate configuration comparator is unavailable before Increment 4"))
                 return {"verdict": "ACTION-REQUIRED", "stage": stage, "head": None, "findings": findings, "projection_rebuilt": [], "recovered_bytes": recovered}
             try:
+                # _read_ledger already ran _receipt_prefix_check over these exact
+                # bundles, and returns before this point when it fails.
                 state = replay(bundles)
-                _receipt_prefix_check(root, bundles)
             except ApprovalGraphError as exc:
                 findings.append(_finding(exc.code, exc.message, exc.record_id))
                 if stage == "acceptance": findings.append(_finding("I5-COMPARATOR-UNAVAILABLE", "structured gate configuration comparator is unavailable before Increment 4"))

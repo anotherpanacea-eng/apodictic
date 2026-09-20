@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Executable Increment-1 acceptance candidates H1-H20.
+"""Executable Increment-1 acceptance candidates H1-H21.
 
 This is a black-box fixture runner.  It imports the public approval_graph module
 from ``--engine`` and creates disposable project directories; no fixture project
@@ -927,6 +927,33 @@ def run_cases(engine) -> list[dict[str, Any]]:
         assert "error" not in outcome, outcome
         assert validate(engine, p, "graph")["verdict"] == "PASS"
 
+    def h21(p):
+        # An append advances the replayed state by one bundle instead of replaying
+        # the prefix again, and records are copied on first write rather than up
+        # front.  After every append, for every bundle shape, the projections it
+        # publishes must equal the ones a full replay rebuilds from the ledger.
+        def matches_full_replay(head):
+            graph = (p / "Approval_Graph.md").read_bytes()
+            session = (p / "Adjudication_Session.json").read_bytes()
+            assert state(engine, p)["head"] == head, (state(engine, p)["head"], head)
+            (p / "Approval_Graph.md").unlink()
+            (p / "Adjudication_Session.json").unlink()
+            assert validate(engine, p, "graph")["verdict"] == "PASS"
+            assert (p / "Approval_Graph.md").read_bytes() == graph
+            assert (p / "Adjudication_Session.json").read_bytes() == session
+
+        head, ids, eids = mint(engine, p, texts=("A.", "B.", "C."),
+                               edges=(("SUPPORTS", 0, 1, "\u2014"),))
+        matches_full_replay(head)
+        for rid in (ids[0], ids[1], eids[0], ids[2]):
+            head = decisions(engine, p, head, [rid])["head"]
+            matches_full_replay(head)
+        # RECONCILE appends provenance inside record["content"], so a shallow
+        # copy-on-write would leak the mutation into the pre-append state.
+        head = engine.reconcile(str(p), {"nodes": [node(engine, "A."), node(engine, "B.")], "edges": []},
+                                source(p, "A.\nB.\n"), head, STAMP)["head"]
+        matches_full_replay(head)
+
     for name, fn in [("H1-required-orphan", h1), ("H2-edge-endpoint-eligibility", h2),
                      ("H3-unchanged-edge-no-provenance", h3), ("H4-novel-edge-origin", h4),
                      ("H5-live-lock-active-suffix", h5), ("H6-existing-identity-revision", h6),
@@ -937,7 +964,8 @@ def run_cases(engine) -> list[dict[str, Any]]:
                      ("H15-stale-receipt-head", h15), ("H16-missing-receipt", h16),
                      ("H17-empty-readiness", h17), ("H18-source-custody", h18),
                      ("H19-session-presentation-order", h19),
-                     ("H20-lock-unsupported-release", h20)]:
+                     ("H20-lock-unsupported-release", h20),
+                     ("H21-incremental-append-equivalence", h21)]:
         case(name, fn)
     return outcomes
 
