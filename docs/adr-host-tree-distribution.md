@@ -25,8 +25,9 @@ readily usable (download-and-open: no clone, no Node), while removing the churn.
 - **Antigravity** → `apodictic-antigravity.zip` (new; `build-antigravity.mjs` now
   emits it, mirroring `build-codex.mjs`)
 - **Claude / Cowork** → `apodictic.plugin`
-- **Custom GPT** → unchanged; served by manually uploaded instructions/knowledge,
-  decoupled from the repo trees (a separate follow-up if it should track releases).
+- **ChatGPT** → the root `.claude-plugin/marketplace.json` is importable by eligible
+  ChatGPT workspaces; the README documents the admin import and member install.
+  Existing Custom GPTs remain separate and are not updated by a plugin release.
 
 ## Options considered (from #52)
 
