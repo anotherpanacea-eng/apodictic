@@ -15,7 +15,6 @@ CI = WORKFLOWS / "ci.yml"
 
 CI_SHA256 = "9891e5b8ee53f138ea32bfcf6eaca14095766e114f67c6b7d2cd5e5118d412b5"
 AUXILIARY_SHA256 = {
-    "claude.yml": "f627bcff7dddf755efe7e96283abae0155d466b2ecbb79e1fc9f7f21b11f529f",
     "release.yml": "bd1dc52391b48cd1662bf7d4ab161827fb7c8b83cc2b46b5566b7d637f23a5f3",
     "release-readiness.yml": "18c248b2d4e94fb9473d81b3dfd04ccfc58083e39c3937e343d2d618288f3710",
     "sync-setec.yml": "a3c9669dfd67dad1a78d2fa899fc4a872f3ab78e9fc391d3b19f6a88f61a4e00",

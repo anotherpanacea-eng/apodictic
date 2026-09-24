@@ -18,8 +18,8 @@ name: claude
 # `claude setup-token`, billed to the Claude subscription) and the Claude
 # GitHub App installed on this repository.
 #
-# tests/test_ci_train_policy.py keeps the workflow set closed and pins this
-# file's normalized digest, so an edit here must update that digest too.
+# tests/test_ci_train_policy.py keeps the workflow set closed and checks
+# this file's safety boundaries.
 on:
   issue_comment:
     types: [created]
