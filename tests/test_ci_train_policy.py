@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,7 @@ CI = WORKFLOWS / "ci.yml"
 
 CI_SHA256 = "9891e5b8ee53f138ea32bfcf6eaca14095766e114f67c6b7d2cd5e5118d412b5"
 AUXILIARY_SHA256 = {
+    "claude.yml": "f627bcff7dddf755efe7e96283abae0155d466b2ecbb79e1fc9f7f21b11f529f",
     "release.yml": "bd1dc52391b48cd1662bf7d4ab161827fb7c8b83cc2b46b5566b7d637f23a5f3",
     "release-readiness.yml": "18c248b2d4e94fb9473d81b3dfd04ccfc58083e39c3937e343d2d618288f3710",
     "sync-setec.yml": "a3c9669dfd67dad1a78d2fa899fc4a872f3ab78e9fc391d3b19f6a88f61a4e00",
@@ -131,6 +133,7 @@ def _step_id(step: dict) -> str:
 def test_current_workflow_holds_closed_policy():
     assert _workflow_names(WORKFLOWS) == {
         "ci.yml",
+        "claude.yml",
         "release.yml",
         "release-readiness.yml",
         "sync-setec.yml",
@@ -383,3 +386,54 @@ def test_ci_cost_or_authorization_mutation_fails_closed(old: str, new: str):
     text = CI.read_text(encoding="utf-8")
     assert old in text
     assert _normalized_digest(text.replace(old, new, 1)) != CI_SHA256
+
+
+# The @claude workflow hands a write-capable App token and the Claude OAuth
+# token to a model acting on comment text. These tests guard the boundaries a
+# later edit must not loosen: only trusted authors start a run, fork pull
+# requests are refused before checkout, every action is pinned to a commit,
+# and the workflow's own GITHUB_TOKEN carries no write scope beyond OIDC.
+CLAUDE = WORKFLOWS / "claude.yml"
+TRUSTED_AUTHOR = """contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'),"""
+
+
+def _claude_job() -> dict:
+    return _load(CLAUDE.read_text(encoding="utf-8"))["jobs"]["claude"]
+
+
+def test_claude_workflow_pins_every_action_to_a_commit():
+    uses = [step["uses"] for step in _claude_job()["steps"] if "uses" in step]
+    assert uses
+    for ref in uses:
+        assert re.search(r"@[0-9a-f]{40}$", ref), f"{ref} is not pinned to a commit SHA"
+
+
+def test_claude_workflow_requires_a_trusted_author_on_every_trigger():
+    workflow = _load(CLAUDE.read_text(encoding="utf-8"))
+    gate = workflow["jobs"]["claude"]["if"]
+    events = re.findall(r"github\.event_name == '(\w+)'", gate)
+    assert sorted(events) == sorted(workflow["on"])
+    assert gate.count(TRUSTED_AUTHOR) == len(events)
+    assert gate.count("'@claude')") >= len(events)
+
+
+def test_claude_workflow_refuses_fork_prs_before_checkout():
+    steps = _claude_job()["steps"]
+    guard = next(
+        i for i, step in enumerate(steps) if "isCrossRepository" in step.get("run", "")
+    )
+    checkout = next(
+        i for i, step in enumerate(steps)
+        if step.get("uses", "").startswith("actions/checkout@")
+    )
+    assert guard < checkout
+    assert 'if [ "$cross" != "false" ]' in steps[guard]["run"]
+
+
+def test_claude_workflow_token_has_no_write_scope_but_oidc():
+    workflow = _load(CLAUDE.read_text(encoding="utf-8"))
+    assert "permissions" not in workflow or all(
+        value != "write" for value in workflow["permissions"].values()
+    )
+    scopes = workflow["jobs"]["claude"]["permissions"]
+    assert {name for name, value in scopes.items() if value == "write"} == {"id-token"}

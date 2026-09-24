@@ -1,0 +1,85 @@
+name: claude
+
+# On-demand Claude work from GitHub: a comment, review, or issue that mentions
+# `@claude` starts one run of claude-code-action. Nothing else triggers it, so
+# ordinary pushes and PR updates spend no Actions minutes here; events without
+# the mention are skipped before a runner starts. Issues trigger only when
+# opened, so editing or assigning an old issue never re-runs it.
+#
+# There is deliberately no concurrency group: GitHub keeps only one pending
+# run per group, so a third mention would silently replace the second. Each
+# mention gets its own run; if two push to the same branch, the later push
+# fails visibly instead of a request vanishing.
+#
+# Only repository owners, members, and collaborators can start a run. Bot
+# accounts are refused by the action unless listed in `allowed_bots`.
+#
+# Requires the CLAUDE_CODE_OAUTH_TOKEN repository secret (from
+# `claude setup-token`, billed to the Claude subscription) and the Claude
+# GitHub App installed on this repository.
+#
+# tests/test_ci_train_policy.py keeps the workflow set closed and pins this
+# file's normalized digest, so an edit here must update that digest too.
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+  issues:
+    types: [opened]
+
+jobs:
+  claude:
+    if: >-
+      (
+        (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') &&
+          contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+        (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') &&
+          contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+        (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude') &&
+          contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.review.author_association)) ||
+        (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')) &&
+          contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association))
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The workflow's own GITHUB_TOKEN stays read-only. Claude's pushes,
+    # comments, and PR edits use the Claude GitHub App token the action
+    # mints through OIDC (id-token: write), so nothing on this runner holds
+    # a write-scoped GITHUB_TOKEN it does not need.
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+      actions: read
+    steps:
+      # A fork's code and instructions must never share a workspace with the
+      # OAuth token and the write-scoped App token, so pull requests from
+      # forks are refused before anything is checked out. Fails closed if
+      # the lookup fails.
+      - name: Refuse pull requests from forks
+        id: fork_guard
+        if: github.event.issue.pull_request || github.event.pull_request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.issue.number || github.event.pull_request.number }}
+        run: |
+          cross=$(gh pr view "$PR" -R "$GITHUB_REPOSITORY" --json isCrossRepository -q .isCrossRepository)
+          if [ "$cross" != "false" ]; then
+            echo "Refusing @claude on a pull request from a fork." >&2
+            exit 1
+          fi
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 1
+      # Pinned to a commit: this step holds the OAuth token and write
+      # permissions, so a moved tag must not change what runs.
+      - uses: anthropics/claude-code-action@8cf3482550831fb35a4fc3fbf7ca139cf8028b4c # v1.0.233
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Lets Claude read CI results on the PR it was asked about.
+          additional_permissions: |
+            actions: read
