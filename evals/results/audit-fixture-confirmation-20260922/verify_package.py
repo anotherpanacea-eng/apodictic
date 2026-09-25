@@ -4,6 +4,7 @@ from collections import Counter
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -31,6 +32,26 @@ def checked(root, name, expected):
     data = child(root, name).read_bytes()
     require(digest(data) == expected, 'Hash mismatch: ' + name)
     return data
+
+
+def frozen_source(repo, name, expected, head):
+    """Return declared source bytes from the working tree, else from the frozen source head.
+
+    Later edits to a fixture or reference must not break verification of this
+    package; the hash requirement is unchanged either way.
+    """
+    try:
+        return checked(repo, name, expected)
+    except ValueError:
+        try:
+            result = subprocess.run(['git', '-C', str(repo), 'show', head + ':' + name],
+                                    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
+        except OSError:
+            raise ValueError('Hash mismatch: ' + name + ' (frozen source head unavailable)')
+        require(result.returncode == 0, 'Hash mismatch: ' + name + ' (frozen source head unavailable)')
+        require(digest(result.stdout) == expected, 'Hash mismatch: ' + name + ' (working tree and frozen source head)')
+        print('NOTE: ' + name + ' changed after the frozen source head; verified from ' + head[:12])
+        return result.stdout
 
 
 def extract_scores(data):
@@ -113,8 +134,9 @@ def verify(package=PACKAGE, repo=REPO, private=None):
     require(sorted(r['mode'] for r in rows) == ['excerpt'] * 2 + ['positive'] * 3 + ['trigger'] * 3,
             'Mode census changed')
     for row in rows:
-        source = checked(repo, 'evals/fixtures/' + row['fixture'], row['source_sha256'])
-        checked(repo, 'plugins/apodictic/skills/specialized-audits/references/' + row['reference'], row['reference_sha256'])
+        head = manifest['source_head']
+        source = frozen_source(repo, 'evals/fixtures/' + row['fixture'], row['source_sha256'], head)
+        frozen_source(repo, 'plugins/apodictic/skills/specialized-audits/references/' + row['reference'], row['reference_sha256'], head)
         match = re.search(rb'(?m)^---(?:\r\n|\n)', source)
         require(match is not None, 'Missing complete source delimiter')
         body = source[match.end():]
