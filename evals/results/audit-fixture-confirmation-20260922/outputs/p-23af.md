@@ -1,0 +1,8 @@
+Activation decision: **dormant** on the supplied excerpt. No automatic trigger is established; unavailable positioning cannot establish that cozy is never implied elsewhere.
+
+- **Author, comps, pitch, blurb, or metadata uses cozy or adjacent language — unsupported in the supplied material.** “You're a genius,” followed by “I'm cheaper than a genius,” is character dialogue, not an author or marketing promise. The passage supplies no explicit cozy positioning.
+- **Shelf and positioning work suggests cozy discoverability — unsupported; positioning work is unavailable.** “Reuben passed her the one with tape on it” and “The forklift coughed, caught, and settled into its rattling idle” describe cooperation and a successful repair. These passage details do not establish a shelf or discoverability claim.
+- **Beta readers report tone mismatch — unsupported; beta-reader reports are unavailable.** “You hand-ball forty crates and I'll write the incident report when your back goes” is dialogue within the scene, not reader feedback about a marketed cozy promise.
+- **Pass 11 identifies promise-delivery risk tied to warmth/safety expectations — unsupported; Pass 11 findings are unavailable.** “Forty crates. By six.” establishes the scene's immediate work pressure, not an upstream assessment of warmth or safety expectations.
+
+Missing metadata: author intent; comps; pitch, blurb, and packaging language; declared tags and shelf positioning; discoverability work; beta-reader feedback; and Pass 11 findings. The excerpt's place in the manuscript and other manuscript corridors are also unavailable. No supported trigger warrants automatic activation from this excerpt alone.
