@@ -64,6 +64,7 @@
     "commandBaseSkills": {
       "start": "core-editor",
       "ready": "core-editor",
+      "adjudicate": "core-editor",
       "audit": "specialized-audits",
       "research": "specialized-audits",
       "coach": "revision-coach",
@@ -100,6 +101,7 @@
     "commandBaseSkills": {
       "start": "core-editor",
       "ready": "core-editor",
+      "adjudicate": "core-editor",
       "audit": "specialized-audits",
       "research": "specialized-audits",
       "coach": "revision-coach",
@@ -143,6 +145,14 @@
     ]
   },
   "commands": [
+    {
+      "command": "/adjudicate",
+      "category": "focused",
+      "status": "first_class_shortcut",
+      "routerEquivalent": null,
+      "writerQuestion": "Which claims and relationships do I authorize for reconstruction?",
+      "description": "Record explicit author decisions and resume an existing claim graph; semantic exclusion screening remains pending."
+    },
     {
       "command": "/start",
       "category": "entry",

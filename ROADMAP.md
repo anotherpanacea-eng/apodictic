@@ -153,8 +153,12 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
    source-evidence custody, deterministic graph/session projections, complete
    graph/draft-ready validation and a fail-closed acceptance envelope. The H1–H18
    synthetic cases trace core coverage separately from later workflow integration.
-   Approval workflow, drafting, semantic comparison and `/ready` integration remain
-   separate Increments 2–5; no end-to-end acceptance PASS is available here.
+   **Increment 2 mechanical workflow built:** `/adjudicate` presents verified
+   state, records explicit head-bound author decisions and resumes after interruption.
+   Nonempty exclusions block approval until compatible semantic screening exists;
+   history presentation is exhaustive, not entailment retrieval. Increment 2 remains
+   partial; drafting, semantic comparison and `/ready` integration remain separate
+   Increments 3–5. No end-to-end acceptance PASS is available here.
 
 ### Benchmark Suite
 
