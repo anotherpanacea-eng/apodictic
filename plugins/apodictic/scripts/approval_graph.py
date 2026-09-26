@@ -1589,6 +1589,112 @@ def revise(project: str | Path, original_id: str, replacement: dict, expected_he
         return _append_locked(root, {"shape": "REVISE", "prev_hash": state["head"]["terminal_hash"], "timestamp": timestamp, "context": None, "events": events}, expected_head, recovered)
 
 
+
+@_public_mutation
+def session_snapshot(project: str | Path) -> dict:
+    """Recover and present verified author state; never use a cache as authority."""
+    root = _project_root(project)
+    with _ProjectLock(root):
+        bundles, recovered = _read_ledger(root, allow_missing=False)
+        state = replay(bundles)
+        _preappend_custody(root, bundles, state)
+        rebuilt = _publish(root, state)
+        records = sorted(state["records"].values(), key=lambda r: (r["kind"] != "node", r["id"]))
+        # Projection history intentionally omits reason/note. Author presentation
+        # joins those fields from verified events without altering projection bytes.
+        records = copy.deepcopy(records)
+        histories = {r["id"]: [] for r in records}
+        for bundle in bundles:
+            for event in bundle["events"]:
+                entry = _history_entry(bundle, event)
+                entry.update(reason=event["reason"], note=event["note"])
+                histories[event["record_id"]].append(entry)
+        for record in records:
+            record["history"] = histories[record["id"]]
+        counts = {status: sum(r["approval"] == status for r in records) for status in sorted(APPROVALS)}
+        return {"schema": "approval-presentation/1", "head": state["head"],
+                "session": json.loads(project_session(state)), "context": state["context"],
+                "progress": {"total": len(records), "adjudicated": len(records) - counts["PENDING"],
+                             "by_approval": counts}, "records": records,
+                "exclusions": [r["id"] for r in records if r["approval"] == "REJECTED"],
+                "semantic_screen": "UNAVAILABLE", "projection_rebuilt": rebuilt,
+                "recovered_bytes": recovered}
+
+
+@_public_mutation
+def adjudicate(project: str | Path, request: dict) -> dict:
+    """Commit one explicit author decision, bound to the presented ledger head.
+
+    This mechanical workflow cannot clear nonempty semantic exclusions. The
+    lower-level append API remains the existing ledger primitive, not a screen.
+    """
+    required = {"action", "record_id", "expected_head", "timestamp"}
+    optional = {"inclusion", "reason", "note", "replacement"}
+    if not isinstance(request, dict) or not required <= request.keys() or request.keys() - required - optional:
+        raise _err("INVALID-DECISION", "request requires action, record_id, expected_head, timestamp; unknown fields forbidden")
+    action = request["action"]
+    if not isinstance(action, str) or action not in {"approve", "reject", "withdraw", "unreject", "inclusion", "revise"}:
+        raise _err("INVALID-DECISION", "unknown author action")
+    allowed = {"approve": {"inclusion", "note"}, "reject": {"note"}, "withdraw": {"note"},
+               "unreject": {"reason", "note"}, "inclusion": {"inclusion", "reason", "note"},
+               "revise": {"replacement", "note"}}[action]
+    if request.keys() - required - allowed:
+        raise _err("INVALID-DECISION", "fields are not applicable to the chosen action")
+    rid = _rid(request["record_id"])
+    _timestamp(request["timestamp"])
+    for field in ("note", "reason"):
+        if field in request and (not isinstance(request[field], str) or not request[field].strip()):
+            raise _err("INVALID-DECISION", f"{field} must be a nonempty string")
+    if action in {"unreject", "inclusion"} and "reason" not in request:
+        raise _err("INVALID-DECISION", "this action requires the author's reason")
+    if action == "revise":
+        return revise(project, rid, request.get("replacement"), request["expected_head"],
+                      request["timestamp"], request.get("note"))
+    root = _project_root(project)
+    with _ProjectLock(root):
+        bundles, recovered = _read_ledger(root, allow_missing=False)
+        state = replay(bundles)
+        _preappend_custody(root, bundles, state)
+        _head_equal(request["expected_head"], state["head"])
+        record = state["records"].get(rid)
+        if record is None:
+            raise _err("UNKNOWN-RECORD", "record does not exist", rid)
+        if record["kind"] == "edge" and action in {"approve", "reject"}:
+            endpoints = (record["content"]["source"], record["content"]["target"])
+            if any(state["records"][endpoint]["approval"] == "PENDING" for endpoint in endpoints):
+                raise _err("ENDPOINTS-PENDING", "adjudicate endpoint nodes before this edge", rid)
+        if action == "approve":
+            if record["kind"] == "node" and request.get("inclusion") not in INCLUSIONS:
+                raise _err("INVALID-DECISION", "node approval requires REQUIRED or OPTIONAL inclusion", rid)
+            if record["kind"] == "edge" and "inclusion" in request:
+                raise _err("INVALID-DECISION", "edge approval has no inclusion", rid)
+            if any(r["approval"] == "REJECTED" for r in state["records"].values()):
+                raise _err("EXCLUSION-SCREEN-UNAVAILABLE", "nonempty rejection set requires compatible semantic screening; decline or explicitly resolve prior rejections", rid)
+        if action == "inclusion" and (record["kind"] != "node" or record["approval"] != "APPROVED" or request.get("inclusion") not in INCLUSIONS):
+            raise _err("INVALID-DECISION", "inclusion change requires an approved node and REQUIRED or OPTIONAL", rid)
+        event = {key: None for key in EVENT_KEYS}
+        event.update(event={"approve": "DECISION", "reject": "DECISION", "withdraw": "WITHDRAWAL",
+                            "unreject": "UNREJECT", "inclusion": "INCLUSION"}[action],
+                     actor="author", record_id=rid, reason=request.get("reason"), note=request.get("note"))
+        if action == "inclusion":
+            event.update(inclusion_from=record["inclusion"], inclusion_to=request["inclusion"])
+        else:
+            event.update(approval_from=record["approval"],
+                         approval_to={"approve": "APPROVED", "reject": "REJECTED", "withdraw": "PENDING", "unreject": "PENDING"}[action])
+            if record["kind"] == "node":
+                event.update(inclusion_from=record["inclusion"], inclusion_to=request.get("inclusion"))
+        events = [event]
+        if record["kind"] == "node" and event["approval_from"] == "APPROVED" and event["approval_to"] != "APPROVED":
+            for edge in sorted(state["records"].values(), key=lambda r: r["id"]):
+                if edge["kind"] == "edge" and edge["approval"] == "APPROVED" and rid in (edge["content"]["source"], edge["content"]["target"]):
+                    cascade = {key: None for key in EVENT_KEYS}
+                    cascade.update(event="CASCADE", actor="system", record_id=edge["id"], approval_from="APPROVED", approval_to="PENDING")
+                    events.append(cascade)
+        return _append_locked(root, {"shape": "DECISION", "prev_hash": state["head"]["terminal_hash"],
+                                    "timestamp": request["timestamp"], "context": None, "events": events},
+                              request["expected_head"], recovered)
+
+
 def _finding(code: str, message: str, record_id: str | None = None) -> dict:
     return {"code": code, "message": message, "record_id": record_id}
 
@@ -1989,6 +2095,19 @@ def _self_test() -> int:
         assert result["status"] == "COMMITTED" and replay([bundle])["records"][rid]["approval"] == "PENDING"
         check = validate_project(root, "graph"); assert check["verdict"] == "PASS", check
         assert parse_graph(project_graph(replay([bundle])))['nodes'][0]['id'] == rid
+        shown = session_snapshot(root)
+        approved = adjudicate(root, {"action": "approve", "record_id": rid,
+                                    "expected_head": shown["head"], "timestamp": "2026-01-01T00:00:01Z",
+                                    "inclusion": "REQUIRED"})
+        assert approved["status"] == "COMMITTED"
+        assert session_snapshot(root)["session"]["status"] == "CLOSED"
+        try:
+            adjudicate(root, {"action": "reject", "record_id": rid,
+                              "expected_head": shown["head"], "timestamp": "2026-01-01T00:00:02Z"})
+        except ApprovalGraphError as exc:
+            assert exc.code == "STALE-HEAD"
+        else:
+            raise AssertionError("stale author response was accepted")
     print("approval_graph self-test: PASS")
     return 0
 
