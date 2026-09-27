@@ -3,7 +3,7 @@
 
 *Version: 0.3.3*
 
-**Status:** Phase 0 repaired; Increment 1 built; Increments 2–5 unbuilt
+**Status:** Phase 0 repaired; Increment 1 built; Increment 2 mechanical workflow built (semantic screen/history retrieval pending); Increments 3–5 unbuilt
 <!-- built-when: scripts/approval_graph.py -->
 
 *Depends on: Argument State Schema 0.2.0 or later; Dialectical Clarity v2.0*
@@ -1318,7 +1318,7 @@ _Annotated by: approval-gated-reconstruction — [ISO timestamp]_
 - Adjudication progress and outcome summary
 - Gate verdicts per draft iteration
 - Working artifacts reference: Approval_Graph.md, Reconstruction_Receipt.md
-- Full contract reference: [the module's craft contract — path fixed at Increment 2/3]
+- Full contract reference: [author approval workflow](../plugins/apodictic/skills/core-editor/references/craft/approval-workflow.md)
 ```
 
 (§ 10.6–10.8 use a "Full results reference" file pattern and § 10.9 a "Full contract
@@ -1382,6 +1382,30 @@ a `changelog.d/<slug>.md` fragment. The status-drift lint arms as soon as the In
 deliverable exists (any-true marker semantics); from that point the Status line above must
 read as partially built (e.g., "Increment 1 built; 2–5 unbuilt") until the module is
 complete.
+
+---
+
+## Increment 2 mechanical workflow boundary
+
+`/adjudicate` is owned by Core Editor and loads
+`plugins/apodictic/skills/core-editor/references/craft/approval-workflow.md`.
+`approval_session.py PROJECT --show` recovers and presents verified ledger state;
+`--decision FILE` accepts one head-bound author request. The engine supplies
+snapshot, decision-bundle construction and required cascades through the same
+locked append path as Increment 1. Request actions are approve, reject, withdraw,
+unreject, inclusion and revise; reason and note retain their separate meanings.
+Locks cover each operation; the head comparison rejects intervening writes
+between presentation and author response. A stale head requires renewed presentation.
+
+This is **partial Increment 2**. Empty exclusions make the screen vacuous;
+nonempty exclusions produce `EXCLUSION-SCREEN-UNAVAILABLE`, with no append.
+No human acknowledgement or model agreement bypasses that block. An explicit
+reasoned un-rejection is still a separate author action, never implied approval.
+All rejected history is displayed, including orphaned rejections, but this is
+not the specified entailment-near retrieval. Compatible screening remains a
+later dependency. CLOSED is not draft-ready, and Stage C remains fail-closed.
+Synthetic behavioral checks live in `tests/test_approval_session.py`; H1–H21
+retain their existing lower-level contract coverage.
 
 ---
 

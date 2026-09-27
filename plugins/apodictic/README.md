@@ -81,6 +81,7 @@ The plugin assumes its user is an adult working on a creative or argumentative p
 - `/ready` — Is this ready to submit?
 
 **Focused tools:**
+- `/adjudicate` — Which claims and relationships do I authorize for reconstruction?
 - `/audit` — Run a specific deep-dive analysis — including argument audits (dialectical, argument-decision).
 - `/research` — I need internet-assisted verification.
 - `/coach` — I have a diagnosis — how do I revise?
