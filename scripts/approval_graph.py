@@ -1645,6 +1645,8 @@ def adjudicate(project: str | Path, request: dict) -> dict:
     for field in ("note", "reason"):
         if field in request and (not isinstance(request[field], str) or not request[field].strip()):
             raise _err("INVALID-DECISION", f"{field} must be a nonempty string")
+    if "inclusion" in request and not isinstance(request["inclusion"], str):
+        raise _err("INVALID-DECISION", "inclusion must be REQUIRED or OPTIONAL")
     if action in {"unreject", "inclusion"} and "reason" not in request:
         raise _err("INVALID-DECISION", "this action requires the author's reason")
     if action == "revise":

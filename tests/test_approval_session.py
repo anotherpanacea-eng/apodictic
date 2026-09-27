@@ -175,3 +175,13 @@ def test_cli_rejects_duplicate_keys_and_preserves_unicode_note(tmp_path):
     assert good.returncode == 0, good.stdout + good.stderr
     assert json.loads(good.stdout)["status"] == "COMMITTED"
     assert records(tmp_path)[nodes[0]]["notes"][-1]["text"] == "Why—café?"
+
+
+@pytest.mark.parametrize("inclusion", [["REQUIRED"], {"REQUIRED": True}, None])
+def test_malformed_inclusion_is_an_invalid_decision(tmp_path, inclusion):
+    _, nodes, _ = cases.mint(engine, tmp_path)
+    before = (tmp_path / "Approval_Events.jsonl").read_bytes()
+    with pytest.raises(engine.ApprovalGraphError) as error:
+        decide(tmp_path, nodes[0], "approve", inclusion=inclusion)
+    assert error.value.code == "INVALID-DECISION"
+    assert (tmp_path / "Approval_Events.jsonl").read_bytes() == before
