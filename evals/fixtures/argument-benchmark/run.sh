@@ -227,7 +227,9 @@ fetch_source() (
   # Keep every allocated path: the PDF input and converted text are distinct.
   tmp=""; txt=""; stage=""
   trap 'rm -f -- "$tmp" "$txt" "$stage"' EXIT
-  trap 'exit 1' HUP INT TERM
+  # Exit with the conventional 128+signal status so the batch loop stops on an
+  # operator interrupt instead of treating it as one failed source.
+  trap 'exit 129' HUP; trap 'exit 130' INT; trap 'exit 143' TERM
   tmp="$(mktemp)" && [ -n "$tmp" ] || { echo "FAIL  $s  (temporary download file unavailable)"; return 1; }
   if ! curl -fsSL --max-time 90 "$url" -o "$tmp"; then
     echo "FAIL  $s  (fetch error: $url)"; return 1
@@ -250,6 +252,10 @@ fetch_source() (
   stage="$(mktemp "$SRC/.argument-fetch.XXXXXXXX")" && [ -n "$stage" ] || { echo "FAIL  $s  (temporary publication file unavailable)"; return 1; }
   if ! printf '%s\n' "$body" > "$stage"; then
     echo "FAIL  $s  (staging write failed)"; return 1
+  fi
+  # mktemp creates 0600; publish with the mode a plain redirect would give.
+  if ! chmod "$(printf '%o' $(( 0666 & ~0$(umask) )))" "$stage"; then
+    echo "FAIL  $s  (staging permissions failed)"; return 1
   fi
   if ! got="$(sha < "$stage")" || [[ ! "$got" =~ ^[0-9a-f]{64}$ ]]; then
     echo "FAIL  $s  (SHA-256 computation failed)"; return 1
@@ -289,7 +295,9 @@ if [ "$FETCH_ONLY" -eq 1 ]; then
     if [ "$is_pdf" -eq 1 ] && ! command -v pdftotext >/dev/null 2>&1; then
       echo "FAIL  $s  (analyzed text is a PDF: $url — --fetch's plain-text pipeline needs \`pdftotext\` (poppler) to reconstitute it; install it (brew install poppler / apt-get install poppler-utils) and re-run, or fetch + convert and place the body at \$SRC/$s.md manually)"; ffail=1; continue
     fi
-    fetch_source || ffail=1
+    fetch_source; frc=$?
+    if [ "$frc" -ge 128 ]; then echo; echo "Fetch interrupted at $s."; exit "$frc"; fi
+    [ "$frc" -eq 0 ] || ffail=1
   done
   echo; echo "Fetch complete. Texts in: $SRC"
   exit $ffail

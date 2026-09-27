@@ -54,7 +54,7 @@ def harness(tmp_path):
     # An allowlisted PATH makes missing pdftotext deterministic and prevents real
     # curl/Claude calls. Wrappers still use actual core utilities for extraction.
     real = {}
-    for name in ("awk", "dirname", "date", "mkdir", "head", "grep", "sed", "cut", "cat", "rm", "mv", "mktemp", "bash"):
+    for name in ("awk", "dirname", "date", "mkdir", "head", "grep", "sed", "cut", "cat", "rm", "mv", "mktemp", "chmod", "bash"):
         found = subprocess.run([bash, "-c", f"PATH=/usr/bin:/bin:$PATH; command -v {name}"], capture_output=True, text=True, check=True).stdout.strip()
         real[name] = found
         command(name, f"exec {shlex.quote(found)} \"$@\"")
@@ -228,5 +228,20 @@ def test_batch_continues_after_failure_but_returns_failure(harness):
     assert "OK    second" in result.stdout
 
 
-def test_catchable_interruption_cleans_owned_temps(harness):
-    harness.fails(CONVERT_MODE="signal")
+def test_interruption_cleans_owned_temps_and_stops_batch(harness):
+    result = harness.run(batch=True, CONVERT_MODE="signal")
+    assert result.returncode == 143, result.stdout + result.stderr
+    assert harness.dest.read_bytes() == PRIOR
+    assert not (harness.dest.parent / "second.md").exists()
+    assert "second" not in result.stdout
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits")
+def test_published_text_follows_umask(harness):
+    previous = os.umask(0o022)
+    try:
+        result = harness.run()
+    finally:
+        os.umask(previous)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert harness.dest.stat().st_mode & 0o777 == 0o644
