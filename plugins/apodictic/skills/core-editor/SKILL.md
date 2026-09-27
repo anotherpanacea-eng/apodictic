@@ -27,6 +27,14 @@ Dedicated reference files (genre modules, specialized audits, `references/pass-1
 
 ---
 
+## Author adjudication entry point
+
+For `/adjudicate`, load `references/craft/approval-workflow.md` and follow that
+workflow directly. It presents an existing reconstruction graph and records
+explicit author decisions. Do not start Core DE passes or generic audit output
+routing. Semantic exclusion screening remains unavailable; never override a
+blocked approval or represent this partial workflow as drafting acceptance.
+
 ## Plugin Structure
 
 This skill is the core of the APODICTIC plugin. Three companion workflows handle specialized functions:
