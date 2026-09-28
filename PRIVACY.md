@@ -27,7 +27,7 @@ That is a placeholder address unless you set `CROSSREF_MAILTO` or `OPENALEX_MAIL
 policy applies to the requests it receives.
 
 Some research modes also ask Claude to search or fetch web pages with its own web tools. Those
-requests go through your Claude client, which asks for your permission before each one.
+requests go through your Claude client and follow its permission settings.
 
 ## Contact
 

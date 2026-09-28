@@ -5,6 +5,14 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.13.3 - 2026-09-28
+
+### Plugin directory metadata and privacy policy
+
+`plugin.json` now carries homepage, repository, documentation, support, privacy-policy,
+terms (license) and license fields for the Claude plugin directory listing, and the repo gains a
+`PRIVACY.md` describing what the plugin does and does not send off the machine.
+
 ## v2.13.2 - 2026-09-28
 
 ### Plugin directory policy holds
