@@ -1,5 +1,5 @@
 ---
-description: Guide a writer from idea to draftable structure (no manuscript required)
+description: Guide a writer from idea to draftable structure: a story plan for fiction, or an argument spine for an op-ed, brief, or testimony (no manuscript required)
 allowed-tools: Read, Write, Edit, Bash, Glob
 ---
 

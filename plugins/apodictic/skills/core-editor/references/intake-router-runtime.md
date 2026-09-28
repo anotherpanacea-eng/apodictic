@@ -194,7 +194,7 @@ Always asked after routing, before work begins. Multiple selections allowed.
 |--------|-------|--------------|------|-------------------|
 | A | I'm on a deadline | `constraint:time` | **Fork** (workflow) | Route to Submission Triage: Pass 1 → SR codes (detectable subset) → go/no-go memo with blind spots. See `references/submission-triage.md`. |
 | B | Parts of this were written with AI | `constraint:ai` | **Overlay** (lens) | Add AI-Prose Calibration overlay. |
-| C | This is nonfiction | `constraint:nonfiction` | **Fork** (engine) | Run nonfiction triage. Route argument-shaped work to the Nonfiction Argument Engine, scene-led nonfiction to Narrative Nonfiction Craft, and memoir / witness-led work to Memoir & CNF. Idea-stage Nonfiction Pre-Draft remains a gap. |
+| C | This is nonfiction | `constraint:nonfiction` | **Fork** (engine) | Run nonfiction triage. Route argument-shaped work to the Nonfiction Argument Engine, scene-led nonfiction to Narrative Nonfiction Craft, and memoir / witness-led work to Memoir & CNF. At `artifact:idea`, route argument-shaped ideas to the Pre-Writing Pathway's Nonfiction Pre-Draft (`pre-writing-pathway/references/nonfiction-pre-draft.md`), which builds the argument spine and seeds `Argument_State.md`. |
 | D | There's sensitive or legally risky content | `constraint:risk` | **Overlay** (output) | **Built.** Offer the Legal Risk Register; on accept, attach `[Project]_Legal_Risk_Register_[runlabel].md` (`references/legal-risk-register.md`; synthesis hook in `run-synthesis.md §Constraint mode`). Direct entry: `/legal-risk`. **Also content-auto-recommended without this flag:** when the manuscript reads as memoir / autofiction / nonfiction portraying identifiable real people, the synthesis layer **offers** the same register even if the author never set `constraint:risk` — model-side content detection, same offer-then-attach discipline (see the content-detection auto-recommend note below Table B, `run-synthesis.md §Content-detection auto-recommend`, and `pass-dependencies.md §4a`). |
 | E | I'm editing someone else's work | `operator:editor` | **Overlay** (output) | Shift output to editor scaffolding (editor-facing reframe of the synthesis letter). **Built** — see `references/editor-scaffolding.md`. |
 | F | I'm facilitating a writing group | `operator:facilitator` | **Overlay** (output) | Shift to diagnostic vocabulary mode (produce a teaching Vocabulary Guide: glossary + discussion prompts). **Built** — see `references/diagnostic-vocabulary.md`. |
@@ -296,7 +296,7 @@ The **cold-start** workflow-selection decisions — the path for a project with 
 |----------|------|------|----------|--------|
 | idea | draft | — | Pre-Writing Pathway | **Built** |
 | idea | draft (fast-track) | — | Pre-Writing Pathway (skip to Phase 4) | **Built** |
-| idea | draft | engine=nonfiction | Nonfiction Pre-Writing | Gap |
+| idea | draft | engine=nonfiction (argument-shaped) | Nonfiction Pre-Draft (`pre-writing-pathway/references/nonfiction-pre-draft.md`; seeds `Argument_State.md`) | **Built** |
 | fragments | draft | — | Fragment Synthesis → Pre-Writing | **Built** (v1.2.0) |
 | fragments | repair | — | Core DE (partial flag) | **Built** (v1.2.0) |
 | partial | repair (diagnostic) | — | Core DE (partial flag) | **Built** (v1.2.0) |

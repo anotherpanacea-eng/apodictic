@@ -5,6 +5,9 @@ description: >
   draft-ready structure. Use when the user asks to "plan a story," "outline
   a novel," "develop a premise," "figure out my book," "structure my idea,"
   or any request for help moving from concept to ready-to-draft planning.
+  Also covers argument-shaped nonfiction before a draft exists: "argument
+  spine," "outline an op-ed," "outline a policy brief," "plan my testimony,"
+  "structure my argument," "claim ladder before I write."
 version: 2.12.0
 ---
 
