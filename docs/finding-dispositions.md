@@ -1,7 +1,7 @@
 # Spec 03 — Engine-level `declined`/`deferred` finding dispositions (apodictic)
 
 **Status:** **Built** (this PR; spec-review pass 1 folded 2026-07-01, verdict BUILD-READY-WITH-FIXES, 0 P1; Opus build-review READY-TO-PR, 0 P1/P2, 3 P3s folded). Built in the `apodictic.finding_disposition.v1` schema + `_coverage.json` row, `apodictic_artifacts.py` (marker-grammar + `FID_RE` SSoT), `run_gate.py` (`disposition_deltas` freeze/fold/pointer/`check_state`), the new `disposition_check.py` validator + `validate.sh` dispatcher (+ root mirrors), `feedback_triage.py` W3, `structured_findings.py` (`severity_tally` factored shared), the §A–§D consumers, and the canonical fixture `references/example-run-folder-dispositions/` wired into `--check-all` (green). **Owner of the decision:** craft/editorial boundary.
-<!-- built-when: scripts/disposition_check.py -->
+<!-- built-when: plugins/apodictic/scripts/disposition_check.py -->
 **Provenance:** Fable pick #3. Sequenced directly after stub 01 (shared state-lifecycle surface;
 the resume flow should display dispositions).
 **Doc home at build time:** `docs/finding-dispositions.md` (this spec, updated with build-time corrections — the `docs/revision-round-gate.md` pattern).

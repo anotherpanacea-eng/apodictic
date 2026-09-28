@@ -1,7 +1,7 @@
 # Coaching History & Pattern Recognition — the cross-session process pattern, opt-in and deletable
 
 **Status:** **Built (Increment 1, v1 scope).** Shipped: the `apodictic.coaching_observation.v1` schema, `scripts/coaching_history.py` + `validate.sh coaching-history` (H1–H7 + W1 + the `delete <project_root>` subcommand), the canonical `example-coaching-history/` project fixture wired into `--check-all` under `--strict` (positive + five hostile ethics-gate arms + a delete round-trip), and the `revision-coach` skill contract §9. Self-testable validators count is **derived** from `validate.sh`'s `AGG_VALIDATORS` (not a hand-maintained number). This is APODICTIC's ONE ethically-sensitive surface; the two Fable conditions (2026-07-05) are mechanized as **H5** (writer-visible / no coach-only shadow) and **H6 + `delete`** (deletion honored, recomputed). Roadmap: `ROADMAP.md` → [Coaching Deepening](../ROADMAP.md#coaching-deepening).
-<!-- built-when: scripts/coaching_history.py -->
+<!-- built-when: plugins/apodictic/scripts/coaching_history.py -->
 
 Today each `/coach` session plans in isolation; nothing surfaces the pattern that spans them — "the same finding was set aside three sessions running." Over multiple revision cycles that cross-session pattern is exactly what a good coach remembers. Coaching History surfaces it as a **rolling, opt-in, local-only artifact of provenance-bound, descriptive observations**, each **mechanically derived from recorded session history** (a count over the recorded finding-disposition / revision-arc records — a count, not a vibe), carrying **no editorial severity** (a claim about the writer's *process* is orthogonal to a manuscript defect — no Must/Should/Could token, no `apodictic:finding` block).
 

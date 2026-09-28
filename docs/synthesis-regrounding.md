@@ -17,7 +17,7 @@ re-grounding and honest degrade disclosure.
 Protocol seam and the same `letter_checks.py`-family validator surface, and stacking in-flight
 edits there is how merge trains die. M1 is a **hard dependency of M2 and stays mandatory after
 M2 lands** (disclosure is never replaced by remediation).
-<!-- built-when: scripts/synthesis_coverage.py -->
+<!-- built-when: plugins/apodictic/scripts/synthesis_coverage.py -->
 
 ---
 

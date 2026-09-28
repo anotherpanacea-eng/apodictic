@@ -3,7 +3,7 @@
 **Status:** **Built** (the `calibration-honesty` `AGG_VALIDATORS` arm + `calibration_honesty.py` +
 the canonical decision-audit-letter fixture; spec `apo-narrative-decision-residue` increment (c),
 Opus build-review READY-AFTER-P1s, both P2s folded — this doc + the CS2 case-sensitivity fixture).
-<!-- built-when: scripts/calibration_honesty.py -->
+<!-- built-when: plugins/apodictic/scripts/calibration_honesty.py -->
 
 Both consumer decision-audit surfaces — `narrative_decision_audit` (StoryScope) and
 `argument_decision_audit` (ArgScope) — ship `handoff: experimental` with an envelope

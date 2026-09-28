@@ -5,7 +5,7 @@
 2026-07-01 BUILD-READY-WITH-FIXES 0 P1; Opus build-review READY-WITH-FIXES — the only P2 was this
 Status flip, every constructed attack failed closed). **Estimate:** 2–3 sessions, one PR
 (split point named in §Build). **Owner of the decision:** craft (the writer's revision-triage call).
-<!-- built-when: scripts/refutation_check.py -->
+<!-- built-when: plugins/apodictic/scripts/refutation_check.py -->
 **Provenance:** Opus 4.8 pick #1 — a genuine miss in the Fable list; evidence verified against the
 code 2026-07-01. Expanded to a full spec 2026-07-01; every anchor below re-verified by grep/read
 against the repo at expansion time.

@@ -1298,16 +1298,12 @@ def run_raw_check(name, path):
 def _fixture_dir():
     """Validator fixtures live in the repo at tests/fixtures/validators/.
 
-    Returns that path whenever a repo tests/ dir is found (from the plugin or
-    root scripts copy), even if the fixtures dir is missing, so a moved dir
-    fails the self-test. Returns None in an installed plugin (no repo).
+    Returns that path whenever the repo tests/ dir is found, even if the
+    fixtures dir is missing, so a moved dir fails the self-test. Returns None
+    in an installed plugin (no repo).
     """
-    here = os.path.dirname(os.path.abspath(__file__))
-    for tests in (os.path.join(here, "..", "..", "..", "tests"),
-                  os.path.join(here, "..", "tests")):
-        if os.path.isdir(tests):
-            return os.path.join(tests, "fixtures", "validators")
-    return None
+    tests = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tests")
+    return os.path.join(tests, "fixtures", "validators") if os.path.isdir(tests) else None
 
 
 def run_self_test(which=None):

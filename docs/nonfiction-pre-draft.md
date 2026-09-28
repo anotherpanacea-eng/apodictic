@@ -1,7 +1,7 @@
 # Nonfiction Pre-Draft Pathway — a workflow
 
 **Status:** Increments 1 (**argument spine**) + 2 (**source/evidence map**) + 3 (**warrant pre-check**) + 4 (**scene-ethics plan**) + 5 (**genre layer**, incl. its Increment 2 — **reviewer-anticipation W5**) built. Roadmap: `ROADMAP.md` → Workflows → Nonfiction Pre-Draft (+ Horizon item 11). Home: **pre-writing-pathway** (thesis-driven mode), reference `pre-writing-pathway/references/nonfiction-pre-draft.md`. Seeds: `Argument_State.md` (`docs/argument-state-schema.md`). Validator: `validate.sh argument-spine`.
-<!-- built-when: scripts/argument_spine.py contains "parse_genre_profiles" -->
+<!-- built-when: plugins/apodictic/scripts/argument_spine.py contains "parse_genre_profiles" -->
 <!--
 NOTE on Increment numbering: Increments 1-3 and 5 ride the SAME `argument-spine` validator (they are
 the spine's lenses on the shared `Argument_State`). Increment 4 (scene-ethics) is a DISTINCT artifact on
