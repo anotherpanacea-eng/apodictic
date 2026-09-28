@@ -45,11 +45,6 @@
 | `references/intake-router-design.md` | Router rationale and implementation notes (non-runtime) |
 | `references/series-state-template.md` | Series continuity state initialization |
 
-### Other References
-| File | Purpose |
-|------|---------|
-| `references/changelog.md` | Version history |
-
 ### Deprecated (do not load)
 | File | Superseded by |
 |------|--------------|
