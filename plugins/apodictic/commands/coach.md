@@ -1,7 +1,6 @@
 ---
 description: Plan revision sessions from diagnostic state
 argument-hint: [time] or [deadline DATE] or [stuck SCENE] or no argument
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
 Post-diagnostic revision coaching. Helps plan revision sessions, work through stuck points, track momentum, and manage deadlines.

@@ -1,6 +1,5 @@
 ---
 description: Recommended entry point for fiction or argument-shaped nonfiction — asks 2-3 questions (zero for a resumed project) and routes you to the right workflow
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob, WebSearch, WebFetch
 ---
 
 # /start — Intake Router + Resume Gate

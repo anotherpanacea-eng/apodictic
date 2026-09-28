@@ -1,7 +1,6 @@
 ---
 description: Generate a targeted beta-reader questionnaire from the diagnosis's open uncertainties
 argument-hint: point to the run folder / Findings Ledger, or no argument
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
 Beta-Reader Instrument Generation. The upstream complement to Feedback Triage: instead of handing beta readers "tell me what you think" and getting back noise, this turns the diagnosis's *own* open uncertainties into a focused, non-leading reader questionnaire — so the feedback that comes back is the feedback worth triaging.
