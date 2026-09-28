@@ -1,8 +1,7 @@
 # changelog.d/ — changelog fragments
 
-Instead of editing the big append-only changelog directly (which collides across
-parallel branches and is triplicated into the generated `codex/` + `antigravity/`
-trees), **each change drops one fragment file here.** The release pipeline
+Instead of editing the big append-only `CHANGELOG.md` directly (which collides
+across parallel branches), **each change drops one fragment file here.** The release pipeline
 assembles them into a single dated section. (Design: GitHub #51.)
 
 ## How to add an entry
@@ -33,8 +32,7 @@ version bump and before the host builds. It prepends a new
 `## vX.Y.Z - YYYY-MM-DD` section (these fragments concatenated) to the canonical
 repo-root `CHANGELOG.md` (kept outside the plugin folder so the Claude plugin
 directory's 256 KiB per-file limit doesn't hold every version for review), **deletes the
-consumed fragments**, and the host builds regenerate the `codex/` + `antigravity/`
-copies. Adoption is forward-only: this directory holds only the *unreleased*
+consumed fragments**. Adoption is forward-only: this directory holds only the *unreleased*
 fragments.
 
 Do **not** put this directory under `plugins/` — repo-root placement is what keeps

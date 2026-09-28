@@ -771,11 +771,11 @@ PY
       # is byte-identical to the committed docx/ fixture.
       CA_DXE_SRC="$CA_BASE/example-annotated-manuscript"
       # The committed .docx golden lives in evals/ (binaries stay out of the plugin folder, which the
-      # Claude plugin directory holds for review), so a standalone plugin install gates the export
-      # but skips the byte-compare.
+      # Claude plugin directory holds for review). Inside the repo the golden is required (a missing one
+      # fails the cmp below); only a standalone plugin install, with no evals/ at all, skips the byte-compare.
       CA_DXE_GOLD=""
-      for cand in "$CA_SCRIPT_DIR/../../../evals/fixtures/annotation-export/docx" "$CA_SCRIPT_DIR/../evals/fixtures/annotation-export/docx"; do
-        if [ -d "$cand" ]; then CA_DXE_GOLD="$cand"; break; fi
+      for cand in "$CA_SCRIPT_DIR/../../../evals" "$CA_SCRIPT_DIR/../evals"; do
+        if [ -d "$cand" ]; then CA_DXE_GOLD="$cand/fixtures/annotation-export/docx"; break; fi
       done
       CA_DXE=$(mktemp -d)
       cp "$CA_DXE_SRC"/*_Manuscript_Snapshot_*.md "$CA_DXE_SRC"/*_Annotation_Manifest_*.md "$CA_DXE"/ 2>/dev/null
@@ -811,11 +811,11 @@ PY
       # is byte-identical to the committed pdf/ fixture.
       CA_PXE_SRC="$CA_BASE/example-annotated-manuscript"
       # The committed .pdf golden lives in evals/ (binaries stay out of the plugin folder, which the
-      # Claude plugin directory holds for review), so a standalone plugin install gates the export
-      # but skips the byte-compare.
+      # Claude plugin directory holds for review). Inside the repo the golden is required (a missing one
+      # fails the cmp below); only a standalone plugin install, with no evals/ at all, skips the byte-compare.
       CA_PXE_GOLD=""
-      for cand in "$CA_SCRIPT_DIR/../../../evals/fixtures/annotation-export/pdf" "$CA_SCRIPT_DIR/../evals/fixtures/annotation-export/pdf"; do
-        if [ -d "$cand" ]; then CA_PXE_GOLD="$cand"; break; fi
+      for cand in "$CA_SCRIPT_DIR/../../../evals" "$CA_SCRIPT_DIR/../evals"; do
+        if [ -d "$cand" ]; then CA_PXE_GOLD="$cand/fixtures/annotation-export/pdf"; break; fi
       done
       CA_PXE=$(mktemp -d)
       cp "$CA_PXE_SRC"/*_Manuscript_Snapshot_*.md "$CA_PXE_SRC"/*_Annotation_Manifest_*.md "$CA_PXE"/ 2>/dev/null

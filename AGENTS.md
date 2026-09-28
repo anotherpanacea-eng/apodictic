@@ -170,7 +170,7 @@ don't need mirroring.)
 
 ## Changelog
 
-Don't edit `changelog.md` directly. Add one `changelog.d/<slug>.md` fragment per
+Don't edit `CHANGELOG.md` directly. Add one `changelog.d/<slug>.md` fragment per
 change — a single freeform thematic `### ` section. `scripts/release.sh` assembles
 the fragments into a dated `## vX.Y.Z` section at release time (and deletes them);
 `scripts/assemble-changelog.mjs --check` gates fragment validity in CI. See
