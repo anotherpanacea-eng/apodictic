@@ -1,5 +1,5 @@
 ---
-description: Capability index — every APODICTIC command grouped by workflow stage, the Firewall, and where your project stands
+description: Read-only capability index — lists every APODICTIC command by workflow stage and where your projects stand; asks no questions (use /start to be routed)
 argument-hint: no argument
 allowed-tools: Read, Glob, Bash
 ---
@@ -18,6 +18,8 @@ Print the reference below, then stop. This command is a **flat index, not a rout
 
 A developmental editor that **listens before diagnosing**: it infers the manuscript's own contract (genre, promise, controlling idea) from the text, then diagnoses the draft against that contract — structure, pacing, character, argument, voice — and routes you to revision.
 
+It covers two kinds of manuscript. **Fiction** gets structural passes, genre calibration, tag audits, and plot-spine work. **Argument-shaped nonfiction** (op-eds, policy briefs, testimony, academic arguments, open letters, white papers, legal briefs, regulatory comments, expert affidavits) gets the Argument Engine: it infers your claim, audience, and burden of proof, then finds missing warrants, scope drift, and unmet objections, with red-team, persuasion, evidence, adversarial-evidence, field-recon, and citation-verifier companions. `/start` detects which one you have.
+
 **The Firewall — diagnose, don't rewrite.** APODICTIC identifies problems and *classes* of solution — including which structural elements are missing or mis-weighted — but never drafts your prose or scripts the specific content that fills them (the events, characters, dialogue, or evidence). Naming a needed beat is diagnosis; writing it is yours. The author creates; the system analyzes. (Canonical: `../skills/core-editor/references/firewall.md`.) Per-module variants: the revision coach gives **guidance without specification** — it names the architectural weakness, you choose the words (`../skills/revision-coach/SKILL.md` §The Coaching Firewall); `/legal-risk` **flags, doesn't practice law** — it names exposure areas and routes serious items to counsel, never rendering a legal conclusion.
 
 ## Commands, by workflow stage
@@ -32,13 +34,15 @@ A developmental editor that **listens before diagnosing**: it infers the manuscr
 - `/new-project` — set up project scaffolding, the contract, and diagnostic state.
 
 **Diagnose a draft** — full or targeted diagnosis routes through `/start`.
-- `/audit` — run a named specialized audit (no argument lists the full set).
+- `/audit` — run a named specialized audit (no argument lists the full set). For nonfiction arguments, `/audit dialectical` comes first.
 - `/research` — internet-enabled verification modes (no argument lists them all).
+- `/world-bible` — check a worldbuilding bible for self-contradiction (rules, magic costs, geography, timeline).
 
 **Revise after a diagnosis**
 - `/coach` — session planning, stuck-point coaching, momentum tracking, deadline calendars.
 - `/triage-feedback` — sort, validate, and prioritize external (beta-reader / critique / editor) feedback.
 - `/reader-questions` — turn the diagnosis's open uncertainties into a targeted, non-leading beta-reader questionnaire.
+- `/adjudicate` — review the argument reconstruction (claim graph) and record your approve / reject / revise decisions on each claim and link; resumable.
 
 **Risk & submission**
 - `/legal-risk` — flag defamation / privacy / rights-clearance exposure for a lawyer's review (flags, never adjudicates).
