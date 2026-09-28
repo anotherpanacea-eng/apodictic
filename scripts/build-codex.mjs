@@ -458,7 +458,6 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
       const relPath = path.relative(tempWorkspace, file).split(path.sep).join("/");
       return !new Set([
         "NON_PARITY_NOTES.md",
-        "plugins/apodictic/skills/core-editor/references/changelog.md",
         "plugins/apodictic/skills/core-editor/references/output-policy.md",
         "plugins/apodictic/skills/core-editor/references/output-structure.md",
         "plugins/apodictic/skills/specialized-audits/references/craft/adversarial-evidence-review.md"
