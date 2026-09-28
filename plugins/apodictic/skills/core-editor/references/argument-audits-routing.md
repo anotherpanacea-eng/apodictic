@@ -19,7 +19,7 @@ definition in `pass-dependencies.md`).
 
 | Router signal | Audit(s) | Policy | Reference file |
 |---------------|----------|--------|----------------|
-| Constraint = nonfiction (idea-stage) | (Nonfiction Pre-Draft Pathway — idea-stage gap) | Note gap; offer closest. Prose-stage nonfiction engines (argument / narrative / memoir) are built — see `intake-router-runtime.md` §6 Table A | — |
+| Constraint = nonfiction (idea-stage) | Nonfiction Pre-Draft (argument spine; seeds `Argument_State.md`) | Route to the pre-writing pathway's nonfiction pre-draft; Dialectical Clarity consumes the seeded state once a draft exists — see `intake-router-runtime.md` §6 Table A | `pre-writing-pathway/references/nonfiction-pre-draft.md` |
 | Argument-shaped run (constraint=nonfiction + intake hint at white paper / policy brief / testimony / op-ed / academic article / legal brief / regulatory comment / expert affidavit) | Field Reconnaissance | **Hard Prerequisite** when high-stakes signal present (testimony, expert affidavit, legal brief, regulatory comment, peer-reviewed publication, or `constraint=high-stakes` flag); otherwise **Auto-recommend before synthesis** | `craft/research-field-recon.md` |
 | Argument-shaped run (constraint=nonfiction + high-stakes intake hint: testimony / expert affidavit / legal brief / regulatory comment / peer-reviewed publication) | Citation Verifier | **Pre-DE Prerequisite** (runs before passes; not a DE-internal audit — see audit reference) | `craft/research-citation-verifier.md` |
 
