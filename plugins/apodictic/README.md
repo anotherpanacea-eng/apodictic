@@ -159,7 +159,7 @@ Internet-enabled research to validate comps, check facts, verify genre currency,
 
 ## Execution Modes
 
-APODICTIC selects its execution mode based on the available context window. On models with ≥1M token context (e.g., Claude Opus 4.6), the default is **single-agent mode**: one subagent runs all passes sequentially in a single context, with the full manuscript in view throughout. This is the fastest and most token-efficient option, viable for manuscripts up to roughly 200,000 words.
+APODICTIC selects its execution mode based on the available context window. On models with ≥1M token context (e.g., Claude Opus 5.5), the default is **single-agent mode**: one subagent runs all passes sequentially in a single context, with the full manuscript in view throughout. This is the fastest and most token-efficient option, viable for manuscripts up to roughly 200,000 words.
 
 For a **final-round verification pass**, request **swarm mode**: each pass runs as an independent subagent loading the full manuscript. The gain is **architectural isolation** — each pass genuinely cannot see prior analysis until reconciliation, which eliminates anchoring bias — at approximately **5x the token cost**. Best reserved for final submission prep: an earlier validation reported ~2× findings, but a 2026-06 N=1 re-test on long fiction did not reproduce a depth advantage, so swarm's dependable value is verification isolation, not everyday yield.
 
