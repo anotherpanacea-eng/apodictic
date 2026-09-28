@@ -35,7 +35,7 @@ The Development Editor works like a human developmental editor: it reads a manus
 - Line edit, copyedit, or proofread
 - Replace a human developmental editor's judgment — it provides analytical scaffolding, not verdicts
 - Guarantee commercial viability, publication readiness, or literary merit
-- Add telemetry or network calls of its own — the plugin transmits nothing on its own, and stores diagnostic state only on your local disk; the optional `/research` modes make web searches you invoke explicitly
+- Add telemetry, analytics, or a server of its own. Diagnostic state stays on your local disk. The optional `/research` and citation-checking modes query public scholarly services (Crossref, OpenAlex, Semantic Scholar, Unpaywall, CORE, PubMed, and the Wayback Machine) with a DOI, title, short search query, or URL; see [PRIVACY.md](https://github.com/anotherpanacea-eng/apodictic/blob/main/PRIVACY.md)
 
 The system diagnoses structure. The author creates content. After diagnosis you can stay inside APODICTIC's revision-coaching and editor workflows (session planning, stuck-point help, the revising-loop dispatcher), or step outside the diagnostic firewall to draft.
 
