@@ -60,7 +60,12 @@
       "packaging/codex/README.codex.md": "plugins/apodictic/README.md",
       "packaging/codex/route-explorer.codex.html": "plugins/apodictic/route-explorer.html",
       "packaging/codex/NON_PARITY_NOTES.codex.md": "NON_PARITY_NOTES.md",
-      "packaging/codex/.codex-plugin/plugin.json": "plugins/apodictic/.codex-plugin/plugin.json"
+      "packaging/codex/.codex-plugin/plugin.json": "plugins/apodictic/.codex-plugin/plugin.json",
+      "packaging/codex/assets/apodictic-composer.svg": "plugins/apodictic/assets/apodictic-composer.svg",
+      "packaging/codex/assets/apodictic-composer.png": "plugins/apodictic/assets/apodictic-composer.png",
+      "packaging/codex/assets/apodictic-screenshot-homepage.png": "plugins/apodictic/assets/apodictic-screenshot-homepage.png",
+      "packaging/codex/assets/apodictic-screenshot-route-explorer.png": "plugins/apodictic/assets/apodictic-screenshot-route-explorer.png",
+      "packaging/codex/assets/apodictic-screenshot-editor-letter.png": "plugins/apodictic/assets/apodictic-screenshot-editor-letter.png"
     },
     "commandBaseSkills": {
       "start": "core-editor",
