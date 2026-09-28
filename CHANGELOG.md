@@ -5,6 +5,14 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.13.2 - 2026-09-28
+
+### Plugin directory policy holds
+
+Commands no longer pre-approve tools through `allowed-tools`; Claude now asks before running
+shell commands, writing files, or fetching from the web while a command is active. The plugin
+also ships `.claude-plugin/icon.svg` for its directory listing.
+
 ## v2.13.1 - 2026-09-28
 
 ### Codex images move out of the plugin folder

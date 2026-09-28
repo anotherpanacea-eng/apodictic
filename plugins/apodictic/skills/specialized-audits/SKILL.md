@@ -13,7 +13,7 @@ description: >
   review. Use when the user asks for a named or focused audit, or asks
   "list audits" / "what audits are available." Full trigger vocabulary is in
   the body under Trigger Vocabulary.
-version: 2.13.1
+version: 2.13.2
 ---
 
 # Specialized Audits & Research Modes
