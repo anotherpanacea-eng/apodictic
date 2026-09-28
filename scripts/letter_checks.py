@@ -24,7 +24,7 @@ Conventions mirror structured_findings.py / honesty_check.py:
     list to exit 1, warnings to a WARN line + exit 0.
   - the surfaced lines keep the legacy "ERROR:" / "WARN:" / "FAILED:" / "OK:"
     prefixes that callers (e.g. underdiagnosis-triggers Trigger #5) grep for.
-  - data-driven fixtures under test_fixtures/lc.*  (.pass.->exit 0, .fail.->exit 1).
+  - data-driven fixtures under tests/fixtures/validators/lc.*  (.pass.->exit 0, .fail.->exit 1).
 
 CLI:
   letter_checks.py severity-floor <letter_file> [<ledger_file>]
@@ -1296,11 +1296,17 @@ def run_raw_check(name, path):
 
 
 def _fixture_dir():
+    """Validator fixtures live in the repo at tests/fixtures/validators/.
+
+    Returns that path whenever a repo tests/ dir is found (from the plugin or
+    root scripts copy), even if the fixtures dir is missing, so a moved dir
+    fails the self-test. Returns None in an installed plugin (no repo).
+    """
     here = os.path.dirname(os.path.abspath(__file__))
-    for c in (os.path.join(here, "test_fixtures"),
-              os.path.join(here, "..", "plugins", "apodictic", "scripts", "test_fixtures")):
-        if os.path.isdir(c):
-            return c
+    for tests in (os.path.join(here, "..", "..", "..", "tests"),
+                  os.path.join(here, "..", "tests")):
+        if os.path.isdir(tests):
+            return os.path.join(tests, "fixtures", "validators")
     return None
 
 
@@ -1588,9 +1594,12 @@ def run_self_test(which=None):
                   "### Unresolved Questions\nx\nSee the ### Audit Triggers list below.\n")
         check_rc("lc_prose_pseudo_heading_fails", ledger_check(_prose)[0], False)
 
-    # Data-driven fixtures: lc.<pass|fail>.<check>.<name>.md in test_fixtures/.
+    # Data-driven fixtures: lc.<pass|fail>.<check>.<name>.md in tests/fixtures/validators/.
     fdir = _fixture_dir()
-    if fdir:
+    if fdir and not os.path.isdir(fdir):
+        print("  fixtures: FAIL (%s missing)" % fdir)
+        rc["v"] = 1
+    elif fdir:
         for path in sorted(glob.glob(os.path.join(fdir, "lc.*"))):
             name = os.path.basename(path)
             parts = name.split(".")
@@ -1605,7 +1614,7 @@ def run_self_test(which=None):
                 fn = CHECKS.get(chk, severity_floor)
                 check("fixture:%s" % name, fn(txt)[0], ".pass." in name)
     else:
-        print("  fixtures: SKIP (test_fixtures/ not found)")
+        print("  fixtures: SKIP (no repo checkout)")
 
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]

@@ -67,10 +67,10 @@ to the prior behavior, never to nothing).
 exit semantics so no caller changes.
 
 **Fixtures** follow the existing data-driven convention (`structured_findings.py`):
-`test_fixtures/lc.<pass|fail>.<check>.<name>.md`; `.pass.` ⇒ clean (exit 0), `.fail.` ⇒
-caught (exit 1). Fixtures are single-homed in `plugins/apodictic/scripts/test_fixtures/`;
-the root `scripts/` copy resolves them via the same `_fixture_dir()` fallback the other
-helpers use.
+`lc.<pass|fail>.<check>.<name>.md`; `.pass.` ⇒ clean (exit 0), `.fail.` ⇒
+caught (exit 1). Fixtures live in the repo at `tests/fixtures/validators/` (outside the
+shipped plugin); `_fixture_dir()` finds them from either scripts copy and fails the
+self-test if a repo checkout lacks them.
 
 ## Increment plan
 

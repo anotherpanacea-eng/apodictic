@@ -24,7 +24,7 @@
       "plugins/apodictic/skills/revision-coach/SKILL.md"
     ],
     "pluginReadme": "plugins/apodictic/README.md",
-    "pluginReadmeCodex": "plugins/apodictic/README.codex.md",
+    "pluginReadmeCodex": "packaging/codex/README.codex.md",
     "auditCommand": "plugins/apodictic/commands/audit.md"
   },
   "counts": {
@@ -57,9 +57,10 @@
       "Use APODICTIC to help me plan revisions without rewriting prose."
     ],
     "overrides": {
-      "plugins/apodictic/README.codex.md": "plugins/apodictic/README.md",
-      "plugins/apodictic/route-explorer.codex.html": "plugins/apodictic/route-explorer.html",
-      "plugins/apodictic/NON_PARITY_NOTES.codex.md": "NON_PARITY_NOTES.md"
+      "packaging/codex/README.codex.md": "plugins/apodictic/README.md",
+      "packaging/codex/route-explorer.codex.html": "plugins/apodictic/route-explorer.html",
+      "packaging/codex/NON_PARITY_NOTES.codex.md": "NON_PARITY_NOTES.md",
+      "packaging/codex/.codex-plugin/plugin.json": "plugins/apodictic/.codex-plugin/plugin.json"
     },
     "commandBaseSkills": {
       "start": "core-editor",
@@ -271,8 +272,8 @@
       { "name": "Reverse Outline", "files": ["core-editor/references/reverse-outline-template.md"] }
     ],
     "coreDe": [
-      { "name": "Reader Experience Mapping", "files": ["core-editor/references/core-framework.md"] },
-      { "name": "Structural Diagnosis", "files": ["core-editor/references/structural-frameworks.md"] }
+      { "name": "Reader Experience Mapping", "files": ["core-editor/references/run-core.md"] },
+      { "name": "Structural Diagnosis", "files": ["core-editor/references/run-core.md", "core-editor/references/run-full.md"] }
     ],
     "fullDe": [
       { "name": "Rhythm and Modulation (Pass 3)", "files": ["core-editor/references/run-full.md"] },
@@ -280,7 +281,7 @@
       { "name": "Character Architecture (Pass 5)", "files": ["core-editor/references/character-architecture.md", "core-editor/references/run-full.md"] },
       { "name": "Scene Function Audit (Pass 6)", "files": ["core-editor/references/run-full.md"] },
       { "name": "POV and Voice (Pass 7)", "files": ["core-editor/references/run-full.md"] },
-      { "name": "Reveal Economy (Pass 8)", "files": ["core-editor/references/certainty-axis.md", "core-editor/references/run-full.md"] },
+      { "name": "Reveal Economy (Pass 8)", "files": ["core-editor/references/run-full.md"] },
       { "name": "Thematic Coherence (Pass 9)", "files": ["core-editor/references/run-full.md"] },
       { "name": "Entity Tracking (Pass 10)", "files": ["core-editor/references/run-full.md"] },
       { "name": "Pacing Analysis", "files": ["core-editor/references/run-core.md"] }
@@ -297,10 +298,10 @@
     ],
     "submissionReadinessAnalytical": [
       { "name": "Reverse Outline", "files": ["core-editor/references/reverse-outline-template.md"] },
-      { "name": "Reader Experience Mapping", "files": ["core-editor/references/core-framework.md"] },
-      { "name": "Structural Diagnosis", "files": ["core-editor/references/structural-frameworks.md"] },
+      { "name": "Reader Experience Mapping", "files": ["core-editor/references/run-core.md"] },
+      { "name": "Structural Diagnosis", "files": ["core-editor/references/run-core.md", "core-editor/references/run-full.md"] },
       { "name": "Character Architecture (Pass 5)", "files": ["core-editor/references/character-architecture.md", "core-editor/references/run-full.md"] },
-      { "name": "Reveal Economy (Pass 8)", "files": ["core-editor/references/certainty-axis.md", "core-editor/references/run-full.md"] }
+      { "name": "Reveal Economy (Pass 8)", "files": ["core-editor/references/run-full.md"] }
     ],
     "submissionReadinessSynthesis": [
       { "name": "Adversarial Stress Test", "files": ["core-editor/references/adversarial-stress-test.md"] },

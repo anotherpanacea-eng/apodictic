@@ -44,14 +44,3 @@
 | `references/intake-router-runtime.md` | Runtime routing spec for `/start` command |
 | `references/intake-router-design.md` | Router rationale and implementation notes (non-runtime) |
 | `references/series-state-template.md` | Series continuity state initialization |
-
-### Deprecated (do not load)
-| File | Superseded by |
-|------|--------------|
-| `references/core-framework.md` | SKILL.md + run-core.md + run-full.md + all reference files |
-| `references/module-index.md` | `AUDIT_SELECTION_MATRIX.md` + `specialized-audits/SKILL.md` |
-| `references/intake-router.md` | `references/intake-router-runtime.md` + `references/intake-router-design.md` |
-| `references/intake-questions.md` | `references/run-core.md` §Hypothesis-Driven Intake Questions |
-| `references/certainty-axis.md` | `references/run-full.md` §Certainty Axis Cues |
-| `references/structural-frameworks.md` | `references/run-full.md` §Structural Frameworks |
-

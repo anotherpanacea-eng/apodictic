@@ -5,10 +5,10 @@
 # Usage: ./scripts/bump-version.sh 1.0.0
 #
 # Canonical source: plugins/apodictic/.claude-plugin/plugin.json
-# Also updates:     plugins/apodictic/.codex-plugin/plugin.json
+# Also updates:     packaging/codex/.codex-plugin/plugin.json
 #                   marketplace.json (root, both version fields)
 #                   .claude-plugin/marketplace.json (both version fields)
-#                   plugins/apodictic/README.codex.md version callout
+#                   packaging/codex/README.codex.md version callout
 #                   5 SKILL.md frontmatter version: fields
 #
 # Does NOT touch: changelog entries, deprecated file banners,
@@ -60,7 +60,7 @@ else
 fi
 
 # 3. plugin.json (Codex template)
-CODEX_PLUGIN_JSON="$PLUGIN_DIR/.codex-plugin/plugin.json"
+CODEX_PLUGIN_JSON="$REPO_ROOT/packaging/codex/.codex-plugin/plugin.json"
 if [ -f "$CODEX_PLUGIN_JSON" ]; then
   sedi "s/\"version\": \"[^\"]*\"/\"version\": \"${NEW_VERSION}\"/" "$CODEX_PLUGIN_JSON"
   echo "  updated  $CODEX_PLUGIN_JSON"
@@ -87,7 +87,7 @@ else
 fi
 
 # 6. Codex README version callout
-CODEX_README="$PLUGIN_DIR/README.codex.md"
+CODEX_README="$REPO_ROOT/packaging/codex/README.codex.md"
 if [ -f "$CODEX_README" ]; then
   sedi 's/Current Codex manifest version is `[^`]*`/Current Codex manifest version is `'"${NEW_VERSION}"'`/' "$CODEX_README"
   echo "  updated  $CODEX_README"

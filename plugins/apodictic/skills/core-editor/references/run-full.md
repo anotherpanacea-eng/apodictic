@@ -137,7 +137,7 @@ For multi-POV manuscripts, Pass 7 supplements the LLM's qualitative voice readin
 
 **POV mapping cascade** — determine how the pass learns which chapters belong to which POV character, in priority order:
 
-1. **Contract intake answer.** When the intake protocol's multi-POV question was answered (see `intake-questions.md`), use the author-supplied POV-to-chapter mapping. Author-confirmed.
+1. **Contract intake answer.** When the intake protocol's multi-POV question was answered (see `run-core.md` §Hypothesis-Driven Intake Questions), use the author-supplied POV-to-chapter mapping. Author-confirmed.
 2. **Runtime interactive question.** When intake didn't capture POV info AND the runtime context supports interactive input, ask the writer once at pass start: *"This manuscript appears multi-POV. List the POV characters and which chapters belong to each."* Build the in-memory manifest from the answer. Author-confirmed.
 3. **LLM POV-shift detection (non-interactive fallback).** When neither (1) nor (2) is available — pipeline/headless modes — the LLM detects POV transitions from the prose and builds the manifest from the detection. NOT author-confirmed; the pass output records this provenance and all downstream stylometric findings carry the caveat *"POV mapping detected by LLM; not author-confirmed."*
 
