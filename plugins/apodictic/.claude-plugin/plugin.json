@@ -5,6 +5,13 @@
   "author": {
     "name": "anotherpanacea"
   },
+  "homepage": "https://github.com/anotherpanacea-eng/apodictic",
+  "repository": "https://github.com/anotherpanacea-eng/apodictic",
+  "documentationUrl": "https://github.com/anotherpanacea-eng/apodictic/blob/main/plugins/apodictic/README.md",
+  "supportUrl": "https://github.com/anotherpanacea-eng/apodictic/issues",
+  "privacyPolicyUrl": "https://github.com/anotherpanacea-eng/apodictic/blob/main/PRIVACY.md",
+  "termsOfServiceUrl": "https://github.com/anotherpanacea-eng/apodictic/blob/main/LICENSE",
+  "license": "CC-BY-NC-SA-4.0",
   "keywords": [
     "writing",
     "editing",
