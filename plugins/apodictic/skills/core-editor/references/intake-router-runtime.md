@@ -296,7 +296,7 @@ The **cold-start** workflow-selection decisions — the path for a project with 
 |----------|------|------|----------|--------|
 | idea | draft | — | Pre-Writing Pathway | **Built** |
 | idea | draft (fast-track) | — | Pre-Writing Pathway (skip to Phase 4) | **Built** |
-| idea | draft | engine=nonfiction | Nonfiction Pre-Draft (`pre-writing-pathway/references/nonfiction-pre-draft.md`; seeds `Argument_State.md`) | **Built** |
+| idea | draft | engine=nonfiction (argument-shaped) | Nonfiction Pre-Draft (`pre-writing-pathway/references/nonfiction-pre-draft.md`; seeds `Argument_State.md`) | **Built** |
 | fragments | draft | — | Fragment Synthesis → Pre-Writing | **Built** (v1.2.0) |
 | fragments | repair | — | Core DE (partial flag) | **Built** (v1.2.0) |
 | partial | repair (diagnostic) | — | Core DE (partial flag) | **Built** (v1.2.0) |
