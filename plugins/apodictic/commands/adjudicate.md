@@ -1,7 +1,6 @@
 ---
 description: Review and record author decisions on an existing reconstruction claim graph
 argument-hint: project directory
-allowed-tools: Read, Write, Bash, Glob
 ---
 
 # /adjudicate — Author approval session

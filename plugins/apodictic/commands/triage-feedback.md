@@ -1,7 +1,6 @@
 ---
 description: Sort, validate, and prioritize external feedback (beta readers, critique group, editor)
 argument-hint: paste or point to the feedback, or no argument
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
 Feedback Triage. For writers returning with external feedback — beta readers, a critique group, an agent or editor — that is often contradictory, uneven, and unvalidated. Sorts each note, checks it against the diagnosis, prioritizes, and resolves contradictions before any revision time is spent.

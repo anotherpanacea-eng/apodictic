@@ -1,7 +1,6 @@
 ---
 description: Run a specialized audit or list available audits
 argument-hint: [audit-name] or no argument to list all
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob
 ---
 
 Run a specialized audit from the APODICTIC Development Editor framework.

@@ -1,7 +1,6 @@
 ---
 description: Read-only capability index — lists every APODICTIC command by workflow stage and where your projects stand; asks no questions (use /start to be routed)
 argument-hint: no argument
-allowed-tools: Read, Glob, Bash
 ---
 
 # /apodictic — capability index
