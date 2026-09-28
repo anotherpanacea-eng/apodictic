@@ -1,7 +1,6 @@
 ---
 description: Check a worldbuilding bible for self-contradiction (rules, magic costs, geography/timeline)
 argument-hint: point to the worldbuilding bible, or no argument
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
 Standalone Worldbuilding-Bible Coherence Tool. For an SFF author with a **pre-draft worldbuilding bible** — the rules of the magic/tech and its cost, the geography, the order of events, the factions — checks that *bible* (not a manuscript) for self-contradiction: closed-set rule consistency, magic-system cost accounting, and geography/timeline contradiction. It surfaces the conflicts the bible has already committed to; it does **not** invent world content.

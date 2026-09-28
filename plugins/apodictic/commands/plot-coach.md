@@ -1,6 +1,5 @@
 ---
 description: Plot structure selection and coaching
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob
 ---
 
 Activate the plot selection and coaching workflow for structural guidance.

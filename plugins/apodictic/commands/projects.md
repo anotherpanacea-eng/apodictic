@@ -1,6 +1,5 @@
 ---
 description: List and manage your APODICTIC projects
-allowed-tools: Read, Write, Edit, Bash, Glob
 ---
 
 # /projects — list and manage registered projects

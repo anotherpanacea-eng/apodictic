@@ -1,7 +1,6 @@
 ---
 description: Run a research mode or list available modes
 argument-hint: [mode-name] or no argument to list all
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob, WebSearch, WebFetch
 ---
 
 Run a research mode from the APODICTIC Development Editor framework. Research modes are internet-enabled investigations that supplement structural analysis.

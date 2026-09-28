@@ -1,6 +1,5 @@
 ---
 description: Initialize a new development editor project
-allowed-tools: Read, Write, Edit, Bash, Glob
 ---
 
 Initialize a new project for the APODICTIC Development Editor.

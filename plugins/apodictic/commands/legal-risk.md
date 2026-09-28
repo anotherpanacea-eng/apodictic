@@ -1,7 +1,6 @@
 ---
 description: Flag legal-exposure areas (defamation, privacy, rights-clearance) for legal review
 argument-hint: point to the manuscript, or no argument
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
 Legal Risk Register. For memoir, autofiction, or nonfiction that portrays **identifiable real people**, or quotes substantial third-party copyrighted material, and is heading toward publication. Flags the manuscript's legal-exposure areas so the author knows where to get a lawyer's eyes — it does **not** practice law.
