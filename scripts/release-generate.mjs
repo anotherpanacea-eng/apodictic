@@ -126,7 +126,9 @@ function validateRegistry(stats) {
 function buildPluginDescription(stats) {
   return [
     "APODICTIC Development Editor. A development editor for fiction and argument-shaped nonfiction — reads what you wrote, diagnoses structure, never rewrites.",
-    "Provides structural diagnosis, genre calibration, tag audits, plot architecture analysis, revision coaching, partial manuscript diagnostic, fragment synthesis, nonfiction argument engine (Dialectical Clarity + Red Team, Persuasion, Evidence, and Coaching companions), pre-writing pathway, and intake routing",
+    "For nonfiction, the Argument Engine infers your claim, audience, and burden, then finds missing warrants, scope drift, and unmet objections in op-eds, policy briefs, testimony, academic arguments, legal briefs, and regulatory comments, with Dialectical Clarity, Red Team, Persuasion, Evidence, Field Reconnaissance, and Citation Verifier companions.",
+    "For fiction: structural diagnosis, genre calibration, tag audits, plot architecture analysis, and pre-writing.",
+    "Shared: revision coaching, partial manuscript diagnostic, fragment synthesis, and intake routing",
     `across ${counts.corePasses} core passes, ${stats.available} available audits (${stats.universal} universal, ${stats.craft} craft, ${stats.genre} genre, ${stats.tag} tag), ${counts.researchModes} research modes, ${counts.preWritingPathways} pre-writing pathway, and ${counts.intakeRouters} intake router.`,
     "Includes contract-driven and finding-driven audit integration pipeline."
   ].join(" ");

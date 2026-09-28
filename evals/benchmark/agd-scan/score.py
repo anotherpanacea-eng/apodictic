@@ -94,7 +94,7 @@ import tempfile
 # --------------------------------------------------------------------------
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.abspath(os.path.join(_HERE, "..", "..", ".."))
-_SCRIPTS_DIR = os.path.join(_REPO_ROOT, "scripts")
+_SCRIPTS_DIR = os.path.join(_REPO_ROOT, "plugins", "apodictic", "scripts")
 _MANIFESTS_DIR = os.path.join(_HERE, "manifests")
 _FIXTURES_DIR = os.path.join(_REPO_ROOT, "evals", "fixtures", "argument-agd")
 _SHIM = os.path.join(_REPO_ROOT, "plugins", "apodictic", "skills",

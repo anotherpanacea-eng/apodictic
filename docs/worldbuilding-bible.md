@@ -1,7 +1,7 @@
 # Standalone Worldbuilding-Bible Coherence Tool — a pre-draft consistency checker over the author's own bible
 
 **Status:** **Built (M1), 2026-06-21.** Shipped: the `apodictic.world_fact.v1` schema, the `core-editor/references/worldbuilding-bible.md` extraction module, `scripts/world_bible.py` + `validate.sh world-bible` (W1/WD + WB-R1/C1/C2/G1/G2 + WF), the `/world-bible` command, and the canonical `example-worldbuilding-bible.md` wired into `--check-all` under `--strict`. Self-testable validators 50 → 51 (derived from `validate.sh`'s `AGG_VALIDATORS` list — adding `world-bible` is the whole count change). Roadmap: `ROADMAP.md` → [Horizon Capacities](../ROADMAP.md#horizon-capacities) Tier 2, item 13. Homed in core-editor as an optional-artifact **tool/command** (routed like `/legal-risk`, not as a manuscript-pass audit). **Increment (2026-07-05):** the contradiction **State axis** (`conflicting` / `apparent` / `consistent`) on the ledger table, mechanically derived by the shared `scripts/contradiction_state.py` helper, with the `X1` firewall arm on the validator and `conflicting`-row prose-citation into the editorial letter (see §The State axis).
-<!-- built-when: scripts/world_bible.py -->
+<!-- built-when: plugins/apodictic/scripts/world_bible.py -->
 
 > This doc lives under `docs/` (mirroring `docs/continuity-bible.md`) so `check-status-drift.mjs` — which scans `docs/**/*.md` only — sees the `built-when` marker above and enforces the Status flip in the same PR. (The reviewed spec originally lived in `setec-scratch/`, outside the lint's scope; the build moved it here, per review finding P2.)
 

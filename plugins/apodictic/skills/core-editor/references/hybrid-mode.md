@@ -390,8 +390,6 @@ The treatment arm preserves the spec's anti-overfit condition: in non-hybrid mod
 
 ### Target metrics (M1-M4)
 
-Per `docs/eval-harness-spec.md §Synthesis-Specific Eval`:
-
 - **M1 — Severity Honesty:** 1-5 manual scoring. Whether severity matches evidence weight; whether retry loop fires when warranted; whether final verdict is calibrated.
 - **M2 — Audit Routing Coverage:** Count of audit recommendations made vs. ground-truth audit need per fixture's known-good calibration.
 - **M3 — Cross-Pass Connection Density:** Count of distinct cross-pass connections logged in Findings Ledger entries.
@@ -423,7 +421,7 @@ If acceptance criteria met: adopt per per-mode role definitions — single-agent
 
 When the test eventually runs:
 
-1. Pre-register the test per `docs/eval-harness-spec.md §Decision Rules` (fixture set, target metrics, binary checks, regression fixtures).
+1. Pre-register the test (fixture set, target metrics, binary checks, regression fixtures).
 2. Run both arms on all three fixtures.
 3. Score M1-M4 and G1-G2 per arm per fixture.
 4. Compare against acceptance criteria.

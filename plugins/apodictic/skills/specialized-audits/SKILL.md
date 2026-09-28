@@ -1,105 +1,18 @@
 ---
 name: specialized-audits
 description: >
-  Deep-dive specialized audits and research modes for the APODICTIC
-  Development Editor. Use when the user asks to "run a scene audit,"
-  "character architecture audit," "shelf positioning," "emotional craft
-  audit," "dialectical clarity," "dialectical clarity audit," "argument audit,"
-  "warrant gap," "warrant analysis," "audience calibration," "dialectical integrity,"
-  "claim ladder," "support map," "burden of proof," "scope creep,"
-  "definitional smuggling," "concession without cost," "evidence laundering,"
-  "motte-and-bailey," "epistemic erasure," "false precision,"
-  "testimonial overburden," "emotional inflation," "implementation blindspot,"
-  "qualification erosion," "authority overreach," "anecdote-to-principle,"
-  "is the argument working," "does the argument hold," "structurally unsound,"
-  "argument structure," "nonfiction argument," "policy brief audit,"
-  "testimony audit," "op-ed audit," "argument red team", "red team",
-  "red-team", "stress test the argument", "hostile reader", "opposition memo",
-  "cross-examine", "cross examination", "strongest objection", "argument pressure test",
-  "argument persuasion", "persuasion memo", "audience memo", "framing options",
-  "concession placement", "make this land better", "argument evidence",
-  "evidence deep-dive", "evidence provenance", "testimony calibration",
-  "evidence ledger", "verification queue",
-  "consent audit," "comedy audit,"
-  "historical fiction audit," "queer romance audit," "fan fiction conversion,"
-  "interiority audit," "banister audit," "short fiction audit," "series audit,"
-  "ai prose," "ai calibration," "slop to silver," "ai-prose calibration,"
-  "narrative decision," "narrative-decision audit," "narrative decision audit,"
-  "storyscope," "story scope," "narrative feature scoring," "narrative-decision signals,"
-  "rewrite-resistant," "structure-level ai," "structure-level ai detection,"
-  "argument decision," "argument-decision audit," "argument decision audit,"
-  "argscope," "argument feature scoring," "argument-decision signals,"
-  "argument structure scoring," "structure-level argument," "argument collapse,"
-  "variance audit," "manuscript audit," "repetition audit," "lexical compression,"
-  "personal baseline," "voice fingerprint," "burstiness," "MATTR," "function-word fingerprint,"
-  "negation hedge," "indefinite-pronoun gesture," "disguised correctio,"
-  "pseudo-aphorism," "manifesto cadence," "source triage," "payoff test,"
-  "voice slip," "lost callback," "earned by frame,"
-  "abstraction shielding," "false-balance," "hedge-and-affirm,"
-  "recommendation template," "authority laundering,"
-  "idiolect," "idiolect preservation," "preservation list,"
-  "do not normalize," "do not flatten," "signature moves,"
-  "voice preservation," "keyness," "collocation preservation,"
-  "punctuation cadence," "punctuation rhythm," "interruption grammar,"
-  "punctuation regularization," "dash density," "em-dash audit,"
-  "house style," "copyedit drift," "my editor flattened me,"
-  "pov voice," "pov voice profile," "per-pov voiceprint,"
-  "do my povs sound different," "voice-collapse," "pov collapse,"
-  "blind swap fail," "interchangeable povs," "pov differentiation,"
-  "comp validation," "fact check," "genre currency check,"
-  "representation context," "citation verifier," "citation verification,"
-  "verify citations," "check my citations," "are these citations real,"
-  "source verification," "quote verification," "ghost citation,"
-  "do my sources check out," "citation integrity," "source integrity,"
-  "field recon," "field reconnaissance," "counterevidence," "what am I missing,"
-  "literature gaps," "source ecosystem," "hostile reviewer," "what would a reviewer cite,"
-  "is my source base adequate," "dead links," "retracted sources,"
-  "adversarial evidence," "evidence pressure test," "evidence survivability,"
-  "does my evidence hold up," "hostile peer reviewer," "would this survive review,"
-  "attack my evidence," "stress test evidence," "evidence attack surface,"
-  "cozy audit," "cozy tag," "philosophical audit,"
-  "philosophical tag," "novel of ideas," "tag audit,"
-  "sff worldbuilding," "worldbuilding integration," "worldbuilding audit,"
-  "literary craft," "literary mode," "ornamental prose," "load-bearing,"
-  "horror craft," "horror integration," "inert dread," "dread architecture,"
-  "horror pressure," "does the horror land,"
-  "supernatural horror," "supernatural audit," "ghost story audit,"
-  "haunting audit," "possession audit," "belief threshold,"
-  "wrongness," "inert supernaturality," "does the haunting land,"
-  "is the supernatural working," "the ghost feels decorative,"
-  "supernatural feels flat," "curse audit," "folk horror audit,"
-  "grimdark," "grimdark audit," "dark fantasy audit," "inert bleakness,"
-  "violence economy," "moral argument," "productive darkness,"
-  "is the darkness working," "nihilism collapse," "grimdark cosplay,"
-  "darkness tourism," "institutional wallpaper," "empathy bankruptcy,"
-  "military grimdark," "political grimdark," "noir dark fantasy,"
-  "mythic dark fantasy," "literary dark fantasy," "progression grimdark,"
-  "mystery/thriller architecture," "mystery architecture," "thriller architecture,"
-  "informational drift," "information pressure," "clue economy," "fair play,"
-  "does the puzzle work," "is the reader playing,"
-  "force architecture," "force delivery," "inert force," "inert action,"
-  "action choreography," "fight scenes," "combat architecture,"
-  "do the fights work," "is the action landing,"
-  "stakes system," "stakes audit," "stakes feel low," "pressure architecture,"
-  "decision pressure," "choice plausibility," "I don't buy why they did that,"
-  "erotic content," "erotic tag," "heat level," "consent calculus,"
-  "intimate scenes," "sex scenes work," "escalation audit,"
-  "decorative kink," "static heat," "erotic craft,"
-  "compression audit," "what to cut," "cut list," "too long,"
-  "needs tightening," "word count target," "expendable material,"
-  "what can I remove," "what can I cut," "retained scaffolding,"
-  "reception risk," "sensitivity read," "sensitivity pre-read,"
-  "how will this land," "will this be a problem," "hostile readers,"
-  "weaponize," "bad faith reading," "screenshot risk," "cultural sensitivity,"
-  "political reception," "representation concerns," "identity concerns,"
-  "is this going to be a problem," "will this get me cancelled,"
-  "content advisory," "content advisory audit," "content warning,"
-  "content warnings," "content note," "content notes," "trigger warning,"
-  "trigger warnings," "front-matter content note," "retailer content warning,"
-  "content-warning metadata," "sensitivity surface," "what's depicted,"
-  or any request for a focused manuscript audit beyond the core development
-  edit passes. Also triggers on "list audits," "what audits are available,"
-  or "help audits."
+  Deep-dive specialized audits and internet-enabled research modes for the
+  APODICTIC Development Editor, beyond the core development-edit passes.
+  Covers nonfiction argument audits (Dialectical Clarity, argument red team,
+  persuasion, evidence, adversarial evidence, field reconnaissance, citation
+  verification: warrants, burden of proof, scope creep, motte-and-bailey),
+  fiction craft audits (stakes, scene turns, character, interiority, force,
+  compression, AI-prose and structure-level AI tells), genre audits (horror,
+  grimdark, mystery/thriller, SFF, historical, memoir, comedy, romance), tag
+  audits (cozy, erotic, consent, queer), and reception-risk and content-advisory
+  review. Use when the user asks for a named or focused audit, or asks
+  "list audits" / "what audits are available." Full trigger vocabulary is in
+  the body under Trigger Vocabulary.
 version: 2.12.0
 ---
 
@@ -284,7 +197,6 @@ See `references/craft/shelf-positioning.md` for the full audit.
 - `references/craft/force-architecture-level-setting.md` — Force Architecture level-setting brief (SPECT, Clausewitz, Arendt, Scarry, Hayakawa, O'Brien, McCarthy, Morrison, physiological realism, positive cases)
 - `references/craft/compression-audit.md` — Compression audit (16 flags, 5 channels, 4 hard gates, 7 mode calibrations, Cut List + Compression Map artifacts)
 - `references/craft/compression-audit-level-setting.md` — Compression audit level-setting brief (scaffolding theory, over-establishment, diminishing-returns, genre-specific compression norms, distinguish problem)
-- `references/craft/compression-audit-expansion-stub.md` — Compression audit expansion stub (design document)
 - `references/craft/reception-risk.md` — Reception Risk audit (17 flags, 5 channels, 5 hard gates, 8 mode calibrations, Risk Map + Pattern Summary + Handoff Memo artifacts)
 - `references/craft/reception-risk-level-setting.md` — Reception Risk level-setting brief (Jauss, Iser, Fish, Hall, Booth, Genette, Phelan, failure taxonomy, positive cases, distinguish problem, three-model workflow)
 - `references/content-advisory.md` — Content-Advisory / Sensitivity-Surface derivation (reader/marketing-facing advisory of what is depicted, at what intensity, on/off page; `apodictic.content_note.v1` blocks, 9-category enum + opt-in marker; descriptive-not-evaluative firewall; validators A1–A3 + W1/W2 via `validate.sh content-advisory`; homed alongside Reception Risk but derives a descriptive advisory, not a harm/craft verdict)
@@ -328,3 +240,9 @@ See `references/craft/shelf-positioning.md` for the full audit.
 - `references/tag/erotic-content.md` — Erotic Content tag audit (8 flags, 5 dimensions, 4 hard gates, 7 mode calibrations)
 - `references/tag/consent-complexity.md` — Consent Complexity audit (companion to Erotic Content tag)
 - `references/tag/queer-romance-erotica.md` — Queer Romance/Erotica audit (companion to Erotic Content tag)
+
+## Trigger Vocabulary
+
+Phrases that should route here (moved out of the frontmatter to keep the skill description short; the audit is chosen by `references/audit-routing-table.md` and `AUDIT_SELECTION_MATRIX.md`, not by this list):
+
+> Deep-dive specialized audits and research modes for the APODICTIC Development Editor. Use when the user asks to "run a scene audit," "character architecture audit," "shelf positioning," "emotional craft audit," "dialectical clarity," "dialectical clarity audit," "argument audit," "warrant gap," "warrant analysis," "audience calibration," "dialectical integrity," "claim ladder," "support map," "burden of proof," "scope creep," "definitional smuggling," "concession without cost," "evidence laundering," "motte-and-bailey," "epistemic erasure," "false precision," "testimonial overburden," "emotional inflation," "implementation blindspot," "qualification erosion," "authority overreach," "anecdote-to-principle," "is the argument working," "does the argument hold," "structurally unsound," "argument structure," "nonfiction argument," "policy brief audit," "testimony audit," "op-ed audit," "argument red team", "red team", "red-team", "stress test the argument", "hostile reader", "opposition memo", "cross-examine", "cross examination", "strongest objection", "argument pressure test", "argument persuasion", "persuasion memo", "audience memo", "framing options", "concession placement", "make this land better", "argument evidence", "evidence deep-dive", "evidence provenance", "testimony calibration", "evidence ledger", "verification queue", "consent audit," "comedy audit," "historical fiction audit," "queer romance audit," "fan fiction conversion," "interiority audit," "banister audit," "short fiction audit," "series audit," "ai prose," "ai calibration," "slop to silver," "ai-prose calibration," "narrative decision," "narrative-decision audit," "narrative decision audit," "storyscope," "story scope," "narrative feature scoring," "narrative-decision signals," "rewrite-resistant," "structure-level ai," "structure-level ai detection," "argument decision," "argument-decision audit," "argument decision audit," "argscope," "argument feature scoring," "argument-decision signals," "argument structure scoring," "structure-level argument," "argument collapse," "variance audit," "manuscript audit," "repetition audit," "lexical compression," "personal baseline," "voice fingerprint," "burstiness," "MATTR," "function-word fingerprint," "negation hedge," "indefinite-pronoun gesture," "disguised correctio," "pseudo-aphorism," "manifesto cadence," "source triage," "payoff test," "voice slip," "lost callback," "earned by frame," "abstraction shielding," "false-balance," "hedge-and-affirm," "recommendation template," "authority laundering," "idiolect," "idiolect preservation," "preservation list," "do not normalize," "do not flatten," "signature moves," "voice preservation," "keyness," "collocation preservation," "punctuation cadence," "punctuation rhythm," "interruption grammar," "punctuation regularization," "dash density," "em-dash audit," "house style," "copyedit drift," "my editor flattened me," "pov voice," "pov voice profile," "per-pov voiceprint," "do my povs sound different," "voice-collapse," "pov collapse," "blind swap fail," "interchangeable povs," "pov differentiation," "comp validation," "fact check," "genre currency check," "representation context," "citation verifier," "citation verification," "verify citations," "check my citations," "are these citations real," "source verification," "quote verification," "ghost citation," "do my sources check out," "citation integrity," "source integrity," "field recon," "field reconnaissance," "counterevidence," "what am I missing," "literature gaps," "source ecosystem," "hostile reviewer," "what would a reviewer cite," "is my source base adequate," "dead links," "retracted sources," "adversarial evidence," "evidence pressure test," "evidence survivability," "does my evidence hold up," "hostile peer reviewer," "would this survive review," "attack my evidence," "stress test evidence," "evidence attack surface," "cozy audit," "cozy tag," "philosophical audit," "philosophical tag," "novel of ideas," "tag audit," "sff worldbuilding," "worldbuilding integration," "worldbuilding audit," "literary craft," "literary mode," "ornamental prose," "load-bearing," "horror craft," "horror integration," "inert dread," "dread architecture," "horror pressure," "does the horror land," "supernatural horror," "supernatural audit," "ghost story audit," "haunting audit," "possession audit," "belief threshold," "wrongness," "inert supernaturality," "does the haunting land," "is the supernatural working," "the ghost feels decorative," "supernatural feels flat," "curse audit," "folk horror audit," "grimdark," "grimdark audit," "dark fantasy audit," "inert bleakness," "violence economy," "moral argument," "productive darkness," "is the darkness working," "nihilism collapse," "grimdark cosplay," "darkness tourism," "institutional wallpaper," "empathy bankruptcy," "military grimdark," "political grimdark," "noir dark fantasy," "mythic dark fantasy," "literary dark fantasy," "progression grimdark," "mystery/thriller architecture," "mystery architecture," "thriller architecture," "informational drift," "information pressure," "clue economy," "fair play," "does the puzzle work," "is the reader playing," "force architecture," "force delivery," "inert force," "inert action," "action choreography," "fight scenes," "combat architecture," "do the fights work," "is the action landing," "stakes system," "stakes audit," "stakes feel low," "pressure architecture," "decision pressure," "choice plausibility," "I don't buy why they did that," "erotic content," "erotic tag," "heat level," "consent calculus," "intimate scenes," "sex scenes work," "escalation audit," "decorative kink," "static heat," "erotic craft," "compression audit," "what to cut," "cut list," "too long," "needs tightening," "word count target," "expendable material," "what can I remove," "what can I cut," "retained scaffolding," "reception risk," "sensitivity read," "sensitivity pre-read," "how will this land," "will this be a problem," "hostile readers," "weaponize," "bad faith reading," "screenshot risk," "cultural sensitivity," "political reception," "representation concerns," "identity concerns," "is this going to be a problem," "will this get me cancelled," "content advisory," "content advisory audit," "content warning," "content warnings," "content note," "content notes," "trigger warning," "trigger warnings," "front-matter content note," "retailer content warning," "content-warning metadata," "sensitivity surface," "what's depicted," or any request for a focused manuscript audit beyond the core development edit passes. Also triggers on "list audits," "what audits are available," or "help audits."

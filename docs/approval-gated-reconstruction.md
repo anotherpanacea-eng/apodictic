@@ -4,7 +4,7 @@
 *Version: 0.3.3*
 
 **Status:** Phase 0 repaired; Increment 1 built; Increment 2 mechanical workflow built (semantic screen/history retrieval pending); Increments 3–5 unbuilt
-<!-- built-when: scripts/approval_graph.py -->
+<!-- built-when: plugins/apodictic/scripts/approval_graph.py -->
 
 *Depends on: Argument State Schema 0.2.0 or later; Dialectical Clarity v2.0*
 *Revision 0.2.0 (2026-07-15) folds three independent spec-review passes — schema-compatibility, adversarial red-team, implementability. Reports: `docs/.local/review-log/2026-07-15_approval-gated-reconstruction-spec-review.md`.*

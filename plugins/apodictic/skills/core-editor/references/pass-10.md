@@ -2,7 +2,7 @@
 
 *Reference file for the APODICTIC Development Editor. Loaded by Pass 10 (Entity Tracking) when the resolver activates it.*
 
-**Last updated:** 2026-04-25 (Phase 6 Wave 1 — Timeline artifact added per `docs/review-log/2026-04-25_pass-10-timeline-enhancement-spec.md`).
+**Last updated:** 2026-04-25 (Phase 6 Wave 1 — Timeline artifact added).
 
 ---
 
@@ -194,4 +194,4 @@ A pre-pass intake timeline scaffold is **out of scope** for this reference. Pass
 
 ---
 
-*Schema source of truth: `docs/review-log/2026-04-25_pass-10-timeline-enhancement-spec.md`. This reference file lifts that spec into runtime-loadable form.*
+*This reference file is the runtime schema source of truth for the Timeline artifact.*

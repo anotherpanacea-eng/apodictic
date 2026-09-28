@@ -678,9 +678,8 @@ Files:
 ### B) Registry/index updates
 
 1. `specialized-audits/SKILL.md` — add row to Craft Audits table
-2. `core-editor/references/module-index.md` — add entry if module index is maintained
-3. Intake router references — add activation triggers
-4. `run-core.md` — add finding-driven audit trigger at Pass 2 (orphan scenes ≥3 → recommend Compression Audit)
+2. Intake router references — add activation triggers
+3. `run-core.md` — add finding-driven audit trigger at Pass 2 (orphan scenes ≥3 → recommend Compression Audit)
 
 ### C) Invocation guidance
 

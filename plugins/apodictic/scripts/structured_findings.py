@@ -169,13 +169,14 @@ def validate_file(path):
 
 
 def _fixture_dir():
-    """Locate test_fixtures/ from the plugin or root scripts copy."""
-    here = os.path.dirname(os.path.abspath(__file__))
-    for c in (os.path.join(here, "test_fixtures"),
-              os.path.join(here, "..", "plugins", "apodictic", "scripts", "test_fixtures")):
-        if os.path.isdir(c):
-            return c
-    return None
+    """Validator fixtures live in the repo at tests/fixtures/validators/.
+
+    Returns that path whenever the repo tests/ dir is found, even if the
+    fixtures dir is missing, so a moved dir fails the self-test. Returns None
+    in an installed plugin (no repo).
+    """
+    tests = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tests")
+    return os.path.join(tests, "fixtures", "validators") if os.path.isdir(tests) else None
 
 
 def run_self_test():
@@ -249,14 +250,17 @@ def run_self_test():
                                '<!-- apodictic:finding\n{"schema":"apodictic.finding.v1"}\n-->\n', "<t>"), True)
     check("non_ledger_presence_not_enforced",
           check_block_presence("# Editorial Letter\nThe pacing is a Must-Fix problem.\n", "<t>"), True)
-    # Data-driven fixtures: sf.<pass|fail>.<name>.<md|json> in test_fixtures/.
+    # Data-driven fixtures: sf.<pass|fail>.<name>.<md|json> in tests/fixtures/validators/.
     fdir = _fixture_dir()
-    if fdir:
+    if fdir and not os.path.isdir(fdir):
+        print("  fixtures: FAIL (%s missing)" % fdir)
+        results["rc"] = 1
+    elif fdir:
         for path in sorted(glob.glob(os.path.join(fdir, "sf.*"))):
             name = os.path.basename(path)
             check("fixture:%s" % name, validate_file(path), ".pass." in name)
     else:
-        print("  fixtures: SKIP (test_fixtures/ not found)")
+        print("  fixtures: SKIP (no repo checkout)")
     print("Self-test: PASS" if results["rc"] == 0 else "Self-test: FAIL")
     return results["rc"]
 

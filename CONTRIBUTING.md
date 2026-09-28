@@ -8,7 +8,7 @@ Thank you for your interest in improving this plugin. Contributions are welcome 
 
 **Audit improvements:** If you've found a false positive pattern, a missing diagnostic, or a calibration gap in a specific audit, describe the manuscript context where it occurred and what the audit missed or misflagged.
 
-**New audit proposals:** Use the `Specialized_Audit_Expansion_Stub_TEMPLATE.md` included in the plugin to sketch your proposal. Send the completed stub to the email above.
+**New audit proposals:** Use [`docs/audit-expansion/Specialized_Audit_Expansion_Stub_TEMPLATE.md`](docs/audit-expansion/Specialized_Audit_Expansion_Stub_TEMPLATE.md) to sketch your proposal; `docs/audit-expansion/compression-audit-expansion-stub.md` is a filled-in example. Send the completed stub to the email above.
 
 ## What We're Not Looking For
 

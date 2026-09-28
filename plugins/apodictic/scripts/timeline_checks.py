@@ -455,13 +455,14 @@ def _read(path):
 # --------------------------------------------------------------------------
 
 def _fixture_dir():
-    here = os.path.dirname(os.path.abspath(__file__))
-    for cand in (os.path.join(here, "test_fixtures"),
-                 os.path.join(here, "..", "..", "..", "plugins", "apodictic",
-                              "scripts", "test_fixtures")):
-        if os.path.isdir(cand):
-            return cand
-    return os.path.join(here, "test_fixtures")
+    """Validator fixtures live in the repo at tests/fixtures/validators/.
+
+    Returns that path whenever the repo tests/ dir is found, even if the
+    fixtures dir is missing, so a moved dir fails the self-test. Returns None
+    in an installed plugin (no repo).
+    """
+    tests = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tests")
+    return os.path.join(tests, "fixtures", "validators") if os.path.isdir(tests) else None
 
 
 def run_self_test(which=None):
@@ -476,7 +477,9 @@ def run_self_test(which=None):
 
     # Single-file fixtures: tl.<pass|fail>.<check>.<name>.md
     fdir = _fixture_dir()
-    if os.path.isdir(fdir):
+    if fdir and not os.path.isdir(fdir):
+        expect("fixtures-dir-present", False, True)
+    elif fdir:
         for fn in sorted(os.listdir(fdir)):
             if not fn.startswith("tl.") or not fn.endswith(".md"):
                 continue
