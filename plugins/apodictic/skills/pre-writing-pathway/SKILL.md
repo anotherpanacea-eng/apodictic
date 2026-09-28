@@ -8,7 +8,7 @@ description: >
   Also covers argument-shaped nonfiction before a draft exists: "argument
   spine," "outline an op-ed," "outline a policy brief," "plan my testimony,"
   "structure my argument," "claim ladder before I write."
-version: 2.13.0
+version: 2.13.1
 ---
 
 # Pre-Writing Pathway
