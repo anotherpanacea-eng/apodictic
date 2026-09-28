@@ -5,6 +5,108 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.13.0 - 2026-09-28
+
+### Author adjudication workflow (partial Increment 2)
+
+Add `/adjudicate` with verified progress/history presentation, explicit author
+approval/rejection/revision, reasoned un-rejection and Inclusion changes, atomic
+edge cascades, and head-bound crash-safe resume. All writes reuse the existing
+ledger engine. Nonempty exclusions fail closed while compatible semantic
+screening is unavailable; the workflow does not draft or certify acceptance.
+
+### Argument benchmark fetch publication
+
+Stage fetched and converted argument text before replacing cached output. Conversion,
+extraction, staging and digest failures preserve the previous destination; recorded
+digest mismatches no longer overwrite it. Sources without a recorded digest still
+publish with an explicitly unverified `GOT` notice. Per-source cleanup retains every
+temporary path through ordinary failures and catchable signals; an interrupt
+stops the batch with the conventional signal status. Published text keeps the
+umask-derived file mode. Synthetic offline
+regressions cover the PDF converter and shared publication path. This does not claim
+power-loss durability or real-manuscript extraction quality.
+
+### CI: comment-triggered `@claude` workflow
+
+Add `.github/workflows/claude.yml`: a comment, review, or new issue that mentions
+`@claude` from a repository owner, member, or collaborator starts one
+claude-code-action run. Pull requests from forks are refused before checkout,
+both actions are pinned to commit SHAs, and the workflow's own `GITHUB_TOKEN`
+stays read-only apart from `id-token: write`. The policy suite admits the new
+file to the closed workflow set and guards those safety boundaries.
+
+### Nonfiction discoverability
+
+The plugin description, keywords, and Codex short description now name
+argument-shaped nonfiction (op-eds, policy briefs, testimony, academic
+arguments, legal briefs, regulatory comments) alongside fiction. `/start` and
+`/apodictic` describe the two manuscript kinds and have distinct descriptions;
+`/start` names the Argument Engine route; `/apodictic` indexes `/adjudicate`
+and `/world-bible`; `/audit` lists the adversarial-evidence, field-recon, and
+citation-verifier companions. The route explorer and the runtime router table
+mark nonfiction pre-draft as built. The specialized-audits skill description
+drops from about 6.7 KB to under 900 characters (the trigger vocabulary moves
+into the skill body), revision-coach drops its most generic triggers, and
+pre-writing gains argument-spine triggers.
+
+### Nonfiction depth in the docs
+
+The root README's "Your First Five Minutes" now covers an argument-shaped
+piece, and its nonfiction section lists the forms the engine knows,
+Adversarial Evidence Review, the built nonfiction pre-draft, `/adjudicate`,
+and the AIF export. The plugin and Codex READMEs gain an "Argument-Shaped
+Nonfiction" usage section. `AUDIT_SELECTION_MATRIX.md` states the
+`Argument_State.md` prerequisite and adds a by-form table (start, then,
+research before synthesis). The Argument Engine skill documents
+`/adjudicate` and the AIF export as optional post-diagnosis steps, and
+`argument-audits-routing.md` routes idea-stage nonfiction to the built
+pre-draft instead of calling it a gap.
+
+### Plugin folder fits the Claude plugin directory's review limits
+
+The plugin folder now meets the Claude plugin directory's automated file checks, which would
+otherwise hold every version for a manual review. `validate.sh` is split into a short entry script
+plus three sourced parts under `scripts/validate.d/`, so no file exceeds 256 KiB; commands, output
+and exit codes are unchanged, and `check-mirror`, `validator-conventions` and `schema-coverage`
+read the parts together. The changelog moved to the repo-root `CHANGELOG.md`, the `.docx`/`.pdf`
+export goldens moved to `evals/fixtures/annotation-export/`, and nine unreferenced images moved
+to `docs/assets/`, bringing the plugin to 509 files with no binary documents.
+
+### Plugin headroom
+
+The shipped plugin drops from 509 to 426 files. Validator fixtures move from
+`plugins/apodictic/scripts/test_fixtures/` to `tests/fixtures/validators/`
+(the self-tests now fail, rather than skip, when a repo checkout lacks them).
+The Codex-only sources (`README.codex.md`, `NON_PARITY_NOTES.codex.md`,
+`route-explorer.codex.html`, and `.codex-plugin/plugin.json`) move to
+`packaging/codex/` and are copied in by `build-codex.mjs` through the registry
+overrides. The six deprecated core-editor references (`core-framework`,
+`module-index`, `intake-router`, `intake-questions`, `certainty-axis`,
+`structural-frameworks`) are deleted, and the registry and reference pointers
+to them now name their canonical homes in `run-core.md` and `run-full.md`.
+
+### Reference hygiene
+
+Shipped references no longer cite `docs/` files that do not exist (the F4
+Stage 2 review, the Pass 10 timeline spec, the eval-harness spec); the
+reference index now says that `docs/`, `evals/`, and `ROADMAP.md` paths are
+repo-only provenance, never load targets. The model-tag table gains current
+Claude rows (`opus55`, `sonnet55`, `opus5`, `fable51`), so runs on those models
+pass `dispatch-record`'s tag check, and the plugin README's context example
+names Claude Opus 5.5. The compression-audit expansion stub and the audit
+expansion template move out of the plugin to `docs/audit-expansion/`.
+ROADMAP validator counts are updated.
+
+### One copy of the validators
+
+The root `scripts/` mirror of `validate.sh`, `validate.d/`, `preflight.sh`,
+and every Python validator is gone; root `scripts/validate.sh` is now a
+one-line shim that execs `plugins/apodictic/scripts/validate.sh`, so CI runs
+the shipped code. `check-mirror` is removed (83 validators). The approval
+session test and the two eval scripts that imported root copies now import
+the plugin copies. AGENTS.md and CLAUDE.md describe the single-copy layout.
+
 ## v2.12.0 - 2026-09-20
 
 ### ChatGPT installation
