@@ -66,7 +66,7 @@ The **dialectical** audit is the entry point for all argument-shaped nonfiction:
 - `/audit argument-red-team` — hostile-reader pressure test (requires `Argument_State.md`)
 - `/audit argument-persuasion` — audience calibration and framing guidance (requires `Argument_State.md`)
 - `/audit argument-evidence` — provenance, testimony calibration, verification queue (requires `Argument_State.md`)
-- `/audit adversarial-evidence-review` — hostile-expert survivability of each claim-evidence link (requires `Argument_State.md`; strongest after the evidence, citation, and field-recon passes)
+- `/audit adversarial-evidence-review` — hostile-expert survivability of each claim-evidence link (requires `Argument_State.md` plus the argument-evidence, citation-verifier, and field-recon outputs for the same draft)
 - `/research field-recon` — counterevidence, literature gaps, source-ecosystem health
 - `/research citation-verifier` — does each cited source exist, say what you claim, and fit the claim
 - `/coach` — argument revision coaching (reads `Argument_State.md` + companion annotations)

@@ -62,6 +62,8 @@ The plugin assumes its user is an adult working on a creative or argumentative p
 **Nonfiction & argument pillar:**
 - **Nonfiction Argument Engine** — Diagnoses argument-shaped nonfiction (op-eds, policy briefs, testimony, essays): infers the argument contract (claim, audience, burden, stakes), then flags missing warrants, scope drift, and unmet strongest objections. Produces an argument editorial letter and marked-up piece. Companions: Dialectical Clarity, Red-Team, Persuasion, Evidence.
 - **Dialectical Clarity** (`/audit dialectical`) — Deep-dive argument structure audit: claim ladder, thesis–antithesis balance, rhetorical fairness, straw-position detection
+- **Argument companions** — Red Team, Persuasion, Evidence, and Adversarial Evidence Review audits (`/audit argument-red-team`, `argument-persuasion`, `argument-evidence`, `adversarial-evidence-review`) plus the Field Reconnaissance and Citation Verifier research modes; all read the shared `Argument_State.md`
+- **Nonfiction pre-draft, author decisions, and export** — argument-spine planning before a draft (`/pre-writing`), approval-gated claim-graph decisions (`/adjudicate`), and an optional AIF argument-map export
 - **Argument-Decision / ArgScope** (`/audit argument-decision`) — Structure-level argument AI-tell audit: paragraph-role arc + discourse-mode mix, per-signal contributions
 
 **Shared:**
@@ -109,13 +111,20 @@ The plugin assumes its user is an adult working on a creative or argumentative p
 ```
 /start
 ```
-The intake router asks what you have (idea, fragments, partial draft, complete draft, series), what you need (draft, diagnose/fix, submission readiness, AI cleanup), and any modifiers (deadline, AI-assisted text, nonfiction, editing for someone else, co-authoring). Routes you to the right workflow automatically. All other commands remain available as direct shortcuts.
+The intake router asks what you have (idea, fragments, partial draft, complete draft, series, or an argument-shaped piece), what you need (draft, diagnose/fix, submission readiness, AI cleanup), and any modifiers (deadline, AI-assisted text, nonfiction, editing for someone else, co-authoring). Routes you to the right workflow automatically. All other commands remain available as direct shortcuts.
 
 ### Full Development Edit
 ```
 /start path/to/manuscript.md
 ```
 Answer "complete draft" + "diagnose/fix" and the router runs intake, core passes (reverse outline, reader experience, structural mapping, character audit, reveal economy), and synthesis. Outputs an editorial letter, revision checklist, and diagnostic state.
+
+### Argument-Shaped Nonfiction
+```
+/start path/to/op-ed.md
+/audit dialectical
+```
+Answer "an argument-shaped piece" and the router sends op-eds, policy briefs, testimony, academic arguments, open letters, white papers, legal briefs, regulatory comments, and expert affidavits to the Nonfiction Argument Engine. It infers the claim, audience, burden of proof, and stakes, then writes an argument editorial letter and `Argument_State.md`, the shared argument record the companions read. After that, run the companions you need: `/audit argument-red-team` (strongest opposition), `/audit argument-persuasion` (audience fit), `/audit argument-evidence` (evidence chain), `/audit adversarial-evidence-review` (would each claim-evidence link survive a hostile expert), `/research field-recon` (counterevidence and literature gaps), and `/research citation-verifier` (do the sources exist and say what you claim). `/coach` plans the revision. No draft yet? `/pre-writing` builds the argument spine first. `/adjudicate` records your decisions on a reconstructed claim graph, and an optional AIF export turns `Argument_State.md` into a standard argument-map graph.
 
 ### Submission Readiness
 ```

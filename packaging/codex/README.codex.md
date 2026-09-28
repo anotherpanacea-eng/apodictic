@@ -83,7 +83,7 @@ The plugin assumes its user is an adult working on a creative project. Its outpu
 - **Pre-Writing Pathway** — Guides writers from idea to draftable structure (no manuscript required). Writer mode calibration, seed inventory, readiness gates, option architecture, complexity budget, prospective contract, re-entry diff protocol.
 - **Plot Coaching** — Plot structure diagnosis (50 spines across 12 families), selection coaching, fantasy & series architecture
 - **Specialized Audits** — 38 available audits (3 universal, 20 craft, 10 genre, 5 tag), including 3 primary tags (cozy, philosophical, erotic content) and 2 companion intimacy audits; plus 6 internet-enabled research modes
-- **Nonfiction Argument Engine** — Diagnoses argument-shaped nonfiction: argument spine, support, and warrant, with Red-Team, Persuasion, and Evidence companions
+- **Nonfiction Argument Engine** — Diagnoses argument-shaped nonfiction (op-eds, policy briefs, testimony, academic arguments, legal briefs, regulatory comments): argument spine, support, and warrant, with Red-Team, Persuasion, Evidence, and Adversarial Evidence companions, Field Reconnaissance and Citation Verifier research modes, argument pre-draft, and an optional AIF argument-map export
 - **Legal Risk Register** — Flags possible defamation, privacy, and rights exposure for counsel to review. It flags, never adjudicates — not legal advice
 - **Feedback Triage & Beta-Reader Instrument** — Sort, cluster, and prioritize beta-reader/editor feedback, and turn a diagnosis into targeted beta-reader questions
 - **Projects** — Addressable, resumable editing projects (`apodictic-projects`, state-driven resume), with Retcon Planning and State Cards
@@ -127,13 +127,20 @@ In this Codex build, the legacy workflows are exposed as namespaced compatibilit
 ```
 apodictic-start
 ```
-The intake router asks what you have (idea, fragments, partial draft, complete draft, series), what you need (draft, diagnose/fix, submission readiness, AI cleanup), and any modifiers (deadline, AI-assisted text, nonfiction, editing for someone else, co-authoring). Routes you to the right workflow automatically. All other namespaced entrypoints remain available as direct shortcuts.
+The intake router asks what you have (idea, fragments, partial draft, complete draft, series, or an argument-shaped piece), what you need (draft, diagnose/fix, submission readiness, AI cleanup), and any modifiers (deadline, AI-assisted text, nonfiction, editing for someone else, co-authoring). Routes you to the right workflow automatically. All other namespaced entrypoints remain available as direct shortcuts.
 
 ### Full Development Edit
 ```
 apodictic-start path/to/manuscript.md
 ```
 Answer "complete draft" + "diagnose/fix" and the router runs intake, core passes (reverse outline, reader experience, structural mapping, character audit, reveal economy), and synthesis. Outputs an editorial letter, revision checklist, and diagnostic state.
+
+### Argument-Shaped Nonfiction
+```
+apodictic-start path/to/op-ed.md
+apodictic-audit dialectical
+```
+Answer "an argument-shaped piece" and the router sends op-eds, policy briefs, testimony, academic arguments, open letters, white papers, legal briefs, regulatory comments, and expert affidavits to the Nonfiction Argument Engine. It infers the claim, audience, burden of proof, and stakes, then writes an argument editorial letter and `Argument_State.md`, the shared argument record the companions read. After that, run the companions you need: `apodictic-audit argument-red-team` (strongest opposition), `apodictic-audit argument-persuasion` (audience fit), `apodictic-audit argument-evidence` (evidence chain), `apodictic-audit adversarial-evidence-review` (would each claim-evidence link survive a hostile expert), `apodictic-research field-recon` (counterevidence and literature gaps), and `apodictic-research citation-verifier` (do the sources exist and say what you claim). `apodictic-coach` plans the revision. No draft yet? `apodictic-pre-writing` builds the argument spine first. `apodictic-adjudicate` records your decisions on a reconstructed claim graph, and an optional AIF export turns `Argument_State.md` into a standard argument-map graph.
 
 ### Submission Readiness
 ```
