@@ -1,6 +1,8 @@
 # Reference File Index
 
-*Full load-on-demand index for the APODICTIC core editor. `SKILL.md` keeps a compact routing map; this file holds the complete tables (execution, genre modules, templates, other, deprecated).*
+*Full load-on-demand index for the APODICTIC core editor. `SKILL.md` keeps a compact routing map; this file holds the complete tables (execution, genre modules, templates, other).*
+
+*Paths beginning `docs/`, `evals/`, or `ROADMAP.md` in any reference point at design and provenance records in the GitHub repository. They are not shipped with the plugin and are never load targets; the runtime rule always lives in the reference itself.*
 
 ### Execution
 | File | When to Load |

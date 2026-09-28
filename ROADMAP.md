@@ -38,7 +38,7 @@
 
 ### V1 — Finding correctness, not just structural conformance
 
-The mechanical layer (~59 validators) gates artifact structure, severity propagation, ledger integrity, and export correctness. None of it can tell whether a finding is *right, relevant, or helpful* — that is editorial judgment, and a system asked to hunt structural defects can always name one. The argument engine is furthest along on closing this (the [Benchmark Suite](#benchmark-suite): ground-truth diagnoses, sensitivity fixtures, specificity positive controls, the two-run convergence protocol). Gaps:
+The mechanical layer (84 validators as of 2026-09) gates artifact structure, severity propagation, ledger integrity, and export correctness. None of it can tell whether a finding is *right, relevant, or helpful* — that is editorial judgment, and a system asked to hunt structural defects can always name one. The argument engine is furthest along on closing this (the [Benchmark Suite](#benchmark-suite): ground-truth diagnoses, sensitivity fixtures, specificity positive controls, the two-run convergence protocol). Gaps:
 - **Argument benchmark panel confirmation** of provisional GT4–GT8 anchors
   (GT1–GT3 authoritative). The stale one-editor packet was replaced on
   2026-07-14 by the shared, closed-response argument + fiction packet with GT8,
@@ -81,7 +81,7 @@ The tool is correctly positioned as a disciplined **structured second opinion**,
 
 New specialized audits built from real editorial engagements, not hypothetical coverage. Each manuscript-in-genre that runs through the plugin surfaces what a genre's audit actually needs.
 
-**Expansion protocol** (codified in `Specialized_Audit_Expansion_Stub_TEMPLATE.md`):
+**Expansion protocol** (codified in `docs/audit-expansion/Specialized_Audit_Expansion_Stub_TEMPLATE.md`):
 1. Level-setting research phase (cognitive narratology, genre theory, reader-experience evidence, positive cases)
 2. Structural spec phase (named flags, dimensions, hard gates, subgenre calibrations, distinguish framework)
 3. Three-model synthesis for quality assurance — validated with Reception Risk (v1.0.9)
@@ -748,7 +748,7 @@ self-contained, browser-openable file with severity-tagged, bidirectionally-link
 The "Done" section is **backfilled** with v2.3.0 / v2.3.1 / v2.4.0 (shipped tags that had no entry), so the
 in-repo history is complete through the current release. Still open as a deliberate choice: whether to
 **commit the assembled `CHANGELOG.md`** at release (history in-repo) rather than only in `changelog.d/`
-fragments + GitHub Releases. (For reference, the current suite is **48 validators**; `registry-check`'s
+fragments + GitHub Releases. (For reference, the suite was **48 validators** at this review; it is 84 as of 2026-09; `registry-check`'s
 "43" is the separate signal-emitting-audit count.)
 
 ### README host-positioning — **Fixed (this wave)**

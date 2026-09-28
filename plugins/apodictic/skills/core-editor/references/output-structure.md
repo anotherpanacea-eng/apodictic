@@ -176,13 +176,17 @@ The model tag is **required**, not optional. It identifies which model generated
 | Codex 5.4 | `codex54` |
 | ChatGPT o3 | `o3` |
 | Gemini 3.1 | `gemini31` |
+| Claude Opus 5.5 | `opus55` |
+| Claude Sonnet 5.5 | `sonnet55` |
+| Claude Opus 5 | `opus5` |
+| Claude Fable 5.1 | `fable51` |
 | Claude Opus 4.6 (historical compatibility) | `opus46` |
 | Claude Sonnet 4.6 (historical compatibility) | `sonnet46` |
 | Claude Haiku 4.5 (historical compatibility) | `haiku45` |
 
 **Examples:** `2026-03-18_codex54`, `2026-03-18_o3`
 
-**Derivation:** Read the model identifier at runtime and derive the tag (for example, `codex-5-4` → `codex54`, `claude-opus-4-6` → `opus46`). If the model identifier is unavailable, use `unknown`.
+**Derivation:** Read the model identifier at runtime and derive the tag (for example, `codex-5-4` → `codex54`, `claude-opus-5-5` → `opus55`). A model not in the table needs a row added here before its runs will validate. If the model identifier is unavailable, use `unknown`.
 
 **Multi-model runs:** All output files in a run share the run's **single `runlabel`** (one tag per run — the runlabel grammar admits exactly one). That tag is the **synthesis/consolidating model's**; in swarm mode where different passes run on different models, the per-pass model identities are **not** recoverable from the filenames (which all carry the one runlabel). Which model each **dispatched** step was actually issued to is recorded in the `dispatch_log` sidecar object — the per-dispatch SSoT (see §Machine-Readable Sidecar). Note `dispatch_log` records the dispatch **instruction as issued** (parent-requested, not platform-verified).
 

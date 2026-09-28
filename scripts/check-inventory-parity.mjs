@@ -86,7 +86,6 @@ const NOT_CARDED = new Set([
   "craft/ai-prose-calibration-level-setting.md",
   "craft/argument-persuasion-level-setting.md",
   "craft/argument-red-team-level-setting.md",
-  "craft/compression-audit-expansion-stub.md",
   "craft/compression-audit-level-setting.md",
   "craft/decision-pressure-level-setting.md",
   "craft/dialectical-clarity-level-setting.md",
