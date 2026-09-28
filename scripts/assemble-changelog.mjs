@@ -34,7 +34,7 @@ const repoRoot = path.resolve(__dirname, "..");
 const fragmentsDir = path.join(repoRoot, "changelog.d");
 const changelogPath = path.join(
   repoRoot,
-  "plugins/apodictic/skills/core-editor/references/changelog.md"
+  "CHANGELOG.md"
 );
 
 function fail(message) {

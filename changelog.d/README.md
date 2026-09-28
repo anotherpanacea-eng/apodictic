@@ -31,7 +31,8 @@ Rules (the assembler enforces them, and CI runs `assemble-changelog.mjs --check`
 `scripts/release.sh` runs `node scripts/assemble-changelog.mjs <version>` after the
 version bump and before the host builds. It prepends a new
 `## vX.Y.Z - YYYY-MM-DD` section (these fragments concatenated) to the canonical
-`plugins/apodictic/skills/core-editor/references/changelog.md`, **deletes the
+repo-root `CHANGELOG.md` (kept outside the plugin folder so the Claude plugin
+directory's 256 KiB per-file limit doesn't hold every version for review), **deletes the
 consumed fragments**, and the host builds regenerate the `codex/` + `antigravity/`
 copies. Adoption is forward-only: this directory holds only the *unreleased*
 fragments.

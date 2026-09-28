@@ -161,10 +161,10 @@ and every Python validator exist in **two committed copies**: `plugins/apodictic
 are *not* generated like `codex/` — they must be mirrored **by hand, byte-identical**, or
 a validator/engine change passes locally while CI runs the stale copy blind to it. Sync the
 copies by hand (`cp`), then verify with **`validate.sh check-mirror`** — it asserts the shared
-mirrored set (`validate.sh`, `preflight.sh`, every `*.py`) is byte-identical and is wired into
+mirrored set (`validate.sh` and its sourced `validate.d/*.sh` parts, `preflight.sh`, every `*.py`) is byte-identical and is wired into
 `--check-all`, so drift is now CI-blocking. (It only *detects* drift; it never auto-syncs — the
 by-hand `cp` stays deliberate. Sync as the **last** step before `--check-all`, else its own
-`validate.sh` edit shows as `DIFFER: validate.sh` until both copies match.) (Schemas/manifests in
+`validate.sh` edit shows as `DIFFER: validate.sh` until both copies match.) Keep every file in `plugins/apodictic/` under 256 KiB and the folder at 512 files or fewer: past either limit the Claude plugin directory holds each version for a manual review. That is why `validate.sh` sources `validate.d/` and the changelog lives at the repo root. (Schemas/manifests in
 `plugins/apodictic/schemas/` are single-sourced — resolved from either script dir — so they
 don't need mirroring.)
 

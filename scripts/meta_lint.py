@@ -684,6 +684,13 @@ def run():
     sh_text = _read_text(sh_path)
     if sh_text is None:
         return 2, ["validator-conventions: cannot read %s" % sh_path]
+    # validate.sh sources its --check-all block and command arms from validate.d/ (split to stay under
+    # the plugin directory's per-file size limit); lint the parts as one text, in source order.
+    vd = os.path.join(d, "validate.d")
+    if os.path.isdir(vd):
+        for fn in sorted(os.listdir(vd)):
+            if fn.endswith(".sh"):
+                sh_text += _read_text(os.path.join(vd, fn)) or ""
 
     py_files = {}
     for fn in sorted(os.listdir(d)):
