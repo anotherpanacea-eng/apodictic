@@ -1,7 +1,7 @@
 # Setup–Payoff Ledger — referential completeness for foreshadowing
 
 **Status:** **Built (Stage A), 2026-07-05.** Shipped: the `apodictic.setup_payoff.v1` (foreshadow) + `apodictic.payoff.v1` (resolving payoff) schemas, the `core-editor/references/setup-payoff-ledger.md` extraction module, `scripts/setup_payoff_checks.py` + `validate.sh setup-payoff` (SP1–SP4 + X1), and the canonical `example-setup-payoff-ledger.md` (three valid states, an abandoned row surfaced for prose citation) wired into `--check-all` under `--strict`. Self-testable validators count is **derived** from `validate.sh`'s `AGG_VALIDATORS` list — adding `setup-payoff` to that list is the whole count change. Homed in core-editor as a **derived deliverable** (like the Continuity Bible), not a routed audit. Anchor paper: *Codified Foreshadowing-Payoff Text Generation* (Yun, Zhou, Hou, Peng, Shang), **arXiv:2601.07033**.
-<!-- built-when: scripts/setup_payoff_checks.py -->
+<!-- built-when: plugins/apodictic/scripts/setup_payoff_checks.py -->
 
 ## Why
 

@@ -8,7 +8,7 @@ import sys
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "plugins/apodictic/scripts"))
 import approval_graph as engine
 
 spec = importlib.util.spec_from_file_location("reconstruction_cases", ROOT / "evals/fixtures/argument-reconstruction/run_cases.py")
@@ -165,7 +165,7 @@ def test_cli_rejects_duplicate_keys_and_preserves_unicode_note(tmp_path):
     head, nodes, _ = cases.mint(engine, tmp_path)
     request = tmp_path / "decision.json"
     request.write_text('{"action":"approve","action":"reject"}', encoding="utf-8")
-    cmd = [sys.executable, str(ROOT / "scripts/approval_session.py"), str(tmp_path), "--decision", str(request)]
+    cmd = [sys.executable, str(ROOT / "plugins/apodictic/scripts/approval_session.py"), str(tmp_path), "--decision", str(request)]
     bad = subprocess.run(cmd, capture_output=True, text=True)
     assert bad.returncode == 1
     assert json.loads(bad.stdout)["error"] == "INVALID-REQUEST"

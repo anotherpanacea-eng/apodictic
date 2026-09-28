@@ -1,7 +1,7 @@
 # Spec — Disposition supersedence must be recomputed, never trusted (disposition-check DP2.6)
 
 **Status:** **Built** (this PR; spec-review pass 1 folded 2026-07-02, verdict BUILD-READY-WITH-FIXES, 0 P1). Built in `disposition_check.py` (recomputed `active()`, `evidence_texts` corroboration surface, DP2.6) + `validate.sh` hostile arm 4, both mirrored; `docs/finding-dispositions.md` §Schema 2 amendment.
-<!-- built-when: scripts/disposition_check.py contains "DP2.6" -->
+<!-- built-when: plugins/apodictic/scripts/disposition_check.py contains "DP2.6" -->
 **Provenance:** sibling-sweep of the PR #161 Codex P1 (fabricated refutation budget, fixed in
 `scripts/refutation_check.py` commit `7085daa` — *"recompute, don't trust: the recorded-field rule
 applied to an exemption gate"*). This spec applies the same rule to the one other exemption path

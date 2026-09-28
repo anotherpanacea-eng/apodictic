@@ -1,7 +1,6 @@
 # Mirror-parity check — `validate.sh check-mirror` (spec)
 
-**Status:** **Built** (`validate.sh check-mirror`, wired into `--check-all`). QoL infrastructure; no behavior change to any existing validator.
-<!-- built-when: scripts/validate.sh contains "check-mirror" -->
+**Status:** **Retired** (2026-09). The root `scripts/` mirror was removed; root `scripts/validate.sh` is now a shim that execs `plugins/apodictic/scripts/validate.sh`, so there is nothing left to compare. Kept as a historical record.
 
 ## The problem
 

@@ -8,7 +8,7 @@ Read `AGENTS.md` first. In particular:
   contracts, reproduced bugs, or stable safety boundaries; do not preserve
   implementation-mirroring tests or production seams built only for tests.
 - **`AGENTS.md` § The flow → Review practices** — hostile fixtures, run the real CI command (`bash scripts/validate.sh --check-all`) first, and distrust count-shaped claims.
-- **`AGENTS.md` § Platform parity → the dual script mirror** — `scripts/` (root, what CI runs) and `plugins/apodictic/scripts/` (canonical) are committed copies that must be kept byte-identical by hand.
+- **`AGENTS.md` § Platform parity** — validators live only in `plugins/apodictic/scripts/`; root `scripts/validate.sh` is a shim.
 - **`AGENTS.md` § CI / PRs and merges** — `validate.sh --check-all` is the gate; merge via merge commit (not squash).
 
 Update `AGENTS.md`, not this file, when the workflow changes.

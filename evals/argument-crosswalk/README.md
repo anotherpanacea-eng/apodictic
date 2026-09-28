@@ -37,7 +37,7 @@ is not a quota or an instruction to force a future equivalence.
 
 ## What "valid" means — and what it does not
 
-`argument-crosswalk-check` (in `scripts/argument_crosswalk.py`, run by
+`argument-crosswalk-check` (in `plugins/apodictic/scripts/argument_crosswalk.py`, run by
 `validate.sh --check-all`) certifies **shape**: membership completeness against a set *derived*
 from the live registry (never a hardcoded copy — the verdict/flag/FM-A slices import
 `argument_groundtruth.py`'s owners, the DC codes + schemes are parsed structurally from
@@ -55,7 +55,7 @@ PR review, not "CI is green." See the ADR "firewall" section.
 
 Edit `crosswalk.json` directly (it is a hand-maintained answer key, not generated). Adding a
 target: give it a `vocab` from the four above, a `ref` inside that vocab's closed value-space
-(see `scripts/argument_crosswalk.py` §3a constants), a per-target `cardinality`, and a `prov`
+(see `plugins/apodictic/scripts/argument_crosswalk.py` §3a constants), a per-target `cardinality`, and a `prov`
 `{work, loc, id}` locator. Set the row `cardinality` to the strongest target's. To resolve an
 `unmapped` row, replace `targets: []` + `rationale` with real targets. Re-run
-`python3 scripts/argument_crosswalk.py argument-crosswalk-check` before committing.
+`bash scripts/validate.sh argument-crosswalk-check` before committing.

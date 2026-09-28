@@ -1,7 +1,7 @@
 # Validator-Conventions — a meta-linter that validates the validator fleet
 
 **Status:** **Built (Increment 1), 2026-06-20; extended M6–M8.** Shipped: `scripts/meta_lint.py` + `validate.sh validator-conventions` (M1–M8), wired into `--self-test-all` and `--check-all`. A validator that validates the validators. (M6 code-span hygiene and M7 single-Firewall landed after Increment 1; M8 severity-vocab SSoT landed 2026-07-06.)
-<!-- built-when: scripts/meta_lint.py -->
+<!-- built-when: plugins/apodictic/scripts/meta_lint.py -->
 
 APODICTIC's validator fleet (count **derived** from `AGG_VALIDATORS`, never hand-typed — so this prose names no integer) shares a set of structural conventions — every self-testable validator is wired into the dispatcher with a `--self-test`; file resolvers classify inputs on **parsed blocks**, never a raw `apodictic:<type>` marker substring; the advertised count is derived; every schema is actually consumed; override markers are detected with the hardened boundary-matched helper, never a bare substring. Until now these were enforced only by manual review, and the gaps caused real latent bugs: a fleet-wide adversarial sweep (2026-06-20) found a **resolver-substring** class in 13 validators (a file that merely *names* a marker in prose misroutes and silently false-passes) and an **override-substring** class in every override-honoring gate (a suffixed slug or a code-span decoy is wrongly honored), plus crash-on-malformed and lexical-regex over-fire classes. The substring classes are *structural* and statically checkable — so this validator mechanizes them (M2 + M5), and they cannot silently re-enter.
 

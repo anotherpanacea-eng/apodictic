@@ -1,6 +1,6 @@
 # Feedback Triage — sort, validate, prioritize external feedback
 
-<!-- built-when: scripts/feedback_triage.py contains "maps_to" -->
+<!-- built-when: plugins/apodictic/scripts/feedback_triage.py contains "maps_to" -->
 
 **Status:** Increments 1–2 **built**. Roadmap: `ROADMAP.md` → Workflows → Feedback Triage. Implementation: `scripts/feedback_triage.py`, `validate.sh feedback-triage` (+ canonical `--check-all` gate), `commands/triage-feedback.md`, `revision-coach/references/feedback-triage.md`, schema `apodictic.feedback_item.v1`.
 

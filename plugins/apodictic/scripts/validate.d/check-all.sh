@@ -1660,12 +1660,6 @@ PY
   echo "== validator-conventions (meta-linter: M1 dispatch+self-test, M2 resolver hygiene, M3 derived count, M4 no orphan schema, M5 override hygiene, M6 code-span hygiene, M7 single-Firewall, M8 severity-vocab SSoT) =="
   "$0" validator-conventions >/dev/null 2>&1 && echo "  ok (fleet conventions hold)" || { echo "  FAIL"; "$0" validator-conventions || true; CA_FAIL=1; }
   echo ""
-  # Dual-script-mirror invariant: the root scripts/ copy (what CI runs) and the canonical
-  # plugins/apodictic/scripts/ copy must be byte-identical for the shared mirrored set, or a
-  # validator change passes against one copy while CI runs the stale other (AGENTS.md § parity).
-  echo "== check-mirror (scripts/ <-> plugins/apodictic/scripts/ byte-identical) =="
-  "$0" check-mirror >/dev/null 2>&1 && echo "  ok (mirrored set identical)" || { echo "  FAIL"; "$0" check-mirror || true; CA_FAIL=1; }
-  echo ""
 
   if [ "$CA_FAIL" -eq 0 ]; then
     if [ "$CA_SKIP_SELF_TESTS" -eq 1 ]; then
