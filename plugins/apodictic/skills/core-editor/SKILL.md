@@ -8,7 +8,7 @@ description: >
   "run the passes," "do a revision round," or any request involving manuscript
   analysis, structural diagnosis, or editorial feedback. Also triggers on
   "APODICTIC," "APDE," or "development editor."
-version: 2.12.0
+version: 2.13.3
 ---
 
 # APODICTIC Development Editor — Core Orchestrator
@@ -26,6 +26,14 @@ Dedicated reference files (genre modules, specialized audits, `references/pass-1
 **Model note:** This framework is designed for strong frontier models with reliable instruction-following and ample context. On weaker models, expect degraded severity honesty, weaker thematic interpretation, and lower fix quality.
 
 ---
+
+## Author adjudication entry point
+
+For `/adjudicate`, load `references/craft/approval-workflow.md` and follow that
+workflow directly. It presents an existing reconstruction graph and records
+explicit author decisions. Do not start Core DE passes or generic audit output
+routing. Semantic exclusion screening remains unavailable; never override a
+blocked approval or represent this partial workflow as drafting acceptance.
 
 ## Plugin Structure
 

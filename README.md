@@ -77,9 +77,13 @@ APODICTIC isn't just for finished drafts. Both pillars — fiction and argument-
 - **Nonfiction Argument Engine** — for persuasive, argument-shaped nonfiction (policy briefs, op-eds, testimony, essays). Infers the argument contract (claim, audience, burden, stakes) from the text, then diagnoses where the argument breaks down: missing warrants, scope drift, unmet strongest objections. Produces an argument editorial letter and a marked-up piece with anchored findings
 - **Dialectical Clarity** (`/audit dialectical`) — deep-dive argument structure audit: thesis–antithesis balance, claim ladder, rhetorical fairness, straw-position detection
 - **Red-Team, Persuasion, and Evidence companions** — three focused argument companions that stress-test the argument against its strongest opposition (Red Team), audit audience fit and rhetorical force (Persuasion), and verify the evidence base under the claim ladder (Evidence)
+- **Adversarial Evidence Review** (`/audit adversarial-evidence-review`) — asks, for each claim that carries weight, whether its link to the evidence would survive a hostile expert who knows the sources
 - **Argument coaching** — revision coaching for arguments, with the same session-planning and stuck-point modes as the fiction coach, calibrated to argument structure
 - **Citation Verification and Field Reconnaissance** research modes — internet-enabled verification of sources and scouting for counterevidence and literature gaps; especially valuable for argument-shaped nonfiction
-- **Nonfiction pre-draft** — for writers who have an argument but not yet a draft, coming to the same pre-writing pathway with argument-contract framing
+- **Nonfiction pre-draft** (`/pre-writing`) — for writers who have an argument but not yet a draft: captures the thesis, the claim ladder, and the strongest opposing view, and seeds the `Argument_State.md` the audits later read
+- **Author decisions and export** — `/adjudicate` records your approve / reject / revise decisions on a reconstructed claim graph, resumably, without drafting anything; an optional AIF export turns `Argument_State.md` into a standard argument-map graph (claims, warrants, typed objections) for mapping tools, listing every construct it could not map
+
+**Forms it knows:** op-eds, policy briefs, legislative and agency testimony, academic arguments, open letters, white papers, advocacy pieces, legal briefs, regulatory comments, and expert affidavits, plus lens or exploratory essays when you confirm that register. Narrative nonfiction and memoir route to their own genre audits instead.
 
 **Shared across both pillars:**
 
@@ -194,10 +198,10 @@ Or `/plugin marketplace update apodictic` from inside Claude Code (CLI). For Cow
 ## Your First Five Minutes
 
 1. **Install** APODICTIC for your host (see above), then start a fresh session.
-2. **Type `/start`.** It asks three plain-language questions — what you have (an idea, fragments, a partial draft, a complete draft, or a series), what you want, and anything that should change how it works.
+2. **Type `/start`.** It asks three plain-language questions — what you have (an idea, fragments, a partial draft, a complete draft, a series, or an argument-shaped piece like an op-ed or brief), what you want, and anything that should change how it works.
 3. **Give it your manuscript** when it asks — paste it, or point it at the file.
-4. **Read the editorial letter.** You get a structural diagnosis like the [samples above](#see-it-in-action): what's working, what isn't, ranked by severity, each with a class of solution. It never rewrites your prose.
-5. **Decide what's next.** The letter ends by pointing you onward — a focused `/audit`, revision planning with `/coach`, or a submission-readiness check with `/ready`.
+4. **Read the editorial letter.** You get a structural diagnosis like the [samples above](#see-it-in-action): what's working, what isn't, ranked by severity, each with a class of solution. For an argument, the letter works from the claim, audience, and burden it inferred, and names missing warrants, scope drift, and unmet objections. It never rewrites your prose.
+5. **Decide what's next.** The letter ends by pointing you onward — a focused `/audit`, revision planning with `/coach`, or a submission-readiness check with `/ready`. For arguments, the usual next steps are `/audit argument-red-team` or `/audit argument-evidence`, and `/research citation-verifier` before anything goes out.
 
 Not sure where to begin? Just `/start`. When in doubt, that's the front door.
 
@@ -211,6 +215,7 @@ Not sure where to begin? Just `/start`. When in doubt, that's the front door.
 - `/ready` — Is this ready to submit?
 
 **Focused tools:**
+- `/adjudicate` — Which claims and relationships do I authorize for reconstruction?
 - `/audit` — Run a specific deep-dive analysis — including argument audits (dialectical, argument-decision).
 - `/research` — I need internet-assisted verification.
 - `/coach` — I have a diagnosis — how do I revise?

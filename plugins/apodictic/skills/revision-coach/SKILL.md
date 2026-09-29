@@ -10,12 +10,12 @@ description: >
   "I have a diagnosis," "help me revise," "where should I start," "I'm stuck,"
   "I have [time] to work," "I can't write," "deadline," "policy brief,"
   "testimony revision," "op-ed revision," "argument revision,"
-  "Argument_State," "warrant repair," "writer's block," "blocked,"
-  "can't write," "prompt," "exercise," "rut," "stalled," "paralyzed,"
+  "Argument_State," "warrant repair," "writer's block," "revision rut,"
+  "stalled revision," "paralyzed,"
   "choice paralysis," "execution gap," "too much feedback,"
   "overmediated," "I don't know what I think anymore,"
   "structural experiment," or "I need an exercise."
-version: 2.12.0
+version: 2.13.3
 ---
 
 # APODICTIC Revision Coach

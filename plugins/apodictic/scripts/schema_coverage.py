@@ -340,6 +340,10 @@ def run(schemas_dir=None, scripts_dir=None, strict=False):
     # C4/C5 need validate.sh.
     vsh = _validate_sh_path(scripts_dir)
     vtext = _read(vsh) if vsh else None
+    # validate.sh sources its --check-all block and command arms from validate.d/ (split to stay under
+    # the plugin directory's per-file size limit); parse the parts as one text, in source order.
+    if vtext is not None:
+        vtext += "".join(_read(pp) or "" for pp in sorted((Path(scripts_dir) / "validate.d").glob("*.sh")))
     arms = _dispatch_arms(vtext)
     agg = _agg_validators(vtext)
     ca_region = _check_all_region(vtext)

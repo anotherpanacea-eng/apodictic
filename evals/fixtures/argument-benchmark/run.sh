@@ -214,11 +214,65 @@ if [ "$#" -gt 0 ]; then SLUGS=("$@"); else SLUGS=($(printf '%s\n' "$PAIRS" | awk
 # --- --fetch: reconstitute referenced texts from their pinned URLs ----------
 # Fetches each slug's source from its SOURCES.md URL, carves the analyzed body
 # by the same anchors a run uses, writes it to $SRC/<slug>.md, and verifies the
-# recorded SHA-256. This is the "ship a fetch-list, reconstitute locally" path:
+# recorded SHA-256 before replacing the destination. With no recorded digest,
+# publish with a GOT (unverified) notice. Failed preparation leaves prior text
+# intact. Same-directory rename is not a power-loss/crash-durability guarantee.
+# This is the "ship a fetch-list, reconstitute locally" path:
 # copyrighted/public-domain text is never stored in the repo, only fetched here.
 # PDF sources (URL ends in .pdf, e.g. SOURCE_PDF fixtures) reconstitute only when
 # `pdftotext` (poppler) is installed; without it the PDF fixture fails loudly with
 # a manual path (blindness/hash discipline is identical — see the loop below).
+fetch_source() (
+  # A subshell gives each source its own cleanup scope, including early returns.
+  # Keep every allocated path: the PDF input and converted text are distinct.
+  tmp=""; txt=""; stage=""
+  trap 'rm -f -- "$tmp" "$txt" "$stage"' EXIT
+  # Exit with the conventional 128+signal status so the batch loop stops on an
+  # operator interrupt instead of treating it as one failed source.
+  trap 'exit 129' HUP; trap 'exit 130' INT; trap 'exit 143' TERM
+  tmp="$(mktemp)" && [ -n "$tmp" ] || { echo "FAIL  $s  (temporary download file unavailable)"; return 1; }
+  if ! curl -fsSL --max-time 90 "$url" -o "$tmp"; then
+    echo "FAIL  $s  (fetch error: $url)"; return 1
+  fi
+  input="$tmp"
+  if [ "$is_pdf" -eq 1 ]; then
+    txt="$(mktemp)" && [ -n "$txt" ] || { echo "FAIL  $s  (temporary conversion file unavailable)"; return 1; }
+    # -layout preserves page layout; -q silences poppler notices.
+    if ! pdftotext -layout -q "$tmp" "$txt"; then
+      echo "FAIL  $s  (pdftotext conversion failed: $url)"; return 1
+    fi
+    input="$txt"
+  fi
+  if ! body="$(extract_body "$input" "$s")"; then
+    echo "FAIL  $s  (body extraction failed)"; return 1
+  fi
+  [[ "$body" =~ [^[:space:]] ]] || { echo "FAIL  $s  (empty after extract - check anchors)"; return 1; }
+  dest="$SRC/$s.md"
+  [ ! -d "$dest" ] || { echo "FAIL  $s  (destination is a directory)"; return 1; }
+  stage="$(mktemp "$SRC/.argument-fetch.XXXXXXXX")" && [ -n "$stage" ] || { echo "FAIL  $s  (temporary publication file unavailable)"; return 1; }
+  if ! printf '%s\n' "$body" > "$stage"; then
+    echo "FAIL  $s  (staging write failed)"; return 1
+  fi
+  # mktemp creates 0600; publish with the mode a plain redirect would give.
+  if ! chmod "$(printf '%o' $(( 0666 & ~0$(umask) )))" "$stage"; then
+    echo "FAIL  $s  (staging permissions failed)"; return 1
+  fi
+  if ! got="$(sha < "$stage")" || [[ ! "$got" =~ ^[0-9a-f]{64}$ ]]; then
+    echo "FAIL  $s  (SHA-256 computation failed)"; return 1
+  fi
+  if [ -n "$want" ] && [ "$got" != "$want" ]; then
+    echo "HASH? $s  (got $got != recorded $want - destination unchanged)"; return 1
+  fi
+  if ! mv -f -- "$stage" "$dest"; then
+    echo "FAIL  $s  (destination publication failed)"; return 1
+  fi
+  if [ -z "$want" ]; then
+    echo "GOT   $s  (sha256: $got; no recorded hash to check, unverified) -> ${dest#$SRC/}"
+  else
+    echo "OK    $s  (hash matches recorded) -> ${dest#$SRC/}"
+  fi
+)
+
 if [ "$FETCH_ONLY" -eq 1 ]; then
   command -v curl >/dev/null 2>&1 || die "curl not found (needed for --fetch)"
   echo "mode=fetch"; echo "src=$SRC"; echo
@@ -241,21 +295,9 @@ if [ "$FETCH_ONLY" -eq 1 ]; then
     if [ "$is_pdf" -eq 1 ] && ! command -v pdftotext >/dev/null 2>&1; then
       echo "FAIL  $s  (analyzed text is a PDF: $url — --fetch's plain-text pipeline needs \`pdftotext\` (poppler) to reconstitute it; install it (brew install poppler / apt-get install poppler-utils) and re-run, or fetch + convert and place the body at \$SRC/$s.md manually)"; ffail=1; continue
     fi
-    tmp="$(mktemp)"
-    if ! curl -fsSL --max-time 90 "$url" -o "$tmp"; then echo "FAIL  $s  (fetch error: $url)"; rm -f "$tmp"; ffail=1; continue; fi
-    if [ "$is_pdf" -eq 1 ]; then
-      txt="$(mktemp)"
-      # -layout keeps reading order closest to the visible page; -q silences poppler notices.
-      if ! pdftotext -layout -q "$tmp" "$txt"; then echo "FAIL  $s  (pdftotext conversion failed: $url)"; rm -f "$tmp" "$txt"; ffail=1; continue; fi
-      rm -f "$tmp"; tmp="$txt"
-    fi
-    body="$(extract_body "$tmp" "$s")"; rm -f "$tmp"
-    [ -n "$body" ] || { echo "FAIL  $s  (empty after extract — check anchors)"; ffail=1; continue; }
-    dest="$SRC/$s.md"; printf '%s\n' "$body" > "$dest"
-    got="$(sha < "$dest")"
-    if   [ -z "$want" ];          then echo "GOT   $s  (sha256: $got; no recorded hash to check) -> ${dest#$SRC/}"
-    elif [ "$got" = "$want" ];    then echo "OK    $s  (hash matches recorded) -> ${dest#$SRC/}"
-    else echo "HASH? $s  (got $got != recorded $want — reconcile anchors/source)"; ffail=1; fi
+    fetch_source; frc=$?
+    if [ "$frc" -ge 128 ]; then echo; echo "Fetch interrupted at $s."; exit "$frc"; fi
+    [ "$frc" -eq 0 ] || ffail=1
   done
   echo; echo "Fetch complete. Texts in: $SRC"
   exit $ffail

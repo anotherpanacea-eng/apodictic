@@ -8,7 +8,7 @@ description: >
   Evidence Review, Field Reconnaissance, and Citation Verifier as companion audits.
   Also covers nonfiction argument coaching and nonfiction pre-draft argument spine work.
   Invoked when intake resolves constraint=nonfiction + persuasive-argument form.
-version: 2.12.0
+version: 2.13.3
 ---
 
 # Nonfiction Argument Engine
@@ -167,6 +167,13 @@ Signal propagation for argument-cluster audits follows `core-editor/references/a
 After synthesis, update `Argument_State.md` at the project root per the schema in
 `core-editor/references/run-synthesis.md §Argument_State`. This is the argument path's
 Pass-10-Class rolling artifact — it persists across runs and is diffed on re-runs.
+
+### 6. Optional: author decisions and export
+
+Offer these only when the writer asks, or when the letter's next steps call for them:
+
+- **`/adjudicate`** — the author approves, rejects, or revises the claims and relationships in an existing reconstruction claim graph, one decision at a time, with resumable state beside the manuscript. It records decisions; it never drafts. Semantic screening of rejections is not built yet, so a nonempty rejection set blocks new approvals (the command explains this).
+- **AIF export** — a one-way, loss-aware projection of `Argument_State.md` into the AIF-Core graph format (Toulmin-style I-nodes, RA-nodes carrying the warrant, CA-nodes for typed objections) for argument-mapping tools: plugin-bundled `scripts/validate.sh argument-aif-export <project>/Argument_State.md --state-schema 0.2.0 --out <project>/Argument_AIF.json`, then `argument-aif-check` on the output. Every construct it cannot map is listed as a named loss, never invented. The export is never read back to set findings or severities.
 
 ---
 

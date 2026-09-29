@@ -1,6 +1,5 @@
 ---
 description: Run the Submission Readiness Workflow — full diagnostic + verdict + query/synopsis assessment
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob, WebSearch, WebFetch, Agent
 ---
 
 # /ready — Submission Readiness Workflow

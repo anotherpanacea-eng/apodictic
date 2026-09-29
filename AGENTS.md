@@ -155,22 +155,11 @@ CI verifies the generators instead of committed copies: `release-generate.mjs
 `build-antigravity.mjs --self-check` (regenerate in temp + validate). `release.sh`
 runs the same self-checks via `release-verify.mjs`.
 
-**Separate gotcha — the dual script mirror (committed, not generated).** `validate.sh`
-and every Python validator exist in **two committed copies**: `plugins/apodictic/scripts/`
-(canonical) and root `scripts/` (**what CI runs**, per `.github/workflows/ci.yml`). These
-are *not* generated like `codex/` — they must be mirrored **by hand, byte-identical**, or
-a validator/engine change passes locally while CI runs the stale copy blind to it. Sync the
-copies by hand (`cp`), then verify with **`validate.sh check-mirror`** — it asserts the shared
-mirrored set (`validate.sh`, `preflight.sh`, every `*.py`) is byte-identical and is wired into
-`--check-all`, so drift is now CI-blocking. (It only *detects* drift; it never auto-syncs — the
-by-hand `cp` stays deliberate. Sync as the **last** step before `--check-all`, else its own
-`validate.sh` edit shows as `DIFFER: validate.sh` until both copies match.) (Schemas/manifests in
-`plugins/apodictic/schemas/` are single-sourced — resolved from either script dir — so they
-don't need mirroring.)
+**Validators live in one place.** `validate.sh`, its `validate.d/*.sh` parts, `preflight.sh`, and every Python validator live only in `plugins/apodictic/scripts/`. Root `scripts/validate.sh` is a one-line shim that execs the plugin copy, so CI's `bash scripts/validate.sh ...` runs the shipped code. Root `scripts/` otherwise holds only repo tooling (release and build `*.mjs`, `release.sh`, `bump-version.sh`, `tag-release.sh`, `sync_setec.py`). Validator fixtures live in `tests/fixtures/validators/`. Keep every file in `plugins/apodictic/` under 256 KiB and the folder at 512 files or fewer: past either limit the Claude plugin directory holds each version for a manual review. That is why `validate.sh` sources `validate.d/` and the changelog lives at the repo root. (Schemas in `plugins/apodictic/schemas/` are single-sourced.)
 
 ## Changelog
 
-Don't edit `changelog.md` directly. Add one `changelog.d/<slug>.md` fragment per
+Don't edit `CHANGELOG.md` directly. Add one `changelog.d/<slug>.md` fragment per
 change — a single freeform thematic `### ` section. `scripts/release.sh` assembles
 the fragments into a dated `## vX.Y.Z` section at release time (and deletes them);
 `scripts/assemble-changelog.mjs --check` gates fragment validity in CI. See

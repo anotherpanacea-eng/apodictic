@@ -8,7 +8,7 @@ Thank you for your interest in improving this plugin. Contributions are welcome 
 
 **Audit improvements:** If you've found a false positive pattern, a missing diagnostic, or a calibration gap in a specific audit, describe the manuscript context where it occurred and what the audit missed or misflagged.
 
-**New audit proposals:** Use the `Specialized_Audit_Expansion_Stub_TEMPLATE.md` included in the plugin to sketch your proposal. Send the completed stub to the email above.
+**New audit proposals:** Use [`docs/audit-expansion/Specialized_Audit_Expansion_Stub_TEMPLATE.md`](docs/audit-expansion/Specialized_Audit_Expansion_Stub_TEMPLATE.md) to sketch your proposal; `docs/audit-expansion/compression-audit-expansion-stub.md` is a filled-in example. Send the completed stub to the email above.
 
 ## What We're Not Looking For
 
@@ -34,7 +34,7 @@ The copyright holder (Joshua A. Miller, PhD) retains the right to use contributi
 
 All changes that alter diagnostic behavior, output format, thresholds, flag definitions, pass logic, or the user-facing contract must be documented. Bug fixes, typo corrections, and internal refactoring that don't change behavior are encouraged but not required.
 
-**Don't edit `changelog.md` directly.** Maintainer-agent changes add one fragment per change under `changelog.d/<slug>.md` (see `changelog.d/README.md`); the release pipeline assembles the fragments into a dated `## vX.Y.Z` section. This keeps parallel branches from colliding on the shared changelog.
+**Don't edit `CHANGELOG.md` directly.** Maintainer-agent changes add one fragment per change under `changelog.d/<slug>.md` (see `changelog.d/README.md`); the release pipeline assembles the fragments into a dated `## vX.Y.Z` section. This keeps parallel branches from colliding on the shared changelog.
 
 **Fragment format:** a single freeform thematic `### ` header (the house style — e.g. `### Validators`, `### Workflows — Retcon Planning`, not bare `### Added/Changed/Fixed`) followed by prose. Entries should be specific enough to grep — name the file, flag, pass, or threshold that changed.
 

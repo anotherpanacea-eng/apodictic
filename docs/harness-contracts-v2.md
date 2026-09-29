@@ -1,8 +1,8 @@
 # Harness Contracts v2 — schema-coverage gate + closed-key enforcement
 
 **Status:** **Built, 2026-06-21.** Shipped: the `schema-coverage` validator (`scripts/schema_coverage.py`) + the declarative `schemas/_coverage.json` binding table + its two schemas (`apodictic.schema_coverage.v1`, `apodictic.schema_binding.v1`); opt-in closed-key (`additionalProperties:false`) enforcement in the shared engine (`apodictic_artifacts.py`) with the six flat const-tagged blocks closed; and an advisory docs-no-re-list prose lint (`--check-docs`). Wired into `validate.sh --check-all` against the real `schemas/` dir, and added to `AGG_VALIDATORS`. Self-testable validators **50 → 51** (derived from `AGG_VALIDATORS`, not a hand-maintained literal). Roadmap: [`ROADMAP.md` → Harness Contracts v2](../ROADMAP.md#harness-contracts-v2).
-<!-- built-when: scripts/schema_coverage.py -->
-<!-- built-when: scripts/validate.sh contains "schema-coverage" -->
+<!-- built-when: plugins/apodictic/scripts/schema_coverage.py -->
+<!-- built-when: plugins/apodictic/scripts/validate.sh contains "schema-coverage" -->
 
 > This doc is the canonical description of the coverage manifest. Per the schema-`$comment`
 > discipline it does **not** re-list the `_coverage.json` field set in prose beyond §3 — §3 points

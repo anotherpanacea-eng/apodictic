@@ -130,6 +130,20 @@ Use these when one craft system needs deeper diagnosis than core passes provide.
 | Argument Red Team | Stress-tests the argument against its strongest opposition | Before publication/testimony where the case will be attacked |
 | Adversarial Evidence Review | Pressure-tests evidence under formal adversarial protocols (ACH, cross-exam, severe testing) | After Citation Verifier & Field Recon when evidence defensibility is critical |
 
+**Prerequisite:** Dialectical Clarity runs first and writes `Argument_State.md`. Red Team, Persuasion, Evidence, and Adversarial Evidence Review read it and refuse to run without it. Adversarial Evidence Review also needs the Argument Evidence, Citation Verifier, and Field Recon outputs for the same draft, and a fresh session for high-consequence work. `/pre-writing` can seed `Argument_State.md` before a draft exists.
+
+**By nonfiction form** (canonical: `skills/core-editor/references/nonfiction-intake-routing.md` §Default activation by form and `argument-audits-routing.md`):
+
+| Form | Start with | Then | Research before synthesis |
+|---|---|---|---|
+| Op-ed, persuasive essay, open letter | Dialectical Clarity | Red Team or Persuasion | Field Recon (recommended) |
+| Policy brief, recommendation memo, white paper | Dialectical Clarity | Red Team, then Evidence | Field Recon (recommended) |
+| Testimony, expert affidavit | Dialectical Clarity | Red Team, then Adversarial Evidence Review | Citation Verifier and Field Recon (required) |
+| Legal brief, regulatory comment | Dialectical Clarity | Red Team, then Adversarial Evidence Review | Citation Verifier and Field Recon (required) |
+| Academic argument, review essay | Dialectical Clarity | Evidence | Field Recon (recommended; required for peer-reviewed publication) |
+| Lens or exploratory essay (writer-confirmed) | Dialectical Clarity, `register=generative` | Red Team on cash-out points only | Optional |
+| Reported feature, memoir, personal essay | Narrative Nonfiction Craft or Memoir & CNF | Dialectical Clarity when a claim burden dominates | Fact-check as needed |
+
 ---
 
 ## 6) Structural Modules (Plot and Pathway)

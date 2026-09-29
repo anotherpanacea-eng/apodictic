@@ -1,17 +1,27 @@
 {
   "name": "apodictic",
-  "version": "2.12.0",
-  "description": "APODICTIC Development Editor. A development editor for fiction and argument-shaped nonfiction — reads what you wrote, diagnoses structure, never rewrites. Provides structural diagnosis, genre calibration, tag audits, plot architecture analysis, revision coaching, partial manuscript diagnostic, fragment synthesis, nonfiction argument engine (Dialectical Clarity + Red Team, Persuasion, Evidence, and Coaching companions), pre-writing pathway, and intake routing across 11 core passes, 38 available audits (3 universal, 20 craft, 10 genre, 5 tag), 6 research modes, 1 pre-writing pathway, and 1 intake router. Includes contract-driven and finding-driven audit integration pipeline.",
+  "version": "2.13.3",
+  "description": "APODICTIC Development Editor. A development editor for fiction and argument-shaped nonfiction — reads what you wrote, diagnoses structure, never rewrites. For nonfiction, the Argument Engine infers your claim, audience, and burden, then finds missing warrants, scope drift, and unmet objections in op-eds, policy briefs, testimony, academic arguments, legal briefs, and regulatory comments, with Dialectical Clarity, Red Team, Persuasion, Evidence, Field Reconnaissance, and Citation Verifier companions. For fiction: structural diagnosis, genre calibration, tag audits, plot architecture analysis, and pre-writing. Shared: revision coaching, partial manuscript diagnostic, fragment synthesis, and intake routing across 11 core passes, 38 available audits (3 universal, 20 craft, 10 genre, 5 tag), 6 research modes, 1 pre-writing pathway, and 1 intake router. Includes contract-driven and finding-driven audit integration pipeline.",
   "author": {
     "name": "anotherpanacea"
   },
   "keywords": [
     "writing",
     "editing",
-    "fiction",
     "developmental-editing",
     "manuscript-analysis",
+    "fiction",
     "plot-structure",
-    "genre-calibration"
+    "genre-calibration",
+    "nonfiction",
+    "argument-analysis",
+    "op-ed",
+    "policy-brief",
+    "testimony",
+    "legal-brief",
+    "academic-writing",
+    "citation-verification",
+    "red-team",
+    "persuasion"
   ]
 }

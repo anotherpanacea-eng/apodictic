@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APODICTIC — Route Explorer</title>
+<style>
+  :root {
+    --bg: #111114;
+    --surface: #1a1a1f;
+    --surface-raised: #222228;
+    --surface-hover: #2a2a32;
+    --border: #333340;
+    --border-focus: #c8964a;
+    --text: #e8e6e0;
+    --text-muted: #9994;
+    --text-dim: #888;
+    --amber: #c8964a;
+    --amber-glow: rgba(200, 150, 74, 0.15);
+    --amber-dim: #a07838;
+    --green: #6ab77b;
+    --green-dim: rgba(106, 183, 123, 0.15);
+    --yellow: #d4a843;
+    --yellow-dim: rgba(212, 168, 67, 0.15);
+    --red: #c75050;
+    --red-dim: rgba(199, 80, 80, 0.12);
+    --blue: #5b8ec9;
+    --blue-dim: rgba(91, 142, 201, 0.12);
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 4rem;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  header h1 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--amber);
+    margin-bottom: 0.3rem;
+  }
+  header .tagline {
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+  header .version {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.6rem;
+    font-family: var(--mono);
+  }
+
+  /* ── Intro ── */
+  .intro {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 2.5rem;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+  .intro strong { color: var(--text); font-weight: 500; }
+
+  /* ── Router steps ── */
+  .router-step {
+    margin-bottom: 2rem;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+  .router-step.dimmed { opacity: 0.3; pointer-events: none; }
+  .router-step.active { opacity: 1; }
+
+  .step-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+  }
+  .step-number {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+  .router-step.active .step-number {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: var(--amber-glow);
+  }
+  .router-step.completed .step-number {
+    border-color: var(--green);
+    color: var(--green);
+    background: var(--green-dim);
+  }
+  .step-question {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .router-step.dimmed .step-question { color: var(--text-dim); }
+
+  /* ── Option buttons ── */
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-left: 2.4rem;
+  }
+  .option-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.7rem 1rem;
+    text-align: left;
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 0.88rem;
+    color: var(--text);
+    transition: all 0.15s ease;
+    line-height: 1.5;
+  }
+  .option-btn:hover {
+    background: var(--surface-hover);
+    border-color: var(--amber-dim);
+  }
+  .option-btn.selected {
+    background: var(--amber-glow);
+    border-color: var(--amber);
+    color: var(--text);
+  }
+  .option-btn .option-key {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    text-align: center;
+    line-height: 20px;
+    font-size: 0.7rem;
+    font-family: var(--mono);
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-right: 0.6rem;
+    vertical-align: middle;
+  }
+  .option-btn.selected .option-key {
+    background: var(--amber);
+    border-color: var(--amber);
+    color: var(--bg);
+  }
+
+  /* ── Result panel ── */
+  .result-panel {
+    margin-top: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: none;
+  }
+  .result-panel.visible { display: block; }
+
+  .result-header {
+    padding: 1rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .result-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--amber);
+  }
+  .result-status {
+    font-size: 0.75rem;
+    font-family: var(--mono);
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  .status-built {
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(106, 183, 123, 0.3);
+  }
+  .status-gap {
+    background: var(--yellow-dim);
+    color: var(--yellow);
+    border: 1px solid rgba(212, 168, 67, 0.3);
+  }
+  .status-partial {
+    background: var(--blue-dim);
+    color: var(--blue);
+    border: 1px solid rgba(91, 142, 201, 0.3);
+  }
+
+  .result-body {
+    padding: 1.4rem;
+  }
+  .result-body h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+    margin-top: 1.2rem;
+  }
+  .result-body h3:first-child { margin-top: 0; }
+  .result-body p {
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    line-height: 1.7;
+    margin-bottom: 0.5rem;
+  }
+
+  .pass-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.6rem 0;
+  }
+  .pass-chip {
+    font-size: 0.75rem;
+    font-family: var(--mono);
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  .pass-chip.tier1 { border-color: rgba(106, 183, 123, 0.4); color: var(--green); }
+  .pass-chip.tier2 { border-color: rgba(200, 150, 74, 0.4); color: var(--amber); }
+  .pass-chip.tier3 { border-color: rgba(91, 142, 201, 0.4); color: var(--blue); }
+
+  .workflow-arrow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.8rem 0;
+    flex-wrap: wrap;
+  }
+  .workflow-node {
+    font-size: 0.8rem;
+    font-family: var(--mono);
+    padding: 0.35rem 0.7rem;
+    border-radius: 5px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .workflow-node.active-node {
+    border-color: var(--amber);
+    background: var(--amber-glow);
+  }
+  .arrow {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  .gap-note {
+    font-size: 0.82rem;
+    color: var(--yellow);
+    background: var(--yellow-dim);
+    border: 1px solid rgba(212, 168, 67, 0.2);
+    border-radius: 5px;
+    padding: 0.6rem 0.9rem;
+    margin-top: 0.8rem;
+    line-height: 1.6;
+  }
+  .gap-note strong { color: var(--yellow); }
+
+  .output-list {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    line-height: 2;
+  }
+
+  /* ── Reset button ── */
+  .reset-bar {
+    text-align: center;
+    margin-top: 1.5rem;
+    display: none;
+  }
+  .reset-bar.visible { display: block; }
+  .reset-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-dim);
+    font-family: var(--font);
+    font-size: 0.82rem;
+    padding: 0.45rem 1.2rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .reset-btn:hover {
+    border-color: var(--amber-dim);
+    color: var(--text);
+  }
+
+  /* ── Shortcut footer ── */
+  .shortcuts {
+    margin-top: 3rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1.5rem;
+  }
+  .shortcuts h2 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.8rem;
+  }
+  .shortcut-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.5rem;
+  }
+  .shortcut-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .shortcut-cmd {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--amber);
+    white-space: nowrap;
+  }
+  .shortcut-desc {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+  }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: var(--mono);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1><a href="https://github.com/anotherpanacea-eng/apodictic" style="color:inherit; text-decoration:none;">APODICTIC</a></h1>
+    <div class="tagline">Developmental editing that listens before diagnosing.</div>
+    <div class="version">Route Explorer &middot; v2.3.1</div>
+  </header>
+
+  <div class="intro">
+    Every edit starts with three questions. <strong>APODICTIC</strong> asks what you have, what you need, and whether anything should change how it works — then routes you to the right diagnostic workflow. This explorer shows every path the router can take.
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="router-step active" id="step1">
+    <div class="step-label">
+      <div class="step-number">1</div>
+      <div class="step-question">What do you have right now?</div>
+    </div>
+    <div class="options" id="opts1"></div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="router-step dimmed" id="step2">
+    <div class="step-label">
+      <div class="step-number">2</div>
+      <div class="step-question">What do you want next?</div>
+    </div>
+    <div class="options" id="opts2"></div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="router-step dimmed" id="step3">
+    <div class="step-label">
+      <div class="step-number">3</div>
+      <div class="step-question">Anything that should change how we work?</div>
+    </div>
+    <div class="options" id="opts3"></div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result-panel" id="resultPanel">
+    <div class="result-header">
+      <div class="result-title" id="resultTitle">Route</div>
+      <div class="result-status" id="resultStatus"></div>
+    </div>
+    <div class="result-body" id="resultBody"></div>
+  </div>
+
+  <div class="reset-bar" id="resetBar">
+    <button class="reset-btn" onclick="resetAll()">Start over</button>
+  </div>
+
+  <!-- SHORTCUTS -->
+  <div class="shortcuts">
+    <h2>Skill Entrypoints</h2>
+    <p style="font-size:0.82rem; color:var(--text-dim); margin-bottom:0.8rem;">
+      If you already know what you need, these skip the router and go direct.
+    </p>
+    <div class="shortcut-grid">
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-start</span><span class="shortcut-desc">Full router</span></div>
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-pre-writing</span><span class="shortcut-desc">Idea → structure</span></div>
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-plot-coach</span><span class="shortcut-desc">Spine coaching</span></div>
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-audit</span><span class="shortcut-desc">Specialized audit</span></div>
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-research</span><span class="shortcut-desc">Research mode</span></div>
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-coach</span><span class="shortcut-desc">Post-diagnostic plan</span></div>
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-legal-risk</span><span class="shortcut-desc">Legal Risk Register</span></div>
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-triage-feedback</span><span class="shortcut-desc">Sort beta feedback</span></div>
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-reader-questions</span><span class="shortcut-desc">Beta-reader instrument</span></div>
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-projects</span><span class="shortcut-desc">List &amp; manage projects</span></div>
+      <div class="shortcut-item"><span class="shortcut-cmd">apodictic-start &lt;id&gt;</span><span class="shortcut-desc">Resume a project (zero-question)</span></div>
+    </div>
+    <p style="font-size:0.82rem; color:var(--text-dim); margin-top:0.8rem;">
+      <strong>Projects &amp; resume.</strong> Runs are registered as projects. Come back later and <span class="shortcut-cmd">apodictic-start &lt;id&gt;</span> resumes from the project's lifecycle state with zero intake questions; <span class="shortcut-cmd">apodictic-projects</span> lists, inspects, and tidies what you have registered.
+    </p>
+    <p style="font-size:0.82rem; color:var(--text-dim); margin-top:0.8rem;">
+      <strong>Execution mode.</strong> Any route can run single-agent (default) or, for final submission prep, in <em>swarm</em> mode — passes run in architectural isolation as verification insurance, not a higher raw yield. Swarm costs roughly 5x the tokens (measured up to ~8.5x on long fiction); reserve it for the final round and the writer/verifier spot-check.
+    </p>
+  </div>
+
+  <footer><a href="https://github.com/anotherpanacea-eng/apodictic" style="color:inherit;">APODICTIC</a> Development Editor &middot; anotherpanacea</footer>
+</div>
+
+<script>
+const ARTIFACTS = [
+  { key: 'A', value: 'idea',       label: 'An idea — no writing yet' },
+  { key: 'B', value: 'fragments',  label: 'Scattered notes, scenes, or fragments' },
+  { key: 'C', value: 'partial',    label: 'A draft in progress — started but not finished' },
+  { key: 'D', value: 'full_draft', label: 'A complete draft' },
+  { key: 'E', value: 'series',     label: 'Multiple books in a series' },
+  { key: 'F', value: 'argument',   label: 'An argument-shaped piece — op-ed, brief, testimony, essay' },
+];
+
+const GOALS = {
+  idea: [
+    { key: 'A', value: 'draft',      label: 'Help figuring out what to write and how to structure it' },
+    { key: 'B', value: 'draft_fast', label: 'I already know my structure — just need to start drafting' },
+  ],
+  fragments: [
+    { key: 'A', value: 'synthesize', label: 'Figure out what they add up to — find the book in the fragments' },
+    { key: 'B', value: 'repair',     label: 'I know what the book is — help me fill in the gaps' },
+  ],
+  partial: [
+    { key: 'A', value: 'diagnose',   label: "I'm stuck — something isn't working but I don't know what" },
+    { key: 'B', value: 'targeted',   label: "I know what's wrong — I need help fixing a specific problem" },
+    { key: 'C', value: 'rethink',    label: 'I want to step back and rethink the structure before writing more' },
+  ],
+  full_draft: [
+    { key: 'A', value: 'repair',    label: "Figure out what's wrong and how to fix it" },
+    { key: 'B', value: 'submit',    label: "Check if it's ready to submit" },
+    { key: 'C', value: 'ai_clean',  label: 'Clean up AI-generated or AI-assisted prose' },
+    { key: 'D', value: 'feedback',  label: 'I have beta reader feedback — help me sort through it' },
+    { key: 'E', value: 'coach',     label: 'I have a diagnosis — help me plan revision' },
+  ],
+  series: [
+    { key: 'A', value: 'single_vol',  label: 'Work on one book (the current volume)' },
+    { key: 'B', value: 'continuity',  label: 'Check continuity across volumes' },
+    { key: 'C', value: 'plan_next',   label: 'Plan the series arc or the next volume' },
+  ],
+  argument: [
+    { key: 'A', value: 'diagnose',    label: 'Diagnose what\'s wrong with the argument — missing warrants, scope drift, unmet objections' },
+    { key: 'B', value: 'dialectical', label: 'Deep-dive the argument structure (Dialectical Clarity audit)' },
+    { key: 'C', value: 'red_team',    label: 'Stress-test against the strongest opposition (Red Team)' },
+    { key: 'D', value: 'pre_draft',   label: 'I have an argument but no draft yet — help me structure it' },
+  ],
+};
+
+const CONSTRAINTS = [
+  { key: 'A', value: 'time',        label: "I'm on a deadline" },
+  { key: 'B', value: 'ai',          label: 'Parts of this were written with AI' },
+  { key: 'C', value: 'nonfiction',  label: 'This is nonfiction' },
+  { key: 'D', value: 'risk',        label: "There's sensitive or legally risky content" },
+  { key: 'E', value: 'editor',      label: "I'm editing someone else's work" },
+  { key: 'F', value: 'facilitator', label: "I'm facilitating a writing group" },
+  { key: 'G', value: 'team',        label: "We're co-authoring (multiple writers)" },
+  { key: 'H', value: 'none',        label: "No constraints — let's go" },
+];
+
+// Route database: artifact + goal + constraint → result
+const ROUTES = {
+  // idea
+  'idea|draft|*':       { workflow: 'Pre-Writing Pathway', status: 'built', flow: ['Intake', 'Pre-Writing Pathway', 'Structural Plan'], passes: [], desc: 'Full pre-writing journey from raw idea through premise development, controlling idea, spine selection, structural plan, and scene map. Six phases ending with a draft-ready blueprint.', outputs: ['Structural_Plan.md', 'Scene_Map.md', 'Contract_and_Controlling_Idea.md'] },
+  'idea|draft_fast|*':  { workflow: 'Pre-Writing Pathway (fast-track)', status: 'built', flow: ['Intake', 'Pre-Writing (Phase 4)', 'Spine Selection'], passes: [], desc: 'Skips premise development and jumps to spine selection and structural planning. For writers who already know their story and need architecture, not ideation.', outputs: ['Structural_Plan.md', 'Scene_Map.md'] },
+
+  // fragments
+  'fragments|synthesize|*': { workflow: 'Fragment Synthesis → Pre-Writing', status: 'built', flow: ['Fragment Synthesis', 'Pre-Writing Pathway'], passes: [], desc: 'Clusters existing fragments, maps connections, and proposes a candidate structure, then feeds it into the pre-writing pathway. The synthesis step finds the book hiding in the pieces.', outputs: ['Fragment_Analysis.md', 'Structural_Plan.md'] },
+  'fragments|repair|*':     { workflow: 'Core DE (partial manuscript)', status: 'built', flow: ['Core DE', 'Partial-Manuscript Mode'], passes: ['0','1','2','5','8'], desc: 'Runs the diagnostic on available material with a partial-manuscript flag, so incompleteness is tracked (momentum, stall causes, setup inventory) rather than penalized as a structural failure.', outputs: ['Editorial_Letter.md', 'Diagnostic_State.md'] },
+
+  // partial
+  'partial|diagnose|*':  { workflow: 'Core DE (partial, diagnostic focus)', status: 'built', flow: ['Core DE', 'Partial-Manuscript Mode'], passes: ['0','1','2','5','8'], desc: 'Diagnostic focus on a draft-in-progress: stall detection, momentum tracking, and a setup inventory of what the draft has committed to. Synthesis centers on what is working, what is stalling, and where to go next.', outputs: ['Editorial_Letter.md', 'Diagnostic_State.md'] },
+  'partial|targeted|*':  { workflow: 'Core DE (partial, targeted)', status: 'built', flow: ['Concern Intake', 'Query Resolver', 'Core DE'], passes: [], desc: 'You name the specific problem; the query resolver selects the minimum pass set to address it. Focused and efficient.', outputs: ['Editorial_Letter.md'] },
+  'partial|rethink|*':   { workflow: 'Pre-Writing Pathway (re-entry)', status: 'built', flow: ['Import Decisions', 'Pre-Writing Pathway', 'Revised Plan'], passes: [], desc: 'Imports existing decisions from the draft (what\'s working, what\'s established) and runs the pre-writing pathway from there. For stepping back without starting over.', outputs: ['Structural_Plan.md', 'Scene_Map.md'] },
+
+  // full_draft — core routes
+  'full_draft|repair|none':    { workflow: 'Core DE', status: 'built', flow: ['Intake', 'Contract', 'Query Resolver', 'Passes', 'Audits', 'Synthesis'], passes: ['0','1','2','5','8'], desc: 'The flagship workflow. Draft-then-validate contract, concern-driven pass resolution (defaulting to the general diagnostic floor: Passes 0, 1, 2, 5, 8), specialized audits, root cause analysis, editorial letter.', outputs: ['Contract_and_Controlling_Idea.md', 'Pass reports', 'Audit findings', 'Editorial_Letter.md', 'Diagnostic_State.md'] },
+  'full_draft|submit|*':      { workflow: 'Submission Readiness Workflow', status: 'built', flow: ['Core DE', 'All Passes', 'Pass 11', 'Submission Package'], passes: ['0','1','2','3','4','5','6','7','8','9','10','11'], desc: 'Full diagnostic plus submission-readiness assessment: hard truths, revision economics, three-lens verdict, market reality check. For manuscripts heading to agents, editors, or self-publication. Available directly via apodictic-ready.', outputs: ['Editorial_Letter.md', 'Pass11_Critical_Quality.md'] },
+  'full_draft|ai_clean|*':    { workflow: 'Core DE + AI-Prose Calibration', status: 'built', flow: ['Core DE', 'AI-Prose Calibration Overlay'], passes: ['0','1','2','5','8'], desc: 'Standard diagnostic plus AI-prose calibration overlay. Identifies and addresses the characteristic patterns of AI-assisted writing: smoothed registers, false hedging, decorative imagery, rhythmic monotony.', outputs: ['Editorial_Letter.md', 'AI_Prose_Calibration_Report.md'] },
+  'full_draft|feedback|*':    { workflow: 'Feedback Triage → Core DE', status: 'built', flow: ['Feedback Intake', 'Conflict Resolution', 'Core DE'], passes: ['0','1','2','5','8'], desc: 'Structured intake for beta reader or critique-partner feedback: sorts and validates each note, surfaces conflicts, and prioritizes them, then runs the diagnostic with feedback as additional evidence. Available directly via apodictic-triage-feedback.', outputs: ['Feedback_Triage.md', 'Editorial_Letter.md'] },
+  'full_draft|coach|*':       { workflow: 'Revision Coach', status: 'built', flow: ['Diagnosis', 'Revision Coach', 'Session Plan'], passes: [], desc: 'Post-diagnostic coaching that helps you plan revision without doing the revision for you: leverage-ranked session planning, stuck-point coaching, momentum tracking, and deadline triage. Available directly via apodictic-coach.', outputs: ['Revision_Plan.md'] },
+
+  // full_draft — constraint variants
+  'full_draft|repair|time':        { workflow: 'Submission Triage', status: 'built', flow: ['Pass 1', 'SR Codes', 'Go/No-Go Memo'], passes: ['1'], desc: 'Deadline mode: Pass 1 reader experience plus the detectable subset of submission-readiness codes, producing a go/no-go memo with named blind spots. For writers who need direction today, not a comprehensive diagnostic.', outputs: ['Triage_Memo.md'] },
+  'full_draft|repair|ai':         { workflow: 'Core DE + AI-Prose Calibration', status: 'built', flow: ['Core DE', 'AI-Prose Calibration Overlay'], passes: ['0','1','2','5','8'], desc: 'Same as the AI cleanup route. The constraint flag triggers the overlay automatically.', outputs: ['Editorial_Letter.md', 'AI_Prose_Calibration_Report.md'] },
+  'full_draft|repair|risk':       { workflow: 'Core DE + Legal Risk Register', status: 'built', flow: ['Core DE', 'Legal Risk Register'], passes: ['0','1','2','5','8'], desc: 'Standard diagnostic plus a Legal Risk Register that flags defamation, privacy, and rights-clearance exposure with escalation triggers and routes serious items to counsel. Reached via constraint:risk (offered, attached on accept) or the apodictic-legal-risk command. It flags areas that may need legal review — it does not give legal advice.', outputs: ['Editorial_Letter.md', 'Legal_Risk_Register.md'] },
+  'full_draft|repair|nonfiction': { workflow: 'Nonfiction Argument Engine', status: 'built', flow: ['Nonfiction Triage', 'Dialectical Clarity', 'Companion Audits'], passes: [], desc: 'Argument-shaped nonfiction routes to the Nonfiction Argument Engine (Dialectical Clarity + a shared Argument_State.md); scene-led work routes to Narrative Nonfiction Craft; memoir and witness-led work to Memoir & CNF.', outputs: ['Argument_State.md', 'Editorial_Letter.md'] },
+  'full_draft|repair|editor':     { workflow: 'Core DE (editor scaffolding)', status: 'built', flow: ['Core DE', 'Editor Output Mode'], passes: ['0','1','2','5','8'], desc: 'Same diagnostic, output re-aimed at a human developmental editor working on someone else\'s manuscript: an Editor Brief, a What-You-Might-Have-Missed blind-spot section, and an intervention menu left to the editor\'s discretion.', outputs: ['Editorial_Letter.md'] },
+  'full_draft|repair|facilitator':{ workflow: 'Core DE (diagnostic vocabulary)', status: 'built', flow: ['Core DE', 'Vocabulary Guide'], passes: ['0','1','2','5','8'], desc: 'Diagnostic vocabulary mode for writing-group facilitation: produces a teaching Vocabulary Guide (a grounded glossary plus question-framed discussion prompts) alongside the editorial letter, which keeps its severity record.', outputs: ['Editorial_Letter.md', 'Vocabulary_Guide.md'] },
+  'full_draft|repair|team':       { workflow: 'Core DE (multi-party)', status: 'gap', flow: ['Multi-Party Intake', 'Core DE', 'Conflict Surface'], passes: ['0','1','2','5','8'], desc: 'Intake that surfaces conflicting visions between co-authors. Diagnostic flags vision-alignment issues alongside structural problems.', gap: 'Multi-party intake is not yet built. Fallback: single-author Core DE.', outputs: ['Editorial_Letter.md'] },
+
+  // argument
+  'argument|diagnose|*':    { workflow: 'Nonfiction Argument Engine', status: 'built', flow: ['Argument Triage', 'Dialectical Clarity', 'Companion Audits', 'Argument Editorial Letter'], passes: [], desc: 'Infers the argument contract (claim, audience, burden, stakes) from the text, then diagnoses where it breaks down: missing warrants, scope drift, unmet strongest objections. Produces an argument editorial letter and marked-up piece. Companions: Dialectical Clarity, Red-Team, Persuasion, Evidence.', outputs: ['Argument_State.md', 'Editorial_Letter.md', 'Marked_Up_Piece.md'] },
+  'argument|dialectical|*': { workflow: 'Dialectical Clarity Audit', status: 'built', flow: ['Argument Intake', 'Dialectical Clarity'], passes: [], desc: 'Deep-dive argument structure audit: claim ladder, thesis–antithesis balance, rhetorical fairness, straw-position detection. Available directly via /audit dialectical.', outputs: ['Dialectical_Clarity_Report.md'] },
+  'argument|red_team|*':    { workflow: 'Argument Red Team', status: 'built', flow: ['Argument Intake', 'Red Team Simulation'], passes: [], desc: 'Hostile-reader simulation: identifies the strongest version of the opposition, stress-tests the argument against it, surfaces concessions that would strengthen rather than weaken the piece.', outputs: ['Red_Team_Report.md'] },
+  'argument|pre_draft|*':   { workflow: 'Pre-Writing Pathway (nonfiction pre-draft)', status: 'built', flow: ['Argument Spine', 'Claim Ladder', 'Opposing View'], passes: [], desc: 'Argument-shaped pre-draft: capture the thesis, the claim ladder that builds to it, and the strongest opposing view it must defeat, then seed the shared Argument_State.md so Dialectical Clarity and the companion audits consume one contract once a draft exists.', outputs: ['Argument_State.md (pre-draft)'] },
+
+  // series
+  'series|single_vol|*':  { workflow: 'Core DE (series context)', status: 'partial', flow: ['Series Context Noted', 'Re-route to Volume', 'Core DE'], passes: ['0','1','2','5','8'], desc: 'Routes back to Q1 for the specific volume, with series context preserved. Cross-volume character and world state are noted but not formally tracked.', outputs: ['Editorial_Letter.md', 'Diagnostic_State.md'] },
+  'series|continuity|*':  { workflow: 'Series Continuity Audit', status: 'built', flow: ['Cross-Volume Scan', 'Continuity Report'], passes: ['10'], desc: 'Cross-volume consequence tracking across five channels — character state, world rules, unresolved threads, hope calibration, and intentional discontinuities — persisted in a rolling Series_State.md. Catches continuity breaks, character drift, and dangling series setups.', outputs: ['Series_Continuity_Report.md', 'Series_State.md'] },
+  'series|plan_next|*':   { workflow: 'Pre-Writing Pathway (series-aware)', status: 'partial', flow: ['Import Series State', 'Pre-Writing Pathway'], passes: [], desc: 'Pre-writing pathway that imports established series elements: recurring characters, world rules, unresolved threads, series arc position. Plans the next volume without contradicting what exists.', outputs: ['Structural_Plan.md', 'Scene_Map.md'] },
+};
+
+let state = { artifact: null, goal: null, constraint: null };
+
+function renderOptions(containerId, items, step) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  items.forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-key">${item.key}</span>${item.label}`;
+    btn.onclick = () => selectOption(step, item.value);
+    c.appendChild(btn);
+  });
+}
+
+function selectOption(step, value) {
+  if (step === 1) {
+    state.artifact = value;
+    state.goal = null;
+    state.constraint = null;
+    highlightSelection('opts1', value, ARTIFACTS);
+    setStepState('step1', 'completed');
+    setStepState('step2', 'active');
+    setStepState('step3', 'dimmed');
+    renderOptions('opts2', GOALS[value], 2);
+    document.getElementById('opts3').innerHTML = '';
+    hideResult();
+  } else if (step === 2) {
+    state.goal = value;
+    state.constraint = null;
+    highlightSelection('opts2', value, GOALS[state.artifact]);
+    setStepState('step2', 'completed');
+    setStepState('step3', 'active');
+    renderOptions('opts3', CONSTRAINTS, 3);
+    hideResult();
+  } else if (step === 3) {
+    state.constraint = value;
+    highlightSelection('opts3', value, CONSTRAINTS);
+    setStepState('step3', 'completed');
+    showResult();
+  }
+}
+
+function highlightSelection(containerId, value, items) {
+  const btns = document.getElementById(containerId).querySelectorAll('.option-btn');
+  items.forEach((item, i) => {
+    btns[i].className = 'option-btn' + (item.value === value ? ' selected' : '');
+  });
+}
+
+function setStepState(id, state) {
+  document.getElementById(id).className = 'router-step ' + state;
+}
+
+function hideResult() {
+  document.getElementById('resultPanel').className = 'result-panel';
+  document.getElementById('resetBar').className = 'reset-bar';
+}
+
+function lookupRoute(artifact, goal, constraint) {
+  // Try exact match first
+  const exact = `${artifact}|${goal}|${constraint}`;
+  if (ROUTES[exact]) return ROUTES[exact];
+  // Try wildcard
+  const wild = `${artifact}|${goal}|*`;
+  if (ROUTES[wild]) return ROUTES[wild];
+  // Fallback for constraint variants on full_draft|repair
+  if (artifact === 'full_draft' && goal === 'repair' && constraint !== 'none') {
+    const constRoute = `full_draft|repair|${constraint}`;
+    if (ROUTES[constRoute]) return ROUTES[constRoute];
+  }
+  // Default fallback
+  return ROUTES[wild] || null;
+}
+
+function showResult() {
+  const route = lookupRoute(state.artifact, state.goal, state.constraint);
+  if (!route) return;
+
+  const panel = document.getElementById('resultPanel');
+  const title = document.getElementById('resultTitle');
+  const status = document.getElementById('resultStatus');
+  const body = document.getElementById('resultBody');
+
+  title.textContent = route.workflow;
+
+  const statusMap = { built: ['Built', 'status-built'], gap: ['Gap', 'status-gap'], partial: ['Partial', 'status-partial'] };
+  const [statusText, statusClass] = statusMap[route.status];
+  status.textContent = statusText;
+  status.className = 'result-status ' + statusClass;
+
+  let html = '';
+
+  // Workflow flow
+  html += '<h3>Workflow</h3>';
+  html += '<div class="workflow-arrow">';
+  route.flow.forEach((node, i) => {
+    if (i > 0) html += '<span class="arrow">→</span>';
+    const cls = (i === route.flow.length - 1) ? 'workflow-node active-node' : 'workflow-node';
+    html += `<span class="${cls}">${node}</span>`;
+  });
+  html += '</div>';
+
+  // Description
+  html += `<h3>What happens</h3><p>${route.desc}</p>`;
+
+  // Passes
+  if (route.passes.length > 0) {
+    html += '<h3>Passes</h3><div class="pass-list">';
+    const passNames = {
+      '0': 'Reverse Outline', '1': 'Reader Experience', '2': 'Structural Mapping',
+      '3': 'Rhythm & Modulation', '4': 'Emotional Value', '5': 'Character Audit',
+      '6': 'Scene Function', '7': 'POV & Voice', '8': 'Reveal Economy',
+      '9': 'Thematic Coherence', '10': 'Entity Tracking', '11': 'Critical Quality'
+    };
+    const tiers = { '0':'tier1', '1':'tier1', '10':'tier1', '11':'tier3' };
+    route.passes.forEach(p => {
+      const tier = tiers[p] || 'tier2';
+      html += `<span class="pass-chip ${tier}">${p}: ${passNames[p]}</span>`;
+    });
+    html += '</div>';
+  }
+
+  // Outputs
+  if (route.outputs && route.outputs.length > 0) {
+    html += '<h3>Key outputs</h3><div class="output-list">';
+    route.outputs.forEach(o => { html += o + '<br>'; });
+    html += '</div>';
+  }
+
+  // Gap note
+  if (route.gap) {
+    html += `<div class="gap-note"><strong>Not yet built.</strong> ${route.gap}</div>`;
+  }
+
+  body.innerHTML = html;
+  panel.className = 'result-panel visible';
+  document.getElementById('resetBar').className = 'reset-bar visible';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function resetAll() {
+  state = { artifact: null, goal: null, constraint: null };
+  setStepState('step1', 'active');
+  setStepState('step2', 'dimmed');
+  setStepState('step3', 'dimmed');
+  renderOptions('opts1', ARTIFACTS, 1);
+  document.getElementById('opts2').innerHTML = '';
+  document.getElementById('opts3').innerHTML = '';
+  hideResult();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Initialize
+renderOptions('opts1', ARTIFACTS, 1);
+</script>
+</body>
+</html>

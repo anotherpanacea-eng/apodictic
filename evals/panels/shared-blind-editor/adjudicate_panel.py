@@ -14,9 +14,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = Path(os.environ.get("APODICTIC_REPO", HERE.parents[2])).resolve()
 
-spec = importlib.util.spec_from_file_location("agreement_alpha", REPO / "scripts/agreement_alpha.py")
+spec = importlib.util.spec_from_file_location("agreement_alpha", REPO / "plugins/apodictic/scripts/agreement_alpha.py")
 if spec is None or spec.loader is None:
-    raise SystemExit("ERROR: cannot load scripts/agreement_alpha.py")
+    raise SystemExit("ERROR: cannot load plugins/apodictic/scripts/agreement_alpha.py")
 alpha_lib = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(alpha_lib)
 

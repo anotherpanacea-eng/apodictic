@@ -1,6 +1,5 @@
 ---
-description: Recommended entry point — routes to the right workflow in 2-3 questions (zero for a resumed project)
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob, WebSearch, WebFetch
+description: Recommended entry point for fiction or argument-shaped nonfiction — asks 2-3 questions (zero for a resumed project) and routes you to the right workflow
 ---
 
 # /start — Intake Router + Resume Gate
@@ -121,6 +120,7 @@ The `next_action` field also accepts a human-readable `description` subfield for
    - Submission triage route -> load `../skills/core-editor/references/submission-triage.md`
    - Audit route -> load `../skills/specialized-audits/SKILL.md`
    - Plot coaching route -> load `../skills/plot-architecture/SKILL.md`
+   - Argument-shaped nonfiction (op-ed, policy brief, testimony, academic argument, open letter, white paper, legal brief, regulatory comment, expert affidavit; router resolves `constraint=nonfiction` + a persuasive-argument form) -> load `../skills/nonfiction-argument-engine/SKILL.md`, which layers the argument cluster onto the development-edit or pre-writing route
 10. If route target is a gap, execute the runtime gap-handling protocol (acknowledge, offer closest, name missing coverage).
 11. Pass router output (`artifact`, `goal`, `concern`, `base_route`, `forks`, `overlays`, `gap_flags`) to the routed workflow intake and skip redundant questions. (Output contract: `../skills/core-editor/references/intake-router-design.md` §Router output format.)
 

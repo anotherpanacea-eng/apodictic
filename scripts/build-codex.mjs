@@ -156,7 +156,7 @@ If APODICTIC does not appear in Codex, the most common cause is opening the wron
 ## Source Of Truth
 
 - \`plugins/apodictic/\` — canonical authored APODICTIC source
-- \`plugins/apodictic/*.codex.*\` — authored Codex-only overrides
+- \`packaging/codex/*.codex.*\` — authored Codex-only overrides
 - \`scripts/build-codex.mjs\` — generator for this workspace and package
 `;
 }
@@ -458,7 +458,6 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
       const relPath = path.relative(tempWorkspace, file).split(path.sep).join("/");
       return !new Set([
         "NON_PARITY_NOTES.md",
-        "plugins/apodictic/skills/core-editor/references/changelog.md",
         "plugins/apodictic/skills/core-editor/references/output-policy.md",
         "plugins/apodictic/skills/core-editor/references/output-structure.md",
         "plugins/apodictic/skills/specialized-audits/references/craft/adversarial-evidence-review.md"
@@ -570,7 +569,7 @@ function main() {
   const canonicalManifestPath = abs(paths.pluginJson);
   const canonicalManifest = readJson(canonicalManifestPath);
   const canonicalVersion = canonicalManifest.version;
-  const codexTemplatePath = abs("plugins/apodictic/.codex-plugin/plugin.json");
+  const codexTemplatePath = abs("packaging/codex/.codex-plugin/plugin.json");
   const codexTemplate = readJson(codexTemplatePath);
 
   if (codexTemplate.version !== canonicalVersion) {

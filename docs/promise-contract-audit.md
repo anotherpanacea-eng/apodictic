@@ -1,7 +1,7 @@
 # Promise-Contract Fidelity — does the pitch keep the promise the book makes?
 
 **Status:** **Built (Increment 1)** — shipped the document-fidelity layer: `core-editor/references/promise-contract.md`, the `apodictic.pitch_copy.v1` persisted input + `apodictic.finding.v1` findings with origin `PCF`, `scripts/promise_contract.py`, `validate.sh promise-contract` (P1/P2/P3 + W1/W2), the OD1 `CONTROLLING IDEA:` contract-schema field, and the canonical `example-promise-contract.md` wired into `--check-all`. Spec-reviewed **BUILD-READY-WITH-FIXES** (2026-06-19 Codex-down pass — see [§Build-Readiness Review](#build-readiness-review-codex-down-independent-pass-2026-06-19) at the end); OD1 **resolved 2026-06-19** (operator: add a `CONTROLLING IDEA:` schema field). Homed like [Legal Risk Register](legal-risk-register.md) / Editor Scaffolding — a **core-editor workflow module**, *not* a craft audit. Roadmap: `ROADMAP.md` → [Horizon Capacities](../ROADMAP.md#horizon-capacities) Tier 1, item 4.
-<!-- built-when: scripts/promise_contract.py -->
+<!-- built-when: plugins/apodictic/scripts/promise_contract.py -->
 
 APODICTIC's foundational move is contract inference: read the manuscript, predict its **contract** (genre, reader promise, controlling idea, ending type), and treat the gap between inferred and intended as the signal. The same move applies to the author's **marketing copy**. A query foregrounds a subplot the book treats as minor; a back-cover blurb discloses a reveal the manuscript protects; the controlling idea the book is built on never appears in the pitch at all. Each is a **promise the copy makes — or fails to make — that the contract does not keep.** The writer usually can't see it, because they know what they meant.
 

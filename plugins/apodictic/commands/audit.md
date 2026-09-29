@@ -1,7 +1,6 @@
 ---
 description: Run a specialized audit or list available audits
 argument-hint: [audit-name] or no argument to list all
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob
 ---
 
 Run a specialized audit from the APODICTIC Development Editor framework.
@@ -61,11 +60,14 @@ Display the complete list of available audits with brief descriptions:
 Plot structure analysis uses a separate skill. Run `/plot-coach` for spine diagnosis (50 spines across 12 families), selection coaching, and structural triage.
 
 ### Nonfiction Argument Engine
-The **dialectical** audit is the entry point for all argument-shaped nonfiction. It produces `Argument_State.md`, which companion modules then consume:
+The **dialectical** audit is the entry point for all argument-shaped nonfiction: op-eds, policy briefs, testimony, academic arguments, open letters, white papers, legal briefs, regulatory comments, and expert affidavits. It produces `Argument_State.md`, which companion modules then consume:
 - `/audit dialectical` — run first; produces the shared argument state
 - `/audit argument-red-team` — hostile-reader pressure test (requires `Argument_State.md`)
 - `/audit argument-persuasion` — audience calibration and framing guidance (requires `Argument_State.md`)
 - `/audit argument-evidence` — provenance, testimony calibration, verification queue (requires `Argument_State.md`)
+- `/audit adversarial-evidence-review` — hostile-expert survivability of each claim-evidence link (requires `Argument_State.md` plus the argument-evidence, citation-verifier, and field-recon outputs for the same draft)
+- `/research field-recon` — counterevidence, literature gaps, source-ecosystem health
+- `/research citation-verifier` — does each cited source exist, say what you claim, and fit the claim
 - `/coach` — argument revision coaching (reads `Argument_State.md` + companion annotations)
 
 Companion modules will refuse to run without a populated `Argument_State.md`. Run `/audit dialectical` first.
