@@ -188,8 +188,10 @@ the fragments into a dated `## vX.Y.Z` section at release time (and deletes them
 - **`gh` OAuth workflow-scope merge block (public repo).** A PR that touches
   `.github/workflows/` can't be merged with the `gh` OAuth token (403 "refusing to
   allow an OAuth App to create or update workflow") — this has bitten this repo.
-  Use GitHub's merge path only when it reliably enforces the unchanged frozen base
-  and expected train head. Otherwise fetch the train PR's tested synthetic merge
+  Prefer GitHub's merge path when it reliably enforces the unchanged frozen base
+  and expected train head; the single-maintainer connector exception below also
+  permits a freshly verified merge when an atomic base guard is unavailable.
+  For the guarded terminal path, fetch the train PR's tested synthetic merge
   ref, require exact parents `BASE` then `HEAD`, construct a local two-parent merge
   with that exact tree and no CI-skip instruction, repeat every live-state and
   receipt check, then update `main` only with
@@ -209,7 +211,41 @@ the fragments into a dated `## vX.Y.Z` section at release time (and deletes them
 There is no docs-only, typo, or one-line direct-main bypass. If a change genuinely
 cannot wait for the next train, keep its PR non-train, add the exact `ci-ready`
 label only after both reviews and local validation, and follow the same exact-head
-receipt and compare-and-swap landing discipline.
+receipt and landing discipline below, preferring compare-and-swap.
+
+### Single-maintainer connector landing
+
+Prefer the existing atomic base guard (the sanitized CAS landing path or an
+explicit expected-base lease). The maintainer's standing authorization,
+2026-10-01, permits a GitHub merge-commit fallback when that path is unavailable
+and this remains a trusted single-maintainer repository. Do not ask again solely
+because the connector lacks an expected-base parameter.
+
+This exception applies only to a frozen, reviewed train or an already authorized
+`ci-ready` standalone PR. Immediately before merging, recheck the live `main`
+commit, PR base/head, closed inventory, reviews and unresolved threads, and the newest
+live CI run/attempt (which must be successful) and its exact
+base/head/synthetic-merge receipt. Every
+value must still match the frozen clearance. Use the merge-commit API with the
+full expected PR-head SHA; never substitute squash, rebase, an unconditional ref
+update, or enabling auto-merge. If anything moved or evidence is unavailable,
+stop and rebuild/review/revalidate as needed.
+
+This fallback accepts the short gap between checking `main` and merging; it is
+not an atomic base comparison. After merging, verify the actual merge parents
+are the checked base then PR head and its tree equals the CI-tested tree before
+landing a dependent repository. All review, CI, train, scope and release rules
+still apply. This authorization does not include deployments or release tags.
+
+**CI support:** the existing PR-merge binding step proves which base/head/tree
+were tested; it does not lock `main` until landing. Enforced strict up-to-date
+required checks or a supported GitHub merge queue can manage base changes, but
+verify repository settings first; queue adoption also needs `merge_group` CI
+support, which the current PR-only workflow does not have. A dedicated landing
+workflow could perform the existing guarded CAS write on the runner, with narrow
+write permissions and all live checks. Concurrency alone does not exclude web/API
+writers. These are options, not configured guarantees; do not enable new write
+permissions or a queue merely to satisfy this fallback.
 
 ## CI
 
