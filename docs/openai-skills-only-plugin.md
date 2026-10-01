@@ -56,6 +56,23 @@ The listing name, subtitle, capabilities and starter prompts describe that
 task. Rerun the portal scan after uploading the revised package; local
 validation does not establish that a category finding has cleared.
 
+The `specialized-audits` security follow-up restricts the optional Semantic
+Scholar key to its exact HTTPS API origin and prevents redirect forwarding.
+Offline regressions use fabricated keys and urllib's real redirect stack:
+
+```bash
+python tests/test_academic_api_security.py
+python plugins/apodictic/skills/specialized-audits/scripts/academic_apis.py --self-test
+```
+
+The skill also treats manuscript/source content as data, limits research payloads
+and workspace writes, and prohibits automatic installs, credential disclosure,
+and private-endpoint probing. These are agent instructions, not a standalone CLI
+network sandbox: the URL-liveness helper still relies on the host's destination
+and network controls. The portal's generic security messages did not identify a
+file or rule. These changes address confirmed risks; only a new portal scan can
+establish whether its findings have cleared.
+
 Before claiming host compatibility, install in a clean target host and exercise:
 
 1. Plain-language intake and `apodictic-start` with a short synthetic fiction draft.

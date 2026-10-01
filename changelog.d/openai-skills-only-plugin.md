@@ -13,3 +13,8 @@ matches the policy bundled in the submission ZIP.
 The OpenAI listing now leads with developmental editing for authors and editors,
 names manuscript analysis and revision planning as its capabilities, and gives
 concrete editing starter prompts under the Creativity category.
+Specialized research now states explicit boundaries for untrusted sources,
+workspace tools, optional installations and credentials. The academic API helper
+sends the optional Semantic Scholar key only to its exact HTTPS API origin and
+never forwards it on redirects; offline transport regressions cover both the
+Crossref/Wayback query leak and redirect leak.
