@@ -49,6 +49,14 @@ commit permalink for the host-neutral policy included in this package. Update
 that pinned URL when the policy changes, and verify that anonymous visitors can
 read the policy and that its content matches the bundled `PRIVACY.md`.
 
+The package selects `Productivity` because its main task is developmental
+editing: reviewing a draft and organizing the author's revision work. The
+listing name, subtitle, capabilities and starter prompts describe that task.
+If the portal cannot confirm the category, check its current dropdown titles
+and rerun the scan after uploading the revised package. A wording change is
+not proof that a category finding has cleared; do not invent a category name
+that the dashboard does not offer.
+
 Before claiming host compatibility, install in a clean target host and exercise:
 
 1. Plain-language intake and `apodictic-start` with a short synthetic fiction draft.

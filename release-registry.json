@@ -45,7 +45,7 @@
     "workspaceDir": "codex",
     "distArchive": "dist/apodictic-codex-marketplace.zip",
     "submissionArchive": "dist/apodictic-openai-plugin.zip",
-    "displayName": "APODICTIC",
+    "displayName": "APODICTIC Development Editor",
     "category": "Productivity",
     "wrapperPrefix": "apodictic",
     "policy": {
@@ -53,9 +53,9 @@
       "authentication": "ON_INSTALL"
     },
     "defaultPrompts": [
-      "Use APODICTIC to tell me what kind of manuscript help I need.",
-      "Use APODICTIC to diagnose the structural problems in this draft.",
-      "Use APODICTIC to help me plan revisions without rewriting prose."
+      "Analyze this fiction draft for plot, pacing, and character-arc problems without rewriting it.",
+      "Review the claims, evidence, and unanswered objections in this nonfiction argument.",
+      "Turn these editorial findings into a prioritized revision plan without drafting new prose."
     ],
     "overrides": {
       "packaging/codex/README.codex.md": "plugins/apodictic/README.md",

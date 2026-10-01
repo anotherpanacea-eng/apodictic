@@ -10,3 +10,6 @@ delegation, storage, and SETEC limits. No MCP or author-operated backend is adde
 in-app compatibility and public approval remain separate from packaging checks.
 The listing also supplies a publicly accessible privacy-policy permalink that
 matches the policy bundled in the submission ZIP.
+The OpenAI listing now leads with developmental editing for authors and editors,
+names manuscript analysis and revision planning as its capabilities, and gives
+concrete editing starter prompts under the Productivity category.
