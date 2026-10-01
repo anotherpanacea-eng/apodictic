@@ -128,7 +128,7 @@ Audit-internal scales (AIC Spot/Pattern/Systemic, Reception Note/Flag/Alert, Red
 
 ## Severity Honesty Protocol (v0.4.14.3)
 
-*Canonical home for anti-sycophancy / no-self-revise rule. Other surfaces (`adversarial-stress-test.md §Lock-then-test protocol` / §Anti-softening rule, `specialized-audits/references/craft/reception-risk.md §Lock-then-classify` / §Forbidden #6, `run-synthesis.md §Step 6 Adversarial Self-Check`) reference here and add only context-specific elaborations (stress-test ordering, audit lock-then-classify discipline, self-check up/down pressure). The general principle — LLMs reliably talk themselves out of hard findings; severity locks before steelmanning — lives here. Per-audit Deficit-First Diagnostic Rule blocks (each tailored to the audit's failure modes) are the operational expression of this principle and stay in their audit reference files.*
+*Canonical home for anti-sycophancy / no-self-revise rule. Other surfaces (`adversarial-stress-test.md §Lock-then-test protocol` / §Anti-softening rule, `genre-reader-audits/references/craft/reception-risk.md §Lock-then-classify` / §Forbidden #6, `run-synthesis.md §Step 6 Adversarial Self-Check`) reference here and add only context-specific elaborations (stress-test ordering, audit lock-then-classify discipline, self-check up/down pressure). The general principle — LLMs reliably talk themselves out of hard findings; severity locks before steelmanning — lives here. Per-audit Deficit-First Diagnostic Rule blocks (each tailored to the audit's failure modes) are the operational expression of this principle and stay in their audit reference files.*
 
 LLMs have a documented tendency to soften negative findings in editorial analysis. This manifests as:
 
@@ -165,7 +165,7 @@ The Deficit Lock does not forbid charity — it makes charity *legible*. A genui
 
 ## Severity Floor Rules (v0.4.14.3)
 
-*Canonical home for severity-floor rules. Mechanical check: `scripts/validate.sh severity-floor <editorial_letter_file>`. Other framework surfaces (e.g., `run-synthesis.md` Step 10, `specialized-audits/references/craft/reception-risk.md` §7) reference these rules rather than restating them; if a surface appears to encode a fourth rule, treat that as a duplication bug and consolidate here.*
+*Canonical home for severity-floor rules. Mechanical check: `scripts/validate.sh severity-floor <editorial_letter_file>`. Other framework surfaces (e.g., `run-synthesis.md` Step 10, `genre-reader-audits/references/craft/reception-risk.md` §7) reference these rules rather than restating them; if a surface appears to encode a fourth rule, treat that as a duplication bug and consolidate here.*
 
 These rules prevent diagnostic softening from producing incoherent verdicts:
 

@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildAuditCatalog } from "./audit-catalog.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -147,7 +148,7 @@ function buildCommandAuditList() {
 }
 
 function buildReadmeSpecializedLine(stats) {
-  return `- **Specialized Audits** — ${stats.available} available audits (${stats.universal} universal, ${stats.craft} craft, ${stats.genre} genre, ${stats.tag} tag), including ${stats.primaryTag} primary tags (${tagSummaryNames.join(", ")}) and ${stats.companionTag} companion intimacy audits; plus ${counts.researchModes} internet-enabled research modes`;
+  return `- **Specialized Audits** — ${stats.available} available audits (${stats.universal} universal, ${stats.craft} craft, ${stats.genre} genre, ${stats.tag} tag), including ${stats.primaryTag} primary tags (${tagSummaryNames.join(", ")}) and ${stats.companionTag} companion intimacy audits; plus ${counts.researchModes} internet-enabled research modes. A small catalog dispatches to five owning skills: narrative craft, genre/reader expectations, argument analysis, research/verification, and prose measurements`;
 }
 
 function buildReadmeAuditCountLine(stats) {
@@ -220,6 +221,9 @@ function main() {
   const changedFiles = [];
   const auditStats = buildAuditStats();
   validateRegistry(auditStats);
+  const catalog = buildAuditCatalog(registry, repoRoot);
+  const catalogPath = abs("plugins/apodictic/skills/specialized-audits/catalog.json");
+  writeIfChanged(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`, changedFiles);
 
   const pluginJsonPath = abs(paths.pluginJson);
   const pluginDescription = buildPluginDescription(auditStats);

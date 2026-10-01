@@ -73,7 +73,7 @@ The **dialectical** audit is the entry point for all argument-shaped nonfiction:
 Companion modules will refuse to run without a populated `Argument_State.md`. Run `/audit dialectical` first.
 
 **If an argument is provided:**
-Load the named audit's reference file from `../skills/specialized-audits/references/` and run the full audit on the manuscript. Apply all logic gates, produce flagged findings with specific scene/page evidence, and output a focused audit report.
+Select the owning family from `../skills/specialized-audits/SKILL.md`, load that family's skill and the named protocol, and run the full audit on the manuscript. Apply all logic gates, produce flagged findings with specific scene/page evidence, and output a focused audit report. Command aliases and output contracts remain unchanged.
 
 **Output location** (per `../skills/core-editor/references/output-structure.md` §Folder Architecture):
 - Create run folder: `runs/YYYY-MM-DD_{model}_audit/` inside the project root

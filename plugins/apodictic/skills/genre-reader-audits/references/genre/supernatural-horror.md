@@ -730,4 +730,4 @@ That answer determines whether the manuscript needs local tightening, systemic s
 
 ---
 
-*This audit is designed to bolt onto the APODICTIC development editor framework as a child of Horror Craft Integration. Activate during intake when the manuscript operates in supernatural horror mode. File placement: `specialized-audits/references/genre/supernatural-horror.md`.*
+*This audit is designed to bolt onto the APODICTIC development editor framework as a child of Horror Craft Integration. Activate during intake when the manuscript operates in supernatural horror mode. File placement: `genre-reader-audits/references/genre/supernatural-horror.md`.*

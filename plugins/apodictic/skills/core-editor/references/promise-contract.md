@@ -16,7 +16,7 @@ APODICTIC's foundational move is **contract inference** — read the manuscript,
 
 ## Consume Shelf & Positioning — do not duplicate (prerequisite)
 
-The [Shelf & Positioning audit](../../specialized-audits/references/craft/shelf-positioning.md) already owns **genre-promise mismatch**, **comp misrepresentation** (the Vibe-Only Comp test), and **tone-shelf mismatch** — and even *rewrites* pitches in its Reframe Protocol. This module therefore **does not re-flag genre, comp, or tone.** Where those matter it is a **prerequisite**: if Shelf & Positioning has run, consume and cite its findings; if it has not, recommend running it and record reduced coverage rather than re-deriving positioning. What's left — the non-overlapping residue — is **document-level fidelity**: emphasis, disclosure, over/under-promise, cross-document consistency. That is this module's whole job.
+The [Shelf & Positioning audit](../../genre-reader-audits/references/craft/shelf-positioning.md) already owns **genre-promise mismatch**, **comp misrepresentation** (the Vibe-Only Comp test), and **tone-shelf mismatch** — and even *rewrites* pitches in its Reframe Protocol. This module therefore **does not re-flag genre, comp, or tone.** Where those matter it is a **prerequisite**: if Shelf & Positioning has run, consume and cite its findings; if it has not, recommend running it and record reduced coverage rather than re-deriving positioning. What's left — the non-overlapping residue — is **document-level fidelity**: emphasis, disclosure, over/under-promise, cross-document consistency. That is this module's whole job.
 
 ---
 

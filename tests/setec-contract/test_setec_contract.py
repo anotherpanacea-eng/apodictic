@@ -52,7 +52,7 @@ VENDOR_DIR = REPO_ROOT / "tests" / "setec-contract"
 VENDORED_MANIFEST = VENDOR_DIR / "setec-capabilities.json"
 VENDORED_FIXTURES = VENDOR_DIR / "fixtures"
 SHIM_DIR = (
-    REPO_ROOT / "plugins" / "apodictic" / "skills" / "specialized-audits" / "scripts"
+    REPO_ROOT / "plugins" / "apodictic" / "skills" / "prose-measurements" / "scripts"
 )
 TOOLS_DIR = REPO_ROOT / "tools"
 
@@ -665,7 +665,7 @@ def t8_run_surface_cli_preserves_dispatcher_exit_code() -> None:
 # resolvability — it does not re-read the SETEC envelope at runtime — but the
 # capability's schema/docs/fixture cite this shape as their consume contract, so
 # it is no longer a purely forward-looking reference.) The older voice_profile
-# consumer (skills/specialized-audits/scripts/ai_prose_voice_profile.py) remains
+# consumer (skills/prose-measurements/scripts/ai_prose_voice_profile.py) remains
 # a pure pass-through that forwards argv to the SETEC dispatcher and never parses
 # the envelope. This gate pins the field shape so that a SETEC drop of these
 # arrays fails HERE, in per-PR CI, rather than reaching the capability's specced
