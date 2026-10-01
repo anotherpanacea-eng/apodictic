@@ -31,8 +31,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "APODICTIC",
-    "shortDescription": "Structural developmental editing for fiction and argument-shaped nonfiction.",
-    "longDescription": "APODICTIC is a skill-first developmental editing framework for fiction and narrative nonfiction. It routes writers into diagnosis, audits, research, plot coaching, and revision planning while keeping a strict no-rewrite firewall.",
+    "shortDescription": "Developmental editing",
+    "longDescription": "APODICTIC diagnoses structure in fiction, narrative nonfiction, and argument-shaped nonfiction such as op-eds, policy briefs, testimony, and academic arguments. Start with manuscript intake, then use focused audits, citation research, plot coaching, feedback triage, or revision planning. It identifies problems and classes of solution without rewriting your prose or inventing content. Bundled scripts provide mechanical checks and annotated exports when the host supports execution. Saved projects require a persistent project workspace; independent pass agents require host delegation; SETEC measurements require a separate compatible installation. Hosts without these facilities have reduced functionality. Legal-risk flags support a lawyer's review and are not legal advice. This skills-only plugin operates through your host's tools and has no author-operated backend.",
     "developerName": "anotherpanacea",
     "category": "Productivity",
     "capabilities": [
@@ -53,5 +53,10 @@
       "./assets/apodictic-screenshot-editor-letter.png"
     ],
     "brandColor": "#2B4C7E"
+  },
+  "extensions": {
+    "com.openai": {
+      "onboardingSkill": "./skills/apodictic-start/SKILL.md"
+    }
   }
 }

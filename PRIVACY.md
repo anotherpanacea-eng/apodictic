@@ -1,8 +1,8 @@
 # Privacy Policy
 
-APODICTIC is a plugin that runs inside your own Claude client (Claude Code, Claude desktop, or another
-host that loads it). This policy covers the plugin itself. Your use of Claude is covered by
-Anthropic's own terms and privacy policy.
+APODICTIC is a skills-based plugin that runs inside the host you use, such as Claude Code,
+Cowork, Codex, or a supported ChatGPT workspace. This policy covers the plugin itself.
+Your host provider's terms and privacy policy govern content you share with that host.
 
 ## What the plugin collects
 
@@ -12,8 +12,11 @@ analytics, telemetry, or tracking.
 ## Where your files go
 
 The plugin reads the manuscript and notes you point it at, and writes its reports (editorial letters,
-audit findings, run logs) into your project folder on your own machine. It does not upload them
-anywhere. Claude reads the content you share with it in the usual way, under Anthropic's terms.
+audit findings, run logs) into your host's project workspace when file tools are available.
+That workspace may be on your machine or hosted by your provider. The plugin does not send
+manuscripts or reports to its author. Your host processes the content you share under its
+own terms and may store uploaded files and generated artifacts. Saved-project workflows
+require persistent workspace support; the plugin does not provide a storage service.
 
 ## Network requests
 
@@ -26,8 +29,8 @@ That is a placeholder address unless you set `CROSSREF_MAILTO` or `OPENALEX_MAIL
 `S2_API_KEY`, that key is sent only to Semantic Scholar, which issues it. Each service's own privacy
 policy applies to the requests it receives.
 
-Some research modes also ask Claude to search or fetch web pages with its own web tools. Those
-requests go through your Claude client and follow its permission settings.
+Some research modes also ask the host to search or fetch web pages with its own web tools. Those
+requests go through your host and follow its permission settings.
 
 ## Contact
 

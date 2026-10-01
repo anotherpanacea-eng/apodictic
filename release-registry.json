@@ -44,6 +44,7 @@
   "codex": {
     "workspaceDir": "codex",
     "distArchive": "dist/apodictic-codex-marketplace.zip",
+    "submissionArchive": "dist/apodictic-openai-plugin.zip",
     "displayName": "APODICTIC",
     "category": "Productivity",
     "wrapperPrefix": "apodictic",

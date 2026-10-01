@@ -63,6 +63,7 @@ jobs:
           fi
           gh release upload "$TAG" \
             dist/apodictic-codex-marketplace.zip \
+            dist/apodictic-openai-plugin.zip \
             dist/apodictic-antigravity.zip \
             apodictic.plugin \
             --clobber
