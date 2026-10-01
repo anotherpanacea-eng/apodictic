@@ -4,7 +4,7 @@ Pre-registered **before any audit run** (the argument-benchmark ground-truth dis
 `evals/argument-groundtruth-template.md`). A run is scored against this key; an `expected.md`
 written after seeing run output is void.
 
-Reference: `plugins/apodictic/skills/specialized-audits/references/craft/ai-prose-calibration.md`
+Reference: `plugins/apodictic/skills/prose-measurements/references/craft/ai-prose-calibration.md`
 §Step 2 (Layer B flag scan). Severity bands are Spot / Pattern / Systemic.
 
 ---

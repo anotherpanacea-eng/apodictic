@@ -2,7 +2,7 @@
 """argument-agd — the AGD Move Audit validator (R3A).
 
 Validates an `Argument_State.md` §10.9 "AGD Move Audit" block (the companion audit defined in
-plugins/apodictic/skills/specialized-audits/references/craft/argument-agd-audit.md): the coverage
+plugins/apodictic/skills/argument-audits/references/craft/argument-agd-audit.md): the coverage
 manifest, the typed M-records, the total family×challenge×result matrix, the neutrality firewall
 (candidates licensed ONLY by failed function), the candidate namespace + reconciliation grammar,
 the DISCOUNTING cross-ref contract, the OPTIONAL §1b `Scan:` scan-consumption coverage line (R3B

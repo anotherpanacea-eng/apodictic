@@ -6,8 +6,8 @@
     "plugins/apodictic/scripts/run_gate.py",
     "plugins/apodictic/scripts/structured_findings.py",
     "plugins/apodictic/scripts/validate.sh",
-    "plugins/apodictic/skills/specialized-audits/scripts/ai_prose_voice_distance.py",
-    "plugins/apodictic/skills/specialized-audits/scripts/ai_prose_voice_profile.py"
+    "plugins/apodictic/skills/prose-measurements/scripts/ai_prose_voice_distance.py",
+    "plugins/apodictic/skills/prose-measurements/scripts/ai_prose_voice_profile.py"
   ],
   "paths": {
     "rootReadme": "README.md",
@@ -21,7 +21,12 @@
       "plugins/apodictic/skills/pre-writing-pathway/SKILL.md",
       "plugins/apodictic/skills/plot-architecture/SKILL.md",
       "plugins/apodictic/skills/specialized-audits/SKILL.md",
-      "plugins/apodictic/skills/revision-coach/SKILL.md"
+      "plugins/apodictic/skills/revision-coach/SKILL.md",
+      "plugins/apodictic/skills/narrative-craft-audits/SKILL.md",
+      "plugins/apodictic/skills/genre-reader-audits/SKILL.md",
+      "plugins/apodictic/skills/argument-audits/SKILL.md",
+      "plugins/apodictic/skills/research-verification/SKILL.md",
+      "plugins/apodictic/skills/prose-measurements/SKILL.md"
     ],
     "pluginReadme": "plugins/apodictic/README.md",
     "pluginReadmeCodex": "packaging/codex/README.codex.md",
@@ -73,7 +78,7 @@
       "ready": "core-editor",
       "adjudicate": "core-editor",
       "audit": "specialized-audits",
-      "research": "specialized-audits",
+      "research": "research-verification",
       "coach": "revision-coach",
       "plot-coach": "plot-architecture",
       "pre-writing": "pre-writing-pathway",
@@ -110,7 +115,7 @@
       "ready": "core-editor",
       "adjudicate": "core-editor",
       "audit": "specialized-audits",
-      "research": "specialized-audits",
+      "research": "research-verification",
       "coach": "revision-coach",
       "plot-coach": "plot-architecture",
       "pre-writing": "pre-writing-pathway",
@@ -126,21 +131,60 @@
   "folderArchitecture": {
     "version": "0.5.0",
     "runTypes": [
-      { "type": "full-de", "when": "Full development edit (all 11 passes + contract audits)" },
-      { "type": "core-de", "when": "Core development edit (6 passes)" },
-      { "type": "partial-de", "when": "Partial manuscript diagnostic" },
-      { "type": "fragment-de", "when": "Fragment synthesis" },
-      { "type": "audit", "when": "Standalone audit(s) without a DE run" },
-      { "type": "consolidated", "when": "Cross-model or cross-run consolidation" },
-      { "type": "coaching", "when": "Revision coaching session outputs" }
+      {
+        "type": "full-de",
+        "when": "Full development edit (all 11 passes + contract audits)"
+      },
+      {
+        "type": "core-de",
+        "when": "Core development edit (6 passes)"
+      },
+      {
+        "type": "partial-de",
+        "when": "Partial manuscript diagnostic"
+      },
+      {
+        "type": "fragment-de",
+        "when": "Fragment synthesis"
+      },
+      {
+        "type": "audit",
+        "when": "Standalone audit(s) without a DE run"
+      },
+      {
+        "type": "consolidated",
+        "when": "Cross-model or cross-run consolidation"
+      },
+      {
+        "type": "coaching",
+        "when": "Revision coaching session outputs"
+      }
     ],
     "modelTags": [
-      { "model": "Claude Opus 4.6", "tag": "opus46" },
-      { "model": "Claude Sonnet 4.6", "tag": "sonnet46" },
-      { "model": "Claude Haiku 4.5", "tag": "haiku45" },
-      { "model": "Codex 5.4", "tag": "codex54" },
-      { "model": "ChatGPT o3", "tag": "o3" },
-      { "model": "Gemini 3.1", "tag": "gemini31" }
+      {
+        "model": "Claude Opus 4.6",
+        "tag": "opus46"
+      },
+      {
+        "model": "Claude Sonnet 4.6",
+        "tag": "sonnet46"
+      },
+      {
+        "model": "Claude Haiku 4.5",
+        "tag": "haiku45"
+      },
+      {
+        "model": "Codex 5.4",
+        "tag": "codex54"
+      },
+      {
+        "model": "ChatGPT o3",
+        "tag": "o3"
+      },
+      {
+        "model": "Gemini 3.1",
+        "tag": "gemini31"
+      }
     ],
     "runFolderPattern": "YYYY-MM-DD_{model-tag}_{run-type}",
     "rollingStateFiles": [
@@ -275,77 +319,347 @@
   ],
   "passes": {
     "base": [
-      { "name": "Reverse Outline", "files": ["core-editor/references/reverse-outline-template.md"] }
+      {
+        "name": "Reverse Outline",
+        "files": [
+          "core-editor/references/reverse-outline-template.md"
+        ]
+      }
     ],
     "coreDe": [
-      { "name": "Reader Experience Mapping", "files": ["core-editor/references/run-core.md"] },
-      { "name": "Structural Diagnosis", "files": ["core-editor/references/run-core.md", "core-editor/references/run-full.md"] }
+      {
+        "name": "Reader Experience Mapping",
+        "files": [
+          "core-editor/references/run-core.md"
+        ]
+      },
+      {
+        "name": "Structural Diagnosis",
+        "files": [
+          "core-editor/references/run-core.md",
+          "core-editor/references/run-full.md"
+        ]
+      }
     ],
     "fullDe": [
-      { "name": "Rhythm and Modulation (Pass 3)", "files": ["core-editor/references/run-full.md"] },
-      { "name": "Emotional Value Tracking (Pass 4)", "files": ["core-editor/references/run-full.md"] },
-      { "name": "Character Architecture (Pass 5)", "files": ["core-editor/references/character-architecture.md", "core-editor/references/run-full.md"] },
-      { "name": "Scene Function Audit (Pass 6)", "files": ["core-editor/references/run-full.md"] },
-      { "name": "POV and Voice (Pass 7)", "files": ["core-editor/references/run-full.md"] },
-      { "name": "Reveal Economy (Pass 8)", "files": ["core-editor/references/run-full.md"] },
-      { "name": "Thematic Coherence (Pass 9)", "files": ["core-editor/references/run-full.md"] },
-      { "name": "Entity Tracking (Pass 10)", "files": ["core-editor/references/run-full.md"] },
-      { "name": "Pacing Analysis", "files": ["core-editor/references/run-core.md"] }
+      {
+        "name": "Rhythm and Modulation (Pass 3)",
+        "files": [
+          "core-editor/references/run-full.md"
+        ]
+      },
+      {
+        "name": "Emotional Value Tracking (Pass 4)",
+        "files": [
+          "core-editor/references/run-full.md"
+        ]
+      },
+      {
+        "name": "Character Architecture (Pass 5)",
+        "files": [
+          "core-editor/references/character-architecture.md",
+          "core-editor/references/run-full.md"
+        ]
+      },
+      {
+        "name": "Scene Function Audit (Pass 6)",
+        "files": [
+          "core-editor/references/run-full.md"
+        ]
+      },
+      {
+        "name": "POV and Voice (Pass 7)",
+        "files": [
+          "core-editor/references/run-full.md"
+        ]
+      },
+      {
+        "name": "Reveal Economy (Pass 8)",
+        "files": [
+          "core-editor/references/run-full.md"
+        ]
+      },
+      {
+        "name": "Thematic Coherence (Pass 9)",
+        "files": [
+          "core-editor/references/run-full.md"
+        ]
+      },
+      {
+        "name": "Entity Tracking (Pass 10)",
+        "files": [
+          "core-editor/references/run-full.md"
+        ]
+      },
+      {
+        "name": "Pacing Analysis",
+        "files": [
+          "core-editor/references/run-core.md"
+        ]
+      }
     ],
     "fullOnlySynthesis": [
-      { "name": "Shelf Audit & Market Viability (Pass 11)", "files": ["core-editor/references/pass-11.md", "specialized-audits/references/craft/shelf-positioning.md"] }
+      {
+        "name": "Shelf Audit & Market Viability (Pass 11)",
+        "files": [
+          "core-editor/references/pass-11.md",
+          "specialized-audits/references/craft/shelf-positioning.md"
+        ]
+      }
     ],
     "commonSynthesis": [
-      { "name": "Adversarial Stress Test", "files": ["core-editor/references/adversarial-stress-test.md"] },
-      { "name": "Editorial Letter Synthesis", "files": ["core-editor/references/run-full.md", "core-editor/references/output-policy.md"] }
+      {
+        "name": "Adversarial Stress Test",
+        "files": [
+          "core-editor/references/adversarial-stress-test.md"
+        ]
+      },
+      {
+        "name": "Editorial Letter Synthesis",
+        "files": [
+          "core-editor/references/run-full.md",
+          "core-editor/references/output-policy.md"
+        ]
+      }
     ],
     "submissionTriage": [
-      { "name": "Reader Experience Mapping", "files": ["core-editor/references/run-core.md", "core-editor/references/submission-triage.md"] }
+      {
+        "name": "Reader Experience Mapping",
+        "files": [
+          "core-editor/references/run-core.md",
+          "core-editor/references/submission-triage.md"
+        ]
+      }
     ],
     "submissionReadinessAnalytical": [
-      { "name": "Reverse Outline", "files": ["core-editor/references/reverse-outline-template.md"] },
-      { "name": "Reader Experience Mapping", "files": ["core-editor/references/run-core.md"] },
-      { "name": "Structural Diagnosis", "files": ["core-editor/references/run-core.md", "core-editor/references/run-full.md"] },
-      { "name": "Character Architecture (Pass 5)", "files": ["core-editor/references/character-architecture.md", "core-editor/references/run-full.md"] },
-      { "name": "Reveal Economy (Pass 8)", "files": ["core-editor/references/run-full.md"] }
+      {
+        "name": "Reverse Outline",
+        "files": [
+          "core-editor/references/reverse-outline-template.md"
+        ]
+      },
+      {
+        "name": "Reader Experience Mapping",
+        "files": [
+          "core-editor/references/run-core.md"
+        ]
+      },
+      {
+        "name": "Structural Diagnosis",
+        "files": [
+          "core-editor/references/run-core.md",
+          "core-editor/references/run-full.md"
+        ]
+      },
+      {
+        "name": "Character Architecture (Pass 5)",
+        "files": [
+          "core-editor/references/character-architecture.md",
+          "core-editor/references/run-full.md"
+        ]
+      },
+      {
+        "name": "Reveal Economy (Pass 8)",
+        "files": [
+          "core-editor/references/run-full.md"
+        ]
+      }
     ],
     "submissionReadinessSynthesis": [
-      { "name": "Adversarial Stress Test", "files": ["core-editor/references/adversarial-stress-test.md"] },
-      { "name": "Editorial Letter Synthesis", "files": ["core-editor/references/run-full.md", "core-editor/references/output-policy.md"] }
+      {
+        "name": "Adversarial Stress Test",
+        "files": [
+          "core-editor/references/adversarial-stress-test.md"
+        ]
+      },
+      {
+        "name": "Editorial Letter Synthesis",
+        "files": [
+          "core-editor/references/run-full.md",
+          "core-editor/references/output-policy.md"
+        ]
+      }
     ],
     "submissionReadinessVerdict": [
-      { "name": "Pass 11: Writing Quality (11A)", "files": ["core-editor/references/pass-11.md", "core-editor/references/submission-readiness.md"] },
-      { "name": "Pass 11: Critical Verdict (11B)", "files": ["core-editor/references/pass-11.md", "core-editor/references/submission-readiness.md"] },
-      { "name": "Pass 11: Market Reality (11C)", "files": ["core-editor/references/pass-11.md", "specialized-audits/references/craft/shelf-positioning.md", "core-editor/references/submission-readiness.md"] },
-      { "name": "Pass 11: First-50 Gate (11D)", "files": ["core-editor/references/pass-11.md", "core-editor/references/submission-readiness.md"] },
-      { "name": "Compression Test", "files": ["core-editor/references/submission-readiness.md"] },
-      { "name": "Submission Readiness Assessment", "files": ["core-editor/references/submission-readiness.md"] }
+      {
+        "name": "Pass 11: Writing Quality (11A)",
+        "files": [
+          "core-editor/references/pass-11.md",
+          "core-editor/references/submission-readiness.md"
+        ]
+      },
+      {
+        "name": "Pass 11: Critical Verdict (11B)",
+        "files": [
+          "core-editor/references/pass-11.md",
+          "core-editor/references/submission-readiness.md"
+        ]
+      },
+      {
+        "name": "Pass 11: Market Reality (11C)",
+        "files": [
+          "core-editor/references/pass-11.md",
+          "specialized-audits/references/craft/shelf-positioning.md",
+          "core-editor/references/submission-readiness.md"
+        ]
+      },
+      {
+        "name": "Pass 11: First-50 Gate (11D)",
+        "files": [
+          "core-editor/references/pass-11.md",
+          "core-editor/references/submission-readiness.md"
+        ]
+      },
+      {
+        "name": "Compression Test",
+        "files": [
+          "core-editor/references/submission-readiness.md"
+        ]
+      },
+      {
+        "name": "Submission Readiness Assessment",
+        "files": [
+          "core-editor/references/submission-readiness.md"
+        ]
+      }
     ]
   },
   "researchModes": [
-    { "name": "Citation Verification", "files": ["craft/research-citation-verifier.md"], "description": "Verify source existence, accuracy, and fit against claims" },
-    { "name": "Comp Validation", "files": ["craft/research-comp-validation.md"], "description": "Verify comps are current, positioned, and query-ready" },
-    { "name": "Factual Verification", "files": ["craft/research-factual-verification.md"], "description": "Spot-check real-world claims" },
-    { "name": "Field Reconnaissance", "files": ["craft/research-field-recon.md"], "description": "Scout for counterevidence, literature gaps, and source ecosystem health" },
-    { "name": "Genre Currency", "files": ["craft/research-genre-currency.md"], "description": "Verify genre expectations reflect current market" },
-    { "name": "Representation Context", "files": ["craft/research-representation-context.md"], "description": "Surface community discourse for writing outside experience" }
+    {
+      "name": "Citation Verification",
+      "files": [
+        "craft/research-citation-verifier.md"
+      ],
+      "description": "Verify source existence, accuracy, and fit against claims"
+    },
+    {
+      "name": "Comp Validation",
+      "files": [
+        "craft/research-comp-validation.md"
+      ],
+      "description": "Verify comps are current, positioned, and query-ready"
+    },
+    {
+      "name": "Factual Verification",
+      "files": [
+        "craft/research-factual-verification.md"
+      ],
+      "description": "Spot-check real-world claims"
+    },
+    {
+      "name": "Field Reconnaissance",
+      "files": [
+        "craft/research-field-recon.md"
+      ],
+      "description": "Scout for counterevidence, literature gaps, and source ecosystem health"
+    },
+    {
+      "name": "Genre Currency",
+      "files": [
+        "craft/research-genre-currency.md"
+      ],
+      "description": "Verify genre expectations reflect current market"
+    },
+    {
+      "name": "Representation Context",
+      "files": [
+        "craft/research-representation-context.md"
+      ],
+      "description": "Surface community discourse for writing outside experience"
+    }
   ],
   "argumentCompanions": [
-    { "name": "Argument Red Team", "files": ["craft/argument-red-team.md", "craft/argument-red-team-level-setting.md"], "description": "Hostile-reader simulation" },
-    { "name": "Argument Persuasion", "files": ["craft/argument-persuasion.md", "craft/argument-persuasion-level-setting.md"], "description": "Audience matrix & framing" },
-    { "name": "Argument Evidence Deep-Dive", "files": ["craft/argument-evidence.md"], "description": "Provenance & testimony calibration" },
-    { "name": "Adversarial Evidence Review", "files": ["craft/adversarial-evidence-review.md"], "description": "Evidence survivability under structured adversarial protocols" },
-    { "name": "AGD Move Audit", "files": ["craft/argument-agd-audit.md"], "description": "Functional assuring, guarding, and discounting move audit" }
+    {
+      "name": "Argument Red Team",
+      "files": [
+        "craft/argument-red-team.md",
+        "craft/argument-red-team-level-setting.md"
+      ],
+      "description": "Hostile-reader simulation"
+    },
+    {
+      "name": "Argument Persuasion",
+      "files": [
+        "craft/argument-persuasion.md",
+        "craft/argument-persuasion-level-setting.md"
+      ],
+      "description": "Audience matrix & framing"
+    },
+    {
+      "name": "Argument Evidence Deep-Dive",
+      "files": [
+        "craft/argument-evidence.md"
+      ],
+      "description": "Provenance & testimony calibration"
+    },
+    {
+      "name": "Adversarial Evidence Review",
+      "files": [
+        "craft/adversarial-evidence-review.md"
+      ],
+      "description": "Evidence survivability under structured adversarial protocols"
+    },
+    {
+      "name": "AGD Move Audit",
+      "files": [
+        "craft/argument-agd-audit.md"
+      ],
+      "description": "Functional assuring, guarding, and discounting move audit"
+    }
   ],
   "macroBlocks": [
-    { "question": "Is the structure working?", "passes": ["Reverse Outline", "Structural Diagnosis"] },
-    { "question": "Does the pacing hold?", "passes": ["Reader Experience Mapping", "Rhythm and Modulation (Pass 3)"] },
-    { "question": "Are my characters landing?", "passes": ["Character Architecture (Pass 5)", "POV and Voice (Pass 7)"] },
-    { "question": "Are the emotional beats earning their weight?", "passes": ["Emotional Value Tracking (Pass 4)"] },
-    { "question": "Are the scenes doing their jobs?", "passes": ["Scene Function Audit (Pass 6)"] },
-    { "question": "Is the information flow right?", "passes": ["Reveal Economy (Pass 8)"] },
-    { "question": "Does it cohere?", "passes": ["Thematic Coherence (Pass 9)", "Entity Tracking (Pass 10)"] },
-    { "question": "Is this ready?", "passes": ["Shelf Audit & Market Viability (Pass 11)"] }
+    {
+      "question": "Is the structure working?",
+      "passes": [
+        "Reverse Outline",
+        "Structural Diagnosis"
+      ]
+    },
+    {
+      "question": "Does the pacing hold?",
+      "passes": [
+        "Reader Experience Mapping",
+        "Rhythm and Modulation (Pass 3)"
+      ]
+    },
+    {
+      "question": "Are my characters landing?",
+      "passes": [
+        "Character Architecture (Pass 5)",
+        "POV and Voice (Pass 7)"
+      ]
+    },
+    {
+      "question": "Are the emotional beats earning their weight?",
+      "passes": [
+        "Emotional Value Tracking (Pass 4)"
+      ]
+    },
+    {
+      "question": "Are the scenes doing their jobs?",
+      "passes": [
+        "Scene Function Audit (Pass 6)"
+      ]
+    },
+    {
+      "question": "Is the information flow right?",
+      "passes": [
+        "Reveal Economy (Pass 8)"
+      ]
+    },
+    {
+      "question": "Does it cohere?",
+      "passes": [
+        "Thematic Coherence (Pass 9)",
+        "Entity Tracking (Pass 10)"
+      ]
+    },
+    {
+      "question": "Is this ready?",
+      "passes": [
+        "Shelf Audit & Market Viability (Pass 11)"
+      ]
+    }
   ],
   "tagSummaryNames": [
     "cozy",
@@ -695,5 +1009,109 @@
         }
       ]
     }
-  ]
+  ],
+  "auditFamilies": [
+    {
+      "id": "narrative-craft-audits",
+      "name": "Narrative Craft",
+      "description": "Focused manuscript audits of stakes, decisions, scene turns, character, emotion, interiority, literary craft, compression, and series structure."
+    },
+    {
+      "id": "genre-reader-audits",
+      "name": "Genre and Reader Expectations",
+      "description": "Genre and tag craft audits, shelf positioning, reception risk, reader-persona divergence, and descriptive content advisories."
+    },
+    {
+      "id": "argument-audits",
+      "name": "Argument Analysis",
+      "description": "Dialectical clarity, argument red team, persuasion, evidence provenance, adversarial evidence review, and assuring/guarding/discounting move analysis."
+    },
+    {
+      "id": "research-verification",
+      "name": "Research and Verification",
+      "description": "Requested internet research for citation verification, factual checking, field reconnaissance, comps, genre currency, and representation context."
+    },
+    {
+      "id": "prose-measurements",
+      "name": "Prose and Structural Measurements",
+      "description": "AI-prose calibration, narrative/argument decision signals, idiolect preservation, punctuation cadence, POV voice profiles, and experimental position-pair measurements. Optional SETEC execution is required for mechanical measurements."
+    }
+  ],
+  "auditReferenceAliases": {
+    "specialized-audits/references/content-advisory.md": "genre-reader-audits/references/content-advisory.md",
+    "specialized-audits/references/craft/adversarial-evidence-review.md": "argument-audits/references/craft/adversarial-evidence-review.md",
+    "specialized-audits/references/craft/ai-prose-calibration-distributional.md": "prose-measurements/references/craft/ai-prose-calibration-distributional.md",
+    "specialized-audits/references/craft/ai-prose-calibration-level-setting.md": "prose-measurements/references/craft/ai-prose-calibration-level-setting.md",
+    "specialized-audits/references/craft/ai-prose-calibration.md": "prose-measurements/references/craft/ai-prose-calibration.md",
+    "specialized-audits/references/craft/argument-agd-audit.md": "argument-audits/references/craft/argument-agd-audit.md",
+    "specialized-audits/references/craft/argument-decision-audit.md": "prose-measurements/references/craft/argument-decision-audit.md",
+    "specialized-audits/references/craft/argument-evidence.md": "argument-audits/references/craft/argument-evidence.md",
+    "specialized-audits/references/craft/argument-persuasion-level-setting.md": "argument-audits/references/craft/argument-persuasion-level-setting.md",
+    "specialized-audits/references/craft/argument-persuasion.md": "argument-audits/references/craft/argument-persuasion.md",
+    "specialized-audits/references/craft/argument-red-team-level-setting.md": "argument-audits/references/craft/argument-red-team-level-setting.md",
+    "specialized-audits/references/craft/argument-red-team.md": "argument-audits/references/craft/argument-red-team.md",
+    "specialized-audits/references/craft/banister.md": "narrative-craft-audits/references/craft/banister.md",
+    "specialized-audits/references/craft/character-architecture.md": "narrative-craft-audits/references/craft/character-architecture.md",
+    "specialized-audits/references/craft/compression-audit-level-setting.md": "narrative-craft-audits/references/craft/compression-audit-level-setting.md",
+    "specialized-audits/references/craft/compression-audit.md": "narrative-craft-audits/references/craft/compression-audit.md",
+    "specialized-audits/references/craft/decision-pressure-level-setting.md": "narrative-craft-audits/references/craft/decision-pressure-level-setting.md",
+    "specialized-audits/references/craft/decision-pressure.md": "narrative-craft-audits/references/craft/decision-pressure.md",
+    "specialized-audits/references/craft/dialectical-clarity-level-setting.md": "argument-audits/references/craft/dialectical-clarity-level-setting.md",
+    "specialized-audits/references/craft/dialectical-clarity.md": "argument-audits/references/craft/dialectical-clarity.md",
+    "specialized-audits/references/craft/emotional-craft.md": "narrative-craft-audits/references/craft/emotional-craft.md",
+    "specialized-audits/references/craft/female-interiority-level-setting.md": "narrative-craft-audits/references/craft/female-interiority-level-setting.md",
+    "specialized-audits/references/craft/female-interiority.md": "narrative-craft-audits/references/craft/female-interiority.md",
+    "specialized-audits/references/craft/force-architecture-level-setting.md": "narrative-craft-audits/references/craft/force-architecture-level-setting.md",
+    "specialized-audits/references/craft/force-architecture.md": "narrative-craft-audits/references/craft/force-architecture.md",
+    "specialized-audits/references/craft/idiolect-preservation.md": "prose-measurements/references/craft/idiolect-preservation.md",
+    "specialized-audits/references/craft/interiority-preservation.md": "narrative-craft-audits/references/craft/interiority-preservation.md",
+    "specialized-audits/references/craft/literary-craft-level-setting.md": "narrative-craft-audits/references/craft/literary-craft-level-setting.md",
+    "specialized-audits/references/craft/literary-craft.md": "narrative-craft-audits/references/craft/literary-craft.md",
+    "specialized-audits/references/craft/narrative-decision-audit.md": "prose-measurements/references/craft/narrative-decision-audit.md",
+    "specialized-audits/references/craft/persona-divergence.md": "genre-reader-audits/references/craft/persona-divergence.md",
+    "specialized-audits/references/craft/position-pair-register.md": "prose-measurements/references/craft/position-pair-register.md",
+    "specialized-audits/references/craft/pov-voice-profile.md": "prose-measurements/references/craft/pov-voice-profile.md",
+    "specialized-audits/references/craft/punctuation-cadence.md": "prose-measurements/references/craft/punctuation-cadence.md",
+    "specialized-audits/references/craft/reception-risk-level-setting.md": "genre-reader-audits/references/craft/reception-risk-level-setting.md",
+    "specialized-audits/references/craft/reception-risk.md": "genre-reader-audits/references/craft/reception-risk.md",
+    "specialized-audits/references/craft/research-citation-verifier.md": "research-verification/references/craft/research-citation-verifier.md",
+    "specialized-audits/references/craft/research-comp-validation.md": "research-verification/references/craft/research-comp-validation.md",
+    "specialized-audits/references/craft/research-factual-verification.md": "research-verification/references/craft/research-factual-verification.md",
+    "specialized-audits/references/craft/research-field-recon.md": "research-verification/references/craft/research-field-recon.md",
+    "specialized-audits/references/craft/research-genre-currency.md": "research-verification/references/craft/research-genre-currency.md",
+    "specialized-audits/references/craft/research-representation-context.md": "research-verification/references/craft/research-representation-context.md",
+    "specialized-audits/references/craft/rhetorical-stance-triage.md": "argument-audits/references/craft/rhetorical-stance-triage.md",
+    "specialized-audits/references/craft/scene-turn.md": "narrative-craft-audits/references/craft/scene-turn.md",
+    "specialized-audits/references/craft/series-composite-novel.md": "narrative-craft-audits/references/craft/series-composite-novel.md",
+    "specialized-audits/references/craft/series-continuity-level-setting.md": "narrative-craft-audits/references/craft/series-continuity-level-setting.md",
+    "specialized-audits/references/craft/series-continuity.md": "narrative-craft-audits/references/craft/series-continuity.md",
+    "specialized-audits/references/craft/shelf-positioning.md": "genre-reader-audits/references/craft/shelf-positioning.md",
+    "specialized-audits/references/craft/short-fiction.md": "narrative-craft-audits/references/craft/short-fiction.md",
+    "specialized-audits/references/craft/stakes-system-level-setting.md": "narrative-craft-audits/references/craft/stakes-system-level-setting.md",
+    "specialized-audits/references/craft/stakes-system.md": "narrative-craft-audits/references/craft/stakes-system.md",
+    "specialized-audits/references/example-position-pair-register/Example_Position_Pair_Register_run.md": "prose-measurements/references/example-position-pair-register/Example_Position_Pair_Register_run.md",
+    "specialized-audits/references/example-position-pair-register/envelope.json": "prose-measurements/references/example-position-pair-register/envelope.json",
+    "specialized-audits/references/example-position-pair-register/manuscript.txt": "prose-measurements/references/example-position-pair-register/manuscript.txt",
+    "specialized-audits/references/genre/comedy-satire.md": "genre-reader-audits/references/genre/comedy-satire.md",
+    "specialized-audits/references/genre/fan-fiction-conversion.md": "genre-reader-audits/references/genre/fan-fiction-conversion.md",
+    "specialized-audits/references/genre/grimdark-level-setting.md": "genre-reader-audits/references/genre/grimdark-level-setting.md",
+    "specialized-audits/references/genre/grimdark.md": "genre-reader-audits/references/genre/grimdark.md",
+    "specialized-audits/references/genre/historical-fiction.md": "genre-reader-audits/references/genre/historical-fiction.md",
+    "specialized-audits/references/genre/horror-craft-level-setting.md": "genre-reader-audits/references/genre/horror-craft-level-setting.md",
+    "specialized-audits/references/genre/horror-craft.md": "genre-reader-audits/references/genre/horror-craft.md",
+    "specialized-audits/references/genre/memoir-creative-nonfiction.md": "genre-reader-audits/references/genre/memoir-creative-nonfiction.md",
+    "specialized-audits/references/genre/mystery-thriller-architecture-level-setting.md": "genre-reader-audits/references/genre/mystery-thriller-architecture-level-setting.md",
+    "specialized-audits/references/genre/mystery-thriller-architecture.md": "genre-reader-audits/references/genre/mystery-thriller-architecture.md",
+    "specialized-audits/references/genre/narrative-nonfiction.md": "genre-reader-audits/references/genre/narrative-nonfiction.md",
+    "specialized-audits/references/genre/sff-worldbuilding-level-setting.md": "genre-reader-audits/references/genre/sff-worldbuilding-level-setting.md",
+    "specialized-audits/references/genre/sff-worldbuilding.md": "genre-reader-audits/references/genre/sff-worldbuilding.md",
+    "specialized-audits/references/genre/supernatural-horror-level-setting.md": "genre-reader-audits/references/genre/supernatural-horror-level-setting.md",
+    "specialized-audits/references/genre/supernatural-horror.md": "genre-reader-audits/references/genre/supernatural-horror.md",
+    "specialized-audits/references/tag/consent-complexity.md": "genre-reader-audits/references/tag/consent-complexity.md",
+    "specialized-audits/references/tag/cozy-tag-level-setting.md": "genre-reader-audits/references/tag/cozy-tag-level-setting.md",
+    "specialized-audits/references/tag/cozy-tag.md": "genre-reader-audits/references/tag/cozy-tag.md",
+    "specialized-audits/references/tag/erotic-content.md": "genre-reader-audits/references/tag/erotic-content.md",
+    "specialized-audits/references/tag/philosophical-tag.md": "genre-reader-audits/references/tag/philosophical-tag.md",
+    "specialized-audits/references/tag/queer-romance-erotica.md": "genre-reader-audits/references/tag/queer-romance-erotica.md"
+  }
 }

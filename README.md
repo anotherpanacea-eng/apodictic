@@ -274,3 +274,5 @@ You can use, adapt, and share this framework for non-commercial purposes, with a
 ## Author
 
 Joshua A. Miller, PhD
+
+Focused audit ownership and consumer migration: [Canonical audit skill families](docs/audit-skill-families.md).

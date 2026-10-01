@@ -18,3 +18,8 @@ workspace tools, optional installations and credentials. The academic API helper
 sends the optional Semantic Scholar key only to its exact HTTPS API origin and
 never forwards it on redirects; offline transport regressions cover both the
 Crossref/Wayback query leak and redirect leak.
+
+The OpenAI package now includes the canonical five-family audit split, thin
+specialized dispatcher and legacy-reference catalog. Research and measurement
+helpers remain with their owners, including the existing credential and tool
+boundaries, and the research wrapper loads its current owning skill.

@@ -1,7 +1,7 @@
 # Persona Divergence Map — *The Tidewater Braid*
 
 <!--
-Worked example of a contract-conformant Persona Divergence Map (see specialized-audits/references/
+Worked example of a contract-conformant Persona Divergence Map (see genre-reader-audits/references/
 persona-divergence.md + docs/reader-persona-simulation.md). It runs the reader-experience lens
 through declared reading DISPOSITIONS and surfaces where the predicted experience DIVERGES. A persona
 is a parameterization of the lens, NEVER a character — it has disposition axes, not a name or a life.

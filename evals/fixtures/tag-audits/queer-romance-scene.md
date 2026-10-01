@@ -1,7 +1,7 @@
 # Tag-Audit Scene — Queer Romance / Erotica
 
 *Synthetic ~500-word F/F scene authored to exercise the Queer Romance and Erotica audit
-(`plugins/apodictic/skills/specialized-audits/references/tag/queer-romance-erotica.md`):
+(`plugins/apodictic/skills/genre-reader-audits/references/tag/queer-romance-erotica.md`):
 same-pronoun clarity, audience orientation ("explaining queerness"), and joy/struggle
 calibration. Word count target ~500 (body between the rules).*
 

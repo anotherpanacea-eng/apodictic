@@ -155,14 +155,14 @@ This cannot be fixed by loosening: deliberate misreading is a *hard* violation o
 
 Two precedents, one boundary:
 
-- **In-repo (nearer):** `specialized-audits/references/craft/ai-prose-calibration.md` Layer C source triage, with earned/unearned illustrations per named pattern in `ai-prose-calibration-level-setting.md`. Same verdict vocabulary (earned / unearned / earned-by-frame), same "the verdict is irreducibly the writer's call per instance" doctrine, same honesty posture (most flags resolve as earned; the framework's authority rests on saying so).
+- **In-repo (nearer):** `prose-measurements/references/craft/ai-prose-calibration.md` Layer C source triage, with earned/unearned illustrations per named pattern in `ai-prose-calibration-level-setting.md`. Same verdict vocabulary (earned / unearned / earned-by-frame), same "the verdict is irreducibly the writer's call per instance" doctrine, same honesty posture (most flags resolve as earned; the framework's authority rests on saying so).
 - **Upstream origin:** setec-voiceprint craft-restoration, from which the in-repo calibration derives.
 
 **Domain boundary (deliberate, not a fork):** prose-pattern source triage adjudicates *voice and craft patterns* (AIC flag families — is this uniformity a smoothing artifact or a drumbeat?); rhetorical stance triage adjudicates *argumentative moves* (overstatement-family codes — is this exaggeration doing concealed warrant work?). Distinct flag families, distinct tests (source triage leans on voice attribution and callback knowledge; stance triage leans on function-under-detection), no shared verdict storage. The shared vocabulary is intentional — writers should meet one earned/unearned concept across the toolchain — and the two constructs must be cross-referenced in both reference files so neither drifts into the other's domain.
 
 ### 2.3 Stance taxonomy
 
-New reference file `specialized-audits/references/craft/rhetorical-stance-triage.md`. Per-instance stance codes:
+New reference file `argument-audits/references/craft/rhetorical-stance-triage.md`. Per-instance stance codes:
 
 | Code | Stance | Description | Canonical example |
 |------|--------|-------------|-------------------|
@@ -245,10 +245,10 @@ Named per house practice; these are accepted costs, not open questions.
 
 | File | Change |
 |------|--------|
-| `plugins/apodictic/skills/specialized-audits/references/craft/rhetorical-stance-triage.md` | **New.** Stance taxonomy, three tests, verdict rules (incl. `divergent`), stakes-gate and cash-out ineligibility, S5 boundary, GT8 exclusion, domain boundary vs. ai-prose-calibration source triage, worked examples (Rao spans as S2; Nietzsche polemic as S3/S4 earned vs. dying-words reading unearned; motte-and-bailey as the canonical detection-failure). |
-| `plugins/apodictic/skills/specialized-audits/references/craft/dialectical-clarity.md` | AT5 + burden split (Step 1); GN codes with severity tokens (new subsection); Lens Essay entry (§By Argument Form); Triage-time stance-triage integration with Step 9 boundary (§2.5); GT8 exclusion. |
-| `plugins/apodictic/skills/specialized-audits/references/craft/argument-red-team.md` | One calibration paragraph: attack the strongest sincere reconstruction of S3/S4 material. |
-| `plugins/apodictic/skills/specialized-audits/references/craft/ai-prose-calibration.md` | Cross-reference paragraph: stance triage as the argument-domain sibling of Layer C source triage; domain boundary. |
+| `plugins/apodictic/skills/argument-audits/references/craft/rhetorical-stance-triage.md` | **New.** Stance taxonomy, three tests, verdict rules (incl. `divergent`), stakes-gate and cash-out ineligibility, S5 boundary, GT8 exclusion, domain boundary vs. ai-prose-calibration source triage, worked examples (Rao spans as S2; Nietzsche polemic as S3/S4 earned vs. dying-words reading unearned; motte-and-bailey as the canonical detection-failure). |
+| `plugins/apodictic/skills/argument-audits/references/craft/dialectical-clarity.md` | AT5 + burden split (Step 1); GN codes with severity tokens (new subsection); Lens Essay entry (§By Argument Form); Triage-time stance-triage integration with Step 9 boundary (§2.5); GT8 exclusion. |
+| `plugins/apodictic/skills/argument-audits/references/craft/argument-red-team.md` | One calibration paragraph: attack the strongest sincere reconstruction of S3/S4 material. |
+| `plugins/apodictic/skills/prose-measurements/references/craft/ai-prose-calibration.md` | Cross-reference paragraph: stance triage as the argument-domain sibling of Layer C source triage; domain boundary. |
 | `plugins/apodictic/schemas/apodictic.finding.v1.schema.json` | Five **optional** properties, following the `salience` precedent: `register` (enum: `asserted`, `generative`), `stance` (enum: `S1`–`S5`), `stance_verdict` (enum: `earned`, `unearned`, `earned-by-frame`, `divergent`), `calibration_effect` (enum: `register-floor`, `stance-demotion`, `blocked-high-stakes`, `blocked-cash-out`), and `cash_out_ref` (`CO#`). Absent fields = pre-extension findings/no calibration effect. Precedence: high-stakes > cash-out > register > stance. |
 | `plugins/apodictic/schemas/apodictic.argument_spine.v1.schema.json` | Extend `argument_type` enum with `AT5`; update the AT0–AT4 `$comment` mirror. |
 | `plugins/apodictic/scripts/` (validate.sh + supporting script) | New `stance-calibration` check: (a) earned verdicts must actually demote unless blocked; (b) a calibration effect has its required register/stance/verdict fields; (c) supplied `cash_out_ref` values resolve and prescriptive joins force `blocked-cash-out`; (d) an active high-stakes gate blocks would-be demotions while retaining unearned/divergent stance records; (e) premise flags identified by the authoritative GT8 flag tokens or a `GT8` mechanism prefix cannot carry stance calibration; (f) an asserted document cannot claim a finding-level generative floor, `register-floor` is restricted to WR/SM/BP mechanism prefixes, and `stance-demotion` to the §2.5 overstatement list; (g) the cash-out `NONE` sentinel and ACTIVE-gate source are parsed exactly, not by substring; (h) enum membership. Shape checks only — it verifies recorded honesty, never verdict correctness, pre-commit severity history, omitted joins, or whether a producer labeled a mechanism truthfully. |

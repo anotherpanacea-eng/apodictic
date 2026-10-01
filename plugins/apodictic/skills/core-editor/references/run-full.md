@@ -275,13 +275,13 @@ Detect: state errors, timeline impossibilities, spatial violations, world rule v
 
 Supplementary audits are specialized diagnostic modules that go deeper than any single pass. They are activated at contract (genre/mode-driven) or by finding-driven triggers during passes. See `references/audit-routing-table.md` for the full activation table.
 
-Each audit has its own reference file in `specialized-audits/references/`. Load the full module when running the audit. The summaries below describe what each audit does and how it connects to the pass sequence — they are not substitutes for the full audit modules.
+Each audit has its own reference file in the owning family listed in `specialized-audits/SKILL.md`. Load the full module when running the audit. The summaries below describe what each audit does and how it connects to the pass sequence — they are not substitutes for the full audit modules.
 
 ### Universal Audits (recommend for every manuscript)
 
 #### Stakes System Audit
-**Module:** `specialized-audits/references/craft/stakes-system.md`
-**Level-setting:** `specialized-audits/references/craft/stakes-system-level-setting.md`
+**Module:** `narrative-craft-audits/references/craft/stakes-system.md`
+**Level-setting:** `narrative-craft-audits/references/craft/stakes-system-level-setting.md`
 
 Evaluates whether the manuscript's stakes system functions as a coherent escalation and consequence engine. Six channels: Stakes Texture (STX), Pressure Conversion (PC), Immediacy Management (IM), Escalation Geometry (EG), Multi-Axis Pressure (MP), Climax Load (CL). 22 named diagnostic flags.
 
@@ -293,8 +293,8 @@ Evaluates whether the manuscript's stakes system functions as a coherent escalat
 **Triggered by:** "Stakes feel low," "I don't care what happens," intensity plateau without escalation, stakes language high but consequence low.
 
 #### Decision Pressure Audit
-**Module:** `specialized-audits/references/craft/decision-pressure.md`
-**Level-setting:** `specialized-audits/references/craft/decision-pressure-level-setting.md`
+**Module:** `narrative-craft-audits/references/craft/decision-pressure.md`
+**Level-setting:** `narrative-craft-audits/references/craft/decision-pressure-level-setting.md`
 
 Evaluates whether major character decisions are believable under the manuscript's pressure environment. Seven channels: Alternative Visibility (AV), Constraint Specificity (CS), Information-State Integrity (IS), Emotion-Cognition Coherence (EC), Reasoning Fidelity (RF), Tradeoff Reality (TR), Pivot Integrity (PV). 23 named diagnostic flags.
 
@@ -306,7 +306,7 @@ Evaluates whether major character decisions are believable under the manuscript'
 **Triggered by:** "I don't buy why they did that," convenient pivots, character competence dropping at plot-critical moments, obvious alternatives unaddressed.
 
 #### Scene Turn Diagnostics (Bickham)
-**Module:** `specialized-audits/references/craft/scene-turn.md`
+**Module:** `narrative-craft-audits/references/craft/scene-turn.md`
 
 Evaluates scene-level mechanics: goal → conflict → outcome, sequel mechanics (reaction → dilemma → decision), scene-sequel chain causality. Named for Jack M. Bickham's *Scene & Structure*. G-, C-, O-, Sq-, H-, U-, P-code flag system.
 
@@ -318,7 +318,7 @@ Evaluates scene-level mechanics: goal → conflict → outcome, sequel mechanics
 **Triggered by:** "Nothing happens" concerns, scenes that don't earn their space, pacing stalls at scene boundaries, missing transitional decision mechanics.
 
 #### Emotional Craft Diagnostics
-**Module:** `specialized-audits/references/craft/emotional-craft.md`
+**Module:** `narrative-craft-audits/references/craft/emotional-craft.md`
 
 Evaluates emotional precision, earned moments, sentiment tracking, and felt transmission. Diagnoses whether emotional events on the page actually produce felt response in the reader.
 
@@ -332,8 +332,8 @@ Evaluates emotional precision, earned moments, sentiment tracking, and felt tran
 ### Genre and Mode Audits (contract-driven)
 
 #### Force Architecture
-**Module:** `specialized-audits/references/craft/force-architecture.md`
-**Level-setting:** `specialized-audits/references/craft/force-architecture-level-setting.md`
+**Module:** `narrative-craft-audits/references/craft/force-architecture.md`
+**Level-setting:** `narrative-craft-audits/references/craft/force-architecture-level-setting.md`
 
 Evaluates whether physical conflict events produce legible, causal, persistent, meaningful change — or are spectacle loops. 25 flags across 6 dimensions. 8 mode calibrations.
 
@@ -344,8 +344,8 @@ Evaluates whether physical conflict events produce legible, causal, persistent, 
 **Activated when:** Contract identifies significant physical conflict (military, progression fantasy, thriller, horror, crime, domestic violence, superhero).
 
 #### Literary Craft Deep Dive
-**Module:** `specialized-audits/references/craft/literary-craft.md`
-**Level-setting:** `specialized-audits/references/craft/literary-craft-level-setting.md`
+**Module:** `narrative-craft-audits/references/craft/literary-craft.md`
+**Level-setting:** `narrative-craft-audits/references/craft/literary-craft-level-setting.md`
 
 Evaluates whether literary-mode techniques (defamiliarization, image systems, subtext, recognition architecture) do narrative work or are cosmetic. 22 flags across 5+1 dimensions. 9 genre-hybrid calibrations.
 
@@ -353,18 +353,18 @@ Evaluates whether literary-mode techniques (defamiliarization, image systems, su
 
 #### Additional Genre/Mode Audits
 
-These audits activate based on contract signals. Load the full module from `specialized-audits/references/` when activated.
+These audits activate based on contract signals. Load the full module from the owning family listed in `specialized-audits/SKILL.md` when activated.
 
 | Audit | Module Location | Activates When |
 |---|---|---|
-| Mystery/Thriller Architecture | `references/genre/mystery-thriller-architecture.md` | Mystery or thriller in contract |
-| Horror Craft Integration | `references/genre/horror-craft.md` | Horror or horror-hybrid in contract |
-| SFF Worldbuilding Integration | `references/genre/sff-worldbuilding.md` | SF/F in contract |
-| Memoir/Creative Nonfiction | `references/genre/memoir-creative-nonfiction.md` | Memoir or personal narrative in contract |
-| Narrative Nonfiction Craft | `references/genre/narrative-nonfiction.md` | Nonfiction with narrative ambitions |
-| Historical Fiction | `references/genre/historical-fiction.md` | Historical setting (>50 years before composition) |
-| Comedy & Satire | `references/genre/comedy-satire.md` | Comedic voice or satirical intent |
-| Character Architecture (full) | `references/craft/character-architecture.md` | Truby Part 9 (moral argument) activated by Pass 5 findings or author request |
+| Mystery/Thriller Architecture | `genre-reader-audits/references/genre/mystery-thriller-architecture.md` | Mystery or thriller in contract |
+| Horror Craft Integration | `genre-reader-audits/references/genre/horror-craft.md` | Horror or horror-hybrid in contract |
+| SFF Worldbuilding Integration | `genre-reader-audits/references/genre/sff-worldbuilding.md` | SF/F in contract |
+| Memoir/Creative Nonfiction | `genre-reader-audits/references/genre/memoir-creative-nonfiction.md` | Memoir or personal narrative in contract |
+| Narrative Nonfiction Craft | `genre-reader-audits/references/genre/narrative-nonfiction.md` | Nonfiction with narrative ambitions |
+| Historical Fiction | `genre-reader-audits/references/genre/historical-fiction.md` | Historical setting (>50 years before composition) |
+| Comedy & Satire | `genre-reader-audits/references/genre/comedy-satire.md` | Comedic voice or satirical intent |
+| Character Architecture (full) | `narrative-craft-audits/references/craft/character-architecture.md` | Truby Part 9 (moral argument) activated by Pass 5 findings or author request |
 
 ### Tag Audits (cross-genre modifiers)
 
@@ -372,11 +372,11 @@ Tag audits evaluate experience-layer promises that sit on top of any genre's str
 
 | Audit | Module Location | Activates When |
 |---|---|---|
-| Erotic Content | `references/tag/erotic-content.md` | Heat level > 0 or intimate scenes present |
-| Consent Complexity | `references/tag/consent-complexity.md` | Consent narratively interrogated, power dynamics central |
-| Cozy Tag | `references/tag/cozy-tag.md` | Cozy signaling in marketing or tone |
-| Philosophical Tag | `references/tag/philosophical-tag.md` | Philosophical themes, novel of ideas |
-| Queer Romance/Erotica | `references/tag/queer-romance-erotica.md` | Queer identity central to romance/erotica |
+| Erotic Content | `genre-reader-audits/references/tag/erotic-content.md` | Heat level > 0 or intimate scenes present |
+| Consent Complexity | `genre-reader-audits/references/tag/consent-complexity.md` | Consent narratively interrogated, power dynamics central |
+| Cozy Tag | `genre-reader-audits/references/tag/cozy-tag.md` | Cozy signaling in marketing or tone |
+| Philosophical Tag | `genre-reader-audits/references/tag/philosophical-tag.md` | Philosophical themes, novel of ideas |
+| Queer Romance/Erotica | `genre-reader-audits/references/tag/queer-romance-erotica.md` | Queer identity central to romance/erotica |
 
 ### Supplementary Audit Integration Protocol
 

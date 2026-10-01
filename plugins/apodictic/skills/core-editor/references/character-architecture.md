@@ -1,6 +1,6 @@
 # Character Architecture — Pass Reference
 
-*Compact reference for Pass 5 (Character Audit) execution. For the full deep-dive audit with genre tuning packs, named flags, and severity levels, see the specialized-audits skill: `references/craft/character-architecture.md`.*
+*Compact reference for Pass 5 (Character Audit) execution. For the full deep-dive audit with genre tuning packs, named flags, and severity levels, see the narrative-craft-audits skill: `narrative-craft-audits/references/craft/character-architecture.md`.*
 
 ---
 

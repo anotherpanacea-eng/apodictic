@@ -14,7 +14,7 @@ APODICTIC→SETEC contract boundary. Two independent checks:
     the array that drives the UI" freeze. It needs no live SETEC: it reads
     the committed vendored manifest only, so it runs in every CI job.
     ALSO offline (F1): the RUNTIME vendored client
-    (plugins/apodictic/skills/specialized-audits/scripts/_vendored_setec_client.py)
+    (plugins/apodictic/skills/prose-measurements/scripts/_vendored_setec_client.py)
     must hash to setec-plugin.lock's `client_sha256` — this is the check that
     makes a mutated vendored client or a corrupted lock entry fail WITHOUT a
     live SETEC checkout. Before this fix, only CHECK 2 (which needs
@@ -54,7 +54,7 @@ SHIM_DIR = (
     / "plugins"
     / "apodictic"
     / "skills"
-    / "specialized-audits"
+    / "prose-measurements"
     / "scripts"
 )
 VENDORED_CLIENT = SHIM_DIR / "_vendored_setec_client.py"
@@ -267,7 +267,7 @@ def check_provisional_lock_warning(lock_path: Path = LOCK_PATH) -> "str | None":
 PINNED_WORKFLOWS: tuple[tuple[Path, str], ...] = (
     (
         REPO_ROOT / ".github" / "workflows" / "sync-setec.yml",
-        "cde7703720b7af625963c1bc99bfd0eb3977e72393bd326f9bdf30857faa4019",
+        "0edcc3ce75d33d2f3b1f08cba81a3505b9a7ce1a48a4265bfe6707131053557b",
     ),
 )
 

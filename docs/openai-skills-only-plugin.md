@@ -35,6 +35,16 @@ temporary output. These checks do not prove in-app installation or editorial
 quality. Tagged releases publish both ZIPs as GitHub assets; they do not submit
 or publish a plugin in the OpenAI directory.
 
+
+The archive now includes five owning audit skills: `narrative-craft-audits`,
+`genre-reader-audits`, `argument-audits`, `research-verification`, and
+`prose-measurements`. `specialized-audits` is a small dispatcher with a generated
+`catalog.json`; it no longer bundles every protocol and helper in one skill.
+The catalog retains legacy reference identities while mapping them to current
+owner files. The research command wrapper loads `research-verification`.
+This split makes workflow scope clearer; it does not prove that the submission
+portal's security review will accept any skill.
+
 ## Submit and test
 
 Use the current [OpenAI submission guide](https://developers.openai.com/plugins/deploy/submission).
@@ -56,18 +66,20 @@ The listing name, subtitle, capabilities and starter prompts describe that
 task. Rerun the portal scan after uploading the revised package; local
 validation does not establish that a category finding has cleared.
 
-The `specialized-audits` security follow-up restricts the optional Semantic
+The `research-verification` scholarly helper restricts the optional Semantic
 Scholar key to its exact HTTPS API origin and prevents redirect forwarding.
 Offline regressions use fabricated keys and urllib's real redirect stack:
 
 ```bash
 python tests/test_academic_api_security.py
-python plugins/apodictic/skills/specialized-audits/scripts/academic_apis.py --self-test
+python plugins/apodictic/skills/research-verification/scripts/academic_apis.py --self-test
 ```
 
-The skill also treats manuscript/source content as data, limits research payloads
-and workspace writes, and prohibits automatic installs, credential disclosure,
-and private-endpoint probing. These are agent instructions, not a standalone CLI
+The owning audit families and their shared execution contract treat manuscript
+and source content as data. Research limits lookup payloads and prohibits
+credential disclosure and private-endpoint probing; measurements prohibit
+automatic installs and arbitrary execution. Workspace writes stay in the
+selected project. These are agent instructions, not a standalone CLI
 network sandbox: the URL-liveness helper still relies on the host's destination
 and network controls. The portal's generic security messages did not identify a
 file or rule. These changes address confirmed risks; only a new portal scan can

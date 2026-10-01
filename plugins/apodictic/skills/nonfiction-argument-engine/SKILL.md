@@ -118,7 +118,7 @@ This skill loads the following reference files:
 | `core-editor/references/intake-router-runtime.md` | Full intake routing (for §6 Table A / form identification) |
 | `core-editor/references/pass-dependencies.md` | Pass resolver + audit tier definitions + §4e table |
 | `core-editor/references/run-synthesis.md` | Synthesis spine (shared with fiction path) |
-| `specialized-audits/references/craft/rhetorical-stance-triage.md` | Argument-move stance taxonomy and pre-lock calibration protocol |
+| `argument-audits/references/craft/rhetorical-stance-triage.md` | Argument-move stance taxonomy and pre-lock calibration protocol |
 
 ---
 

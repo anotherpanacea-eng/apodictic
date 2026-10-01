@@ -120,9 +120,8 @@ def _fetch_json_network(url: str, headers: dict | None = None, timeout: int = 15
             and origin.hostname == "api.semanticscholar.org"
             and origin.port in (None, 443)
             and origin.username is None and origin.password is None):
-        # Query/path text is untrusted (e.g. a CrossRef search or Wayback URL).
-        # urllib redirects copy regular headers, but exclude unredirected ones:
-        # the key authenticates only this initial request, never a redirect.
+        # Search/citation text does not authorize credentials for that host.
+        # urllib excludes unredirected headers when following redirects.
         req.add_unredirected_header("x-api-key", S2_API_KEY)
     delay = _HTTP_BACKOFF_BASE
     last_error = None
