@@ -34,7 +34,7 @@
     "shortDescription": "Manuscript & argument editing",
     "longDescription": "APODICTIC is a developmental editing assistant for authors and editors revising fiction and nonfiction manuscripts. Its main purpose is to turn a draft into a structural editorial assessment and a prioritized revision plan.\n\nFor fiction, it examines plot, pacing, character arcs, continuity, and the experience promised to readers. For argumentative nonfiction, it examines the central claim, supporting evidence, missing logical connections, and unanswered objections. It returns an editorial letter with prioritized findings and suggested types of revision. It diagnoses structure without rewriting the manuscript or inventing prose. Writers can also use it to organize feedback and plan revision sessions.\n\nBundled scripts support mechanical checks and annotated manuscript exports when the host can execute them. Saved-project resume requires persistent workspace files; independent pass agents require host delegation; optional SETEC measurements require a separate compatible installation. Availability depends on the host. APODICTIC has no author-operated backend.",
     "developerName": "anotherpanacea",
-    "category": "Productivity",
+    "category": "Creativity",
     "capabilities": [
       "Manuscript analysis",
       "Argument analysis",

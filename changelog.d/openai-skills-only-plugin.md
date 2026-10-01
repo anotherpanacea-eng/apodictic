@@ -12,4 +12,4 @@ The listing also supplies a publicly accessible privacy-policy permalink that
 matches the policy bundled in the submission ZIP.
 The OpenAI listing now leads with developmental editing for authors and editors,
 names manuscript analysis and revision planning as its capabilities, and gives
-concrete editing starter prompts under the Productivity category.
+concrete editing starter prompts under the Creativity category.
