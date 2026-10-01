@@ -1,7 +1,7 @@
 # AI-Prose Calibration — unexercised flag-family fixtures
 
 Ground-truth fixtures for the AI-Prose Calibration audit
-(`plugins/apodictic/skills/specialized-audits/references/craft/ai-prose-calibration.md`).
+(`plugins/apodictic/skills/prose-measurements/references/craft/ai-prose-calibration.md`).
 All fixture text is **synthetic** — authored for this eval, no permission constraints
 (provenance tier 1, per `evals/fixtures/argument-benchmark/CORPUS.md §Provenance tier`).
 

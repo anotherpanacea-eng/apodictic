@@ -429,8 +429,8 @@ def _default_crosswalk():
 def _registry_path():
     return _resolve([
         os.path.join(_SCRIPT_DIR, "..", "plugins", "apodictic", "skills",
-                     "specialized-audits", "references", "craft", "dialectical-clarity.md"),
-        os.path.join(_SCRIPT_DIR, "..", "skills", "specialized-audits",
+                     "argument-audits", "references", "craft", "dialectical-clarity.md"),
+        os.path.join(_SCRIPT_DIR, "..", "skills", "argument-audits",
                      "references", "craft", "dialectical-clarity.md"),
     ])
 
@@ -467,8 +467,8 @@ def _vocabulary_migration_errors():
     if root is None:
         return []  # host bundle lacks repo-only active examples
     rels = [
-        "plugins/apodictic/skills/specialized-audits/references/craft/dialectical-clarity.md",
-        "plugins/apodictic/skills/specialized-audits/references/craft/dialectical-clarity-level-setting.md",
+        "plugins/apodictic/skills/argument-audits/references/craft/dialectical-clarity.md",
+        "plugins/apodictic/skills/argument-audits/references/craft/dialectical-clarity-level-setting.md",
         "evals/fixtures/argument-benchmark/personal-essay-narrative-arg/groundtruth.md",
         "docs/argument-benchmark-calibration-round.md",
         "sample-dialectical-clarity-letter.html",

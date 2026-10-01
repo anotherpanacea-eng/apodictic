@@ -423,4 +423,4 @@ When handing into Pass 11 synthesis, provide:
 
 ---
 
-*This audit is designed to bolt onto the APODICTIC development editor framework. Activate during intake when the manuscript features significant female characters. File placement: `specialized-audits/references/craft/female-interiority.md`.*
+*This audit is designed to bolt onto the APODICTIC development editor framework. Activate during intake when the manuscript features significant female characters. File placement: `narrative-craft-audits/references/craft/female-interiority.md`.*

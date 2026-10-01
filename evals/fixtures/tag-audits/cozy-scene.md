@@ -1,7 +1,7 @@
 # Tag-Audit Scene — Cozy
 
 *Synthetic ~500-word scene authored to exercise the Cozy tag audit
-(`plugins/apodictic/skills/specialized-audits/references/tag/cozy-tag.md`): Cruelty Leak
+(`plugins/apodictic/skills/genre-reader-audits/references/tag/cozy-tag.md`): Cruelty Leak
 (CZ-2), Comfort Prop (CZ-5 / Axis B), and a Trapdoor safety-envelope breach (CZ-2). Cozy
 signifiers are present on the surface; the audit should find the warmth is protagonist-only
 and prop-deep. Word count target ~500.*

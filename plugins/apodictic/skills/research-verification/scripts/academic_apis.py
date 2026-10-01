@@ -114,10 +114,15 @@ def _fetch_json_network(url: str, headers: dict | None = None, timeout: int = 15
     req_headers = {"User-Agent": f"APODICTIC/1.0 (mailto:{CROSSREF_MAILTO})"}
     if headers:
         req_headers.update(headers)
-    if S2_API_KEY and "semanticscholar" in url:
-        req_headers["x-api-key"] = S2_API_KEY
-
     req = urllib.request.Request(url, headers=req_headers)
+    origin = urllib.parse.urlsplit(url)
+    if (S2_API_KEY and origin.scheme == "https"
+            and origin.hostname == "api.semanticscholar.org"
+            and origin.port in (None, 443)
+            and origin.username is None and origin.password is None):
+        # Search/citation text does not authorize credentials for that host.
+        # urllib excludes unredirected headers when following redirects.
+        req.add_unredirected_header("x-api-key", S2_API_KEY)
     delay = _HTTP_BACKOFF_BASE
     last_error = None
     for attempt in range(_HTTP_MAX_RETRIES + 1):

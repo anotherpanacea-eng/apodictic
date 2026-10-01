@@ -111,7 +111,7 @@ unimportant.** The existing GT2 already says the primary argument stands
 without this subargument. The proposed GT5/GT6 wording should preserve that
 distinction consistently.
 
-The [audit's Step 9 and Severity Floor](https://github.com/anotherpanacea-eng/apodictic/blob/20b8ca6219e649b2743866b9ffaba0e77ab208a5/plugins/apodictic/skills/specialized-audits/references/craft/dialectical-clarity.md)
+The [audit's Step 9 and Severity Floor](https://github.com/anotherpanacea-eng/apodictic/blob/20b8ca6219e649b2743866b9ffaba0e77ab208a5/plugins/apodictic/skills/argument-audits/references/craft/dialectical-clarity.md)
 require an identified defeat of C0 before Must-Fix/UNWARRANTED. A disputed
 subsidiary warrant is insufficient by itself. The existing GT7 allowance for
 either WARRANTED or UNCONVENTIONAL-BUT-WARRANTED, with no form-dependent

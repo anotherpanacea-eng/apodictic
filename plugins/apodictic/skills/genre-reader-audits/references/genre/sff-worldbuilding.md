@@ -498,4 +498,4 @@ When handing into Pass 11 synthesis, provide:
 
 ---
 
-*This audit is designed to bolt onto the APODICTIC development editor framework. Activate during intake when the manuscript is SF/F. Run alongside the Genre Module: SF/F (which handles consistency). File placement: `specialized-audits/references/genre/sff-worldbuilding.md`.*
+*This audit is designed to bolt onto the APODICTIC development editor framework. Activate during intake when the manuscript is SF/F. Run alongside the Genre Module: SF/F (which handles consistency). File placement: `genre-reader-audits/references/genre/sff-worldbuilding.md`.*

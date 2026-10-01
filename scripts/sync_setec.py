@@ -67,7 +67,7 @@ LOCK_PATH = REPO_ROOT / "setec-plugin.lock"
 # contract-block gating below shares ONE SemVer parser with the runtime and
 # the drift gate.
 _SHIM_DIR = (
-    REPO_ROOT / "plugins" / "apodictic" / "skills" / "specialized-audits" / "scripts"
+    REPO_ROOT / "plugins" / "apodictic" / "skills" / "prose-measurements" / "scripts"
 )
 if str(_SHIM_DIR) not in sys.path:
     sys.path.insert(0, str(_SHIM_DIR))
@@ -112,7 +112,7 @@ CONTRACT_BLOCK_MIN_SETEC_VERSION = (1, 129, 0)
 # (C2.2's per-consumer table; this is APODICTIC's row).
 CLIENT_SOURCE_RELATIVE = Path("scripts") / "setec" / "consumer_client.py"
 CLIENT_RUNTIME_DESTINATION = (
-    REPO_ROOT / "plugins" / "apodictic" / "skills" / "specialized-audits"
+    REPO_ROOT / "plugins" / "apodictic" / "skills" / "prose-measurements"
     / "scripts" / "_vendored_setec_client.py"
 )
 

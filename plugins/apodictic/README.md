@@ -57,7 +57,7 @@ The plugin assumes its user is an adult working on a creative or argumentative p
 - **Development Edit** — The main workflow: intake protocol, 11 analysis passes, synthesis, revision rounds, genre calibration
 - **Pre-Writing Pathway** — Guides writers from idea to draftable structure (no manuscript required). Writer mode calibration, seed inventory, readiness gates, option architecture, complexity budget, prospective contract, re-entry diff protocol.
 - **Plot Coaching** — Plot structure diagnosis (50 spines across 12 families), selection coaching, fantasy & series architecture
-- **Specialized Audits** — 38 available audits (3 universal, 20 craft, 10 genre, 5 tag), including 3 primary tags (cozy, philosophical, erotic content) and 2 companion intimacy audits; plus 6 internet-enabled research modes
+- **Specialized Audits** — 38 available audits (3 universal, 20 craft, 10 genre, 5 tag), including 3 primary tags (cozy, philosophical, erotic content) and 2 companion intimacy audits; plus 6 internet-enabled research modes. A small catalog dispatches to five owning skills: narrative craft, genre/reader expectations, argument analysis, research/verification, and prose measurements
 
 **Nonfiction & argument pillar:**
 - **Nonfiction Argument Engine** — Diagnoses argument-shaped nonfiction (op-eds, policy briefs, testimony, essays): infers the argument contract (claim, audience, burden, stakes), then flags missing warrants, scope drift, and unmet strongest objections. Produces an argument editorial letter and marked-up piece. Companions: Dialectical Clarity, Red-Team, Persuasion, Evidence.

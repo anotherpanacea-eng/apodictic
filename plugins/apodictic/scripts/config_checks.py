@@ -471,7 +471,7 @@ def audit_tier_criterion(pd_path, audit_root=None):
     pd_text = _read(pd_path)
     if not audit_root:
         pd_dir = os.path.dirname(pd_path)
-        cand = os.path.join(pd_dir, "..", "..", "specialized-audits", "references")
+        cand = os.path.join(pd_dir, "..", "..")
         audit_root = cand if os.path.isdir(cand) else (pd_dir or ".")
 
     lines, errors, warns = [], 0, 0

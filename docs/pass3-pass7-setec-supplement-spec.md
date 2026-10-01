@@ -4,7 +4,7 @@
 implemented" label was stale (caught in the 2026-06-19 Codex-down reconciliation pass — see the box below).
 The live implementation is in `run-full.md` §Pass 3 / §Pass 7, the intake question `run-core.md` Q14a, the
 `setec_runner.py` helper, and the §4e POV Voice Profile rows.
-**Predecessor work:** Phase 2 substrate swap + new audits, 2026-05-17 (see `project_apodictic_setec_integration.md` memory entry; `plugins/apodictic/skills/specialized-audits/scripts/setec_discovery.py` + ai_prose_* shims).
+**Predecessor work:** Phase 2 substrate swap + new audits, 2026-05-17 (see `project_apodictic_setec_integration.md` memory entry; `plugins/apodictic/skills/prose-measurements/scripts/setec_discovery.py` + ai_prose_* shims).
 **Required SETEC:** ≥ 1.86.0 per-surface floor, but the **effective** runtime floor is **1.114.0** (the R2 dispatcher bootstrap in `setec_discovery.py`); the vendored contract is `v1.127.0` (`setec-plugin.lock`, refreshed 2026-07-28).
 
 > ## ⚠️ Reconciliation note — already built (2026-06-19, Codex-down independent review)
@@ -340,11 +340,11 @@ No baseline-corpus intake question. Baseline is offered post-hoc per §6.3.
 - `plugins/apodictic/skills/core-editor/references/run-full.md` §Pass 3, §Pass 7
 - `plugins/apodictic/skills/core-editor/references/pass-dependencies.md` §4e Audit-Signal Propagation Table
 - `plugins/apodictic/skills/core-editor/references/run-synthesis.md` §Step 2 Canonical Audit-Signal Propagation Rule
-- `plugins/apodictic/skills/specialized-audits/scripts/setec_discovery.py` — discovery contract
-- `plugins/apodictic/skills/specialized-audits/references/craft/ai-prose-calibration-distributional.md` §Computing the Signals — schema_version 1.0 envelope spec
-- `plugins/apodictic/skills/specialized-audits/references/craft/pov-voice-profile.md` — opt-in audit; will be the Pass 7 stylometry companion
-- `plugins/apodictic/skills/specialized-audits/references/craft/punctuation-cadence.md` — Pass 3 punctuation-rhythm companion
-- `plugins/apodictic/skills/specialized-audits/references/craft/idiolect-preservation.md` — Pass 7 per-POV signature-feature companion
+- `plugins/apodictic/skills/prose-measurements/scripts/setec_discovery.py` — discovery contract
+- `plugins/apodictic/skills/prose-measurements/references/craft/ai-prose-calibration-distributional.md` §Computing the Signals — schema_version 1.0 envelope spec
+- `plugins/apodictic/skills/prose-measurements/references/craft/pov-voice-profile.md` — opt-in audit; will be the Pass 7 stylometry companion
+- `plugins/apodictic/skills/prose-measurements/references/craft/punctuation-cadence.md` — Pass 3 punctuation-rhythm companion
+- `plugins/apodictic/skills/prose-measurements/references/craft/idiolect-preservation.md` — Pass 7 per-POV signature-feature companion
 - SETEC spec: `setec-voiceprint/internal/SPEC_output_schema_unification.md`
 - SETEC registry fragments for the two §3 surfaces this doc previously called nonexistent (2026-07-27):
   `setec-voiceprint/plugins/setec-voiceprint/capabilities.d/sliding_window_heatmap.yaml`,

@@ -95,9 +95,11 @@ jobs:
 
       - name: Research reliability self-tests
         run: |
-          python3 plugins/apodictic/skills/specialized-audits/scripts/api_reliability.py --self-test
-          python3 plugins/apodictic/skills/specialized-audits/scripts/response_cache.py --self-test
-          python3 plugins/apodictic/skills/specialized-audits/scripts/academic_apis.py --self-test
+          node --test tests/audit-catalog.test.mjs
+          python3 tests/test_academic_api_security.py
+          python3 plugins/apodictic/skills/research-verification/scripts/api_reliability.py --self-test
+          python3 plugins/apodictic/skills/research-verification/scripts/response_cache.py --self-test
+          python3 plugins/apodictic/skills/research-verification/scripts/academic_apis.py --self-test
 
       - name: Changelog fragments parse
         run: node scripts/assemble-changelog.mjs --check

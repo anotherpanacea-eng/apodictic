@@ -87,7 +87,7 @@ SETEC_VOICEPRINT_DIR=<producer worktree>/plugins/setec-voiceprint \
 JUDGE_VENDOR=<vendor> SETEC_HOST=<claude-code|codex-cli> SETEC_HOST_MODEL=<model> \
 SETEC_HOST_JUDGE_CMD="python3 evals/benchmark/agd-scan/host_judge_cmd.py" \
 SETEC_HOST_JUDGE_TIMEOUT=900 \
-python3 plugins/apodictic/skills/specialized-audits/scripts/ai_prose_agd_move_scan.py \
+python3 plugins/apodictic/skills/prose-measurements/scripts/ai_prose_agd_move_scan.py \
     evals/fixtures/argument-agd/<fixture>/source.md \
     --judge agent_host --json --out <scratch>.json --out-md <scratch>.md
 ```
@@ -163,7 +163,7 @@ APODICTIC audit would use, with the producer's `manifest` judge:
 
 ```
 SETEC_VOICEPRINT_DIR=<producer worktree>/plugins/setec-voiceprint \
-python3 plugins/apodictic/skills/specialized-audits/scripts/ai_prose_agd_move_scan.py \
+python3 plugins/apodictic/skills/prose-measurements/scripts/ai_prose_agd_move_scan.py \
     evals/fixtures/argument-agd/<fixture>/source.md \
     --judge manifest --judge-manifest manifests/<cell>.json \
     --expect-fingerprint <the manifest's own prompt_fingerprint_sha256> --json

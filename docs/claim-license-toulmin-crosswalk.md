@@ -22,7 +22,7 @@ ClaimLicense is not a Toulmin warrant. It does not populate or replace APODICTIC
 
 - **Toulmin model:** Stephen Toulmin, *The Uses of Argument* (1958). APODICTIC's
   six-role account is documented in
-  [`dialectical-clarity-level-setting.md`](../plugins/apodictic/skills/specialized-audits/references/craft/dialectical-clarity-level-setting.md),
+  [`dialectical-clarity-level-setting.md`](../plugins/apodictic/skills/argument-audits/references/craft/dialectical-clarity-level-setting.md),
   and R2 records Toulmin as its typed warrant/rebuttal design source.
 - **APODICTIC model:** [`argument-state-schema.md`](argument-state-schema.md) §§2–6.
   Claims live in §2, support/grounds in §3, warrant/backing/qualifier in §4, and

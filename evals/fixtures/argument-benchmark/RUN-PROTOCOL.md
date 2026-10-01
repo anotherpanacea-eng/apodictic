@@ -53,7 +53,7 @@ Done by the **preparer**, in a session separate from the runner.
 > rewrite or invent content (the Editor's Firewall).
 >
 > **Procedure:** read and faithfully apply
-> `plugins/apodictic/skills/specialized-audits/references/craft/dialectical-clarity.md`.
+> `plugins/apodictic/skills/argument-audits/references/craft/dialectical-clarity.md`.
 > Run all 9 steps; use its code families (AT, AC, CL, SM, WR, BP, OB, DI, NE)
 > and named patterns (FM-A1..FM-A20); end with Step 9 (Distinguish) and the
 > audit's Output Format. You may also read `docs/argument-state-schema.md`.

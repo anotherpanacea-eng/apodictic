@@ -200,5 +200,5 @@ This audit sits behind the same firewall as the rest of APODICTIC: it diagnoses 
 - Kim, Chang, Pham & Iyyer (2026). *Argument Collapse: LLMs Flatten Long-Form Public Debate.* arXiv:2606.01736v3. (Surface source; B1 paragraph-role transition rates + B2 discourse-mode share; §4.1-4.2 / Tables 26-27 human/LLM group means over NYT *Room for Debate* + *Boston Review* essays.)
 - SETEC Voiceprint capabilities manifest: `argument_decision_audit` task surface, `literature_anchored` calibration status, `handoff: experimental`, `min_setec_version: 1.116.0`.
 - `narrative-decision-audit.md` — the narrative-domain sibling (StoryScope; the "structure, not texture; complementary, not substitute" framing precedent).
-- `dialectical-clarity.md` and the warrant/banister audits — the soundness-level siblings this surface pre-flags but never replaces.
+- `argument-audits/references/craft/dialectical-clarity.md` and the warrant/banister audits — the soundness-level siblings this surface pre-flags but never replaces.
 - `plugins/setec-voiceprint/references/signals-glossary.md` (SETEC) — glossary cross-reference for the anchored-signal vocabulary.

@@ -36,7 +36,7 @@ def harness(tmp_path):
     script = root / "evals/fixtures/argument-benchmark/run.sh"
     script.parent.mkdir(parents=True)
     shutil.copyfile(RUNNER, script)
-    audit = root / "plugins/apodictic/skills/specialized-audits/references/craft/dialectical-clarity.md"
+    audit = root / "plugins/apodictic/skills/argument-audits/references/craft/dialectical-clarity.md"
     audit.parent.mkdir(parents=True)
     audit.write_text("Synthetic reference; never dispatched.\n", encoding="utf-8")
     cache = root / "cache with spaces"
