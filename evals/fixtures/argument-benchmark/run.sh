@@ -60,7 +60,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="${REPO:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
 SRC="${SRC:-$HOME/Library/CloudStorage/Dropbox/Cowork/Development Editor/argument-benchmark-sources}"
-AUDIT="$REPO/plugins/apodictic/skills/specialized-audits/references/craft/dialectical-clarity.md"
+AUDIT="$REPO/plugins/apodictic/skills/argument-audits/references/craft/dialectical-clarity.md"
 SOURCES="$SCRIPT_DIR/SOURCES.md"
 
 CLAUDE_BIN="${CLAUDE_BIN:-claude}"

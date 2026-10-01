@@ -16,9 +16,9 @@ Identify moves **functionally at a locus**. **Identification requires an indepen
 
 **Scan pre-pass (optional; the R3B AGD producer/consumer seam).** Before building the move inventory, if `agd_move_scan.json` is present in the run folder, read `results.observations` from it — SETEC's `agd_move_scan` surface (min SETEC **1.124.0**; `handoff: experimental`, `calibration_status: heuristic`) reports **LOCATED, verbatim-anchored candidate move observations** (family + span + `paragraph_index` + cue; `cue: null` = cue-free). **The scan is a POINTER, never a finding (R4A ADR D5):** it seeds and cross-checks this audit's own Layer-1 identification; identification authority stays with the audit, and codes are assigned by the audit alone (Layer 3 + the reconciliation contract), never read off the scan. Observation **count is location data, not a quality signal**.
 
-- *Transport is orchestration, not a code path in this audit.* The consumer shim `scripts/ai_prose_agd_move_scan.py` is a stdout-only forwarder (`run_surface_cli`; it persists no file). The run instruction produces the artifact by redirecting the shim's stdout into the run folder **before** the audit begins:
+- *Transport is orchestration, not a code path in this audit.* The consumer shim `../prose-measurements/scripts/ai_prose_agd_move_scan.py` is a stdout-only forwarder (`run_surface_cli`; it persists no file). The run instruction produces the artifact by redirecting the shim's stdout into the run folder **before** the audit begins:
   ```
-  python3 <skill>/scripts/ai_prose_agd_move_scan.py <source.md> --judge <manifest|api-backend> --json > <run folder>/agd_move_scan.json
+  python3 <plugin>/skills/prose-measurements/scripts/ai_prose_agd_move_scan.py <source.md> --judge <manifest|api-backend> --json > <run folder>/agd_move_scan.json
   ```
   A non-zero shim exit or an unparseable capture ⇒ the artifact is **absent/malformed**.
 - *Absent or malformed → proceed* with the ordinary inventory and record **`Scan: not consulted (<absent|error>)`** in the §10.9 coverage manifest — loud, never silent.

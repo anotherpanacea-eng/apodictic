@@ -1,7 +1,7 @@
 # Proposal — Engine fix: objection structural-priority / decoy resistance (Step 6)
 
 **Status:** RATIFIED + APPLIED in `4d350ec` (6a two-test + FM-A20 + OB5 in `dialectical-clarity.md`; verified by the post-fix blind re-run, `evals/results/run-20260604-174301`). Retained as the design record. *(Original status: DRAFT for ratification.)*
-**Target file:** `plugins/apodictic/skills/specialized-audits/references/craft/dialectical-clarity.md` (Step 6), + its codex/antigravity mirrors.
+**Target file:** `plugins/apodictic/skills/argument-audits/references/craft/dialectical-clarity.md` (Step 6), + its codex/antigravity mirrors.
 **Driver:** the two structural objection-misses in the benchmark — **ppi** (took
 the public-safety decoy) and **roosevelt** (missed the veto-point-regress
 objection) — are **engine-general**, not a model quirk: Opus, Sonnet, **and blind

@@ -58,11 +58,11 @@ if [ "$1" = "--check-all" ]; then
     fi
     echo ""
     echo "== position-pair-register (canonical example-position-pair-register fixture) =="
-    # The consumer fixture lives beside the shim, under specialized-audits/references (NOT core-editor).
+    # The consumer fixture lives beside the shim, under prose-measurements/references (NOT core-editor).
     # Resolve either mirror root the same way CA_BASE does.
     PPR_BASE=""
-    for base in "$CA_SCRIPT_DIR/../skills/specialized-audits/references" \
-                "$CA_SCRIPT_DIR/../plugins/apodictic/skills/specialized-audits/references"; do
+    for base in "$CA_SCRIPT_DIR/../skills/prose-measurements/references" \
+                "$CA_SCRIPT_DIR/../plugins/apodictic/skills/prose-measurements/references"; do
       if [ -d "$base/example-position-pair-register" ]; then PPR_BASE="$base/example-position-pair-register"; break; fi
     done
     if [ -n "$PPR_BASE" ]; then

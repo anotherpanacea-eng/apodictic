@@ -13,11 +13,11 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 CI = WORKFLOWS / "ci.yml"
 
-CI_SHA256 = "9891e5b8ee53f138ea32bfcf6eaca14095766e114f67c6b7d2cd5e5118d412b5"
+CI_SHA256 = "84b665aeb158be281aea9159ca85a23a806ee494f1ed0545cc43fd88440e83e9"
 AUXILIARY_SHA256 = {
     "release.yml": "bd1dc52391b48cd1662bf7d4ab161827fb7c8b83cc2b46b5566b7d637f23a5f3",
     "release-readiness.yml": "18c248b2d4e94fb9473d81b3dfd04ccfc58083e39c3937e343d2d618288f3710",
-    "sync-setec.yml": "a3c9669dfd67dad1a78d2fa899fc4a872f3ab78e9fc391d3b19f6a88f61a4e00",
+    "sync-setec.yml": "e5f5f7347ef64699fb39f578e9528eca73a6e988cd37c711b422cd9b0c8b0e85",
 }
 EVENTS = [
     "opened",

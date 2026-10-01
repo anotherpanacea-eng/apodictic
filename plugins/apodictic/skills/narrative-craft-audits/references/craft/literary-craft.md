@@ -572,4 +572,4 @@ Forbidden: (1) Writing replacement prose. (2) Inventing new motifs or thematic e
 
 ---
 
-*This audit is designed to bolt onto the APODICTIC development editor framework. Activate during intake when the manuscript operates in literary mode across any genre. File placement: `specialized-audits/references/craft/literary-craft.md`.*
+*This audit is designed to bolt onto the APODICTIC development editor framework. Activate during intake when the manuscript operates in literary mode across any genre. File placement: `narrative-craft-audits/references/craft/literary-craft.md`.*

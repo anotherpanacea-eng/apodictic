@@ -22,7 +22,7 @@ CENTRAL QUESTION:
 PROMISE TYPE: [Reveal / Explain / Verdict / Portrait / Lesson]
 ```
 
-Vocabulary per the Central Question & Promise Map (`specialized-audits/references/genre/narrative-nonfiction.md` §Step 2): the Central Question is what the reader wants answered; the Promise Type is what kind of answer the piece offers (Reveal = what really happened, Explain = how this works, Verdict = good/bad/true/false, Portrait = who this person really is, Lesson = what this means). LC/E lead-contract codes are audit-time diagnostics — they stay in the Findings Ledger, never in this block.
+Vocabulary per the Central Question & Promise Map (`genre-reader-audits/references/genre/narrative-nonfiction.md` §Step 2): the Central Question is what the reader wants answered; the Promise Type is what kind of answer the piece offers (Reveal = what really happened, Explain = how this works, Verdict = good/bad/true/false, Portrait = who this person really is, Lesson = what this means). LC/E lead-contract codes are audit-time diagnostics — they stay in the Findings Ledger, never in this block.
 
 ## Contract Statement
 

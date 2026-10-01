@@ -182,9 +182,9 @@ EOF
     if [ -z "$AUDIT_ROOT" ]; then
       PD_DIR=$(dirname "$PD_FILE")
       # Common layout: pass-dependencies.md is in core-editor/references;
-      # audits live in ../../specialized-audits/references/.
-      if [ -d "$PD_DIR/../../specialized-audits/references" ]; then
-        AUDIT_ROOT="$PD_DIR/../../specialized-audits/references"
+      # audits live across sibling skill reference directories.
+      if [ -d "$PD_DIR/../.." ]; then
+        AUDIT_ROOT="$PD_DIR/../.."
       else
         AUDIT_ROOT="$PD_DIR"
       fi

@@ -590,4 +590,4 @@ That answer determines revision depth, readiness, and positioning confidence.
 
 ---
 
-*This audit is designed to bolt onto the APODICTIC development editor framework. Activate during intake when the manuscript operates in horror mode as primary or significant genre contract. File placement: `specialized-audits/references/genre/horror-craft.md`.*
+*This audit is designed to bolt onto the APODICTIC development editor framework. Activate during intake when the manuscript operates in horror mode as primary or significant genre contract. File placement: `genre-reader-audits/references/genre/horror-craft.md`.*

@@ -2,9 +2,9 @@
 
 Ground-truth fixtures for three tag audits that had **no** canonical fixture invoking them:
 
-- Queer Romance / Erotica — `plugins/apodictic/skills/specialized-audits/references/tag/queer-romance-erotica.md`
-- Cozy — `plugins/apodictic/skills/specialized-audits/references/tag/cozy-tag.md`
-- Philosophical — `plugins/apodictic/skills/specialized-audits/references/tag/philosophical-tag.md`
+- Queer Romance / Erotica — `plugins/apodictic/skills/genre-reader-audits/references/tag/queer-romance-erotica.md`
+- Cozy — `plugins/apodictic/skills/genre-reader-audits/references/tag/cozy-tag.md`
+- Philosophical — `plugins/apodictic/skills/genre-reader-audits/references/tag/philosophical-tag.md`
 
 All fixture text is **synthetic** (authored for this eval, no permission constraints;
 provenance tier 1). Each scene is a self-contained ~500-word passage authored to exercise its

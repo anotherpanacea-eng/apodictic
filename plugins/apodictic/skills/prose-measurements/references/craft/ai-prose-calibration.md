@@ -783,7 +783,7 @@ Note: Systemic + Keep is not a valid combination for AIC-7. If discourse leak is
 
 This translation is for interoperability with severity floors and revision checklist integration only. The audit's own outputs use Spot/Pattern/Systemic + Keep/Recast/Replace + source-triage verdicts because those three axes are more informative for the author's revision work.
 
-**Argument-domain sibling:** `rhetorical-stance-triage.md` deliberately reuses the
+**Argument-domain sibling:** `argument-audits/references/craft/rhetorical-stance-triage.md` deliberately reuses the
 earned / unearned / earned-by-frame vocabulary for argumentative moves. The domains stay
 separate: Layer C source triage adjudicates AIC voice/craft-pattern families using voice
 attribution and callback knowledge; rhetorical stance triage adjudicates overstatement-

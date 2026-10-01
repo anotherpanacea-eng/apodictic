@@ -133,4 +133,4 @@ This audit sits behind the same firewall as the rest of APODICTIC, and further f
 - Myakala, Agrawal & Manche (2026). *BeliefShift* (opinion-drift / belief-consistency benchmark). arXiv:2603.23848. (The position-drift framing + metrics.)
 - SETEC Voiceprint capabilities manifest: `position_pair_register` task surface, `uncalibrated` calibration status, `handoff: experimental`, `min_setec_version: 1.121.0`.
 - `argument-decision-audit.md` — the sibling consumer (ArgScope; the shim / floor-from-manifest / drift-gate precedent this audit mirrors).
-- `content-advisory.md` (SETEC/APODICTIC) — the A3 severity-leak + finding-block firewall this validator reuses.
+- `genre-reader-audits/references/content-advisory.md` (SETEC/APODICTIC) — the A3 severity-leak + finding-block firewall this validator reuses.

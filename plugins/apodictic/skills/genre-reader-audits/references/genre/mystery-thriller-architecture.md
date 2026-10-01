@@ -650,4 +650,4 @@ That answer determines revision depth, readiness, and positioning confidence.
 
 ---
 
-*This audit is designed to bolt onto the APODICTIC development editor framework. Activate during intake when the manuscript operates in mystery/thriller mode as primary or significant genre contract. File placement: `specialized-audits/references/genre/mystery-thriller-architecture.md`.*
+*This audit is designed to bolt onto the APODICTIC development editor framework. Activate during intake when the manuscript operates in mystery/thriller mode as primary or significant genre contract. File placement: `genre-reader-audits/references/genre/mystery-thriller-architecture.md`.*

@@ -1,7 +1,7 @@
 # Research / API Reliability Layer
 
 **Status:** **Built** (`api_reliability.py` + `response_cache.py` TTL + `academic_apis.py` wiring + the two research-mode prose contracts). Run-level/provider-level hardening of `/research`; additive — `APODICTIC_RELIABILITY=off` omits the `reliability` block (the additive per-result/summary keys remain, never altering existing values).
-<!-- built-when: plugins/apodictic/skills/specialized-audits/scripts/api_reliability.py -->
+<!-- built-when: plugins/apodictic/skills/research-verification/scripts/api_reliability.py -->
 <!-- Single-marker by design (docs/qol-status-drift-lint.md § Marker syntax: one repo-relative PATH, no globs, no AND). The CI registration of the module's --self-test is asserted by the ci.yml step, not by a second marker. -->
 
 **ROADMAP home:** `ROADMAP.md` § Research / API Reliability Layer (post-v2.x hardening band; the follow-on to the v2.0.0 Phase 5 plumbing).
@@ -40,7 +40,7 @@ existing diagnostic/rewrite firewall.
 One new stdlib-only module plus additive changes to two existing scripts and the
 two LLM-facing research-mode docs:
 
-- **`plugins/apodictic/skills/specialized-audits/scripts/api_reliability.py`** —
+- **`plugins/apodictic/skills/research-verification/scripts/api_reliability.py`** —
   new module: `ProviderBudget`, `CircuitBreaker`, `ReliabilityLedger`, and a `TTL`
   helper. Carries a `--self-test` arm.
 - **`response_cache.py`** — additive TTL + freshness-stamp support. Disk entries
@@ -65,7 +65,7 @@ validator. It is a hardening of an existing surface's external-IO substrate.
 
 | Asserted substrate | Verified location | Confirmed fact |
 |---|---|---|
-| External-API client | `plugins/apodictic/skills/specialized-audits/scripts/academic_apis.py` | 531 lines (pre-change); `_fetch_json(url, headers, timeout)`, `resolve_citation(citation, cache, provenance)`, `resolve_batch(citations, output_path)` |
+| External-API client | `plugins/apodictic/skills/research-verification/scripts/academic_apis.py` | 531 lines (pre-change); `_fetch_json(url, headers, timeout)`, `resolve_citation(citation, cache, provenance)`, `resolve_batch(citations, output_path)` |
 | Phase 5 backoff / Retry-After | same file, ll. 45–105 | `_HTTP_MAX_RETRIES` (`APODICTIC_HTTP_RETRIES`, default 3), `_RETRYABLE_STATUS={429,500,502,503,504}`, `_retry_after_delay()` caps at 60s |
 | No-sticky-error cache | `response_cache.py` ll. 50–64 | `set()` keeps `_error` dicts memory-only, never to disk |
 | Batch output shape | `resolve_batch` (output dict at ll. 453–458) | `output = {summary, results, provenance, cache_stats}` — the insertion point for a `reliability` block |
@@ -202,9 +202,9 @@ invocation in `.github/workflows/ci.yml`**:
 ```yaml
 - name: Research reliability self-tests
   run: |
-    python3 plugins/apodictic/skills/specialized-audits/scripts/api_reliability.py --self-test
-    python3 plugins/apodictic/skills/specialized-audits/scripts/response_cache.py --self-test
-    python3 plugins/apodictic/skills/specialized-audits/scripts/academic_apis.py --self-test
+    python3 plugins/apodictic/skills/research-verification/scripts/api_reliability.py --self-test
+    python3 plugins/apodictic/skills/research-verification/scripts/response_cache.py --self-test
+    python3 plugins/apodictic/skills/research-verification/scripts/academic_apis.py --self-test
 ```
 
 `validate.sh check-mirror` stays green because nothing mirrored changed, and the

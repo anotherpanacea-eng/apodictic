@@ -12,7 +12,7 @@ The writer declares or confirms the document register. `asserted` is the default
 `asserted` document-wide. A prescriptive/action-demanding cash-out is assessed at asserted
 burden at that span regardless of the document register.
 
-This is the argument-domain sibling of `ai-prose-calibration.md` Layer C source triage.
+This is the argument-domain sibling of `prose-measurements/references/craft/ai-prose-calibration.md` Layer C source triage.
 Source triage adjudicates voice/craft pattern families. This triage adjudicates
 argumentative overstatement. They share writer-facing verdict words but do not share flag
 families or verdict storage.

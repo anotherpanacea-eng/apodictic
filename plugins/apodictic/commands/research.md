@@ -5,7 +5,7 @@ argument-hint: [mode-name] or no argument to list all
 
 Run a research mode from the APODICTIC Development Editor framework. Research modes are internet-enabled investigations that supplement structural analysis.
 
-Load `../skills/specialized-audits/SKILL.md`.
+Load `../skills/research-verification/SKILL.md`.
 
 **If no argument is provided** (or argument is "list" or "help"):
 Display the available research modes:
@@ -18,7 +18,7 @@ Display the available research modes:
 - **representation** — Representation Context: surface community discourse for writing outside author's experience
 
 **If an argument is provided:**
-Load the named research mode's reference file from `../skills/specialized-audits/references/` and execute it. Follow research mode principles:
+Load the named protocol from the research-verification skill's table and execute it. Follow research mode principles:
 1. Research supplements structural judgment; it doesn't replace it
 2. Cap queries: 3-5 per question
 3. Present uncertainty: show the range when sources conflict

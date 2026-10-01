@@ -177,7 +177,17 @@ function checkRegistryReferenceCoverage(root, { notCarded = NOT_CARDED } = {}) {
   } catch (e) {
     return [`BAD-REGISTRY: ${REGISTRY_FILE} is not valid JSON (${e.message}).`];
   }
-  const shipped = collectReferenceFiles(refsDir);
+  const shipped = registry.auditFamilies
+    ? registry.auditFamilies.flatMap((family) => {
+        const directory = `plugins/apodictic/skills/${family.id}/references`;
+        return collectReferenceFiles(path.join(root, directory)).map((rel) => {
+          const canonical = `${family.id}/references/${rel}`;
+          const legacy = Object.entries(registry.auditReferenceAliases || {})
+            .find(([, target]) => target === canonical)?.[0];
+          return legacy ? legacy.replace(/^specialized-audits\/references\//, "") : canonical;
+        });
+      })
+    : collectReferenceFiles(refsDir);
   const { primaries, duplicates } = collectPrimaryReferenceFiles(registry);
   const problems = [];
   for (const dup of duplicates.sort()) {

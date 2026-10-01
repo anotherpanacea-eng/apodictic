@@ -1,7 +1,7 @@
 # Tag-Audit Scene — Philosophical
 
 *Synthetic ~500-word scene authored to exercise the Philosophical tag audit
-(`plugins/apodictic/skills/specialized-audits/references/tag/philosophical-tag.md`): Seminar
+(`plugins/apodictic/skills/genre-reader-audits/references/tag/philosophical-tag.md`): Seminar
 Scene (PH-4 / Axis B), Topic Fog (PH-1 / Axis A), Decoration Philosophy (PH-5 / Axis F), and
 Explanatory Reflex (PH-7 / Axis E). Philosophical signifiers are everywhere; philosophical
 work is nowhere. Word count target ~500.*

@@ -460,7 +460,7 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
         "NON_PARITY_NOTES.md",
         "plugins/apodictic/skills/core-editor/references/output-policy.md",
         "plugins/apodictic/skills/core-editor/references/output-structure.md",
-        "plugins/apodictic/skills/specialized-audits/references/craft/adversarial-evidence-review.md"
+        "plugins/apodictic/skills/argument-audits/references/craft/adversarial-evidence-review.md"
       ]).has(relPath);
     });
   const badRuntimePatterns = [

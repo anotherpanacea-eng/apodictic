@@ -3,7 +3,7 @@
 <!-- content-advisory: opted-in -->
 
 <!--
-Worked example of a contract-conformant Content Advisory (see specialized-audits/references/
+Worked example of a contract-conformant Content Advisory (see genre-reader-audits/references/
 content-advisory.md + docs/content-advisory.md). A reader/marketing-facing map of where the
 manuscript depicts intense material, at what intensity, on- or off-page — generated ONLY under the
 opt-in marker above. It is DESCRIPTIVE, never evaluative: each note records *that* content is
@@ -45,7 +45,7 @@ Must/Should/Could token, no apodictic:finding block), W1 descriptive-not-prescri
 
 - **Descriptive, not evaluative.** Each note records what is depicted and how — on- vs off-page,
   at what intensity — for a reader's informed choice. The advisory makes no craft judgment and
-  recommends no cut; that is the [Reception Risk audit](../specialized-audits/references/craft/reception-risk.md)'s
+  recommends no cut; that is the [Reception Risk audit](../genre-reader-audits/references/craft/reception-risk.md)'s
   separate job, and even it never appears here as a finding.
 - **Off the editorial severity scale.** Depicted content is not a defect. The intensity scale
   (low/medium/high) is orthogonal to the editorial severity scale — and this artifact carries no
