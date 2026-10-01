@@ -397,6 +397,72 @@ function validateManifestAssets(tempPluginDir, manifest) {
   }
 }
 
+// Public submission uses the plugin itself as the ZIP root. The marketplace
+// bundle is a workspace and cannot be uploaded as a single plugin package.
+function buildSubmissionArchive(tempPluginDir, archivePath) {
+  const manifest = readJson(path.join(tempPluginDir, ".codex-plugin", "plugin.json"));
+  for (const field of ["mcpServers", "apps", "hooks"]) {
+    if (Object.hasOwn(manifest, field)) {
+      throw new Error(`Skills-only submission cannot declare ${field}.`);
+    }
+  }
+  const listing = manifest.interface || {};
+  for (const [field, limit] of Object.entries({
+    displayName: 30, shortDescription: 30, longDescription: 4000,
+    developerName: 80, category: 120
+  })) {
+    const value = listing[field];
+    if (typeof value !== "string" || !value.trim() || [...value].length > limit) {
+      throw new Error(`Submission interface.${field} must contain 1-${limit} characters.`);
+    }
+  }
+  if (!Array.isArray(listing.capabilities) || listing.capabilities.length > 20 ||
+      listing.capabilities.some((value) => typeof value !== "string" || !value.trim() || [...value].length > 120)) {
+    throw new Error("Invalid submission capabilities.");
+  }
+  const prompts = typeof listing.defaultPrompt === "string" ? [listing.defaultPrompt] : listing.defaultPrompt;
+  if (prompts && (!Array.isArray(prompts) || prompts.length > 3 ||
+      prompts.some((value) => typeof value !== "string" || !value.trim() || [...value].length > 128))) {
+    throw new Error("Submission starter prompts must contain at most three prompts of 1-128 characters.");
+  }
+  const onboarding = manifest.extensions?.["com.openai"]?.onboardingSkill;
+  const referencedFiles = [listing.logo, listing.composerIcon, ...(listing.screenshots || []), onboarding];
+  for (const relPath of referencedFiles) {
+    if (typeof relPath !== "string" || !relPath.startsWith("./") || relPath.includes("\\") ||
+        path.posix.normalize(relPath.slice(2)) !== relPath.slice(2) || relPath.slice(2).startsWith("../")) {
+      throw new Error(`Invalid submission file path: ${relPath}`);
+    }
+    const resolved = path.resolve(tempPluginDir, relPath);
+    if (!resolved.startsWith(`${path.resolve(tempPluginDir)}${path.sep}`) || !fs.statSync(resolved).isFile()) {
+      throw new Error(`Submission reference is not an included file: ${relPath}`);
+    }
+  }
+  if (!/^\.\/skills\/[^/]+\/SKILL\.md$/.test(onboarding)) {
+    throw new Error("Submission onboarding must reference a packaged skill.");
+  }
+  const forbiddenNames = new Set(["mcp.json", ".mcp.json", ".app.json", "hooks.json"]);
+  const sources = walkFiles(tempPluginDir)
+    .filter((file) => !path.relative(tempPluginDir, file).split(path.sep).includes(".claude-plugin"))
+    .map((sourcePath) => {
+      const archiveName = path.relative(tempPluginDir, sourcePath).split(path.sep).join("/");
+      if (forbiddenNames.has(path.basename(sourcePath)) || archiveName.startsWith("hooks/")) {
+        throw new Error(`Skills-only submission contains unsupported wiring: ${archiveName}`);
+      }
+      return { sourcePath, archiveName,
+        mode: archiveExecutableSet.has(`plugins/apodictic/${archiveName}`) ? 0o755 : 0o644 };
+    });
+  createZipArchive(archivePath, sources);
+  const entries = new Set(listZipEntries(archivePath));
+  for (const entry of [".codex-plugin/plugin.json", "LICENSE", "PRIVACY.md", ...referencedFiles.map((file) => file.slice(2))]) {
+    if (!entries.has(entry)) throw new Error(`Missing submission archive entry: ${entry}`);
+  }
+  for (const { name, mode } of listZipEntryMetadata(archivePath)) {
+    if (archiveExecutableSet.has(`plugins/apodictic/${name}`) && mode !== 0o755) {
+      throw new Error(`Submission executable mode was not preserved: ${name}`);
+    }
+  }
+}
+
 function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMappings, version, tempArchivePath) {
   const manifestPath = path.join(tempPluginDir, ".codex-plugin", "plugin.json");
   const manifest = readJson(manifestPath);
@@ -581,10 +647,12 @@ function main() {
   const wrapperMappings = buildCommandMappings();
   const workspaceDir = abs(codex.workspaceDir);
   const archivePath = abs(codex.distArchive);
+  const submissionArchivePath = abs(codex.submissionArchive);
   const tempRoot = fs.mkdtempSync(path.join(repoRoot, ".codex-build-tmp-"));
   const tempWorkspace = path.join(tempRoot, "codex");
   const tempPluginDir = path.join(tempWorkspace, "plugins", "apodictic");
   const tempArchivePath = path.join(tempRoot, path.basename(archivePath));
+  const tempSubmissionArchivePath = path.join(tempRoot, path.basename(submissionArchivePath));
 
   try {
     ensureDir(path.join(tempWorkspace, "plugins"));
@@ -598,6 +666,9 @@ function main() {
     stampGeneratedReadme(tempPluginDir, canonicalVersion);
     stampGeneratedManifest(tempPluginDir, canonicalManifest, canonicalVersion);
     generateWrapperSkills(tempPluginDir, wrapperMappings, canonicalVersion);
+    for (const file of ["LICENSE", "PRIVACY.md"]) {
+      fs.copyFileSync(abs(file), path.join(tempPluginDir, file));
+    }
     writeWorkspaceRootFiles(tempWorkspace, tempPluginDir);
     validateGeneratedWorkspace(
       tempWorkspace,
@@ -606,6 +677,7 @@ function main() {
       canonicalVersion,
       tempArchivePath
     );
+    buildSubmissionArchive(tempPluginDir, tempSubmissionArchivePath);
 
     if (selfCheck) {
       // validateGeneratedWorkspace already built + verified the workspace and
@@ -634,9 +706,12 @@ function main() {
     removePath(workspaceDir);
     fs.renameSync(tempWorkspace, workspaceDir);
     fs.copyFileSync(tempArchivePath, archivePath);
+    ensureDir(path.dirname(submissionArchivePath));
+    fs.copyFileSync(tempSubmissionArchivePath, submissionArchivePath);
 
     console.log(`Generated workspace: ${path.relative(repoRoot, workspaceDir)}`);
     console.log(`Created archive: ${path.relative(repoRoot, archivePath)}`);
+    console.log(`Created submission archive: ${path.relative(repoRoot, submissionArchivePath)}`);
   } finally {
     removePath(tempRoot);
   }
