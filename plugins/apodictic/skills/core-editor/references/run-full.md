@@ -357,14 +357,14 @@ These audits activate based on contract signals. Load the full module from the o
 
 | Audit | Module Location | Activates When |
 |---|---|---|
-| Mystery/Thriller Architecture | `references/genre/mystery-thriller-architecture.md` | Mystery or thriller in contract |
-| Horror Craft Integration | `references/genre/horror-craft.md` | Horror or horror-hybrid in contract |
-| SFF Worldbuilding Integration | `references/genre/sff-worldbuilding.md` | SF/F in contract |
-| Memoir/Creative Nonfiction | `references/genre/memoir-creative-nonfiction.md` | Memoir or personal narrative in contract |
-| Narrative Nonfiction Craft | `references/genre/narrative-nonfiction.md` | Nonfiction with narrative ambitions |
-| Historical Fiction | `references/genre/historical-fiction.md` | Historical setting (>50 years before composition) |
-| Comedy & Satire | `references/genre/comedy-satire.md` | Comedic voice or satirical intent |
-| Character Architecture (full) | `references/craft/character-architecture.md` | Truby Part 9 (moral argument) activated by Pass 5 findings or author request |
+| Mystery/Thriller Architecture | `genre-reader-audits/references/genre/mystery-thriller-architecture.md` | Mystery or thriller in contract |
+| Horror Craft Integration | `genre-reader-audits/references/genre/horror-craft.md` | Horror or horror-hybrid in contract |
+| SFF Worldbuilding Integration | `genre-reader-audits/references/genre/sff-worldbuilding.md` | SF/F in contract |
+| Memoir/Creative Nonfiction | `genre-reader-audits/references/genre/memoir-creative-nonfiction.md` | Memoir or personal narrative in contract |
+| Narrative Nonfiction Craft | `genre-reader-audits/references/genre/narrative-nonfiction.md` | Nonfiction with narrative ambitions |
+| Historical Fiction | `genre-reader-audits/references/genre/historical-fiction.md` | Historical setting (>50 years before composition) |
+| Comedy & Satire | `genre-reader-audits/references/genre/comedy-satire.md` | Comedic voice or satirical intent |
+| Character Architecture (full) | `narrative-craft-audits/references/craft/character-architecture.md` | Truby Part 9 (moral argument) activated by Pass 5 findings or author request |
 
 ### Tag Audits (cross-genre modifiers)
 
@@ -372,11 +372,11 @@ Tag audits evaluate experience-layer promises that sit on top of any genre's str
 
 | Audit | Module Location | Activates When |
 |---|---|---|
-| Erotic Content | `references/tag/erotic-content.md` | Heat level > 0 or intimate scenes present |
-| Consent Complexity | `references/tag/consent-complexity.md` | Consent narratively interrogated, power dynamics central |
-| Cozy Tag | `references/tag/cozy-tag.md` | Cozy signaling in marketing or tone |
-| Philosophical Tag | `references/tag/philosophical-tag.md` | Philosophical themes, novel of ideas |
-| Queer Romance/Erotica | `references/tag/queer-romance-erotica.md` | Queer identity central to romance/erotica |
+| Erotic Content | `genre-reader-audits/references/tag/erotic-content.md` | Heat level > 0 or intimate scenes present |
+| Consent Complexity | `genre-reader-audits/references/tag/consent-complexity.md` | Consent narratively interrogated, power dynamics central |
+| Cozy Tag | `genre-reader-audits/references/tag/cozy-tag.md` | Cozy signaling in marketing or tone |
+| Philosophical Tag | `genre-reader-audits/references/tag/philosophical-tag.md` | Philosophical themes, novel of ideas |
+| Queer Romance/Erotica | `genre-reader-audits/references/tag/queer-romance-erotica.md` | Queer identity central to romance/erotica |
 
 ### Supplementary Audit Integration Protocol
 
