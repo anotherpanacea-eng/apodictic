@@ -44,6 +44,11 @@ skill scan findings, and complete the applicable review. Skills-only plugins
 do not require MCP connection setup, MCP review test cases or an MCP demo.
 Public approval and publication are separate steps; this build performs neither.
 
+The listing's `interface.privacyPolicyURL` points to a publicly accessible GitHub
+commit permalink for the host-neutral policy included in this package. Update
+that pinned URL when the policy changes, and verify that anonymous visitors can
+read the policy and that its content matches the bundled `PRIVACY.md`.
+
 Before claiming host compatibility, install in a clean target host and exercise:
 
 1. Plain-language intake and `apodictic-start` with a short synthetic fiction draft.

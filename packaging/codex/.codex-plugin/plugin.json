@@ -40,6 +40,7 @@
       "Write"
     ],
     "websiteURL": "https://apodictic.anotherpanacea.com",
+    "privacyPolicyURL": "https://github.com/anotherpanacea-eng/apodictic/blob/0bda2c6db8b1ed733909779c0358c48637f5b8d9/PRIVACY.md",
     "defaultPrompt": [
       "Use APODICTIC to tell me what kind of manuscript help I need.",
       "Use APODICTIC to diagnose the structural problems in this draft.",

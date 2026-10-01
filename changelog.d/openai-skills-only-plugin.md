@@ -8,3 +8,5 @@ The local marketplace ZIP remains available. Listing and privacy language now
 describe fiction and argument-shaped nonfiction with host-dependent execution,
 delegation, storage, and SETEC limits. No MCP or author-operated backend is added;
 in-app compatibility and public approval remain separate from packaging checks.
+The listing also supplies a publicly accessible privacy-policy permalink that
+matches the policy bundled in the submission ZIP.
