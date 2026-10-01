@@ -4,7 +4,7 @@
 **Date:** 2026-10-01
 **Origin:** Owner-requested response to an external critique of APODICTIC's claim-and-support model; developed with Astra.
 **Depends on:** Dialectical Clarity v2.1; Argument Register & Rhetorical Stance Triage; Argument_State; output-policy severity honesty and Deficit Lock; ADR 0001's taxonomy ownership and loss-aware export boundaries.
-<!-- built-when: plugins/apodictic/skills/specialized-audits/references/craft/rhetorical-purpose.md -->
+<!-- built-when: plugins/apodictic/skills/argument-audits/references/craft/rhetorical-purpose.md -->
 
 ## Problem and intended result
 
@@ -294,6 +294,9 @@ the register/stance spec and a new ADR; nonfiction intake/router and engine;
 `dialectical-clarity.md` and a new `rhetorical-purpose.md` reference; output policy
 and synthesis; optional finding/state schemas and one owner-derived validator;
 companion/coaching/pre-draft/export adapters; independent eval fixtures and rubric.
+The planned new reference belongs under
+`plugins/apodictic/skills/argument-audits/references/craft/`, following the audit
+family split now on main; `specialized-audits` is the dispatcher, not its owner.
 Registry/derived UI changes follow normal generation and consumer compatibility
 review. SETEC remains an optional producer of declared observations, not the
 authority for assigning rhetorical-purpose findings.
