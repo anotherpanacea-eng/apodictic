@@ -40,7 +40,8 @@ the burden of proof.
 
 ## The elicitation prompt (as issued)
 
-Paste the scholar's critique (or a faithful summary) into the marked slot before issuing.
+The critique below is a ChatGPT reading of the public README and a published sample, relayed
+by the scholar on 2026-10-02 and pasted by the maintainer.
 
 ````text
 # Deep-research request: does a claim-and-support editing engine misread non-deliberative rhetoric, and what is the smallest fix?
@@ -55,7 +56,26 @@ design and the rhetorical literature, then recommend the **leanest** change that
 misdiagnoses. Extra architecture is a cost, not a deliverable.
 
 ## The critique
-[PASTE THE SCHOLAR'S CRITIQUE HERE]
+The scholar relayed this ChatGPT reading of the tool's public README and one published sample:
+
+> My read is: yes, this is substantially a liberal-rationalist model of argument, though a
+> considerably more sophisticated and self-aware one than I expected. It is not merely "logic
+> checking," and it does make some moves toward rhetorical situatedness. But those moves happen
+> inside a fairly determinate normative picture of what argument ought to be.
+>
+> The clearest evidence is its own definition of Dialectical Clarity. APODICTIC says the audit
+> maps a "claim ladder," identifies "missing warrants," checks "rhetorical fairness" by asking
+> whether the text engages the strongest version of the opposition, and flags scope drift. It
+> defines burden as what a writer has committed themselves to proving and treats stronger
+> claims as generating higher burdens. That is already much closer to Toulmin-plus-steelmanning
+> than to anything recognizably agonistic, constitutive, Burkean, Foucauldian, or even
+> Perelmanian.
+>
+> And the actual sample makes the normative machinery considerably more explicit.
+
+Note that the reading is based on public-facing documentation and a sample, not the engine's
+full rules. Part of your task is to say which of its claims are about the engine and which are
+about how the engine presents itself.
 
 ## How the engine works now (summary)
 The engine reconstructs a claim ladder (core claim C0, subclaims, warrants, evidence, scope,
@@ -84,7 +104,9 @@ witness, and exploratory rhetoric.
    is one genre among several), (b) a political claim (deliberative norms privilege some
    speakers or styles), and (c) a practical claim (the tool gives bad editorial advice on some
    texts). Which of these can a software change address, and which are disagreements to
-   acknowledge rather than fix?
+   acknowledge rather than fix? The critique names Perelman as a tradition the tool is far
+   from, although the engine cites Perelman for audience-relative reasonableness: is that a
+   real gap (e.g. no treatment of presumption, values, or loci) or a documentation gap?
 2. **Where would the current engine misfire?** For each tradition below, name the concrete
    misdiagnosis the AT table would produce, and classify it: wrong question applied, right
    question at wrong severity, or a positive success criterion the engine cannot see at all.
