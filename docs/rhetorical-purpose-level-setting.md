@@ -1,6 +1,6 @@
 # Alternative Argument Approaches — level-setting research
 
-**Status:** Level-setting research. **Prompt ready; no sources in yet.** Asks how the argument
+**Status:** Level-setting research. **1 source in; synthesis waits on at least one more.** Asks how the argument
 engine can recognize, diagnose, and coach effective approaches to argument other than the
 claim-and-support model, and what the *smallest* change to Dialectical Clarity would support
 them. Feeds a decision between the proposed spec in PR #288
@@ -32,11 +32,13 @@ last category carrying the burden of proof.
 
 | # | Model | File | Shape |
 |---|---|---|---|
-| 1 | *(pending)* | | |
+| 1 | Not recorded | `rhetorical-purpose-sources/source-1.md` | 18 approaches; lean + one narrow no-C0 schema change; proposes AT6 Relational/constitutive and an AT4 recognition extension; schema claim verified |
 
 ## Synthesis
 
-*Pending.*
+*Pending a second source.* Source 1's headline to test: everything fits AT6, an AT4
+extension, and an applicability rule, except that `Argument_State` must allow a text with no
+global C0 or global warrant verdict.
 
 ## The elicitation prompt (as issued)
 
