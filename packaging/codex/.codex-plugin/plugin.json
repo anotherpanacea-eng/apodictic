@@ -30,20 +30,22 @@
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "APODICTIC",
-    "shortDescription": "Structural developmental editing for fiction and argument-shaped nonfiction.",
-    "longDescription": "APODICTIC is a skill-first developmental editing framework for fiction and narrative nonfiction. It routes writers into diagnosis, audits, research, plot coaching, and revision planning while keeping a strict no-rewrite firewall.",
+    "displayName": "APODICTIC Development Editor",
+    "shortDescription": "Manuscript & argument editing",
+    "longDescription": "APODICTIC is a developmental editing assistant for authors and editors revising fiction and nonfiction manuscripts. Its main purpose is to turn a draft into a structural editorial assessment and a prioritized revision plan.\n\nFor fiction, it examines plot, pacing, character arcs, continuity, and the experience promised to readers. For argumentative nonfiction, it examines the central claim, supporting evidence, missing logical connections, and unanswered objections. It returns an editorial letter with prioritized findings and suggested types of revision. It diagnoses structure without rewriting the manuscript or inventing prose. Writers can also use it to organize feedback and plan revision sessions.\n\nBundled scripts support mechanical checks and annotated manuscript exports when the host can execute them. Saved-project resume requires persistent workspace files; independent pass agents require host delegation; optional SETEC measurements require a separate compatible installation. Availability depends on the host. APODICTIC has no author-operated backend.",
     "developerName": "anotherpanacea",
-    "category": "Productivity",
+    "category": "Creativity",
     "capabilities": [
-      "Interactive",
-      "Write"
+      "Manuscript analysis",
+      "Argument analysis",
+      "Revision planning"
     ],
     "websiteURL": "https://apodictic.anotherpanacea.com",
+    "privacyPolicyURL": "https://github.com/anotherpanacea-eng/apodictic/blob/0bda2c6db8b1ed733909779c0358c48637f5b8d9/PRIVACY.md",
     "defaultPrompt": [
-      "Use APODICTIC to tell me what kind of manuscript help I need.",
-      "Use APODICTIC to diagnose the structural problems in this draft.",
-      "Use APODICTIC to help me plan revisions without rewriting prose."
+      "Analyze this fiction draft for plot, pacing, and character-arc problems without rewriting it.",
+      "Review the claims, evidence, and unanswered objections in this nonfiction argument.",
+      "Turn these editorial findings into a prioritized revision plan without drafting new prose."
     ],
     "composerIcon": "./assets/apodictic-composer.svg",
     "logo": "./assets/apodictic-composer.png",
@@ -53,5 +55,10 @@
       "./assets/apodictic-screenshot-editor-letter.png"
     ],
     "brandColor": "#2B4C7E"
+  },
+  "extensions": {
+    "com.openai": {
+      "onboardingSkill": "./skills/apodictic-start/SKILL.md"
+    }
   }
 }

@@ -259,6 +259,7 @@ A few words you'll meet in the README and in your first editorial letter:
 
 ## Project Docs
 
+- [Skills-only OpenAI plugin](docs/openai-skills-only-plugin.md) — build and test the standalone directory submission ZIP, with host-dependent limitations
 - [ROADMAP.md](ROADMAP.md) — what's planned after publication
 - [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) — sources and influences (~155 works cited)
 - [CONTRIBUTING.md](CONTRIBUTING.md) — how to contribute, changelog policy
