@@ -1,6 +1,6 @@
 # Alternative Argument Approaches — level-setting research
 
-**Status:** Level-setting research. **1 source in; synthesis waits on at least one more.** Asks how the argument
+**Status:** Level-setting research. **2 sources in; synthesis below.** Asks how the argument
 engine can recognize, diagnose, and coach effective approaches to argument other than the
 claim-and-support model, and what the *smallest* change to Dialectical Clarity would support
 them. Feeds a decision between the proposed spec in PR #288
@@ -33,12 +33,62 @@ last category carrying the burden of proof.
 | # | Model | File | Shape |
 |---|---|---|---|
 | 1 | Not recorded | `rhetorical-purpose-sources/source-1.md` | 18 approaches; lean + one narrow no-C0 schema change; proposes AT6 Relational/constitutive and an AT4 recognition extension; schema claim verified |
+| 2 | Claude Opus 5.5 with web research (five passes) | `rhetorical-purpose-sources/source-2.md` (verbatim) | 19 approaches; no class D; AT6 Constitutive/relational address, AT4 mandate + attribution sub-burdens, ten finding rules; keeps C0 mandatory but typed ASSERTION/ADDRESS; strongest empirical section (O'Keefe, narrative/statistics studies) |
 
 ## Synthesis
 
-*Pending a second source.* Source 1's headline to test: everything fits AT6, an AT4
-extension, and an applicability rule, except that `Argument_State` must allow a text with no
-global C0 or global warrant verdict.
+Two sources; a third is optional. Source 2 is the same model family as the session that wrote
+this prompt, and it read only a one-line summary of Source 1, so agreement is partly
+independent, not fully.
+
+### Convergence (high confidence)
+- **Diagnosis:** the main misreadings come from asking assertion questions (warrant, strongest
+  objection, representativeness) of spans that address, witness, narrate, or commemorate.
+  Both sources reach this across every approach surveyed.
+- **Change shape:** one new row, **AT6 constitutive/relational address** (writer-confirmed,
+  AT5-style split with asserted burden at every cash-out); an **AT4 extension** so testimony
+  can seek recognition without a compulsory general lesson; and **applicability rules** that
+  switch specific questions off for confirmed span functions. An inapplicable question yields
+  no finding, not a demoted Could-Fix.
+- **Never exempt:** factual, causal, quantified, historical, attributive, and prescriptive
+  claims, wherever they sit and under any label.
+- **No general purpose architecture.** Both reject PR #288's persisted records, profiles, and
+  phases; both keep its purpose/operation/commitment distinction and matched fixtures.
+- **Document-level warrant verdict** is not computed for an address; verdicts live at
+  cash-outs.
+- **Critique:** real but narrower than "liberal-rationalist." The engine's honest position is
+  that claim-support standards apply where a text undertakes claim-support work, and the
+  documentation should say so.
+
+### Divergence: how to represent a text with no thesis
+- **Source 1:** make C0 and the global verdict optional; local claims keep their burdens.
+- **Source 2:** keep C0 mandatory and add a type, ASSERTION (default) or ADDRESS ("the text
+  asks [audience] to be / recognize / do [X]"); the global verdict records "address C0;
+  verdicts at cash-outs."
+- **Lean pick: Source 2.** It changes one field instead of making a required field optional
+  for every consumer of `Argument_State`, and it keeps CL0 able to tell a deliberate address
+  from a text that commits to nothing. Downstream modules that need a claim ladder decline an
+  ADDRESS C0 instead of inventing one.
+
+### What Source 2 adds
+Never-exempt list extended to stance triage (it cannot earn a fact or a dated prediction);
+attribution sub-burden for recorded or translated speech (Truth, Chief Joseph); disclosure
+rule for composite testimony (undisclosed composite = Must-Fix); example vs. illustration
+split; Walton's critical questions for load-bearing analogy; open letters default to
+"AT3 or AT6, confirm at intake"; four propaganda checks (ideal withdrawal, accurate facts are
+not clearance, out-group attributions carry burden, adversary/enemy line). O'Keefe's
+meta-analyses support the engine's existing norms for asserting spans.
+
+### Value ranking (both sources agree on the top)
+1. Witness/testimony. 2. Narrative cash-outs. 3. Constitutive address (AT6). Then shared
+premises/enthymeme and example vs. illustration, which are cheap false-positive cuts.
+
+### Open for the build spec
+- Trim Source 2's ten rules to the ones that change findings; several restate existing codes.
+- Decide AT6 as its own row or a declared register of AT5 (Source 2 rates this moderate).
+- Reconcile the "no finding when inapplicable" rule with the register spec's
+  every-finding-retained rule (AD2).
+- Citations: single-source items are untested; recheck any that a runtime rule leans on.
 
 ## The elicitation prompt (as issued)
 
