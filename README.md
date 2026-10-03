@@ -103,13 +103,18 @@ Pick the row for the app you'll actually run APODICTIC in — that's the only th
 
 | You're using… | Go to | Fastest path |
 |---|---|---|
+| **Claude (Cowork, claude.ai)** | [Claude plugin directory](#claude-plugin-directory) | Find APODICTIC in the plugin directory and install it |
 | **Antigravity** | [Antigravity (Native)](#antigravity-native) | Workspace Isolation — download the zip, open the folder, `/start` |
 | **Codex** | [Codex](#codex) | Download the zip, open the `codex/` folder, install from the local marketplace |
 | **ChatGPT workspace** | [ChatGPT](#chatgpt) | Ask a workspace admin to import this GitHub marketplace, then install APODICTIC |
 | **Claude Code (CLI / terminal)** | [Claude Code (CLI)](#claude-code-cli) | Two `/plugin` commands |
 | **Cowork (desktop app)** | [Cowork (Desktop App)](#cowork-desktop-app) | Add the marketplace from GitHub, then install |
 
-For Antigravity, Claude Code, and Cowork, start a fresh session and type `/start`. In Codex, run `apodictic-start`; in ChatGPT, select or mention the installed APODICTIC plugin.
+For Claude, Antigravity, Claude Code, and Cowork, start a fresh session and type `/start`. In Codex, run `apodictic-start`; in ChatGPT, select or mention the installed APODICTIC plugin.
+
+### Claude plugin directory
+
+APODICTIC is listed in the Claude plugin directory. In Claude, open **Customize**, browse the plugin directory, search for **APODICTIC**, and install it. Then start a fresh session and type `/start`. The marketplace routes below still work if you prefer them.
 
 ### Antigravity (Native)
 

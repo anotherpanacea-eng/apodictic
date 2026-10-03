@@ -6,29 +6,18 @@
 
 ## Board
 
-*Reconciled 2026-07-14 against git tags, the current release changelog, benchmark handoffs, and `fleet_inventory.py`: shipped capability lanes moved to Done; In Progress / Planned list only genuinely-open work. Git tags and the release changelog remain authoritative.*
+*Reset 2026-09-29, after APODICTIC was accepted into the Claude plugin directory. Order confirmed by the maintainer. Shipped history lives in [`CHANGELOG.md`](CHANGELOG.md) and [GitHub Releases](https://github.com/anotherpanacea-eng/apodictic/releases), not here.*
 
-| In Progress | Planned | Done | Backlog |
-|-------------|---------|------|---------|
-| [Argument Benchmark Suite](#benchmark-suite) | [Multi-Party Intake](#multi-party-intake) | **v2.10.0** · **v2.9.0** · **v2.8.0** · **v2.7.0** · **v2.6.2** · **v2.6.1** · **v2.6.0** | [Model-Capacity Exploitation M2–M3](#model-capacity-exploitation) |
-| [Validation & External Evidence](#validation--external-evidence) | [Coaching Deepening](#coaching-deepening) | [**v2.4.0**](#v240--argument-engine-calibration-command-trim--legal-risk-wiring) | [Research / API Reliability Layer](#research--api-reliability-layer) *(M1 built; follow-ons deferred)* |
-| | [Genre Audit Expansion](#genre--audit-expansion) | [**v2.3.1**](#v231--decoupled-ui-generation--host-bundle-distribution) | [Episode Cadence](#episode-cadence) |
-| | | [**v2.3.0**](#v230--retcon-planning-legal-risk-register--nonfiction-pre-draft) | [Collaborative Revision Coaching](#collaborative-revision-coaching) |
-| | | [**v2.2.0**](#v220--operator-modes-feedback-triage--revision-follow-through) | [Corpus-Expansion Fixtures](#deferred-corpus-expansion-candidates) |
-| | | [**v2.1.0**](#v210--runner-governed-execution--finding-lifecycle-ids) | [Horizon Capacities](#horizon-capacities) *(Tier-1 fully shipped; Tier-2 mostly deferred)* |
-| | | [**v2.0.0**](#v200--editorial-honesty--structural-integrity) | |
-| | | [v1.9.0](#v190--ai-prose-calibration-v20) | |
-| | | [v1.7.0](#v170--harness-engineering) | |
-| | | [v1.4.0](#v140--surface-hardening--writers-block) | |
-| | | [v1.3.0](#v130--nonfiction-argument-engine--genre-audits) | |
-| | | [v1.2.1](#v121--audit-sequencing--model-tags) | |
-| | | [v1.2.0](#v120--artifact-coverage) | |
-| | | [v1.1.3](#v113--coaching-deepening) · [v1.1.2](#v112--revision-coach) · [v1.1.1](#v111--series-continuity--pass-9) · [v1.1.0](#v110--token-aware-agent-usage) | |
-| | | [v1.0.9](#v109) · [v1.0.8](#v108) · [v1.0.4](#v104) · [v1.0](#v10--public-release) | |
+| # | Now | Waiting on |
+|---|-----|------------|
+| 1 | **Hosting exit.** Retire the Cloud Run site in favor of the desktop app (maintainer-private cutover checklist). | Engine tag, cutover go, user email |
+| 2 | **Desktop app installable by strangers.** In-app updater, clean-machine install test on Windows and Mac. | Updater signing key |
+| 3 | **Directory listing as the front door.** Install docs lead with the Claude plugin directory. | — |
+| 4 | **Trim before adding.** Keep this file to open work; cut CI gates that no longer protect a behavior. | — |
+| 5 | **One piece of external validation.** A blind sample ([V3](#v3--blind-demonstration)) before the editor panel. | A permissioned manuscript |
+| 6 | **Feature work, chosen by directory-user demand.** Candidates: [Multi-Party Intake](#multi-party-intake), [Genre & Audit Expansion](#genre--audit-expansion), [Coaching Deepening](#coaching-deepening). | Items 1–5 |
 
-**Now backfilled below (v2.6.0–v2.10.0):** **v2.6.0** — the Horizon Tier-1 wave (the Annotated-Manuscript deliverable + all its exports, plus the Tier-1 extraction audits); **v2.6.1** — audit carding + persona-divergence severity hardening; **v2.6.2** — override-marker SSoT hardening; **v2.7.0** — the state-seams wave (round-trip resume, finding dispositions, finding disconfirmation, synthesis re-grounding) + Multi-Session Arc Planning + the co-presence-network chart; **v2.8.0** — reviewer-anticipation, calibration-honesty, and coaching-history hardening; **v2.9.0** — the argument re-grounding foundation; **v2.10.0** — R3B benchmark scoring plus R4B/R5 completion. *(There is no v2.5.0.)*
-
-**Earlier release detail (through v2.4.0):** **v2.3.0** — Retcon Planning (revision-coaching track), the Nonfiction Pre-Draft Pathway, the Legal Risk Register, Adaptive Mode de-escalation, and the Horizon Capacities scan. **v2.3.1** — decoupled web-app UI generation and research modes 4 → 6. **v2.4.0** — Manuscript-Structure Visualizations, Beta-Reader Instrument generation, the Legal Risk Register detection layer + router wiring, the routing fork/overlay split + project addressability, the Capability Index command (command surface trimmed to 13), and the Argument-Decision (ArgScope) audit with the SETEC normalized-dispatcher integration (vendor/pin/drift-gate); the release pipeline was also decoupled from the APODICTIC-Gemini sibling. *(Earlier — v2.2.0: Editor Scaffolding + Diagnostic Vocabulary operators, Feedback Triage, Adaptive Mid-Run Mode Escalation, Finding Lifecycle IDs incr 2–3.)* **Done and folded into shipped releases:** Runner-Governed Execution (incr 1–3 + 5; incr 4 future), Finding Lifecycle IDs (incr 1–3; incr 4 future), Validator Architecture Hardening, Adaptive Mode Escalation, Editor Scaffolding, Diagnostic Vocabulary, Feedback Triage. Pre-Skill Context Compaction is resolved by platform (see below).
+**Backlog (no work planned):** [Model-Capacity Exploitation M2–M3](#model-capacity-exploitation), [Research / API Reliability Layer](#research--api-reliability-layer) follow-ons, [Episode Cadence](#episode-cadence), [Collaborative Revision Coaching](#collaborative-revision-coaching), [Corpus-Expansion Fixtures](#deferred-corpus-expansion-candidates), [Horizon Capacities](#horizon-capacities) Tier 2, and the argument and fiction benchmark panels (blocked on recruiting ≥3 editors).
 
 ---
 
@@ -684,80 +673,6 @@ The fixtures in place (F1-F4) are reusable for future model-capability reviews. 
 
 ---
 
-## Release-Readiness Review (2026-06-19)
-
-A pre-v2.5.0 review. v2.5.0 is **staged but untagged**: `plugin.json` / `marketplace.json` already
-read `2.5.0`, 11 `changelog.d/` fragments are accumulated, and the 81 unreleased commits are one
-coherent theme — the **Annotated-Manuscript deliverable + export targets** (Obsidian, HTML,
-DOCX→Google Docs). **GitHub CI for `main` is green on `ubuntu-latest` — the release is shippable.**
-The items below are hardening / showcase work the review surfaced; none blocks the tag. **Several were
-resolved in the same wave** (marked *Fixed*); the strategic items remain roadmap work.
-
-### Cross-platform gate parity (Windows dev environment) — **Fixed (this wave)**
-
-The three named CI gates all fail *locally on Windows* for environment reasons, not content — so a
-maintainer following `AGENTS.md`'s "run the real CI command first" discipline on the Windows rig gets
-spurious red, which trains reviewers to ignore the gate (the dangerous failure mode). All three are
-checkout/locale artifacts; CI is green on Linux.
-- **`validate.sh --check-all`** — 9/48 validator self-tests crash with `UnicodeDecodeError` on byte
-  `0x97` (the cp1252 em-dash): the self-test fixture writers use bare `open(..., "w")`, so on a
-  cp1252 default-locale box the fixture is written non-UTF-8 and the UTF-8 reader chokes. Confirmed:
-  `PYTHONUTF8=1 bash scripts/validate.sh --check-all` → **all 48 pass**.
-- **`release-generate.mjs --check`** — "Pattern not found for root README grouped command list": the
-  README is checked out CRLF (`core.autocrlf=true`, no `eol=lf` in `.gitattributes`) and the script's
-  `\n`-anchored regexes don't match. The raw blob is LF, so Linux CI passes.
-- **`build-codex.mjs --self-check`** — a Claude-specific-reference false positive because the
-  generated path uses Windows backslashes and the allowlist matches forward slashes.
-
-**What landed:** `* text=auto eol=lf` in `.gitattributes` (zero-renormalization — all blobs were already
-LF — and it future-proofs the byte-identical dual-script mirror against EOL drift); `encoding="utf-8"`
-pinned on all **70** text-mode fixture/output writers across the validator suite (root-cause fix, so
-`bash scripts/validate.sh --self-test-all` is **48/48 without `PYTHONUTF8`** on a cp1252 box); and a
-`path.sep`→`/` normalize before build-codex's allowlist match. After a `.gitattributes` refresh
-(`git add --renormalize .` once, post-merge), `--check-all` is green on the Windows rig. A follow-on
-(#118) then pinned `newline=""` on the **93** text-mode output writers (+ the one `os.fdopen` sidecar in
-`run_gate.py`) so a fresh build is LF on every platform — otherwise, once the fixtures are LF, a
-CRLF-on-Windows build wouldn't byte-match them.
-
-**Tracked residual (demand-gated):** `scripts/sync_setec.py`'s `Path.write_text` calls still lack
-`newline=`. It's **root-only** (not part of the byte-identical mirrored validator set) and its outputs
-are regenerated via `sync_setec.py` rather than byte-compared, so it doesn't affect any gate — fix only
-if full-tree Windows EOL determinism is ever wanted.
-
-### Input-encoding robustness — **Mostly fine; small follow-up**
-
-*Correction to the initial review, which overstated this.* The **manuscript-reading** family
-(`annotation_export.py`, `reanchor.py`, `regression_diff.py`) already catches `(OSError,
-UnicodeDecodeError)` and degrades — the user-facing path does **not** crash on a non-UTF-8 manuscript.
-The other ~18 `_read` helpers raw-crash on non-UTF-8, but they only ever read **tool-written** artifacts
-(ledgers, sidecars, letters) that are UTF-8 by construction (now doubly so, with the writers pinned). So
-the residual is a small consistency follow-up, not a confirmed user crash. The right shape is **fail-loud**
-(a clear "must be UTF-8" message naming the file), **not** the `regression_diff`-style swallow-to-`None`,
-which produces a *silent* wrong answer — the worse hazard. Demand-gated; no fixture exercises it today.
-
-### Showcase the v2.5.0 marquee deliverable — **Built (this wave)**
-
-v2.5.0's theme is the Annotated-Manuscript deliverable — "the #1 human-DE deliverable"
-(§Annotated-Manuscript Deliverable). Added [`sample-annotated-manuscript.html`](sample-annotated-manuscript.html)
-(rendered from the canonical `example-annotated-manuscript/` fixture via `annotation_export.py html` — a
-self-contained, browser-openable file with severity-tagged, bidirectionally-linked margin findings) and a
-"See It in Action" entry linking it on GitHub Pages, beside the letter / audit / pre-writing samples.
-
-### Repo-browsable version history — **Partly fixed (this wave)**
-
-The "Done" section is **backfilled** with v2.3.0 / v2.3.1 / v2.4.0 (shipped tags that had no entry), so the
-in-repo history is complete through the current release. Still open as a deliberate choice: whether to
-**commit the assembled `CHANGELOG.md`** at release (history in-repo) rather than only in `changelog.d/`
-fragments + GitHub Releases. (For reference, the suite was **48 validators** at this review; it is 83 as of 2026-09; `registry-check`'s
-"43" is the separate signal-emitting-audit count.)
-
-### README host-positioning — **Fixed (this wave)**
-
-The install routing table listed Claude Code (CLI) and Cowork as first-class rows while the section header
-called them "legacy host flow." Dropped the contradictory "legacy" framing (header + body) so the headers
-agree with the table; ordering unchanged (Antigravity / Codex still lead). *If the intent was to actively
-de-emphasize Claude Code / Cowork, re-add an explicit note — this fix only removed the contradiction.*
-
 ### Toward "truly great" (strategic) — **Planned**
 
 Beyond hardening: the framework is a deep *diagnostic* instrument, and the highest-value next moves are
@@ -793,83 +708,4 @@ remarkable to indispensable:
 
 ## Done
 
-### v2.10.0 — Argument-Regrounding Completion
-Completes the R2–R5 descent begun in v2.9.0: **R3B §4** adds the deterministic, offline AGD scan↔audit agreement benchmark over 20 committed manifests; **R4B** migrates Warrant-recoverability to Bridge-recoverability, advances the crosswalk's concept layer, and adds a loss-aware, one-way AIF-Core export; **R5** records the ClaimLicense↔Toulmin relationship as a docs-only cross-level analogy. Review folds harden AIF source closure, canonical serialization, and loss disclosure. Released 2026-07-13.
-
-### v2.9.0 — Argument-Regrounding Foundation
-Establishes the shared argument-model foundation: the warrant verdict / premise-plausibility split, reliability-as-license ledger and audited Krippendorff's-α utility, R2 typed warrant-defeaters, R3A's functional AGD Move Audit, R3B's neutral Voiceprint scan consumer seam, and R4A's layer-boundary ADR plus machine-readable taxonomy crosswalk. Released 2026-07-12.
-
-### v2.8.0 — Reviewer-Anticipation, Calibration Honesty & Coaching-History Hardening
-Adds genre-layer reviewer anticipation, the cross-surface calibration-honesty guard, and opt-in local coaching-history with deletion and anti-fabrication hardening. Released 2026-07-07.
-
-### v2.7.0 — State-Seams Wave, Multi-Session Arc Planning & Co-Presence Network
-Additive; no command/API break. The **state-seams wave** hardens the diagnose⇄revise loop's seams. **One-click round-trip resume** surfaces at `/start`'s `revising` + `diagnosed` nodes (Increment 1) with a `reanchor.py` disposition gate (RT1–RT4 + W1, Increment 2). **Finding dispositions** — a declined/deferred overlay that is explicitly *not* a lifecycle state (anti-laundering by construction: no disposition can improve on a declined Must-Fix), with a marker-grammar SSoT and the `disposition-check` validator. **Finding disconfirmation** — HIGH now means *survived a recorded refutation attempt* (the Step-6b Finding Disconfirmation Pass; `refutation_check.py` + three `validate.sh` arms; the refuter never sees severity or confidence — anti-anchoring). **Synthesis coverage disclosure** (M1 — the read manifest + letter coverage note + `synthesis_coverage` sidecar/validator) plus **pre-letter re-grounding** (M2 — re-read spans flip their manifest rows, so disclosure gets *better* on contact with the text). Also: **Multi-Session Revision Arc Planning** (the `revision-arc` validator + `apodictic.revision_arc.v1`, one arc per manuscript), **Manuscript-Structure Visualization chart 5** (character co-presence network — the first producer-gated chart to land), the **Validation & External Evidence** lane added to the roadmap, and the **SETEC contract re-sync** to v1.118.0. Hardening: a UnicodeDecodeError class-sweep across every OSError-only artifact reader, `specificity_floor` fail-*closed* on an unreadable required artifact, and disposition-supersedence recompute-don't-trust. Released `#166`, 2026-07-02.
-
-### v2.6.2 — Override-Marker SSoT Hardening
-Additive; no behavior change to green runs. Routes **18 validators through a single `override_marker` source-of-truth** so structured-dissent detection (the `<!-- override: … -->` path) is parsed identically everywhere instead of by per-validator regex, closing a fleet-wide substring-match class. Folds #148 review P2s: CRLF fence closing and drafted-copy backtick payloads. Released 2026-06-26.
-
-### v2.6.1 — Audit Carding & Persona-Divergence Severity Hardening
-**Registers the two genuine new specialized audits — Content Advisory + Reader-Persona Simulation — on the marketing/inventory surfaces** (`release-registry.json`) and adds the `check-inventory-parity` gate so a shipped specialized-audit reference that isn't carded (or explicitly `NOT_CARDED`) fails CI. Two Codex #146 P1 follow-ups: the `files[0]`-primary binding gate (a ref misattached as a non-primary file no longer passes coverage) and persona-divergence **D3 severity equality**, including the Timeline-anchor path where an asserted Must-Fix over a no-locked-severity anchor was a silent severity sink. Released 2026-06-22.
-
-### v2.6.0 — Horizon Tier-1 Wave: Annotated-Manuscript Deliverable + Extraction Audits
-The largest capability release since v2.0.0 — it completes **Horizon Capacities Tier-1**. **Annotated-Manuscript Deliverable** (the #1 human-DE deliverable): locus-anchored margin comments (Increment 1), character-precise quote anchoring + the A6 quote-integrity gate (Increment 2), letter↔margin cross-links (Increment 3), the producer that wires it into the run flow, plus **round-trip re-anchoring** and **draft-over-draft `regression-diff`**, and four render targets — Obsidian (footnotes + bidirectional wikilinks), self-contained HTML, and **DOCX with anchored Word comments that Google Docs imports natively**. **Horizon Tier-1 extraction audits:** Promise-Contract Fidelity (#4), Reader-Persona Simulation (#5), Auto-Derived Continuity Bible (#7), Content-Advisory / Sensitivity-Surface Derivation (#8), Cross-Manuscript Author Voice/Craft Fingerprint (#9), Uncertainty-Resolution Intake Interview (#18), Interpretable Stylometric Explanation (#19, M1). **Tier-2:** the standalone Worldbuilding-Bible coherence tool (#13) and the Nonfiction Argument Engine **genre layer** for grants / academic papers / pitch decks (#11, M1). **Visualizations:** the render-only nonfiction claim ladder (chart 7). **Harness:** the Harness Contracts v2 keystone — the `schema-coverage` gate + opt-in closed-key (`additionalProperties:false`) enforcement — and the run-level **Research / API reliability layer** (M1). CI gained a version-parity gate + a weekly release-readiness nudge, and a long Codex-hardening tail across the new validators (override-marker fleet-wide, content-advisory negation scope, persona-divergence D4, intake I4). Released `#145`, 2026-06-22. *(No v2.5.0 — the wave shipped as v2.6.0.)*
-
-### v2.4.0 — Argument-Engine Calibration, Command Trim & Legal-Risk Wiring
-Additive on top of v2.3.1; no API break. **Nonfiction Argument Engine:** Dialectical Clarity classification **rule 2a** — an AT3 *recommendation* that discharges none of its comparative burden (BP5 + OB3, no funding mechanism) is not evaluable as a recommendation → **Structurally Unsound** (FM-A10, "The Uncompared Proposal"). Post-benchmark it was narrowed so that naming *any* alternative — even a strawman foil — counts as partial discharge (a Should-Fix soft spot), with an anti-gaming clause so a merely decorative foil can still be Unsound via the general evaluability test. Aligns the engine with the `policy-brief-uncompared` ground-truth key (GT7 = UNSOUND); verdict-behavior change, gated on a benchmark convergence run. **Command surface trimmed to 13** — retired `/revision-plan`, `/develop-edit`, `/diagnose`, all reachable through `/start`. **Validators:** `finding-trace` completion glob narrowed to `*_Revision_Report_*.md` so a deadline `*_Revision_Calendar_*.md` isn't mis-counted as a completion. **Legal Risk Register:** a detection layer (per-class signals + severity modifiers + ~20-code escalation-trigger taxonomy) and router wiring — `constraint:risk` offer-then-attach + a `/legal-risk` command. **Onboarding:** README install decision-aid table + a Key Terms glossary.
-
-### v2.3.1 — Decoupled UI Generation & Host-Bundle Distribution
-`release-generate.mjs` no longer reaches into the private APODICTIC-Gemini sibling to write its `App.tsx` / `LandingPage.tsx`; the app now **pulls** this repo's vendored `release-registry.json` and runs its own generator (−175 lines of dead TS-emit), fixing the silent drift when the sibling wasn't checked out at release. The generated `codex/` + `antigravity/` workspaces are **no longer committed** — a new `.github/workflows/release.yml` builds them from the canonical `plugins/` source and publishes them as release assets on `v*` tags (`apodictic-codex-marketplace.zip`, `apodictic-antigravity.zip`, `apodictic.plugin`), so install is download-and-open and the ×3 parity-churn multiplier is gone (GitHub #52, Option B). `release-verify.mjs` + CI now `--self-check` the host builds, and CI gained generator/parity gates (`release-generate --check`, both build `--self-check`s, `assemble-changelog --check`).
-
-### v2.3.0 — Retcon Planning, Legal Risk Register & Nonfiction Pre-Draft
-Captures capability that merged to `main` after the v2.2.0 release commit without a bump; additive, no command/API break. **Retcon Planning** (a `/coach` revision-coaching track) accounts for the *setup debt* a late structural decision incurs, governed by a commitment budget; planning-only (Firewall). **Legal Risk Register** flags defamation / privacy / rights-clearance exposure for work portraying identifiable real people — *flag, don't practice law*. **Nonfiction Pre-Draft Pathway** — thesis-driven pre-writing that plans the argument spine and seeds `Argument_State.md`. **Adaptive Mode Escalation: de-escalation** — steps *down* an over-provisioned mode when Tier 1 reveals a simpler manuscript (strictly conservative, never below `sequential`). Validators **23 → 35** (5 new — `retcon-plan`, `state-card-diff`, `legal-risk`, `scene-ethics`, `argument-spine` — plus self-test coverage for 7 pre-existing pure-utility validators).
-
-### v2.2.0 — Operator Modes, Feedback Triage & Revision Follow-Through
-Additive on top of v2.1.0; no command/API break. **Operators:** two output-presentation modes close the intake-router operator gaps — **Editor Scaffolding** (`operator:editor`, a superset overlay re-aiming the editorial letter at a human developmental editor: Editor Brief, What-You-Might-Have-Missed, Intervention Menu) and **Diagnostic Vocabulary** (`operator:facilitator`, a Vocabulary Guide teaching aid: grounded glossary + question-framed discussion prompts). **Workflows:** **Feedback Triage** increment 1 (sort/validate/prioritize external feedback; `apodictic.feedback_item.v1`, `/triage-feedback`). **Infrastructure:** **Adaptive Mid-Run Mode Escalation** (condition-triggered post-Tier-1 checkpoint that recommends escalating execution mode). **Harness:** **Finding Lifecycle IDs** increments 2–3 extend `finding-trace` into the revision loop (revision-plan follow-through E4/W2; revision-completion E5/W3 on an explicit `<!-- resolved: F-… -->` marker). Validators **19 → 23** (`escalation-check`, `feedback-triage`, `editor-scaffolding`, `diagnostic-vocabulary`); `--self-test-all` 23/23, `--check-all` + `release-verify` green.
-
-### v2.1.0 — Runner-Governed Execution & Finding Lifecycle IDs
-Harness Engineering: the prompt-governed → runner-governed step. **Runner-Governed Execution** lands the cooperative gate engine (increments 1–3: declarative manifest `execution-gates.v1.json` + `scripts/run_gate.py` behind `validate.sh gate <phase> <run_folder>`; sidecar `execution` state; finding-ID lifecycle) and **structured gate-event records** (increment 5): the per-phase `gates` map is replaced by an append-only `execution.gate_events[]` log (`apodictic.gate_event.v1`) with `phase`/`allowed_next`/`pending_gate`/`finding_states` as a recomputable resume pointer, a `mechanical-passed`→`--attest` attestation handshake (a `passed` clears only with `attested_items` covering its own snapshotted `attested_contract`), durable history, and safe grandfathered migration — all enforced by a new `gate-state` validator. **Finding Lifecycle IDs** increment 1 adds `finding-trace` (cross-artifact referential integrity + sidecar lifecycle coherence by `apodictic.finding.v1.id`). The **Argument Benchmark** ground-truth validator `argument-groundtruth-check` (GT1–GT7) also landed. Validators **14 → 19** (`gate`, `gate-state`, `finding-trace`, `argument-groundtruth-check`, `artifacts-schema`); `--self-test-all` 19/19. Still cooperative — external host orchestration (RGE increment 4) and revision-plan follow-through (FLI increment 2) remain future.
-
-### v2.0.0 — Editorial Honesty & Structural Integrity
-Five-phase subtraction-and-hardening pass. **Subtract:** bookkeeping moved out of the always-loaded judgment files into on-demand references (instruction floor −9.5%); `.gitattributes` collapses the generated mirrors in review. **Normalize severity:** one canonical Must-Fix/Should-Fix/Could-Fix scale with the orthogonal axes (confidence, prose tier, readiness, lens verdicts) named as not-severity, plus a 42-audit Signal-Emitting Registry enforced by `audit-signal-propagation --check-registry`. **Structured state:** real-JSON `apodictic.finding.v1` blocks + Python validator (`structured_findings.py`), required for synthesis-bound findings and mirrored into the sidecar under a triage-tally invariant. **Harden honesty (behavior change):** the Deficit Lock generation-order rule locks severities at Triage before any charity reframing, with the Distinguish / literary-exception / Stillness hatches gated so charity is legible; `honesty_check.py` drives `softness-check` (delivered-vs-locked, read from the Severity Calibration appendix) and `deficit-lock`. **Plumbing:** API exponential backoff honoring Retry-After, no-sticky-error caching, response-cache disk persistence, and full decoupling of the public release path from the private Gemini sibling; `release-verify` runs `validate.sh --check-all`. Validators 11 → 14.
-
-### v1.9.0 — AI-Prose Calibration v2.0
-Three-layer architecture extending the v1.0 audit. Layer A distributional pre-scan: variance_audit (single document), manuscript_audit (cross-chapter), repetition_audit (vocabulary diagnostic), eleven signals against personal/genre baseline with z-score band classification. Layer B named subtypes: AIC-2 Indefinite-Pronoun Gesture; AIC-7 Negation Hedge, Disguised Correctio, Pseudo-Aphorism, Manifesto Cadence. Argument-shaped nonfiction parallel set: Abstraction Shielding, False-Balance Construction, Hedge-and-Affirm, Recommendation Template, Authority Laundering. Layer C Source Triage Pass: payoff test, voice slip vs. lost callback distinction, earned-by-frame verdict. Cross-detector caveat for AIC-4 / Pangram signal-9 tension. Source-triage modifier table layered onto existing severity translation. v1.0 spec preserved verbatim — additions are integrative.
-
-### v1.7.0 — Harness Engineering
-Machine-readable sidecar state (`Diagnostic_State.meta.json`) with enumerated resume dispatch. Mechanical validation script (`validate.sh`) for contract integrity, ledger structure, artifact naming, and 14-heading synthesis section verification — bundled in plugin tree for Codex. Post-synthesis evidence spot-check (5 claims verified against manuscript). State gardening protocol (threshold-triggered archival). Enhanced `/start` resume gate with context-aware summary and state gardening trigger. Refactored `run-core.md` into three files: `run-core.md` (orchestration + pass specs), `run-synthesis.md` (audit integration, synthesis, deliverables), `state-lifecycle.md` (gardening, revision rounds). Cross-references updated across all callers.
-
-### v1.4.0 — Surface Hardening & Writer's Block
-Writer-Question Surface Hardening: command taxonomy in release-registry (11 commands with category/status/writer question), doc sync via release-generate, canonical 8-block macro map (Pass 4 → Emotional Dynamics), pass-detail artifact headers, Results Guide artifact, skill names scrubbed from user-facing copy, handoff language standardized. *(The last two — items #6/#7 in §Writer-Question Surface Hardening — were listed here at v1.4.0 but not fully closed until the 2026-07-06 scrub + convention pass; the residue is now cleared and the build-list is reconciled.)* Writer's Block & Rut-Breaking module: 8-type expanded block taxonomy (replaces 3-way split), 7 structural prompt families, 5-part firewall test, clinamen clause, perfectionism modifier, nocebo inoculation, no-prompt zones, Structural Experiment session plan section, integrated into both fiction and argument coaching.
-
-### v1.3.0 — Nonfiction Argument Engine & Genre Audits
-Nonfiction Argument Engine: Dialectical Clarity v2.0 as kernel, Argument State Schema (v0.1.1), Red Team (12 flags, Distinguish Framework), Persuasion (12 signals, audience × form calibration), Evidence Deep-Dive (10 flags, form calibration, testimony handoff), Coaching Protocol (8 tracks, stuck-point diagnosis), nonfiction routing in intake. Supernatural Horror genre audit (25 flags, 7 dimensions, 8 subgenres). Grimdark / Dark Fantasy genre audit (22 flags, 7 dimensions, 6 subgenres).
-
-### v1.2.1 — Audit Sequencing & Model Tags
-Auto-run audits as synthesis dependencies (fixes multi-story collection sequencing bug). Model-tag required in output filenames.
-
-### v1.2.0 — Artifact Coverage
-Partial Manuscript Diagnostic (six stall causes, momentum report, setup inventory). Fragment Synthesis Mode (clustering, connection mapping, candidate structure). Router gaps filled for fragments and partial drafts.
-
-### v1.1.3 — Coaching Deepening
-Guidance Without Specification stance. Stuck-point block diagnosis (expanded to 8-type taxonomy in v1.4.0). Exercise library (6 exercises). Anti-chronological revision. Pause/Paraphrase/Probe.
-
-### v1.1.2 — Revision Coach
-Fourth companion skill. Session Planning, Stuck-Point Coaching, Momentum Tracking, Deadline Coaching. Coaching firewall with drift check.
-
-### v1.1.1 — Series Continuity & Pass 9
-Cross-Volume Series Continuity Audit (5 channels, 24 flags, 7 decision tests). Pass 9 deepened (8 failure modes, semantic threading). Three-model level-setting brief.
-
-### v1.1.0 — Token-Aware Agent Usage
-Submission Readiness Workflow. Submission Triage. Context-aware single-agent execution for 1M windows.
-
-### v1.0.9
-Reception Risk Audit (17 flags, 5 channels, three-model synthesis). Voice Distinctiveness Comparison. Title/Framing Architecture. Release tooling.
-
-### v1.0.8
-Compression Audit.
-
-### v1.0.4
-Subagent Pass Orchestration (swarm mode).
-
-### v1.0 — Public Release
-Query-driven passes, intake router, scene-level handoff, command alias model, overview dashboard.
+Shipped releases are recorded in [`CHANGELOG.md`](CHANGELOG.md) and on [GitHub Releases](https://github.com/anotherpanacea-eng/apodictic/releases).
