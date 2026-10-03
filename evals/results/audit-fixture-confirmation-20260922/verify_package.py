@@ -37,12 +37,12 @@ def checked(root, name, expected):
 def frozen_source(repo, name, expected, head):
     """Return declared source bytes from the working tree, else from the frozen source head.
 
-    Later edits to a fixture or reference must not break verification of this
-    package; the hash requirement is unchanged either way.
+    Later edits, moves or deletions of a fixture or reference must not break
+    verification of this package; the hash requirement is unchanged either way.
     """
     try:
         return checked(repo, name, expected)
-    except ValueError:
+    except (ValueError, OSError):
         try:
             result = subprocess.run(['git', '-C', str(repo), 'show', head + ':' + name],
                                     stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
