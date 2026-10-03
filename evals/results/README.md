@@ -40,3 +40,10 @@ registered fixtures without copying those bytes into the package:
 ```bash
 python3 evals/results/fiction-m2a-20260714-terra-opus/verify_package.py
 ```
+
+The existing-audit fixture confirmation package at
+`audit-fixture-confirmation-20260922/` follows the same form:
+
+```bash
+python3 evals/results/audit-fixture-confirmation-20260922/verify_package.py
+```
