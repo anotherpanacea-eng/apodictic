@@ -15,7 +15,7 @@
 | 3 | **Directory listing as the front door.** Install docs lead with the Claude plugin directory. | — |
 | 4 | **Trim before adding.** Keep this file to open work; cut CI gates that no longer protect a behavior. | — |
 | 5 | **One piece of external validation.** A blind sample ([V3](#v3--blind-demonstration)) before the editor panel. | A permissioned manuscript |
-| 6 | **Feature work, chosen by directory-user demand.** Candidates: [Multi-Party Intake](#multi-party-intake), [Genre & Audit Expansion](#genre--audit-expansion), [Coaching Deepening](#coaching-deepening). | Items 1–5 |
+| 6 | **Feature work, chosen by directory-user demand.** Candidates: [Multi-Party Intake](#multi-party-intake), [Genre & Audit Expansion](#genre--audit-expansion), [Coaching Deepening](#coaching-deepening), [Rhetorical Purpose & Plural Standards](#rhetorical-purpose--plural-standards). | Items 1–5 |
 
 **Backlog (no work planned):** [Model-Capacity Exploitation M2–M3](#model-capacity-exploitation), [Research / API Reliability Layer](#research--api-reliability-layer) follow-ons, [Episode Cadence](#episode-cadence), [Collaborative Revision Coaching](#collaborative-revision-coaching), [Corpus-Expansion Fixtures](#deferred-corpus-expansion-candidates), [Horizon Capacities](#horizon-capacities) Tier 2, and the argument and fiction benchmark panels (blocked on recruiting ≥3 editors).
 
@@ -204,9 +204,43 @@ Validate that the engine works on real argument-shaped nonfiction, not just in t
 
 **Success condition:** Two serious editors using the engine independently should usually converge on the core claim, the top 1–3 structural failures, the main burden mismatch, and the strongest objection zone.
 
+### Rhetorical Purpose & Plural Standards
+
+**Status:** Planned — proposed spec; no runtime capability built.
+**Spec:** [`docs/rhetorical-purpose-pluralism-spec.md`](docs/rhetorical-purpose-pluralism-spec.md).
+**Origin:** Owner-requested response to the argument engine's implicit normative
+model, developed with Astra (2026-10-01).
+
+Support rhetorical work whose success is not exhausted by an evaluable claim
+ladder: constituting a public, bearing witness, making conflict legible, organizing
+identification, unsettling inherited categories, and exploring a lens. Confirm
+purposes with the writer; distinguish purpose, passage operation, and actual
+commitment; establish applicability before emitting findings. Factual, causal,
+representative, and consequential prescriptive commitments retain their local
+burdens wherever they occur. Report purpose achievement and local integrity
+separately; no universal rhetoric score or compulsory strongest-opponent rebuttal.
+
+**Delivery order:** P0 research and explicit amendments to current all-audits-run,
+high-stakes-register, and whole-piece-verdict assumptions; P1 constitutive + witness
+vertical slice alongside the existing deliberative baseline; P2 agonistic,
+identification, genealogical, and exploratory integration with per-profile evidence;
+P3 companion workflows, loss-aware export, and external editorial validation.
+New profiles need positive controls, hostile hybrids, false-positive guards, and
+independent assessment. Model agreement and mechanical conformance do not establish
+rhetorical correctness or actual audience uptake.
+
+**Related research, deferred:** stasis/frame disputes, burden allocation,
+rhetorical ecology, and explicitly labeled multi-frame review. See the spec for
+scope, acceptance cases, compatibility obligations, and distinguish rules.
+
 ### Design principle
 
 Treat Dialectical Clarity as the kernel, not the whole operating system. Companion modules should read `Argument_State.md` rather than rebuilding the argument from scratch.
+
+The planned purpose layer makes that principle explicit: Dialectical Clarity
+remains the kernel for applicable claim-support reasoning, while other rhetorical
+operations receive their own reviewed standards within the same shared state.
+Current runtime routing remains authoritative until those amendments are built.
 
 ---
 
