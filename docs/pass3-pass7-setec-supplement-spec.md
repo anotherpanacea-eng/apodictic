@@ -5,7 +5,7 @@ implemented" label was stale (caught in the 2026-06-19 Codex-down reconciliation
 The live implementation is in `run-full.md` §Pass 3 / §Pass 7, the intake question `run-core.md` Q14a, the
 `setec_runner.py` helper, and the §4e POV Voice Profile rows.
 **Predecessor work:** Phase 2 substrate swap + new audits, 2026-05-17 (see `project_apodictic_setec_integration.md` memory entry; `plugins/apodictic/skills/prose-measurements/scripts/setec_discovery.py` + ai_prose_* shims).
-**Required SETEC:** ≥ 1.86.0 per-surface floor, but the **effective** runtime floor is **1.114.0** (the R2 dispatcher bootstrap in `setec_discovery.py`); the vendored contract is `v1.127.0` (`setec-plugin.lock`, refreshed 2026-07-28).
+**Required SETEC:** ≥ 1.86.0 per-surface floor, but the **effective** runtime floor is **1.114.0** (the R2 dispatcher bootstrap in `setec_discovery.py`); the vendored contract is `v1.132.0` (`setec-plugin.lock` and the 15-entry vendored manifest, verified 2026-10-03).
 
 > ## ⚠️ Reconciliation note — already built (2026-06-19, Codex-down independent review)
 >
@@ -65,9 +65,9 @@ The live implementation is in `run-full.md` §Pass 3 / §Pass 7, the intake ques
 > `variance_audit --window-size` run; the heatmap is the separate rendering surface over it. So §3's
 > Pass-3 row is right to list it as an **optional advanced output**, not as a second measurement.
 >
-> **Still true, for a different reason: neither is reachable from APODICTIC yet.** Not because they
-> don't exist, but because neither is *pinned*. Both fragments still carry `consumers: []` and
-> `status: todo` with seeded `TODO` metadata, and neither carries a `json_delivery` field. Three
+> **Neither was reachable from APODICTIC at this July checkpoint.** Not because they
+> don't exist, but because neither was *pinned*. Both fragments carried `consumers: []` and
+> `status: todo` with seeded `TODO` metadata, and neither carried a `json_delivery` field. Three
 > consequences, each mechanical:
 > - `scripts/sync_setec.py` vendors an entry **iff** `"apodictic"` appears in its `consumers` list, so
 >   neither lands in `tests/setec-contract/setec-capabilities.json` (15 entries at SETEC v1.127.0).
@@ -76,14 +76,30 @@ The live implementation is in `run-full.md` §Pass 3 / §Pass 7, the intake ques
 >   `bad_input` envelope today.
 > - There are no `ai_prose_*` shims for either.
 >
-> **Follow-up (producer-side; deliberately NOT done in this doc's PR).** Pinning is a
-> `setec-voiceprint` change plus a sync run, not an APODICTIC edit: fill both seeded fragments off
-> `status: todo`, add `consumers: ['apodictic']` and `json_delivery: stdout` (+ `min_setec_version`,
-> `dependencies`), regenerate each `scripts/tests/_golden_capabilities/<id>.json` per the standing
-> per-capability convention, then run `python3 scripts/sync_setec.py` here and commit the regenerated
-> `tests/setec-contract/setec-capabilities.json` + `setec-plugin.lock`. **Do not hand-edit the lock or
-> the vendored manifest** (AGENTS.md § Fleet / cross-repo context). Until that lands, the two §3 rows
-> below are **aspirational, not stale** — the surfaces are real; the pin is missing, and §3 now says so.
+> **Delivery correction and current state — 2026-10-03.** Both direct scripts accept
+> `--json-out` sidecars, not a `--json` stdout flag. Heatmap ordinary stdout is Markdown;
+> voice drift refuses no-file stdout without an explicit public-output opt-out, and that
+> opted-out stdout is Markdown too. Do not declare `json_delivery: stdout` for either renderer
+> or bypass its private-output posture to make normalized dispatch work.
+>
+> Operator metadata curation, normalized dispatch admission and consumer pinning are separate.
+> Future normalized admission should use `json_delivery: file` only after **each** producer
+> surface's actual file-adapter input/success contract, R3 refusal categories, one-JSON delivery,
+> temporary cleanup and privacy behavior have been independently qualified. Heatmap evidence
+> does not qualify voice drift. Producer [draft #525](https://github.com/anotherpanacea-eng/setec-voiceprint/pull/525)
+> (heatmap envelope loading), [#527](https://github.com/anotherpanacea-eng/setec-voiceprint/pull/527)
+> (refusal delivery) and [#529](https://github.com/anotherpanacea-eng/setec-voiceprint/pull/529)
+> (operator metadata) remain unmerged; none establishes a released consumer surface.
+>
+> After qualification, the producer needs curated metadata, `consumers: ['apodictic']`, the
+> supported delivery declaration, dependencies and a `min_setec_version` identifying the actual
+> integrated release containing that contract, plus per-ID golden agreement. Do not invent a
+> release floor from a pending draft. Then run `python3 scripts/sync_setec.py` here and commit the
+> regenerated `tests/setec-contract/setec-capabilities.json` + `setec-plugin.lock` through the
+> normal reviewed draft/train process. **Do not hand-edit the lock or vendored manifest.**
+> The current pin is `v1.132.0` with 15 entries and neither renderer; the `v1.127.0` snapshot above
+> is historical. Until qualified admission and scripted sync land, both optional §3 rows remain
+> **aspirational**. This documentation correction does not build or admit either renderer.
 
 ---
 
