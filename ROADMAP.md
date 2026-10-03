@@ -10,7 +10,7 @@
 
 | # | Now | Waiting on |
 |---|-----|------------|
-| 1 | **Hosting exit.** Retire the Cloud Run site in favor of the desktop app ([checklist](https://github.com/anotherpanacea-eng/APODICTIC-Gemini/blob/main/docs/cloud-run-retirement-checklist.md)). | Engine tag, cutover go, user email |
+| 1 | **Hosting exit.** Retire the Cloud Run site in favor of the desktop app (maintainer-private cutover checklist). | Engine tag, cutover go, user email |
 | 2 | **Desktop app installable by strangers.** In-app updater, clean-machine install test on Windows and Mac. | Updater signing key |
 | 3 | **Directory listing as the front door.** Install docs lead with the Claude plugin directory. | — |
 | 4 | **Trim before adding.** Keep this file to open work; cut CI gates that no longer protect a behavior. | — |
