@@ -1790,8 +1790,14 @@ def _stage_c_parse_passage(
         if not match:
             _stage_c_add(findings, "PASSAGE-SPAN-GRAMMAR", f"passage {passage_id} has invalid Span")
         else:
-            first, last = int(match.group(1)), int(match.group(2))
-            if first > last:  # defensive; regex values are parsed deterministically.
+            try:
+                first, last = int(match.group(1)), int(match.group(2))
+            except ValueError:
+                _stage_c_add(findings, "PASSAGE-SPAN-GRAMMAR", f"passage {passage_id} has unrepresentable paragraph numbers")
+                first, last = None, None
+            if first is None:
+                pass
+            elif first > last:  # defensive; regex values are parsed deterministically.
                 _stage_c_add(findings, "PASSAGE-SPAN-GRAMMAR", f"passage {passage_id} reverses its span")
             else:
                 spans.append((first, last, passage_id))
@@ -1878,10 +1884,34 @@ def _stage_c_parse_violation(
     return opened, check
 
 
-def _stage_c(root: Path, state: dict, findings: list[dict]) -> None:
+def _check_passage_coverage(draft_raw: bytes | None, records: dict, mapped: set[str], spans: list[tuple[int, int, str]], findings: list[dict]) -> None:
+    """Shared mechanical paragraph coverage and REQUIRED membership checks."""
+    paragraph_count = _stage_c_paragraphs(draft_raw, findings) if draft_raw is not None else None
+    if paragraph_count == 0:
+        _stage_c_add(findings, "DRAFT-EMPTY", "draft has zero paragraph blocks")
+    if paragraph_count is not None:
+        coverage = [0] * paragraph_count
+        for first, last, passage_id in spans:
+            if first > paragraph_count or last > paragraph_count:
+                _stage_c_add(findings, "PASSAGE-SPAN-OUT-OF-RANGE", f"passage {passage_id} exceeds draft paragraph count")
+                continue
+            for paragraph in range(first, last + 1):
+                coverage[paragraph - 1] += 1
+        for number, count in enumerate(coverage, 1):
+            if count == 0:
+                _stage_c_add(findings, "PASSAGE-COVERAGE-GAP", f"draft paragraph {number} has no passage record")
+            elif count > 1:
+                _stage_c_add(findings, "PASSAGE-COVERAGE-OVERLAP", f"draft paragraph {number} belongs to multiple passage records")
+    for rid, rec in records.items():
+        if rec.get("kind") == "node" and rec.get("inclusion") == "REQUIRED" and rid not in mapped:
+            _stage_c_add(findings, "REQUIRED-NODE-UNCOVERED", "required node appears in no mapped passage", rid)
+
+
+
+def _stage_c(root: Path, state: dict, findings: list[dict], *, receipt_path: Path | None = None, draft_path: Path | None = None, graph_bytes: bytes | None = None) -> None:
     """Perform deterministic Stage C validation only; it never gives semantic approval."""
-    receipt = _inside(root, "Reconstruction_Receipt.md")
-    draft = _inside(root, "Reconstruction_Draft.md")
+    receipt = receipt_path if receipt_path is not None else _inside(root, "Reconstruction_Receipt.md")
+    draft = draft_path if draft_path is not None else _inside(root, "Reconstruction_Draft.md")
     graph = _inside(root, "Approval_Graph.md")
     try:
         draft_raw = draft.read_bytes() if draft.exists() else None
@@ -1891,7 +1921,7 @@ def _stage_c(root: Path, state: dict, findings: list[dict]) -> None:
     if draft_raw is None:
         _stage_c_add(findings, "DRAFT-MISSING", "current draft is required for acceptance")
     try:
-        graph_raw = graph.read_bytes() if graph.exists() else None
+        graph_raw = graph_bytes if graph_bytes is not None else (graph.read_bytes() if graph.exists() else None)
     except Exception as exc:
         graph_raw = None
         _stage_c_add(findings, "GRAPH-READ-FAILED", f"cannot read current graph: {exc}")
@@ -2002,29 +2032,33 @@ def _stage_c(root: Path, state: dict, findings: list[dict]) -> None:
             if line.strip() and index not in owned:
                 _stage_c_add(findings, "RECEIPT-ORPHAN-CONTENT", f"receipt body has unexpected content {line!r}")
 
-        paragraph_count = _stage_c_paragraphs(draft_raw, findings) if draft_raw is not None else None
-        if paragraph_count == 0:
-            _stage_c_add(findings, "DRAFT-EMPTY", "draft has zero paragraph blocks")
-        if paragraph_count is not None:
-            coverage = [0] * paragraph_count
-            for first, last, passage_id in spans:
-                if first > paragraph_count or last > paragraph_count:
-                    _stage_c_add(findings, "PASSAGE-SPAN-OUT-OF-RANGE", f"passage {passage_id} exceeds draft paragraph count")
-                    continue
-                for paragraph in range(first, last + 1):
-                    coverage[paragraph - 1] += 1
-            for number, count in enumerate(coverage, 1):
-                if count == 0:
-                    _stage_c_add(findings, "PASSAGE-COVERAGE-GAP", f"draft paragraph {number} has no passage record")
-                elif count > 1:
-                    _stage_c_add(findings, "PASSAGE-COVERAGE-OVERLAP", f"draft paragraph {number} belongs to multiple passage records")
-        for rid, rec in records.items():
-            if rec.get("kind") == "node" and rec.get("inclusion") == "REQUIRED" and rid not in mapped:
-                _stage_c_add(findings, "REQUIRED-NODE-UNCOVERED", "required node appears in no mapped passage", rid)
+        _check_passage_coverage(draft_raw, records, mapped, spans, findings)
 
     # This is intentionally unconditional and last: Increment 1 has no config
     # comparator, so a well-shaped recorded run can never cause a semantic PASS.
     _stage_c_add(findings, "I5-COMPARATOR-UNAVAILABLE", "structured gate configuration comparator is unavailable before Increment 4")
+
+
+def _prepare_locked(root: Path, state: dict, draft_ready: bool = True) -> tuple[list[dict], list[str]]:
+    """Existing Stage A/B checks; caller owns the project lock."""
+    findings = []; rebuilt = []; bundles = state['bundles']
+    for bundle in state["bundles"]:
+        try:
+            _check_bundle_sources(root, bundle)
+            _check_quarantine_artifact(root, bundle)
+        except ApprovalGraphError as exc:
+            findings.append(_finding(exc.code, exc.message, exc.record_id))
+    findings.extend(_check_sources(root, state))
+    try: rebuilt = _publish(root, state)
+    except Exception as exc: findings.append(_finding("PROJECTION-PUBLISH-FAILED", str(exc)))
+    if draft_ready:
+        if not bundles or not any(b["shape"] == "MINT" for b in bundles): findings.append(_finding("UNSTARTED-GRAPH", "draft-readiness requires a nonempty MINT-derived graph"))
+        if any(r["approval"] == "PENDING" for r in state["records"].values()): findings.append(_finding("PENDING-RECORDS", "all records must leave PENDING before drafting"))
+        for rid, rec in state["records"].items():
+            if rec["kind"] == "node" and rec["approval"] == "APPROVED" and rec["inclusion"] is None: findings.append(_finding("MISSING-INCLUSION", "approved node has no Inclusion", rid))
+            if rec["kind"] == "node" and rec["inclusion"] == "REQUIRED" and rid not in eligible_ids(state): findings.append(_finding("REQUIRED-BUT-WITHHELD", "required node is not eligible/current", rid))
+
+    return findings, rebuilt
 
 
 def validate_project(project: str | Path, stage: str) -> dict:
@@ -2057,21 +2091,8 @@ def validate_project(project: str | Path, stage: str) -> dict:
                 findings.append(_finding(exc.code, exc.message, exc.record_id))
                 if stage == "acceptance": findings.append(_finding("I5-COMPARATOR-UNAVAILABLE", "structured gate configuration comparator is unavailable before Increment 4"))
                 return {"verdict": "ACTION-REQUIRED", "stage": stage, "head": None, "findings": findings, "projection_rebuilt": [], "recovered_bytes": recovered}
-            for bundle in state["bundles"]:
-                try:
-                    _check_bundle_sources(root, bundle)
-                    _check_quarantine_artifact(root, bundle)
-                except ApprovalGraphError as exc:
-                    findings.append(_finding(exc.code, exc.message, exc.record_id))
-            findings.extend(_check_sources(root, state))
-            try: rebuilt = _publish(root, state)
-            except Exception as exc: findings.append(_finding("PROJECTION-PUBLISH-FAILED", str(exc)))
-            if stage in {"draft-ready", "acceptance"}:
-                if not bundles or not any(b["shape"] == "MINT" for b in bundles): findings.append(_finding("UNSTARTED-GRAPH", "draft-readiness requires a nonempty MINT-derived graph"))
-                if any(r["approval"] == "PENDING" for r in state["records"].values()): findings.append(_finding("PENDING-RECORDS", "all records must leave PENDING before drafting"))
-                for rid, rec in state["records"].items():
-                    if rec["kind"] == "node" and rec["approval"] == "APPROVED" and rec["inclusion"] is None: findings.append(_finding("MISSING-INCLUSION", "approved node has no Inclusion", rid))
-                    if rec["kind"] == "node" and rec["inclusion"] == "REQUIRED" and rid not in eligible_ids(state): findings.append(_finding("REQUIRED-BUT-WITHHELD", "required node is not eligible/current", rid))
+            prepared, rebuilt = _prepare_locked(root, state, stage in {"draft-ready", "acceptance"})
+            findings.extend(prepared)
             if stage == "acceptance": _stage_c(root, state, findings)
     except ApprovalGraphError as exc:
         findings.append(_finding(exc.code, exc.message, exc.record_id))

@@ -1971,6 +1971,20 @@ EOF
     exit 0
     ;;
 
+  argument-reconstruction-draft)
+    ARD_DIR=$(cd "$(dirname "$0")" && pwd)
+    ARD_HELPER="$ARD_DIR/reconstruction_draft.py"
+    if [ "${1:-}" = "--self-test" ]; then
+      if command -v python3 >/dev/null 2>&1 && [ -f "$ARD_HELPER" ]; then python3 "$ARD_HELPER" --self-test; exit $?; fi
+      echo "ERROR: argument-reconstruction-draft requires python3 and reconstruction_draft.py" >&2; exit 1
+    fi
+    if command -v python3 >/dev/null 2>&1 && [ -f "$ARD_HELPER" ]; then
+      python3 "$ARD_HELPER" "$@"; exit $?
+    fi
+    echo "ERROR: argument-reconstruction-draft requires python3 and reconstruction_draft.py" >&2
+    exit 1
+    ;;
+
   argument-reconstruction)
     AGR_DIR=$(cd "$(dirname "$0")" && pwd)
     AGR_HELPER="$AGR_DIR/approval_graph.py"

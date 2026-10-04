@@ -35,6 +35,13 @@ explicit author decisions. Do not start Core DE passes or generic audit output
 routing. Semantic exclusion screening remains unavailable; never override a
 blocked approval or represent this partial workflow as drafting acceptance.
 
+## Reconstruction drafting entry point
+
+For `/reconstruct`, load `references/craft/reconstruction-drafting.md`. Export
+only the eligible approved packet and invoke the supported isolated drafter.
+Follow the existing author adjudication workflow when readiness is blocked.
+Draft and receipt production requires subsequent semantic review; unavailable
+semantic screening and comparison must remain explicit.
 ## Plugin Structure
 
 This skill is the core of the APODICTIC plugin. Three companion workflows handle specialized functions:

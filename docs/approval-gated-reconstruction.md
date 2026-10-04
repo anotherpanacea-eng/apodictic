@@ -3,7 +3,7 @@
 
 *Version: 0.3.3*
 
-**Status:** Phase 0 repaired; Increment 1 built; Increment 2 mechanical workflow built (semantic screen/history retrieval pending); Increments 3–5 unbuilt
+**Status:** Phase 0 repaired; Increment 1 built; Increment 2 mechanical workflow built (semantic screen/history retrieval pending); Increment 3 packet/drafting/receipt workflow built; Increments 4–5 unbuilt
 <!-- built-when: plugins/apodictic/scripts/approval_graph.py -->
 
 *Depends on: Argument State Schema 0.2.0 or later; Dialectical Clarity v2.0*
@@ -1385,7 +1385,15 @@ complete.
 
 ---
 
-## Increment 3 execution boundary (specified, not built)
+## Increment 3 execution boundary (built)
+
+The canonical tool, isolated runtime adapter and synthetic behavioral suites
+implement this boundary. Production drafting requires Claude Code bare mode
+2.1.286 or later and explicitly configured provider credentials; unsupported
+isolation refuses before drafting. Local acceptance uses invented subprocess
+fixtures without provider calls. Successful artifact emission remains
+`ACTION-REQUIRED`: semantic judging and the Increment4 comparator are unavailable.
+
 
 Increment 3 supplies a deterministic export/emission tool and a drafting command
 owned by Core Editor. It does not implement a semantic judge or make Stage C pass.
