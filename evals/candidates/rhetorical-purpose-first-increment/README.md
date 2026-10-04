@@ -1,6 +1,6 @@
 # Rhetorical purpose: first-increment candidate deck
 
-Research-only construction draft. These original invented passages and lifecycle scenarios instantiate all eight bullets of the [roadmap spec](../../../docs/rhetorical-purpose-pluralism-spec.md#evaluation-and-acceptance-criteria). They are proposed distinctions for review, not ratified ground truth, training labels, completed P0 research, a P1 implementation, or active profiles. No evaluator runs or audience observations have occurred.
+Research-only construction draft. These original invented passages and lifecycle scenarios were built against the earlier roadmap version of the [build spec](../../../docs/rhetorical-purpose-pluralism-spec.md#acceptance). They are proposed distinctions for review, not ratified ground truth, training labels, completed P0 research, a P1 implementation, or active profiles. No evaluator runs or audience observations have occurred.
 
 Use [PROTOCOL.md](PROTOCOL.md), [inputs.md](inputs.md), and [expected.md](expected.md). An evaluator receives only one selected INPUT body and the common prompt; withhold this README, expectations, siblings, IDs, battery mapping and condition names.
 

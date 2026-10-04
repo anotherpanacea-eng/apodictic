@@ -10,7 +10,7 @@ Charland contrasts audience constitution with an assumed pre-existing audience (
 
 ## Editorial inference
 
-For the [profile](../rhetorical-purpose-pluralism-spec.md#proposed-profiles-and-distinguish-rules), map enacted membership against undertaken promises. Constituting a bounded collective does not automatically violate universal inclusion. Textual mechanisms cannot certify reception; retained factual and consequential commitments still require applicable checks.
+For the [profile](../rhetorical-purpose-pluralism-spec.md#1-at-table-dialectical-claritymd-step-1), map enacted membership against undertaken promises. Constituting a bounded collective does not automatically violate universal inclusion. Textual mechanisms cannot certify reception; retained factual and consequential commitments still require applicable checks.
 
 ## Comparison and questions
 

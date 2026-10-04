@@ -1,7 +1,6 @@
-### Rhetorical purpose planning
+### Rhetorical purpose: lean build spec
 
-Added the proposed Rhetorical Purpose & Plural Standards spec and Planned roadmap
-lane, developed with Astra. It separates confirmed purposes, passage operations,
-and local commitments, outlines constitutive/witness-first delivery, and names the
-reviewed runtime amendments and editorial evidence needed for broader profiles.
-Documentation only; no new runtime audit, schema, or validated rhetorical capability.
+Replaced the rhetorical-purpose roadmap spec with a one-increment build spec (AT6
+constitutive/relational address, AT4 attribution extension, typed C0, applicability
+rule) and revised ADR 0003 to match. Added the two-source level-setting research
+behind it. Documentation only; no runtime change yet.

@@ -1,6 +1,7 @@
 # Alternative Argument Approaches — level-setting research
 
-**Status:** Level-setting research. **2 sources in; synthesis below.** Asks how the argument
+**Status:** Level-setting research. **Complete (2 sources); decided.** The synthesis below became the lean build spec
+(`docs/rhetorical-purpose-pluralism-spec.md`) and revised ADR 0003. Asks how the argument
 engine can recognize, diagnose, and coach effective approaches to argument other than the
 claim-and-support model, and what the *smallest* change to Dialectical Clarity would support
 them. Feeds a decision between the proposed spec in PR #288
