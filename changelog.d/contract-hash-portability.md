@@ -1,6 +1,5 @@
 ### Portable contract digests
 
-Use the available `shasum` or `sha256sum` for contract digests, including Git Bash
-hosts without `shasum`. Hash literal file bytes through stdin, preserve provider
-failures, and refuse comparison of failed partial output. Existing match, drift,
-and usage outcomes remain unchanged.
+Fall back to `sha256sum` for `contract-hash` / `contract-check` when `shasum` is
+unavailable (perl-less Linux, some Git Bash installs). The file is hashed via
+stdin, so names beginning with `-` are read literally.
