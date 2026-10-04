@@ -164,3 +164,20 @@ Context: The writer labels this a policy memorandum and confirms securing a cons
 [V1] Vote next week to close the existing night clinic and redirect its entire budget to Program X. Program X will reduce deaths by 40%.
 [V2] Begin the transfer on Monday and cancel all clinic appointments immediately. There is no need to compare other ways of providing night care.
 INPUT END
+
+<a id="s0"></a>
+## S0
+INPUT START
+Context: The writer confirms this is a solidarity greeting opening a fictional Alder Court gathering, addressed to residents. It asks residents to stand with one another; it does not propose or fund a policy. No audience response is supplied.
+[W1] Welcome, neighbors. Whoever you are and however long you have lived here, you belong in this room tonight.
+[W2] When one of us is pushed out, all of us are diminished. Stand with the family beside you, and let them know they are not alone.
+INPUT END
+
+<a id="s1"></a>
+## S1
+INPUT START
+Context: The writer confirms this is a solidarity greeting opening a fictional Alder Court gathering, addressed to residents. It asks residents to stand with one another; it does not propose or fund a policy. No audience response, eviction records or program evidence are supplied.
+[W1] Welcome, neighbors. Whoever you are and however long you have lived here, you belong in this room tonight.
+[W2] When one of us is pushed out, all of us are diminished. Stand with the family beside you, and let them know they are not alone.
+[W3] This gathering will reduce neighborhood evictions by 40% within one year.
+INPUT END

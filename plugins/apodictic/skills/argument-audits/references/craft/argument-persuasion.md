@@ -63,6 +63,8 @@ This module should not re-derive the argument graph. It should interpret how tha
 
 ---
 
+**`ADDRESS` C0 guard.** When `Argument_State.md` § 2 records `C0 type: ADDRESS` (writer-confirmed AT6 or AT4 testimony; see `docs/argument-state-schema.md`), assess only the cash-out claims, and report address coherence findings from Dialectical Clarity as they stand. Do not select a subclaim to foreground; there may be none. Never invent a claim ladder, an antithesis, an inference edge, or a global WARRANTED to give the module something to work on.
+
 ## Firewall Compliance
 
 ### Allowed

@@ -35,6 +35,21 @@ Argument_State §1. High-stakes forms force `register=asserted`. In a confirmed 
 run, inventory every cash-out with a stable `CO#`; prescriptions retain asserted burden at
 that span.
 
+### Route to the Nonfiction Argument Engine as AT6 (address) when:
+
+1. the piece mainly asks readers to stand with a group, to recognize someone or something, or to
+   take up a role: a solidarity address, commemoration or tribute, pledge, dedication, welcome, or
+   acknowledgment
+2. the writer confirms it in plain words: "Is this piece mainly asking readers to stand with a
+   group, or to accept a claim?" Never ask by theory name, and never infer a writer's culture
+   from text features
+3. otherwise the default route stays in place
+
+Record `AT6` and `C0 type: ADDRESS` in Argument_State. Span functions (Dialectical Clarity
+§ Applicability and span functions) are proposed and confirmed the same way. For any text with
+quoted speech, also ask: "Does any quoted speech come to us through a recorder, translator, or
+composite?" A yes opens the AT4 attribution burden.
+
 ### Route to Narrative Nonfiction Craft when:
 
 1. the material is primarily scene-led, reportorial, or chronologically narrative
@@ -57,6 +72,7 @@ If the manuscript is Franklin Classification 3:
 | Form | Default route |
 |---|---|
 | Op-ed / persuasive essay / open letter | Dialectical Clarity |
+| Solidarity address / commemoration / pledge / dedication (writer-confirmed) | Dialectical Clarity as AT6 with an `ADDRESS` C0; offer Red Team on cash-out points only |
 | Policy brief / recommendation memo / white paper | Dialectical Clarity; offer Red Team next |
 | Testimony | Dialectical Clarity; offer Red Team next |
 | Academic argument / review essay / legal brief | Dialectical Clarity |

@@ -1,6 +1,6 @@
 # Rhetorical Purpose — Lean Build Spec
 
-**Status:** Proposed (unbuilt). Ready to build as one increment. Documentation only until then.
+**Status:** Built 2026-10-04 (PR #306). Acceptance decks updated; blind readings outstanding.
 **Date:** 2026-10-04 (replaces the 2026-10-01 roadmap version of this file; see git history).
 **Research basis:** [`rhetorical-purpose-level-setting.md`](rhetorical-purpose-level-setting.md)
 (two sources, synthesized). **Decision record:** [ADR 0003](adr/0003-rhetorical-purpose-state-boundary.md).
@@ -41,9 +41,10 @@ Add one row and extend AT4:
 | AT4 | Testimonial | "I witnessed this; recognize or consider it" | Split, as now: **observational** (low; a speaker's act or presence can discharge it for claims about capacity or standing), **interpretive** and **representative** (only where the text undertakes them; a named mandate can ground representation). New **attribution** sub-burden for recorded, translated, reconstructed, or composite speech: who spoke, who recorded, when, through what language chain. |
 | **AT6** | Constitutive / relational address | "Here is who we are and what that asks of us" or "Recognize this" | Split: **address coherence** (the collective is identifiable; its scope is stable or visibly widened; the implied reader is one the stated audience can occupy; exclusions are owned); **closure** (the text hands the reader a role or act, or marks recognition as its end); **cash-out** (every factual, causal, quantified, historical, attributive, or prescriptive sentence at asserted burden, wherever it sits). Writer-confirmed, never inferred, same as AT5. Covers solidarity addresses, commemoration and other epideictic, and pledges, dedications, and acknowledgments. |
 
-Add AT6 failure codes alongside GN0–GN2, at most three: unexplained "we" drift where a claim
-depends on the narrower scope; an implied reader the stated audience cannot occupy; closure that
-contradicts the address. Default Should-Fix.
+AT6 failures reuse existing codes rather than adding a family (as built, to keep the code
+crosswalk stable): unexplained "we" drift where a claim depends on the narrower scope is BP2 or
+CL1; an implied reader the stated audience cannot occupy is AC0 or AC2; closure that contradicts
+the address is CL1. Default Should-Fix.
 
 Change the Open Letter / Manifesto genre note from "AT3" to "AT3 or AT6; confirm at intake."
 State in the AT6 row that the grouping is functional and implies no endorsement.
@@ -68,7 +69,7 @@ defeated cash-out. An AT6 coherence failure is Should-Fix by default. Never borr
 propositional C0 to escalate.
 
 **Downstream modules** that read the claim ladder (red team, persuasion, coaching, pre-draft,
-AIF export, reconstruction): when C0 type is `ADDRESS`, operate on the cash-out claims only, or
+AIF export; reconstruction drafts from its own approved claim graph and does not read C0): when C0 type is `ADDRESS`, operate on the cash-out claims only, or
 say plainly that the module does not apply. Never invent a ladder, an antithesis, an inference
 edge, or a global WARRANTED. This is a one-paragraph guard per module reference, not an adapter
 layer.
@@ -138,21 +139,24 @@ deliberate commitment that factual and prescriptive claims carry burden in every
 - `plugins/apodictic/skills/argument-audits/references/craft/rhetorical-stance-triage.md`:
   never-exempt extension.
 - Downstream module references: one guard paragraph each (red team, persuasion,
-  revision coach argument path, nonfiction pre-draft, AIF export, reconstruction).
-- `plugins/apodictic/skills/core-editor/references/intake-router-runtime.md`: §5.
-- Parsers that enumerate warrant verdicts (`grep UNCONVENTIONAL-BUT-WARRANTED
-  plugins/apodictic/scripts`): accept the new value where they read live `Argument_State`.
-  The argument benchmark's GT7 classes are unaffected; no benchmark fixture is AT6.
+  revision coach argument path, nonfiction pre-draft, AIF export).
+- `plugins/apodictic/skills/core-editor/references/nonfiction-intake-routing.md` and the
+  lifecycle table in `intake-router-runtime.md`: §5.
+- Code parsers: `argument_crosswalk.py` (AT family count 7, union 89) with an unmapped AT6 row
+  in `evals/argument-crosswalk/crosswalk.json`; `argument_agd.py` excludes AT6 with the other
+  type labels. No parser reads live warrant verdicts outside the benchmark, whose GT7 classes
+  are unaffected; no benchmark fixture is AT6.
 - `changelog.d/` fragment; ROADMAP section status.
 
 ## Acceptance
 
-Promote the existing candidate decks rather than writing new ones:
+Reuse the existing candidate decks rather than writing new ones:
 `evals/candidates/rhetorical-purpose-first-increment/` and
-`evals/candidates/rhetorical-purpose-constitutive-controls/`. Update their `expected.md` where
+`evals/candidates/rhetorical-purpose-constitutive-controls/`. They stay candidates until the
+two-reader blind protocol runs. Update their `expected.md` where
 they assume the rejected branch design (R13–R16 in particular: legacy compatibility now means
 "`ASSERTION` default, artifact unchanged"; consumer refusal means the one-paragraph guard).
-Add the level-setting doc's matched pair:
+Add the level-setting doc's matched pair (built into the first-increment deck):
 
 - **S0**, a short solidarity greeting: `ADDRESS` C0, coherence checks, no thesis, objection,
   representativeness, or comparison finding.

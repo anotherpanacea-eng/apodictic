@@ -1,0 +1,12 @@
+### Rhetorical purpose: AT6, typed C0, applicability rule
+
+Dialectical Clarity no longer scores solidarity addresses, witness accounts, and
+commemoration as failed claim-and-support. Added AT6 (constitutive/relational address,
+writer-confirmed), an AT4 attribution burden and recognition reading, a typed C0
+(`ASSERTION | ADDRESS`) with the `ADDRESS-C0` warrant-verdict value (Argument_State
+schema 0.4.0; existing artifacts stay valid), and an applicability rule with six span
+rules: a check that does not apply to a span produces no finding. Factual, causal,
+quantified, historical, attributive, and prescriptive claims keep their burden under
+every type, span function, and stance verdict. Downstream modules guard on an
+`ADDRESS` C0, intake asks the AT6 question in plain words, and the crosswalk carries
+AT6. Includes the lean build spec, ADR 0003, and the two-source level-setting research.

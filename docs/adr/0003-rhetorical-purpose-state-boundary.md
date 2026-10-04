@@ -1,8 +1,8 @@
 # ADR 0003 — Rhetorical-purpose state boundary
 
-**Status:** Proposed · **Date:** 2026-10-04 (revised the same day after the level-setting synthesis) · **Related:** [lean build spec](../rhetorical-purpose-pluralism-spec.md), [level-setting research](../rhetorical-purpose-level-setting.md), [ADR 0001](0001-argument-layer-boundary.md), [ADR 0002](0002-approval-reconstruction-ledger-authority.md).
+**Status:** Accepted (built 2026-10-04, PR #306) · **Date:** 2026-10-04 (revised the same day after the level-setting synthesis) · **Related:** [lean build spec](../rhetorical-purpose-pluralism-spec.md), [level-setting research](../rhetorical-purpose-level-setting.md), [ADR 0001](0001-argument-layer-boundary.md), [ADR 0002](0002-approval-reconstruction-ledger-authority.md).
 
-Documentation only. This records the state and applicability decisions the build spec implements; it becomes Accepted when that build merges. The first draft of this ADR proposed a branched `Argument_State` with persisted purpose, operation, commitment, applicability, finding, and coverage records. Both level-setting sources rejected that machinery as unnecessary; the decisions below replace it.
+This records the state and applicability decisions the build spec implements. The first draft of this ADR proposed a branched `Argument_State` with persisted purpose, operation, commitment, applicability, finding, and coverage records. Both level-setting sources rejected that machinery as unnecessary; the decisions below replace it.
 
 ## Context: current obligations to amend deliberately
 

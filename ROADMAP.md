@@ -15,8 +15,7 @@
 | 3 | **Directory listing as the front door.** Install docs lead with the Claude plugin directory. | — |
 | 4 | **Trim before adding.** Keep this file to open work; cut CI gates that no longer protect a behavior. | — |
 | 5 | **One piece of external validation.** A blind sample ([V3](#v3--blind-demonstration)) before the editor panel. | A permissioned manuscript |
-| 6 | **[Rhetorical purpose, lean build](#rhetorical-purpose--plural-standards).** AT6, typed C0, applicability rule; spec ready for Codex. | — |
-| 7 | **Feature work, chosen by directory-user demand.** Candidates: [Multi-Party Intake](#multi-party-intake), [Genre & Audit Expansion](#genre--audit-expansion), [Coaching Deepening](#coaching-deepening). | Items 1–5 |
+| 6 | **Feature work, chosen by directory-user demand.** Candidates: [Multi-Party Intake](#multi-party-intake), [Genre & Audit Expansion](#genre--audit-expansion), [Coaching Deepening](#coaching-deepening). | Items 1–5 |
 
 **Backlog (no work planned):** [Model-Capacity Exploitation M2–M3](#model-capacity-exploitation), [Research / API Reliability Layer](#research--api-reliability-layer) follow-ons, [Episode Cadence](#episode-cadence), [Collaborative Revision Coaching](#collaborative-revision-coaching), [Corpus-Expansion Fixtures](#deferred-corpus-expansion-candidates), [Horizon Capacities](#horizon-capacities) Tier 2, and the argument and fiction benchmark panels (blocked on recruiting ≥3 editors).
 
@@ -209,18 +208,18 @@ Validate that the engine works on real argument-shaped nonfiction, not just in t
 
 ### Rhetorical Purpose & Plural Standards
 
-**Status:** Ready to build (one increment); maintainer expects Codex to build it.
+**Status:** Built 2026-10-04. Open: blind readings of the candidate decks.
 **Spec:** [`docs/rhetorical-purpose-pluralism-spec.md`](docs/rhetorical-purpose-pluralism-spec.md) ·
 **Decision:** [ADR 0003](docs/adr/0003-rhetorical-purpose-state-boundary.md) ·
 **Research:** [`docs/rhetorical-purpose-level-setting.md`](docs/rhetorical-purpose-level-setting.md).
 
-Stop scoring solidarity addresses, witness accounts, commemoration, and other
-non-thesis rhetoric as failed claim-and-support. Adds AT6 (constitutive/relational
+Stops scoring solidarity addresses, witness accounts, commemoration, and other
+non-thesis rhetoric as failed claim-and-support. Added AT6 (constitutive/relational
 address), an AT4 attribution and recognition extension, a typed C0
 (`ASSERTION | ADDRESS`), and an applicability rule: a check that does not apply to a
 span produces no finding. Factual, causal, quantified, and prescriptive claims keep
-their burden everywhere. Acceptance promotes the existing candidate decks under
-`evals/candidates/rhetorical-purpose-*`.
+their burden everywhere. The candidate decks under `evals/candidates/rhetorical-purpose-*`
+(including the S0/S1 matched pair) await the two-reader blind protocol.
 
 ### Design principle
 

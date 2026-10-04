@@ -10,6 +10,8 @@
 
 Capture the **argument spine** before drafting — the thesis, the claim ladder that builds to it, and the strongest opposing view it must defeat — and **seed the shared `Argument_State.md`** so the Dialectical Clarity audit and the companion modules later consume one contract. Design + lineage: [`docs/nonfiction-pre-draft.md`](../../../../docs/nonfiction-pre-draft.md).
 
+**Scope.** The spine plans a propositional argument (AT0–AT5): a thesis, a ladder, an antithesis. A constitutive or relational address (AT6, `C0 type: ADDRESS`) has no thesis or antithesis to plan, so this pathway does not apply to it. Say so plainly rather than forcing a spine; the Dialectical Clarity audit handles such texts once a draft exists.
+
 ---
 
 ## The artifact: a pre-draft `Argument_State.md`, seeded from the spine

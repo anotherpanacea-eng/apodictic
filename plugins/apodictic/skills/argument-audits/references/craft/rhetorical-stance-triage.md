@@ -10,7 +10,10 @@ rhetorical move; it never adjudicates whether the underlying claim is true.
 The writer declares or confirms the document register. `asserted` is the default;
 `generative` is never silently inferred. An intake-declared high-stakes signal forces
 `asserted` document-wide. A prescriptive/action-demanding cash-out is assessed at asserted
-burden at that span regardless of the document register.
+burden at that span regardless of the document register. The same holds for factual,
+causal, quantified, historical, and attributive claims and for dated or quantified
+predictions: no stance verdict demotes them (Dialectical Clarity span rule 1). An earned
+stance can calibrate how a move is framed; it never excuses what the move commits to.
 
 This is the argument-domain sibling of `prose-measurements/references/craft/ai-prose-calibration.md` Layer C source triage.
 Source triage adjudicates voice/craft pattern families. This triage adjudicates
