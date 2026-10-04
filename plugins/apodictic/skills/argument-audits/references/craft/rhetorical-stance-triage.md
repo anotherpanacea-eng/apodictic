@@ -50,7 +50,7 @@ judgments, never mechanically certified. The writer remains the authority.
 An earned or earned-by-frame candidate calibrates an eligible finding to Could-Fix at
 Triage. Unearned/divergent leaves severity unchanged. The committed severity is then
 locked. For an earned would-be demotion under an active high-stakes gate, record
-`calibration_effect: blocked-high-stakes`; for one joined to a prescriptive cash-out,
+`calibration_effect: blocked-high-stakes`; for one joined to any cash-out row (assertion or prescription),
 record `calibration_effect: blocked-cash-out`. Unearned/divergent records retain their
 stance and full severity without a block effect because no demotion was attempted. The
 validator proves only supplied `cash_out_ref` joins; join completeness remains an auditor

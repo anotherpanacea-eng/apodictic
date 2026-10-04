@@ -228,6 +228,13 @@ def _final_claims(sec):
             value = text[line_start + m.start(1):line_start + m.end(1)].strip()
             if not value: raise ExportError("final-claim-incomplete")
             claims["C0"], c0_seen = value, True; continue
+        m = re.fullmatch(r"C0 type:[ \t]*(.*?)[ \t]*", line)
+        if m:
+            # Schema 0.4.0 typed C0. An address has no document-level inference graph to
+            # project, so refuse it rather than export it as a proposition.
+            if m.group(1) == "ADDRESS": raise ExportError("address-c0-not-exportable")
+            if m.group(1) != "ASSERTION": raise ExportError("final-claim-type-invalid")
+            continue
         m = re.fullmatch(r"\s{2}(C\d+):[ \t]*?(.*)", line)
         if m:
             if m.group(1) in claims: raise ExportError("final-claim-duplicate")
@@ -589,6 +596,13 @@ def selftest():
         arms.append(name)
         if not condition: failures.append(name)
     obj = build_export(final.encode())
+    typed = final.replace("path\n\nSubclaims:", "path\nC0 type: ASSERTION\n\nSubclaims:")
+    check("typed ASSERTION C0 exports unchanged", build_export(typed.encode())["nodes"] == obj["nodes"])
+    for name, src in [("ADDRESS C0 refused", typed.replace("ASSERTION", "ADDRESS")),
+                      ("ADDRESS C0 without subclaims refused",
+                       "## 2. Claim Architecture\nC0 (main claim): the text asks residents to stand together\nC0 type: ADDRESS\n")]:
+        try: build_export(src.encode()); check(name, False)
+        except ExportError as exc: check(name, str(exc) == "address-c0-not-exportable")
     check("support", any(n["id"] == "i:C1.support" for n in obj["nodes"]))
     check("CA attacks RA", {"from": "s:CA:O1", "to": "s:RA:C1"} in obj["edges"])
     check("authored path", "/Users/authored/path" in canonical(obj))

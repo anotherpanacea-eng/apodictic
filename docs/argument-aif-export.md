@@ -34,7 +34,7 @@ and loss ledger, binds the export's recorded `source.artifact` basename to the
 supplied source filename, and requires byte identity; that is the only mode that
 proves loss-set completeness.
 
-**`ADDRESS` C0 guard.** When `Argument_State.md` § 2 records `C0 type: ADDRESS` (writer-confirmed AT6 or AT4 testimony; see `docs/argument-state-schema.md`), do not run the export. AIF needs an inference graph and an address has none at the document level; say that the export does not apply. Never invent a claim ladder, an antithesis, an inference edge, or a global WARRANTED to give the module something to work on.
+**`ADDRESS` C0 guard.** When `Argument_State.md` § 2 records `C0 type: ADDRESS` (writer-confirmed AT6 or AT4 testimony; see `docs/argument-state-schema.md`), do not run the export. AIF needs an inference graph and an address has none at the document level; say that the export does not apply. The exporter enforces this: it refuses such a state with `address-c0-not-exportable` (and accepts `C0 type: ASSERTION` unchanged). Never invent a claim ladder, an antithesis, an inference edge, or a global WARRANTED to give the module something to work on.
 
 ## Loss contract
 

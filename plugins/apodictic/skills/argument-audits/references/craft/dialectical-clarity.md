@@ -201,7 +201,7 @@ AT6 failures use existing codes, not a new family: unmarked "we" drift that a cl
 | **GN3** | Broken lens | The metaphor or frame contradicts its own terms when extended. | Should-Fix |
 | **GN4** | Borrowed authority unreturned | Imported technical precision does warrant work at a cash-out rather than illustrative work in the lens. | Floor at the equivalent asserted-register finding |
 
-Under `register=generative`, WR/SM/BP findings on non-cash-out spans may calibrate to Could-Fix at Triage, with the finding's register, stance, verdict, and calibration effect recorded before the Deficit Lock. Definitional migration is the method of many lens essays: CL4 fires only when the migration is concealed and spent at a cash-out. GN2/GN4 and prescriptive cash-outs retain asserted burden.
+Under `register=generative`, WR/SM/BP findings on non-cash-out spans may calibrate to Could-Fix at Triage, with the finding's register, stance, verdict, and calibration effect recorded before the Deficit Lock. Definitional migration is the method of many lens essays: CL4 fires only when the migration is concealed and spent at a cash-out. GN2/GN4 and every cash-out (assertion or prescription) retain asserted burden.
 
 **Calibration with F5:** If the Narrative Nonfiction Craft audit has already classified the piece as F5 (Argument with embedded narrative), AT-codes add precision about *what kind* of argument. F5 says "argument dominates"; AT-codes say what the argument asks the reader to do.
 

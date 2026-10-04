@@ -91,7 +91,7 @@ Fired codes: [AT-codes, AC-codes, or PASS]
 | Register confirmation | Intake / Step 1 | Yes for argument-shaped runs | Never infer `generative` silently; a high-stakes signal records `FORCED-ASSERTED` |
 | High-stakes gate | Intake / Step 1 | Yes for argument-shaped runs | `ACTIVE` forces asserted burden document-wide; the source after the dash makes the decision auditable |
 | Audience | Step 1 | Yes | Three dimensions; drives calibration in all later sections |
-| Cash-out inventory | Step 1 / Triage | Yes for AT5, AT6, an `ADDRESS` C0, or `generative`; otherwise optional | Stable `CO#` join keys. `Kind: PRESCRIPTION` is the mechanical backstop: findings joined by `cash_out_ref` cannot be demoted |
+| Cash-out inventory | Step 1 / Triage | Yes for AT5, AT6, an `ADDRESS` C0, or `generative`; otherwise optional | Stable `CO#` join keys. Every row is a protected commitment: findings joined by `cash_out_ref` cannot be demoted, whether `Kind` is `ASSERTION` or `PRESCRIPTION` |
 | Warrant verdict | Step 9 | Yes | `ADDRESS-C0 (verdicts at cash-outs)` only with an `ADDRESS` C0; each cash-out then carries its own three-way verdict. Backfilled after terminal step; may retroactively adjust codes. The inference axis (Local Relevance + Local Sufficiency); does not adjudicate premise truth |
 | Premise-plausibility flags | Step 9 | Yes | Backfilled after terminal step; the acceptability axis (Local Acceptability), surfaced as flags only — never a truth verdict, never alters the warrant verdict by itself |
 

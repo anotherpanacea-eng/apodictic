@@ -173,7 +173,7 @@ Pass-10-Class rolling artifact — it persists across runs and is diffed on re-r
 Offer these only when the writer asks, or when the letter's next steps call for them:
 
 - **`/adjudicate`** — the author approves, rejects, or revises the claims and relationships in an existing reconstruction claim graph, one decision at a time, with resumable state beside the manuscript. It records decisions; it never drafts. Semantic screening of rejections is not built yet, so a nonempty rejection set blocks new approvals (the command explains this).
-- **AIF export** — a one-way, loss-aware projection of `Argument_State.md` into the AIF-Core graph format (Toulmin-style I-nodes, RA-nodes carrying the warrant, CA-nodes for typed objections) for argument-mapping tools: plugin-bundled `scripts/validate.sh argument-aif-export <project>/Argument_State.md --state-schema 0.2.0 --out <project>/Argument_AIF.json`, then `argument-aif-check` on the output. Every construct it cannot map is listed as a named loss, never invented. The export is never read back to set findings or severities.
+- **AIF export** — a one-way, loss-aware projection of `Argument_State.md` into the AIF-Core graph format (Toulmin-style I-nodes, RA-nodes carrying the warrant, CA-nodes for typed objections) for argument-mapping tools: plugin-bundled `scripts/validate.sh argument-aif-export <project>/Argument_State.md --state-schema 0.2.0 --out <project>/Argument_AIF.json`, then `argument-aif-check` on the output. Every construct it cannot map is listed as a named loss, never invented. The export is never read back to set findings or severities. It does not apply when §2 records `C0 type: ADDRESS` (an AT6 address has no inference graph): say so instead of running it; the exporter refuses such a state with `address-c0-not-exportable`.
 
 ---
 
@@ -198,7 +198,7 @@ All core-editor QA guardrails apply (see `core-editor/SKILL.md §QA Guardrails`)
    a QA failure. Intake-declared high stakes forces `register=asserted`.
 7. **Stance verdicts classify moves, never claims.** `earned` is not evidence that a claim is true;
    `unearned` is not evidence that it is false. Calibration occurs at Triage before the Deficit Lock,
-   and prescriptive cash-outs remain at asserted burden. The shape gate validates recorded
+   and every joined cash-out (assertion or prescription) remains at asserted burden. The shape gate validates recorded
    verdicts/effects and supplied cash-out joins; the auditor still owns completeness because an
    omitted optional join or undeclared stance cannot be inferred mechanically from prose location.
 
