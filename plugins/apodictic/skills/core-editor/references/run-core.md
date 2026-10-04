@@ -606,6 +606,8 @@ Track information flow.
 
 **Output:** Reveal ledger, fairness flags.
 
+**`evidence_quote` (conditional).** When a finding is about one precise reveal, signpost, or withholding sentence, copy that complete single-line sentence verbatim as `evidence_quote` and keep the intended `evidence_refs`. Omit it for structural timing, missing clues, dropped threads, and multi-line evidence. The quote outranks the refs for placement, so copy the sentence you mean the note to sit on. See `findings-ledger-format.md` §"When to populate `evidence_quote`".
+
 **Finding-driven audit triggers:**
 - Knowledge errors (character acts on information they shouldn't have) → recommend **Decision Pressure** audit (IS channel)
 - Information timing issues affecting character decision credibility → coordinate Decision Pressure IS flags with Reveal Economy findings
