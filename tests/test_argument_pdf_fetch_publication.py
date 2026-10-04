@@ -188,12 +188,13 @@ def test_hash_command_failure_is_not_a_verified_or_unverified_success(harness, w
 
 
 def test_stage_write_failure_preserves_destination(harness):
-    # Fault injection into Bash's write builtin; no production test seam.
+    # Bash3.2 reads BASH_ENV before $0 becomes the script path. Target the
+    # cleanup subshell staging write at runtime, not nested extraction printf.
     startup = harness.root / "fail-write.sh"
     startup.write_text(
-        'case "$0" in */run.sh)\n'
-        'printf() { if [ -f /dev/fd/1 ]; then return 12; fi; builtin printf "$@"; }\n'
-        'esac\n', encoding="utf-8", newline="\n")
+        'printf() { if [ "$BASH_SUBSHELL" = 1 ] && [ "$#" = 2 ] '
+        '&& [ "$1" = "%s\\n" ]; then return 12; fi; builtin printf "$@"; }\n',
+        encoding="utf-8", newline="\n")
     result = harness.fails(BASH_ENV=shell_path(startup))
     assert "staging write failed" in result.stdout
 
