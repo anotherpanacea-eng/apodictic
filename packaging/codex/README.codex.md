@@ -6,7 +6,7 @@ AI-powered developmental editing framework for fiction, narrative nonfiction, an
 
 ## Installation
 
-The current tested Codex install path is workspace-based:
+The generated local Codex install path is workspace-based:
 
 1. From the repo root, run:
    ```bash
@@ -17,6 +17,23 @@ The current tested Codex install path is workspace-based:
 4. Start a fresh thread and run `apodictic-start`.
 
 If the plugin does not appear, make sure Codex is opened on the generated `codex/` directory, not the repo root.
+
+## OpenAI Directory Package
+
+The same build creates `dist/apodictic-openai-plugin.zip` for the OpenAI plugin
+submission portal. Its archive root is the plugin root, with skills, command
+references, scripts, schemas, and assets. The marketplace ZIP above is for local
+workspace installation; use the standalone ZIP for directory submission.
+
+This is a skills-only package. It has no MCP connection or author-operated
+backend. Start with `apodictic-start` or a plain-language manuscript intake
+request. Shell checks and exports require host execution support; independent
+pass agents require delegation; saved-project resume requires persistent file
+storage. SETEC supplements require a separate compatible installation. Hosts
+without shell execution use the documented inline checks where supported;
+they cannot record those checks as mechanically executed or promise scripted
+exports. In-app installation and workflow parity must be tested in the target
+host. See the repository's [submission guide](https://github.com/anotherpanacea-eng/apodictic/blob/main/docs/openai-skills-only-plugin.md).
 
 ## Quick Start In Codex
 
@@ -63,7 +80,7 @@ The Development Editor works like a human developmental editor: it reads a manus
 - Line edit, copyedit, or proofread
 - Replace a human developmental editor's judgment — it provides analytical scaffolding, not verdicts
 - Guarantee commercial viability, publication readiness, or literary merit
-- Add telemetry, analytics, or a server of its own. Diagnostic state stays on your local disk. The optional `apodictic-research` and citation-checking modes query public scholarly services (Crossref, OpenAlex, Semantic Scholar, Unpaywall, CORE, PubMed, and the Wayback Machine) with a DOI, title, short search query, or URL; see [PRIVACY.md](https://github.com/anotherpanacea-eng/apodictic/blob/main/PRIVACY.md)
+- Add telemetry, analytics, or a server of its own. Diagnostic state stays in your host's project workspace when persistent file tools are available. Your host provider governs its processing and storage. The optional `apodictic-research` and citation-checking modes query public scholarly services (Crossref, OpenAlex, Semantic Scholar, Unpaywall, CORE, PubMed, and the Wayback Machine) with a DOI, title, short search query, or URL; see [PRIVACY.md](./PRIVACY.md).
 
 The system diagnoses structure. The author creates content. After diagnosis, you can either stay inside APODICTIC's coaching/editor workflows or switch to a general writing session outside the diagnostic firewall.
 
@@ -140,7 +157,7 @@ Answer "complete draft" + "diagnose/fix" and the router runs intake, core passes
 apodictic-start path/to/op-ed.md
 apodictic-audit dialectical
 ```
-Answer "an argument-shaped piece" and the router sends op-eds, policy briefs, testimony, academic arguments, open letters, white papers, legal briefs, regulatory comments, and expert affidavits to the Nonfiction Argument Engine. It infers the claim, audience, burden of proof, and stakes, then writes an argument editorial letter and `Argument_State.md`, the shared argument record the companions read. After that, run the companions you need: `apodictic-audit argument-red-team` (strongest opposition), `apodictic-audit argument-persuasion` (audience fit), `apodictic-audit argument-evidence` (evidence chain), `apodictic-audit adversarial-evidence-review` (would each claim-evidence link survive a hostile expert), `apodictic-research field-recon` (counterevidence and literature gaps), and `apodictic-research citation-verifier` (do the sources exist and say what you claim). `apodictic-coach` plans the revision. No draft yet? `apodictic-pre-writing` builds the argument spine first. `apodictic-adjudicate` records your decisions on a reconstructed claim graph, and an optional AIF export turns `Argument_State.md` into a standard argument-map graph.
+Answer "an argument-shaped piece" and the router sends op-eds, policy briefs, testimony, academic arguments, open letters, white papers, legal briefs, regulatory comments, and expert affidavits to the Nonfiction Argument Engine. It infers the claim, audience, burden of proof, and stakes, then writes an argument editorial letter and `Argument_State.md`, the shared argument record the companions read. After that, run the companions you need: `apodictic-audit argument-red-team` (strongest opposition), `apodictic-audit argument-persuasion` (audience fit), `apodictic-audit argument-evidence` (evidence chain), `apodictic-audit adversarial-evidence-review` (would each claim-evidence link survive a hostile expert), `apodictic-research field-recon` (counterevidence and literature gaps), and `apodictic-research citation-verifier` (do the sources exist and say what you claim). `apodictic-coach` plans the revision. No draft yet? `apodictic-pre-writing` builds the argument spine first. `apodictic-adjudicate` records your decisions on a reconstructed claim graph, `apodictic-reconstruct` drafts from only the approved claims (production drafting needs Claude Code bare mode), and an optional AIF export turns `Argument_State.md` into a standard argument-map graph.
 
 ### Submission Readiness
 ```

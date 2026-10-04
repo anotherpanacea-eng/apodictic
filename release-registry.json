@@ -49,17 +49,18 @@
   "codex": {
     "workspaceDir": "codex",
     "distArchive": "dist/apodictic-codex-marketplace.zip",
-    "displayName": "APODICTIC",
-    "category": "Productivity",
+    "submissionArchive": "dist/apodictic-openai-plugin.zip",
+    "displayName": "APODICTIC Development Editor",
+    "category": "Creativity",
     "wrapperPrefix": "apodictic",
     "policy": {
       "installation": "AVAILABLE",
       "authentication": "ON_INSTALL"
     },
     "defaultPrompts": [
-      "Use APODICTIC to tell me what kind of manuscript help I need.",
-      "Use APODICTIC to diagnose the structural problems in this draft.",
-      "Use APODICTIC to help me plan revisions without rewriting prose."
+      "Analyze this fiction draft for plot, pacing, and character-arc problems without rewriting it.",
+      "Review the claims, evidence, and unanswered objections in this nonfiction argument.",
+      "Turn these editorial findings into a prioritized revision plan without drafting new prose."
     ],
     "overrides": {
       "packaging/codex/README.codex.md": "plugins/apodictic/README.md",
@@ -76,6 +77,7 @@
       "start": "core-editor",
       "ready": "core-editor",
       "adjudicate": "core-editor",
+      "reconstruct": "core-editor",
       "audit": "specialized-audits",
       "research": "research-verification",
       "coach": "revision-coach",
@@ -113,6 +115,7 @@
       "start": "core-editor",
       "ready": "core-editor",
       "adjudicate": "core-editor",
+      "reconstruct": "core-editor",
       "audit": "specialized-audits",
       "research": "research-verification",
       "coach": "revision-coach",
@@ -195,6 +198,14 @@
     ]
   },
   "commands": [
+    {
+      "command": "/reconstruct",
+      "category": "focused",
+      "status": "first_class_shortcut",
+      "routerEquivalent": null,
+      "writerQuestion": "How do I draft from only the claims and relationships I approved?",
+      "description": "Draft from an isolated approved packet and emit a traceable receipt; semantic screening and comparison remain pending."
+    },
     {
       "command": "/adjudicate",
       "category": "focused",

@@ -42,6 +42,7 @@ It covers two kinds of manuscript. **Fiction** gets structural passes, genre cal
 - `/triage-feedback` — sort, validate, and prioritize external (beta-reader / critique / editor) feedback.
 - `/reader-questions` — turn the diagnosis's open uncertainties into a targeted, non-leading beta-reader questionnaire.
 - `/adjudicate` — review the argument reconstruction (claim graph) and record your approve / reject / revise decisions on each claim and link; resumable.
+- `/reconstruct` — draft fresh prose from only the claims and links you approved, in an isolated drafter, with a traceable receipt (semantic review still pending).
 
 **Risk & submission**
 - `/legal-risk` — flag defamation / privacy / rights-clearance exposure for a lawyer's review (flags, never adjudicates).

@@ -1651,6 +1651,9 @@ PY
   if [ -n "$CA_RECON" ]; then
     echo "== argument-reconstruction (synthetic ledger and recovery histories) =="
     python3 "$CA_RECON/run_cases.py" --engine "$CA_SCRIPT_DIR/approval_graph.py" || CA_FAIL=1
+    echo "== argument-reconstruction-draft (packet, publication and isolated transport) =="
+    python3 "$CA_RECON/run_increment3.py" --engine "$CA_SCRIPT_DIR/reconstruction_draft.py" || CA_FAIL=1
+    python3 "$CA_RECON/run_drafter_transport.py" --engine "$CA_SCRIPT_DIR/reconstruction_drafter.py" || CA_FAIL=1
     echo ""
   elif [ -d "$CA_SCRIPT_DIR/../evals" ] || [ -d "$CA_SCRIPT_DIR/../../../evals" ]; then
     echo "FAIL: reconstruction behavioral suite missing from repository checkout"

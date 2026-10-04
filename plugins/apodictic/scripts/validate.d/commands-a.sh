@@ -1,19 +1,27 @@
 # shellcheck shell=bash
 # Sourced by ../validate.sh; not runnable on its own.
+# SHA-256 of stdin: macOS ships shasum, some Linux/Git Bash hosts only sha256sum.
+_sha256() {
+    if command -v shasum >/dev/null 2>&1; then shasum -a 256
+    elif command -v sha256sum >/dev/null 2>&1; then sha256sum
+    else echo "Error: No SHA-256 tool available (need shasum or sha256sum)." >&2; return 127
+    fi
+}
+
 case "$COMMAND" in
 
   contract-hash)
     if [ "${1:-}" = "--self-test" ]; then _selftest_contract_hash; exit $?; fi
     if [ $# -lt 1 ]; then echo "Usage: $0 contract-hash <contract_file>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
-    shasum -a 256 "$1" | awk '{print $1}'
+    _sha256 < "$1" | awk '{print $1}'
     ;;
 
   contract-check)
     if [ "${1:-}" = "--self-test" ]; then _selftest_contract_check; exit $?; fi
     if [ $# -lt 2 ]; then echo "Usage: $0 contract-check <contract_file> <expected_hash>"; exit 2; fi
     if [ ! -f "$1" ]; then echo "Error: File not found: $1" >&2; exit 2; fi
-    ACTUAL=$(shasum -a 256 "$1" | awk '{print $1}')
+    ACTUAL=$(_sha256 < "$1" | awk '{print $1}')
     if [ "$ACTUAL" = "$2" ]; then
       echo "OK: Contract unchanged."
       exit 0
