@@ -146,8 +146,14 @@ APODICTIC now has the kernel of a full nonfiction and persuasive-argument workfl
    state, records explicit head-bound author decisions and resumes after interruption.
    Nonempty exclusions block approval until compatible semantic screening exists;
    history presentation is exhaustive, not entailment retrieval. Increment 2 remains
-   partial; drafting, semantic comparison and `/ready` integration remain separate
-   Increments 3–5. No end-to-end acceptance PASS is available here.
+   partial. **Increment 3 packet/drafting/receipt workflow built:** `/reconstruct`
+   exports only eligible approved material to a supported fresh isolated drafter,
+   verifies returned maps and emits paired draft/receipt artifacts with explicit
+   unavailable semantic/comparison results. Synthetic transport and interrupted
+   publication controls make no provider calls. Production requires configured
+   Claude Code bare mode; unsupported isolation refuses. Semantic judging and
+   comparison (Increment4), and `/ready` integration (Increment5), remain unbuilt.
+   No end-to-end acceptance PASS is available here.
 
 ### Benchmark Suite
 

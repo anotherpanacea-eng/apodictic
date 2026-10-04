@@ -10,6 +10,7 @@ import re
 import sys
 
 import approval_graph as engine
+from override_marker import mask_code_spans
 
 
 @dataclass(frozen=True)
@@ -40,6 +41,66 @@ def _prepare(root):
     return state
 
 
+def _context_fields(text):
+    """Scan active section-1 field lines with root/Audience block ownership.
+
+    The shared Markdown mask owns code syntax. A positional comment mask keeps
+    section and field recognition separate from their verbatim inline values.
+    """
+    code_mask = mask_code_spans(text)
+    source = list(text)
+    comment_end = 0
+    for opener in re.finditer('<!--', code_mask):
+        if opener.start() < comment_end:
+            continue
+        closer = text.find('-->', opener.end())
+        comment_end = len(text) if closer < 0 else closer + 3
+        for index in range(opener.start(), comment_end):
+            if source[index] != '\n':
+                source[index] = ' '
+    source = ''.join(source)
+    active_lines = mask_code_spans(source).split('\n')
+    source_lines = source.split('\n')
+    root_names = ('Form', 'Goal', 'Register', 'High-stakes gate', 'Audience')
+    audience_names = ('Expertise', 'Receptivity', 'Consequence context')
+    fields, audience = {}, {}
+    section_count = 0; in_section = False; in_audience = False; audience_count = 0
+    for active, raw in zip(active_lines, source_lines):
+        if active.startswith('## '):
+            in_section = bool(re.fullmatch(r'## 1\. \S.*', active))
+            if in_section:
+                section_count += 1
+            in_audience = False
+            continue
+        if not in_section or not active.strip():
+            continue
+        indented = active.startswith((' ', '\t'))
+        if not indented:
+            in_audience = False
+        names = audience_names if in_audience and indented else root_names if not indented else ()
+        line = active.lstrip(' \t') if indented else active
+        original = raw.lstrip(' \t') if indented else raw
+        name = next((name for name in names if line == name or any(line.startswith(name + separator) for separator in (':', ' ', '\t'))), None)
+        if name is None:
+            continue
+        if name == 'Audience':
+            audience_count += 1
+            if audience_count != 1 or original.rstrip(' \t') != 'Audience:':
+                raise engine._err('CONTEXT-GRAMMAR', 'duplicate or malformed Audience block')
+            in_audience = True
+            continue
+        target = audience if in_audience else fields
+        if name in target or not original.startswith(name + ': '):
+            raise engine._err('CONTEXT-GRAMMAR', f'duplicate or malformed {name}')
+        value = original[len(name) + 2:].rstrip(' \t')
+        if not value or value != value.lstrip(' \t'):
+            raise engine._err('CONTEXT-GRAMMAR', f'empty or malformed {name}')
+        target[name] = value
+    if section_count != 1 or audience_count != 1:
+        raise engine._err('CONTEXT-GRAMMAR', 'exactly one active section 1 and Audience block required')
+    return fields, audience
+
+
 def _context(root, state):
     identity = state['context']['argument_state']
     archives = []
@@ -52,28 +113,14 @@ def _context(root, state):
     current = 1 + max(archives or [0])
     path = engine._inside(root, 'Argument_State.md' if n == current else identity + '.md')
     text = _read(path).decode('utf-8').replace('\r\n', '\n').replace('\r', '\n')
-    sections = re.findall(r'^## 1\. [^\n]+\n(.*?)(?=^## |\Z)', text, re.M | re.S)
-    if len(sections) != 1:
-        raise engine._err('CONTEXT-GRAMMAR', 'exactly one section 1 required')
-    section = sections[0]
-    audience_markers = list(re.finditer(r'^Audience:[ \t]*\n', section, re.M))
-    if len(audience_markers) != 1:
-        raise engine._err('CONTEXT-GRAMMAR', 'exactly one Audience block required')
-    audience_lines = []
-    for line in section[audience_markers[0].end():].split('\n'):
-        if line.strip() and not line.startswith((' ', '\t')):
-            break
-        audience_lines.append(line)
-    audience = '\n'.join(audience_lines)
+    fields, audience_fields = _context_fields(text)
     def field(name, optional=False, audience_field=False):
-        scope = audience if audience_field else section
-        prefix = r'^[ \t]+' if audience_field else '^'
-        values = re.findall(prefix + re.escape(name) + r': ([^\n]*)$', scope, re.M)
-        if optional and not values:
+        scope = audience_fields if audience_field else fields
+        if optional and name not in scope:
             return None
-        if len(values) != 1 or not values[0].strip() or values[0] != values[0].strip():
-            raise engine._err('CONTEXT-GRAMMAR', f'missing, duplicate or malformed {name}')
-        return values[0]
+        if name not in scope:
+            raise engine._err('CONTEXT-GRAMMAR', f'missing {name}')
+        return scope[name]
     context = {'Form': field('Form'), 'Goal': field('Goal'), 'Audience': {
         'Expertise': field('Expertise', audience_field=True), 'Receptivity': field('Receptivity', audience_field=True),
         'Consequence context': field('Consequence context', audience_field=True)}}

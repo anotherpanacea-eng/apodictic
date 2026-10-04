@@ -82,6 +82,28 @@ def run(tool):
         (root / 'Argument_State.md').write_text(context.replace('essay', 'letter'), encoding='utf-8')
         expect('PACKET-STALE', lambda: emit(root, snap, draft, mapping))
         (root / 'Argument_State.md').write_text(context, encoding='utf-8')
+        # Active structure, not examples/comments, owns context fields and headings.
+        malformed = [
+            context.replace('Form: essay', '```text\nForm: essay\n```'),
+            context.replace('Form: essay', 'Form: essay\nForm:letter'),
+            context.replace('Form: essay', '<!--\nForm: essay\n-->'),
+            context.replace('Form: essay', '~~~text\nForm: essay\n~~~'),
+            '```text\n' + context + '```\n',
+            '<!--\n' + context + '-->\n',
+            context.replace('  Expertise: GENERAL', '  Expertise: GENERAL\n  Expertise:EXPERT'),
+            context.replace('Audience:', 'Audience:invalid'),
+        ]
+        for hostile_context in malformed:
+            (root / 'Argument_State.md').write_text(hostile_context, encoding='utf-8')
+            expect('CONTEXT-GRAMMAR', lambda: tool.export_snapshot(root))
+        decorated = ('~~~text\n## 1. Decoy heading\nForm: decoy\n~~~\n<!--\n## 1. Another decoy\nForm: hidden\n-->\n' +
+                     context.replace('Goal: Describe invented lanterns.', 'Goal: Describe `invented lanterns`.').replace('Form: essay', 'Form: essay\n<!-- Form: decoy -->\n```text\nForm: decoy\n```'))
+        (root / 'Argument_State.md').write_text(decorated, encoding='utf-8')
+        decorated_packet = json.loads(tool.export_snapshot(root).packet_bytes)
+        assert decorated_packet['context']['Goal'] == 'Describe `invented lanterns`.'
+        assert decorated_packet['context']['Form'] == 'essay'
+        tests += 1
+        (root / 'Argument_State.md').write_text(context, encoding='utf-8')
         escaped_audience = context.replace('  Consequence context: LOW\n', '')
         escaped_audience = escaped_audience.replace('\n## 2.', '\nCash-out inventory:\n  Consequence context: HIGH\n\n## 2.')
         (root / 'Argument_State.md').write_text(escaped_audience, encoding='utf-8')
@@ -197,7 +219,7 @@ def run(tool):
             assert (interrupted / 'Reconstruction_Draft_v1.md').read_bytes() == originals[0]
         # The plugin distributes scripts without the repository eval tree.
         installed = base / 'installed-plugin' / 'scripts'; installed.mkdir(parents=True)
-        for name in ('approval_graph.py', 'reconstruction_draft.py'):
+        for name in ('approval_graph.py', 'reconstruction_draft.py', 'override_marker.py'):
             (installed / name).write_bytes((Path(tool.__file__).parent / name).read_bytes())
         portable = subprocess.run([sys.executable, str(installed / 'reconstruction_draft.py'), '--self-test'], capture_output=True, text=True)
         assert portable.returncode == 0, portable.stderr
