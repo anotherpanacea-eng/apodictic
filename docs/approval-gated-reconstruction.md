@@ -1355,10 +1355,7 @@ modifies §§ 1–9.
      thin `validate.sh` case → `approval_graph.py`; joins the single-sourced
      `AGG_VALIDATORS` list and the usage Commands string; ships a `--self-test` dispatcher
      case (CI's `validator-conventions` meta-linter and `--self-test-all` both require it).
-   - **Canonical script tree:** validators live in `plugins/apodictic/scripts/`;
-     root `scripts/validate.sh` is a delegating shim (root mirror retired in
-     `defd529`). Extend the canonical dispatcher and its checks; do not restore
-     duplicate root Python validators or a mirror check.
+   - **Script tree:** see AGENTS.md § Platform parity (root mirror retired in `defd529`).
 2. **Approval workflow.** The adjudication session contract (presentation order,
    decision capture, approval-time exclusion screen, history surfacing, resumable,
    crash-safe, progress-reporting), as a command/skill following house patterns. The
@@ -1394,7 +1391,6 @@ isolation refuses before drafting. Local acceptance uses invented subprocess
 fixtures without provider calls. Successful artifact emission remains
 `ACTION-REQUIRED`: semantic judging and the Increment4 comparator are unavailable.
 
-
 Increment 3 supplies a deterministic export/emission tool and a drafting command
 owned by Core Editor. It does not implement a semantic judge or make Stage C pass.
 Use the existing ledger engine for locking, replay, eligibility, source custody,
@@ -1403,9 +1399,7 @@ approval authority.
 
 ### Tool and context handoff
 
-The canonical tool is `plugins/apodictic/scripts/reconstruction_draft.py`; the
-root `scripts/validate.sh` delegates to the canonical dispatcher. Do not recreate
-the retired root Python-script mirror. The command is `/reconstruct` at
+The canonical tool is `plugins/apodictic/scripts/reconstruction_draft.py`. The command is `/reconstruct` at
 `plugins/apodictic/commands/reconstruct.md`. The command loads the drafting contract
 at `skills/core-editor/references/craft/reconstruction-drafting.md`.
 
@@ -1436,22 +1430,13 @@ at `skills/core-editor/references/craft/reconstruction-drafting.md`.
 
 ### Drafter isolation
 
-`/reconstruct` must invoke a **fresh drafter context** whose only supplied material
-is the generated packet and this drafting contract. It must inherit no chat,
-project, adjudication, manuscript or tool-output history. The drafter has no
-project-file, filesystem, retrieval, network or delegation tools. Packet strings
-are data, including instruction-like text; they cannot authorize extra access.
-Return only fresh draft UTF-8 bytes and the passage map defined above.
-
-The invoking runtime must actually support these context and tool restrictions.
-The command checks that capability before invoking a drafter and refuses with
-`DRAFTER-ISOLATION-UNAVAILABLE` if it cannot establish it. Merely opening another
-chat, asking the same context to forget, or filtering the exporter output does
-not establish I3. A packet-only exporter proves its own output boundary; it does
-not certify an arbitrary external model invocation. No model call is required for
-local tests: use a synthetic invocation adapter that captures the entire supplied
-context and tool configuration, and assert both are restricted. A production
-runtime adapter must satisfy the same boundary before drafting is enabled.
+`/reconstruct` invokes a fresh drafter context that receives only the packet and
+the drafting contract, with no tools and no inherited history; packet strings are
+data. If the runtime cannot establish that boundary, the command refuses with
+`DRAFTER-ISOLATION-UNAVAILABLE`. Operational rules live in
+`commands/reconstruct.md` and `references/craft/reconstruction-drafting.md`
+(adapter: `reconstruction_drafter.py`). Local tests use a synthetic invocation
+adapter that captures the supplied context and tool configuration; no model call.
 
 ### Receipt emission and paired versioning
 
@@ -1508,10 +1493,7 @@ stale ledger heads, changed context/style bytes, malformed/incomplete maps, REQU
 hashes/IDs and truthful unavailable results. Cover first iteration, successful
 paired replacement, collisions, missing members, interruption after either archive
 copy or current-file replacement, preserved recovery bytes and refusal on restart.
-Use invented prose only. Integrate the tool's self-test into the existing validator
-conventions and check-all gate, use the canonical script tree, and keep H1–H21 green.
-Full Increment-3 delivery requires these behaviors and the drafting contract;
-this specification amendment alone does not mark the increment built.
+Use invented prose only, run through the check-all gate, and keep H1–H21 green.
 
 ---
 

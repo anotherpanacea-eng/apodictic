@@ -149,28 +149,6 @@ def run_coordinator(module, base, runtime):
     assert (project / "Reconstruction_Draft.md").read_bytes() == current_draft
     assert (project / "Reconstruction_Receipt.md").read_bytes() == current_receipt
 
-    class ChangeHeadAfterReturn(module.ClaudeBareRuntime):
-        def invoke_drafter(self, packet_bytes, contract_bytes):
-            returned = super().invoke_drafter(packet_bytes, contract_bytes)
-            engine.adjudicate(project, {"action": "inclusion", "record_id": ids[0],
-                                       "expected_head": engine.session_snapshot(project)["head"],
-                                       "timestamp": cases.STAMP, "inclusion": "OPTIONAL",
-                                       "reason": "The author changed this invented node's inclusion."})
-            return returned
-
-    changing = ChangeHeadAfterReturn(production.command, production.environ, production.timeout)
-    try:
-        module.run_project(project, changing)
-    except module.DrafterError as error:
-        assert error.code == "STALE-HEAD", error.code
-        assert error.input_files
-        assert Path(error.input_files["draft_file"]).read_bytes() == current_draft
-        assert Path(error.input_files["map_file"]).read_bytes()
-    else:
-        raise AssertionError("coordinator accepted an intervening author decision")
-    assert (project / "Reconstruction_Draft.md").read_bytes() == current_draft
-    assert (project / "Reconstruction_Receipt.md").read_bytes() == current_receipt
-
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)

@@ -2041,23 +2041,35 @@ def _stage_c(root: Path, state: dict, findings: list[dict], *, receipt_path: Pat
 
 def _prepare_locked(root: Path, state: dict, draft_ready: bool = True) -> tuple[list[dict], list[str]]:
     """Existing Stage A/B checks; caller owns the project lock."""
-    findings = []; rebuilt = []; bundles = state['bundles']
-    for bundle in state["bundles"]:
+    findings: list[dict] = []
+    rebuilt: list[str] = []
+    bundles = state["bundles"]
+    for bundle in bundles:
         try:
             _check_bundle_sources(root, bundle)
             _check_quarantine_artifact(root, bundle)
         except ApprovalGraphError as exc:
             findings.append(_finding(exc.code, exc.message, exc.record_id))
     findings.extend(_check_sources(root, state))
-    try: rebuilt = _publish(root, state)
-    except Exception as exc: findings.append(_finding("PROJECTION-PUBLISH-FAILED", str(exc)))
-    if draft_ready:
-        if not bundles or not any(b["shape"] == "MINT" for b in bundles): findings.append(_finding("UNSTARTED-GRAPH", "draft-readiness requires a nonempty MINT-derived graph"))
-        if any(r["approval"] == "PENDING" for r in state["records"].values()): findings.append(_finding("PENDING-RECORDS", "all records must leave PENDING before drafting"))
-        for rid, rec in state["records"].items():
-            if rec["kind"] == "node" and rec["approval"] == "APPROVED" and rec["inclusion"] is None: findings.append(_finding("MISSING-INCLUSION", "approved node has no Inclusion", rid))
-            if rec["kind"] == "node" and rec["inclusion"] == "REQUIRED" and rid not in eligible_ids(state): findings.append(_finding("REQUIRED-BUT-WITHHELD", "required node is not eligible/current", rid))
-
+    try:
+        rebuilt = _publish(root, state)
+    except Exception as exc:
+        findings.append(_finding("PROJECTION-PUBLISH-FAILED", str(exc)))
+    if not draft_ready:
+        return findings, rebuilt
+    records = state["records"]
+    if not any(b["shape"] == "MINT" for b in bundles):
+        findings.append(_finding("UNSTARTED-GRAPH", "draft-readiness requires a nonempty MINT-derived graph"))
+    if any(r["approval"] == "PENDING" for r in records.values()):
+        findings.append(_finding("PENDING-RECORDS", "all records must leave PENDING before drafting"))
+    eligible = eligible_ids(state)
+    for rid, rec in records.items():
+        if rec["kind"] != "node":
+            continue
+        if rec["approval"] == "APPROVED" and rec["inclusion"] is None:
+            findings.append(_finding("MISSING-INCLUSION", "approved node has no Inclusion", rid))
+        if rec["inclusion"] == "REQUIRED" and rid not in eligible:
+            findings.append(_finding("REQUIRED-BUT-WITHHELD", "required node is not eligible/current", rid))
     return findings, rebuilt
 
 

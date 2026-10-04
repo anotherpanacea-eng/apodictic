@@ -261,7 +261,7 @@ def emit(project, draft_file, map_file, expected_count, expected_hash, expected_
 
 
 def _self_test():
-    """Portable shipped smoke test; the repository adds its broader fixture suite."""
+    """Portable shipped smoke test; check-all runs the repository fixture suite."""
     import tempfile
     with tempfile.TemporaryDirectory(prefix='reconstruction-self-test-') as td:
         base = Path(td); root = base / 'project'; root.mkdir()
@@ -285,21 +285,7 @@ def _self_test():
         assert [f['code'] for f in engine.validate_project(root, 'acceptance')['findings']] == ['I5-COMPARATOR-UNAVAILABLE']
         assert engine._receipt_identity(root / 'Reconstruction_Receipt.md')['draft_sha256'] == hashlib.sha256(draft.read_bytes()).hexdigest()
     print('reconstruction_draft portable self-test: PASS')
-    script = Path(__file__).resolve()
-    runner = script.parents[3] / 'evals/fixtures/argument-reconstruction/run_increment3.py' if len(script.parents) > 3 else None
-    if runner is None or not runner.is_file():
-        print('reconstruction_draft repository fixture suite: SKIP (not included in installed plugin)')
-        return 0
-    import runpy
-    old_argv = sys.argv; old_path = list(sys.path)
-    try:
-        sys.path.insert(0, str(runner.parent))
-        sys.argv = [str(runner), '--engine', str(script)]
-        runpy.run_path(str(runner), run_name='__main__')
-    finally:
-        sys.argv = old_argv; sys.path[:] = old_path
     return 0
-
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)

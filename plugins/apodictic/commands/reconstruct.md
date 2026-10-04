@@ -37,6 +37,8 @@ Exit code 0 means artifact production succeeded, even with ACTION-REQUIRED;
 exit code 1 reports refusal or failure. Do not retry a produced iteration merely
 because its semantic verdict is unavailable.
 Do not describe the draft as cleared, accepted, or ready for submission. Preserve
-the returned input files reported by the coordinator. If publication stops for
+the returned input files reported by the coordinator. The `Reconstruction_Input_*`
+folders it leaves in the project are kept for recovery and are safe to delete once
+the author has adjudicated that draft. If publication stops for
 recovery, show its findings and those retained locations; do not delete archives,
 repair a mixed pair by guessing, or retry an old draft after packet/head changes.
