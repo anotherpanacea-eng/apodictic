@@ -35,6 +35,25 @@ The live implementation is in `run-full.md` §Pass 3 / §Pass 7, the intake ques
 > validate the convergence-ladder severities → promote off provisional + add self-test coverage) is the
 > only real remaining work, and it's code/tests → gated on Codex. See the fleet board.
 
+> **Correction to the POV follow-up above (2026-10-03).** The all-five-pending and
+> no-self-test claims are historical and superseded. `pass-dependencies.md` §4e marks
+> the multi-pair voice-collapse + Blind-Swap-fail row as validated for **Must-Fix-floor
+> propagation**. The existing `audit-signal-propagation` self-test covers clean
+> propagation, missing-propagation refusal, and explicit synthesis-body override
+> acceptance/warning (`pov_propagated_clean`, `pov_unpropagated_errors`,
+> `pov_override_body_no_error`, `pov_override_body_warns`). These snippets assume a
+> declared Must-Fix floor; they do not establish that the editorial tier assignment
+> is correct for a manuscript.
+>
+> The other four POV rows remain **provisional editorial conventions**: the
+> single-pair Should-Fix assignment, Blind-Swap-pass Could-Fix assignment, and the
+> threshold-confidence and mapping-provenance downshifts. The current generic
+> validator supports table-driven mapped severity tiers, but these four POV-specific
+> assignments and conditions are not qualified by the existing POV assertions.
+> Their next useful evidence is live manuscript/editorial evaluation under the
+> existing permission and human-judgment gates, not mechanical fixture promotion.
+> No new validator build or promotion of those conventions follows from this note.
+
 > ## ⚠️ Correction to the note above — both surfaces exist (2026-07-27, SETEC registry verification)
 >
 > The 2026-06-19 bullet asserting that `sliding_window_heatmap` and `voice_drift_tracker` **"do not
