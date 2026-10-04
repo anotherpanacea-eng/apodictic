@@ -47,18 +47,18 @@ def _context_fields(text):
     The shared Markdown mask owns code syntax. A positional comment mask keeps
     section and field recognition separate from their verbatim inline values.
     """
-    code_mask = mask_code_spans(text)
-    source = list(text)
-    comment_end = 0
-    for opener in re.finditer('<!--', code_mask):
-        if opener.start() < comment_end:
-            continue
-        closer = text.find('-->', opener.end())
-        comment_end = len(text) if closer < 0 else closer + 3
-        for index in range(opener.start(), comment_end):
-            if source[index] != '\n':
-                source[index] = ' '
-    source = ''.join(source)
+    source = text; cursor = 0
+    while True:
+        # Recompute after each comment: fences quoted inside an HTML comment
+        # must not hide the next live comment or influence subsequent fields.
+        opener = mask_code_spans(source).find('<!--', cursor)
+        if opener < 0:
+            break
+        closer = source.find('-->', opener + 4)
+        end = len(source) if closer < 0 else closer + 3
+        blank = ''.join('\n' if char == '\n' else ' ' for char in source[opener:end])
+        source = source[:opener] + blank + source[end:]
+        cursor = end
     active_lines = mask_code_spans(source).split('\n')
     source_lines = source.split('\n')
     root_names = ('Form', 'Goal', 'Register', 'High-stakes gate', 'Audience')
@@ -93,7 +93,7 @@ def _context_fields(text):
         if name in target or not original.startswith(name + ': '):
             raise engine._err('CONTEXT-GRAMMAR', f'duplicate or malformed {name}')
         value = original[len(name) + 2:].rstrip(' \t')
-        if not value or value != value.lstrip(' \t'):
+        if not value.strip() or value != value.lstrip(' \t'):
             raise engine._err('CONTEXT-GRAMMAR', f'empty or malformed {name}')
         target[name] = value
     if section_count != 1 or audience_count != 1:

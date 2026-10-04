@@ -92,6 +92,7 @@ def run(tool):
             '<!--\n' + context + '-->\n',
             context.replace('  Expertise: GENERAL', '  Expertise: GENERAL\n  Expertise:EXPERT'),
             context.replace('Audience:', 'Audience:invalid'),
+            context.replace('Form: essay', '<!--\n```text\n-->\n<!--\nForm: essay\n-->'),
         ]
         for hostile_context in malformed:
             (root / 'Argument_State.md').write_text(hostile_context, encoding='utf-8')
