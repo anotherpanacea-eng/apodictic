@@ -30,3 +30,20 @@ reuse, endpoint eligibility, orphan/reappearance stickiness, existing-edge casca
 and both separate-process and same-process OS lock contention checks, append fsync/short-write
 outcomes, and atomic projection publication failure. Temporary project directories are removed
 after each case.
+
+## Increment 3 packet and drafting boundary
+
+Run the additional invented behavioral suites against the canonical scripts:
+
+```text
+python3 evals/fixtures/argument-reconstruction/run_increment3.py --engine plugins/apodictic/scripts/reconstruction_draft.py
+python3 evals/fixtures/argument-reconstruction/run_drafter_transport.py --engine plugins/apodictic/scripts/reconstruction_drafter.py
+```
+
+The engine cases exercise eligible packet export, bound context/style inputs,
+passage maps, stale-head/packet refusals, receipt identity and paired archive
+publication/interruption recovery. Transport cases invoke a synthetic executable
+through the production adapter and capture its actual context, environment and
+tool restrictions. They make no provider calls and do not test model fidelity.
+Existing H1–H21 remain registered. Semantic judging, calibration, the Increment4
+comparator and Increment5 `/ready` integration remain unavailable.

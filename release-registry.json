@@ -77,6 +77,7 @@
       "start": "core-editor",
       "ready": "core-editor",
       "adjudicate": "core-editor",
+      "reconstruct": "core-editor",
       "audit": "specialized-audits",
       "research": "research-verification",
       "coach": "revision-coach",
@@ -114,6 +115,7 @@
       "start": "core-editor",
       "ready": "core-editor",
       "adjudicate": "core-editor",
+      "reconstruct": "core-editor",
       "audit": "specialized-audits",
       "research": "research-verification",
       "coach": "revision-coach",
@@ -196,6 +198,14 @@
     ]
   },
   "commands": [
+    {
+      "command": "/reconstruct",
+      "category": "focused",
+      "status": "first_class_shortcut",
+      "routerEquivalent": null,
+      "writerQuestion": "How do I draft from only the claims and relationships I approved?",
+      "description": "Draft from an isolated approved packet and emit a traceable receipt; semantic screening and comparison remain pending."
+    },
     {
       "command": "/adjudicate",
       "category": "focused",
