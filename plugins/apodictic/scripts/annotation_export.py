@@ -29,7 +29,13 @@ import io
 import os
 import re
 import sys
+import tempfile
 import zipfile
+
+try:
+    import pdf_navigation as pn
+except ImportError:
+    pn = None
 
 try:
     import annotation_manifest as am
@@ -927,10 +933,58 @@ def _pdf_content(page_items):
     return "\n".join(out) + "\n"
 
 
-def build_pdf(manifest_obj, snapshot):
+def _pdf_navigation_layout(manifest_obj, snapshot):
+    """Owned emitted items/links for already gated normal-run inputs."""
+    if not isinstance(manifest_obj, dict) or not isinstance(snapshot, str):
+        raise pn.NavigationRefusal("N malformed manifest or snapshot")
+    annotations = manifest_obj.get("annotations")
+    if not isinstance(annotations, list):
+        raise pn.NavigationRefusal("N annotations must be an array")
+    if snapshot != am.normalize_snapshot(snapshot):
+        raise pn.NavigationRefusal("N snapshot must already be normalized")
+    project = manifest_obj.get("project", "Manuscript")
+    if not isinstance(project, str):
+        raise pn.NavigationRefusal("N project must be a string")
+    _, _, chap_l, sec_l = am.heading_index(snapshot)
+    nl_at, line = {}, 1
+    for position, char in enumerate(snapshot):
+        if char == "\n":
+            nl_at[line] = position
+            line += 1
+    offsets = []
+    for annotation in annotations:
+        if not isinstance(annotation, dict) or not isinstance(annotation.get("anchor"), dict):
+            raise pn.NavigationRefusal("N malformed annotation anchor")
+        anchor = annotation["anchor"]
+        kind = anchor.get("kind")
+        if not isinstance(anchor.get("value"), str) or kind not in am._ANCHOR_KINDS:
+            raise pn.NavigationRefusal("N unknown anchor kind")
+        if kind == "quote":
+            match = re.fullmatch(r"(\d+)-(\d+)", str(anchor.get("value", "")))
+            if not match:
+                raise pn.NavigationRefusal("N malformed quote offsets")
+            start, end = map(int, match.groups())
+            quote = anchor.get("quote")
+            if not isinstance(quote, str) or not quote or not 0 <= start < end <= len(snapshot) or snapshot[start:end] != quote:
+                raise pn.NavigationRefusal("N quote does not bind its source span")
+        elif kind != "document" and am.anchor_line(anchor, snapshot, chap_l, sec_l) is None:
+            raise pn.NavigationRefusal("N unresolved source anchor")
+        offsets.append(_insertion_offset(anchor, snapshot, nl_at, chap_l, sec_l))
+    return pn.layout(snapshot, annotations, project + _PDF_TITLE_SUFFIX, offsets, am.fid_key)
+
+
+def build_pdf(manifest_obj, snapshot, *, internal_links=False):
     """-> (pdf_bytes_or_None, errs). Pure projection: the snapshot prose as Helvetica text with a
     `[<finding_id>]` marker at each locus, then a Findings section of the verbatim comments. errs is the
     two-sided precondition (WinAnsi-encodable; no marker sigil already in the snapshot; single-line comment)."""
+    navigation = None
+    if internal_links:
+        if pn is None:
+            return None, ["N navigation helper unavailable"]
+        try:
+            navigation = _pdf_navigation_layout(manifest_obj, snapshot)
+        except (pn.NavigationRefusal, OSError, ValueError) as exc:
+            return None, [str(exc) if isinstance(exc, pn.NavigationRefusal) else "N metrics/input unavailable"]
     annotations = [a for a in (manifest_obj.get("annotations") or []) if isinstance(a, dict)]
     project = manifest_obj.get("project", "Manuscript")
     project = project if isinstance(project, str) else "Manuscript"
@@ -973,10 +1027,17 @@ def build_pdf(manifest_obj, snapshot):
     for a in ordered:
         items += [("show", chunk) for chunk in _pdf_wrap(_pdf_comment_str(a), _PDF_WRAP)]
         items.append(("skip",))
+    links = []
+    if navigation is not None:
+        items, links = navigation
 
     pages = [items[i:i + _PDF_LINES_PER_PAGE] for i in range(0, len(items), _PDF_LINES_PER_PAGE)] or [[]]
     page_count = len(pages)
     font_num = 3 + 2 * page_count
+    last_num = font_num + len(links)
+    page_annots = {}
+    for index, link in enumerate(links):
+        page_annots.setdefault(link[1] // _PDF_LINES_PER_PAGE, []).append(font_num + 1 + index)
 
     objs = {}
     objs[1] = b"<< /Type /Catalog /Pages 2 0 R >>"
@@ -988,26 +1049,36 @@ def build_pdf(manifest_obj, snapshot):
             "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %d %d] "
             "/Resources << /Font << /F1 %d 0 R >> >> /Contents %d 0 R >>"
             % (_PDF_PAGE_W, _PDF_PAGE_H, font_num, cont_num)).encode("ascii")
+        if p in page_annots:
+            refs = " ".join("%d 0 R" % num for num in page_annots[p])
+            objs[page_num] = objs[page_num][:-3] + (" /Annots [%s] >>" % refs).encode("ascii")
         data = _pdf_content(pages[p]).encode("ascii")
         objs[cont_num] = b"<< /Length %d >>\nstream\n" % len(data) + data + b"\nendstream"
     objs[font_num] = b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"
+    for index, (fid, item, rect, destination_item, destination_rect) in enumerate(links):
+        destination_page = 3 + 2 * (destination_item // _PDF_LINES_PER_PAGE)
+        rectangle = " ".join(pn.decimal(value) for value in rect)
+        left, top = pn.decimal(destination_rect[0]), pn.decimal(destination_rect[3])
+        objs[font_num + 1 + index] = (
+            "<< /Type /Annot /Subtype /Link /Rect [%s] /Border [0 0 0] "
+            "/Dest [%d 0 R /XYZ %s %s null] >>" % (rectangle, destination_page, left, top)).encode("ascii")
 
     buf = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")   # the binary-comment 2nd line marks the file binary
     offsets = {}
-    for num in range(1, font_num + 1):
+    for num in range(1, last_num + 1):
         offsets[num] = len(buf)
         buf += b"%d 0 obj\n" % num + objs[num] + b"\nendobj\n"
     xref_off = len(buf)
-    n_entries = font_num + 1
+    n_entries = last_num + 1
     buf += b"xref\n0 %d\n" % n_entries
     buf += b"0000000000 65535 f\r\n"
-    for num in range(1, font_num + 1):
+    for num in range(1, last_num + 1):
         buf += b"%010d 00000 n\r\n" % offsets[num]
     buf += (b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (n_entries, xref_off))
     return bytes(buf), []
 
 
-def check_pdf(manifest_obj, snapshot, pdf_bytes):
+def check_pdf(manifest_obj, snapshot, pdf_bytes, *, internal_links=False):
     """P1-P3 over an emitted .pdf. Returns (errs, warns).
 
     P1 (authoritative) — the on-disk .pdf == a fresh deterministic build byte-for-byte (the artifact is
@@ -1015,13 +1086,29 @@ def check_pdf(manifest_obj, snapshot, pdf_bytes):
     structure, and forbids any authored content — the DOCX-D1 discipline, for a text-native PDF).
     P2/P3 independently parse the PDF bytes as granular diagnostics."""
     errs = []
+    if internal_links and not isinstance(manifest_obj, dict):
+        return ["P1 navigation manifest invalid"], []
+    if internal_links and not isinstance(pdf_bytes, bytes):
+        return ["N navigation artifact must be bytes"], []
+    if internal_links:
+        expected, _perrs = build_pdf(manifest_obj, snapshot, internal_links=True)
+        if expected is None:
+            return ["P1 navigation fresh build refused"] + _perrs, []
     annotations = [a for a in (manifest_obj.get("annotations") or []) if isinstance(a, dict)]
-
-    expected, _perrs = build_pdf(manifest_obj, snapshot)
+    if not internal_links:
+        expected, _perrs = build_pdf(manifest_obj, snapshot)
     if expected is not None and pdf_bytes != expected:
         errs.append("P1 artifact integrity: the on-disk .pdf is not byte-identical to a fresh build from "
                     "the gated manifest + snapshot (prose / marker-position / comment / structure drift, "
                     "or authored content)")
+    if internal_links:
+        try:
+            items, links = _pdf_navigation_layout(manifest_obj, snapshot)
+            streams = [_pdf_content(items[i:i + _PDF_LINES_PER_PAGE]).encode("ascii")
+                       for i in range(0, len(items), _PDF_LINES_PER_PAGE)]
+            errs += pn.check_structure(pdf_bytes, streams, links)
+        except (pn.NavigationRefusal, OSError, ValueError):
+            errs.append("N structural layout unavailable")
 
     shown = []
     for cs in _pdf_content_streams(pdf_bytes):
@@ -1282,8 +1369,175 @@ def run_docx(paths):
     return 0, lines
 
 
-def generate_pdf(folder):
+class _PDFNavigationInputError(ValueError):
+    def __init__(self, code, condition):
+        self.code = code
+        super().__init__(condition)
+
+
+def _pdf_nav_path(root, path, *, file=False):
+    resolved = os.path.realpath(path)
+    try:
+        contained = os.path.normcase(os.path.commonpath([root, resolved])) == os.path.normcase(root)
+    except ValueError:
+        contained = False
+    if not contained:
+        raise _PDFNavigationInputError(2, "N input/output path escapes run folder")
+    if file and not os.path.isfile(resolved):
+        raise _PDFNavigationInputError(2, "N required input is not a readable regular file")
+    return resolved
+
+
+def _pdf_nav_output(root, path):
+    """Require the dedicated lexical output tree, without filesystem aliases."""
+    dedicated = os.path.join(root, "pdf-linked")
+    resolved = _pdf_nav_path(root, path)
+    if os.path.normcase(os.path.realpath(dedicated)) != os.path.normcase(dedicated):
+        raise _PDFNavigationInputError(2, "N linked output directory aliases another tree")
+    if os.path.normcase(os.path.abspath(path)) != os.path.normcase(resolved):
+        raise _PDFNavigationInputError(2, "N linked output file aliases another path")
+    if os.path.isfile(resolved) and os.stat(resolved).st_nlink > 1:
+        raise _PDFNavigationInputError(2, "N linked output file has filesystem aliases")
+    return resolved
+
+
+def _pdf_nav_unique(root, patterns, label, *, required=True):
+    matches = sorted(set(path for pattern in patterns for path in glob.glob(os.path.join(root, pattern))))
+    if len(matches) != 1:
+        if not matches and not required:
+            return None
+        raise _PDFNavigationInputError(2, "N %s selection is missing or ambiguous" % label)
+    return _pdf_nav_path(root, matches[0], file=True)
+
+
+def _pdf_nav_read(path):
+    try:
+        with open(path, encoding="utf-8", newline="") as fh:
+            return fh.read()
+    except (OSError, UnicodeDecodeError):
+        raise _PDFNavigationInputError(2, "N input UTF-8 read unavailable") from None
+
+
+def _pdf_nav_inputs(folder):
+    """Authenticate original on-disk normal-run evidence, without normalization."""
+    if not os.path.isdir(folder):
+        raise _PDFNavigationInputError(2, "N run folder unavailable")
+    root = os.path.realpath(folder)
+    manifest_path = _pdf_nav_unique(root, [am._MANIFEST_GLOB], "manifest")
+    snapshot_path = _pdf_nav_unique(root, [am._SNAPSHOT_GLOB], "snapshot")
+    annotated_path = _pdf_nav_unique(root, [am._ANNOTATED_GLOB], "CriticMarkup copy")
+    manifest_text = _pdf_nav_read(manifest_path)
+    if am.art is None:
+        raise _PDFNavigationInputError(2, "N annotation schema validator unavailable")
+    blocks = [block for block in am.art.parse_blocks(manifest_text) if block[0] == "annotation"]
+    if len(blocks) != 1:
+        raise _PDFNavigationInputError(1, "N exactly one parsed annotation block required")
+    obj, schema_errors = am.parse_manifest(manifest_text)
+    if not isinstance(obj, dict) or obj.get("schema") != am._SCHEMA_ID or schema_errors:
+        raise _PDFNavigationInputError(1, "N annotation manifest schema refused")
+    declared = obj.get("snapshot_path")
+    if not isinstance(declared, str) or not declared or os.path.isabs(declared):
+        raise _PDFNavigationInputError(1, "N snapshot filename binding refused")
+    if _pdf_nav_path(root, os.path.join(root, declared), file=True) != snapshot_path:
+        raise _PDFNavigationInputError(1, "N snapshot filename binding mismatch")
+    snapshot = _pdf_nav_read(snapshot_path)
+    if obj.get("snapshot_sha256") != am.sha256(snapshot):
+        raise _PDFNavigationInputError(1, "N original snapshot hash mismatch")
+    if snapshot != am.normalize_snapshot(snapshot):
+        raise _PDFNavigationInputError(1, "N snapshot is not already normalized")
+    try:
+        _pdf_navigation_layout(obj, snapshot)
+    except pn.MetricsUnavailable as exc:
+        raise _PDFNavigationInputError(2, str(exc)) from None
+    except pn.NavigationRefusal as exc:
+        raise _PDFNavigationInputError(1, str(exc)) from None
+    except (OSError, ValueError):
+        raise _PDFNavigationInputError(2, "N metrics unavailable") from None
+    nonempty = bool(obj.get("annotations"))
+    ledger_path = _pdf_nav_unique(root, [am._LEDGER_GLOB], "Findings Ledger", required=nonempty)
+    timeline_path = _pdf_nav_unique(root, am._TIMELINE_GLOBS, "Timeline", required=nonempty)
+    annotated = _pdf_nav_read(annotated_path)
+    ledger = _pdf_nav_read(ledger_path) if ledger_path is not None else None
+    timeline = _pdf_nav_read(timeline_path) if timeline_path is not None else None
+    try:
+        code, gate_lines = am.check(snapshot, manifest_text, annotated, ledger,
+                                   timeline_text=timeline, strict=False, ledger_optional=False)
+    except (TypeError, ValueError, AttributeError, KeyError, IndexError):
+        raise _PDFNavigationInputError(1, "N malformed normal-run supporting evidence") from None
+    if code != 0:
+        raise _PDFNavigationInputError(1, "N annotation-manifest normal-run gates refused")
+    warnings = []
+    for line in gate_lines:
+        if "WARN: W1" in line:
+            finding = re.search(r"F-[A-Za-z0-9]+-[0-9]{2,}", line)
+            condition = "coverage" if "W1 coverage" in line else "boundary drift"
+            warnings.append("pdf-export: WARN W1 %s%s" % (condition, ": " + finding.group() if finding else ""))
+    project = os.path.basename(snapshot_path).split("_Manuscript_Snapshot_")[0]
+    runlabel = _runlabel_of(snapshot_path)
+    for component in (project, runlabel):
+        if not component or component in (".", "..") or any(char in component for char in "/\\:\x00"):
+            raise _PDFNavigationInputError(1, "N unsafe output filename component")
+    output_directory = _pdf_nav_output(root, os.path.join(root, "pdf-linked"))
+    output_path = _pdf_nav_output(root, os.path.join(output_directory,
+                    "%s_Annotated_Manuscript_%s.pdf" % (project, runlabel)))
+    return root, obj, snapshot, output_directory, output_path, warnings
+
+
+def _run_pdf_navigation(folder, *, generate=False):
+    if pn is None:
+        return 2, ["pdf-export: N navigation validation unavailable (helper missing)"]
+    temp_path = None
+    try:
+        root, obj, snapshot, outdir, output_path, warnings = _pdf_nav_inputs(folder)
+        pdf, errors = build_pdf(obj, snapshot, internal_links=True)
+        if errors:
+            return 1, warnings + ["pdf-export: " + error for error in errors]
+        artifact = pdf
+        if not generate:
+            selected = _pdf_nav_unique(root, ["pdf-linked/*_Annotated_Manuscript_*.pdf"], "linked PDF")
+            if selected != output_path:
+                raise _PDFNavigationInputError(1, "N linked PDF filename binding mismatch")
+            try:
+                with open(_pdf_nav_path(root, selected, file=True), "rb") as fh:
+                    artifact = fh.read()
+            except OSError:
+                raise _PDFNavigationInputError(2, "N linked PDF read unavailable") from None
+        errors, _ = check_pdf(obj, snapshot, artifact, internal_links=True)
+        if errors:
+            return 1, warnings + ["pdf-export: " + error for error in errors]
+        if generate:
+            os.makedirs(_pdf_nav_output(root, outdir), exist_ok=True)
+            outdir = _pdf_nav_output(root, outdir)
+            output_path = _pdf_nav_output(root, output_path)
+            with tempfile.NamedTemporaryFile(dir=outdir, prefix=".pdf-linked-", suffix=".tmp", delete=False) as fh:
+                temp_path = fh.name
+                fh.write(pdf)
+                fh.flush()
+                os.fsync(fh.fileno())
+            _pdf_nav_path(root, temp_path, file=True)
+            _pdf_nav_output(root, output_path)
+            os.replace(temp_path, output_path)
+            temp_path = None
+        count = len(obj["annotations"])
+        verb = "wrote" if generate else "validated"
+        return 0, warnings + ["pdf-export: %d finding(s); %s pdf-linked/%s" % (count, verb, os.path.basename(output_path)),
+                             "pdf-export: PASS (linked P1-P3 + independent structure; reader unqualified)"]
+    except _PDFNavigationInputError as exc:
+        return exc.code, ["pdf-export: " + str(exc)]
+    except OSError:
+        return 2, ["pdf-export: N atomic publication or input I/O unavailable"]
+    finally:
+        if temp_path is not None:
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
+
+
+def generate_pdf(folder, *, internal_links=False):
     """Write pdf/<Project>_Annotated_Manuscript_<runlabel>.pdf. Returns (code, lines)."""
+    if internal_links:
+        return _run_pdf_navigation(folder, generate=True)
     obj, snapshot, project, runlabel, _cl, err = _resolve(folder)
     if err:
         return 2, ["pdf-export: %s" % err]
@@ -1298,8 +1552,12 @@ def generate_pdf(folder):
     return 0, ["pdf-export: wrote pdf/%s" % os.path.basename(out_path)]
 
 
-def run_pdf(paths):
+def run_pdf(paths, *, internal_links=False):
     """Validate the ON-DISK pdf/<copy>.pdf (P1-P3), never a regenerate."""
+    if internal_links:
+        if len(paths) != 1:
+            return 2, ["pdf-export: usage: pdf-export <run_folder> --internal-links"]
+        return _run_pdf_navigation(paths[0])
     if len(paths) < 1 or not os.path.isdir(paths[0]):
         return 2, ["pdf-export: usage: pdf-export <run_folder>"]
     obj, snapshot, _p, _r, _cl, err = _resolve(paths[0])
@@ -1862,11 +2120,30 @@ def run_self_test():
     except TypeError:
         chk("letter_nonhashable_finding_id_no_crash", False)
 
+    if pn is not None:
+        nav_obj = {"project": "Invented", "annotations": [
+            {"finding_id": "F-TEST-01", "anchor": {"kind": "document", "value": ""}, "comment": "Invented note"}]}
+        nav_pdf, nav_errors = build_pdf(nav_obj, "Invented line.\n", internal_links=True)
+        chk("pdf_navigation_deterministic_and_structural", not nav_errors and nav_pdf is not None
+            and nav_pdf == build_pdf(nav_obj, "Invented line.\n", internal_links=True)[0]
+            and not check_pdf(nav_obj, "Invented line.\n", nav_pdf, internal_links=True)[0])
+        chk("pdf_navigation_structure_rejects_tamper", nav_pdf is not None
+            and any(error.startswith("N") for error in check_pdf(nav_obj, "Invented line.\n",
+                nav_pdf.replace(b"/Subtype /Link", b"/Subtype /Text", 1), internal_links=True)[0]))
+    else:
+        print("  pdf_navigation: unavailable; default self-test does not qualify navigation")
     print("Self-test: %s" % ("PASS" if rc["v"] == 0 else "FAIL"))
     return rc["v"]
 
 
 def main(argv):
+    navigation_flags = [arg for arg in argv[1:] if arg.startswith("--internal-links")]
+    internal_links = bool(navigation_flags)
+    if internal_links and (navigation_flags != ["--internal-links"] or len(argv) < 2
+            or argv[1] not in ("pdf", "pdf-export")
+            or any(arg.startswith("--") and arg != "--internal-links" for arg in argv[2:])):
+        print("pdf-export: usage: pdf|pdf-export <run_folder> --internal-links (once)")
+        return 2
     if "--self-test" in argv:
         return run_self_test()
     if am is None:
@@ -1881,14 +2158,14 @@ def main(argv):
             if len(rest) != 1 or not os.path.isdir(rest[0]):
                 print("Usage: annotation_export.py %s <run_folder>" % verb)
                 return 2
-            code, lines = gen(rest[0])
+            code, lines = gen(rest[0], internal_links=internal_links) if verb == "pdf" else gen(rest[0])
             for ln in lines:
                 print(ln)
             return code
     # validate modes
     for verb, val in (("html-export", run_html), ("docx-export", run_docx), ("pdf-export", run_pdf)):
         if args and args[0] == verb:
-            code, lines = val(args[1:])
+            code, lines = val(args[1:], internal_links=internal_links) if verb == "pdf-export" else val(args[1:])
             for ln in lines:
                 print(ln)
             return code

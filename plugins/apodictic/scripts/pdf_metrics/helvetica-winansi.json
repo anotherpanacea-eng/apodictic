@@ -1,0 +1,2410 @@
+{
+  "glyphs": {
+    "100": {
+      "advance": 556,
+      "box": [
+        35,
+        -15,
+        499,
+        718
+      ],
+      "name": "d",
+      "whitespace": false
+    },
+    "101": {
+      "advance": 556,
+      "box": [
+        40,
+        -15,
+        516,
+        538
+      ],
+      "name": "e",
+      "whitespace": false
+    },
+    "102": {
+      "advance": 278,
+      "box": [
+        14,
+        0,
+        262,
+        728
+      ],
+      "name": "f",
+      "whitespace": false
+    },
+    "103": {
+      "advance": 556,
+      "box": [
+        40,
+        -220,
+        499,
+        538
+      ],
+      "name": "g",
+      "whitespace": false
+    },
+    "104": {
+      "advance": 556,
+      "box": [
+        65,
+        0,
+        491,
+        718
+      ],
+      "name": "h",
+      "whitespace": false
+    },
+    "105": {
+      "advance": 222,
+      "box": [
+        67,
+        0,
+        155,
+        718
+      ],
+      "name": "i",
+      "whitespace": false
+    },
+    "106": {
+      "advance": 222,
+      "box": [
+        -16,
+        -210,
+        155,
+        718
+      ],
+      "name": "j",
+      "whitespace": false
+    },
+    "107": {
+      "advance": 500,
+      "box": [
+        67,
+        0,
+        501,
+        718
+      ],
+      "name": "k",
+      "whitespace": false
+    },
+    "108": {
+      "advance": 222,
+      "box": [
+        67,
+        0,
+        155,
+        718
+      ],
+      "name": "l",
+      "whitespace": false
+    },
+    "109": {
+      "advance": 833,
+      "box": [
+        65,
+        0,
+        769,
+        538
+      ],
+      "name": "m",
+      "whitespace": false
+    },
+    "110": {
+      "advance": 556,
+      "box": [
+        65,
+        0,
+        491,
+        538
+      ],
+      "name": "n",
+      "whitespace": false
+    },
+    "111": {
+      "advance": 556,
+      "box": [
+        35,
+        -14,
+        521,
+        538
+      ],
+      "name": "o",
+      "whitespace": false
+    },
+    "112": {
+      "advance": 556,
+      "box": [
+        58,
+        -207,
+        517,
+        538
+      ],
+      "name": "p",
+      "whitespace": false
+    },
+    "113": {
+      "advance": 556,
+      "box": [
+        35,
+        -207,
+        494,
+        538
+      ],
+      "name": "q",
+      "whitespace": false
+    },
+    "114": {
+      "advance": 333,
+      "box": [
+        77,
+        0,
+        332,
+        538
+      ],
+      "name": "r",
+      "whitespace": false
+    },
+    "115": {
+      "advance": 500,
+      "box": [
+        32,
+        -15,
+        464,
+        538
+      ],
+      "name": "s",
+      "whitespace": false
+    },
+    "116": {
+      "advance": 278,
+      "box": [
+        14,
+        -7,
+        257,
+        669
+      ],
+      "name": "t",
+      "whitespace": false
+    },
+    "117": {
+      "advance": 556,
+      "box": [
+        68,
+        -15,
+        489,
+        523
+      ],
+      "name": "u",
+      "whitespace": false
+    },
+    "118": {
+      "advance": 500,
+      "box": [
+        8,
+        0,
+        492,
+        523
+      ],
+      "name": "v",
+      "whitespace": false
+    },
+    "119": {
+      "advance": 722,
+      "box": [
+        14,
+        0,
+        709,
+        523
+      ],
+      "name": "w",
+      "whitespace": false
+    },
+    "120": {
+      "advance": 500,
+      "box": [
+        11,
+        0,
+        490,
+        523
+      ],
+      "name": "x",
+      "whitespace": false
+    },
+    "121": {
+      "advance": 500,
+      "box": [
+        11,
+        -214,
+        489,
+        523
+      ],
+      "name": "y",
+      "whitespace": false
+    },
+    "122": {
+      "advance": 500,
+      "box": [
+        31,
+        0,
+        469,
+        523
+      ],
+      "name": "z",
+      "whitespace": false
+    },
+    "123": {
+      "advance": 334,
+      "box": [
+        42,
+        -196,
+        292,
+        722
+      ],
+      "name": "braceleft",
+      "whitespace": false
+    },
+    "124": {
+      "advance": 260,
+      "box": [
+        94,
+        -225,
+        167,
+        775
+      ],
+      "name": "bar",
+      "whitespace": false
+    },
+    "125": {
+      "advance": 334,
+      "box": [
+        42,
+        -196,
+        292,
+        722
+      ],
+      "name": "braceright",
+      "whitespace": false
+    },
+    "126": {
+      "advance": 584,
+      "box": [
+        61,
+        180,
+        523,
+        326
+      ],
+      "name": "asciitilde",
+      "whitespace": false
+    },
+    "128": {
+      "advance": 556,
+      "box": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "Euro",
+      "whitespace": false
+    },
+    "130": {
+      "advance": 222,
+      "box": [
+        53,
+        -149,
+        157,
+        106
+      ],
+      "name": "quotesinglbase",
+      "whitespace": false
+    },
+    "131": {
+      "advance": 556,
+      "box": [
+        -11,
+        -207,
+        501,
+        737
+      ],
+      "name": "florin",
+      "whitespace": false
+    },
+    "132": {
+      "advance": 333,
+      "box": [
+        26,
+        -149,
+        295,
+        106
+      ],
+      "name": "quotedblbase",
+      "whitespace": false
+    },
+    "133": {
+      "advance": 1000,
+      "box": [
+        115,
+        0,
+        885,
+        106
+      ],
+      "name": "ellipsis",
+      "whitespace": false
+    },
+    "134": {
+      "advance": 556,
+      "box": [
+        43,
+        -159,
+        514,
+        718
+      ],
+      "name": "dagger",
+      "whitespace": false
+    },
+    "135": {
+      "advance": 556,
+      "box": [
+        43,
+        -159,
+        514,
+        718
+      ],
+      "name": "daggerdbl",
+      "whitespace": false
+    },
+    "136": {
+      "advance": 333,
+      "box": [
+        21,
+        593,
+        312,
+        734
+      ],
+      "name": "circumflex",
+      "whitespace": false
+    },
+    "137": {
+      "advance": 1000,
+      "box": [
+        7,
+        -19,
+        994,
+        703
+      ],
+      "name": "perthousand",
+      "whitespace": false
+    },
+    "138": {
+      "advance": 667,
+      "box": [
+        49,
+        -19,
+        620,
+        929
+      ],
+      "name": "Scaron",
+      "whitespace": false
+    },
+    "139": {
+      "advance": 333,
+      "box": [
+        88,
+        108,
+        245,
+        446
+      ],
+      "name": "guilsinglleft",
+      "whitespace": false
+    },
+    "140": {
+      "advance": 1000,
+      "box": [
+        36,
+        -19,
+        965,
+        737
+      ],
+      "name": "OE",
+      "whitespace": false
+    },
+    "142": {
+      "advance": 611,
+      "box": [
+        23,
+        0,
+        588,
+        929
+      ],
+      "name": "Zcaron",
+      "whitespace": false
+    },
+    "145": {
+      "advance": 222,
+      "box": [
+        65,
+        470,
+        169,
+        725
+      ],
+      "name": "quoteleft",
+      "whitespace": false
+    },
+    "146": {
+      "advance": 222,
+      "box": [
+        53,
+        463,
+        157,
+        718
+      ],
+      "name": "quoteright",
+      "whitespace": false
+    },
+    "147": {
+      "advance": 333,
+      "box": [
+        38,
+        470,
+        307,
+        725
+      ],
+      "name": "quotedblleft",
+      "whitespace": false
+    },
+    "148": {
+      "advance": 333,
+      "box": [
+        26,
+        463,
+        295,
+        718
+      ],
+      "name": "quotedblright",
+      "whitespace": false
+    },
+    "149": {
+      "advance": 350,
+      "box": [
+        18,
+        202,
+        333,
+        517
+      ],
+      "name": "bullet",
+      "whitespace": false
+    },
+    "150": {
+      "advance": 556,
+      "box": [
+        0,
+        240,
+        556,
+        313
+      ],
+      "name": "endash",
+      "whitespace": false
+    },
+    "151": {
+      "advance": 1000,
+      "box": [
+        0,
+        240,
+        1000,
+        313
+      ],
+      "name": "emdash",
+      "whitespace": false
+    },
+    "152": {
+      "advance": 333,
+      "box": [
+        -4,
+        606,
+        337,
+        722
+      ],
+      "name": "tilde",
+      "whitespace": false
+    },
+    "153": {
+      "advance": 1000,
+      "box": [
+        46,
+        306,
+        903,
+        718
+      ],
+      "name": "trademark",
+      "whitespace": false
+    },
+    "154": {
+      "advance": 500,
+      "box": [
+        32,
+        -15,
+        464,
+        734
+      ],
+      "name": "scaron",
+      "whitespace": false
+    },
+    "155": {
+      "advance": 333,
+      "box": [
+        88,
+        108,
+        245,
+        446
+      ],
+      "name": "guilsinglright",
+      "whitespace": false
+    },
+    "156": {
+      "advance": 944,
+      "box": [
+        35,
+        -15,
+        902,
+        538
+      ],
+      "name": "oe",
+      "whitespace": false
+    },
+    "158": {
+      "advance": 500,
+      "box": [
+        31,
+        0,
+        469,
+        734
+      ],
+      "name": "zcaron",
+      "whitespace": false
+    },
+    "159": {
+      "advance": 667,
+      "box": [
+        14,
+        0,
+        653,
+        901
+      ],
+      "name": "Ydieresis",
+      "whitespace": false
+    },
+    "160": {
+      "advance": 278,
+      "box": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "nbspace",
+      "whitespace": true
+    },
+    "161": {
+      "advance": 333,
+      "box": [
+        118,
+        -195,
+        215,
+        523
+      ],
+      "name": "exclamdown",
+      "whitespace": false
+    },
+    "162": {
+      "advance": 556,
+      "box": [
+        51,
+        -115,
+        513,
+        623
+      ],
+      "name": "cent",
+      "whitespace": false
+    },
+    "163": {
+      "advance": 556,
+      "box": [
+        33,
+        -16,
+        539,
+        718
+      ],
+      "name": "sterling",
+      "whitespace": false
+    },
+    "164": {
+      "advance": 556,
+      "box": [
+        28,
+        99,
+        528,
+        603
+      ],
+      "name": "currency",
+      "whitespace": false
+    },
+    "165": {
+      "advance": 556,
+      "box": [
+        3,
+        0,
+        553,
+        688
+      ],
+      "name": "yen",
+      "whitespace": false
+    },
+    "166": {
+      "advance": 260,
+      "box": [
+        94,
+        -150,
+        167,
+        700
+      ],
+      "name": "brokenbar",
+      "whitespace": false
+    },
+    "167": {
+      "advance": 556,
+      "box": [
+        43,
+        -191,
+        512,
+        737
+      ],
+      "name": "section",
+      "whitespace": false
+    },
+    "168": {
+      "advance": 333,
+      "box": [
+        40,
+        604,
+        293,
+        706
+      ],
+      "name": "dieresis",
+      "whitespace": false
+    },
+    "169": {
+      "advance": 737,
+      "box": [
+        -14,
+        -19,
+        752,
+        737
+      ],
+      "name": "copyright",
+      "whitespace": false
+    },
+    "170": {
+      "advance": 370,
+      "box": [
+        24,
+        405,
+        346,
+        737
+      ],
+      "name": "ordfeminine",
+      "whitespace": false
+    },
+    "171": {
+      "advance": 556,
+      "box": [
+        97,
+        108,
+        459,
+        446
+      ],
+      "name": "guillemotleft",
+      "whitespace": false
+    },
+    "172": {
+      "advance": 584,
+      "box": [
+        39,
+        108,
+        545,
+        390
+      ],
+      "name": "logicalnot",
+      "whitespace": false
+    },
+    "173": {
+      "advance": 333,
+      "box": [
+        44,
+        232,
+        289,
+        322
+      ],
+      "name": "sfthyphen",
+      "whitespace": false
+    },
+    "174": {
+      "advance": 737,
+      "box": [
+        -14,
+        -19,
+        752,
+        737
+      ],
+      "name": "registered",
+      "whitespace": false
+    },
+    "175": {
+      "advance": 333,
+      "box": [
+        10,
+        627,
+        323,
+        684
+      ],
+      "name": "macron",
+      "whitespace": false
+    },
+    "176": {
+      "advance": 400,
+      "box": [
+        54,
+        411,
+        346,
+        703
+      ],
+      "name": "degree",
+      "whitespace": false
+    },
+    "177": {
+      "advance": 584,
+      "box": [
+        39,
+        0,
+        545,
+        506
+      ],
+      "name": "plusminus",
+      "whitespace": false
+    },
+    "178": {
+      "advance": 333,
+      "box": [
+        4,
+        281,
+        323,
+        703
+      ],
+      "name": "twosuperior",
+      "whitespace": false
+    },
+    "179": {
+      "advance": 333,
+      "box": [
+        5,
+        270,
+        325,
+        703
+      ],
+      "name": "threesuperior",
+      "whitespace": false
+    },
+    "180": {
+      "advance": 333,
+      "box": [
+        122,
+        593,
+        319,
+        734
+      ],
+      "name": "acute",
+      "whitespace": false
+    },
+    "181": {
+      "advance": 556,
+      "box": [
+        68,
+        -207,
+        489,
+        523
+      ],
+      "name": "mu",
+      "whitespace": false
+    },
+    "182": {
+      "advance": 537,
+      "box": [
+        18,
+        -173,
+        497,
+        718
+      ],
+      "name": "paragraph",
+      "whitespace": false
+    },
+    "183": {
+      "advance": 278,
+      "box": [
+        77,
+        190,
+        202,
+        315
+      ],
+      "name": "periodcentered",
+      "whitespace": false
+    },
+    "184": {
+      "advance": 333,
+      "box": [
+        45,
+        -225,
+        259,
+        0
+      ],
+      "name": "cedilla",
+      "whitespace": false
+    },
+    "185": {
+      "advance": 333,
+      "box": [
+        43,
+        281,
+        222,
+        703
+      ],
+      "name": "onesuperior",
+      "whitespace": false
+    },
+    "186": {
+      "advance": 365,
+      "box": [
+        25,
+        405,
+        341,
+        737
+      ],
+      "name": "ordmasculine",
+      "whitespace": false
+    },
+    "187": {
+      "advance": 556,
+      "box": [
+        97,
+        108,
+        459,
+        446
+      ],
+      "name": "guillemotright",
+      "whitespace": false
+    },
+    "188": {
+      "advance": 834,
+      "box": [
+        73,
+        -19,
+        756,
+        703
+      ],
+      "name": "onequarter",
+      "whitespace": false
+    },
+    "189": {
+      "advance": 834,
+      "box": [
+        43,
+        -19,
+        773,
+        703
+      ],
+      "name": "onehalf",
+      "whitespace": false
+    },
+    "190": {
+      "advance": 834,
+      "box": [
+        45,
+        -19,
+        810,
+        703
+      ],
+      "name": "threequarters",
+      "whitespace": false
+    },
+    "191": {
+      "advance": 611,
+      "box": [
+        91,
+        -201,
+        527,
+        525
+      ],
+      "name": "questiondown",
+      "whitespace": false
+    },
+    "192": {
+      "advance": 667,
+      "box": [
+        14,
+        0,
+        654,
+        929
+      ],
+      "name": "Agrave",
+      "whitespace": false
+    },
+    "193": {
+      "advance": 667,
+      "box": [
+        14,
+        0,
+        654,
+        929
+      ],
+      "name": "Aacute",
+      "whitespace": false
+    },
+    "194": {
+      "advance": 667,
+      "box": [
+        14,
+        0,
+        654,
+        929
+      ],
+      "name": "Acircumflex",
+      "whitespace": false
+    },
+    "195": {
+      "advance": 667,
+      "box": [
+        14,
+        0,
+        654,
+        917
+      ],
+      "name": "Atilde",
+      "whitespace": false
+    },
+    "196": {
+      "advance": 667,
+      "box": [
+        14,
+        0,
+        654,
+        901
+      ],
+      "name": "Adieresis",
+      "whitespace": false
+    },
+    "197": {
+      "advance": 667,
+      "box": [
+        14,
+        0,
+        654,
+        931
+      ],
+      "name": "Aring",
+      "whitespace": false
+    },
+    "198": {
+      "advance": 1000,
+      "box": [
+        8,
+        0,
+        951,
+        718
+      ],
+      "name": "AE",
+      "whitespace": false
+    },
+    "199": {
+      "advance": 722,
+      "box": [
+        44,
+        -225,
+        681,
+        737
+      ],
+      "name": "Ccedilla",
+      "whitespace": false
+    },
+    "200": {
+      "advance": 667,
+      "box": [
+        86,
+        0,
+        616,
+        929
+      ],
+      "name": "Egrave",
+      "whitespace": false
+    },
+    "201": {
+      "advance": 667,
+      "box": [
+        86,
+        0,
+        616,
+        929
+      ],
+      "name": "Eacute",
+      "whitespace": false
+    },
+    "202": {
+      "advance": 667,
+      "box": [
+        86,
+        0,
+        616,
+        929
+      ],
+      "name": "Ecircumflex",
+      "whitespace": false
+    },
+    "203": {
+      "advance": 667,
+      "box": [
+        86,
+        0,
+        616,
+        901
+      ],
+      "name": "Edieresis",
+      "whitespace": false
+    },
+    "204": {
+      "advance": 278,
+      "box": [
+        -13,
+        0,
+        188,
+        929
+      ],
+      "name": "Igrave",
+      "whitespace": false
+    },
+    "205": {
+      "advance": 278,
+      "box": [
+        91,
+        0,
+        292,
+        929
+      ],
+      "name": "Iacute",
+      "whitespace": false
+    },
+    "206": {
+      "advance": 278,
+      "box": [
+        -6,
+        0,
+        285,
+        929
+      ],
+      "name": "Icircumflex",
+      "whitespace": false
+    },
+    "207": {
+      "advance": 278,
+      "box": [
+        13,
+        0,
+        266,
+        901
+      ],
+      "name": "Idieresis",
+      "whitespace": false
+    },
+    "208": {
+      "advance": 722,
+      "box": [
+        0,
+        0,
+        674,
+        718
+      ],
+      "name": "Eth",
+      "whitespace": false
+    },
+    "209": {
+      "advance": 722,
+      "box": [
+        76,
+        0,
+        646,
+        917
+      ],
+      "name": "Ntilde",
+      "whitespace": false
+    },
+    "210": {
+      "advance": 778,
+      "box": [
+        39,
+        -19,
+        739,
+        929
+      ],
+      "name": "Ograve",
+      "whitespace": false
+    },
+    "211": {
+      "advance": 778,
+      "box": [
+        39,
+        -19,
+        739,
+        929
+      ],
+      "name": "Oacute",
+      "whitespace": false
+    },
+    "212": {
+      "advance": 778,
+      "box": [
+        39,
+        -19,
+        739,
+        929
+      ],
+      "name": "Ocircumflex",
+      "whitespace": false
+    },
+    "213": {
+      "advance": 778,
+      "box": [
+        39,
+        -19,
+        739,
+        917
+      ],
+      "name": "Otilde",
+      "whitespace": false
+    },
+    "214": {
+      "advance": 778,
+      "box": [
+        39,
+        -19,
+        739,
+        901
+      ],
+      "name": "Odieresis",
+      "whitespace": false
+    },
+    "215": {
+      "advance": 584,
+      "box": [
+        39,
+        0,
+        545,
+        506
+      ],
+      "name": "multiply",
+      "whitespace": false
+    },
+    "216": {
+      "advance": 778,
+      "box": [
+        39,
+        -19,
+        740,
+        737
+      ],
+      "name": "Oslash",
+      "whitespace": false
+    },
+    "217": {
+      "advance": 722,
+      "box": [
+        79,
+        -19,
+        644,
+        929
+      ],
+      "name": "Ugrave",
+      "whitespace": false
+    },
+    "218": {
+      "advance": 722,
+      "box": [
+        79,
+        -19,
+        644,
+        929
+      ],
+      "name": "Uacute",
+      "whitespace": false
+    },
+    "219": {
+      "advance": 722,
+      "box": [
+        79,
+        -19,
+        644,
+        929
+      ],
+      "name": "Ucircumflex",
+      "whitespace": false
+    },
+    "220": {
+      "advance": 722,
+      "box": [
+        79,
+        -19,
+        644,
+        901
+      ],
+      "name": "Udieresis",
+      "whitespace": false
+    },
+    "221": {
+      "advance": 667,
+      "box": [
+        14,
+        0,
+        653,
+        929
+      ],
+      "name": "Yacute",
+      "whitespace": false
+    },
+    "222": {
+      "advance": 667,
+      "box": [
+        86,
+        0,
+        622,
+        718
+      ],
+      "name": "Thorn",
+      "whitespace": false
+    },
+    "223": {
+      "advance": 611,
+      "box": [
+        67,
+        -15,
+        571,
+        728
+      ],
+      "name": "germandbls",
+      "whitespace": false
+    },
+    "224": {
+      "advance": 556,
+      "box": [
+        36,
+        -15,
+        530,
+        734
+      ],
+      "name": "agrave",
+      "whitespace": false
+    },
+    "225": {
+      "advance": 556,
+      "box": [
+        36,
+        -15,
+        530,
+        734
+      ],
+      "name": "aacute",
+      "whitespace": false
+    },
+    "226": {
+      "advance": 556,
+      "box": [
+        36,
+        -15,
+        530,
+        734
+      ],
+      "name": "acircumflex",
+      "whitespace": false
+    },
+    "227": {
+      "advance": 556,
+      "box": [
+        36,
+        -15,
+        530,
+        722
+      ],
+      "name": "atilde",
+      "whitespace": false
+    },
+    "228": {
+      "advance": 556,
+      "box": [
+        36,
+        -15,
+        530,
+        706
+      ],
+      "name": "adieresis",
+      "whitespace": false
+    },
+    "229": {
+      "advance": 556,
+      "box": [
+        36,
+        -15,
+        530,
+        756
+      ],
+      "name": "aring",
+      "whitespace": false
+    },
+    "230": {
+      "advance": 889,
+      "box": [
+        36,
+        -15,
+        847,
+        538
+      ],
+      "name": "ae",
+      "whitespace": false
+    },
+    "231": {
+      "advance": 500,
+      "box": [
+        30,
+        -225,
+        477,
+        538
+      ],
+      "name": "ccedilla",
+      "whitespace": false
+    },
+    "232": {
+      "advance": 556,
+      "box": [
+        40,
+        -15,
+        516,
+        734
+      ],
+      "name": "egrave",
+      "whitespace": false
+    },
+    "233": {
+      "advance": 556,
+      "box": [
+        40,
+        -15,
+        516,
+        734
+      ],
+      "name": "eacute",
+      "whitespace": false
+    },
+    "234": {
+      "advance": 556,
+      "box": [
+        40,
+        -15,
+        516,
+        734
+      ],
+      "name": "ecircumflex",
+      "whitespace": false
+    },
+    "235": {
+      "advance": 556,
+      "box": [
+        40,
+        -15,
+        516,
+        706
+      ],
+      "name": "edieresis",
+      "whitespace": false
+    },
+    "236": {
+      "advance": 278,
+      "box": [
+        -13,
+        0,
+        184,
+        734
+      ],
+      "name": "igrave",
+      "whitespace": false
+    },
+    "237": {
+      "advance": 278,
+      "box": [
+        95,
+        0,
+        292,
+        734
+      ],
+      "name": "iacute",
+      "whitespace": false
+    },
+    "238": {
+      "advance": 278,
+      "box": [
+        -6,
+        0,
+        285,
+        734
+      ],
+      "name": "icircumflex",
+      "whitespace": false
+    },
+    "239": {
+      "advance": 278,
+      "box": [
+        13,
+        0,
+        266,
+        706
+      ],
+      "name": "idieresis",
+      "whitespace": false
+    },
+    "240": {
+      "advance": 556,
+      "box": [
+        35,
+        -15,
+        522,
+        737
+      ],
+      "name": "eth",
+      "whitespace": false
+    },
+    "241": {
+      "advance": 556,
+      "box": [
+        65,
+        0,
+        491,
+        722
+      ],
+      "name": "ntilde",
+      "whitespace": false
+    },
+    "242": {
+      "advance": 556,
+      "box": [
+        35,
+        -14,
+        521,
+        734
+      ],
+      "name": "ograve",
+      "whitespace": false
+    },
+    "243": {
+      "advance": 556,
+      "box": [
+        35,
+        -14,
+        521,
+        734
+      ],
+      "name": "oacute",
+      "whitespace": false
+    },
+    "244": {
+      "advance": 556,
+      "box": [
+        35,
+        -14,
+        521,
+        734
+      ],
+      "name": "ocircumflex",
+      "whitespace": false
+    },
+    "245": {
+      "advance": 556,
+      "box": [
+        35,
+        -14,
+        521,
+        722
+      ],
+      "name": "otilde",
+      "whitespace": false
+    },
+    "246": {
+      "advance": 556,
+      "box": [
+        35,
+        -14,
+        521,
+        706
+      ],
+      "name": "odieresis",
+      "whitespace": false
+    },
+    "247": {
+      "advance": 584,
+      "box": [
+        39,
+        -19,
+        545,
+        524
+      ],
+      "name": "divide",
+      "whitespace": false
+    },
+    "248": {
+      "advance": 611,
+      "box": [
+        28,
+        -22,
+        537,
+        545
+      ],
+      "name": "oslash",
+      "whitespace": false
+    },
+    "249": {
+      "advance": 556,
+      "box": [
+        68,
+        -15,
+        489,
+        734
+      ],
+      "name": "ugrave",
+      "whitespace": false
+    },
+    "250": {
+      "advance": 556,
+      "box": [
+        68,
+        -15,
+        489,
+        734
+      ],
+      "name": "uacute",
+      "whitespace": false
+    },
+    "251": {
+      "advance": 556,
+      "box": [
+        68,
+        -15,
+        489,
+        734
+      ],
+      "name": "ucircumflex",
+      "whitespace": false
+    },
+    "252": {
+      "advance": 556,
+      "box": [
+        68,
+        -15,
+        489,
+        706
+      ],
+      "name": "udieresis",
+      "whitespace": false
+    },
+    "253": {
+      "advance": 500,
+      "box": [
+        11,
+        -214,
+        489,
+        734
+      ],
+      "name": "yacute",
+      "whitespace": false
+    },
+    "254": {
+      "advance": 556,
+      "box": [
+        58,
+        -207,
+        517,
+        718
+      ],
+      "name": "thorn",
+      "whitespace": false
+    },
+    "255": {
+      "advance": 500,
+      "box": [
+        11,
+        -214,
+        489,
+        706
+      ],
+      "name": "ydieresis",
+      "whitespace": false
+    },
+    "32": {
+      "advance": 278,
+      "box": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "name": "space",
+      "whitespace": true
+    },
+    "33": {
+      "advance": 278,
+      "box": [
+        90,
+        0,
+        187,
+        718
+      ],
+      "name": "exclam",
+      "whitespace": false
+    },
+    "34": {
+      "advance": 355,
+      "box": [
+        70,
+        463,
+        285,
+        718
+      ],
+      "name": "quotedbl",
+      "whitespace": false
+    },
+    "35": {
+      "advance": 556,
+      "box": [
+        28,
+        0,
+        529,
+        688
+      ],
+      "name": "numbersign",
+      "whitespace": false
+    },
+    "36": {
+      "advance": 556,
+      "box": [
+        32,
+        -115,
+        520,
+        775
+      ],
+      "name": "dollar",
+      "whitespace": false
+    },
+    "37": {
+      "advance": 889,
+      "box": [
+        39,
+        -19,
+        850,
+        703
+      ],
+      "name": "percent",
+      "whitespace": false
+    },
+    "38": {
+      "advance": 667,
+      "box": [
+        44,
+        -15,
+        645,
+        718
+      ],
+      "name": "ampersand",
+      "whitespace": false
+    },
+    "39": {
+      "advance": 191,
+      "box": [
+        59,
+        463,
+        132,
+        718
+      ],
+      "name": "quotesingle",
+      "whitespace": false
+    },
+    "40": {
+      "advance": 333,
+      "box": [
+        68,
+        -207,
+        299,
+        733
+      ],
+      "name": "parenleft",
+      "whitespace": false
+    },
+    "41": {
+      "advance": 333,
+      "box": [
+        34,
+        -207,
+        265,
+        733
+      ],
+      "name": "parenright",
+      "whitespace": false
+    },
+    "42": {
+      "advance": 389,
+      "box": [
+        39,
+        431,
+        349,
+        718
+      ],
+      "name": "asterisk",
+      "whitespace": false
+    },
+    "43": {
+      "advance": 584,
+      "box": [
+        39,
+        0,
+        545,
+        505
+      ],
+      "name": "plus",
+      "whitespace": false
+    },
+    "44": {
+      "advance": 278,
+      "box": [
+        87,
+        -147,
+        191,
+        106
+      ],
+      "name": "comma",
+      "whitespace": false
+    },
+    "45": {
+      "advance": 333,
+      "box": [
+        44,
+        232,
+        289,
+        322
+      ],
+      "name": "hyphen",
+      "whitespace": false
+    },
+    "46": {
+      "advance": 278,
+      "box": [
+        87,
+        0,
+        191,
+        106
+      ],
+      "name": "period",
+      "whitespace": false
+    },
+    "47": {
+      "advance": 278,
+      "box": [
+        -17,
+        -19,
+        295,
+        737
+      ],
+      "name": "slash",
+      "whitespace": false
+    },
+    "48": {
+      "advance": 556,
+      "box": [
+        37,
+        -19,
+        519,
+        703
+      ],
+      "name": "zero",
+      "whitespace": false
+    },
+    "49": {
+      "advance": 556,
+      "box": [
+        101,
+        0,
+        359,
+        703
+      ],
+      "name": "one",
+      "whitespace": false
+    },
+    "50": {
+      "advance": 556,
+      "box": [
+        26,
+        0,
+        507,
+        703
+      ],
+      "name": "two",
+      "whitespace": false
+    },
+    "51": {
+      "advance": 556,
+      "box": [
+        34,
+        -19,
+        522,
+        703
+      ],
+      "name": "three",
+      "whitespace": false
+    },
+    "52": {
+      "advance": 556,
+      "box": [
+        25,
+        0,
+        523,
+        703
+      ],
+      "name": "four",
+      "whitespace": false
+    },
+    "53": {
+      "advance": 556,
+      "box": [
+        32,
+        -19,
+        514,
+        688
+      ],
+      "name": "five",
+      "whitespace": false
+    },
+    "54": {
+      "advance": 556,
+      "box": [
+        38,
+        -19,
+        518,
+        703
+      ],
+      "name": "six",
+      "whitespace": false
+    },
+    "55": {
+      "advance": 556,
+      "box": [
+        37,
+        0,
+        523,
+        688
+      ],
+      "name": "seven",
+      "whitespace": false
+    },
+    "56": {
+      "advance": 556,
+      "box": [
+        38,
+        -19,
+        517,
+        703
+      ],
+      "name": "eight",
+      "whitespace": false
+    },
+    "57": {
+      "advance": 556,
+      "box": [
+        42,
+        -19,
+        514,
+        703
+      ],
+      "name": "nine",
+      "whitespace": false
+    },
+    "58": {
+      "advance": 278,
+      "box": [
+        87,
+        0,
+        191,
+        516
+      ],
+      "name": "colon",
+      "whitespace": false
+    },
+    "59": {
+      "advance": 278,
+      "box": [
+        87,
+        -147,
+        191,
+        516
+      ],
+      "name": "semicolon",
+      "whitespace": false
+    },
+    "60": {
+      "advance": 584,
+      "box": [
+        48,
+        11,
+        536,
+        495
+      ],
+      "name": "less",
+      "whitespace": false
+    },
+    "61": {
+      "advance": 584,
+      "box": [
+        39,
+        115,
+        545,
+        390
+      ],
+      "name": "equal",
+      "whitespace": false
+    },
+    "62": {
+      "advance": 584,
+      "box": [
+        48,
+        11,
+        536,
+        495
+      ],
+      "name": "greater",
+      "whitespace": false
+    },
+    "63": {
+      "advance": 556,
+      "box": [
+        56,
+        0,
+        492,
+        727
+      ],
+      "name": "question",
+      "whitespace": false
+    },
+    "64": {
+      "advance": 1015,
+      "box": [
+        147,
+        -19,
+        868,
+        737
+      ],
+      "name": "at",
+      "whitespace": false
+    },
+    "65": {
+      "advance": 667,
+      "box": [
+        14,
+        0,
+        654,
+        718
+      ],
+      "name": "A",
+      "whitespace": false
+    },
+    "66": {
+      "advance": 667,
+      "box": [
+        74,
+        0,
+        627,
+        718
+      ],
+      "name": "B",
+      "whitespace": false
+    },
+    "67": {
+      "advance": 722,
+      "box": [
+        44,
+        -19,
+        681,
+        737
+      ],
+      "name": "C",
+      "whitespace": false
+    },
+    "68": {
+      "advance": 722,
+      "box": [
+        81,
+        0,
+        674,
+        718
+      ],
+      "name": "D",
+      "whitespace": false
+    },
+    "69": {
+      "advance": 667,
+      "box": [
+        86,
+        0,
+        616,
+        718
+      ],
+      "name": "E",
+      "whitespace": false
+    },
+    "70": {
+      "advance": 611,
+      "box": [
+        86,
+        0,
+        583,
+        718
+      ],
+      "name": "F",
+      "whitespace": false
+    },
+    "71": {
+      "advance": 778,
+      "box": [
+        48,
+        -19,
+        704,
+        737
+      ],
+      "name": "G",
+      "whitespace": false
+    },
+    "72": {
+      "advance": 722,
+      "box": [
+        77,
+        0,
+        646,
+        718
+      ],
+      "name": "H",
+      "whitespace": false
+    },
+    "73": {
+      "advance": 278,
+      "box": [
+        91,
+        0,
+        188,
+        718
+      ],
+      "name": "I",
+      "whitespace": false
+    },
+    "74": {
+      "advance": 500,
+      "box": [
+        17,
+        -19,
+        428,
+        718
+      ],
+      "name": "J",
+      "whitespace": false
+    },
+    "75": {
+      "advance": 667,
+      "box": [
+        76,
+        0,
+        663,
+        718
+      ],
+      "name": "K",
+      "whitespace": false
+    },
+    "76": {
+      "advance": 556,
+      "box": [
+        76,
+        0,
+        537,
+        718
+      ],
+      "name": "L",
+      "whitespace": false
+    },
+    "77": {
+      "advance": 833,
+      "box": [
+        73,
+        0,
+        761,
+        718
+      ],
+      "name": "M",
+      "whitespace": false
+    },
+    "78": {
+      "advance": 722,
+      "box": [
+        76,
+        0,
+        646,
+        718
+      ],
+      "name": "N",
+      "whitespace": false
+    },
+    "79": {
+      "advance": 778,
+      "box": [
+        39,
+        -19,
+        739,
+        737
+      ],
+      "name": "O",
+      "whitespace": false
+    },
+    "80": {
+      "advance": 667,
+      "box": [
+        86,
+        0,
+        622,
+        718
+      ],
+      "name": "P",
+      "whitespace": false
+    },
+    "81": {
+      "advance": 778,
+      "box": [
+        39,
+        -56,
+        739,
+        737
+      ],
+      "name": "Q",
+      "whitespace": false
+    },
+    "82": {
+      "advance": 722,
+      "box": [
+        88,
+        0,
+        684,
+        718
+      ],
+      "name": "R",
+      "whitespace": false
+    },
+    "83": {
+      "advance": 667,
+      "box": [
+        49,
+        -19,
+        620,
+        737
+      ],
+      "name": "S",
+      "whitespace": false
+    },
+    "84": {
+      "advance": 611,
+      "box": [
+        14,
+        0,
+        597,
+        718
+      ],
+      "name": "T",
+      "whitespace": false
+    },
+    "85": {
+      "advance": 722,
+      "box": [
+        79,
+        -19,
+        644,
+        718
+      ],
+      "name": "U",
+      "whitespace": false
+    },
+    "86": {
+      "advance": 667,
+      "box": [
+        20,
+        0,
+        647,
+        718
+      ],
+      "name": "V",
+      "whitespace": false
+    },
+    "87": {
+      "advance": 944,
+      "box": [
+        16,
+        0,
+        928,
+        718
+      ],
+      "name": "W",
+      "whitespace": false
+    },
+    "88": {
+      "advance": 667,
+      "box": [
+        19,
+        0,
+        648,
+        718
+      ],
+      "name": "X",
+      "whitespace": false
+    },
+    "89": {
+      "advance": 667,
+      "box": [
+        14,
+        0,
+        653,
+        718
+      ],
+      "name": "Y",
+      "whitespace": false
+    },
+    "90": {
+      "advance": 611,
+      "box": [
+        23,
+        0,
+        588,
+        718
+      ],
+      "name": "Z",
+      "whitespace": false
+    },
+    "91": {
+      "advance": 278,
+      "box": [
+        63,
+        -196,
+        250,
+        722
+      ],
+      "name": "bracketleft",
+      "whitespace": false
+    },
+    "92": {
+      "advance": 278,
+      "box": [
+        -17,
+        -19,
+        295,
+        737
+      ],
+      "name": "backslash",
+      "whitespace": false
+    },
+    "93": {
+      "advance": 278,
+      "box": [
+        28,
+        -196,
+        215,
+        722
+      ],
+      "name": "bracketright",
+      "whitespace": false
+    },
+    "94": {
+      "advance": 469,
+      "box": [
+        -14,
+        264,
+        483,
+        688
+      ],
+      "name": "asciicircum",
+      "whitespace": false
+    },
+    "95": {
+      "advance": 556,
+      "box": [
+        0,
+        -125,
+        556,
+        -75
+      ],
+      "name": "underscore",
+      "whitespace": false
+    },
+    "96": {
+      "advance": 333,
+      "box": [
+        14,
+        593,
+        211,
+        734
+      ],
+      "name": "grave",
+      "whitespace": false
+    },
+    "97": {
+      "advance": 556,
+      "box": [
+        36,
+        -15,
+        530,
+        538
+      ],
+      "name": "a",
+      "whitespace": false
+    },
+    "98": {
+      "advance": 556,
+      "box": [
+        58,
+        -15,
+        517,
+        718
+      ],
+      "name": "b",
+      "whitespace": false
+    },
+    "99": {
+      "advance": 500,
+      "box": [
+        30,
+        -15,
+        477,
+        538
+      ],
+      "name": "c",
+      "whitespace": false
+    }
+  },
+  "schema": "apodictic.helvetica-winansi-metrics.v1",
+  "sources": {
+    "ADOBE-LICENSE": "8618df77fef76491116b941327bfeddf4976ab7ca98f24fe97385761ba8e09f9",
+    "APACHE-LICENSE": "1301d8415a4868d82aeeec594849cf7679f1ead4636a9603dc46875f5713157e",
+    "APACHE-NOTICE": "40741b4ab76d77ba4fbc5e8759277169fb0ce281859d273075de6fd3a3588458",
+    "Helvetica.afm": "da33f1870474c8e68bfe3e2353ff107ab6c6eea1f9836ce2aaf1e1a07b17982f",
+    "WinAnsiEncoding.java": "3f490da5a07c01f3301e7ec418a434d36854182208216f42a30a61d31863019a"
+  }
+}
