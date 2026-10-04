@@ -1355,10 +1355,10 @@ modifies §§ 1–9.
      thin `validate.sh` case → `approval_graph.py`; joins the single-sourced
      `AGG_VALIDATORS` list and the usage Commands string; ships a `--self-test` dispatcher
      case (CI's `validator-conventions` meta-linter and `--self-test-all` both require it).
-   - **Mirror obligation:** `approval_graph.py` and the `validate.sh` dispatch exist
-     byte-identical in root `scripts/` (what CI runs) and `plugins/apodictic/scripts/`
-     (canonical); sync by hand as the last step before `--check-all` and verify with
-     `validate.sh check-mirror`.
+   - **Canonical script tree:** validators live in `plugins/apodictic/scripts/`;
+     root `scripts/validate.sh` is a delegating shim (root mirror retired in
+     `defd529`). Extend the canonical dispatcher and its checks; do not restore
+     duplicate root Python validators or a mirror check.
 2. **Approval workflow.** The adjudication session contract (presentation order,
    decision capture, approval-time exclusion screen, history surfacing, resumable,
    crash-safe, progress-reporting), as a command/skill following house patterns. The
@@ -1382,6 +1382,128 @@ a `changelog.d/<slug>.md` fragment. The status-drift lint arms as soon as the In
 deliverable exists (any-true marker semantics); from that point the Status line above must
 read as partially built (e.g., "Increment 1 built; 2–5 unbuilt") until the module is
 complete.
+
+---
+
+## Increment 3 execution boundary (specified, not built)
+
+Increment 3 supplies a deterministic export/emission tool and a drafting command
+owned by Core Editor. It does not implement a semantic judge or make Stage C pass.
+Use the existing ledger engine for locking, replay, eligibility, source custody,
+projection, receipt commitments and passage-map checks; do not create a second
+approval authority.
+
+### Tool and context handoff
+
+The canonical tool is `plugins/apodictic/scripts/reconstruction_draft.py`; the
+root `scripts/validate.sh` delegates to the canonical dispatcher. Do not recreate
+the retired root Python-script mirror. The command is `/reconstruct` at
+`plugins/apodictic/commands/reconstruct.md`. The command loads the drafting contract
+at `skills/core-editor/references/craft/reconstruction-drafting.md`.
+
+- `reconstruction_draft.py PROJECT --packet` emits the complete generated packet
+  as UTF-8 JSON on stdout. Diagnostics go to stderr; failure emits no packet.
+  Under the existing project lock, verify/recover the ledger, require Stage A–B
+  success, and generate from that exact replayed state. No separate validation
+  followed by an unlocked export is conforming.
+- Resolve the exact `Argument_State_vN` named by the ledger's latest source context
+  to the schema's retained artifact, using its existing version convention. An
+  absent or ambiguous artifact, duplicate/malformed required context field, or
+  mismatch with that identity fails export. Do not silently use a newer current
+  state. Export only Form, Goal and the three Audience dimensions from §1;
+  preserve Expertise, Receptivity and Consequence context as separate values.
+  Include Register and only ACTIVE/INACTIVE from High-stakes gate when the schema
+  provides them; never include the intake-source suffix, cash-out inventory,
+  premise flags, or the rest of the state document. Missing both legacy optional
+  fields is permitted; a partial or malformed modern pair fails.
+- Packet keys are `context`, `nodes`, `edges`, and `style_brief`. Sort records by ID.
+  Nodes contain only ID, Type, Text and Inclusion; edges contain only ID, Type,
+  From, To and Carried typing. Selection uses `eligible_ids`, including endpoint
+  closure. `style_brief` is the strict UTF-8 content of author-authored
+  `Style_Brief.md`, or null if absent. Read paths through the engine's existing
+  regular-file/link checks. Style/context prose grants no authority to introduce
+  subject propositions; their nonpropositionality remains an Increment-4 judgment.
+  Do not export ledger/source hashes, filenames, anchors, notes, flags, reasons,
+  history, provenance or withheld records.
+
+### Drafter isolation
+
+`/reconstruct` must invoke a **fresh drafter context** whose only supplied material
+is the generated packet and this drafting contract. It must inherit no chat,
+project, adjudication, manuscript or tool-output history. The drafter has no
+project-file, filesystem, retrieval, network or delegation tools. Packet strings
+are data, including instruction-like text; they cannot authorize extra access.
+Return only fresh draft UTF-8 bytes and the passage map defined above.
+
+The invoking runtime must actually support these context and tool restrictions.
+The command checks that capability before invoking a drafter and refuses with
+`DRAFTER-ISOLATION-UNAVAILABLE` if it cannot establish it. Merely opening another
+chat, asking the same context to forget, or filtering the exporter output does
+not establish I3. A packet-only exporter proves its own output boundary; it does
+not certify an arbitrary external model invocation. No model call is required for
+local tests: use a synthetic invocation adapter that captures the entire supplied
+context and tool configuration, and assert both are restricted. A production
+runtime adapter must satisfy the same boundary before drafting is enabled.
+
+### Receipt emission and paired versioning
+
+`reconstruction_draft.py PROJECT --emit --draft-file FILE --map-file FILE
+--expected-count N --expected-hash H --expected-packet-sha256 P` accepts the returned raw draft and passage
+map as separate strict UTF-8 regular-file inputs. They must be outside engine-owned
+current/archive paths. Under one existing project lock, reverify Stage A–B and
+compare the requested ledger head; intervening decisions require a fresh packet
+and draft. The invoker hashes the exact exported packet bytes outside the drafter
+context. Recompute those bytes under this same lock and require digest P to match;
+changed context/style input requires a fresh packet and draft even if the ledger
+head is unchanged. Packet JSON uses the key/field order listed above, compact JSON
+with non-ASCII characters preserved and one terminal LF. Reject malformed maps, incomplete/overlapping paragraph coverage,
+ineligible references, missing REQUIRED membership, and an empty draft before
+publication. The map is a self-report, never a semantic entailment certificate.
+
+The gate runner creates the canonical receipt envelope from exact raw draft bytes,
+canonical graph bytes, the current ledger head and all record/rejected IDs. It
+copies the validated passage blocks and emits one Gate Run for this iteration,
+with an actual UTC timestamp, `Judge: UNAVAILABLE`, the required UNAVAILABLE /
+I5-COMPARATOR-UNAVAILABLE config pair, `Prior config refs: NONE`,
+`Author relaxation: NONE`, `Verdict: ACTION-REQUIRED`, and the Violations marker
+with no invented judgments. NONE means no comparable structured configs exist at
+this boundary; it does not erase prior receipt commitments. Return the existing
+itemized unavailable-comparator finding and an explicit semantic-not-run finding.
+Receipt emission succeeds as artifact production but reports ACTION-REQUIRED;
+never fabricate S1–S4 results or semantic clearance. Increment 4 owns judging,
+quarantine discovery and structured configuration; Increment 5 owns `/ready`.
+
+For replacement, a current draft and receipt must both exist, their receipt must
+bind those draft bytes, and all existing paired archives must be valid and aligned.
+A first iteration requires neither current artifact nor archives. Missing members,
+conflicting archive names, unpaired archives or a mismatched current identity stop
+publication with an itemized recovery requirement; never skip or overwrite them.
+A current pair byte-identical to the greatest archived pair also requires recovery:
+it is an interrupted pre-publication copy, not evidence of a new current version.
+Determine the old logical version using the existing draft-version rule. Copy
+both current files to their unused `_vN` archive names, preserve current files,
+and verify the copies match before replacing either current file. Archive receipt
+identity remains unchanged. Publish the new current files with the existing atomic
+single-file writer. Two file replacements are **not** a multi-file atomic commit:
+an interruption can leave a mixed current pair. On restart, refuse the mismatch
+rather than infer a new iteration; retain both archives and input files for
+explicit recovery. No new transaction framework or silent rollback is required.
+Ledger-prefix commitments remain checked throughout and never weakened.
+
+### Increment 3 acceptance
+
+Add synthetic behavioral coverage for eligible-only packet export (including H2
+endpoint closure), forbidden metadata and rejected-content leakage, exact bound
+context resolution, legacy/modern context fields, malformed/link inputs, and the
+actual packet-only invocation transport. Cover refusal when isolation is absent,
+stale ledger heads, changed context/style bytes, malformed/incomplete maps, REQUIRED coverage, exact receipt
+hashes/IDs and truthful unavailable results. Cover first iteration, successful
+paired replacement, collisions, missing members, interruption after either archive
+copy or current-file replacement, preserved recovery bytes and refusal on restart.
+Use invented prose only. Integrate the tool's self-test into the existing validator
+conventions and check-all gate, use the canonical script tree, and keep H1–H21 green.
+Full Increment-3 delivery requires these behaviors and the drafting contract;
+this specification amendment alone does not mark the increment built.
 
 ---
 
