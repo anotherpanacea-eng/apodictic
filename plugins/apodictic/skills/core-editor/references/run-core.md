@@ -606,7 +606,7 @@ Track information flow.
 
 **Output:** Reveal ledger, fairness flags.
 
-**`evidence_quote` (conditional Pass 8 adoption).** For a finding about a precise reveal, signpost, or withholding locus, copy the **complete, already-cited single-line sentence** verbatim into its structured finding block, only when that sentence is genuinely the evidence. Preserve the intended `evidence_refs`. **Omit** the field for structural timing, absent clues or signposts, dropped threads, and evidence spanning lines; never invent, paraphrase, concatenate, or select a convenient sentence just to gain a quote anchor. Quote lookup outranks the refs: a unique sentence from elsewhere would anchor there even if the refs name another chapter. The existing A6 check establishes quote provenance and offsets, not sentence completeness, editorial relevance, fairness, or producer adherence. See `findings-ledger-format.md` §"When to populate `evidence_quote`" and the invented mechanical example in `docs/pass8-evidence-quote.md`.
+**`evidence_quote` (conditional).** When a finding is about one precise reveal, signpost, or withholding sentence, copy that complete single-line sentence verbatim as `evidence_quote` and keep the intended `evidence_refs`. Omit it for structural timing, missing clues, dropped threads, and multi-line evidence. The quote outranks the refs for placement, so copy the sentence you mean the note to sit on. See `findings-ledger-format.md` §"When to populate `evidence_quote`".
 
 **Finding-driven audit triggers:**
 - Knowledge errors (character acts on information they shouldn't have) → recommend **Decision Pressure** audit (IS channel)
