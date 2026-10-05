@@ -132,7 +132,10 @@ the fragment `core-editor/references/nonfiction-intake-routing.md`:
 - Identify form, audience, stakes, constraint=high-stakes
 - Propose `generative` only for a lens/exploratory form and obtain writer confirmation;
   otherwise record the asserted default. A high-stakes signal forces asserted.
-- Seed `Argument_State.md` with the initial `apodictic:argument_spine` block
+- Propose AT6 (address) only from textual signals and obtain writer confirmation in plain words
+- Seed `Argument_State.md` with the initial `apodictic:argument_spine` block, except for a
+  confirmed AT6 / `ADDRESS` C0: skip the spine (it is propositional, AT0–AT5 only) and
+  initialize Argument_State §1 and the typed C0 directly
 - Identify the Hard Prerequisite tier requirement (high-stakes signal → Field Recon first)
 
 ### 2. Audit Activation (Pre-Pass)

@@ -45,7 +45,8 @@ that span.
    from text features
 3. otherwise the default route stays in place
 
-Record `AT6` and `C0 type: ADDRESS` in Argument_State. Span functions (Dialectical Clarity
+Record `AT6` and `C0 type: ADDRESS` in Argument_State directly; do not seed an
+`apodictic:argument_spine` block, which is propositional (AT0–AT5, thesis, antithesis). Span functions (Dialectical Clarity
 § Applicability and span functions) are proposed and confirmed the same way. For any text with
 quoted speech, also ask: "Does any quoted speech come to us through a recorder, translator, or
 composite?" A yes opens the AT4 attribution burden.
