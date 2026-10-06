@@ -1,0 +1,3 @@
+### Annotation PDF proofing
+
+Add explicit `pdf` / `pdf-export --internal-links` mode with bidirectional marker/comment links in separate `pdf-linked/` output. Pinned offline Helvetica/WinAnsi ink metrics define exact hit regions and internal destinations; clipped, conflicting or unsupported regions refuse. Normal-run on-disk evidence, original snapshot binding, contained unique inputs and atomic publication protect the projection. Independent object/xref, link-ownership, geometry and action checks supplement P1–P3. Default PDF bytes and output remain unchanged. Structural acceptance is distinct from reader qualification, which remains unperformed.

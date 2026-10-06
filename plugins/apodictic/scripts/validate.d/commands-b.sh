@@ -1,5 +1,24 @@
 # shellcheck shell=bash
 # Sourced by ../validate.sh; not runnable on its own.
+_PDF_LINK_FLAGS=0
+_PDF_LINK_INVALID=0
+for _PDF_ARG in "$@"; do
+  case "$_PDF_ARG" in
+    --internal-links) _PDF_LINK_FLAGS=$((_PDF_LINK_FLAGS + 1)) ;;
+    --internal-links*) _PDF_LINK_INVALID=1 ;;
+  esac
+done
+if [ "$_PDF_LINK_FLAGS" -gt 0 ] || [ "$_PDF_LINK_INVALID" -ne 0 ]; then
+  if [ "$COMMAND" != "pdf-export" ] || [ "$_PDF_LINK_FLAGS" -ne 1 ] || [ "$_PDF_LINK_INVALID" -ne 0 ] || [ "$#" -ne 2 ]; then
+    echo "pdf-export: usage: pdf-export <run_folder> --internal-links (once)"; exit 2
+  fi
+  for _PDF_ARG in "$@"; do
+    case "$_PDF_ARG" in
+      --internal-links) ;;
+      --*) echo "pdf-export: usage: misplaced navigation option"; exit 2 ;;
+    esac
+  done
+fi
 case "$COMMAND" in
 
   # ----------------------------------------------------------------------
@@ -1141,8 +1160,23 @@ EOF
     # Delegates to scripts/annotation_export.py; degrades to an advisory WARN without python3.
     PXE_DIR=$(cd "$(dirname "$0")" && pwd)
     PXE_HELPER="$PXE_DIR/annotation_export.py"
+    if [ "$_PDF_LINK_FLAGS" -eq 1 ] && { ! command -v python3 >/dev/null 2>&1 || [ ! -f "$PXE_HELPER" ]; }; then
+      echo "pdf-export: N navigation validation unavailable (Python/helper missing)"; exit 2
+    fi
     if [ "${1:-}" = "--self-test" ]; then
-      if command -v python3 >/dev/null 2>&1 && [ -f "$PXE_HELPER" ]; then python3 "$PXE_HELPER" --self-test; exit $?; fi
+      if command -v python3 >/dev/null 2>&1 && [ -f "$PXE_HELPER" ]; then
+        python3 "$PXE_HELPER" --self-test || exit $?
+        # Repository canonical gate also runs the behavioral navigation suite.
+        # Installed standalone default-mode smoke tests retain their legacy path.
+        PXE_REPO=$(cd "$PXE_DIR/../../.." && pwd)
+        if [ -f "$PXE_REPO/AGENTS.md" ]; then
+          if [ ! -f "$PXE_REPO/tests/test_pdf_navigation.py" ]; then
+            echo "pdf-export: N repository navigation acceptance suite unavailable"; exit 2
+          fi
+          python3 "$PXE_REPO/tests/test_pdf_navigation.py" || exit $?
+        fi
+        exit 0
+      fi
       echo "Self-test: PASS (degraded — python3 unavailable; pdf-export is advisory without it)"; exit 0
     fi
     if command -v python3 >/dev/null 2>&1 && [ -f "$PXE_HELPER" ]; then
