@@ -298,6 +298,23 @@ class NavigationRunTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    @unittest.skipUnless(os.name == "posix", "POSIX permission contract")
+    def test_linked_publication_matches_default_permissions_under_umask(self):
+        for mask in (0o022, 0o077):
+            with self.subTest(umask=mask):
+                prior = os.umask(mask)
+                try:
+                    self.assertEqual(exporter.generate_pdf(str(self.root))[0], 0)
+                    self.assertEqual(exporter.generate_pdf(str(self.root), internal_links=True)[0], 0)
+                    linked = next((self.root / "pdf-linked").glob("*.pdf"))
+                    default = next((self.root / "pdf").glob("*.pdf"))
+                    self.assertEqual(linked.stat().st_mode & 0o777, 0o666 & ~mask)
+                    self.assertEqual(linked.stat().st_mode & 0o777, default.stat().st_mode & 0o777)
+                    linked.unlink()
+                    default.unlink()
+                finally:
+                    os.umask(prior)
+
     def test_real_normal_run_gate_and_separate_output(self):
         self.assertEqual(exporter.generate_pdf(str(self.root), internal_links=True)[0], 0)
         self.assertFalse((self.root / "pdf").exists())

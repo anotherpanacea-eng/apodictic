@@ -55,6 +55,7 @@ def generate():
     if len(table) != 218:
         raise ValueError("unexpected WinAnsi coverage: %d" % len(table))
     return {"schema": "apodictic.helvetica-winansi-metrics.v1", "sources": SOURCES,
+            "notice": "Modified by APODICTIC: derived from Adobe Helvetica AFM and Apache PDFBox WinAnsiEncoding; normalized nbspace/sfthyphen to Helvetica space/hyphen metrics and excluded controls and undefined CP1252 bytes. Original licenses and notices accompany this table.",
             "glyphs": table}
 
 

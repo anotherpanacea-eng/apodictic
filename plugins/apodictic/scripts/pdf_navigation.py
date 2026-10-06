@@ -31,7 +31,7 @@ def metrics():
     root = Path(__file__).resolve().parent / "pdf_metrics"
     try:
         table = json.loads((root / "helvetica-winansi.json").read_bytes())
-        if (not isinstance(table, dict) or set(table) != {"schema", "sources", "glyphs"}
+        if (not isinstance(table, dict) or set(table) != {"schema", "sources", "notice", "glyphs"}
                 or table["schema"] != "apodictic.helvetica-winansi-metrics.v1"):
             raise MetricsUnavailable("N metrics schema or shape")
         # Source filenames come only from the pinned recipe, never the mutable

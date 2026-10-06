@@ -2399,6 +2399,7 @@
       "whitespace": false
     }
   },
+  "notice": "Modified by APODICTIC: derived from Adobe Helvetica AFM and Apache PDFBox WinAnsiEncoding; normalized nbspace/sfthyphen to Helvetica space/hyphen metrics and excluded controls and undefined CP1252 bytes. Original licenses and notices accompany this table.",
   "schema": "apodictic.helvetica-winansi-metrics.v1",
   "sources": {
     "ADOBE-LICENSE": "8618df77fef76491116b941327bfeddf4976ab7ca98f24fe97385761ba8e09f9",

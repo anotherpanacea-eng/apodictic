@@ -68,3 +68,7 @@ P1 compares bytes to a fresh build in the explicitly selected mode. A refused fr
 Structural validation is separate from reader qualification. A later qualification record identifies reader/version/platform, exact artifact checksum and observed forward/return behavior on single-page, adjacent-marker and cross-page fixtures. At least one named reader must pass before advertising qualified navigation; document unsupported readers. The [PDF Association report on preview limitations](https://pdfa.org/googles-pdf-preview-fails-including-with-pdfs-made-by-google-docs/) motivates this independent evidence. Unperformed checks are not passes; no all-viewers claim.
 
 Excluded: font embedding, Unicode expansion, reflow, tagged-PDF/PDF-UA conformance, editor integration, corpus acquisition and reader-automation infrastructure. Implementation follows independent reviews, local gates and normal draft/train admission; reader qualification remains separate unfinished work.
+
+### Long manuscript lines
+
+The current fixed-layout exporter does not wrap or reflow source lines. Navigation refuses an anchor whose ink rectangle lies outside the page; it never clips the rectangle to claim a usable link. A manuscript stored one paragraph per line may therefore export normally but refuse internal navigation for many anchors. Use default PDF export in that case. Wrapping/reflow requires a separately reviewed layout contract and is not implemented by this increment.

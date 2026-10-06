@@ -1514,6 +1514,10 @@ def _run_pdf_navigation(folder, *, generate=False):
                 fh.write(pdf)
                 fh.flush()
                 os.fsync(fh.fileno())
+            # Match ordinary PDF creation permissions, including the caller's umask.
+            mask = os.umask(0)
+            os.umask(mask)
+            os.chmod(temp_path, 0o666 & ~mask)
             _pdf_nav_path(root, temp_path, file=True)
             _pdf_nav_output(root, output_path)
             os.replace(temp_path, output_path)
