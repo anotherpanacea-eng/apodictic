@@ -1,3 +1,3 @@
 ### Annotation-export roadmap
 
-Correct the roadmap to record the already shipped PDF proofing export, its artifact/text/comment gates and WinAnsi/single-line-comment limits. Clickable PDF annotations remain deferred, and byte/content validation remains distinct from real-reader rendering qualification.
+Record the shipped PDF proofing export's date, P1 to P3 gates and WinAnsi/single-line limits beside the opt-in navigation entry. Byte/content validation remains distinct from real-reader qualification.
