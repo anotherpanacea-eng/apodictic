@@ -1,6 +1,6 @@
 # Proposed distinctions and counter-readings
 
-Construction key; never dispatch to blind readers. Expectations are provisional hypotheses under the [roadmap spec](../../../docs/rhetorical-purpose-pluralism-spec.md), not results, ratified labels or new severity authority. Each link names the closed packet. Purpose-aware applicability describes a future reviewed assessment; current rules remain unchanged. Unassessed is unknown, not pass. Absence of a named defect establishes neither universal achievement nor actual audience uptake.
+Construction key; never dispatch to blind readers. Expectations are provisional hypotheses under the [lean build spec](../../../docs/rhetorical-purpose-pluralism-spec.md), not results, ratified labels or new severity authority. Each link names the closed packet. R13, R15, R16, S0 and S1 were revised for the built design (AT6, typed C0, applicability rule); the other packets still read correctly under it. In this deck, "purpose-native" severity and profiles mean machinery the lean build rejected; their prohibition stands. Unassessed is unknown, not pass. Absence of a named defect establishes neither universal achievement nor actual audience uptake.
 
 ## R01
 [Input](inputs.md#r01), A1-A2.
@@ -112,10 +112,10 @@ Construction key; never dispatch to blind readers. Expectations are provisional 
 
 ## R13
 [Input](inputs.md#r13), M1-M3.
-- Applicability: existing default route retained with limitations disclosed; alternative constitutive reading provisional.
+- Applicability: existing default route retained with limitations disclosed; the AT6 reading is a proposal only.
 - Retained commitments: inventory actual M2 undertaking without invented thesis or confirmation.
-- Proposed behavior: seek confirmation through future reviewed intake; no current exclusion activation or claimed purpose-aware run.
-- Normative basis: absent confirmation and explicitly unchanged capability.
+- Proposed behavior: ask the plain-words intake question ("mainly asking readers to stand with a group, or to accept a claim?"); until the writer answers, no AT6, no `ADDRESS` C0 and no span-function exclusion.
+- Normative basis: absent confirmation; AT6 and span functions are writer-confirmed only.
 - Prohibited outputs: silent switch, proposal-as-confirmation, claiming shipped alternative assessment.
 - Counter-reading/uncertainty: multiple readings of "stand together" confer no authorization.
 
@@ -132,16 +132,16 @@ Construction key; never dispatch to blind readers. Expectations are provisional 
 [Input](inputs.md#r15), O1-O2.
 - Applicability: ordinary existing legacy workflow and requirements apply.
 - Retained commitments: C0/subclaims/finding links, scoped warrant and stable IDs unchanged.
-- Proposed behavior: preserve compatibility without demanding purpose records or conversion.
+- Proposed behavior: the artifact has no `C0 type` field, so it reads as `ASSERTION` and stays valid unchanged under schema 0.4.0; demand no conversion.
 - Normative basis: supplied valid legacy status and no purpose request.
 - Prohibited outputs: rejecting valid ordinary legacy artifact for missing future optional records; inventing fields or broadening verdict.
 - Counter-reading/uncertainty: source reasoning absent; scenario validity is supplied evidence, not executed validator proof or re-evaluated warrant.
 
 ## R16
 [Input](inputs.md#r16), P1-P2.
-- Applicability: capability/version negotiation and explicit loss-aware refusal, not manufactured projection.
+- Applicability: the consumer's `ADDRESS` C0 guard paragraph, not negotiation or an adapter.
 - Retained commitments: preserve original artifact/unaffected material; unsupported operations remain unprojected, never passing.
-- Proposed behavior: visibly refuse unsupported projection until safe reviewed support/adapter exists; identify unrepresentable operations.
+- Proposed behavior: operate on cash-out claims only, or say plainly that the module does not apply; identify what is not represented.
 - Normative basis: legacy-only consumer contract and absent support.
 - Prohibited outputs: fake C0/AIF inference edges, silent loss, empty warrant string or global WARRANTED.
 - Counter-reading/uncertainty: a reviewed subset adapter could later support actual claim units; none exists in this packet.
@@ -182,6 +182,24 @@ Construction key; never dispatch to blind readers. Expectations are provisional 
 - Prohibited outputs: commitment exemption or changed local finding from title label alone.
 - Counter-reading/uncertainty: a real genre context might add expectations; here the only altered evidence is the title label, not the undertaking.
 
+## S0
+[Input](inputs.md#s0), W1-W2.
+- Applicability: AT6 with `C0 type: ADDRESS` (the text asks residents to stand with one another). Address coherence and closure checks apply. No claim in either span, so no cash-out.
+- Retained commitments: W2's "pushed out ... diminished" is evaluative and shared with the declared audience (span rule 2), not an empirical premise.
+- Proposed defect/repair: none evidenced; describe the address and its closure (stand with the family beside you).
+- Normative basis: writer-confirmed solidarity aim and W1's inclusive address.
+- Prohibited outputs: invented thesis or antithesis, objection or rebuttal demand, representativeness or comparison finding, global WARRANTED.
+- Counter-reading/uncertainty: the greeting may not produce solidarity; no reception evidence decides that.
+
+## S1
+[Input](inputs.md#s1), W1-W3; matched pair with S0.
+- Applicability: identical reading of W1-W2 as S0. W3 is a cash-out at asserted burden.
+- Retained commitments: W3 is causal, quantified and time-bound with no supplied support.
+- Proposed defect/repair: exactly one finding, at W3: unsupported causal and quantified prediction (precision, mechanism, horizon). Delimit or support it. The same sentence draws the same finding in an ordinary asserted text (compare R05/R06).
+- Normative basis: W3's actual commitment; the address purpose neither excuses nor aggravates it.
+- Prohibited outputs: any S0-type finding on W1-W2, label immunity for W3, falsehood verdict, global WARRANTED.
+- Counter-reading/uncertainty: W3 could be read as hope rather than prediction, but "will reduce ... by 40% within one year" favors the literal reading.
+
 ## Coverage and disposition
 
-Twenty candidate packets cover all eight battery bullets plus political-only, title-only and changed-context controls. Zero executed readings, adjudications or ratified/licensed cases. Anchor/coverage checks are mechanical only. Independent editorial judgment, contested-case human licensing and runtime prerequisites remain outstanding. No scalar score, flag-count pass or actual audience evidence is recorded.
+Twenty-two candidate packets cover all eight battery bullets plus political-only, title-only and changed-context controls and the S0/S1 matched pair. Zero executed readings, adjudications or ratified/licensed cases. Anchor/coverage checks are mechanical only. Independent editorial judgment, contested-case human licensing and runtime prerequisites remain outstanding. No scalar score, flag-count pass or actual audience evidence is recorded.

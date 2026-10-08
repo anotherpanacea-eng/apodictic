@@ -1,8 +1,8 @@
 # Argument State Schema
 ## Nonfiction Argument Engine — Shared Artifact Specification
-*Version: 0.3.0*
+*Version: 0.4.0*
 *Status: Active*
-*Last updated: July 15, 2026*
+*Last updated: October 4, 2026*
 *Depends on: Dialectical Clarity v2.1*
 
 ---
@@ -72,7 +72,7 @@ Cash-out inventory:
   - CO1 | Location: [stable span] | Kind: [ASSERTION / PRESCRIPTION] | Press: [LIGHT / MEDIUM / HARD] | Consequence: [LOW / MEDIUM / HIGH]
   - NONE
 
-Warrant verdict: [WARRANTED / UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED]
+Warrant verdict: [WARRANTED / UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED / ADDRESS-C0 (verdicts at cash-outs)]
   Form notes: [if unconventional, name the form and the basis for the verdict]
 Premise-plausibility flags: [NONE_REGISTERED / P1, P2, …]
   Flag notes: [per flagged premise — role + flag type(s) + Firewall boundary; never a truth verdict]
@@ -86,13 +86,13 @@ Fired codes: [AT-codes, AC-codes, or PASS]
 |-------|-----------|----------|-------|
 | Form | Intake / Step 1 | Yes | From the genre calibration list; "other" allowed with explanation |
 | Goal | Step 1 | Yes | One sentence; extracted from the text, not invented |
-| Argument type | Step 1 | Yes | AT0–AT5 |
+| Argument type | Step 1 | Yes | AT0–AT6. AT6 (constitutive / relational address) is writer-confirmed, never inferred |
 | Register | Intake / Step 1 | Yes for argument-shaped runs | `asserted` is the default; `generative` requires writer confirmation and AT5 routing |
 | Register confirmation | Intake / Step 1 | Yes for argument-shaped runs | Never infer `generative` silently; a high-stakes signal records `FORCED-ASSERTED` |
 | High-stakes gate | Intake / Step 1 | Yes for argument-shaped runs | `ACTIVE` forces asserted burden document-wide; the source after the dash makes the decision auditable |
 | Audience | Step 1 | Yes | Three dimensions; drives calibration in all later sections |
-| Cash-out inventory | Step 1 / Triage | Yes for AT5 or `generative`; otherwise optional | Stable `CO#` join keys. `Kind: PRESCRIPTION` is the mechanical backstop: findings joined by `cash_out_ref` cannot be demoted |
-| Warrant verdict | Step 9 | Yes | Backfilled after terminal step; may retroactively adjust codes. The inference axis (Local Relevance + Local Sufficiency); does not adjudicate premise truth |
+| Cash-out inventory | Step 1 / Triage | Yes for AT5, AT6, an `ADDRESS` C0, or `generative`; otherwise optional | Stable `CO#` join keys. Every row is a protected commitment: findings joined by `cash_out_ref` cannot be demoted, whether `Kind` is `ASSERTION` or `PRESCRIPTION` |
+| Warrant verdict | Step 9 | Yes | `ADDRESS-C0 (verdicts at cash-outs)` only with an `ADDRESS` C0; each cash-out then carries its own three-way verdict. Backfilled after terminal step; may retroactively adjust codes. The inference axis (Local Relevance + Local Sufficiency); does not adjudicate premise truth |
 | Premise-plausibility flags | Step 9 | Yes | Backfilled after terminal step; the acceptability axis (Local Acceptability), surfaced as flags only — never a truth verdict, never alters the warrant verdict by itself |
 
 **Premise-plausibility flags — detail (non-adjudicative; companion modules may annotate but may not convert to truth verdicts):**
@@ -119,6 +119,7 @@ Populated by: Dialectical Clarity Step 2.
 ## 2. Claim Architecture
 
 C0 (main claim): [one sentence]
+C0 type: [ASSERTION / ADDRESS]
 
 Subclaims:
   C1: [necessary subclaim]
@@ -140,11 +141,12 @@ Fired codes: [CL-codes or PASS]
 | Field | Source Step | Required | Notes |
 |-------|-----------|----------|-------|
 | C0 | Step 2 | Yes | Must be extractable from text, not reviewer-supplied |
-| C1–C3 | Step 2 | Yes (at least one) | Necessary links only; may be fewer than 3 |
+| C0 type | Step 2 | No (absent reads as `ASSERTION`) | `ADDRESS` ("the text asks [audience] to be / recognize / do [X]") only under writer-confirmed AT6, or AT4 whose stated purpose is to be heard |
+| C1–C3 | Step 2 | Yes (at least one) for `ASSERTION`; optional for `ADDRESS` | Necessary links only; may be fewer than 3. Under `ADDRESS`, local claim chains attach to cash-outs |
 | Stakes | Step 2 | Yes | Stated or strongly implied by the text |
 | Key terms | Step 2 | When definitional pressure matters | Track terms whose meaning carries argumentative force |
 
-**Downstream consumers:** Every module reads C0 and the claim ladder. The red-team module attacks C0 and its weakest subclaim. The persuasion module assesses which subclaim to foreground for the identified audience. The revision coach sequences repair by subclaim dependency.
+**Downstream consumers:** Every module reads C0 and the claim ladder. The red-team module attacks C0 and its weakest subclaim. The persuasion module assesses which subclaim to foreground for the identified audience. The revision coach sequences repair by subclaim dependency. When C0 type is `ADDRESS`, each consumer operates on the cash-out claims only or says plainly that it does not apply; it never invents a ladder, antithesis, inference edge, or global WARRANTED.
 
 ---
 
@@ -602,7 +604,7 @@ Schema version does not change when:
 - Companion modules are added (they get new subsections in § 10)
 - Field descriptions are clarified without changing the field's meaning
 
-Current schema version: **0.3.0** (AT5/register calibration: required register-confirmation and high-stakes fields for argument-shaped runs, plus the cash-out inventory; legacy finding records remain valid through optional extension fields)
+Current schema version: **0.4.0** (typed C0: `C0 type: ASSERTION | ADDRESS`, default `ASSERTION`, plus the `ADDRESS-C0` warrant-verdict value; artifacts without the field read as `ASSERTION` and stay valid). Previous: 0.3.0 (AT5/register calibration: required register-confirmation and high-stakes fields for argument-shaped runs, plus the cash-out inventory; legacy finding records remain valid through optional extension fields)
 Depends on: Dialectical Clarity v2.1
 
 ---

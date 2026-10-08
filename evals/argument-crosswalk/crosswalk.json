@@ -67,6 +67,14 @@
       "rationale": "argument-type classification layer for writer-confirmed lens essays; no direct fallacy/scheme analogue in the R4A reference set; no direct target in the reviewed reference set."
     },
     {
+      "id": "AT6",
+      "family": "AT",
+      "internal_name": "Constitutive / Relational Address",
+      "cardinality": "unmapped",
+      "targets": [],
+      "rationale": "argument-type classification layer for writer-confirmed addresses (solidarity, commemoration, pledge); its C0 is an address, not a proposition, so no fallacy/scheme analogue in the R4A reference set; no direct target in the reviewed reference set."
+    },
+    {
       "id": "AC0",
       "family": "AC",
       "internal_name": "Audience dependency undeclared",
