@@ -13,3 +13,7 @@ AT6. Includes the lean build spec, ADR 0003, and the two-source level-setting re
 
 Intake also covers AT4 testimony whose writer-stated purpose is to be heard,
 without inventing a thesis or changing its AT4 classification.
+
+The pre-draft spine also skips heard-witness AT4 `ADDRESS` states. AIF export accepts
+`ASSERTION` states declared as schema 0.2.0, 0.3.0, or 0.4.0 and preserves that source
+version; every `ADDRESS` state remains explicitly non-exportable.

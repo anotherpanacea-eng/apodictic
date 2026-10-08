@@ -10,7 +10,7 @@
 
 Capture the **argument spine** before drafting — the thesis, the claim ladder that builds to it, and the strongest opposing view it must defeat — and **seed the shared `Argument_State.md`** so the Dialectical Clarity audit and the companion modules later consume one contract. Design + lineage: [`docs/nonfiction-pre-draft.md`](../../../../docs/nonfiction-pre-draft.md).
 
-**Scope.** The spine plans a propositional argument (AT0–AT5): a thesis, a ladder, an antithesis. A constitutive or relational address (AT6, `C0 type: ADDRESS`) has no thesis or antithesis to plan, so this pathway does not apply to it. Say so plainly rather than forcing a spine; the Dialectical Clarity audit handles such texts once a draft exists.
+**Scope.** The spine plans a propositional argument: a thesis, a ladder, an antithesis. It does not apply to any `C0 type: ADDRESS`: writer-confirmed AT6 or AT4 testimony whose writer-stated purpose is to be heard. Such an address has no thesis or antithesis to plan. Retain the AT4 classification for heard-witness testimony, and say plainly why the spine does not apply instead of inventing one; the Dialectical Clarity audit handles such texts once a draft exists. Ordinary AT0–AT5 `ASSERTION` texts still use this pathway.
 
 ---
 
