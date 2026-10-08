@@ -7,7 +7,7 @@
 
 The severity rows below are **asserted-register base severities**. For an argument-shaped
 run, Triage then applies the precedence defined in `run-synthesis.md`: active high-stakes
-gate → prescriptive cash-out → confirmed generative-register default → instance rhetorical
+gate → joined cash-out → confirmed generative-register default → instance rhetorical
 stance. Calibration happens before the Deficit Lock and is recorded in the structured
 finding; these rows never authorize post-lock softening.
 

@@ -10,7 +10,10 @@ rhetorical move; it never adjudicates whether the underlying claim is true.
 The writer declares or confirms the document register. `asserted` is the default;
 `generative` is never silently inferred. An intake-declared high-stakes signal forces
 `asserted` document-wide. A prescriptive/action-demanding cash-out is assessed at asserted
-burden at that span regardless of the document register.
+burden at that span regardless of the document register. The same holds for factual,
+causal, quantified, historical, and attributive claims and for dated or quantified
+predictions: no stance verdict demotes them (Dialectical Clarity span rule 1). An earned
+stance can calibrate how a move is framed; it never excuses what the move commits to.
 
 This is the argument-domain sibling of `prose-measurements/references/craft/ai-prose-calibration.md` Layer C source triage.
 Source triage adjudicates voice/craft pattern families. This triage adjudicates
@@ -47,7 +50,7 @@ judgments, never mechanically certified. The writer remains the authority.
 An earned or earned-by-frame candidate calibrates an eligible finding to Could-Fix at
 Triage. Unearned/divergent leaves severity unchanged. The committed severity is then
 locked. For an earned would-be demotion under an active high-stakes gate, record
-`calibration_effect: blocked-high-stakes`; for one joined to a prescriptive cash-out,
+`calibration_effect: blocked-high-stakes`; for one joined to any cash-out row (assertion or prescription),
 record `calibration_effect: blocked-cash-out`. Unearned/divergent records retain their
 stance and full severity without a block effect because no demotion was attempted. The
 validator proves only supplied `cash_out_ref` joins; join completeness remains an auditor

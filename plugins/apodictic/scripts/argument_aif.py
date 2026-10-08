@@ -20,6 +20,7 @@ from override_marker import mask_code_spans  # noqa: E402
 
 SCHEMA = "apodictic.aif-core-export.v1"
 STATE_SCHEMA = "0.2.0"
+SUPPORTED_STATE_SCHEMAS = ("0.2.0", "0.3.0", "0.4.0")
 NODE_TYPES = {"I-node", "RA-node", "CA-node"}
 LOSS_CODES = {
     "CLAIM-LADDER-TOPOLOGY-UNDECLARED", "UNMAPPED-PA", "UNTYPED-OBJECTION",
@@ -228,6 +229,13 @@ def _final_claims(sec):
             value = text[line_start + m.start(1):line_start + m.end(1)].strip()
             if not value: raise ExportError("final-claim-incomplete")
             claims["C0"], c0_seen = value, True; continue
+        m = re.fullmatch(r"C0 type:[ \t]*(.*?)[ \t]*", line)
+        if m:
+            # Schema 0.4.0 typed C0. An address has no document-level inference graph to
+            # project, so refuse it rather than export it as a proposition.
+            if m.group(1) == "ADDRESS": raise ExportError("address-c0-not-exportable")
+            if m.group(1) != "ASSERTION": raise ExportError("final-claim-type-invalid")
+            continue
         m = re.fullmatch(r"\s{2}(C\d+):[ \t]*?(.*)", line)
         if m:
             if m.group(1) in claims: raise ExportError("final-claim-duplicate")
@@ -374,7 +382,7 @@ def _populated(sec):
 
 
 def build_export(source, *, artifact="Argument_State.md", state_schema=STATE_SCHEMA):
-    if state_schema != STATE_SCHEMA: raise ExportError("state-schema-unsupported")
+    if state_schema not in SUPPORTED_STATE_SCHEMAS: raise ExportError("state-schema-unsupported")
     raw = source if isinstance(source, bytes) else source.encode("utf-8")
     try: text = raw.decode("utf-8")
     except UnicodeDecodeError: raise ExportError("source-encoding-invalid")
@@ -461,7 +469,7 @@ def build_export(source, *, artifact="Argument_State.md", state_schema=STATE_SCH
     losses = sorted({_loss_key(x): x for x in losses}.values(), key=_loss_key)
     nodes.sort(key=lambda x: x["id"]); edges.sort(key=lambda x: (x["from"], x["to"]))
     obj = {"schema": SCHEMA,
-           "source": {"artifact": Path(artifact).name, "sha256": hashlib.sha256(raw).hexdigest(), "argument_state_schema": STATE_SCHEMA, "schema_version_basis": "operator-declared"},
+           "source": {"artifact": Path(artifact).name, "sha256": hashlib.sha256(raw).hexdigest(), "argument_state_schema": state_schema, "schema_version_basis": "operator-declared"},
            "profile": {"name": "aif-core-subset", "aif_reference": "AIF Specification, Definition 1.1", "loss_policy": "explicit"},
            "nodes": nodes, "edges": edges, "losses": losses}
     errors = validate_export(obj)
@@ -479,7 +487,7 @@ def validate_export(obj):
     else:
         if not isinstance(source["artifact"], str) or not source["artifact"] or Path(source["artifact"]).name != source["artifact"]: errors.append("source artifact")
         if not isinstance(source["sha256"], str) or not re.fullmatch(r"[0-9a-f]{64}", source["sha256"]): errors.append("source sha256")
-        if source["argument_state_schema"] != STATE_SCHEMA: errors.append("state schema literal")
+        if source["argument_state_schema"] not in SUPPORTED_STATE_SCHEMAS: errors.append("state schema literal")
         if source["schema_version_basis"] != "operator-declared": errors.append("schema basis literal")
     expected_profile = {"name": "aif-core-subset", "aif_reference": "AIF Specification, Definition 1.1", "loss_policy": "explicit"}
     if not isinstance(profile, dict) or set(profile) != PROFILE_KEYS: errors.append("profile closed shape")
@@ -589,6 +597,36 @@ def selftest():
         arms.append(name)
         if not condition: failures.append(name)
     obj = build_export(final.encode())
+    typed = final.replace("path\n\nSubclaims:", "path\nC0 type: ASSERTION\n\nSubclaims:")
+    check("typed ASSERTION C0 exports unchanged", build_export(typed.encode())["nodes"] == obj["nodes"])
+    export_schema = artifacts.load_schema(SCHEMA)
+    for version in SUPPORTED_STATE_SCHEMAS:
+        versioned = build_export(typed.encode(), state_schema=version)
+        check("declared source schema preserved " + version,
+              versioned["source"]["argument_state_schema"] == version
+              and versioned["nodes"] == obj["nodes"]
+              and not validate_export(versioned)
+              and export_schema is not None
+              and not artifacts.validate_obj(versioned, export_schema, where="export"))
+        try:
+            build_export(typed.replace("ASSERTION", "ADDRESS").encode(), state_schema=version)
+            check("ADDRESS refused under " + version, False)
+        except ExportError as exc:
+            check("ADDRESS refused under " + version, str(exc) == "address-c0-not-exportable")
+    for version in ("0.5.0", None, [], {}):
+        try:
+            build_export(typed.encode(), state_schema=version)
+            check("unsupported source schema refused " + repr(version), False)
+        except ExportError as exc:
+            check("unsupported source schema refused " + repr(version), str(exc) == "state-schema-unsupported")
+        invalid = copy.deepcopy(obj)
+        invalid["source"]["argument_state_schema"] = version
+        check("unsupported stored source schema rejected " + repr(version), bool(validate_export(invalid)))
+    for name, src in [("ADDRESS C0 refused", typed.replace("ASSERTION", "ADDRESS")),
+                      ("ADDRESS C0 without subclaims refused",
+                       "## 2. Claim Architecture\nC0 (main claim): the text asks residents to stand together\nC0 type: ADDRESS\n")]:
+        try: build_export(src.encode()); check(name, False)
+        except ExportError as exc: check(name, str(exc) == "address-c0-not-exportable")
     check("support", any(n["id"] == "i:C1.support" for n in obj["nodes"]))
     check("CA attacks RA", {"from": "s:CA:O1", "to": "s:RA:C1"} in obj["edges"])
     check("authored path", "/Users/authored/path" in canonical(obj))

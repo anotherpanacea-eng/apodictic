@@ -1,7 +1,8 @@
 # Optional Argument State → AIF-Core export (R4B)
 
 `argument-aif-export` is a deterministic, one-way interoperability projection.
-`Argument_State.md` v0.2.0 remains authoritative; exported JSON is never imported
+`Argument_State.md` remains authoritative; source schemas 0.2.0, 0.3.0, and 0.4.0
+are supported. Exported JSON is never imported
 to assign codes, severities, or verdicts.
 
 The graph profile follows the ARG-tech *AIF Specification*, Definition 1.1. A
@@ -15,9 +16,14 @@ explicit loss. PA is never inferred from comparison prose.
 ## Commands
 
 ```text
-bash scripts/validate.sh argument-aif-export Argument_State.md --state-schema 0.2.0 [--out export.json] [--strict]
+bash scripts/validate.sh argument-aif-export Argument_State.md --state-schema 0.4.0 [--out export.json] [--strict]
 bash scripts/validate.sh argument-aif-check export.json [--source Argument_State.md]
 ```
+
+Declare the source artifact's actual schema version with `--state-schema`; use 0.2.0
+or 0.3.0 for an older state. The export preserves that declaration in
+`source.argument_state_schema`, and source-bound checking rebuilds with the same version.
+Existing 0.2.0 exports keep their encoding. Unsupported versions refuse.
 
 There is one canonical UTF-8 JSON encoding. Export builds and validates fully in
 memory; blocking/strict failure writes no stdout JSON and never replaces `--out`.
@@ -33,6 +39,8 @@ from the original `Argument_State`. With `--source`, the checker rebuilds the gr
 and loss ledger, binds the export's recorded `source.artifact` basename to the
 supplied source filename, and requires byte identity; that is the only mode that
 proves loss-set completeness.
+
+**`ADDRESS` C0 guard.** When `Argument_State.md` § 2 records `C0 type: ADDRESS` (writer-confirmed AT6 or AT4 testimony; see `docs/argument-state-schema.md`), do not run the export. AIF needs an inference graph and an address has none at the document level; say that the export does not apply. The exporter enforces this: it refuses such a state with `address-c0-not-exportable` (and accepts `C0 type: ASSERTION` unchanged). Never invent a claim ladder, an antithesis, an inference edge, or a global WARRANTED to give the module something to work on.
 
 ## Loss contract
 

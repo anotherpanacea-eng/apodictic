@@ -109,6 +109,8 @@ Do not invent a cartoon villain. The adversary is informed, competent, and argue
 
 ---
 
+**`ADDRESS` C0 guard.** When `Argument_State.md` § 2 records `C0 type: ADDRESS` (writer-confirmed AT6 or AT4 testimony; see `docs/argument-state-schema.md`), build the adversary against the cash-out claims only (the Cash-out inventory in § 1). If there are none, report that the red team does not apply to this text and stop. Never invent a claim ladder, an antithesis, an inference edge, or a global WARRANTED to give the module something to work on.
+
 ## §5. Diagnostic Procedure
 
 Six steps. The module reads the Argument State once, constructs the adversary profile, then runs each step against the manuscript using the state as its structural map.

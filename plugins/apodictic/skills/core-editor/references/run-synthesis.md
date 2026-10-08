@@ -181,7 +181,7 @@ If any auto-run audit has not completed, do not begin synthesis. Complete the au
    **Argument register and stance calibration (argument-shaped runs only; before lock).**
    Apply the declared/confirmed register and `rhetorical-stance-triage.md` while assigning
    severity, before committing the finding below. Precedence is: active intake high-stakes
-   gate → prescriptive cash-out → register default → instance stance. The first two block
+   gate → joined cash-out → register default → instance stance. The first two block
    demotion; generative non-cash-out WR/SM/BP findings and earned/earned-by-frame eligible
    stance findings may land at Could-Fix. Record `register`, `stance`, `stance_verdict`,
    `calibration_effect`, and any exact `cash_out_ref` in the structured finding. GT8 premise-

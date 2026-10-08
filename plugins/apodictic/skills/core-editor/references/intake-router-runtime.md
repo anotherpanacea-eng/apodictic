@@ -308,6 +308,7 @@ The **cold-start** workflow-selection decisions — the path for a project with 
 | full_draft | repair | — | Core DE | **Built** |
 | full_draft | repair | engine=nonfiction (argument-shaped) | Nonfiction Argument Engine (`dialectical-clarity.md`) | **Built** (v1.0) |
 | full_draft | repair | engine=nonfiction (lens/exploratory; writer-confirmed) | Nonfiction Argument Engine (`register=generative`, AT5) | **Built** |
+| full_draft | repair | engine=nonfiction (address; writer-confirmed) | Nonfiction Argument Engine (AT6, `ADDRESS` C0) | **Built** |
 | full_draft | repair | engine=nonfiction (scene-led) | Narrative Nonfiction Craft | **Built** |
 | full_draft | repair | engine=nonfiction (memoir / witness-led) | Memoir & CNF | **Built** |
 | full_draft | repair | workflow=time | Submission Triage | **Built** (v1.1) |

@@ -238,8 +238,9 @@ def check(ledger_text, state_text=None):
         expected_block = None
         if state is not None and state["high_gate"] == "ACTIVE" and would_demote:
             expected_block = "blocked-high-stakes"
-        elif co is not None and co["kind"] == "PRESCRIPTION" and (
-                would_demote or recorded_register_floor):
+        elif co is not None and (would_demote or recorded_register_floor):
+            # Every joined cash-out row (ASSERTION or PRESCRIPTION) is an actual commitment;
+            # DC span rule 1 keeps its burden under every stance verdict.
             expected_block = "blocked-cash-out"
 
         if expected_block:
@@ -250,7 +251,7 @@ def check(ledger_text, state_text=None):
         elif effect == "blocked-high-stakes":
             errors.append("S6 %s: blocked-high-stakes requires an earned would-be demotion under an ACTIVE gate" % fid)
         elif effect == "blocked-cash-out":
-            errors.append("S6 %s: blocked-cash-out requires an earned would-be demotion at a joined PRESCRIPTION row" % fid)
+            errors.append("S6 %s: blocked-cash-out requires an earned would-be demotion at a joined cash-out row" % fid)
 
         if effect == "blocked-high-stakes" and (stance is None or verdict not in _EARNED):
             errors.append("S6 %s: blocked-high-stakes requires stance + earned verdict" % fid)
@@ -382,9 +383,13 @@ Cash-out inventory:
     expect("lookalike_cashout_id_rejected", finding(cash_out_ref="CO1-extra"), base_state, False)
     assertion_state = base_state.replace("Register: generative", "Register: asserted").replace(
         "WRITER-CONFIRMED", "DEFAULT-ASSERTED").replace("Kind: PRESCRIPTION", "Kind: ASSERTION")
-    expect("assertion_stance_demotion_valid",
+    expect("assertion_cashout_stance_demotion_rejected",
            finding(mechanism="FM-A8 false precision", register="asserted", cash_out_ref="CO1",
                    calibration_effect="stance-demotion"),
+           assertion_state, False)
+    expect("assertion_cashout_blocked_valid",
+           finding(mechanism="FM-A8 false precision", severity="Should-Fix", register="asserted",
+                   cash_out_ref="CO1", calibration_effect="blocked-cash-out"),
            assertion_state, True)
     expect("asserted_generative_floor_rejected", finding(), asserted_prescriptive_state.replace(
         "Kind: PRESCRIPTION", "Kind: ASSERTION"), False)

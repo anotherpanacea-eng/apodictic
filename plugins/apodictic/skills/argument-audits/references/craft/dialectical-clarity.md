@@ -18,6 +18,8 @@ Diagnose argumentative structure in non-narrative material: essays, op-eds, poli
 
 **What this audit is not:** Rhetoric coaching. It does not teach persuasion, suggest hooks, recommend "counterargument paragraphs," or optimize for audience manipulation. It does not catalog named fallacies as an end in themselves. It diagnoses whether the argument is structurally clear, inferentially warranted, and evidentially honest. The writer decides what to argue; this audit tests whether the argument holds together.
 
+**Scope of its standards:** the audit applies claim-and-support standards where a text undertakes claim-and-support work. It also supports a bounded set of other undertakings with their own burdens: testimony (AT4), lens offering (AT5), and constitutive or relational address (AT6). Applicability is decided per span before any finding is created (see §Applicability and span functions). One commitment is deliberate and holds in every genre: factual, causal, quantified, historical, attributive, and prescriptive claims carry their burden wherever they appear.
+
 **Named for:** The dialectical tradition in philosophy, in which argument is tested through objection, scope, and evidence, not the rhetorical tradition (which optimizes for persuasion) and not the informal-logic tradition (which catalogs named fallacies).
 
 **When to activate:**
@@ -91,8 +93,9 @@ This audit uses nine code families across nine diagnostic steps.
 - `AC` — audience calibration (Step 1)
 - `WR` — warrant and inference bridge (Step 4)
 - `DI` — dialectical integrity (Step 6)
+- `GN` — generative register (Step 1)
 
-**Total codes:** 45 across 9 families.
+**Total codes:** 53 across 10 families. AT6 failures reuse existing codes (Step 1).
 
 **No collisions with existing code systems:**
 
@@ -103,13 +106,28 @@ This audit uses nine code families across nine diagnostic steps.
 - Horror Craft Integration: DR-codes, DP-codes, MN-codes, PS-codes, ED-codes, TP-codes, UN-codes
 - Grimdark: MA-codes, VE-codes, PA-codes, CC-codes, IB-codes, CP-codes, HD-codes
 
-All nine code families use two-letter prefixes. All may appear in the same editorial letter alongside codes from other audits.
+All code families use two-letter prefixes. All may appear in the same editorial letter alongside codes from other audits.
 
 ---
 
 ## The Diagnostic Procedure
 
 Nine steps. Steps 1 and 2 run on the full piece. Steps 3–7 sample strategically within the scope defined below. Step 8 compares across sections. Step 9 classifies the argument form and may retroactively adjust prior findings.
+
+### Applicability and span functions
+
+Before applying a claim, warrant, evidence, scope, objection, or comparison check to a span, name the commitment that makes it relevant. **An inapplicable check produces no finding**; it is not a demoted Could-Fix. Record the applicability decision for each span examined. Inventory commitments throughout the text, not only at the end. A run that finds nothing applicable anywhere has failed; re-read for cash-outs.
+
+**Span functions** a writer can confirm: `ADDRESS`, `OBSERVATION`, `NARRATIVE`, `ILLUSTRATION`, `SHARED-PREMISE`, `IRONIC`, `PARTICIPATORY`. Propose them from textual signals; never apply one without confirmation (the default route stays in place). Inside a confirmed span these checks do not apply: objection handling and rhetorical fairness (OB), WR0 on the span's internal moves, redundancy, and hasty generalization (ILLUSTRATION only). Every check switches back on at the span's cash-out.
+
+**Span rules:**
+
+1. **Never exempt.** Factual, causal, quantified, historical, attributive, and prescriptive claims, and dated or quantified predictions, keep their burden under every argument type, span function, and stance verdict.
+2. **Shared premises.** An unstated warrant that is evaluative, definitional, or traditional (a value ranking, a covenant, a proverb), recoverable, and attributable to the declared audience produces no finding unless the text contests it. Empirical premises framed as shared keep DI0 and AC1.
+3. **Example vs. illustration.** A case that follows an independently supported or shared rule is an illustration and gets aptness checks only. A case that precedes or solely supports a rule is an example and gets representativeness checks (NE1, BP6). A single case may defeat a universal claim.
+4. **Seams.** AT0 does not fire on a signaled mode switch. It fires when the switch is unsignaled and a claim after it borrows the lower burden of the span before it.
+5. **Disclosure.** An undisclosed composite or pseudonymous case presented as one real person is Must-Fix under any label. A disclosed composite is a representative claim under AT4.
+6. **Dissent.** Faithful representation of an opponent, rebuttal, comparison of alternatives, and refusal of a frame are separate obligations. Absence of rebuttal is not misrepresentation. Under a confirmed agonistic purpose, the steelman question becomes "would the adversary recognize their position?" Denial of standing and dehumanization remain findings under every label.
 
 ### Step 1: Argument Type, Promise & Audience Calibration (AT, AC)
 
@@ -136,8 +154,9 @@ Argument Type: [AT-code]
 | **AT1** | Explanatory | "Here's how this works" | Low — must be clear and accurate |
 | **AT2** | Evaluative | "Here's whether this is good/bad/working/broken" | Medium — must show criteria and apply them |
 | **AT3** | Propositional | "Here's what we should do" (policy/normative) | High — must show problem, solution, tradeoffs, and why alternatives fail |
-| **AT4** | Testimonial | "I witnessed this; here's what it means" | Split — observation is low-burden, interpretation is high-burden |
+| **AT4** | Testimonial | "I witnessed this; recognize it or consider what it means" | Split — observation is low-burden; interpretation, representation, and attribution carry burden only where the text undertakes them |
 | **AT5** | Generative / Lens-Offering | "Here's a lens; look through it and see what it reveals" | Split — coherence + fertility on the journey; asserted burden at each cash-out |
+| **AT6** | Constitutive / Relational Address | "Here is who we are and what that asks of us" / "Recognize this" | Split — address coherence + closure across the piece; asserted burden at each cash-out |
 
 **Argument type failure codes:**
 
@@ -147,9 +166,12 @@ Argument Type: [AT-code]
 
 **AT4 burden split:** Do not split testimony into a new global argument type. Keep AT4, but diagnose within it:
 
-1. **Observational burden** — what the witness directly saw, experienced, or can responsibly report
+1. **Observational burden** — what the witness directly saw, experienced, or can responsibly report. The speaker's own act or presence can discharge it for claims about capacity, presence, or standing.
 2. **Interpretive burden** — what the testimony means beyond the observed event
-3. **Representative burden** — whether a personal or local account is being asked to stand for a wider population or system
+3. **Representative burden** — whether a personal or local account is being asked to stand for a wider population or system. A named mandate (the witness speaks for an organization or community that chose them) is a basis for representation; it is not population evidence.
+4. **Attribution burden** — for recorded, translated, reconstructed, or composite speech: who spoke, who recorded it, when relative to the event, and through what language chain. Quoting a later rendering as the speaker's verbatim words is an attribution finding at ordinary burden.
+
+Interpretive and representative burdens apply only where the text undertakes them. Testimony whose stated purpose is to be heard needs no general lesson and no rebuttal of denial. Observational spans are held to one standard whatever the speaker's social position; ask for corroboration only where an observation is load-bearing for an interpretive, causal, quantified, or representative claim.
 
 **AT5 burden split:** A writer-confirmed generative register changes the aim of diagnosis, not its coverage. Keep every finding in the ledger and assess three burdens:
 
@@ -158,6 +180,14 @@ Argument Type: [AT-code]
 3. **Cash-out burden** — inventory every conversion of the lens into assertion or prescription. Each cash-out is assessed at asserted-register burden, scaled to how hard the landing is pressed. A prescriptive/action-demanding cash-out is never eligible for register or stance demotion.
 
 AT5 is declared or writer-confirmed at intake; never infer it silently. An intake-declared high-stakes signal forces `register=asserted` for the whole document. A content-resolved high-consequence landing forces asserted burden only at that cash-out span.
+
+**AT6 burden split:** For solidarity addresses, commemoration and other praise or blame, and pledges, dedications, welcomes, and acknowledgments. The grouping is functional and implies no endorsement of any address. AT6 is writer-confirmed, never inferred silently, and its C0 is typed `ADDRESS` (Step 2). Assess three burdens:
+
+1. **Address coherence:** the collective or addressee is identifiable; its scope is stable or visibly widened; the implied reader is one the stated audience can occupy, with a path into the role; exclusions are owned rather than unmarked.
+2. **Closure:** the text hands the reader a role or act, or marks recognition as its end, and that ending fits the address.
+3. **Cash-out burden:** inventory every factual, causal, quantified, historical, attributive, or prescriptive sentence wherever it sits, using the AT5 cash-out inventory. Each is assessed at asserted burden.
+
+AT6 failures use existing codes, not a new family: unmarked "we" drift that a claim depends on is BP2 (scope creep) or CL1; an implied reader the stated audience cannot occupy is AC0 or AC2; closure that contradicts the address is CL1. Default Should-Fix; Must-Fix only through the ADDRESS rule in §Severity definitions. Objection handling (OB) does not apply to address spans.
 
 **Why type classification matters:** All later steps calibrate by type. Flagging "no objections engaged" in an AT1 explanatory piece is a false positive: explanations don't require objection handling. Flagging "no objections engaged" in an AT3 propositional piece is a critical failure: proposals demand it.
 
@@ -171,7 +201,7 @@ AT5 is declared or writer-confirmed at intake; never infer it silently. An intak
 | **GN3** | Broken lens | The metaphor or frame contradicts its own terms when extended. | Should-Fix |
 | **GN4** | Borrowed authority unreturned | Imported technical precision does warrant work at a cash-out rather than illustrative work in the lens. | Floor at the equivalent asserted-register finding |
 
-Under `register=generative`, WR/SM/BP findings on non-cash-out spans may calibrate to Could-Fix at Triage, with the finding's register, stance, verdict, and calibration effect recorded before the Deficit Lock. Definitional migration is the method of many lens essays: CL4 fires only when the migration is concealed and spent at a cash-out. GN2/GN4 and prescriptive cash-outs retain asserted burden.
+Under `register=generative`, WR/SM/BP findings on non-cash-out spans may calibrate to Could-Fix at Triage, with the finding's register, stance, verdict, and calibration effect recorded before the Deficit Lock. Definitional migration is the method of many lens essays: CL4 fires only when the migration is concealed and spent at a cash-out. GN2/GN4 and every cash-out (assertion or prescription) retain asserted burden.
 
 **Calibration with F5:** If the Narrative Nonfiction Craft audit has already classified the piece as F5 (Argument with embedded narrative), AT-codes add precision about *what kind* of argument. F5 says "argument dominates"; AT-codes say what the argument asks the reader to do.
 
@@ -209,6 +239,8 @@ KEY TERMS:
   T1: [term] = [operational meaning in the draft]
   T2: [term] = [operational meaning in the draft]
 ```
+
+**C0 type:** `ASSERTION` (default) or `ADDRESS`. An `ADDRESS` C0 reads "the text asks [named audience] to be / recognize / do [X]" and is available only under writer-confirmed AT6, or AT4 whose stated purpose is to be heard. Under an `ADDRESS` C0, subclaims are optional and local claim chains attach to cash-outs; never invent a proposition to fill the ladder. CL0 still fires when neither form can be stated: a deliberate address has a statable point, and a text that commits to nothing does not.
 
 **Constraints:**
 
@@ -569,6 +601,8 @@ After the full diagnostic runs, this terminal step asks: did this text fail beca
 | **UNCONVENTIONAL-BUT-WARRANTED** | The piece does not follow thesis-evidence-objection form, but a careful reader can recover and test the argument | Retroactively downgrade form-dependent failures (missing thesis sentence, absent formal concession paragraph, non-linear structure) to advisory notes rather than structural diagnoses |
 | **UNWARRANTED** | The reader cannot reliably identify, evaluate, or pressure the argument regardless of form | Report all codes as issued; note that form does not explain the failures |
 
+**ADDRESS C0.** When C0 type is `ADDRESS` (Step 2), the document-level warrant verdict is `ADDRESS-C0 (verdicts at cash-outs)`. Each cash-out receives its own WARRANTED / UNCONVENTIONAL-BUT-WARRANTED / UNWARRANTED verdict using the decision tests below. Never issue a global WARRANTED for an address, and never construct a propositional C0 to test.
+
 **Decision tests for classification:**
 
 | Test | Diagnostic Question |
@@ -767,7 +801,7 @@ The 20 patterns cluster into four diagnostic types that tell the reviewer *how* 
 
 **Book Review:** AT2 primarily. Scope discipline is the central risk: the review must evaluate *this book*, not use this book as an excuse to evaluate *this field*. BP2 is the signature failure. CL4 may fire when the review's key terms (e.g., "accessible," "rigorous," "ambitious") shift meaning between praise sections and criticism sections.
 
-**Open Letter / Manifesto:** AT3 with sympathetic audience. AC3 is the signature risk: the document preaches to the converted. FM-A12 (Emotional Inflation) and FM-A13 (Structural Motte-and-Bailey) are high-frequency. OB handling calibrates differently: manifestos may legitimately decline to engage moderate objections, but DI0 (starting-point smuggling) still applies.
+**Open Letter / Manifesto:** AT3 or AT6; confirm at intake. As AT3, sympathetic audience. AC3 is the signature risk: the document preaches to the converted. FM-A12 (Emotional Inflation) and FM-A13 (Structural Motte-and-Bailey) are high-frequency. OB handling calibrates differently: manifestos may legitimately decline to engage moderate objections, but DI0 (starting-point smuggling) still applies.
 
 **Crisis Communications:** Mixed audience. Compressed timeline. AC4 is high-risk. WR0 tolerance is higher because the audience needs direction, not philosophical completeness. But BP4 and DI2 (pseudo-resolution) are critical: the crisis communication must not perform certainty it doesn't have or claim resolution it hasn't achieved.
 
@@ -886,6 +920,7 @@ These tiers are referenced throughout (artifacts, Hard Gates) and are defined he
 - **Must-Fix:** the failure *defeats* evaluability or warrant of **C0**. The main claim cannot be identified or is unstable; its central inferential bridge is *unrecoverable* (warrant MISSING, not merely RECOVERABLE-but-unstated); or the conclusion asserts something the evidence cannot reach at all. A code *correctly escalated* to Must-Fix has, by this definition, already registered a defeat of C0's evaluability — which is what forces an UNWARRANTED verdict in Step 9. (The Severity Floor, not the code family, is what escalates: a Hard-Gate code that fires without defeating evaluability caps at Should-Fix and does not touch the verdict.)
 - **Should-Fix:** a real weakness a competent reader can route around: a recoverable-but-understated warrant, a strong objection thinned rather than absent, scope tightened toward the conclusion, an alternative gestured at but not engaged. This is the **default tier for soft spots in an otherwise-warranted argument** and is the priority repair agenda; it does not force UNWARRANTED.
 - **Could-Fix:** improves rigor; does not affect whether C0 holds.
+- **ADDRESS C0:** Must-Fix requires CL0 or a defeated cash-out (or span rule 5). An AT6 coherence or closure failure is Should-Fix by default. Never borrow a fictional propositional C0 to escalate.
 
 ### Severity Floor
 

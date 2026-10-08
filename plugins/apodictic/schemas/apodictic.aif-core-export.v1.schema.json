@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "properties": {
     "schema": {"const": "apodictic.aif-core-export.v1"},
-    "source": {"type":"object","required":["artifact","sha256","argument_state_schema","schema_version_basis"],"additionalProperties":false,"properties":{"artifact":{"type":"string"},"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"argument_state_schema":{"const":"0.2.0"},"schema_version_basis":{"const":"operator-declared"}}},
+    "source": {"type":"object","required":["artifact","sha256","argument_state_schema","schema_version_basis"],"additionalProperties":false,"properties":{"artifact":{"type":"string"},"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"argument_state_schema":{"enum":["0.2.0","0.3.0","0.4.0"]},"schema_version_basis":{"const":"operator-declared"}}},
     "profile": {"type":"object","required":["name","aif_reference","loss_policy"],"additionalProperties":false,"properties":{"name":{"const":"aif-core-subset"},"aif_reference":{"const":"AIF Specification, Definition 1.1"},"loss_policy":{"const":"explicit"}}},
     "nodes": {"type":"array","items":{"oneOf":[
       {"type":"object","required":["id","type","text","source_ref"],"additionalProperties":false,"properties":{"id":{"type":"string"},"type":{"const":"I-node"},"text":{"type":"string"},"source_ref":{"type":"string"}}},

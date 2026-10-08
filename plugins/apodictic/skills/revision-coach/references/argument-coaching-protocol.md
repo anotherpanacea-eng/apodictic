@@ -57,6 +57,8 @@ If the writer asks "what should I say?", redirect to:
 
 ---
 
+**`ADDRESS` C0 guard.** When `Argument_State.md` § 2 records `C0 type: ADDRESS` (writer-confirmed AT6 or AT4 testimony; see `docs/argument-state-schema.md`), sequence repair over the cash-out claims and the AT6 coherence and closure findings. Do not sequence by subclaim dependency, and do not coach the writer toward a thesis the text never undertook. Never invent a claim ladder, an antithesis, an inference edge, or a global WARRANTED to give the module something to work on.
+
 ## Core Coaching Principle
 
 **Repair in dependency order.**
