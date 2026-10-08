@@ -35,6 +35,15 @@ Argument_State §1. High-stakes forms force `register=asserted`. In a confirmed 
 run, inventory every cash-out with a stable `CO#`; prescriptions retain asserted burden at
 that span.
 
+### Route heard-witness testimony as AT4 with an ADDRESS C0 when:
+
+The writer states that the testimony asks to be heard or recognized rather than to establish
+a general claim. Confirm that purpose in plain words and retain `AT4`; do not relabel the
+witness as AT6. Initialize Argument_State §1 and `C0 type: ADDRESS` directly, with cash-outs
+inventoried wherever actual claims occur. Skip the propositional `apodictic:argument_spine`
+seed: it requires a thesis, subclaims, and an antithesis the witness may not undertake.
+Without that stated purpose, keep the ordinary AT4 claim route.
+
 ### Route to the Nonfiction Argument Engine as AT6 (address) when:
 
 1. the piece mainly asks readers to stand with a group, to recognize someone or something, or to

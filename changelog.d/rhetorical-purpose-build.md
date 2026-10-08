@@ -10,3 +10,6 @@ quantified, historical, attributive, and prescriptive claims keep their burden u
 every type, span function, and stance verdict. Downstream modules guard on an
 `ADDRESS` C0, intake asks the AT6 question in plain words, and the crosswalk carries
 AT6. Includes the lean build spec, ADR 0003, and the two-source level-setting research.
+
+Intake also covers AT4 testimony whose writer-stated purpose is to be heard,
+without inventing a thesis or changing its AT4 classification.
