@@ -1,6 +1,6 @@
 # Rhetorical purpose: blind-screen execution brief
 
-Status: **draft for owner freeze.** No readings have run. Both candidate decks require the design to be frozen before any blind reading: roster, prompt, rubric, thresholds and provenance, with human adjudication of contested readings ([first increment](../rhetorical-purpose-first-increment/PROTOCOL.md), [constitutive controls](../rhetorical-purpose-constitutive-controls/README.md)). This brief supplies them. Running it is a separate, owner-authorized step.
+Status: **frozen by the owner on 2026-10-09** (burndown decision sheet, round 14: roster as drafted; freeze, and Claude may run it). No readings have run yet. Both candidate decks require the design to be frozen before any blind reading: roster, prompt, rubric, thresholds and provenance, with human adjudication of contested readings ([first increment](../rhetorical-purpose-first-increment/PROTOCOL.md), [constitutive controls](../rhetorical-purpose-constitutive-controls/README.md)). This brief supplies them. Running it is a separate, owner-authorized step.
 
 ## Packets and reads
 
@@ -54,9 +54,3 @@ A retained candidate is still a candidate. Model agreement licenses nothing; gat
 ## Output
 
 One results file in this directory: the 62 rubric tables, the adjudications and, per deck, a count of retained / disputed / rejected / invalid. Counts are reported, not compared with any cutoff; there is no deck-level pass threshold. Raw outputs sit next to it. All material is invented and public-repo safe.
-
-## Open for the owner
-
-1. The roster: the two pinned readers, a separate adjudicator, and the owner as screen panel.
-2. The decision rule, in particular that anything short of both readers matching is disputed.
-3. Freeze as written, or with edits.
