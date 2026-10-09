@@ -1,0 +1,3 @@
+### Rhetorical-purpose blind-screen results
+
+Ran the frozen blind-screen brief: 62 reads (Reader A `claude-opus-5-5`, Reader B `gpt-6.1-sol/high`), each saved unedited, and adjudicated in a separate context that filled the rubric tables before seeing the keys. First increment: 14 retained candidates, 8 disputed. Constitutive controls: 4 retained, 5 disputed. No reads are invalid on content. Two departures from the brief go to the owner's screen panel: Reader B was re-dispatched after an invalid first run, and the reader-context additions.
