@@ -8,10 +8,13 @@ This wrapper runs the vendor CLI named by ``$JUDGE_VENDOR`` in a FRESH process:
 the blind-runner discipline (the judge sees only the producer's rendered prompt +
 numbered passage, never the fixture's §10.9 keys) is what a fresh subprocess buys.
 
-Vendors (the R3B §4 pinning):
+Standalone defaults (the historical R3B driver supplies its own pins):
   JUDGE_VENDOR=fable  ->  claude -p --model claude-fable-5           (Claude Code CLI)
-  JUDGE_VENDOR=codex  ->  codex exec -m gpt-5.6-sol
-                          -c model_reasoning_effort="xhigh"          (Codex CLI, Sol extra-high)
+  JUDGE_VENDOR=codex  ->  codex exec -m gpt-6.1-sol
+                          -c model_reasoning_effort="medium"         (Codex CLI, Sol medium)
+
+For Codex, SETEC_HOST_MODEL and SETEC_HOST_REASONING_EFFORT override those
+defaults. The R3B acquisition driver explicitly retains gpt-5.6-sol/xhigh.
 
 Used via (see acquire.py):
   SETEC_HOST_JUDGE_CMD="python3 evals/benchmark/agd-scan/host_judge_cmd.py"
@@ -56,8 +59,9 @@ def main() -> int:
             # the blind-runner discipline demands the judge see only the prompt.
             with tempfile.TemporaryDirectory(prefix="agd_judge_") as blind_cwd:
                 proc = subprocess.run(
-                    ["codex", "exec", "-m", "gpt-5.6-sol",
-                     "-c", 'model_reasoning_effort="xhigh"',
+                    ["codex", "exec", "-m", os.environ.get("SETEC_HOST_MODEL", "gpt-6.1-sol"),
+                     "-c", "model_reasoning_effort=" + json.dumps(
+                         os.environ.get("SETEC_HOST_REASONING_EFFORT", "medium")),
                      "-s", "read-only", "--skip-git-repo-check",
                      "--output-last-message", out_path],
                     input=prompt, capture_output=True, text=True,

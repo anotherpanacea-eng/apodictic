@@ -69,6 +69,9 @@ def acquire_cell(fixture: str, vendor: str, rep: int, scratch: Path) -> dict:
         "JUDGE_VENDOR": vendor,
         "SETEC_HOST": host,
         "SETEC_HOST_MODEL": model,
+        # Keep this frozen benchmark's recorded effort explicit when the
+        # standalone transport default advances to a newer Sol model.
+        "SETEC_HOST_REASONING_EFFORT": "xhigh",
         "SETEC_HOST_JUDGE_CMD": "python3 %s" % (HERE / "host_judge_cmd.py"),
         "SETEC_HOST_JUDGE_TIMEOUT": "900",
     })
