@@ -6,7 +6,7 @@ Construction key; never dispatch to blind readers. Expectations are provisional 
 [Input](inputs.md#r01), A1-A2.
 - Applicability: describe enacted resident membership/boundary; no automatic thesis, strongest-objection or comparative-policy requirement.
 - Retained commitments: avowed all-resident belonging remains an undertaking, not demonstrated demographic truth or achieved consensus.
-- Proposed defect/repair: no membership contradiction evidenced; describe the positive work without inventing repairs.
+- Proposed defect/repair: no membership contradiction evidenced; describe the positive work. Readers may raise weaknesses; each is adjudicated directly: a nit (unanchored, stylistic, or immaterial to the confirmed aim) is rejected, and an anchored, material issue may carry a repair class, judged by whether it fixes the issue. *(Revised 2026-10-10 by the screen panel: "Adjudicate directly the weaknesses, reject nits and fix for real issues.")*
 - Normative basis: confirmed shared-identity aim and A1's inclusive reader promise, not universal inclusion as external default.
 - Prohibited outputs: fake C0/antithesis, compulsory rebuttal, global WARRANTED, actual audience-response prediction.
 - Counter-reading/uncertainty: an invitation may fail to form belonging; no reception evidence decides success or failure.
@@ -186,7 +186,7 @@ Construction key; never dispatch to blind readers. Expectations are provisional 
 [Input](inputs.md#s0), W1-W2.
 - Applicability: AT6 with `C0 type: ADDRESS` (the text asks residents to stand with one another). Address coherence and closure checks apply. No claim in either span, so no cash-out.
 - Retained commitments: W2's "pushed out ... diminished" is evaluative and shared with the declared audience (span rule 2), not an empirical premise.
-- Proposed defect/repair: none evidenced; describe the address and its closure (stand with the family beside you).
+- Proposed defect/repair: no defect of the address evidenced; describe the address and its closure (stand with the family beside you). Any weakness a reader raises is adjudicated directly as in R01: nits rejected, an anchored, material issue may carry a repair. *(Revised 2026-10-10 by the screen panel, on R01's principle.)*
 - Normative basis: writer-confirmed solidarity aim and W1's inclusive address.
 - Prohibited outputs: invented thesis or antithesis, objection or rebuttal demand, representativeness or comparison finding, global WARRANTED.
 - Counter-reading/uncertainty: the greeting may not produce solidarity; no reception evidence decides that.
@@ -197,7 +197,7 @@ Construction key; never dispatch to blind readers. Expectations are provisional 
 - Retained commitments: W3 is causal, quantified and time-bound with no supplied support.
 - Proposed defect/repair: exactly one finding, at W3: unsupported causal and quantified prediction (precision, mechanism, horizon). Delimit or support it. The same sentence draws the same finding in an ordinary asserted text (compare R05/R06).
 - Normative basis: W3's actual commitment; the address purpose neither excuses nor aggravates it.
-- Prohibited outputs: any S0-type finding on W1-W2, label immunity for W3, falsehood verdict, global WARRANTED.
+- Prohibited outputs: any W1-W2 finding beyond those the S0 adjudication rules real, label immunity for W3, falsehood verdict, global WARRANTED. *(Amended 2026-10-10 by the screen panel to match the revised S0 key.)*
 - Counter-reading/uncertainty: W3 could be read as hope rather than prediction, but "will reduce ... by 40% within one year" favors the literal reading.
 
 ## Coverage and disposition
