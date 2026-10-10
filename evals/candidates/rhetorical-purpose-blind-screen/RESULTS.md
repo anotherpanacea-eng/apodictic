@@ -26,7 +26,7 @@ The owner's rulings as screen panel, 2026-10-09, from the burndown decision shee
   - **Key upheld for 11:** R09, R11, R13, R14, R20, S1, H01, H02, N03, U01 and U02 stay candidates, and the readers' misses stand as findings.
   - **Key revised for 2:** R01 and S0. The owner's note on R01 reads "Adjudicate directly the weaknesses, reject nits and fix for real issues". S0 is revised on the same principle. Both are re-adjudicated in [Screen-panel re-adjudication](#screen-panel-re-adjudication-r01-s0) and stay candidates.
   - **Dropped:** none.
-- **Open point for the panel:** S1's upheld key prohibits "any S0-type finding on W1–W2". It was written when S0 had no finding, and it now bars the one W1–W2 issue that S0's re-adjudication rules real. No outcome changes. The adjudicator recommends amending S1's ban to "beyond those the S0 adjudication rules real".
+- **S1 amended** (2026-10-10, screen panel): S1's ban now reads "any W1–W2 finding beyond those the S0 adjudication rules real", which removes the conflict with revised S0. No outcome changes.
 
 ## Counts
 

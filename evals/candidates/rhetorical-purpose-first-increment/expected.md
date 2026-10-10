@@ -197,7 +197,7 @@ Construction key; never dispatch to blind readers. Expectations are provisional 
 - Retained commitments: W3 is causal, quantified and time-bound with no supplied support.
 - Proposed defect/repair: exactly one finding, at W3: unsupported causal and quantified prediction (precision, mechanism, horizon). Delimit or support it. The same sentence draws the same finding in an ordinary asserted text (compare R05/R06).
 - Normative basis: W3's actual commitment; the address purpose neither excuses nor aggravates it.
-- Prohibited outputs: any S0-type finding on W1-W2, label immunity for W3, falsehood verdict, global WARRANTED.
+- Prohibited outputs: any W1-W2 finding beyond those the S0 adjudication rules real, label immunity for W3, falsehood verdict, global WARRANTED. *(Amended 2026-10-10 by the screen panel to match the revised S0 key.)*
 - Counter-reading/uncertainty: W3 could be read as hope rather than prediction, but "will reduce ... by 40% within one year" favors the literal reading.
 
 ## Coverage and disposition
