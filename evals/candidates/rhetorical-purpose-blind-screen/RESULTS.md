@@ -22,11 +22,19 @@ The owner's rulings as screen panel, 2026-10-09, from the burndown decision shee
 
 - **Reader B's re-dispatch:** run 2 counts. Run 1 stays recorded as invalid and is not adjudicated.
 - **Reader-context additions:** Reader A's auto-attached account email is accepted as harmless, so Reader A's reads stay valid. Reader B's AGENTS.md and skill names were already accepted in round 16.
-- **The 13 disputed packets:** pending, one decision-sheet card per packet. The counts below update when they are ruled.
+- **The 13 disputed packets** (ruled 2026-10-10):
+  - **Key upheld for 11:** R09, R11, R13, R14, R20, S1, H01, H02, N03, U01 and U02 stay candidates, and the readers' misses stand as findings.
+  - **Key revised for 2:** R01 and S0. The owner's note on R01 reads "Adjudicate directly the weaknesses, reject nits and fix for real issues". S0 is revised on the same principle. Both are re-adjudicated in [Screen-panel re-adjudication](#screen-panel-re-adjudication-r01-s0) and stay candidates.
+  - **Dropped:** none.
+- **Open point for the panel:** S1's upheld key prohibits "any S0-type finding on W1–W2". It was written when S0 had no finding, and it now bars the one W1–W2 issue that S0's re-adjudication rules real. No outcome changes. The adjudicator recommends amending S1's ban to "beyond those the S0 adjudication rules real".
 
 ## Counts
 
 Counts are reported only. There is no cutoff and no deck-level pass or fail.
+
+After the screen panel's rulings: **all 31 packets remain candidates.** 18 were retained on agreement; 11 were disputed and the panel upheld the key; 2 were disputed and the panel revised the key (R01, S0). None was dropped.
+
+Adjudication counts before the panel ruled:
 
 | Deck | Retained candidate | Disputed | Rejected | Invalid (on content) |
 |---|---|---|---|---|
@@ -34,6 +42,57 @@ Counts are reported only. There is no cutoff and no deck-level pass or fail.
 | Constitutive controls (9) | 4 (H03, N01, N02, U03) | 5 (H01, H02, N03, U01, U02) | 0 | 0 |
 
 A retained candidate is still only a candidate. Model agreement licenses nothing, and gating use needs the reliability ladder.
+
+## Screen-panel re-adjudication (R01, S0)
+
+The screen panel revised the keys for R01 and S0. This file adjudicates each weakness the readers raised directly against the INPUT body and the revised finding line. A **nit** is unanchored, stylistic, or immaterial to the confirmed aim. A **real issue** is anchored and material, and its repair is judged on whether it actually fixes the issue. Phase-1 tables and phase-2 adjudications are unchanged.
+
+Weaknesses were re-read from `raw/reader-a/R01.md`, `raw/reader-b/R01.md`, `raw/reader-a/S0.md` and `raw/reader-b/S0.md`. Each reading's own "Weaknesses" section was counted, and nothing was added from counter-readings or inventories.
+
+### R01
+
+Confirmed aim: shared identity among Alder Court residents. Meeting opening, not policy.
+
+| # | Reader | Weakness (short quote) | Anchor in INPUT | Ruling | Reason | Repair → fixes? |
+|---|---|---|---|---|---|---|
+| 1 | A | "'Belongs to' is ambiguous right after naming owners and renters" | A1 "Whether we rent or own… this courtyard belongs to all of us" | **nit** | In an identity opening the communal sense is the natural one, as A's own counter-reading concedes. A property reading is a stylistic possibility, immaterial to the aim. | — |
+| 2 | A | "The identity anchor may not be shared by everyone it claims" | A1 "We are the people who wait together when the lift stops" | **nit** | Materiality depends on building facts the body doesn't supply (who uses the lift); the image reads naturally as metonymy for shared building life. Closest call in R01. | — |
+| 3 | A | "'Disposable' implies a contrast it never names" | A2 "no neighbor is disposable" | **nit** | A negated norm needs no named opponent. Requiring a referent edges toward supplying the antithesis the key prohibits. The "readers may supply" claim is reception speculation. | — |
+| 4 | A | "Collective declaration placed before any assent" | A2 "Tonight we say… without pretending we all agree" | **nit** | A performative "we say" is how a constitutive opening works, and A2 already disclaims consensus. A calls the tension mild itself. | — |
+| 5 | A | "The instruction's feasibility is unverified" | A2 "Sit beside someone you have not met" | **nit** | Rests on unsupplied seating and mobility facts; immaterial to the identity aim. | — |
+| 6 | B | "Collective voice may overstate demonstrated commonality" | A1 "We are"; A2 "we say" | **nit** | Same point as #4. B's own counter-reading, that an opening proposes rather than reports identity, defeats it. The key lists consensus as an undertaking, not a defect. | — |
+| 7 | B | "'Belongs' leaves the promised relationship underspecified" | A1 "belongs to all of us" | **nit** | Same as #1. B concedes that a short opening need not define property or governance. | — |
+| 8 | B | "'No neighbor is disposable' has broad but undefined practical implications" | A2 "no neighbor is disposable" | **nit** | Asking for practical scope pushes toward the policy content the context excludes. B's own counter-reading (a moral orientation) holds. | — |
+| 9 | B | "The shared-waiting scene has uncertain reach" | A1 "the people who wait together when the lift stops" | **nit** | Same as #2: rests on unsupplied facts, and B concedes that a recognizable scene need not be universal. | — |
+
+**Counts:** A has 5 nits and 0 real issues; B has 4 nits and 0 real issues. The closest calls were the lift anchor (#2, #9) and the "belongs" possessive (#1, #7). Both readers raised each independently, but neither is material on this body.
+
+**Outcome (revised key): matches; candidate stands.** Both readings find no membership contradiction and describe the positive work: the concrete anchor, divisions named and folded in, and disagreement allowed. All nine weaknesses are rejected as nits, and there are no prohibited outputs. A's repair "Ground or reframe the 'disposable' contrast" points toward an antithesis, but A supplies none.
+
+### S0
+
+Confirmed aim: a solidarity greeting to residents asking them to stand with one another; no policy. Under the revised key, W2 stays evaluative.
+
+| # | Reader | Weakness (short quote) | Anchor in INPUT | Ruling | Reason | Repair → fixes? |
+|---|---|---|---|---|---|---|
+| 1 | A | "Universal address vs. narrower presuppositions… 'The family beside you' presupposes family units" | W1 "Whoever you are…"; W2 "Stand with the family beside you" | **real issue (minor)** | Anchored in W1's own unconditional-inclusion promise, which is the key's named normative basis, and it bears on the solidarity closure. A resident attending alone is a giver of solidarity but is not named as a recipient. | "Presupposition alignment" (bring "family" in line with W1's universal address) → **yes**. It targets the exact mismatch, at the noted cost to warmth. |
+| 2 | A | "Residency presupposition… 'however long you have lived here'" | W1 "however long you have lived here" | **nit** | Consistent with the confirmed addressee (residents). It matters only if non-residents attend, which is unsupplied. A calls it low-severity. | — |
+| 3 | A | "Unanchored referent… 'Pushed out'" | W2 "When one of us is pushed out" | **nit** | W2 is an evaluative maxim shared with the audience and needs no specified event. Requiring a referent treats it as a premise. | — |
+| 4 | A | "Bounded belonging… 'belong in this room tonight'" | W1 "you belong in this room tonight" | **nit** | Stylistic. Naming the occasion is natural in a greeting, and A's own counter-reading (immediacy) holds. | — |
+| 5 | B | "'Pushed out' and 'diminished' leave the triggering event and resulting loss unspecified" | W2 | **nit** | Same as #3. W2 is evaluative, and B concedes that "a greeting need not explain a displacement mechanism". | — |
+| 6 | B | "'Stand with' leaves the form of support open" | W2 "Stand with the family beside you" | **nit** | Openness suits an opening, and B concedes the orientation is clear. Specifying the action would over-direct. | — |
+| 7 | B | "The shift from unrestricted individual welcome in [W1] to 'the family beside you' in [W2] leaves support for residents attending alone less explicit" | W1; W2 | **real issue (minor)** | Same issue as #1, anchored to W1's inclusive promise. B correctly calls it a scope ambiguity rather than demonstrated exclusion. | "Inclusive-recipient clarification" → **yes**. It names the recipient scope that W1 promises. |
+
+**Counts:** A has 3 nits and 1 real issue; B has 2 nits and 1 real issue. It is the same real issue for both readers: W1's "whoever you are" against W2's "the family beside you".
+
+**Outcome (revised key): matches; candidate stands.** Neither reader finds a defect in the address itself. Both describe the welcome→stake→action arc and keep W2 non-empirical: B reads it as moral, and A leaves its status uncertain without applying an evidentiary standard. Each reader's single real issue is a minor scope ambiguity in the closure, and each repair fixes it. There are no prohibited outputs. For the panel to note: "no defect of the address evidenced" has to sit beside one minor real closure issue. I read the revised key as permitting that, since it explicitly allows a material issue with a repair.
+
+### S0/S1 interaction
+
+S1's upheld key prohibits "any S0-type finding on W1–W2". It was written when S0's key said no defect. Under the revised S0 key, one W1–W2 issue is now ruled **real**: the "whoever you are" / "the family beside you" tension. W1–W2 are identical in S1, and S1's own applicability line requires an "identical reading of W1–W2 as S0". Read literally, the prohibition now forbids in S1 the very finding that S0 admits. That conflicts with S1's own invariance principle.
+
+- **Effect on current outcomes:** none. Neither S1 reading raises the family/whoever issue as a weakness; S1.A mentions "the family beside you" only in its representative inventory. The only S1 W1–W2 finding is S1.B's "'pushed out' and 'diminished'" weakness, which corresponds to S0.B #5, ruled a **nit**. So B's S1 output stays a rejected, prohibited finding under either reading of the S1 key.
+- **Recommendation to the panel:** amend S1's prohibition to "any W1–W2 finding beyond those the S0 adjudication rules real". The conserved text would then get the same treatment in both packets: the minor family/whoever issue becomes permissible in S1, and S0's nits stay barred there. Until the panel amends it, the literal S1 wording and the revised S0 key are inconsistent on this one point.
 
 ## Adjudication
 
