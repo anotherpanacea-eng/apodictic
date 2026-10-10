@@ -16,6 +16,14 @@ Each reader got exactly the packet text: the deck's prompt followed by one INPUT
 - **Reader B was dispatched twice.** Run 1 (11:41–12:13 UTC) used the normal Codex config, with the APODICTIC plugin loaded. In 6 of its 31 reads the reader ran shell commands (34 in total) to open plugin skill files. Because the plugin was loaded for every read, the whole run was treated as invalid: the reader could see more than prompt and body. Its outputs are kept in `raw/reader-b-run1-invalid/` and are not adjudicated. The brief says "There is no re-dispatch", but Reader B was re-dispatched as run 2 with plugins, memories and skill search disabled, and run 2 is the one adjudicated. The panel can instead count run 1 as B's reads. In that case all 31 packets are disputed, because every packet then has an invalid read.
 - **Reader-context additions** (Reader A's account email, Reader B's AGENTS.md and skill names) are listed under [Provenance caveats](#provenance-caveats). No output shows any trace of either.
 
+## Screen-panel rulings
+
+The owner's rulings as screen panel, 2026-10-09, from the burndown decision sheet:
+
+- **Reader B's re-dispatch:** run 2 counts. Run 1 stays recorded as invalid and is not adjudicated.
+- **Reader-context additions:** Reader A's auto-attached account email is accepted as harmless, so Reader A's reads stay valid. Reader B's AGENTS.md and skill names were already accepted in round 16.
+- **The 13 disputed packets:** pending, one decision-sheet card per packet. The counts below update when they are ruled.
+
 ## Counts
 
 Counts are reported only. There is no cutoff and no deck-level pass or fail.
