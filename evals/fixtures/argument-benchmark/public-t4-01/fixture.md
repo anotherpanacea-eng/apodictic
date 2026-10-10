@@ -1,0 +1,3 @@
+At the Ember Desk, a submitted form is complete if all four required boxes are filled. The April register lists 100 submitted forms, of which 30 are complete. The May register lists 40 submitted forms, of which 20 are complete. Those are the entire submitted-form registers for the two months, and the definition of complete is unchanged.
+
+Completion became less common among submitted forms in May. There were only 20 complete forms in May against 30 in April, so the share of submissions completed fell. This conclusion concerns the share within each month's submissions, not the total number of complete forms.

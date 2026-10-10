@@ -62,6 +62,31 @@ the discriminator, clean does not) is the measurement that isolates the planted 
 fixture's own authored roughness. See [RUN-PROTOCOL.md §Step 4](RUN-PROTOCOL.md) for the pair
 convergence rule.
 
+### Public T4 prospective diagnostic expansion — 2026-10-10
+
+`public-t4-01/`, `public-t4-02/` and `public-t4-03/` copy the exact bodies of
+the three owner-approved MC2g candidates and register prospective keys under
+the existing GT template. They are standalone local diagnostic cases, with
+no matched-pair delta. Their local statuses are defect, defect and control.
+They do not expand the frozen Fleet manifest until a separate reviewed
+admission pins the exact public source commit.
+
+Extractable claims and local arithmetic/quotation anchors carry construction
+authority. Proposed code mappings inside GT2/GT3 remain provisional and
+report only; all GT4–GT8 judgments are also provisional/report only. The
+section-level Reliability ledger cannot enforce those sub-field exclusions.
+Consequently no Q2/Q3 code scores or full argument-engine scores are licensed
+by these keys, and a green validator is a consistency check, not additional
+label authority. Feed only fixture bodies with opaque identifiers; keep
+ground truth and directory names outside engine input.
+
+Fresh diagnostic adjudications preceded these keys. Preserve those responses
+as adjudication evidence and never score them retrospectively against the
+new keys. Future scored runs require prior registration. The original six
+public T4 bodies and historical receipts remain frozen. This proposal claims
+no nine-item seat result, panel license, untouched-holdout performance,
+T4 sentence revision, private eligibility or production qualification.
+
 ### Referenced real corpus (severity calibration)
 
 Ten published arguments (Coates, Andreessen, Amodei, Bender et al., AECF, PPI,
