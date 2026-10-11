@@ -29,7 +29,7 @@ git fetch origin
 
 # 3. point at the local source cache and DRY-CHECK first (no model calls)
 cd evals/fixtures/argument-benchmark
-export SRC="/Users/anotherpanacea/Library/CloudStorage/Dropbox/Cowork/Development Editor/argument-benchmark-sources"
+export SRC="/Users/anotherpanacea/Library/CloudStorage/Dropbox/80-89 Projects/81 Software & tools/APODICTIC supporting material/Development Editor/argument-benchmark-sources"
 ./run.sh --verify
 ```
 
