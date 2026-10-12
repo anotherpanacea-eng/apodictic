@@ -43,9 +43,11 @@ whole-artifact hashes only — never corpus prose, per-unit identifiers,
 private machine paths, or keys.
 
 **Fuller cross-repo context** (backlog, topology, deep lessons) lives in the
-maintainer's local `Cowork/repo-fleet/` hub — **not reachable from cloud
-containers** (which hold only this one git repo). If you're a cloud session and
-need cross-repo context beyond this section, flag it rather than guessing.
+maintainer's private fleet hub in Dropbox at `80-89 Projects/81 Software & tools/81.11 Repo fleet/`
+(moved from the retired `Cowork/repo-fleet/` on 2026-10-11). Local agents reach it through the
+Dropbox folder; cloud sessions reach it only when the Dropbox connector is attached. Never copy
+private hub content into this repo. If you're a cloud session without the connector and need cross-repo
+context beyond this section, flag it rather than guessing.
 
 ## The flow
 
