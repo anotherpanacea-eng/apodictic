@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native validator dispatcher, CB-1(a) groups 1–4, 5a and 6–8.
+"""Native validator dispatcher, CB-1(a) groups 1–4, 5a and 6–9.
 
 Early utilities, signals, configuration, timelines and structured checks run without Bash.
 Other commands and aggregates still belong to validate.sh until their groups land.
@@ -128,6 +128,19 @@ _INTAKE_VOICE = {
     "persona-divergence": ("persona_divergence.py", "<run_folder|files...> [--strict] | --self-test"),
 }
 COMMANDS += tuple(_INTAKE_VOICE)
+_READER_MANUSCRIPT = {
+    "lifecycle-node": ("lifecycle_node.py", 1, "lifecycle-node", "<sidecar> [run_folder] | --self-test"),
+    "reader-instrument": ("reader_instrument.py", 1, "reader-instrument", "<run_folder|files...> [--strict] | --self-test"),
+    "manuscript-viz": ("viz_manifest.py", 1, "manuscript-viz", "<run_folder|files...> [--strict] [--require-block] | --self-test"),
+    "annotated-manuscript": ("annotation_manifest.py", 1, "annotated-manuscript", "<run_folder|files...> [--strict] | --self-test"),
+    "crosslink": ("crosslink.py", 1, "crosslink", "<run_folder|files...> [--strict] | --self-test"),
+    "reanchor": ("reanchor.py", 1, "reanchor", "<prior_run_folder> <new_snapshot> [--strict] | --self-test"),
+    "roundtrip-disposition": ("reanchor.py", 3, "disposition", "<prior_run_folder> <new_snapshot> <this_run_folder> [--strict] | --self-test"),
+    "reader-contract-outline": ("reader_contract_outline.py", 1, "reader-contract-outline", "<run_folder|files...> [--strict] | --self-test"),
+    "results-guide": ("results_guide.py", 1, "results-guide", "<run_folder|files...> [--strict] | --self-test"),
+    "position-pair-register": ("position_pair_gates.py", 3, "position-pair-register", "<artifact.md> <envelope.json> <manuscript> [--strict] | --self-test"),
+}
+COMMANDS += tuple(_READER_MANUSCRIPT)
 
 
 def _line(text, *, error=False):
@@ -281,6 +294,15 @@ def _intake_voice(command, args):
     return _run_helper(script, [command, *args])
 
 
+def _reader_manuscript(command, args):
+    script, count, prefix, usage = _READER_MANUSCRIPT[command]
+    if args and args[0] == "--self-test":
+        return _run_helper(script, ["--self-test"])
+    if len(args) < count:
+        return _usage(command, usage)
+    return _run_helper(script, [prefix, *args])
+
+
 def _self_test(command):
     """Keep the existing pure-utility self-test output and observable assertions."""
     failed = False
@@ -342,6 +364,8 @@ def main(argv=None):
         _line("Partial migration: remaining commands and aggregates require validate.sh.")
         return 2
     command, args = args[0], args[1:]
+    if command in _READER_MANUSCRIPT:
+        return _reader_manuscript(command, args)
     if command in _INTAKE_VOICE:
         return _intake_voice(command, args)
     if command in _ARTIFACT_PLANNING:

@@ -49,6 +49,11 @@ INTAKE_VOICE = (
     "intake-interview", "author-fingerprint", "content-advisory", "coaching-history",
     "style-explanation", "persona-divergence",
 )
+READER_MANUSCRIPT = (
+    "lifecycle-node", "reader-instrument", "manuscript-viz", "annotated-manuscript",
+    "crosslink", "reanchor", "roundtrip-disposition", "reader-contract-outline",
+    "results-guide", "position-pair-register",
+)
 REFERENCES = SCRIPTS.parent / "skills/core-editor/references"
 BASH = shutil.which("bash")
 
@@ -131,7 +136,7 @@ def test_byte_utilities_differential(tmp_path, payload):
         parity(*args, cwd=tmp_path)
 
 
-@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS + CONFIG_TIMELINES + STRUCTURED_INTEGRITY + RUN_INTEGRITY + PLANNING_DIFFS + REFUTATION + ARTIFACT_PLANNING + INTAKE_VOICE)
+@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS + CONFIG_TIMELINES + STRUCTURED_INTEGRITY + RUN_INTEGRITY + PLANNING_DIFFS + REFUTATION + ARTIFACT_PLANNING + INTAKE_VOICE + READER_MANUSCRIPT)
 def test_migrated_self_tests_have_identical_output(command):
     result = run_python(command, "--self-test", "ignored")
     assert result.returncode == 0
@@ -273,7 +278,7 @@ def test_letter_wrappers_ignore_extra_arguments(tmp_path, command):
     parity(command, path, "ignored", "also ignored")
 
 
-@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "reader-instrument", "bogus"])
+@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "argument-groundtruth-check", "bogus"])
 def test_unported_entrypoints_do_not_claim_success(command):
     result = run_python(command)
     assert result.returncode == 2
@@ -1436,3 +1441,345 @@ def test_coaching_root_sidecar_consent_order_and_recursive_newest_selection(tmp_
     # Explicit first carrier moves the consent/sidecar root to its own directory.
     reverse = native_and_optional_parity("coaching-history", bad, history)
     assert reverse.returncode == 2 and b"no opt-in marker" in reverse.stdout
+
+
+@pytest.mark.parametrize('command', READER_MANUSCRIPT)
+def test_reader_manuscript_wrapper_arity_and_helper_owned_tokens(tmp_path, command):
+    minimum = 3 if command in ('roundtrip-disposition', 'position-pair-register') else 1
+    for raw in [()] + [('missing',) * count for count in range(1, minimum)]:
+        result = native_and_optional_parity(command, *raw)
+        assert result.returncode == 2 and result.stderr == b''
+        assert b'validate.sh ' + command.encode() in result.stdout
+    for raw in [('',) * minimum, ('--strict',) * minimum, (command,) * minimum,
+                ('--unknown', 'missing', '--', '-', 'extra')]:
+        result = native_and_optional_parity(command, *raw, cwd=tmp_path)
+        assert result.returncode in (0, 1, 2)  # Helper-owned no-op/read/usage decisions vary.
+    result = native_and_optional_parity(command, 'missing', '--self-test')
+    assert result.returncode == (2 if minimum == 3 else 0)
+    result = native_and_optional_parity(command, 'missing', 'missing', '--self-test')
+    assert result.returncode == 0 and result.stdout.endswith(b'Self-test: PASS\n')
+
+
+VIZ_INPUTS = ('example-structure-map-manifest.md', 'example-timeline.md', 'example-findings-ledger.md',
+              'example-argument-state-predraft.md', 'example-scene-roster.md', 'example-scene-function.md',
+              'example-tension-points.md', 'example-story-spine.md')
+POSITION_REFERENCES = SCRIPTS.parent / 'skills/prose-measurements/references/example-position-pair-register'
+
+
+@pytest.mark.parametrize('strict', [False, True])
+@pytest.mark.parametrize('command,names', [
+    ('lifecycle-node', ('example-run-folder/Diagnostic_State.meta.json', 'example-run-folder')),
+    ('reader-instrument', ('example-beta-reader-instrument.md', 'example-uncertainty-ledger.md')),
+    ('manuscript-viz', VIZ_INPUTS),
+    ('annotated-manuscript', ('example-annotated-manuscript',)),
+    ('crosslink', ('example-annotated-manuscript',)),
+    ('reanchor', ('example-annotated-manuscript', 'example-reanchor-revised.md')),
+    ('reader-contract-outline', ('example-reader-contract-outline',)),
+    ('results-guide', ('example-results-guide',)),
+    ('position-pair-register', ('Example_Position_Pair_Register_run.md', 'envelope.json', 'manuscript.txt')),
+])
+def test_reader_manuscript_canonical_default_and_strict(command, names, strict):
+    base = POSITION_REFERENCES if command == 'position-pair-register' else REFERENCES
+    args = [base / name for name in names]
+    if command == 'manuscript-viz':
+        args.append('--require-block')
+    if strict:
+        args.append('--strict')
+    result = native_and_optional_parity(command, *args)
+    assert result.returncode == (1 if command == 'reanchor' and strict else 0)
+    assert result.stderr == b''
+
+
+@pytest.fixture
+def disposition_round(tmp_path):
+    prior, current = tmp_path / 'prior', tmp_path / 'current'
+    prior.mkdir(); current.mkdir()
+    for pattern in ('*_Annotation_Manifest_*.md', '*_Findings_Ledger_*.md'):
+        for source in (REFERENCES / 'example-annotated-manuscript').glob(pattern):
+            shutil.copy2(source, prior / source.name)
+    for source in (REFERENCES / 'example-run-folder-r2').glob('*_Findings_Ledger_*.md'):
+        shutil.copy2(source, current / source.name)
+    for name, dest in [('example-roundtrip-disposition.md', 'Example_Roundtrip_Disposition_reanchor-r2.md'),
+                       ('example-roundtrip-revision-report.md', 'Example_Revision_Report_reanchor-r2.md')]:
+        shutil.copy2(REFERENCES / name, current / dest)
+    snapshot = tmp_path / 'Example_Manuscript_Snapshot_reanchor-r2.md'
+    shutil.copy2(REFERENCES / 'example-reanchor-revised.md', snapshot)
+    return prior, snapshot, current
+
+
+def test_disposition_canonical_record_and_absent_record_before_reads(disposition_round, tmp_path):
+    for flags in ((), ('--strict',)):
+        assert native_and_optional_parity('roundtrip-disposition', *disposition_round, *flags).returncode == 0
+    empty = tmp_path / 'absent'
+    empty.mkdir()
+    assert native_and_optional_parity('roundtrip-disposition', 'missing-prior', 'missing-snapshot', empty, '--strict').returncode == 0
+    record = empty / 'Project_Roundtrip_Disposition_r1.md'
+    record.write_bytes(b'\xff\xfe')
+    assert native_and_optional_parity('roundtrip-disposition', 'missing-prior', 'missing-snapshot', empty, '--strict').returncode == 2
+    record = next(disposition_round[2].glob('*_Roundtrip_Disposition_*.md'))
+    text = record.read_text(encoding='utf-8')
+    record.write_text(re.sub(r'<!--\s*disposition-confirmed:.*?-->', '', text, flags=re.S), encoding='utf-8')
+    result = native_and_optional_parity('roundtrip-disposition', *disposition_round)
+    assert result.returncode == 1 and b'RT2' in result.stdout
+
+
+@pytest.mark.parametrize('project', ['Example', 'ExampleNF'])
+def test_outline_explicit_coherent_projects(project):
+    folder = REFERENCES / 'example-reader-contract-outline'
+    args = [folder / f'{project}_{kind}_2026-01-01.md' for kind in
+            ('Pass0_Reverse_Outline', 'Contract', 'Findings_Ledger', 'Contract_Map', 'Reader_Contract_Outline')]
+    assert native_and_optional_parity('reader-contract-outline', *args, '--strict').returncode == 0
+
+
+def test_lifecycle_total_sidecar_and_optional_folder_precedence(tmp_path):
+    state = tmp_path / 'state.json'
+    state.write_text('{}', encoding='utf-8')
+    folder = tmp_path / 'optional'
+    folder.mkdir()
+    def node(expected):
+        result = native_and_optional_parity('lifecycle-node', state, folder, '--strict', 'ignored')
+        assert result.returncode == 0 and result.stdout.startswith(f'lifecycle-node: {expected}\n'.encode())
+    node('diagnosing')
+    (folder / 'Project_Synthesis_r1.md').write_text('# Letter\n', encoding='utf-8')
+    node('diagnosed')
+    state.write_text('{"mode":"execution","execution":{"pending_gate":"next"}}', encoding='utf-8')
+    node('blocked_gate')
+    for body in (b'\xff', b'{invalid', b'[]'):
+        state.write_bytes(body)
+        node('cold')
+
+
+def test_reader_first_parsed_carrier_optional_ledger_and_scoped_override(tmp_path):
+    good = tmp_path / 'reader café.md'
+    good.write_bytes((REFERENCES / 'example-beta-reader-instrument.md').read_bytes())
+    ledger = REFERENCES / 'example-uncertainty-ledger.md'
+    bad = tmp_path / 'bad.md'
+    bad.write_text('<!-- apodictic:reader_question\n{}\n-->\n', encoding='utf-8')
+    prose = tmp_path / 'decoy.md'
+    prose.write_text('A mention of apodictic:reader_question.\n', encoding='utf-8')
+    assert native_and_optional_parity('reader-instrument', prose, good, ledger, '--strict').returncode == 0
+    assert native_and_optional_parity('reader-instrument', good, bad, ledger, '--strict').returncode == 0
+    assert native_and_optional_parity('reader-instrument', bad, good, ledger).returncode == 1
+    bad.write_bytes(b'\xff')
+    assert native_and_optional_parity('reader-instrument', bad).returncode == 2
+    assert native_and_optional_parity('reader-instrument', good, bad).returncode == 1
+    edit_artifact_block(good, 'reader_question', lambda obj: obj.update(question="Don't you think this scene is boring?"))
+    assert native_and_optional_parity('reader-instrument', good, ledger).returncode == 0
+    assert native_and_optional_parity('reader-instrument', good, ledger, '--strict').returncode == 1
+    good.write_text('<!-- override: leading-question RQ-01 — author wording -->\n' + good.read_text(encoding='utf-8'), encoding='utf-8')
+    assert native_and_optional_parity('reader-instrument', good, ledger, '--strict').returncode == 0
+
+
+def test_viz_timeline_glob_optional_roles_and_require_block(tmp_path):
+    names = ('Project_Structure_Map_r1.md', 'Project_Timeline_r1.md', 'Project_Findings_Ledger_r1.md',
+             'Argument_State_r1.md', 'Project_Scene_Roster_r1.md', 'Project_Scene_Function_r1.md',
+             'Project_Tension_Points_r1.md', 'Project_Story_Spine_r1.md')
+    files = []
+    for name, canonical in zip(names, VIZ_INPUTS):
+        path = tmp_path / name
+        path.write_bytes((REFERENCES / canonical).read_bytes())
+        files.append(path)
+    os.utime(files[1], (100, 100))
+    fallback = tmp_path / 'Timeline.md'
+    fallback.write_bytes(b'\xff')
+    os.utime(fallback, (200, 200))
+    assert native_and_optional_parity('manuscript-viz', tmp_path, '--strict', '--require-block').returncode == 0
+    assert native_and_optional_parity('manuscript-viz', *reversed(files), '--strict', '--require-block').returncode == 0
+    files[1].unlink()
+    assert native_and_optional_parity('manuscript-viz', tmp_path, '--strict', '--require-block').returncode == 1
+    plain = tmp_path / 'plain.md'
+    plain.write_text('# No block\n', encoding='utf-8')
+    assert native_and_optional_parity('manuscript-viz', plain).returncode == 0
+    assert native_and_optional_parity('manuscript-viz', plain, '--require-block').returncode == 1
+
+
+def test_annotation_last_role_bound_snapshot_and_crosslink_priority_noop(tmp_path):
+    folder = tmp_path / 'annotations'
+    shutil.copytree(REFERENCES / 'example-annotated-manuscript', folder)
+    files = sorted(folder.glob('*.md'))
+    original = next(folder.glob('*_Manuscript_Snapshot_*.md'))
+    newer = folder / 'Other_Manuscript_Snapshot_r2.md'
+    newer.write_text('Unrelated snapshot\n', encoding='utf-8')
+    os.utime(newer, (2000000000, 2000000000))
+    assert native_and_optional_parity('annotated-manuscript', folder, '--strict').returncode == 0
+    good = native_and_optional_parity('annotated-manuscript', newer, *files, '--strict')
+    assert good.returncode == 0
+    assert native_and_optional_parity('annotated-manuscript', *files, newer, '--strict').returncode == 1
+    # Letter glob class outranks a newer lower-priority canonical editorial letter.
+    priority = folder / 'Project_Core_DE_Synthesis_old.md'
+    priority.write_text('Different priority letter\n', encoding='utf-8')
+    os.utime(priority, (100, 100))
+    assert native_and_optional_parity('crosslink', folder, '--strict').returncode == 1
+    priority.unlink()
+    assert native_and_optional_parity('crosslink', folder, '--strict').returncode == 0
+    empty_manifest = tmp_path / 'Project_Annotation_Manifest_empty.md'
+    empty_manifest.write_text('# No anchors\n', encoding='utf-8')
+    assert native_and_optional_parity('crosslink', empty_manifest, '--strict').returncode == 0
+    original.write_bytes(b'\xff')
+    assert native_and_optional_parity('annotated-manuscript', folder).returncode == 2
+
+
+def test_outline_project_score_contract_collisions_and_same_seed_extra_keys(tmp_path):
+    folder = tmp_path / 'outline'
+    shutil.copytree(REFERENCES / 'example-reader-contract-outline', folder)
+    chosen = native_and_optional_parity('reader-contract-outline', folder, '--strict')
+    assert chosen.returncode == 0
+    contract = folder / 'Example_Contract_2026-01-01.md'
+    original = contract.read_bytes()
+    contract.unlink()
+    other = native_and_optional_parity('reader-contract-outline', folder, '--strict')
+    assert other.returncode == 0 and other.stdout != chosen.stdout
+    contract.write_bytes(original)
+    map_path = folder / 'Example_Contract_Map_2026-01-01.md'
+    original_map = map_path.read_bytes()
+    for site in ('inputs', 'clauses'):
+        map_path.write_bytes(original_map)
+        def add(obj):
+            target = obj['inputs'] if site == 'inputs' else obj['clauses'][0]
+            target.update({key: 'synthetic' for key in ('extra_a', 'extra_b', 'extra_c', 'extra_d', 'extra_e')})
+        edit_artifact_block(map_path, 'contract_map', add)
+        for seed in ('1', '2', '3'):
+            result = native_and_optional_parity('reader-contract-outline', folder, '--strict', env=dict(os.environ, PYTHONHASHSEED=seed))
+            assert result.returncode == 1 and b'unknown key' in result.stdout
+
+
+def test_guide_source_precedence_and_citation_containment(tmp_path):
+    folder = tmp_path / 'nested/run'
+    folder.mkdir(parents=True)
+    guide = folder / 'Project_Results_Guide_r1.md'
+    guide.write_text('# Guide\n\n### Is the structure working?\n\nSee `inside.md`.\n', encoding='utf-8')
+    (folder / 'inside.md').write_text('Synthetic\n', encoding='utf-8')
+    source = tmp_path / 'pass-dependencies.md'
+    pd = (REFERENCES / 'pass-dependencies.md').read_text(encoding='utf-8')
+    source.write_text(pd, encoding='utf-8')
+    first = native_and_optional_parity('results-guide', folder)
+    assert first.returncode == 0 and b'R1 skipped' not in first.stdout
+    local = folder / 'pass-dependencies.md'
+    local.write_text(pd.replace('Is the structure working?', 'A different question?'), encoding='utf-8')
+    assert native_and_optional_parity('results-guide', folder).returncode == 1
+    local.unlink()
+    guide.write_text('# Guide\n\n### Is the structure working?\n\nSee `../../outside.md`.\n', encoding='utf-8')
+    (tmp_path / 'outside.md').write_text('Exists outside\n', encoding='utf-8')
+    assert native_and_optional_parity('results-guide', folder).returncode == 1
+    guide.write_bytes(b'\xff')
+    assert native_and_optional_parity('results-guide', folder).returncode == 1
+
+
+def test_position_pair_quote_drop_strict_and_role_read_errors(tmp_path):
+    folder = tmp_path / 'position'
+    shutil.copytree(POSITION_REFERENCES, folder)
+    artifact, envelope, manuscript = (folder / name for name in ('Example_Position_Pair_Register_run.md', 'envelope.json', 'manuscript.txt'))
+    obj = json.loads(envelope.read_text(encoding='utf-8'))
+    obj['results']['pairs'][0]['a']['quote'] = 'A quote absent from the source.'
+    envelope.write_text(json.dumps(obj), encoding='utf-8')
+    result = native_and_optional_parity('position-pair-register', artifact, envelope, manuscript, 'ignored')
+    assert result.returncode == 0 and b'pairs_dropped_quote_mismatch=' in result.stdout
+    assert native_and_optional_parity('position-pair-register', artifact, envelope, manuscript, '--strict').returncode == 1
+    envelope.write_text('{invalid', encoding='utf-8')
+    assert native_and_optional_parity('position-pair-register', artifact, envelope, manuscript).returncode == 1
+    artifact.write_bytes(b'\xff')
+    assert native_and_optional_parity('position-pair-register', artifact, envelope, manuscript).returncode == 1
+
+
+@pytest.mark.parametrize('command,mode', [('manuscript-viz', 'render'), ('annotated-manuscript', 'build'),
+                                        ('crosslink', 'render'), ('reader-contract-outline', 'build'), ('reanchor', 'emit')])
+def test_wrapper_mode_words_never_enable_producer_writes(tmp_path, command, mode):
+    folder = tmp_path / 'inputs'
+    source = 'example-reader-contract-outline' if command == 'reader-contract-outline' else 'example-annotated-manuscript'
+    shutil.copytree(REFERENCES / source, folder)
+    before = tree_contents(tmp_path)
+    native_and_optional_parity(command, mode, folder, '-o', tmp_path / 'unexpected.html')
+    assert tree_contents(tmp_path) == before
+
+
+@pytest.mark.parametrize('root_name', ['ordinary', 'colon: PASS', 'prój\nPASS'])
+def test_viz_self_test_exact_output_with_real_temp_roots(tmp_path, root_name):
+    root = tmp_path / root_name
+    try:
+        root.mkdir()
+    except OSError:
+        pytest.skip('Host forbids this temporary directory spelling')
+    env = dict(os.environ, TMPDIR=str(root), TEMP=str(root), TMP=str(root))
+    result = native_and_optional_parity('manuscript-viz', '--self-test', env=env)
+    assert result.returncode == 0 and result.stdout.endswith(b'Self-test: PASS\n')
+    assert b'  render_force_reordered: OK\n' in result.stdout
+    assert b'  render_in_order_ok: OK\n' in result.stdout
+    assert b'manuscript-viz: rendered ' not in result.stdout
+    assert result.stderr  # Stable intentional render refusal remains public.
+    assert not list(root.iterdir())
+
+
+@pytest.fixture
+def viz_helper_module():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('cb1_viz_capture_test', SCRIPTS / 'viz_manifest.py')
+    module = importlib.util.module_from_spec(spec)
+    sys.path.insert(0, str(SCRIPTS))
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.path.pop(0)
+    return module
+
+
+@pytest.mark.parametrize('positive_site', [0, 1], ids=['forced-render', 'ordered-render'])
+@pytest.mark.parametrize('fault', ['silent', 'extra-output', 'nonzero', 'exception'])
+def test_viz_positive_render_capture_refuses_fault_and_restores_stdout(viz_helper_module, monkeypatch, tmp_path, positive_site, fault):
+    from contextlib import redirect_stdout, redirect_stderr
+    from io import StringIO
+    import tempfile
+    module = viz_helper_module
+    original = module.main
+    real_mkdtemp = tempfile.mkdtemp
+    made = []
+    def create(*args, **kwargs):
+        kwargs['dir'] = str(tmp_path)
+        path = real_mkdtemp(*args, **kwargs)
+        made.append(Path(path))
+        return path
+    monkeypatch.setattr(tempfile, 'mkdtemp', create)
+    positive = 0
+    injected = RuntimeError('render exception control')
+    def render(argv):
+        nonlocal positive
+        out, err = StringIO(), StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            rc = original(argv)
+        sys.stderr.write(err.getvalue())
+        if rc != 0:
+            sys.stdout.write(out.getvalue())
+            return rc
+        site = positive
+        positive += 1
+        if site != positive_site:
+            sys.stdout.write(out.getvalue())
+            return rc
+        if fault == 'exception':
+            raise injected
+        if fault != 'silent':
+            sys.stdout.write(out.getvalue())
+        if fault == 'extra-output':
+            print('unexpected diagnostic')
+        return 7 if fault == 'nonzero' else 0
+    monkeypatch.setattr(module, 'main', render)
+    public, errors = StringIO(), StringIO()
+    with redirect_stdout(public), redirect_stderr(errors):
+        if fault == 'exception':
+            with pytest.raises(RuntimeError) as caught:
+                module.run_self_test()
+            assert caught.value is injected
+        else:
+            assert module.run_self_test() == 1
+        assert sys.stdout is public
+    name = 'render_force_reordered' if positive_site == 0 else 'render_in_order_ok'
+    if fault != 'exception':
+        assert f'  {name}: FAIL\n' in public.getvalue()
+        assert public.getvalue().endswith('Self-test: FAIL\n')
+        assert '  w3_beat_map_coverage_strict_fails: OK\n' in public.getvalue()
+        assert not any(path.exists() for path in made)
+    else:
+        assert f'  {name}: OK\n' not in public.getvalue()
+        # Preserve inherited exceptional cleanup limits; remove probe leftovers ourselves.
+        for path in made:
+            shutil.rmtree(path, ignore_errors=True)
+    assert errors.getvalue()  # Negative render refusal stderr was not swallowed.

@@ -1,0 +1,3 @@
+### Native lifecycle, reader and manuscript validator routes
+
+Added ten native Python routes for lifecycle, reader instruments, manuscript maps/annotations, crosslinks, reanchoring/disposition, reader outlines, results guides and position pairs. Existing helpers retain raw argument, discovery, strictness, read and override behavior; producer modes remain direct-helper-only. Two viz self-test render emissions are captured with separate exact status/output assertions to stabilize self-test parity while preserving ordinary renderer output and artifacts. Earlier routes, gate/aggregate holds and platform acceptance boundaries remain.

@@ -1,7 +1,7 @@
 # Native Python validator migration
 
-**Status:** Groups 1–4, 5a and 6–8 built; self-test output stabilized. The gate pair
-and groups 9–14 remain queued. The Bash dispatcher remains the
+**Status:** Groups 1–4, 5a and 6–9 built; self-test output stabilized. The gate pair
+and groups 10–14 remain queued. The Bash dispatcher remains the
 full validator entrypoint during this migration.
 <!-- built-when: plugins/apodictic/scripts/validate.py -->
 
@@ -90,8 +90,8 @@ All 18 official gate child validators now have native routes. Both gate surfaces
 still require the separate launcher transition; child availability alone does
 not make them native. Custom manifests can reach other commands such as
 `schema-coverage` and aggregate switches that remain unported. Changing the
-shared Bash gate default now would regress those existing calls. Groups 9–13
-follow Group 8; full aggregate dispatch and gate migration stay
+shared Bash gate default now would regress those existing calls. Groups 10–13
+follow Group 9; full aggregate dispatch and gate migration stay
 coordinated in Group 14 unless a separate reviewed design preserves all behavior.
 
 Group 7 adds `legal-risk`, `promise-contract`, `continuity-bible`, `setup-payoff`,
@@ -120,6 +120,23 @@ Ordinary coaching calls retain original arguments, including command tokens the
 helper later removes. Deletion can remove histories before refusing a malformed
 sidecar; the existing helper does not promise atomic rollback.
 
+Group 9 adds ten lifecycle, reader and manuscript routes. Original arguments go
+to unchanged helpers after raw wrapper arity checks; `roundtrip-disposition`
+uses the helper prefix `disposition`. Reanchor admits one raw argument, while
+roundtrip and position-pair require three before a late self-test can reach the
+helper. First-position self-tests retain their wrapper bypass. Direct helper
+build/render/emit/crossref modes remain direct-only: mode-like wrapper tokens are
+paths and do not enable writes. Discovery, optional reads, strictness, citation
+containment and recorded-disposition checks remain helper-owned.
+
+The only Group 9 helper edit captures two expected positive render calls inside
+the viz self-test. Each named check still verifies return 0 and now also requires
+the exact complete success stdout, including its actual output path and newline.
+Only those two random-path stdout emissions are hidden. The negative render's
+stable stderr, named rows, suite accounting, successful cleanup and ordinary
+renderer output/artifacts remain unchanged; exceptions propagate with stdout
+restored, without a new guarantee of directory cleanup on arbitrary exceptions.
+
 Exit codes remain 0 for success, 1 for a validation failure, and 2 for usage or an
 invalid/inaccessible input path. For the three raw-byte utilities, a regular file
 that is found but cannot be read returns 1 with empty stdout and a named
@@ -134,7 +151,7 @@ partial-migration message. Python does not fall back to Bash.
 ## Differential acceptance
 
 `tests/test_validate_python_parity.py` compares exit codes and stdout bytes against
-the independent Bash dispatcher without output normalization. All 54 migrated
+the independent Bash dispatcher without output normalization. All 64 migrated
 self-test surfaces now compare exact stdout bytes, including specificity and
 the three shared refutation routes. Their self-tests formerly printed random
 temporary paths while exercising expected negative CLI reads. The separate
@@ -177,9 +194,10 @@ checks still run; this is not full native Windows acceptance. The final acceptan
 requires the whole Python `--check-all` suite green on `windows-latest` and exact
 differential results over every command self-test and all validator fixtures.
 The final independent pre-cutover Bash reference includes the separately reviewed
-specificity/refutation helper stabilization. Its intentional self-test-only
-output change removes the two specificity fixture diagnostic lines and the one
-shared refutation fixture diagnostic line; no pre-stabilization self-test
+specificity/refutation helper stabilization and the narrow viz self-test capture.
+Their intentional self-test-only output changes remove the two specificity fixture
+diagnostic lines, the one shared refutation fixture diagnostic line and two
+positive viz render output-path lines; no pre-stabilization self-test
 byte-equivalence claim is made. Output from readable-empty and other checks,
 ordinary helper dispatch and unrelated exception propagation remain unchanged.
 The shared refutation suite retains an unrelated synthetic-JSON failure when a
@@ -231,6 +249,20 @@ sorted or normalized, production does not set a seed, and ordinary unseeded
 output determinism is not claimed. Fingerprint W2/style X6 remain nonblocking
 under strict while coaching URL W1 remains blocking.
 
+Group 9 adds ten exact self-test surfaces, canonical default/strict behavior and
+both explicit outline projects, including expected strict reanchor refusal.
+Compact controls preserve raw wrapper minima/prefixes, distinct resolver roles,
+optional/read/no-op behavior, strictness, direct-only producer modes and no-write
+validation. Viz capture controls exercise real temporary roots with colon/PASS,
+Unicode and newline spellings, per-site bad status/output and propagated
+exceptions. Independent pre-edit ordinary render/refusal receipts compare raw
+outputs and resulting artifact bytes/modes; two known full render emissions are
+the only intentional self-test output delta. The stable nonempty viz/outline
+self-test stderr remains compared exactly. Outline unknown-input/clause-key
+ordering is inherited: raw differential controls pair the same seeds 1, 2 and 3
+without sorting output or setting a production seed. Recorded confirmation checks
+prove consistency of records, not independent human confirmation.
+
 ## Continuation groups
 
 These provisional groups give each subsequent increment its own PR. Refresh the
@@ -250,7 +282,7 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | Self-test stability | Specificity/refutation expected-negative diagnostic capture and four restored exact-output surfaces | Built |
 | 7 | legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, argument-spine, scene-ethics | Built |
 | 8 | intake-interview, author-fingerprint, content-advisory, coaching-history, style-explanation, persona-divergence | Built |
-| 9 | lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, reader-contract-outline, results-guide, position-pair-register | Queued |
+| 9 | lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, reader-contract-outline, results-guide, position-pair-register | Built |
 | 10 | argument-groundtruth-check, fiction-groundtruth-check, agreement-alpha, argument-crosswalk-check, argument-agd, argument-aif-export, argument-aif-check | Queued |
 | 11 | argument-reconstruction, argument-reconstruction-draft | Queued |
 | 12 | obsidian-export, html-export, docx-export, pdf-export | Queued |
