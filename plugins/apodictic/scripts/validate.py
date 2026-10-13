@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Native validator dispatcher, CB-1(a) group 1.
+"""Native validator dispatcher, CB-1(a) groups 1–2.
 
-The seven early utilities are available without Bash. Other commands and the
-aggregate checks still belong to validate.sh until their migration groups land.
+The early utilities and letter signal/consolidation commands run without Bash.
+Other commands and aggregates still belong to validate.sh until their groups land.
 """
 
 import hashlib
@@ -24,6 +24,18 @@ _HELPERS = {
     "synthesis-sections": ("letter_checks.py", 1, "<editorial_letter_file>"),
     "tone-check": ("letter_checks.py", 1, "<editorial_letter_file>"),
 }
+_LETTER_SIGNALS = {
+    "author-facing-lint": "<editorial_letter_file> | --self-test",
+    "severity-floor": "<editorial_letter_file> [<ledger_file>] | --self-test",
+    "audit-signal-propagation": (
+        "<editorial_letter_file> [<ledger_file>] | --self-test | "
+        "--check-registry [<registry_file> <pass_deps_file>]"
+    ),
+    "underdiagnosis-triggers": "<editorial_letter_file> [<ledger_file>] | --self-test",
+    "ledger-consolidation": "<consolidated_ledger_file> [<raw_ledger_file>] | --self-test",
+    "decision-layer-check": "<editorial_letter_file> | --self-test",
+}
+COMMANDS += tuple(_LETTER_SIGNALS)
 
 
 def _line(text, *, error=False):
@@ -48,6 +60,14 @@ def _hash(path):
     return digest.hexdigest()
 
 
+def _run_helper(script, args):
+    env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
+    return subprocess.run(
+        [sys.executable, str(Path(__file__).resolve().parent / script), *args],
+        env=env,
+    ).returncode
+
+
 def _helper(command, args):
     script, count, arguments = _HELPERS[command]
     self_test = bool(args and args[0] == "--self-test")
@@ -61,11 +81,42 @@ def _helper(command, args):
             _line(f"Error: {kind} not found: {args[0]}", error=True)
             return 2
     helper_args = ["--self-test", command] if self_test else [command, *args[:count]]
-    env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
-    return subprocess.run(
-        [sys.executable, str(Path(__file__).resolve().parent / script), *helper_args],
-        env=env,
-    ).returncode
+    return _run_helper(script, helper_args)
+
+
+def _registry_check(args):
+    registry = args[0] if args else ""
+    dependencies = args[1] if len(args) > 1 else ""
+    if not registry:
+        # Preserve the shell's logical script directory and lexical ../ paths.
+        script_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
+        for relative in (
+            "../skills/core-editor/references",
+            "../plugins/apodictic/skills/core-editor/references",
+        ):
+            base = os.path.join(script_dir, relative)
+            candidate = os.path.join(base, "audit-routing-table.md")
+            if os.path.isfile(candidate):
+                registry = candidate
+                dependencies = os.path.join(base, "pass-dependencies.md")
+                break
+    if not os.path.isfile(registry) or not os.path.isfile(dependencies):
+        _line("Error: registry or pass-dependencies file not found "
+              f"(REG={registry} DEP={dependencies})", error=True)
+        return 2
+    return _run_helper("letter_checks.py", ["check-registry", registry, dependencies])
+
+
+def _letter_signal(command, args):
+    if not args:
+        return _usage(command, _LETTER_SIGNALS[command])
+    if args[0] == "--self-test":
+        return _run_helper("letter_checks.py", ["--self-test", command])
+    if command == "audit-signal-propagation" and args[0] == "--check-registry":
+        return _registry_check(args[1:])
+    # These Bash arms delegate before probing files and forward every argument.
+    # The existing parser owns optional-file handling and ignored extras.
+    return _run_helper("letter_checks.py", [command, *args])
 
 
 def _self_test(command):
@@ -129,6 +180,8 @@ def main(argv=None):
         _line("Partial migration: remaining commands and aggregates require validate.sh.")
         return 2
     command, args = args[0], args[1:]
+    if command in _LETTER_SIGNALS:
+        return _letter_signal(command, args)
     if command in _HELPERS:
         return _helper(command, args)
     if args and args[0] == "--self-test":

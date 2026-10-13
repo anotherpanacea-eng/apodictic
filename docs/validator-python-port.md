@@ -1,6 +1,6 @@
 # Native Python validator migration
 
-**Status:** Group 1 built; groups 2–14 queued. The Bash dispatcher remains the
+**Status:** Groups 1–2 built; groups 3–14 queued. The Bash dispatcher remains the
 full validator entrypoint during this migration.
 <!-- built-when: plugins/apodictic/scripts/validate.py -->
 
@@ -22,6 +22,21 @@ counting counts LF bytes, including those in CRLF pairs, and excludes an
 unterminated final line. These three utilities require only Python's standard
 library. The other four call the existing shipped Python parser through the active
 interpreter, preserving its output and the Bash wrapper's argument slicing.
+
+Group 2 adds `author-facing-lint`, `severity-floor`, `audit-signal-propagation`,
+`underdiagnosis-triggers`, `ledger-consolidation` and `decision-layer-check` using
+the same invocation pattern. These six commands forward their original arguments
+to the existing letter parser, which owns file errors and advisory behavior.
+`ledger-consolidation` consumes an optional raw ledger when it exists; missing
+optional files and further arguments retain the existing parser behavior.
+First-position `--self-test` selects the corresponding existing helper suite.
+
+`audit-signal-propagation --check-registry` locates the canonical registry and
+dependencies relative to the script. Explicit nonempty registry input requires an
+explicit dependencies file; absent/empty registry input defaults both files.
+Explicit path spelling, lexical default paths, candidate order and the helper's
+argument-propagation fragment discovery are preserved. Extra registry arguments
+are ignored as before.
 
 Exit codes remain 0 for success, 1 for a validation failure, and 2 for usage or an
 invalid/inaccessible input path. For the three raw-byte utilities, a regular file
@@ -45,7 +60,10 @@ exercises every migrated self-test, all applicable shipped validator fixtures,
 binary/empty/CRLF/unterminated files, literal project/run labels, Unicode/space/
 leading-dash paths, missing arguments and paths, wrong path types, hash drift and
 ignored extra arguments, invalid path components, inaccessible parents and
-unreadable regular files. POSIX permission regressions require an unprivileged
+unreadable regular files. Group 2 additionally exercises all six self-tests and
+42 shipped fixtures, advisory/override behavior, parser-owned errors, optional
+inputs and explicit/default/fragment/empty-registry routes. POSIX permission
+regressions require an unprivileged
 account and are explicitly skipped when the host can bypass mode restrictions.
 Independent native assertions cover the raw-byte utility
 contract with an empty `PATH`, including files larger than a read chunk. Native
@@ -73,7 +91,7 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | Group | Commands or deliverable | State |
 | --- | --- | --- |
 | 1 | contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines | Built |
-| 2 | author-facing-lint, severity-floor, audit-signal-propagation (including registry route), underdiagnosis-triggers, ledger-consolidation, decision-layer-check | Queued |
+| 2 | author-facing-lint, severity-floor, audit-signal-propagation (including registry route), underdiagnosis-triggers, ledger-consolidation, decision-layer-check | Built |
 | 3 | quality-risk-triggers, cost-floor, audit-tier-criterion, pass-header, argument-recon-prerequisite, timeline-diff, timeline-arithmetic, timeline-anchor-conflict | Queued |
 | 4 | structured-findings, softness-check, deficit-lock, artifacts-schema, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary | Queued |
 | 5 | gate, gate-state, escalation-check, dispatch-record, disposition-check, synthesis-coverage, specificity-floor | Queued |

@@ -22,10 +22,14 @@ UTILITIES = (
     "contract-hash", "contract-check", "ledger-check", "artifact-names",
     "synthesis-sections", "tone-check", "state-lines",
 )
+LETTER_SIGNALS = (
+    "author-facing-lint", "severity-floor", "audit-signal-propagation",
+    "underdiagnosis-triggers", "ledger-consolidation", "decision-layer-check",
+)
 BASH = shutil.which("bash")
 FIXTURES = sorted(
     path for path in (ROOT / "tests/fixtures/validators").glob("lc.*.*.*.md")
-    if path.name.split(".")[2] in ("ledger-check", "synthesis-sections", "tone-check")
+    if path.name.split(".")[2] in ("ledger-check", "synthesis-sections", "tone-check", *LETTER_SIGNALS)
 )
 
 
@@ -93,7 +97,7 @@ def test_byte_utilities_differential(tmp_path, payload):
         parity(*args, cwd=tmp_path)
 
 
-@pytest.mark.parametrize("command", UTILITIES)
+@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS)
 def test_migrated_self_tests_have_identical_output(command):
     result = run_python(command, "--self-test", "ignored")
     assert result.returncode == 0
@@ -233,9 +237,97 @@ def test_letter_wrappers_ignore_extra_arguments(tmp_path, command):
     parity(command, path, "ignored", "also ignored")
 
 
-@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "severity-floor", "bogus"])
+@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "quality-risk-triggers", "bogus"])
 def test_unported_entrypoints_do_not_claim_success(command):
     result = run_python(command)
     assert result.returncode == 2
     assert b"Partial migration:" in result.stdout
     assert result.stderr == b""
+
+
+@pytest.mark.parametrize("command", LETTER_SIGNALS)
+def test_letter_signal_argument_forwarding_and_parser_owned_errors(tmp_path, command):
+    primary = tmp_path / "input.md"
+    primary.write_text("# Development Edit\n## What Needs Work\nClean prose.\n", encoding="utf-8")
+    extra = tmp_path / "optional.md"
+    extra.write_text("## Pass 1\n## Pass 2\n## Pass 3\n", encoding="utf-8")
+    for args in (
+        (), ("missing.md",), (str(tmp_path),), ("x" * 256,),
+        ("input.md/",), ("--strict",), ("",),
+        ("input.md",), ("input.md", "missing.md"),
+        ("input.md", "optional.md", "ignored", "--strict"),
+    ):
+        native = run_python(command, *args, cwd=tmp_path)
+        if not args or args[0] != "input.md":
+            assert native.returncode == 2
+        if BASH is not None:
+            parity(command, *args, cwd=tmp_path)
+
+
+@pytest.mark.parametrize("body, warns", [
+    ("This is a Pass 11F problem and a QF-7 issue.\n", True),
+    ("The consent-and-reception pass (Pass 11F) flagged weak motivation (QF-7).\n", False),
+    ("<!-- override: author-facing-lint -->\nA Pass 11F / QF-7 note.\n", False),
+    ("<!-- override: author-facing-lint-extra -->\nA Pass 11F / QF-7 note.\n", True),
+    ("`<!-- override: author-facing-lint -->`\nA Pass 11F / QF-7 note.\n", True),
+], ids=["advisory-warning", "gloss", "override", "suffix-decoy", "quoted-decoy"])
+def test_native_author_lint_preserves_advisory_and_override_behavior(tmp_path, body, warns):
+    path = tmp_path / "letter.md"
+    path.write_text("# Development Edit\n## What Needs Work\n" + body, encoding="utf-8")
+    native = run_python("author-facing-lint", path)
+    assert (native.returncode, native.stderr) == (0, b"")
+    assert (b"WARN:" in native.stdout) == warns
+    if BASH is not None:
+        parity("author-facing-lint", path)
+
+
+def test_registry_defaults_and_explicit_argument_rules(tmp_path):
+    refs = SCRIPTS.parent / "skills/core-editor/references"
+    registry = refs / "audit-routing-table.md"
+    dependencies = refs / "pass-dependencies.md"
+    for args in (
+        (), ("",), ("", "ignored-nonexistent-dependency.md"),
+        (registry, dependencies), (registry, dependencies, "ignored"),
+    ):
+        native = run_python("audit-signal-propagation", "--check-registry", *args, cwd=tmp_path)
+        assert native.returncode == 0
+        assert native.stdout.startswith(b"Registry check: PASS (")
+        assert native.stderr == b""
+        if BASH is not None:
+            parity("audit-signal-propagation", "--check-registry", *args, cwd=tmp_path)
+    for args in ((registry,), (registry, ""), ("missing-reg.md", dependencies), (registry, tmp_path)):
+        native = run_python("audit-signal-propagation", "--check-registry", *args, cwd=tmp_path)
+        assert (native.returncode, native.stdout) == (2, b"")
+        assert native.stderr.startswith(b"Error: registry or pass-dependencies file not found (")
+        if BASH is not None:
+            parity("audit-signal-propagation", "--check-registry", *args, cwd=tmp_path)
+
+
+def test_registry_fragment_and_empty_registry(tmp_path):
+    directory = tmp_path / "references"
+    directory.mkdir()
+    registry = directory / "registry.md"
+    dependencies = directory / "dependencies.md"
+    fragment = directory / "argument-audits-propagation.md"
+    registry.write_text("<!-- registry:signal-emitting-audits:begin -->\n"
+                        "- Example Audit\n<!-- registry:signal-emitting-audits:end -->\n",
+                        encoding="utf-8")
+    dependencies.write_text("# Dependencies\n", encoding="utf-8")
+
+    def check(expected):
+        # Explicit lexical ../ paths must remain untouched by wrapper probes.
+        args = ("audit-signal-propagation", "--check-registry",
+                "references/../references/registry.md", "references/../references/dependencies.md")
+        native = run_python(*args, cwd=tmp_path)
+        assert native.returncode == expected
+        if BASH is not None:
+            parity(*args, cwd=tmp_path)
+        return native
+
+    assert "no §4e propagation row".encode("utf-8") in check(1).stdout
+    fragment.write_text("| Example Audit | hard gate | Must-Fix |\n", encoding="utf-8")
+    assert check(0).stdout.startswith(b"Registry check: PASS (")
+    registry.write_text("# No entries\n", encoding="utf-8")
+    empty = check(2)
+    assert empty.stdout == b""
+    assert b"Error: no registry entries found in references/../references/registry.md" in empty.stderr
