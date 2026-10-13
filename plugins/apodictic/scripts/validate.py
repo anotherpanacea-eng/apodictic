@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native validator dispatcher, CB-1(a) groups 1–4, 5a and 6–10.
+"""Native validator dispatcher, CB-1(a) groups 1–4, 5a and 6–11.
 
 Early utilities, signals, configuration, timelines and structured checks run without Bash.
 Other commands and aggregates still belong to validate.sh until their groups land.
@@ -163,6 +163,11 @@ _ARGUMENT_EVALUATORS = {
     "argument-aif-check": ("argument_aif.py", 0, "check", ""),
 }
 COMMANDS += tuple(_ARGUMENT_EVALUATORS)
+_ARGUMENT_RECONSTRUCTION = {
+    "argument-reconstruction-draft": "reconstruction_draft.py",
+    "argument-reconstruction": "approval_graph.py",
+}
+COMMANDS += tuple(_ARGUMENT_RECONSTRUCTION)
 
 
 def _line(text, *, error=False):
@@ -193,6 +198,14 @@ def _run_helper(script, args):
         [sys.executable, str(Path(__file__).resolve().parent / script), *args],
         env=env,
     ).returncode
+
+
+def _argument_reconstruction(command, args):
+    script = _ARGUMENT_RECONSTRUCTION[command]
+    if not (Path(__file__).resolve().parent / script).is_file():
+        _line(f"ERROR: {command} requires python3 and {script}", error=True)
+        return 1
+    return _run_helper(script, ["--self-test"] if args and args[0] == "--self-test" else args)
 
 
 def _helper(command, args):
@@ -395,6 +408,8 @@ def main(argv=None):
         _line("Partial migration: remaining commands and aggregates require validate.sh.")
         return 2
     command, args = args[0], args[1:]
+    if command in _ARGUMENT_RECONSTRUCTION:
+        return _argument_reconstruction(command, args)
     if command in _ARGUMENT_EVALUATORS:
         return _argument_evaluator(command, args)
     if command in _READER_MANUSCRIPT:
