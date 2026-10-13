@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native validator dispatcher, CB-1(a) groups 1–4, 5a and 6–11.
+"""Native validator dispatcher, CB-1(a) groups 1–4, 5a and 6–12.
 
 Early utilities, signals, configuration, timelines and structured checks run without Bash.
 Other commands and aggregates still belong to validate.sh until their groups land.
@@ -168,6 +168,13 @@ _ARGUMENT_RECONSTRUCTION = {
     "argument-reconstruction": "approval_graph.py",
 }
 COMMANDS += tuple(_ARGUMENT_RECONSTRUCTION)
+_ANNOTATION_EXPORTS = {
+    "obsidian-export": "<run_folder> | (generate) {script} ... via annotation_export.py obsidian <run_folder>",
+    "html-export": "<run_folder> | (generate) via annotation_export.py html <run_folder>",
+    "docx-export": "<run_folder> | (generate) via annotation_export.py docx <run_folder>",
+    "pdf-export": "<run_folder> | (generate) via annotation_export.py pdf <run_folder>",
+}
+COMMANDS += tuple(_ANNOTATION_EXPORTS)
 
 
 def _line(text, *, error=False):
@@ -206,6 +213,37 @@ def _argument_reconstruction(command, args):
         _line(f"ERROR: {command} requires python3 and {script}", error=True)
         return 1
     return _run_helper(script, ["--self-test"] if args and args[0] == "--self-test" else args)
+
+
+def _annotation_export(command, args):
+    links = sum(arg == "--internal-links" for arg in args)
+    malformed = any(arg.startswith("--internal-links") and arg != "--internal-links" for arg in args)
+    if links or malformed:
+        if command != "pdf-export" or links != 1 or malformed or len(args) != 2:
+            _line("pdf-export: usage: pdf-export <run_folder> --internal-links (once)")
+            return 2
+        if any(arg.startswith("--") and arg != "--internal-links" for arg in args):
+            _line("pdf-export: usage: misplaced navigation option")
+            return 2
+        if not (Path(__file__).resolve().parent / "annotation_export.py").is_file():
+            _line("pdf-export: N navigation validation unavailable (Python/helper missing)")
+            return 2
+    if args and args[0] == "--self-test":
+        result = _run_helper("annotation_export.py", ["--self-test"])
+        if result or command != "pdf-export":
+            return result
+        root = Path(__file__).resolve().parents[3]
+        if (root / "AGENTS.md").is_file():
+            suite = root / "tests/test_pdf_navigation.py"
+            if not suite.is_file():
+                _line("pdf-export: N repository navigation acceptance suite unavailable")
+                return 2
+            return _run_helper(suite, [])
+        return 0
+    if not args:
+        script_name = os.path.splitext(sys.argv[0])[0] + ".sh"
+        return _usage(command, _ANNOTATION_EXPORTS[command].format(script=script_name))
+    return _run_helper("annotation_export.py", [command, *args])
 
 
 def _helper(command, args):
@@ -408,6 +446,8 @@ def main(argv=None):
         _line("Partial migration: remaining commands and aggregates require validate.sh.")
         return 2
     command, args = args[0], args[1:]
+    if command in _ANNOTATION_EXPORTS:
+        return _annotation_export(command, args)
     if command in _ARGUMENT_RECONSTRUCTION:
         return _argument_reconstruction(command, args)
     if command in _ARGUMENT_EVALUATORS:

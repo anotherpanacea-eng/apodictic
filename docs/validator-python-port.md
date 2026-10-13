@@ -1,7 +1,7 @@
 # Native Python validator migration
 
-**Status:** Groups 1–4, 5a and 6–10 built; self-test output stabilized. The gate pair
-and groups 11–14 remain queued. The Bash dispatcher remains the
+**Status:** Groups 1–4, 5a and 6–12 built; self-test output stabilized. The gate pair
+and groups 13–14 remain queued. The Bash dispatcher remains the
 full validator entrypoint during this migration.
 <!-- built-when: plugins/apodictic/scripts/validate.py -->
 
@@ -289,6 +289,28 @@ reject `--internal-links*` before either arm, so Group 11 route-arm forwarding,
 first-self-test and missing-helper parity exclude those scanner-control calls.
 Group 14 owns the scanner's global reach and aggregate cutover.
 
+Group 12 adds native `obsidian-export`, `html-export`, `docx-export`, and
+`pdf-export` validators. Each sends its own command name and all original raw
+arguments to the existing annotation export helper. First-position self-tests
+send only `--self-test`; PDF then runs the actual repository navigation suite
+when the repository marker is present. A nonzero helper or suite result remains
+nonzero. The direct helper's `obsidian`, `html`, `docx`, and `pdf` verbs remain
+producers; these four public routes check on-disk exports and do not create them.
+The four routes reproduce the Bash wrapper's `--internal-links*` scan before
+self-test or shortage handling. Earlier native routes still lack the global
+scanner reach, which Group 14 must resolve with complete dispatch tests.
+
+PDF first-self-test compares exact exit status and stdout. Its repository
+navigation suite writes unittest progress and results to stderr; only the
+elapsed decimal in `Ran N tests in <elapsed>s` varies between real executions.
+Normal-PATH parity checks all remaining stderr bytes, count and result. An
+empty-PATH native run executes the same suite but skips its two Bash-dependent
+cases on the current POSIX host; that is partial coverage, not a no-skip result.
+Default exports use the helper's existing independent newest-file discovery;
+linked PDF keeps its separate normal-run authentication and reports that reader
+behavior is unqualified. The aggregate gate, complete historical scanner reach,
+native Windows acceptance and cutover remain Group 14 work.
+
 ## Continuation groups
 
 These provisional groups give each subsequent increment its own PR. Refresh the
@@ -311,7 +333,7 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | 9 | lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, reader-contract-outline, results-guide, position-pair-register | Built |
 | 10 | argument-groundtruth-check, fiction-groundtruth-check, agreement-alpha, argument-crosswalk-check, argument-agd, argument-aif-export, argument-aif-check | Built |
 | 11 | argument-reconstruction, argument-reconstruction-draft | Built |
-| 12 | obsidian-export, html-export, docx-export, pdf-export | Queued |
+| 12 | obsidian-export, html-export, docx-export, pdf-export | Built |
 | 13 | registry-check, schema-coverage, validator-conventions, calibration-honesty, stance-calibration, argument-carve-behavior-preservation | Queued |
 | 14 | Native aggregate/canonical workflow, complete usage routing, Bash shim cutover, references, and native Windows full-suite acceptance | Queued |
 
