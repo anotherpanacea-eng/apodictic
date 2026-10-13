@@ -123,13 +123,15 @@ def test_byte_utilities_differential(tmp_path, payload):
         parity(*args, cwd=tmp_path)
 
 
-@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS + CONFIG_TIMELINES + STRUCTURED_INTEGRITY + RUN_INTEGRITY[:-1] + PLANNING_DIFFS)
+@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS + CONFIG_TIMELINES + STRUCTURED_INTEGRITY + RUN_INTEGRITY + PLANNING_DIFFS + REFUTATION)
 def test_migrated_self_tests_have_identical_output(command):
     result = run_python(command, "--self-test", "ignored")
     assert result.returncode == 0
     assert result.stdout.endswith(b"Self-test: PASS\n")
     if BASH is not None:
         parity(command, "--self-test", "ignored")
+    if command in ("specificity-floor", *REFUTATION):
+        assert b"Error: cannot read" not in result.stdout
 
 
 @pytest.mark.parametrize("fixture", FIXTURES, ids=lambda path: path.name)
@@ -633,30 +635,9 @@ def test_run_integrity_wrapper_arity_flags_and_late_self_test(command):
     assert native_and_optional_parity(command).returncode == 2
     assert native_and_optional_parity(command, "--strict", "--strict").returncode == 2
     assert native_and_optional_parity(command, command, "--unknown").returncode == 2
-    if command == "specificity-floor":
-        return  # Its path-bearing self-test has separate assertions below.
     late = native_and_optional_parity(command, "--strict", "--self-test", "ignored")
     assert late.returncode == 0
     assert late.stdout.endswith(b"Self-test: PASS\n")
-
-
-@pytest.mark.parametrize("args", [("--self-test", "ignored"), ("--strict", "--self-test", "ignored")])
-def test_specificity_self_test_preserves_named_read_errors(args):
-    # The unchanged helper prints its own random mkdtemp path. Independent runs
-    # cannot have byte-identical stdout; do not normalize it and claim parity.
-    results = [run_python("specificity-floor", *args)]
-    if BASH is not None:
-        results.append(subprocess.run(
-            [BASH, str(BASH_CLI), "specificity-floor", *args],
-            capture_output=True, timeout=60,
-        ))
-    for result in results:
-        assert (result.returncode, result.stderr) == (0, b"")
-        assert result.stdout.endswith(b"Self-test: PASS\n")
-        assert result.stdout.count(b"Error: cannot read editorial letter ") == 1
-        assert result.stdout.count(b"Error: cannot read findings ledger ") == 1
-        assert b"non_utf8_letter_fails_closed: OK\n" in result.stdout
-        assert b"non_utf8_ledger_fails_closed: OK\n" in result.stdout
 
 
 @pytest.mark.parametrize("command,inputs", [
@@ -781,22 +762,6 @@ def test_refutation_raw_wrapper_minimum(command, count):
         result = native_and_optional_parity(command, *(["missing"] * argc))
         assert (result.returncode, result.stderr) == (2, b"")
         assert result.stdout.startswith(b"Usage: ")
-
-
-@pytest.mark.parametrize("command", REFUTATION)
-def test_refutation_shared_self_test_preserves_named_read_error(command):
-    # This unchanged shared suite prints a random temporary path. Independently
-    # assert full success; no normalization or exact-output equivalence claim.
-    args = (command, "--self-test", "ignored", "--strict")
-    results = [run_python(*args)]
-    if BASH is not None:
-        results.append(subprocess.run([BASH, str(BASH_CLI), *args], capture_output=True, timeout=60))
-    for result in results:
-        assert (result.returncode, result.stderr) == (0, b"")
-        assert result.stdout.endswith(b"Self-test: PASS\n")
-        assert result.stdout.count(b"Error: cannot read editorial letter ") == 1
-        assert b"non_utf8_read_file_named_error: OK\n" in result.stdout
-        assert b"non_utf8_coverage_cli_degrades: OK\n" in result.stdout
 
 
 @pytest.mark.parametrize("command,inputs,expected", [
