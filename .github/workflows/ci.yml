@@ -113,6 +113,7 @@ jobs:
         run: |
           node scripts/check-inventory-parity.mjs --self-test
           node scripts/check-inventory-parity.mjs
+          python -I -S plugins/apodictic/scripts/validator_runner.py --check-inventory
 
       - name: Registry-derived docs are up to date
         run: node scripts/release-generate.mjs --check
