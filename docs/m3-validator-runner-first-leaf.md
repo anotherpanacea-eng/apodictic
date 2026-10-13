@@ -1,6 +1,6 @@
 # M3 validator runner: first leaf
 
-**Status:** Built as a source-development tone-check runner; synthesis-sections amendment is proposed for independent review and remains unimplemented. Signed desktop availability and native Windows process qualification remain unestablished.
+**Status:** Built as a source-development tone-check and synthesis-sections runner. Signed desktop availability and native Windows process qualification remain unestablished.
 <!-- built-when: plugins/apodictic/scripts/validator_runner.py -->
 
 ## 1. Deliverable and boundary
@@ -199,7 +199,7 @@ No new owner policy decision is needed to implement this development leaf after 
 
 ## 7. Bounded second-leaf amendment: synthesis-sections
 
-Amendment baseline: independently cleared, durably published held draft PR332, `d545ddc70bb55266234c5a2c6736bda58b9dbc26`, on spec PR329 `4bb61612e17cc16963f47385e24e7490828ba3ad`. Fleet730 custody is released; Fleet737 is the separate one-path spec task. This section specifies development support only, pending independent substantive review and a fresh five-path implementation grant. It does not claim the new leaf is built because the first-leaf script already exists. The builder must update the Status line and this amendment's build status together.
+Amendment baseline: independently cleared, durably published held draft PR332, `d545ddc70bb55266234c5a2c6736bda58b9dbc26`, on spec PR329 `4bb61612e17cc16963f47385e24e7490828ba3ad`. Fleet730 custody is released; Fleet737 is the separate one-path spec task. Amendment build status: implemented as a development-only leaf under the separate five-path Fleet739 grant, following independent spec clearance. Development evidence does not qualify signed desktop availability or native Windows behavior.
 
 ### Fixed worker binding and legacy result
 

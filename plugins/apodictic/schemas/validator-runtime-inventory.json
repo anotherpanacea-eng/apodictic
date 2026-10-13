@@ -28,7 +28,7 @@
     {
       "id": "synthesis-sections",
       "desktop_disposition": "not-yet-supported",
-      "development_support": "none",
+      "development_support": "synthesis-sections-v1",
       "omitted_capability": "synthesis-sections validation is unavailable in desktop: no signed, brokered leaf."
     },
     {

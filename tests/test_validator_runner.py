@@ -1,4 +1,4 @@
-"""Behavioral contract tests using only invented text/public tone fixtures."""
+"""Behavioral contract tests using only invented text/public validator fixtures."""
 import copy
 import json
 import os
@@ -127,7 +127,8 @@ class RunnerTests(unittest.TestCase):
             "  open(%r,'w').write(str(os.getpid()))\n"
             "  signal.signal(signal.SIGTERM,signal.SIG_IGN)\n"
             "  time.sleep(30)\n"
-            " return [],[], 'synthetic OK', 'synthetic FAILED'\n" % str(self.pidfile))
+            " return [],[], 'synthetic OK', 'synthetic FAILED'\n"
+            "synthesis_sections = tone_check\n" % str(self.pidfile))
 
     def pid(self):
         until = time.monotonic() + 3
@@ -184,6 +185,72 @@ class RunnerTests(unittest.TestCase):
                 self.assertEqual((got["exit_code"], got["stdout"].encode(), got["stderr"].encode()),
                                  (oracle.returncode, oracle.stdout, oracle.stderr))
         self.assertEqual(c.end(), (0, [], b""))
+
+    def test_synthesis_exact_legacy_oracle_parity(self):
+        names = ("Development Edit", "The Short Version", "What the Book Does Best",
+                 "What Needs Work", "Additional Observations", "Revision Checklist",
+                 "Protected Elements", "Author Decisions", "Control Questions",
+                 "The Strongest Case Against", "Stress Test", "Appendix A", "Appendix B", "Appendix C")
+        full = "".join("## %s\n\nbody\n\n" % h for h in names)
+        fixtures = list((ROOT / "tests/fixtures/validators").glob("lc.*.synthesis-sections.*.md"))
+        self.assertEqual(len(fixtures), 3)
+        texts = [p.read_bytes().decode() for p in fixtures]
+        # The helper's five shipped synthetic cases, followed by hostile boundaries.
+        texts += [full, full.replace("## Stress Test\n\nbody\n\n", ""),
+                  full.replace("## Development Edit\n", "# Development Edit — Worked Example\n")
+                      .replace("## Stress Test\n", "## **Stress Test**\n")
+                      .replace("## Appendix A\n", "## Appendix A — Diagnostic Detail\n"),
+                  full.replace("## Stress Test\n", "## Notes on the Stress Test approach\n"),
+                  full.replace("## Appendix A\n", "## Appendix Alpha\n"),
+                  "", full.upper(), full.lower(), "雪 😀\n" + full,
+                  "\n".join(names), full.replace("## ", "##\t"),
+                  full.replace("## Stress Test\n", "## \nStress Test\n"),
+                  full.replace("## Stress Test\n", " ## Stress Test\n"),
+                  full.replace("\n", "\r\n"), full.replace("\n", "\r")]
+        texts += [full.replace("## Appendix A\n", "## Appendix A" + suffix + "\n")
+                  for suffix in ("_", "2", "é", "雪", "\u0301", "!", " — Detail", "lpha")]
+        texts += [full.replace("## ", "#" * level + " ") for level in (1, 3, 4, 5)]
+        texts += ["## Appendix Alpha\n" * 8191,
+                  ("## Appendix Alpha" + "x" * 14 + "\n") * 8191 + "x" * 32,
+                  "x" * 262144, "\n" * 8191]
+        c = self.client()
+        for i, text in enumerate(texts):
+            with self.subTest(case=i):
+                source = self.root / "invented-synthesis.txt"
+                source.write_bytes(text.encode())
+                oracle = subprocess.run(["bash", str(ROOT / "scripts/validate.sh"),
+                                         "synthesis-sections", str(source)], capture_output=True)
+                c.send(validation(str(i), text, "synthesis-sections"))
+                value = c.next()
+                self.assertEqual((value["id"], value["validator"], value["available"]),
+                                 (str(i), "synthesis-sections", True))
+                got = value["result"]
+                self.assertEqual((got["exit_code"], got["stdout"].encode(), got["stderr"].encode()),
+                                 (oracle.returncode, oracle.stdout, oracle.stderr))
+                if text == "":
+                    self.assertEqual((got["exit_code"], len(got["stdout"].encode())), (1, 898))
+                elif text == full:
+                    self.assertEqual((got["exit_code"], len(got["stdout"].encode())), (0, 66))
+        for i, text in enumerate(("x" * 262145, "\n" * 8192, "\r\n" * 8192)):
+            c.send(validation("over" + str(i), text, "synthesis-sections"))
+            self.error(c.next(), "input_limit")
+        self.assertEqual(c.end(), (0, [], b""))
+
+    def test_mixed_leaves_foreign_cwd_and_closed_worker_routes(self):
+        clean = (ROOT / "tests/fixtures/validators/lc.pass.synthesis-sections.all-headings.md").read_text()
+        c = self.client(cwd=self.root, env=dict(os.environ, PATH="", PYTHONPATH=str(self.root)))
+        for i, (leaf, text, rc) in enumerate((("tone-check", "", 0),
+                ("synthesis-sections", clean, 0), ("tone-check", "masterpiece", 1),
+                ("synthesis-sections", "", 1))):
+            c.send(validation(str(i), text, leaf)); got = c.next()
+            self.assertEqual((got["id"], got["validator"], got["available"], got["result"]["exit_code"]),
+                             (str(i), leaf, True, rc))
+        c.send(cancel("unknown")); self.assertFalse(c.next()["cancelled"])
+        self.assertEqual(c.end(), (0, [], b""))
+        for argv in (("--worker-other",), ("--worker-synthesis-sections", "extra"),
+                     ("--worker", "--worker-synthesis-sections")):
+            result = subprocess.run([PYTHON, "-I", "-S", str(SCRIPT), *argv], capture_output=True)
+            self.assertEqual((result.returncode, result.stdout), (2, b""))
 
     def test_closed_schemas_and_ids(self):
         cases = []
@@ -294,6 +361,9 @@ class RunnerTests(unittest.TestCase):
         self.sleeping(); c = self.client(script=self.script)
         c.send(validation(text="sleep")); pid = self.pid()
         c.send(validation("busy")); self.error(c.next(), "busy")
+        c.send(validation("busy-synth", "", "synthesis-sections"))
+        got = c.next(); self.error(got, "busy")
+        self.assertEqual((got["id"], got["validator"]), ("busy-synth", "synthesis-sections"))
         c.send(validation("other", validator="other")); self.error(c.next(), "validator_unavailable")
         c.send(validation("limit", "\n" * 8192)); self.error(c.next(), "input_limit")
         c.send(cancel()); self.error(c.next(), "cancelled")
@@ -301,6 +371,28 @@ class RunnerTests(unittest.TestCase):
         c.send(validation("healthy")); self.assertTrue(c.next()["available"])
         c.send(cancel("healthy", "late")); self.assertFalse(c.next()["cancelled"])
         self.assertEqual(c.end(), (0, [], b""))
+
+    @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
+    def test_in_budget_synthesis_cancel_precedes_excess_session_byte(self):
+        self.sleeping(); c = self.client(script=self.script)
+        used = 0
+        for i in range(15):
+            base = frame(cancel("unknown", str(i)))[:-1]
+            c.raw(base + b" " * (1048575 - len(base)) + b"\n")
+            self.assertFalse(c.next()["cancelled"]); used += 1048576
+        request = frame(validation("synth", "sleep", "synthesis-sections"))
+        c.raw(request); used += len(request); pid = self.pid()
+        base = frame(cancel("unknown", "padding"))[:-1]
+        length = 16777216 - used - 128
+        c.raw(base + b" " * (length - 1 - len(base)) + b"\n")
+        self.assertFalse(c.next()["cancelled"])
+        edge = frame(cancel("synth", "edge"))
+        c.raw(edge + b" " * (129 - len(edge)))
+        got = c.next(); self.error(got, "cancelled")
+        self.assertEqual((got["id"], got["validator"]), ("synth", "synthesis-sections"))
+        self.assertTrue(c.next()["cancelled"])
+        self.assertEqual(c.next()["error"]["code"], "session_limit")
+        self.assertEqual(c.end(), (2, [], b"")); self.dead(pid)
 
     @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
     def test_exact_cancel_target_boundary_and_invalid_active_targets(self):
@@ -334,8 +426,9 @@ class RunnerTests(unittest.TestCase):
     @unittest.skipUnless(os.name == "posix", "POSIX development-host pipe/death evidence")
     def test_saturated_stderr_and_output_failure_share_cleanup_budget(self):
         # Actual inherited pipes, unmodified deadlines, and a SIGTERM-ignoring worker.
-        for action in ("blocked", "broken", "cancel", "fatal"):
-            with self.subTest(action=action):
+        for action, leaf in ((action, leaf) for leaf in ("tone-check", "synthesis-sections")
+                             for action in ("blocked", "broken", "cancel", "fatal")):
+            with self.subTest(action=action, leaf=leaf):
                 self.sleeping(); self.pidfile.unlink(missing_ok=True)
                 out_r, out_w = os.pipe(); err_r, err_w = os.pipe()
                 def fill(fd):
@@ -358,7 +451,7 @@ class RunnerTests(unittest.TestCase):
                     if action in ("cancel", "fatal"):
                         code = "cancelled" if action == "cancel" else "session_ended"
                         first = {"protocol": 1, "type": "result", "id": "r1",
-                            "validator": "tone-check", "available": False, "result": None,
+                            "validator": leaf, "available": False, "result": None,
                             "error": {"code": code, "message": "Validator unavailable: " + code + "."}}
                         # Leave room for exactly the first terminal envelope, forcing
                         # the subsequent control/fatal write onto the same deadline.
@@ -371,7 +464,7 @@ class RunnerTests(unittest.TestCase):
                     stdin=subprocess.PIPE, stdout=out_w, stderr=err_w)
                 os.close(out_w); os.close(err_w)
                 try:
-                    p.stdin.write(frame(validation(text="sleep"))); p.stdin.flush(); pid = self.pid()
+                    p.stdin.write(frame(validation(text="sleep", validator=leaf))); p.stdin.flush(); pid = self.pid()
                     started = time.monotonic()
                     request = (frame(cancel()) if action == "cancel" else b"{}\n"
                         if action == "fatal" else frame(validation("busy")))
@@ -390,6 +483,42 @@ class RunnerTests(unittest.TestCase):
                     if p.poll() is None: p.kill(); p.wait()
                     p.stdin.close(); os.close(err_r)
                     if action != "broken": os.close(out_r)
+
+    @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
+    def test_synthesis_lifecycle_shared_slot_and_other_leaf_reuse(self):
+        for action in ("cancel", "bad_target", "partial", "eof", "SIGTERM", "SIGINT", "timeout"):
+            with self.subTest(action=action):
+                self.sleeping(); self.pidfile.unlink(missing_ok=True)
+                c = self.client(script=self.script)
+                started = time.monotonic()
+                c.send(validation("synth", "sleep", "synthesis-sections")); pid = self.pid()
+                # Both leaves share one slot, with unsupported/limits preceding busy.
+                for id, leaf, text, code in (("busy-tone", "tone-check", "", "busy"),
+                        ("busy-synth", "synthesis-sections", "", "busy"),
+                        ("unknown", "other", "x" * 262145, "validator_unavailable"),
+                        ("limit", "synthesis-sections", "x" * 262145, "input_limit")):
+                    c.send(validation(id, text, leaf)); got = c.next(); self.error(got, code)
+                    self.assertEqual((got["id"], got["validator"]), (id, leaf))
+                if action == "cancel": c.send(cancel("synth"))
+                elif action == "bad_target": c.send(cancel("x" * 65))
+                elif action == "partial": c.raw(b"{}"); c.child.stdin.close()
+                elif action == "eof": c.child.stdin.close()
+                elif action != "timeout": c.child.send_signal(getattr(signal, action))
+                got = c.next()
+                self.error(got, "cancelled" if action == "cancel" else "timeout" if action == "timeout" else "session_ended")
+                self.assertEqual((got["id"], got["validator"]), ("synth", "synthesis-sections"))
+                self.dead(pid)
+                if action == "timeout":
+                    self.assertGreaterEqual(time.monotonic() - started, 5)
+                    self.assertLess(time.monotonic() - started, 7)
+                if action == "cancel": self.assertTrue(c.next()["cancelled"])
+                elif action in ("bad_target", "partial"):
+                    self.assertEqual(c.next()["error"]["code"], "invalid_request" if action == "bad_target" else "invalid_frame")
+                if action in ("cancel", "timeout"):
+                    c.send(validation("healthy", "", "tone-check")); got = c.next()
+                    self.assertEqual((got["id"], got["validator"], got["available"]), ("healthy", "tone-check", True))
+                    c.send(cancel("synth", "late")); self.assertFalse(c.next()["cancelled"])
+                self.assertEqual(c.end(), (0 if action in ("cancel", "timeout", "eof") else 2, [], b""))
 
     def test_fixed_idle_and_session_deadlines_with_test_only_clock(self):
         # A disposable test launcher accelerates monotonic time, not protocol limits.
@@ -450,6 +579,39 @@ class RunnerTests(unittest.TestCase):
         c = self.client(script=self.script); c.send(validation()); self.error(c.next(), "runner_dependency_unavailable")
         self.assertEqual(c.end(), (0, [], b""))
 
+    def test_synthesis_dependency_malformed_child_and_death_are_unavailable(self):
+        self.pidfile = self.root / "dead-worker.pid"
+        bodies = ("raise ImportError('synthetic')\n", "def synthesis_sections(text): raise RuntimeError(text)\n",
+                  "import os\ndef synthesis_sections(text):\n"
+                  " open(%r,'w').write(str(os.getpid()))\n os._exit(3)\n" % str(self.pidfile),
+                  "def synthesis_sections(text): return []\n",
+                  "def synthesis_sections(text): print(text); return [],[],'OK','FAIL'\n",
+                  "import sys\ndef synthesis_sections(text): sys.stderr.write(text); return [],[],'OK','FAIL'\n",
+                  "import json,os\ndef synthesis_sections(text):\n"
+                  " os.write(1,(json.dumps({'exit_code':0,'stdout':'OK','stderr':'','validator':'tone-check','id':'forged'})+'\\n').encode())\n"
+                  " return [],[],'OK','FAIL'\n")
+        for body in bodies:
+            with self.subTest(body=body):
+                (self.scripts / "letter_checks.py").write_text(body + "\ndef tone_check(text): return [],[],'tone OK','FAIL'\n")
+                before = set(p.relative_to(self.root) for p in self.root.rglob('*') if p.is_file())
+                c = self.client(script=self.script)
+                c.send(validation("synth", "SYNTHETIC_SENTINEL", "synthesis-sections")); got = c.next()
+                self.error(got, "runner_dependency_unavailable" if "ImportError" in body else "worker_failed")
+                self.assertEqual((got["id"], got["validator"]), ("synth", "synthesis-sections"))
+                self.assertNotIn("SYNTHETIC_SENTINEL", json.dumps(got))
+                if "os._exit" in body:
+                    if os.name == "posix": self.dead(self.pid())
+                    self.pidfile.unlink()  # Remove the test harness's deliberate PID marker.
+                if "ImportError" not in body:
+                    c.send(validation("healthy")); self.assertTrue(c.next()["available"])
+                self.assertEqual(c.end(), (0, [], b""))
+                self.assertEqual(before, set(p.relative_to(self.root) for p in self.root.rglob('*') if p.is_file()))
+                self.assertTrue(all(b'SYNTHETIC_SENTINEL' not in p.read_bytes() for p in self.root.rglob('*') if p.is_file()))
+        (self.scripts / "letter_checks.py").unlink()
+        c = self.client(script=self.script)
+        c.send(validation("synth", "", "synthesis-sections")); self.error(c.next(), "runner_dependency_unavailable")
+        self.assertEqual(c.end(), (0, [], b""))
+
     def test_environment_scrubbing_and_socket_guard(self):
         (self.scripts / "letter_checks.py").write_text(
             "import os,socket,subprocess,sys\ndef tone_check(text):\n"
@@ -460,19 +622,22 @@ class RunnerTests(unittest.TestCase):
             " else: raise AssertionError('socket allowed')\n"
             " try: subprocess.Popen([sys.executable,'-c','pass'])\n"
             " except PermissionError: return [],[],'socket and spawn denied','FAIL'\n"
-            " raise AssertionError('spawn allowed')\n")
+            " raise AssertionError('spawn allowed')\n"
+            "synthesis_sections = tone_check\n")
         c = self.client(script=self.script, env=dict(os.environ, OPENAI_API_KEY="synthetic", HTTPS_PROXY="synthetic", PYTHONPATH="synthetic"))
         c.send(validation()); self.assertEqual(c.next()["result"]["stdout"], "socket and spawn denied\n")
+        c.send(validation("synth", "", "synthesis-sections"))
+        self.assertEqual(c.next()["result"]["stdout"], "socket and spawn denied\n")
         self.assertEqual(c.end(), (0, [], b""))
 
     def test_output_limit_exact_and_over(self):
         # Derive real envelope boundaries, including escaped LF and the final delimiter.
-        for over in (False, True):
-            request = validation()
-            prototype = {"protocol":1,"type":"result","id":"r1","validator":"tone-check","available":True,
+        for leaf, over in ((leaf, over) for leaf in ("tone-check", "synthesis-sections") for over in (False, True)):
+            request = validation(validator=leaf)
+            prototype = {"protocol":1,"type":"result","id":"r1","validator":leaf,"available":True,
                          "result":{"exit_code":0,"stdout":"\n","stderr":""},"error":None}
             size = 32768 - len(frame(prototype)) + int(over)
-            (self.scripts / "letter_checks.py").write_text("def tone_check(text): return [],[], 'x'*%d, 'FAIL'\n" % size)
+            (self.scripts / "letter_checks.py").write_text("def tone_check(text): return [],[], 'x'*%d, 'FAIL'\nsynthesis_sections = tone_check\n" % size)
             c = self.client(script=self.script); c.send(request); got = c.next()
             if over: self.error(got, "output_limit")
             else: self.assertEqual(len(frame(got)), 32768)
@@ -511,9 +676,36 @@ class RunnerTests(unittest.TestCase):
             else: self.metadata.write_bytes(data)
             c = self.client(script=self.script)
             c.send(validation()); self.error(c.next(), "runner_dependency_unavailable")
+            c.send(validation("synth", "", "synthesis-sections")); self.error(c.next(), "runner_dependency_unavailable")
             c.send(validation("other", validator="other")); self.error(c.next(), "validator_unavailable")
             self.assertEqual(c.end(), (0, [], b""))
             self.assertEqual(self.inventory_check().returncode, 1)
+
+    def test_both_exact_inventory_mappings_required_at_runtime_and_check(self):
+        baseline = json.loads(self.metadata.read_text())
+        for change in ("swap", "unknown", "omit-tone", "omit-synth", "disable-tone", "disable-synth", "desktop"):
+            with self.subTest(change=change):
+                value = copy.deepcopy(baseline)
+                tone = next(r for r in value["validators"] if r["id"] == "tone-check")
+                synth = next(r for r in value["validators"] if r["id"] == "synthesis-sections")
+                if change == "swap":
+                    tone["development_support"], synth["development_support"] = synth["development_support"], tone["development_support"]
+                elif change == "unknown": synth["development_support"] = "synthesis-v2"
+                elif change.startswith("omit-"): value["validators"].remove(tone if change == "omit-tone" else synth)
+                elif change.startswith("disable-"): (tone if change == "disable-tone" else synth)["development_support"] = "none"
+                else: synth["desktop_disposition"] = "desktop-supported"
+                self.metadata.write_text(json.dumps(value)); self.assertEqual(self.inventory_check().returncode, 1)
+                c = self.client(script=self.script)
+                for id, leaf, text, code in (("unknown", "other", "x" * 262145, "validator_unavailable"),
+                        ("limit", "synthesis-sections", "x" * 262145, "input_limit"),
+                        ("tone", "tone-check", "", "runner_dependency_unavailable"),
+                        ("synth", "synthesis-sections", "", "runner_dependency_unavailable")):
+                    c.send(validation(id, text, leaf)); got = c.next(); self.error(got, code)
+                    self.assertEqual((got["id"], got["validator"]), (id, leaf))
+                self.assertEqual(c.end(), (0, [], b""))
+        self.metadata.write_text(json.dumps(baseline)); self.assertEqual(self.inventory_check().returncode, 0)
+        c = self.client(script=self.script); c.send(validation(validator="cost_floor"))
+        self.error(c.next(), "validator_unavailable"); self.assertEqual(c.end(), (0, [], b""))
 
     def test_metadata_byte_and_reason_scalar_boundaries(self):
         value = json.loads(self.metadata.read_text())
@@ -531,9 +723,9 @@ class RunnerTests(unittest.TestCase):
     def test_inventory_row_limit_and_no_bash_execution(self):
         registry = self.scripts / "validate.sh"
         for count in (512, 513):
-            rows = [{"id": "tone-check" if i == 0 else "v%d" % i,
+            rows = [{"id": "tone-check" if i == 0 else "synthesis-sections" if i == 1 else "v%d" % i,
                      "desktop_disposition": "not-yet-supported",
-                     "development_support": "tone-check-v1" if i == 0 else "none",
+                     "development_support": "tone-check-v1" if i == 0 else "synthesis-sections-v1" if i == 1 else "none",
                      "omitted_capability": "Synthetic unavailable validation."} for i in range(count)]
             self.metadata.write_text(json.dumps({"version":1,"validators":rows}, separators=(",",":")))
             # Keep the raw metadata inside its independent byte bound.
