@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Native validator dispatcher, CB-1(a) groups 1–2.
+"""Native validator dispatcher, CB-1(a) groups 1–3.
 
-The early utilities and letter signal/consolidation commands run without Bash.
+Early utilities, letter signals, configuration and timelines run without Bash.
 Other commands and aggregates still belong to validate.sh until their groups land.
 """
 
@@ -36,6 +36,29 @@ _LETTER_SIGNALS = {
     "decision-layer-check": "<editorial_letter_file> | --self-test",
 }
 COMMANDS += tuple(_LETTER_SIGNALS)
+_CONFIG_TIMELINES = {
+    "quality-risk-triggers": (
+        "config_checks.py", "<contract_file> [<diagnostic_state_meta_file>] | --self-test",
+    ),
+    "cost-floor": (
+        "config_checks.py", "<contract_or_run_metadata_file> [<preflight_packet>] [<meta_json>] [--strict] | --self-test",
+    ),
+    "audit-tier-criterion": (
+        "config_checks.py", "<pass_dependencies_file> [<audits_root_dir>] | --self-test",
+    ),
+    "pass-header": (
+        "config_checks.py", "<pass_artifact_file> [<pass_dependencies_file>] | --self-test",
+    ),
+    "argument-recon-prerequisite": (
+        "config_checks.py", "<run_folder> [<editorial_letter_file>] | --self-test",
+    ),
+    "timeline-diff": (
+        "timeline_checks.py", "<prior_timeline> <current_timeline> | --self-test",
+    ),
+    "timeline-arithmetic": ("timeline_checks.py", "<timeline_file> | --self-test"),
+    "timeline-anchor-conflict": ("timeline_checks.py", "<timeline_file> | --self-test"),
+}
+COMMANDS += tuple(_CONFIG_TIMELINES)
 
 
 def _line(text, *, error=False):
@@ -88,7 +111,7 @@ def _registry_check(args):
     registry = args[0] if args else ""
     dependencies = args[1] if len(args) > 1 else ""
     if not registry:
-        # Preserve the shell's logical script directory and lexical ../ paths.
+        # Preserve script-relative candidate order and lexical ../ components.
         script_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
         for relative in (
             "../skills/core-editor/references",
@@ -117,6 +140,18 @@ def _letter_signal(command, args):
     # These Bash arms delegate before probing files and forward every argument.
     # The existing parser owns optional-file handling and ignored extras.
     return _run_helper("letter_checks.py", [command, *args])
+
+
+def _config_timeline(command, args):
+    script, usage = _CONFIG_TIMELINES[command]
+    if not args:
+        return _usage(command, usage)
+    if args[0] == "--self-test":
+        return _run_helper(script, ["--self-test", command])
+    if command == "timeline-diff" and len(args) < 2:
+        return _usage(command, "<prior_timeline> <current_timeline>")
+    # Helpers own file checks, defaults, flags, optional inputs and ignored extras.
+    return _run_helper(script, [command, *args])
 
 
 def _self_test(command):
@@ -180,6 +215,8 @@ def main(argv=None):
         _line("Partial migration: remaining commands and aggregates require validate.sh.")
         return 2
     command, args = args[0], args[1:]
+    if command in _CONFIG_TIMELINES:
+        return _config_timeline(command, args)
     if command in _LETTER_SIGNALS:
         return _letter_signal(command, args)
     if command in _HELPERS:

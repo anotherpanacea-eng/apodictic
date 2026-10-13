@@ -1,6 +1,6 @@
 # Native Python validator migration
 
-**Status:** Groups 1–2 built; groups 3–14 queued. The Bash dispatcher remains the
+**Status:** Groups 1–3 built; groups 4–14 queued. The Bash dispatcher remains the
 full validator entrypoint during this migration.
 <!-- built-when: plugins/apodictic/scripts/validate.py -->
 
@@ -38,6 +38,14 @@ Explicit path spelling, lexical default paths, candidate order and the helper's
 argument-propagation fragment discovery are preserved. Extra registry arguments
 are ignored as before.
 
+Group 3 adds `quality-risk-triggers`, `cost-floor`, `audit-tier-criterion`,
+`pass-header`, `argument-recon-prerequisite`, `timeline-diff`, `timeline-arithmetic`
+and `timeline-anchor-conflict`. Existing config and timeline parsers own all
+defaults, file errors, optional inputs and ignored extras. Cost-floor retains its
+helper's positional filtering and `--strict` behavior. Timeline-diff preserves
+the distinct no-argument and one-argument usage messages; other calls forward the
+original arguments. Each route supports its existing `--self-test` suite.
+
 Exit codes remain 0 for success, 1 for a validation failure, and 2 for usage or an
 invalid/inaccessible input path. For the three raw-byte utilities, a regular file
 that is found but cannot be read returns 1 with empty stdout and a named
@@ -53,7 +61,8 @@ partial-migration message. Python does not fall back to Bash.
 
 `tests/test_validate_python_parity.py` compares exit codes and stdout bytes against
 the independent Bash dispatcher without output normalization. Application-generated
-stderr bytes are also compared exactly. For shell/OS-generated read-redirection
+stderr bytes are compared exactly except for the accepted logical/physical cwd
+prefix limitation noted below. For shell/OS-generated read-redirection
 errors, the native CLI retains the exit/stdout contract and emits a named file-read
 error; it does not reproduce shell source paths, line numbers or platform wording. It
 exercises every migrated self-test, all applicable shipped validator fixtures,
@@ -81,6 +90,13 @@ checks still run; this is not full native Windows acceptance. The final acceptan
 requires the whole Python `--check-all` suite green on `windows-latest` and exact
 differential results over every command self-test and all validator fixtures.
 
+Group 3 adds eight self-test routes, all 15 applicable shipped timeline fixtures,
+canonical config/timeline inputs and temporary strict/default/optional-file and
+two-timeline cases. The accepted Group 2 P3 remains bounded: relative invocation
+from a symlinked cwd can show a physical cwd prefix in an empty-registry stderr
+diagnostic where Bash shows the logical prefix. File selection, exit code and
+stdout match. The dispatcher does not emulate shell `PWD` behavior.
+
 ## Continuation groups
 
 These provisional groups give each subsequent increment its own PR. Refresh the
@@ -92,7 +108,7 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | --- | --- | --- |
 | 1 | contract-hash, contract-check, ledger-check, artifact-names, synthesis-sections, tone-check, state-lines | Built |
 | 2 | author-facing-lint, severity-floor, audit-signal-propagation (including registry route), underdiagnosis-triggers, ledger-consolidation, decision-layer-check | Built |
-| 3 | quality-risk-triggers, cost-floor, audit-tier-criterion, pass-header, argument-recon-prerequisite, timeline-diff, timeline-arithmetic, timeline-anchor-conflict | Queued |
+| 3 | quality-risk-triggers, cost-floor, audit-tier-criterion, pass-header, argument-recon-prerequisite, timeline-diff, timeline-arithmetic, timeline-anchor-conflict | Built |
 | 4 | structured-findings, softness-check, deficit-lock, artifacts-schema, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary | Queued |
 | 5 | gate, gate-state, escalation-check, dispatch-record, disposition-check, synthesis-coverage, specificity-floor | Queued |
 | 6 | retcon-plan, state-card-diff, revision-arc, regression-diff, refutation-coverage, refutation-evidence, refutation-write-scope | Queued |
