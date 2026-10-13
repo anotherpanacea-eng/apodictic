@@ -1,7 +1,7 @@
 # Native Python validator migration
 
-**Status:** Groups 1–4, 5a and 6 built; self-test output stabilized. The gate pair
-and groups 7–14 remain queued. The Bash dispatcher remains the
+**Status:** Groups 1–4, 5a, 6 and 7 built; self-test output stabilized. The gate pair
+and groups 8–14 remain queued. The Bash dispatcher remains the
 full validator entrypoint during this migration.
 <!-- built-when: plugins/apodictic/scripts/validate.py -->
 
@@ -90,9 +90,19 @@ All 18 official gate child validators now have native routes. Both gate surfaces
 still require the separate launcher transition; child availability alone does
 not make them native. Custom manifests can reach other commands such as
 `schema-coverage` and aggregate switches that remain unported. Changing the
-shared Bash gate default now would regress those existing calls. Groups 7–13
-follow the self-test stabilizer; full aggregate dispatch and gate migration stay
+shared Bash gate default now would regress those existing calls. Groups 8–13
+follow Group 7; full aggregate dispatch and gate migration stay
 coordinated in Group 14 unless a separate reviewed design preserves all behavior.
+
+Group 7 adds `legal-risk`, `promise-contract`, `continuity-bible`, `setup-payoff`,
+`world-bible`, `argument-spine` and `scene-ethics`. The wrapper preserves first
+self-test trimming, raw minimum arity and command-tagged original arguments.
+Helpers retain late self-tests, exact command-token filtering, strict/override
+behavior, parsed-carrier classification and newest-file discovery. Promise selects
+the newest pitch while consuming all sorted Markdown reports; mixed unreadable
+inputs retain its partial-read behavior and wholly unreadable inputs retain its
+generic refusal. Continuity preserves the first recognized timeline and local
+`Timeline.md` before parent lookup, including missing/unreadable coverage limits.
 
 Exit codes remain 0 for success, 1 for a validation failure, and 2 for usage or an
 invalid/inaccessible input path. For the three raw-byte utilities, a regular file
@@ -108,7 +118,7 @@ partial-migration message. Python does not fall back to Bash.
 ## Differential acceptance
 
 `tests/test_validate_python_parity.py` compares exit codes and stdout bytes against
-the independent Bash dispatcher without output normalization. All 41 migrated
+the independent Bash dispatcher without output normalization. All 48 migrated
 self-test surfaces now compare exact stdout bytes, including specificity and
 the three shared refutation routes. Their self-tests formerly printed random
 temporary paths while exercising expected negative CLI reads. The separate
@@ -181,9 +191,15 @@ Group 6 adds seven helper self-test surfaces, canonical plans/cards/arc, single
 and paired regression rounds, canonical refutation inputs and temporary hostile
 records. Controls cover planning discovery, parsed carriers, ledger precedence,
 advisory/strict behavior, positional refutation flags, optional/required snapshots,
-containment and named decode errors. All 41 migrated command self-test surfaces
-now compare exact stdout bytes after the separate helper stabilizer.
+containment and named decode errors. Its 41 migrated command self-test surfaces
+compare exact stdout bytes after the separate helper stabilizer.
 All 73 earlier validator fixture cases remain intact.
+
+Group 7 adds seven exact self-test surfaces and ten canonical strict cases. Compact
+controls cover raw argv/filtered-token differences, literal command filenames,
+read refusals, first parsed carrier/newest file, Promise report scope, Continuity
+timeline order/fallback and an advisory/strict/scoped-override transition. All
+earlier native cases, including the stabilizer's temp-root regressions, remain.
 
 ## Continuation groups
 
@@ -202,7 +218,7 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | 5b | gate, gate-state; coherent live/shared-self-test nested launcher transition | Held for coordinated Group 14; official children available, custom/aggregate dispatch still incomplete |
 | 6 | retcon-plan, state-card-diff, revision-arc, regression-diff, refutation-coverage, refutation-evidence, refutation-write-scope | Built |
 | Self-test stability | Specificity/refutation expected-negative diagnostic capture and four restored exact-output surfaces | Built |
-| 7 | legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, argument-spine, scene-ethics | Queued |
+| 7 | legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, argument-spine, scene-ethics | Built |
 | 8 | intake-interview, author-fingerprint, content-advisory, coaching-history, style-explanation, persona-divergence | Queued |
 | 9 | lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, reader-contract-outline, results-guide, position-pair-register | Queued |
 | 10 | argument-groundtruth-check, fiction-groundtruth-check, agreement-alpha, argument-crosswalk-check, argument-agd, argument-aif-export, argument-aif-check | Queued |
