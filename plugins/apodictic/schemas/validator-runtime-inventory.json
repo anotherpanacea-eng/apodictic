@@ -76,7 +76,7 @@
     {
       "id": "author-facing-lint",
       "desktop_disposition": "not-yet-supported",
-      "development_support": "none",
+      "development_support": "author-facing-lint-v1",
       "omitted_capability": "author-facing-lint validation is unavailable in desktop: no signed, brokered leaf."
     },
     {
