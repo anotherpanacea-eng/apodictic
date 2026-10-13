@@ -41,6 +41,10 @@ RUN_INTEGRITY = (
 )
 PLANNING_DIFFS = ("retcon-plan", "state-card-diff", "revision-arc", "regression-diff")
 REFUTATION = ("refutation-coverage", "refutation-evidence", "refutation-write-scope")
+ARTIFACT_PLANNING = (
+    "legal-risk", "promise-contract", "continuity-bible", "setup-payoff",
+    "world-bible", "argument-spine", "scene-ethics",
+)
 REFERENCES = SCRIPTS.parent / "skills/core-editor/references"
 BASH = shutil.which("bash")
 
@@ -123,7 +127,7 @@ def test_byte_utilities_differential(tmp_path, payload):
         parity(*args, cwd=tmp_path)
 
 
-@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS + CONFIG_TIMELINES + STRUCTURED_INTEGRITY + RUN_INTEGRITY + PLANNING_DIFFS + REFUTATION)
+@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS + CONFIG_TIMELINES + STRUCTURED_INTEGRITY + RUN_INTEGRITY + PLANNING_DIFFS + REFUTATION + ARTIFACT_PLANNING)
 def test_migrated_self_tests_have_identical_output(command):
     result = run_python(command, "--self-test", "ignored")
     assert result.returncode == 0
@@ -265,7 +269,7 @@ def test_letter_wrappers_ignore_extra_arguments(tmp_path, command):
     parity(command, path, "ignored", "also ignored")
 
 
-@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "legal-risk", "bogus"])
+@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "intake-interview", "bogus"])
 def test_unported_entrypoints_do_not_claim_success(command):
     result = run_python(command)
     assert result.returncode == 2
@@ -686,7 +690,7 @@ def test_native_run_integrity_canonical_inputs(command, inputs):
 
 @pytest.mark.parametrize("command", ["gate", "gate-state"])
 @pytest.mark.parametrize("args", [(), ("--self-test",), ("--strict", "--self-test")])
-def test_gate_pair_is_explicitly_deferred_until_nested_children_ready(command, args):
+def test_gate_pair_is_deferred_until_complete_dispatch_and_aggregate_cutover(command, args):
     result = run_python(command, *args)
     assert (result.returncode, result.stderr) == (2, b"")
     assert b"Partial migration:" in result.stdout
@@ -979,3 +983,143 @@ def test_refutation_named_decode_error_is_byte_exact(refutation_run, command, ro
     result = native_and_optional_parity(command, *args)
     assert (result.returncode, result.stderr) == (2, b"")
     assert result.stdout.startswith(b"Error: cannot read " + label + b" ")
+
+
+@pytest.mark.parametrize("command", ARTIFACT_PLANNING)
+def test_artifact_planning_original_argv_and_late_self_test(command):
+    for args in ((), ("",), ("--strict",), (command,), (command, command), ("--unknown",)):
+        assert native_and_optional_parity(command, *args).returncode == 2
+    late = native_and_optional_parity(command, "--strict", "--self-test", "ignored")
+    assert (late.returncode, late.stderr) == (0, b"")
+    assert late.stdout.endswith(b"Self-test: PASS\n")
+
+
+@pytest.mark.parametrize("command,inputs", [
+    ("legal-risk", ("example-legal-risk-register.md",)),
+    ("promise-contract", ("example-promise-contract.md",)),
+    ("continuity-bible", ("example-continuity-bible.md", "example-timeline.md")),
+    ("setup-payoff", ("example-setup-payoff-ledger.md",)),
+    ("world-bible", ("example-worldbuilding-bible.md",)),
+    ("argument-spine", ("example-argument-state-predraft.md",)),
+    ("argument-spine", ("example-argument-state-genre-grant.md",)),
+    ("argument-spine", ("example-argument-state-genre-academic.md",)),
+    ("argument-spine", ("example-argument-state-genre-pitch.md",)),
+    ("scene-ethics", ("example-scene-ethics-plan.md",)),
+])
+def test_artifact_planning_canonical_strict_inputs(command, inputs):
+    result = native_and_optional_parity(command, *(REFERENCES / path for path in inputs), "--strict")
+    assert (result.returncode, result.stderr) == (0, b"")
+
+
+@pytest.mark.parametrize("command", ARTIFACT_PLANNING)
+def test_artifact_planning_missing_and_non_utf8_read_refusal(tmp_path, command):
+    for path in (tmp_path / "missing café.md", tmp_path / "bad café.md"):
+        if path.name.startswith("bad"):
+            path.write_bytes(b"\xff\xfe")
+        result = native_and_optional_parity(command, path)
+        assert (result.returncode, result.stderr) == (2, b"")
+        if command == "promise-contract":
+            assert b"no readable artifact found" in result.stdout
+        else:
+            assert b"cannot read " in result.stdout
+
+
+@pytest.mark.parametrize("command,filename,canonical,block", [
+    ("legal-risk", "Project_Legal_Risk_Register_r1.md", "example-legal-risk-register.md", "legal_risk"),
+    ("setup-payoff", "Project_Setup_Payoff_Ledger_r1.md", "example-setup-payoff-ledger.md", "setup_payoff"),
+    ("world-bible", "Project_Worldbuilding_Bible_r1.md", "example-worldbuilding-bible.md", "world_fact"),
+    ("argument-spine", "Argument_State_r1.md", "example-argument-state-predraft.md", "argument_spine"),
+    ("scene-ethics", "Project_Scene_Ethics_Plan_r1.md", "example-scene-ethics-plan.md", "scene_ethics"),
+])
+def test_artifact_planning_parsed_first_carrier_and_newest_file(tmp_path, command, filename, canonical, block):
+    folder = tmp_path / "run café"
+    folder.mkdir()
+    bad = folder / filename
+    bad.write_text(f"<!-- apodictic:{block}\n{{\n-->\n", encoding="utf-8")
+    good = folder / filename.replace("r1", "r2")
+    good.write_bytes((REFERENCES / canonical).read_bytes())
+    decoy = tmp_path / "prose.md"
+    decoy.write_text(f"Prose mentions apodictic:{block}, without carrying a block.\n", encoding="utf-8")
+    assert native_and_optional_parity(command, decoy, good, "--strict").returncode == 0
+    assert native_and_optional_parity(command, good, bad, "--strict").returncode == 0
+    assert native_and_optional_parity(command, bad, good).returncode == 1
+    os.utime(bad, (100, 100))
+    os.utime(good, (200, 200))
+    assert native_and_optional_parity(command, folder, "--strict").returncode == 0
+    os.utime(bad, (300, 300))
+    assert native_and_optional_parity(command, folder).returncode == 1
+
+
+def test_literal_command_filename_remains_helper_owned(tmp_path):
+    (tmp_path / "legal-risk").write_bytes((REFERENCES / "example-legal-risk-register.md").read_bytes())
+    assert native_and_optional_parity("legal-risk", "legal-risk", cwd=tmp_path).returncode == 2
+    assert native_and_optional_parity("legal-risk", "./legal-risk", cwd=tmp_path).returncode == 0
+
+
+def test_promise_separate_inputs_partial_reads_and_all_folder_reports(tmp_path):
+    def block(kind, obj):
+        return f"<!-- apodictic:{kind}\n{json.dumps(obj, ensure_ascii=False)}\n-->\n"
+    pitch = {"schema": "apodictic.pitch_copy.v1", "id": "PC-01", "copy_type": "query",
+             "text": "A cartographer maps a changing city."}
+    finding = {"schema": "apodictic.finding.v1", "id": "F-PCF-01", "severity": "Should-Fix",
+               "confidence": "HIGH", "mechanism": "PCF1 emphasis distortion: the query leads with a minor subplot",
+               "evidence_refs": ["copy:query¶1", "contract:CONTROLLING IDEA"],
+               "fix_class": "bring the copy back to the kept promise", "risk_if_fixed": "the lead reframes the book"}
+    new = tmp_path / "Project_Pitch_Copy_r2.md"
+    report = tmp_path / "Report café.md"
+    new.write_text(block("pitch_copy", pitch), encoding="utf-8")
+    report.write_text(block("finding", finding), encoding="utf-8")
+    unreadable = tmp_path / "unreadable.md"
+    unreadable.write_bytes(b"\xff\xfe")
+    assert native_and_optional_parity("promise-contract", report, new, unreadable, "--strict").returncode == 0
+    old = tmp_path / "Project_Pitch_Copy_r1.md"
+    old_pitch = dict(pitch, copy_type="invalid")
+    old_finding = dict(finding, id="F-PCF-02", evidence_refs=["copy:query¶1"])
+    old.write_text(block("pitch_copy", old_pitch) + block("finding", old_finding), encoding="utf-8")
+    os.utime(old, (100, 100))
+    os.utime(new, (200, 200))
+    selected = native_and_optional_parity("promise-contract", tmp_path, "--strict")
+    assert selected.returncode == 1
+    assert b"P1 one-sided gap" in selected.stdout
+    assert b"P2" not in selected.stdout  # Old copy is excluded from pitch, but included in report.
+    old_finding["evidence_refs"] = finding["evidence_refs"]
+    old.write_text(block("pitch_copy", old_pitch) + block("finding", old_finding), encoding="utf-8")
+    os.utime(old, (100, 100))
+    assert native_and_optional_parity("promise-contract", tmp_path, "--strict").returncode == 0
+
+
+def test_continuity_timeline_local_parent_and_first_explicit_order(tmp_path):
+    folder = tmp_path / "run"
+    folder.mkdir()
+    bible = folder / "Project_Continuity_Bible_r1.md"
+    bible.write_bytes((REFERENCES / "example-continuity-bible.md").read_bytes())
+    parent = tmp_path / "Timeline.md"
+    parent.write_bytes((REFERENCES / "example-timeline.md").read_bytes())
+    assert native_and_optional_parity("continuity-bible", folder, "--strict").returncode == 0
+    local = folder / "Timeline.md"
+    local.write_text(parent.read_text(encoding="utf-8").replace("Ch 1 §2", "Ch 99 §2"), encoding="utf-8")
+    assert native_and_optional_parity("continuity-bible", folder, "--strict").returncode == 1
+    assert native_and_optional_parity("continuity-bible", parent, bible, local, "--strict").returncode == 0
+    assert native_and_optional_parity("continuity-bible", local, bible, parent, "--strict").returncode == 1
+    local.unlink()
+    assert native_and_optional_parity("continuity-bible", folder, "--strict").returncode == 0
+    parent.write_bytes(b"\xff\xfe")
+    # An unreadable optional timeline retains the same coverage limitation as omission.
+    assert native_and_optional_parity("continuity-bible", bible, parent, "--strict").returncode == 0
+    assert native_and_optional_parity("continuity-bible", bible, "--strict").returncode == 0
+
+
+def test_scene_ethics_advisory_strict_and_scoped_override(tmp_path):
+    path = tmp_path / "ethics café.md"
+    item = {"schema": "apodictic.scene_ethics.v1", "id": "EP-01", "subject": "a named manager",
+            "depiction": "a workplace remark", "consent_status": "not-sought", "handling": "as-is",
+            "legal_ref": "LR-01"}
+    text = "<!-- apodictic:scene_ethics\n" + json.dumps(item) + "\n-->\n"
+    path.write_text(text, encoding="utf-8")
+    advisory = native_and_optional_parity("scene-ethics", path)
+    assert advisory.returncode == 0 and b"W1 unresolved depiction" in advisory.stdout
+    assert native_and_optional_parity("scene-ethics", path, "--strict").returncode == 1
+    path.write_text("<!-- override: scene-ethics-unresolved EP-99 — unrelated -->\n" + text, encoding="utf-8")
+    assert native_and_optional_parity("scene-ethics", path, "--strict").returncode == 1
+    path.write_text("<!-- override: scene-ethics-unresolved EP-01 — public record -->\n" + text, encoding="utf-8")
+    assert native_and_optional_parity("scene-ethics", path, "--strict").returncode == 0

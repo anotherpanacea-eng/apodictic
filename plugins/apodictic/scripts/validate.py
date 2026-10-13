@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native validator dispatcher, CB-1(a) groups 1–4, 5a and 6.
+"""Native validator dispatcher, CB-1(a) groups 1–4, 5a, 6 and 7.
 
 Early utilities, signals, configuration, timelines and structured checks run without Bash.
 Other commands and aggregates still belong to validate.sh until their groups land.
@@ -106,6 +106,16 @@ _PLANNING_REFUTATION = {
     ),
 }
 COMMANDS += tuple(_PLANNING_REFUTATION)
+_ARTIFACT_PLANNING = {
+    "legal-risk": "legal_risk.py",
+    "promise-contract": "promise_contract.py",
+    "continuity-bible": "continuity_bible.py",
+    "setup-payoff": "setup_payoff_checks.py",
+    "world-bible": "world_bible.py",
+    "argument-spine": "argument_spine.py",
+    "scene-ethics": "scene_ethics.py",
+}
+COMMANDS += tuple(_ARTIFACT_PLANNING)
 
 
 def _line(text, *, error=False):
@@ -235,6 +245,15 @@ def _planning_refutation(command, args):
     return _run_helper(script, [command, *args])
 
 
+def _artifact_planning(command, args):
+    script = _ARTIFACT_PLANNING[command]
+    if args and args[0] == "--self-test":
+        return _run_helper(script, ["--self-test"])
+    if not args:
+        return _usage(command, "<run_folder|files...> [--strict] | --self-test")
+    return _run_helper(script, [command, *args])
+
+
 def _self_test(command):
     """Keep the existing pure-utility self-test output and observable assertions."""
     failed = False
@@ -296,6 +315,8 @@ def main(argv=None):
         _line("Partial migration: remaining commands and aggregates require validate.sh.")
         return 2
     command, args = args[0], args[1:]
+    if command in _ARTIFACT_PLANNING:
+        return _artifact_planning(command, args)
     if command in _PLANNING_REFUTATION:
         return _planning_refutation(command, args)
     if command in _RUN_INTEGRITY:
