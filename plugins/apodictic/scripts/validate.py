@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Native validator dispatcher, CB-1(a) groups 1–3.
+"""Native validator dispatcher, CB-1(a) groups 1–4.
 
-Early utilities, letter signals, configuration and timelines run without Bash.
+Early utilities, signals, configuration, timelines and structured checks run without Bash.
 Other commands and aggregates still belong to validate.sh until their groups land.
 """
 
@@ -59,6 +59,21 @@ _CONFIG_TIMELINES = {
     "timeline-anchor-conflict": ("timeline_checks.py", "<timeline_file> | --self-test"),
 }
 COMMANDS += tuple(_CONFIG_TIMELINES)
+_STRUCTURED_INTEGRITY = {
+    "structured-findings": ("structured_findings.py", 0, ""),
+    "softness-check": ("honesty_check.py", 2, "<editorial_letter> <findings_ledger> | --self-test"),
+    "deficit-lock": ("honesty_check.py", 1, "<findings_ledger> | --self-test"),
+    "artifacts-schema": ("apodictic_artifacts.py", 0, "--self-test"),
+    "finding-trace": ("finding_trace.py", 1, "<run_folder|files...> [--strict] | --self-test"),
+    "feedback-triage": ("feedback_triage.py", 1, "<run_folder|files...> [--strict] | --self-test"),
+    "editor-scaffolding": (
+        "editor_scaffolding.py", 1,
+        "<editorial_letter|run_folder> [--strict] | editor-scaffolding --dual <editor_letter> <author_letter> "
+        "[--strict] | editor-scaffolding --per-pass <pass_artifact> [--strict] | --self-test",
+    ),
+    "diagnostic-vocabulary": ("diagnostic_vocabulary.py", 1, "<vocab_guide|run_folder> [--strict] | --self-test"),
+}
+COMMANDS += tuple(_STRUCTURED_INTEGRITY)
 
 
 def _line(text, *, error=False):
@@ -154,6 +169,20 @@ def _config_timeline(command, args):
     return _run_helper(script, [command, *args])
 
 
+def _structured_integrity(command, args):
+    script, count, usage = _STRUCTURED_INTEGRITY[command]
+    if command == "structured-findings":
+        # This arm has no wrapper prefix, arity check, file probe or flag parser.
+        return _run_helper(script, args)
+    if args and args[0] == "--self-test":
+        # Honesty's two surfaces share a suite; schema is self-test-only.
+        return _run_helper(script, ["--self-test"])
+    if command == "artifacts-schema" or len(args) < count:
+        return _usage(command, usage)
+    # Late self-tests, flags, discovery and read failures belong to these helpers.
+    return _run_helper(script, [command, *args])
+
+
 def _self_test(command):
     """Keep the existing pure-utility self-test output and observable assertions."""
     failed = False
@@ -215,6 +244,8 @@ def main(argv=None):
         _line("Partial migration: remaining commands and aggregates require validate.sh.")
         return 2
     command, args = args[0], args[1:]
+    if command in _STRUCTURED_INTEGRITY:
+        return _structured_integrity(command, args)
     if command in _CONFIG_TIMELINES:
         return _config_timeline(command, args)
     if command in _LETTER_SIGNALS:

@@ -30,12 +30,24 @@ CONFIG_TIMELINES = (
     "quality-risk-triggers", "cost-floor", "audit-tier-criterion", "pass-header",
     "argument-recon-prerequisite", "timeline-diff", "timeline-arithmetic", "timeline-anchor-conflict",
 )
+STRUCTURED_INTEGRITY = (
+    "structured-findings", "softness-check", "deficit-lock", "artifacts-schema",
+    "finding-trace", "feedback-triage", "editor-scaffolding", "diagnostic-vocabulary",
+)
 REFERENCES = SCRIPTS.parent / "skills/core-editor/references"
 BASH = shutil.which("bash")
+
+
+def fixture_command(path):
+    if path.name.startswith("sf."):
+        return "structured-findings"
+    return path.name.split(".")[2]
+
+
 FIXTURES = sorted(
-    path for path in (ROOT / "tests/fixtures/validators").glob("*.md")
-    if path.name.split(".")[2] in (
-        "ledger-check", "synthesis-sections", "tone-check", *LETTER_SIGNALS, *CONFIG_TIMELINES,
+    path for path in (ROOT / "tests/fixtures/validators").iterdir()
+    if path.is_file() and fixture_command(path) in (
+        "ledger-check", "synthesis-sections", "tone-check", *LETTER_SIGNALS, *CONFIG_TIMELINES, *STRUCTURED_INTEGRITY,
     )
 )
 
@@ -104,7 +116,7 @@ def test_byte_utilities_differential(tmp_path, payload):
         parity(*args, cwd=tmp_path)
 
 
-@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS + CONFIG_TIMELINES)
+@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS + CONFIG_TIMELINES + STRUCTURED_INTEGRITY)
 def test_migrated_self_tests_have_identical_output(command):
     result = run_python(command, "--self-test", "ignored")
     assert result.returncode == 0
@@ -115,7 +127,7 @@ def test_migrated_self_tests_have_identical_output(command):
 
 @pytest.mark.parametrize("fixture", FIXTURES, ids=lambda path: path.name)
 def test_shipped_fixture_parity(fixture):
-    command = fixture.name.split(".")[2]
+    command = fixture_command(fixture)
     result = run_python(command, fixture)
     assert result.returncode == (0 if ".pass." in fixture.name else 1)
     if BASH is not None:
@@ -244,7 +256,7 @@ def test_letter_wrappers_ignore_extra_arguments(tmp_path, command):
     parity(command, path, "ignored", "also ignored")
 
 
-@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "structured-findings", "bogus"])
+@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "retcon-plan", "bogus"])
 def test_unported_entrypoints_do_not_claim_success(command):
     result = run_python(command)
     assert result.returncode == 2
@@ -341,10 +353,9 @@ def test_registry_fragment_and_empty_registry(tmp_path):
 
 
 def native_and_optional_parity(*args, cwd=None):
-    result = run_python(*args, cwd=cwd)
     if BASH is not None:
-        parity(*args, cwd=cwd)
-    return result
+        return parity(*args, cwd=cwd)
+    return run_python(*args, cwd=cwd)
 
 
 @pytest.mark.parametrize("command", CONFIG_TIMELINES)
@@ -467,3 +478,144 @@ def test_timeline_diff_pair_order_and_body_override(tmp_path):
         "# Timeline\n", "# Timeline\n<!-- override: timeline-diff-undocumented — deferred -->\n"), encoding="utf-8")
     assert native_and_optional_parity("timeline-diff", prior, current).returncode == 0
     assert native_and_optional_parity("timeline-diff", prior, "missing.md").returncode == 2
+
+
+@pytest.mark.parametrize("command", STRUCTURED_INTEGRITY)
+def test_structured_integrity_empty_arguments_and_flags_only(command):
+    assert native_and_optional_parity(command).returncode == 2
+    result = native_and_optional_parity(command, "--strict")
+    assert result.returncode == (1 if command == "structured-findings" else 2)
+
+
+@pytest.mark.parametrize("command,inputs", [
+    ("structured-findings", ("diagnostic-state-meta-template.json", "findings-ledger-format.md")),
+    ("softness-check", ("example-editorial-letter.md", "example-findings-ledger.md")),
+    ("deficit-lock", ("example-findings-ledger.md",)),
+    ("finding-trace", ("example-findings-ledger.md", "example-editorial-letter.md")),
+    ("feedback-triage", ("example-feedback-triage.md", "example-findings-ledger.md", "--strict")),
+    ("editor-scaffolding", ("example-editorial-letter-scaffolded.md",)),
+    ("diagnostic-vocabulary", ("example-vocabulary-guide.md",)),
+])
+def test_native_structured_integrity_canonical_inputs(command, inputs):
+    args = [path if path.startswith("--") else REFERENCES / path for path in inputs]
+    result = native_and_optional_parity(command, *args)
+    assert (result.returncode, result.stderr) == (0, b"")
+
+
+def test_structured_findings_raw_argv_and_all_file_errors(tmp_path):
+    clean = tmp_path / "plain.md"
+    clean.write_text("# Plain file\n", encoding="utf-8")
+    invalid = tmp_path / "invalid.json"
+    invalid.write_text("{", encoding="utf-8")
+    result = native_and_optional_parity("structured-findings", clean, invalid, "missing.md")
+    assert result.returncode == 1
+    assert b"invalid JSON" in result.stdout and b"cannot read" in result.stdout
+    late_test = native_and_optional_parity("structured-findings", clean, "--self-test")
+    assert late_test.returncode == 1
+    assert b"Self-test:" not in late_test.stdout
+    assert b"--self-test: cannot read" in late_test.stdout
+    native_and_optional_parity("structured-findings", "--self-test", "ignored")
+
+
+@pytest.mark.parametrize("command", ["softness-check", "deficit-lock"])
+def test_honesty_wrapper_arity_extras_and_read_errors(tmp_path, command):
+    letter = REFERENCES / "example-editorial-letter.md"
+    ledger = REFERENCES / "example-findings-ledger.md"
+    valid = (letter, ledger) if command == "softness-check" else (ledger,)
+    assert native_and_optional_parity(command, *valid, "--self-test", "ignored").returncode == 0
+    assert native_and_optional_parity(command, "missing.md", *valid[1:]).returncode == 2
+    bad = tmp_path / "bad.md"
+    bad.write_bytes(b"\xff\xfe")
+    invalid = (bad, ledger) if command == "softness-check" else (bad,)
+    unreadable = native_and_optional_parity(command, *invalid)
+    assert (unreadable.returncode, unreadable.stderr) == (2, b"")
+    assert unreadable.stdout.startswith(b"Error: ")
+    if command == "softness-check":
+        assert native_and_optional_parity(command, letter).returncode == 2
+        assert native_and_optional_parity(command, letter, "--self-test").returncode == 2
+
+
+@pytest.mark.parametrize("args", [("file.md",), ("file.md", "--self-test"), ("--strict", "--self-test")])
+def test_schema_module_surface_refuses_nonfirst_self_test(args):
+    result = native_and_optional_parity("artifacts-schema", *args)
+    assert (result.returncode, result.stderr) == (2, b"")
+    assert result.stdout.startswith(b"Usage: ")
+
+
+@pytest.mark.parametrize("command", ["finding-trace", "feedback-triage", "editor-scaffolding", "diagnostic-vocabulary"])
+def test_helper_owned_late_self_test_and_command_token_filtering(command):
+    late = native_and_optional_parity(command, "--strict", "--self-test", "ignored.md")
+    assert late.returncode == 0
+    assert late.stdout.endswith(b"Self-test: PASS\n")
+    filtered = native_and_optional_parity(command, command, "--strict", "--unknown")
+    assert filtered.returncode == 2
+    assert filtered.stdout.startswith(b"Usage: ")
+
+
+@pytest.mark.parametrize("flags,inputs", [
+    (("--dual",), ("example-editorial-letter-scaffolded.md", "example-editorial-letter-dual-author.md")),
+    (("--dual", "--per-pass"), ("example-editorial-letter-scaffolded.md", "example-editorial-letter-dual-author.md")),
+    (("--per-pass", "--strict"), ("example-pass-scaffolded.md",)),
+    (("--strict",), ("example-blindspot-ranked",)),
+])
+def test_editor_modes_keep_helper_precedence_and_canonical_contract(flags, inputs):
+    assert native_and_optional_parity("editor-scaffolding", *flags, *(REFERENCES / path for path in inputs)).returncode == 0
+
+
+@pytest.mark.parametrize("flag,count", [("--dual", 1), ("--dual", 3), ("--per-pass", 2)])
+def test_editor_mode_arity_is_owned_by_helper(flag, count):
+    path = REFERENCES / "example-editorial-letter-scaffolded.md"
+    result = native_and_optional_parity("editor-scaffolding", flag, *([path] * count))
+    assert result.returncode == 2
+    assert b"need exactly" in result.stdout
+
+
+@pytest.mark.parametrize("command,source,filename,invalid", [
+    ("feedback-triage", "example-feedback-triage.md", "Demo_Feedback_Triage_r1.md",
+     "<!-- apodictic:feedback_item\n{\n-->\n"),
+    ("editor-scaffolding", "example-editorial-letter-scaffolded.md", "Demo_Editorial_Letter_r1.md",
+     "<!-- mode: editor-scaffolding -->\n# Wrong\n"),
+    ("diagnostic-vocabulary", "example-vocabulary-guide.md", "Demo_Vocabulary_Guide_r1.md", "# Missing mode\n"),
+])
+def test_run_folder_resolution_and_newest_file_selection(tmp_path, command, source, filename, invalid):
+    path = tmp_path / filename
+    path.write_bytes((REFERENCES / source).read_bytes())
+    # Supply the optional ledger in the same folder for cross-artifact consumers.
+    (tmp_path / "Demo_Findings_Ledger_r1.md").write_bytes((REFERENCES / "example-findings-ledger.md").read_bytes())
+    os.utime(path, (100, 100))
+    assert native_and_optional_parity(command, tmp_path).returncode == 0
+    newer = tmp_path / filename.replace("r1", "r2")
+    newer.write_bytes(path.read_bytes())
+    path.write_text(invalid, encoding="utf-8")
+    os.utime(path, (100, 100))
+    os.utime(newer, (200, 200))
+    assert native_and_optional_parity(command, tmp_path, "--strict").returncode == 0
+    newer.unlink()
+    assert native_and_optional_parity(command, tmp_path, "--strict").returncode == 1
+
+
+def test_finding_trace_folder_and_bounded_sidecar_discovery(tmp_path):
+    root = tmp_path / "project"
+    run = root / "runs/current"
+    run.mkdir(parents=True)
+    ledger = run / "Demo_Findings_Ledger_r1.md"
+    letter = run / "Demo_Editorial_Letter_r1.md"
+    ledger.write_bytes((REFERENCES / "example-findings-ledger.md").read_bytes())
+    letter.write_bytes((REFERENCES / "example-editorial-letter.md").read_bytes())
+    assert native_and_optional_parity("finding-trace", run).returncode == 0
+    sidecar = root / "Diagnostic_State.meta.json"
+    sidecar.write_text("{", encoding="utf-8")
+    found = native_and_optional_parity("finding-trace", run)
+    assert found.returncode == 1
+    assert b"unparseable sidecar" in found.stdout
+    sidecar.unlink()
+    far = tmp_path / "Diagnostic_State.meta.json"
+    far.write_text("{", encoding="utf-8")
+    # Four examined directories include tmp_path for this run-folder depth.
+    assert native_and_optional_parity("finding-trace", run).returncode == 1
+    deeper = run / "nested"
+    deeper.mkdir()
+    (deeper / ledger.name).write_bytes(ledger.read_bytes())
+    (deeper / letter.name).write_bytes(letter.read_bytes())
+    # The same sidecar is now beyond the four examined directories.
+    assert native_and_optional_parity("finding-trace", deeper).returncode == 0
