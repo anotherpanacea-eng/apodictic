@@ -6,6 +6,7 @@ This source tool supplies neither a desktop interpreter nor a native sandbox.
 """
 import json
 import os
+import collections
 from pathlib import Path
 import queue
 import re
@@ -20,10 +21,6 @@ TEXT_BYTES = 262144
 TEXT_LINES = 8192
 RESPONSE_BYTES = 32768
 WORK_SECONDS = 5
-SESSION_FRAMES = 64
-SESSION_BYTES = 16777216
-SESSION_SECONDS = 600
-IDLE_SECONDS = 60
 CLEANUP_SECONDS = 2
 METADATA_BYTES = 65536
 HERE = Path(__file__).resolve().parent
@@ -272,10 +269,10 @@ class Session:
         self.inputs = queue.Queue(maxsize=2)
         self.wakeup = threading.Event()
         self.active = None
+        self.pending = collections.deque()  # Admitted validations waiting, in order.
+        self.eof = False
         self.ids = set()
         self.frame = bytearray()
-        self.frames = self.bytes = 0
-        self.started = self.last_input = time.monotonic()
         self.termination = None
         try:
             inventory()
@@ -291,12 +288,12 @@ class Session:
         try:
             while True:
                 data = os.read(sys.stdin.fileno(), 4096)
-                self.inputs.put(("input", None, data, time.monotonic()))
+                self.inputs.put(("input", None, data, None))
                 self.wakeup.set()
                 if not data:
                     return
         except OSError:
-            self.inputs.put(("input_error", None, b"", time.monotonic()))
+            self.inputs.put(("input_error", None, b"", None))
             self.wakeup.set()
 
     def emit(self, value, deadline=None):
@@ -417,19 +414,21 @@ class Session:
         self.stop(deadline)
         self.emit(unavailable(request, code), deadline)
 
-    def fatal(self, code):
-        deadline = time.monotonic() + CLEANUP_SECONDS
+    def end_all(self, deadline):
         if self.active:
             request = self.active["request"]
             self.stop(deadline)
             self.emit(unavailable(request, "session_ended"), deadline)
+        while self.pending:
+            self.emit(unavailable(self.pending.popleft(), "session_ended"), deadline)
+
+    def fatal(self, code):
+        deadline = time.monotonic() + CLEANUP_SECONDS
+        self.end_all(deadline)
         self.emit(protocol_error(code), deadline)
         return 2
 
     def admit(self, data):
-        self.frames += 1
-        if self.frames > SESSION_FRAMES:
-            return self.fatal("session_limit")
         if data.endswith(b"\r"):
             return self.fatal("invalid_frame")
         try:
@@ -443,12 +442,17 @@ class Session:
             return self.fatal("duplicate_id")
         self.ids.add(request["id"])
         if request["type"] == "cancel":
-            cancelled = bool(self.active and self.active["request"]["id"] == request["target"])
+            queued = [r for r in self.pending if r["id"] == request["target"]]
+            active = bool(self.active and self.active["request"]["id"] == request["target"])
+            cancelled = active or bool(queued)
             deadline = time.monotonic() + CLEANUP_SECONDS
-            if cancelled:
+            if active:
                 target = self.active["request"]
                 self.stop(deadline)
                 self.emit(unavailable(target, "cancelled"), deadline)
+            elif queued:
+                self.pending.remove(queued[0])
+                self.emit(unavailable(queued[0], "cancelled"), deadline)
             self.emit({"protocol": 1, "type": "cancel_result", "id": request["id"],
                        "target": request["target"], "cancelled": cancelled, "error": None}, deadline)
         elif request["validator"] not in ("tone-check", "synthesis-sections", "severity-floor", "decision-layer-check", "author-facing-lint", "ledger-check"):
@@ -456,12 +460,10 @@ class Session:
         elif (len(request["text"].encode("utf-8")) > TEXT_BYTES
               or request["text"].replace("\r\n", "\n").replace("\r", "\n").count("\n") + 1 > TEXT_LINES):
             self.emit(unavailable(request, "input_limit"))
-        elif self.active:
-            self.emit(unavailable(request, "busy"))
         elif not self.dependency:
             self.emit(unavailable(request, "runner_dependency_unavailable"))
         else:
-            self.start(request)
+            self.pending.append(request)  # Started in order by the run loop.
         return None
 
     def child_event(self, event):
@@ -514,19 +516,17 @@ class Session:
             signal.signal(sig, self.terminate)
         try:
             while True:
-                now = time.monotonic()
                 if self.termination is not None:
-                    deadline = self.termination + CLEANUP_SECONDS
-                    if self.active:
-                        request = self.active["request"]
-                        self.stop(deadline)
-                        self.emit(unavailable(request, "session_ended"), deadline)
+                    self.end_all(self.termination + CLEANUP_SECONDS)
                     return 2
-                if now - self.started >= SESSION_SECONDS or now - self.last_input >= IDLE_SECONDS:
-                    return self.fatal("session_limit")
-                if self.active and now - self.active["started"] >= WORK_SECONDS:
+                if self.active and time.monotonic() - self.active["started"] >= WORK_SECONDS:
                     self.finish("timeout")
                 self.accept_result()
+                if not self.active and self.pending:
+                    self.start(self.pending.popleft())
+                    continue
+                if self.eof and not self.active:
+                    return 0
                 self.wakeup.clear()
                 try:
                     try:
@@ -536,7 +536,7 @@ class Session:
                 except queue.Empty:
                     self.wakeup.wait(.02)
                     continue
-                name, _, data, timestamp = event
+                name, _, data, _ = event
                 if name == "input_error":
                     raise TransportFailure()
                 if name != "input":
@@ -545,15 +545,10 @@ class Session:
                 if not data:
                     if self.frame:
                         return self.fatal("invalid_frame")
-                    if self.active:
-                        self.finish("session_ended")
-                    return 0
-                self.last_input = timestamp
-                remaining = SESSION_BYTES - self.bytes
-                prefix = data[:remaining]
-                self.bytes += len(prefix)
+                    self.eof = True  # Finish active and queued work, then exit 0.
+                    continue
                 # Only LF frames: never use universal splitlines for transport.
-                pieces = prefix.split(b"\n")
+                pieces = data.split(b"\n")
                 for i, piece in enumerate(pieces):
                     self.frame.extend(piece)
                     if len(self.frame) > FRAME_BYTES:
@@ -564,8 +559,6 @@ class Session:
                         status = self.admit(record)
                         if status is not None:
                             return status
-                if len(prefix) < len(data):
-                    return self.fatal("session_limit")
         except (TransportFailure, BrokenPipeError, OSError) as exc:
             deadline = getattr(exc, "deadline", None)
             if deadline is None:

@@ -31,8 +31,8 @@ def frame(value):
 
 
 class Client:
-    def __init__(self, script=SCRIPT, env=None, cwd=None, launcher=None):
-        self.child = subprocess.Popen([PYTHON, "-I", "-S", str(launcher or script)],
+    def __init__(self, script=SCRIPT, env=None, cwd=None):
+        self.child = subprocess.Popen([PYTHON, "-I", "-S", str(script)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             env=env, cwd=cwd)
         self.lines = queue.Queue()
@@ -128,7 +128,8 @@ class RunnerTests(unittest.TestCase):
             "  signal.signal(signal.SIGTERM,signal.SIG_IGN)\n"
             "  time.sleep(30)\n"
             " return [],[], 'synthetic OK', 'synthetic FAILED'\n"
-            "synthesis_sections = severity_floor = decision_layer_check = author_facing_lint = ledger_check = tone_check\n" % str(self.pidfile))
+            "synthesis_sections = severity_floor = decision_layer_check = author_facing_lint = tone_check\n"
+            "def ledger_check(text): return 0, [tone_check(text)[2]]\n" % str(self.pidfile))
 
     def pid(self):
         until = time.monotonic() + 3
@@ -624,7 +625,7 @@ class RunnerTests(unittest.TestCase):
             c.send(validation("over" + str(i), text)); self.error(c.next(), "input_limit")
         self.assertEqual(c.end(), (0, [], b""))
 
-    def test_frame_and_frame_count_limits(self):
+    def test_frame_limit_and_long_sequential_session(self):
         for extra in (0, 1):
             c = self.client()
             base = frame(cancel())[:-1]
@@ -632,87 +633,50 @@ class RunnerTests(unittest.TestCase):
             got = c.next()
             self.assertEqual(got["type"], "cancel_result" if not extra else "protocol_error")
             self.assertEqual(c.end()[0], 0 if not extra else 2)
+        # A well-behaved client is not cut off after any number of requests.
         c = self.client()
-        for i in range(64):
-            c.send(cancel("unknown", str(i))); self.assertFalse(c.next()["cancelled"])
-        c.send(cancel("unknown", "over"))
-        self.assertEqual(c.next()["error"]["code"], "session_limit")
-        self.assertEqual(c.end(), (2, [], b""))
-
-    def test_session_byte_limit(self):
-        c = self.client()
-        for i in range(16):
-            base = frame(cancel("unknown", str(i)))[:-1]
-            c.raw(base + b" " * (1048575 - len(base)) + b"\n")
-            self.assertFalse(c.next()["cancelled"])
-        c.raw(b"x")  # Exactly 16MiB accepted; the next byte is refused before admission.
-        self.assertEqual(c.next()["error"]["code"], "session_limit")
-        self.assertEqual(c.end(), (2, [], b""))
-
-    def test_session_byte_boundary_preserves_identical_stream_prefix(self):
-        outcomes = []
-        for split in (False, True):
-            c = self.client(script=self.script)
-            prefix_responses = []
-            for i in range(16):
-                base = frame(cancel("unknown", str(i)))[:-1]
-                length = 1048576 - (128 if i == 15 else 0)
-                c.raw(base + b" " * (length - 1 - len(base)) + b"\n")
-                prefix_responses.append(c.next())
-            edge = frame(cancel("unknown", "edge"))
-            padding = b" " * (129 - len(edge))
-            if split:
-                c.raw(edge)
-                response = c.next()
-                c.raw(padding)
-            else:
-                c.raw(edge + padding)
-                response = c.next()
-            self.assertEqual(response, {"protocol": 1, "type": "cancel_result", "id": "edge",
-                "target": "unknown", "cancelled": False, "error": None})
-            fatal = c.next()
-            self.assertEqual(fatal["error"]["code"], "session_limit")
-            self.assertEqual(c.end(), (2, [], b""))
-            outcomes.append(prefix_responses + [response, fatal])
-        self.assertEqual(*outcomes)
-
-    @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
-    def test_cancel_busy_race_and_reuse(self):
-        self.sleeping(); c = self.client(script=self.script)
-        c.send(validation(text="sleep")); pid = self.pid()
-        c.send(validation("busy")); self.error(c.next(), "busy")
-        c.send(validation("busy-synth", "", "synthesis-sections"))
-        got = c.next(); self.error(got, "busy")
-        self.assertEqual((got["id"], got["validator"]), ("busy-synth", "synthesis-sections"))
-        c.send(validation("other", validator="other")); self.error(c.next(), "validator_unavailable")
-        c.send(validation("limit", "\n" * 8192)); self.error(c.next(), "input_limit")
-        c.send(cancel()); self.error(c.next(), "cancelled")
-        self.assertTrue(c.next()["cancelled"]); self.dead(pid)
-        c.send(validation("healthy")); self.assertTrue(c.next()["available"])
-        c.send(cancel("healthy", "late")); self.assertFalse(c.next()["cancelled"])
+        for i in range(72):
+            c.send(validation(str(i))); got = c.next()
+            self.assertEqual((got["id"], got["available"]), (str(i), True))
+        c.send(cancel("unknown")); self.assertFalse(c.next()["cancelled"])
         self.assertEqual(c.end(), (0, [], b""))
 
+    def test_piped_batch_drains_at_eof(self):
+        requests = [validation("a"), validation("b", "## Pass 2\n", "ledger-check"),
+                    validation("c", "masterpiece")]
+        for count in (1, 3):
+            with self.subTest(count=count):
+                run = subprocess.run([PYTHON, "-I", "-S", str(SCRIPT)], capture_output=True, timeout=30,
+                                     input=b"".join(frame(r) for r in requests[:count]))
+                self.assertEqual((run.returncode, run.stderr), (0, b""))
+                got = [json.loads(line) for line in run.stdout.splitlines()]
+                self.assertEqual([(g["id"], g["validator"], g["available"], g["result"]["exit_code"]) for g in got],
+                                 [("a", "tone-check", True, 0), ("b", "ledger-check", True, 1),
+                                  ("c", "tone-check", True, 1)][:count])
+
     @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
-    def test_in_budget_synthesis_cancel_precedes_excess_session_byte(self):
+    def test_cancel_queue_order_and_reuse(self):
         self.sleeping(); c = self.client(script=self.script)
-        used = 0
-        for i in range(15):
-            base = frame(cancel("unknown", str(i)))[:-1]
-            c.raw(base + b" " * (1048575 - len(base)) + b"\n")
-            self.assertFalse(c.next()["cancelled"]); used += 1048576
-        request = frame(validation("synth", "sleep", "synthesis-sections"))
-        c.raw(request); used += len(request); pid = self.pid()
-        base = frame(cancel("unknown", "padding"))[:-1]
-        length = 16777216 - used - 128
-        c.raw(base + b" " * (length - 1 - len(base)) + b"\n")
-        self.assertFalse(c.next()["cancelled"])
-        edge = frame(cancel("synth", "edge"))
-        c.raw(edge + b" " * (129 - len(edge)))
-        got = c.next(); self.error(got, "cancelled")
-        self.assertEqual((got["id"], got["validator"]), ("synth", "synthesis-sections"))
-        self.assertTrue(c.next()["cancelled"])
-        self.assertEqual(c.next()["error"]["code"], "session_limit")
-        self.assertEqual(c.end(), (2, [], b"")); self.dead(pid)
+        c.send(validation(text="sleep")); pid = self.pid()
+        # Valid requests admitted while a worker is active wait and run in order.
+        c.send(validation("queued")); c.send(validation("queued-synth", "", "synthesis-sections"))
+        c.send(validation("dropped"))
+        c.send(validation("other", validator="other")); self.error(c.next(), "validator_unavailable")
+        c.send(validation("limit", "\n" * 8192)); self.error(c.next(), "input_limit")
+        # Cancelling a queued request removes it without touching the active worker.
+        c.send(cancel("dropped", "c0")); got = c.next(); self.error(got, "cancelled")
+        self.assertEqual((got["id"], got["validator"]), ("dropped", "tone-check"))
+        self.assertEqual(c.next(), {"protocol": 1, "type": "cancel_result", "id": "c0",
+                                    "target": "dropped", "cancelled": True, "error": None})
+        os.kill(pid, 0)
+        c.send(cancel()); self.error(c.next(), "cancelled")
+        self.assertTrue(c.next()["cancelled"]); self.dead(pid)
+        for id, leaf in (("queued", "tone-check"), ("queued-synth", "synthesis-sections")):
+            got = c.next()
+            self.assertEqual((got["id"], got["validator"], got["available"]), (id, leaf, True))
+        c.send(cancel("queued", "late")); self.assertFalse(c.next()["cancelled"])
+        c.send(cancel("dropped", "late2")); self.assertFalse(c.next()["cancelled"])
+        self.assertEqual(c.end(), (0, [], b""))
 
     @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
     def test_exact_cancel_target_boundary_and_invalid_active_targets(self):
@@ -787,7 +751,7 @@ class RunnerTests(unittest.TestCase):
                     p.stdin.write(frame(validation(text="sleep", validator=leaf))); p.stdin.flush(); pid = self.pid()
                     started = time.monotonic()
                     request = (frame(cancel()) if action == "cancel" else b"{}\n"
-                        if action == "fatal" else frame(validation("busy")))
+                        if action == "fatal" else frame(validation("other", validator="other")))
                     p.stdin.write(request); p.stdin.flush()
                     self.assertEqual(p.wait(timeout=2.2), 2)
                     self.assertLess(time.monotonic() - started, 2.2)  # Parent scheduling allowance only.
@@ -804,234 +768,81 @@ class RunnerTests(unittest.TestCase):
                     p.stdin.close(); os.close(err_r)
                     if action != "broken": os.close(out_r)
 
-    @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
-    def test_synthesis_lifecycle_shared_slot_and_other_leaf_reuse(self):
-        for action in ("cancel", "bad_target", "partial", "eof", "SIGTERM", "SIGINT", "timeout"):
+    def queued_lifecycle(self, leaf, id, queued, actions, recovery):
+        for action in actions:
             with self.subTest(action=action):
                 self.sleeping(); self.pidfile.unlink(missing_ok=True)
                 c = self.client(script=self.script)
                 started = time.monotonic()
-                c.send(validation("synth", "sleep", "synthesis-sections")); pid = self.pid()
-                # Both leaves share one slot, with unsupported/limits preceding busy.
-                for id, leaf, text, code in (("busy-tone", "tone-check", "", "busy"),
-                        ("busy-synth", "synthesis-sections", "", "busy"),
-                        ("unknown", "other", "x" * 262145, "validator_unavailable"),
-                        ("limit", "synthesis-sections", "x" * 262145, "input_limit")):
-                    c.send(validation(id, text, leaf)); got = c.next(); self.error(got, code)
-                    self.assertEqual((got["id"], got["validator"]), (id, leaf))
-                if action == "cancel": c.send(cancel("synth"))
+                c.send(validation(id, "sleep", leaf)); pid = self.pid()
+                # Every leaf shares one active slot; later valid requests queue in order.
+                for q in queued:
+                    c.send(validation("queued-" + q, "", q))
+                for rid, other, text, code in (("unknown", "other", "x" * 262145, "validator_unavailable"),
+                        ("limit", leaf, "x" * 262145, "input_limit")):
+                    c.send(validation(rid, text, other)); got = c.next(); self.error(got, code)
+                    self.assertEqual((got["id"], got["validator"]), (rid, other))
+                c.send(cancel("unknown", "unknown-cancel")); self.assertFalse(c.next()["cancelled"])
+                if action == "cancel": c.send(cancel(id))
                 elif action == "bad_target": c.send(cancel("x" * 65))
                 elif action == "partial": c.raw(b"{}"); c.child.stdin.close()
                 elif action == "eof": c.child.stdin.close()
+                elif action == "fatal": c.raw(b"{}\n")
                 elif action != "timeout": c.child.send_signal(getattr(signal, action))
+                drains = action in ("cancel", "eof", "timeout")
                 got = c.next()
-                self.error(got, "cancelled" if action == "cancel" else "timeout" if action == "timeout" else "session_ended")
-                self.assertEqual((got["id"], got["validator"]), ("synth", "synthesis-sections"))
+                self.error(got, "cancelled" if action == "cancel" else "timeout" if drains else "session_ended")
+                self.assertEqual((got["id"], got["validator"]), (id, leaf))
                 self.dead(pid)
-                if action == "timeout":
+                if action in ("eof", "timeout"):
                     self.assertGreaterEqual(time.monotonic() - started, 5)
                     self.assertLess(time.monotonic() - started, 7)
                 if action == "cancel": self.assertTrue(c.next()["cancelled"])
-                elif action in ("bad_target", "partial"):
-                    self.assertEqual(c.next()["error"]["code"], "invalid_request" if action == "bad_target" else "invalid_frame")
+                for q in queued:
+                    got = c.next()
+                    self.assertEqual((got["id"], got["validator"]), ("queued-" + q, q))
+                    if drains: self.assertTrue(got["available"])
+                    else: self.error(got, "session_ended")
+                if action in ("bad_target", "partial", "fatal"):
+                    self.assertEqual(c.next()["error"]["code"],
+                                     "invalid_frame" if action == "partial" else "invalid_request")
                 if action in ("cancel", "timeout"):
-                    c.send(validation("healthy", "", "tone-check")); got = c.next()
-                    self.assertEqual((got["id"], got["validator"], got["available"]), ("healthy", "tone-check", True))
-                    c.send(cancel("synth", "late")); self.assertFalse(c.next()["cancelled"])
-                self.assertEqual(c.end(), (0 if action in ("cancel", "timeout", "eof") else 2, [], b""))
+                    c.send(validation("healthy", "", recovery)); got = c.next()
+                    self.assertEqual((got["id"], got["validator"], got["available"]), ("healthy", recovery, True))
+                    c.send(cancel(id, "late")); self.assertFalse(c.next()["cancelled"])
+                self.assertEqual(c.end(), (0 if drains else 2, [], b""))
+
+    @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
+    def test_synthesis_lifecycle_shared_slot_and_other_leaf_reuse(self):
+        self.queued_lifecycle("synthesis-sections", "synth", ("tone-check", "synthesis-sections"),
+                              ("cancel", "bad_target", "partial", "eof", "SIGTERM", "SIGINT", "timeout"), "tone-check")
 
     @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
     def test_severity_lifecycle_shared_slot_and_recovery(self):
-        for action in ("cancel", "eof", "fatal", "SIGTERM", "timeout"):
-            with self.subTest(action=action):
-                self.sleeping(); self.pidfile.unlink(missing_ok=True)
-                c = self.client(script=self.script)
-                started = time.monotonic()
-                c.send(validation("sev", "sleep", "severity-floor")); pid = self.pid()
-                for id, leaf, text, code in (("busy-tone", "tone-check", "", "busy"),
-                        ("busy-synth", "synthesis-sections", "", "busy"),
-                        ("busy-sev", "severity-floor", "", "busy"),
-                        ("unknown", "other", "x" * 262145, "validator_unavailable"),
-                        ("limit", "severity-floor", "x" * 262145, "input_limit")):
-                    c.send(validation(id, text, leaf)); got = c.next(); self.error(got, code)
-                    self.assertEqual((got["id"], got["validator"]), (id, leaf))
-                if action == "cancel": c.send(cancel("sev"))
-                elif action == "eof": c.child.stdin.close()
-                elif action == "fatal": c.raw(b"{}\n")
-                elif action == "SIGTERM": c.child.send_signal(signal.SIGTERM)
-                got = c.next()
-                self.error(got, "cancelled" if action == "cancel" else "timeout" if action == "timeout" else "session_ended")
-                self.assertEqual((got["id"], got["validator"]), ("sev", "severity-floor"))
-                self.dead(pid)
-                if action == "timeout":
-                    self.assertGreaterEqual(time.monotonic() - started, 5)
-                    self.assertLess(time.monotonic() - started, 7)
-                if action == "cancel": self.assertTrue(c.next()["cancelled"])
-                elif action == "fatal": self.assertEqual(c.next()["error"]["code"], "invalid_request")
-                if action in ("cancel", "timeout"):
-                    c.send(validation("healthy", "", "synthesis-sections")); got = c.next()
-                    self.assertEqual((got["id"], got["validator"], got["available"]),
-                                     ("healthy", "synthesis-sections", True))
-                    c.send(cancel("sev", "late")); self.assertFalse(c.next()["cancelled"])
-                self.assertEqual(c.end(), (0 if action in ("cancel", "timeout", "eof") else 2, [], b""))
+        self.queued_lifecycle("severity-floor", "sev", ("tone-check", "synthesis-sections", "severity-floor"),
+                              ("cancel", "eof", "fatal", "SIGTERM", "timeout"), "synthesis-sections")
 
     @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
     def test_decision_layer_lifecycle_shared_slot_and_recovery(self):
-        for action in ("cancel", "eof", "partial", "fatal", "SIGTERM", "timeout"):
-            with self.subTest(action=action):
-                self.sleeping(); self.pidfile.unlink(missing_ok=True)
-                c = self.client(script=self.script)
-                started = time.monotonic()
-                c.send(validation("decision", "sleep", "decision-layer-check")); pid = self.pid()
-                for id, leaf, text, code in (("busy-tone", "tone-check", "", "busy"),
-                        ("busy-synth", "synthesis-sections", "", "busy"),
-                        ("busy-severity", "severity-floor", "", "busy"),
-                        ("busy-decision", "decision-layer-check", "", "busy"),
-                        ("unknown", "other", "x" * 262145, "validator_unavailable"),
-                        ("limit", "decision-layer-check", "x" * 262145, "input_limit")):
-                    c.send(validation(id, text, leaf)); got = c.next(); self.error(got, code)
-                    self.assertEqual((got["id"], got["validator"]), (id, leaf))
-                c.send(cancel("unknown", "unknown-cancel"))
-                self.assertFalse(c.next()["cancelled"])
-                if action == "cancel": c.send(cancel("decision"))
-                elif action == "eof": c.child.stdin.close()
-                elif action == "partial": c.raw(b"{}"); c.child.stdin.close()
-                elif action == "fatal": c.raw(b"{}\n")
-                elif action == "SIGTERM": c.child.send_signal(signal.SIGTERM)
-                got = c.next()
-                self.error(got, "cancelled" if action == "cancel" else "timeout" if action == "timeout" else "session_ended")
-                self.assertEqual((got["id"], got["validator"]), ("decision", "decision-layer-check"))
-                self.dead(pid)
-                if action == "timeout":
-                    self.assertGreaterEqual(time.monotonic() - started, 5)
-                    self.assertLess(time.monotonic() - started, 7)
-                if action == "cancel": self.assertTrue(c.next()["cancelled"])
-                elif action in ("partial", "fatal"):
-                    self.assertEqual(c.next()["error"]["code"],
-                                     "invalid_frame" if action == "partial" else "invalid_request")
-                if action in ("cancel", "timeout"):
-                    c.send(validation("healthy", "", "severity-floor")); got = c.next()
-                    self.assertEqual((got["id"], got["validator"], got["available"]),
-                                     ("healthy", "severity-floor", True))
-                    c.send(cancel("decision", "late")); self.assertFalse(c.next()["cancelled"])
-                self.assertEqual(c.end(), (0 if action in ("cancel", "timeout", "eof") else 2, [], b""))
+        self.queued_lifecycle("decision-layer-check", "decision", ("tone-check", "synthesis-sections",
+                              "severity-floor", "decision-layer-check"),
+                              ("cancel", "eof", "partial", "fatal", "SIGTERM", "timeout"), "severity-floor")
 
     @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
     def test_author_facing_lifecycle_shared_slot_and_recovery(self):
-        for action in ("cancel", "eof", "partial", "fatal", "SIGTERM", "timeout"):
-            with self.subTest(action=action):
-                self.sleeping(); self.pidfile.unlink(missing_ok=True)
-                c = self.client(script=self.script)
-                started = time.monotonic()
-                c.send(validation("author", "sleep", "author-facing-lint")); pid = self.pid()
-                for id, leaf, text, code in (("busy-tone", "tone-check", "", "busy"),
-                        ("busy-synth", "synthesis-sections", "", "busy"),
-                        ("busy-severity", "severity-floor", "", "busy"),
-                        ("busy-decision", "decision-layer-check", "", "busy"),
-                        ("busy-author", "author-facing-lint", "", "busy"),
-                        ("unknown", "other", "x" * 262145, "validator_unavailable"),
-                        ("limit", "author-facing-lint", "x" * 262145, "input_limit")):
-                    c.send(validation(id, text, leaf)); got = c.next(); self.error(got, code)
-                    self.assertEqual((got["id"], got["validator"]), (id, leaf))
-                c.send(cancel("unknown", "unknown-author-cancel"))
-                self.assertFalse(c.next()["cancelled"])
-                if action == "cancel": c.send(cancel("author"))
-                elif action == "eof": c.child.stdin.close()
-                elif action == "partial": c.raw(b"{}"); c.child.stdin.close()
-                elif action == "fatal": c.raw(b"{}\n")
-                elif action == "SIGTERM": c.child.send_signal(signal.SIGTERM)
-                got = c.next()
-                self.error(got, "cancelled" if action == "cancel" else "timeout" if action == "timeout" else "session_ended")
-                self.assertEqual((got["id"], got["validator"]), ("author", "author-facing-lint"))
-                self.dead(pid)
-                if action == "timeout":
-                    self.assertGreaterEqual(time.monotonic() - started, 5)
-                    self.assertLess(time.monotonic() - started, 7)
-                if action == "cancel": self.assertTrue(c.next()["cancelled"])
-                elif action in ("partial", "fatal"):
-                    self.assertEqual(c.next()["error"]["code"],
-                                     "invalid_frame" if action == "partial" else "invalid_request")
-                if action in ("cancel", "timeout"):
-                    c.send(validation("healthy", "", "severity-floor")); got = c.next()
-                    self.assertEqual((got["id"], got["validator"], got["available"]),
-                                     ("healthy", "severity-floor", True))
-                    c.send(cancel("author", "late")); self.assertFalse(c.next()["cancelled"])
-                self.assertEqual(c.end(), (0 if action in ("cancel", "timeout", "eof") else 2, [], b""))
+        self.queued_lifecycle("author-facing-lint", "author", ("tone-check", "synthesis-sections",
+                              "severity-floor", "decision-layer-check", "author-facing-lint"),
+                              ("cancel", "eof", "partial", "fatal", "SIGTERM", "timeout"), "severity-floor")
 
     @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
     def test_ledger_lifecycle_slot_and_recovery(self):
-        for action in ("cancel", "eof", "fatal", "SIGTERM", "timeout"):
-            with self.subTest(action=action):
-                self.sleeping(); self.pidfile.unlink(missing_ok=True)
-                c = self.client(script=self.script)
-                started = time.monotonic()
-                c.send(validation("ledger", "sleep", "ledger-check")); pid = self.pid()
-                for id, leaf, text, code in (("busy", "ledger-check", "", "busy"),
-                        ("busy-tone", "tone-check", "", "busy"),
-                        ("unknown", "other", "x" * 262145, "validator_unavailable"),
-                        ("limit", "ledger-check", "x" * 262145, "input_limit")):
-                    c.send(validation(id, text, leaf))
-                    got = c.next(); self.error(got, code)
-                    self.assertEqual((got["id"], got["validator"]), (id, leaf))
-                if action == "cancel": c.send(cancel("ledger"))
-                elif action == "eof": c.child.stdin.close()
-                elif action == "fatal": c.raw(b"{}\n")
-                elif action == "SIGTERM": c.child.send_signal(signal.SIGTERM)
-                got = c.next()
-                self.error(got, "cancelled" if action == "cancel" else "timeout" if action == "timeout" else "session_ended")
-                self.assertEqual((got["id"], got["validator"]), ("ledger", "ledger-check"))
-                self.dead(pid)
-                if action == "timeout":
-                    self.assertGreaterEqual(time.monotonic() - started, 5)
-                    self.assertLess(time.monotonic() - started, 7)
-                if action == "cancel": self.assertTrue(c.next()["cancelled"])
-                elif action == "fatal": self.assertEqual(c.next()["error"]["code"], "invalid_request")
-                if action in ("cancel", "timeout"):
-                    c.send(validation("healthy", "", "tone-check"))
-                    self.assertTrue(c.next()["available"])
-                    c.send(cancel("ledger", "late")); self.assertFalse(c.next()["cancelled"])
-                self.assertEqual(c.end(), (0 if action in ("cancel", "timeout", "eof") else 2, [], b""))
-
-    def test_fixed_idle_and_session_deadlines_with_test_only_clock(self):
-        # A disposable test launcher accelerates monotonic time, not protocol limits.
-        # The production script and request schema have no clock/limit override.
-        launcher = self.root / "synthetic-clock-launcher.py"
-        launcher.write_text("import runpy,sys,time\n"
-            "real=time.monotonic\norigin=real()\n"
-            "time.monotonic=lambda: origin+(real()-origin)*100\n"
-            "sys.argv=[%r]\nrunpy.run_path(%r,run_name='__main__')\n" % (str(self.script), str(self.script)))
-        c = self.client(script=self.script, launcher=launcher)
-        started = time.monotonic(); c.raw(b"{")
-        self.assertEqual(c.next()["error"]["code"], "session_limit")
-        self.assertGreaterEqual(time.monotonic() - started, .6)
-        self.assertEqual(c.end(), (2, [], b""))
-        c = self.client(script=self.script, launcher=launcher)
-        started = time.monotonic()
-        while c.child.poll() is None and time.monotonic() - started < 8:
-            try: c.raw(b" ")
-            except BrokenPipeError: break
-            time.sleep(.1)
-        self.assertEqual(c.next()["error"]["code"], "session_limit")
-        self.assertGreaterEqual(time.monotonic() - started, 6)
-        self.assertLess(time.monotonic() - started, 8)
-        self.assertEqual(c.end(), (2, [], b""))
+        self.queued_lifecycle("ledger-check", "ledger", ("ledger-check", "tone-check"),
+                              ("cancel", "eof", "fatal", "SIGTERM", "timeout"), "tone-check")
 
     @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
-    def test_fatal_active_target_eof_and_termination_cleanup(self):
-        for action in ("bad_target", "partial", "eof", "SIGTERM", "SIGINT"):
-            with self.subTest(action=action):
-                self.sleeping(); self.pidfile.unlink(missing_ok=True)
-                c = self.client(script=self.script); c.send(validation(text="sleep")); pid = self.pid()
-                if action == "bad_target": c.send(cancel("x" * 65))
-                elif action == "partial": c.raw(b"{}"); c.child.stdin.close()
-                elif action == "eof": c.child.stdin.close()
-                else: c.child.send_signal(getattr(signal, action))
-                self.error(c.next(), "session_ended")
-                if action in ("bad_target", "partial"):
-                    self.assertEqual(c.next()["error"]["code"], "invalid_request" if action == "bad_target" else "invalid_frame")
-                status, remainder, stderr = c.end()
-                self.assertEqual(status, 0 if action == "eof" else 2)
-                self.assertEqual((remainder, stderr), ([], b"")); self.dead(pid)
+    def test_tone_lifecycle_fatal_eof_and_termination_cleanup(self):
+        self.queued_lifecycle("tone-check", "r1", ("synthesis-sections",),
+                              ("bad_target", "partial", "eof", "SIGTERM", "SIGINT"), "tone-check")
 
     def test_dependency_and_worker_failures_are_unavailable(self):
         for code in ("raise ImportError('synthetic')\n", "def tone_check(text): raise RuntimeError(text)\n",
