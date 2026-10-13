@@ -1,7 +1,7 @@
 # Native Python validator migration
 
-**Status:** Groups 1–4, 5a, 6 and 7 built; self-test output stabilized. The gate pair
-and groups 8–14 remain queued. The Bash dispatcher remains the
+**Status:** Groups 1–4, 5a and 6–8 built; self-test output stabilized. The gate pair
+and groups 9–14 remain queued. The Bash dispatcher remains the
 full validator entrypoint during this migration.
 <!-- built-when: plugins/apodictic/scripts/validate.py -->
 
@@ -90,8 +90,8 @@ All 18 official gate child validators now have native routes. Both gate surfaces
 still require the separate launcher transition; child availability alone does
 not make them native. Custom manifests can reach other commands such as
 `schema-coverage` and aggregate switches that remain unported. Changing the
-shared Bash gate default now would regress those existing calls. Groups 8–13
-follow Group 7; full aggregate dispatch and gate migration stay
+shared Bash gate default now would regress those existing calls. Groups 9–13
+follow Group 8; full aggregate dispatch and gate migration stay
 coordinated in Group 14 unless a separate reviewed design preserves all behavior.
 
 Group 7 adds `legal-risk`, `promise-contract`, `continuity-bible`, `setup-payoff`,
@@ -103,6 +103,22 @@ the newest pitch while consuming all sorted Markdown reports; mixed unreadable
 inputs retain its partial-read behavior and wholly unreadable inputs retain its
 generic refusal. Continuity preserves the first recognized timeline and local
 `Timeline.md` before parent lookup, including missing/unreadable coverage limits.
+
+Group 8 adds `intake-interview`, `author-fingerprint`, `content-advisory`,
+`coaching-history`, `style-explanation` and `persona-divergence`. Unchanged helpers
+own consent, parsed-carrier selection, newest files, optional ledger/timeline
+reads, strictness and overrides. Persona discovers only a local Timeline; style
+prefers parsed style labels over a newer fingerprint-only file. Coaching retains
+recursive whole-project checks and its root-local sidecar.
+
+First-position `coaching-history delete` forwards exactly `delete` and the second
+raw argument, dropping all later tokens. A retained `--self-test` still invokes
+the helper suite. A missing second token preserves Bash's exit 1 and empty stdout,
+but emits `Error: coaching-history delete requires <project_root>` on stderr;
+the native CLI does not reproduce Bash's sourced-file path/line diagnostic.
+Ordinary coaching calls retain original arguments, including command tokens the
+helper later removes. Deletion can remove histories before refusing a malformed
+sidecar; the existing helper does not promise atomic rollback.
 
 Exit codes remain 0 for success, 1 for a validation failure, and 2 for usage or an
 invalid/inaccessible input path. For the three raw-byte utilities, a regular file
@@ -118,7 +134,7 @@ partial-migration message. Python does not fall back to Bash.
 ## Differential acceptance
 
 `tests/test_validate_python_parity.py` compares exit codes and stdout bytes against
-the independent Bash dispatcher without output normalization. All 48 migrated
+the independent Bash dispatcher without output normalization. All 54 migrated
 self-test surfaces now compare exact stdout bytes, including specificity and
 the three shared refutation routes. Their self-tests formerly printed random
 temporary paths while exercising expected negative CLI reads. The separate
@@ -131,7 +147,9 @@ suites still run. Ordinary
 commands, including their named decode errors, retain byte-identical output.
 Application-generated
 stderr bytes are compared exactly except for the accepted logical/physical cwd
-prefix limitation noted below. For shell/OS-generated read-redirection
+prefix limitation noted below. Coaching’s shell-fatal missing-delete-target
+case preserves exit/stdout with the named native stderr described above.
+For shell/OS-generated read-redirection
 errors, the native CLI retains the exit/stdout contract and emits a named file-read
 error; it does not reproduce shell source paths, line numbers or platform wording. It
 exercises every migrated self-test, all applicable shipped validator fixtures,
@@ -201,6 +219,18 @@ read refusals, first parsed carrier/newest file, Promise report scope, Continuit
 timeline order/fallback and an advisory/strict/scoped-override transition. All
 earlier native cases, including the stabilizer's temp-root regressions, remain.
 
+Group 8 adds six exact self-test surfaces, six canonical strict inputs and compact
+raw-token, discovery, optional-role, read, strict and override controls. Synthetic
+temporary coaching trees are restored to identical paths/bytes/modes before each
+Bash/native deletion; comparisons include output and resulting file membership,
+bytes and modes, recursive sequence removal, tombstones, H6 residue recomputation,
+idempotence and partial failure. Canonical inputs are never deleted. Coaching's
+bare-token warnings inherit unsorted set iteration: raw differential comparisons
+use the same recorded `PYTHONHASHSEED` (1, 2 and 3) for each pair. Output is not
+sorted or normalized, production does not set a seed, and ordinary unseeded
+output determinism is not claimed. Fingerprint W2/style X6 remain nonblocking
+under strict while coaching URL W1 remains blocking.
+
 ## Continuation groups
 
 These provisional groups give each subsequent increment its own PR. Refresh the
@@ -219,7 +249,7 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | 6 | retcon-plan, state-card-diff, revision-arc, regression-diff, refutation-coverage, refutation-evidence, refutation-write-scope | Built |
 | Self-test stability | Specificity/refutation expected-negative diagnostic capture and four restored exact-output surfaces | Built |
 | 7 | legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, argument-spine, scene-ethics | Built |
-| 8 | intake-interview, author-fingerprint, content-advisory, coaching-history, style-explanation, persona-divergence | Queued |
+| 8 | intake-interview, author-fingerprint, content-advisory, coaching-history, style-explanation, persona-divergence | Built |
 | 9 | lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, reader-contract-outline, results-guide, position-pair-register | Queued |
 | 10 | argument-groundtruth-check, fiction-groundtruth-check, agreement-alpha, argument-crosswalk-check, argument-agd, argument-aif-export, argument-aif-check | Queued |
 | 11 | argument-reconstruction, argument-reconstruction-draft | Queued |

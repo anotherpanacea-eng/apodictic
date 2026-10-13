@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native validator dispatcher, CB-1(a) groups 1–4, 5a, 6 and 7.
+"""Native validator dispatcher, CB-1(a) groups 1–4, 5a and 6–8.
 
 Early utilities, signals, configuration, timelines and structured checks run without Bash.
 Other commands and aggregates still belong to validate.sh until their groups land.
@@ -116,6 +116,18 @@ _ARTIFACT_PLANNING = {
     "scene-ethics": "scene_ethics.py",
 }
 COMMANDS += tuple(_ARTIFACT_PLANNING)
+_INTAKE_VOICE = {
+    "intake-interview": ("intake_interview.py", "<run_folder|files...> [--strict] | --self-test"),
+    "author-fingerprint": ("author_fingerprint.py", "<author_root|files...> [--strict] | --self-test"),
+    "content-advisory": ("content_advisory.py", "<run_folder|files...> [--strict] | --self-test"),
+    "coaching-history": (
+        "coaching_history.py",
+        "<project_root|files...> [--strict] | coaching-history delete <project_root> | --self-test",
+    ),
+    "style-explanation": ("style_explanation.py", "<author_root|files...> [--strict] | --self-test"),
+    "persona-divergence": ("persona_divergence.py", "<run_folder|files...> [--strict] | --self-test"),
+}
+COMMANDS += tuple(_INTAKE_VOICE)
 
 
 def _line(text, *, error=False):
@@ -254,6 +266,21 @@ def _artifact_planning(command, args):
     return _run_helper(script, [command, *args])
 
 
+def _intake_voice(command, args):
+    script, usage = _INTAKE_VOICE[command]
+    if args and args[0] == "--self-test":
+        return _run_helper(script, ["--self-test"])
+    if not args:
+        return _usage(command, usage)
+    if command == "coaching-history" and args[0] == "delete":
+        if len(args) < 2:
+            _line("Error: coaching-history delete requires <project_root>", error=True)
+            return 1
+        # The Bash branch retains exactly the second raw token, even if a flag.
+        return _run_helper(script, ["delete", args[1]])
+    return _run_helper(script, [command, *args])
+
+
 def _self_test(command):
     """Keep the existing pure-utility self-test output and observable assertions."""
     failed = False
@@ -315,6 +342,8 @@ def main(argv=None):
         _line("Partial migration: remaining commands and aggregates require validate.sh.")
         return 2
     command, args = args[0], args[1:]
+    if command in _INTAKE_VOICE:
+        return _intake_voice(command, args)
     if command in _ARTIFACT_PLANNING:
         return _artifact_planning(command, args)
     if command in _PLANNING_REFUTATION:

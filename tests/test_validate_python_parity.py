@@ -45,6 +45,10 @@ ARTIFACT_PLANNING = (
     "legal-risk", "promise-contract", "continuity-bible", "setup-payoff",
     "world-bible", "argument-spine", "scene-ethics",
 )
+INTAKE_VOICE = (
+    "intake-interview", "author-fingerprint", "content-advisory", "coaching-history",
+    "style-explanation", "persona-divergence",
+)
 REFERENCES = SCRIPTS.parent / "skills/core-editor/references"
 BASH = shutil.which("bash")
 
@@ -127,7 +131,7 @@ def test_byte_utilities_differential(tmp_path, payload):
         parity(*args, cwd=tmp_path)
 
 
-@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS + CONFIG_TIMELINES + STRUCTURED_INTEGRITY + RUN_INTEGRITY + PLANNING_DIFFS + REFUTATION + ARTIFACT_PLANNING)
+@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS + CONFIG_TIMELINES + STRUCTURED_INTEGRITY + RUN_INTEGRITY + PLANNING_DIFFS + REFUTATION + ARTIFACT_PLANNING + INTAKE_VOICE)
 def test_migrated_self_tests_have_identical_output(command):
     result = run_python(command, "--self-test", "ignored")
     assert result.returncode == 0
@@ -269,7 +273,7 @@ def test_letter_wrappers_ignore_extra_arguments(tmp_path, command):
     parity(command, path, "ignored", "also ignored")
 
 
-@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "intake-interview", "bogus"])
+@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "reader-instrument", "bogus"])
 def test_unported_entrypoints_do_not_claim_success(command):
     result = run_python(command)
     assert result.returncode == 2
@@ -1123,3 +1127,312 @@ def test_scene_ethics_advisory_strict_and_scoped_override(tmp_path):
     assert native_and_optional_parity("scene-ethics", path, "--strict").returncode == 1
     path.write_text("<!-- override: scene-ethics-unresolved EP-01 — public record -->\n" + text, encoding="utf-8")
     assert native_and_optional_parity("scene-ethics", path, "--strict").returncode == 0
+
+
+@pytest.mark.parametrize("command", INTAKE_VOICE)
+def test_intake_voice_raw_arguments_and_self_test_precedence(tmp_path, command):
+    for args in ((), ("",), ("--strict",), (command,), (command, command),
+                 ("--unknown",), ("--unknown", "missing"), ("--", "missing"), ("-",)):
+        assert native_and_optional_parity(command, *args, cwd=tmp_path).returncode == 2
+    for args in (("--self-test", "ignored"), ("--strict", "--self-test", "ignored")):
+        result = native_and_optional_parity(command, *args)
+        assert (result.returncode, result.stderr) == (0, b"")
+        assert result.stdout.endswith(b"Self-test: PASS\n")
+
+
+@pytest.mark.parametrize("command,inputs", [
+    ("intake-interview", ("example-intake-interview.md", "example-intake-interview-ledger.md")),
+    ("author-fingerprint", ("example-author-voice-profile.md",)),
+    ("content-advisory", ("example-content-advisory.md",)),
+    ("coaching-history", ("example-coaching-history",)),
+    ("style-explanation", ("example-author-style-explanation.md",)),
+    ("persona-divergence", ("example-persona-divergence-map.md", "example-persona-divergence-ledger.md")),
+])
+def test_intake_voice_canonical_strict_inputs(command, inputs):
+    result = native_and_optional_parity(command, *(REFERENCES / name for name in inputs), "--strict")
+    assert (result.returncode, result.stderr) == (0, b"")
+
+
+@pytest.mark.parametrize("command", INTAKE_VOICE)
+def test_intake_voice_read_and_no_artifact_distinctions(tmp_path, command):
+    for path in (tmp_path / "missing café.md", tmp_path / "bad café.md"):
+        if path.name.startswith("bad"):
+            path.write_bytes(b"\xff\xfe")
+        result = native_and_optional_parity(command, path)
+        assert (result.returncode, result.stderr) == (2, b"")
+        if command == "content-advisory":
+            assert b"no advisory artifact found" in result.stdout
+        elif command == "coaching-history":
+            assert b"no opt-in marker" in result.stdout
+        else:
+            assert b"cannot read " in result.stdout
+    assert native_and_optional_parity(command, tmp_path).returncode == 2
+
+
+@pytest.mark.parametrize("command,filename,canonical,kind,extra", [
+    ("intake-interview", "Project_Intake_Interview_r1.md", "example-intake-interview.md", "intake_query", ("example-intake-interview-ledger.md",)),
+    ("author-fingerprint", "Author_Voice_Profile_r1.md", "example-author-voice-profile.md", "voice_fingerprint", ()),
+    ("content-advisory", "Project_Content_Advisory_r1.md", "example-content-advisory.md", "content_note", ()),
+    ("persona-divergence", "Project_Persona_Divergence_Map_r1.md", "example-persona-divergence-map.md", "persona", ("example-persona-divergence-ledger.md",)),
+])
+def test_intake_voice_parsed_carrier_and_newest_discovery(tmp_path, command, filename, canonical, kind, extra):
+    folder = tmp_path / "run café"
+    folder.mkdir()
+    bad = folder / filename
+    bad.write_text(f"<!-- apodictic:{kind}\n{{\n-->\n", encoding="utf-8")
+    good = folder / filename.replace("r1", "r2")
+    good.write_bytes((REFERENCES / canonical).read_bytes())
+    optional = []
+    for name in extra:
+        ledger = folder / "Project_Findings_Ledger_r1.md"
+        ledger.write_bytes((REFERENCES / name).read_bytes())
+        optional.append(ledger)
+    prose = tmp_path / "decoy.md"
+    prose.write_text(f"Mention apodictic:{kind} without a parsed block.\n", encoding="utf-8")
+    assert native_and_optional_parity(command, prose, good, *optional, "--strict").returncode == 0
+    assert native_and_optional_parity(command, good, bad, *optional, "--strict").returncode == 0
+    assert native_and_optional_parity(command, bad, good, *optional).returncode == 1
+    os.utime(bad, (100, 100))
+    os.utime(good, (200, 200))
+    assert native_and_optional_parity(command, folder, "--strict").returncode == 0
+    os.utime(bad, (300, 300))
+    assert native_and_optional_parity(command, folder).returncode == 1
+
+
+def test_style_prefers_parsed_labels_over_newer_fingerprint_and_first_fallback(tmp_path):
+    labels = tmp_path / "Author_Style_Explanation_r1.md"
+    labels.write_bytes((REFERENCES / "example-author-style-explanation.md").read_bytes())
+    profile = tmp_path / "Author_Voice_Profile_r2.md"
+    profile.write_bytes((REFERENCES / "example-author-voice-profile.md").read_bytes())
+    os.utime(labels, (100, 100))
+    os.utime(profile, (200, 200))
+    result = native_and_optional_parity("style-explanation", tmp_path, "--strict")
+    assert result.returncode == 0 and b"4 label(s)" in result.stdout
+    assert native_and_optional_parity("style-explanation", profile, labels, "--strict").stdout == result.stdout
+    labels.unlink()
+    result = native_and_optional_parity("style-explanation", tmp_path, "--strict")
+    assert result.returncode == 0 and b"no style_label blocks" in result.stdout
+    prose = tmp_path / "plain.md"
+    prose.write_text("Plain prose.\n", encoding="utf-8")
+    for command, marker in (("style-explanation", b"no style_label"), ("author-fingerprint", b"no voice_fingerprint")):
+        result = native_and_optional_parity(command, prose, "--strict")
+        assert result.returncode == 0 and marker in result.stdout
+    assert native_and_optional_parity("content-advisory", prose).returncode == 2
+
+
+def test_advisory_folder_prose_decode_and_scoped_override(tmp_path):
+    path = tmp_path / "Project_Content_Advisory_r1.md"
+    path.write_text("<!-- content-advisory: opted-in -->\nYou should cut this scene.\n", encoding="utf-8")
+    assert native_and_optional_parity("content-advisory", path).returncode == 2
+    result = native_and_optional_parity("content-advisory", tmp_path)
+    assert result.returncode == 0 and b"W1 prescriptive drift" in result.stdout
+    assert native_and_optional_parity("content-advisory", tmp_path, "--strict").returncode == 1
+    text = path.read_text(encoding="utf-8")
+    path.write_text("<!-- override: advisory-eval CN-01 — scoped elsewhere -->\n" + text, encoding="utf-8")
+    assert native_and_optional_parity("content-advisory", tmp_path, "--strict").returncode == 1
+    path.write_text("<!-- override: advisory-eval-prose — requested wording -->\n" + text, encoding="utf-8")
+    assert native_and_optional_parity("content-advisory", tmp_path, "--strict").returncode == 0
+    path.write_bytes(b"\xff\xfe")
+    result = native_and_optional_parity("content-advisory", tmp_path)
+    assert result.returncode == 2 and b"cannot read " in result.stdout
+
+
+def test_intake_optional_ledger_order_degradation_and_duplicate_override(tmp_path):
+    query = tmp_path / "query.md"
+    query.write_bytes((REFERENCES / "example-intake-interview.md").read_bytes())
+    ledger = tmp_path / "ledger.md"
+    ledger.write_bytes((REFERENCES / "example-intake-interview-ledger.md").read_bytes())
+    good = native_and_optional_parity("intake-interview", query, ledger, "--strict")
+    assert native_and_optional_parity("intake-interview", ledger, query, "--strict").stdout == good.stdout
+    bad = tmp_path / "bad.md"
+    bad.write_bytes(b"\xff\xfe")
+    for args in ((query,), (query, bad)):
+        result = native_and_optional_parity("intake-interview", *args, "--strict")
+        assert result.returncode == 1 and b"I3 grounded" in result.stdout
+    assert native_and_optional_parity("intake-interview", query, bad, ledger, "--strict").returncode == 0
+    edit_artifact_block(query, "intake_query", lambda obj: obj.update(question="What is the genre?"))
+    assert native_and_optional_parity("intake-interview", query, ledger).returncode == 0
+    assert native_and_optional_parity("intake-interview", query, ledger, "--strict").returncode == 1
+    query.write_text("<!-- override: intake-dup IQ-01 — author requested -->\n" + query.read_text(encoding="utf-8"), encoding="utf-8")
+    assert native_and_optional_parity("intake-interview", query, ledger, "--strict").returncode == 0
+
+
+def test_persona_local_only_timeline_optional_inputs_and_severity_lock(tmp_path):
+    folder = tmp_path / "run"
+    folder.mkdir()
+    path = folder / "Project_Persona_Divergence_Map_r1.md"
+    path.write_bytes((REFERENCES / "example-persona-divergence-map.md").read_bytes())
+    edit_artifact_block(path, "divergence", lambda obj: (obj.update(anchor="Ch 1 §2"), obj.pop("asserted_severity", None)))
+    parent = tmp_path / "Timeline.md"
+    parent.write_bytes((REFERENCES / "example-timeline.md").read_bytes())
+    result = native_and_optional_parity("persona-divergence", folder, "--strict")
+    assert result.returncode == 1 and b"D2 grounded" in result.stdout
+    assert native_and_optional_parity("persona-divergence", parent, path, "--strict").returncode == 0
+    local = folder / "Timeline.md"
+    local.write_bytes(parent.read_bytes())
+    assert native_and_optional_parity("persona-divergence", folder, "--strict").returncode == 0
+    edit_artifact_block(path, "divergence", lambda obj: obj.update(asserted_severity="Must-Fix"))
+    result = native_and_optional_parity("persona-divergence", folder, "--strict")
+    assert result.returncode == 1 and b"no locked Ledger severity" in result.stdout
+    path.write_bytes((REFERENCES / "example-persona-divergence-map.md").read_bytes())
+    bad_ledger = folder / "Project_Findings_Ledger_r1.md"
+    bad_ledger.write_bytes(b"\xff\xfe")
+    assert native_and_optional_parity("persona-divergence", folder).returncode == 1
+    bad_ledger.write_bytes((REFERENCES / "example-persona-divergence-ledger.md").read_bytes())
+    assert native_and_optional_parity("persona-divergence", folder, "--strict").returncode == 0
+
+
+@pytest.mark.parametrize("command,canonical,marker,warning", [
+    ("author-fingerprint", "example-author-voice-profile.md", "<!-- author-voice-profile: local-only -->", b"W2 local-only"),
+    ("style-explanation", "example-author-style-explanation.md", "<!-- author-style-explanation: local-only -->", b"X6 local-only"),
+])
+def test_voice_local_only_warnings_remain_nonblocking_strict(tmp_path, command, canonical, marker, warning):
+    path = tmp_path / "voice café.md"
+    path.write_text((REFERENCES / canonical).read_text(encoding="utf-8").replace(marker, "") + "\nhttps://example.invalid/profile\n", encoding="utf-8")
+    result = native_and_optional_parity(command, path, "--strict")
+    assert result.returncode == 0 and warning in result.stdout
+
+
+def test_coaching_delete_missing_target_preserves_exit_stdout_with_named_stderr():
+    native = run_python("coaching-history", "delete")
+    assert (native.returncode, native.stdout, native.stderr) == (
+        1, b"", b"Error: coaching-history delete requires <project_root>\n",
+    )
+    if BASH is not None:
+        legacy = subprocess.run([BASH, str(BASH_CLI), "coaching-history", "delete"], capture_output=True, timeout=60)
+        assert (legacy.returncode, legacy.stdout) == (1, b"")
+        assert legacy.stderr  # Shell source-path/line diagnostics are deliberately not emulated.
+
+
+@pytest.mark.parametrize("raw,expected", [
+    (("delete", "--self-test", "absent"), 0),
+    (("delete", "absent", "--self-test"), 2),
+    (("delete", "--strict", "absent"), 2),
+    (("delete", "absent", "extra"), 2),
+    (("coaching-history", "delete", "absent"), 2),
+    (("--strict", "delete", "absent"), 2),
+    (("delete", "coaching-history", "absent"), 2),
+    (("delete", "", "absent"), 2),
+])
+def test_coaching_first_delete_truncation_and_helper_filtering(tmp_path, raw, expected):
+    result = native_and_optional_parity("coaching-history", *raw, cwd=tmp_path)
+    assert result.returncode == expected and result.stderr == b""
+
+
+def tree_contents(root):
+    return {
+        str(p.relative_to(root)): (p.stat().st_mode & 0o777, p.read_bytes() if p.is_file() else None)
+        for p in sorted(root.rglob("*"))
+    }
+
+
+@pytest.mark.parametrize("malformed", [False, True])
+def test_coaching_delete_effects_residue_idempotence_and_partial_failure(tmp_path, malformed):
+    project = tmp_path / "project café"
+    def restore():
+        if project.exists():
+            shutil.rmtree(project)
+        (project / "nested/deep").mkdir(parents=True)
+        (project / "Diagnostic_State.md").write_text("<!-- coaching-history: opted-in -->\n", encoding="utf-8")
+        for name in ("First_Coaching_History_r1.md", "nested/deep/Second_Coaching_History_r2.md"):
+            (project / name).write_text("# History\n", encoding="utf-8")
+        (project / "projection.md").write_text("<!-- apodictic:coaching_observation\n{}\n-->\n", encoding="utf-8")
+        sidecar = {"coaching_history_seq": 1, "nested": [{"coaching_history_seq": 2, "keep": "yes"}], "keep": "value"}
+        (project / "Diagnostic_State.meta.json").write_text("{broken" if malformed else json.dumps(sidecar), encoding="utf-8")
+        for p in project.rglob("*"):
+            p.chmod(0o750 if p.is_dir() else 0o640)
+    restore()
+    before = tree_contents(project)
+    native = run_python("coaching-history", "delete", project, "--self-test", "ignored")
+    after = tree_contents(project)
+    assert native.returncode == (1 if malformed else 0) and native.stderr == b""
+    assert not list(project.rglob("*_Coaching_History_*.md"))
+    assert after["projection.md"] == before["projection.md"]
+    if malformed:
+        assert after["Diagnostic_State.md"] == before["Diagnostic_State.md"]
+        assert after["Diagnostic_State.meta.json"] == before["Diagnostic_State.meta.json"]
+    else:
+        assert json.loads((project / "Diagnostic_State.meta.json").read_text()) == {"nested": [{"keep": "yes"}], "keep": "value"}
+        assert b"coaching-history: deleted" in after["Diagnostic_State.md"][1]
+        recompute = run_python("coaching-history", project, "--strict")
+        assert recompute.returncode == 1 and b"H6" in recompute.stdout
+        repeated = run_python("coaching-history", "delete", project)
+        assert repeated.returncode == 0 and tree_contents(project) == after
+        (project / "projection.md").unlink()
+        clean = run_python("coaching-history", project, "--strict")
+        assert clean.returncode == 0 and b"PASS" in clean.stdout
+    if BASH is not None:
+        restore()
+        assert tree_contents(project) == before
+        legacy = subprocess.run([BASH, str(BASH_CLI), "coaching-history", "delete", str(project), "--self-test", "ignored"], capture_output=True, timeout=60)
+        assert (legacy.returncode, legacy.stdout, legacy.stderr) == (native.returncode, native.stdout, native.stderr)
+        assert tree_contents(project) == after
+        if not malformed:
+            check = subprocess.run([BASH, str(BASH_CLI), "coaching-history", str(project), "--strict"], capture_output=True, timeout=60)
+            assert (check.returncode, check.stdout, check.stderr) == (recompute.returncode, recompute.stdout, recompute.stderr)
+            repeat = subprocess.run([BASH, str(BASH_CLI), "coaching-history", "delete", str(project)], capture_output=True, timeout=60)
+            assert (repeat.returncode, repeat.stdout, repeat.stderr) == (repeated.returncode, repeated.stdout, repeated.stderr)
+            assert tree_contents(project) == after
+
+
+def test_coaching_warning_order_same_seed_strict_url_and_residue_override(tmp_path):
+    history = tmp_path / "Project_Coaching_History_r1.md"
+    history.write_text("# History\n", encoding="utf-8")
+    (tmp_path / "Diagnostic_State.md").write_text("<!-- coaching-history: opted-in -->\n", encoding="utf-8")
+    notes = tmp_path / "notes.md"
+    notes.write_text("CH-01 CH-02 CH-03 CH-04 CH-05\n", encoding="utf-8")
+    for seed in ("1", "2", "3"):
+        env = dict(os.environ, PYTHONHASHSEED=seed)
+        result = native_and_optional_parity("coaching-history", tmp_path, env=env)
+        assert result.returncode == 0 and b"bare" in result.stdout
+        assert native_and_optional_parity("coaching-history", tmp_path, "--strict", env=env).returncode == 1
+    notes.write_text("<!-- override: coaching-residue CH-99 — unrelated -->\nCH-01\n", encoding="utf-8")
+    assert native_and_optional_parity("coaching-history", tmp_path, "--strict").returncode == 1
+
+    notes.write_text("<!-- override: coaching-residue CH-01 — discussion only -->\nCH-01\n", encoding="utf-8")
+    assert native_and_optional_parity("coaching-history", tmp_path, "--strict").returncode == 0
+    notes.unlink()
+    history.write_text("# History\nhttps://example.invalid/profile\n", encoding="utf-8")
+    result = native_and_optional_parity("coaching-history", tmp_path)
+    assert result.returncode == 0 and b"W1 local-only" in result.stdout
+    assert native_and_optional_parity("coaching-history", tmp_path, "--strict").returncode == 1
+
+
+def test_coaching_root_sidecar_consent_order_and_recursive_newest_selection(tmp_path):
+    project = tmp_path / "project"
+    shutil.copytree(REFERENCES / "example-coaching-history", project)
+    history = next(project.glob("*_Coaching_History_*.md"))
+    state = project / "Diagnostic_State.md"
+    sidecar = project / "Diagnostic_State.meta.json"
+    assert native_and_optional_parity("coaching-history", project, "--strict").returncode == 0
+    outside = tmp_path / "outside.json"
+    outside.write_text("{broken", encoding="utf-8")
+    assert native_and_optional_parity("coaching-history", history, outside, "--strict").returncode == 0
+    original_state, original_sidecar = state.read_bytes(), sidecar.read_bytes()
+    # A present malformed local sidecar fails before absent consent; extra paths do not replace it.
+    state.write_text("# State\n", encoding="utf-8")
+    history_text = history.read_text(encoding="utf-8")
+    history.write_text(history_text.replace("<!-- coaching-history: opted-in -->", ""), encoding="utf-8")
+    sidecar.write_text("{broken", encoding="utf-8")
+    result = native_and_optional_parity("coaching-history", history, outside)
+    assert result.returncode == 1 and b"H0 unparseable sidecar" in result.stdout
+    sidecar.write_bytes(original_sidecar)
+    assert native_and_optional_parity("coaching-history", history).returncode == 2
+    state.write_bytes(original_state + b"\n<!-- coaching-history: deleted -->\n")
+    result = native_and_optional_parity("coaching-history", project)
+    assert result.returncode == 1 and b"consent contradiction" in result.stdout
+    state.write_bytes(original_state)
+    history.write_text(history_text, encoding="utf-8")
+    nested = project / "nested/deep"
+    nested.mkdir(parents=True)
+    bad = nested / "Second_Coaching_History_r2.md"
+    bad.write_text("<!-- apodictic:coaching_observation\n{\n-->\n", encoding="utf-8")
+    os.utime(history, (100, 100))
+    os.utime(bad, (200, 200))
+    selected = native_and_optional_parity("coaching-history", project)
+    assert selected.returncode == 1 and b"H1 schema" in selected.stdout
+    explicit = native_and_optional_parity("coaching-history", history, bad)
+    assert explicit.returncode == 1 and b"H1 schema" not in explicit.stdout
+    # Explicit first carrier moves the consent/sidecar root to its own directory.
+    reverse = native_and_optional_parity("coaching-history", bad, history)
+    assert reverse.returncode == 2 and b"no opt-in marker" in reverse.stdout
