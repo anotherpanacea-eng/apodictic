@@ -1,0 +1,425 @@
+{
+  "version": 1,
+  "validators": [
+    {
+      "id": "contract-hash",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "contract-hash validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "contract-check",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "contract-check validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "ledger-check",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "ledger-check validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "artifact-names",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "artifact-names validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "synthesis-sections",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "synthesis-sections validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "tone-check",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "tone-check validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "state-lines",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "state-lines validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "severity-floor",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "severity-floor validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "audit-signal-propagation",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "audit-signal-propagation validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "underdiagnosis-triggers",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "underdiagnosis-triggers validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "ledger-consolidation",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "ledger-consolidation validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "decision-layer-check",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "decision-layer-check validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "author-facing-lint",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "author-facing-lint validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "quality-risk-triggers",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "quality-risk-triggers validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "cost-floor",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "cost-floor validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "timeline-diff",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "timeline-diff validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "timeline-arithmetic",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "timeline-arithmetic validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "timeline-anchor-conflict",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "timeline-anchor-conflict validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "audit-tier-criterion",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "audit-tier-criterion validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "pass-header",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "pass-header validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "argument-recon-prerequisite",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "argument-recon-prerequisite validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "structured-findings",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "structured-findings validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "softness-check",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "softness-check validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "deficit-lock",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "deficit-lock validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "artifacts-schema",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "artifacts-schema validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "gate",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "gate validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "gate-state",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "gate-state validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "finding-trace",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "finding-trace validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "escalation-check",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "escalation-check validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "feedback-triage",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "feedback-triage validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "editor-scaffolding",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "editor-scaffolding validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "diagnostic-vocabulary",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "diagnostic-vocabulary validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "retcon-plan",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "retcon-plan validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "state-card-diff",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "state-card-diff validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "revision-arc",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "revision-arc validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "regression-diff",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "regression-diff validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "legal-risk",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "legal-risk validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "promise-contract",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "promise-contract validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "continuity-bible",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "continuity-bible validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "setup-payoff",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "setup-payoff validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "world-bible",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "world-bible validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "intake-interview",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "intake-interview validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "author-fingerprint",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "author-fingerprint validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "content-advisory",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "content-advisory validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "coaching-history",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "coaching-history validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "style-explanation",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "style-explanation validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "persona-divergence",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "persona-divergence validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "argument-spine",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "argument-spine validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "scene-ethics",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "scene-ethics validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "argument-groundtruth-check",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "argument-groundtruth-check validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "fiction-groundtruth-check",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "fiction-groundtruth-check validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "agreement-alpha",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "agreement-alpha validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "argument-crosswalk-check",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "argument-crosswalk-check validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "argument-agd",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "argument-agd validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "argument-aif-check",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "argument-aif-check validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "argument-reconstruction",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "argument-reconstruction validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "argument-reconstruction-draft",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "argument-reconstruction-draft validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "registry-check",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "registry-check validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "schema-coverage",
+      "desktop_disposition": "ci-only",
+      "omitted_capability": "schema-coverage is a source/repository check excluded from desktop."
+    },
+    {
+      "id": "lifecycle-node",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "lifecycle-node validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "reader-instrument",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "reader-instrument validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "manuscript-viz",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "manuscript-viz validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "annotated-manuscript",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "annotated-manuscript validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "crosslink",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "crosslink validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "reanchor",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "reanchor validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "roundtrip-disposition",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "roundtrip-disposition validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "disposition-check",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "disposition-check validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "synthesis-coverage",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "synthesis-coverage validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "dispatch-record",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "dispatch-record validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "specificity-floor",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "specificity-floor validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "refutation-coverage",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "refutation-coverage validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "refutation-evidence",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "refutation-evidence validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "refutation-write-scope",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "refutation-write-scope validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "obsidian-export",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "obsidian-export validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "html-export",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "html-export validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "docx-export",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "docx-export validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "pdf-export",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "pdf-export validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "results-guide",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "results-guide validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "position-pair-register",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "position-pair-register validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "reader-contract-outline",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "reader-contract-outline validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "calibration-honesty",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "calibration-honesty validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "stance-calibration",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "stance-calibration validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
+      "id": "validator-conventions",
+      "desktop_disposition": "ci-only",
+      "omitted_capability": "validator-conventions is a source/repository check excluded from desktop."
+    },
+    {
+      "id": "argument-carve-behavior-preservation",
+      "desktop_disposition": "ci-only",
+      "omitted_capability": "argument-carve-behavior-preservation is a source/repository check excluded from desktop."
+    }
+  ]
+}

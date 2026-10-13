@@ -2149,6 +2149,8 @@ def run(paths, strict=False, require_block=False):
 # ---------------------------------------------------------------- self-test
 
 def run_self_test():
+    from contextlib import redirect_stdout
+    from io import StringIO
     import json as _j
     import tempfile
     import shutil
@@ -2326,8 +2328,16 @@ def run_self_test():
     with open(rev_man, "w", encoding="utf-8", newline="") as fh: fh.write(manifest(scenes=rev_scenes))
     with open(ok_man, "w", encoding="utf-8", newline="") as fh: fh.write(manifest())
     chk("render_refuses_reordered", main(["x", "render", rev_man, tlp, ldp, "-o", out]) == 1)
-    chk("render_force_reordered", main(["x", "render", rev_man, tlp, ldp, "-o", out, "--force"]) == 0)
-    chk("render_in_order_ok", main(["x", "render", ok_man, tlp, ldp, "-o", out]) == 0)
+    rendered_stdout = StringIO()
+    with redirect_stdout(rendered_stdout):
+        rendered_rc = main(["x", "render", rev_man, tlp, ldp, "-o", out, "--force"])
+    chk("render_force_reordered", rendered_rc == 0 and
+        rendered_stdout.getvalue() == "manuscript-viz: rendered %s\n" % out)
+    rendered_stdout = StringIO()
+    with redirect_stdout(rendered_stdout):
+        rendered_rc = main(["x", "render", ok_man, tlp, ldp, "-o", out])
+    chk("render_in_order_ok", rendered_rc == 0 and
+        rendered_stdout.getvalue() == "manuscript-viz: rendered %s\n" % out)
 
     # ============================================================================================
     # Chart 7-nonfiction — the claim ladder (X1/X5/X6/X7/X8 + W3). Exercised on a canonical

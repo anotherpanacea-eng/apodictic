@@ -1,0 +1,3 @@
+### Native intake, voice and coaching validator routes
+
+Added six native Python routes for intake interviews, author fingerprints, content advisories, coaching history, style explanations and persona divergence. Existing helpers retain discovery, consent, strictness, overrides and filesystem behavior, including coaching deletion's exact argument truncation and non-atomic refusal. Missing deletion targets preserve the shell's exit/stdout contract with a named native stderr diagnostic. Raw parity, temporary deletion effects and PATH-empty execution are covered; gate/aggregate cutover remains pending.
