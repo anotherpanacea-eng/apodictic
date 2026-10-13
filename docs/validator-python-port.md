@@ -1,6 +1,7 @@
 # Native Python validator migration
 
-**Status:** Groups 1–4, 5a and 6 built; the gate pair and groups 7–14 queued. The Bash dispatcher remains the
+**Status:** Groups 1–4, 5a and 6 built; self-test output stabilized. The gate pair
+and groups 7–14 remain queued. The Bash dispatcher remains the
 full validator entrypoint during this migration.
 <!-- built-when: plugins/apodictic/scripts/validate.py -->
 
@@ -72,8 +73,8 @@ Specificity's named unreadable/non-UTF-8 errors remain blocking usage failures.
 `gate` and `gate-state` remain unported. Their shared helper still launches Bash
 for child checks and its shared self-test. The gate manifest has 18 unique child
 validators; 15 are native after 5a and Group 6 supplies the final three refutation
-routes. A separate increment after Group 6 will address both the live and
-self-test launchers together under a fresh scope and independent review.
+routes. The launcher transition remains held for the coordinated Group 14
+cutover under a fresh scope and independent review.
 
 Group 6 adds `retcon-plan`, `state-card-diff`, `revision-arc`, `regression-diff`,
 `refutation-coverage`, `refutation-evidence` and `refutation-write-scope`.
@@ -87,8 +88,11 @@ No generic wrapper flag parser or filesystem preflight is added.
 
 All 18 official gate child validators now have native routes. Both gate surfaces
 still require the separate launcher transition; child availability alone does
-not make them native. A separately scoped self-test output stabilizer for
-specificity/refutation is queued before that gate increment.
+not make them native. Custom manifests can reach other commands such as
+`schema-coverage` and aggregate switches that remain unported. Changing the
+shared Bash gate default now would regress those existing calls. Groups 7–13
+follow the self-test stabilizer; full aggregate dispatch and gate migration stay
+coordinated in Group 14 unless a separate reviewed design preserves all behavior.
 
 Exit codes remain 0 for success, 1 for a validation failure, and 2 for usage or an
 invalid/inaccessible input path. For the three raw-byte utilities, a regular file
@@ -104,14 +108,17 @@ partial-migration message. Python does not fall back to Bash.
 ## Differential acceptance
 
 `tests/test_validate_python_parity.py` compares exit codes and stdout bytes against
-the independent Bash dispatcher without output normalization. The existing
-specificity-floor self-test prints a random temporary directory in two read-error
-messages. The shared refutation self-test prints one such path in its named
-decode-error message, affecting all three refutation command surfaces. Repeated
-Bash runs alone differ. These four surfaces independently require native and Bash
-exit 0, named fail-closed checks and `Self-test: PASS`; their self-test stdout is
-explicitly excluded from exact-output equivalence. Real inputs, including named
-decode errors, compare exact bytes. No output normalization is used.
+the independent Bash dispatcher without output normalization. All 41 migrated
+self-test surfaces now compare exact stdout bytes, including specificity and
+the three shared refutation routes. Their self-tests formerly printed random
+temporary paths while exercising expected negative CLI reads. The separate
+stabilizer captures only those three internal calls, asserts exit 2 and the
+complete named role/path boundary and read/decode reason, and rejects false PASS
+output. Reason, line-count and PASS checks inspect only the payload after the
+complete expected role/path and delimiter, preserving valid temporary roots
+containing PASS, BYPASS or newlines. The named fail-closed checks and complete
+suites still run. Ordinary
+commands, including their named decode errors, retain byte-identical output.
 Application-generated
 stderr bytes are compared exactly except for the accepted logical/physical cwd
 prefix limitation noted below. For shell/OS-generated read-redirection
@@ -141,13 +148,14 @@ When Bash is absent, differential-only cases are explicitly skipped. Native
 checks still run; this is not full native Windows acceptance. The final acceptance
 requires the whole Python `--check-all` suite green on `windows-latest` and exact
 differential results over every command self-test and all validator fixtures.
-Before claiming every self-test's exact-output equivalence, the specificity and
-refutation helpers' random-path output must be stabilized under a separately
-approved scope. Until then these remain explicit unresolved limitations. The
-planned small stabilizer captures expected negative CLI diagnostics inside their
-self-tests while asserting content/status, preserves real command output and
-restores all four exact self-test comparisons. It requires its own grant/review
-before the separate gate launcher transition.
+The final independent pre-cutover Bash reference includes the separately reviewed
+specificity/refutation helper stabilization. Its intentional self-test-only
+output change removes the two specificity fixture diagnostic lines and the one
+shared refutation fixture diagnostic line; no pre-stabilization self-test
+byte-equivalence claim is made. Output from readable-empty and other checks,
+ordinary helper dispatch and unrelated exception propagation remain unchanged.
+The shared refutation suite retains an unrelated synthetic-JSON failure when a
+temporary-root path contains a newline; its negative read checks still pass.
 
 Group 3 adds eight self-test routes, all 15 applicable shipped timeline fixtures,
 canonical config/timeline inputs and temporary strict/default/optional-file and
@@ -173,8 +181,8 @@ Group 6 adds seven helper self-test surfaces, canonical plans/cards/arc, single
 and paired regression rounds, canonical refutation inputs and temporary hostile
 records. Controls cover planning discovery, parsed carriers, ledger precedence,
 advisory/strict behavior, positional refutation flags, optional/required snapshots,
-containment and named decode errors. Of 41 migrated command self-test surfaces,
-37 compare exact stdout bytes and four carry the disclosed inherited exception.
+containment and named decode errors. All 41 migrated command self-test surfaces
+now compare exact stdout bytes after the separate helper stabilizer.
 All 73 earlier validator fixture cases remain intact.
 
 ## Continuation groups
@@ -191,8 +199,9 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | 3 | quality-risk-triggers, cost-floor, audit-tier-criterion, pass-header, argument-recon-prerequisite, timeline-diff, timeline-arithmetic, timeline-anchor-conflict | Built |
 | 4 | structured-findings, softness-check, deficit-lock, artifacts-schema, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary | Built |
 | 5a | escalation-check, dispatch-record, disposition-check, synthesis-coverage, specificity-floor | Built |
-| 5b | gate, gate-state; coherent live/shared-self-test nested launcher transition | Deferred pending separate self-test stabilizer and launcher scope; all 18 children now available |
+| 5b | gate, gate-state; coherent live/shared-self-test nested launcher transition | Held for coordinated Group 14; official children available, custom/aggregate dispatch still incomplete |
 | 6 | retcon-plan, state-card-diff, revision-arc, regression-diff, refutation-coverage, refutation-evidence, refutation-write-scope | Built |
+| Self-test stability | Specificity/refutation expected-negative diagnostic capture and four restored exact-output surfaces | Built |
 | 7 | legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, argument-spine, scene-ethics | Queued |
 | 8 | intake-interview, author-fingerprint, content-advisory, coaching-history, style-explanation, persona-divergence | Queued |
 | 9 | lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, reader-contract-outline, results-guide, position-pair-register | Queued |

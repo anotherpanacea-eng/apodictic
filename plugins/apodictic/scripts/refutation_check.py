@@ -657,6 +657,8 @@ def _read_file(path, what):
 # ------------------------------------------------------------------ self-test
 
 def run_self_test():
+    import io
+    from contextlib import redirect_stdout
     import shutil
     import tempfile
     rc = {"v": 0}
@@ -680,8 +682,16 @@ def run_self_test():
         check("non_utf8_read_file_named_error",
               _read_file(_nu, "editorial letter")[0] is None
               and "cannot read editorial letter" in (_read_file(_nu, "editorial letter")[1] or ""))
+        error_stdout = io.StringIO()
+        with redirect_stdout(error_stdout):
+            error_code = main(["refutation_check.py", "refutation-coverage", _nu, _ok, _ok])
+        diagnostic = error_stdout.getvalue()
+        error_prefix = "Error: cannot read editorial letter %s: " % _nu
+        error_payload = diagnostic[len(error_prefix):] if diagnostic.startswith(error_prefix) else ""
         check("non_utf8_coverage_cli_degrades",
-              main(["refutation_check.py", "refutation-coverage", _nu, _ok, _ok]) == 2)
+              error_code == 2
+              and "utf-8" in error_payload and "decode" in error_payload
+              and error_payload.count("\n") == 1 and "PASS" not in error_payload)
     finally:
         shutil.rmtree(_nud)
 
