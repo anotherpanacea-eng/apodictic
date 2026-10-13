@@ -1,7 +1,7 @@
 # Native Python validator migration
 
-**Status:** Groups 1–4, 5a and 6–12 built; self-test output stabilized. The gate pair
-and groups 13–14 remain queued. The Bash dispatcher remains the
+**Status:** Groups 1–4, 5a and 6–13 built; self-test output stabilized. The gate pair
+and Group 14 remain queued. The Bash dispatcher remains the
 full validator entrypoint during this migration.
 <!-- built-when: plugins/apodictic/scripts/validate.py -->
 
@@ -151,8 +151,8 @@ partial-migration message. Python does not fall back to Bash.
 ## Differential acceptance
 
 `tests/test_validate_python_parity.py` compares exit codes and stdout bytes against
-the independent Bash dispatcher without output normalization. All 64 migrated
-self-test surfaces now compare exact stdout bytes, including specificity and
+the independent Bash dispatcher without output normalization. All migrated
+self-test surfaces compare exact stdout bytes, including specificity and
 the three shared refutation routes. Their self-tests formerly printed random
 temporary paths while exercising expected negative CLI reads. The separate
 stabilizer captures only those three internal calls, asserts exit 2 and the
@@ -311,6 +311,46 @@ linked PDF keeps its separate normal-run authentication and reports that reader
 behavior is unqualified. The aggregate gate, complete historical scanner reach,
 native Windows acceptance and cutover remain Group 14 work.
 
+Group 13 adds `registry-check`, `schema-coverage`, `validator-conventions`,
+`calibration-honesty`, `stance-calibration` and
+`argument-carve-behavior-preservation`. The five helper routes preserve their
+exact command prefixes, original ordinary tokens and distinct raw arities.
+First-position selftests forward only that flag; helper-owned late selftests
+retain wrapper arity checks. All six reproduce the Bash `--internal-links*`
+refusal before shortage, selftest or repository-fixture selection. Earlier
+routes' global scanner reach remains Group 14 work.
+
+Conventions first-selftest executes all twelve actual shared override-marker CLI
+checks with their original UTF-8 bodies before the full existing meta-lint suite.
+Logical mismatches accumulate and prevent that suite; companion launch failures
+return their actual status. Late selftest runs the helper suite alone. Both
+meta-lint and schema coverage still inspect the shipped Bash dispatcher/parts;
+routing them natively does not migrate source introspection or aggregates.
+
+Carve remains a repository-only summary smoke. It selects the first of the two
+existing lexical fixture directories, skips when neither exists, and preserves
+ordinary first-missing versus selftest all-missing reporting. It executes the
+actual native propagation and decision children, serially capturing each child,
+reading its golden, then comparing. A nonzero child immediately returns that
+status with child streams captured/suppressed and only prior outer rows retained.
+An unavailable golden read stops at that phase with rc1 and a named native read
+error; only the shell/OS-generated `cat` stderr wording differs. Comparison drift
+permits the next pair, but a later execution/read failure prevents the final row.
+Successful comparisons retain LF-tail selection before NUL removal and
+trailing-LF-only substitution, preserving CR, spaces, embedded LF and non-UTF-8
+golden diagnostic bytes. The smoke does not establish field-level or editorial
+behavior preservation.
+
+Public copied fixtures cover both candidates, skips and missing files, raw goldens,
+real child failure and matching failure-summary false-PASS controls, unreadable
+first/second goldens and drift followed by later failure. Complete raw streams and
+copied membership/bytes/modes are checked; permission assertions skip explicitly
+if the host can bypass mode restrictions. Native empty-PATH checks run the real
+helpers/companions/children. Active Python remains required: missing native
+helpers retain launch failures, rather than Bash's advisory skip or degraded
+selftest PASS. Existing helper-owned degraded outcomes remain unchanged. Full
+native Windows, aggregates and cutover stay held for Group 14.
+
 ## Continuation groups
 
 These provisional groups give each subsequent increment its own PR. Refresh the
@@ -334,7 +374,7 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | 10 | argument-groundtruth-check, fiction-groundtruth-check, agreement-alpha, argument-crosswalk-check, argument-agd, argument-aif-export, argument-aif-check | Built |
 | 11 | argument-reconstruction, argument-reconstruction-draft | Built |
 | 12 | obsidian-export, html-export, docx-export, pdf-export | Built |
-| 13 | registry-check, schema-coverage, validator-conventions, calibration-honesty, stance-calibration, argument-carve-behavior-preservation | Queued |
+| 13 | registry-check, schema-coverage, validator-conventions, calibration-honesty, stance-calibration, argument-carve-behavior-preservation | Built |
 | 14 | Native aggregate/canonical workflow, complete usage routing, Bash shim cutover, references, and native Windows full-suite acceptance | Queued |
 
 Groups 2–13 preserve wrapper-specific optional/default arguments, strict flags,

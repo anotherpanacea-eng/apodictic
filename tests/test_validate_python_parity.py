@@ -285,7 +285,7 @@ def test_letter_wrappers_ignore_extra_arguments(tmp_path, command):
     parity(command, path, "ignored", "also ignored")
 
 
-@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "registry-check", "bogus"])
+@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "gate", "bogus"])
 def test_unported_entrypoints_do_not_claim_success(command):
     result = run_python(command)
     assert result.returncode == 2
@@ -2341,3 +2341,302 @@ def test_pdf_linked_mode_authenticates_and_checks_existing_artifact(tmp_path):
     artifact.write_bytes(before[:-1] + b"X")
     tampered = parity("pdf-export", tmp_path, "--internal-links")
     assert tampered.returncode == 1 and b"P1 artifact integrity" in tampered.stdout
+
+
+REPOSITORY_INTEGRITY = (
+    'registry-check', 'schema-coverage', 'validator-conventions',
+    'calibration-honesty', 'stance-calibration', 'argument-carve-behavior-preservation',
+)
+
+
+@pytest.mark.parametrize('command', REPOSITORY_INTEGRITY)
+def test_repository_integrity_real_selftests_and_empty_path(command):
+    result = native_and_optional_parity(command, '--self-test', 'discarded')
+    assert result.returncode == 0
+    env = {**os.environ, 'PATH': '', 'PYTHONUTF8': '1', 'PYTHONIOENCODING': 'utf-8'}
+    native = run_python(command, '--self-test', 'discarded', env=env)
+    assert (native.returncode, native.stdout, native.stderr) == (result.returncode, result.stdout, result.stderr)
+    if command == 'validator-conventions':
+        assert native.stdout.startswith(b'  ho_genuine_emdash: OK (found)\n')
+        assert b'  ho_multiline_inline_decoy: OK (miss)\n' in native.stdout
+        late = parity(command, 'ignored', '--self-test')
+        assert late.returncode == 0 and b'  ho_' not in late.stdout
+
+
+@pytest.mark.parametrize('command', REPOSITORY_INTEGRITY)
+@pytest.mark.parametrize('args', [('--internal-links',), ('--internal-links=true',),
+                                  ('--self-test', '--internal-links'),
+                                  ('--', '--internal-links'), ('--internal-links', '--internal-links')])
+def test_repository_integrity_scanner_before_every_route(command, args):
+    result = parity(command, *args)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        2, b'pdf-export: usage: pdf-export <run_folder> --internal-links (once)\n', b'')
+
+
+@pytest.mark.parametrize('command,args,rc', [
+    ('registry-check', (), 2), ('registry-check', ('--strict',), 2),
+    ('registry-check', ('missing',), 2), ('registry-check', ('missing', '--self-test'), 0),
+    ('schema-coverage', (), 0), ('schema-coverage', ('--strict',), 0),
+    ('schema-coverage', ('--check-docs',), 0), ('schema-coverage', ('--check-docs', '--unknown'), 0),
+    ('schema-coverage', ('missing',), 2), ('schema-coverage', ('missing', '--self-test'), 0),
+    ('validator-conventions', (), 0), ('validator-conventions', ('ignored', '--strict'), 0),
+    ('calibration-honesty', (), 2), ('calibration-honesty', ('--strict',), 2),
+    ('calibration-honesty', ('missing',), 2), ('calibration-honesty', ('missing', '--self-test'), 0),
+    ('stance-calibration', (), 2), ('stance-calibration', ('missing', '--self-test'), 2),
+    ('stance-calibration', ('missing', '--self-test', 'extra'), 0),
+    ('stance-calibration', ('missing', 'extra', '--argument-state'), 2),
+])
+def test_repository_integrity_raw_wrapper_boundaries(command, args, rc):
+    assert parity(command, *args).returncode == rc
+
+
+@pytest.mark.parametrize('payload,rc', [(b'{', 1), (b'[]', 1), (b'\xff', 2),
+    (b'{"schema":"apodictic.project_registry.v1","projects":[]}', 0)])
+def test_registry_public_shape_reads_and_first_path(tmp_path, payload, rc):
+    workspace = tmp_path / 'workspace café'
+    registry = workspace / '.apodictic/registry.json'
+    registry.parent.mkdir(parents=True)
+    registry.write_bytes(payload)
+    for args in ((workspace,), (registry,), ('registry-check', registry, 'ignored'),
+                 ('--unknown', registry, '--strict', 'ignored')):
+        assert parity('registry-check', *args).returncode == rc
+    assert parity('registry-check', 'missing', registry).returncode == 2
+
+
+def test_schema_public_directory_and_docs_modes(tmp_path):
+    schemas = tmp_path / 'schemas'
+    schemas.mkdir()
+    assert parity('schema-coverage', schemas).returncode == 1
+    (schemas / '_coverage.json').write_bytes(b'{')
+    assert parity('schema-coverage', schemas, 'ignored').returncode == 1
+    (schemas / '_coverage.json').write_bytes(b'[]')
+    assert parity('schema-coverage', schemas, '--check-docs', '--strict').returncode == 1
+    assert parity('schema-coverage', 'schema-coverage', '--check-docs').returncode == 0
+    assert parity('schema-coverage', '--check-docs', 'missing').returncode == 2
+
+
+def test_calibration_public_resolution_qualifiers_and_overrides(tmp_path):
+    clean = tmp_path / 'Old_Core_DE_Synthesis_r1.md'
+    bad = tmp_path / 'New_Core_DE_Synthesis_r2.md'
+    clean.write_text('# Letter\n\nThe op-ed scores in the AI-elevated band, uncalibrated.\n', encoding='utf-8')
+    bad.write_text('# Letter\n\nThe op-ed scores in the AI-elevated band.\n', encoding='utf-8')
+    os.utime(clean, (100, 100)); os.utime(bad, (200, 200))
+    assert parity('calibration-honesty', tmp_path, '--strict').returncode == 1
+    assert parity('calibration-honesty', clean, bad, '--strict').returncode == 0
+    assert parity('calibration-honesty', bad, '--unknown').returncode == 0
+    binary = tmp_path / 'binary.md'; binary.write_bytes(b'\xff')
+    assert parity('calibration-honesty', binary).returncode == 2
+    assert parity('calibration-honesty', binary, clean, '--strict').returncode == 0
+    assert parity('calibration-honesty', 'calibration-honesty', clean, '--strict').returncode == 0
+    bad.write_text('# Letter\n\nThe op-ed scores in the AI-elevated band. '
+                   '<!-- override: calibration-honesty — synthetic reason -->\n', encoding='utf-8')
+    assert parity('calibration-honesty', tmp_path, '--strict').returncode == 0
+    assert parity('calibration-honesty', '', '--strict').returncode == 2
+
+
+def test_stance_public_join_and_raw_parser_errors(tmp_path):
+    source = ROOT / 'evals/fixtures/stance-calibration/clean'
+    ledger = tmp_path / 'Findings_Ledger.md'; state = tmp_path / 'Argument_State.md'
+    shutil.copy2(source / ledger.name, ledger); shutil.copy2(source / state.name, state)
+    assert parity('stance-calibration', ledger, '--argument-state', state).returncode == 0
+    for args in ((ledger, '--argument-state', state, 'extra'),
+                 (ledger, '--argument-state', state, '--strict'),
+                 ('--argument-state', state, ledger),
+                 (ledger, '--argument-state', state, '--argument-state', state),
+                 ('stance-calibration', ledger, '--argument-state', state)):
+        assert parity('stance-calibration', *args).returncode == 2
+    state.write_text(state.read_text().replace('CO1', 'CO9'), encoding='utf-8')
+    assert parity('stance-calibration', ledger, '--argument-state', state).returncode == 1
+    for target in (ledger, state):
+        old = target.read_bytes(); target.write_bytes(b'\xff')
+        assert parity('stance-calibration', ledger, '--argument-state', state).returncode == 2
+        target.write_bytes(old)
+
+
+@pytest.fixture
+def repository_bundle(tmp_path):
+    scripts = tmp_path / 'plugins/apodictic/scripts'
+    shutil.copytree(SCRIPTS, scripts)
+    shutil.copytree(SCRIPTS.parent / 'schemas', scripts.parent / 'schemas')
+    fixtures = tmp_path / 'evals/fixtures/argument-carve/precarve'
+    shutil.copytree(ROOT / 'evals/fixtures/argument-carve/precarve', fixtures)
+    return scripts, fixtures
+
+
+def _repository_copy_run(scripts, native, *args, env=None):
+    if not native and BASH is None:
+        pytest.skip('Bash differential oracle unavailable')
+    entry = [sys.executable, str(scripts / 'validate.py')] if native else [BASH, str(scripts / 'validate.sh')]
+    return subprocess.run([*entry, *map(str, args)], capture_output=True, timeout=60, env=env)
+
+
+def _repository_copy_parity(scripts, *args):
+    legacy = _repository_copy_run(scripts, False, *args)
+    native = _repository_copy_run(scripts, True, *args)
+    assert (native.returncode, native.stdout, native.stderr) == (legacy.returncode, legacy.stdout, legacy.stderr)
+    return native
+
+
+def _repository_effects(root):
+    contents = {}
+    for path in sorted(root.rglob('*')):
+        if path.is_symlink():
+            value = ('symlink', os.readlink(path))
+        elif path.is_file():
+            try:
+                value = path.read_bytes()
+            except PermissionError:
+                value = 'unreadable'
+        else:
+            value = None
+        contents[str(path.relative_to(root))] = (path.lstat().st_mode & 0o777, value)
+    return contents
+
+
+@pytest.mark.parametrize('args', [(), ('--self-test', 'ignored'), ('ignored', '--self-test')])
+def test_carve_actual_fixture_read_only_and_standalone_candidates(repository_bundle, tmp_path, args):
+    scripts, fixtures = repository_bundle
+    before = _repository_effects(tmp_path)
+    assert _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *args).returncode == 0
+    assert _repository_effects(tmp_path) == before
+    second = scripts.parent / 'evals/fixtures/argument-carve/precarve'
+    second.parent.mkdir(parents=True)
+    shutil.copytree(fixtures, second)
+    (second / 'propagation-output.txt').write_bytes(b'wrong\n')
+    assert _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *args).returncode == 0
+    shutil.rmtree(fixtures)
+    assert _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *args).returncode == 1
+    shutil.rmtree(second)
+    skipped = _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *args)
+    assert skipped.returncode == 0 and b'SKIP (evals/ not present' in skipped.stdout
+    assert (b'Self-test: PASS\n' in skipped.stdout) == bool(args and args[0] == '--self-test')
+    assert _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', '--self-test', '--internal-links').returncode == 2
+
+
+@pytest.mark.parametrize('selftest', [False, True])
+@pytest.mark.parametrize('mutation', ['missing', 'multiple-missing', 'directory', 'symlink'])
+def test_carve_actual_fixture_preflight_order(repository_bundle, selftest, mutation):
+    scripts, fixtures = repository_bundle
+    letter = fixtures / 'argument-editorial-letter.md'; letter.unlink()
+    if mutation == 'multiple-missing': (fixtures / 'argument-findings-ledger.md').unlink()
+    if mutation == 'directory': letter.mkdir()
+    if mutation == 'symlink': letter.symlink_to(fixtures / 'absent')
+    result = _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *(['--self-test'] if selftest else []))
+    assert result.returncode == 1
+    if selftest:
+        assert result.stdout.count(b'missing:') == (2 if mutation == 'multiple-missing' else 1)
+    else:
+        assert b'fixture missing:' in result.stdout
+    assert (b'Self-test: FAIL\n' in result.stdout) == selftest
+    assert b'../../../evals/fixtures/argument-carve/precarve/argument-editorial-letter.md' in result.stdout
+
+
+@pytest.mark.parametrize('selftest', [False, True])
+@pytest.mark.parametrize('mutation', ['trailing-lf', 'no-final-lf', 'nul', 'crlf', 'multiline-binary', 'both-drift'])
+def test_carve_raw_golden_bytes_and_no_writes(repository_bundle, tmp_path, selftest, mutation):
+    scripts, fixtures = repository_bundle
+    golden = fixtures / 'propagation-output.txt'; payload = golden.read_bytes()
+    if mutation == 'trailing-lf': payload += b'\n\n'
+    if mutation == 'no-final-lf': payload = payload.rstrip(b'\n')
+    if mutation == 'nul': payload = payload[:2] + b'\0' + payload[2:]
+    if mutation == 'crlf': payload = payload.replace(b'\n', b'\r\n')
+    if mutation == 'multiline-binary': payload = b'wrong\n  spaced\xff\r\n'
+    if mutation == 'both-drift':
+        payload = b'wrong\n'; (fixtures / 'decision-layer-output.txt').write_bytes(b'also wrong\n')
+    golden.write_bytes(payload)
+    before = _repository_effects(tmp_path)
+    result = _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *(['--self-test'] if selftest else []))
+    assert result.returncode == (0 if mutation in ('trailing-lf', 'no-final-lf', 'nul') else 1)
+    assert _repository_effects(tmp_path) == before
+
+
+@pytest.mark.parametrize('selftest', [False, True])
+@pytest.mark.parametrize('phase', ['first-child', 'matched-failure-goldens', 'second-child',
+                                    'first-read', 'second-read', 'drift-second-child', 'drift-second-read',
+                                    'first-child-before-read', 'second-child-before-read'])
+def test_carve_real_failure_phases_no_false_pass(repository_bundle, tmp_path, selftest, phase):
+    scripts, fixtures = repository_bundle
+    lexical = str(scripts) + '/../../../evals/fixtures/argument-carve/precarve/'
+    letter = fixtures / 'argument-editorial-letter.md'
+    propagation = fixtures / 'propagation-output.txt'; decision = fixtures / 'decision-layer-output.txt'
+    original_summary = propagation.read_bytes().rstrip(b'\n')
+    if phase in ('first-child', 'matched-failure-goldens', 'first-child-before-read'):
+        letter.write_text('# Invented public hostile letter\n\nhard gate\n', encoding='utf-8')
+        if phase == 'matched-failure-goldens':
+            for command, args, golden in (
+                ('audit-signal-propagation', [lexical + letter.name, lexical + 'argument-findings-ledger.md'], propagation),
+                ('decision-layer-check', [lexical + letter.name], decision),
+            ):
+                child = _repository_copy_parity(scripts, command, *args)
+                assert child.returncode == 1
+                golden.write_bytes(child.stdout.rstrip(b'\n').rsplit(b'\n', 1)[-1] + b'\n')
+    if phase in ('second-child', 'drift-second-child', 'second-child-before-read'): letter.write_bytes(b'\xff\xfe')
+    if phase.startswith('drift'): propagation.write_bytes(b'wrong\n')
+    unreadable = (propagation if phase in ('first-read', 'first-child-before-read') else
+                  decision if phase in ('second-read', 'drift-second-read', 'second-child-before-read') else None)
+    if unreadable is not None:
+        unreadable.chmod(0)
+        if os.access(unreadable, os.R_OK):
+            pytest.skip('Host bypasses mode restrictions; unreadable golden not exercised')
+        with pytest.raises(PermissionError): unreadable.read_bytes()
+    before = _repository_effects(tmp_path)
+    args = ['argument-carve-behavior-preservation', *(['--self-test'] if selftest else [])]
+    legacy = _repository_copy_run(scripts, False, *args)
+    assert _repository_effects(tmp_path) == before
+    native = _repository_copy_run(scripts, True, *args)
+    assert _repository_effects(tmp_path) == before
+    assert native.returncode == legacy.returncode == 1
+    prefix = b'  fixture_present: OK (4 fixture files found)\n' if selftest else b''
+    if phase in ('second-child', 'second-read', 'second-child-before-read') and selftest: prefix += b'  propagation_golden: OK\n'
+    if phase.startswith('drift'):
+        prefix += ((b'  propagation_golden: FAIL\n    expected: wrong\n    got:      ' if selftest else
+                    b'ERROR: argument-carve-behavior-preservation: audit-signal-propagation output drifted from golden\n  expected: wrong\n  got:      ')
+                   + original_summary + b'\n')
+    assert native.stdout == legacy.stdout == prefix
+    if unreadable is None or phase.endswith('before-read'):
+        assert native.stderr == legacy.stderr == b''
+    else:
+        assert legacy.stderr == ('cat: ' + lexical + unreadable.name + ': Permission denied\n').encode()
+        assert native.stderr == ('Error: Cannot read file: ' + lexical + unreadable.name + ': Permission denied\n').encode()
+
+
+@pytest.mark.parametrize('helper', ['registry_check.py', 'schema_coverage.py', 'meta_lint.py',
+                                   'calibration_honesty.py', 'stance_calibration.py', 'override_marker.py', 'letter_checks.py'])
+def test_repository_missing_installation_never_fake_pass(repository_bundle, helper):
+    scripts, _ = repository_bundle
+    command = {'registry_check.py':'registry-check', 'schema_coverage.py':'schema-coverage',
+               'meta_lint.py':'validator-conventions', 'calibration_honesty.py':'calibration-honesty',
+               'stance_calibration.py':'stance-calibration', 'override_marker.py':'validator-conventions',
+               'letter_checks.py':'argument-carve-behavior-preservation'}[helper]
+    (scripts / helper).unlink()
+    result = _repository_copy_run(scripts, True, command, '--self-test')
+    assert result.returncode == 2 and b'Self-test: PASS' not in result.stdout
+    if helper == 'letter_checks.py':
+        assert result.stdout == b'  fixture_present: OK (4 fixture files found)\n' and result.stderr == b''
+    else:
+        assert helper.encode() in result.stderr
+
+
+def test_carve_native_empty_path_executes_real_children_without_writes(repository_bundle, tmp_path):
+    scripts, _ = repository_bundle
+    env = {**os.environ, 'PATH': '', 'PYTHONUTF8': '1', 'PYTHONIOENCODING': 'utf-8'}
+    before = _repository_effects(tmp_path)
+    for args in ((), ('--self-test',)):
+        result = _repository_copy_run(scripts, True, 'argument-carve-behavior-preservation', *args, env=env)
+        assert result.returncode == 0 and result.stderr == b''
+        assert result.stdout.endswith(b'Self-test: PASS\n' if args else
+            b'argument-carve-behavior-preservation: PASS (smoke: resolvers still classify the argument fixture as Argument-DE post-carve; authoritative guarantee = audit-signal-propagation --check-registry + the byte-identical \xc2\xa74e diff)\n')
+        assert _repository_effects(tmp_path) == before
+
+
+@pytest.mark.parametrize('helper,command', [
+    ('registry_check.py', 'registry-check'), ('schema_coverage.py', 'schema-coverage'),
+    ('meta_lint.py', 'validator-conventions'), ('calibration_honesty.py', 'calibration-honesty'),
+    ('stance_calibration.py', 'stance-calibration'),
+])
+def test_repository_regular_helper_symlink_stays_available(repository_bundle, helper, command):
+    scripts, _ = repository_bundle
+    target = scripts / ('target-' + helper)
+    (scripts / helper).rename(target)
+    (scripts / helper).symlink_to(target.name)
+    assert _repository_copy_parity(scripts, command, '--self-test').returncode == 0

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native validator dispatcher, CB-1(a) groups 1–4, 5a and 6–12.
+"""Native validator dispatcher, CB-1(a) groups 1–4, 5a and 6–13.
 
 Early utilities, signals, configuration, timelines and structured checks run without Bash.
 Other commands and aggregates still belong to validate.sh until their groups land.
@@ -175,6 +175,17 @@ _ANNOTATION_EXPORTS = {
     "pdf-export": "<run_folder> | (generate) via annotation_export.py pdf <run_folder>",
 }
 COMMANDS += tuple(_ANNOTATION_EXPORTS)
+_REPOSITORY_INTEGRITY = {
+    "registry-check": ("registry_check.py", 1, "<registry.json | workspace_dir> [--strict] | --self-test"),
+    "schema-coverage": ("schema_coverage.py", 0, ""),
+    "validator-conventions": ("meta_lint.py", 0, ""),
+    "calibration-honesty": ("calibration_honesty.py", 1, "<run_folder|files...> [--strict] | --self-test"),
+    "stance-calibration": (
+        "stance_calibration.py", 3,
+        "<findings_ledger.md> --argument-state <Argument_State.md> | --self-test",
+    ),
+}
+COMMANDS += (*_REPOSITORY_INTEGRITY, "argument-carve-behavior-preservation")
 
 
 def _line(text, *, error=False):
@@ -199,12 +210,135 @@ def _hash(path):
     return digest.hexdigest()
 
 
-def _run_helper(script, args):
+def _run_helper(script, args, *, input=None):
     env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
     return subprocess.run(
         [sys.executable, str(Path(__file__).resolve().parent / script), *args],
-        env=env,
+        env=env, input=input,
     ).returncode
+
+
+def _repository_integrity(command, args):
+    if any(arg.startswith("--internal-links") for arg in args):
+        _line("pdf-export: usage: pdf-export <run_folder> --internal-links (once)")
+        return 2
+    if command == "argument-carve-behavior-preservation":
+        return _argument_carve(args)
+    script, count, usage = _REPOSITORY_INTEGRITY[command]
+    if args and args[0] == "--self-test":
+        if command == "validator-conventions":
+            result = _override_companion()
+            if result:
+                return result
+        return _run_helper(script, ["--self-test"])
+    if len(args) < count:
+        return _usage(command, usage)
+    return _run_helper(script, [command, *args])
+
+
+def _override_companion():
+    slug = "severity-floor-weak-axis"
+    marker = f"<!-- override: {slug} -->"
+    cases = (
+        ("genuine_emdash", "found", f"<!-- override: {slug} — reason -->\n"),
+        ("genuine_noreason", "found", marker + "\n"),
+        ("nospace_dash", "found", f"<!-- override: {slug}—reason -->\n"),
+        ("flex_whitespace", "found", f"<!--  override:  {slug}  -->\n"),
+        ("suffix_collision", "miss", f"<!-- override: {slug}-but-not-really — decoy -->\n"),
+        ("inline_codespan_decoy", "miss", f"Use `{marker}` here.\n"),
+        ("fenced_block_decoy", "miss", f"before\n```\n{marker}\n```\nafter\n"),
+        ("indented_fenced_decoy", "miss", f"x\n    ```\n{marker}\n    ```\ny\n"),
+        ("multi_backtick_decoy", "miss", f"``{marker}``\n"),
+        ("tilde_fence_decoy", "miss", f"before\n~~~\n{marker}\n~~~\nafter\n"),
+        ("tilde_with_backtick_line_decoy", "miss", f"~~~\n```\n{marker}\n```\n~~~\n"),
+        ("multiline_inline_decoy", "miss", f"a `open\n{marker}\nclose` b\n"),
+    )
+    failed = False
+    for label, want, body in cases:
+        result = _run_helper("override_marker.py", ["--has-override", slug], input=body.encode("utf-8"))
+        if result not in (0, 1):
+            return result
+        got = "found" if result == 0 else "miss"
+        if got == want:
+            _line(f"  ho_{label}: OK ({got})")
+        else:
+            _line(f"  ho_{label}: FAIL (got {got} want {want})")
+            failed = True
+    if failed:
+        _line("Self-test: FAIL (_has_override bash regression)")
+    return int(failed)
+
+
+def _argument_carve(args):
+    scripts = str(Path(__file__).resolve().parent)
+    directory = next((candidate for candidate in (
+        scripts + "/../../../evals/fixtures/argument-carve/precarve",
+        scripts + "/../evals/fixtures/argument-carve/precarve",
+    ) if os.path.isdir(candidate)), None)
+    self_test = bool(args and args[0] == "--self-test")
+    if directory is None:
+        if self_test:
+            _line("  fixture_present: SKIP (evals/ not present — repo-only gate)")
+            _line("Self-test: PASS")
+        else:
+            _line("argument-carve-behavior-preservation: SKIP (evals/ not present — repo-only gate)")
+        return 0
+    letter, ledger, propagation, decision = (directory + "/" + name for name in (
+        "argument-editorial-letter.md", "argument-findings-ledger.md",
+        "propagation-output.txt", "decision-layer-output.txt",
+    ))
+    missing = False
+    for path in (letter, ledger, propagation, decision):
+        if not os.path.isfile(path):
+            if not self_test:
+                _line(f"ERROR: argument-carve-behavior-preservation fixture missing: {path}")
+                return 1
+            _line(f"  fixture_present: FAIL (missing: {path})")
+            missing = True
+    if missing:
+        _line("Self-test: FAIL")
+        return 1
+    if self_test:
+        _line("  fixture_present: OK (4 fixture files found)")
+    failed = False
+    for command, child_args, golden, label in (
+        ("audit-signal-propagation", [letter, ledger], propagation, "propagation_golden"),
+        ("decision-layer-check", [letter], decision, "decision_layer_golden"),
+    ):
+        child = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), command, *child_args],
+            env=dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8"),
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        )
+        # Bash's unguarded capture assignment inherits pipefail/errexit.
+        if child.returncode:
+            return child.returncode
+        output = child.stdout[:-1] if child.stdout.endswith(b"\n") else child.stdout
+        output = output.rsplit(b"\n", 1)[-1].replace(b"\0", b"").rstrip(b"\n")
+        try:
+            expected = Path(golden).read_bytes().replace(b"\0", b"").rstrip(b"\n")
+        except OSError as exc:
+            _line(f"Error: Cannot read file: {golden}: {exc.strerror}", error=True)
+            return 1
+        if output == expected:
+            if self_test:
+                _line(f"  {label}: OK")
+        else:
+            failed = True
+            if self_test:
+                _line(f"  {label}: FAIL")
+            else:
+                _line(f"ERROR: argument-carve-behavior-preservation: {command} output drifted from golden")
+            indent = "    " if self_test else "  "
+            _line(indent + "expected: " + expected.decode("utf-8", errors="surrogateescape"))
+            _line(indent + "got:      " + output.decode("utf-8", errors="surrogateescape"))
+    if self_test:
+        _line("Self-test: FAIL" if failed else "Self-test: PASS")
+    elif failed:
+        _line("argument-carve-behavior-preservation: FAIL")
+    else:
+        _line("argument-carve-behavior-preservation: PASS (smoke: resolvers still classify the argument fixture as Argument-DE post-carve; authoritative guarantee = audit-signal-propagation --check-registry + the byte-identical §4e diff)")
+    return int(failed)
 
 
 def _argument_reconstruction(command, args):
@@ -446,6 +580,8 @@ def main(argv=None):
         _line("Partial migration: remaining commands and aggregates require validate.sh.")
         return 2
     command, args = args[0], args[1:]
+    if command in _REPOSITORY_INTEGRITY or command == "argument-carve-behavior-preservation":
+        return _repository_integrity(command, args)
     if command in _ANNOTATION_EXPORTS:
         return _annotation_export(command, args)
     if command in _ARGUMENT_RECONSTRUCTION:
