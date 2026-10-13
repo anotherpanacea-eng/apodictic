@@ -1,6 +1,6 @@
 # Native Python validator migration
 
-**Status:** Groups 1–4 built; groups 5–14 queued. The Bash dispatcher remains the
+**Status:** Groups 1–4 and 5a built; the gate pair and groups 6–14 queued. The Bash dispatcher remains the
 full validator entrypoint during this migration.
 <!-- built-when: plugins/apodictic/scripts/validate.py -->
 
@@ -60,6 +60,21 @@ selection, sidecar ascent and optional ledger behavior stay in the existing
 helpers. Editor dual mode keeps precedence over per-pass mode and their exact
 path arities. The dispatcher adds no file probes or second input resolver.
 
+Group 5a adds `escalation-check`, `dispatch-record`, `disposition-check`,
+`synthesis-coverage` and `specificity-floor`. Original tagged arguments go to the
+existing helpers after the Bash wrapper's raw minimum-argument check. First-position
+`--self-test` forwards only that flag; the helpers retain late self-test handling,
+flag filtering, discovery, defaults and strict behavior. Dispatch report mode
+selects its path before normal strict/flag filtering, preserving argument order.
+Synthesis requires exactly one directory and specificity exactly two regular files.
+Specificity's named unreadable/non-UTF-8 errors remain blocking usage failures.
+
+`gate` and `gate-state` remain unported. Their shared helper still launches Bash
+for child checks and its shared self-test. The gate manifest has 18 unique child
+validators; 15 are native after 5a, with the three refutation routes queued in
+Group 6. A separate increment after Group 6 will address both the live and
+self-test launchers together under a fresh scope and independent review.
+
 Exit codes remain 0 for success, 1 for a validation failure, and 2 for usage or an
 invalid/inaccessible input path. For the three raw-byte utilities, a regular file
 that is found but cannot be read returns 1 with empty stdout and a named
@@ -74,7 +89,13 @@ partial-migration message. Python does not fall back to Bash.
 ## Differential acceptance
 
 `tests/test_validate_python_parity.py` compares exit codes and stdout bytes against
-the independent Bash dispatcher without output normalization. Application-generated
+the independent Bash dispatcher without output normalization. The existing
+specificity-floor self-test prints a randomly generated temporary directory in
+two read-error messages, so separate runs cannot produce identical stdout bytes.
+Its native and Bash runs independently require exit 0, both named fail-closed
+checks and `Self-test: PASS`; this is explicitly not exact-byte self-test parity.
+Real specificity inputs, including both named decode errors, compare exact bytes.
+Application-generated
 stderr bytes are compared exactly except for the accepted logical/physical cwd
 prefix limitation noted below. For shell/OS-generated read-redirection
 errors, the native CLI retains the exit/stdout contract and emits a named file-read
@@ -103,6 +124,9 @@ When Bash is absent, differential-only cases are explicitly skipped. Native
 checks still run; this is not full native Windows acceptance. The final acceptance
 requires the whole Python `--check-all` suite green on `windows-latest` and exact
 differential results over every command self-test and all validator fixtures.
+Before claiming every self-test's exact-output equivalence, the specificity-floor
+helper's random-path output must be stabilized under a separate approved scope
+or explicitly carried forward as an unresolved limitation at final cutover.
 
 Group 3 adds eight self-test routes, all 15 applicable shipped timeline fixtures,
 canonical config/timeline inputs and temporary strict/default/optional-file and
@@ -118,6 +142,12 @@ operator-mode inputs, raw/mixed file errors, schema refusal, helper-owned late
 self-tests, editor mode arity/precedence, latest-file selection and sidecar ascent.
 Native aggregate coverage and full-suite Windows acceptance remain queued.
 
+Group 5a adds five helper self-test surfaces, canonical run folders and the
+re-grounded letter/ledger pair, advisory/strict controls, model-tag source
+precedence and parse refusal, report flag ordering, malformed sidecars, exact
+path arities and named UTF-8 read errors. Both deferred gate routes have explicit
+partial-migration refusal checks. All earlier native tests and 73 fixtures remain.
+
 ## Continuation groups
 
 These provisional groups give each subsequent increment its own PR. Refresh the
@@ -131,7 +161,8 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | 2 | author-facing-lint, severity-floor, audit-signal-propagation (including registry route), underdiagnosis-triggers, ledger-consolidation, decision-layer-check | Built |
 | 3 | quality-risk-triggers, cost-floor, audit-tier-criterion, pass-header, argument-recon-prerequisite, timeline-diff, timeline-arithmetic, timeline-anchor-conflict | Built |
 | 4 | structured-findings, softness-check, deficit-lock, artifacts-schema, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary | Built |
-| 5 | gate, gate-state, escalation-check, dispatch-record, disposition-check, synthesis-coverage, specificity-floor | Queued |
+| 5a | escalation-check, dispatch-record, disposition-check, synthesis-coverage, specificity-floor | Built |
+| 5b | gate, gate-state; coherent live/shared-self-test nested launcher transition | Deferred until Group 6 supplies all 18 gate children |
 | 6 | retcon-plan, state-card-diff, revision-arc, regression-diff, refutation-coverage, refutation-evidence, refutation-write-scope | Queued |
 | 7 | legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, argument-spine, scene-ethics | Queued |
 | 8 | intake-interview, author-fingerprint, content-advisory, coaching-history, style-explanation, persona-divergence | Queued |
