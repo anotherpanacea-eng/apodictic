@@ -66,14 +66,14 @@ def run_python(*args, cwd=None, env=None):
     )
 
 
-def parity(*args, cwd=None):
+def parity(*args, cwd=None, env=None):
     if BASH is None:
         pytest.skip("Bash differential oracle unavailable; native contract tests still run")
     legacy = subprocess.run(
-        [BASH, str(BASH_CLI), *map(str, args)], cwd=cwd,
+        [BASH, str(BASH_CLI), *map(str, args)], cwd=cwd, env=env,
         capture_output=True, timeout=60,
     )
-    native = run_python(*args, cwd=cwd)
+    native = run_python(*args, cwd=cwd, env=env)
     assert (native.returncode, native.stdout, native.stderr) == (
         legacy.returncode, legacy.stdout, legacy.stderr,
     )
@@ -361,10 +361,40 @@ def test_registry_fragment_and_empty_registry(tmp_path):
     assert b"Error: no registry entries found in references/../references/registry.md" in empty.stderr
 
 
-def native_and_optional_parity(*args, cwd=None):
+def native_and_optional_parity(*args, cwd=None, env=None):
     if BASH is not None:
-        return parity(*args, cwd=cwd)
-    return run_python(*args, cwd=cwd)
+        return parity(*args, cwd=cwd, env=env)
+    return run_python(*args, cwd=cwd, env=env)
+
+
+@pytest.mark.parametrize("command", ["specificity-floor", *REFUTATION])
+@pytest.mark.parametrize("temp_name", ["PASS-cache", "BYPASS-cache", "line\nbreak"])
+def test_negative_self_test_diagnostics_ignore_valid_temp_root_text(tmp_path, command, temp_name):
+    temp_root = tmp_path / temp_name
+    try:
+        temp_root.mkdir()
+    except OSError:
+        if "\n" in temp_name:
+            pytest.skip("Host forbids newline directory names")
+        raise
+    env = dict(os.environ, TMPDIR=str(temp_root), TEMP=str(temp_root), TMP=str(temp_root))
+    result = native_and_optional_parity(command, "--self-test", env=env)
+    assert result.stderr == b""
+    if command == "specificity-floor":
+        assert b"non_utf8_letter_fails_closed: OK\n" in result.stdout
+        assert b"non_utf8_ledger_fails_closed: OK\n" in result.stdout
+        assert result.returncode == 0
+    else:
+        assert b"non_utf8_coverage_cli_degrades: OK\n" in result.stdout
+        if "\n" in temp_name:
+            # The shared suite's separate synthetic JSON still embeds a newline
+            # path unescaped. Preserve that inherited failure outside this repair.
+            assert result.returncode == 1
+            assert b"v2_absolute_snapshot_path_refused: FAIL" in result.stdout
+            assert result.stdout.endswith(b"Self-test: FAIL\n")
+            return
+        assert result.returncode == 0
+    assert result.stdout.endswith(b"Self-test: PASS\n")
 
 
 @pytest.mark.parametrize("command", CONFIG_TIMELINES)

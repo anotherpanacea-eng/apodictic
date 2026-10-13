@@ -686,11 +686,12 @@ def run_self_test():
         with redirect_stdout(error_stdout):
             error_code = main(["refutation_check.py", "refutation-coverage", _nu, _ok, _ok])
         diagnostic = error_stdout.getvalue()
+        error_prefix = "Error: cannot read editorial letter %s: " % _nu
+        error_payload = diagnostic[len(error_prefix):] if diagnostic.startswith(error_prefix) else ""
         check("non_utf8_coverage_cli_degrades",
               error_code == 2
-              and diagnostic.startswith("Error: cannot read editorial letter %s: " % _nu)
-              and "utf-8" in diagnostic and "decode" in diagnostic
-              and diagnostic.count("\n") == 1 and "PASS" not in diagnostic)
+              and "utf-8" in error_payload and "decode" in error_payload
+              and error_payload.count("\n") == 1 and "PASS" not in error_payload)
     finally:
         shutil.rmtree(_nud)
 

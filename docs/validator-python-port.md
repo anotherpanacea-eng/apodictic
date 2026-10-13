@@ -114,7 +114,10 @@ the three shared refutation routes. Their self-tests formerly printed random
 temporary paths while exercising expected negative CLI reads. The separate
 stabilizer captures only those three internal calls, asserts exit 2 and the
 complete named role/path boundary and read/decode reason, and rejects false PASS
-output. The named fail-closed checks and complete suites still run. Ordinary
+output. Reason, line-count and PASS checks inspect only the payload after the
+complete expected role/path and delimiter, preserving valid temporary roots
+containing PASS, BYPASS or newlines. The named fail-closed checks and complete
+suites still run. Ordinary
 commands, including their named decode errors, retain byte-identical output.
 Application-generated
 stderr bytes are compared exactly except for the accepted logical/physical cwd
@@ -151,6 +154,8 @@ output change removes the two specificity fixture diagnostic lines and the one
 shared refutation fixture diagnostic line; no pre-stabilization self-test
 byte-equivalence claim is made. Output from readable-empty and other checks,
 ordinary helper dispatch and unrelated exception propagation remain unchanged.
+The shared refutation suite retains an unrelated synthetic-JSON failure when a
+temporary-root path contains a newline; its negative read checks still pass.
 
 Group 3 adds eight self-test routes, all 15 applicable shipped timeline fixtures,
 canonical config/timeline inputs and temporary strict/default/optional-file and
