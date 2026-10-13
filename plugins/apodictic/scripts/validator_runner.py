@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bounded development JSONL adapter for five fixed text leaves (stdlib only).
+"""Bounded development JSONL adapter for six fixed text leaves (stdlib only).
 
 Invoke with a supplied interpreter: python -I -S validator_runner.py.
 This source tool supplies neither a desktop interpreter nor a native sandbox.
@@ -108,7 +108,7 @@ def inventory():
                 or not isinstance(row["id"], str) or not IDENTIFIER.fullmatch(row["id"])
                 or row["id"] in rows
                 or row["desktop_disposition"] not in ("ci-only", "not-yet-supported")
-                or row["development_support"] not in ("none", "tone-check-v1", "synthesis-sections-v1", "severity-floor-v1", "decision-layer-check-v1", "author-facing-lint-v1")
+                or row["development_support"] not in ("none", "tone-check-v1", "synthesis-sections-v1", "severity-floor-v1", "decision-layer-check-v1", "author-facing-lint-v1", "ledger-check-v1")
                 or not isinstance(row["omitted_capability"], str)
                 or not 1 <= len(row["omitted_capability"]) <= 256
                 or not row["omitted_capability"].strip()
@@ -116,14 +116,16 @@ def inventory():
                 or (row["development_support"] == "synthesis-sections-v1" and row["id"] != "synthesis-sections")
                 or (row["development_support"] == "severity-floor-v1" and row["id"] != "severity-floor")
                 or (row["development_support"] == "decision-layer-check-v1" and row["id"] != "decision-layer-check")
-                or (row["development_support"] == "author-facing-lint-v1" and row["id"] != "author-facing-lint")):
+                or (row["development_support"] == "author-facing-lint-v1" and row["id"] != "author-facing-lint")
+                or (row["development_support"] == "ledger-check-v1" and row["id"] != "ledger-check")):
             raise Refused()
         rows[row["id"]] = row
     for leaf, support in (("tone-check", "tone-check-v1"),
                           ("synthesis-sections", "synthesis-sections-v1"),
                           ("severity-floor", "severity-floor-v1"),
                           ("decision-layer-check", "decision-layer-check-v1"),
-                          ("author-facing-lint", "author-facing-lint-v1")):
+                          ("author-facing-lint", "author-facing-lint-v1"),
+                          ("ledger-check", "ledger-check-v1")):
         if (leaf not in rows or rows[leaf]["development_support"] != support
                 or rows[leaf]["desktop_disposition"] != "not-yet-supported"):
             raise Refused()
@@ -181,7 +183,8 @@ def worker_environment():
     return env
 
 
-def worker_main(synthesis=False, severity=False, decision_layer=False, author_facing=False):
+def worker_main(synthesis=False, severity=False, decision_layer=False, author_facing=False,
+                ledger=False):
     # Install the denial before importing the trusted leaf, with no configurable path.
     def deny(event, _):
         if (event.startswith("socket.") or event in ("subprocess.Popen", "os.system",
@@ -207,21 +210,32 @@ def worker_main(synthesis=False, severity=False, decision_layer=False, author_fa
                 from letter_checks import decision_layer_check as check
             elif author_facing:
                 from letter_checks import author_facing_lint as check
+            elif ledger:
+                from letter_checks import ledger_check as check
             else:
                 from letter_checks import tone_check as check
         except Exception:
             result = {"error": "runner_dependency_unavailable"}
         else:
             value = check(text)
-            if (not isinstance(value, tuple) or len(value) != 4
-                    or not all(isinstance(x, list) for x in value[:2])
-                    or not all(isinstance(x, str) for group in value[:2] for x in group)
-                    or not all(isinstance(x, str) for x in value[2:])):
-                raise Refused()
-            errors, warnings, ok, failed = value
-            stdout = "".join(x + "\n" for x in warnings + errors)
-            stdout += ("\n" + failed if errors else ok) + "\n"
-            result = {"exit_code": int(bool(errors)), "stdout": stdout, "stderr": ""}
+            if ledger:
+                if (not isinstance(value, tuple) or len(value) != 2
+                        or type(value[0]) is not int or value[0] not in (0, 1)
+                        or not isinstance(value[1], list)
+                        or not all(isinstance(line, str) for line in value[1])):
+                    raise Refused()
+                result = {"exit_code": value[0],
+                          "stdout": "".join(line + "\n" for line in value[1]), "stderr": ""}
+            else:
+                if (not isinstance(value, tuple) or len(value) != 4
+                        or not all(isinstance(x, list) for x in value[:2])
+                        or not all(isinstance(x, str) for group in value[:2] for x in group)
+                        or not all(isinstance(x, str) for x in value[2:])):
+                    raise Refused()
+                errors, warnings, ok, failed = value
+                stdout = "".join(x + "\n" for x in warnings + errors)
+                stdout += ("\n" + failed if errors else ok) + "\n"
+                result = {"exit_code": int(bool(errors)), "stdout": stdout, "stderr": ""}
         payload = encoded(result)
         if len(payload) > RESPONSE_BYTES:
             payload = encoded({"error": "output_limit"})
@@ -322,6 +336,7 @@ class Session:
                  else "--worker-severity-floor" if request["validator"] == "severity-floor"
                  else "--worker-decision-layer-check" if request["validator"] == "decision-layer-check"
                  else "--worker-author-facing-lint" if request["validator"] == "author-facing-lint"
+                 else "--worker-ledger-check" if request["validator"] == "ledger-check"
                  else "--worker")
         try:
             child = subprocess.Popen([sys.executable, "-I", "-S", "-B", str(HERE / "validator_runner.py"), route],
@@ -436,7 +451,7 @@ class Session:
                 self.emit(unavailable(target, "cancelled"), deadline)
             self.emit({"protocol": 1, "type": "cancel_result", "id": request["id"],
                        "target": request["target"], "cancelled": cancelled, "error": None}, deadline)
-        elif request["validator"] not in ("tone-check", "synthesis-sections", "severity-floor", "decision-layer-check", "author-facing-lint"):
+        elif request["validator"] not in ("tone-check", "synthesis-sections", "severity-floor", "decision-layer-check", "author-facing-lint", "ledger-check"):
             self.emit(unavailable(request, "validator_unavailable"))
         elif (len(request["text"].encode("utf-8")) > TEXT_BYTES
               or request["text"].replace("\r\n", "\n").replace("\r", "\n").count("\n") + 1 > TEXT_LINES):
@@ -582,6 +597,8 @@ def main():
         return worker_main(decision_layer=True)
     if sys.argv[1:] == ["--worker-author-facing-lint"]:
         return worker_main(author_facing=True)
+    if sys.argv[1:] == ["--worker-ledger-check"]:
+        return worker_main(ledger=True)
     if sys.argv[1:]:
         sys.stderr.write("Unsupported validator runner usage.\n")
         return 2

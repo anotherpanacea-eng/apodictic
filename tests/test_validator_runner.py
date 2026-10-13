@@ -128,7 +128,7 @@ class RunnerTests(unittest.TestCase):
             "  signal.signal(signal.SIGTERM,signal.SIG_IGN)\n"
             "  time.sleep(30)\n"
             " return [],[], 'synthetic OK', 'synthetic FAILED'\n"
-            "synthesis_sections = severity_floor = decision_layer_check = author_facing_lint = tone_check\n" % str(self.pidfile))
+            "synthesis_sections = severity_floor = decision_layer_check = author_facing_lint = ledger_check = tone_check\n" % str(self.pidfile))
 
     def pid(self):
         until = time.monotonic() + 3
@@ -410,6 +410,138 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(c.next()["cancelled"])
         self.assertEqual(c.end(), (0, [], b""))
 
+    def test_ledger_exact_python_backed_bash_bytes(self):
+        fixtures = list((ROOT / "tests/fixtures/validators").glob("lc.*.ledger-check.*.md"))
+        self.assertEqual(len(fixtures), 3)
+        headings = ("Notable Findings", "Data Artifacts for Letter Reference",
+                    "Cross-Pass Connections", "Unresolved Questions", "Audit Triggers")
+        complete = "## Pass 2\n" + "".join("### " + h + "\n" for h in headings)
+        reverse = "## Pass 2\n" + "".join("### " + h + "\n" for h in reversed(headings))
+        texts = [p.read_bytes().decode() for p in fixtures]
+        texts += ["", "Unrecognized text", complete, reverse, complete.replace("\n", "\r\n"),
+                  complete.replace("\n", "\r"), complete.rstrip("\n"),
+                  "## Pass 0\n", "## Pass 10\n", "## Pass 00\n", "## Pass 010\n",
+                  "## Pass 2\n### Notable Findings\n", "## Pass 0\n## Pass 2\n",
+                  "## Pass 2\nprose ### Notable Findings\n",
+                  "## Pass 2\n### Notable FindingsX\n",
+                  "## Pass 2\n#### **Notable Findings**\n",
+                  "## Pass ١\n", "## Pass 2\n### Unresolved QuestionsX\n",
+                  "雪 😀\n" + complete, complete + "## Pass 3\n",
+                  "\n" * 8191, "x" * 262144]
+        c = self.client()
+        for i, text in enumerate(texts):
+            with self.subTest(case=i):
+                source = self.root / "invented-ledger.txt"
+                source.write_bytes(text.encode())
+                oracle = subprocess.run(["bash", str(ROOT / "scripts/validate.sh"),
+                                         "ledger-check", str(source)], capture_output=True)
+                c.send(validation(str(i), text, "ledger-check"))
+                got = c.next()
+                self.assertEqual((got["id"], got["validator"], got["available"]),
+                                 (str(i), "ledger-check", True))
+                result = got["result"]
+                self.assertEqual((result["exit_code"], result["stdout"].encode(), result["stderr"].encode()),
+                                 (oracle.returncode, oracle.stdout, oracle.stderr))
+                if text == "## Pass 2\n### Notable Findings\n":
+                    self.assertIn("\n\nFAILED:", result["stdout"])
+                if text == reverse:
+                    self.assertEqual(result["exit_code"], 0)
+        for i, text in enumerate(("x" * 262145, "\n" * 8192, "\r" * 8192)):
+            c.send(validation("over" + str(i), text, "ledger-check"))
+            self.error(c.next(), "input_limit")
+        self.assertEqual(c.end(), (0, [], b""))
+
+    def test_ledger_natural_output_fit_overflow_and_recovery(self):
+        # A copied worker records its PID; the production route and helper are unchanged.
+        self.pidfile = self.root / "natural-overflow-worker.pid"
+        source = self.script.read_text()
+        needle = 'if sys.argv[1:] == ["--worker-ledger-check"]:'
+        self.assertEqual(source.count(needle), 1)
+        self.script.write_text(source.replace(needle, needle + "\n        Path(%r).write_text(str(os.getpid()))" % str(self.pidfile)))
+        c = self.client(script=self.script)
+        fit = "## Pass 2\n### Notable Findings\n"
+        c.send(validation("f" * 64, fit, "ledger-check"))
+        result = c.next()
+        self.assertTrue(result["available"])
+        self.assertLessEqual(len(frame(result)), 32768)
+        self.assertIn("\n\nFAILED:", result["result"]["stdout"])
+        for i, (digit, count, available) in enumerate((("1", 6200, True),
+                ("1", 6500, False), ("١", 3100, True), ("١", 3300, False))):
+            text = "## Pass " + digit * count + "\n雪 😀"
+            c.send(validation("b" * 63 + str(i), text, "ledger-check"))
+            got = c.next()
+            self.assertEqual((got["id"], got["validator"]), ("b" * 63 + str(i), "ledger-check"))
+            self.assertEqual(got["available"], available)
+            if available:
+                source = self.root / "invented-ledger.txt"
+                source.write_bytes(text.encode())
+                oracle = subprocess.run(["bash", str(ROOT / "scripts/validate.sh"),
+                                         "ledger-check", str(source)], capture_output=True)
+                self.assertEqual((got["result"]["exit_code"], got["result"]["stdout"].encode(),
+                                  got["result"]["stderr"].encode()),
+                                 (oracle.returncode, oracle.stdout, oracle.stderr))
+                self.assertLessEqual(len(frame(got)), 32768)
+            else:
+                self.error(got, "output_limit")
+                self.assertNotIn(digit * 100, json.dumps(got))
+        # The helper repeats the digit token once for each missing heading.
+        huge = "\n".join(["## Pass 9999999999"] * 8191)
+        self.assertLessEqual(len(huge.encode()), 262144)
+        c.send(validation("u" * 64, huge, "ledger-check"))
+        got = c.next()
+        self.assertEqual((got["id"], got["validator"]), ("u" * 64, "ledger-check"))
+        self.error(got, "output_limit")
+        self.assertNotIn("9999999999", json.dumps(got))
+        if os.name == "posix": self.dead(self.pid())
+        c.send(validation("healthy", "", "tone-check"))
+        self.assertTrue(c.next()["available"])
+        c.send(cancel("u" * 64, "late"))
+        self.assertFalse(c.next()["cancelled"])
+        self.assertEqual(c.end(), (0, [], b""))
+
+    def test_ledger_raw_shape_and_closed_worker_failures(self):
+        cases = ("(0, [])", "(1, ['', 'OK'])", "(0, ['odd\\nline', ''])",
+                 "(True, ['OK'])", "(2, ['OK'])", "(0, ('OK',))",
+                 "(0, [1])", "[]", "(0, []) + (1,)", "raise")
+        for i, value in enumerate(cases):
+            with self.subTest(value=value):
+                body = ("def ledger_check(text):\n raise RuntimeError(text)\n" if value == "raise"
+                        else "def ledger_check(text): return " + value + "\n")
+                (self.scripts / "letter_checks.py").write_text(
+                    body + "def tone_check(text): return [],[], 'tone OK', 'FAIL'\n")
+                c = self.client(script=self.script)
+                c.send(validation(str(i), "SYNTHETIC_SENTINEL", "ledger-check"))
+                got = c.next()
+                if i < 3:
+                    self.assertTrue(got["available"])
+                    self.assertEqual(got["result"], {"exit_code": 1 if i == 1 else 0,
+                        "stdout": ["", "\nOK\n", "odd\nline\n\n"][i], "stderr": ""})
+                else:
+                    self.error(got, "worker_failed")
+                    self.assertNotIn("SYNTHETIC_SENTINEL", json.dumps(got))
+                c.send(validation("healthy")); self.assertTrue(c.next()["available"])
+                self.assertEqual(c.end(), (0, [], b""))
+        for body, code in (("raise ImportError('synthetic')\n", "runner_dependency_unavailable"),
+                           ("def ledger_check(text): print(text); return 0, []\n", "worker_failed"),
+                           ("import sys\ndef ledger_check(text): sys.stderr.write(text); return 0, []\n", "worker_failed"),
+                           ("import os\ndef ledger_check(text): os._exit(3)\n", "worker_failed")):
+            (self.scripts / "letter_checks.py").write_text(body)
+            c = self.client(script=self.script)
+            c.send(validation("bad", "SYNTHETIC_SENTINEL", "ledger-check"))
+            self.error(c.next(), code)
+            self.assertEqual(c.end(), (0, [], b""))
+        (self.scripts / "letter_checks.py").unlink()
+        c = self.client(script=self.script)
+        c.send(validation("missing", "", "ledger-check"))
+        self.error(c.next(), "runner_dependency_unavailable")
+        self.assertEqual(c.end(), (0, [], b""))
+        shutil.copyfile(SCRIPT.parent / "letter_checks.py", self.scripts / "letter_checks.py")
+        (self.scripts / "override_marker.py").unlink()
+        c = self.client(script=self.script)
+        c.send(validation("transitive", "", "ledger-check"))
+        self.error(c.next(), "runner_dependency_unavailable")
+        self.assertEqual(c.end(), (0, [], b""))
+
     def test_mixed_leaves_foreign_cwd_and_closed_worker_routes(self):
         clean = (ROOT / "tests/fixtures/validators/lc.pass.synthesis-sections.all-headings.md").read_text()
         c = self.client(cwd=self.root, env=dict(os.environ, PATH="", PYTHONPATH=str(self.root)))
@@ -420,7 +552,9 @@ class RunnerTests(unittest.TestCase):
                 ("decision-layer-check", "", 1),
                 ("decision-layer-check", "## Control Questions\n1. One\n", 1),
                 ("author-facing-lint", "", 0),
-                ("author-facing-lint", "QF-7", 0))):
+                ("author-facing-lint", "QF-7", 0),
+                ("ledger-check", "", 1),
+                ("ledger-check", "## Pass 0\n", 0))):
             c.send(validation(str(i), text, leaf)); got = c.next()
             self.assertEqual((got["id"], got["validator"], got["available"], got["result"]["exit_code"]),
                              (str(i), leaf, True, rc))
@@ -433,6 +567,7 @@ class RunnerTests(unittest.TestCase):
                      ("--worker-severity-floor", "extra"),
                      ("--worker-decision-layer-check", "extra"),
                      ("--worker-author-facing-lint", "extra"),
+                     ("--worker-ledger-check", "extra"),
                      ("--worker", "--worker-synthesis-sections")):
             result = subprocess.run([PYTHON, "-I", "-S", str(SCRIPT), *argv], capture_output=True)
             self.assertEqual((result.returncode, result.stdout), (2, b""))
@@ -823,6 +958,40 @@ class RunnerTests(unittest.TestCase):
                     c.send(cancel("author", "late")); self.assertFalse(c.next()["cancelled"])
                 self.assertEqual(c.end(), (0 if action in ("cancel", "timeout", "eof") else 2, [], b""))
 
+    @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
+    def test_ledger_lifecycle_slot_and_recovery(self):
+        for action in ("cancel", "eof", "fatal", "SIGTERM", "timeout"):
+            with self.subTest(action=action):
+                self.sleeping(); self.pidfile.unlink(missing_ok=True)
+                c = self.client(script=self.script)
+                started = time.monotonic()
+                c.send(validation("ledger", "sleep", "ledger-check")); pid = self.pid()
+                for id, leaf, text, code in (("busy", "ledger-check", "", "busy"),
+                        ("busy-tone", "tone-check", "", "busy"),
+                        ("unknown", "other", "x" * 262145, "validator_unavailable"),
+                        ("limit", "ledger-check", "x" * 262145, "input_limit")):
+                    c.send(validation(id, text, leaf))
+                    got = c.next(); self.error(got, code)
+                    self.assertEqual((got["id"], got["validator"]), (id, leaf))
+                if action == "cancel": c.send(cancel("ledger"))
+                elif action == "eof": c.child.stdin.close()
+                elif action == "fatal": c.raw(b"{}\n")
+                elif action == "SIGTERM": c.child.send_signal(signal.SIGTERM)
+                got = c.next()
+                self.error(got, "cancelled" if action == "cancel" else "timeout" if action == "timeout" else "session_ended")
+                self.assertEqual((got["id"], got["validator"]), ("ledger", "ledger-check"))
+                self.dead(pid)
+                if action == "timeout":
+                    self.assertGreaterEqual(time.monotonic() - started, 5)
+                    self.assertLess(time.monotonic() - started, 7)
+                if action == "cancel": self.assertTrue(c.next()["cancelled"])
+                elif action == "fatal": self.assertEqual(c.next()["error"]["code"], "invalid_request")
+                if action in ("cancel", "timeout"):
+                    c.send(validation("healthy", "", "tone-check"))
+                    self.assertTrue(c.next()["available"])
+                    c.send(cancel("ledger", "late")); self.assertFalse(c.next()["cancelled"])
+                self.assertEqual(c.end(), (0 if action in ("cancel", "timeout", "eof") else 2, [], b""))
+
     def test_fixed_idle_and_session_deadlines_with_test_only_clock(self):
         # A disposable test launcher accelerates monotonic time, not protocol limits.
         # The production script and request schema have no clock/limit override.
@@ -1093,7 +1262,8 @@ class RunnerTests(unittest.TestCase):
         c = self.client(script=self.script)
         for id, leaf in (("tone", "tone-check"), ("synth", "synthesis-sections"),
                          ("sev", "severity-floor"), ("decision", "decision-layer-check"),
-                         ("author", "author-facing-lint")):
+                         ("author", "author-facing-lint"),
+                         ("ledger", "ledger-check")):
             c.send(validation(id, "", leaf)); self.assertTrue(c.next()["available"])
         c.send(validation("invented", "", "invented-support-none"))
         self.error(c.next(), "validator_unavailable")
@@ -1110,7 +1280,8 @@ class RunnerTests(unittest.TestCase):
             c = self.client(script=self.script)
             for id, leaf in (("tone", "tone-check"), ("synth", "synthesis-sections"),
                              ("sev", "severity-floor"), ("decision", "decision-layer-check"),
-                             ("author", "author-facing-lint")):
+                             ("author", "author-facing-lint"),
+                             ("ledger", "ledger-check")):
                 c.send(validation(id, "", leaf))
                 self.error(c.next(), "runner_dependency_unavailable")
             self.assertEqual(c.end(), (0, [], b""))
@@ -1125,17 +1296,19 @@ class RunnerTests(unittest.TestCase):
             c.send(validation("sev", "", "severity-floor")); self.error(c.next(), "runner_dependency_unavailable")
             c.send(validation("decision", "", "decision-layer-check")); self.error(c.next(), "runner_dependency_unavailable")
             c.send(validation("author", "", "author-facing-lint")); self.error(c.next(), "runner_dependency_unavailable")
+            c.send(validation("ledger", "", "ledger-check")); self.error(c.next(), "runner_dependency_unavailable")
             c.send(validation("other", validator="other")); self.error(c.next(), "validator_unavailable")
             self.assertEqual(c.end(), (0, [], b""))
             self.assertEqual(self.inventory_check().returncode, 1)
 
-    def test_five_exact_inventory_mappings_required_at_runtime_and_check(self):
+    def test_six_exact_inventory_mappings_required_at_runtime_and_check(self):
         baseline = json.loads(self.metadata.read_text())
         for change in ("swap", "swap-sev", "unknown", "unknown-sev", "omit-tone", "omit-synth",
                        "omit-sev", "omit-decision", "disable-tone", "disable-synth", "disable-sev",
                        "disable-decision", "swap-decision", "unknown-decision", "desktop", "desktop-sev",
                        "desktop-decision", "omit-author", "disable-author", "swap-author",
-                       "unknown-author", "desktop-author"):
+                       "unknown-author", "desktop-author", "omit-ledger", "disable-ledger",
+                       "swap-ledger", "unknown-ledger", "desktop-ledger"):
             with self.subTest(change=change):
                 value = copy.deepcopy(baseline)
                 tone = next(r for r in value["validators"] if r["id"] == "tone-check")
@@ -1143,6 +1316,7 @@ class RunnerTests(unittest.TestCase):
                 sev = next(r for r in value["validators"] if r["id"] == "severity-floor")
                 decision = next(r for r in value["validators"] if r["id"] == "decision-layer-check")
                 author = next(r for r in value["validators"] if r["id"] == "author-facing-lint")
+                ledger = next(r for r in value["validators"] if r["id"] == "ledger-check")
                 if change == "swap":
                     tone["development_support"], synth["development_support"] = synth["development_support"], tone["development_support"]
                 elif change == "swap-sev":
@@ -1151,18 +1325,24 @@ class RunnerTests(unittest.TestCase):
                     sev["development_support"], decision["development_support"] = decision["development_support"], sev["development_support"]
                 elif change == "swap-author":
                     decision["development_support"], author["development_support"] = author["development_support"], decision["development_support"]
+                elif change == "swap-ledger":
+                    author["development_support"], ledger["development_support"] = ledger["development_support"], author["development_support"]
                 elif change == "unknown": synth["development_support"] = "synthesis-v2"
                 elif change == "unknown-sev": sev["development_support"] = "severity-v2"
                 elif change == "unknown-decision": decision["development_support"] = "decision-v2"
                 elif change == "unknown-author": author["development_support"] = "author-v2"
+                elif change == "unknown-ledger": ledger["development_support"] = "ledger-v2"
                 elif change.startswith("omit-"):
                     value["validators"].remove({"omit-tone": tone, "omit-synth": synth, "omit-sev": sev,
-                                                "omit-decision": decision, "omit-author": author}[change])
+                                                "omit-decision": decision, "omit-author": author,
+                                                "omit-ledger": ledger}[change])
                 elif change.startswith("disable-"):
                     {"disable-tone": tone, "disable-synth": synth, "disable-sev": sev,
-                     "disable-decision": decision, "disable-author": author}[change]["development_support"] = "none"
+                     "disable-decision": decision, "disable-author": author,
+                     "disable-ledger": ledger}[change]["development_support"] = "none"
                 else: {"desktop": synth, "desktop-sev": sev,
-                       "desktop-decision": decision, "desktop-author": author}[change]["desktop_disposition"] = "desktop-supported"
+                       "desktop-decision": decision, "desktop-author": author,
+                       "desktop-ledger": ledger}[change]["desktop_disposition"] = "desktop-supported"
                 self.metadata.write_text(json.dumps(value)); self.assertEqual(self.inventory_check().returncode, 1)
                 c = self.client(script=self.script)
                 for id, leaf, text, code in (("unknown", "other", "x" * 262145, "validator_unavailable"),
@@ -1171,7 +1351,8 @@ class RunnerTests(unittest.TestCase):
                         ("synth", "synthesis-sections", "", "runner_dependency_unavailable"),
                         ("sev", "severity-floor", "", "runner_dependency_unavailable"),
                         ("decision", "decision-layer-check", "", "runner_dependency_unavailable"),
-                        ("author", "author-facing-lint", "", "runner_dependency_unavailable")):
+                        ("author", "author-facing-lint", "", "runner_dependency_unavailable"),
+                        ("ledger", "ledger-check", "", "runner_dependency_unavailable")):
                     c.send(validation(id, text, leaf)); got = c.next(); self.error(got, code)
                     self.assertEqual((got["id"], got["validator"]), (id, leaf))
                 self.assertEqual(c.end(), (0, [], b""))
@@ -1195,9 +1376,9 @@ class RunnerTests(unittest.TestCase):
     def test_inventory_row_limit_and_no_bash_execution(self):
         registry = self.scripts / "validate.sh"
         for count in (512, 513):
-            rows = [{"id": "tone-check" if i == 0 else "synthesis-sections" if i == 1 else "severity-floor" if i == 2 else "decision-layer-check" if i == 3 else "author-facing-lint" if i == 4 else "v%d" % i,
+            rows = [{"id": "tone-check" if i == 0 else "synthesis-sections" if i == 1 else "severity-floor" if i == 2 else "decision-layer-check" if i == 3 else "author-facing-lint" if i == 4 else "ledger-check" if i == 5 else "v%d" % i,
                      "desktop_disposition": "not-yet-supported",
-                     "development_support": "tone-check-v1" if i == 0 else "synthesis-sections-v1" if i == 1 else "severity-floor-v1" if i == 2 else "decision-layer-check-v1" if i == 3 else "author-facing-lint-v1" if i == 4 else "none",
+                     "development_support": "tone-check-v1" if i == 0 else "synthesis-sections-v1" if i == 1 else "severity-floor-v1" if i == 2 else "decision-layer-check-v1" if i == 3 else "author-facing-lint-v1" if i == 4 else "ledger-check-v1" if i == 5 else "none",
                      "omitted_capability": "Synthetic unavailable validation."} for i in range(count)]
             self.metadata.write_text(json.dumps({"version":1,"validators":rows}, separators=(",",":")))
             # Keep the raw metadata inside its independent byte bound.

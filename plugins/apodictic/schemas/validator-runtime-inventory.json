@@ -16,7 +16,7 @@
     {
       "id": "ledger-check",
       "desktop_disposition": "not-yet-supported",
-      "development_support": "none",
+      "development_support": "ledger-check-v1",
       "omitted_capability": "ledger-check validation is unavailable in desktop: no signed, brokered leaf."
     },
     {
