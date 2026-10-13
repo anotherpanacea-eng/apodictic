@@ -207,8 +207,10 @@ behavior preservation.
 ## Differential acceptance
 
 `tests/test_validate_python_parity.py` compares exit codes, stdout and stderr
-bytes against the independent Bash dispatcher without output normalization. It
-covers every migrated self-test, all applicable shipped validator fixtures and
+bytes against the independent Bash dispatcher without output normalization, except
+that leading blanks are stripped from the Bash `state-lines` count (BSD/macOS
+`wc -l` left-pads it; native output is unpadded). It covers every migrated
+self-test, all applicable shipped validator fixtures and
 canonical reference inputs, and raw-byte utility edge cases. One argv-echo
 differential copies the scripts, replaces every helper with a stub that prints
 its arguments and stdin, and compares Bash and native results for every native

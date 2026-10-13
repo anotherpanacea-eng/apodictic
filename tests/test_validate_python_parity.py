@@ -8,8 +8,8 @@ import hashlib
 import json
 import math
 import os
-from pathlib import Path
 import re
+from pathlib import Path
 import shutil
 import subprocess
 import sys
@@ -93,8 +93,12 @@ def parity(*args, cwd=None, env=None):
         capture_output=True, timeout=60,
     )
     native = run_python(*args, cwd=cwd, env=env)
+    legacy_stdout = legacy.stdout
+    if args[0] == "state-lines" and re.fullmatch(rb"[ \t]*[0-9]+\n", legacy_stdout):
+        # Bash counts with the host `wc -l`; BSD/macOS `wc` left-pads the number.
+        legacy_stdout = legacy_stdout.lstrip(b" \t")
     assert (native.returncode, native.stdout, native.stderr) == (
-        legacy.returncode, legacy.stdout, legacy.stderr,
+        legacy.returncode, legacy_stdout, legacy.stderr,
     )
     return native
 
