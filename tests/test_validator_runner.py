@@ -128,7 +128,7 @@ class RunnerTests(unittest.TestCase):
             "  signal.signal(signal.SIGTERM,signal.SIG_IGN)\n"
             "  time.sleep(30)\n"
             " return [],[], 'synthetic OK', 'synthetic FAILED'\n"
-            "synthesis_sections = tone_check\n" % str(self.pidfile))
+            "synthesis_sections = severity_floor = tone_check\n" % str(self.pidfile))
 
     def pid(self):
         until = time.monotonic() + 3
@@ -236,18 +236,70 @@ class RunnerTests(unittest.TestCase):
             self.error(c.next(), "input_limit")
         self.assertEqual(c.end(), (0, [], b""))
 
+    def test_severity_exact_legacy_oracle_parity(self):
+        fixtures = list((ROOT / "tests/fixtures/validators").glob("lc.*.severity-floor.*.md"))
+        self.assertEqual(len(fixtures), 7)
+        weak = "Weak at High"
+        systemic = "Systemic Must-Fix Strong Fit"
+        band = "Strong Fit Should-Fix Should-Fix Should-Fix"
+        marker = "<!-- override:severity-floor-weak-axis -->"
+        texts = [p.read_bytes().decode() for p in fixtures]
+        texts += ["", weak, "Weak at Medium", "Weak at Low", systemic, band,
+                  band + " justification", weak + "\n" + marker,
+                  weak + "\n## Appendix A\n" + marker,
+                  weak + "\n`" + marker + "`",
+                  weak + "\n```\n" + marker + "\n```",
+                  weak + "\n~~~\n" + marker + "\n```",
+                  weak + "\n" + marker.replace("override:", "Override:"),
+                  weak + "\n" + marker.replace(" -->", "_extra -->"),
+                  weak + "\n" + marker.replace(" -->", "suffix -->"),
+                  weak + "\n" + marker.replace("override:", "overridе:"),
+                  weak + "\n" + marker.replace(" -->", " — reason -->"),
+                  weak + "\n" + marker.replace(" -->", "\u2003reason -->"),
+                  weak + "\n<!-- override:severity-floor-weak-axis",
+                  "Systemic Must-Fix Strong Fit " + band,
+                  band + " `justification`", "Must-Fix " + weak,
+                  "# Appendix A\n" + weak, "Should-Fixed Strong Fit Should-Fix Should-Fix",
+                  "Wеak at High", "雪 😀\r\n" + weak + "\r" + systemic,
+                  weak.replace(" ", "\u2028", 1), weak.replace("\n", "\r\n"),
+                  systemic.replace(" ", "\n", 1),
+                  "Must-Fix " * 29120 + systemic, "\n" * 8191,
+                  weak + "x" * (262144 - len(weak))]
+        c = self.client()
+        for i, text in enumerate(texts):
+            with self.subTest(case=i):
+                source = self.root / "invented-severity.txt"
+                source.write_bytes(text.encode())
+                oracle = subprocess.run(["bash", str(ROOT / "scripts/validate.sh"),
+                                         "severity-floor", str(source)], capture_output=True)
+                c.send(validation(str(i), text, "severity-floor"))
+                value = c.next()
+                self.assertEqual((value["id"], value["validator"], value["available"]),
+                                 (str(i), "severity-floor", True))
+                got = value["result"]
+                self.assertEqual((got["exit_code"], got["stdout"].encode(), got["stderr"].encode()),
+                                 (oracle.returncode, oracle.stdout, oracle.stderr))
+                if text == "":
+                    self.assertEqual((got["exit_code"], len(got["stdout"].encode())), (0, 73))
+        for i, text in enumerate(("x" * 262145, "\n" * 8192, "\r" * 8192)):
+            c.send(validation("over" + str(i), text, "severity-floor"))
+            self.error(c.next(), "input_limit")
+        self.assertEqual(c.end(), (0, [], b""))
+
     def test_mixed_leaves_foreign_cwd_and_closed_worker_routes(self):
         clean = (ROOT / "tests/fixtures/validators/lc.pass.synthesis-sections.all-headings.md").read_text()
         c = self.client(cwd=self.root, env=dict(os.environ, PATH="", PYTHONPATH=str(self.root)))
         for i, (leaf, text, rc) in enumerate((("tone-check", "", 0),
                 ("synthesis-sections", clean, 0), ("tone-check", "masterpiece", 1),
-                ("synthesis-sections", "", 1))):
+                ("synthesis-sections", "", 1), ("severity-floor", "", 0),
+                ("severity-floor", "Weak at High", 1))):
             c.send(validation(str(i), text, leaf)); got = c.next()
             self.assertEqual((got["id"], got["validator"], got["available"], got["result"]["exit_code"]),
                              (str(i), leaf, True, rc))
         c.send(cancel("unknown")); self.assertFalse(c.next()["cancelled"])
         self.assertEqual(c.end(), (0, [], b""))
         for argv in (("--worker-other",), ("--worker-synthesis-sections", "extra"),
+                     ("--worker-severity-floor", "extra"),
                      ("--worker", "--worker-synthesis-sections")):
             result = subprocess.run([PYTHON, "-I", "-S", str(SCRIPT), *argv], capture_output=True)
             self.assertEqual((result.returncode, result.stdout), (2, b""))
@@ -520,6 +572,41 @@ class RunnerTests(unittest.TestCase):
                     c.send(cancel("synth", "late")); self.assertFalse(c.next()["cancelled"])
                 self.assertEqual(c.end(), (0 if action in ("cancel", "timeout", "eof") else 2, [], b""))
 
+    @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
+    def test_severity_lifecycle_shared_slot_and_recovery(self):
+        for action in ("cancel", "eof", "fatal", "SIGTERM", "timeout"):
+            with self.subTest(action=action):
+                self.sleeping(); self.pidfile.unlink(missing_ok=True)
+                c = self.client(script=self.script)
+                started = time.monotonic()
+                c.send(validation("sev", "sleep", "severity-floor")); pid = self.pid()
+                for id, leaf, text, code in (("busy-tone", "tone-check", "", "busy"),
+                        ("busy-synth", "synthesis-sections", "", "busy"),
+                        ("busy-sev", "severity-floor", "", "busy"),
+                        ("unknown", "other", "x" * 262145, "validator_unavailable"),
+                        ("limit", "severity-floor", "x" * 262145, "input_limit")):
+                    c.send(validation(id, text, leaf)); got = c.next(); self.error(got, code)
+                    self.assertEqual((got["id"], got["validator"]), (id, leaf))
+                if action == "cancel": c.send(cancel("sev"))
+                elif action == "eof": c.child.stdin.close()
+                elif action == "fatal": c.raw(b"{}\n")
+                elif action == "SIGTERM": c.child.send_signal(signal.SIGTERM)
+                got = c.next()
+                self.error(got, "cancelled" if action == "cancel" else "timeout" if action == "timeout" else "session_ended")
+                self.assertEqual((got["id"], got["validator"]), ("sev", "severity-floor"))
+                self.dead(pid)
+                if action == "timeout":
+                    self.assertGreaterEqual(time.monotonic() - started, 5)
+                    self.assertLess(time.monotonic() - started, 7)
+                if action == "cancel": self.assertTrue(c.next()["cancelled"])
+                elif action == "fatal": self.assertEqual(c.next()["error"]["code"], "invalid_request")
+                if action in ("cancel", "timeout"):
+                    c.send(validation("healthy", "", "synthesis-sections")); got = c.next()
+                    self.assertEqual((got["id"], got["validator"], got["available"]),
+                                     ("healthy", "synthesis-sections", True))
+                    c.send(cancel("sev", "late")); self.assertFalse(c.next()["cancelled"])
+                self.assertEqual(c.end(), (0 if action in ("cancel", "timeout", "eof") else 2, [], b""))
+
     def test_fixed_idle_and_session_deadlines_with_test_only_clock(self):
         # A disposable test launcher accelerates monotonic time, not protocol limits.
         # The production script and request schema have no clock/limit override.
@@ -612,6 +699,40 @@ class RunnerTests(unittest.TestCase):
         c.send(validation("synth", "", "synthesis-sections")); self.error(c.next(), "runner_dependency_unavailable")
         self.assertEqual(c.end(), (0, [], b""))
 
+    def test_severity_dependency_malformed_child_and_death_are_unavailable(self):
+        self.pidfile = self.root / "dead-worker.pid"
+        bodies = ("raise ImportError('synthetic')\n",
+                  "def severity_floor(text): raise RuntimeError(text)\n",
+                  "import os\ndef severity_floor(text):\n"
+                  " open(%r,'w').write(str(os.getpid()))\n os._exit(3)\n" % str(self.pidfile),
+                  "def severity_floor(text): return []\n",
+                  "def severity_floor(text): print(text); return [],[],'OK','FAIL'\n",
+                  "import sys\ndef severity_floor(text): sys.stderr.write(text); return [],[],'OK','FAIL'\n")
+        for body in bodies:
+            with self.subTest(body=body):
+                (self.scripts / "letter_checks.py").write_text(body + "\ndef tone_check(text): return [],[],'tone OK','FAIL'\n")
+                c = self.client(script=self.script)
+                c.send(validation("sev", "SYNTHETIC_SENTINEL", "severity-floor")); got = c.next()
+                self.error(got, "runner_dependency_unavailable" if "ImportError" in body else "worker_failed")
+                self.assertEqual((got["id"], got["validator"]), ("sev", "severity-floor"))
+                self.assertNotIn("SYNTHETIC_SENTINEL", json.dumps(got))
+                if "os._exit" in body:
+                    if os.name == "posix": self.dead(self.pid())
+                    self.pidfile.unlink()
+                if "ImportError" not in body:
+                    c.send(validation("healthy")); self.assertTrue(c.next()["available"])
+                self.assertEqual(c.end(), (0, [], b""))
+        (self.scripts / "letter_checks.py").unlink()
+        c = self.client(script=self.script)
+        c.send(validation("sev", "", "severity-floor")); self.error(c.next(), "runner_dependency_unavailable")
+        self.assertEqual(c.end(), (0, [], b""))
+        # The fixed sibling dependency fails at import, never becomes a pass.
+        shutil.copyfile(SCRIPT.parent / "letter_checks.py", self.scripts / "letter_checks.py")
+        (self.scripts / "override_marker.py").unlink()
+        c = self.client(script=self.script)
+        c.send(validation("sev2", "", "severity-floor")); self.error(c.next(), "runner_dependency_unavailable")
+        self.assertEqual(c.end(), (0, [], b""))
+
     def test_environment_scrubbing_and_socket_guard(self):
         (self.scripts / "letter_checks.py").write_text(
             "import os,socket,subprocess,sys\ndef tone_check(text):\n"
@@ -669,6 +790,32 @@ class RunnerTests(unittest.TestCase):
             else: value["version"] = True
             self.metadata.write_text(json.dumps(value))
             self.assertEqual(self.inventory_check().returncode, 1, change)
+        value = copy.deepcopy(baseline)
+        value["validators"].append(dict(value["validators"][6], id="invented-support-none"))
+        self.metadata.write_text(json.dumps(value))
+        self.assertEqual(self.inventory_check().returncode, 1)
+        c = self.client(script=self.script)
+        for id, leaf in (("tone", "tone-check"), ("synth", "synthesis-sections"),
+                         ("sev", "severity-floor")):
+            c.send(validation(id, "", leaf)); self.assertTrue(c.next()["available"])
+        c.send(validation("invented", "", "invented-support-none"))
+        self.error(c.next(), "validator_unavailable")
+        self.assertEqual(c.end(), (0, [], b""))
+        for change in ("duplicate", "bad-id", "empty-reason", "false-desktop"):
+            value = copy.deepcopy(baseline)
+            sev = next(r for r in value["validators"] if r["id"] == "severity-floor")
+            if change == "duplicate": value["validators"].append(copy.deepcopy(sev))
+            elif change == "bad-id": sev["id"] = "bad/id"
+            elif change == "empty-reason": sev["omitted_capability"] = ""
+            else: sev["desktop_disposition"] = "desktop-supported"
+            self.metadata.write_text(json.dumps(value))
+            self.assertEqual(self.inventory_check().returncode, 1)
+            c = self.client(script=self.script)
+            for id, leaf in (("tone", "tone-check"), ("synth", "synthesis-sections"),
+                             ("sev", "severity-floor")):
+                c.send(validation(id, "", leaf))
+                self.error(c.next(), "runner_dependency_unavailable")
+            self.assertEqual(c.end(), (0, [], b""))
 
     def test_missing_bad_or_oversized_metadata_disables_leaf(self):
         for data in (None, b"{}", b" " * 65537, b'{"version":1,"version":1,"validators":[]}'):
@@ -677,29 +824,38 @@ class RunnerTests(unittest.TestCase):
             c = self.client(script=self.script)
             c.send(validation()); self.error(c.next(), "runner_dependency_unavailable")
             c.send(validation("synth", "", "synthesis-sections")); self.error(c.next(), "runner_dependency_unavailable")
+            c.send(validation("sev", "", "severity-floor")); self.error(c.next(), "runner_dependency_unavailable")
             c.send(validation("other", validator="other")); self.error(c.next(), "validator_unavailable")
             self.assertEqual(c.end(), (0, [], b""))
             self.assertEqual(self.inventory_check().returncode, 1)
 
-    def test_both_exact_inventory_mappings_required_at_runtime_and_check(self):
+    def test_three_exact_inventory_mappings_required_at_runtime_and_check(self):
         baseline = json.loads(self.metadata.read_text())
-        for change in ("swap", "unknown", "omit-tone", "omit-synth", "disable-tone", "disable-synth", "desktop"):
+        for change in ("swap", "swap-sev", "unknown", "unknown-sev", "omit-tone", "omit-synth",
+                       "omit-sev", "disable-tone", "disable-synth", "disable-sev", "desktop", "desktop-sev"):
             with self.subTest(change=change):
                 value = copy.deepcopy(baseline)
                 tone = next(r for r in value["validators"] if r["id"] == "tone-check")
                 synth = next(r for r in value["validators"] if r["id"] == "synthesis-sections")
+                sev = next(r for r in value["validators"] if r["id"] == "severity-floor")
                 if change == "swap":
                     tone["development_support"], synth["development_support"] = synth["development_support"], tone["development_support"]
+                elif change == "swap-sev":
+                    synth["development_support"], sev["development_support"] = sev["development_support"], synth["development_support"]
                 elif change == "unknown": synth["development_support"] = "synthesis-v2"
-                elif change.startswith("omit-"): value["validators"].remove(tone if change == "omit-tone" else synth)
-                elif change.startswith("disable-"): (tone if change == "disable-tone" else synth)["development_support"] = "none"
-                else: synth["desktop_disposition"] = "desktop-supported"
+                elif change == "unknown-sev": sev["development_support"] = "severity-v2"
+                elif change.startswith("omit-"):
+                    value["validators"].remove({"omit-tone": tone, "omit-synth": synth, "omit-sev": sev}[change])
+                elif change.startswith("disable-"):
+                    {"disable-tone": tone, "disable-synth": synth, "disable-sev": sev}[change]["development_support"] = "none"
+                else: (sev if change == "desktop-sev" else synth)["desktop_disposition"] = "desktop-supported"
                 self.metadata.write_text(json.dumps(value)); self.assertEqual(self.inventory_check().returncode, 1)
                 c = self.client(script=self.script)
                 for id, leaf, text, code in (("unknown", "other", "x" * 262145, "validator_unavailable"),
                         ("limit", "synthesis-sections", "x" * 262145, "input_limit"),
                         ("tone", "tone-check", "", "runner_dependency_unavailable"),
-                        ("synth", "synthesis-sections", "", "runner_dependency_unavailable")):
+                        ("synth", "synthesis-sections", "", "runner_dependency_unavailable"),
+                        ("sev", "severity-floor", "", "runner_dependency_unavailable")):
                     c.send(validation(id, text, leaf)); got = c.next(); self.error(got, code)
                     self.assertEqual((got["id"], got["validator"]), (id, leaf))
                 self.assertEqual(c.end(), (0, [], b""))
@@ -723,9 +879,9 @@ class RunnerTests(unittest.TestCase):
     def test_inventory_row_limit_and_no_bash_execution(self):
         registry = self.scripts / "validate.sh"
         for count in (512, 513):
-            rows = [{"id": "tone-check" if i == 0 else "synthesis-sections" if i == 1 else "v%d" % i,
+            rows = [{"id": "tone-check" if i == 0 else "synthesis-sections" if i == 1 else "severity-floor" if i == 2 else "v%d" % i,
                      "desktop_disposition": "not-yet-supported",
-                     "development_support": "tone-check-v1" if i == 0 else "synthesis-sections-v1" if i == 1 else "none",
+                     "development_support": "tone-check-v1" if i == 0 else "synthesis-sections-v1" if i == 1 else "severity-floor-v1" if i == 2 else "none",
                      "omitted_capability": "Synthetic unavailable validation."} for i in range(count)]
             self.metadata.write_text(json.dumps({"version":1,"validators":rows}, separators=(",",":")))
             # Keep the raw metadata inside its independent byte bound.
