@@ -37,7 +37,9 @@ partial-migration message. Python does not fall back to Bash.
 ## Differential acceptance
 
 `tests/test_validate_python_parity.py` compares exit codes and stdout bytes against
-the independent Bash dispatcher without output normalization. Application-generated
+the independent Bash dispatcher without output normalization, except that leading
+blanks are stripped from the Bash `state-lines` count: Bash uses the host `wc -l`,
+which BSD/macOS left-pads. Native output is the unpadded count. Application-generated
 stderr bytes are also compared exactly. For shell/OS-generated read-redirection
 errors, the native CLI retains the exit/stdout contract and emits a named file-read
 error; it does not reproduce shell source paths, line numbers or platform wording. It
