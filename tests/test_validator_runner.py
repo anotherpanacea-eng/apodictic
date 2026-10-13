@@ -262,6 +262,33 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(c.next()["error"]["code"], "session_limit")
         self.assertEqual(c.end(), (2, [], b""))
 
+    def test_session_byte_boundary_preserves_identical_stream_prefix(self):
+        outcomes = []
+        for split in (False, True):
+            c = self.client(script=self.script)
+            prefix_responses = []
+            for i in range(16):
+                base = frame(cancel("unknown", str(i)))[:-1]
+                length = 1048576 - (128 if i == 15 else 0)
+                c.raw(base + b" " * (length - 1 - len(base)) + b"\n")
+                prefix_responses.append(c.next())
+            edge = frame(cancel("unknown", "edge"))
+            padding = b" " * (129 - len(edge))
+            if split:
+                c.raw(edge)
+                response = c.next()
+                c.raw(padding)
+            else:
+                c.raw(edge + padding)
+                response = c.next()
+            self.assertEqual(response, {"protocol": 1, "type": "cancel_result", "id": "edge",
+                "target": "unknown", "cancelled": False, "error": None})
+            fatal = c.next()
+            self.assertEqual(fatal["error"]["code"], "session_limit")
+            self.assertEqual(c.end(), (2, [], b""))
+            outcomes.append(prefix_responses + [response, fatal])
+        self.assertEqual(*outcomes)
+
     @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
     def test_cancel_busy_race_and_reuse(self):
         self.sleeping(); c = self.client(script=self.script)
@@ -305,36 +332,64 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(c.end(), (0, [], b""))
 
     @unittest.skipUnless(os.name == "posix", "POSIX development-host pipe/death evidence")
-    def test_blocked_and_broken_output_reap_active_worker(self):
-        for broken in (False, True):
-            self.sleeping(); self.pidfile.unlink(missing_ok=True)
-            reader, writer = os.pipe()
-            if broken:
-                os.close(reader)
-            else:
-                os.set_blocking(writer, False)
+    def test_saturated_stderr_and_output_failure_share_cleanup_budget(self):
+        # Actual inherited pipes, unmodified deadlines, and a SIGTERM-ignoring worker.
+        for action in ("blocked", "broken", "cancel", "fatal"):
+            with self.subTest(action=action):
+                self.sleeping(); self.pidfile.unlink(missing_ok=True)
+                out_r, out_w = os.pipe(); err_r, err_w = os.pipe()
+                def fill(fd):
+                    os.set_blocking(fd, False)
+                    count = 0
+                    try:
+                        while True:
+                            count += os.write(fd, b"x" * 4096)
+                    except BlockingIOError:
+                        pass
+                    os.set_blocking(fd, True)
+                    return count
+                fill(err_w)  # Never drained while the coordinator is alive.
+                prefix = b""
+                first = None
+                if action == "broken":
+                    os.close(out_r)
+                else:
+                    capacity = fill(out_w)
+                    if action in ("cancel", "fatal"):
+                        code = "cancelled" if action == "cancel" else "session_ended"
+                        first = {"protocol": 1, "type": "result", "id": "r1",
+                            "validator": "tone-check", "available": False, "result": None,
+                            "error": {"code": code, "message": "Validator unavailable: " + code + "."}}
+                        # Leave room for exactly the first terminal envelope, forcing
+                        # the subsequent control/fatal write onto the same deadline.
+                        left = capacity
+                        while left:
+                            left -= len(os.read(out_r, left))
+                        prefix = b"x" * (capacity - len(frame(first)) - 1) + b"\n"
+                        self.assertEqual(os.write(out_w, prefix), len(prefix))
+                p = subprocess.Popen([PYTHON, "-I", "-S", str(self.script)],
+                    stdin=subprocess.PIPE, stdout=out_w, stderr=err_w)
+                os.close(out_w); os.close(err_w)
                 try:
-                    while True: os.write(writer, b"x" * 4096)
-                except BlockingIOError:
-                    pass
-                os.set_blocking(writer, True)
-            p = subprocess.Popen([PYTHON, "-I", "-S", str(self.script)],
-                stdin=subprocess.PIPE, stdout=writer, stderr=subprocess.PIPE)
-            os.close(writer)
-            try:
-                p.stdin.write(frame(validation(text="sleep"))); p.stdin.flush(); pid = self.pid()
-                started = time.monotonic()
-                p.stdin.write(frame(validation("busy"))); p.stdin.flush()
-                self.assertEqual(p.wait(timeout=5), 2)
-                self.assertLess(time.monotonic() - started, 3)
-                self.dead(pid)
-                stderr = p.stderr.read()
-                self.assertEqual(stderr, b"Validator runner transport or cleanup failed.\n")
-                self.assertNotIn(b"sleep", stderr)
-            finally:
-                if p.poll() is None: p.kill(); p.wait()
-                p.stdin.close(); p.stderr.close()
-                if not broken: os.close(reader)
+                    p.stdin.write(frame(validation(text="sleep"))); p.stdin.flush(); pid = self.pid()
+                    started = time.monotonic()
+                    request = (frame(cancel()) if action == "cancel" else b"{}\n"
+                        if action == "fatal" else frame(validation("busy")))
+                    p.stdin.write(request); p.stdin.flush()
+                    self.assertEqual(p.wait(timeout=2.2), 2)
+                    self.assertLess(time.monotonic() - started, 2.2)  # Parent scheduling allowance only.
+                    self.dead(pid)  # Absence also excludes an unreaped zombie.
+                    if first is not None:
+                        delivered = bytearray()
+                        while True:
+                            data = os.read(out_r, 4096)
+                            if not data: break
+                            delivered.extend(data)
+                        self.assertEqual(bytes(delivered), prefix + frame(first))
+                finally:
+                    if p.poll() is None: p.kill(); p.wait()
+                    p.stdin.close(); os.close(err_r)
+                    if action != "broken": os.close(out_r)
 
     def test_fixed_idle_and_session_deadlines_with_test_only_clock(self):
         # A disposable test launcher accelerates monotonic time, not protocol limits.

@@ -214,7 +214,24 @@ def worker_main():
 
 
 class TransportFailure(Exception):
-    pass
+    def __init__(self, deadline=None):
+        self.deadline = deadline
+
+
+def failure_diagnostic(deadline):
+    # Inherited stderr can be full too: diagnostics never extend shutdown.
+    if time.monotonic() >= deadline:
+        return
+    done = threading.Event()
+    def write():
+        try:
+            os.write(sys.stderr.fileno(), b"Validator runner transport or cleanup failed.\n")
+        except OSError:
+            pass
+        finally:
+            done.set()
+    threading.Thread(target=write, daemon=True).start()
+    done.wait(max(0, deadline - time.monotonic()))
 
 
 class Session:
@@ -251,12 +268,15 @@ class Session:
             self.wakeup.set()
 
     def emit(self, value, deadline=None):
+        deadline = time.monotonic() + CLEANUP_SECONDS if deadline is None else deadline
         payload = encoded(value)
         if len(payload) > RESPONSE_BYTES:
             if value["type"] != "result":
-                raise TransportFailure()
+                raise TransportFailure(deadline)
             payload = encoded(unavailable(value, "output_limit"))
-        deadline = time.monotonic() + CLEANUP_SECONDS if deadline is None else deadline
+        # Reserve part of this same budget to kill/reap an active worker if
+        # output fails. Waiting until the absolute deadline would leave no reap time.
+        write_deadline = deadline - .25 if self.active else deadline
         done = threading.Event()
         failures = []
         def write():
@@ -272,11 +292,11 @@ class Session:
             finally:
                 done.set()
         threading.Thread(target=write, daemon=True).start()
-        while not done.wait(min(.02, max(0, deadline - time.monotonic()))):
-            if time.monotonic() >= deadline or self.termination is not None:
-                raise TransportFailure()
+        while not done.wait(min(.02, max(0, write_deadline - time.monotonic()))):
+            if time.monotonic() >= write_deadline or self.termination is not None:
+                raise TransportFailure(deadline)
         if failures:
-            raise TransportFailure()
+            raise TransportFailure(deadline)
 
     def start(self, request):
         started = time.monotonic()
@@ -328,27 +348,30 @@ class Session:
         if active is None:
             return
         self.active = None  # Any queued output is now stale and must be discarded.
-        child = active["child"]
-        if child.poll() is None:
-            child.terminate()
-            try:
-                child.wait(timeout=min(.1, max(0, deadline - time.monotonic())))
-            except subprocess.TimeoutExpired:
-                child.kill()
         try:
-            child.wait(timeout=max(0, deadline - time.monotonic()))
-        except subprocess.TimeoutExpired:
-            raise TransportFailure() from None
-        # Readers can be blocked putting stale bounded events; drain until joined.
-        while any(t.is_alive() for t in active["threads"]):
-            if time.monotonic() >= deadline:
-                raise TransportFailure()
+            child = active["child"]
+            if child.poll() is None:
+                child.terminate()
+                try:
+                    child.wait(timeout=min(.1, max(0, deadline - time.monotonic())))
+                except subprocess.TimeoutExpired:
+                    child.kill()
             try:
-                self.events.get(timeout=.01)
-            except queue.Empty:
-                pass
-        for stream in (child.stdin, child.stdout, child.stderr):
-            stream.close()
+                child.wait(timeout=max(0, deadline - time.monotonic()))
+            except subprocess.TimeoutExpired:
+                raise TransportFailure(deadline) from None
+            # Readers can be blocked putting stale bounded events; drain until joined.
+            while any(t.is_alive() for t in active["threads"]):
+                if time.monotonic() >= deadline:
+                    raise TransportFailure(deadline)
+                try:
+                    self.events.get(timeout=.01)
+                except queue.Empty:
+                    pass
+            for stream in (child.stdin, child.stdout, child.stderr):
+                stream.close()
+        except OSError:
+            raise TransportFailure(deadline) from None
 
     def finish(self, code):
         request = self.active["request"]
@@ -488,11 +511,11 @@ class Session:
                         self.finish("session_ended")
                     return 0
                 self.last_input = timestamp
-                self.bytes += len(data)
-                if self.bytes > SESSION_BYTES:
-                    return self.fatal("session_limit")
+                remaining = SESSION_BYTES - self.bytes
+                prefix = data[:remaining]
+                self.bytes += len(prefix)
                 # Only LF frames: never use universal splitlines for transport.
-                pieces = data.split(b"\n")
+                pieces = prefix.split(b"\n")
                 for i, piece in enumerate(pieces):
                     self.frame.extend(piece)
                     if len(self.frame) > FRAME_BYTES:
@@ -503,14 +526,19 @@ class Session:
                         status = self.admit(record)
                         if status is not None:
                             return status
-        except (TransportFailure, BrokenPipeError, OSError):
-            deadline = ((self.termination if self.termination is not None else time.monotonic())
-                        + CLEANUP_SECONDS)
+                if len(prefix) < len(data):
+                    return self.fatal("session_limit")
+        except (TransportFailure, BrokenPipeError, OSError) as exc:
+            deadline = getattr(exc, "deadline", None)
+            if deadline is None:
+                deadline = time.monotonic() + CLEANUP_SECONDS
+            if self.termination is not None:
+                deadline = min(deadline, self.termination + CLEANUP_SECONDS)
             try:
                 self.stop(deadline)
             except (TransportFailure, OSError):
                 pass
-            os.write(sys.stderr.fileno(), b"Validator runner transport or cleanup failed.\n")
+            failure_diagnostic(deadline)
             return 2
 
 
