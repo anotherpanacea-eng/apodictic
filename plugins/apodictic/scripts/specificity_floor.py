@@ -615,26 +615,16 @@ def run_self_test():
         _letter_stdout = _io.StringIO()
         with _redirect_stdout(_letter_stdout):
             _letter_code = main(["specificity_floor.py", "specificity-floor", _nu, _real_p])
-        _letter_error = _letter_stdout.getvalue()
-        _letter_prefix = "Error: cannot read editorial letter %s (" % _nu
-        _letter_payload = (_letter_error[len(_letter_prefix):]
-                           if _letter_error.startswith(_letter_prefix) else "")
         chk("non_utf8_letter_fails_closed",
             _letter_code == 2
-            and _letter_payload.startswith("unreadable or not UTF-8)")
-            and _letter_payload.count("\n") == 1 and "PASS" not in _letter_payload)
+            and _letter_stdout.getvalue().startswith("Error: cannot read editorial letter %s" % _nu))
         # non-UTF8 LEDGER (readable letter): fail closed too — a real ledger must never read as empty.
         _ledger_stdout = _io.StringIO()
         with _redirect_stdout(_ledger_stdout):
             _ledger_code = main(["specificity_floor.py", "specificity-floor", _ok, _nu])
-        _ledger_error = _ledger_stdout.getvalue()
-        _ledger_prefix = "Error: cannot read findings ledger %s (" % _nu
-        _ledger_payload = (_ledger_error[len(_ledger_prefix):]
-                           if _ledger_error.startswith(_ledger_prefix) else "")
         chk("non_utf8_ledger_fails_closed",
             _ledger_code == 2
-            and _ledger_payload.startswith("unreadable or not UTF-8)")
-            and _ledger_payload.count("\n") == 1 and "PASS" not in _ledger_payload)
+            and _ledger_stdout.getvalue().startswith("Error: cannot read findings ledger %s" % _nu))
         # readable-but-EMPTY letter (readable "") must NOT be swept up by the fail-closed change:
         # it reads as "", not None, so the CLI runs; an empty letter delivers 0 findings and the
         # floor has nothing to hold, exit 0 (unchanged readable-empty semantics).

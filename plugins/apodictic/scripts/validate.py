@@ -186,6 +186,13 @@ _REPOSITORY_INTEGRITY = {
     ),
 }
 COMMANDS += (*_REPOSITORY_INTEGRITY, "argument-carve-behavior-preservation")
+# validate.sh resolves these arms in validate.d/commands-a.sh. Every other command reaches
+# commands-b.sh, whose preamble refuses misplaced --internal-links* arguments first.
+_BASH_COMMANDS_A = frozenset((
+    "contract-hash", "contract-check", "ledger-check", "artifact-names", "synthesis-sections",
+    "tone-check", "state-lines", *_LETTER_SIGNALS, "quality-risk-triggers", "cost-floor",
+    "timeline-diff", "timeline-arithmetic", "timeline-anchor-conflict",
+))
 
 
 def _line(text, *, error=False):
@@ -218,10 +225,26 @@ def _run_helper(script, args, *, input=None):
     ).returncode
 
 
-def _repository_integrity(command, args):
-    if any(arg.startswith("--internal-links") for arg in args):
+def _script_dir():
+    # Bash uses the logical (unresolved) script directory, as `cd "$(dirname "$0")" && pwd`.
+    return os.path.abspath(os.path.dirname(sys.argv[0]))
+
+
+def _navigation_scan(command, args):
+    links = args.count("--internal-links")
+    malformed = any(arg.startswith("--internal-links") and arg != "--internal-links" for arg in args)
+    if not (links or malformed):
+        return 0
+    if command != "pdf-export" or links != 1 or malformed or len(args) != 2:
         _line("pdf-export: usage: pdf-export <run_folder> --internal-links (once)")
         return 2
+    if any(arg.startswith("--") and arg != "--internal-links" for arg in args):
+        _line("pdf-export: usage: misplaced navigation option")
+        return 2
+    return 0
+
+
+def _repository_integrity(command, args):
     if command == "argument-carve-behavior-preservation":
         return _argument_carve(args)
     script, count, usage = _REPOSITORY_INTEGRITY[command]
@@ -255,9 +278,8 @@ def _override_companion():
     )
     failed = False
     for label, want, body in cases:
+        # Like Bash's `if ... | _has_override`, any nonzero status (including launch failure) is a miss.
         result = _run_helper("override_marker.py", ["--has-override", slug], input=body.encode("utf-8"))
-        if result not in (0, 1):
-            return result
         got = "found" if result == 0 else "miss"
         if got == want:
             _line(f"  ho_{label}: OK ({got})")
@@ -270,7 +292,7 @@ def _override_companion():
 
 
 def _argument_carve(args):
-    scripts = str(Path(__file__).resolve().parent)
+    scripts = _script_dir()
     directory = next((candidate for candidate in (
         scripts + "/../../../evals/fixtures/argument-carve/precarve",
         scripts + "/../evals/fixtures/argument-carve/precarve",
@@ -350,23 +372,14 @@ def _argument_reconstruction(command, args):
 
 
 def _annotation_export(command, args):
-    links = sum(arg == "--internal-links" for arg in args)
-    malformed = any(arg.startswith("--internal-links") and arg != "--internal-links" for arg in args)
-    if links or malformed:
-        if command != "pdf-export" or links != 1 or malformed or len(args) != 2:
-            _line("pdf-export: usage: pdf-export <run_folder> --internal-links (once)")
-            return 2
-        if any(arg.startswith("--") and arg != "--internal-links" for arg in args):
-            _line("pdf-export: usage: misplaced navigation option")
-            return 2
-        if not (Path(__file__).resolve().parent / "annotation_export.py").is_file():
-            _line("pdf-export: N navigation validation unavailable (Python/helper missing)")
-            return 2
+    if "--internal-links" in args and not (Path(__file__).resolve().parent / "annotation_export.py").is_file():
+        _line("pdf-export: N navigation validation unavailable (Python/helper missing)")
+        return 2
     if args and args[0] == "--self-test":
         result = _run_helper("annotation_export.py", ["--self-test"])
         if result or command != "pdf-export":
             return result
-        root = Path(__file__).resolve().parents[3]
+        root = Path(os.path.normpath(os.path.join(_script_dir(), "../../..")))
         if (root / "AGENTS.md").is_file():
             suite = root / "tests/test_pdf_navigation.py"
             if not suite.is_file():
@@ -401,7 +414,7 @@ def _registry_check(args):
     dependencies = args[1] if len(args) > 1 else ""
     if not registry:
         # Preserve script-relative candidate order and lexical ../ components.
-        script_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
+        script_dir = _script_dir()
         for relative in (
             "../skills/core-editor/references",
             "../plugins/apodictic/skills/core-editor/references",
@@ -580,6 +593,10 @@ def main(argv=None):
         _line("Partial migration: remaining commands and aggregates require validate.sh.")
         return 2
     command, args = args[0], args[1:]
+    if command not in _BASH_COMMANDS_A:
+        result = _navigation_scan(command, args)
+        if result:
+            return result
     if command in _REPOSITORY_INTEGRITY or command == "argument-carve-behavior-preservation":
         return _repository_integrity(command, args)
     if command in _ANNOTATION_EXPORTS:

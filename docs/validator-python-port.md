@@ -129,13 +129,8 @@ build/render/emit/crossref modes remain direct-only: mode-like wrapper tokens ar
 paths and do not enable writes. Discovery, optional reads, strictness, citation
 containment and recorded-disposition checks remain helper-owned.
 
-The only Group 9 helper edit captures two expected positive render calls inside
-the viz self-test. Each named check still verifies return 0 and now also requires
-the exact complete success stdout, including its actual output path and newline.
-Only those two random-path stdout emissions are hidden. The negative render's
-stable stderr, named rows, suite accounting, successful cleanup and ordinary
-renderer output/artifacts remain unchanged; exceptions propagate with stdout
-restored, without a new guarantee of directory cleanup on arbitrary exceptions.
+The only Group 9 helper edit captures the viz self-test's two positive render
+calls so their random output paths no longer reach self-test stdout.
 
 Exit codes remain 0 for success, 1 for a validation failure, and 2 for usage or an
 invalid/inaccessible input path. For the three raw-byte utilities, a regular file
@@ -148,133 +143,11 @@ Python help identifies the partial migration. Unported commands, including
 `--self-test-all`, `--check-canonical` and `--check-all`, return 2 with an explicit
 partial-migration message. Python does not fall back to Bash.
 
-## Differential acceptance
-
-`tests/test_validate_python_parity.py` compares exit codes and stdout bytes against
-the independent Bash dispatcher without output normalization. All migrated
-self-test surfaces compare exact stdout bytes, including specificity and
-the three shared refutation routes. Their self-tests formerly printed random
-temporary paths while exercising expected negative CLI reads. The separate
-stabilizer captures only those three internal calls, asserts exit 2 and the
-complete named role/path boundary and read/decode reason, and rejects false PASS
-output. Reason, line-count and PASS checks inspect only the payload after the
-complete expected role/path and delimiter, preserving valid temporary roots
-containing PASS, BYPASS or newlines. The named fail-closed checks and complete
-suites still run. Ordinary
-commands, including their named decode errors, retain byte-identical output.
-Application-generated
-stderr bytes are compared exactly except for the accepted logical/physical cwd
-prefix limitation noted below. Coaching’s shell-fatal missing-delete-target
-case preserves exit/stdout with the named native stderr described above.
-For shell/OS-generated read-redirection
-errors, the native CLI retains the exit/stdout contract and emits a named file-read
-error; it does not reproduce shell source paths, line numbers or platform wording. It
-exercises every migrated self-test, all applicable shipped validator fixtures,
-binary/empty/CRLF/unterminated files, literal project/run labels, Unicode/space/
-leading-dash paths, missing arguments and paths, wrong path types, hash drift and
-ignored extra arguments, invalid path components, inaccessible parents and
-unreadable regular files. Group 2 additionally exercises all six self-tests and
-42 shipped fixtures, advisory/override behavior, parser-owned errors, optional
-inputs and explicit/default/fragment/empty-registry routes. POSIX permission
-regressions require an unprivileged
-account and are explicitly skipped when the host can bypass mode restrictions.
-Independent native assertions cover the raw-byte utility
-contract with an empty `PATH`, including files larger than a read chunk. Native
-self-tests, fixture behavior and invalid-input checks also run without Bash.
-
-```text
-python -m pytest -q tests/test_validate_python_parity.py tests/test_contract_hash_portability.py
-bash scripts/validate.sh --check-all
-node scripts/assemble-changelog.mjs --check
-git diff --check
-```
-
-When Bash is absent, differential-only cases are explicitly skipped. Native
-checks still run; this is not full native Windows acceptance. The final acceptance
-requires the whole Python `--check-all` suite green on `windows-latest` and exact
-differential results over every command self-test and all validator fixtures.
-The final independent pre-cutover Bash reference includes the separately reviewed
-specificity/refutation helper stabilization and the narrow viz self-test capture.
-Their intentional self-test-only output changes remove the two specificity fixture
-diagnostic lines, the one shared refutation fixture diagnostic line and two
-positive viz render output-path lines; no pre-stabilization self-test
-byte-equivalence claim is made. Output from readable-empty and other checks,
-ordinary helper dispatch and unrelated exception propagation remain unchanged.
-The shared refutation suite retains an unrelated synthetic-JSON failure when a
-temporary-root path contains a newline; its negative read checks still pass.
-
-Group 3 adds eight self-test routes, all 15 applicable shipped timeline fixtures,
-canonical config/timeline inputs and temporary strict/default/optional-file and
-two-timeline cases. The accepted Group 2 P3 remains bounded: relative invocation
-from a symlinked cwd can show a physical cwd prefix in an empty-registry stderr
-diagnostic where Bash shows the logical prefix. File selection, exit code and
-stdout match. The dispatcher does not emulate shell `PWD` behavior.
-
-Group 4 exercises eight added self-test surfaces and the seven remaining `sf.*`
-fixtures, including both JSON files, so all 73 validator fixture files now have
-migrated command coverage. Additional controls cover canonical structured and
-operator-mode inputs, raw/mixed file errors, schema refusal, helper-owned late
-self-tests, editor mode arity/precedence, latest-file selection and sidecar ascent.
-Native aggregate coverage and full-suite Windows acceptance remain queued.
-
-Group 5a adds five helper self-test surfaces, canonical run folders and the
-re-grounded letter/ledger pair, advisory/strict controls, model-tag source
-precedence and parse refusal, report flag ordering, malformed sidecars, exact
-path arities and named UTF-8 read errors. Both deferred gate routes have explicit
-partial-migration refusal checks. All earlier native tests and 73 fixtures remain.
-
-Group 6 adds seven helper self-test surfaces, canonical plans/cards/arc, single
-and paired regression rounds, canonical refutation inputs and temporary hostile
-records. Controls cover planning discovery, parsed carriers, ledger precedence,
-advisory/strict behavior, positional refutation flags, optional/required snapshots,
-containment and named decode errors. Its 41 migrated command self-test surfaces
-compare exact stdout bytes after the separate helper stabilizer.
-All 73 earlier validator fixture cases remain intact.
-
-Group 7 adds seven exact self-test surfaces and ten canonical strict cases. Compact
-controls cover raw argv/filtered-token differences, literal command filenames,
-read refusals, first parsed carrier/newest file, Promise report scope, Continuity
-timeline order/fallback and an advisory/strict/scoped-override transition. All
-earlier native cases, including the stabilizer's temp-root regressions, remain.
-
-Group 8 adds six exact self-test surfaces, six canonical strict inputs and compact
-raw-token, discovery, optional-role, read, strict and override controls. Synthetic
-temporary coaching trees are restored to identical paths/bytes/modes before each
-Bash/native deletion; comparisons include output and resulting file membership,
-bytes and modes, recursive sequence removal, tombstones, H6 residue recomputation,
-idempotence and partial failure. Canonical inputs are never deleted. Coaching's
-bare-token warnings inherit unsorted set iteration: raw differential comparisons
-use the same recorded `PYTHONHASHSEED` (1, 2 and 3) for each pair. Output is not
-sorted or normalized, production does not set a seed, and ordinary unseeded
-output determinism is not claimed. Fingerprint W2/style X6 remain nonblocking
-under strict while coaching URL W1 remains blocking.
-
-Group 9 adds ten exact self-test surfaces, canonical default/strict behavior and
-both explicit outline projects, including expected strict reanchor refusal.
-Compact controls preserve raw wrapper minima/prefixes, distinct resolver roles,
-optional/read/no-op behavior, strictness, direct-only producer modes and no-write
-validation. Viz capture controls exercise real temporary roots with colon/PASS,
-Unicode and newline spellings, per-site bad status/output and propagated
-exceptions. Independent pre-edit ordinary render/refusal receipts compare raw
-outputs and resulting artifact bytes/modes; two known full render emissions are
-the only intentional self-test output delta. The stable nonempty viz/outline
-self-test stderr remains compared exactly. Outline unknown-input/clause-key
-ordering is inherited: raw differential controls pair the same seeds 1, 2 and 3
-without sorting output or setting a production seed. Recorded confirmation checks
-prove consistency of records, not independent human confirmation.
-
 Group 10 adds seven argument evaluator routes. Each forwards the original raw
 arguments to its existing helper after the Bash wrapper's minimum-arity and
 first-position self-test rules; AIF export/check use distinct `export`/`check`
 prefixes. GT repair/round modes, alpha options, crosswalk defaults, AGD optional
-paths and AIF schema/loss rules remain helper-owned. AIF export is a public
-producer: temporary output comparisons cover streams, complete artifact bytes,
-directory membership and modes from identical starting states, including
-overwrite and no-write refusals. Source closure is checked separately from
-sourceless canonical shape. The global Bash `--internal-links*` scanner still
-takes precedence over some route arguments; the native CLI does not emulate that
-global scanner. Route-arm parity excludes those scanner-control invocations,
-which remain part of the coordinated Group 14 cutover.
+paths and AIF schema/loss rules remain helper-owned.
 
 Group 11 adds the argument reconstruction validation and draft publication
 routes. Both send zero-argument calls and ordinary raw arguments directly to
@@ -284,10 +157,7 @@ hard rc1 error; a symlink to a regular helper remains available. Approval's
 stage/append parser and draft's argparse packet/emit parser retain their
 distinct outputs and errors. Real packet, append, projection and draft/receipt
 effects remain helper-owned; a published draft retains `ACTION-REQUIRED` and
-unavailable semantic-comparator markers. The inherited Bash scanner can still
-reject `--internal-links*` before either arm, so Group 11 route-arm forwarding,
-first-self-test and missing-helper parity exclude those scanner-control calls.
-Group 14 owns the scanner's global reach and aggregate cutover.
+unavailable semantic-comparator markers.
 
 Group 12 adds native `obsidian-export`, `html-export`, `docx-export`, and
 `pdf-export` validators. Each sends its own command name and all original raw
@@ -296,34 +166,26 @@ send only `--self-test`; PDF then runs the actual repository navigation suite
 when the repository marker is present. A nonzero helper or suite result remains
 nonzero. The direct helper's `obsidian`, `html`, `docx`, and `pdf` verbs remain
 producers; these four public routes check on-disk exports and do not create them.
-The four routes reproduce the Bash wrapper's `--internal-links*` scan before
-self-test or shortage handling. Earlier native routes still lack the global
-scanner reach, which Group 14 must resolve with complete dispatch tests.
+Linked PDF keeps its separate normal-run authentication and reports that reader
+behavior is unqualified.
 
-PDF first-self-test compares exact exit status and stdout. Its repository
-navigation suite writes unittest progress and results to stderr; only the
-elapsed decimal in `Ran N tests in <elapsed>s` varies between real executions.
-Normal-PATH parity checks all remaining stderr bytes, count and result. An
-empty-PATH native run executes the same suite but skips its two Bash-dependent
-cases on the current POSIX host; that is partial coverage, not a no-skip result.
-Default exports use the helper's existing independent newest-file discovery;
-linked PDF keeps its separate normal-run authentication and reports that reader
-behavior is unqualified. The aggregate gate, complete historical scanner reach,
-native Windows acceptance and cutover remain Group 14 work.
+Every native route that Bash dispatches through `validate.d/commands-b.sh`
+first applies that file's `--internal-links*` refusal: only
+`pdf-export <run_folder> --internal-links` (exactly once, no other `--` option)
+passes; anything else exits 2 with Bash's usage message, before self-test or
+shortage handling. Routes in `commands-a.sh` never see the check, as in Bash.
 
 Group 13 adds `registry-check`, `schema-coverage`, `validator-conventions`,
 `calibration-honesty`, `stance-calibration` and
 `argument-carve-behavior-preservation`. The five helper routes preserve their
 exact command prefixes, original ordinary tokens and distinct raw arities.
 First-position selftests forward only that flag; helper-owned late selftests
-retain wrapper arity checks. All six reproduce the Bash `--internal-links*`
-refusal before shortage, selftest or repository-fixture selection. Earlier
-routes' global scanner reach remains Group 14 work.
+retain wrapper arity checks.
 
 Conventions first-selftest executes all twelve actual shared override-marker CLI
 checks with their original UTF-8 bodies before the full existing meta-lint suite.
-Logical mismatches accumulate and prevent that suite; companion launch failures
-return their actual status. Late selftest runs the helper suite alone. Both
+As in Bash, any nonzero companion status is a miss; mismatches accumulate and
+prevent that suite. Late selftest runs the helper suite alone. Both
 meta-lint and schema coverage still inspect the shipped Bash dispatcher/parts;
 routing them natively does not migrate source introspection or aggregates.
 
@@ -338,18 +200,51 @@ error; only the shell/OS-generated `cat` stderr wording differs. Comparison drif
 permits the next pair, but a later execution/read failure prevents the final row.
 Successful comparisons retain LF-tail selection before NUL removal and
 trailing-LF-only substitution, preserving CR, spaces, embedded LF and non-UTF-8
-golden diagnostic bytes. The smoke does not establish field-level or editorial
+golden diagnostic bytes. Fixture paths are built from the logical script
+directory, as in Bash. The smoke does not establish field-level or editorial
 behavior preservation.
 
-Public copied fixtures cover both candidates, skips and missing files, raw goldens,
-real child failure and matching failure-summary false-PASS controls, unreadable
-first/second goldens and drift followed by later failure. Complete raw streams and
-copied membership/bytes/modes are checked; permission assertions skip explicitly
-if the host can bypass mode restrictions. Native empty-PATH checks run the real
-helpers/companions/children. Active Python remains required: missing native
-helpers retain launch failures, rather than Bash's advisory skip or degraded
-selftest PASS. Existing helper-owned degraded outcomes remain unchanged. Full
-native Windows, aggregates and cutover stay held for Group 14.
+## Differential acceptance
+
+`tests/test_validate_python_parity.py` compares exit codes, stdout and stderr
+bytes against the independent Bash dispatcher without output normalization. It
+covers every migrated self-test, all applicable shipped validator fixtures and
+canonical reference inputs, and raw-byte utility edge cases. One argv-echo
+differential copies the scripts, replaces every helper with a stub that prints
+its arguments and stdin, and compares Bash and native results for every native
+route over empty, missing, file, directory, `--strict`, `--`, late
+`--self-test`, extra, empty-string, `--internal-links*` and delete shapes.
+Helpers are shared, so this checks everything the wrapper can change.
+
+```text
+python -m pytest -q tests/test_validate_python_parity.py tests/test_contract_hash_portability.py
+bash scripts/validate.sh --check-all
+node scripts/assemble-changelog.mjs --check
+git diff --check
+```
+
+When Bash is absent, differential-only cases are explicitly skipped; native
+checks still run. This is not full native Windows acceptance, which requires the
+whole Python `--check-all` suite green on `windows-latest`.
+
+## Divergences and known limitations
+
+- Shell/OS-generated read errors (for example carve's golden `cat`) keep exit
+  and stdout but emit a named native read error instead of shell wording.
+- `coaching-history delete` without a target keeps Bash's exit 1 and empty
+  stdout but emits `Error: coaching-history delete requires <project_root>`.
+- Relative invocation from a symlinked cwd can show a physical cwd prefix in an
+  empty-registry stderr diagnostic where Bash shows the logical prefix.
+- BSD `wc` pads `state-lines` output under Bash; native output is unpadded.
+- Missing native helpers fail as launch errors, never as Bash's advisory skip or
+  degraded self-test PASS.
+- Specificity, refutation and viz self-tests no longer print random temporary
+  paths, so no pre-stabilization self-test byte-equivalence is claimed. The
+  shared refutation suite still fails when a temporary root contains a newline.
+- Coaching bare-token warnings and outline unknown-key ordering inherit unsorted
+  set iteration; output order depends on `PYTHONHASHSEED` in both CLIs.
+- The PDF navigation suite's stderr includes a varying elapsed time, and an
+  empty-PATH run skips its two Bash-dependent cases.
 
 ## Continuation groups
 
