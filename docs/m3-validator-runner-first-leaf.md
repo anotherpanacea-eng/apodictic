@@ -1,0 +1,198 @@
+# M3 validator runner: first leaf
+
+**Status:** Proposed (unbuilt); implementation pending.
+<!-- built-when: plugins/apodictic/scripts/validator_runner.py -->
+
+## 1. Deliverable and boundary
+
+Implement the first owner-admitted CB-1(b) runner capability: a stdlib Python process accepting closed JSON-lines requests over inherited stdin/stdout and executing only `letter_checks.tone_check(text)`. This is a development runner, not a signed desktop runtime. It produces the same validator exit code and stdout as the canonical Python-backed `validate.sh tone-check` route for the same decoded text. It never invokes Bash or the partial `validate.py` dispatcher.
+
+Source baseline: apodictic main `217d2f08f3fd90c09880764d6547f576e0cdd560`. Authority: Fleet `BURN-DOWN-BOARD.md` §5l CB-1(b), and `handoffs/CODE-MAC-APODICTIC-LOCAL-CUTOVER-2026-07-21.md` §M3 (281–321). July M0 inventory is dependency history, not current runtime proof. Current `AGENTS.md` single-sources validators in the plugin: **no root Python mirror**. This document lives in `docs/`, matching current specs; no new `docs/specs/` hierarchy.
+
+Signing, embedded/dependency-locked Python, Tauri broker, desktop staged-path authority, native sandbox qualification, SBOM/locks, full validator port and desktop clean-machine acceptance remain outside this increment and owner-gated where the board says so. This leaf does not establish complete `--check-all` equivalence. No provider, model, SETEC or network operation, private manuscript, shell, generic command/module/plugin dispatch, release workflow, current `validate.py` or helper edit belongs here.
+
+## 2. Existing behavior reused
+
+At the baseline, `plugins/apodictic/scripts/letter_checks.py:1136`, `tone_check(text)`, returns `(errors, warnings, ok_line, failed_line)`. It scans the synthesis body before the first Appendix heading, uses the existing `override_marker.strip_code_spans`, skips blockquoted lines, and reports at most seven distinct blocked superlatives in the helper's existing order. Reuse this function and unchanged helper; do not port the logic into the adapter.
+
+The adapter formats that tuple exactly like `letter_checks.py:1250`, `run_check`: warnings, then errors, each followed by LF; when errors exist, one additional LF, then `failed_line` and LF, exit code 1; otherwise `ok_line` and LF, exit code 0. Preserve the FAILED line's embedded LF and NOTE. `stderr` is the empty string on a successful invocation, including a validator failure. Empty text retains the helper's existing successful result; do not add a minimum-length rule. Input line endings are translated `CRLF -> LF`, then remaining `CR -> LF`, reproducing the canonical helper's text-file universal-newline reading before calling the pure function. No trimming, Unicode normalization, replacement decoding or added headings.
+
+Three existing public fixtures under `tests/fixtures/validators/` cover clean text, body superlatives and appendix/code exemption. Exact-main helper self-test currently has six synthetic checks plus those three fixtures, all passing. These establish seam viability, not runner or desktop acceptance.
+
+## 3. Closed version 1 protocol
+
+Launch explicitly with a developer-selected Python 3.10+ interpreter: `python -I -S <canonical-script>/validator_runner.py`. This is a source-development invocation, never discovery of an installed desktop interpreter. The runner refuses startup if isolated/no-site interpreter flags are absent; the usage error contains no input. Trusted fixed sibling imports are resolved from the canonical script location, never cwd, `PATH`, user site or `PYTHONPATH`. Any worker uses the same executable and isolation flags, solely to execute this leaf. No module, executable, path or argv comes from a request.
+
+Framing is binary UTF-8, exactly one JSON object followed by LF per frame. CRLF framing, BOM, blank lines, trailing non-JSON bytes, duplicate object keys at any depth, NaN/Infinity, invalid UTF-8, lone surrogate escapes, arrays/scalars, nesting deeper than eight containers, unknown keys and unsupported protocol versions are refused. Parser overflow/recursion failure is caught and refused, never a traceback. JSON whitespace within the LF-delimited record is legal; literal newlines in strings must be escaped. Integer fields require an integer JSON token, not a bool or float. `protocol` is exactly integer 1; no implicit negotiation or downgrade. No handshake or extensible capability dispatch.
+
+Every request has a unique session id matching `[A-Za-z0-9_-]{1,64}`. Ids are public correlation tokens, not manuscript locators. Reuse of any accepted request id is a fatal protocol error; retained ids are bounded by the session ceiling. Only these two shapes are accepted, with every shown field required and no extra field:
+
+```json
+{"protocol":1,"type":"validate","id":"r1","validator":"tone-check","text":"The pacing needs work.\n"}
+{"protocol":1,"type":"cancel","id":"c1","target":"r1"}
+```
+
+`validator` must be a bounded 1–64-character id using the same alphabet. A well-shaped request naming another id receives `validator_unavailable`; it never loads that validator. `text` must be a JSON string; no file, directory, URL, workspace, resource or output path is accepted. The only file authority is loading trusted shipped Python and ordinary inventory metadata. Manuscript text is never persisted, logged, echoed into error messages, used as a name, or sent outside this process and its fixed worker.
+
+Cancel `target` must be a JSON string matching the same `[A-Za-z0-9_-]{1,64}` correlation-id grammar. Reject a wrong type, empty string, invalid alphabet or more than 64 characters as fatal `invalid_request` before target lookup or echo, using the existing active-leaf shutdown rule below. A valid bounded target that is unknown or already terminal retains `cancelled:false`.
+
+A completed leaf emits exactly this result shape (all keys required, extra keys forbidden):
+
+```json
+{"protocol":1,"type":"result","id":"r1","validator":"tone-check","available":true,"result":{"exit_code":0,"stdout":"OK: No blocked superlatives found. Severity tone is compliant.\n","stderr":""},"error":null}
+```
+
+A validator finding uses the same shape, `available:true`, `exit_code:1`, and exact legacy stdout. `available` means the leaf executed, not that the text passed. The result exit code is only 0 or 1. No inferred verdict or separate pass boolean is introduced.
+
+Unavailability uses the same outer result shape with `available:false`, `result:null`, and `error:{"code":CODE,"message":MESSAGE}`. For every result error, message is exactly `Validator unavailable: <code>.` with the literal closed code substituted. Consumers branch on code, never message wording. No exception text is included. Closed codes: `validator_unavailable`, `runner_dependency_unavailable`, `busy`, `input_limit`, `cancelled`, `timeout`, `worker_failed`, `output_limit`, `session_ended`. Missing/unreadable shipped helper, import/dependency failure or absent capability metadata maps to dependency unavailable, never a successful empty check. Unexpected tuple shape, exception, child exit, nonempty worker diagnostic stdout/stderr, or malformed worker result maps to `worker_failed`. Output overflow maps to `output_limit`; no truncation into a success. These states contain no legacy result/exit code. No retry or fallback to Bash/native dispatcher.
+
+Cancellation emits a control response of exactly:
+
+```json
+{"protocol":1,"type":"cancel_result","id":"c1","target":"r1","cancelled":true,"error":null}
+```
+
+`cancelled:true` means an active target was stopped and reaped, and its sole validation terminal result is `available:false/error.code:cancelled`. `cancelled:false` means no active target at processing time (unknown or already terminal); it does not reverse or repeat an earlier result. Validation terminal precedes a successful cancel response. These controls have their own unique ids and do not count as validation results.
+
+For fatal framing/schema/version/id errors, emit one final shape `{"protocol":1,"type":"protocol_error","id":null,"error":{"code":CODE,"message":MESSAGE}}`, with closed code `invalid_frame`, `invalid_request`, `unsupported_protocol`, `duplicate_id`, or `session_limit`. For every protocol error, message is exactly `Protocol refused: <code>.` with the literal closed code substituted. Do not salvage or echo an unvalidated id. If a validation is active, stop/reap it and emit its sole `session_ended` result before the fatal response, when stdout remains writable. Exit 2. A malformed request is not a validator pass or ordinary finding.
+
+## 4. Finite limits and lifecycle
+
+These v1 limits address concrete untrusted-stream risks: unbounded framing allocations, pathological regex work, a blocked consumer, and an abandoned child. They are protocol limits, not tunable performance advice. Changing them requires reviewed protocol acceptance; no request or environment variable can increase them.
+
+| Bound | Limit and measurement |
+| --- | --- |
+| Input frame | 1,048,576 bytes before its LF; bounded incremental read, do not allocate an unbounded line |
+| Text | 262,144 UTF-8 bytes before newline translation; at most 8,192 logical lines after translation (LF count plus one, including an empty final line) |
+| Response | 32,768 encoded UTF-8 bytes including final LF; serialize/check before writing, never partial success |
+| Execution | 5 seconds monotonic wall time per leaf, from worker start through validated result receipt |
+| Concurrent work | One active leaf; another valid validation receives terminal `busy`, never an unbounded work queue |
+| Session | At most 64 complete input frames, 16,777,216 input bytes including delimiters, and 600 seconds monotonic wall time from startup |
+| Input idle | 60 seconds without an input byte; applies to partial frames too |
+| Cleanup/write | 2 seconds total after cancellation/timeout/end to stop/reap the worker and finish the bounded response write |
+
+After full framing/schema/version/id validation, admission order is unsupported validator, text limits, busy state, then dependency/worker execution. Each well-shaped request id is retained even for a refused leaf. Valid oversized tone-check text returns `input_limit` without calling the helper. Oversized framing cannot safely parse a request, so it is fatal `invalid_frame`. Frame/byte/session counters include rejected complete requests and cancel records; the next record exceeding a session bound is fatal `session_limit` before admission. Session wall/idle expiration ends the active leaf as `session_ended`, emits final `session_limit` if writable, and exits 2. All output is compact JSON plus LF; no banner, progress line or self-test text contaminates protocol stdout. Work diagnostics go to bounded fixed stderr messages only. Response-limit failure must itself fit a small fixed error envelope; control/error envelopes are subject to the same limit.
+
+The coordinator must continue receiving cancellation while the helper is running; calling the pure function synchronously in the stdin loop is insufficient. Use a single disposable fixed leaf worker with only bounded text/result pipes; this is process isolation for cancellation and work time, not a generic broker. No child-created descendants or discretionary files are allowed. Stop, force-terminate if needed, and reap/close worker resources within the cleanup bound on cancel, timeout, fatal request, EOF, output failure and coordinator termination. Do not emit a cancellation success before cleanup succeeds. If cleanup cannot be confirmed, terminate the session with nonzero status; never claim a reusable worker or successful check.
+
+Race rule: if a validated worker result has been accepted by the coordinator before cancel processing, it remains the terminal result and cancel reports false. Otherwise cancel wins; discard all subsequent worker output. Every well-shaped admitted validate request gets one terminal result, including busy/unsupported/limit refusals. Never emit both timeout/cancel and a later successful result for the same id.
+
+Clean EOF between frames ends an active leaf as `session_ended`, reaps it, flushes that terminal result if possible, then exits 0. EOF with an unterminated frame is fatal `invalid_frame`, even if its bytes form complete JSON. Broken stdout or a blocked writer exceeding the cleanup/write deadline requires cleanup and process exit 2; delivery cannot be guaranteed to a disconnected reader and is not claimed. Handled termination (SIGTERM/SIGINT on POSIX, supported console termination on Windows) must enter the same bounded cleanup path. Uncatchable coordinator death, host shutdown and native process-tree containment require the future broker/platform work; this development leaf must not claim to solve them. Workers run no grandchildren. Test handled termination on the development host and disclose any unqualified Windows termination behavior. No text-bearing temporary file, cache, log or recovery record exists to clean up.
+
+Environment: fixed UTC timezone and UTF-8 encoding, deterministic C locale where available, no environment-dependent thresholds or clocks in results. Scrub inherited provider credentials, proxy variables, Python injection variables and user configuration from workers rather than copying the parent's environment; forward only the minimal platform variables needed to start the fixed interpreter, plus the deterministic values. The host interpreter's stdlib remains a development prerequisite. The coordinator/worker exposes no network-capable request path; install a small socket-audit denial before importing the trusted leaf, and test attempted socket use is refused. This is a bounded trusted-code development guard, not a claim of native OS sandboxing or safe execution of arbitrary Python. No arbitrary source or request-driven import is evaluated.
+
+Process status is 0 for a clean protocol session, whether leaf findings pass or fail; 2 for usage/protocol/lifecycle/transport failure. A consumer uses the per-request envelope, never process exit 0 or empty output as validation success. Missing result, wrong schema/version/id/type, duplicate terminal result, EOF during a response and an unavailable envelope must remain unavailable. There is no automatic retry.
+
+## 5. One inventory coupled to the actual leaf
+
+The first implementation includes ordinary capability rows under `plugins/apodictic/schemas/validator-runtime-inventory.json` and a source-side `validator_runner.py --check-inventory` mode. This small check is shipped with the actual runner; do not introduce a separate checker service, registry, hash, lock, signature or release identity framework. The metadata is a disposition inventory, not another command dispatch source. The runtime has one hardwired leaf and refuses all other validator ids.
+
+Closed file shape: `{"version":1,"validators":[ROW,...]}`; ROW has only `id`, `desktop_disposition`, `development_support`, `omitted_capability`. Id uniqueness and exact equality with current canonical `AGG_VALIDATORS` are required. Read the single literal assignment in `plugins/apodictic/scripts/validate.sh` without executing/importing Bash. Missing, ambiguous, dynamic or duplicate registry contents fail the check; do not guess. All metadata is bounded to 65,536 bytes before reading, and at most 512 rows. `desktop_disposition` is exactly `desktop-supported`, `ci-only`, or `not-yet-supported`; `development_support` is exactly `tone-check-v1` or `none`. Omission reason is a nonempty bounded string (1–256 Unicode scalars) identifying the corresponding unavailable product capability, not “source copied.” Unknown fields/enums, ids or unsupported development mappings fail. `tone-check-v1` is allowed only for `tone-check`; zero desktop-supported rows are allowed in this unsigned increment. Source check success is a checked inventory, not desktop availability.
+
+`--check-inventory` is an exclusive source-tool mode (no JSONL input, no validation), printing one bounded PASS/FAIL summary and returning 0/1. The runner validates the bounded metadata and its own tone-check mapping at startup; missing/malformed metadata disables the leaf for that session. It may still process bounded valid protocol requests, but every otherwise admissible tone-check request receives `runner_dependency_unavailable`, with no helper execution. The source inventory check returns FAIL; startup failure never supplies a pass or claims availability. Registry exact-set conservation is the source check's responsibility, tested in the implementation and before publication. Generated host bundles recursively include canonical scripts/schemas; verify their actual output, do not create mirrors or modify generators by default.
+
+All current ids are explicitly dispositioned below. `N` means `not-yet-supported`, with omitted capability “<id> validation is unavailable in desktop: no signed, brokered leaf.” `C` means `ci-only`, with the named source/repository check excluded from the desktop product. Every row is `development_support:none` except tone-check (`tone-check-v1`). Tone-check's product disposition stays N even after development parity passes. Counts are diagnostic; the gate compares sets, not a fixed 84 literal.
+
+| Canonical id | Desktop disposition | Omitted product capability / development exception |
+| --- | --- | --- |
+| `contract-hash` | N | contract-hash validation unavailable in desktop; no signed, brokered leaf. |
+| `contract-check` | N | contract-check validation unavailable in desktop; no signed, brokered leaf. |
+| `ledger-check` | N | ledger-check validation unavailable in desktop; no signed, brokered leaf. |
+| `artifact-names` | N | artifact-names validation unavailable in desktop; no signed, brokered leaf. |
+| `synthesis-sections` | N | synthesis-sections validation unavailable in desktop; no signed, brokered leaf. |
+| `tone-check` | N | tone-check validation unavailable in desktop; no signed, brokered leaf. Development only: tone-check-v1. |
+| `state-lines` | N | state-lines validation unavailable in desktop; no signed, brokered leaf. |
+| `severity-floor` | N | severity-floor validation unavailable in desktop; no signed, brokered leaf. |
+| `audit-signal-propagation` | N | audit-signal-propagation validation unavailable in desktop; no signed, brokered leaf. |
+| `underdiagnosis-triggers` | N | underdiagnosis-triggers validation unavailable in desktop; no signed, brokered leaf. |
+| `ledger-consolidation` | N | ledger-consolidation validation unavailable in desktop; no signed, brokered leaf. |
+| `decision-layer-check` | N | decision-layer-check validation unavailable in desktop; no signed, brokered leaf. |
+| `author-facing-lint` | N | author-facing-lint validation unavailable in desktop; no signed, brokered leaf. |
+| `quality-risk-triggers` | N | quality-risk-triggers validation unavailable in desktop; no signed, brokered leaf. |
+| `cost-floor` | N | cost-floor validation unavailable in desktop; no signed, brokered leaf. |
+| `timeline-diff` | N | timeline-diff validation unavailable in desktop; no signed, brokered leaf. |
+| `timeline-arithmetic` | N | timeline-arithmetic validation unavailable in desktop; no signed, brokered leaf. |
+| `timeline-anchor-conflict` | N | timeline-anchor-conflict validation unavailable in desktop; no signed, brokered leaf. |
+| `audit-tier-criterion` | N | audit-tier-criterion validation unavailable in desktop; no signed, brokered leaf. |
+| `pass-header` | N | pass-header validation unavailable in desktop; no signed, brokered leaf. |
+| `argument-recon-prerequisite` | N | argument-recon-prerequisite validation unavailable in desktop; no signed, brokered leaf. |
+| `structured-findings` | N | structured-findings validation unavailable in desktop; no signed, brokered leaf. |
+| `softness-check` | N | softness-check validation unavailable in desktop; no signed, brokered leaf. |
+| `deficit-lock` | N | deficit-lock validation unavailable in desktop; no signed, brokered leaf. |
+| `artifacts-schema` | N | artifacts-schema validation unavailable in desktop; no signed, brokered leaf. |
+| `gate` | N | gate validation unavailable in desktop; no signed, brokered leaf. |
+| `gate-state` | N | gate-state validation unavailable in desktop; no signed, brokered leaf. |
+| `finding-trace` | N | finding-trace validation unavailable in desktop; no signed, brokered leaf. |
+| `escalation-check` | N | escalation-check validation unavailable in desktop; no signed, brokered leaf. |
+| `feedback-triage` | N | feedback-triage validation unavailable in desktop; no signed, brokered leaf. |
+| `editor-scaffolding` | N | editor-scaffolding validation unavailable in desktop; no signed, brokered leaf. |
+| `diagnostic-vocabulary` | N | diagnostic-vocabulary validation unavailable in desktop; no signed, brokered leaf. |
+| `retcon-plan` | N | retcon-plan validation unavailable in desktop; no signed, brokered leaf. |
+| `state-card-diff` | N | state-card-diff validation unavailable in desktop; no signed, brokered leaf. |
+| `revision-arc` | N | revision-arc validation unavailable in desktop; no signed, brokered leaf. |
+| `regression-diff` | N | regression-diff validation unavailable in desktop; no signed, brokered leaf. |
+| `legal-risk` | N | legal-risk validation unavailable in desktop; no signed, brokered leaf. |
+| `promise-contract` | N | promise-contract validation unavailable in desktop; no signed, brokered leaf. |
+| `continuity-bible` | N | continuity-bible validation unavailable in desktop; no signed, brokered leaf. |
+| `setup-payoff` | N | setup-payoff validation unavailable in desktop; no signed, brokered leaf. |
+| `world-bible` | N | world-bible validation unavailable in desktop; no signed, brokered leaf. |
+| `intake-interview` | N | intake-interview validation unavailable in desktop; no signed, brokered leaf. |
+| `author-fingerprint` | N | author-fingerprint validation unavailable in desktop; no signed, brokered leaf. |
+| `content-advisory` | N | content-advisory validation unavailable in desktop; no signed, brokered leaf. |
+| `coaching-history` | N | coaching-history validation unavailable in desktop; no signed, brokered leaf. |
+| `style-explanation` | N | style-explanation validation unavailable in desktop; no signed, brokered leaf. |
+| `persona-divergence` | N | persona-divergence validation unavailable in desktop; no signed, brokered leaf. |
+| `argument-spine` | N | argument-spine validation unavailable in desktop; no signed, brokered leaf. |
+| `scene-ethics` | N | scene-ethics validation unavailable in desktop; no signed, brokered leaf. |
+| `argument-groundtruth-check` | N | argument-groundtruth-check validation unavailable in desktop; no signed, brokered leaf. |
+| `fiction-groundtruth-check` | N | fiction-groundtruth-check validation unavailable in desktop; no signed, brokered leaf. |
+| `agreement-alpha` | N | agreement-alpha validation unavailable in desktop; no signed, brokered leaf. |
+| `argument-crosswalk-check` | N | argument-crosswalk-check validation unavailable in desktop; no signed, brokered leaf. |
+| `argument-agd` | N | argument-agd validation unavailable in desktop; no signed, brokered leaf. |
+| `argument-aif-check` | N | argument-aif-check validation unavailable in desktop; no signed, brokered leaf. |
+| `argument-reconstruction` | N | argument-reconstruction validation unavailable in desktop; no signed, brokered leaf. |
+| `argument-reconstruction-draft` | N | argument-reconstruction-draft validation unavailable in desktop; no signed, brokered leaf. |
+| `registry-check` | N | registry-check validation unavailable in desktop; no signed, brokered leaf. |
+| `schema-coverage` | C | Repository schema coverage is a source/CI check, excluded from desktop. |
+| `lifecycle-node` | N | lifecycle-node validation unavailable in desktop; no signed, brokered leaf. |
+| `reader-instrument` | N | reader-instrument validation unavailable in desktop; no signed, brokered leaf. |
+| `manuscript-viz` | N | manuscript-viz validation unavailable in desktop; no signed, brokered leaf. |
+| `annotated-manuscript` | N | annotated-manuscript validation unavailable in desktop; no signed, brokered leaf. |
+| `crosslink` | N | crosslink validation unavailable in desktop; no signed, brokered leaf. |
+| `reanchor` | N | reanchor validation unavailable in desktop; no signed, brokered leaf. |
+| `roundtrip-disposition` | N | roundtrip-disposition validation unavailable in desktop; no signed, brokered leaf. |
+| `disposition-check` | N | disposition-check validation unavailable in desktop; no signed, brokered leaf. |
+| `synthesis-coverage` | N | synthesis-coverage validation unavailable in desktop; no signed, brokered leaf. |
+| `dispatch-record` | N | dispatch-record validation unavailable in desktop; no signed, brokered leaf. |
+| `specificity-floor` | N | specificity-floor validation unavailable in desktop; no signed, brokered leaf. |
+| `refutation-coverage` | N | refutation-coverage validation unavailable in desktop; no signed, brokered leaf. |
+| `refutation-evidence` | N | refutation-evidence validation unavailable in desktop; no signed, brokered leaf. |
+| `refutation-write-scope` | N | refutation-write-scope validation unavailable in desktop; no signed, brokered leaf. |
+| `obsidian-export` | N | obsidian-export validation unavailable in desktop; no signed, brokered leaf. |
+| `html-export` | N | html-export validation unavailable in desktop; no signed, brokered leaf. |
+| `docx-export` | N | docx-export validation unavailable in desktop; no signed, brokered leaf. |
+| `pdf-export` | N | pdf-export validation unavailable in desktop; no signed, brokered leaf. |
+| `results-guide` | N | results-guide validation unavailable in desktop; no signed, brokered leaf. |
+| `position-pair-register` | N | position-pair-register validation unavailable in desktop; no signed, brokered leaf. |
+| `reader-contract-outline` | N | reader-contract-outline validation unavailable in desktop; no signed, brokered leaf. |
+| `calibration-honesty` | N | calibration-honesty validation unavailable in desktop; no signed, brokered leaf. |
+| `stance-calibration` | N | stance-calibration validation unavailable in desktop; no signed, brokered leaf. |
+| `validator-conventions` | C | Validator source conventions are a source/CI check, excluded from desktop. |
+| `argument-carve-behavior-preservation` | C | Repository argument-carve fixture composite is a source/CI check, excluded from desktop. |
+
+Compared with July M0's 83 rows, add argument-reconstruction and argument-reconstruction-draft; check-mirror is a nonaggregate developer command and is not an omitted AGG row. The baseline has 84 unique ids: three CI-only, 81 not yet desktop-supported, zero desktop-supported. Metadata reasons may later become more specific when the corresponding leaf is reviewed; no eligibility is inferred from Python source or helper availability.
+
+## 6. Implementation unit and acceptance
+
+Future separately granted build scope: canonical `plugins/apodictic/scripts/validator_runner.py`; `plugins/apodictic/schemas/validator-runtime-inventory.json`; focused `tests/test_validator_runner.py`; this doc's built status; `changelog.d/m3-tone-check-runner.md`. Closed schemas above are normative and validated in stdlib code; a separate JSON Schema file is not needed to add a runtime dependency or duplicate validation. Preserve existing Bash/Python helper/registry/schema/fixture/workflow bytes and active Fleet722 dispatcher/parity/port-document paths. Obtain fresh exact custody, independently review the committed implementation, then publish only an unarmed draft constituent. Owner-gated signed/brokered runtime remains owed.
+
+Required behavioral evidence:
+
+1. Real subprocess JSONL invocation from foreign cwd and empty PATH in isolated/no-site mode, repeated requests, exactly one compact response per accepted request, no shell/Bash/provider/network requirement. Both generator outputs contain and can invoke the canonical leaf with a supplied development interpreter. This is portability evidence, not an embedded runtime claim.
+2. Differential code/stdout/stderr parity against the unchanged canonical Python-backed Bash tone route for all three shipped tone fixtures, the six existing synthetic cases, all seven blocked phrases together/repeated/in mixed case, empty text, Unicode, LF/CRLF/bare-CR and Appendix/code/blockquote boundary adversaries. Match UTF-8 output bytes exactly after JSON decoding; no whitespace normalization. Run exact-main helper self-test and canonical combined `bash scripts/validate.sh --check-all` before build review. No full-validator or native-Windows parity claim from these leaf checks.
+3. Closed framing/schema rejection: every extra/missing/wrong-typed field, duplicate key/id, arrays/scalars, booleans/floats for version, unsupported version, malformed UTF-8/JSON, BOM, CRLF delimiter, unterminated EOF, literal/present surrogate, NaN/Infinity, injected paths/argv/modules and unsupported validator. Cancel-target acceptance covers exactly 64 valid characters, 65 characters, empty string, wrong JSON type, invalid alphabet and an unknown valid bounded target; invalid targets cause fatal `invalid_request` before lookup/echo, including stopping/reaping an active leaf and its sole `session_ended` result under the existing fatal rule. Unknown valid targets return `cancelled:false`. Boundary values and one over for every frame/text/line/output/frame-count/byte-count limit; blocked writer, partial-record idle and session deadline. Unsupported/malformed/unavailable never converts to pass.
+4. Real fixed-worker timeout/cancel/EOF and handled coordinator-termination tests with bounded synthetic sleeping/failing worker seams confined to tests, no production request option for those seams. Assert worker dead/reaped, no late successful result, cancel race behavior, busy refusal and subsequent healthy request after reusable failures. Simulate missing helper/dependency/malformed child output and verify fixed unavailable mappings without text-bearing errors. Socket denial, hostile inherited cwd/environment/PYTHONPATH/site settings cannot change the leaf or trigger a network request. Input text never appears in stderr, temp files or error messages.
+5. Inventory test changes the actual registry input to add/remove/rename/duplicate an id, and metadata to omit/add/duplicate/unknown-class/empty-reason/false-desktop-support/invalid-development-mapping rows. Each fails; all current explicit dispositions pass without executing the registry. Do not pin a permanent count or sorted-id hash. A check success cannot enable an unsupported validator.
+6. Applicable local compilation, changelog/status-drift and existing generator self-checks; whitespace checks. Readiness holds until independent substantive spec review and exact-head implementation review resolve findings. Report platform/process-termination limitations precisely rather than claiming signed/native sandbox completion.
+
+No new owner policy decision is needed to implement this development leaf after review. Protocol ceilings and mappings here are this increment's engineering contract, not an expansion of product authority. A request to enable desktop-supported status, add path-based input, expand leaves, use real user material, change provider/network behavior or integrate signing/broker/packaging must return to its appropriate separately admitted scope.
