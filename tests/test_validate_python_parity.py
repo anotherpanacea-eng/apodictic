@@ -5,6 +5,7 @@ also run on hosts with no Bash or external hash/count tools.
 """
 
 import hashlib
+import json
 import os
 from pathlib import Path
 import shutil
@@ -33,6 +34,9 @@ CONFIG_TIMELINES = (
 STRUCTURED_INTEGRITY = (
     "structured-findings", "softness-check", "deficit-lock", "artifacts-schema",
     "finding-trace", "feedback-triage", "editor-scaffolding", "diagnostic-vocabulary",
+)
+RUN_INTEGRITY = (
+    "escalation-check", "dispatch-record", "disposition-check", "synthesis-coverage", "specificity-floor",
 )
 REFERENCES = SCRIPTS.parent / "skills/core-editor/references"
 BASH = shutil.which("bash")
@@ -116,7 +120,7 @@ def test_byte_utilities_differential(tmp_path, payload):
         parity(*args, cwd=tmp_path)
 
 
-@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS + CONFIG_TIMELINES + STRUCTURED_INTEGRITY)
+@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS + CONFIG_TIMELINES + STRUCTURED_INTEGRITY + RUN_INTEGRITY[:-1])
 def test_migrated_self_tests_have_identical_output(command):
     result = run_python(command, "--self-test", "ignored")
     assert result.returncode == 0
@@ -619,3 +623,141 @@ def test_finding_trace_folder_and_bounded_sidecar_discovery(tmp_path):
     (deeper / letter.name).write_bytes(letter.read_bytes())
     # The same sidecar is now beyond the four examined directories.
     assert native_and_optional_parity("finding-trace", deeper).returncode == 0
+
+
+@pytest.mark.parametrize("command", RUN_INTEGRITY)
+def test_run_integrity_wrapper_arity_flags_and_late_self_test(command):
+    assert native_and_optional_parity(command).returncode == 2
+    assert native_and_optional_parity(command, "--strict", "--strict").returncode == 2
+    assert native_and_optional_parity(command, command, "--unknown").returncode == 2
+    if command == "specificity-floor":
+        return  # Its path-bearing self-test has separate assertions below.
+    late = native_and_optional_parity(command, "--strict", "--self-test", "ignored")
+    assert late.returncode == 0
+    assert late.stdout.endswith(b"Self-test: PASS\n")
+
+
+@pytest.mark.parametrize("args", [("--self-test", "ignored"), ("--strict", "--self-test", "ignored")])
+def test_specificity_self_test_preserves_named_read_errors(args):
+    # The unchanged helper prints its own random mkdtemp path. Independent runs
+    # cannot have byte-identical stdout; do not normalize it and claim parity.
+    results = [run_python("specificity-floor", *args)]
+    if BASH is not None:
+        results.append(subprocess.run(
+            [BASH, str(BASH_CLI), "specificity-floor", *args],
+            capture_output=True, timeout=60,
+        ))
+    for result in results:
+        assert (result.returncode, result.stderr) == (0, b"")
+        assert result.stdout.endswith(b"Self-test: PASS\n")
+        assert result.stdout.count(b"Error: cannot read editorial letter ") == 1
+        assert result.stdout.count(b"Error: cannot read findings ledger ") == 1
+        assert b"non_utf8_letter_fails_closed: OK\n" in result.stdout
+        assert b"non_utf8_ledger_fails_closed: OK\n" in result.stdout
+
+
+@pytest.mark.parametrize("command,inputs", [
+    ("escalation-check", ("example-run-folder",)),
+    ("dispatch-record", ("example-run-folder-coverage", "--strict")),
+    ("disposition-check", ("example-run-folder-dispositions", "--strict")),
+    ("synthesis-coverage", ("example-run-folder-coverage", "--strict")),
+    ("synthesis-coverage", ("example-run-folder-coverage-degraded", "--strict")),
+    ("specificity-floor", ("example-regrounded-letter.md", "example-regrounded-ledger.md", "--strict")),
+])
+def test_native_run_integrity_canonical_inputs(command, inputs):
+    args = [path if path.startswith("--") else REFERENCES / path for path in inputs]
+    result = native_and_optional_parity(command, *args)
+    assert (result.returncode, result.stderr) == (0, b"")
+
+
+@pytest.mark.parametrize("command", ["gate", "gate-state"])
+@pytest.mark.parametrize("args", [(), ("--self-test",), ("--strict", "--self-test")])
+def test_gate_pair_is_explicitly_deferred_until_nested_children_ready(command, args):
+    result = run_python(command, *args)
+    assert (result.returncode, result.stderr) == (2, b"")
+    assert b"Partial migration:" in result.stdout
+
+
+def test_escalation_advisory_strict_and_sidecar_discovery(tmp_path):
+    run = tmp_path / "runs/current"
+    run.mkdir(parents=True)
+    sidecar = tmp_path / "Diagnostic_State.meta.json"
+    sidecar.write_text(json.dumps({
+        "last_session": {"execution_mode": "sequential"},
+        "complexity_signals": {"pov_count": 4},
+    }), encoding="utf-8")
+    for path in (run, sidecar):
+        advisory = native_and_optional_parity("escalation-check", path)
+        assert advisory.returncode == 0
+        assert b"RECOMMEND escalate sequential -> hybrid" in advisory.stdout
+        assert native_and_optional_parity("escalation-check", "--strict", path).returncode == 1
+
+
+def test_dispatch_report_ordering_and_ignored_normal_extras(tmp_path):
+    folder = REFERENCES / "example-run-folder-coverage"
+    assert native_and_optional_parity("dispatch-record", folder, "ignored", "--strict").returncode == 0
+    assert native_and_optional_parity("dispatch-record", "--report", tmp_path).returncode == 0
+    assert native_and_optional_parity("dispatch-record", "--report").returncode == 2
+    # The report branch removes only --report before choosing its first token.
+    # It deliberately does not share normal-mode positional flag filtering.
+    for args in (("--strict", "--report", tmp_path), ("--report", "--strict", tmp_path)):
+        result = native_and_optional_parity("dispatch-record", *args, cwd=tmp_path)
+        assert result.returncode == 2
+        assert b"not a directory: --strict" in result.stdout
+
+
+def test_dispatch_model_tag_default_and_invalid_local_table(tmp_path):
+    sidecar = tmp_path / "Diagnostic_State.meta.json"
+    sidecar.write_bytes((REFERENCES / "example-run-folder-coverage/Diagnostic_State.meta.json").read_bytes())
+    # A local table overrides the shipped source; zero parsed rows must refuse.
+    (tmp_path / "output-structure.md").write_text("# No model table\n", encoding="utf-8")
+    refused = native_and_optional_parity("dispatch-record", tmp_path)
+    assert refused.returncode == 2
+    assert b"model-tag-table-unparseable" in refused.stdout
+    (tmp_path / "output-structure.md").unlink()
+    # Falls back to the shipped model table; the R2 growth warning is not promoted.
+    assert native_and_optional_parity("dispatch-record", tmp_path).returncode == 0
+    assert native_and_optional_parity("dispatch-record", tmp_path, "--strict").returncode == 0
+    # Present-but-empty dispatch_log is an R1 warning promoted by --strict.
+    sidecar.write_text('{"dispatch_log": []}', encoding="utf-8")
+    assert native_and_optional_parity("dispatch-record", tmp_path).returncode == 0
+    assert native_and_optional_parity("dispatch-record", tmp_path, "--strict").returncode == 1
+
+
+def test_disposition_sidecar_classification_and_bad_shape(tmp_path):
+    sidecar = tmp_path / "Diagnostic_State.meta.json"
+    sidecar.write_text("{", encoding="utf-8")
+    for path in (sidecar, tmp_path):
+        invalid = native_and_optional_parity("disposition-check", path, "--strict")
+        assert invalid.returncode == 1
+    assert native_and_optional_parity("disposition-check", "missing.json").returncode == 1
+
+
+def test_synthesis_exact_directory_arity_and_advisory_strict(tmp_path):
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    assert native_and_optional_parity("synthesis-coverage", empty).returncode == 0
+    strict_empty = native_and_optional_parity("synthesis-coverage", empty, "--strict")
+    assert strict_empty.returncode == 0
+    assert b"no coverage obligation" in strict_empty.stdout
+    # A real full letter creates a manifest obligation; missing manifest is advisory.
+    source = REFERENCES / "example-run-folder-coverage"
+    letter = next(source.glob("*_Core_DE_Synthesis_*.md"))
+    (empty / letter.name).write_bytes(letter.read_bytes())
+    assert native_and_optional_parity("synthesis-coverage", empty).returncode == 0
+    assert native_and_optional_parity("synthesis-coverage", empty, "--strict").returncode == 1
+    for args in (("missing",), (empty, empty), (REFERENCES / "example-editorial-letter.md",)):
+        assert native_and_optional_parity("synthesis-coverage", *args).returncode == 2
+
+
+def test_specificity_exact_file_arity_and_read_refusal(tmp_path):
+    letter = REFERENCES / "example-regrounded-letter.md"
+    ledger = REFERENCES / "example-regrounded-ledger.md"
+    for args in ((letter,), (letter, ledger, letter), ("missing.md", ledger), (tmp_path, ledger)):
+        assert native_and_optional_parity("specificity-floor", *args).returncode == 2
+    bad = tmp_path / "bad.md"
+    bad.write_bytes(b"\xff\xfe")
+    for args in ((bad, ledger), (letter, bad)):
+        result = native_and_optional_parity("specificity-floor", *args)
+        assert (result.returncode, result.stderr) == (2, b"")
+        assert b"Error: cannot read" in result.stdout

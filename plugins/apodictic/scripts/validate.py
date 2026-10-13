@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native validator dispatcher, CB-1(a) groups 1–4.
+"""Native validator dispatcher, CB-1(a) groups 1–4 and 5a.
 
 Early utilities, signals, configuration, timelines and structured checks run without Bash.
 Other commands and aggregates still belong to validate.sh until their groups land.
@@ -74,6 +74,19 @@ _STRUCTURED_INTEGRITY = {
     "diagnostic-vocabulary": ("diagnostic_vocabulary.py", 1, "<vocab_guide|run_folder> [--strict] | --self-test"),
 }
 COMMANDS += tuple(_STRUCTURED_INTEGRITY)
+_RUN_INTEGRITY = {
+    "escalation-check": ("escalation_check.py", 1, "<run_folder|files...> [--strict] | --self-test"),
+    "dispatch-record": (
+        "dispatch_record.py", 1,
+        "<run_folder> [--strict] | dispatch-record --report <project_dir> | --self-test",
+    ),
+    "disposition-check": (
+        "disposition_check.py", 1, "<run_folder|sidecar> [readiness_assessment] [--strict] | --self-test",
+    ),
+    "synthesis-coverage": ("synthesis_coverage.py", 1, "<run_folder> [--strict] | --self-test"),
+    "specificity-floor": ("specificity_floor.py", 2, "<editorial_letter> <findings_ledger> [--strict] | --self-test"),
+}
+COMMANDS += tuple(_RUN_INTEGRITY)
 
 
 def _line(text, *, error=False):
@@ -183,6 +196,16 @@ def _structured_integrity(command, args):
     return _run_helper(script, [command, *args])
 
 
+def _run_integrity(command, args):
+    script, count, usage = _RUN_INTEGRITY[command]
+    if args and args[0] == "--self-test":
+        return _run_helper(script, ["--self-test"])
+    if len(args) < count:
+        return _usage(command, usage)
+    # Keep report/strict/late-self-test parsing and discovery in the helper.
+    return _run_helper(script, [command, *args])
+
+
 def _self_test(command):
     """Keep the existing pure-utility self-test output and observable assertions."""
     failed = False
@@ -244,6 +267,8 @@ def main(argv=None):
         _line("Partial migration: remaining commands and aggregates require validate.sh.")
         return 2
     command, args = args[0], args[1:]
+    if command in _RUN_INTEGRITY:
+        return _run_integrity(command, args)
     if command in _STRUCTURED_INTEGRITY:
         return _structured_integrity(command, args)
     if command in _CONFIG_TIMELINES:
