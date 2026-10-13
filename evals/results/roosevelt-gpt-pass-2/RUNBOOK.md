@@ -46,7 +46,7 @@ and its `SCORECARD.md` (both in-repo). Scored against the amended key:
 - **Fixture slug:** `roosevelt-democratic-abundance` = **`submission-04`** in the
   blind-upload map (`argument-benchmark-runbook/SUBMISSION-MAP.csv`).
 - **Prompt to paste (verbatim, one message):**
-  `~/Library/CloudStorage/Dropbox/Cowork/Development Editor/argument-benchmark-runbook/prompts/roosevelt-democratic-abundance.txt`
+  `~/Library/CloudStorage/Dropbox/80-89 Projects/81 Software & tools/APODICTIC supporting material/Development Editor/argument-benchmark-runbook/prompts/roosevelt-democratic-abundance.txt`
   This file is byte-identical to what Opus/Sonnet/GPT-pass-1 saw: the same header,
   the full inlined `dialectical-clarity.md` audit reference, and the stripped
   submission body under the neutral label "Submission X". **It contains
@@ -126,7 +126,7 @@ vs key; Reliability = pass-1 vs pass-2), not a single "converged?" binary.
 
 - Protocol: `evals/fixtures/argument-benchmark/RUN-PROTOCOL.md`
 - Cross-vendor paste runbook (Dropbox, copyright-bearing prompts):
-  `~/Library/CloudStorage/Dropbox/Cowork/Development Editor/argument-benchmark-runbook/README.md`
+  `~/Library/CloudStorage/Dropbox/80-89 Projects/81 Software & tools/APODICTIC supporting material/Development Editor/argument-benchmark-runbook/README.md`
 - Pass-1 result + scorecard: `evals/results/cross-vendor-gpt-20260604/`
 - Key: `evals/fixtures/argument-benchmark/roosevelt-democratic-abundance/groundtruth.md`
 - Rubric: `evals/rubrics/argument-benchmark.md`
