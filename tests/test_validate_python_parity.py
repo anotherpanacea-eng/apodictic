@@ -26,10 +26,17 @@ LETTER_SIGNALS = (
     "author-facing-lint", "severity-floor", "audit-signal-propagation",
     "underdiagnosis-triggers", "ledger-consolidation", "decision-layer-check",
 )
+CONFIG_TIMELINES = (
+    "quality-risk-triggers", "cost-floor", "audit-tier-criterion", "pass-header",
+    "argument-recon-prerequisite", "timeline-diff", "timeline-arithmetic", "timeline-anchor-conflict",
+)
+REFERENCES = SCRIPTS.parent / "skills/core-editor/references"
 BASH = shutil.which("bash")
 FIXTURES = sorted(
-    path for path in (ROOT / "tests/fixtures/validators").glob("lc.*.*.*.md")
-    if path.name.split(".")[2] in ("ledger-check", "synthesis-sections", "tone-check", *LETTER_SIGNALS)
+    path for path in (ROOT / "tests/fixtures/validators").glob("*.md")
+    if path.name.split(".")[2] in (
+        "ledger-check", "synthesis-sections", "tone-check", *LETTER_SIGNALS, *CONFIG_TIMELINES,
+    )
 )
 
 
@@ -97,7 +104,7 @@ def test_byte_utilities_differential(tmp_path, payload):
         parity(*args, cwd=tmp_path)
 
 
-@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS)
+@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS + CONFIG_TIMELINES)
 def test_migrated_self_tests_have_identical_output(command):
     result = run_python(command, "--self-test", "ignored")
     assert result.returncode == 0
@@ -237,7 +244,7 @@ def test_letter_wrappers_ignore_extra_arguments(tmp_path, command):
     parity(command, path, "ignored", "also ignored")
 
 
-@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "quality-risk-triggers", "bogus"])
+@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "structured-findings", "bogus"])
 def test_unported_entrypoints_do_not_claim_success(command):
     result = run_python(command)
     assert result.returncode == 2
@@ -331,3 +338,132 @@ def test_registry_fragment_and_empty_registry(tmp_path):
     empty = check(2)
     assert empty.stdout == b""
     assert b"Error: no registry entries found in references/../references/registry.md" in empty.stderr
+
+
+def native_and_optional_parity(*args, cwd=None):
+    result = run_python(*args, cwd=cwd)
+    if BASH is not None:
+        parity(*args, cwd=cwd)
+    return result
+
+
+@pytest.mark.parametrize("command", CONFIG_TIMELINES)
+def test_config_timeline_arity_and_invalid_primary_paths(tmp_path, command):
+    for args in ((), ("missing.md",), ("",), ("x" * 256,), ("--strict",)):
+        result = native_and_optional_parity(command, *args, cwd=tmp_path)
+        assert result.returncode == 2
+    if command == "timeline-diff":
+        assert b" | --self-test" in run_python(command).stdout
+        assert b" | --self-test" not in run_python(command, "prior-only.md").stdout
+
+
+@pytest.mark.parametrize("command,inputs", [
+    ("quality-risk-triggers", ("example-quality-risk-contract.md",)),
+    ("cost-floor", ("example-cost-floor-contract.md", "example-cost-floor-preflight.md")),
+    ("audit-tier-criterion", ("pass-dependencies.md",)),
+    ("pass-header", ("example-pass-artifact-header.md", "pass-dependencies.md")),
+    ("argument-recon-prerequisite", ("example-run-folder",)),
+    ("timeline-diff", ("example-timeline.md", "example-timeline.md")),
+    ("timeline-arithmetic", ("example-timeline.md",)),
+    ("timeline-anchor-conflict", ("example-timeline.md",)),
+])
+def test_native_configuration_and_timeline_canonical_inputs(command, inputs):
+    result = native_and_optional_parity(command, *(REFERENCES / path for path in inputs))
+    assert (result.returncode, result.stderr) == (0, b"")
+
+
+def test_quality_risk_optional_metadata_and_ignored_extras(tmp_path):
+    contract = tmp_path / "contract.md"
+    contract.write_text("GENRE/SUBGENRE: Literary fiction\nPOV count: 1\nGOAL: repair\n", encoding="utf-8")
+    meta = tmp_path / "meta.json"
+    meta.write_text('{"underdiagnosis_flag":"fired"}', encoding="utf-8")
+    for extra in ((), ("missing.json",), ("",)):
+        assert native_and_optional_parity("quality-risk-triggers", contract, *extra).returncode == 0
+    fired = native_and_optional_parity("quality-risk-triggers", contract, meta, "ignored")
+    assert fired.returncode == 1
+    assert b"Q4" in fired.stdout
+
+
+def test_cost_floor_strict_and_flag_filtering_preserve_argument_positions(tmp_path):
+    contract = tmp_path / "-contract.md"
+    contract.write_text("GENRE/SUBGENRE: Literary fiction\nPOV count: 1\nGOAL: repair\n"
+                        "cost_floor_override: sequential — deliberate cap\n", encoding="utf-8")
+    relaxed = native_and_optional_parity("cost-floor", contract, "missing-preflight.md", "missing-meta.json", "ignored")
+    assert relaxed.returncode == 0
+    assert b"WARN:" in relaxed.stdout
+    for args in (
+        ("--strict", contract), (contract, "--strict"),
+        ("--unused", contract, "missing-preflight.md", "--strict", "missing-meta.json", "ignored"),
+    ):
+        assert native_and_optional_parity("cost-floor", *args).returncode == 1
+    flags_only = native_and_optional_parity("cost-floor", "--unused", "--strict")
+    assert (flags_only.returncode, flags_only.stdout) == (2, b"")
+    assert flags_only.stderr.startswith(b"Usage: config_checks.py cost-floor ")
+
+
+def test_audit_tier_default_root_and_explicit_root(tmp_path):
+    root = tmp_path / "tree"
+    refs = root / "core/references"
+    refs.mkdir(parents=True)
+    audits = root / "audits"
+    audits.mkdir()
+    dependencies = refs / "dependencies.md"
+    dependencies.write_text("| Trigger | Example Audit | Auto-run | `audits/example.md` |\n", encoding="utf-8")
+    audit = audits / "example.md"
+    audit.write_text("# Example Audit\nNo floor defined.\n", encoding="utf-8")
+    for extra in ((), ("",), (root, "ignored")):
+        assert native_and_optional_parity("audit-tier-criterion", dependencies, *extra).returncode == 1
+    audit.write_text("# Example Audit\n## Hard Gates\n", encoding="utf-8")
+    assert native_and_optional_parity("audit-tier-criterion", dependencies).returncode == 0
+    missing = native_and_optional_parity("audit-tier-criterion", dependencies, "missing-root")
+    assert missing.returncode == 0
+    assert b"WARN:" in missing.stdout
+
+
+def test_pass_header_default_precedence_and_explicit_dependencies(tmp_path):
+    artifact_dir = tmp_path / "install/output"
+    artifact_dir.mkdir(parents=True)
+    artifact = artifact_dir / "pass.md"
+    artifact.write_bytes((REFERENCES / "example-pass-artifact-header.md").read_bytes())
+    sibling = artifact_dir / "pass-dependencies.md"
+    fallback = artifact_dir.parent / "skills/core-editor/references/pass-dependencies.md"
+    fallback.parent.mkdir(parents=True)
+    fallback.write_bytes((REFERENCES / "pass-dependencies.md").read_bytes())
+    assert native_and_optional_parity("pass-header", artifact).returncode == 0
+    sibling.write_text("# Invalid section 3\n", encoding="utf-8")
+    assert native_and_optional_parity("pass-header", artifact).returncode == 2
+    assert native_and_optional_parity("pass-header", artifact, fallback, "ignored").returncode == 0
+    assert native_and_optional_parity("pass-header", artifact, "missing-dependencies.md").returncode == 2
+
+
+def test_recon_prerequisite_autodiscovery_and_optional_letter(tmp_path):
+    run = tmp_path / "run"
+    run.mkdir()
+    assert native_and_optional_parity("argument-recon-prerequisite", run).returncode == 0
+    (run / "Argument_State.md").write_text("# State\n", encoding="utf-8")
+    assert native_and_optional_parity("argument-recon-prerequisite", run).returncode == 1
+    clean = run / "A_Editorial_Letter.md"
+    disclosed = run / "Z_Editorial_Letter.md"
+    clean.write_text("# Letter\nClean prose.\n", encoding="utf-8")
+    disclosed.write_text("# Letter\nliterature-counterevidence not surveyed\n", encoding="utf-8")
+    assert native_and_optional_parity("argument-recon-prerequisite", run).returncode == 1
+    assert native_and_optional_parity("argument-recon-prerequisite", run, disclosed, "ignored").returncode == 0
+    assert native_and_optional_parity("argument-recon-prerequisite", run, "missing-letter.md").returncode == 1
+    (run / "Field_Reconnaissance_Report.md").write_text("# Recon\n", encoding="utf-8")
+    assert native_and_optional_parity("argument-recon-prerequisite", run).returncode == 0
+
+
+def test_timeline_diff_pair_order_and_body_override(tmp_path):
+    prior = tmp_path / "prior.md"
+    current = tmp_path / "current.md"
+    text = ("# Timeline\n## Section 1: Event Ledger\n| Scene ID | Anchor text | Span |\n"
+            "|---|---|---|\n| Ch 1 §1 | Monday morning | 3 hours |\n"
+            "## Section 8: Diff Notes\nn/a.\n")
+    prior.write_text(text, encoding="utf-8")
+    current.write_text(text.replace("Monday morning", "Tuesday morning"), encoding="utf-8")
+    for args in ((prior, current), (current, prior), (prior, current, "ignored", "--strict")):
+        assert native_and_optional_parity("timeline-diff", *args).returncode == 1
+    current.write_text(current.read_text(encoding="utf-8").replace(
+        "# Timeline\n", "# Timeline\n<!-- override: timeline-diff-undocumented — deferred -->\n"), encoding="utf-8")
+    assert native_and_optional_parity("timeline-diff", prior, current).returncode == 0
+    assert native_and_optional_parity("timeline-diff", prior, "missing.md").returncode == 2
