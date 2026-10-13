@@ -1,6 +1,6 @@
 # M3 validator runner: first leaf
 
-**Status:** Proposed (unbuilt); implementation pending.
+**Status:** Built as a source-development tone-check runner; signed desktop availability and native Windows process qualification remain unestablished.
 <!-- built-when: plugins/apodictic/scripts/validator_runner.py -->
 
 ## 1. Deliverable and boundary
