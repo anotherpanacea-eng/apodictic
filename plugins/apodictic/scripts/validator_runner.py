@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bounded development JSONL adapter for three fixed text leaves (stdlib only).
+"""Bounded development JSONL adapter for four fixed text leaves (stdlib only).
 
 Invoke with a supplied interpreter: python -I -S validator_runner.py.
 This source tool supplies neither a desktop interpreter nor a native sandbox.
@@ -108,18 +108,20 @@ def inventory():
                 or not isinstance(row["id"], str) or not IDENTIFIER.fullmatch(row["id"])
                 or row["id"] in rows
                 or row["desktop_disposition"] not in ("ci-only", "not-yet-supported")
-                or row["development_support"] not in ("none", "tone-check-v1", "synthesis-sections-v1", "severity-floor-v1")
+                or row["development_support"] not in ("none", "tone-check-v1", "synthesis-sections-v1", "severity-floor-v1", "decision-layer-check-v1")
                 or not isinstance(row["omitted_capability"], str)
                 or not 1 <= len(row["omitted_capability"]) <= 256
                 or not row["omitted_capability"].strip()
                 or (row["development_support"] == "tone-check-v1" and row["id"] != "tone-check")
                 or (row["development_support"] == "synthesis-sections-v1" and row["id"] != "synthesis-sections")
-                or (row["development_support"] == "severity-floor-v1" and row["id"] != "severity-floor")):
+                or (row["development_support"] == "severity-floor-v1" and row["id"] != "severity-floor")
+                or (row["development_support"] == "decision-layer-check-v1" and row["id"] != "decision-layer-check")):
             raise Refused()
         rows[row["id"]] = row
     for leaf, support in (("tone-check", "tone-check-v1"),
                           ("synthesis-sections", "synthesis-sections-v1"),
-                          ("severity-floor", "severity-floor-v1")):
+                          ("severity-floor", "severity-floor-v1"),
+                          ("decision-layer-check", "decision-layer-check-v1")):
         if (leaf not in rows or rows[leaf]["development_support"] != support
                 or rows[leaf]["desktop_disposition"] != "not-yet-supported"):
             raise Refused()
@@ -177,7 +179,7 @@ def worker_environment():
     return env
 
 
-def worker_main(synthesis=False, severity=False):
+def worker_main(synthesis=False, severity=False, decision_layer=False):
     # Install the denial before importing the trusted leaf, with no configurable path.
     def deny(event, _):
         if (event.startswith("socket.") or event in ("subprocess.Popen", "os.system",
@@ -199,6 +201,8 @@ def worker_main(synthesis=False, severity=False):
                 from letter_checks import synthesis_sections as check
             elif severity:
                 from letter_checks import severity_floor as check
+            elif decision_layer:
+                from letter_checks import decision_layer_check as check
             else:
                 from letter_checks import tone_check as check
         except Exception:
@@ -312,6 +316,7 @@ class Session:
         started = time.monotonic()
         route = ("--worker-synthesis-sections" if request["validator"] == "synthesis-sections"
                  else "--worker-severity-floor" if request["validator"] == "severity-floor"
+                 else "--worker-decision-layer-check" if request["validator"] == "decision-layer-check"
                  else "--worker")
         try:
             child = subprocess.Popen([sys.executable, "-I", "-S", "-B", str(HERE / "validator_runner.py"), route],
@@ -426,7 +431,7 @@ class Session:
                 self.emit(unavailable(target, "cancelled"), deadline)
             self.emit({"protocol": 1, "type": "cancel_result", "id": request["id"],
                        "target": request["target"], "cancelled": cancelled, "error": None}, deadline)
-        elif request["validator"] not in ("tone-check", "synthesis-sections", "severity-floor"):
+        elif request["validator"] not in ("tone-check", "synthesis-sections", "severity-floor", "decision-layer-check"):
             self.emit(unavailable(request, "validator_unavailable"))
         elif (len(request["text"].encode("utf-8")) > TEXT_BYTES
               or request["text"].replace("\r\n", "\n").replace("\r", "\n").count("\n") + 1 > TEXT_LINES):
@@ -568,6 +573,8 @@ def main():
         return worker_main(synthesis=True)
     if sys.argv[1:] == ["--worker-severity-floor"]:
         return worker_main(severity=True)
+    if sys.argv[1:] == ["--worker-decision-layer-check"]:
+        return worker_main(decision_layer=True)
     if sys.argv[1:]:
         sys.stderr.write("Unsupported validator runner usage.\n")
         return 2
