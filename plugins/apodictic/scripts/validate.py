@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native validator dispatcher, CB-1(a) groups 1–4, 5a and 6–9.
+"""Native validator dispatcher, CB-1(a) groups 1–4, 5a and 6–10.
 
 Early utilities, signals, configuration, timelines and structured checks run without Bash.
 Other commands and aggregates still belong to validate.sh until their groups land.
@@ -141,6 +141,28 @@ _READER_MANUSCRIPT = {
     "position-pair-register": ("position_pair_gates.py", 3, "position-pair-register", "<artifact.md> <envelope.json> <manuscript> [--strict] | --self-test"),
 }
 COMMANDS += tuple(_READER_MANUSCRIPT)
+_ARGUMENT_EVALUATORS = {
+    "argument-groundtruth-check": (
+        "argument_groundtruth.py", 1, "argument-groundtruth-check",
+        "<groundtruth_file> | --round-record <record.md> --fixtures-dir <dir> | "
+        "--repair-diff <broken/fixture.md> <clean/fixture.md> <clean/groundtruth.md> | --self-test",
+    ),
+    "fiction-groundtruth-check": (
+        "fiction_groundtruth.py", 1, "fiction-groundtruth-check", "<groundtruth_file> | --self-test",
+    ),
+    "agreement-alpha": (
+        "agreement_alpha.py", 1, "agreement-alpha",
+        "<ratings.csv> [--metric nominal|ordinal] [--seed <int>] [--resamples <int>=1000] | --self-test",
+    ),
+    "argument-crosswalk-check": ("argument_crosswalk.py", 0, "argument-crosswalk-check", ""),
+    "argument-agd": (
+        "argument_agd.py", 1, "argument-agd",
+        "<argument_state.md> [--source <source.md>] [--scan <agd_move_scan.json>] [--strict] | --self-test",
+    ),
+    "argument-aif-export": ("argument_aif.py", 0, "export", ""),
+    "argument-aif-check": ("argument_aif.py", 0, "check", ""),
+}
+COMMANDS += tuple(_ARGUMENT_EVALUATORS)
 
 
 def _line(text, *, error=False):
@@ -303,6 +325,15 @@ def _reader_manuscript(command, args):
     return _run_helper(script, [prefix, *args])
 
 
+def _argument_evaluator(command, args):
+    script, count, prefix, usage = _ARGUMENT_EVALUATORS[command]
+    if args and args[0] == "--self-test":
+        return _run_helper(script, ["--self-test"])
+    if len(args) < count:
+        return _usage(command, usage)
+    return _run_helper(script, [prefix, *args])
+
+
 def _self_test(command):
     """Keep the existing pure-utility self-test output and observable assertions."""
     failed = False
@@ -364,6 +395,8 @@ def main(argv=None):
         _line("Partial migration: remaining commands and aggregates require validate.sh.")
         return 2
     command, args = args[0], args[1:]
+    if command in _ARGUMENT_EVALUATORS:
+        return _argument_evaluator(command, args)
     if command in _READER_MANUSCRIPT:
         return _reader_manuscript(command, args)
     if command in _INTAKE_VOICE:

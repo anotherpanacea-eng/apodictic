@@ -1,7 +1,7 @@
 # Native Python validator migration
 
-**Status:** Groups 1–4, 5a and 6–9 built; self-test output stabilized. The gate pair
-and groups 10–14 remain queued. The Bash dispatcher remains the
+**Status:** Groups 1–4, 5a and 6–10 built; self-test output stabilized. The gate pair
+and groups 11–14 remain queued. The Bash dispatcher remains the
 full validator entrypoint during this migration.
 <!-- built-when: plugins/apodictic/scripts/validate.py -->
 
@@ -263,6 +263,19 @@ ordering is inherited: raw differential controls pair the same seeds 1, 2 and 3
 without sorting output or setting a production seed. Recorded confirmation checks
 prove consistency of records, not independent human confirmation.
 
+Group 10 adds seven argument evaluator routes. Each forwards the original raw
+arguments to its existing helper after the Bash wrapper's minimum-arity and
+first-position self-test rules; AIF export/check use distinct `export`/`check`
+prefixes. GT repair/round modes, alpha options, crosswalk defaults, AGD optional
+paths and AIF schema/loss rules remain helper-owned. AIF export is a public
+producer: temporary output comparisons cover streams, complete artifact bytes,
+directory membership and modes from identical starting states, including
+overwrite and no-write refusals. Source closure is checked separately from
+sourceless canonical shape. The global Bash `--internal-links*` scanner still
+takes precedence over some route arguments; the native CLI does not emulate that
+global scanner. Route-arm parity excludes those scanner-control invocations,
+which remain part of the coordinated Group 14 cutover.
+
 ## Continuation groups
 
 These provisional groups give each subsequent increment its own PR. Refresh the
@@ -283,7 +296,7 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | 7 | legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, argument-spine, scene-ethics | Built |
 | 8 | intake-interview, author-fingerprint, content-advisory, coaching-history, style-explanation, persona-divergence | Built |
 | 9 | lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, reader-contract-outline, results-guide, position-pair-register | Built |
-| 10 | argument-groundtruth-check, fiction-groundtruth-check, agreement-alpha, argument-crosswalk-check, argument-agd, argument-aif-export, argument-aif-check | Queued |
+| 10 | argument-groundtruth-check, fiction-groundtruth-check, agreement-alpha, argument-crosswalk-check, argument-agd, argument-aif-export, argument-aif-check | Built |
 | 11 | argument-reconstruction, argument-reconstruction-draft | Queued |
 | 12 | obsidian-export, html-export, docx-export, pdf-export | Queued |
 | 13 | registry-check, schema-coverage, validator-conventions, calibration-honesty, stance-calibration, argument-carve-behavior-preservation | Queued |
