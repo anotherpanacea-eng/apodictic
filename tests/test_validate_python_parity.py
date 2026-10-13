@@ -5,6 +5,7 @@ also run on hosts with no Bash or external hash/count tools.
 """
 
 import hashlib
+from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
@@ -282,12 +283,140 @@ def test_letter_wrappers_ignore_extra_arguments(tmp_path, command):
     parity(command, path, "ignored", "also ignored")
 
 
-@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "argument-reconstruction", "bogus"])
+@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "html-export", "bogus"])
 def test_unported_entrypoints_do_not_claim_success(command):
     result = run_python(command)
     assert result.returncode == 2
     assert b"Partial migration:" in result.stdout
     assert result.stderr == b""
+
+
+@pytest.mark.parametrize("command", ["argument-reconstruction", "argument-reconstruction-draft"])
+def test_argument_reconstruction_delegate_preserves_distinct_parsers(command, tmp_path):
+    env = {**os.environ, "TMPDIR": str(tmp_path.resolve())}
+    for args in ((), ("--bogus",), ("project", "--self-test"), ("--self-test", "ignored")):
+        parity(command, *args, env=env)
+    self_test = run_python(command, "--self-test", "ignored", env={**env, "PATH": ""})
+    assert self_test.returncode == 0
+    assert self_test.stderr == b""
+    assert b"self-test: PASS\n" in self_test.stdout
+
+
+@pytest.mark.parametrize("command, helper", [
+    ("argument-reconstruction", "approval_graph.py"),
+    ("argument-reconstruction-draft", "reconstruction_draft.py"),
+])
+def test_argument_reconstruction_shipped_helper_availability(tmp_path, command, helper):
+    copied = tmp_path / "validate.py"
+    shutil.copyfile(PYTHON_CLI, copied)
+    env = {**os.environ, "TMPDIR": str(tmp_path.resolve()), "PATH": ""}
+
+    def invoke(*args):
+        return subprocess.run([sys.executable, str(copied), command, *args],
+                              capture_output=True, env=env, timeout=30)
+
+    expected = f"ERROR: {command} requires python3 and {helper}\n".encode()
+    for args in ((), ("project",), ("--self-test", "ignored")):
+        result = invoke(*args)
+        assert (result.returncode, result.stdout, result.stderr) == (1, b"", expected)
+
+    target = tmp_path / helper
+    target.mkdir()
+    result = invoke("--self-test")
+    assert (result.returncode, result.stdout, result.stderr) == (1, b"", expected)
+    target.rmdir()
+    target.symlink_to(tmp_path / "absent-helper.py")
+    result = invoke("project")
+    assert (result.returncode, result.stdout, result.stderr) == (1, b"", expected)
+    target.unlink()
+    regular = tmp_path / "synthetic_helper.py"
+    regular.write_text("import sys; print(repr(sys.argv[1:]))\n", encoding="utf-8")
+    target.symlink_to(regular)
+    result = invoke("--self-test", "ignored")
+    assert (result.returncode, result.stdout, result.stderr) == (0, b"['--self-test']\n", b"")
+    result = invoke("project", "--bogus")
+    assert (result.returncode, result.stdout, result.stderr) == (0, b"['project', '--bogus']\n", b"")
+
+
+def test_argument_reconstruction_real_append_stage_packet_and_emit(tmp_path, monkeypatch):
+    monkeypatch.syspath_prepend(str(SCRIPTS))
+    monkeypatch.syspath_prepend(str(ROOT / "evals/fixtures/argument-reconstruction"))
+    import approval_graph as engine
+    import run_cases as fixture
+
+    project = tmp_path / "project"
+    project.mkdir()
+    context = fixture.source(project, "The invented lantern glows.\n")
+    node = fixture.node(engine, "The invented lantern glows.")
+    record_id = engine.node_id(node["type"], node["text"])
+    bundle = fixture.bundle(engine, "MINT", "GENESIS", context, [
+        fixture.event("MINTED", "normalizer", record_id, content=node, at="PENDING", pt="CURRENT")
+    ])
+    bundle_file = tmp_path / "mint.jsonl"
+    bundle_file.write_bytes((engine.canonical_json(bundle) + "\n").encode())
+    env = {**os.environ, "TMPDIR": str(tmp_path.resolve()), "PATH": ""}
+    appended = run_python("argument-reconstruction", project, "--append-bundle", bundle_file,
+                          "--expected-count", "0", "--expected-hash", "GENESIS", env=env)
+    assert appended.returncode == 0 and json.loads(appended.stdout)["status"] == "COMMITTED"
+    assert (project / "Approval_Events.jsonl").read_bytes() == bundle_file.read_bytes()
+    assert (project / "Approval_Graph.md").is_file()
+
+    stage = run_python("argument-reconstruction", project, "--stage", "graph", env=env)
+    assert stage.returncode == 0
+    assert (json.loads(stage.stdout)["stage"], json.loads(stage.stdout)["verdict"]) == ("graph", "PASS")
+    assert (project / ".Approval_Events.lock").read_bytes() == b"\0"
+
+    decision = fixture.bundle(engine, "DECISION", json.loads(appended.stdout)["head"]["terminal_hash"],
+                              None, [fixture.event("DECISION", "author", record_id,
+                                                   af="PENDING", at="APPROVED", inct="REQUIRED")])
+    bundle_file.write_bytes((engine.canonical_json(decision) + "\n").encode())
+    head = json.loads(appended.stdout)["head"]
+    accepted = run_python("argument-reconstruction", project, "--append-bundle", bundle_file,
+                          "--expected-count", head["bundle_count"],
+                          "--expected-hash", head["terminal_hash"], env=env)
+    assert accepted.returncode == 0 and json.loads(accepted.stdout)["status"] == "COMMITTED"
+    stale = run_python("argument-reconstruction", project, "--append-bundle", bundle_file,
+                       "--expected-count", "0", "--expected-hash", "GENESIS", env=env)
+    assert stale.returncode == 1 and json.loads(stale.stdout)["error"] == "STALE-HEAD"
+    assert (project / "Approval_Events.jsonl").read_bytes().count(b"\n") == 2
+
+    (project / "Argument_State.md").write_text(
+        "# Argument State\n\n## 1. Context and Classification\nForm: essay\n"
+        "Goal: Describe invented lanterns.\nAudience:\n  Expertise: GENERAL\n"
+        "  Receptivity: MIXED\n  Consequence context: LOW\n\n## 2. Propositions\n"
+        "Synthetic context remainder.\n", encoding="utf-8")
+    packet = run_python("argument-reconstruction-draft", project, "--packet", env=env)
+    assert packet.returncode == 0 and tuple(json.loads(packet.stdout)) == (
+        "context", "nodes", "edges", "style_brief")
+    draft = tmp_path / "returned-draft.md"
+    draft.write_bytes(b"Invented fresh prose.\n")
+    mapping = tmp_path / "returned-map.md"
+    mapping.write_text("### Passage p-1\nSpan: paragraphs 1–1\nKind: MAPPED\n"
+                       f"Realizes: {record_id}\n", encoding="utf-8")
+    final_head = json.loads(accepted.stdout)["head"]
+    args = (project, "--emit", "--draft-file", draft, "--map-file", mapping,
+            "--expected-count", final_head["bundle_count"], "--expected-hash", final_head["terminal_hash"],
+            "--expected-packet-sha256", hashlib.sha256(packet.stdout).hexdigest())
+    start = datetime.now(timezone.utc).replace(microsecond=0)
+    emitted = run_python("argument-reconstruction-draft", *args, env=env)
+    end = datetime.now(timezone.utc).replace(microsecond=0)
+    assert emitted.returncode == 0
+    assert json.loads(emitted.stdout)["verdict"] == "ACTION-REQUIRED"
+    assert {f["code"] for f in json.loads(emitted.stdout)["findings"]} == {
+        "I5-COMPARATOR-UNAVAILABLE", "SEMANTIC-NOT-RUN"}
+    assert (project / "Reconstruction_Draft.md").read_bytes() == draft.read_bytes()
+    receipt = (project / "Reconstruction_Receipt.md").read_text(encoding="utf-8")
+    timestamp = re.search(r"^Timestamp: (.+)$", receipt, re.MULTILINE)
+    assert timestamp is not None
+    assert start <= datetime.strptime(timestamp.group(1), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc) <= end
+    assert "Judge: UNAVAILABLE" in receipt and "Config: I5-COMPARATOR-UNAVAILABLE" in receipt
+    stale_args = list(args)
+    stale_args[7:10] = ["0", "--expected-hash", "GENESIS"]
+    refused = run_python("argument-reconstruction-draft", *stale_args, env=env)
+    assert refused.returncode == 1
+    assert b"STALE-HEAD" in refused.stderr
+    assert (project / "Reconstruction_Draft.md").read_bytes() == draft.read_bytes()
+    assert (project / "Reconstruction_Receipt.md").read_text(encoding="utf-8") == receipt
 
 
 @pytest.mark.parametrize("command", LETTER_SIGNALS)

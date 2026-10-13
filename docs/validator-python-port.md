@@ -276,6 +276,19 @@ takes precedence over some route arguments; the native CLI does not emulate that
 global scanner. Route-arm parity excludes those scanner-control invocations,
 which remain part of the coordinated Group 14 cutover.
 
+Group 11 adds the argument reconstruction validation and draft publication
+routes. Both send zero-argument calls and ordinary raw arguments directly to
+their unchanged helpers, without a command prefix. A first raw `--self-test`
+sends only that flag. A missing or nonregular shipped helper retains its route's
+hard rc1 error; a symlink to a regular helper remains available. Approval's
+stage/append parser and draft's argparse packet/emit parser retain their
+distinct outputs and errors. Real packet, append, projection and draft/receipt
+effects remain helper-owned; a published draft retains `ACTION-REQUIRED` and
+unavailable semantic-comparator markers. The inherited Bash scanner can still
+reject `--internal-links*` before either arm, so Group 11 route-arm forwarding,
+first-self-test and missing-helper parity exclude those scanner-control calls.
+Group 14 owns the scanner's global reach and aggregate cutover.
+
 ## Continuation groups
 
 These provisional groups give each subsequent increment its own PR. Refresh the
@@ -297,7 +310,7 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | 8 | intake-interview, author-fingerprint, content-advisory, coaching-history, style-explanation, persona-divergence | Built |
 | 9 | lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, reader-contract-outline, results-guide, position-pair-register | Built |
 | 10 | argument-groundtruth-check, fiction-groundtruth-check, agreement-alpha, argument-crosswalk-check, argument-agd, argument-aif-export, argument-aif-check | Built |
-| 11 | argument-reconstruction, argument-reconstruction-draft | Queued |
+| 11 | argument-reconstruction, argument-reconstruction-draft | Built |
 | 12 | obsidian-export, html-export, docx-export, pdf-export | Queued |
 | 13 | registry-check, schema-coverage, validator-conventions, calibration-honesty, stance-calibration, argument-carve-behavior-preservation | Queued |
 | 14 | Native aggregate/canonical workflow, complete usage routing, Bash shim cutover, references, and native Windows full-suite acceptance | Queued |
