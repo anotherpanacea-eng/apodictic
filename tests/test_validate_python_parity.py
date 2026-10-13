@@ -54,6 +54,10 @@ READER_MANUSCRIPT = (
     "crosslink", "reanchor", "roundtrip-disposition", "reader-contract-outline",
     "results-guide", "position-pair-register",
 )
+ARGUMENT_EVALUATORS = (
+    "argument-groundtruth-check", "fiction-groundtruth-check", "agreement-alpha",
+    "argument-crosswalk-check", "argument-agd", "argument-aif-export", "argument-aif-check",
+)
 REFERENCES = SCRIPTS.parent / "skills/core-editor/references"
 BASH = shutil.which("bash")
 
@@ -278,7 +282,7 @@ def test_letter_wrappers_ignore_extra_arguments(tmp_path, command):
     parity(command, path, "ignored", "also ignored")
 
 
-@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "argument-groundtruth-check", "bogus"])
+@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "argument-reconstruction", "bogus"])
 def test_unported_entrypoints_do_not_claim_success(command):
     result = run_python(command)
     assert result.returncode == 2
@@ -1783,3 +1787,250 @@ def test_viz_positive_render_capture_refuses_fault_and_restores_stdout(viz_helpe
         for path in made:
             shutil.rmtree(path, ignore_errors=True)
     assert errors.getvalue()  # Negative render refusal stderr was not swallowed.
+
+
+@pytest.mark.parametrize("command", ARGUMENT_EVALUATORS)
+def test_argument_evaluator_first_self_test_is_exact(command):
+    result = parity(command, "--self-test", "ignored")
+    assert result.returncode == 0
+
+
+@pytest.mark.parametrize("command", ARGUMENT_EVALUATORS)
+def test_argument_evaluator_raw_wrapper_minimum_and_late_tokens(command, tmp_path):
+    parity(command)
+    parity(command, "--not-a-real-option", "--self-test", tmp_path / "missing")
+
+
+def test_argument_evaluator_public_canonical_inputs():
+    argument = ROOT / "evals/fixtures/argument-benchmark"
+    fiction = ROOT / "evals/fixtures/fiction-benchmark"
+    for path in (*argument.glob("*/groundtruth.md"), *argument.glob("*/*/groundtruth.md")):
+        assert parity("argument-groundtruth-check", path).returncode == 0
+    for path in (*fiction.glob("*/groundtruth.md"), *fiction.glob("*/*/groundtruth.md")):
+        assert parity("fiction-groundtruth-check", path).returncode == 0
+    for clean in argument.glob("*/clean/groundtruth.md"):
+        pair = clean.parent.parent
+        assert parity("argument-groundtruth-check", "--repair-diff", pair / "broken/fixture.md",
+                      pair / "clean/fixture.md", clean).returncode == 0
+    assert parity("argument-groundtruth-check", "--round-record",
+                  ROOT / "docs/argument-benchmark-calibration-round.md", "--fixtures-dir", argument).returncode == 0
+    crosswalk = ROOT / "evals/argument-crosswalk/crosswalk.json"
+    for args in ((), (crosswalk,), ("--check", crosswalk)):
+        assert parity("argument-crosswalk-check", *args).returncode == 0
+    for state in (ROOT / "evals/fixtures/argument-agd").glob("*/argument-state.md"):
+        args = [state, "--source", state.with_name("source.md")]
+        scan = state.with_name("agd_move_scan.json")
+        if scan.exists():
+            args.extend(("--scan", scan))
+        assert parity("argument-agd", *args, "--strict").returncode == 0
+    for artifact, source in (
+        (ROOT / "evals/fixtures/argument-aif/final-audit/export.json",
+         ROOT / "evals/fixtures/argument-aif/final-audit/argument-state.md"),
+        (REFERENCES / "example-argument-aif-export.json", REFERENCES / "example-argument-aif-state.md"),
+    ):
+        assert parity("argument-aif-check", artifact, "--source", source).returncode == 0
+
+
+def test_argument_alpha_synthetic_seed_floor_and_panel(tmp_path):
+    ratings = tmp_path / "ratings.csv"
+    ratings.write_text("rater,unit,value\na,1,1\nb,1,1\nc,1,1\na,2,2\nb,2,2\nc,2,2\n"
+                       "a,3,1\nb,3,2\nc,3,1\na,4,2\nb,4,2\nc,4,1\n", encoding="utf-8")
+    args = ("agreement-alpha", ratings, "--seed", "17", "--resamples", "1000")
+    first = parity(*args)
+    assert first.returncode == 0
+    assert first.stdout == parity(*args).stdout
+    assert parity("agreement-alpha", ratings, "--resamples", "999").returncode != 0
+    assert parity("agreement-alpha", ratings, "--metric", "ordinal", "--seed", "17").returncode == 0
+    ratings.write_text("rater,unit,value\na,1,1\nb,1,1\na,2,2\nb,2,2\n", encoding="utf-8")
+    assert parity("agreement-alpha", ratings).returncode == 2
+
+
+@pytest.mark.parametrize("variant", [
+    "file", "stdout", "empty-out", "dash", "strict", "unsupported", "missing-parent",
+    "symlink", "same-source", "invalid-utf8", "blocking-loss", "schema-03", "schema-04",
+])
+def test_argument_aif_export_effects_match_from_identical_temporary_state(tmp_path, variant):
+    if BASH is None:
+        pytest.skip("Bash differential oracle unavailable")
+    tree = tmp_path / "aif"
+    canonical = ROOT / "evals/fixtures/argument-aif/final-audit/argument-state.md"
+
+    def setup():
+        if tree.exists():
+            shutil.rmtree(tree)
+        tree.mkdir()
+        source = tree / "argument-state.md"
+        source.write_bytes(canonical.read_bytes())
+        if variant == "invalid-utf8":
+            source.write_bytes(b"\xff")
+        if variant == "blocking-loss":
+            source.write_bytes((ROOT / "evals/fixtures/argument-aif/mixed-support/argument-state.md").read_bytes())
+        destination = tree / "export.json"
+        destination.write_bytes(b"sentinel")
+        destination.chmod(0o640)
+        referent = tree / "referent.json"
+        if variant == "symlink":
+            referent.write_bytes(b"referent")
+            referent.chmod(0o640)
+            destination.unlink()
+            destination.symlink_to(referent)
+        schema = {"unsupported": "9.9.9", "schema-03": "0.3.0", "schema-04": "0.4.0"}.get(variant, "0.2.0")
+        args = [str(source), "--state-schema", schema]
+        if variant == "strict":
+            args.append("--strict")
+        if variant == "file" or variant in ("unsupported", "invalid-utf8", "blocking-loss", "strict", "symlink", "schema-03", "schema-04"):
+            args.extend(("--out", str(destination)))
+        elif variant == "empty-out":
+            args.extend(("--out", ""))
+        elif variant == "dash":
+            args.extend(("--out", str(tree / "-")))
+        elif variant == "missing-parent":
+            args.extend(("--out", str(tree / "missing/export.json")))
+        elif variant == "same-source":
+            args.extend(("--out", str(source)))
+        return args
+
+    def snapshot():
+        result = {}
+        for path in tree.rglob("*"):
+            relative = str(path.relative_to(tree))
+            if path.is_symlink():
+                result[relative] = ("symlink", os.readlink(path))
+            elif path.is_file():
+                result[relative] = ("file", path.read_bytes(), path.stat().st_mode & 0o777)
+            else:
+                result[relative] = ("dir", path.stat().st_mode & 0o777)
+        return result
+
+    arguments = setup()
+    legacy = subprocess.run([BASH, str(BASH_CLI), "argument-aif-export", *arguments],
+                            cwd=ROOT, capture_output=True, timeout=60)
+    legacy_effects = snapshot()
+    assert setup() == arguments
+    native = run_python("argument-aif-export", *arguments)
+    assert (native.returncode, native.stdout, native.stderr, snapshot()) == (
+        legacy.returncode, legacy.stdout, legacy.stderr, legacy_effects)
+    if variant in ("file", "symlink", "schema-03", "schema-04"):
+        artifact = tree / "export.json"
+        assert artifact.stat().st_mode & 0o777 == 0o600
+        assert parity("argument-aif-check", artifact, "--source", tree / "argument-state.md").returncode == 0
+    if variant == "file":
+        assert (tree / "export.json").read_bytes() == (
+            ROOT / "evals/fixtures/argument-aif/final-audit/export.json").read_bytes()
+    if variant in ("strict", "unsupported", "invalid-utf8", "blocking-loss", "missing-parent"):
+        assert native.returncode != 0
+
+
+def test_argument_aif_checker_source_closure_and_canonical_bytes(tmp_path):
+    source = tmp_path / "argument-state.md"
+    source.write_bytes((ROOT / "evals/fixtures/argument-aif/final-audit/argument-state.md").read_bytes())
+    artifact = tmp_path / "export.json"
+    assert run_python("argument-aif-export", source, "--state-schema", "0.2.0", "--out", artifact).returncode == 0
+    original = artifact.read_bytes()
+    assert parity("argument-aif-check", artifact).returncode == 0
+    assert parity("argument-aif-check", artifact, "--source", source).returncode == 0
+    assert parity("argument-aif-check", artifact, "--source", "").returncode != 0
+    artifact.write_bytes(original.replace(b"\n", b"\r\n", 1))
+    assert parity("argument-aif-check", artifact).returncode != 0
+    artifact.write_bytes(original)
+    source.write_bytes(source.read_bytes().replace(b"\n", b"\r\n", 1))
+    assert parity("argument-aif-check", artifact, "--source", source).returncode != 0
+    assert artifact.read_bytes() == original
+
+
+def test_argument_evaluators_run_without_path_or_bash(tmp_path):
+    env = dict(os.environ, PATH="", PYTHONDONTWRITEBYTECODE="1", PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
+    for command in ARGUMENT_EVALUATORS:
+        result = run_python(command, "--self-test", env=env)
+        assert result.returncode == 0
+        assert b"Self-test: PASS" in result.stdout
+    source = tmp_path / "argument-state.md"
+    source.write_bytes((ROOT / "evals/fixtures/argument-aif/final-audit/argument-state.md").read_bytes())
+    artifact = tmp_path / "export.json"
+    assert run_python("argument-aif-export", source, "--state-schema", "0.2.0", "--out", artifact,
+                      env=env).returncode == 0
+    assert run_python("argument-aif-check", artifact, "--source", source, env=env).returncode == 0
+    assert artifact.read_bytes() == (ROOT / "evals/fixtures/argument-aif/final-audit/export.json").read_bytes()
+
+
+def test_argument_evaluator_hostile_helper_owned_modes(tmp_path):
+    bad = tmp_path / "bad.md"
+    bad.write_bytes(b"\xff")
+    assert parity("argument-groundtruth-check", bad).returncode != 0
+    assert parity("fiction-groundtruth-check", bad).returncode != 0
+    assert parity("argument-groundtruth-check", "--repair-diff", bad).returncode != 0
+    # An unbooked round is the helper's existing vacuous success.
+    assert parity("argument-groundtruth-check", "--round-record", bad, "--fixtures-dir", tmp_path).returncode == 0
+    assert parity("argument-crosswalk-check", tmp_path / "missing.json").returncode != 0
+    assert parity("argument-agd", bad, "--source", bad, "--strict").returncode != 0
+
+
+def test_argument_groundtruth_pair_path_and_round_booking(tmp_path):
+    original = ROOT / "evals/fixtures/argument-benchmark/policy-brief-uncompared/clean/groundtruth.md"
+    flat = tmp_path / "groundtruth.md"
+    flat.write_bytes(original.read_bytes())
+    assert parity("argument-groundtruth-check", flat).returncode != 0
+    wrong = tmp_path / "wrong-pair/clean"
+    wrong.mkdir(parents=True)
+    (wrong / "groundtruth.md").write_bytes(original.read_bytes())
+    assert parity("argument-groundtruth-check", wrong / "groundtruth.md").returncode != 0
+    record = tmp_path / "round.md"
+    record.write_text("- BOOKED: ENGINE-FAULT absent-fixture GT2\n", encoding="utf-8")
+    assert parity("argument-groundtruth-check", "--round-record", record,
+                  "--fixtures-dir", ROOT / "evals/fixtures/argument-benchmark").returncode != 0
+
+
+def test_argument_agd_source_and_scan_edges(tmp_path):
+    base = ROOT / "evals/fixtures/argument-agd/cue-free-structural-discounting"
+    state = base / "argument-state.md"
+    source = base / "source.md"
+    scan = base / "agd_move_scan.json"
+    assert parity("argument-agd", state, "--source", source, "--scan", scan, "--strict").returncode == 0
+    assert parity("argument-agd", state, "--source", tmp_path / "missing.md", "--strict").returncode != 0
+    assert parity("argument-agd", state, "--scan", tmp_path / "missing.json", "--strict").returncode != 0
+    corrupt = tmp_path / "scan.json"
+    corrupt.write_text("{", encoding="utf-8")
+    assert parity("argument-agd", state, "--scan", corrupt, "--strict").returncode != 0
+
+
+@pytest.mark.parametrize("fixture", [
+    "mixed-support", "mixed-warrant", "carrier-disagreement", "bad-carrier-missing",
+    "bad-carrier-enum", "bad-carrier-extra", "fallback-c99", "extra-final-record",
+])
+def test_argument_aif_public_hostile_export_preserves_destination(tmp_path, fixture):
+    if BASH is None:
+        pytest.skip("Bash differential oracle unavailable")
+    source = ROOT / "evals/fixtures/argument-aif" / fixture / "argument-state.md"
+    out = tmp_path / "export.json"
+    out.write_bytes(b"sentinel")
+    out.chmod(0o640)
+    args = ("argument-aif-export", source, "--state-schema", "0.2.0", "--out", out)
+    result = parity(*args)
+    assert result.returncode != 0
+    assert out.read_bytes() == b"sentinel"
+    assert out.stat().st_mode & 0o777 == 0o640
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["export.json"]
+
+
+@pytest.mark.parametrize("fixture", [
+    "final-audit", "final-over-predraft", "predraft-complete", "predraft-partial",
+])
+def test_argument_aif_public_positive_generations_have_same_artifact(tmp_path, fixture):
+    if BASH is None:
+        pytest.skip("Bash differential oracle unavailable")
+    source = tmp_path / "argument-state.md"
+    source.write_bytes((ROOT / "evals/fixtures/argument-aif" / fixture / "argument-state.md").read_bytes())
+    out = tmp_path / "export.json"
+    args = ("argument-aif-export", source, "--state-schema", "0.2.0", "--out", out)
+    bash = subprocess.run([BASH, str(BASH_CLI), *map(str, args)], cwd=ROOT,
+                          capture_output=True, timeout=60)
+    assert bash.returncode == 0
+    original = out.read_bytes()
+    mode = out.stat().st_mode & 0o777
+    out.unlink()
+    native = run_python(*args)
+    assert (native.returncode, native.stdout, native.stderr) == (bash.returncode, bash.stdout, bash.stderr)
+    assert out.read_bytes() == original
+    assert out.stat().st_mode & 0o777 == mode
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["argument-state.md", "export.json"]
+    assert parity("argument-aif-check", out, "--source", source).returncode == 0
