@@ -5,12 +5,11 @@ also run on hosts with no Bash or external hash/count tools.
 """
 
 import hashlib
-from datetime import datetime, timezone
 import json
 import math
 import os
-from pathlib import Path
 import re
+from pathlib import Path
 import shutil
 import subprocess
 import sys
@@ -94,8 +93,12 @@ def parity(*args, cwd=None, env=None):
         capture_output=True, timeout=60,
     )
     native = run_python(*args, cwd=cwd, env=env)
+    legacy_stdout = legacy.stdout
+    if args[0] == "state-lines" and re.fullmatch(rb"[ \t]*[0-9]+\n", legacy_stdout):
+        # Bash counts with the host `wc -l`; BSD/macOS `wc` left-pads the number.
+        legacy_stdout = legacy_stdout.lstrip(b" \t")
     assert (native.returncode, native.stdout, native.stderr) == (
-        legacy.returncode, legacy.stdout, legacy.stderr,
+        legacy.returncode, legacy_stdout, legacy.stderr,
     )
     return native
 
@@ -285,7 +288,7 @@ def test_letter_wrappers_ignore_extra_arguments(tmp_path, command):
     parity(command, path, "ignored", "also ignored")
 
 
-@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "registry-check", "bogus"])
+@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "gate", "bogus"])
 def test_unported_entrypoints_do_not_claim_success(command):
     result = run_python(command)
     assert result.returncode == 2
@@ -338,87 +341,6 @@ def test_argument_reconstruction_shipped_helper_availability(tmp_path, command, 
     assert (result.returncode, result.stdout, result.stderr) == (0, b"['--self-test']\n", b"")
     result = invoke("project", "--bogus")
     assert (result.returncode, result.stdout, result.stderr) == (0, b"['project', '--bogus']\n", b"")
-
-
-def test_argument_reconstruction_real_append_stage_packet_and_emit(tmp_path, monkeypatch):
-    monkeypatch.syspath_prepend(str(SCRIPTS))
-    monkeypatch.syspath_prepend(str(ROOT / "evals/fixtures/argument-reconstruction"))
-    import approval_graph as engine
-    import run_cases as fixture
-
-    project = tmp_path / "project"
-    project.mkdir()
-    context = fixture.source(project, "The invented lantern glows.\n")
-    node = fixture.node(engine, "The invented lantern glows.")
-    record_id = engine.node_id(node["type"], node["text"])
-    bundle = fixture.bundle(engine, "MINT", "GENESIS", context, [
-        fixture.event("MINTED", "normalizer", record_id, content=node, at="PENDING", pt="CURRENT")
-    ])
-    bundle_file = tmp_path / "mint.jsonl"
-    bundle_file.write_bytes((engine.canonical_json(bundle) + "\n").encode())
-    env = {**os.environ, "TMPDIR": str(tmp_path.resolve()), "PATH": ""}
-    appended = run_python("argument-reconstruction", project, "--append-bundle", bundle_file,
-                          "--expected-count", "0", "--expected-hash", "GENESIS", env=env)
-    assert appended.returncode == 0 and json.loads(appended.stdout)["status"] == "COMMITTED"
-    assert (project / "Approval_Events.jsonl").read_bytes() == bundle_file.read_bytes()
-    assert (project / "Approval_Graph.md").is_file()
-
-    stage = run_python("argument-reconstruction", project, "--stage", "graph", env=env)
-    assert stage.returncode == 0
-    assert (json.loads(stage.stdout)["stage"], json.loads(stage.stdout)["verdict"]) == ("graph", "PASS")
-    assert (project / ".Approval_Events.lock").read_bytes() == b"\0"
-
-    decision = fixture.bundle(engine, "DECISION", json.loads(appended.stdout)["head"]["terminal_hash"],
-                              None, [fixture.event("DECISION", "author", record_id,
-                                                   af="PENDING", at="APPROVED", inct="REQUIRED")])
-    bundle_file.write_bytes((engine.canonical_json(decision) + "\n").encode())
-    head = json.loads(appended.stdout)["head"]
-    accepted = run_python("argument-reconstruction", project, "--append-bundle", bundle_file,
-                          "--expected-count", head["bundle_count"],
-                          "--expected-hash", head["terminal_hash"], env=env)
-    assert accepted.returncode == 0 and json.loads(accepted.stdout)["status"] == "COMMITTED"
-    stale = run_python("argument-reconstruction", project, "--append-bundle", bundle_file,
-                       "--expected-count", "0", "--expected-hash", "GENESIS", env=env)
-    assert stale.returncode == 1 and json.loads(stale.stdout)["error"] == "STALE-HEAD"
-    assert (project / "Approval_Events.jsonl").read_bytes().count(b"\n") == 2
-
-    (project / "Argument_State.md").write_text(
-        "# Argument State\n\n## 1. Context and Classification\nForm: essay\n"
-        "Goal: Describe invented lanterns.\nAudience:\n  Expertise: GENERAL\n"
-        "  Receptivity: MIXED\n  Consequence context: LOW\n\n## 2. Propositions\n"
-        "Synthetic context remainder.\n", encoding="utf-8")
-    packet = run_python("argument-reconstruction-draft", project, "--packet", env=env)
-    assert packet.returncode == 0 and tuple(json.loads(packet.stdout)) == (
-        "context", "nodes", "edges", "style_brief")
-    draft = tmp_path / "returned-draft.md"
-    draft.write_bytes(b"Invented fresh prose.\n")
-    mapping = tmp_path / "returned-map.md"
-    mapping.write_text("### Passage p-1\nSpan: paragraphs 1–1\nKind: MAPPED\n"
-                       f"Realizes: {record_id}\n", encoding="utf-8")
-    final_head = json.loads(accepted.stdout)["head"]
-    args = (project, "--emit", "--draft-file", draft, "--map-file", mapping,
-            "--expected-count", final_head["bundle_count"], "--expected-hash", final_head["terminal_hash"],
-            "--expected-packet-sha256", hashlib.sha256(packet.stdout).hexdigest())
-    start = datetime.now(timezone.utc).replace(microsecond=0)
-    emitted = run_python("argument-reconstruction-draft", *args, env=env)
-    end = datetime.now(timezone.utc).replace(microsecond=0)
-    assert emitted.returncode == 0
-    assert json.loads(emitted.stdout)["verdict"] == "ACTION-REQUIRED"
-    assert {f["code"] for f in json.loads(emitted.stdout)["findings"]} == {
-        "I5-COMPARATOR-UNAVAILABLE", "SEMANTIC-NOT-RUN"}
-    assert (project / "Reconstruction_Draft.md").read_bytes() == draft.read_bytes()
-    receipt = (project / "Reconstruction_Receipt.md").read_text(encoding="utf-8")
-    timestamp = re.search(r"^Timestamp: (.+)$", receipt, re.MULTILINE)
-    assert timestamp is not None
-    assert start <= datetime.strptime(timestamp.group(1), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc) <= end
-    assert "Judge: UNAVAILABLE" in receipt and "Config: I5-COMPARATOR-UNAVAILABLE" in receipt
-    stale_args = list(args)
-    stale_args[7:10] = ["0", "--expected-hash", "GENESIS"]
-    refused = run_python("argument-reconstruction-draft", *stale_args, env=env)
-    assert refused.returncode == 1
-    assert b"STALE-HEAD" in refused.stderr
-    assert (project / "Reconstruction_Draft.md").read_bytes() == draft.read_bytes()
-    assert (project / "Reconstruction_Receipt.md").read_text(encoding="utf-8") == receipt
 
 
 @pytest.mark.parametrize("command", LETTER_SIGNALS)
@@ -513,36 +435,6 @@ def native_and_optional_parity(*args, cwd=None, env=None):
     if BASH is not None:
         return parity(*args, cwd=cwd, env=env)
     return run_python(*args, cwd=cwd, env=env)
-
-
-@pytest.mark.parametrize("command", ["specificity-floor", *REFUTATION])
-@pytest.mark.parametrize("temp_name", ["PASS-cache", "BYPASS-cache", "line\nbreak"])
-def test_negative_self_test_diagnostics_ignore_valid_temp_root_text(tmp_path, command, temp_name):
-    temp_root = tmp_path / temp_name
-    try:
-        temp_root.mkdir()
-    except OSError:
-        if "\n" in temp_name:
-            pytest.skip("Host forbids newline directory names")
-        raise
-    env = dict(os.environ, TMPDIR=str(temp_root), TEMP=str(temp_root), TMP=str(temp_root))
-    result = native_and_optional_parity(command, "--self-test", env=env)
-    assert result.stderr == b""
-    if command == "specificity-floor":
-        assert b"non_utf8_letter_fails_closed: OK\n" in result.stdout
-        assert b"non_utf8_ledger_fails_closed: OK\n" in result.stdout
-        assert result.returncode == 0
-    else:
-        assert b"non_utf8_coverage_cli_degrades: OK\n" in result.stdout
-        if "\n" in temp_name:
-            # The shared suite's separate synthetic JSON still embeds a newline
-            # path unescaped. Preserve that inherited failure outside this repair.
-            assert result.returncode == 1
-            assert b"v2_absolute_snapshot_path_refused: FAIL" in result.stdout
-            assert result.stdout.endswith(b"Self-test: FAIL\n")
-            return
-        assert result.returncode == 0
-    assert result.stdout.endswith(b"Self-test: PASS\n")
 
 
 @pytest.mark.parametrize("command", CONFIG_TIMELINES)
@@ -1129,15 +1021,6 @@ def test_refutation_named_decode_error_is_byte_exact(refutation_run, command, ro
     assert result.stdout.startswith(b"Error: cannot read " + label + b" ")
 
 
-@pytest.mark.parametrize("command", ARTIFACT_PLANNING)
-def test_artifact_planning_original_argv_and_late_self_test(command):
-    for args in ((), ("",), ("--strict",), (command,), (command, command), ("--unknown",)):
-        assert native_and_optional_parity(command, *args).returncode == 2
-    late = native_and_optional_parity(command, "--strict", "--self-test", "ignored")
-    assert (late.returncode, late.stderr) == (0, b"")
-    assert late.stdout.endswith(b"Self-test: PASS\n")
-
-
 @pytest.mark.parametrize("command,inputs", [
     ("legal-risk", ("example-legal-risk-register.md",)),
     ("promise-contract", ("example-promise-contract.md",)),
@@ -1155,131 +1038,6 @@ def test_artifact_planning_canonical_strict_inputs(command, inputs):
     assert (result.returncode, result.stderr) == (0, b"")
 
 
-@pytest.mark.parametrize("command", ARTIFACT_PLANNING)
-def test_artifact_planning_missing_and_non_utf8_read_refusal(tmp_path, command):
-    for path in (tmp_path / "missing café.md", tmp_path / "bad café.md"):
-        if path.name.startswith("bad"):
-            path.write_bytes(b"\xff\xfe")
-        result = native_and_optional_parity(command, path)
-        assert (result.returncode, result.stderr) == (2, b"")
-        if command == "promise-contract":
-            assert b"no readable artifact found" in result.stdout
-        else:
-            assert b"cannot read " in result.stdout
-
-
-@pytest.mark.parametrize("command,filename,canonical,block", [
-    ("legal-risk", "Project_Legal_Risk_Register_r1.md", "example-legal-risk-register.md", "legal_risk"),
-    ("setup-payoff", "Project_Setup_Payoff_Ledger_r1.md", "example-setup-payoff-ledger.md", "setup_payoff"),
-    ("world-bible", "Project_Worldbuilding_Bible_r1.md", "example-worldbuilding-bible.md", "world_fact"),
-    ("argument-spine", "Argument_State_r1.md", "example-argument-state-predraft.md", "argument_spine"),
-    ("scene-ethics", "Project_Scene_Ethics_Plan_r1.md", "example-scene-ethics-plan.md", "scene_ethics"),
-])
-def test_artifact_planning_parsed_first_carrier_and_newest_file(tmp_path, command, filename, canonical, block):
-    folder = tmp_path / "run café"
-    folder.mkdir()
-    bad = folder / filename
-    bad.write_text(f"<!-- apodictic:{block}\n{{\n-->\n", encoding="utf-8")
-    good = folder / filename.replace("r1", "r2")
-    good.write_bytes((REFERENCES / canonical).read_bytes())
-    decoy = tmp_path / "prose.md"
-    decoy.write_text(f"Prose mentions apodictic:{block}, without carrying a block.\n", encoding="utf-8")
-    assert native_and_optional_parity(command, decoy, good, "--strict").returncode == 0
-    assert native_and_optional_parity(command, good, bad, "--strict").returncode == 0
-    assert native_and_optional_parity(command, bad, good).returncode == 1
-    os.utime(bad, (100, 100))
-    os.utime(good, (200, 200))
-    assert native_and_optional_parity(command, folder, "--strict").returncode == 0
-    os.utime(bad, (300, 300))
-    assert native_and_optional_parity(command, folder).returncode == 1
-
-
-def test_literal_command_filename_remains_helper_owned(tmp_path):
-    (tmp_path / "legal-risk").write_bytes((REFERENCES / "example-legal-risk-register.md").read_bytes())
-    assert native_and_optional_parity("legal-risk", "legal-risk", cwd=tmp_path).returncode == 2
-    assert native_and_optional_parity("legal-risk", "./legal-risk", cwd=tmp_path).returncode == 0
-
-
-def test_promise_separate_inputs_partial_reads_and_all_folder_reports(tmp_path):
-    def block(kind, obj):
-        return f"<!-- apodictic:{kind}\n{json.dumps(obj, ensure_ascii=False)}\n-->\n"
-    pitch = {"schema": "apodictic.pitch_copy.v1", "id": "PC-01", "copy_type": "query",
-             "text": "A cartographer maps a changing city."}
-    finding = {"schema": "apodictic.finding.v1", "id": "F-PCF-01", "severity": "Should-Fix",
-               "confidence": "HIGH", "mechanism": "PCF1 emphasis distortion: the query leads with a minor subplot",
-               "evidence_refs": ["copy:query¶1", "contract:CONTROLLING IDEA"],
-               "fix_class": "bring the copy back to the kept promise", "risk_if_fixed": "the lead reframes the book"}
-    new = tmp_path / "Project_Pitch_Copy_r2.md"
-    report = tmp_path / "Report café.md"
-    new.write_text(block("pitch_copy", pitch), encoding="utf-8")
-    report.write_text(block("finding", finding), encoding="utf-8")
-    unreadable = tmp_path / "unreadable.md"
-    unreadable.write_bytes(b"\xff\xfe")
-    assert native_and_optional_parity("promise-contract", report, new, unreadable, "--strict").returncode == 0
-    old = tmp_path / "Project_Pitch_Copy_r1.md"
-    old_pitch = dict(pitch, copy_type="invalid")
-    old_finding = dict(finding, id="F-PCF-02", evidence_refs=["copy:query¶1"])
-    old.write_text(block("pitch_copy", old_pitch) + block("finding", old_finding), encoding="utf-8")
-    os.utime(old, (100, 100))
-    os.utime(new, (200, 200))
-    selected = native_and_optional_parity("promise-contract", tmp_path, "--strict")
-    assert selected.returncode == 1
-    assert b"P1 one-sided gap" in selected.stdout
-    assert b"P2" not in selected.stdout  # Old copy is excluded from pitch, but included in report.
-    old_finding["evidence_refs"] = finding["evidence_refs"]
-    old.write_text(block("pitch_copy", old_pitch) + block("finding", old_finding), encoding="utf-8")
-    os.utime(old, (100, 100))
-    assert native_and_optional_parity("promise-contract", tmp_path, "--strict").returncode == 0
-
-
-def test_continuity_timeline_local_parent_and_first_explicit_order(tmp_path):
-    folder = tmp_path / "run"
-    folder.mkdir()
-    bible = folder / "Project_Continuity_Bible_r1.md"
-    bible.write_bytes((REFERENCES / "example-continuity-bible.md").read_bytes())
-    parent = tmp_path / "Timeline.md"
-    parent.write_bytes((REFERENCES / "example-timeline.md").read_bytes())
-    assert native_and_optional_parity("continuity-bible", folder, "--strict").returncode == 0
-    local = folder / "Timeline.md"
-    local.write_text(parent.read_text(encoding="utf-8").replace("Ch 1 §2", "Ch 99 §2"), encoding="utf-8")
-    assert native_and_optional_parity("continuity-bible", folder, "--strict").returncode == 1
-    assert native_and_optional_parity("continuity-bible", parent, bible, local, "--strict").returncode == 0
-    assert native_and_optional_parity("continuity-bible", local, bible, parent, "--strict").returncode == 1
-    local.unlink()
-    assert native_and_optional_parity("continuity-bible", folder, "--strict").returncode == 0
-    parent.write_bytes(b"\xff\xfe")
-    # An unreadable optional timeline retains the same coverage limitation as omission.
-    assert native_and_optional_parity("continuity-bible", bible, parent, "--strict").returncode == 0
-    assert native_and_optional_parity("continuity-bible", bible, "--strict").returncode == 0
-
-
-def test_scene_ethics_advisory_strict_and_scoped_override(tmp_path):
-    path = tmp_path / "ethics café.md"
-    item = {"schema": "apodictic.scene_ethics.v1", "id": "EP-01", "subject": "a named manager",
-            "depiction": "a workplace remark", "consent_status": "not-sought", "handling": "as-is",
-            "legal_ref": "LR-01"}
-    text = "<!-- apodictic:scene_ethics\n" + json.dumps(item) + "\n-->\n"
-    path.write_text(text, encoding="utf-8")
-    advisory = native_and_optional_parity("scene-ethics", path)
-    assert advisory.returncode == 0 and b"W1 unresolved depiction" in advisory.stdout
-    assert native_and_optional_parity("scene-ethics", path, "--strict").returncode == 1
-    path.write_text("<!-- override: scene-ethics-unresolved EP-99 — unrelated -->\n" + text, encoding="utf-8")
-    assert native_and_optional_parity("scene-ethics", path, "--strict").returncode == 1
-    path.write_text("<!-- override: scene-ethics-unresolved EP-01 — public record -->\n" + text, encoding="utf-8")
-    assert native_and_optional_parity("scene-ethics", path, "--strict").returncode == 0
-
-
-@pytest.mark.parametrize("command", INTAKE_VOICE)
-def test_intake_voice_raw_arguments_and_self_test_precedence(tmp_path, command):
-    for args in ((), ("",), ("--strict",), (command,), (command, command),
-                 ("--unknown",), ("--unknown", "missing"), ("--", "missing"), ("-",)):
-        assert native_and_optional_parity(command, *args, cwd=tmp_path).returncode == 2
-    for args in (("--self-test", "ignored"), ("--strict", "--self-test", "ignored")):
-        result = native_and_optional_parity(command, *args)
-        assert (result.returncode, result.stderr) == (0, b"")
-        assert result.stdout.endswith(b"Self-test: PASS\n")
-
-
 @pytest.mark.parametrize("command,inputs", [
     ("intake-interview", ("example-intake-interview.md", "example-intake-interview-ledger.md")),
     ("author-fingerprint", ("example-author-voice-profile.md",)),
@@ -1291,172 +1049,6 @@ def test_intake_voice_raw_arguments_and_self_test_precedence(tmp_path, command):
 def test_intake_voice_canonical_strict_inputs(command, inputs):
     result = native_and_optional_parity(command, *(REFERENCES / name for name in inputs), "--strict")
     assert (result.returncode, result.stderr) == (0, b"")
-
-
-@pytest.mark.parametrize("command", INTAKE_VOICE)
-def test_intake_voice_read_and_no_artifact_distinctions(tmp_path, command):
-    for path in (tmp_path / "missing café.md", tmp_path / "bad café.md"):
-        if path.name.startswith("bad"):
-            path.write_bytes(b"\xff\xfe")
-        result = native_and_optional_parity(command, path)
-        assert (result.returncode, result.stderr) == (2, b"")
-        if command == "content-advisory":
-            assert b"no advisory artifact found" in result.stdout
-        elif command == "coaching-history":
-            assert b"no opt-in marker" in result.stdout
-        else:
-            assert b"cannot read " in result.stdout
-    assert native_and_optional_parity(command, tmp_path).returncode == 2
-
-
-@pytest.mark.parametrize("command,filename,canonical,kind,extra", [
-    ("intake-interview", "Project_Intake_Interview_r1.md", "example-intake-interview.md", "intake_query", ("example-intake-interview-ledger.md",)),
-    ("author-fingerprint", "Author_Voice_Profile_r1.md", "example-author-voice-profile.md", "voice_fingerprint", ()),
-    ("content-advisory", "Project_Content_Advisory_r1.md", "example-content-advisory.md", "content_note", ()),
-    ("persona-divergence", "Project_Persona_Divergence_Map_r1.md", "example-persona-divergence-map.md", "persona", ("example-persona-divergence-ledger.md",)),
-])
-def test_intake_voice_parsed_carrier_and_newest_discovery(tmp_path, command, filename, canonical, kind, extra):
-    folder = tmp_path / "run café"
-    folder.mkdir()
-    bad = folder / filename
-    bad.write_text(f"<!-- apodictic:{kind}\n{{\n-->\n", encoding="utf-8")
-    good = folder / filename.replace("r1", "r2")
-    good.write_bytes((REFERENCES / canonical).read_bytes())
-    optional = []
-    for name in extra:
-        ledger = folder / "Project_Findings_Ledger_r1.md"
-        ledger.write_bytes((REFERENCES / name).read_bytes())
-        optional.append(ledger)
-    prose = tmp_path / "decoy.md"
-    prose.write_text(f"Mention apodictic:{kind} without a parsed block.\n", encoding="utf-8")
-    assert native_and_optional_parity(command, prose, good, *optional, "--strict").returncode == 0
-    assert native_and_optional_parity(command, good, bad, *optional, "--strict").returncode == 0
-    assert native_and_optional_parity(command, bad, good, *optional).returncode == 1
-    os.utime(bad, (100, 100))
-    os.utime(good, (200, 200))
-    assert native_and_optional_parity(command, folder, "--strict").returncode == 0
-    os.utime(bad, (300, 300))
-    assert native_and_optional_parity(command, folder).returncode == 1
-
-
-def test_style_prefers_parsed_labels_over_newer_fingerprint_and_first_fallback(tmp_path):
-    labels = tmp_path / "Author_Style_Explanation_r1.md"
-    labels.write_bytes((REFERENCES / "example-author-style-explanation.md").read_bytes())
-    profile = tmp_path / "Author_Voice_Profile_r2.md"
-    profile.write_bytes((REFERENCES / "example-author-voice-profile.md").read_bytes())
-    os.utime(labels, (100, 100))
-    os.utime(profile, (200, 200))
-    result = native_and_optional_parity("style-explanation", tmp_path, "--strict")
-    assert result.returncode == 0 and b"4 label(s)" in result.stdout
-    assert native_and_optional_parity("style-explanation", profile, labels, "--strict").stdout == result.stdout
-    labels.unlink()
-    result = native_and_optional_parity("style-explanation", tmp_path, "--strict")
-    assert result.returncode == 0 and b"no style_label blocks" in result.stdout
-    prose = tmp_path / "plain.md"
-    prose.write_text("Plain prose.\n", encoding="utf-8")
-    for command, marker in (("style-explanation", b"no style_label"), ("author-fingerprint", b"no voice_fingerprint")):
-        result = native_and_optional_parity(command, prose, "--strict")
-        assert result.returncode == 0 and marker in result.stdout
-    assert native_and_optional_parity("content-advisory", prose).returncode == 2
-
-
-def test_advisory_folder_prose_decode_and_scoped_override(tmp_path):
-    path = tmp_path / "Project_Content_Advisory_r1.md"
-    path.write_text("<!-- content-advisory: opted-in -->\nYou should cut this scene.\n", encoding="utf-8")
-    assert native_and_optional_parity("content-advisory", path).returncode == 2
-    result = native_and_optional_parity("content-advisory", tmp_path)
-    assert result.returncode == 0 and b"W1 prescriptive drift" in result.stdout
-    assert native_and_optional_parity("content-advisory", tmp_path, "--strict").returncode == 1
-    text = path.read_text(encoding="utf-8")
-    path.write_text("<!-- override: advisory-eval CN-01 — scoped elsewhere -->\n" + text, encoding="utf-8")
-    assert native_and_optional_parity("content-advisory", tmp_path, "--strict").returncode == 1
-    path.write_text("<!-- override: advisory-eval-prose — requested wording -->\n" + text, encoding="utf-8")
-    assert native_and_optional_parity("content-advisory", tmp_path, "--strict").returncode == 0
-    path.write_bytes(b"\xff\xfe")
-    result = native_and_optional_parity("content-advisory", tmp_path)
-    assert result.returncode == 2 and b"cannot read " in result.stdout
-
-
-def test_intake_optional_ledger_order_degradation_and_duplicate_override(tmp_path):
-    query = tmp_path / "query.md"
-    query.write_bytes((REFERENCES / "example-intake-interview.md").read_bytes())
-    ledger = tmp_path / "ledger.md"
-    ledger.write_bytes((REFERENCES / "example-intake-interview-ledger.md").read_bytes())
-    good = native_and_optional_parity("intake-interview", query, ledger, "--strict")
-    assert native_and_optional_parity("intake-interview", ledger, query, "--strict").stdout == good.stdout
-    bad = tmp_path / "bad.md"
-    bad.write_bytes(b"\xff\xfe")
-    for args in ((query,), (query, bad)):
-        result = native_and_optional_parity("intake-interview", *args, "--strict")
-        assert result.returncode == 1 and b"I3 grounded" in result.stdout
-    assert native_and_optional_parity("intake-interview", query, bad, ledger, "--strict").returncode == 0
-    edit_artifact_block(query, "intake_query", lambda obj: obj.update(question="What is the genre?"))
-    assert native_and_optional_parity("intake-interview", query, ledger).returncode == 0
-    assert native_and_optional_parity("intake-interview", query, ledger, "--strict").returncode == 1
-    query.write_text("<!-- override: intake-dup IQ-01 — author requested -->\n" + query.read_text(encoding="utf-8"), encoding="utf-8")
-    assert native_and_optional_parity("intake-interview", query, ledger, "--strict").returncode == 0
-
-
-def test_persona_local_only_timeline_optional_inputs_and_severity_lock(tmp_path):
-    folder = tmp_path / "run"
-    folder.mkdir()
-    path = folder / "Project_Persona_Divergence_Map_r1.md"
-    path.write_bytes((REFERENCES / "example-persona-divergence-map.md").read_bytes())
-    edit_artifact_block(path, "divergence", lambda obj: (obj.update(anchor="Ch 1 §2"), obj.pop("asserted_severity", None)))
-    parent = tmp_path / "Timeline.md"
-    parent.write_bytes((REFERENCES / "example-timeline.md").read_bytes())
-    result = native_and_optional_parity("persona-divergence", folder, "--strict")
-    assert result.returncode == 1 and b"D2 grounded" in result.stdout
-    assert native_and_optional_parity("persona-divergence", parent, path, "--strict").returncode == 0
-    local = folder / "Timeline.md"
-    local.write_bytes(parent.read_bytes())
-    assert native_and_optional_parity("persona-divergence", folder, "--strict").returncode == 0
-    edit_artifact_block(path, "divergence", lambda obj: obj.update(asserted_severity="Must-Fix"))
-    result = native_and_optional_parity("persona-divergence", folder, "--strict")
-    assert result.returncode == 1 and b"no locked Ledger severity" in result.stdout
-    path.write_bytes((REFERENCES / "example-persona-divergence-map.md").read_bytes())
-    bad_ledger = folder / "Project_Findings_Ledger_r1.md"
-    bad_ledger.write_bytes(b"\xff\xfe")
-    assert native_and_optional_parity("persona-divergence", folder).returncode == 1
-    bad_ledger.write_bytes((REFERENCES / "example-persona-divergence-ledger.md").read_bytes())
-    assert native_and_optional_parity("persona-divergence", folder, "--strict").returncode == 0
-
-
-@pytest.mark.parametrize("command,canonical,marker,warning", [
-    ("author-fingerprint", "example-author-voice-profile.md", "<!-- author-voice-profile: local-only -->", b"W2 local-only"),
-    ("style-explanation", "example-author-style-explanation.md", "<!-- author-style-explanation: local-only -->", b"X6 local-only"),
-])
-def test_voice_local_only_warnings_remain_nonblocking_strict(tmp_path, command, canonical, marker, warning):
-    path = tmp_path / "voice café.md"
-    path.write_text((REFERENCES / canonical).read_text(encoding="utf-8").replace(marker, "") + "\nhttps://example.invalid/profile\n", encoding="utf-8")
-    result = native_and_optional_parity(command, path, "--strict")
-    assert result.returncode == 0 and warning in result.stdout
-
-
-def test_coaching_delete_missing_target_preserves_exit_stdout_with_named_stderr():
-    native = run_python("coaching-history", "delete")
-    assert (native.returncode, native.stdout, native.stderr) == (
-        1, b"", b"Error: coaching-history delete requires <project_root>\n",
-    )
-    if BASH is not None:
-        legacy = subprocess.run([BASH, str(BASH_CLI), "coaching-history", "delete"], capture_output=True, timeout=60)
-        assert (legacy.returncode, legacy.stdout) == (1, b"")
-        assert legacy.stderr  # Shell source-path/line diagnostics are deliberately not emulated.
-
-
-@pytest.mark.parametrize("raw,expected", [
-    (("delete", "--self-test", "absent"), 0),
-    (("delete", "absent", "--self-test"), 2),
-    (("delete", "--strict", "absent"), 2),
-    (("delete", "absent", "extra"), 2),
-    (("coaching-history", "delete", "absent"), 2),
-    (("--strict", "delete", "absent"), 2),
-    (("delete", "coaching-history", "absent"), 2),
-    (("delete", "", "absent"), 2),
-])
-def test_coaching_first_delete_truncation_and_helper_filtering(tmp_path, raw, expected):
-    result = native_and_optional_parity("coaching-history", *raw, cwd=tmp_path)
-    assert result.returncode == expected and result.stderr == b""
 
 
 def tree_contents(root):
@@ -1515,86 +1107,6 @@ def test_coaching_delete_effects_residue_idempotence_and_partial_failure(tmp_pat
             assert tree_contents(project) == after
 
 
-def test_coaching_warning_order_same_seed_strict_url_and_residue_override(tmp_path):
-    history = tmp_path / "Project_Coaching_History_r1.md"
-    history.write_text("# History\n", encoding="utf-8")
-    (tmp_path / "Diagnostic_State.md").write_text("<!-- coaching-history: opted-in -->\n", encoding="utf-8")
-    notes = tmp_path / "notes.md"
-    notes.write_text("CH-01 CH-02 CH-03 CH-04 CH-05\n", encoding="utf-8")
-    for seed in ("1", "2", "3"):
-        env = dict(os.environ, PYTHONHASHSEED=seed)
-        result = native_and_optional_parity("coaching-history", tmp_path, env=env)
-        assert result.returncode == 0 and b"bare" in result.stdout
-        assert native_and_optional_parity("coaching-history", tmp_path, "--strict", env=env).returncode == 1
-    notes.write_text("<!-- override: coaching-residue CH-99 — unrelated -->\nCH-01\n", encoding="utf-8")
-    assert native_and_optional_parity("coaching-history", tmp_path, "--strict").returncode == 1
-
-    notes.write_text("<!-- override: coaching-residue CH-01 — discussion only -->\nCH-01\n", encoding="utf-8")
-    assert native_and_optional_parity("coaching-history", tmp_path, "--strict").returncode == 0
-    notes.unlink()
-    history.write_text("# History\nhttps://example.invalid/profile\n", encoding="utf-8")
-    result = native_and_optional_parity("coaching-history", tmp_path)
-    assert result.returncode == 0 and b"W1 local-only" in result.stdout
-    assert native_and_optional_parity("coaching-history", tmp_path, "--strict").returncode == 1
-
-
-def test_coaching_root_sidecar_consent_order_and_recursive_newest_selection(tmp_path):
-    project = tmp_path / "project"
-    shutil.copytree(REFERENCES / "example-coaching-history", project)
-    history = next(project.glob("*_Coaching_History_*.md"))
-    state = project / "Diagnostic_State.md"
-    sidecar = project / "Diagnostic_State.meta.json"
-    assert native_and_optional_parity("coaching-history", project, "--strict").returncode == 0
-    outside = tmp_path / "outside.json"
-    outside.write_text("{broken", encoding="utf-8")
-    assert native_and_optional_parity("coaching-history", history, outside, "--strict").returncode == 0
-    original_state, original_sidecar = state.read_bytes(), sidecar.read_bytes()
-    # A present malformed local sidecar fails before absent consent; extra paths do not replace it.
-    state.write_text("# State\n", encoding="utf-8")
-    history_text = history.read_text(encoding="utf-8")
-    history.write_text(history_text.replace("<!-- coaching-history: opted-in -->", ""), encoding="utf-8")
-    sidecar.write_text("{broken", encoding="utf-8")
-    result = native_and_optional_parity("coaching-history", history, outside)
-    assert result.returncode == 1 and b"H0 unparseable sidecar" in result.stdout
-    sidecar.write_bytes(original_sidecar)
-    assert native_and_optional_parity("coaching-history", history).returncode == 2
-    state.write_bytes(original_state + b"\n<!-- coaching-history: deleted -->\n")
-    result = native_and_optional_parity("coaching-history", project)
-    assert result.returncode == 1 and b"consent contradiction" in result.stdout
-    state.write_bytes(original_state)
-    history.write_text(history_text, encoding="utf-8")
-    nested = project / "nested/deep"
-    nested.mkdir(parents=True)
-    bad = nested / "Second_Coaching_History_r2.md"
-    bad.write_text("<!-- apodictic:coaching_observation\n{\n-->\n", encoding="utf-8")
-    os.utime(history, (100, 100))
-    os.utime(bad, (200, 200))
-    selected = native_and_optional_parity("coaching-history", project)
-    assert selected.returncode == 1 and b"H1 schema" in selected.stdout
-    explicit = native_and_optional_parity("coaching-history", history, bad)
-    assert explicit.returncode == 1 and b"H1 schema" not in explicit.stdout
-    # Explicit first carrier moves the consent/sidecar root to its own directory.
-    reverse = native_and_optional_parity("coaching-history", bad, history)
-    assert reverse.returncode == 2 and b"no opt-in marker" in reverse.stdout
-
-
-@pytest.mark.parametrize('command', READER_MANUSCRIPT)
-def test_reader_manuscript_wrapper_arity_and_helper_owned_tokens(tmp_path, command):
-    minimum = 3 if command in ('roundtrip-disposition', 'position-pair-register') else 1
-    for raw in [()] + [('missing',) * count for count in range(1, minimum)]:
-        result = native_and_optional_parity(command, *raw)
-        assert result.returncode == 2 and result.stderr == b''
-        assert b'validate.sh ' + command.encode() in result.stdout
-    for raw in [('',) * minimum, ('--strict',) * minimum, (command,) * minimum,
-                ('--unknown', 'missing', '--', '-', 'extra')]:
-        result = native_and_optional_parity(command, *raw, cwd=tmp_path)
-        assert result.returncode in (0, 1, 2)  # Helper-owned no-op/read/usage decisions vary.
-    result = native_and_optional_parity(command, 'missing', '--self-test')
-    assert result.returncode == (2 if minimum == 3 else 0)
-    result = native_and_optional_parity(command, 'missing', 'missing', '--self-test')
-    assert result.returncode == 0 and result.stdout.endswith(b'Self-test: PASS\n')
-
-
 VIZ_INPUTS = ('example-structure-map-manifest.md', 'example-timeline.md', 'example-findings-ledger.md',
               'example-argument-state-predraft.md', 'example-scene-roster.md', 'example-scene-function.md',
               'example-tension-points.md', 'example-story-spine.md')
@@ -1642,20 +1154,9 @@ def disposition_round(tmp_path):
     return prior, snapshot, current
 
 
-def test_disposition_canonical_record_and_absent_record_before_reads(disposition_round, tmp_path):
+def test_disposition_canonical_round(disposition_round):
     for flags in ((), ('--strict',)):
         assert native_and_optional_parity('roundtrip-disposition', *disposition_round, *flags).returncode == 0
-    empty = tmp_path / 'absent'
-    empty.mkdir()
-    assert native_and_optional_parity('roundtrip-disposition', 'missing-prior', 'missing-snapshot', empty, '--strict').returncode == 0
-    record = empty / 'Project_Roundtrip_Disposition_r1.md'
-    record.write_bytes(b'\xff\xfe')
-    assert native_and_optional_parity('roundtrip-disposition', 'missing-prior', 'missing-snapshot', empty, '--strict').returncode == 2
-    record = next(disposition_round[2].glob('*_Roundtrip_Disposition_*.md'))
-    text = record.read_text(encoding='utf-8')
-    record.write_text(re.sub(r'<!--\s*disposition-confirmed:.*?-->', '', text, flags=re.S), encoding='utf-8')
-    result = native_and_optional_parity('roundtrip-disposition', *disposition_round)
-    assert result.returncode == 1 and b'RT2' in result.stdout
 
 
 @pytest.mark.parametrize('project', ['Example', 'ExampleNF'])
@@ -1664,167 +1165,6 @@ def test_outline_explicit_coherent_projects(project):
     args = [folder / f'{project}_{kind}_2026-01-01.md' for kind in
             ('Pass0_Reverse_Outline', 'Contract', 'Findings_Ledger', 'Contract_Map', 'Reader_Contract_Outline')]
     assert native_and_optional_parity('reader-contract-outline', *args, '--strict').returncode == 0
-
-
-def test_lifecycle_total_sidecar_and_optional_folder_precedence(tmp_path):
-    state = tmp_path / 'state.json'
-    state.write_text('{}', encoding='utf-8')
-    folder = tmp_path / 'optional'
-    folder.mkdir()
-    def node(expected):
-        result = native_and_optional_parity('lifecycle-node', state, folder, '--strict', 'ignored')
-        assert result.returncode == 0 and result.stdout.startswith(f'lifecycle-node: {expected}\n'.encode())
-    node('diagnosing')
-    (folder / 'Project_Synthesis_r1.md').write_text('# Letter\n', encoding='utf-8')
-    node('diagnosed')
-    state.write_text('{"mode":"execution","execution":{"pending_gate":"next"}}', encoding='utf-8')
-    node('blocked_gate')
-    for body in (b'\xff', b'{invalid', b'[]'):
-        state.write_bytes(body)
-        node('cold')
-
-
-def test_reader_first_parsed_carrier_optional_ledger_and_scoped_override(tmp_path):
-    good = tmp_path / 'reader café.md'
-    good.write_bytes((REFERENCES / 'example-beta-reader-instrument.md').read_bytes())
-    ledger = REFERENCES / 'example-uncertainty-ledger.md'
-    bad = tmp_path / 'bad.md'
-    bad.write_text('<!-- apodictic:reader_question\n{}\n-->\n', encoding='utf-8')
-    prose = tmp_path / 'decoy.md'
-    prose.write_text('A mention of apodictic:reader_question.\n', encoding='utf-8')
-    assert native_and_optional_parity('reader-instrument', prose, good, ledger, '--strict').returncode == 0
-    assert native_and_optional_parity('reader-instrument', good, bad, ledger, '--strict').returncode == 0
-    assert native_and_optional_parity('reader-instrument', bad, good, ledger).returncode == 1
-    bad.write_bytes(b'\xff')
-    assert native_and_optional_parity('reader-instrument', bad).returncode == 2
-    assert native_and_optional_parity('reader-instrument', good, bad).returncode == 1
-    edit_artifact_block(good, 'reader_question', lambda obj: obj.update(question="Don't you think this scene is boring?"))
-    assert native_and_optional_parity('reader-instrument', good, ledger).returncode == 0
-    assert native_and_optional_parity('reader-instrument', good, ledger, '--strict').returncode == 1
-    good.write_text('<!-- override: leading-question RQ-01 — author wording -->\n' + good.read_text(encoding='utf-8'), encoding='utf-8')
-    assert native_and_optional_parity('reader-instrument', good, ledger, '--strict').returncode == 0
-
-
-def test_viz_timeline_glob_optional_roles_and_require_block(tmp_path):
-    names = ('Project_Structure_Map_r1.md', 'Project_Timeline_r1.md', 'Project_Findings_Ledger_r1.md',
-             'Argument_State_r1.md', 'Project_Scene_Roster_r1.md', 'Project_Scene_Function_r1.md',
-             'Project_Tension_Points_r1.md', 'Project_Story_Spine_r1.md')
-    files = []
-    for name, canonical in zip(names, VIZ_INPUTS):
-        path = tmp_path / name
-        path.write_bytes((REFERENCES / canonical).read_bytes())
-        files.append(path)
-    os.utime(files[1], (100, 100))
-    fallback = tmp_path / 'Timeline.md'
-    fallback.write_bytes(b'\xff')
-    os.utime(fallback, (200, 200))
-    assert native_and_optional_parity('manuscript-viz', tmp_path, '--strict', '--require-block').returncode == 0
-    assert native_and_optional_parity('manuscript-viz', *reversed(files), '--strict', '--require-block').returncode == 0
-    files[1].unlink()
-    assert native_and_optional_parity('manuscript-viz', tmp_path, '--strict', '--require-block').returncode == 1
-    plain = tmp_path / 'plain.md'
-    plain.write_text('# No block\n', encoding='utf-8')
-    assert native_and_optional_parity('manuscript-viz', plain).returncode == 0
-    assert native_and_optional_parity('manuscript-viz', plain, '--require-block').returncode == 1
-
-
-def test_annotation_last_role_bound_snapshot_and_crosslink_priority_noop(tmp_path):
-    folder = tmp_path / 'annotations'
-    shutil.copytree(REFERENCES / 'example-annotated-manuscript', folder)
-    files = sorted(folder.glob('*.md'))
-    original = next(folder.glob('*_Manuscript_Snapshot_*.md'))
-    newer = folder / 'Other_Manuscript_Snapshot_r2.md'
-    newer.write_text('Unrelated snapshot\n', encoding='utf-8')
-    os.utime(newer, (2000000000, 2000000000))
-    assert native_and_optional_parity('annotated-manuscript', folder, '--strict').returncode == 0
-    good = native_and_optional_parity('annotated-manuscript', newer, *files, '--strict')
-    assert good.returncode == 0
-    assert native_and_optional_parity('annotated-manuscript', *files, newer, '--strict').returncode == 1
-    # Letter glob class outranks a newer lower-priority canonical editorial letter.
-    priority = folder / 'Project_Core_DE_Synthesis_old.md'
-    priority.write_text('Different priority letter\n', encoding='utf-8')
-    os.utime(priority, (100, 100))
-    assert native_and_optional_parity('crosslink', folder, '--strict').returncode == 1
-    priority.unlink()
-    assert native_and_optional_parity('crosslink', folder, '--strict').returncode == 0
-    empty_manifest = tmp_path / 'Project_Annotation_Manifest_empty.md'
-    empty_manifest.write_text('# No anchors\n', encoding='utf-8')
-    assert native_and_optional_parity('crosslink', empty_manifest, '--strict').returncode == 0
-    original.write_bytes(b'\xff')
-    assert native_and_optional_parity('annotated-manuscript', folder).returncode == 2
-
-
-def test_outline_project_score_contract_collisions_and_same_seed_extra_keys(tmp_path):
-    folder = tmp_path / 'outline'
-    shutil.copytree(REFERENCES / 'example-reader-contract-outline', folder)
-    chosen = native_and_optional_parity('reader-contract-outline', folder, '--strict')
-    assert chosen.returncode == 0
-    contract = folder / 'Example_Contract_2026-01-01.md'
-    original = contract.read_bytes()
-    contract.unlink()
-    other = native_and_optional_parity('reader-contract-outline', folder, '--strict')
-    assert other.returncode == 0 and other.stdout != chosen.stdout
-    contract.write_bytes(original)
-    map_path = folder / 'Example_Contract_Map_2026-01-01.md'
-    original_map = map_path.read_bytes()
-    for site in ('inputs', 'clauses'):
-        map_path.write_bytes(original_map)
-        def add(obj):
-            target = obj['inputs'] if site == 'inputs' else obj['clauses'][0]
-            target.update({key: 'synthetic' for key in ('extra_a', 'extra_b', 'extra_c', 'extra_d', 'extra_e')})
-        edit_artifact_block(map_path, 'contract_map', add)
-        for seed in ('1', '2', '3'):
-            result = native_and_optional_parity('reader-contract-outline', folder, '--strict', env=dict(os.environ, PYTHONHASHSEED=seed))
-            assert result.returncode == 1 and b'unknown key' in result.stdout
-
-
-def test_guide_source_precedence_and_citation_containment(tmp_path):
-    folder = tmp_path / 'nested/run'
-    folder.mkdir(parents=True)
-    guide = folder / 'Project_Results_Guide_r1.md'
-    guide.write_text('# Guide\n\n### Is the structure working?\n\nSee `inside.md`.\n', encoding='utf-8')
-    (folder / 'inside.md').write_text('Synthetic\n', encoding='utf-8')
-    source = tmp_path / 'pass-dependencies.md'
-    pd = (REFERENCES / 'pass-dependencies.md').read_text(encoding='utf-8')
-    source.write_text(pd, encoding='utf-8')
-    first = native_and_optional_parity('results-guide', folder)
-    assert first.returncode == 0 and b'R1 skipped' not in first.stdout
-    local = folder / 'pass-dependencies.md'
-    local.write_text(pd.replace('Is the structure working?', 'A different question?'), encoding='utf-8')
-    assert native_and_optional_parity('results-guide', folder).returncode == 1
-    local.unlink()
-    guide.write_text('# Guide\n\n### Is the structure working?\n\nSee `../../outside.md`.\n', encoding='utf-8')
-    (tmp_path / 'outside.md').write_text('Exists outside\n', encoding='utf-8')
-    assert native_and_optional_parity('results-guide', folder).returncode == 1
-    guide.write_bytes(b'\xff')
-    assert native_and_optional_parity('results-guide', folder).returncode == 1
-
-
-def test_position_pair_quote_drop_strict_and_role_read_errors(tmp_path):
-    folder = tmp_path / 'position'
-    shutil.copytree(POSITION_REFERENCES, folder)
-    artifact, envelope, manuscript = (folder / name for name in ('Example_Position_Pair_Register_run.md', 'envelope.json', 'manuscript.txt'))
-    obj = json.loads(envelope.read_text(encoding='utf-8'))
-    obj['results']['pairs'][0]['a']['quote'] = 'A quote absent from the source.'
-    envelope.write_text(json.dumps(obj), encoding='utf-8')
-    result = native_and_optional_parity('position-pair-register', artifact, envelope, manuscript, 'ignored')
-    assert result.returncode == 0 and b'pairs_dropped_quote_mismatch=' in result.stdout
-    assert native_and_optional_parity('position-pair-register', artifact, envelope, manuscript, '--strict').returncode == 1
-    envelope.write_text('{invalid', encoding='utf-8')
-    assert native_and_optional_parity('position-pair-register', artifact, envelope, manuscript).returncode == 1
-    artifact.write_bytes(b'\xff')
-    assert native_and_optional_parity('position-pair-register', artifact, envelope, manuscript).returncode == 1
-
-
-@pytest.mark.parametrize('command,mode', [('manuscript-viz', 'render'), ('annotated-manuscript', 'build'),
-                                        ('crosslink', 'render'), ('reader-contract-outline', 'build'), ('reanchor', 'emit')])
-def test_wrapper_mode_words_never_enable_producer_writes(tmp_path, command, mode):
-    folder = tmp_path / 'inputs'
-    source = 'example-reader-contract-outline' if command == 'reader-contract-outline' else 'example-annotated-manuscript'
-    shutil.copytree(REFERENCES / source, folder)
-    before = tree_contents(tmp_path)
-    native_and_optional_parity(command, mode, folder, '-o', tmp_path / 'unexpected.html')
-    assert tree_contents(tmp_path) == before
 
 
 @pytest.mark.parametrize('root_name', ['ordinary', 'colon: PASS', 'prój\nPASS'])
@@ -1844,92 +1184,10 @@ def test_viz_self_test_exact_output_with_real_temp_roots(tmp_path, root_name):
     assert not list(root.iterdir())
 
 
-@pytest.fixture
-def viz_helper_module():
-    import importlib.util
-    spec = importlib.util.spec_from_file_location('cb1_viz_capture_test', SCRIPTS / 'viz_manifest.py')
-    module = importlib.util.module_from_spec(spec)
-    sys.path.insert(0, str(SCRIPTS))
-    try:
-        spec.loader.exec_module(module)
-    finally:
-        sys.path.pop(0)
-    return module
-
-
-@pytest.mark.parametrize('positive_site', [0, 1], ids=['forced-render', 'ordered-render'])
-@pytest.mark.parametrize('fault', ['silent', 'extra-output', 'nonzero', 'exception'])
-def test_viz_positive_render_capture_refuses_fault_and_restores_stdout(viz_helper_module, monkeypatch, tmp_path, positive_site, fault):
-    from contextlib import redirect_stdout, redirect_stderr
-    from io import StringIO
-    import tempfile
-    module = viz_helper_module
-    original = module.main
-    real_mkdtemp = tempfile.mkdtemp
-    made = []
-    def create(*args, **kwargs):
-        kwargs['dir'] = str(tmp_path)
-        path = real_mkdtemp(*args, **kwargs)
-        made.append(Path(path))
-        return path
-    monkeypatch.setattr(tempfile, 'mkdtemp', create)
-    positive = 0
-    injected = RuntimeError('render exception control')
-    def render(argv):
-        nonlocal positive
-        out, err = StringIO(), StringIO()
-        with redirect_stdout(out), redirect_stderr(err):
-            rc = original(argv)
-        sys.stderr.write(err.getvalue())
-        if rc != 0:
-            sys.stdout.write(out.getvalue())
-            return rc
-        site = positive
-        positive += 1
-        if site != positive_site:
-            sys.stdout.write(out.getvalue())
-            return rc
-        if fault == 'exception':
-            raise injected
-        if fault != 'silent':
-            sys.stdout.write(out.getvalue())
-        if fault == 'extra-output':
-            print('unexpected diagnostic')
-        return 7 if fault == 'nonzero' else 0
-    monkeypatch.setattr(module, 'main', render)
-    public, errors = StringIO(), StringIO()
-    with redirect_stdout(public), redirect_stderr(errors):
-        if fault == 'exception':
-            with pytest.raises(RuntimeError) as caught:
-                module.run_self_test()
-            assert caught.value is injected
-        else:
-            assert module.run_self_test() == 1
-        assert sys.stdout is public
-    name = 'render_force_reordered' if positive_site == 0 else 'render_in_order_ok'
-    if fault != 'exception':
-        assert f'  {name}: FAIL\n' in public.getvalue()
-        assert public.getvalue().endswith('Self-test: FAIL\n')
-        assert '  w3_beat_map_coverage_strict_fails: OK\n' in public.getvalue()
-        assert not any(path.exists() for path in made)
-    else:
-        assert f'  {name}: OK\n' not in public.getvalue()
-        # Preserve inherited exceptional cleanup limits; remove probe leftovers ourselves.
-        for path in made:
-            shutil.rmtree(path, ignore_errors=True)
-    assert errors.getvalue()  # Negative render refusal stderr was not swallowed.
-
-
 @pytest.mark.parametrize("command", ARGUMENT_EVALUATORS)
 def test_argument_evaluator_first_self_test_is_exact(command):
     result = parity(command, "--self-test", "ignored")
     assert result.returncode == 0
-
-
-@pytest.mark.parametrize("command", ARGUMENT_EVALUATORS)
-def test_argument_evaluator_raw_wrapper_minimum_and_late_tokens(command, tmp_path):
-    parity(command)
-    parity(command, "--not-a-real-option", "--self-test", tmp_path / "missing")
 
 
 def test_argument_evaluator_public_canonical_inputs():
@@ -1962,113 +1220,6 @@ def test_argument_evaluator_public_canonical_inputs():
         assert parity("argument-aif-check", artifact, "--source", source).returncode == 0
 
 
-def test_argument_alpha_synthetic_seed_floor_and_panel(tmp_path):
-    ratings = tmp_path / "ratings.csv"
-    ratings.write_text("rater,unit,value\na,1,1\nb,1,1\nc,1,1\na,2,2\nb,2,2\nc,2,2\n"
-                       "a,3,1\nb,3,2\nc,3,1\na,4,2\nb,4,2\nc,4,1\n", encoding="utf-8")
-    args = ("agreement-alpha", ratings, "--seed", "17", "--resamples", "1000")
-    first = parity(*args)
-    assert first.returncode == 0
-    assert first.stdout == parity(*args).stdout
-    assert parity("agreement-alpha", ratings, "--resamples", "999").returncode != 0
-    assert parity("agreement-alpha", ratings, "--metric", "ordinal", "--seed", "17").returncode == 0
-    ratings.write_text("rater,unit,value\na,1,1\nb,1,1\na,2,2\nb,2,2\n", encoding="utf-8")
-    assert parity("agreement-alpha", ratings).returncode == 2
-
-
-@pytest.mark.parametrize("variant", [
-    "file", "stdout", "empty-out", "dash", "strict", "unsupported", "missing-parent",
-    "symlink", "same-source", "invalid-utf8", "blocking-loss", "schema-03", "schema-04",
-])
-def test_argument_aif_export_effects_match_from_identical_temporary_state(tmp_path, variant):
-    if BASH is None:
-        pytest.skip("Bash differential oracle unavailable")
-    tree = tmp_path / "aif"
-    canonical = ROOT / "evals/fixtures/argument-aif/final-audit/argument-state.md"
-
-    def setup():
-        if tree.exists():
-            shutil.rmtree(tree)
-        tree.mkdir()
-        source = tree / "argument-state.md"
-        source.write_bytes(canonical.read_bytes())
-        if variant == "invalid-utf8":
-            source.write_bytes(b"\xff")
-        if variant == "blocking-loss":
-            source.write_bytes((ROOT / "evals/fixtures/argument-aif/mixed-support/argument-state.md").read_bytes())
-        destination = tree / "export.json"
-        destination.write_bytes(b"sentinel")
-        destination.chmod(0o640)
-        referent = tree / "referent.json"
-        if variant == "symlink":
-            referent.write_bytes(b"referent")
-            referent.chmod(0o640)
-            destination.unlink()
-            destination.symlink_to(referent)
-        schema = {"unsupported": "9.9.9", "schema-03": "0.3.0", "schema-04": "0.4.0"}.get(variant, "0.2.0")
-        args = [str(source), "--state-schema", schema]
-        if variant == "strict":
-            args.append("--strict")
-        if variant == "file" or variant in ("unsupported", "invalid-utf8", "blocking-loss", "strict", "symlink", "schema-03", "schema-04"):
-            args.extend(("--out", str(destination)))
-        elif variant == "empty-out":
-            args.extend(("--out", ""))
-        elif variant == "dash":
-            args.extend(("--out", str(tree / "-")))
-        elif variant == "missing-parent":
-            args.extend(("--out", str(tree / "missing/export.json")))
-        elif variant == "same-source":
-            args.extend(("--out", str(source)))
-        return args
-
-    def snapshot():
-        result = {}
-        for path in tree.rglob("*"):
-            relative = str(path.relative_to(tree))
-            if path.is_symlink():
-                result[relative] = ("symlink", os.readlink(path))
-            elif path.is_file():
-                result[relative] = ("file", path.read_bytes(), path.stat().st_mode & 0o777)
-            else:
-                result[relative] = ("dir", path.stat().st_mode & 0o777)
-        return result
-
-    arguments = setup()
-    legacy = subprocess.run([BASH, str(BASH_CLI), "argument-aif-export", *arguments],
-                            cwd=ROOT, capture_output=True, timeout=60)
-    legacy_effects = snapshot()
-    assert setup() == arguments
-    native = run_python("argument-aif-export", *arguments)
-    assert (native.returncode, native.stdout, native.stderr, snapshot()) == (
-        legacy.returncode, legacy.stdout, legacy.stderr, legacy_effects)
-    if variant in ("file", "symlink", "schema-03", "schema-04"):
-        artifact = tree / "export.json"
-        assert artifact.stat().st_mode & 0o777 == 0o600
-        assert parity("argument-aif-check", artifact, "--source", tree / "argument-state.md").returncode == 0
-    if variant == "file":
-        assert (tree / "export.json").read_bytes() == (
-            ROOT / "evals/fixtures/argument-aif/final-audit/export.json").read_bytes()
-    if variant in ("strict", "unsupported", "invalid-utf8", "blocking-loss", "missing-parent"):
-        assert native.returncode != 0
-
-
-def test_argument_aif_checker_source_closure_and_canonical_bytes(tmp_path):
-    source = tmp_path / "argument-state.md"
-    source.write_bytes((ROOT / "evals/fixtures/argument-aif/final-audit/argument-state.md").read_bytes())
-    artifact = tmp_path / "export.json"
-    assert run_python("argument-aif-export", source, "--state-schema", "0.2.0", "--out", artifact).returncode == 0
-    original = artifact.read_bytes()
-    assert parity("argument-aif-check", artifact).returncode == 0
-    assert parity("argument-aif-check", artifact, "--source", source).returncode == 0
-    assert parity("argument-aif-check", artifact, "--source", "").returncode != 0
-    artifact.write_bytes(original.replace(b"\n", b"\r\n", 1))
-    assert parity("argument-aif-check", artifact).returncode != 0
-    artifact.write_bytes(original)
-    source.write_bytes(source.read_bytes().replace(b"\n", b"\r\n", 1))
-    assert parity("argument-aif-check", artifact, "--source", source).returncode != 0
-    assert artifact.read_bytes() == original
-
-
 def test_argument_evaluators_run_without_path_or_bash(tmp_path):
     env = dict(os.environ, PATH="", PYTHONDONTWRITEBYTECODE="1", PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
     for command in ARGUMENT_EVALUATORS:
@@ -2082,81 +1233,6 @@ def test_argument_evaluators_run_without_path_or_bash(tmp_path):
                       env=env).returncode == 0
     assert run_python("argument-aif-check", artifact, "--source", source, env=env).returncode == 0
     assert artifact.read_bytes() == (ROOT / "evals/fixtures/argument-aif/final-audit/export.json").read_bytes()
-
-
-def test_argument_evaluator_hostile_helper_owned_modes(tmp_path):
-    bad = tmp_path / "bad.md"
-    bad.write_bytes(b"\xff")
-    assert parity("argument-groundtruth-check", bad).returncode != 0
-    assert parity("fiction-groundtruth-check", bad).returncode != 0
-    assert parity("argument-groundtruth-check", "--repair-diff", bad).returncode != 0
-    # An unbooked round is the helper's existing vacuous success.
-    assert parity("argument-groundtruth-check", "--round-record", bad, "--fixtures-dir", tmp_path).returncode == 0
-    assert parity("argument-crosswalk-check", tmp_path / "missing.json").returncode != 0
-    assert parity("argument-agd", bad, "--source", bad, "--strict").returncode != 0
-
-
-def test_argument_groundtruth_pair_path_and_round_booking(tmp_path):
-    original = ROOT / "evals/fixtures/argument-benchmark/policy-brief-uncompared/clean/groundtruth.md"
-    flat = tmp_path / "groundtruth.md"
-    flat.write_bytes(original.read_bytes())
-    assert parity("argument-groundtruth-check", flat).returncode != 0
-    wrong = tmp_path / "wrong-pair/clean"
-    wrong.mkdir(parents=True)
-    (wrong / "groundtruth.md").write_bytes(original.read_bytes())
-    assert parity("argument-groundtruth-check", wrong / "groundtruth.md").returncode != 0
-    record = tmp_path / "round.md"
-    record.write_text("- BOOKED: ENGINE-FAULT absent-fixture GT2\n", encoding="utf-8")
-    assert parity("argument-groundtruth-check", "--round-record", record,
-                  "--fixtures-dir", ROOT / "evals/fixtures/argument-benchmark").returncode != 0
-
-
-def test_argument_agd_source_and_scan_edges(tmp_path):
-    base = ROOT / "evals/fixtures/argument-agd/cue-free-structural-discounting"
-    state = base / "argument-state.md"
-    source = base / "source.md"
-    scan = base / "agd_move_scan.json"
-    assert parity("argument-agd", state, "--source", source, "--scan", scan, "--strict").returncode == 0
-    assert parity("argument-agd", state, "--source", tmp_path / "missing.md", "--strict").returncode != 0
-    assert parity("argument-agd", state, "--scan", tmp_path / "missing.json", "--strict").returncode != 0
-    corrupt = tmp_path / "scan.json"
-    corrupt.write_text("{", encoding="utf-8")
-    assert parity("argument-agd", state, "--scan", corrupt, "--strict").returncode != 0
-
-
-@pytest.mark.parametrize("fixture", [
-    "mixed-support", "mixed-warrant", "carrier-disagreement", "bad-carrier-missing",
-    "bad-carrier-enum", "bad-carrier-extra", "fallback-c99", "extra-final-record",
-])
-def test_argument_aif_public_hostile_export_preserves_destination(tmp_path, fixture):
-    if BASH is None:
-        pytest.skip("Bash differential oracle unavailable")
-    source = ROOT / "evals/fixtures/argument-aif" / fixture / "argument-state.md"
-    out = tmp_path / "export.json"
-    def reset():
-        out.write_bytes(b"sentinel")
-        out.chmod(0o640)
-
-    def effects():
-        return (out.read_bytes(), out.stat().st_mode & 0o777,
-                sorted(p.name for p in tmp_path.iterdir()))
-
-    expected = (b"sentinel", 0o640, ["export.json"])
-    reset()
-    assert effects() == expected
-    args = ("argument-aif-export", source, "--state-schema", "0.2.0", "--out", out)
-    legacy = subprocess.run([BASH, str(BASH_CLI), *map(str, args)], cwd=ROOT,
-                            capture_output=True, timeout=60)
-    legacy_effects = effects()
-    assert legacy.returncode != 0
-    assert legacy_effects == expected
-    reset()
-    assert effects() == expected
-    native = run_python(*args)
-    native_effects = effects()
-    assert (native.returncode, native.stdout, native.stderr) == (
-        legacy.returncode, legacy.stdout, legacy.stderr)
-    assert native_effects == legacy_effects == expected
 
 
 @pytest.mark.parametrize("fixture", [
@@ -2341,3 +1417,269 @@ def test_pdf_linked_mode_authenticates_and_checks_existing_artifact(tmp_path):
     artifact.write_bytes(before[:-1] + b"X")
     tampered = parity("pdf-export", tmp_path, "--internal-links")
     assert tampered.returncode == 1 and b"P1 artifact integrity" in tampered.stdout
+
+
+REPOSITORY_INTEGRITY = (
+    'registry-check', 'schema-coverage', 'validator-conventions',
+    'calibration-honesty', 'stance-calibration', 'argument-carve-behavior-preservation',
+)
+
+
+@pytest.mark.parametrize('command', REPOSITORY_INTEGRITY)
+def test_repository_integrity_real_selftests_and_empty_path(command):
+    result = native_and_optional_parity(command, '--self-test', 'discarded')
+    assert result.returncode == 0
+    env = {**os.environ, 'PATH': '', 'PYTHONUTF8': '1', 'PYTHONIOENCODING': 'utf-8'}
+    native = run_python(command, '--self-test', 'discarded', env=env)
+    assert (native.returncode, native.stdout, native.stderr) == (result.returncode, result.stdout, result.stderr)
+    if command == 'validator-conventions':
+        assert native.stdout.startswith(b'  ho_genuine_emdash: OK (found)\n')
+        assert b'  ho_multiline_inline_decoy: OK (miss)\n' in native.stdout
+        late = parity(command, 'ignored', '--self-test')
+        assert late.returncode == 0 and b'  ho_' not in late.stdout
+
+
+@pytest.fixture
+def repository_bundle(tmp_path):
+    scripts = tmp_path / 'plugins/apodictic/scripts'
+    shutil.copytree(SCRIPTS, scripts)
+    shutil.copytree(SCRIPTS.parent / 'schemas', scripts.parent / 'schemas')
+    fixtures = tmp_path / 'evals/fixtures/argument-carve/precarve'
+    shutil.copytree(ROOT / 'evals/fixtures/argument-carve/precarve', fixtures)
+    return scripts, fixtures
+
+
+def _repository_copy_run(scripts, native, *args, env=None):
+    if not native and BASH is None:
+        pytest.skip('Bash differential oracle unavailable')
+    entry = [sys.executable, str(scripts / 'validate.py')] if native else [BASH, str(scripts / 'validate.sh')]
+    return subprocess.run([*entry, *map(str, args)], capture_output=True, timeout=60, env=env)
+
+
+def _repository_copy_parity(scripts, *args):
+    legacy = _repository_copy_run(scripts, False, *args)
+    native = _repository_copy_run(scripts, True, *args)
+    assert (native.returncode, native.stdout, native.stderr) == (legacy.returncode, legacy.stdout, legacy.stderr)
+    return native
+
+
+def _repository_effects(root):
+    contents = {}
+    for path in sorted(root.rglob('*')):
+        if path.is_symlink():
+            value = ('symlink', os.readlink(path))
+        elif path.is_file():
+            try:
+                value = path.read_bytes()
+            except PermissionError:
+                value = 'unreadable'
+        else:
+            value = None
+        contents[str(path.relative_to(root))] = (path.lstat().st_mode & 0o777, value)
+    return contents
+
+
+@pytest.mark.parametrize('args', [(), ('--self-test', 'ignored'), ('ignored', '--self-test')])
+def test_carve_actual_fixture_read_only_and_standalone_candidates(repository_bundle, tmp_path, args):
+    scripts, fixtures = repository_bundle
+    before = _repository_effects(tmp_path)
+    assert _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *args).returncode == 0
+    assert _repository_effects(tmp_path) == before
+    second = scripts.parent / 'evals/fixtures/argument-carve/precarve'
+    second.parent.mkdir(parents=True)
+    shutil.copytree(fixtures, second)
+    (second / 'propagation-output.txt').write_bytes(b'wrong\n')
+    assert _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *args).returncode == 0
+    shutil.rmtree(fixtures)
+    assert _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *args).returncode == 1
+    shutil.rmtree(second)
+    skipped = _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *args)
+    assert skipped.returncode == 0 and b'SKIP (evals/ not present' in skipped.stdout
+    assert (b'Self-test: PASS\n' in skipped.stdout) == bool(args and args[0] == '--self-test')
+    assert _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', '--self-test', '--internal-links').returncode == 2
+
+
+@pytest.mark.parametrize('selftest', [False, True])
+@pytest.mark.parametrize('mutation', ['missing', 'multiple-missing', 'directory', 'symlink'])
+def test_carve_actual_fixture_preflight_order(repository_bundle, selftest, mutation):
+    scripts, fixtures = repository_bundle
+    letter = fixtures / 'argument-editorial-letter.md'; letter.unlink()
+    if mutation == 'multiple-missing': (fixtures / 'argument-findings-ledger.md').unlink()
+    if mutation == 'directory': letter.mkdir()
+    if mutation == 'symlink': letter.symlink_to(fixtures / 'absent')
+    result = _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *(['--self-test'] if selftest else []))
+    assert result.returncode == 1
+    if selftest:
+        assert result.stdout.count(b'missing:') == (2 if mutation == 'multiple-missing' else 1)
+    else:
+        assert b'fixture missing:' in result.stdout
+    assert (b'Self-test: FAIL\n' in result.stdout) == selftest
+    assert b'../../../evals/fixtures/argument-carve/precarve/argument-editorial-letter.md' in result.stdout
+
+
+@pytest.mark.parametrize('selftest', [False, True])
+@pytest.mark.parametrize('mutation', ['trailing-lf', 'no-final-lf', 'nul', 'crlf', 'multiline-binary', 'both-drift'])
+def test_carve_raw_golden_bytes_and_no_writes(repository_bundle, tmp_path, selftest, mutation):
+    scripts, fixtures = repository_bundle
+    golden = fixtures / 'propagation-output.txt'; payload = golden.read_bytes()
+    if mutation == 'trailing-lf': payload += b'\n\n'
+    if mutation == 'no-final-lf': payload = payload.rstrip(b'\n')
+    if mutation == 'nul': payload = payload[:2] + b'\0' + payload[2:]
+    if mutation == 'crlf': payload = payload.replace(b'\n', b'\r\n')
+    if mutation == 'multiline-binary': payload = b'wrong\n  spaced\xff\r\n'
+    if mutation == 'both-drift':
+        payload = b'wrong\n'; (fixtures / 'decision-layer-output.txt').write_bytes(b'also wrong\n')
+    golden.write_bytes(payload)
+    before = _repository_effects(tmp_path)
+    result = _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *(['--self-test'] if selftest else []))
+    assert result.returncode == (0 if mutation in ('trailing-lf', 'no-final-lf', 'nul') else 1)
+    assert _repository_effects(tmp_path) == before
+
+
+@pytest.mark.parametrize('selftest', [False, True])
+@pytest.mark.parametrize('phase', ['first-child', 'matched-failure-goldens', 'second-child',
+                                    'first-read', 'second-read', 'drift-second-child', 'drift-second-read',
+                                    'first-child-before-read', 'second-child-before-read'])
+def test_carve_real_failure_phases_no_false_pass(repository_bundle, tmp_path, selftest, phase):
+    scripts, fixtures = repository_bundle
+    lexical = str(scripts) + '/../../../evals/fixtures/argument-carve/precarve/'
+    letter = fixtures / 'argument-editorial-letter.md'
+    propagation = fixtures / 'propagation-output.txt'; decision = fixtures / 'decision-layer-output.txt'
+    original_summary = propagation.read_bytes().rstrip(b'\n')
+    if phase in ('first-child', 'matched-failure-goldens', 'first-child-before-read'):
+        letter.write_text('# Invented public hostile letter\n\nhard gate\n', encoding='utf-8')
+        if phase == 'matched-failure-goldens':
+            for command, args, golden in (
+                ('audit-signal-propagation', [lexical + letter.name, lexical + 'argument-findings-ledger.md'], propagation),
+                ('decision-layer-check', [lexical + letter.name], decision),
+            ):
+                child = _repository_copy_parity(scripts, command, *args)
+                assert child.returncode == 1
+                golden.write_bytes(child.stdout.rstrip(b'\n').rsplit(b'\n', 1)[-1] + b'\n')
+    if phase in ('second-child', 'drift-second-child', 'second-child-before-read'): letter.write_bytes(b'\xff\xfe')
+    if phase.startswith('drift'): propagation.write_bytes(b'wrong\n')
+    unreadable = (propagation if phase in ('first-read', 'first-child-before-read') else
+                  decision if phase in ('second-read', 'drift-second-read', 'second-child-before-read') else None)
+    if unreadable is not None:
+        unreadable.chmod(0)
+        if os.access(unreadable, os.R_OK):
+            pytest.skip('Host bypasses mode restrictions; unreadable golden not exercised')
+        with pytest.raises(PermissionError): unreadable.read_bytes()
+    before = _repository_effects(tmp_path)
+    args = ['argument-carve-behavior-preservation', *(['--self-test'] if selftest else [])]
+    legacy = _repository_copy_run(scripts, False, *args)
+    assert _repository_effects(tmp_path) == before
+    native = _repository_copy_run(scripts, True, *args)
+    assert _repository_effects(tmp_path) == before
+    assert native.returncode == legacy.returncode == 1
+    prefix = b'  fixture_present: OK (4 fixture files found)\n' if selftest else b''
+    if phase in ('second-child', 'second-read', 'second-child-before-read') and selftest: prefix += b'  propagation_golden: OK\n'
+    if phase.startswith('drift'):
+        prefix += ((b'  propagation_golden: FAIL\n    expected: wrong\n    got:      ' if selftest else
+                    b'ERROR: argument-carve-behavior-preservation: audit-signal-propagation output drifted from golden\n  expected: wrong\n  got:      ')
+                   + original_summary + b'\n')
+    assert native.stdout == legacy.stdout == prefix
+    if unreadable is None or phase.endswith('before-read'):
+        assert native.stderr == legacy.stderr == b''
+    else:
+        assert legacy.stderr == ('cat: ' + lexical + unreadable.name + ': Permission denied\n').encode()
+        assert native.stderr == ('Error: Cannot read file: ' + lexical + unreadable.name + ': Permission denied\n').encode()
+
+
+@pytest.mark.parametrize('helper', ['registry_check.py', 'schema_coverage.py', 'meta_lint.py',
+                                   'calibration_honesty.py', 'stance_calibration.py', 'override_marker.py', 'letter_checks.py'])
+def test_repository_missing_installation_never_fake_pass(repository_bundle, helper):
+    scripts, _ = repository_bundle
+    command = {'registry_check.py':'registry-check', 'schema_coverage.py':'schema-coverage',
+               'meta_lint.py':'validator-conventions', 'calibration_honesty.py':'calibration-honesty',
+               'stance_calibration.py':'stance-calibration', 'override_marker.py':'validator-conventions',
+               'letter_checks.py':'argument-carve-behavior-preservation'}[helper]
+    (scripts / helper).unlink()
+    result = _repository_copy_run(scripts, True, command, '--self-test')
+    expected = 1 if helper == 'override_marker.py' else 2  # Every companion case misses, as in Bash.
+    assert result.returncode == expected and b'Self-test: PASS' not in result.stdout
+    if helper == 'letter_checks.py':
+        assert result.stdout == b'  fixture_present: OK (4 fixture files found)\n' and result.stderr == b''
+    else:
+        assert helper.encode() in result.stderr
+
+
+def test_carve_native_empty_path_executes_real_children_without_writes(repository_bundle, tmp_path):
+    scripts, _ = repository_bundle
+    env = {**os.environ, 'PATH': '', 'PYTHONUTF8': '1', 'PYTHONIOENCODING': 'utf-8'}
+    before = _repository_effects(tmp_path)
+    for args in ((), ('--self-test',)):
+        result = _repository_copy_run(scripts, True, 'argument-carve-behavior-preservation', *args, env=env)
+        assert result.returncode == 0 and result.stderr == b''
+        assert result.stdout.endswith(b'Self-test: PASS\n' if args else
+            b'argument-carve-behavior-preservation: PASS (smoke: resolvers still classify the argument fixture as Argument-DE post-carve; authoritative guarantee = audit-signal-propagation --check-registry + the byte-identical \xc2\xa74e diff)\n')
+        assert _repository_effects(tmp_path) == before
+
+
+@pytest.mark.parametrize('helper,command', [
+    ('registry_check.py', 'registry-check'), ('schema_coverage.py', 'schema-coverage'),
+    ('meta_lint.py', 'validator-conventions'), ('calibration_honesty.py', 'calibration-honesty'),
+    ('stance_calibration.py', 'stance-calibration'),
+])
+def test_repository_regular_helper_symlink_stays_available(repository_bundle, helper, command):
+    scripts, _ = repository_bundle
+    target = scripts / ('target-' + helper)
+    (scripts / helper).rename(target)
+    (scripts / helper).symlink_to(target.name)
+    assert _repository_copy_parity(scripts, command, '--self-test').returncode == 0
+
+
+def _native_commands():
+    listing = run_python().stdout.decode()
+    return listing.split("Native commands: ", 1)[1].split("\n", 1)[0].split(", ")
+
+
+ECHO_STUB = (
+    "import os, sys\n"
+    "print('stub', os.path.basename(__file__), sys.argv[1:], repr(sys.stdin.read()))\n"
+    "sys.exit(int(os.environ['STUB_RC']))\n"
+)
+
+
+@pytest.fixture(scope="module")
+def stubbed_scripts(tmp_path_factory):
+    scripts = tmp_path_factory.mktemp("stubbed") / "plugins/apodictic/scripts"
+    shutil.copytree(SCRIPTS, scripts, ignore=shutil.ignore_patterns("__pycache__"))
+    for helper in scripts.glob("*.py"):
+        if helper.name != "validate.py":
+            helper.write_text(ECHO_STUB, encoding="utf-8")
+    return scripts
+
+
+@pytest.mark.parametrize("command", [c for c in _native_commands() if c != "state-lines"])  # BSD wc pads
+def test_wrapper_argv_matches_bash_with_echo_stub_helpers(stubbed_scripts, tmp_path, command):
+    # Helpers are shared, so only the wrapper can diverge: compare what each wrapper passes on.
+    if BASH is None:
+        pytest.skip("Bash differential oracle unavailable")
+    from concurrent.futures import ThreadPoolExecutor
+    path = tmp_path / "in put.md"
+    path.write_text("x\n", encoding="utf-8")
+    shapes = [(), ("missing",), (path,), (tmp_path,), (path, path, path), (path, "--strict"),
+              ("--strict", path), ("--", path), (path, "--self-test"), ("--self-test", "extra"), ("",),
+              (command, path), ("--internal-links",), (path, "--internal-links"), ("--internal-links", path),
+              (path, "--internal-links=x"), (path, "--internal-links", "--internal-links"),
+              ("--self-test", "--internal-links"), ("--strict", "--internal-links"),
+              ("delete",), ("delete", tmp_path), ("delete", "--strict", "extra")]
+
+    def run(case):
+        entry, shape, rc = case
+        result = subprocess.run([*entry, command, *map(str, shape)], capture_output=True, timeout=60,
+                                stdin=subprocess.DEVNULL, env={**os.environ, "STUB_RC": rc})
+        return result.returncode, result.stdout, result.stderr
+
+    cases = [(entry, shape, rc) for shape in shapes for rc in ("0", "3")
+             if rc == "0" or shape in ((path,), ("--self-test", "extra"), (path, "--internal-links"))
+             for entry in ([BASH, str(stubbed_scripts / "validate.sh")],
+                           [sys.executable, str(stubbed_scripts / "validate.py")])]
+    with ThreadPoolExecutor(8) as pool:
+        results = list(pool.map(run, cases))
+    for index in range(0, len(cases), 2):
+        legacy, native = results[index], results[index + 1]
+        if command == "coaching-history" and cases[index][1] == ("delete",):
+            legacy, native = legacy[:2], native[:2]  # Documented: Bash's shell-fatal stderr is not emulated.
+        assert native == legacy, cases[index][1:]

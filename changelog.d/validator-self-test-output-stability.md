@@ -1,11 +1,8 @@
 ### Deterministic specificity and refutation self-tests
 
 Specificity and shared refutation self-tests now capture their expected negative
-CLI read diagnostics, assert exit status plus the complete artifact role/path
-boundary and read/decode reason, and reject false PASS output.
-Diagnostic payload checks follow the complete expected path delimiter, so valid
-temporary-root names cannot supply a decode reason or trigger a false failure.
-This removes random temporary filenames from successful self-test stdout while retaining
-named fail-closed checks and unchanged ordinary command output. All 41 migrated
-self-test surfaces again compare exact bytes without normalization. Gate launchers
-and aggregate cutover remain separate held work.
+CLI read diagnostics and assert exit status 2 plus the named artifact role and
+path. This removes random temporary filenames from successful self-test stdout
+while retaining the named fail-closed checks and unchanged ordinary command
+output. All migrated self-test surfaces again compare exact bytes without
+normalization.
