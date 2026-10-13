@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Bounded development JSONL adapter for six fixed text leaves (stdlib only).
+"""Development JSONL adapter for fixed text validator leaves (stdlib only).
 
-Invoke with a supplied interpreter: python -I -S validator_runner.py.
-This source tool supplies neither a desktop interpreter nor a native sandbox.
+Run with a supplied interpreter: python -I -S validator_runner.py. Each validation
+runs in a disposable worker. This source tool supplies neither a desktop
+interpreter nor a native sandbox.
 """
+import collections
 import json
 import os
-import collections
 from pathlib import Path
 import queue
 import re
@@ -22,47 +23,44 @@ TEXT_LINES = 8192
 RESPONSE_BYTES = 32768
 WORK_SECONDS = 5
 CLEANUP_SECONDS = 2
-METADATA_BYTES = 65536
-HERE = Path(__file__).resolve().parent
+SCRIPT = Path(__file__).resolve()
+HERE = SCRIPT.parent
 IDENTIFIER = re.compile(r"[A-Za-z0-9_-]{1,64}\Z")
+
+
+def four_tuple(errors, warnings, ok_line, failed_line):
+    """letter_checks.run_check's stdout lines and exit code."""
+    return int(bool(errors)), warnings + errors + (["", failed_line] if errors else [ok_line])
+
+
+def raw(exit_code, lines):
+    """letter_checks.run_raw_check's stdout lines and exit code."""
+    return exit_code, lines
+
+
+# The only runnable leaves: validator id -> (letter_checks registry, result formatter).
+# Adding a leaf is one row here; --check-inventory requires its registry id.
+LEAVES = {
+    "tone-check": ("CHECKS", four_tuple),
+    "synthesis-sections": ("CHECKS", four_tuple),
+    "severity-floor": ("CHECKS", four_tuple),
+    "decision-layer-check": ("CHECKS", four_tuple),
+    "author-facing-lint": ("CHECKS", four_tuple),
+    "ledger-check": ("RAW_CHECKS", raw),
+}
+WORKER_ERRORS = ("runner_dependency_unavailable", "worker_failed", "output_limit")
 
 
 class Refused(ValueError):
     pass
 
 
-def closed_json(data):
-    def pairs(items):
-        result = {}
-        for key, value in items:
-            if key in result:
-                raise Refused()
-            result[key] = value
-        return result
+class CleanupFailed(Exception):
+    pass
 
-    def constant(_):
-        raise Refused()
 
-    def inspect(value, depth=0):
-        if isinstance(value, (dict, list)):
-            depth += 1
-            if depth > 8:
-                raise Refused()
-            for item in (list(value.keys()) + list(value.values())
-                         if isinstance(value, dict) else value):
-                inspect(item, depth)
-        elif isinstance(value, str) and any(0xD800 <= ord(c) <= 0xDFFF for c in value):
-            raise Refused()
-
-    try:
-        if data.startswith(b"\xef\xbb\xbf"):
-            raise Refused()
-        value = json.loads(data.decode("utf-8", "strict"), object_pairs_hook=pairs,
-                           parse_constant=constant)
-        inspect(value)
-        return value
-    except (ValueError, UnicodeError, RecursionError, OverflowError):
-        raise Refused() from None
+def refuse(_):
+    raise Refused()
 
 
 def encoded(value):
@@ -70,11 +68,20 @@ def encoded(value):
                        allow_nan=False) + "\n").encode("utf-8")
 
 
+def closed_json(data):
+    """Strict UTF-8 JSON without NaN/Infinity or lone surrogates."""
+    try:
+        value = json.loads(data.decode("utf-8"), parse_constant=refuse)
+        encoded(value)  # A lone surrogate cannot be re-encoded as UTF-8.
+        return value
+    except (ValueError, RecursionError):
+        raise Refused() from None
+
+
 def unavailable(request, code):
     return {"protocol": 1, "type": "result", "id": request["id"],
-            "validator": request["validator"], "available": False,
-            "result": None, "error": {"code": code,
-            "message": "Validator unavailable: %s." % code}}
+            "validator": request["validator"], "available": False, "result": None,
+            "error": {"code": code, "message": "Validator unavailable: %s." % code}}
 
 
 def protocol_error(code):
@@ -82,69 +89,29 @@ def protocol_error(code):
             "error": {"code": code, "message": "Protocol refused: %s." % code}}
 
 
-def bounded_file(path, limit):
-    with path.open("rb") as source:
-        data = source.read(limit + 1)
-    if len(data) > limit:
-        raise Refused()
-    return data
-
-
-def inventory():
-    value = closed_json(bounded_file(HERE.parent / "schemas" /
-                                    "validator-runtime-inventory.json", METADATA_BYTES))
-    if (not isinstance(value, dict) or set(value) != {"version", "validators"}
-            or type(value["version"]) is not int or value["version"] != 1
-            or not isinstance(value["validators"], list)
-            or not 1 <= len(value["validators"]) <= 512):
-        raise Refused()
-    rows = {}
-    for row in value["validators"]:
-        if (not isinstance(row, dict) or set(row) != {"id", "desktop_disposition",
-                "development_support", "omitted_capability"}
-                or not isinstance(row["id"], str) or not IDENTIFIER.fullmatch(row["id"])
-                or row["id"] in rows
-                or row["desktop_disposition"] not in ("ci-only", "not-yet-supported")
-                or row["development_support"] not in ("none", "tone-check-v1", "synthesis-sections-v1", "severity-floor-v1", "decision-layer-check-v1", "author-facing-lint-v1", "ledger-check-v1")
-                or not isinstance(row["omitted_capability"], str)
-                or not 1 <= len(row["omitted_capability"]) <= 256
-                or not row["omitted_capability"].strip()
-                or (row["development_support"] == "tone-check-v1" and row["id"] != "tone-check")
-                or (row["development_support"] == "synthesis-sections-v1" and row["id"] != "synthesis-sections")
-                or (row["development_support"] == "severity-floor-v1" and row["id"] != "severity-floor")
-                or (row["development_support"] == "decision-layer-check-v1" and row["id"] != "decision-layer-check")
-                or (row["development_support"] == "author-facing-lint-v1" and row["id"] != "author-facing-lint")
-                or (row["development_support"] == "ledger-check-v1" and row["id"] != "ledger-check")):
-            raise Refused()
-        rows[row["id"]] = row
-    for leaf, support in (("tone-check", "tone-check-v1"),
-                          ("synthesis-sections", "synthesis-sections-v1"),
-                          ("severity-floor", "severity-floor-v1"),
-                          ("decision-layer-check", "decision-layer-check-v1"),
-                          ("author-facing-lint", "author-facing-lint-v1"),
-                          ("ledger-check", "ledger-check-v1")):
-        if (leaf not in rows or rows[leaf]["development_support"] != support
-                or rows[leaf]["desktop_disposition"] != "not-yet-supported"):
-            raise Refused()
-    return rows
-
-
 def check_inventory():
+    """Source/CI gate: every canonical AGG_VALIDATORS id has exactly one disposition."""
     try:
-        rows = inventory()
-        registry = bounded_file(HERE / "validate.sh", METADATA_BYTES * 4).decode("utf-8")
-        assignments = [line for line in registry.splitlines()
-                       if re.match(r"^\s*(?:export\s+)?AGG_VALIDATORS\b", line)]
-        if len(assignments) != 1:
-            raise Refused()
-        literal = re.fullmatch(r"AGG_VALIDATORS=([\"'])([^\"'$`\\\n]*)\1\s*", assignments[0])
-        if not literal:
-            raise Refused()
-        ids = literal[2].split()
-        if (not ids or len(ids) != len(set(ids)) or set(ids) != set(rows)
-                or any(not IDENTIFIER.fullmatch(x) for x in ids)):
-            raise Refused()
-    except (OSError, Refused, UnicodeError, TypeError):
+        value = json.loads((HERE.parent / "schemas" / "validator-runtime-inventory.json")
+                           .read_text(encoding="utf-8"))
+        rows = value["validators"]
+        ids = [row["id"] for row in rows]
+        assignments = re.findall(r"^\s*(?:export\s+)?AGG_VALIDATORS\b.*$",
+                                 (HERE / "validate.sh").read_text(encoding="utf-8"), re.M)
+        literal = len(assignments) == 1 and re.fullmatch(
+            r"AGG_VALIDATORS=([\"'])([^\"'$`\\\n]*)\1\s*", assignments[0])
+        registry = literal[2].split() if literal else []
+        ok = (set(value) == {"version", "validators"} and value["version"] == 1
+              and registry and len(set(registry)) == len(registry)
+              and len(set(ids)) == len(ids) and set(ids) == set(registry)
+              and set(LEAVES) <= set(ids)
+              and all(set(row) == {"id", "desktop_disposition", "omitted_capability"}
+                      and row["desktop_disposition"] in ("ci-only", "not-yet-supported")
+                      and isinstance(row["omitted_capability"], str)
+                      and row["omitted_capability"].strip() for row in rows))
+    except (OSError, ValueError, TypeError, KeyError):
+        ok = False
+    if not ok:
         print("FAIL: Validator runtime inventory unavailable or inconsistent.")
         return 1
     print("PASS: Validator runtime inventory matches canonical registry (development only).")
@@ -161,10 +128,8 @@ def request_shape(value):
             else {"protocol", "type", "id", "target"} if kind == "cancel" else set())
     if not keys or set(value) != keys:
         return "invalid_request"
-    if not isinstance(value["id"], str) or not IDENTIFIER.fullmatch(value["id"]):
-        return "invalid_request"
     field = "validator" if kind == "validate" else "target"
-    if not isinstance(value[field], str) or not IDENTIFIER.fullmatch(value[field]):
+    if not all(isinstance(value[k], str) and IDENTIFIER.fullmatch(value[k]) for k in ("id", field)):
         return "invalid_request"
     if kind == "validate" and not isinstance(value["text"], str):
         return "invalid_request"
@@ -180,59 +145,21 @@ def worker_environment():
     return env
 
 
-def worker_main(synthesis=False, severity=False, decision_layer=False, author_facing=False,
-                ledger=False):
-    # Install the denial before importing the trusted leaf, with no configurable path.
-    def deny(event, _):
-        if (event.startswith("socket.") or event in ("subprocess.Popen", "os.system",
-                "os.fork", "os.forkpty", "os.posix_spawn", "os.exec")):
-            raise PermissionError("Development leaf operation refused.")
-    sys.addaudithook(deny)
-    sys.dont_write_bytecode = True
+def worker(leaf):
+    """Run one leaf on the coordinator's already bounded, LF-normalized text."""
     try:
-        data = sys.stdin.buffer.read(FRAME_BYTES + 1)
-        text = closed_json(data)
-        if not isinstance(text, str) or len(text.encode("utf-8")) > TEXT_BYTES:
-            raise Refused()
-        text = text.replace("\r\n", "\n").replace("\r", "\n")
-        if text.count("\n") + 1 > TEXT_LINES:
-            raise Refused()
+        text = json.loads(sys.stdin.buffer.read())
+        registry, formatter = LEAVES[leaf]
         sys.path.insert(0, str(HERE))
         try:
-            if synthesis:
-                from letter_checks import synthesis_sections as check
-            elif severity:
-                from letter_checks import severity_floor as check
-            elif decision_layer:
-                from letter_checks import decision_layer_check as check
-            elif author_facing:
-                from letter_checks import author_facing_lint as check
-            elif ledger:
-                from letter_checks import ledger_check as check
-            else:
-                from letter_checks import tone_check as check
+            import letter_checks
+            check = getattr(letter_checks, registry)[leaf]
         except Exception:
             result = {"error": "runner_dependency_unavailable"}
         else:
-            value = check(text)
-            if ledger:
-                if (not isinstance(value, tuple) or len(value) != 2
-                        or type(value[0]) is not int or value[0] not in (0, 1)
-                        or not isinstance(value[1], list)
-                        or not all(isinstance(line, str) for line in value[1])):
-                    raise Refused()
-                result = {"exit_code": value[0],
-                          "stdout": "".join(line + "\n" for line in value[1]), "stderr": ""}
-            else:
-                if (not isinstance(value, tuple) or len(value) != 4
-                        or not all(isinstance(x, list) for x in value[:2])
-                        or not all(isinstance(x, str) for group in value[:2] for x in group)
-                        or not all(isinstance(x, str) for x in value[2:])):
-                    raise Refused()
-                errors, warnings, ok, failed = value
-                stdout = "".join(x + "\n" for x in warnings + errors)
-                stdout += ("\n" + failed if errors else ok) + "\n"
-                result = {"exit_code": int(bool(errors)), "stdout": stdout, "stderr": ""}
+            code, lines = formatter(*check(text))
+            result = {"exit_code": code, "stdout": "".join(line + "\n" for line in lines),
+                      "stderr": ""}
         payload = encoded(result)
         if len(payload) > RESPONSE_BYTES:
             payload = encoded({"error": "output_limit"})
@@ -242,196 +169,125 @@ def worker_main(synthesis=False, severity=False, decision_layer=False, author_fa
     return 0
 
 
-class TransportFailure(Exception):
-    def __init__(self, deadline=None):
-        self.deadline = deadline
-
-
-def failure_diagnostic(deadline):
-    # Inherited stderr can be full too: diagnostics never extend shutdown.
-    if time.monotonic() >= deadline:
-        return
-    done = threading.Event()
-    def write():
-        try:
-            os.write(sys.stderr.fileno(), b"Validator runner transport or cleanup failed.\n")
-        except OSError:
-            pass
-        finally:
-            done.set()
-    threading.Thread(target=write, daemon=True).start()
-    done.wait(max(0, deadline - time.monotonic()))
-
-
 class Session:
     def __init__(self):
-        self.events = queue.Queue(maxsize=8)
-        self.inputs = queue.Queue(maxsize=2)
+        self.inputs = queue.Queue(maxsize=2)  # Backpressure on stdin.
+        self.events = queue.Queue()
         self.wakeup = threading.Event()
         self.active = None
-        self.pending = collections.deque()  # Admitted validations waiting, in order.
+        self.pending = collections.deque()  # Admitted validations, in order.
         self.eof = False
+        self.terminated = False
         self.ids = set()
         self.frame = bytearray()
-        self.termination = None
-        try:
-            inventory()
-            self.dependency = True
-        except (OSError, Refused, TypeError, UnicodeError):
-            self.dependency = False
 
-    def terminate(self, *_):
-        if self.termination is None:
-            self.termination = time.monotonic()
+    def notify(self, target, event):
+        target.put(event)
+        self.wakeup.set()
 
-    def input_reader(self):
+    def read_input(self):
         try:
             while True:
                 data = os.read(sys.stdin.fileno(), 4096)
-                self.inputs.put(("input", None, data, None))
-                self.wakeup.set()
+                self.notify(self.inputs, ("input", None, data))
                 if not data:
                     return
         except OSError:
-            self.inputs.put(("input_error", None, b"", None))
-            self.wakeup.set()
+            self.notify(self.inputs, ("input_error", None, b""))
 
-    def emit(self, value, deadline=None):
-        deadline = time.monotonic() + CLEANUP_SECONDS if deadline is None else deadline
+    def emit(self, value):
         payload = encoded(value)
         if len(payload) > RESPONSE_BYTES:
-            if value["type"] != "result":
-                raise TransportFailure(deadline)
             payload = encoded(unavailable(value, "output_limit"))
-        # Reserve part of this same budget to kill/reap an active worker if
-        # output fails. Waiting until the absolute deadline would leave no reap time.
-        write_deadline = deadline - .25 if self.active else deadline
-        done = threading.Event()
-        failures = []
-        def write():
-            try:
-                view = memoryview(payload)
-                while view:
-                    n = os.write(sys.stdout.fileno(), view)
-                    if n <= 0:
-                        raise OSError()
-                    view = view[n:]
-            except OSError:
-                failures.append(True)
-            finally:
-                done.set()
-        threading.Thread(target=write, daemon=True).start()
-        while not done.wait(min(.02, max(0, write_deadline - time.monotonic()))):
-            if time.monotonic() >= write_deadline or self.termination is not None:
-                raise TransportFailure(deadline)
-        if failures:
-            raise TransportFailure(deadline)
+        view = memoryview(payload)
+        while view:
+            view = view[os.write(sys.stdout.fileno(), view):]
 
     def start(self, request):
-        started = time.monotonic()
-        route = ("--worker-synthesis-sections" if request["validator"] == "synthesis-sections"
-                 else "--worker-severity-floor" if request["validator"] == "severity-floor"
-                 else "--worker-decision-layer-check" if request["validator"] == "decision-layer-check"
-                 else "--worker-author-facing-lint" if request["validator"] == "author-facing-lint"
-                 else "--worker-ledger-check" if request["validator"] == "ledger-check"
-                 else "--worker")
         try:
-            child = subprocess.Popen([sys.executable, "-I", "-S", "-B", str(HERE / "validator_runner.py"), route],
+            child = subprocess.Popen(
+                [sys.executable, "-I", "-S", "-B", str(SCRIPT), "--worker", request["validator"]],
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 env=worker_environment(), cwd=str(HERE), close_fds=True)
         except OSError:
             self.emit(unavailable(request, "runner_dependency_unavailable"))
             return
-        active = {"request": request, "child": child, "started": started,
-                  "stdout": bytearray(), "closed": set(), "threads": []}
-        self.active = active
-        def read(name, stream):
+        active = self.active = {"request": request, "child": child, "started": time.monotonic(),
+                                "stdout": bytearray(), "closed": set(), "threads": []}
+        def pump(name, stream):
             try:
                 while True:
-                    data = os.read(stream.fileno(), 1024)
-                    self.events.put((name, active, data, None))
-                    self.wakeup.set()
+                    data = os.read(stream.fileno(), 4096)
+                    self.notify(self.events, (name, active, data))
                     if not data:
                         return
             except OSError:
-                self.events.put(("child_error", active, b"", None))
-                self.wakeup.set()
-        def write():
+                self.notify(self.events, ("child_error", active, b""))
+        def send():
             try:
-                payload = encoded(request["text"])
-                view = memoryview(payload)
-                while view:
-                    n = os.write(child.stdin.fileno(), view)
-                    if n <= 0:
-                        raise OSError()
-                    view = view[n:]
+                with child.stdin:
+                    child.stdin.write(encoded(request["text"]))
             except OSError:
-                self.events.put(("child_error", active, b"", None))
-                self.wakeup.set()
-            finally:
-                child.stdin.close()
-        for name, stream in (("stdout", child.stdout), ("stderr", child.stderr)):
-            thread = threading.Thread(target=read, args=(name, stream), daemon=True)
+                self.notify(self.events, ("child_error", active, b""))
+        for target, args in ((pump, ("stdout", child.stdout)), (pump, ("stderr", child.stderr)),
+                             (send, ())):
+            thread = threading.Thread(target=target, args=args, daemon=True)
             active["threads"].append(thread)
             thread.start()
-        thread = threading.Thread(target=write, daemon=True)
-        active["threads"].append(thread)
-        thread.start()
 
-    def stop(self, deadline):
-        active = self.active
+    def stop(self):
+        """Kill and reap the active worker; later output from it is discarded."""
+        active, self.active = self.active, None
         if active is None:
             return
-        self.active = None  # Any queued output is now stale and must be discarded.
+        deadline = time.monotonic() + CLEANUP_SECONDS
+        child = active["child"]
         try:
-            child = active["child"]
-            if child.poll() is None:
-                child.terminate()
-                try:
-                    child.wait(timeout=min(.1, max(0, deadline - time.monotonic())))
-                except subprocess.TimeoutExpired:
-                    child.kill()
-            try:
-                child.wait(timeout=max(0, deadline - time.monotonic()))
-            except subprocess.TimeoutExpired:
-                raise TransportFailure(deadline) from None
-            # Readers can be blocked putting stale bounded events; drain until joined.
-            while any(t.is_alive() for t in active["threads"]):
-                if time.monotonic() >= deadline:
-                    raise TransportFailure(deadline)
-                try:
-                    self.events.get(timeout=.01)
-                except queue.Empty:
-                    pass
-            for stream in (child.stdin, child.stdout, child.stderr):
-                stream.close()
-        except OSError:
-            raise TransportFailure(deadline) from None
+            child.kill()
+            child.wait(timeout=CLEANUP_SECONDS)
+            for thread in active["threads"]:
+                thread.join(max(0, deadline - time.monotonic()))
+        except (OSError, subprocess.TimeoutExpired):
+            raise CleanupFailed() from None
+        if any(thread.is_alive() for thread in active["threads"]):
+            raise CleanupFailed()
+        for stream in (child.stdin, child.stdout, child.stderr):
+            stream.close()
 
     def finish(self, code):
         request = self.active["request"]
-        deadline = time.monotonic() + CLEANUP_SECONDS
-        self.stop(deadline)
-        self.emit(unavailable(request, code), deadline)
+        self.stop()
+        self.emit(unavailable(request, code))
 
-    def end_all(self, deadline):
+    def end_all(self):
         if self.active:
-            request = self.active["request"]
-            self.stop(deadline)
-            self.emit(unavailable(request, "session_ended"), deadline)
+            self.finish("session_ended")
         while self.pending:
-            self.emit(unavailable(self.pending.popleft(), "session_ended"), deadline)
+            self.emit(unavailable(self.pending.popleft(), "session_ended"))
 
     def fatal(self, code):
-        deadline = time.monotonic() + CLEANUP_SECONDS
-        self.end_all(deadline)
-        self.emit(protocol_error(code), deadline)
+        self.end_all()
+        self.emit(protocol_error(code))
         return 2
 
+    def cancel(self, request):
+        target = request["target"]
+        if self.active and self.active["request"]["id"] == target:
+            victim = self.active["request"]
+            self.stop()
+        else:
+            victim = next((r for r in self.pending if r["id"] == target), None)
+            if victim:
+                self.pending.remove(victim)
+        if victim:
+            self.emit(unavailable(victim, "cancelled"))
+        self.emit({"protocol": 1, "type": "cancel_result", "id": request["id"],
+                   "target": target, "cancelled": victim is not None, "error": None})
+
     def admit(self, data):
-        if data.endswith(b"\r"):
-            return self.fatal("invalid_frame")
         try:
+            if data.endswith(b"\r"):  # LF framing only.
+                raise Refused()
             request = closed_json(data)
         except Refused:
             return self.fatal("invalid_frame")
@@ -442,82 +298,95 @@ class Session:
             return self.fatal("duplicate_id")
         self.ids.add(request["id"])
         if request["type"] == "cancel":
-            queued = [r for r in self.pending if r["id"] == request["target"]]
-            active = bool(self.active and self.active["request"]["id"] == request["target"])
-            cancelled = active or bool(queued)
-            deadline = time.monotonic() + CLEANUP_SECONDS
-            if active:
-                target = self.active["request"]
-                self.stop(deadline)
-                self.emit(unavailable(target, "cancelled"), deadline)
-            elif queued:
-                self.pending.remove(queued[0])
-                self.emit(unavailable(queued[0], "cancelled"), deadline)
-            self.emit({"protocol": 1, "type": "cancel_result", "id": request["id"],
-                       "target": request["target"], "cancelled": cancelled, "error": None}, deadline)
-        elif request["validator"] not in ("tone-check", "synthesis-sections", "severity-floor", "decision-layer-check", "author-facing-lint", "ledger-check"):
+            self.cancel(request)
+            return None
+        # Reproduce the canonical helper's universal-newline file reading.
+        text = request["text"].replace("\r\n", "\n").replace("\r", "\n")
+        if request["validator"] not in LEAVES:
             self.emit(unavailable(request, "validator_unavailable"))
-        elif (len(request["text"].encode("utf-8")) > TEXT_BYTES
-              or request["text"].replace("\r\n", "\n").replace("\r", "\n").count("\n") + 1 > TEXT_LINES):
+        elif len(request["text"].encode("utf-8")) > TEXT_BYTES or text.count("\n") >= TEXT_LINES:
             self.emit(unavailable(request, "input_limit"))
-        elif not self.dependency:
-            self.emit(unavailable(request, "runner_dependency_unavailable"))
         else:
-            self.pending.append(request)  # Started in order by the run loop.
+            self.pending.append(dict(request, text=text))
         return None
 
-    def child_event(self, event):
-        name, active, data, _ = event
+    def receive(self, data):
+        if not data:
+            if self.frame:
+                return self.fatal("invalid_frame")
+            self.eof = True  # Finish active and queued work, then exit 0.
+            return None
+        # Only LF frames: never use universal splitlines for transport.
+        pieces = data.split(b"\n")
+        for i, piece in enumerate(pieces):
+            self.frame.extend(piece)
+            if len(self.frame) > FRAME_BYTES:
+                return self.fatal("invalid_frame")
+            if i < len(pieces) - 1:
+                record = bytes(self.frame)
+                self.frame.clear()
+                status = self.admit(record)
+                if status is not None:
+                    return status
+        return None
+
+    def child_event(self, name, active, data):
         if active is not self.active:
             return
         if name == "child_error" or (name == "stderr" and data):
             self.finish("worker_failed")
-            return
-        if name == "stdout" and data:
+        elif data:
             active["stdout"].extend(data)
             if len(active["stdout"]) > RESPONSE_BYTES:
                 self.finish("output_limit")
-            return
-        if not data:
+        else:
             active["closed"].add(name)
 
     def accept_result(self):
         active = self.active
-        if not active or active["closed"] != {"stdout", "stderr"} or active["child"].poll() is None:
+        if not active or len(active["closed"]) < 2 or active["child"].poll() is None:
             return
+        request = active["request"]
         try:
             if active["child"].returncode != 0:
                 raise Refused()
-            data = active["stdout"]
-            if not data.endswith(b"\n") or b"\n" in data[:-1]:
-                raise Refused()
-            result = closed_json(bytes(data[:-1]))
+            result = closed_json(bytes(active["stdout"]))
             if isinstance(result, dict) and set(result) == {"error"}:
-                if result["error"] not in ("runner_dependency_unavailable", "worker_failed", "output_limit"):
+                if result["error"] not in WORKER_ERRORS:
                     raise Refused()
-                value = unavailable(active["request"], result["error"])
+                value = unavailable(request, result["error"])
             elif (isinstance(result, dict) and set(result) == {"exit_code", "stdout", "stderr"}
                     and type(result["exit_code"]) is int and result["exit_code"] in (0, 1)
                     and isinstance(result["stdout"], str) and result["stderr"] == ""):
-                value = {"protocol": 1, "type": "result", "id": active["request"]["id"],
-                         "validator": active["request"]["validator"], "available": True, "result": result, "error": None}
+                value = {"protocol": 1, "type": "result", "id": request["id"],
+                         "validator": request["validator"], "available": True,
+                         "result": result, "error": None}
             else:
                 raise Refused()
-        except (Refused, TypeError):
+        except Refused:
             self.finish("worker_failed")
             return
-        deadline = time.monotonic() + CLEANUP_SECONDS
-        self.stop(deadline)
-        self.emit(value, deadline)
+        self.stop()
+        self.emit(value)
+
+    def next_event(self):
+        self.wakeup.clear()
+        for source in (self.inputs, self.events):
+            try:
+                return source.get_nowait()
+            except queue.Empty:
+                pass
+        self.wakeup.wait(.02)
+        return None
 
     def run(self):
-        threading.Thread(target=self.input_reader, daemon=True).start()
+        threading.Thread(target=self.read_input, daemon=True).start()
         for sig in (signal.SIGINT, signal.SIGTERM):
-            signal.signal(sig, self.terminate)
+            signal.signal(sig, lambda *_: setattr(self, "terminated", True))
         try:
             while True:
-                if self.termination is not None:
-                    self.end_all(self.termination + CLEANUP_SECONDS)
+                if self.terminated:
+                    self.end_all()
                     return 2
                 if self.active and time.monotonic() - self.active["started"] >= WORK_SECONDS:
                     self.finish("timeout")
@@ -527,72 +396,34 @@ class Session:
                     continue
                 if self.eof and not self.active:
                     return 0
-                self.wakeup.clear()
-                try:
-                    try:
-                        event = self.inputs.get_nowait()
-                    except queue.Empty:
-                        event = self.events.get_nowait()
-                except queue.Empty:
-                    self.wakeup.wait(.02)
+                event = self.next_event()
+                if event is None:
                     continue
-                name, _, data, _ = event
+                name, active, data = event
                 if name == "input_error":
-                    raise TransportFailure()
+                    raise OSError()
                 if name != "input":
-                    self.child_event(event)
+                    self.child_event(name, active, data)
                     continue
-                if not data:
-                    if self.frame:
-                        return self.fatal("invalid_frame")
-                    self.eof = True  # Finish active and queued work, then exit 0.
-                    continue
-                # Only LF frames: never use universal splitlines for transport.
-                pieces = data.split(b"\n")
-                for i, piece in enumerate(pieces):
-                    self.frame.extend(piece)
-                    if len(self.frame) > FRAME_BYTES:
-                        return self.fatal("invalid_frame")
-                    if i < len(pieces) - 1:
-                        record = bytes(self.frame)
-                        self.frame.clear()
-                        status = self.admit(record)
-                        if status is not None:
-                            return status
-        except (TransportFailure, BrokenPipeError, OSError) as exc:
-            deadline = getattr(exc, "deadline", None)
-            if deadline is None:
-                deadline = time.monotonic() + CLEANUP_SECONDS
-            if self.termination is not None:
-                deadline = min(deadline, self.termination + CLEANUP_SECONDS)
+                status = self.receive(data)
+                if status is not None:
+                    return status
+        except (CleanupFailed, OSError):
+            # Broken stdout/stdin or an unreapable worker: reap if possible, exit 2.
             try:
-                self.stop(deadline)
-            except (TransportFailure, OSError):
+                self.stop()
+            except (CleanupFailed, OSError):
                 pass
-            failure_diagnostic(deadline)
             return 2
 
 
 def main():
-    sys.dont_write_bytecode = True
-    if not sys.flags.isolated or not sys.flags.no_site:
-        sys.stderr.write("Use an isolated no-site development interpreter (-I -S).\n")
-        return 2
-    if sys.argv[1:] == ["--check-inventory"]:
+    args = sys.argv[1:]
+    if args == ["--check-inventory"]:
         return check_inventory()
-    if sys.argv[1:] == ["--worker"]:
-        return worker_main()
-    if sys.argv[1:] == ["--worker-synthesis-sections"]:
-        return worker_main(synthesis=True)
-    if sys.argv[1:] == ["--worker-severity-floor"]:
-        return worker_main(severity=True)
-    if sys.argv[1:] == ["--worker-decision-layer-check"]:
-        return worker_main(decision_layer=True)
-    if sys.argv[1:] == ["--worker-author-facing-lint"]:
-        return worker_main(author_facing=True)
-    if sys.argv[1:] == ["--worker-ledger-check"]:
-        return worker_main(ledger=True)
-    if sys.argv[1:]:
+    if len(args) == 2 and args[0] == "--worker" and args[1] in LEAVES:
+        return worker(args[1])
+    if args:
         sys.stderr.write("Unsupported validator runner usage.\n")
         return 2
     return Session().run()
