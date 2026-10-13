@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -38,6 +39,8 @@ STRUCTURED_INTEGRITY = (
 RUN_INTEGRITY = (
     "escalation-check", "dispatch-record", "disposition-check", "synthesis-coverage", "specificity-floor",
 )
+PLANNING_DIFFS = ("retcon-plan", "state-card-diff", "revision-arc", "regression-diff")
+REFUTATION = ("refutation-coverage", "refutation-evidence", "refutation-write-scope")
 REFERENCES = SCRIPTS.parent / "skills/core-editor/references"
 BASH = shutil.which("bash")
 
@@ -120,7 +123,7 @@ def test_byte_utilities_differential(tmp_path, payload):
         parity(*args, cwd=tmp_path)
 
 
-@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS + CONFIG_TIMELINES + STRUCTURED_INTEGRITY + RUN_INTEGRITY[:-1])
+@pytest.mark.parametrize("command", UTILITIES + LETTER_SIGNALS + CONFIG_TIMELINES + STRUCTURED_INTEGRITY + RUN_INTEGRITY[:-1] + PLANNING_DIFFS)
 def test_migrated_self_tests_have_identical_output(command):
     result = run_python(command, "--self-test", "ignored")
     assert result.returncode == 0
@@ -260,7 +263,7 @@ def test_letter_wrappers_ignore_extra_arguments(tmp_path, command):
     parity(command, path, "ignored", "also ignored")
 
 
-@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "retcon-plan", "bogus"])
+@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "legal-risk", "bogus"])
 def test_unported_entrypoints_do_not_claim_success(command):
     result = run_python(command)
     assert result.returncode == 2
@@ -761,3 +764,223 @@ def test_specificity_exact_file_arity_and_read_refusal(tmp_path):
         result = native_and_optional_parity("specificity-floor", *args)
         assert (result.returncode, result.stderr) == (2, b"")
         assert b"Error: cannot read" in result.stdout
+
+
+@pytest.mark.parametrize("command", PLANNING_DIFFS)
+def test_planning_wrapper_flags_and_late_self_test(command):
+    assert native_and_optional_parity(command).returncode == 2
+    assert native_and_optional_parity(command, command, "--strict", "--unknown").returncode == 2
+    late = native_and_optional_parity(command, "--strict", "--self-test", "ignored")
+    assert (late.returncode, late.stderr) == (0, b"")
+    assert late.stdout.endswith(b"Self-test: PASS\n")
+
+
+@pytest.mark.parametrize("command,count", [("refutation-coverage", 3), ("refutation-evidence", 1), ("refutation-write-scope", 2)])
+def test_refutation_raw_wrapper_minimum(command, count):
+    for argc in range(count):
+        result = native_and_optional_parity(command, *(["missing"] * argc))
+        assert (result.returncode, result.stderr) == (2, b"")
+        assert result.stdout.startswith(b"Usage: ")
+
+
+@pytest.mark.parametrize("command", REFUTATION)
+def test_refutation_shared_self_test_preserves_named_read_error(command):
+    # This unchanged shared suite prints a random temporary path. Independently
+    # assert full success; no normalization or exact-output equivalence claim.
+    args = (command, "--self-test", "ignored", "--strict")
+    results = [run_python(*args)]
+    if BASH is not None:
+        results.append(subprocess.run([BASH, str(BASH_CLI), *args], capture_output=True, timeout=60))
+    for result in results:
+        assert (result.returncode, result.stderr) == (0, b"")
+        assert result.stdout.endswith(b"Self-test: PASS\n")
+        assert result.stdout.count(b"Error: cannot read editorial letter ") == 1
+        assert b"non_utf8_read_file_named_error: OK\n" in result.stdout
+        assert b"non_utf8_coverage_cli_degrades: OK\n" in result.stdout
+
+
+@pytest.mark.parametrize("command,inputs,expected", [
+    ("retcon-plan", ("example-retcon-plan.md", "--strict"), 0),
+    ("state-card-diff", ("example-state-card.md", "--strict"), 0),
+    ("state-card-diff", ("example-state-card.md", "example-state-card-round2.md", "--strict", "ignored"), 0),
+    ("revision-arc", ("example-revision-arc.md", "--strict"), 0),
+    ("regression-diff", ("example-run-folder-r1", "example-run-folder-r2"), 0),
+    ("regression-diff", ("--strict", "example-run-folder-r1", "example-run-folder-r2", "ignored"), 1),
+    ("regression-diff", ("example-run-folder-r1", "--strict"), 0),
+    ("regression-diff", ("example-run-folder-r1", "example-run-folder-r1"), 1),
+    ("state-card-diff", ("example-state-card-round2.md", "example-state-card.md"), 1),
+])
+def test_native_planning_canonical_single_pair_and_strict(command, inputs, expected):
+    args = [path if path.startswith("--") or path == "ignored" else REFERENCES / path for path in inputs]
+    assert native_and_optional_parity(command, *args).returncode == expected
+
+
+@pytest.mark.parametrize("command,glob_name,canonical,block", [
+    ("retcon-plan", "Project_Retcon_Plan_r1.md", "example-retcon-plan.md", "retcon_item"),
+    ("state-card-diff", "Project_State_Card_r1.md", "example-state-card.md", "state_card"),
+    ("revision-arc", "Project_Revision_Arc_r1.md", "example-revision-arc.md", "revision_arc"),
+])
+def test_planning_newest_file_discovery_and_parsed_carrier(tmp_path, command, glob_name, canonical, block):
+    folder = tmp_path / "run"
+    folder.mkdir()
+    old = folder / glob_name
+    old.write_text(f"<!-- apodictic:{block}\n{{\n-->\n", encoding="utf-8")
+    fresh = folder / glob_name.replace("r1", "r2")
+    fresh.write_bytes((REFERENCES / canonical).read_bytes())
+    os.utime(old, (100, 100))
+    os.utime(fresh, (200, 200))
+    assert native_and_optional_parity(command, folder, "--strict").returncode == 0
+    os.utime(old, (300, 300))
+    assert native_and_optional_parity(command, folder).returncode == 1
+    if command != "state-card-diff":
+        prose = tmp_path / "prose.md"
+        prose.write_text(f"This prose names apodictic:{block} but carries no block.\n", encoding="utf-8")
+        assert native_and_optional_parity(command, prose, fresh, "--strict").returncode == 0
+
+
+def test_revision_arc_sibling_ledger_precedes_explicit_and_embedded(tmp_path):
+    arc = tmp_path / "Project_Revision_Arc_r1.md"
+    arc.write_bytes((REFERENCES / "example-revision-arc.md").read_bytes())
+    assert native_and_optional_parity("revision-arc", arc, "--strict").returncode == 0
+    sibling = tmp_path / "Project_Findings_Ledger_r1.md"
+    sibling.write_bytes((REFERENCES / "example-regrounded-ledger.md").read_bytes())
+    # The sibling ledger overrides both embedded findings and the explicit carrier.
+    assert native_and_optional_parity("revision-arc", arc, REFERENCES / "example-revision-arc.md").returncode == 1
+
+
+@pytest.mark.parametrize("command", PLANNING_DIFFS)
+def test_planning_missing_and_non_utf8_inputs(tmp_path, command):
+    assert native_and_optional_parity(command, tmp_path).returncode == 2
+    assert native_and_optional_parity(command, tmp_path / "missing.md").returncode == 2
+    bad = tmp_path / "bad.md"
+    bad.write_bytes(b"\xff\xfe")
+    result = native_and_optional_parity(command, bad)
+    # Preserve the existing regression single-round zero-finding behavior.
+    assert result.returncode == (0 if command == "regression-diff" else 2)
+
+
+@pytest.fixture
+def refutation_run(tmp_path):
+    source = REFERENCES / "example-run-folder"
+    paths = {}
+    for key, suffix in (
+        ("letter", "Core_DE_Synthesis"), ("ledger", "Findings_Ledger"),
+        ("record", "Refutation_Record"), ("snapshot", "Manuscript_Snapshot"),
+    ):
+        original = source / f"Example_{suffix}_2026-01-01_opus46.md"
+        paths[key] = tmp_path / original.name
+        paths[key].write_bytes(original.read_bytes())
+    return paths
+
+
+def edit_artifact_block(path, kind, edit):
+    text = path.read_text(encoding="utf-8")
+    def replace(match):
+        obj = json.loads(match[2])
+        edit(obj)
+        return match[1] + json.dumps(obj, ensure_ascii=False) + match[3]
+    changed, count = re.subn(rf"(<!-- apodictic:{kind}\s*)(.*?)(\s*-->)", replace, text, count=1, flags=re.S)
+    assert count == 1
+    path.write_text(changed, encoding="utf-8")
+
+
+def test_refutation_canonical_and_distinct_flag_positions(refutation_run):
+    p = refutation_run
+    assert native_and_optional_parity("refutation-coverage", p["letter"], p["ledger"], p["record"], "--self-test").returncode == 0
+    assert native_and_optional_parity("refutation-write-scope", p["ledger"], p["record"], "--self-test").returncode == 0
+    for args in ((p["record"],), ("--require-snapshot", p["record"]), (p["record"], p["snapshot"], "--require-snapshot", "ignored")):
+        assert native_and_optional_parity("refutation-evidence", *args).returncode == 0
+    # Refutation has no generic late-self-test, strict or command-token filtering.
+    assert native_and_optional_parity("refutation-evidence", p["record"], "--self-test").returncode == 1
+    assert native_and_optional_parity("refutation-evidence", "--strict", p["record"]).returncode == 2
+    assert native_and_optional_parity("refutation-evidence", "refutation-evidence", p["record"]).returncode == 2
+    assert native_and_optional_parity("refutation-evidence", "--require-snapshot").returncode == 2
+
+
+def test_refutation_snapshot_missing_optional_required_and_run_shape(refutation_run):
+    p = refutation_run
+    p["snapshot"].unlink()
+    # Core/full letter shape requires the implicit snapshot even without a flag.
+    assert native_and_optional_parity("refutation-evidence", p["record"]).returncode == 1
+    p["letter"].unlink()
+    optional = native_and_optional_parity("refutation-evidence", p["record"])
+    assert optional.returncode == 0
+    assert b"VOID" in optional.stdout
+    assert native_and_optional_parity("refutation-evidence", p["record"], "--require-snapshot").returncode == 1
+    assert native_and_optional_parity("refutation-write-scope", p["ledger"], p["record"]).returncode == 0
+
+
+@pytest.mark.parametrize("snapshot_path", ["../outside.md", "/outside.md"])
+def test_refutation_implicit_snapshot_containment(refutation_run, snapshot_path):
+    p = refutation_run
+    edit_artifact_block(p["record"], "refutation", lambda obj: obj.update(snapshot_path=snapshot_path))
+    for command, args in (("refutation-evidence", (p["record"],)), ("refutation-write-scope", (p["ledger"], p["record"]))):
+        result = native_and_optional_parity(command, *args)
+        assert result.returncode == 1
+        assert b"refusing to read" in result.stdout
+
+
+def test_refutation_symlink_snapshot_escape_is_refused(refutation_run, tmp_path):
+    p = refutation_run
+    outside = tmp_path.parent / (tmp_path.name + "-snapshot.md")
+    outside.write_bytes(p["snapshot"].read_bytes())
+    p["snapshot"].unlink()
+    try:
+        p["snapshot"].symlink_to(outside)
+    except OSError:
+        pytest.skip("Host cannot create symlinks; literal containment checks still run")
+    for command, args in (("refutation-evidence", (p["record"],)), ("refutation-write-scope", (p["ledger"], p["record"]))):
+        result = native_and_optional_parity(command, *args)
+        assert result.returncode == 1
+        assert b"containment" in result.stdout
+
+
+def test_refutation_snapshot_hash_uses_unchanged_raw_bytes(refutation_run):
+    p = refutation_run
+    p["snapshot"].write_bytes(p["snapshot"].read_bytes().replace(b"\n", b"\r\n"))
+    for args in ((p["record"],), (p["record"], p["snapshot"], "--require-snapshot")):
+        result = native_and_optional_parity("refutation-evidence", *args)
+        assert result.returncode == 1
+        assert b"snapshot_sha256 mismatch" in result.stdout
+
+
+@pytest.mark.parametrize("hostile", ["missing_survived", "fabricated_quote", "severity_write", "fabricated_budget"])
+def test_refutation_hostile_records_are_blocking(refutation_run, hostile):
+    p = refutation_run
+    if hostile == "missing_survived":
+        p["record"].write_text(re.sub(
+            r"<!-- apodictic:refutation\s+.*?-->", "",
+            p["record"].read_text(encoding="utf-8"), flags=re.S,
+        ), encoding="utf-8")
+        assert native_and_optional_parity("refutation-coverage", p["letter"], p["ledger"], p["record"]).returncode == 1
+    elif hostile == "fabricated_quote":
+        edit_artifact_block(p["record"], "refutation", lambda obj: obj.update(counter_evidence_quotes=["This quote is absent from the canonical snapshot."]))
+        assert native_and_optional_parity("refutation-evidence", p["record"], p["snapshot"]).returncode == 1
+    elif hostile == "severity_write":
+        edit_artifact_block(p["record"], "refutation", lambda obj: obj.update(severity="Must-Fix"))
+        assert native_and_optional_parity("refutation-write-scope", p["ledger"], p["record"]).returncode == 1
+    else:
+        edit_artifact_block(p["record"], "refutation_budget", lambda obj: obj.update(eligible=16, processed=15, bound=True))
+        assert native_and_optional_parity("refutation-coverage", p["letter"], p["ledger"], p["record"]).returncode == 1
+        assert native_and_optional_parity("refutation-evidence", p["record"]).returncode == 1
+
+
+@pytest.mark.parametrize("command,role,label", [
+    ("refutation-coverage", "letter", b"editorial letter"),
+    ("refutation-coverage", "ledger", b"findings ledger"),
+    ("refutation-coverage", "record", b"refutation record"),
+    ("refutation-evidence", "record", b"refutation record"),
+    ("refutation-write-scope", "ledger", b"findings ledger"),
+    ("refutation-write-scope", "record", b"refutation record"),
+])
+def test_refutation_named_decode_error_is_byte_exact(refutation_run, command, role, label):
+    p = refutation_run
+    p[role].write_bytes(b"\xff\xfe")
+    args = {
+        "refutation-coverage": (p["letter"], p["ledger"], p["record"]),
+        "refutation-evidence": (p["record"],),
+        "refutation-write-scope": (p["ledger"], p["record"]),
+    }[command]
+    result = native_and_optional_parity(command, *args)
+    assert (result.returncode, result.stderr) == (2, b"")
+    assert result.stdout.startswith(b"Error: cannot read " + label + b" ")

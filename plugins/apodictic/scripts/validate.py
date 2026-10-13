@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native validator dispatcher, CB-1(a) groups 1–4 and 5a.
+"""Native validator dispatcher, CB-1(a) groups 1–4, 5a and 6.
 
 Early utilities, signals, configuration, timelines and structured checks run without Bash.
 Other commands and aggregates still belong to validate.sh until their groups land.
@@ -87,6 +87,25 @@ _RUN_INTEGRITY = {
     "specificity-floor": ("specificity_floor.py", 2, "<editorial_letter> <findings_ledger> [--strict] | --self-test"),
 }
 COMMANDS += tuple(_RUN_INTEGRITY)
+_PLANNING_REFUTATION = {
+    "retcon-plan": ("retcon_plan.py", 1, "<run_folder|files...> [--strict] | --self-test"),
+    "state-card-diff": ("state_card_diff.py", 1, "<current> | <prior> <current> [--strict] | --self-test"),
+    "revision-arc": ("revision_arc.py", 1, "<run_folder|files...> [--strict] | --self-test"),
+    "regression-diff": (
+        "regression_diff.py", 1,
+        "<prior_run_folder> <this_run_folder> [--strict] | <run_folder> | --self-test",
+    ),
+    "refutation-coverage": (
+        "refutation_check.py", 3, "<editorial_letter> <findings_ledger> <refutation_record> | --self-test",
+    ),
+    "refutation-evidence": (
+        "refutation_check.py", 1, "<refutation_record> [<manuscript_snapshot>] [--require-snapshot] | --self-test",
+    ),
+    "refutation-write-scope": (
+        "refutation_check.py", 2, "<findings_ledger> <refutation_record> | --self-test",
+    ),
+}
+COMMANDS += tuple(_PLANNING_REFUTATION)
 
 
 def _line(text, *, error=False):
@@ -206,6 +225,16 @@ def _run_integrity(command, args):
     return _run_helper(script, [command, *args])
 
 
+def _planning_refutation(command, args):
+    script, count, usage = _PLANNING_REFUTATION[command]
+    if args and args[0] == "--self-test":
+        return _run_helper(script, ["--self-test"])
+    if len(args) < count:
+        return _usage(command, usage)
+    # Planning flags and positional refutation dispatch remain distinct in helpers.
+    return _run_helper(script, [command, *args])
+
+
 def _self_test(command):
     """Keep the existing pure-utility self-test output and observable assertions."""
     failed = False
@@ -267,6 +296,8 @@ def main(argv=None):
         _line("Partial migration: remaining commands and aggregates require validate.sh.")
         return 2
     command, args = args[0], args[1:]
+    if command in _PLANNING_REFUTATION:
+        return _planning_refutation(command, args)
     if command in _RUN_INTEGRITY:
         return _run_integrity(command, args)
     if command in _STRUCTURED_INTEGRITY:

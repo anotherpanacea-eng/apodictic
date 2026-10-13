@@ -1,6 +1,6 @@
 # Native Python validator migration
 
-**Status:** Groups 1–4 and 5a built; the gate pair and groups 6–14 queued. The Bash dispatcher remains the
+**Status:** Groups 1–4, 5a and 6 built; the gate pair and groups 7–14 queued. The Bash dispatcher remains the
 full validator entrypoint during this migration.
 <!-- built-when: plugins/apodictic/scripts/validate.py -->
 
@@ -71,9 +71,24 @@ Specificity's named unreadable/non-UTF-8 errors remain blocking usage failures.
 
 `gate` and `gate-state` remain unported. Their shared helper still launches Bash
 for child checks and its shared self-test. The gate manifest has 18 unique child
-validators; 15 are native after 5a, with the three refutation routes queued in
-Group 6. A separate increment after Group 6 will address both the live and
+validators; 15 are native after 5a and Group 6 supplies the final three refutation
+routes. A separate increment after Group 6 will address both the live and
 self-test launchers together under a fresh scope and independent review.
+
+Group 6 adds `retcon-plan`, `state-card-diff`, `revision-arc`, `regression-diff`,
+`refutation-coverage`, `refutation-evidence` and `refutation-write-scope`.
+Planning/diff helpers retain late-self-test and strict/flag filtering, parsed
+artifact classification, newest-file discovery, prior/current ordering and
+optional ledger/marker sources. The three refutation routes retain distinct
+positional dispatch. Only evidence mode removes `--require-snapshot`; it keeps
+explicit versus implicit snapshot selection, contained read-only paths, raw-byte
+hashes, run-shape requirements and voided-demotion behavior in the existing helper.
+No generic wrapper flag parser or filesystem preflight is added.
+
+All 18 official gate child validators now have native routes. Both gate surfaces
+still require the separate launcher transition; child availability alone does
+not make them native. A separately scoped self-test output stabilizer for
+specificity/refutation is queued before that gate increment.
 
 Exit codes remain 0 for success, 1 for a validation failure, and 2 for usage or an
 invalid/inaccessible input path. For the three raw-byte utilities, a regular file
@@ -90,11 +105,13 @@ partial-migration message. Python does not fall back to Bash.
 
 `tests/test_validate_python_parity.py` compares exit codes and stdout bytes against
 the independent Bash dispatcher without output normalization. The existing
-specificity-floor self-test prints a randomly generated temporary directory in
-two read-error messages, so separate runs cannot produce identical stdout bytes.
-Its native and Bash runs independently require exit 0, both named fail-closed
-checks and `Self-test: PASS`; this is explicitly not exact-byte self-test parity.
-Real specificity inputs, including both named decode errors, compare exact bytes.
+specificity-floor self-test prints a random temporary directory in two read-error
+messages. The shared refutation self-test prints one such path in its named
+decode-error message, affecting all three refutation command surfaces. Repeated
+Bash runs alone differ. These four surfaces independently require native and Bash
+exit 0, named fail-closed checks and `Self-test: PASS`; their self-test stdout is
+explicitly excluded from exact-output equivalence. Real inputs, including named
+decode errors, compare exact bytes. No output normalization is used.
 Application-generated
 stderr bytes are compared exactly except for the accepted logical/physical cwd
 prefix limitation noted below. For shell/OS-generated read-redirection
@@ -124,9 +141,13 @@ When Bash is absent, differential-only cases are explicitly skipped. Native
 checks still run; this is not full native Windows acceptance. The final acceptance
 requires the whole Python `--check-all` suite green on `windows-latest` and exact
 differential results over every command self-test and all validator fixtures.
-Before claiming every self-test's exact-output equivalence, the specificity-floor
-helper's random-path output must be stabilized under a separate approved scope
-or explicitly carried forward as an unresolved limitation at final cutover.
+Before claiming every self-test's exact-output equivalence, the specificity and
+refutation helpers' random-path output must be stabilized under a separately
+approved scope. Until then these remain explicit unresolved limitations. The
+planned small stabilizer captures expected negative CLI diagnostics inside their
+self-tests while asserting content/status, preserves real command output and
+restores all four exact self-test comparisons. It requires its own grant/review
+before the separate gate launcher transition.
 
 Group 3 adds eight self-test routes, all 15 applicable shipped timeline fixtures,
 canonical config/timeline inputs and temporary strict/default/optional-file and
@@ -148,6 +169,14 @@ precedence and parse refusal, report flag ordering, malformed sidecars, exact
 path arities and named UTF-8 read errors. Both deferred gate routes have explicit
 partial-migration refusal checks. All earlier native tests and 73 fixtures remain.
 
+Group 6 adds seven helper self-test surfaces, canonical plans/cards/arc, single
+and paired regression rounds, canonical refutation inputs and temporary hostile
+records. Controls cover planning discovery, parsed carriers, ledger precedence,
+advisory/strict behavior, positional refutation flags, optional/required snapshots,
+containment and named decode errors. Of 41 migrated command self-test surfaces,
+37 compare exact stdout bytes and four carry the disclosed inherited exception.
+All 73 earlier validator fixture cases remain intact.
+
 ## Continuation groups
 
 These provisional groups give each subsequent increment its own PR. Refresh the
@@ -162,8 +191,8 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | 3 | quality-risk-triggers, cost-floor, audit-tier-criterion, pass-header, argument-recon-prerequisite, timeline-diff, timeline-arithmetic, timeline-anchor-conflict | Built |
 | 4 | structured-findings, softness-check, deficit-lock, artifacts-schema, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary | Built |
 | 5a | escalation-check, dispatch-record, disposition-check, synthesis-coverage, specificity-floor | Built |
-| 5b | gate, gate-state; coherent live/shared-self-test nested launcher transition | Deferred until Group 6 supplies all 18 gate children |
-| 6 | retcon-plan, state-card-diff, revision-arc, regression-diff, refutation-coverage, refutation-evidence, refutation-write-scope | Queued |
+| 5b | gate, gate-state; coherent live/shared-self-test nested launcher transition | Deferred pending separate self-test stabilizer and launcher scope; all 18 children now available |
+| 6 | retcon-plan, state-card-diff, revision-arc, regression-diff, refutation-coverage, refutation-evidence, refutation-write-scope | Built |
 | 7 | legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, argument-spine, scene-ethics | Queued |
 | 8 | intake-interview, author-fingerprint, content-advisory, coaching-history, style-explanation, persona-divergence | Queued |
 | 9 | lifecycle-node, reader-instrument, manuscript-viz, annotated-manuscript, crosslink, reanchor, roundtrip-disposition, reader-contract-outline, results-guide, position-pair-register | Queued |
