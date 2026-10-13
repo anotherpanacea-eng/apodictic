@@ -23,8 +23,12 @@ unterminated final line. These three utilities require only Python's standard
 library. The other four call the existing shipped Python parser through the active
 interpreter, preserving its output and the Bash wrapper's argument slicing.
 
-Exit codes remain 0 for success, 1 for a validation failure, and 2 for usage or a
-missing input. Migrated-command usage errors deliberately retain the sibling
+Exit codes remain 0 for success, 1 for a validation failure, and 2 for usage or an
+invalid/inaccessible input path. For the three raw-byte utilities, a regular file
+that is found but cannot be read returns 1 with empty stdout and a named
+application error on stderr. The parser-backed commands retain their helper's
+failure behavior.
+Migrated-command usage errors deliberately retain the sibling
 `validate.sh` name, including its invocation path, for compatibility. General
 Python help identifies the partial migration. Unported commands, including
 `--self-test-all`, `--check-canonical` and `--check-all`, return 2 with an explicit
@@ -32,12 +36,18 @@ partial-migration message. Python does not fall back to Bash.
 
 ## Differential acceptance
 
-`tests/test_validate_python_parity.py` compares exit codes, stdout bytes and stderr
-bytes against the independent Bash dispatcher without output normalization. It
+`tests/test_validate_python_parity.py` compares exit codes and stdout bytes against
+the independent Bash dispatcher without output normalization. Application-generated
+stderr bytes are also compared exactly. For shell/OS-generated read-redirection
+errors, the native CLI retains the exit/stdout contract and emits a named file-read
+error; it does not reproduce shell source paths, line numbers or platform wording. It
 exercises every migrated self-test, all applicable shipped validator fixtures,
 binary/empty/CRLF/unterminated files, literal project/run labels, Unicode/space/
 leading-dash paths, missing arguments and paths, wrong path types, hash drift and
-ignored extra arguments. Independent native assertions cover the raw-byte utility
+ignored extra arguments, invalid path components, inaccessible parents and
+unreadable regular files. POSIX permission regressions require an unprivileged
+account and are explicitly skipped when the host can bypass mode restrictions.
+Independent native assertions cover the raw-byte utility
 contract with an empty `PATH`, including files larger than a read chunk. Native
 self-tests, fixture behavior and invalid-input checks also run without Bash.
 

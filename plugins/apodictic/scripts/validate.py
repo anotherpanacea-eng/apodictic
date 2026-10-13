@@ -35,7 +35,7 @@ def _line(text, *, error=False):
 
 def _usage(command, arguments):
     # Keep migrated-command diagnostics compatible with the sibling Bash CLI.
-    legacy_name = str(Path(sys.argv[0]).with_suffix(".sh"))
+    legacy_name = os.path.splitext(sys.argv[0])[0] + ".sh"
     _line(f"Usage: {legacy_name} {command} {arguments}")
     return 2
 
@@ -55,7 +55,7 @@ def _helper(command, args):
         if len(args) < count:
             return _usage(command, arguments)
         is_directory = command == "artifact-names"
-        exists = Path(args[0]).is_dir() if is_directory else Path(args[0]).is_file()
+        exists = os.path.isdir(args[0]) if is_directory else os.path.isfile(args[0])
         if not exists:
             kind = "Directory" if is_directory else "File"
             _line(f"Error: {kind} not found: {args[0]}", error=True)
@@ -139,7 +139,7 @@ def main(argv=None):
         if command == "contract-check":
             arguments += " <expected_hash>"
         return _usage(command, arguments)
-    if not Path(args[0]).is_file():
+    if not os.path.isfile(args[0]):
         _line(f"Error: File not found: {args[0]}", error=True)
         return 2
     try:
@@ -151,7 +151,7 @@ def main(argv=None):
         actual = _hash(args[0])
     except OSError as exc:
         _line(f"Error: Cannot read file: {args[0]}: {exc.strerror}", error=True)
-        return 2
+        return 1
     if command == "contract-hash":
         _line(actual)
         return 0

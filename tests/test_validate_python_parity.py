@@ -129,6 +129,95 @@ def test_missing_arguments_and_wrong_path_types(tmp_path, command):
             parity(command, *args, cwd=tmp_path)
 
 
+def input_args(command, path):
+    if command == "artifact-names":
+        return command, path, "Project", "r1"
+    if command == "contract-check":
+        return command, path, "expected"
+    return command, path
+
+
+@pytest.mark.parametrize("command", UTILITIES)
+def test_invalid_path_components_are_named_usage_errors(tmp_path, command):
+    (tmp_path / "file.md").write_bytes(b"body\n")
+    for path in ("x" * 256, "file.md/", "file.md/."):
+        args = input_args(command, path)
+        native = run_python(*args, cwd=tmp_path)
+        kind = "Directory" if command == "artifact-names" else "File"
+        assert (native.returncode, native.stdout, native.stderr) == (
+            2, b"", f"Error: {kind} not found: {path}\n".encode(),
+        )
+        if BASH is not None:
+            parity(*args, cwd=tmp_path)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX directory search permission regression")
+@pytest.mark.parametrize("command", UTILITIES)
+def test_inaccessible_parent_is_a_named_usage_error(tmp_path, command):
+    parent = tmp_path / "denied"
+    parent.mkdir()
+    path = parent / "file.md"
+    path.write_bytes(b"body\n")
+    parent.chmod(0)
+    try:
+        if os.access(parent, os.X_OK):
+            pytest.skip("host account can search mode-000 directories")
+        args = input_args(command, "denied/file.md")
+        native = run_python(*args, cwd=tmp_path)
+        kind = "Directory" if command == "artifact-names" else "File"
+        assert (native.returncode, native.stdout, native.stderr) == (
+            2, b"", f"Error: {kind} not found: denied/file.md\n".encode(),
+        )
+        if BASH is not None:
+            parity(*args, cwd=tmp_path)
+    finally:
+        parent.chmod(0o700)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX regular-file read permission regression")
+@pytest.mark.parametrize("command", ["contract-hash", "contract-check", "state-lines"])
+def test_unreadable_regular_file_is_a_read_failure(tmp_path, command):
+    path = tmp_path / "blocked.md"
+    path.write_bytes(b"body\n")
+    path.chmod(0)
+    try:
+        if os.access(path, os.R_OK):
+            pytest.skip("host account can read mode-000 files")
+        args = input_args(command, "blocked.md")
+        native = run_python(*args, cwd=tmp_path)
+        assert (native.returncode, native.stdout) == (1, b"")
+        assert native.stderr.startswith(b"Error: Cannot read file: blocked.md: ")
+        assert b"Traceback" not in native.stderr
+        if BASH is not None:
+            legacy = subprocess.run(
+                [BASH, str(BASH_CLI), *args], cwd=tmp_path,
+                capture_output=True, timeout=60,
+            )
+            # Shell read-redirection stderr includes platform paths/line numbers.
+            assert (legacy.returncode, legacy.stdout) == (native.returncode, native.stdout)
+            assert legacy.stderr
+    finally:
+        path.chmod(0o600)
+
+
+@pytest.mark.parametrize("command", UTILITIES)
+def test_usage_preserves_literal_relative_invocation(command):
+    python_path = "./plugins/apodictic/scripts/validate.py"
+    native = subprocess.run(
+        [sys.executable, python_path, command], cwd=ROOT, capture_output=True, timeout=60,
+    )
+    assert native.returncode == 2
+    assert native.stdout.startswith(b"Usage: ./plugins/apodictic/scripts/validate.sh ")
+    if BASH is not None:
+        legacy = subprocess.run(
+            [BASH, python_path[:-3] + ".sh", command], cwd=ROOT,
+            capture_output=True, timeout=60,
+        )
+        assert (native.returncode, native.stdout, native.stderr) == (
+            legacy.returncode, legacy.stdout, legacy.stderr,
+        )
+
+
 def test_artifact_naming_literal_project_and_runlabel(tmp_path):
     (tmp_path / "Prój_Pass1_Reader_Experience_r1.md").write_bytes(b"")
     result = parity("artifact-names", tmp_path, "Prój", "r1", "ignored")
