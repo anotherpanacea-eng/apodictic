@@ -7,6 +7,7 @@ also run on hosts with no Bash or external hash/count tools.
 import hashlib
 from datetime import datetime, timezone
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -59,6 +60,7 @@ ARGUMENT_EVALUATORS = (
     "argument-groundtruth-check", "fiction-groundtruth-check", "agreement-alpha",
     "argument-crosswalk-check", "argument-agd", "argument-aif-export", "argument-aif-check",
 )
+ANNOTATION_EXPORTS = ("obsidian-export", "html-export", "docx-export", "pdf-export")
 REFERENCES = SCRIPTS.parent / "skills/core-editor/references"
 BASH = shutil.which("bash")
 
@@ -283,7 +285,7 @@ def test_letter_wrappers_ignore_extra_arguments(tmp_path, command):
     parity(command, path, "ignored", "also ignored")
 
 
-@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "html-export", "bogus"])
+@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "registry-check", "bogus"])
 def test_unported_entrypoints_do_not_claim_success(command):
     result = run_python(command)
     assert result.returncode == 2
@@ -2179,3 +2181,163 @@ def test_argument_aif_public_positive_generations_have_same_artifact(tmp_path, f
     assert out.stat().st_mode & 0o777 == mode
     assert sorted(p.name for p in tmp_path.iterdir()) == ["argument-state.md", "export.json"]
     assert parity("argument-aif-check", out, "--source", source).returncode == 0
+
+
+@pytest.mark.parametrize("command", ANNOTATION_EXPORTS)
+def test_annotation_export_wrapper_and_helper_boundaries(command):
+    assert parity(command).returncode == 2
+    assert parity(command, "missing-folder", "--self-test").returncode == 0
+    if command != "pdf-export":
+        assert parity(command, "--self-test", "ignored").returncode == 0
+    empty_path = {**os.environ, "PATH": "", "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
+    late = run_python(command, "missing-folder", "--self-test", env=empty_path)
+    assert (late.returncode, late.stderr) == (0, b"")
+    assert late.stdout.endswith(b"Self-test: PASS\n")
+
+
+@pytest.mark.parametrize("command,args,expected", [
+    ("obsidian-export", ("x", "--internal-links"), b"pdf-export: usage: pdf-export <run_folder> --internal-links (once)\n"),
+    ("html-export", ("--self-test", "--internal-links"), b"pdf-export: usage: pdf-export <run_folder> --internal-links (once)\n"),
+    ("docx-export", ("x", "--internal-links=true"), b"pdf-export: usage: pdf-export <run_folder> --internal-links (once)\n"),
+    ("pdf-export", ("x", "--internal-links", "extra"), b"pdf-export: usage: pdf-export <run_folder> --internal-links (once)\n"),
+    ("pdf-export", ("x", "--internal-links", "--internal-links"), b"pdf-export: usage: pdf-export <run_folder> --internal-links (once)\n"),
+    ("pdf-export", ("--self-test", "--internal-links"), b"pdf-export: usage: misplaced navigation option\n"),
+    ("pdf-export", ("--", "--internal-links"), b"pdf-export: usage: misplaced navigation option\n"),
+    ("pdf-export", ("--internal-links", ""), b"pdf-export: N run folder unavailable\n"),
+])
+def test_annotation_export_navigation_scanner_precedes_helper(command, args, expected):
+    result = parity(command, *args)
+    assert (result.returncode, result.stdout, result.stderr) == (2, expected, b"")
+
+
+def _navigation_success(stderr):
+    match = re.fullmatch(
+        rb"([.s]+\n-{70}\nRan (\d+) tests in )([0-9]+(?:\.[0-9]+)?)(s\n\nOK(?: \(skipped=\d+\))?\n)",
+        stderr,
+    )
+    assert match is not None, stderr
+    count = int(match.group(2))
+    elapsed = float(match.group(3))
+    assert count > 0 and math.isfinite(elapsed) and elapsed > 0
+    assert len(match.group(1).split(b"\n", 1)[0]) == count
+    return count, match.group(1), match.group(4)
+
+
+def test_pdf_first_selftest_runs_actual_repository_navigation_suite():
+    env = {**os.environ, "TMPDIR": os.environ.get("TMPDIR", "/private/tmp"),
+           "PYTHONWARNINGS": "ignore", "PYTHONDONTWRITEBYTECODE": "1"}
+    shared = subprocess.run([sys.executable, str(SCRIPTS / "annotation_export.py"), "--self-test"],
+                            env=env, capture_output=True, timeout=60)
+    bash = subprocess.run([BASH, str(BASH_CLI), "pdf-export", "--self-test"],
+                          env=env, capture_output=True, timeout=60) if BASH else None
+    native = run_python("pdf-export", "--self-test", "ignored", env=env)
+    assert (shared.returncode, shared.stderr) == (0, b"")
+    assert (native.returncode, native.stdout) == (0, shared.stdout)
+    count, before, after = _navigation_success(native.stderr)
+    assert after.startswith(b"s\n\nOK")
+    if bash is not None:
+        assert (bash.returncode, bash.stdout) == (native.returncode, native.stdout)
+        bash_count, bash_before, bash_after = _navigation_success(bash.stderr)
+        assert (bash_count, bash_before, bash_after) == (count, before, after)
+    pathless = run_python("pdf-export", "--self-test", env={**env, "PATH": ""})
+    assert (pathless.returncode, pathless.stdout) == (0, shared.stdout)
+    pathless_count, _, pathless_result = _navigation_success(pathless.stderr)
+    assert pathless_count == count and pathless_result.startswith(b"s\n\nOK")
+    skipped = re.search(rb"skipped=(\d+)", pathless_result)
+    assert skipped is None or int(skipped.group(1)) < pathless_count
+
+
+def test_pdf_repository_continuation_marker_and_failure(tmp_path):
+    scripts = tmp_path / "plugins/apodictic/scripts"
+    scripts.mkdir(parents=True)
+    shutil.copyfile(PYTHON_CLI, scripts / "validate.py")
+    helper = scripts / "annotation_export.py"
+    helper.write_text("import os, sys\nprint('shared:' + repr(sys.argv[1:]))\nsys.exit(int(os.environ.get('G12_HELPER_RC', '0')))\n", encoding="utf-8")
+    def invoke(env=None):
+        return subprocess.run([sys.executable, str(scripts / "validate.py"), "pdf-export", "--self-test"],
+                              capture_output=True, env={**os.environ, **(env or {})}, timeout=30)
+    alone = invoke()
+    assert (alone.returncode, alone.stdout, alone.stderr) == (0, b"shared:['--self-test']\n", b"")
+    (tmp_path / "AGENTS.md").write_text("repository marker\n", encoding="utf-8")
+    missing = invoke()
+    assert (missing.returncode, missing.stdout, missing.stderr) == (
+        2, b"shared:['--self-test']\npdf-export: N repository navigation acceptance suite unavailable\n", b"")
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    (tests / "test_pdf_navigation.py").write_text("print('navigation suite ran')\nraise SystemExit(7)\n", encoding="utf-8")
+    failing = invoke()
+    assert (failing.returncode, failing.stdout, failing.stderr) == (
+        7, b"shared:['--self-test']\nnavigation suite ran\n", b"")
+    blocked = invoke({"G12_HELPER_RC": "5"})
+    assert (blocked.returncode, blocked.stdout, blocked.stderr) == (5, b"shared:['--self-test']\n", b"")
+    helper.unlink()
+    unavailable = subprocess.run([sys.executable, str(scripts / "validate.py"), "pdf-export",
+                                  "run", "--internal-links"], capture_output=True, timeout=30)
+    assert (unavailable.returncode, unavailable.stdout, unavailable.stderr) == (
+        2, b"pdf-export: N navigation validation unavailable (Python/helper missing)\n", b"")
+
+
+@pytest.mark.parametrize("verb", ("obsidian", "html", "docx", "pdf"))
+def test_annotation_exports_validate_authentic_goldens_without_writes(tmp_path, verb):
+    source = REFERENCES / "example-annotated-manuscript"
+    for path in source.iterdir():
+        if path.is_file() and ("_Manuscript_Snapshot_" in path.name or "_Annotation_Manifest_" in path.name
+                               or (verb == "obsidian" and "_Crosslinked_Letter_" in path.name)):
+            shutil.copy2(path, tmp_path / path.name)
+    command = verb + "-export"
+    before_producer = sorted(path.name for path in tmp_path.iterdir())
+    attempted_alias = run_python(command, verb, tmp_path, cwd=tmp_path)
+    assert attempted_alias.returncode == 2
+    assert sorted(path.name for path in tmp_path.iterdir()) == before_producer
+    missing = run_python(command, tmp_path)
+    assert missing.returncode == 2 and b"run `annotation_export.py" in missing.stdout
+    producer = subprocess.run([sys.executable, str(SCRIPTS / "annotation_export.py"), verb, str(tmp_path)],
+                              capture_output=True, timeout=60)
+    assert (producer.returncode, producer.stderr) == (0, b"")
+    exported = sorted(path for path in (tmp_path / verb).iterdir() if path.is_file())
+    assert len(exported) == (2 if verb == "obsidian" else 1)
+    for path in exported:
+        golden = (source if verb in ("obsidian", "html") else ROOT / "evals/fixtures/annotation-export") / verb / path.name
+        assert golden.is_file() and path.read_bytes() == golden.read_bytes()
+    def tree():
+        return {str(path.relative_to(tmp_path)): (hashlib.sha256(path.read_bytes()).digest(),
+                                                   path.stat().st_mode & 0o777)
+                for path in tmp_path.rglob("*") if path.is_file()}
+    before = tree()
+    if BASH:
+        legacy = subprocess.run([BASH, str(BASH_CLI), command, str(tmp_path)], capture_output=True, timeout=60)
+        assert tree() == before
+    native = run_python(command, tmp_path, env={**os.environ, "PATH": ""})
+    assert native.returncode == 0 and native.stderr == b"" and b"PASS" in native.stdout
+    assert tree() == before
+    if BASH:
+        assert (native.returncode, native.stdout, native.stderr) == (
+            legacy.returncode, legacy.stdout, legacy.stderr)
+        assert parity(command, tmp_path, "--", "ignored").returncode == 0
+        assert parity(command, tmp_path, "--strict").returncode == 0
+        repeated = parity(command, command, tmp_path, cwd=tmp_path)
+        assert repeated.returncode == (0 if verb == "obsidian" else 2)
+        assert tree() == before
+
+
+def test_pdf_linked_mode_authenticates_and_checks_existing_artifact(tmp_path):
+    from test_pdf_navigation import normal_run
+
+    normal_run(tmp_path)
+    absent = run_python("pdf-export", tmp_path, "--internal-links", env={**os.environ, "PATH": ""})
+    assert absent.returncode == 2 and b"linked PDF selection is missing" in absent.stdout
+    produced = subprocess.run([sys.executable, str(SCRIPTS / "annotation_export.py"), "pdf",
+                               str(tmp_path), "--internal-links"], capture_output=True, timeout=60)
+    assert (produced.returncode, produced.stderr) == (0, b"")
+    artifact = next((tmp_path / "pdf-linked").glob("*.pdf"))
+    before = artifact.read_bytes()
+    for args in ((tmp_path, "--internal-links"), ("--internal-links", tmp_path)):
+        result = parity("pdf-export", *args)
+        assert result.returncode == 0 and b"reader unqualified" in result.stdout
+        assert artifact.read_bytes() == before
+        pathless = run_python("pdf-export", *args, env={**os.environ, "PATH": ""})
+        assert (pathless.returncode, pathless.stdout, pathless.stderr) == (
+            result.returncode, result.stdout, result.stderr)
+    artifact.write_bytes(before[:-1] + b"X")
+    tampered = parity("pdf-export", tmp_path, "--internal-links")
+    assert tampered.returncode == 1 and b"P1 artifact integrity" in tampered.stdout
