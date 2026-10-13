@@ -70,7 +70,7 @@
     {
       "id": "decision-layer-check",
       "desktop_disposition": "not-yet-supported",
-      "development_support": "none",
+      "development_support": "decision-layer-check-v1",
       "omitted_capability": "decision-layer-check validation is unavailable in desktop: no signed, brokered leaf."
     },
     {

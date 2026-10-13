@@ -128,7 +128,7 @@ class RunnerTests(unittest.TestCase):
             "  signal.signal(signal.SIGTERM,signal.SIG_IGN)\n"
             "  time.sleep(30)\n"
             " return [],[], 'synthetic OK', 'synthetic FAILED'\n"
-            "synthesis_sections = severity_floor = tone_check\n" % str(self.pidfile))
+            "synthesis_sections = severity_floor = decision_layer_check = tone_check\n" % str(self.pidfile))
 
     def pid(self):
         until = time.monotonic() + 3
@@ -286,13 +286,67 @@ class RunnerTests(unittest.TestCase):
             self.error(c.next(), "input_limit")
         self.assertEqual(c.end(), (0, [], b""))
 
+    def test_decision_layer_exact_legacy_oracle_parity(self):
+        fixtures = list((ROOT / "tests/fixtures/validators").glob("lc.*.decision-layer-check.*.md"))
+        self.assertEqual(len(fixtures), 12)
+        valid = (ROOT / "tests/fixtures/validators/lc.pass.decision-layer-check.pos.md").read_text()
+        sections = "## Protected Elements\n- Keep one\n- Keep two\n- Keep three\n## Author Decisions\n- Keep one\n- Cut two\n- Defer three\n"
+        absent_questions = sections + "## Appendix A\nExample.\n"
+        marker = "Claim Ladder"
+        thin = "## What Needs Work\nMust-Fix: invented pacing gap.\n"
+        texts = [p.read_bytes().decode() for p in fixtures]
+        texts += ["", valid, valid.replace("\n", "\r\n"), valid.replace("\n", "\r"),
+                  "雪 😀\r\n" + valid, sections, absent_questions,
+                  absent_questions + marker, absent_questions + "```\n" + marker + "\n```",
+                  sections + marker, valid.replace("1. What", "- What"),
+                  valid.replace("7. What is the book's controlling idea?\n", ""),
+                  valid.replace("## Appendix C — Framework Notes\n", "## Appendix Sea\n"),
+                  valid.replace("## Author Decisions\n", "## Editorial-Dispute Territory\n"),
+                  valid.replace("## Protected Elements\n", "## Coalition-Partner Ground-Truth\n"),
+                  valid.replace("## Protected Elements\n", "## Notes on Protected Elements\n"),
+                  valid.replace("## Protected Elements\n", "## Protected Elements\n\n**Keep**\n\n**Cut**\n\n**Defer**\n"),
+                  valid.replace("## What Needs Work\n", thin),
+                  valid.replace("Must-Fix: pacing collapse", "Prose mentions Must-Fix: pacing collapse"),
+                  valid.replace("Must-Fix: pacing collapse", "Must-Fix: gap\n\n## Next Section\nChapter 7, line 142. Chapter 9, line 220.\n\nMust-Fix: pacing collapse"),
+                  valid + "\n## Appendix A\nMust-Fix: no references\n",
+                  valid + "\n```\n<!-- override:decision-layer-control-questions -->\n```\n",
+                  valid.replace("7. What is the book's controlling idea?\n", "") + "\n<!-- override:decision-layer-control-questions -->\n",
+                  valid.replace("7. What is the book's controlling idea?\n", "") + "\n## Appendix A\n<!-- override:decision-layer-control-questions -->\n",
+                  "\n" * 8191, "x" * 262144]
+        c = self.client()
+        for i, text in enumerate(texts):
+            with self.subTest(case=i):
+                source = self.root / "invented-decision.txt"
+                source.write_bytes(text.encode())
+                oracle = subprocess.run(["bash", str(ROOT / "scripts/validate.sh"),
+                                         "decision-layer-check", str(source)], capture_output=True)
+                c.send(validation(str(i), text, "decision-layer-check"))
+                value = c.next()
+                self.assertEqual((value["id"], value["validator"], value["available"]),
+                                 (str(i), "decision-layer-check", True))
+                got = value["result"]
+                self.assertEqual((got["exit_code"], got["stdout"].encode(), got["stderr"].encode()),
+                                 (oracle.returncode, oracle.stdout, oracle.stderr))
+                if text == absent_questions:
+                    self.assertIn("Check 3", got["stdout"])
+                    self.assertIn("Check 4", got["stdout"])
+                elif text in (absent_questions + marker, absent_questions + "```\n" + marker + "\n```"):
+                    self.assertEqual(got["exit_code"], 0)
+                    self.assertIn("Checks 3-4 skipped", got["stdout"])
+        for i, text in enumerate(("x" * 262145, "\n" * 8192, "\r" * 8192)):
+            c.send(validation("over" + str(i), text, "decision-layer-check"))
+            self.error(c.next(), "input_limit")
+        self.assertEqual(c.end(), (0, [], b""))
+
     def test_mixed_leaves_foreign_cwd_and_closed_worker_routes(self):
         clean = (ROOT / "tests/fixtures/validators/lc.pass.synthesis-sections.all-headings.md").read_text()
         c = self.client(cwd=self.root, env=dict(os.environ, PATH="", PYTHONPATH=str(self.root)))
         for i, (leaf, text, rc) in enumerate((("tone-check", "", 0),
                 ("synthesis-sections", clean, 0), ("tone-check", "masterpiece", 1),
                 ("synthesis-sections", "", 1), ("severity-floor", "", 0),
-                ("severity-floor", "Weak at High", 1))):
+                ("severity-floor", "Weak at High", 1),
+                ("decision-layer-check", "", 1),
+                ("decision-layer-check", "## Control Questions\n1. One\n", 1))):
             c.send(validation(str(i), text, leaf)); got = c.next()
             self.assertEqual((got["id"], got["validator"], got["available"], got["result"]["exit_code"]),
                              (str(i), leaf, True, rc))
@@ -300,6 +354,7 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(c.end(), (0, [], b""))
         for argv in (("--worker-other",), ("--worker-synthesis-sections", "extra"),
                      ("--worker-severity-floor", "extra"),
+                     ("--worker-decision-layer-check", "extra"),
                      ("--worker", "--worker-synthesis-sections")):
             result = subprocess.run([PYTHON, "-I", "-S", str(SCRIPT), *argv], capture_output=True)
             self.assertEqual((result.returncode, result.stdout), (2, b""))
@@ -607,6 +662,47 @@ class RunnerTests(unittest.TestCase):
                     c.send(cancel("sev", "late")); self.assertFalse(c.next()["cancelled"])
                 self.assertEqual(c.end(), (0 if action in ("cancel", "timeout", "eof") else 2, [], b""))
 
+    @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
+    def test_decision_layer_lifecycle_shared_slot_and_recovery(self):
+        for action in ("cancel", "eof", "partial", "fatal", "SIGTERM", "timeout"):
+            with self.subTest(action=action):
+                self.sleeping(); self.pidfile.unlink(missing_ok=True)
+                c = self.client(script=self.script)
+                started = time.monotonic()
+                c.send(validation("decision", "sleep", "decision-layer-check")); pid = self.pid()
+                for id, leaf, text, code in (("busy-tone", "tone-check", "", "busy"),
+                        ("busy-synth", "synthesis-sections", "", "busy"),
+                        ("busy-severity", "severity-floor", "", "busy"),
+                        ("busy-decision", "decision-layer-check", "", "busy"),
+                        ("unknown", "other", "x" * 262145, "validator_unavailable"),
+                        ("limit", "decision-layer-check", "x" * 262145, "input_limit")):
+                    c.send(validation(id, text, leaf)); got = c.next(); self.error(got, code)
+                    self.assertEqual((got["id"], got["validator"]), (id, leaf))
+                c.send(cancel("unknown", "unknown-cancel"))
+                self.assertFalse(c.next()["cancelled"])
+                if action == "cancel": c.send(cancel("decision"))
+                elif action == "eof": c.child.stdin.close()
+                elif action == "partial": c.raw(b"{}"); c.child.stdin.close()
+                elif action == "fatal": c.raw(b"{}\n")
+                elif action == "SIGTERM": c.child.send_signal(signal.SIGTERM)
+                got = c.next()
+                self.error(got, "cancelled" if action == "cancel" else "timeout" if action == "timeout" else "session_ended")
+                self.assertEqual((got["id"], got["validator"]), ("decision", "decision-layer-check"))
+                self.dead(pid)
+                if action == "timeout":
+                    self.assertGreaterEqual(time.monotonic() - started, 5)
+                    self.assertLess(time.monotonic() - started, 7)
+                if action == "cancel": self.assertTrue(c.next()["cancelled"])
+                elif action in ("partial", "fatal"):
+                    self.assertEqual(c.next()["error"]["code"],
+                                     "invalid_frame" if action == "partial" else "invalid_request")
+                if action in ("cancel", "timeout"):
+                    c.send(validation("healthy", "", "severity-floor")); got = c.next()
+                    self.assertEqual((got["id"], got["validator"], got["available"]),
+                                     ("healthy", "severity-floor", True))
+                    c.send(cancel("decision", "late")); self.assertFalse(c.next()["cancelled"])
+                self.assertEqual(c.end(), (0 if action in ("cancel", "timeout", "eof") else 2, [], b""))
+
     def test_fixed_idle_and_session_deadlines_with_test_only_clock(self):
         # A disposable test launcher accelerates monotonic time, not protocol limits.
         # The production script and request schema have no clock/limit override.
@@ -733,6 +829,44 @@ class RunnerTests(unittest.TestCase):
         c.send(validation("sev2", "", "severity-floor")); self.error(c.next(), "runner_dependency_unavailable")
         self.assertEqual(c.end(), (0, [], b""))
 
+    def test_decision_layer_dependency_child_output_and_death_are_unavailable(self):
+        self.pidfile = self.root / "dead-worker.pid"
+        bodies = ("raise ImportError('synthetic')\n",
+                  "def decision_layer_check(text): raise RuntimeError(text)\n",
+                  "import os\ndef decision_layer_check(text):\n"
+                  " open(%r,'w').write(str(os.getpid()))\n os._exit(3)\n" % str(self.pidfile),
+                  "def decision_layer_check(text): return []\n",
+                  "def decision_layer_check(text): print(text); return [],[],'OK','FAIL'\n",
+                  "import sys\ndef decision_layer_check(text): sys.stderr.write(text); return [],[],'OK','FAIL'\n",
+                  "import json,os\ndef decision_layer_check(text):\n"
+                  " os.write(1,(json.dumps({'exit_code':0,'stdout':'OK','stderr':'','id':'forged'})+'\\n').encode())\n"
+                  " return [],[],'OK','FAIL'\n")
+        for body in bodies:
+            with self.subTest(body=body):
+                (self.scripts / "letter_checks.py").write_text(body + "\ndef tone_check(text): return [],[],'tone OK','FAIL'\n")
+                c = self.client(script=self.script)
+                c.send(validation("decision", "SYNTHETIC_SENTINEL", "decision-layer-check")); got = c.next()
+                self.error(got, "runner_dependency_unavailable" if "ImportError" in body else "worker_failed")
+                self.assertEqual((got["id"], got["validator"]), ("decision", "decision-layer-check"))
+                self.assertNotIn("SYNTHETIC_SENTINEL", json.dumps(got))
+                if "os._exit" in body:
+                    if os.name == "posix": self.dead(self.pid())
+                    self.pidfile.unlink()
+                if "ImportError" not in body:
+                    c.send(validation("healthy")); self.assertTrue(c.next()["available"])
+                self.assertEqual(c.end(), (0, [], b""))
+        (self.scripts / "letter_checks.py").unlink()
+        c = self.client(script=self.script)
+        c.send(validation("decision", "", "decision-layer-check"))
+        self.error(c.next(), "runner_dependency_unavailable")
+        self.assertEqual(c.end(), (0, [], b""))
+        shutil.copyfile(SCRIPT.parent / "letter_checks.py", self.scripts / "letter_checks.py")
+        (self.scripts / "override_marker.py").unlink()
+        c = self.client(script=self.script)
+        c.send(validation("decision2", "", "decision-layer-check"))
+        self.error(c.next(), "runner_dependency_unavailable")
+        self.assertEqual(c.end(), (0, [], b""))
+
     def test_environment_scrubbing_and_socket_guard(self):
         (self.scripts / "letter_checks.py").write_text(
             "import os,socket,subprocess,sys\ndef tone_check(text):\n"
@@ -744,21 +878,23 @@ class RunnerTests(unittest.TestCase):
             " try: subprocess.Popen([sys.executable,'-c','pass'])\n"
             " except PermissionError: return [],[],'socket and spawn denied','FAIL'\n"
             " raise AssertionError('spawn allowed')\n"
-            "synthesis_sections = tone_check\n")
+            "synthesis_sections = decision_layer_check = tone_check\n")
         c = self.client(script=self.script, env=dict(os.environ, OPENAI_API_KEY="synthetic", HTTPS_PROXY="synthetic", PYTHONPATH="synthetic"))
         c.send(validation()); self.assertEqual(c.next()["result"]["stdout"], "socket and spawn denied\n")
         c.send(validation("synth", "", "synthesis-sections"))
+        self.assertEqual(c.next()["result"]["stdout"], "socket and spawn denied\n")
+        c.send(validation("decision", "", "decision-layer-check"))
         self.assertEqual(c.next()["result"]["stdout"], "socket and spawn denied\n")
         self.assertEqual(c.end(), (0, [], b""))
 
     def test_output_limit_exact_and_over(self):
         # Derive real envelope boundaries, including escaped LF and the final delimiter.
-        for leaf, over in ((leaf, over) for leaf in ("tone-check", "synthesis-sections") for over in (False, True)):
+        for leaf, over in ((leaf, over) for leaf in ("tone-check", "synthesis-sections", "decision-layer-check") for over in (False, True)):
             request = validation(validator=leaf)
             prototype = {"protocol":1,"type":"result","id":"r1","validator":leaf,"available":True,
                          "result":{"exit_code":0,"stdout":"\n","stderr":""},"error":None}
             size = 32768 - len(frame(prototype)) + int(over)
-            (self.scripts / "letter_checks.py").write_text("def tone_check(text): return [],[], 'x'*%d, 'FAIL'\nsynthesis_sections = tone_check\n" % size)
+            (self.scripts / "letter_checks.py").write_text("def tone_check(text): return [],[], 'x'*%d, 'FAIL'\nsynthesis_sections = decision_layer_check = tone_check\n" % size)
             c = self.client(script=self.script); c.send(request); got = c.next()
             if over: self.error(got, "output_limit")
             else: self.assertEqual(len(frame(got)), 32768)
@@ -796,7 +932,7 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(self.inventory_check().returncode, 1)
         c = self.client(script=self.script)
         for id, leaf in (("tone", "tone-check"), ("synth", "synthesis-sections"),
-                         ("sev", "severity-floor")):
+                         ("sev", "severity-floor"), ("decision", "decision-layer-check")):
             c.send(validation(id, "", leaf)); self.assertTrue(c.next()["available"])
         c.send(validation("invented", "", "invented-support-none"))
         self.error(c.next(), "validator_unavailable")
@@ -812,7 +948,7 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(self.inventory_check().returncode, 1)
             c = self.client(script=self.script)
             for id, leaf in (("tone", "tone-check"), ("synth", "synthesis-sections"),
-                             ("sev", "severity-floor")):
+                             ("sev", "severity-floor"), ("decision", "decision-layer-check")):
                 c.send(validation(id, "", leaf))
                 self.error(c.next(), "runner_dependency_unavailable")
             self.assertEqual(c.end(), (0, [], b""))
@@ -825,37 +961,48 @@ class RunnerTests(unittest.TestCase):
             c.send(validation()); self.error(c.next(), "runner_dependency_unavailable")
             c.send(validation("synth", "", "synthesis-sections")); self.error(c.next(), "runner_dependency_unavailable")
             c.send(validation("sev", "", "severity-floor")); self.error(c.next(), "runner_dependency_unavailable")
+            c.send(validation("decision", "", "decision-layer-check")); self.error(c.next(), "runner_dependency_unavailable")
             c.send(validation("other", validator="other")); self.error(c.next(), "validator_unavailable")
             self.assertEqual(c.end(), (0, [], b""))
             self.assertEqual(self.inventory_check().returncode, 1)
 
-    def test_three_exact_inventory_mappings_required_at_runtime_and_check(self):
+    def test_four_exact_inventory_mappings_required_at_runtime_and_check(self):
         baseline = json.loads(self.metadata.read_text())
         for change in ("swap", "swap-sev", "unknown", "unknown-sev", "omit-tone", "omit-synth",
-                       "omit-sev", "disable-tone", "disable-synth", "disable-sev", "desktop", "desktop-sev"):
+                       "omit-sev", "omit-decision", "disable-tone", "disable-synth", "disable-sev",
+                       "disable-decision", "swap-decision", "unknown-decision", "desktop", "desktop-sev",
+                       "desktop-decision"):
             with self.subTest(change=change):
                 value = copy.deepcopy(baseline)
                 tone = next(r for r in value["validators"] if r["id"] == "tone-check")
                 synth = next(r for r in value["validators"] if r["id"] == "synthesis-sections")
                 sev = next(r for r in value["validators"] if r["id"] == "severity-floor")
+                decision = next(r for r in value["validators"] if r["id"] == "decision-layer-check")
                 if change == "swap":
                     tone["development_support"], synth["development_support"] = synth["development_support"], tone["development_support"]
                 elif change == "swap-sev":
                     synth["development_support"], sev["development_support"] = sev["development_support"], synth["development_support"]
+                elif change == "swap-decision":
+                    sev["development_support"], decision["development_support"] = decision["development_support"], sev["development_support"]
                 elif change == "unknown": synth["development_support"] = "synthesis-v2"
                 elif change == "unknown-sev": sev["development_support"] = "severity-v2"
+                elif change == "unknown-decision": decision["development_support"] = "decision-v2"
                 elif change.startswith("omit-"):
-                    value["validators"].remove({"omit-tone": tone, "omit-synth": synth, "omit-sev": sev}[change])
+                    value["validators"].remove({"omit-tone": tone, "omit-synth": synth, "omit-sev": sev,
+                                                "omit-decision": decision}[change])
                 elif change.startswith("disable-"):
-                    {"disable-tone": tone, "disable-synth": synth, "disable-sev": sev}[change]["development_support"] = "none"
-                else: (sev if change == "desktop-sev" else synth)["desktop_disposition"] = "desktop-supported"
+                    {"disable-tone": tone, "disable-synth": synth, "disable-sev": sev,
+                     "disable-decision": decision}[change]["development_support"] = "none"
+                else: {"desktop": synth, "desktop-sev": sev,
+                       "desktop-decision": decision}[change]["desktop_disposition"] = "desktop-supported"
                 self.metadata.write_text(json.dumps(value)); self.assertEqual(self.inventory_check().returncode, 1)
                 c = self.client(script=self.script)
                 for id, leaf, text, code in (("unknown", "other", "x" * 262145, "validator_unavailable"),
                         ("limit", "synthesis-sections", "x" * 262145, "input_limit"),
                         ("tone", "tone-check", "", "runner_dependency_unavailable"),
                         ("synth", "synthesis-sections", "", "runner_dependency_unavailable"),
-                        ("sev", "severity-floor", "", "runner_dependency_unavailable")):
+                        ("sev", "severity-floor", "", "runner_dependency_unavailable"),
+                        ("decision", "decision-layer-check", "", "runner_dependency_unavailable")):
                     c.send(validation(id, text, leaf)); got = c.next(); self.error(got, code)
                     self.assertEqual((got["id"], got["validator"]), (id, leaf))
                 self.assertEqual(c.end(), (0, [], b""))
@@ -879,9 +1026,9 @@ class RunnerTests(unittest.TestCase):
     def test_inventory_row_limit_and_no_bash_execution(self):
         registry = self.scripts / "validate.sh"
         for count in (512, 513):
-            rows = [{"id": "tone-check" if i == 0 else "synthesis-sections" if i == 1 else "severity-floor" if i == 2 else "v%d" % i,
+            rows = [{"id": "tone-check" if i == 0 else "synthesis-sections" if i == 1 else "severity-floor" if i == 2 else "decision-layer-check" if i == 3 else "v%d" % i,
                      "desktop_disposition": "not-yet-supported",
-                     "development_support": "tone-check-v1" if i == 0 else "synthesis-sections-v1" if i == 1 else "severity-floor-v1" if i == 2 else "none",
+                     "development_support": "tone-check-v1" if i == 0 else "synthesis-sections-v1" if i == 1 else "severity-floor-v1" if i == 2 else "decision-layer-check-v1" if i == 3 else "none",
                      "omitted_capability": "Synthetic unavailable validation."} for i in range(count)]
             self.metadata.write_text(json.dumps({"version":1,"validators":rows}, separators=(",",":")))
             # Keep the raw metadata inside its independent byte bound.
