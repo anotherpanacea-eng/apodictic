@@ -2002,14 +2002,30 @@ def test_argument_aif_public_hostile_export_preserves_destination(tmp_path, fixt
         pytest.skip("Bash differential oracle unavailable")
     source = ROOT / "evals/fixtures/argument-aif" / fixture / "argument-state.md"
     out = tmp_path / "export.json"
-    out.write_bytes(b"sentinel")
-    out.chmod(0o640)
+    def reset():
+        out.write_bytes(b"sentinel")
+        out.chmod(0o640)
+
+    def effects():
+        return (out.read_bytes(), out.stat().st_mode & 0o777,
+                sorted(p.name for p in tmp_path.iterdir()))
+
+    expected = (b"sentinel", 0o640, ["export.json"])
+    reset()
+    assert effects() == expected
     args = ("argument-aif-export", source, "--state-schema", "0.2.0", "--out", out)
-    result = parity(*args)
-    assert result.returncode != 0
-    assert out.read_bytes() == b"sentinel"
-    assert out.stat().st_mode & 0o777 == 0o640
-    assert sorted(p.name for p in tmp_path.iterdir()) == ["export.json"]
+    legacy = subprocess.run([BASH, str(BASH_CLI), *map(str, args)], cwd=ROOT,
+                            capture_output=True, timeout=60)
+    legacy_effects = effects()
+    assert legacy.returncode != 0
+    assert legacy_effects == expected
+    reset()
+    assert effects() == expected
+    native = run_python(*args)
+    native_effects = effects()
+    assert (native.returncode, native.stdout, native.stderr) == (
+        legacy.returncode, legacy.stdout, legacy.stderr)
+    assert native_effects == legacy_effects == expected
 
 
 @pytest.mark.parametrize("fixture", [
