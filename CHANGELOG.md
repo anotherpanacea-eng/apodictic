@@ -5,6 +5,299 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.14.0 - 2026-10-14
+
+### Optional PDF proofing navigation specification
+
+Specify proposed internal marker-to-comment links and returns, with exact glyph/layout geometry, explicit mode validation, containment refusals and separate reader qualification. Runtime navigation remains unbuilt; existing PDF proofing behavior is unchanged.
+
+### Annotation PDF proofing
+
+Add explicit `pdf` / `pdf-export --internal-links` mode with bidirectional marker/comment links in separate `pdf-linked/` output. Pinned offline Helvetica/WinAnsi ink metrics define exact hit regions and internal destinations; clipped, conflicting or unsupported regions refuse. Normal-run on-disk evidence, original snapshot binding, contained unique inputs and atomic publication protect the projection. Independent object/xref, link-ownership, geometry and action checks supplement P1–P3. Default PDF bytes and output remain unchanged. Structural acceptance is distinct from reader qualification, which remains unperformed.
+
+### Annotation-export roadmap
+
+Record the shipped PDF proofing export's date, P1 to P3 gates and WinAnsi/single-line limits beside the opt-in navigation entry. Byte/content validation remains distinct from real-reader qualification.
+
+### Existing audit-fixture confirmation evidence
+
+Record eight bounded synthetic-fixture reader outputs and a separate model scorecard for excerpt AI-prose scans, explicitly activated tag diagnoses and baseline trigger checks. Preserve mixed outcomes, authored-key/canonical disagreements and quotation-fidelity limits in a mechanically conserved evidence package with a stdlib verifier; this does not establish general editorial validity or change production audits.
+
+### Focused audit skill families
+
+Split the canonical specialized-audits umbrella into narrative craft,
+genre/reader expectations, argument analysis, research/verification, and
+prose/structural measurement skills. The umbrella remains a small dispatcher;
+protocols and helpers move to their owners without changing editorial contracts.
+Shared alias metadata preserves consumer reference identities and supports
+Gemini's web/desktop runtime and Tauri's complete payload transport. Consumer
+compatibility must land before releasing the moved producer layout. Optional
+Semantic Scholar credentials are restricted to the exact HTTPS API origin and
+are never forwarded on redirects.
+
+### Judge transport
+
+Default standalone Codex host judges to Sol 6.1 with medium reasoning. Explicit
+caller model and effort settings select the transport configuration; the frozen
+AGD-scan acquisition driver retains its recorded Sol 5.6/xhigh benchmark pin.
+
+### Constitutive-purpose research controls
+
+Add nine original fictional candidate packets with matched historical, undertaking and reception contrasts, provisional keys and a prospective protocol. No evaluation results or runtime qualification.
+
+### Portable contract digests
+
+Fall back to `sha256sum` for `contract-hash` / `contract-check` when `shasum` is
+unavailable (perl-less Linux, some Git Bash installs). The file is hashed via
+stdin, so names beginning with `-` are read literally.
+
+### Reconstruction drafting
+
+Added approved-packet export, a fresh isolated drafting transport, passage-map
+validation and paired draft/receipt publication for reconstruction Increment3.
+The existing approval ledger remains authoritative. Emission records unavailable
+semantic screening and comparison explicitly; it does not grant drafting
+acceptance or implement Increments4–5. Synthetic fixtures cover selection,
+isolation, stale inputs and interrupted publication without provider calls.
+
+### Validator development runner
+
+Added the M3 source-development JSON-lines runner (`python -I -S plugins/apodictic/scripts/validator_runner.py`). It runs six unchanged pure-text leaves (`tone-check`, `synthesis-sections`, `severity-floor`, `decision-layer-check`, `author-facing-lint` and `ledger-check`) from one fixed table, each in a disposable isolated worker with a UTC/C locale. Results match the Python-backed `validate.sh` route byte for byte. Requests and responses use closed schemas with per-frame, per-text and per-response ceilings and a five-second work limit. Requests can be cancelled. A validation sent while another runs waits in a first-in, first-out queue, and clean EOF finishes all queued work, so a piped batch returns every result. Unknown validators, oversized input or output, dependency failures and worker failures return `available:false` with a closed error code, never a pass. `validator_runner.py --check-inventory` (run in CI) fails unless every canonical `AGG_VALIDATORS` id has exactly one desktop disposition in `schemas/validator-runtime-inventory.json`. Desktop support, signing, the broker, and native Windows qualification are still to come.
+
+### Nonfiction counterfactual family
+
+One independently reviewed nonfiction counterfactual development family, with a substantive control, preserved ambiguous interpretations and explicit prompt-freeze and repair-conservation deviations. Candidate status supplies no benchmark scoring or ground-truth admission.
+
+### Nonfiction supplied-finding revision
+
+A prospectively frozen qualitative DEV exercise assessing revision of a supplied nonfiction finding after repair and substantive-control changes; no production prompt, scoring rule or benchmark admission changes.
+
+### Skills-only OpenAI submission package
+
+The Codex build now also creates `apodictic-openai-plugin.zip`, a standalone
+plugin-root archive for the OpenAI directory submission portal. It reuses the
+existing skills and command wrappers, includes license and privacy information,
+adds intake onboarding, and validates submission metadata and archive wiring.
+The local marketplace ZIP remains available. Listing and privacy language now
+describe fiction and argument-shaped nonfiction with host-dependent execution,
+delegation, storage, and SETEC limits. No MCP or author-operated backend is added;
+in-app compatibility and public approval remain separate from packaging checks.
+The listing also supplies a publicly accessible privacy-policy permalink that
+matches the policy bundled in the submission ZIP.
+The OpenAI listing now leads with developmental editing for authors and editors,
+names manuscript analysis and revision planning as its capabilities, and gives
+concrete editing starter prompts under the Creativity category.
+Specialized research now states explicit boundaries for untrusted sources,
+workspace tools, optional installations and credentials. The academic API helper
+sends the optional Semantic Scholar key only to its exact HTTPS API origin and
+never forwards it on redirects; offline transport regressions cover both the
+Crossref/Wayback query leak and redirect leak.
+
+The OpenAI package now includes the canonical five-family audit split, thin
+specialized dispatcher and legacy-reference catalog. Research and measurement
+helpers remain with their owners, including the existing credential and tool
+boundaries, and the research wrapper loads its current owning skill.
+
+### Conditional Pass 8 evidence quotes
+
+Reveal Economy guidance now copies complete, already-cited single-line reveal, signpost or withholding sentences when appropriate, retaining structural findings on the existing refs ladder. No schema or consumer change.
+
+### POV propagation follow-up reconciliation
+
+Correct the supplement design record's historical all-five-pending claim. Existing
+POV self-tests cover declared Must-Fix propagation and explicit overrides; the
+other four editorial assignments remain provisional. Distinguish that coverage
+from the generic validator's mapped-tier support and from manuscript evaluation.
+
+### Public T4 expansion candidates
+
+Prepare three original standalone synthetic inputs for MC2g owner adjudication.
+Proposed labels remain separate and unregistered; the canonical six-item
+manifest, historical receipts and qualification gates are unchanged.
+
+### Public T4 prospective diagnostic ground truth
+
+Register three owner-approved synthetic MC2g candidates as standalone
+prospective diagnostic fixtures with exact body copies and existing-template
+keys. Keep code mappings and broader judgments explicitly provisional,
+preserve the six historical public inputs, and prohibit retrospective scoring
+of construction/adjudication reads. Fleet manifest admission and qualification
+remain separate reviewed work.
+
+### Plugin directory — network disclosure
+- Plugin README now names the scholarly services the research and citation-checking modes query, and links PRIVACY.md, replacing the "transmits nothing on its own" line.
+
+### Rhetorical purpose: AT6, typed C0, applicability rule
+
+Dialectical Clarity no longer scores solidarity addresses, witness accounts, and
+commemoration as failed claim-and-support. Added AT6 (constitutive/relational address,
+writer-confirmed), an AT4 attribution burden and recognition reading, a typed C0
+(`ASSERTION | ADDRESS`) with the `ADDRESS-C0` warrant-verdict value (Argument_State
+schema 0.4.0; existing artifacts stay valid), and an applicability rule with six span
+rules: a check that does not apply to a span produces no finding. Factual, causal,
+quantified, historical, attributive, and prescriptive claims keep their burden under
+every type, span function, and stance verdict. Downstream modules guard on an
+`ADDRESS` C0, intake asks the AT6 question in plain words, and the crosswalk carries
+AT6. Includes the lean build spec, ADR 0003, and the two-source level-setting research.
+
+Intake also covers AT4 testimony whose writer-stated purpose is to be heard,
+without inventing a thesis or changing its AT4 classification.
+
+The pre-draft spine also skips heard-witness AT4 `ADDRESS` states. AIF export accepts
+`ASSERTION` states declared as schema 0.2.0, 0.3.0, or 0.4.0 and preserves that source
+version; every `ADDRESS` state remains explicitly non-exportable.
+
+### Constitutive-purpose research
+
+Add a selected-source research note and candidate gaps; no runtime or qualification change.
+
+### Rhetorical purpose research candidates
+
+Added an invented research-only deck covering all eight first-increment battery bullets, separate lock/intake/legacy/consumer scenarios, political-label invariance and changed-context controls. The proposed blind protocol isolates inputs from provisional expectations and retains local commitment scrutiny. No evaluator runs, licensed answers, runtime profiles, new schema or severity rules are claimed; P0 research and runtime prerequisites remain outstanding.
+
+### Proposed rhetorical-purpose state boundary
+
+Added a proposed ADR separating confirmed purpose, located operation and actual commitment, with applicability before findings/severity and one versioned Argument_State owner. Records the required AD2/AD4, warrant/severity and consumer compatibility amendments while preserving current runtime, lock history and ADR 0001/0002 authority. Concrete schema, research, severity, adapter and evaluation contracts remain open; this is not P0 completion or profile activation.
+
+### Witness-purpose source research
+
+Added a bounded note on two author-hosted Fricker manuscripts, acknowledging existing BP6/FM-A14 grounding and separating source accounts from APODICTIC editorial inference. Identified reception questions absent from the research candidate deck without adding cases, flags, standards or runtime behavior. This does not complete P0 research or certify audience uptake.
+
+### Docs
+
+The README's install table now leads with the Claude plugin directory. ROADMAP.md's board is reset to the post-directory priorities, and its release history now points to CHANGELOG.md and GitHub Releases instead of repeating them.
+
+### Rhetorical-purpose blind-screen brief
+
+Add a draft execution brief for the two rhetorical-purpose candidate decks: roster, recording, and a per-packet retained/disputed/rejected/invalid rule for 62 blind reads. Frozen by the owner on 2026-10-09; no readings run yet.
+
+### Rhetorical-purpose blind-screen results
+
+Ran the frozen blind-screen brief: 62 reads (Reader A `claude-opus-5-5`, Reader B `gpt-6.1-sol/high`), each saved unedited, and adjudicated in a separate context that filled the rubric tables before seeing the keys. First increment: 14 retained candidates, 8 disputed. Constitutive controls: 4 retained, 5 disputed. No reads are invalid on content. Two departures from the brief go to the owner's screen panel: Reader B was re-dispatched after an invalid first run, and the reader-context additions. The owner's screen panel then ruled on all 13 disputes: 11 keys upheld and 2 revised (R01, S0, both re-adjudicated). All 31 packets remain candidates.
+
+### SETEC renderer delivery guidance
+
+Correct the Pass 3/Pass 7 design record's unsupported stdout-delivery instruction
+for heatmap and voice-drift renderers. Their direct scripts use JSON sidecars;
+future normalized file delivery still requires separate producer qualification,
+an actual integrated release floor and scripted consumer sync. Reconcile the
+current v1.132.0 pin while retaining the July snapshot as historical evidence.
+No renderer admission, consumer pin or runtime behavior changes.
+
+### Native annotation export validators
+
+Added native Python routes for Obsidian, HTML, DOCX, and PDF export validation. The routes retain the existing wrapper's navigation-option refusals and run the real repository PDF navigation suite on first self-test. Direct helper producer verbs remain separate from the read-only validators.
+
+### Native argument evaluator and AIF routes
+
+Added seven native Python validator routes for argument and fiction ground truth,
+agreement alpha, argument crosswalk and AGD checks, plus public AIF export and
+check. The existing helpers retain their parser and artifact behavior; the
+Bash dispatcher remains the aggregate entrypoint during the migration.
+
+### Native argument reconstruction routes
+
+Added native Python dispatcher routes for argument reconstruction validation
+and draft packet/publication. Their existing helpers retain parser, custody,
+ledger, and artifact behavior, including explicit unavailable semantic review.
+
+### Native Python artifact and narrative planning validators
+
+Added native routes for legal risk, promise contracts, continuity bibles,
+setup–payoff ledgers, world bibles, argument spines and scene ethics. Existing
+helpers retain discovery, input roles, flags, strict/override behavior and read
+diagnostics, including Promise's generic refusal. Tests cover canonical inputs
+and compact argument/discovery/report/timeline controls. All 48 migrated self-test
+surfaces compare exact bytes; gate launchers and aggregate cutover remain held.
+
+### Native Python configuration and timeline validators
+
+Added native dispatcher routes for quality-risk triggers, cost floors, audit-tier
+criteria, pass headers, argument reconnaissance prerequisites and the three
+timeline checks. Existing helpers retain defaults, flags, optional inputs and
+file-error behavior; timeline-diff preserves both usage forms. Differential
+checks cover eight added self-tests, 15 timeline fixtures, canonical inputs and
+temporary default/strict/optional-input cases. Aggregate cutover remains queued.
+
+### Native intake, voice and coaching validator routes
+
+Added six native Python routes for intake interviews, author fingerprints, content advisories, coaching history, style explanations and persona divergence. Existing helpers retain discovery, consent, strictness, overrides and filesystem behavior, including coaching deletion's exact argument truncation and non-atomic refusal. Missing deletion targets preserve the shell's exit/stdout contract with a named native stderr diagnostic. Raw parity, temporary deletion effects and PATH-empty execution are covered; gate/aggregate cutover remains pending.
+
+### Native Python letter signal validators
+
+Added native dispatcher routes for author-facing lint, severity floors, audit
+signal propagation and registry checks, underdiagnosis triggers, ledger
+consolidation and decision-layer checks. Existing letter parsers retain ownership
+of optional inputs, errors and advisory behavior. Differential checks cover every
+added self-test, all 42 applicable shipped fixtures and registry/default argument
+cases. Aggregate checks and the remaining commands still use `validate.sh`.
+
+### Native Python planning, revision-diff and refutation validators
+
+Added native retcon plans, state-card diffs, revision arcs, regression diffs and
+all three refutation routes. Existing helpers retain discovery, prior/current
+ordering, strict behavior, distinct flag handling and snapshot/read checks.
+Tests exercise canonical plans/rounds and hostile refutation inputs. Shared
+refutation self-tests print a random diagnostic path, so their complete independent
+PASS checks retain an explicit output-equivalence limitation pending a separate
+self-test stabilizer. All 18 gate children are now native; gate launcher and
+aggregate cutover remain separate queued work.
+
+### Native lifecycle, reader and manuscript validator routes
+
+Added ten native Python routes for lifecycle, reader instruments, manuscript maps/annotations, crosslinks, reanchoring/disposition, reader outlines, results guides and position pairs. Existing helpers retain raw argument, discovery, strictness, read and override behavior; producer modes remain direct-helper-only. Two viz self-test render emissions are captured with separate exact status/output assertions to stabilize self-test parity while preserving ordinary renderer output and artifacts. Earlier routes, gate/aggregate holds and platform acceptance boundaries remain.
+
+### Native repository integrity and calibration validator routes
+
+The partial Python validator now routes registry checks, schema coverage,
+validator conventions, calibration honesty, stance calibration and the
+repository-only argument carve smoke. It preserves raw helper arguments, the
+real override companion checks (any nonzero companion status counts as a miss,
+as in Bash), and serial child/golden failure phases. Every native route that
+Bash dispatches through its second command file now refuses misplaced
+`--internal-links*` arguments with Bash's exact usage message and exit 2;
+earlier native routes accepted them. PDF self-test repository detection and
+carve fixture paths use the logical script directory, so a symlinked plugin
+directory behaves as it does under Bash. Bash remains the aggregate entrypoint;
+source-introspection migration and native Windows acceptance remain queued.
+
+### Native Python run-integrity validators
+
+Added native routes for escalation, dispatch records and reports, dispositions,
+synthesis coverage and specificity floors. Existing helpers retain argument
+order, discovery, defaults, strict behavior and blocking read errors. Tests cover
+canonical runs and temporary hostile inputs. Specificity's existing self-test
+prints random temporary paths, so its independent PASS checks do not claim exact
+stdout parity. Gate and gate-state stay deferred until all native child routes
+and both nested launchers are ready; aggregate cutover remains queued.
+
+### Native Python structured-integrity validators
+
+Added native routes for structured findings, softness/deficit locks, artifact
+schema self-tests, finding trace, feedback triage, editor scaffolding and
+diagnostic vocabulary. Existing helpers retain classification, discovery, errors,
+flags and operator modes; the schema command remains self-test-only. Differential
+checks cover eight new self-test surfaces and the seven remaining structured
+fixtures, reaching all 73 validator fixture files. Aggregate cutover stays queued.
+
+### Native Python validator utilities
+
+Added `validate.py` for contract hashing/checking, state line counting, ledger
+structure, artifact naming, synthesis sections and tone checks. Raw-byte hashing
+and LF counting require no external tools; existing Python parsers retain their
+CLI behavior. Exact-byte differential checks compare the seven utilities against
+the Bash dispatcher. Remaining commands and aggregates still use `validate.sh`;
+the continuation roadmap records the later cutover and Windows acceptance.
+
+### Deterministic specificity and refutation self-tests
+
+Specificity and shared refutation self-tests now capture their expected negative
+CLI read diagnostics and assert exit status 2 plus the named artifact role and
+path. This removes random temporary filenames from successful self-test stdout
+while retaining the named fail-closed checks and unchanged ordinary command
+output. All migrated self-test surfaces again compare exact bytes without
+normalization.
+
 ## v2.13.3 - 2026-09-28
 
 ### Plugin directory metadata and privacy policy
