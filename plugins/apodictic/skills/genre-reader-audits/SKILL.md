@@ -4,7 +4,7 @@ description: >
   Genre and tag craft audits, shelf positioning, reception risk, reader-persona divergence, and descriptive content advisories.
   Use when the user requests one of these focused audits. For the complete
   audit catalog or an unclear request, use specialized-audits.
-version: 2.13.3
+version: 2.14.0
 ---
 
 # Genre and Reader Expectations

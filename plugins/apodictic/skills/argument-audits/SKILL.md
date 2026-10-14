@@ -4,7 +4,7 @@ description: >
   Dialectical clarity, argument red team, persuasion, evidence provenance, adversarial evidence review, and assuring/guarding/discounting move analysis.
   Use when the user requests one of these focused audits. For the complete
   audit catalog or an unclear request, use specialized-audits.
-version: 2.13.3
+version: 2.14.0
 ---
 
 # Argument Analysis
