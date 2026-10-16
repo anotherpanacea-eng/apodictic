@@ -57,7 +57,7 @@ The Development Editor works like a human developmental editor: it reads a manus
 
 **Key design principle:** The editor predicts the manuscript's contract (genre, reader promise, controlling idea) from the text alone. Misalignments between the inferred contract and the author's stated intent are diagnostically valuable — they reveal where the text doesn't communicate what the author intended.
 
-**The Firewall:** The system diagnoses problems and identifies classes of solution. It never invents content (new plot events, characters, dialogue, imagery). The author creates; the system analyzes.
+**The Firewall:** The system diagnoses problems and identifies classes of solution. Its diagnostic workflows never invent content (new plot events, characters, dialogue, imagery). Drafting happens only when you ask: `apodictic-reconstruct`, from claims you approved, or a scene-level handoff, which drafts only after you confirm it. The author creates; the system analyzes.
 
 ## What This Plugin Does and Does Not Do
 
@@ -66,7 +66,7 @@ The Development Editor works like a human developmental editor: it reads a manus
 - Identify where a manuscript succeeds or struggles relative to its own implied contract (genre, reader promise, controlling idea)
 - Provide genre-calibrated analysis across literary fiction, horror, mystery, thriller, science fiction, fantasy, romance, and cross-genre hybrids
 - Track continuity, pacing, character arcs, reveal economy, emotional dynamics, and thematic coherence across 11 systematic passes
-- Run specialized audits for specific craft concerns (scene function, shelf positioning, AI-prose detection, worldbuilding integration, force delivery, and more)
+- Run specialized audits for specific craft concerns (scene function, shelf positioning, prose-pattern and voice calibration, worldbuilding integration, force delivery, and more)
 - Diagnose argument-shaped nonfiction with the **Nonfiction Argument Engine** — argument spine, support, and warrant, plus Red-Team, Persuasion, and Evidence companions
 - Maintain a **Legal Risk Register** that flags possible defamation, privacy, and rights exposure for a lawyer's review — it flags, never adjudicates, and is never legal advice
 - **Triage feedback** and build a **beta-reader instrument** — sort and prioritize beta-reader/editor notes, and turn a diagnosis into targeted reader questions
@@ -76,7 +76,7 @@ The Development Editor works like a human developmental editor: it reads a manus
 - Guide pre-draft writers from idea to draftable structure
 
 **It does not:**
-- Rewrite prose, generate new scenes, invent characters, or produce creative content (the Firewall)
+- Rewrite prose, generate new scenes, invent characters, or produce creative content during diagnosis (the Firewall; `apodictic-reconstruct` and a confirmed scene-level handoff are the opt-in drafting paths)
 - Line edit, copyedit, or proofread
 - Replace a human developmental editor's judgment — it provides analytical scaffolding, not verdicts
 - Guarantee commercial viability, publication readiness, or literary merit

@@ -1,6 +1,6 @@
 # APODICTIC: anotherpanacea's Development Editor
 
-A development editor for fiction **and** argument-shaped nonfiction. Reads what you wrote, diagnoses structure, never rewrites — stories *or* arguments.
+A development editor for fiction **and** argument-shaped nonfiction. Reads what you wrote, diagnoses structure, never rewrites unless you ask — stories *or* arguments.
 
 ```mermaid
 flowchart TD
@@ -32,7 +32,7 @@ So I built one. Then I kept building — because the same discipline applies to 
 
 **For argument-shaped nonfiction** (op-eds, policy briefs, testimony, essays): APODICTIC infers the argument contract — the claim you're making, the audience you're addressing, the burden you've accepted, the stakes you've invoked — then measures the piece against it. The engine flags missing warrants, scope drift, and unmet strongest objections via **Dialectical Clarity** and its Red-Team, Persuasion, and Evidence companions. Same Firewall. Same diagnose → letter → marked-up-piece spine. Different front end.
 
-**The Firewall:** APODICTIC diagnoses problems and names *classes* of solution — including which structural elements are missing or mis-weighted. It never drafts your prose, and never scripts the specific content that fills those needs — the events, characters, dialogue, or evidence. Naming that a climax needs a cost paid on the page is diagnosis; writing that scene is yours. You're the writer; it's the analyst.
+**The Firewall:** APODICTIC diagnoses problems and names *classes* of solution — including which structural elements are missing or mis-weighted. Its diagnostic workflows never draft your prose (drafting happens only when you ask for it: `/reconstruct`, from claims you approved, or a scene-level handoff, which drafts only after you confirm it), and never script the specific content that fills those needs — the events, characters, dialogue, or evidence. Naming that a climax needs a cost paid on the page is diagnosis; writing that scene is yours. You're the writer; it's the analyst.
 
 ## See It in Action
 
@@ -69,7 +69,7 @@ APODICTIC isn't just for finished drafts. Both pillars — fiction and argument-
 - **Series Continuity** (`/audit series-continuity`) — cross-volume consequence tracking for multi-book series. Five diagnostic channels: character state, world rules, unresolved threads, hope calibration, and intentional discontinuities. Rolling `Series_State.md` persists across volumes
 - **Pre-writing pathway** for writers who have an idea but no manuscript — takes you from seed to draftable structure
 - **Plot coach** with 50 structural spines across 12 families (not just three-act)
-- **38 available audits** (3 universal, 20 craft, 10 genre, 5 tag) including scene function, shelf positioning, emotional craft, AI-prose detection, worldbuilding integration, force architecture, reception risk, and intimacy/consent coverage
+- **38 available audits** (3 universal, 20 craft, 10 genre, 5 tag) including scene function, shelf positioning, emotional craft, prose-pattern and voice calibration, worldbuilding integration, force architecture, reception risk, and intimacy/consent coverage
 - **Genre calibration** across literary fiction, horror, mystery, thriller, SF/F, romance, and hybrids
 
 ### Nonfiction & Argument
@@ -209,7 +209,7 @@ Or `/plugin marketplace update apodictic` from inside Claude Code (CLI). For Cow
 1. **Install** APODICTIC for your host (see above), then start a fresh session.
 2. **Type `/start`.** It asks three plain-language questions — what you have (an idea, fragments, a partial draft, a complete draft, a series, or an argument-shaped piece like an op-ed or brief), what you want, and anything that should change how it works.
 3. **Give it your manuscript** when it asks — paste it, or point it at the file.
-4. **Read the editorial letter.** You get a structural diagnosis like the [samples above](#see-it-in-action): what's working, what isn't, ranked by severity, each with a class of solution. For an argument, the letter works from the claim, audience, and burden it inferred, and names missing warrants, scope drift, and unmet objections. It never rewrites your prose.
+4. **Read the editorial letter.** You get a structural diagnosis like the [samples above](#see-it-in-action): what's working, what isn't, ranked by severity, each with a class of solution. For an argument, the letter works from the claim, audience, and burden it inferred, and names missing warrants, scope drift, and unmet objections. It never rewrites your prose; drafting happens only in commands you run on purpose, such as `/reconstruct`.
 5. **Decide what's next.** The letter ends by pointing you onward — a focused `/audit`, revision planning with `/coach`, or a submission-readiness check with `/ready`. For arguments, the usual next steps are `/audit argument-red-team` or `/audit argument-evidence`, and `/research citation-verifier` before anything goes out.
 
 Not sure where to begin? Just `/start`. When in doubt, that's the front door.
@@ -248,7 +248,7 @@ A few words you'll meet in the README and in your first editorial letter:
 
 - **Contract** — what APODICTIC infers your manuscript is *trying to be*: its genre, the promise it makes to readers, and its controlling idea. It predicts this from the text alone, then measures the book against it. When the inferred contract doesn't match what you intended, that mismatch is the core diagnostic signal.
 - **Controlling idea** — the central meaning or argument the story makes through its events. Part of the contract.
-- **The Firewall** — APODICTIC diagnoses structure and names *classes* of solution (what category of fix the problem needs, and which structural elements are missing or mis-weighted), but never drafts your prose or scripts the specific content that fills them — the events, characters, dialogue, or evidence. Naming a needed element is diagnosis; inventing what fills it is yours. You're the writer; it's the analyst. Applies equally to fiction and argument-shaped nonfiction.
+- **The Firewall** — APODICTIC diagnoses structure and names *classes* of solution (what category of fix the problem needs, and which structural elements are missing or mis-weighted), but its diagnostic workflows never draft your prose or script the specific content that fills them (drafting happens only when you ask: `/reconstruct`, from claims you approved, or a scene-level handoff, which drafts only after you confirm it) — the events, characters, dialogue, or evidence. Naming a needed element is diagnosis; inventing what fills it is yours. You're the writer; it's the analyst. Applies equally to fiction and argument-shaped nonfiction.
 - **Pass** — one analytical lens over the manuscript (reverse outline, reader experience, reveal economy, and so on). A development edit runs the passes your question requires.
 - **Macro block** — a group of passes organized around a writer question (e.g. "Structure Map," "Reader Dynamics"). Eight blocks in all.
 - **Audit** — a specialized deep-dive beyond the core passes (genre, craft, or tag), run via `/audit`.

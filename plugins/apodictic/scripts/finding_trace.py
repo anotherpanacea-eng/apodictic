@@ -16,7 +16,9 @@ dimension: cross-artifact REFERENTIAL INTEGRITY + sidecar lifecycle COHERENCE.
                           a Must-Fix/Should-Fix ledger ID with no finding_states entry
                           (advisory; ERROR under --strict).
   W2 revision coverage    a Must-Fix ledger ID not referenced in any revision plan, when one
-                          is present (advisory; ERROR under --strict).
+                          is present (advisory; ERROR under --strict). A Must-Fix the letter
+                          withdrew on counter-evidence (`<!-- override: softness-downgrade
+                          F-... — refuted: ... -->`, run-synthesis.md Step 6b) is exempt.
   E5 phantom completion   a completed-revision artifact MENTIONS a ledger ID whose finding_states
                           is "revised" but carries no `<!-- resolved: F-... -->` marker for it (the
                           in-scope report and the rolling sidecar disagree; IDs not in the report
@@ -122,6 +124,17 @@ def letter_cited_ids(letter_text):
     for body in _COMMENT_RE.findall(letter_text):
         cited.update(_ID_RE.findall(body))
     return cited
+
+
+_WITHDRAWN_RE = re.compile(r"override:\s*softness-downgrade\s+(F-[A-Za-z0-9]+-[0-9]{2,})\s*[—-]+\s*refuted\b")
+
+
+def withdrawn_ids(letter_text):
+    """F-... IDs the letter withdrew on counter-evidence (refuted softness-downgrade overrides).
+    They stay in the ledger and the tally; they are just no longer revision obligations."""
+    if not letter_text:
+        return set()
+    return set(_WITHDRAWN_RE.findall("\n".join(_COMMENT_RE.findall(letter_text))))
 
 
 def revision_cited_ids(text):
@@ -298,8 +311,9 @@ def trace(ledger_text, letter_text, sidecar_text, revision_texts=None, completio
                              % (fid, inv[fid]))
     # W2 — revision follow-through coverage (a Must-Fix not picked up by any revision plan)
     if have_revision:
+        withdrawn = withdrawn_ids(letter_text)
         for fid in sorted(inv):
-            if inv[fid] == "Must-Fix" and fid not in rev_cited:
+            if inv[fid] == "Must-Fix" and fid not in rev_cited and fid not in withdrawn:
                 warns.append("W2 follow-through: Must-Fix %s not referenced in any revision plan" % fid)
     # E5 — phantom completion: an in-scope contradiction — a completed-revision artifact *mentions*
     # a `revised` ledger finding (bare, e.g. under "Flags still present") but carries no
@@ -549,6 +563,10 @@ def run_self_test():
           code_w == 0 and any("W2 follow-through" in ln and "F-P5-01" in ln for ln in lines_w))
     code_s, _ = trace(ledger, letter_clean, sc_ok, revision_texts=["Session 1: polish only."], strict=True)
     check("w2_followthrough_strict_fails", code_s == 1)
+    # ...but a Must-Fix the letter withdrew as refuted is no longer a revision obligation
+    let_wd = letter_clean + "\n<!-- override: softness-downgrade F-P5-01 — refuted: the cost is paid in Ch. 9 -->\n"
+    check("w2_skips_withdrawn_strict",
+          trace(ledger, let_wd, sc_ok, revision_texts=["Session 1: polish only."], strict=True)[0] == 0)
 
     # --- Increment 3: revision-completion (`revised`) lifecycle ---
     sc_revised = sidecar({"F-P5-01": "revised", "F-P5-02": "locked"})
