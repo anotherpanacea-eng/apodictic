@@ -1,6 +1,6 @@
 # APODICTIC: anotherpanacea's Development Editor
 
-A development editor for fiction **and** argument-shaped nonfiction. Reads what you wrote, diagnoses structure, never rewrites — stories *or* arguments.
+A development editor for fiction **and** argument-shaped nonfiction. Reads what you wrote, diagnoses structure, never rewrites unless you ask — stories *or* arguments.
 
 ```mermaid
 flowchart TD
@@ -69,7 +69,7 @@ APODICTIC isn't just for finished drafts. Both pillars — fiction and argument-
 - **Series Continuity** (`/audit series-continuity`) — cross-volume consequence tracking for multi-book series. Five diagnostic channels: character state, world rules, unresolved threads, hope calibration, and intentional discontinuities. Rolling `Series_State.md` persists across volumes
 - **Pre-writing pathway** for writers who have an idea but no manuscript — takes you from seed to draftable structure
 - **Plot coach** with 50 structural spines across 12 families (not just three-act)
-- **38 available audits** (3 universal, 20 craft, 10 genre, 5 tag) including scene function, shelf positioning, emotional craft, AI-prose detection, worldbuilding integration, force architecture, reception risk, and intimacy/consent coverage
+- **38 available audits** (3 universal, 20 craft, 10 genre, 5 tag) including scene function, shelf positioning, emotional craft, prose-pattern and voice calibration, worldbuilding integration, force architecture, reception risk, and intimacy/consent coverage
 - **Genre calibration** across literary fiction, horror, mystery, thriller, SF/F, romance, and hybrids
 
 ### Nonfiction & Argument
@@ -205,7 +205,7 @@ Or `/plugin marketplace update apodictic` from inside Claude Code (CLI). For Cow
 1. **Install** APODICTIC for your host (see above), then start a fresh session.
 2. **Type `/start`.** It asks three plain-language questions — what you have (an idea, fragments, a partial draft, a complete draft, a series, or an argument-shaped piece like an op-ed or brief), what you want, and anything that should change how it works.
 3. **Give it your manuscript** when it asks — paste it, or point it at the file.
-4. **Read the editorial letter.** You get a structural diagnosis like the [samples above](#see-it-in-action): what's working, what isn't, ranked by severity, each with a class of solution. For an argument, the letter works from the claim, audience, and burden it inferred, and names missing warrants, scope drift, and unmet objections. It never rewrites your prose.
+4. **Read the editorial letter.** You get a structural diagnosis like the [samples above](#see-it-in-action): what's working, what isn't, ranked by severity, each with a class of solution. For an argument, the letter works from the claim, audience, and burden it inferred, and names missing warrants, scope drift, and unmet objections. It never rewrites your prose; drafting happens only in commands you run on purpose, such as `/reconstruct`.
 5. **Decide what's next.** The letter ends by pointing you onward — a focused `/audit`, revision planning with `/coach`, or a submission-readiness check with `/ready`. For arguments, the usual next steps are `/audit argument-red-team` or `/audit argument-evidence`, and `/research citation-verifier` before anything goes out.
 
 Not sure where to begin? Just `/start`. When in doubt, that's the front door.

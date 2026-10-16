@@ -192,8 +192,9 @@ prose (and the subagent dispatch packet in hybrid/swarm):
 1. **Adversarial stance, stated as the goal.** The pass's job is to *refute* the finding: "argue
    that this diagnosis is wrong, overstated, or better explained by something else — against the
    text." Success is a kill or a weakening; a survival must be *earned*, not defaulted. ("Kill"
-   here means **demote, never delete**: a refuted finding ships at its locked severity with
-   LOW/UNCERTAIN confidence — it is never removed from the letter; §7.)
+   here means **withdraw, never delete**: a refuted finding stays traceable in the letter but
+   leaves the active repair list via the ID-scoped softness-downgrade override; §7 and
+   `run-synthesis.md §Step 6b` as of 2026-10-16.)
 2. **Quote-first ordering (hunt-then-judge).** Gather candidate counter-evidence spans from the
    manuscript **before** writing the outcome — the disconfirmation mirror of the stress test's
    lock-then-test discipline. An outcome written before the quotes exist is malformed.

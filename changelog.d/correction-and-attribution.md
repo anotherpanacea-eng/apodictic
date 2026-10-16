@@ -1,0 +1,3 @@
+### Synthesis — Correction and Attribution
+
+A refuted finding is now withdrawn by default: it stays traceable under **Withdrawn on counter-evidence** (via the existing ID-scoped softness-downgrade override) and leaves the root causes, revision plan, and readiness count. Root cause analysis asks for up to five supported causes, and zero is valid. The Female Interiority audit and the writer's-block taxonomy no longer infer the author's beliefs or feelings from the text. Public copy now says "never rewrites unless you ask" (reconciling `/reconstruct`) and lists "prose-pattern and voice calibration" in place of "AI-prose detection". From the 2026-10-16 Codex framework review.

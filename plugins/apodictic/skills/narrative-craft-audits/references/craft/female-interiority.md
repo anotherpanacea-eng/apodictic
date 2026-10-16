@@ -39,7 +39,7 @@ Interiority is not binary. Characters don't simply "have" or "lack" inner lives.
 
 ### Where Thinning Happens
 
-The key diagnostic insight: thinning is usually *contextual*. A female character may have full interiority in "her" scenes (domestic, emotional, relational) and thin dramatically in scenes coded differently (action, professional, intellectual, political). The pattern reveals what the author believes women's inner lives contain.
+The key diagnostic insight: thinning is usually *contextual*. A female character may have full interiority in "her" scenes (domestic, emotional, relational) and thin dramatically in scenes coded differently (action, professional, intellectual, political). Report the asymmetry in the text and what it costs the reader (for example, competence that feels externally assigned). Do not infer the author's beliefs from it; the contrast may be a deliberate viewpoint choice, so ask whether it serves the intended effect.
 
 **Seven pressure contexts** where interiority commonly thins:
 
