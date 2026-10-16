@@ -12,7 +12,7 @@ The Development Editor works like a human developmental editor: it reads a manus
 
 **For argument-shaped nonfiction:** The engine infers the argument contract — the claim, the audience, the burden of proof, the stakes — then measures the piece against it. The Nonfiction Argument Engine flags missing warrants, scope drift, and unmet strongest objections via **Dialectical Clarity** and its Red-Team, Persuasion, and Evidence companions.
 
-**The Firewall:** The system diagnoses problems and identifies classes of solution. Its diagnostic workflows never invent content (new plot events, arguments, characters, dialogue, imagery). The one drafting exception is `/reconstruct`, which drafts only when you ask, from claims you approved. The author creates; the system analyzes.
+**The Firewall:** The system diagnoses problems and identifies classes of solution. Its diagnostic workflows never invent content (new plot events, arguments, characters, dialogue, imagery). Drafting happens only when you ask: `/reconstruct`, from claims you approved, or a scene-level handoff, which drafts only after you confirm it. The author creates; the system analyzes.
 
 ## What This Plugin Does and Does Not Do
 
@@ -31,7 +31,7 @@ The Development Editor works like a human developmental editor: it reads a manus
 - Guide pre-draft writers from idea to draftable structure
 
 **It does not:**
-- Rewrite prose, generate new scenes, invent characters, or produce creative content during diagnosis (the Firewall; `/reconstruct` is the opt-in drafting exception)
+- Rewrite prose, generate new scenes, invent characters, or produce creative content during diagnosis (the Firewall; `/reconstruct` and a confirmed scene-level handoff are the opt-in drafting paths)
 - Line edit, copyedit, or proofread
 - Replace a human developmental editor's judgment — it provides analytical scaffolding, not verdicts
 - Guarantee commercial viability, publication readiness, or literary merit

@@ -269,13 +269,15 @@ diagnosis survived a deliberate attempt to refute it against the text."
 - **Weakened:** delivered at locked severity, MEDIUM confidence, with the strongest counter-evidence
   quoted inline near the finding (≤25 words per excerpt — the standing quote budget,
   `output-policy.md` §Output Constraints) so the author sees *why* it was weakened.
-- **Refuted:** **not silently dropped** (the Deficit Lock forbids that, and rightly). Delivered at
-  locked severity with LOW/UNCERTAIN confidence, framed per the existing rule ("never present LOW
-  or UNCERTAIN findings as definitive diagnoses" — `output-policy.md:59`): the diagnosis, the
-  counter-evidence quote, and an explicit author-verification ask. If the synthesis judges a
-  refuted finding shouldn't ship at its locked tier at all, that is exactly the existing ID-scoped
-  `<!-- override: softness-downgrade F-… -->` + Appendix B path — a legible human-auditable act,
-  never this pass's write.
+- **Refuted:** **withdrawn, not silently dropped** (the Deficit Lock forbids silent loss, and
+  rightly). By default the synthesis agent writes the ID-scoped
+  `<!-- override: softness-downgrade F-… — refuted: <one-clause reason> -->` + Appendix B line
+  (never this pass's write) and moves the finding to a **Withdrawn on counter-evidence** list: the
+  diagnosis, the counter-evidence quote, and what new evidence would reopen it. It leaves the root
+  causes and the revision plan; its locked severity still counts in the triage tally and verdict
+  caps. It stays at its locked tier only when the synthesis names why the counter-evidence does not
+  settle it — then LOW/UNCERTAIN with an author-verification ask, per `output-policy.md:59`.
+  Author objection or compensating strengths never refute (`run-synthesis.md §Step 6b`).
 - **Appendix B (Severity Calibration)** gains a compact **Refutation Summary**: per processed
   finding — id, outcome, pointer to the record. One line per finding, format template:
   `- F-<ORIGIN>-<NN> — <survived|weakened|refuted> — <one-clause reason> (record:
