@@ -88,11 +88,11 @@ The coaching protocol references this file. The writer never sees it directly.
 - "If I cut this, it's not the book I wanted."
 - "This revision betrays my vision."
 - "I can't write a book that does that."
-- Defensive framing that sounds like aesthetic disagreement but is actually grief or self-protection.
+- Strong attachment to a passage the diagnosis targets. Take an aesthetic disagreement at face value; the diagnosis may be wrong, or the writer may prefer a different aesthetic. Treat it as grief or self-protection only if the writer says so.
 
 **Prompt suitability:** Conditional.
 
-**Intervention:** Reframe first — always. Externalize the manuscript from the self. Name the grief for the version being revised away. Acknowledge that the writer's attachment may be structurally correct (the part they're protecting may actually be load-bearing).
+**Intervention:** Reframe first — always. Externalize the manuscript from the self. If the writer has said the loss hurts, acknowledge the version being revised away; never assign that feeling to them. Acknowledge that the writer's attachment may be structurally correct (the part they're protecting may actually be load-bearing).
 
 Then, if reframing is insufficient, offer low-stakes Constraint or Perspective prompts framed explicitly as temporary experiments the writer can reject. The clinamen clause is especially critical here — the writer must feel genuine permission to refuse the experiment's results.
 

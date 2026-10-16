@@ -1,6 +1,6 @@
 # APODICTIC Development Editor
 
-A development editor for fiction **and** argument-shaped nonfiction. Reads what you wrote, diagnoses structure, never rewrites — stories *or* arguments.
+A development editor for fiction **and** argument-shaped nonfiction. Reads what you wrote, diagnoses structure, never rewrites unless you ask — stories *or* arguments.
 
 AI-powered developmental editing framework for fiction and persuasive/argument-shaped nonfiction (op-eds, policy briefs, testimony, essays — via the Nonfiction Argument Engine), as well as narrative nonfiction and memoir. Diagnoses structural issues through systematic passes, genre-calibrated analysis, and specialized audits. One spine — diagnose → letter → marked-up piece — two front ends.
 
@@ -12,7 +12,7 @@ The Development Editor works like a human developmental editor: it reads a manus
 
 **For argument-shaped nonfiction:** The engine infers the argument contract — the claim, the audience, the burden of proof, the stakes — then measures the piece against it. The Nonfiction Argument Engine flags missing warrants, scope drift, and unmet strongest objections via **Dialectical Clarity** and its Red-Team, Persuasion, and Evidence companions.
 
-**The Firewall:** The system diagnoses problems and identifies classes of solution. It never invents content (new plot events, arguments, characters, dialogue, imagery). The author creates; the system analyzes.
+**The Firewall:** The system diagnoses problems and identifies classes of solution. Its diagnostic workflows never invent content (new plot events, arguments, characters, dialogue, imagery). Drafting happens only when you ask: `/reconstruct`, from claims you approved, or a scene-level handoff, which drafts only after you confirm it. The author creates; the system analyzes.
 
 ## What This Plugin Does and Does Not Do
 
@@ -21,7 +21,7 @@ The Development Editor works like a human developmental editor: it reads a manus
 - Identify where a manuscript succeeds or struggles relative to its own implied contract (genre, reader promise, controlling idea)
 - Provide genre-calibrated analysis across literary fiction, horror, mystery, thriller, science fiction, fantasy, romance, and cross-genre hybrids
 - Track continuity, pacing, character arcs, reveal economy, emotional dynamics, and thematic coherence across 11 systematic passes
-- Run specialized audits for specific craft concerns (scene function, shelf positioning, AI-prose detection, worldbuilding integration, force delivery, and more)
+- Run specialized audits for specific craft concerns (scene function, shelf positioning, prose-pattern and voice calibration, worldbuilding integration, force delivery, and more)
 - Diagnose argument-shaped nonfiction with the **Nonfiction Argument Engine** — argument spine, support, and warrant, plus Red-Team, Persuasion, and Evidence companions
 - Maintain a **Legal Risk Register** that flags possible defamation, privacy, and rights exposure for a lawyer's review — it flags, never adjudicates, and is never legal advice
 - **Triage feedback** and build a **beta-reader instrument** — sort and prioritize beta-reader/editor notes, and turn a diagnosis into targeted reader questions
@@ -31,7 +31,7 @@ The Development Editor works like a human developmental editor: it reads a manus
 - Guide pre-draft writers from idea to draftable structure
 
 **It does not:**
-- Rewrite prose, generate new scenes, invent characters, or produce creative content (the Firewall)
+- Rewrite prose, generate new scenes, invent characters, or produce creative content during diagnosis (the Firewall; `/reconstruct` and a confirmed scene-level handoff are the opt-in drafting paths)
 - Line edit, copyedit, or proofread
 - Replace a human developmental editor's judgment — it provides analytical scaffolding, not verdicts
 - Guarantee commercial viability, publication readiness, or literary merit

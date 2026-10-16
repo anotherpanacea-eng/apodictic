@@ -126,7 +126,7 @@ function validateRegistry(stats) {
 
 function buildPluginDescription(stats) {
   return [
-    "APODICTIC Development Editor. A development editor for fiction and argument-shaped nonfiction — reads what you wrote, diagnoses structure, never rewrites.",
+    "APODICTIC Development Editor. A development editor for fiction and argument-shaped nonfiction — reads what you wrote, diagnoses structure, never rewrites unless you ask.",
     "For nonfiction, the Argument Engine infers your claim, audience, and burden, then finds missing warrants, scope drift, and unmet objections in op-eds, policy briefs, testimony, academic arguments, legal briefs, and regulatory comments, with Dialectical Clarity, Red Team, Persuasion, Evidence, Field Reconnaissance, and Citation Verifier companions.",
     "For fiction: structural diagnosis, genre calibration, tag audits, plot architecture analysis, and pre-writing.",
     "Shared: revision coaching, partial manuscript diagnostic, fragment synthesis, and intake routing",
@@ -179,7 +179,7 @@ function buildRootReadmePlotLine() {
 }
 
 function buildRootReadmeAuditsLine(stats) {
-  return `- **${stats.available} available audits** (${stats.universal} universal, ${stats.craft} craft, ${stats.genre} genre, ${stats.tag} tag) including scene function, shelf positioning, emotional craft, AI-prose detection, worldbuilding integration, force architecture, reception risk, and intimacy/consent coverage`;
+  return `- **${stats.available} available audits** (${stats.universal} universal, ${stats.craft} craft, ${stats.genre} genre, ${stats.tag} tag) including scene function, shelf positioning, emotional craft, prose-pattern and voice calibration, worldbuilding integration, force architecture, reception risk, and intimacy/consent coverage`;
 }
 
 function buildGroupedCommandList() {
