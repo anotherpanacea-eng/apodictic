@@ -29,6 +29,40 @@ if (!antigravity) {
   process.exit(1);
 }
 
+function isPythonCache(filePath) {
+  return filePath.split(/[\\/]/).includes("__pycache__") || /\.py[co]$/.test(filePath);
+}
+
+function validateCanonicalSource() {
+  const files = walkFiles(abs("plugins/apodictic")).filter((source) => !isPythonCache(source));
+  const oversized = files.filter((source) => fs.statSync(source).size >= 256 * 1024);
+  if (files.length > 512 || oversized.length) {
+    throw new Error(`Canonical plugin exceeds limits: ${files.length} files; oversized: ${oversized.join(", ") || "none"}.`);
+  }
+  console.log(`Canonical plugin: ${files.length} files; every shipped source file under 256 KiB.`);
+}
+
+// Check actual self-generated archive members, including the submission ZIP.
+// ZIP metadata reports uncompressed bytes; this does not claim hostile-ZIP validation.
+function validateNativeArchive(archivePath, prefix = "plugins/apodictic/") {
+  const entries = listZipEntryMetadata(archivePath);
+  if (entries.some(({ name }) => isPythonCache(name))) {
+    throw new Error("Archive contains Python bytecode/cache content.");
+  }
+  const plugin = entries.filter(({ name }) => name.startsWith(prefix));
+  if (plugin.length > 512 || plugin.some(({ size }) => size >= 256 * 1024)) {
+    throw new Error(`Archived plugin exceeds limits: ${plugin.length} files; oversized: ${plugin.filter(({ size }) => size >= 256 * 1024).map(({ name, size }) => `${name} (${size} bytes)`).join(", ") || "none"}.`);
+  }
+  console.log(`Archived Antigravity plugin: ${plugin.length} members; every member under 256 KiB.`);
+  const names = new Set(plugin.map(({ name }) => name.slice(prefix.length)));
+  for (const name of ["validate.py", "validate_canonical.py", "validate_source.py", "validate.sh"]) {
+    if (!names.has(`scripts/${name}`)) throw new Error(`Native archive entry missing: ${name}`);
+  }
+  for (const name of ["check-all.sh", "commands-a.sh", "commands-b.sh"]) {
+    if (names.has(`scripts/validate.d/${name}`)) throw new Error(`Obsolete archive entry: ${name}`);
+  }
+}
+
 function abs(relPath) {
   return path.resolve(repoRoot, relPath);
 }
@@ -63,6 +97,7 @@ function removePath(targetPath) {
 
 function createArchive(workspaceRoot, archivePath) {
   const archiveSources = walkFiles(workspaceRoot)
+    .filter((source) => !isPythonCache(source))
     .map((sourcePath) => ({
       sourcePath,
       archiveName: path.relative(workspaceRoot, sourcePath).split(path.sep).join("/"),
@@ -81,6 +116,7 @@ function createArchive(workspaceRoot, archivePath) {
 }
 
 function validateArchive(archivePath) {
+  validateNativeArchive(archivePath);
   const archiveEntries = listZipEntries(archivePath);
   const archiveModes = new Map(
     listZipEntryMetadata(archivePath).map(({ name, mode }) => [name, mode])
@@ -274,6 +310,7 @@ Follow \`plugins/apodictic/skills/core-editor/references/output-structure.md\` Â
 
 
 function main() {
+  validateCanonicalSource();
   const canonicalManifestPath = abs(paths.rootPluginJson);
   const canonicalManifest = readJson(canonicalManifestPath);
   const canonicalVersion = canonicalManifest.version;
@@ -288,7 +325,7 @@ function main() {
     ensureDir(path.join(tempWorkspace, "plugins"));
     
     // Copy canonical plugin
-    fs.cpSync(abs("plugins/apodictic"), tempPluginDir, { recursive: true });
+    fs.cpSync(abs("plugins/apodictic"), tempPluginDir, { recursive: true, filter: (source) => !isPythonCache(source) });
 
     // Strip host specific files
     stripHostSpecificFiles(tempPluginDir);

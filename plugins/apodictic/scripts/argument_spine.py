@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """argument-spine — structural integrity for the Nonfiction Pre-Draft Pathway (Increments 1–3 + 5).
 
-`validate.sh argument-spine <run_folder|files>` shells out here. Before a draft exists, a writer
+`validate.py argument-spine <run_folder|files>` delegates here. Before a draft exists, a writer
 plans the argument: the thesis, the claim ladder, and the opposing view the argument must defeat.
 That plan is one apodictic.argument_spine.v1 block, and it SEEDS the shared Argument_State.md
 artifact (docs/argument-state-schema.md) — thesis -> §2 C0; subclaims -> §2 ladder; anti_thesis ->
@@ -107,7 +107,7 @@ def _has_block(text, btype):
 
     Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
     in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
-    validate.sh validator-conventions (M2)."""
+    validate.py validator-conventions (M2)."""
     if art is None:
         return ("apodictic:%s" % btype) in (text or "")
     return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))

@@ -69,7 +69,7 @@ REFERENCE_SETTING = "APODICTIC_BASH_REFERENCE_ROOT"
 def select_bash_root(environ, bash):
     """An explicit oracle must be external and execute without the native CLI."""
     if REFERENCE_SETTING not in environ:
-        return ROOT
+        return None
     value = environ[REFERENCE_SETTING]
     if not value.strip():
         raise pytest.UsageError(f"{REFERENCE_SETTING}: reference root is empty")
@@ -77,10 +77,10 @@ def select_bash_root(environ, bash):
     if root == ROOT.resolve():
         raise pytest.UsageError(f"{REFERENCE_SETTING}: reference must differ from the current checkout")
     scripts = root / "plugins/apodictic/scripts"
-    if not (scripts / "validate.sh").is_file() or not (scripts / "validate.d").is_dir():
-        raise pytest.UsageError(f"{REFERENCE_SETTING}: missing Bash dispatcher layout: {root}")
     if (scripts / "validate.sh").resolve() == (SCRIPTS / "validate.sh").resolve():
         raise pytest.UsageError(f"{REFERENCE_SETTING}: reference dispatcher must differ from the current checkout")
+    if not (scripts / "validate.sh").is_file() or not all((scripts / "validate.d" / part).is_file() for part in ("check-all.sh", "commands-a.sh", "commands-b.sh")):
+        raise pytest.UsageError(f"{REFERENCE_SETTING}: missing Bash dispatcher layout: {root}")
     if bash is None:
         raise pytest.UsageError(f"{REFERENCE_SETTING}: explicit reference requires executable Bash")
     # A real shell utility is independent of validate.py. Probe a disposable shell
@@ -108,8 +108,10 @@ def select_bash_root(environ, bash):
 
 
 BASH_ROOT = select_bash_root(os.environ, BASH)
-BASH_SCRIPTS = BASH_ROOT / "plugins/apodictic/scripts"
-BASH_CLI = BASH_SCRIPTS / "validate.sh"
+if BASH_ROOT is None:
+    BASH = None  # Differential cases require an explicitly selected independent oracle.
+BASH_SCRIPTS = BASH_ROOT / "plugins/apodictic/scripts" if BASH_ROOT else None
+BASH_CLI = BASH_SCRIPTS / "validate.sh" if BASH_SCRIPTS else None
 
 
 def assert_parity_result(native, legacy, *, command=None, native_cli=PYTHON_CLI, bash_cli=BASH_CLI):
@@ -165,7 +167,7 @@ def parity(*args, cwd=None, env=None):
 
 
 def test_oracle_configuration_default_and_no_bash(monkeypatch):
-    assert select_bash_root({}, None) == ROOT
+    assert select_bash_root({}, None) is None
     monkeypatch.setattr(sys.modules[__name__], "BASH", None)
     with pytest.raises(pytest.skip.Exception, match="Bash differential oracle unavailable"):
         parity("contract-hash", "unused")
@@ -199,6 +201,8 @@ def test_oracle_configuration_rejects_current_scripts_alias(tmp_path):
 
 @pytest.fixture
 def disposable_reference(tmp_path):
+    if BASH_SCRIPTS is None:
+        pytest.skip("External Bash reference not configured; differential-only fixture")
     root = tmp_path / "oracle"
     shutil.copytree(BASH_SCRIPTS, root / "plugins/apodictic/scripts",
                     ignore=shutil.ignore_patterns('__pycache__'))
@@ -445,11 +449,10 @@ def test_letter_wrappers_ignore_extra_arguments(tmp_path, command):
     parity(command, path, "ignored", "also ignored")
 
 
-@pytest.mark.parametrize("command", ["--self-test-all", "--check-canonical", "--check-all", "gate", "bogus"])
-def test_unported_entrypoints_do_not_claim_success(command):
-    result = run_python(command)
+def test_unknown_entrypoint_refuses():
+    result = run_python("bogus")
     assert result.returncode == 2
-    assert b"Partial migration:" in result.stdout
+    assert b"Unknown command: bogus" in result.stdout
     assert result.stderr == b""
 
 
@@ -883,10 +886,13 @@ def test_native_run_integrity_canonical_inputs(command, inputs):
 
 @pytest.mark.parametrize("command", ["gate", "gate-state"])
 @pytest.mark.parametrize("args", [(), ("--self-test",), ("--strict", "--self-test")])
-def test_gate_pair_is_deferred_until_complete_dispatch_and_aggregate_cutover(command, args):
-    result = run_python(command, *args)
-    assert (result.returncode, result.stderr) == (2, b"")
-    assert b"Partial migration:" in result.stdout
+def test_gate_pair_uses_native_dispatch(command, args):
+    result = native_and_optional_parity(command, *args)
+    if "--self-test" in args:
+        assert result.returncode == 0
+    else:
+        assert result.returncode != 0
+    assert b"Partial migration:" not in result.stdout
 
 
 def test_escalation_advisory_strict_and_sidecar_discovery(tmp_path):
@@ -1513,7 +1519,8 @@ def test_pdf_first_selftest_runs_actual_repository_navigation_suite():
     pathless_count, _, pathless_result = _navigation_success(pathless.stderr)
     assert pathless_count == count and pathless_result.startswith(b"s\n\nOK")
     skipped = re.search(rb"skipped=(\d+)", pathless_result)
-    assert skipped is None or int(skipped.group(1)) < pathless_count
+    normal_skipped = re.search(rb"skipped=(\d+)", after)
+    assert (int(skipped.group(1)) if skipped else 0) == (int(normal_skipped.group(1)) if normal_skipped else 0)
 
 
 def test_pdf_repository_continuation_marker_and_failure(tmp_path):
@@ -1620,7 +1627,16 @@ REPOSITORY_INTEGRITY = (
 
 @pytest.mark.parametrize('command', REPOSITORY_INTEGRITY)
 def test_repository_integrity_real_selftests_and_empty_path(command):
-    result = native_and_optional_parity(command, '--self-test', 'discarded')
+    # M1/M3 now inspect native source; their self-test diagnostic rows intentionally
+    # differ from the old shell reader. Execute both actual suites independently.
+    if command == 'validator-conventions':
+        result = run_python(command, '--self-test', 'discarded')
+        if BASH is not None:
+            old = subprocess.run([BASH, str(BASH_CLI), command, '--self-test', 'discarded'],
+                                 capture_output=True, timeout=60)
+            assert old.returncode == 0 and b'Self-test: PASS' in old.stdout
+    else:
+        result = native_and_optional_parity(command, '--self-test', 'discarded')
     assert result.returncode == 0
     env = {**os.environ, 'PATH': '', 'PYTHONUTF8': '1', 'PYTHONIOENCODING': 'utf-8'}
     native = run_python(command, '--self-test', 'discarded', env=env)
@@ -1628,7 +1644,7 @@ def test_repository_integrity_real_selftests_and_empty_path(command):
     if command == 'validator-conventions':
         assert native.stdout.startswith(b'  ho_genuine_emdash: OK (found)\n')
         assert b'  ho_multiline_inline_decoy: OK (miss)\n' in native.stdout
-        late = parity(command, 'ignored', '--self-test')
+        late = run_python(command, 'ignored', '--self-test')
         assert late.returncode == 0 and b'  ho_' not in late.stdout
 
 
@@ -1641,6 +1657,8 @@ def copy_script_origins(directory):
     origins = ScriptOrigins(directory / 'current/plugins/apodictic/scripts',
                             directory / 'reference/plugins/apodictic/scripts')
     for source, target in ((SCRIPTS, origins.native), (BASH_SCRIPTS, origins.bash)):
+        if source is None:
+            continue
         shutil.copytree(source, target, ignore=shutil.ignore_patterns('__pycache__'))
         shutil.copytree(source.parent / 'schemas', target.parent / 'schemas')
     return origins
@@ -1670,6 +1688,8 @@ def _repository_copy_run(origins, native, *args, env=None):
 
 
 def _repository_copy_parity(origins, *args):
+    if BASH is None:
+        return _repository_copy_run(origins, True, *args)
     legacy = _repository_copy_run(origins, False, *args)
     native = _repository_copy_run(origins, True, *args)
     assert_parity_result(native, legacy, command=args[0],
@@ -1877,7 +1897,7 @@ def test_repository_regular_helper_symlink_stays_available(repository_bundle, he
 
 def _native_commands():
     listing = run_python().stdout.decode()
-    return listing.split("Native commands: ", 1)[1].split("\n", 1)[0].split(", ")
+    return listing.split("Commands: ", 1)[1].split("\n", 1)[0].split(", ")
 
 
 ECHO_STUB = (

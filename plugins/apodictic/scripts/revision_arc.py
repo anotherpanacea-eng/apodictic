@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """revision-arc — structural integrity for Multi-Session Revision Arc Planning (Coaching Deepening).
 
-`validate.sh revision-arc <run_folder> [--strict]` (or explicit files) shells out here. The
+`validate.py revision-arc <run_folder> [--strict]` (or explicit files) delegates here. The
 revision-coach reads the diagnostic state and SEQUENCES the Findings Ledger into a phased
 multi-week strategy — Phase 1 structural root causes -> Phase 2 downstream consequences ->
 Phase 3 polish — recorded as a single `apodictic.revision_arc.v1` block (one arc per manuscript).
@@ -95,7 +95,7 @@ def _has_block(text, btype):
     """True if `text` carries a real apodictic:<btype> block (a parsed carrier, not a prose mention).
 
     Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
-    in prose from being misrouted/skipped. Gated by validate.sh validator-conventions (M2)."""
+    in prose from being misrouted/skipped. Gated by validate.py validator-conventions (M2)."""
     if art is None:
         return ("apodictic:%s" % btype) in (text or "")
     return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))

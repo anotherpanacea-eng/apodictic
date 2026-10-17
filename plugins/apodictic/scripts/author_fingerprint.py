@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """author-fingerprint — structural integrity for the Cross-Manuscript Author Voice/Craft Fingerprint.
 
-`validate.sh author-fingerprint <author_root|files>` shells out here. A writer's voice changes over a
+`validate.py author-fingerprint <author_root|files>` delegates here. A writer's voice changes over a
 career — by growth, by drift, or by an unconscious settling into the same cadence book after book.
 APODICTIC measures voice WITHIN a manuscript but has no memory ACROSS works; this is that memory: a
 persistent profile, collected under an operator-designated author-root, that surfaces movement. It

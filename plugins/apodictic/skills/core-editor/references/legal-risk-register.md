@@ -101,4 +101,4 @@ The register attaches two ways. **Explicit-flag path:** the author sets `constra
 
 ## Mechanical check
 
-`scripts/validate.sh legal-risk <run_folder>`: L1 schema, L2 unique ids, **L3 not-a-lawyer disclaimer present** (the signature gate); **W1 legal-advice drift** (a conclusion where a flag belongs — the firewall; override `<!-- override: legal-advice-drift LR-NN — … -->`), W2 a review-now item not routed to counsel. W1/W2 advisory, ERROR under `--strict`. Ownership boundary + lineage: [`docs/legal-risk-register.md`](../../../../../docs/legal-risk-register.md).
+`python scripts/validate.py legal-risk <run_folder>`: L1 schema, L2 unique ids, **L3 not-a-lawyer disclaimer present** (the signature gate); **W1 legal-advice drift** (a conclusion where a flag belongs — the firewall; override `<!-- override: legal-advice-drift LR-NN — … -->`), W2 a review-now item not routed to counsel. W1/W2 advisory, ERROR under `--strict`. Ownership boundary + lineage: [`docs/legal-risk-register.md`](../../../../../docs/legal-risk-register.md).

@@ -4,7 +4,7 @@
 author's OWN hand-authored worldbuilding bible — the rules of the magic/tech, the cost of using it,
 the geography, the order of events, the factions. It checks a **bible** (not a manuscript) for
 self-contradiction and SURFACES the conflicts the bible has already committed to; it never invents
-world content. Spec + validator: `docs/worldbuilding-bible.md`, `scripts/validate.sh world-bible`.
+world content. Spec + validator: `docs/worldbuilding-bible.md`, `python scripts/validate.py world-bible`.
 Worked example: `example-worldbuilding-bible.md`.*
 
 ---
@@ -154,7 +154,7 @@ id-pair) for the letter to cite. An `apparent` (overridden) row is intentional a
 
 ## Validation
 
-`validate.sh world-bible <run_folder|files...> [--strict]` runs the integrity + contradiction checks:
+`python validate.py world-bible <run_folder|files...> [--strict]` runs the integrity + contradiction checks:
 **W1** schema + bespoke closed-key check, **WD** id-uniqueness, **WB-R1** closed-set rule consistency,
 **WB-C1** cost contradiction (+ **WB-C2** free-then-costed, advisory; ERROR under `--strict`),
 **WB-G1** distance contradiction (within a commensurable unit class — spatial vs travel-time are

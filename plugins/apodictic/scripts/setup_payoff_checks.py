@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """setup-payoff — referential completeness for the Setup–Payoff Ledger.
 
-`validate.sh setup-payoff <run_folder|files>` shells out here. The Setup–Payoff Ledger is the
+`validate.py setup-payoff <run_folder|files>` delegates here. The Setup–Payoff Ledger is the
 referential-completeness half of a developmental-edit style sheet: the mechanical home for the one
 ConStory-Bench craft row APODICTIC otherwise has no surface for — "Abandoned Plot Elements",
 introduced narrative expectations never resolved (setup without payoff). It records the

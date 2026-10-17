@@ -55,17 +55,26 @@ The three current validation lanes are consolidated into one required
 4. validator self-tests; and
 5. canonical-framework validation.
 
-The present fourth aggregation runner is removed.  The consolidated job is
-exactly `ubuntu-latest` with `timeout-minutes: 10`; recent successful runs use
-roughly one minute across the three substantive lanes, so the existing per-lane
-hang cap remains ample after consolidation.  The existing protected context name
-`validate` remains unchanged, so no ruleset or branch-protection migration is
-required.  Consolidation trades a small amount of wall-clock parallelism for
-fewer runner startups, less hosted compute/queue noise, and fleet-policy
-consistency.  APODICTIC is public, so its standard GitHub-hosted jobs do not
-consume plan minutes; actual billed-minute savings accrue in the private fleet
-repos.  No test, generator, mirror check, consumer-contract check, or
-canonical-framework gate may disappear.
+The consolidated job is exactly `windows-latest` with `timeout-minutes: 10`.
+The Group14 native cutover replaces the previous Ubuntu lane explicitly while
+retaining the single protected `validate` context, admission predicate, binding
+receipt, and every substantive check. Python 3.12 is the CI qualification pin;
+the documented runtime floor remains Python 3.10+. UTF-8 is explicit, and each
+native call in a multi-command PowerShell step checks its exit immediately.
+
+The final full `--check-all` runs in a fresh absolute-Python child with empty PATH
+after a bounded disposable-runner Bash/sh absence protocol. Only executable
+process-creation absence qualifies; denied renames or launches, surviving shells,
+failed validation, or failed restoration refuse the receipt. All moved files are
+restored in reverse order, preserving any earlier failure. The protocol must never
+be rehearsed by renaming executables on shared development machines.
+
+This proposal keeps one runner startup and trades the hosted Ubuntu lane for
+Windows; POSIX qualification remains required locally. It makes no claim about
+unchanged pricing or runtime duration. No test, generator, consumer-contract check,
+or canonical-framework gate may disappear. The local Group14 draft is unarmed:
+an authorized actual hosted Windows full No-Bash receipt remains owed before
+final CB-1(a) acceptance.
 
 Release, release-readiness, and scheduled SETEC synchronization remain separate
 workflows with their existing triggers and permissions.  Before updating its
@@ -139,7 +148,7 @@ A PR may enter a train only when all of the following are recorded:
 - independent generic and fleet-posture reviews of that exact diff, with every
   P1/P2 repaired and re-reviewed;
 - scope-appropriate local validation plus the combined repository gate
-  `bash scripts/validate.sh --check-all` when applicable;
+  `python plugins/apodictic/scripts/validate.py --check-all` when applicable;
 - clean `git diff --check`, no unresolved review thread, no active owner
   mutation, and no uncommitted integration fix; and
 - preserved SETEC consumer boundaries, mirrored-script parity, generated-tree
@@ -337,7 +346,7 @@ normalize comments and whitespace where those do not affect behavior.
   either reviewed into the rollout train or explicitly excluded.
 - The implementation receives independent generic and fleet-posture review at
   its final exact head.
-- Local policy/tool self-tests, `bash scripts/validate.sh --check-all`, release
+- Local policy/tool self-tests, `python plugins/apodictic/scripts/validate.py --check-all`, release
   digest, status-drift, mirror, generated-build, and `git diff --check` gates pass.
 - `AGENTS.md` and `.github/pull_request_template.md` are reconciled to the
   draft-first/one-train policy with no direct-main or constituent auto-merge

@@ -1,9 +1,37 @@
 # Native Python validator migration
 
-**Status:** Groups 1–4, 5a and 6–13 built; self-test output stabilized. The gate pair
-and Group 14 remain queued. The Bash dispatcher remains the
-full validator entrypoint during this migration.
+**Status:** Group14 native cutover built as an unarmed draft. Local combined
+qualification and independent review are required; final CB-1(a) acceptance still
+requires an authorized actual `windows-latest` full No-Bash receipt. Earlier
+increment records below describe the migration history.
 <!-- built-when: plugins/apodictic/scripts/validate.py -->
+<!-- built-when: plugins/apodictic/scripts/validate_canonical.py -->
+<!-- built-when: plugins/apodictic/scripts/validate_source.py -->
+
+The native entrypoint is `python plugins/apodictic/scripts/validate.py`. Python
+3.10+ is required; CI pins 3.12. All public routes, including gate/gate-state and
+`--self-test-all`, `--check-canonical`, and `--check-all`, use the active interpreter.
+The immutable aggregate tuple is the inventory source. Gate-state accounts for
+the actual gate suite once; full checks still run canonical checks after aggregate
+failures. `validate.sh` remains an optional small POSIX launcher and returns 127
+when Python is missing. There is no missing-runtime degraded PASS. The CLI help
+names `validate.py`; retained per-command legacy usage spelling is compatibility
+output, not a Bash dependency.
+
+`validate_source.py` reads AST data without importing inspected modules. It binds
+actual command-specific helper/self-test routes, the aggregate loop/count/report,
+and ordered direct canonical calls with literal or one-hop reference paths.
+Unknown source forms, mutation, rebinding and disconnected calls block source
+proof. Schema literals are checked only in the bound primary helpers; these are
+bounded routing/reference guarantees, not proof of each schema field's semantics.
+The isolated inventory command imports this fixed sibling even under `-I -S`.
+
+Both package generators exclude `__pycache__` and bytecode, including submission
+archives. Native files and the compatibility shim are required; obsolete shell
+parts are forbidden. Standalone installs preserve the existing explicit skips:
+missing eval-only export goldens can skip byte comparison, while required
+stance/E7 inputs still fail. A standalone layout is not a claim that every full
+canonical check passes without those inputs.
 
 Fleet board CB-1(a) ports the validator dispatcher command group by command group.
 Group 1 implements seven early utilities:
@@ -325,3 +353,13 @@ must use an external pre-cutover reference checkout; comparing the Bash shim to
 Python itself cannot establish parity.
 
 The M3 JSON-lines runner is CB-1(b), a later workflow outside these port groups.
+
+
+Package limit population: canonical Claude plugin source is checked before host
+removals/overrides, excluding only unshipped Python caches. Both actual Codex
+archives enforce the file-count bound over all plugin members. The per-file
+Claude source ceiling excludes only the existing declared Codex listing assets
+with exact packaging override bindings and no canonical counterpart; their actual
+archive sizes are reported separately. Two unchanged listing screenshots exceed
+256 KiB, so this is not a claim that the complete Codex ZIP meets that per-file
+ceiling. Antigravity checks every plugin member against the ceiling.

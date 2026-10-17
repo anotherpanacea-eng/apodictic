@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """style-explanation — structural integrity for the Interpretable Stylometric Explanation overlay.
 
-`validate.sh style-explanation <author_root|files>` shells out here. The Author Voice Fingerprint
+`validate.py style-explanation <author_root|files>` delegates here. The Author Voice Fingerprint
 (#9) measures how distinctive a writer's voice is and persists it across a career — but only as
 NUMBERS. This capability is the LABELLING LAYER: it attaches a natural-language description to an
 already-measured stylistic feature ("the prose leans hard on the definite article", "function-word

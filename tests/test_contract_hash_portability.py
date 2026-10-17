@@ -1,37 +1,38 @@
-"""contract-hash/check on a host with sha256sum but no shasum (e.g. Git Bash)."""
+"""Native hashing needs neither PATH nor an external hash provider."""
 
 import hashlib
 import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 import pytest
 
-VALIDATOR = Path(__file__).resolve().parents[1] / "scripts/validate.sh"
+ROOT = Path(__file__).resolve().parents[1]
+VALIDATOR = ROOT / "plugins/apodictic/scripts/validate.py"
 
 
-def test_sha256sum_fallback_and_missing_provider_fails_closed(tmp_path):
-    tools = {n: shutil.which(n) for n in ("bash", "dirname", "awk", "sha256sum")}
-    if os.name == "nt" or not all(tools.values()):
-        pytest.skip("needs bash, dirname, awk and sha256sum")
-    bin_dir = tmp_path / "bin"
-    bin_dir.mkdir()
-    for name in ("bash", "dirname", "awk"):
-        (bin_dir / name).symlink_to(tools[name])
-    contract = tmp_path / "-contract.md"
+def test_native_hash_bytes_with_no_external_tools(tmp_path):
+    contract = tmp_path / "-contract with spaces.md"
     contract.write_bytes(b"contract\r\nbytes\n")
     digest = hashlib.sha256(contract.read_bytes()).hexdigest()
-
+    env = {**os.environ, "PATH": "", "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
     def run(*args):
-        return subprocess.run([tools["bash"], str(VALIDATOR), *args], cwd=tmp_path,
-                              env={"PATH": str(bin_dir)}, capture_output=True, text=True)
+        return subprocess.run([sys.executable, str(VALIDATOR), *args], cwd=tmp_path,
+                              env=env, capture_output=True, text=True, encoding="utf-8")
+    assert run("contract-hash", contract.name).stdout == digest + "\n"
+    assert run("contract-check", contract.name, digest).returncode == 0
+    assert run("contract-check", contract.name, "0" * 64).returncode == 1
 
-    # No provider at all: neither a digest nor an "unchanged" verdict.
-    for args in (("contract-hash", "-contract.md"), ("contract-check", "-contract.md", "")):
-        result = run(*args)
-        assert (result.returncode, result.stdout) == (127, ""), result.stderr
 
-    (bin_dir / "sha256sum").symlink_to(tools["sha256sum"])
-    assert run("contract-hash", "-contract.md").stdout == digest + "\n"
-    assert run("contract-check", "-contract.md", digest).returncode == 0
+def test_posix_compatibility_shim_names_missing_python(tmp_path):
+    bash = shutil.which("bash")
+    if os.name == "nt" or not bash:
+        pytest.skip("POSIX compatibility seam; native hashing test runs everywhere")
+    # The shim uses only Bash builtins until the Python exec.
+    result = subprocess.run([bash, str(ROOT / "scripts/validate.sh"), "contract-hash", "unused"],
+                            env={**os.environ, "PATH": ""}, capture_output=True)
+    assert result.returncode == 127
+    assert result.stdout == b""
+    assert b"Python 3.10+" in result.stderr

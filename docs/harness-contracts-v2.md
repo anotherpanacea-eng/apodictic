@@ -2,7 +2,7 @@
 
 **Status:** **Built, 2026-06-21.** Shipped: the `schema-coverage` validator (`scripts/schema_coverage.py`) + the declarative `schemas/_coverage.json` binding table + its two schemas (`apodictic.schema_coverage.v1`, `apodictic.schema_binding.v1`); opt-in closed-key (`additionalProperties:false`) enforcement in the shared engine (`apodictic_artifacts.py`) with the six flat const-tagged blocks closed; and an advisory docs-no-re-list prose lint (`--check-docs`). Wired into `validate.sh --check-all` against the real `schemas/` dir, and added to `AGG_VALIDATORS`. Self-testable validators **50 → 51** (derived from `AGG_VALIDATORS`, not a hand-maintained literal). Roadmap: [`ROADMAP.md` → Harness Contracts v2](../ROADMAP.md#harness-contracts-v2).
 <!-- built-when: plugins/apodictic/scripts/schema_coverage.py -->
-<!-- built-when: plugins/apodictic/scripts/validate.sh contains "schema-coverage" -->
+<!-- built-when: plugins/apodictic/scripts/validate.py contains "schema-coverage" -->
 
 > This doc is the canonical description of the coverage manifest. Per the schema-`$comment`
 > discipline it does **not** re-list the `_coverage.json` field set in prose beyond §3 — §3 points
@@ -104,7 +104,7 @@ Two adds to `apodictic_artifacts.py`, both backward-compatible:
 
 ## 4. The gate — `schema-coverage`
 
-`validate.sh schema-coverage [<schemas_dir>] [--strict] [--check-docs]`, default dir via
+`python scripts/validate.py schema-coverage [<schemas_dir>] [--strict] [--check-docs]`, default dir via
 `apodictic_artifacts.schema_dir()`. Reuses the shared engine for all schema loading. Checks:
 
 - **C1 manifest validity.** `_coverage.json` parses and validates against the coverage + binding
@@ -116,23 +116,20 @@ Two adds to `apodictic_artifacts.py`, both backward-compatible:
   `non_artifact[]` and the two self schemas, appears in `bindings[]`. The core anti-drift assertion.
   ERROR, names the orphan.
 - **C3 no phantom binding.** Every `bindings[].schema` exists on disk. ERROR.
-- **C4 binding proven, not asserted.** For each binding, ≥1 named `validators[]` command is a real
-  `validate.sh` dispatch arm **and** the schema `$id` literal is grep-reachable in a `.py` that the
-  **bound arm** delegates to (the gate parses the arm's case block for its `.py` references and greps
-  *those*, not an arbitrary script). The "distrust count-shaped claims" discipline, mechanized.
-  ERROR. *(Folds spec-review P2 #4: C4 greps the bound script.)*
-- **C5 canonical-gate reachability.** For each binding whose `canonical_gate` is a filename/dirname
-  (not `self-test-only`), the **exact token** appears in `validate.sh`'s `--check-all` region **and**
-  the named file/dir exists under `core-editor/references/`. `self-test-only` rows (the two registry
-  schemas, with no shipped canonical instance) are exempt from the file check but the bound validator
-  must be in `AGG_VALIDATORS`, so *some* real check runs. ERROR. *(Folds spec-review P2 #4: exact
-  tokens, not prose. The `--check-all` region is extracted from apodictic's
-  `if [ "$1" = "--check-all" ]; then … fi` block, not a case arm.)*
+- **C4 binding proven, not asserted.** A named validator has a real native command route,
+  and its whole schema ID occurs in a non-docstring literal in that route's primary helper.
+  Comments, unrelated helpers, and PDF companion tests cannot supply the association.
+  This is a bounded source reference guarantee, not semantic field-enforcement proof.
+- **C5 canonical-gate reachability.** An actual direct `run_validator` call from the canonical
+  entry or a directly invoked section passes the exact reference path component to the bound
+  command, and that example exists under references. Literal paths and ordered one-hop local
+  paths are recognized. Dead/uncalled/unknown-control/loop-generated decoys supply no proof.
+  Self-test-only bindings require a real routed aggregate suite. Missing or unsupported source
+  is a blocking source-check error.
 - **W1 non_artifact integrity.** Every `non_artifact[]` entry exists on disk as a `*.schema.json`
   (else the exclusion is dead). WARN; ERROR under `--strict`.
 
-Exit: 0 clean / WARN-only; 1 on any ERROR (or WARN under `--strict`); 2 usage. Degrades to advisory
-PASS without `python3`, like every other Python-backed arm.
+Exit: 0 clean / WARN-only; 1 on any ERROR (or WARN under `--strict`); 2 usage. Python 3.10+ is required; missing source or runtime does not produce a clean result.
 
 ### 4.3 Closed-key enforcement (the misspelled-field kill)
 

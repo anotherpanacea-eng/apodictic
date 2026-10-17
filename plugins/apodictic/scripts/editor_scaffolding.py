@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """editor-scaffolding — Editor Scaffolding operator-mode presentation contract (Operators).
 
-`validate.sh editor-scaffolding <editorial_letter|run_folder> [--strict]` shells out here.
+`validate.py editor-scaffolding <editorial_letter|run_folder> [--strict]` delegates here.
 Editor Scaffolding (`operator:editor`) re-aims the Core DE editorial letter at a human
 developmental editor using APODICTIC as analytical assist: an Editor Brief addressee, a
 "What You Might Have Missed" blind-spot section, and an "Intervention Menu" that hands the

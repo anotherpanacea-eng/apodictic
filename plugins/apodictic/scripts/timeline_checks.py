@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Real parser + verifier for the Pass 10 Timeline artifact (validate.sh timeline-* arms).
+"""Real parser + verifier for the Pass 10 Timeline artifact (validate.py timeline-* arms).
 
 Implements the Phase 7 Timeline parser deferred in core-editor/references/pass-10.md
 §Phase 7 Work Items:
@@ -19,7 +19,7 @@ whose anchors normalize to a (day, time-of-day) / day number with HIGH/MEDIUM co
 that are not marked flashback / concurrent / ambiguous. Unparseable, LOW/UNCERTAIN, or
 flashback rows are exempt — the model still owns the judgment for those.
 
-CLI (called by validate.sh; degrades to the bash implementation when python3 is absent):
+CLI (called by validate.py; Python 3.10+ is required):
     timeline_checks.py timeline-diff <prior> <current>
     timeline_checks.py timeline-arithmetic <timeline>
     timeline_checks.py timeline-anchor-conflict <timeline>

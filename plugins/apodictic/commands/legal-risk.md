@@ -15,7 +15,7 @@ Load `../skills/core-editor/SKILL.md` and follow `../skills/core-editor/referenc
 2. Flag each exposure area as an `apodictic.legal_risk.v1` block — `risk_class` (defamation / privacy / rights-clearance / other), a legal-escalation `severity` (monitor / review-recommended / review-now), the `concern`, the `escalation_trigger`, and a `disposition` that routes serious items to counsel — in `[Project]_Legal_Risk_Register_[runlabel].md`.
 3. Carry the not-a-lawyer disclaimer in reader-facing prose.
 
-**Gate before finalizing:** `scripts/validate.sh legal-risk <run_folder>` (add `--strict` for CI). Resolve any ERROR (broken contract, duplicate id, missing disclaimer) and review W1 (a `concern`/`disposition` that reads like a legal conclusion rather than a flag) / W2 (a `review-now` item not routed to counsel). See `docs/legal-risk-register.md`.
+**Gate before finalizing:** `python scripts/validate.py legal-risk <run_folder>` (add `--strict` for CI). Resolve any ERROR (broken contract, duplicate id, missing disclaimer) and review W1 (a `concern`/`disposition` that reads like a legal conclusion rather than a flag) / W2 (a `review-now` item not routed to counsel). See `docs/legal-risk-register.md`.
 
 **State and output locations** (per `../skills/core-editor/references/output-structure.md` §Folder Architecture):
 - Read the manuscript and any `Diagnostic_State.md` from the **project root**

@@ -481,54 +481,49 @@ class NavigationRunTests(unittest.TestCase):
                 self.assertEqual(call(*args), 2)
 
 
-class ShellNavigationTests(unittest.TestCase):
+class NativeNavigationTests(unittest.TestCase):
     def setUp(self):
-        candidate = Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "Git" / "bin" / "bash.exe"
-        self.bash = str(candidate) if candidate.is_file() else shutil.which("bash")
-        if not self.bash:
-            self.skipTest("Bash unavailable")
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
         normal_run(self.root)
 
     def tearDown(self):
-        if hasattr(self, "temp"):
-            self.temp.cleanup()
+        self.temp.cleanup()
 
-    def shell(self, command, args, *, python=True, helper=True):
-        # Source the actual command arm with an isolated public invocation argv;
-        # missing-helper $0 is a fresh fixture path, never a deleted repo file.
-        script = ("python3() { \"%s\" \"$@\"; }; " % Path(sys.executable).as_posix()) if python else (
-            'command() { if [ "$1" = "-v" ] && [ "$2" = "python3" ]; then return 1; fi; builtin command "$@"; }; ')
-        script += 'COMMAND="$1"; shift; . "%s"' % (SCRIPTS / "validate.d" / "commands-b.sh").as_posix()
-        zero = SCRIPTS / "validate.sh" if helper else self.root / "missing-helper.sh"
-        return subprocess.run([self.bash, "-c", script, zero.as_posix(), command, *args],
-                              text=True, capture_output=True, timeout=30)
+    def native(self, command, args, *, helper=True):
+        entry = SCRIPTS / "validate.py"
+        if not helper:
+            isolated = self.root / "missing helper"
+            isolated.mkdir(exist_ok=True)
+            entry = isolated / "validate.py"
+            shutil.copyfile(SCRIPTS / "validate.py", entry)
+        return subprocess.run([sys.executable, str(entry), command, *args],
+                              env={**os.environ, "PATH": "", "PYTHONUTF8": "1",
+                                   "PYTHONIOENCODING": "utf-8"},
+                              text=True, encoding="utf-8", capture_output=True, timeout=30)
 
     def test_mode_propagation_and_missing_dependencies_fail_closed(self):
         self.assertEqual(exporter.generate_pdf(str(self.root), internal_links=True)[0], 0)
-        args = [self.root.as_posix(), "--internal-links"]
-        actual = self.shell("pdf-export", args)
+        args = [str(self.root), "--internal-links"]
+        actual = self.native("pdf-export", args)
         self.assertEqual(actual.returncode, 0, actual.stdout + actual.stderr)
-        for python, helper in ((False, True), (True, False), (False, False)):
-            with self.subTest(python=python, helper=helper):
-                actual = self.shell("pdf-export", args, python=python, helper=helper)
-                self.assertEqual(actual.returncode, 2, actual.stdout + actual.stderr)
-                self.assertIn("navigation validation unavailable", actual.stdout)
-        default = self.shell("pdf-export", [self.root.as_posix()], python=False)
-        self.assertEqual(default.returncode, 0)
-        self.assertIn("WARN", default.stdout)
+        actual = self.native("pdf-export", args, helper=False)
+        self.assertEqual(actual.returncode, 2, actual.stdout + actual.stderr)
+        self.assertIn("navigation validation unavailable", actual.stdout)
+        # Default mode also fails if its real validator helper is absent.
+        default = self.native("pdf-export", [str(self.root)], helper=False)
+        self.assertNotEqual(default.returncode, 0)
 
-    def test_misplaced_repeated_and_selftest_flags_refuse_without_python(self):
-        cases = [("html-export", [self.root.as_posix(), "--internal-links"]),
-                 ("docx-export", [self.root.as_posix(), "--internal-links"]),
-                 ("obsidian-export", [self.root.as_posix(), "--internal-links"]),
-                 ("pdf-export", [self.root.as_posix(), "--internal-links", "--internal-links"]),
+    def test_misplaced_repeated_and_selftest_flags_refuse_before_helper(self):
+        cases = [("html-export", [str(self.root), "--internal-links"]),
+                 ("docx-export", [str(self.root), "--internal-links"]),
+                 ("obsidian-export", [str(self.root), "--internal-links"]),
+                 ("pdf-export", [str(self.root), "--internal-links", "--internal-links"]),
                  ("pdf-export", ["--self-test", "--internal-links"]),
-                 ("pdf-export", [self.root.as_posix(), "--internal-links=true"])]
+                 ("pdf-export", [str(self.root), "--internal-links=true"])]
         for command, args in cases:
             with self.subTest(command=command, args=args):
-                actual = self.shell(command, args, python=False, helper=False)
+                actual = self.native(command, args, helper=False)
                 self.assertEqual(actual.returncode, 2, actual.stdout + actual.stderr)
                 self.assertIn("usage", actual.stdout)
 

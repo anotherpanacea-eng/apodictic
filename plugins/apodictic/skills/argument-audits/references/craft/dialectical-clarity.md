@@ -823,7 +823,7 @@ For the three **evaluator-scored** genres above, read the argument as the named 
 - **Academic paper → peer reviewer** (strictest calibration; CL0 is disqualifying). The objection class: "this is already known," "the gap isn't real," "the method doesn't support the claim." The net-new structural signal — a **contribution claim with no related-work positioning** is the academic analogue of a bare assertion: the paper claims novelty without locating the gap (the genre layer's W4 nudges the missing related-work section pre-draft).
 - **Pitch deck → investor** (reading fast). The objection class: "the problem isn't urgent," "the solution doesn't follow," "the traction is vanity-metric'd." Surface the unengaged class; never write the investor's objection for the writer.
 
-The three canonical worked examples (`core-editor/references/example-argument-state-genre-{grant,academic,pitch}.md`, gated by `validate.sh --check-all`) each carry a writer-authored `reviewer_objections` pre-list seeded into a §6 *Reviewer-anticipation* block — the worked demonstration of the mapping above (they pass W5 clean under `--strict` because the list is non-empty).
+The three canonical worked examples (`core-editor/references/example-argument-state-genre-{grant,academic,pitch}.md`, gated by `python validate.py --check-all`) each carry a writer-authored `reviewer_objections` pre-list seeded into a §6 *Reviewer-anticipation* block — the worked demonstration of the mapping above (they pass W5 clean under `--strict` because the list is non-empty).
 
 ### By Audience Posture
 

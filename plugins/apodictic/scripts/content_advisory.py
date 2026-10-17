@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """content-advisory — structural integrity for the Content-Advisory / Sensitivity-Surface Derivation.
 
-`validate.sh content-advisory <run_folder|files>` shells out here. A writer preparing to publish often
+`validate.py content-advisory <run_folder|files>` delegates here. A writer preparing to publish often
 needs a content advisory — a map of where the manuscript depicts intense material (violence, sexual
 content, self-harm, abuse), at what intensity, on- or off-page — for front-matter, marketing metadata,
 sensitivity-reader handoff, or their own awareness. APODICTIC's existing audits *assess* such content

@@ -29,6 +29,64 @@ if (!codex) {
   process.exit(1);
 }
 
+function isPythonCache(filePath) {
+  return filePath.split(/[\\/]/).includes("__pycache__") || /\.py[co]$/.test(filePath);
+}
+
+function validateCanonicalSource() {
+  const files = walkFiles(abs("plugins/apodictic")).filter((source) => !isPythonCache(source));
+  const oversized = files.filter((source) => fs.statSync(source).size >= 256 * 1024);
+  if (files.length > 512 || oversized.length) {
+    throw new Error(`Canonical plugin exceeds limits: ${files.length} files; oversized: ${oversized.join(", ") || "none"}.`);
+  }
+  console.log(`Canonical plugin: ${files.length} files; every shipped source file under 256 KiB.`);
+}
+
+function listingAssets() {
+  const result = new Set();
+  for (const destination of codex.requiredAssets || []) {
+    const matches = Object.entries(codex.overrides || {}).filter(([, dest]) => dest === destination);
+    if (matches.length !== 1 || !destination.startsWith("plugins/apodictic/assets/") ||
+        path.posix.normalize(destination) !== destination || destination.includes("\\") ||
+        !matches[0][0].startsWith("packaging/codex/assets/") ||
+        path.posix.normalize(matches[0][0]) !== matches[0][0] || matches[0][0].includes("\\") ||
+        !fs.statSync(abs(matches[0][0])).isFile()) {
+      throw new Error(`Unsupported or ambiguous Codex listing asset: ${destination}`);
+    }
+    // A canonical counterpart is never removed from the source-limit population.
+    if (!fs.existsSync(abs(destination))) result.add(destination.slice("plugins/apodictic/".length));
+  }
+  return result;
+}
+
+// Check actual self-generated archive members, including the submission ZIP.
+// ZIP metadata reports uncompressed bytes; this does not claim hostile-ZIP validation.
+function validateNativeArchive(archivePath, prefix = "plugins/apodictic/") {
+  const entries = listZipEntryMetadata(archivePath);
+  if (entries.some(({ name }) => isPythonCache(name))) {
+    throw new Error("Archive contains Python bytecode/cache content.");
+  }
+  const plugin = entries.filter(({ name }) => name.startsWith(prefix));
+  const externalListing = listingAssets();
+  const limited = plugin.filter(({ name }) => !externalListing.has(name.slice(prefix.length)));
+  for (const name of externalListing) {
+    const member = plugin.find((entry) => entry.name === prefix + name);
+    if (!member) throw new Error(`Listing asset missing from actual archive: ${name}`);
+    console.log(`Codex listing asset (outside Claude source ceiling): ${name}: ${member.size} bytes`);
+  }
+  if (plugin.length > 512 || limited.some(({ size }) => size >= 256 * 1024)) {
+    throw new Error(`Archived plugin exceeds limits: ${plugin.length} files; oversized: ${limited.filter(({ size }) => size >= 256 * 1024).map(({ name, size }) => `${name} (${size} bytes)`).join(", ") || "none"}.`);
+  }
+  console.log(`Archived Codex plugin: ${plugin.length} members; non-listing members under 256 KiB.`);
+  const names = new Set(plugin.map(({ name }) => name.slice(prefix.length)));
+  for (const name of ["validate.py", "validate_canonical.py", "validate_source.py", "validate.sh"]) {
+    if (!names.has(`scripts/${name}`)) throw new Error(`Native archive entry missing: ${name}`);
+  }
+  for (const name of ["check-all.sh", "commands-a.sh", "commands-b.sh"]) {
+    if (names.has(`scripts/validate.d/${name}`)) throw new Error(`Obsolete archive entry: ${name}`);
+  }
+}
+
 function abs(relPath) {
   return path.resolve(repoRoot, relPath);
 }
@@ -442,6 +500,7 @@ function buildSubmissionArchive(tempPluginDir, archivePath) {
   }
   const forbiddenNames = new Set(["mcp.json", ".mcp.json", ".app.json", "hooks.json"]);
   const sources = walkFiles(tempPluginDir)
+    .filter((source) => !isPythonCache(source))
     .filter((file) => !path.relative(tempPluginDir, file).split(path.sep).includes(".claude-plugin"))
     .map((sourcePath) => {
       const archiveName = path.relative(tempPluginDir, sourcePath).split(path.sep).join("/");
@@ -452,6 +511,7 @@ function buildSubmissionArchive(tempPluginDir, archivePath) {
         mode: archiveExecutableSet.has(`plugins/apodictic/${archiveName}`) ? 0o755 : 0o644 };
     });
   createZipArchive(archivePath, sources);
+  validateNativeArchive(archivePath, "");
   const entries = new Set(listZipEntries(archivePath));
   for (const entry of [".codex-plugin/plugin.json", "LICENSE", "PRIVACY.md", ...referencedFiles.map((file) => file.slice(2))]) {
     if (!entries.has(entry)) throw new Error(`Missing submission archive entry: ${entry}`);
@@ -546,6 +606,7 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
   }
 
   const archiveSources = walkFiles(tempWorkspace)
+    .filter((source) => !isPythonCache(source))
     .map((sourcePath) => ({
       sourcePath,
       archiveName: path.relative(tempWorkspace, sourcePath).split(path.sep).join("/"),
@@ -562,6 +623,7 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
     .filter(({ archiveName }) => !archiveName.endsWith("/.DS_Store"))
     .filter(({ archiveName }) => !archiveName.startsWith("plugins/apodictic/.claude-plugin/"));
   createZipArchive(tempArchivePath, archiveSources);
+  validateNativeArchive(tempArchivePath);
 
   const archiveEntries = listZipEntries(tempArchivePath);
   const archiveModes = new Map(
@@ -632,6 +694,7 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
 }
 
 function main() {
+  validateCanonicalSource();
   const canonicalManifestPath = abs(paths.pluginJson);
   const canonicalManifest = readJson(canonicalManifestPath);
   const canonicalVersion = canonicalManifest.version;
@@ -658,7 +721,7 @@ function main() {
     ensureDir(path.join(tempWorkspace, "plugins"));
     ensureDir(path.join(tempWorkspace, ".agents", "plugins"));
 
-    fs.cpSync(abs("plugins/apodictic"), tempPluginDir, { recursive: true });
+    fs.cpSync(abs("plugins/apodictic"), tempPluginDir, { recursive: true, filter: (source) => !isPythonCache(source) });
 
     stripSourceOnlyFiles(tempPluginDir, wrapperMappings);
     applyOverrides(tempWorkspace);

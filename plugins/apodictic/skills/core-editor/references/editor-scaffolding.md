@@ -65,7 +65,7 @@ Worked example: `references/example-editorial-letter-scaffolded.md`.
 
 ## Mechanical check
 
-`scripts/validate.sh editor-scaffolding <editorial_letter>` enforces the operator-mode contract **only when the letter declares the mode marker** (a letter without it is an ordinary author-facing letter and passes as a no-op):
+`python scripts/validate.py editor-scaffolding <editorial_letter>` enforces the operator-mode contract **only when the letter declares the mode marker** (a letter without it is an ordinary author-facing letter and passes as a no-op):
 
 - **E1** mode marker + a non-empty Editor Brief; **E2** a non-empty "What You Might Have Missed"; **E3** an "Intervention Menu" heading (override `<!-- override: scaffolding-checklist — … -->`); **E4** at least one canonical severity token survives. All four are evaluated over the **body** (before Appendix A), so an appendix heading can't satisfy a required scaffold section.
 - **W1** (advisory; ERROR under `--strict`) author-directed prescription in the body — modal ("you should rewrite") or a bare line-start imperative ("Add a scene…", "Cut the prologue"); intervention classes and Keep/Cut/Unsure labels are exempt (override `<!-- override: scaffolding-prescription — … -->`).
@@ -76,7 +76,7 @@ Run it alongside `decision-layer-check`, `severity-floor`, and `softness-check` 
 
 An editor who wants **both** letters — the scaffolded one to work from *and* the author-facing one to hand the author — runs one diagnosis into two letters and validates the pair with the same validator's two-file arm:
 
-`scripts/validate.sh editor-scaffolding --dual <editor_letter> <author_letter>`
+`python scripts/validate.py editor-scaffolding --dual <editor_letter> <author_letter>`
 
 - **D1** the editor letter declares the mode and passes E1–E4.
 - **D2** the author letter is in **author register** — no editor marker, no Editor Brief / What You Might Have Missed / Intervention Menu, and it carries a **Revision Checklist** heading. (The framework never authors the checklist *content* — D2 only checks register; the Firewall holds.)
@@ -88,7 +88,7 @@ Worked pair: `references/example-editorial-letter-scaffolded.md` (editor) + `ref
 
 When an editor wants a **single pass** re-aimed at them — not the whole letter — reframe that pass artifact (`[Project]_Pass<N>_<Name>_<runlabel>.md`) for the editor and validate it with the same validator's single-file per-pass arm:
 
-`scripts/validate.sh editor-scaffolding --per-pass <pass_artifact>`
+`python scripts/validate.py editor-scaffolding --per-pass <pass_artifact>`
 
 A pass is a single diagnostic lens, so the reframe is a right-sized subset of the letter's E1–E4 (and marker-conditional, exactly like the letter path — a pass artifact without `<!-- mode: editor-scaffolding -->` is an ordinary diagnostic artifact and passes as a no-op):
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """calibration-honesty — an uncalibrated SETEC band must never be rendered to a reader as a verdict.
 
-`validate.sh calibration-honesty <run_folder|files...> [--strict]` shells out here. Both consumer
+`validate.py calibration-honesty <run_folder|files...> [--strict]` delegates here. Both consumer
 decision-audit surfaces — `narrative_decision_audit` (StoryScope) and `argument_decision_audit`
 (ArgScope) — ship `handoff: experimental` with an envelope `aggregate.verdict_band: "uncalibrated"` and
 `thresholds: {low: null, high: null}`. The consumer-side discipline (surface the band as PROVENANCE

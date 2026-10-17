@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """schema-coverage — the drift-kill keystone for Harness Contracts v2.
 
-`validate.sh schema-coverage [<schemas_dir>] [--strict] [--check-docs]` shells out here. The
+`python validate.py schema-coverage [<schemas_dir>] [--strict] [--check-docs]` delegates here. The
 22 structured-artifact JSON-Schema files in plugins/apodictic/schemas/ already ARE the single
 source of truth, and every one is bound to a Python validator. What was missing is the invariant
 the whole system rests on: that *every* `*.schema.json` on disk stays bound to a validator and
@@ -14,18 +14,13 @@ disk reality matches the declarative `_coverage.json` binding table.
   C2 no orphan schema    every *.schema.json on disk (minus non_artifact[] and the two self
                          schemas schema_coverage/schema_binding) appears in bindings[].     ERROR
   C3 no phantom binding  every bindings[].schema exists on disk as <schema>.schema.json.    ERROR
-  C4 binding proven      for each binding, >=1 named validator is a real validate.sh arm AND the
-                         schema id literal is grep-reachable in a .py the BOUND arm delegates
-                         to (the binding is demonstrated, not merely asserted).             ERROR
-  C5 canonical reachable for each binding whose canonical_gate is a filename/dirname (not the
-                         literal self-test-only), that exact token (as a whole path component) is
-                         PASSED TO a real `$0 <bound-validator> ...` invocation in the --check-all
-                         region — directly or via one hop of variable indirection — AND the named
-                         file/dir exists under references/. A token sitting only in an echo/comment,
-                         or handed only to an UNRELATED validator, does NOT satisfy C5 (the schema
-                         must be exercised by ITS bound arm against THIS canonical artifact).
-                         self-test-only rows are exempt from the file check but the bound arm
-                         must be in AGG_VALIDATORS (so SOME real check runs).                ERROR
+  C4 binding proven      each bound command has an actual native first-self-test route and the
+                         whole schema ID occurs as non-docstring literal data in its primary
+                         helper. This establishes source association, not semantic field proof.
+  C5 canonical reachable a bound command receives the exact references-relative artifact through
+                         a direct native canonical call or one ordered path assignment in an
+                         actually called section. Unknown control cannot supply an anchor.
+                         self-test-only requires a real aggregate route.                     ERROR
   W1 non_artifact integ. every non_artifact[] entry exists on disk as a *.schema.json file
                          (else the exclusion is dead).                         WARN; ERROR --strict
 
@@ -40,7 +35,8 @@ defer-marker and WARN if any enumerates a field name the schema does not declare
 construction (opt-in docs only); advisory in increment 1.
 
 Reuses apodictic_artifacts for all schema loading (no second schema reader). Stdlib only; shells
-nothing (reads files directly). Degrades to an advisory PASS without apodictic_artifacts.
+nothing (reads files directly). Without apodictic_artifacts, retains the legacy degraded PASS
+only if native source checks succeed; this fallback does not verify schemas.
 
   schema_coverage.py schema-coverage [<schemas_dir>] [--strict] [--check-docs]
   schema_coverage.py --self-test
@@ -51,6 +47,11 @@ import json
 import os
 import re
 import sys
+try:
+    from validate_source import SourceError, read_aggregate, read_dispatch, read_canonical, schema_literals
+except ImportError as exc:
+    print("schema-coverage: source-check unavailable: " + str(exc), file=sys.stderr)
+    raise SystemExit(2)
 from pathlib import Path
 
 try:
@@ -108,158 +109,9 @@ def _load_schema_from(schemas_dir, sid):
         return None
 
 
-# --------------------------------------------------------------- validate.sh parsing
-
-def _validate_sh_path(scripts_dir):
-    p = Path(scripts_dir) / "validate.sh"
-    return p if p.is_file() else None
-
-
-def _agg_validators(validate_sh_text):
-    """The AGG_VALIDATORS token set (the self-testable validator list)."""
-    m = re.search(r'AGG_VALIDATORS="([^"]*)"', validate_sh_text or "")
-    return set(m.group(1).split()) if m else set()
-
-
-def _dispatch_arms(validate_sh_text):
-    """Set of `<arm>)` case-label names defined in validate.sh (the real dispatch arms)."""
-    return set(re.findall(r'^\s{2}([a-z][a-z0-9-]+)\)', validate_sh_text or "", re.MULTILINE))
-
-
-def _arm_scripts(validate_sh_text, arm):
-    """The .py filenames referenced inside `arm`'s case block (the script(s) it delegates to).
-
-    Scans from the `  <arm>)` case label to the next case label / esac, collecting every
-    `<name>.py` token. This is the 'bound script' for C4 — the schema id must be grep-reachable
-    in one of THESE, not in an arbitrary script."""
-    if not validate_sh_text:
-        return set()
-    lines = validate_sh_text.splitlines()
-    start = None
-    label = re.compile(r'^\s{2}%s\)' % re.escape(arm))
-    next_label = re.compile(r'^\s{2}[a-z][a-z0-9-]+\)')
-    for i, ln in enumerate(lines):
-        if label.match(ln):
-            start = i
-            break
-    if start is None:
-        return set()
-    scripts = set()
-    for ln in lines[start + 1:]:
-        if next_label.match(ln) or ln.strip() == "esac":
-            break
-        scripts.update(re.findall(r'([a-z_]+\.py)', ln))
-    return scripts
-
-
-def _check_all_region(validate_sh_text):
-    """The body of the --check-all block — the substring C5 scans for canonical-file tokens.
-
-    apodictic dispatches --check-all via `if [ "$1" = "--check-all" ]; then ... fi` (a top-level
-    if-block, not a case arm). Capture from that guard to the first top-level `fi` (column 0).
-    Falls back to a `  --check-all)` case arm so a future refactor to case-form still resolves."""
-    if not validate_sh_text:
-        return ""
-    m = re.search(r'^if \[ "\$1" = "--check-all" \]; then', validate_sh_text, re.MULTILINE)
-    if m:
-        rest = validate_sh_text[m.end():]
-        end = re.search(r'^fi\b', rest, re.MULTILINE)
-        return rest[: end.start()] if end else rest
-    m = re.search(r'^\s{2}--check-all\)', validate_sh_text, re.MULTILINE)
-    if m:
-        rest = validate_sh_text[m.end():]
-        nxt = re.search(r'^\s{2}[a-z][a-z0-9-]+\)|^\s{2}--[a-z]', rest, re.MULTILINE)
-        return rest[: nxt.start()] if nxt else rest
-    return ""
-
-
-# Tokens are matched as whole PATH COMPONENTS, never as bare substrings, so that
-# `example-run-folder` (a real gate) is NOT satisfied by an `example-run-folder-r1` argument that
-# only an UNRELATED validator (regression-diff) receives. A component is bounded on both sides by a
-# path/quote/whitespace separator (or string end) — `-` is NOT a boundary, so the `-r1`/`-r2`
-# siblings stay distinct.
-_TOKEN_BOUNDARY_BEFORE = r'(?:^|[\s"\'/=$({,])'
-_TOKEN_BOUNDARY_AFTER = r'(?=$|[\s"\'/])'
-
-
-def _token_in(token, text):
-    """True iff `token` occurs in `text` as a whole path component (not a bare substring)."""
-    if not token or not text:
-        return False
-    return re.search(_TOKEN_BOUNDARY_BEFORE + re.escape(token) + _TOKEN_BOUNDARY_AFTER, text) is not None
-
-
-def _var_assignments(ca_region):
-    """Ordered list of `(pos, var, value)` assignments inside the --check-all region, source order.
-
-    Captures `VAR=value`, `VAR="value"`, and `VAR=$(... )` forms (the leading assignment on a line,
-    possibly indented). `pos` is the start offset of the matched line so a consumer can resolve a
-    variable to the assignment IN SCOPE at a given invocation (the latest assignment BEFORE it) —
-    NOT a reassignment that appears later. Lets C5 resolve one hop of indirection — e.g.
-    `CA_RUNDIR="$CA_BASE/example-run-folder"` then `"$0" gate-state "$CA_RUNDIR/Diagnostic_State.meta.json"`
-    — so a gate reached only through a variable still counts, but ONLY when the value that variable
-    HOLDS AT THE INVOCATION carries the token."""
-    out = []
-    for m in re.finditer(r'^\s*([A-Za-z_][A-Za-z0-9_]*)=(.*)$', ca_region or "", re.MULTILINE):
-        out.append((m.start(), m.group(1), m.group(2)))
-    return out
-
-
-def _resolve_at(assigns, var, pos):
-    """The value of `var` in scope at offset `pos` — the latest assignment whose line starts BEFORE
-    `pos`. Returns None if `var` is unassigned (or only assigned at/after `pos`). This is what makes a
-    later reassignment unable to retroactively satisfy C5: `P=other; "$0" arm "$P"; P=canonical` leaves
-    `$P` resolving to `other` at the invocation, not to the trailing `canonical`."""
-    val = None
-    for apos, avar, aval in assigns:
-        if avar == var and apos < pos:
-            val = aval  # later (but still-before-pos) assignment wins; assigns is in source order
-    return val
-
-
-def _bound_invocations(ca_region, validators):
-    """`(pos, args)` for every real `$0 <arm> ...` invocation whose arm is one of `validators`.
-
-    Recognizes both the bare `"$0" <arm> <args>` form and the command-substitution
-    `VAR=$("$0" <arm> <args>)` / `if FOO=$("$0" <arm> ...)` forms. The arm is the first bareword
-    after `"$0"` (a flag like `--self-test-all` is itself the arm); everything to end-of-line is the
-    candidate arg string. `pos` is the start offset of the `"$0"` match, so the caller can resolve any
-    `$VAR` in the args against the assignment in scope at THAT point. Comments and `echo`/heredoc lines
-    never match (no `"$0" <arm>` there)."""
-    if not ca_region or not validators:
-        return []
-    vset = set(validators)
-    args = []
-    inv = re.compile(r'"\$0"\s+([A-Za-z0-9][A-Za-z0-9-]*)\b([^\n]*)')
-    for m in inv.finditer(ca_region):
-        if m.group(1) in vset:
-            args.append((m.start(), m.group(2)))
-    return args
-
-
-def _canonical_invoked(ca_region, validators, token):
-    """C5 core: is `token` exercised by a REAL invocation of one of the schema's BOUND validators?
-
-    Passes only when the canonical token appears (as a path component) in the args of a `$0 <bound-
-    validator> ...` command — directly, or via one hop of variable indirection (a `$VAR` in those args
-    whose value AT THAT INVOCATION carries the token). A `$VAR` is resolved to the assignment in scope
-    at the invocation (the latest assignment before it), so a reassignment that appears LATER cannot
-    retroactively satisfy the gate. A token sitting only in an echo/comment, or passed exclusively to
-    an UNRELATED (non-bound) validator, does NOT satisfy this."""
-    assigns = None
-    for pos, arg_str in _bound_invocations(ca_region, validators):
-        if _token_in(token, arg_str):
-            return True
-        # one hop of indirection: any $VAR / ${VAR} in the args whose IN-SCOPE value carries the token.
-        refs = re.findall(r'\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?', arg_str)
-        if refs:
-            if assigns is None:
-                assigns = _var_assignments(ca_region)
-            for v in refs:
-                val = _resolve_at(assigns, v, pos)
-                if val is not None and _token_in(token, val):
-                    return True
-    return False
+def _canonical_invoked(calls, validators, token):
+    return any(call.command in validators and any(token in parts for parts in call.reference_paths)
+               for call in calls)
 
 
 def _references_dir(scripts_dir):
@@ -281,6 +133,16 @@ def _references_dir(scripts_dir):
 def run(schemas_dir=None, scripts_dir=None, strict=False):
     """Run C1-C5 + W1 + the closed-key agreement cross-check. Returns (code, lines)."""
     if art is None:
+        # Retain the legacy artifact-import fallback only after native source
+        # validity is established; unavailable source must never become a PASS.
+        source_dir = Path(scripts_dir) if scripts_dir else _default_scripts_dir()
+        try:
+            dispatcher = source_dir / "validate.py"
+            read_dispatch(dispatcher)
+            read_aggregate(dispatcher)
+            read_canonical(dispatcher, source_dir / "validate_canonical.py")
+        except SourceError as exc:
+            return 1, ["schema-coverage: C4/C5 source-check: %s" % exc]
         return 0, ["schema-coverage: PASS (degraded — apodictic_artifacts unavailable)"]
     schemas_dir = Path(schemas_dir) if schemas_dir else _default_schemas_dir()
     scripts_dir = Path(scripts_dir) if scripts_dir else _default_scripts_dir()
@@ -337,37 +199,38 @@ def run(schemas_dir=None, scripts_dir=None, strict=False):
             errs.append("C3 phantom binding: bindings[].schema %s has no %s.schema.json on disk"
                         % (b["schema"], b["schema"]))
 
-    # C4/C5 need validate.sh.
-    vsh = _validate_sh_path(scripts_dir)
-    vtext = _read(vsh) if vsh else None
-    # validate.sh sources its --check-all block and command arms from validate.d/ (split to stay under
-    # the plugin directory's per-file size limit); parse the parts as one text, in source order.
-    if vtext is not None:
-        vtext += "".join(_read(pp) or "" for pp in sorted((Path(scripts_dir) / "validate.d").glob("*.sh")))
-    arms = _dispatch_arms(vtext)
-    agg = _agg_validators(vtext)
-    ca_region = _check_all_region(vtext)
+    # Finite source guarantees inspect real native routes without importing them.
+    try:
+        dispatcher = Path(scripts_dir) / "validate.py"
+        arms = read_dispatch(dispatcher)
+        agg = read_aggregate(dispatcher)
+        ca_region = read_canonical(dispatcher, Path(scripts_dir) / "validate_canonical.py")
+    except SourceError as exc:
+        return _report(lines, errs + ["C4/C5 source-check: %s" % exc], warns, strict)
     refs = _references_dir(scripts_dir)
 
     for b in bindings:
         sid = b["schema"]
         validators = b.get("validators", [])
-        # C4 — binding proven: a named arm is real AND the schema id is grep-reachable in a .py
-        # that the BOUND arm delegates to.
+        # C4 — a real native route binds a primary helper with the whole schema ID literal.
         proven = False
         real_arm = None
         for arm in validators:
-            if arm in arms or arm in agg:
+            if arm in arms:
                 real_arm = arm
-                for scr in _arm_scripts(vtext, arm):
-                    txt = _read(Path(scripts_dir) / scr)
-                    if txt and sid in txt:
+                for scr in arms[arm].helper_files:
+                    try:
+                        literals = schema_literals(Path(scripts_dir) / scr)
+                    except SourceError as exc:
+                        errs.append("C4 source-check: %s" % exc)
+                        continue
+                    if any(re.search(r"(?<![0-9A-Za-z_.])" + re.escape(sid) + r"(?![0-9A-Za-z_.])", text) for text in literals):
                         proven = True
                         break
             if proven:
                 break
         if real_arm is None:
-            errs.append("C4 binding unproven: %s names no real validate.sh dispatch arm (%r)" % (sid, validators))
+            errs.append("C4 binding unproven: %s names no real native dispatch route (%r)" % (sid, validators))
         elif not proven:
             errs.append("C4 binding unproven: %s id literal not found in any .py bound to %r (claimed by %s)"
                         % (sid, validators, real_arm))
@@ -376,7 +239,7 @@ def run(schemas_dir=None, scripts_dir=None, strict=False):
         gate = b.get("canonical_gate", "")
         if gate == _SELF_TEST_ONLY:
             # exempt from the file check, but the bound arm must run SOME real check (in AGG_VALIDATORS).
-            if not any(v in agg for v in validators):
+            if not any(v in agg and v in arms and arms[v].self_test_kind for v in validators):
                 errs.append("C5 self-test-only escape unbacked: %s's validator(s) %r are not in AGG_VALIDATORS"
                             % (sid, validators))
         else:
@@ -549,7 +412,7 @@ def run_self_test():
         (sdir / (sid + ".schema.json")).write_text(json.dumps(obj), encoding="utf-8")
 
     def setup(bindings, non_artifact=None, extra_disk=None, closed_on_disk=None, ca_lines=None):
-        """Build a hermetic fixture: a schemas dir + scripts dir + validate.sh + references dir.
+        """Build a hermetic fixture: a schemas dir + scripts dir + validate.py + references dir.
 
         bindings: list of dicts for _coverage.json. extra_disk: schema ids to drop on disk with NO
         binding (orphans). closed_on_disk: set of schema ids to write additionalProperties:false.
@@ -572,44 +435,49 @@ def run_self_test():
             write_schema(sdir, b["schema"], closed=(b["schema"] in closed_on_disk))
         for sid in (extra_disk or []):
             write_schema(sdir, sid)
-        # validate.sh fixture: one dispatch arm per validator named, delegating to <arm>.py,
-        # plus a top-level `--check-all` if-block, plus AGG_VALIDATORS.
         arms = sorted({v for b in bindings for v in b.get("validators", [])})
         for b in bindings:
             g = b.get("canonical_gate", "")
             if g and g != _SELF_TEST_ONLY:
-                (refs / g).write_text("fixture\n", encoding="utf-8")  # the canonical file exists
+                (refs / g).write_text("fixture\n", encoding="utf-8")
 
         def _default_ca(bs):
-            # Mirror production: a real `"$0" <bound-arm> "$CA_BASE/<gate>"` invocation per gate, so the
-            # gate token is actually PASSED TO its bound validator (what C5 now requires).
-            out = ['  CA_BASE="$CA_SCRIPT_DIR/../skills/core-editor/references"']
-            for b in bs:
-                g = b.get("canonical_gate", "")
-                if g and g != _SELF_TEST_ONLY:
-                    arm = (b.get("validators") or ["?"])[0]
-                    out.append('  "$0" %s "$CA_BASE/%s" || CA_FAIL=1' % (arm, g))
-            return out
+            return ["run_validator(%r, references / %r)" % (b["validators"][0], b["canonical_gate"])
+                    for b in bs if b.get("canonical_gate") != _SELF_TEST_ONLY]
 
-        ca_body = (ca_lines(bindings) if ca_lines else _default_ca(bindings))
-        arm_blocks = []
+        ca_body = ca_lines(bindings) if ca_lines else _default_ca(bindings)
+        table = {}
         for a in arms:
             scrname = a.replace("-", "_") + ".py"
-            arm_blocks.append('  %s)\n    python3 "$DIR/%s" "$@"\n    ;;' % (a, scrname))
-            # the bound .py must contain the schema id literal of every binding that names this arm
+            table[a] = scrname
             ids = [b["schema"] for b in bindings if a in b.get("validators", [])]
-            (scr / scrname).write_text("# %s\n" % " ".join(ids), encoding="utf-8")
-        vsh = ['#!/usr/bin/env bash',
-               'AGG_VALIDATORS="%s"' % " ".join(arms),
-               'CA_SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)',
-               'if [ "$1" = "--check-all" ]; then',
-               '  CA_FAIL=0']
-        vsh += ca_body
-        vsh += ['  exit "$CA_FAIL"',
-                'fi',
-                'case "$1" in']
-        vsh += arm_blocks + ['esac']
-        (scr / "validate.sh").write_text("\n".join(vsh) + "\n", encoding="utf-8")
+            (scr / scrname).write_text("SCHEMAS = %r\n" % ids, encoding="utf-8")
+        vpy = "\n".join([
+            "from pathlib import Path", "import sys, subprocess",
+            "from validate_canonical import run_canonical",
+            "AGG_VALIDATORS = %r" % (tuple(arms),), "_FIXTURE = %r" % table,
+            "def _run_helper(script, args):",
+            "    result = subprocess.run([sys.executable, str(Path(__file__).resolve().parent / script), *args])",
+            "    return result.returncode",
+            "def _self_test(command): pass", "def _argument_carve(args): pass",
+            "def _fixture(command, args):",
+            "    script = _FIXTURE[command]",
+            "    return _run_helper(script, args)",
+            "def main(args):",
+            "    command = args[0]",
+            "    if command == '--check-canonical':", "        return run_canonical()",
+            "    if command == '--check-all':", "        return run_canonical()",
+            "    if command in _FIXTURE:", "        return _fixture(command, args)",
+        ])
+        (scr / "validate.py").write_text(vpy + "\n", encoding="utf-8")
+        canonical = "\n".join([
+            "from pathlib import Path", "import sys, subprocess",
+            "def run_validator(command, *arguments):",
+            "    return subprocess.run([sys.executable, str(Path(__file__).resolve().parent / 'validate.py'), command, *arguments])",
+            "def run_canonical():", "    references = Path(__file__).resolve().parent / '../skills/core-editor/references'",
+            *["    " + line for line in ca_body], "    return 0",
+        ])
+        (scr / "validate_canonical.py").write_text(canonical + "\n", encoding="utf-8")
         manifest = {"schema": _COVERAGE_ID, "non_artifact": non_artifact or [], "bindings": bindings}
         (sdir / _MANIFEST_NAME).write_text(json.dumps(manifest), encoding="utf-8")
         return sdir, scr
@@ -638,13 +506,14 @@ def run_self_test():
         code, out = run(sd, sc)
         chk("c3_phantom", code == 1 and any("C3 phantom" in ln for ln in out))
 
-        # C4 unproven (no real arm): the named validator is not a real validate.sh dispatch arm.
+        # C4 unproven (no real arm): the named validator is not a real validate.py dispatch arm.
         # setup() materializes an arm per named validator, so strip alpha's arm + AGG entry afterward.
         sd, sc = setup([dict(b) for b in base])
-        vtxt = (Path(sc) / "validate.sh").read_text(encoding="utf-8")
-        vtxt = re.sub(r'  alpha\)\n(?:.*\n)*?    ;;\n', '', vtxt)  # drop the alpha) case block
-        vtxt = re.sub(r'AGG_VALIDATORS="[^"]*"', 'AGG_VALIDATORS="beta"', vtxt)  # and its AGG entry
-        (Path(sc) / "validate.sh").write_text(vtxt, encoding="utf-8")
+        vpath = Path(sc) / "validate.py"
+        vtxt = vpath.read_text(encoding="utf-8")
+        vtxt = vtxt.replace("AGG_VALIDATORS = ('alpha', 'beta')", "AGG_VALIDATORS = ('beta',)")
+        vtxt = vtxt.replace("'alpha': 'alpha.py', ", "")
+        vpath.write_text(vtxt, encoding="utf-8")
         code, out = run(sd, sc)
         chk("c4_no_arm", code == 1 and any("C4 binding unproven" in ln and "no real" in ln for ln in out))
 
@@ -654,10 +523,10 @@ def run_self_test():
         code, out = run(sd, sc)
         chk("c4_id_not_in_bound_py", code == 1 and any("C4 binding unproven" in ln and "not found" in ln for ln in out))
 
-        # C5 canonical gate not run by --check-all: rewrite validate.sh to drop the token.
+        # C5 canonical gate not run by --check-all: rewrite validate.py to drop the token.
         sd, sc = setup([dict(b) for b in base])
-        vtxt = (Path(sc) / "validate.sh").read_text(encoding="utf-8").replace("example-alpha.md", "OTHER.md")
-        (Path(sc) / "validate.sh").write_text(vtxt, encoding="utf-8")
+        vtxt = (Path(sc) / "validate_canonical.py").read_text(encoding="utf-8").replace("example-alpha.md", "OTHER.md")
+        (Path(sc) / "validate_canonical.py").write_text(vtxt, encoding="utf-8")
         code, out = run(sd, sc)
         chk("c5_gate_unreached", code == 1 and any("C5 canonical gate unreached" in ln for ln in out))
 
@@ -669,7 +538,7 @@ def run_self_test():
             for bb in bs:
                 g = bb.get("canonical_gate", "")
                 if g and g != _SELF_TEST_ONLY:
-                    out_.append('  echo "exercising %s"   # %s' % (g, g))  # echo + comment, no "$0"
+                    out_.append('print(%r) # %s' % (g, g))  # echo + comment, no "$0"
             return out_
         sd, sc = setup([dict(b) for b in base], ca_lines=_ca_echo_only)
         code, out = run(sd, sc)
@@ -678,8 +547,8 @@ def run_self_test():
         # (b) token passed ONLY to an UNRELATED validator (not in alpha's validators[]) -> FAIL.
         # alpha's gate (example-alpha.md) is handed to `beta`, never to `alpha`.
         def _ca_unrelated(bs):
-            return ['  "$0" beta "$CA_BASE/example-alpha.md" || CA_FAIL=1',
-                    '  "$0" beta "$CA_BASE/example-beta.md" || CA_FAIL=1']
+            return ["run_validator('beta', references / 'example-alpha.md')",
+                    "run_validator('beta', references / 'example-beta.md')"]
         sd, sc = setup([dict(b) for b in base], ca_lines=_ca_unrelated)
         # beta's own gate is self-test-only so beta needs no file gate; only alpha's C5 should fire.
         code, out = run(sd, sc)
@@ -689,9 +558,9 @@ def run_self_test():
         # (c) POSITIVE: token reached through ONE HOP of variable indirection (the real CA_RUNDIR
         # pattern) passes; and a sibling token (-extra) handed to an unrelated arm does NOT leak in.
         def _ca_indirect(bs):
-            return ['  CA_RUNDIR="$CA_BASE/example-alpha.md"',
-                    '  "$0" beta "$CA_BASE/example-alpha.md-extra" || CA_FAIL=1',  # sibling, unrelated arm
-                    '  "$0" alpha "$CA_RUNDIR/inner.json" || CA_FAIL=1']           # alpha reaches via $CA_RUNDIR
+            return ["P = references / 'example-alpha.md'",
+                    "run_validator('beta', references / 'example-alpha.md-extra')",
+                    "run_validator('alpha', P / 'inner.json')"]
         sd, sc = setup([dict(b) for b in base], ca_lines=_ca_indirect)
         chk("c5_indirection_passes", run(sd, sc)[0] == 0)
 
@@ -701,10 +570,9 @@ def run_self_test():
         # call. A last-assignment-wins resolver would wrongly PASS this -> must FAIL. (beta carries its
         # own gate so only alpha's C5 should fire.)
         def _ca_reassign_after(bs):
-            return ['  P="$CA_BASE/OTHER.md"',
-                    '  "$0" alpha "$P" || CA_FAIL=1',               # at this point $P = OTHER.md
-                    '  P="$CA_BASE/example-alpha.md"',              # later reassignment — too late
-                    '  "$0" beta "$CA_BASE/example-beta.md" || CA_FAIL=1']
+            return ["P = references / 'OTHER.md'", "run_validator('alpha', P)",
+                    "P = references / 'example-alpha.md'",
+                    "run_validator('beta', references / 'example-beta.md')"]
         sd, sc = setup([dict(b) for b in base], ca_lines=_ca_reassign_after)
         code, out = run(sd, sc)
         chk("c5_reassign_after_invocation_fails",
@@ -713,9 +581,8 @@ def run_self_test():
         # (c3) POSITIVE companion: the SAME variable assigned to the gate BEFORE the invocation (and
         # only reused/shadowed afterward) still passes — in-scope resolution must accept the prior value.
         def _ca_reassign_before(bs):
-            return ['  P="$CA_BASE/example-alpha.md"',
-                    '  "$0" alpha "$P" || CA_FAIL=1',               # at this point $P = example-alpha.md
-                    '  P="$CA_BASE/OTHER.md"']                      # later shadow — irrelevant to the call
+            return ["P = references / 'example-alpha.md'", "run_validator('alpha', P)",
+                    "P = references / 'OTHER.md'"]
         sd, sc = setup([dict(b) for b in base], ca_lines=_ca_reassign_before)
         chk("c5_reassign_before_invocation_passes", run(sd, sc)[0] == 0)
 
@@ -723,7 +590,7 @@ def run_self_test():
         # alpha's gate token appears ONLY as `example-alpha.md-r1` (a different component) on alpha's
         # own invocation -> must still FAIL (substring would have wrongly passed).
         def _ca_sibling_substring(bs):
-            return ['  "$0" alpha "$CA_BASE/example-alpha.md-r1" || CA_FAIL=1']
+            return ["run_validator('alpha', references / 'example-alpha.md-r1')"]
         sd, sc = setup([dict(b) for b in base], ca_lines=_ca_sibling_substring)
         code, out = run(sd, sc)
         chk("c5_sibling_substring_fails",
@@ -737,9 +604,9 @@ def run_self_test():
 
         # C5 self-test-only escape unbacked: beta's arm not in AGG_VALIDATORS.
         sd, sc = setup([dict(b) for b in base])
-        vtxt = (Path(sc) / "validate.sh").read_text(encoding="utf-8")
-        vtxt = re.sub(r'AGG_VALIDATORS="[^"]*"', 'AGG_VALIDATORS="alpha"', vtxt)  # drop beta
-        (Path(sc) / "validate.sh").write_text(vtxt, encoding="utf-8")
+        vpath = Path(sc) / "validate.py"
+        vtxt = vpath.read_text(encoding="utf-8").replace("AGG_VALIDATORS = ('alpha', 'beta')", "AGG_VALIDATORS = ('alpha',)")
+        vpath.write_text(vtxt, encoding="utf-8")
         code, out = run(sd, sc)
         chk("c5_selftest_only_unbacked", code == 1 and any("C5 self-test-only escape unbacked" in ln for ln in out))
 

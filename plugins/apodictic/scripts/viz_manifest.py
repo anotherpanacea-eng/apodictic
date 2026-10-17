@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """manuscript-viz — manifest<->source provenance for Manuscript-Structure Visualizations.
 
-`validate.sh manuscript-viz <run_folder|files...> [--strict]` shells out here. A finished
+`validate.py manuscript-viz <run_folder|files...> [--strict]` delegates here. A finished
 development edit already CONTAINS most of the numbers a structural picture needs — locked inside
 prose and tables. This builds no new analysis: a `apodictic.viz_manifest.v1` block holds only
 TRACEABLE data copied verbatim from two already-machine-readable sources — the Timeline Event-Ledger
@@ -147,7 +147,7 @@ def _has_block(text, btype):
 
     Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
     in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
-    validate.sh validator-conventions (M2)."""
+    validate.py validator-conventions (M2)."""
     if art is None:
         return ("apodictic:%s" % btype) in (text or "")
     return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))

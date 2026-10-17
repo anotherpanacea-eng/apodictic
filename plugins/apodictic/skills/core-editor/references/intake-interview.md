@@ -3,7 +3,7 @@
 *Reference module for the APODICTIC Core Editor. A narrow, optional loop on top of the existing
 intake: at the after-Pass-0/1 checkpoint it asks the author to resolve a **specific structural
 ambiguity the framework detected but cannot settle from the text** — and only that. Spec + validator:
-`docs/uncertainty-intake-interview.md`, `scripts/validate.sh intake-interview`. Worked example:
+`docs/uncertainty-intake-interview.md`, `python scripts/validate.py intake-interview`. Worked example:
 `example-intake-interview.md` (paired with `example-intake-interview-ledger.md`).*
 
 ---
@@ -81,7 +81,7 @@ A `[Project]_Intake_Interview_[runlabel].md` of `apodictic.intake_query.v1` bloc
 
 ## Validation
 
-`validate.sh intake-interview <run_folder|files...> [--strict]` runs: **I1** schema, **I2**
+`python validate.py intake-interview <run_folder|files...> [--strict]` runs: **I1** schema, **I2**
 no-contract-duplication (advisory; ERROR under `--strict`; override
 `<!-- override: intake-dup IQ-NN — <rationale> -->`), **I3** grounded ambiguity (a resolving
 `ambiguity_ref` or a non-empty `source_note`; a dangling ref is an error), **I4** calibrate-not-suppress

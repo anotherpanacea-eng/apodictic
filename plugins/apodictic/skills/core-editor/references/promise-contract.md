@@ -95,7 +95,7 @@ Findings use the canonical Must/Should/Could scale, where severity = **fidelity 
 
 ## The `promise-contract` validator
 
-`validate.sh promise-contract <run_folder|files>` resolves the `apodictic.pitch_copy.v1` input (newest `*_Pitch_Copy_*.md` wins) and the `F-PCF` findings. Delegates to `scripts/promise_contract.py`; degrades to advisory `WARN` without `python3`.
+`python validate.py promise-contract <run_folder|files>` resolves the `apodictic.pitch_copy.v1` input (newest `*_Pitch_Copy_*.md` wins) and the `F-PCF` findings. Delegates to `scripts/promise_contract.py`; requires Python 3.10+; missing Python or helper code is a blocking unavailable check.
 
 | ID | Severity | Rule |
 |---|---|---|

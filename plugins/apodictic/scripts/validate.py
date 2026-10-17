@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Native validator dispatcher, CB-1(a) groups 1–4, 5a and 6–13.
-
-Early utilities, signals, configuration, timelines and structured checks run without Bash.
-Other commands and aggregates still belong to validate.sh until their groups land.
-"""
+"""Native validator dispatcher and ordered self-test/canonical aggregates (Python 3.10+)."""
 
 import hashlib
 import os
@@ -14,10 +10,93 @@ import sys
 import tempfile
 
 
-COMMANDS = (
-    "contract-hash", "contract-check", "ledger-check", "artifact-names",
-    "synthesis-sections", "tone-check", "state-lines",
+AGG_VALIDATORS = (
+    'contract-hash',
+    'contract-check',
+    'ledger-check',
+    'artifact-names',
+    'synthesis-sections',
+    'tone-check',
+    'state-lines',
+    'severity-floor',
+    'audit-signal-propagation',
+    'underdiagnosis-triggers',
+    'ledger-consolidation',
+    'decision-layer-check',
+    'author-facing-lint',
+    'quality-risk-triggers',
+    'cost-floor',
+    'timeline-diff',
+    'timeline-arithmetic',
+    'timeline-anchor-conflict',
+    'audit-tier-criterion',
+    'pass-header',
+    'argument-recon-prerequisite',
+    'structured-findings',
+    'softness-check',
+    'deficit-lock',
+    'artifacts-schema',
+    'gate',
+    'gate-state',
+    'finding-trace',
+    'escalation-check',
+    'feedback-triage',
+    'editor-scaffolding',
+    'diagnostic-vocabulary',
+    'retcon-plan',
+    'state-card-diff',
+    'revision-arc',
+    'regression-diff',
+    'legal-risk',
+    'promise-contract',
+    'continuity-bible',
+    'setup-payoff',
+    'world-bible',
+    'intake-interview',
+    'author-fingerprint',
+    'content-advisory',
+    'coaching-history',
+    'style-explanation',
+    'persona-divergence',
+    'argument-spine',
+    'scene-ethics',
+    'argument-groundtruth-check',
+    'fiction-groundtruth-check',
+    'agreement-alpha',
+    'argument-crosswalk-check',
+    'argument-agd',
+    'argument-aif-check',
+    'argument-reconstruction',
+    'argument-reconstruction-draft',
+    'registry-check',
+    'schema-coverage',
+    'lifecycle-node',
+    'reader-instrument',
+    'manuscript-viz',
+    'annotated-manuscript',
+    'crosslink',
+    'reanchor',
+    'roundtrip-disposition',
+    'disposition-check',
+    'synthesis-coverage',
+    'dispatch-record',
+    'specificity-floor',
+    'refutation-coverage',
+    'refutation-evidence',
+    'refutation-write-scope',
+    'obsidian-export',
+    'html-export',
+    'docx-export',
+    'pdf-export',
+    'results-guide',
+    'position-pair-register',
+    'reader-contract-outline',
+    'calibration-honesty',
+    'stance-calibration',
+    'validator-conventions',
+    'argument-carve-behavior-preservation',
 )
+COMMANDS = (*AGG_VALIDATORS, "argument-aif-export")
 _HELPERS = {
     "ledger-check": ("letter_checks.py", 1, "<ledger_file>"),
     "artifact-names": ("config_checks.py", 3, "<output_dir> <project_name> <runlabel>"),
@@ -35,7 +114,6 @@ _LETTER_SIGNALS = {
     "ledger-consolidation": "<consolidated_ledger_file> [<raw_ledger_file>] | --self-test",
     "decision-layer-check": "<editorial_letter_file> | --self-test",
 }
-COMMANDS += tuple(_LETTER_SIGNALS)
 _CONFIG_TIMELINES = {
     "quality-risk-triggers": (
         "config_checks.py", "<contract_file> [<diagnostic_state_meta_file>] | --self-test",
@@ -58,7 +136,6 @@ _CONFIG_TIMELINES = {
     "timeline-arithmetic": ("timeline_checks.py", "<timeline_file> | --self-test"),
     "timeline-anchor-conflict": ("timeline_checks.py", "<timeline_file> | --self-test"),
 }
-COMMANDS += tuple(_CONFIG_TIMELINES)
 _STRUCTURED_INTEGRITY = {
     "structured-findings": ("structured_findings.py", 0, ""),
     "softness-check": ("honesty_check.py", 2, "<editorial_letter> <findings_ledger> | --self-test"),
@@ -73,7 +150,6 @@ _STRUCTURED_INTEGRITY = {
     ),
     "diagnostic-vocabulary": ("diagnostic_vocabulary.py", 1, "<vocab_guide|run_folder> [--strict] | --self-test"),
 }
-COMMANDS += tuple(_STRUCTURED_INTEGRITY)
 _RUN_INTEGRITY = {
     "escalation-check": ("escalation_check.py", 1, "<run_folder|files...> [--strict] | --self-test"),
     "dispatch-record": (
@@ -86,7 +162,6 @@ _RUN_INTEGRITY = {
     "synthesis-coverage": ("synthesis_coverage.py", 1, "<run_folder> [--strict] | --self-test"),
     "specificity-floor": ("specificity_floor.py", 2, "<editorial_letter> <findings_ledger> [--strict] | --self-test"),
 }
-COMMANDS += tuple(_RUN_INTEGRITY)
 _PLANNING_REFUTATION = {
     "retcon-plan": ("retcon_plan.py", 1, "<run_folder|files...> [--strict] | --self-test"),
     "state-card-diff": ("state_card_diff.py", 1, "<current> | <prior> <current> [--strict] | --self-test"),
@@ -105,7 +180,6 @@ _PLANNING_REFUTATION = {
         "refutation_check.py", 2, "<findings_ledger> <refutation_record> | --self-test",
     ),
 }
-COMMANDS += tuple(_PLANNING_REFUTATION)
 _ARTIFACT_PLANNING = {
     "legal-risk": "legal_risk.py",
     "promise-contract": "promise_contract.py",
@@ -115,7 +189,6 @@ _ARTIFACT_PLANNING = {
     "argument-spine": "argument_spine.py",
     "scene-ethics": "scene_ethics.py",
 }
-COMMANDS += tuple(_ARTIFACT_PLANNING)
 _INTAKE_VOICE = {
     "intake-interview": ("intake_interview.py", "<run_folder|files...> [--strict] | --self-test"),
     "author-fingerprint": ("author_fingerprint.py", "<author_root|files...> [--strict] | --self-test"),
@@ -127,7 +200,6 @@ _INTAKE_VOICE = {
     "style-explanation": ("style_explanation.py", "<author_root|files...> [--strict] | --self-test"),
     "persona-divergence": ("persona_divergence.py", "<run_folder|files...> [--strict] | --self-test"),
 }
-COMMANDS += tuple(_INTAKE_VOICE)
 _READER_MANUSCRIPT = {
     "lifecycle-node": ("lifecycle_node.py", 1, "lifecycle-node", "<sidecar> [run_folder] | --self-test"),
     "reader-instrument": ("reader_instrument.py", 1, "reader-instrument", "<run_folder|files...> [--strict] | --self-test"),
@@ -140,7 +212,6 @@ _READER_MANUSCRIPT = {
     "results-guide": ("results_guide.py", 1, "results-guide", "<run_folder|files...> [--strict] | --self-test"),
     "position-pair-register": ("position_pair_gates.py", 3, "position-pair-register", "<artifact.md> <envelope.json> <manuscript> [--strict] | --self-test"),
 }
-COMMANDS += tuple(_READER_MANUSCRIPT)
 _ARGUMENT_EVALUATORS = {
     "argument-groundtruth-check": (
         "argument_groundtruth.py", 1, "argument-groundtruth-check",
@@ -162,19 +233,16 @@ _ARGUMENT_EVALUATORS = {
     "argument-aif-export": ("argument_aif.py", 0, "export", ""),
     "argument-aif-check": ("argument_aif.py", 0, "check", ""),
 }
-COMMANDS += tuple(_ARGUMENT_EVALUATORS)
 _ARGUMENT_RECONSTRUCTION = {
     "argument-reconstruction-draft": "reconstruction_draft.py",
     "argument-reconstruction": "approval_graph.py",
 }
-COMMANDS += tuple(_ARGUMENT_RECONSTRUCTION)
 _ANNOTATION_EXPORTS = {
     "obsidian-export": "<run_folder> | (generate) {script} ... via annotation_export.py obsidian <run_folder>",
     "html-export": "<run_folder> | (generate) via annotation_export.py html <run_folder>",
     "docx-export": "<run_folder> | (generate) via annotation_export.py docx <run_folder>",
     "pdf-export": "<run_folder> | (generate) via annotation_export.py pdf <run_folder>",
 }
-COMMANDS += tuple(_ANNOTATION_EXPORTS)
 _REPOSITORY_INTEGRITY = {
     "registry-check": ("registry_check.py", 1, "<registry.json | workspace_dir> [--strict] | --self-test"),
     "schema-coverage": ("schema_coverage.py", 0, ""),
@@ -185,9 +253,7 @@ _REPOSITORY_INTEGRITY = {
         "<findings_ledger.md> --argument-state <Argument_State.md> | --self-test",
     ),
 }
-COMMANDS += (*_REPOSITORY_INTEGRITY, "argument-carve-behavior-preservation")
-# validate.sh resolves these arms in validate.d/commands-a.sh. Every other command reaches
-# commands-b.sh, whose preamble refuses misplaced --internal-links* arguments first.
+# Preserve the original command-specific navigation-option precedence.
 _BASH_COMMANDS_A = frozenset((
     "contract-hash", "contract-check", "ledger-check", "artifact-names", "synthesis-sections",
     "tone-check", "state-lines", *_LETTER_SIGNALS, "quality-risk-triggers", "cost-floor",
@@ -203,7 +269,7 @@ def _line(text, *, error=False):
 
 
 def _usage(command, arguments):
-    # Keep migrated-command diagnostics compatible with the sibling Bash CLI.
+    # Keep migrated-command diagnostics compatible with the pre-cutover Bash CLI.
     legacy_name = os.path.splitext(sys.argv[0])[0] + ".sh"
     _line(f"Usage: {legacy_name} {command} {arguments}")
     return 2
@@ -601,20 +667,87 @@ def _self_test(command):
     return int(failed)
 
 
+def _gate(command, args):
+    if args and args[0] == "--self-test":
+        return _run_helper("run_gate.py", ["--self-test"])
+    if command == "gate":
+        if len(args) < 2:
+            return _usage(command, "<phase> <run_folder> [--strict-warnings] | gate --attest <phase> <run_folder> | gate --skip/--defer <phase> <run_folder> --reason ...")
+        return _run_helper("run_gate.py", args)
+    if not args:
+        return _usage(command, "<Diagnostic_State.meta.json> [--strict]")
+    return _run_helper("run_gate.py", ["--check-state", *args])
+
+
+def _self_test_all():
+    total = len(AGG_VALIDATORS)
+    passed = 0
+    failed = 0
+    gate_ok = False
+    _line(f"Aggregate self-test dispatcher (v1.8.4) — running --self-test on all {total} validators:")
+    for command in AGG_VALIDATORS:
+        if command == "gate-state":
+            ok = gate_ok
+            detail = " (covered by gate shared suite)" if ok else " (gate shared suite failed)"
+        else:
+            child = subprocess.run(
+                [sys.executable, str(Path(__file__).resolve()), command, "--self-test"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                env=dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8"),
+            )
+            ok = child.returncode == 0
+            detail = ""
+            if command == "gate":
+                gate_ok = ok
+        _line(f"  {command}: {'PASS' if ok else 'FAIL'}{detail}")
+        if ok:
+            passed += 1
+        else:
+            failed += 1
+    _line("")
+    if failed:
+        _line(f"Aggregate self-test: FAIL ({failed}/{total} validators failed; rerun individually with --self-test for details)")
+    else:
+        _line(f"Aggregate self-test: PASS ({passed}/{total} validators)")
+    return int(bool(failed))
+
+
 def main(argv=None):
     args = list(sys.argv[1:] if argv is None else argv)
+    if args and args[0] in ("--check-canonical", "--check-all"):
+        from validate_canonical import run_canonical
+    if args and args[0] == "--self-test-all":
+        return _self_test_all()
+    if args and args[0] == "--check-canonical":
+        result = run_canonical()
+        _line("check-all canonical shard: FAIL (one or more real-file checks failed)" if result else
+              "check-all canonical shard: PASS (real-file invariants)")
+        return result
+    if args and args[0] == "--check-all":
+        _line("== --self-test-all ==")
+        self_tests = _self_test_all()
+        _line("")
+        canonical = run_canonical()
+        result = int(bool(self_tests or canonical))
+        _line("check-all: FAIL (one or more checks failed; rerun individually for details)" if result else
+              "check-all: PASS (self-tests + real-file invariants)")
+        return result
     if not args or args[0] not in COMMANDS:
         if args:
-            _line(f"Unknown or unported command: {args[0]}")
+            _line(f"Unknown command: {args[0]}")
         _line("Usage: validate.py <command> [args...]")
-        _line("Native commands: " + ", ".join(COMMANDS))
-        _line("Partial migration: remaining commands and aggregates require validate.sh.")
+        _line("Commands: " + ", ".join(COMMANDS))
+        _line(f"Aggregate: --self-test-all (runs --self-test on all {len(AGG_VALIDATORS)} self-testable validators)")
+        _line("Aggregate: --check-canonical (real-file invariants)")
+        _line("Aggregate: --check-all (self-tests + real-file invariants)")
         return 2
     command, args = args[0], args[1:]
     if command not in _BASH_COMMANDS_A:
         result = _navigation_scan(command, args)
         if result:
             return result
+    if command == "gate" or command == "gate-state":
+        return _gate(command, args)
     if command in _REPOSITORY_INTEGRITY or command == "argument-carve-behavior-preservation":
         return _repository_integrity(command, args)
     if command in _ANNOTATION_EXPORTS:
@@ -679,4 +812,8 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except OSError as exc:
+        _line(f"ERROR: {exc}", error=True)
+        sys.exit(1)

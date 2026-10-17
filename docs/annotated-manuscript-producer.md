@@ -1,7 +1,7 @@
 # Annotated-Manuscript Producer — wiring the deliverable into the run flow
 
 **Status:** **Increments 1–2 Built** (2026-06-17) — Increment 1 generation wiring; Increment 2 the `evidence_quote` Pass-5 pilot. Increments 1–3 of the [Annotated-Manuscript Deliverable](annotated-manuscript.md) shipped the **validators** — the annotation manifest + annotated copy + crosslinked letter, gated by A1–A6 / X1–X4 — but proven only on hand-built fixtures. This producer wires them into the run flow so a real `/start` diagnosis ends with a marked-up manuscript + a crosslinked letter the writer can actually open. **Increment 1 (Built):** the intake snapshot, the run-end offer (conditioned on a `*_…_DE_Synthesis_*` letter, author-asked), the staged build→A1–A6→render→X1–X4 chain (verified-or-absent), the `<!-- finding: F-… -->` marker pin, the `diagnosed`-node re-gen dispatch, and a `--check-all` chain gate — no new command, no new validator (count stays 43). **Increment 2 (Built):** Pass 5 (Character Audit) populates `evidence_quote` verbatim for sentence-precise findings, lighting the quote rung; the discipline lives in `findings-ledger-format.md` §"When to populate `evidence_quote`" — prose-only, no schema change, A6 is the safety gate. Two increments, **generation first** (maintainer decision 2026-06-17).
-<!-- built-when: plugins/apodictic/scripts/validate.sh contains "producer chain" -->
+<!-- built-when: plugins/apodictic/scripts/validate_canonical.py contains "producer chain" -->
 
 ## The gap, named honestly
 
@@ -107,3 +107,5 @@ No new mechanical gate: **A6** (the deliverable's quote-integrity gate) already 
 ## Gating prose wiring (resolved by spec-review)
 
 The offer + generation steps are prose (model-executed), so there is no `validate.sh` unit-test for "the orchestrator followed the steps." The resolution (see §Increment-1 gate): keep the prose **thin** and gate the **mechanical chain** it invokes — a `--check-all` step that runs build→gate→render→gate on a **temp copy** of the canonical run folder and asserts exit 0. That proves the generators + gates compose end-to-end on canonical inputs; the prose wiring (the model offering, then calling them in order) is eval-tracked like other command/prompt behavior, not unit-gated. Not pursued: a heavier dedicated harness (redundant with the `--check-all` chain).
+
+The current producer-chain gate is implemented in `validate_canonical.py` and reached through `python scripts/validate.py --check-all`; the shell examples above record the original implementation.

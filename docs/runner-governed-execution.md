@@ -375,3 +375,10 @@ Adding `gate_events` (plus `pending_gate` / `state_version`) is additive, and th
 - **Run-folder discovery.** Should `gate` take `<run_folder>` explicitly (simplest, proposed) or read it from the sidecar? Proposed: explicit arg, default to the sidecar's `run_folder` when omitted.
 - **Audit gate.** `run_audits` entry conditions are contract/finding-driven (not a fixed artifact set); model judgment likely stays here in increment 1, with the manifest covering only the deterministic `run_synthesis` / `run_spot_check` gates.
 - **Where the manifest lives.** `schemas/` (proposed — it is a contract) vs. `references/`. If `schemas/`, it is data, not a JSON-Schema document; the `$id` convention should make that clear (`execution-gates`, not `*.schema.json`).
+
+
+The current gate entrypoint is `python scripts/validate.py gate ...` (and
+`gate-state`). The engine's default child launch uses `sys.executable` and the
+native sibling dispatcher. Its explicit truthy `validate_sh` injection retains the
+legacy Bash compatibility seam for callers; default/falsy values use Python.
+Native aggregate self-tests do not request that compatibility override.

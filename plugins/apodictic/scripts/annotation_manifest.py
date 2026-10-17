@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """annotated-manuscript — the editorial letter's findings, anchored in the margin.
 
-`validate.sh annotated-manuscript <run_folder> [--strict]` shells out here. A human
+`validate.py annotated-manuscript <run_folder> [--strict]` delegates here. A human
 developmental editor hands back the manuscript itself, marked up — margin comments
 anchored where the problem lives — not only a letter that *references* loci. This builds
 no new analysis: each margin comment is a VERBATIM projection of an existing
@@ -84,7 +84,7 @@ def _has_block(text, btype):
 
     Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
     in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
-    validate.sh validator-conventions (M2)."""
+    validate.py validator-conventions (M2)."""
     if art is None:
         return ("apodictic:%s" % btype) in (text or "")
     return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))

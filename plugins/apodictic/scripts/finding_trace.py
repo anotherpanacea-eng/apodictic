@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """finding-trace — cross-artifact Finding Lifecycle ID integrity (Harness Engineering).
 
-`validate.sh finding-trace <run_folder> [--strict]` (or explicit files) shells out here.
+`validate.py finding-trace <run_folder> [--strict]` (or explicit files) delegates here.
 Every material finding carries a durable Finding Lifecycle ID (`apodictic.finding.v1.id`,
 `F-<ORIGIN>-<NN>`). `structured-findings` owns intra-ledger ID hygiene and `softness-check`
 owns severity fidelity (locked -> delivered) by ID. This validator owns the *un-owned*
@@ -54,7 +54,7 @@ def _has_block(text, btype):
 
     Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
     in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
-    validate.sh validator-conventions (M2)."""
+    validate.py validator-conventions (M2)."""
     if art is None:
         return ("apodictic:%s" % btype) in (text or "")
     return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))

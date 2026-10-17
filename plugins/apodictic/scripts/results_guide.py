@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """results-guide — Results Guide navigation-index integrity (Writer-Question Surface Hardening #5).
 
-`validate.sh results-guide <run_folder> [--strict]` (or explicit files) shells out here.
+`validate.py results-guide <run_folder> [--strict]` (or explicit files) delegates here.
 
 The Results Guide (`[Project]_Results_Guide_[runlabel].md`, SKILL.md §Results Guide Artifact) is
 the first file after the editorial letter — a plain-language MAP from each writer question the run
@@ -89,7 +89,7 @@ def _has_block(text, btype):
 
     Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
     in prose from being misrouted (the 2026-06-20 resolver-hardening sweep). Gated by
-    validate.sh validator-conventions (M2)."""
+    validate.py validator-conventions (M2)."""
     if art is None:
         return ("apodictic:%s" % btype) in (text or "")
     return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))

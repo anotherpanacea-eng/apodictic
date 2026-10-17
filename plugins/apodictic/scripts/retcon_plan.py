@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """retcon-plan — structural integrity for the Retcon Planning coaching track (Coaching Deepening).
 
-`validate.sh retcon-plan <run_folder> [--strict]` (or explicit files) shells out here. A returning
+`validate.py retcon-plan <run_folder> [--strict]` (or explicit files) delegates here. A returning
 author planning a retroactive-continuity revision records each commitment as a structured
 `apodictic.retcon_item.v1` block in a Retcon Plan artifact. Two axes are kept orthogonal:
 `mutability` (the commitment budget — locked=observed canon the reader has used; costly=exposed
@@ -61,7 +61,7 @@ def _has_block(text, btype):
 
     Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
     in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
-    validate.sh validator-conventions (M2)."""
+    validate.py validator-conventions (M2)."""
     if art is None:
         return ("apodictic:%s" % btype) in (text or "")
     return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))
