@@ -114,7 +114,19 @@ BASH_SCRIPTS = BASH_ROOT / "plugins/apodictic/scripts" if BASH_ROOT else None
 BASH_CLI = BASH_SCRIPTS / "validate.sh" if BASH_SCRIPTS else None
 
 
-def assert_parity_result(native, legacy, *, command=None, native_cli=PYTHON_CLI, bash_cli=BASH_CLI):
+def assert_parity_result(native, legacy, *, command=None, native_cli=PYTHON_CLI,
+                         bash_cli=BASH_CLI, obsidian_usage=False):
+    if obsidian_usage:
+        assert command == "obsidian-export"
+        # Only the no-argument Obsidian usage has these two invocation slots.
+        # Check whole raw outputs independently; never replace arbitrary paths.
+        for result, entry in ((native, Path(native_cli).with_suffix(".sh")),
+                              (legacy, bash_cli)):
+            path = os.fsencode(entry)
+            expected = (b"Usage: " + path + b" obsidian-export <run_folder> | (generate) "
+                        + path + b" ... via annotation_export.py obsidian <run_folder>\n")
+            assert (result.returncode, result.stdout, result.stderr) == (2, expected, b"")
+        return
     stdout = legacy.stdout
     # Only this leading usage entrypoint is intentionally spelled differently.
     # Leave arbitrary fixture/helper output, stderr, lexical paths and bytes alone.
@@ -162,7 +174,8 @@ def parity(*args, cwd=None, env=None):
         capture_output=True, timeout=60,
     )
     native = run_python(*args, cwd=cwd, env=env)
-    assert_parity_result(native, legacy, command=args[0], bash_cli=BASH_CLI)
+    assert_parity_result(native, legacy, command=args[0], bash_cli=BASH_CLI,
+                         obsidian_usage=args == ("obsidian-export",))
     return native
 
 
@@ -1779,6 +1792,34 @@ def test_carve_actual_fixture_preflight_order(repository_bundle, selftest, mutat
     assert b'../../../evals/fixtures/argument-carve/precarve/argument-editorial-letter.md' in result.stdout
 
 
+def _bash_nul_warning_enabled():
+    """Measure this Bash runtime; unknown command-substitution behavior refuses."""
+    probe = subprocess.run(
+        [BASH, '-c', r'v=$(printf "a\0b"); printf "%s\n" "$v"', 'nul-boundary'],
+        capture_output=True, timeout=60,
+    )
+    assert (probe.returncode, probe.stdout) == (0, b'ab\n')
+    warning = b'nul-boundary: line 1: warning: command substitution: ignored null byte in input\n'
+    if probe.stderr == warning:
+        return True
+    assert probe.stderr == b'', 'Unknown Bash NUL command-substitution diagnostic'
+    return False
+
+
+def _assert_carve_nul_result(native, legacy, bash_scripts, selftest, warns):
+    # Permanent amendment for only the two synthetic NUL-golden cases below.
+    # Pin the actual golden-read statement, then require its complete diagnostic.
+    source = bash_scripts / 'validate.d/commands-b.sh'
+    line = 2333 if selftest else 2370
+    assert source.read_bytes().splitlines()[line - 1].strip() == b'ACB_PROP_EXPECTED=$(cat "$ACB_PROP_GOLDEN")'
+    expected = (os.fsencode(source) + f': line {line}: warning: command substitution: ignored null byte in input\n'.encode()
+                if warns else b'')
+    assert native.returncode == legacy.returncode == 0
+    assert native.stdout == legacy.stdout
+    assert native.stderr == b''
+    assert legacy.stderr == expected
+
+
 @pytest.mark.parametrize('selftest', [False, True])
 @pytest.mark.parametrize('mutation', ['trailing-lf', 'no-final-lf', 'nul', 'crlf', 'multiline-binary', 'both-drift'])
 def test_carve_raw_golden_bytes_and_no_writes(repository_bundle, tmp_path, selftest, mutation):
@@ -1793,7 +1834,17 @@ def test_carve_raw_golden_bytes_and_no_writes(repository_bundle, tmp_path, selft
         payload = b'wrong\n'; (fixtures / 'decision-layer-output.txt').write_bytes(b'also wrong\n')
     golden.write_bytes(payload)
     before = _repository_effects(tmp_path)
-    result = _repository_copy_parity(origins, 'argument-carve-behavior-preservation', *(['--self-test'] if selftest else []))
+    args = ('argument-carve-behavior-preservation', *(['--self-test'] if selftest else []))
+    if mutation == 'nul':
+        result = _repository_copy_run(origins, True, *args)
+        assert result.returncode == 0 and result.stderr == b''
+        assert _repository_effects(tmp_path) == before
+        if BASH is not None:
+            warns = _bash_nul_warning_enabled()
+            legacy = _repository_copy_run(origins, False, *args)
+            _assert_carve_nul_result(result, legacy, origins.bash, selftest, warns)
+    else:
+        result = _repository_copy_parity(origins, *args)
     assert result.returncode == (0 if mutation in ('trailing-lf', 'no-final-lf', 'nul') else 1)
     assert _repository_effects(tmp_path) == before
 
@@ -1888,11 +1939,27 @@ def test_carve_native_empty_path_executes_real_children_without_writes(repositor
 ])
 def test_repository_regular_helper_symlink_stays_available(repository_bundle, helper, command):
     origins, _ = repository_bundle
-    scripts = origins.native
-    target = scripts / ('target-' + helper)
-    (scripts / helper).rename(target)
-    (scripts / helper).symlink_to(target.name)
-    assert _repository_copy_parity(origins, command, '--self-test').returncode == 0
+    if helper == 'meta_lint.py':
+        # The native and retired shell source readers have different legitimate
+        # suites. Availability must preserve each actual suite's own triplet.
+        for native, scripts in ((True, origins.native), (False, origins.bash)):
+            if not native and BASH is None:
+                continue
+            ordinary = _repository_copy_run(origins, native, command, '--self-test')
+            assert ordinary.returncode == 0 and ordinary.stderr == b''
+            assert ordinary.stdout.endswith(b'Self-test: PASS\n')
+            target = scripts / ('target-' + helper)
+            (scripts / helper).rename(target)
+            (scripts / helper).symlink_to(target.name)
+            linked = _repository_copy_run(origins, native, command, '--self-test')
+            assert (linked.returncode, linked.stdout, linked.stderr) == (
+                ordinary.returncode, ordinary.stdout, ordinary.stderr)
+    else:
+        scripts = origins.native
+        target = scripts / ('target-' + helper)
+        (scripts / helper).rename(target)
+        (scripts / helper).symlink_to(target.name)
+        assert _repository_copy_parity(origins, command, '--self-test').returncode == 0
 
 
 def _native_commands():
@@ -1951,4 +2018,5 @@ def test_wrapper_argv_matches_bash_with_echo_stub_helpers(stubbed_scripts, tmp_p
         else:
             assert_parity_result(native, legacy, command=command,
                                  native_cli=stubbed_scripts.native / "validate.py",
-                                 bash_cli=stubbed_scripts.bash / "validate.sh")
+                                 bash_cli=stubbed_scripts.bash / "validate.sh",
+                                 obsidian_usage=command == "obsidian-export" and cases[index][1] == ())

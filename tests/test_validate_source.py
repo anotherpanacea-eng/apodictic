@@ -175,8 +175,6 @@ def test_canonical_direct_and_ordered_one_hop(tmp_path, body):
     "False and run_validator('alpha', references / 'example.md')",
     "return 0\nrun_validator('alpha', references / 'example.md')",
     "if unknown:\n P = references / 'example.md'\nrun_validator('alpha', P)",
-    "def unused():\n run_validator('alpha', references / 'example.md')",
-    "for x in []:\n run_validator('alpha', references / 'example.md')",
 ])
 def test_canonical_decoys_do_not_supply_path_proof(tmp_path, body):
     assert not has_example(read_canonical(*canonical_pair(tmp_path, body)))
@@ -456,4 +454,203 @@ def test_round1_wildcard_import_cannot_supply_builtin_bindings(dispatcher):
 def test_round1_unknown_while_cannot_supply_later_canonical_calls(tmp_path):
     pair = live_canonical_pair(tmp_path)
     insert_body(pair[1], 'run_canonical', 'while True:\n    pass')
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+# Round2: the canonical syntax is closed, and all binding sites share the
+# same enumerator. These sources are only parsed; their bodies never execute.
+@pytest.mark.parametrize('statement', [
+    'match True:\n case True:\n  return 0',
+    'sys.exit(0)', 'assert False', 'unknown_operation()',
+    'if True:\n sys.exit(0)', 'for item in (True,):\n unknown_operation()',
+    '_line(sys.exit(0))', 'result = unknown_operation()',
+    'with unknown_context():\n pass',
+])
+@pytest.mark.parametrize('site', ['entry', 'section'])
+@pytest.mark.parametrize('position', ['before', 'between'])
+def test_round2_unknown_control_cannot_credit_later_anchors(tmp_path, statement, site, position):
+    first = "run_validator('beta', references / 'first.md')\n" if position == 'between' else ''
+    body = first + statement + "\nrun_validator('alpha', references / 'example.md')"
+    pair = canonical_pair(tmp_path, body if site == 'entry' else 'result = section(references)',
+                          body if site == 'section' else None)
+    with pytest.raises(SourceError):
+        read_canonical(*pair)
+
+
+@pytest.mark.parametrize('mutation', [
+    'setattr(subprocess, "run", replacement)', 'delattr(subprocess, "run")',
+    'mutator = setattr', 'mutator = delattr',
+    'globals()["AGG_VALIDATORS"] = ()', 'del globals()["AGG_VALIDATORS"]',
+    'locals()["AGG_VALIDATORS"] = ()', 'del locals()["AGG_VALIDATORS"]',
+    'vars()["AGG_VALIDATORS"] = ()', 'del vars()["AGG_VALIDATORS"]',
+    'namespace = globals', 'namespace = locals', 'namespace = vars',
+    'alias = subprocess', 'consume(subprocess)', 'launch = subprocess.run',
+    'subprocess.__dict__["run"] = replacement',
+    'alias = sys', 'consume(sys)', 'exit_alias = sys.exit',
+    'alias = Path', 'consume(Path)',
+    'import subprocess as child_api\nchild_api.run = replacement',
+    'import sys as runtime\nruntime.executable = \"wrong\"',
+    'from subprocess import run as launch',
+    'from pathlib import Path as OtherPath\nOtherPath.resolve = replacement',
+    'import pathlib as paths\npaths.Path.resolve = replacement',
+    'import importlib\nchild_api = importlib.import_module(\"subprocess\")',
+    'from importlib import import_module as load_module',
+])
+@pytest.mark.parametrize('consumer', ['aggregate', 'dispatch', 'count', 'm1', 'm3'])
+def test_round2_protected_mutation_and_escape_refuse(dispatcher, mutation, consumer):
+    with dispatcher.open('a', encoding='utf-8') as handle:
+        handle.write('\n' + mutation + '\n')
+    if consumer in ('m1', 'm3'):
+        import meta_lint
+        check = meta_lint.check_m1 if consumer == 'm1' else meta_lint.check_m3
+        assert check(dispatcher)
+    else:
+        check = {'aggregate': read_aggregate, 'dispatch': read_dispatch, 'count': check_aggregate_count}[consumer]
+        with pytest.raises(SourceError): check(dispatcher)
+
+
+ROUND2_BINDINGS = [
+    '{name} = None', 'del {name}', '{name}: object = None', '({name} := None)',
+    'def {name}():\n pass', 'async def {name}():\n pass', 'class {name}:\n pass',
+    'import elsewhere as {name}', 'from elsewhere import value as {name}',
+    'def other({name}):\n pass',
+    'try:\n pass\nexcept Exception as {name}:\n pass',
+    'match None:\n case {name}:\n  pass',
+    'match []:\n case [*{name}]:\n  pass',
+    'match {{}}:\n case {{**{name}}}:\n  pass',
+]
+
+
+@pytest.mark.parametrize('name', ['sys', 'subprocess', 'Path'])
+@pytest.mark.parametrize('binding', ROUND2_BINDINGS)
+def test_round2_native_names_share_complete_binding_enumerator(dispatcher, name, binding):
+    with dispatcher.open('a', encoding='utf-8') as handle:
+        handle.write('\n' + binding.format(name=name) + '\n')
+    with pytest.raises(SourceError): read_dispatch(dispatcher)
+    with pytest.raises(SourceError): check_aggregate_count(dispatcher)
+
+
+@pytest.mark.parametrize('name', ['HERE', 'references', 'template_references', 'aif_references'])
+@pytest.mark.parametrize('binding', ROUND2_BINDINGS)
+def test_round2_canonical_roots_share_complete_binding_enumerator(tmp_path, name, binding):
+    pair = live_canonical_pair(tmp_path)
+    source = pair[1].read_text(encoding='utf-8')
+    if name == 'HERE':
+        source += '\n' + binding.format(name=name) + '\n'
+    else:
+        source = source.replace('def run_canonical() -> int:',
+                                'def run_canonical() -> int:\n' + textwrap.indent(binding.format(name=name), '    '), 1)
+    pair[1].write_text(source, encoding='utf-8')
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+@pytest.mark.parametrize('body', [
+    "def unused():\n run_validator('alpha', references / 'example.md')",
+    "for x in []:\n run_validator('alpha', references / 'example.md')",
+])
+def test_round2_unsupported_decoy_forms_refuse(tmp_path, body):
+    with pytest.raises(SourceError): read_canonical(*canonical_pair(tmp_path, body))
+
+
+@pytest.mark.parametrize('site', ['entry', 'section'])
+def test_round2_unknown_call_never_executes_marker(tmp_path, site):
+    body = "unknown_operation()\nrun_validator('alpha', references / 'example.md')"
+    pair = canonical_pair(tmp_path, body if site == 'entry' else 'section(references)',
+                          body if site == 'section' else None)
+    marker = tmp_path / 'MUST-NOT-EXIST'
+    with pair[1].open('a', encoding='utf-8') as handle:
+        handle.write('\ndef unknown_operation():\n    Path(' + repr(str(marker)) + ").write_text('executed')\n")
+    with pytest.raises(SourceError): read_canonical(*pair)
+    assert not marker.exists()
+
+
+@pytest.mark.parametrize('mutation', [
+    'setattr(subprocess, "run", replacement)', 'delattr(subprocess, "run")',
+    'globals()["run_validator"] = replacement', 'del locals()["HERE"]',
+    'alias = subprocess', 'alias = subprocess.run', 'alias = Path',
+    'namespace = vars', 'import builtins\nnamespace = builtins.globals',
+    'from builtins import globals as namespace',
+    'import subprocess as child_api\nchild_api.run = replacement',
+    'from pathlib import Path as OtherPath\nOtherPath.resolve = replacement',
+    'import importlib\nchild_api = importlib.import_module(\"subprocess\")',
+])
+def test_round2_canonical_mutation_refusal(tmp_path, mutation):
+    pair = live_canonical_pair(tmp_path)
+    with pair[1].open('a', encoding='utf-8') as handle:
+        handle.write('\n' + mutation + '\n')
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+@pytest.mark.parametrize('wrapper', ['bool(section(references))', '_line(section(references))',
+                                     'next((section(references) for item in (True,)))'])
+def test_round2_nested_section_cannot_hide_control(tmp_path, wrapper):
+    pair = canonical_pair(tmp_path, wrapper + "\nrun_validator('alpha', references / 'example.md')",
+                          'sys.exit(0)')
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+@pytest.mark.parametrize('mutation', [
+    'from builtins import __dict__ as namespace',
+    'namespace = unrelated.__globals__',
+    'import builtins\nnamespace = builtins.globals',
+    'from builtins import globals as namespace',
+])
+def test_round2_reflective_namespace_aliases_refuse(dispatcher, mutation):
+    with dispatcher.open('a', encoding='utf-8') as handle:
+        handle.write('\n' + mutation + '\n')
+    with pytest.raises(SourceError): read_aggregate(dispatcher)
+    with pytest.raises(SourceError): read_dispatch(dispatcher)
+    with pytest.raises(SourceError): check_aggregate_count(dispatcher)
+
+
+@pytest.mark.parametrize('write', [
+    "P += '/wrong.md'", "P, other = references / 'wrong.md', 0",
+    "del P", "for P in ():\n pass",
+    "if condition:\n P = references / 'wrong.md'",
+])
+def test_round2_all_binding_forms_invalidate_one_hop_paths(tmp_path, write):
+    body = "P = references / 'example.md'\n" + write + "\nrun_validator('alpha', P)"
+    pair = canonical_pair(tmp_path, 'result = section(references)', body)
+    assert not has_example(read_canonical(*pair))
+
+
+@pytest.mark.parametrize('suffix', ['True', 'unexpected=True'])
+def test_round2_existence_guard_rejects_unproven_call_arguments(tmp_path, suffix):
+    body = "if (references / 'example.md').is_file(" + suffix + "):\n run_validator('alpha', references / 'example.md')"
+    assert not has_example(read_canonical(*canonical_pair(tmp_path, body)))
+
+
+@pytest.mark.parametrize('body', [
+    "run_validator('alpha', references / 'example.md', unexpected=True)",
+    "if run_validator('alpha', references / 'example.md', unexpected=True).returncode == 0:\n print('done')",
+])
+def test_round2_canonical_validator_keywords_cannot_supply_proof(tmp_path, body):
+    with pytest.raises(SourceError): read_canonical(*canonical_pair(tmp_path, body))
+
+
+@pytest.mark.parametrize('name', ['_run_helper', '_override_companion', '_argument_carve',
+                                  'frozenset', '_navigation_scan', '_self_test', '_helper'])
+def test_round2_equivalent_native_call_keywords_refuse(dispatcher, name):
+    tree = ast.parse(dispatcher.read_text(encoding='utf-8'))
+    scope = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == '_helper') if name == '_run_helper' else tree
+    call = next(node for node in ast.walk(scope) if isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name) and node.func.id == name)
+    call.keywords.append(ast.keyword(arg='unexpected', value=ast.Constant(True)))
+    dispatcher.write_text(ast.unparse(tree), encoding='utf-8')
+    with pytest.raises(SourceError): read_dispatch(dispatcher)
+
+
+@pytest.mark.parametrize('expression', ['run_canonical(unexpected=True)', 'run_canonical(1)'])
+def test_round2_returned_canonical_entry_call_shape_refuses(tmp_path, expression):
+    pair = canonical_pair(tmp_path, "run_validator('alpha', references / 'example.md')")
+    source = pair[0].read_text(encoding='utf-8').replace('result = run_canonical()', 'return ' + expression)
+    pair[0].write_text(source, encoding='utf-8')
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+@pytest.mark.parametrize('expression', ['bool(args, unexpected=True)', 'len(args, unexpected=True)'])
+def test_round2_route_predicate_keywords_refuse(tmp_path, expression):
+    pair = canonical_pair(tmp_path, "run_validator('alpha', references / 'example.md')")
+    source = pair[0].read_text(encoding='utf-8').replace('if args and', 'if ' + expression + ' and')
+    pair[0].write_text(source, encoding='utf-8')
     with pytest.raises(SourceError): read_canonical(*pair)

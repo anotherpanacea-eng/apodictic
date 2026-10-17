@@ -243,11 +243,12 @@ APODICTIC_BASH_REFERENCE_ROOT=/path/to/pre-cutover-checkout \
   python -m pytest -q tests/test_validate_python_parity.py
 ```
 
-Unset preserves the current checkout's real Bash dispatcher during preparation.
+Unset disables differential-only cases; native checks still run. The current
+checkout's forwarding shim is never an independent oracle.
 Explicit empty, missing, malformed, current-checkout and resolved-alias roots
 fail during harness setup. An explicit request also fails when Bash cannot run.
 Before use, a disposable copy of the reference's shell scripts must compute a
-real contract hash with `validate.py` poisoned. This rejects the planned Python
+real contract hash with `validate.py` poisoned. This rejects a Python
 forwarding shim; it does not authenticate arbitrary hostile shell programs.
 Keep the reference checkout untouched and record its ordinary commit in the
 review record. The harness neither creates nor updates reference checkouts.
@@ -261,13 +262,38 @@ Echo wrappers use identical helper doubles in separate origin trees. Helper
 stdout, stderr and status mutations must each break an otherwise matching
 comparison, and a copied-reference marker proves that copy path is exercised.
 
-The only source-location translation is the exact leading `Usage: <selected
-entrypoint> ` spelling to its current native counterpart. Literal relative usage
+The general source-location translation is limited to the exact leading
+`Usage: <selected entrypoint> ` spelling to its current native counterpart.
+The no-argument Obsidian usage instead checks each complete raw output against
+one literal template with that invocation's known path in both prescribed slots,
+status 2 and empty stderr. It does not replace arbitrary path occurrences. Literal relative usage
 is tested from each checkout without translation. Carve's script-relative
 missing/read diagnostics are checked against explicit expectations for each
 origin, preserving `../` suffixes. No general root, separator, newline or
 traceback normalization is applied. The existing `state-lines` exception strips
 leading blanks from Bash's count because BSD/macOS `wc -l` pads it.
+
+The meta-lint ordinary-file versus regular-symlink case runs each implementation's
+actual self-test before and after the change and requires exact equality within
+that implementation, successful status and nonempty self-test PASS output. Native
+M1/M3 inspect native source and obsolete shell-only M5 checks were removed, so
+native and old meta self-test rows are intentionally different. The other helper
+symlink cases retain their cross-implementation comparisons.
+
+The two synthetic carve NUL-golden cases have a permanent diagnostic amendment.
+Both implementations remove the inserted NUL and must retain the same successful
+status, exact stdout and unchanged files. Native stderr is exactly empty. Bash
+5.1.16 emits one command-substitution warning; the harness requires the complete
+warning with the copied script path and the verified golden-read line. An isolated
+probe of the actual Bash runtime determines whether that runtime emits this exact
+warning or none; unknown probe results refuse. There is no guessed version cutoff
+or unconditional empty-or-warning allowance. Actual Bash 3.2 has not been qualified.
+
+This intentionally removes a human-visible cue that the golden contained a NUL.
+The native port neither reproduces the retired Bash warning nor introduces a new
+warning or malformed-golden rejection. Only those two synthetic cases use this
+amendment; other raw stream, status and no-write assertions remain in force. Thus
+a passing contract suite does not mean universal raw stdout/stderr equality.
 
 The harness covers migrated self-tests, applicable shipped validator fixtures,
 canonical reference inputs and raw-byte utility cases. The argv-echo differential

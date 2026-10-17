@@ -142,7 +142,56 @@ def _bindings(tree, path, names):
             raise SourceError(path, f'{name}: unsupported alias or use', node.lineno)
 
 
+def _protected_objects(tree, path):
+    """Negative capability/escape check, shared by every source-proof entry.
+
+    The inspected programs do not use dynamic namespace or reflective mutation
+    facilities. Refuse the capability itself, including an alias to it; never
+    evaluate a namespace, replacement object, or callable.
+    """
+    parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
+    capabilities = {'globals', 'locals', 'vars', 'setattr', 'delattr',
+                    '__builtins__', '__import__', 'import_module', 'getattr', 'eval', 'exec'}
+    reflective = {'__dict__', '__globals__', '__setattr__', '__delattr__', '__getattribute__'}
+    attributes = {'sys': {'argv', 'executable', 'stdout', 'stderr', 'exit'},
+                  'subprocess': {'run', 'PIPE', 'DEVNULL', 'CompletedProcess'}}
+    for node in ast.walk(tree):
+        # A second import is also an alias to the same mutable module/class.
+        # These are the only supported native-object import forms.
+        if isinstance(node, ast.Import):
+            if any(a.name == 'pathlib' or (a.name in ('sys', 'subprocess') and a.asname is not None)
+                   for a in node.names):
+                raise SourceError(path, 'protected native object imported through an alias', node.lineno)
+        if isinstance(node, ast.ImportFrom):
+            if (node.module in ('sys', 'subprocess') or (node.module == 'pathlib'
+                    and any(a.name != 'Path' or a.asname is not None for a in node.names))):
+                raise SourceError(path, 'unsupported protected native-object import', node.lineno)
+        if ((isinstance(node, ast.alias) and node.name in capabilities | reflective)
+                or (isinstance(node, ast.Attribute) and node.attr in capabilities | reflective)):
+            raise SourceError(path, 'unsupported reflective namespace/mutation capability', getattr(node, 'lineno', None))
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+            if node.id in capabilities:
+                raise SourceError(path, 'unsupported dynamic namespace/mutation capability: ' + node.id, node.lineno)
+            parent = parents.get(node)
+            if node.id == 'Path':
+                if not (isinstance(parent, ast.Call) and parent.func is node):
+                    raise SourceError(path, 'protected Path callable escapes', node.lineno)
+            elif node.id in attributes:
+                if not (isinstance(parent, ast.Attribute) and parent.value is node
+                        and isinstance(parent.ctx, ast.Load) and parent.attr in attributes[node.id]):
+                    raise SourceError(path, 'protected native object escapes or changes: ' + node.id, node.lineno)
+                use = parents.get(parent)
+                if parent.attr in ('run', 'exit') and not (isinstance(use, ast.Call) and use.func is parent):
+                    raise SourceError(path, 'protected native callable escapes', node.lineno)
+                if parent.attr == 'argv' and not (isinstance(use, ast.Subscript) and use.value is parent and isinstance(use.ctx, ast.Load)):
+                    raise SourceError(path, 'protected native argv escapes or changes', node.lineno)
+        if isinstance(node, (ast.Attribute, ast.Subscript)) and isinstance(node.ctx, (ast.Store, ast.Del)):
+            if any(isinstance(n, ast.Name) and n.id in {'sys', 'subprocess', 'Path'} for n in ast.walk(node)):
+                raise SourceError(path, 'protected native object mutation', node.lineno)
+
+
 def _aggregate(tree, path):
+    _protected_objects(tree, path)
     _bindings(tree, path, {'AGG_VALIDATORS'})
     node = next((n for n in tree.body if isinstance(n, ast.Assign) and _name(n.targets[0], 'AGG_VALIDATORS')), None)
     if node is None or not isinstance(node.value, ast.Tuple):
@@ -205,9 +254,9 @@ def _route_value(node, values, path):
         if isinstance(op, ast.In): return left in right
         if isinstance(op, ast.NotIn): return left not in right
         if isinstance(op, ast.Lt): return left < right
-    if _call(node, 'bool') and len(node.args) == 1:
+    if _call(node, 'bool') and len(node.args) == 1 and not node.keywords:
         return bool(_value(node.args[0], values, path))
-    if _call(node, 'len') and len(node.args) == 1:
+    if _call(node, 'len') and len(node.args) == 1 and not node.keywords:
         return len(_value(node.args[0], values, path))
     raise SourceError(path, 'unsupported route expression', getattr(node, 'lineno', None))
 
@@ -217,27 +266,18 @@ def _native_imports(tree, path):
     expected = {'sys': ('sys', None), 'subprocess': ('subprocess', None), 'Path': ('Path', 'pathlib')}
     if any(isinstance(n, ast.ImportFrom) and any(a.name == '*' for a in n.names) for n in ast.walk(tree)):
         raise SourceError(path, 'wildcard import cannot establish native bindings')
+    parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
     for name, (imported, module) in expected.items():
-        aliases = []
-        for node in ast.walk(tree):
-            if isinstance(node, (ast.Import, ast.ImportFrom)):
-                for alias in node.names:
-                    if (alias.asname or alias.name) == name:
-                        if node not in tree.body:
-                            raise SourceError(path, 'native launch/path import is not unconditional: ' + name, node.lineno)
-                        aliases.append((alias.name, node.module if isinstance(node, ast.ImportFrom) else None))
-            if isinstance(node, ast.Name) and node.id == name and isinstance(node.ctx, (ast.Store, ast.Del)):
-                raise SourceError(path, 'native launch/path name rebound: ' + name, node.lineno)
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name == name:
-                raise SourceError(path, 'native launch/path callable rebound: ' + name, node.lineno)
-            if isinstance(node, ast.arg) and node.arg == name:
-                raise SourceError(path, 'native launch/path name shadowed: ' + name, node.lineno)
-            if isinstance(node, ast.Attribute) and isinstance(node.ctx, (ast.Store, ast.Del)) and any(_name(n, name) for n in ast.walk(node.value)):
-                raise SourceError(path, 'native launch/path attribute changed: ' + name, node.lineno)
-        if aliases != [(imported, module)]:
+        bindings = [n for n in ast.walk(tree) if _bound_name(n) == name]
+        if len(bindings) != 1 or not isinstance(bindings[0], ast.alias):
+            raise SourceError(path, 'native launch/path name missing, rebound or shadowed: ' + name)
+        alias = bindings[0]
+        declaration = parents[alias]
+        if (declaration not in tree.body or alias.name != imported or alias.asname is not None
+                or (declaration.module if isinstance(declaration, ast.ImportFrom) else None) != module):
             raise SourceError(path, 'native launch/path import missing or ambiguous: ' + name)
     for node in ast.walk(tree):
-        if _bound_name(node) in ('len', 'bool', 'str', 'map', 'next', 'int'):
+        if _bound_name(node) in ('len', 'bool', 'str', 'map', 'next', 'int', 'all', 'sum', 'sorted', 'enumerate', 'print'):
             raise SourceError(path, 'source predicate builtin rebound', node.lineno)
 
 
@@ -302,6 +342,11 @@ def _launcher(function, path, canonical=False):
     _expect_body(body, 'return ' + expected_return, path, 'native result return')
 
 
+def _positional(call, count, path):
+    if len(call.args) != count or call.keywords:
+        raise SourceError(path, 'unsupported positional call arguments', call.lineno)
+
+
 def _route(function, command, tables, functions, path):
     values = dict(tables, command=command, args=['--self-test'])
     helpers = []
@@ -310,6 +355,7 @@ def _route(function, command, tables, functions, path):
             if isinstance(statement, ast.Assign) and len(statement.targets) == 1:
                 target, rhs = statement.targets[0], statement.value
                 if _call(rhs, '_run_helper'):
+                    _positional(rhs, 2, path)
                     helper = _value(rhs.args[0], values, path)
                     args = _value(rhs.args[1], values, path)
                     if '--self-test' not in args:
@@ -317,6 +363,7 @@ def _route(function, command, tables, functions, path):
                     helpers.append(helper)
                     if isinstance(target, ast.Name): values[target.id] = 0
                 elif _call(rhs, '_override_companion'):
+                    _positional(rhs, 0, path)
                     values[target.id] = 0
                 elif isinstance(target, (ast.Name, ast.Tuple)):
                     if _name(target, 'script') and 'script' in values:
@@ -349,12 +396,13 @@ def _route(function, command, tables, functions, path):
             elif isinstance(statement, ast.Return):
                 value = statement.value
                 if _call(value, '_run_helper'):
+                    _positional(value, 2, path)
                     helper = _value(value.args[0], values, path)
                     args = _value(value.args[1], values, path)
                     if '--self-test' not in args:
                         raise SourceError(path, f'{command}: stripped self-test forwarding', statement.lineno)
                     helpers.append(helper)
-                elif _call(value, '_argument_carve') and len(value.args) == 1 and _name(value.args[0], 'args'):
+                elif _call(value, '_argument_carve') and len(value.args) == 1 and not value.keywords and _name(value.args[0], 'args'):
                     _native_suite(functions.get('_argument_carve'), path, carve=True)
                     helpers.append(None)
                 elif not helpers:
@@ -520,7 +568,7 @@ def read_dispatch(dispatcher_path):
         for node in tree.body:
             if isinstance(node, ast.Assign) and any(_name(t, '_BASH_COMMANDS_A') for t in node.targets):
                 value = node.value
-                if _call(value, 'frozenset') and len(value.args) == 1:
+                if _call(value, 'frozenset') and len(value.args) == 1 and not value.keywords:
                     values['_BASH_COMMANDS_A'] = _value(value.args[0], values, dispatcher_path)
                 else:
                     raise SourceError(dispatcher_path, 'unsupported navigation partition')
@@ -534,7 +582,7 @@ def read_dispatch(dispatcher_path):
                         values['args'] = ['--self-test']
                     elif _name(target, 'command') and _same(rhs, 'args[0]'):
                         values['command'] = command
-                    elif _call(rhs, '_navigation_scan') and len(rhs.args) == 2 and _name(rhs.args[0], 'command') and _name(rhs.args[1], 'args'):
+                    elif _call(rhs, '_navigation_scan') and len(rhs.args) == 2 and not rhs.keywords and _name(rhs.args[0], 'command') and _name(rhs.args[1], 'args'):
                         values[target.id] = 0  # valid first-self-test has no navigation flag
                     else:
                         raise SourceError(dispatcher_path, 'unsupported main assignment before route', statement.lineno)
@@ -545,11 +593,11 @@ def read_dispatch(dispatcher_path):
                 elif isinstance(statement, ast.Return):
                     call = statement.value
                     if isinstance(call, ast.Call) and isinstance(call.func, ast.Name):
-                        if len(call.args) == 2 and _name(call.args[0], 'command') and _name(call.args[1], 'args'):
+                        if len(call.args) == 2 and not call.keywords and _name(call.args[0], 'command') and _name(call.args[1], 'args'):
                             handlers.add(call.func.id)
                             if call.func.id not in functions: raise SourceError(dispatcher_path, 'missing dispatch handler')
                             return _route(functions[call.func.id], command, tables, functions, dispatcher_path)
-                        if _call(call, '_self_test') and len(call.args) == 1 and _name(call.args[0], 'command'):
+                        if _call(call, '_self_test') and len(call.args) == 1 and not call.keywords and _name(call.args[0], 'command'):
                             if command not in ('contract-hash', 'contract-check', 'state-lines'):
                                 raise SourceError(dispatcher_path, f'{command}: not a native utility suite')
                             protected.add('_self_test')
@@ -653,7 +701,7 @@ def _exists_guard(node, values):
     if isinstance(node, ast.BoolOp) and isinstance(node.op, ast.And):
         return all(_exists_guard(n, values) for n in node.values)
     return (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-            and node.func.attr in ('exists', 'is_file', 'is_dir') and not node.args
+            and node.func.attr in ('exists', 'is_file', 'is_dir') and not node.args and not node.keywords
             and _reference(node.func.value, values) is not None)
 
 
@@ -690,6 +738,71 @@ def _root_selector(node, proven):
             or any(_same(fallback, root) for root in roots))
 
 
+def _canonical_syntax(statements, path, *, entry=False, sections=()):
+    """Closed syntax vocabulary, not an evaluator of canonical Python.
+
+    This check cannot credit anchors. It only establishes that the later scanner
+    is not skipping an unknown statement or an unknown call hidden in an operand.
+    Fixture-work blocks retain no anchor credit. Their explicit operations are
+    admitted here so later direct reference checks can still be inspected.
+    """
+    calls = {'run_validator', '_line', 'print', 'int', 'bool', 'next', 'Path'}
+    methods = {'resolve', 'exists', 'is_file', 'is_dir'}
+    module_calls = set()
+    statements_allowed = (ast.Assign, ast.AugAssign, ast.Expr, ast.If, ast.Return)
+    if entry:
+        calls.update(sections)
+    else:
+        calls.update({'_relay', '_summary', '_captured', '_text', '_check', '_temporary',
+                      '_producer', '_write', '_rewrite', '_without_lines', '_copy_globs',
+                      '_same_bytes', '_evals', '_locate', '_corpus_result',
+                      'CanonicalAbort', 'OSError', 'len', 'all', 'sorted', 'sum', 'enumerate'})
+        methods.update({'read_text', 'glob', 'mkdir', 'unlink', 'touch', 'replace',
+                        'splitlines', 'join', 'append', 'extend', 'pop', 'setdefault',
+                        'update', 'start', 'end', 'group'})
+        module_calls.update({'json.loads', 'json.dumps', 're.search', 're.sub',
+                             'shutil.copyfile', 'shutil.copytree', 'am.check',
+                             'am.normalize_snapshot', 'dispatch_record.parse_model_tag_table'})
+        statements_allowed += (ast.For, ast.With, ast.Try, ast.Raise, ast.Delete,
+                               ast.Continue, ast.Pass, ast.Import)
+    expressions_allowed = (ast.Name, ast.Constant, ast.Attribute, ast.Subscript,
+                          ast.Slice, ast.List, ast.Tuple, ast.Set, ast.Dict,
+                          ast.BinOp, ast.UnaryOp, ast.BoolOp, ast.Compare, ast.IfExp,
+                          ast.JoinedStr, ast.FormattedValue, ast.Call,
+                          ast.GeneratorExp, ast.ListComp)
+    for statement in statements:
+        parents = {child: parent for parent in ast.walk(statement) for child in ast.iter_child_nodes(parent)}
+        for node in ast.walk(statement):
+            if isinstance(node, ast.stmt) and not isinstance(node, statements_allowed):
+                raise SourceError(path, 'unsupported canonical statement: ' + type(node).__name__, node.lineno)
+            if isinstance(node, ast.expr) and not isinstance(node, expressions_allowed):
+                raise SourceError(path, 'unsupported canonical expression: ' + type(node).__name__, node.lineno)
+            if isinstance(node, ast.Call):
+                function = node.func
+                direct = isinstance(function, ast.Name) and function.id in calls
+                if entry and isinstance(function, ast.Name) and function.id in sections:
+                    parent = parents.get(node)
+                    if not (isinstance(parent, (ast.Assign, ast.Expr)) and parent.value is node):
+                        raise SourceError(path, 'canonical section call must be direct', node.lineno)
+                method = (isinstance(function, ast.Attribute) and function.attr in methods
+                          and not (isinstance(function.value, ast.Name)
+                                   and function.value.id in {'sys', 'subprocess', 'os', 'Path'}))
+                module = isinstance(function, ast.Attribute) and ast.unparse(function) in module_calls
+                if not (direct or method or module):
+                    raise SourceError(path, 'unsupported canonical call', node.lineno)
+                if any(k.arg is None for k in node.keywords):
+                    raise SourceError(path, 'unsupported canonical call expansion', node.lineno)
+            if isinstance(node, ast.Import):
+                if ast.dump(node) not in {ast.dump(ast.parse('import dispatch_record').body[0]),
+                                         ast.dump(ast.parse('import annotation_manifest as am').body[0])}:
+                    raise SourceError(path, 'unsupported canonical import', node.lineno)
+            if isinstance(node, ast.ExceptHandler):
+                if not _name(node.type, 'Exception') or node.name is not None:
+                    raise SourceError(path, 'unsupported canonical exception binding', node.lineno)
+            if isinstance(node, ast.comprehension) and node.is_async:
+                raise SourceError(path, 'unsupported async canonical comprehension')
+
+
 def _control_exits(node):
     """Negative evidence only: skipped control may exit this function.
 
@@ -706,6 +819,8 @@ def _control_exits(node):
 def read_canonical(dispatcher_path, canonical_path):
     dispatcher = _parse(dispatcher_path)
     canonical = _parse(canonical_path)
+    _protected_objects(dispatcher, dispatcher_path)
+    _protected_objects(canonical, canonical_path)
     _native_imports(canonical, canonical_path)
     functions = _functions(canonical)
     if 'run_canonical' not in functions or 'run_validator' not in functions:
@@ -739,7 +854,9 @@ def read_canonical(dispatcher_path, canonical_path):
                         if not imported: raise SourceError(dispatcher_path, 'canonical import is not reached before entry call')
                         if value.args or value.keywords: raise SourceError(dispatcher_path, 'canonical entry arguments changed')
                         reached.append(statement)
-                    elif _call(value, '_self_test_all') or _same(value, 'int(bool(self_tests or canonical))'):
+                    elif _call(value, '_self_test_all'):
+                        _positional(value, 0, dispatcher_path)
+                    elif _same(value, 'int(bool(self_tests or canonical))'):
                         continue
                     elif isinstance(value, ast.Constant): continue
                     else: raise SourceError(dispatcher_path, 'unsupported expression before canonical entry', statement.lineno)
@@ -747,6 +864,7 @@ def read_canonical(dispatcher_path, canonical_path):
                     continue
                 elif isinstance(statement, ast.Return):
                     if _call(statement.value, 'run_canonical'):
+                        _positional(statement.value, 0, dispatcher_path)
                         if not imported: raise SourceError(dispatcher_path, 'canonical import is not reached before entry call')
                         reached.append(statement)
                     return True
@@ -758,11 +876,14 @@ def read_canonical(dispatcher_path, canonical_path):
             raise SourceError(dispatcher_path, f'{mode}: actual route must call canonical entry exactly once')
     _signature(functions['run_canonical'], (), canonical_path)
     _launcher(functions['run_validator'], canonical_path, canonical=True)
-    if any(_name(n, 'HERE') for n in ast.walk(canonical)):
+    if any(_name(n, 'HERE') or _bound_name(n) == 'HERE' for n in ast.walk(canonical)):
         declarations = [n for n in canonical.body if isinstance(n, ast.Assign) and len(n.targets) == 1 and _name(n.targets[0], 'HERE')]
-        stores = [n for n in ast.walk(canonical) if (_name(n, 'HERE') and isinstance(n.ctx, (ast.Store, ast.Del))) or (isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and n.name == 'HERE') or (isinstance(n, ast.alias) and (n.asname or n.name) == 'HERE') or (isinstance(n, ast.arg) and n.arg == 'HERE')]
+        stores = [n for n in ast.walk(canonical) if _bound_name(n) == 'HERE']
         if len(declarations) != 1 or len(stores) != 1 or not _same(declarations[0].value, 'Path(__file__).resolve().parent'):
             raise SourceError(canonical_path, 'canonical sibling root missing or rebound')
+    _canonical_syntax(_body(functions['run_canonical']), canonical_path, entry=True,
+                      sections={name for name, function in functions.items()
+                                if function.args.args and function.args.args[0].arg == 'references'})
     calls, sections = [], set()
     roots = set()
     def scan(statements, values, entry=False):
@@ -772,8 +893,8 @@ def read_canonical(dispatcher_path, canonical_path):
                 # Other canonical work cannot supply C5 anchors. Invalidate assignments
                 # because a cross-block value must not escape as an earlier path.
                 for n in ast.walk(statement):
-                    if isinstance(n, ast.Name) and isinstance(n.ctx, (ast.Store, ast.Del)):
-                        values.pop(n.id, None)
+                    if _bound_name(n) is not None:
+                        values.pop(_bound_name(n), None)
                 continue
             call = statement.value if isinstance(statement, (ast.Expr, ast.Assign, ast.Return)) else None
             if isinstance(statement, ast.If):
@@ -787,7 +908,7 @@ def read_canonical(dispatcher_path, canonical_path):
                 elif _control_exits(statement):
                     return True
                 for n in ast.walk(statement):
-                    if isinstance(n, ast.Name) and isinstance(n.ctx, (ast.Store, ast.Del)): values.pop(n.id, None)
+                    if _bound_name(n) is not None: values.pop(_bound_name(n), None)
             if _call(call, 'run_validator'): record(call, values)
             elif entry and isinstance(call, ast.Call) and isinstance(call.func, ast.Name) and call.func.id in functions:
                 name = call.func.id
@@ -797,7 +918,12 @@ def read_canonical(dispatcher_path, canonical_path):
                         raise SourceError(canonical_path, 'canonical section must receive unchanged references', statement.lineno)
                     sections.add(name)
                     _signature(functions[name], ('references',), canonical_path)
+                    _canonical_syntax(_body(functions[name]), canonical_path)
                     scan(functions[name].body, {})
+            if isinstance(statement, (ast.Assign, ast.AugAssign, ast.Delete)):
+                for node in ast.walk(statement):
+                    if _bound_name(node) is not None:
+                        values.pop(_bound_name(node), None)
             if isinstance(statement, ast.Assign):
                 for target in statement.targets:
                     if isinstance(target, ast.Name):
@@ -813,6 +939,8 @@ def read_canonical(dispatcher_path, canonical_path):
             if isinstance(statement, (ast.Return, ast.Raise)): return True
         return False
     def record(call, values):
+        if call.keywords:
+            raise SourceError(canonical_path, 'canonical validator requires positional arguments', call.lineno)
         if not call.args or not isinstance(call.args[0], ast.Constant) or not isinstance(call.args[0].value, str):
             return
         paths = tuple(p for n in call.args[1:] if (p := _reference(n, values)) is not None and p)
@@ -820,7 +948,7 @@ def read_canonical(dispatcher_path, canonical_path):
     scan(functions['run_canonical'].body, {}, True)
     if not roots: raise SourceError(canonical_path, 'no proven canonical references root')
     for name in roots:
-        stores = [n for n in ast.walk(functions['run_canonical']) if (_name(n, name) and isinstance(n.ctx, (ast.Store, ast.Del))) or (isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and n.name == name) or (isinstance(n, ast.alias) and (n.asname or n.name) == name)]
+        stores = [n for n in ast.walk(functions['run_canonical']) if _bound_name(n) == name]
         if len(stores) != 1: raise SourceError(canonical_path, 'reference selector rebound: ' + name)
     _bindings(canonical, canonical_path, {'run_canonical', 'run_validator'} | sections)
     return tuple(calls)
