@@ -5,6 +5,7 @@ compiled to executable code, or run; marker files must remain absent.
 """
 import ast
 from pathlib import Path
+import subprocess
 import sys
 import textwrap
 
@@ -800,3 +801,158 @@ def test_round3_hermetic_public_guard_is_required(tmp_path, mutation):
     elif mutation == 'noop': mutate(pair[0], 'sys.exit(main())', 'sys.exit(0)')
     else: mutate(pair[0], 'def main(argv=None):', 'def main(argv):')
     with pytest.raises(SourceError): read_canonical(*pair)
+
+
+# Interpreter-provided bindings participate in the same negative binding check
+# as explicit imports. Put sibling forms inside an unused function so a module
+# statement refusal alone cannot hide a missing shadow/write check.
+@pytest.mark.parametrize('target', ['dispatcher', 'canonical'])
+@pytest.mark.parametrize('name', ['__name__', '__file__', '__builtins__'])
+@pytest.mark.parametrize('binding', ROUND2_BINDINGS + [
+    '{name} += 1', '{name}: object',
+    'for {name} in []:\n pass', 'with open("unused") as {name}:\n pass',
+    '[None for {name} in []]', 'def other(*{name}):\n pass',
+    'def other(**{name}):\n pass',
+])
+def test_round4_implicit_bindings_all_supported_axes(tmp_path, target, name, binding):
+    pair = live_canonical_pair(tmp_path)
+    path = pair[0 if target == 'dispatcher' else 1]
+    extra = 'def unused():\n' + textwrap.indent(binding.format(name=name), '    ') + '\n'
+    if target == 'dispatcher':
+        mutate(path, 'if __name__ == "__main__":', extra + '\nif __name__ == "__main__":')
+        for consumer in ('aggregate', 'dispatch', 'count', 'canonical'):
+            with pytest.raises(SourceError): round3_consumer(consumer, *pair)
+    else:
+        with path.open('a', encoding='utf-8') as stream: stream.write('\n' + extra)
+        with pytest.raises(SourceError): read_canonical(*pair)
+
+
+@pytest.mark.parametrize(('target', 'before', 'extra'), [
+    ('dispatcher', 'if __name__ == "__main__":', "__name__ = 'not_main'"),
+    ('dispatcher', 'if __name__ == "__main__":', 'def __name__(): pass'),
+    ('dispatcher', 'AGG_VALIDATORS = (', '__builtins__ = None'),
+    ('dispatcher', 'if __name__ == "__main__":', "__file__ = 'alternate/validate.py'"),
+    ('canonical', 'HERE = Path(__file__).resolve().parent', "__file__ = 'alternate/validate_canonical.py'"),
+])
+def test_round4_exact_implicit_binding_reproductions(tmp_path, target, before, extra):
+    pair = live_canonical_pair(tmp_path)
+    assert read_dispatch(pair[0])['ledger-check'].helper_files == ('letter_checks.py',)
+    assert read_canonical(*pair)
+    path = pair[0 if target == 'dispatcher' else 1]
+    mutate(path, before, extra + '\n' + before)
+    consumers = ('aggregate', 'dispatch', 'count', 'canonical') if target == 'dispatcher' else ('canonical',)
+    for consumer in consumers:
+        with pytest.raises(SourceError): round3_consumer(consumer, *pair)
+
+
+ROUND4_IMPORT_USES = [
+    ('from pathlib import Path', 'Path', 'HERE = Path(__file__).resolve().parent'),
+    ('import subprocess', 'subprocess', 'def run_validator(command, *arguments)'),
+    ('from contextlib import contextmanager', 'contextmanager', '@contextmanager'),
+]
+
+
+@pytest.mark.parametrize(('declaration', 'name', 'use'), ROUND4_IMPORT_USES)
+@pytest.mark.parametrize('damage', ['missing', 'late', 'local', 'alias', 'wrong-module'])
+def test_round4_module_time_import_requires_prior_actual_binding(tmp_path, declaration, name, use, damage):
+    pair = live_canonical_pair(tmp_path)
+    source = pair[1].read_text(encoding='utf-8')
+    assert declaration + '\n' in source and use in source
+    replacement = ''
+    if damage == 'alias': replacement = declaration + ' as unused_import\n'
+    if damage == 'wrong-module': replacement = 'from json import ' + name + '\n'
+    source = source.replace(declaration + '\n', replacement, 1)
+    if damage == 'late': source += '\n' + declaration + '\n'
+    if damage == 'local': source += '\ndef unused():\n    ' + declaration + '\n'
+    pair[1].write_text(source, encoding='utf-8')
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+@pytest.mark.parametrize('name', ['Path', 'subprocess', 'contextmanager', 'bytes', 'int', 'SystemExit'])
+@pytest.mark.parametrize('binding', ROUND2_BINDINGS)
+def test_round4_definition_dependencies_cannot_be_shadowed(tmp_path, name, binding):
+    pair = live_canonical_pair(tmp_path)
+    # Literal defaults need no name; the supported annotation/base/decorator
+    # operands do. Even an otherwise ignored nested binding invalidates them.
+    with pair[1].open('a', encoding='utf-8') as stream:
+        stream.write('\ndef unused():\n' + textwrap.indent(binding.format(name=name), '    ') + '\n')
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+@pytest.mark.parametrize(('declaration', 'name', 'use'), ROUND4_IMPORT_USES)
+def test_round4_import_immediately_before_use_and_local_function_imports_remain_valid(tmp_path, declaration, name, use):
+    pair = live_canonical_pair(tmp_path)
+    source = pair[1].read_text(encoding='utf-8')
+    source = source.replace(declaration + '\n', '', 1)
+    source = source.replace(use, declaration + '\n' + use, 1)
+    source += '\ndef unused():\n    import json\n    from annotation_manifest import normalize_snapshot\n'
+    pair[1].write_text(source, encoding='utf-8')
+    # Canonical remains importable source: no public main guard is required.
+    assert len(read_canonical(*pair)) == len(read_canonical(SCRIPTS / 'validate.py', SCRIPTS / 'validate_canonical.py'))
+
+
+@pytest.mark.parametrize('target', ['dispatcher', 'canonical'])
+@pytest.mark.parametrize('extra', [
+    'EXTRA = ()\ndef EXTRA(): pass\nCOMPOSED = (*EXTRA,)',
+    'EXTRA = 1\nCOMPOSED = (*EXTRA,)',
+    'COMPOSED = (*EXTRA,)',
+    'COMPOSED = (*EXTRA,)\nEXTRA = ()',
+    'EXTRA = ()\nEXTRA = 1\nCOMPOSED = (*EXTRA,)',
+    'EXTRA = ()\nCOMPOSED = (*EXTRA,)\nEXTRA = ()',
+    'EXTRA = ()\ndef unused(EXTRA): pass\nCOMPOSED = (*EXTRA,)',
+    'EXTRA = ()\ndef unused():\n from json import dumps as EXTRA\nCOMPOSED = (*EXTRA,)',
+    'EXTRA = ()\ndef unused():\n del EXTRA\nCOMPOSED = (*EXTRA,)',
+    'EXTRA = ()\ndef unused():\n EXTRA += ()\nCOMPOSED = (*EXTRA,)',
+    'EXTRA = ()\ndef unused():\n (EXTRA := ())\nCOMPOSED = (*EXTRA,)',
+    'EXTRA = ()\ndef unused():\n try: pass\n except Exception as EXTRA: pass\nCOMPOSED = (*EXTRA,)',
+    'EXTRA = ()\ndef unused():\n match []:\n  case [*EXTRA]: pass\nCOMPOSED = (*EXTRA,)',
+    'COMPOSED = frozenset(1)',
+    'COMPOSED = frozenset(([1],))',
+    'EXTRA = ([1],)\nCOMPOSED = frozenset((*EXTRA,))',
+    'EXTRA = ([1],)\nCOMPOSED = {*EXTRA}',
+    'COMPOSED = {[1]}',
+    'COMPOSED = {(1, []): 1}',
+    'EXTRA = [1]\nCOMPOSED = {(*EXTRA, []): 1}',
+])
+def test_round4_module_literal_composition_requires_established_iterable(tmp_path, target, extra):
+    pair = live_canonical_pair(tmp_path)
+    if target == 'dispatcher':
+        mutate(pair[0], 'if __name__ == "__main__":', extra + '\nif __name__ == "__main__":')
+        consumers = ('aggregate', 'dispatch', 'count', 'canonical')
+    else:
+        with pair[1].open('a', encoding='utf-8') as stream: stream.write('\n' + extra + '\n')
+        consumers = ('canonical',)
+    for consumer in consumers:
+        with pytest.raises(SourceError): round3_consumer(consumer, *pair)
+
+
+@pytest.mark.parametrize('extra', [
+    "EXTRA = ('one',)\nCOMPOSED = (*EXTRA,)",
+    "EXTRA = ['one']\nCOMPOSED = frozenset((*EXTRA,))",
+    "EXTRA = {'one': []}\nCOMPOSED = frozenset((*EXTRA,))",
+    "EXTRA = {'one'}\nCOMPOSED = frozenset((*EXTRA,))",
+    "EXTRA = 'one'\nCOMPOSED = (*EXTRA,)",
+    "EXTRA = b'one'\nCOMPOSED = frozenset((*EXTRA,))",
+    'EXTRA = ([1],)\nCOMPOSED = (*EXTRA,)',
+    'COMPOSED = {(1, 2): [1]}',
+])
+def test_round4_valid_literal_compositions_and_unrelated_local_data(tmp_path, extra):
+    pair = live_canonical_pair(tmp_path)
+    # Local data is outside this module-initialization proof.
+    extra += '\ndef unused():\n    local_data = {key: value}\n'
+    # Dispatcher dictionaries are command tables. Canonical module data tests
+    # initialization without introducing a new, unhandled public command.
+    with pair[1].open('a', encoding='utf-8') as stream: stream.write('\n' + extra)
+    assert len(read_aggregate(pair[0])) == 84
+    assert len(read_dispatch(pair[0])) == 85
+    check_aggregate_count(pair[0])
+    assert len(read_canonical(*pair)) == 77
+    # Execute only these known benign controls in a separate disposable child;
+    # the hostile inspected sources above remain data throughout.
+    helper = tmp_path / 'letter_checks.py'
+    helper.write_text("from pathlib import Path\nPath(__file__).with_suffix('.called').write_text('called')\nraise SystemExit(9)\n", encoding='utf-8')
+    result = subprocess.run([sys.executable, '-B', '-c',
+        "import sys; import validate_canonical as c; sys.exit(c.run_validator('ledger-check', '--self-test').returncode)"],
+        cwd=tmp_path, capture_output=True, timeout=15)
+    assert result.returncode == 9 and result.stdout == result.stderr == b''
+    assert helper.with_suffix('.called').read_text() == 'called'

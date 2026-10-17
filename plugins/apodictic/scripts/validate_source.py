@@ -162,6 +162,8 @@ def _protected_objects(tree, path):
                 or (isinstance(node, ast.ImportFrom) and node.module and node.module.split('.')[0] == 'builtins')
                 or (isinstance(node, ast.Name) and node.id == 'builtins')):
             raise SourceError(path, 'unsupported builtin module capability', node.lineno)
+        if _bound_name(node) in {'__name__', '__file__', '__builtins__'}:
+            raise SourceError(path, 'interpreter-provided module binding replaced or shadowed', getattr(node, 'lineno', None))
         if _bound_name(node) in {'len', 'bool', 'str', 'map', 'next', 'int', 'all', 'sum', 'sorted', 'enumerate', 'print', 'bytes', 'SystemExit', 'OSError', 'frozenset', 'dict', 'list', 'tuple'}:
             raise SourceError(path, 'source predicate builtin rebound', getattr(node, 'lineno', None))
         # A second import is also an alias to the same mutable module/class.
@@ -204,18 +206,59 @@ def _module_boundary(tree, path, *, canonical=False):
     from_imports = {('pathlib', 'Path'), ('contextlib', 'contextmanager')}
     if not canonical:
         from_imports.add(('validate_canonical', 'run_canonical'))
-    literal_names = set()
+    established_imports = {}
+
+    def require_import(name, statement):
+        # Only exact imports admitted earlier in this module can supply these
+        # definition-time operands. A later/local import or shadow is no proof.
+        alias = established_imports.get(name)
+        bindings = [n for n in ast.walk(tree) if _bound_name(n) == name]
+        if alias is None or len(bindings) != 1 or bindings[0] is not alias:
+            raise SourceError(path, 'module-time dependency not uniquely imported before use: ' + name, statement.lineno)
+
+    literal_values = {}
+
+    def items(node, *, hashable=False):
+        if isinstance(node, ast.Dict):
+            return all(k is not None and data(k, hashable=hashable) for k in node.keys)
+        if isinstance(node, (ast.Tuple, ast.List, ast.Set)):
+            return all(data(n, hashable=hashable) for n in node.elts)
+        return isinstance(node, ast.Constant) and isinstance(node.value, (str, bytes))
+
+    def data(node, *, hashable=False):
+        if isinstance(node, ast.Constant):
+            return True
+        if isinstance(node, ast.Tuple):
+            return items(node, hashable=hashable)
+        if isinstance(node, (ast.List, ast.Set)):
+            return not hashable and items(node, hashable=isinstance(node, ast.Set))
+        if isinstance(node, ast.Dict):
+            return not hashable and all(k is not None and data(k, hashable=True) and data(v)
+                                       for k, v in zip(node.keys, node.values))
+        if isinstance(node, ast.Starred) and isinstance(node.value, ast.Name):
+            prior = literal_values.get(node.value.id)
+            bindings = [n for n in ast.walk(tree) if _bound_name(n) == node.value.id]
+            return (prior is not None and len(bindings) == 1 and bindings[0] is prior[0]
+                    and items(prior[1], hashable=hashable))
+        return False
+
     guard = None
     for statement in tree.body:
         if isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Constant) and isinstance(statement.value.value, str):
             continue
         if isinstance(statement, ast.Import):
             if all(a.name in imports and a.asname is None for a in statement.names):
+                established_imports.update((a.name, a) for a in statement.names)
                 continue
         elif isinstance(statement, ast.ImportFrom):
             if not statement.level and all((statement.module, a.name) in from_imports and a.asname is None for a in statement.names):
+                established_imports.update((a.name, a) for a in statement.names)
                 continue
         elif isinstance(statement, ast.FunctionDef):
+            if canonical and statement.returns is not None and _same(statement.returns, 'subprocess.CompletedProcess[bytes]'):
+                require_import('subprocess', statement)
+            if canonical and statement.decorator_list:
+                require_import('contextmanager', statement)
             continue  # Definition-time operands are checked below, including nested definitions.
         elif isinstance(statement, ast.ClassDef) and canonical and statement.name == 'CanonicalAbort':
             if (not statement.decorator_list and not statement.keywords and len(statement.bases) == 1
@@ -224,18 +267,16 @@ def _module_boundary(tree, path, *, canonical=False):
         elif isinstance(statement, ast.Assign) and len(statement.targets) == 1 and isinstance(statement.targets[0], ast.Name):
             name, value = statement.targets[0].id, statement.value
             if canonical and name == 'HERE' and _same(value, 'Path(__file__).resolve().parent'):
+                require_import('Path', statement)
                 continue
             # Literal tables plus the two existing tuple/frozenset compositions.
             candidate = value
+            frozen = False
             if _call(candidate, 'frozenset') and len(candidate.args) == 1 and not candidate.keywords:
                 candidate = candidate.args[0]
-            def data(node):
-                if isinstance(node, ast.Constant): return True
-                if isinstance(node, (ast.Tuple, ast.List, ast.Set)): return all(data(n) for n in node.elts)
-                if isinstance(node, ast.Dict): return all(k is not None and data(k) and data(v) for k, v in zip(node.keys, node.values))
-                return isinstance(node, ast.Starred) and isinstance(node.value, ast.Name) and node.value.id in literal_names
-            if data(candidate):
-                literal_names.add(name)
+                frozen = True
+            if data(candidate) and (not frozen or items(candidate, hashable=True)):
+                literal_values[name] = (statement.targets[0], candidate)
                 continue
         elif isinstance(statement, ast.If) and not canonical and _same(statement.test, '__name__ == "__main__"'):
             if guard is not None or statement is not tree.body[-1] or statement.orelse:
@@ -266,9 +307,6 @@ def _module_boundary(tree, path, *, canonical=False):
             if not (canonical and node in tree.body and node.name == '_temporary'
                     and len(node.decorator_list) == 1 and _name(node.decorator_list[0], 'contextmanager')):
                 raise SourceError(path, 'unsupported definition-time decorator', node.lineno)
-            bindings = [n for n in ast.walk(tree) if _bound_name(n) == 'contextmanager']
-            if len(bindings) != 1 or not isinstance(bindings[0], ast.alias):
-                raise SourceError(path, 'contextmanager decorator rebound')
     if not canonical:
         if guard is None:
             raise SourceError(path, 'public main guard missing')
