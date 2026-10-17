@@ -142,6 +142,22 @@ def _bindings(tree, path, names):
             raise SourceError(path, f'{name}: unsupported alias or use', node.lineno)
 
 
+# The fixed native forms share this finite import/member policy. A member kind
+# describes the permitted use of the object itself, not the semantics of an
+# arbitrary helper. Missing imports are checked only by launch proofs; plain
+# aggregate extraction still has no dependency on unused runtime imports.
+_NATIVE_OBJECTS = {
+    'sys': (None, {('argv',): 'argv', ('executable',): 'value',
+                   ('stdout',): 'stream', ('stderr',): 'stream', ('exit',): 'call'}),
+    'subprocess': (None, {('run',): 'call', ('PIPE',): 'value', ('DEVNULL',): 'value',
+                          ('CompletedProcess',): 'annotation'}),
+    'Path': ('pathlib', {(): 'call'}),
+    'os': (None, {('environ',): 'environment-copy', ('name',): 'value',
+                   **{('path', name): 'call' for name in
+                      ('splitext', 'abspath', 'dirname', 'isdir', 'isfile', 'normpath', 'join')}}),
+}
+
+
 def _protected_objects(tree, path):
     """Negative capability/escape check, shared by every source-proof entry.
 
@@ -153,8 +169,7 @@ def _protected_objects(tree, path):
     capabilities = {'globals', 'locals', 'vars', 'setattr', 'delattr',
                     '__builtins__', '__import__', 'import_module', 'getattr', 'eval', 'exec'}
     reflective = {'__dict__', '__globals__', '__setattr__', '__delattr__', '__getattribute__'}
-    attributes = {'sys': {'argv', 'executable', 'stdout', 'stderr', 'exit'},
-                  'subprocess': {'run', 'PIPE', 'DEVNULL', 'CompletedProcess'}}
+    modules = {module or name for name, (module, _) in _NATIVE_OBJECTS.items()}
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and any(a.name == '*' for a in node.names):
             raise SourceError(path, 'wildcard import cannot establish native bindings', node.lineno)
@@ -169,12 +184,14 @@ def _protected_objects(tree, path):
         # A second import is also an alias to the same mutable module/class.
         # These are the only supported native-object import forms.
         if isinstance(node, ast.Import):
-            if any(a.name == 'pathlib' or (a.name in ('sys', 'subprocess') and a.asname is not None)
+            if any(a.name.split('.')[0] in modules and
+                   (a.name not in _NATIVE_OBJECTS or _NATIVE_OBJECTS[a.name][0] is not None or a.asname is not None)
                    for a in node.names):
                 raise SourceError(path, 'protected native object imported through an alias', node.lineno)
         if isinstance(node, ast.ImportFrom):
-            if (node.module in ('sys', 'subprocess') or (node.module == 'pathlib'
-                    and any(a.name != 'Path' or a.asname is not None for a in node.names))):
+            if node.module and node.module.split('.')[0] in modules and any(
+                    node.level or a.name not in _NATIVE_OBJECTS or
+                    _NATIVE_OBJECTS[a.name][0] != node.module or a.asname is not None for a in node.names):
                 raise SourceError(path, 'unsupported protected native-object import', node.lineno)
         if ((isinstance(node, ast.alias) and node.name in capabilities | reflective)
                 or (isinstance(node, ast.Attribute) and node.attr in capabilities | reflective)):
@@ -183,27 +200,37 @@ def _protected_objects(tree, path):
             if node.id in capabilities:
                 raise SourceError(path, 'unsupported dynamic namespace/mutation capability: ' + node.id, node.lineno)
             parent = parents.get(node)
-            if node.id == 'Path':
-                if not (isinstance(parent, ast.Call) and parent.func is node):
-                    raise SourceError(path, 'protected Path callable escapes', node.lineno)
-            elif node.id in attributes:
-                if not (isinstance(parent, ast.Attribute) and parent.value is node
-                        and isinstance(parent.ctx, ast.Load) and parent.attr in attributes[node.id]):
+            if node.id in _NATIVE_OBJECTS:
+                members = _NATIVE_OBJECTS[node.id][1]
+                member, components = node, ()
+                while components not in members and isinstance(parent, ast.Attribute) and parent.value is member and isinstance(parent.ctx, ast.Load):
+                    member, components = parent, (*components, parent.attr)
+                    parent = parents.get(member)
+                if components not in members:
                     raise SourceError(path, 'protected native object escapes or changes: ' + node.id, node.lineno)
-                use = parents.get(parent)
-                if parent.attr in ('run', 'exit') and not (isinstance(use, ast.Call) and use.func is parent):
+                kind = members[components]
+                if kind == 'call' and not (isinstance(parent, ast.Call) and parent.func is member):
                     raise SourceError(path, 'protected native callable escapes', node.lineno)
-                if parent.attr == 'argv' and not (isinstance(use, ast.Subscript) and use.value is parent and isinstance(use.ctx, ast.Load)):
+                if kind == 'argv' and not (isinstance(parent, ast.Subscript) and parent.value is member and isinstance(parent.ctx, ast.Load)):
                     raise SourceError(path, 'protected native argv escapes or changes', node.lineno)
+                if kind == 'environment-copy' and not (isinstance(parent, ast.Call) and
+                        _same(parent, 'dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")')):
+                    raise SourceError(path, 'protected native environment escapes or changes', node.lineno)
+                if kind == 'annotation' and not (isinstance(parent, ast.Subscript) and
+                        _same(parent, 'subprocess.CompletedProcess[bytes]') and
+                        isinstance(parents.get(parent), ast.FunctionDef) and parents[parent].returns is parent):
+                    raise SourceError(path, 'protected native type escapes', node.lineno)
         if isinstance(node, (ast.Attribute, ast.Subscript)) and isinstance(node.ctx, (ast.Store, ast.Del)):
-            if any(isinstance(n, ast.Name) and n.id in {'sys', 'subprocess', 'Path'} for n in ast.walk(node)):
+            if any(isinstance(n, ast.Name) and n.id in _NATIVE_OBJECTS for n in ast.walk(node)):
                 raise SourceError(path, 'protected native object mutation', node.lineno)
 
 
 def _module_boundary(tree, path, *, canonical=False):
     """Closed module initialization and definition-time forms; never evaluate them."""
-    imports = {'hashlib', 'os', 're', 'subprocess', 'sys', 'tempfile', 'json', 'shutil'}
-    from_imports = {('pathlib', 'Path'), ('contextlib', 'contextmanager')}
+    imports = {'hashlib', 're', 'tempfile', 'json', 'shutil'} | {
+        name for name, (module, _) in _NATIVE_OBJECTS.items() if module is None}
+    from_imports = {('contextlib', 'contextmanager')} | {
+        (module, name) for name, (module, _) in _NATIVE_OBJECTS.items() if module is not None}
     if not canonical:
         from_imports.add(('validate_canonical', 'run_canonical'))
     established_imports = {}
@@ -393,23 +420,25 @@ def _route_value(node, values, path):
 
 
 def _native_imports(tree, path):
-    """Protect the small stdlib launch/path vocabulary from local replacement."""
-    expected = {'sys': ('sys', None), 'subprocess': ('subprocess', None), 'Path': ('Path', 'pathlib')}
-    if any(isinstance(n, ast.ImportFrom) and any(a.name == '*' for a in n.names) for n in ast.walk(tree)):
-        raise SourceError(path, 'wildcard import cannot establish native bindings')
+    """Require the actual imports for the native objects this program uses.
+
+    Runtime uses may precede their import text inside function definitions;
+    _module_boundary separately requires imports before definition-time uses.
+    A minimal supported launcher without environment options need not import os.
+    """
     parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
-    for name, (imported, module) in expected.items():
+    used = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}
+    for name, (module, _) in _NATIVE_OBJECTS.items():
         bindings = [n for n in ast.walk(tree) if _bound_name(n) == name]
+        if name not in used and not bindings:
+            continue
         if len(bindings) != 1 or not isinstance(bindings[0], ast.alias):
             raise SourceError(path, 'native launch/path name missing, rebound or shadowed: ' + name)
         alias = bindings[0]
         declaration = parents[alias]
-        if (declaration not in tree.body or alias.name != imported or alias.asname is not None
+        if (declaration not in tree.body or alias.name != name or alias.asname is not None
                 or (declaration.module if isinstance(declaration, ast.ImportFrom) else None) != module):
             raise SourceError(path, 'native launch/path import missing or ambiguous: ' + name)
-    for node in ast.walk(tree):
-        if _bound_name(node) in ('len', 'bool', 'str', 'map', 'next', 'int', 'all', 'sum', 'sorted', 'enumerate', 'print'):
-            raise SourceError(path, 'source predicate builtin rebound', node.lineno)
 
 
 def _launcher(function, path, canonical=False):
@@ -965,7 +994,7 @@ def _canonical_syntax(statements, path, *, entry=False, sections=()):
                         raise SourceError(path, 'canonical section call must be direct', node.lineno)
                 method = (isinstance(function, ast.Attribute) and function.attr in methods
                           and not (isinstance(function.value, ast.Name)
-                                   and function.value.id in {'sys', 'subprocess', 'os', 'Path'}))
+                                   and function.value.id in _NATIVE_OBJECTS))
                 module = isinstance(function, ast.Attribute) and ast.unparse(function) in module_calls
                 if not (direct or method or module):
                     raise SourceError(path, 'unsupported canonical call', node.lineno)

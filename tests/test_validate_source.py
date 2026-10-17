@@ -956,3 +956,169 @@ def test_round4_valid_literal_compositions_and_unrelated_local_data(tmp_path, ex
         cwd=tmp_path, capture_output=True, timeout=15)
     assert result.returncode == 9 and result.stdout == result.stderr == b''
     assert helper.with_suffix('.called').read_text() == 'called'
+
+
+def round5_environment_pair(tmp_path):
+    pair = canonical_pair(tmp_path, "run_validator('alpha', references / 'example.md')")
+    mutate(pair[1], 'import subprocess, sys', 'import subprocess, sys\nimport os')
+    mutate(pair[1], 'command, *arguments])',
+           'command, *arguments], env=dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8"))')
+    return pair
+
+
+@pytest.mark.parametrize('declaration', ['', 'import os as os', 'from json import os',
+                                         'def unused():\n    import os', 'import os\nimport os'])
+def test_round5_environment_dependency_requires_one_actual_module_import(tmp_path, declaration):
+    pair = round5_environment_pair(tmp_path)
+    mutate(pair[1], 'import os\n', declaration + '\n')
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+@pytest.mark.parametrize('binding', ROUND2_BINDINGS + [
+    '{name} += 1', '{name}: object', 'for {name} in []:\n pass',
+    'with open("unused") as {name}:\n pass', '[None for {name} in []]',
+    'def other(*{name}):\n pass', 'def other(**{name}):\n pass',
+])
+def test_round5_environment_dependency_rejects_binding_siblings(tmp_path, binding):
+    pair = round5_environment_pair(tmp_path)
+    # One small supported program covers binding forms, without multiplying
+    # every complete dispatcher/canonical source by every consumer.
+    with pair[1].open('a', encoding='utf-8') as stream:
+        stream.write('\ndef unused():\n' + textwrap.indent(binding.format(name='os'), '    ') + '\n')
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+@pytest.mark.parametrize('statement', [
+    'alias = os\nalias.environ = None', 'consume(os)',
+    'environment = os.environ\nenvironment["PYTHONHOME"] = "missing-home"',
+    'consume(os.environ)', 'os.environ = None', 'del os.environ',
+    'os.environ["PYTHONHOME"] = "missing-home"', 'del os.environ["PATH"]',
+    'os.environ.update({"PYTHONHOME": "missing-home"})', 'environment = os.environ.copy()',
+    'paths = os.path\npaths.join = replacement', 'consume(os.path)',
+    'join = os.path.join', 'consume(os.path.isfile)',
+    'os.path = None', 'del os.path', 'os.path.join = replacement', 'del os.path.isfile',
+    'os.name = "other"', 'del os.name', 'os.chdir("missing-directory")',
+    'import os as alias\nalias.environ = None', 'import os.path as paths',
+    'from os import environ as environment', 'from os.path import join',
+    'setattr(os, "environ", None)', 'os.__dict__["environ"] = None',
+    'kind = subprocess.CompletedProcess',
+])
+def test_round5_native_object_capabilities_cannot_escape_through_uninspected_helpers(tmp_path, statement):
+    pair = round5_environment_pair(tmp_path)
+    # The unused helper supplies no anchor. It isolates the shared negative
+    # object check from the narrower canonical entry statement grammar.
+    with pair[1].open('a', encoding='utf-8') as stream:
+        stream.write('\ndef unused():\n' + textwrap.indent(statement, '    ') + '\n')
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+@pytest.mark.parametrize(('target', 'damage'), [
+    ('dispatcher', 'missing'), ('dispatcher', 'rebound'),
+    ('canonical', 'missing'), ('canonical', 'rebound'),
+    ('canonical', 'entry-environment'), ('canonical', 'entry-object-alias'),
+    ('canonical', 'entry-environment-alias'),
+])
+def test_round5_actual_launch_and_consumer_adoption(tmp_path, monkeypatch, target, damage):
+    import meta_lint
+    import schema_coverage
+    pair = live_canonical_pair(tmp_path)
+    path = pair[0 if target == 'dispatcher' else 1]
+    if damage == 'missing':
+        mutate(path, 'import os\n', '')
+    elif damage == 'rebound':
+        if target == 'dispatcher':
+            mutate(path, 'if __name__ == "__main__":', 'os = None\nif __name__ == "__main__":')
+        else:
+            with path.open('a', encoding='utf-8') as stream: stream.write('\nos = None\n')
+    else:
+        insert_body(path, 'run_canonical', {
+            'entry-environment': 'os.environ = None',
+            'entry-object-alias': 'alias = os\nalias.environ = None',
+            'entry-environment-alias': 'environment = os.environ\nenvironment["PYTHONHOME"] = "missing-home"',
+        }[damage])
+    if target == 'dispatcher':
+        with pytest.raises(SourceError): read_dispatch(pair[0])
+        with pytest.raises(SourceError): check_aggregate_count(pair[0])
+        assert meta_lint.check_m1(pair[0]) and meta_lint.check_m3(pair[0])
+        # These inspect separate data; missing launcher dependencies alone do
+        # not turn inventory extraction or canonical-only association into a
+        # proof of dispatcher launch execution.
+        assert len(read_aggregate(pair[0])) == 84
+        assert len(read_canonical(*pair)) == 77
+    else:
+        assert read_dispatch(pair[0])['ledger-check'].helper_files == ('letter_checks.py',)
+        with pytest.raises(SourceError): read_canonical(*pair)
+    monkeypatch.setattr(schema_coverage, 'art', None)
+    code, lines = schema_coverage.run(scripts_dir=tmp_path)
+    assert code == 1 and 'source-check' in '\n'.join(lines)
+
+
+def test_round5_shared_escape_refusal_reaches_inventory_and_meta(tmp_path, monkeypatch, capsys):
+    import meta_lint
+    import validator_runner
+    scripts = tmp_path / 'scripts'
+    scripts.mkdir()
+    pair = live_canonical_pair(scripts)
+    schemas = tmp_path / 'schemas'
+    schemas.mkdir()
+    (schemas / 'validator-runtime-inventory.json').write_bytes(
+        (SCRIPTS.parent / 'schemas/validator-runtime-inventory.json').read_bytes())
+    monkeypatch.setattr(validator_runner, 'HERE', scripts)
+    monkeypatch.setattr(sys, 'path', list(sys.path))
+    assert validator_runner.check_inventory() == 0
+    capsys.readouterr()
+    mutate(pair[0], 'if __name__ == "__main__":',
+           'def unused():\n    alias = os\n    alias.environ = None\nif __name__ == "__main__":')
+    for consumer in ('aggregate', 'dispatch', 'count', 'canonical'):
+        with pytest.raises(SourceError): round3_consumer(consumer, *pair)
+    assert meta_lint.check_m1(pair[0]) and meta_lint.check_m3(pair[0])
+    assert validator_runner.check_inventory() == 1
+    assert 'Inventory source-check error:' in capsys.readouterr().out
+
+
+def test_round5_environment_replacement_operand_is_never_executed(tmp_path):
+    pair = round5_environment_pair(tmp_path)
+    marker = tmp_path / 'must-not-exist'
+    insert_body(pair[1], 'run_canonical', f'os.environ = Path({str(marker)!r}).touch()')
+    with pytest.raises(SourceError): read_canonical(*pair)
+    assert not marker.exists()
+
+
+def test_round5_minimal_launch_and_environment_copy_remain_supported(tmp_path):
+    # No unconditional dependency on os for the minimal accepted launch form.
+    assert has_example(read_canonical(*canonical_pair(tmp_path, "run_validator('alpha', references / 'example.md')")))
+    pair = round5_environment_pair(tmp_path)
+    with pair[1].open('a', encoding='utf-8') as stream:
+        stream.write('\ndef unused():\n'
+                     '    environment = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")\n'
+                     '    environment["EXAMPLE"] = "local copy only"\n'
+                     '    platform = os.name\n')
+    assert has_example(read_canonical(*pair))
+
+
+@pytest.mark.parametrize(('target', 'imports'), [
+    ('dispatcher', ('import os', 'import sys', 'import subprocess', 'from pathlib import Path')),
+    ('canonical', ('import os', 'import sys')),
+])
+def test_round5_late_runtime_imports_retain_real_helper_execution(tmp_path, target, imports):
+    pair = live_canonical_pair(tmp_path)
+    path = pair[0 if target == 'dispatcher' else 1]
+    source = path.read_text(encoding='utf-8')
+    for declaration in imports:
+        assert declaration + '\n' in source
+        source = source.replace(declaration + '\n', '', 1)
+    late = '\n'.join(imports) + '\n'
+    if target == 'dispatcher': source = source.replace('if __name__ == "__main__":', late + '\nif __name__ == "__main__":', 1)
+    else: source += '\n' + late
+    path.write_text(source, encoding='utf-8')
+    assert read_dispatch(pair[0])['ledger-check'].helper_files == ('letter_checks.py',)
+    check_aggregate_count(pair[0])
+    assert len(read_canonical(*pair)) == 77
+    helper = tmp_path / 'letter_checks.py'
+    helper.write_text("from pathlib import Path\nPath(__file__).with_suffix('.called').write_text('called')\nraise SystemExit(9)\n", encoding='utf-8')
+    # Only this known benign control is executed, in its own disposable child.
+    command = ([str(pair[0]), 'ledger-check', '--self-test'] if target == 'dispatcher' else
+               ['-c', "import sys; import validate_canonical as c; sys.exit(c.run_validator('ledger-check', '--self-test').returncode)"])
+    result = subprocess.run([sys.executable, '-B', *command], cwd=tmp_path, capture_output=True, timeout=15)
+    assert result.returncode == 9 and result.stdout == result.stderr == b''
+    assert helper.with_suffix('.called').read_text() == 'called'
