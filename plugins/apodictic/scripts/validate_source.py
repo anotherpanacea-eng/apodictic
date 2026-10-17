@@ -156,6 +156,14 @@ def _protected_objects(tree, path):
     attributes = {'sys': {'argv', 'executable', 'stdout', 'stderr', 'exit'},
                   'subprocess': {'run', 'PIPE', 'DEVNULL', 'CompletedProcess'}}
     for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and any(a.name == '*' for a in node.names):
+            raise SourceError(path, 'wildcard import cannot establish native bindings', node.lineno)
+        if ((isinstance(node, ast.Import) and any(a.name.split('.')[0] == 'builtins' for a in node.names))
+                or (isinstance(node, ast.ImportFrom) and node.module and node.module.split('.')[0] == 'builtins')
+                or (isinstance(node, ast.Name) and node.id == 'builtins')):
+            raise SourceError(path, 'unsupported builtin module capability', node.lineno)
+        if _bound_name(node) in {'len', 'bool', 'str', 'map', 'next', 'int', 'all', 'sum', 'sorted', 'enumerate', 'print', 'bytes', 'SystemExit', 'OSError', 'frozenset', 'dict', 'list', 'tuple'}:
+            raise SourceError(path, 'source predicate builtin rebound', getattr(node, 'lineno', None))
         # A second import is also an alias to the same mutable module/class.
         # These are the only supported native-object import forms.
         if isinstance(node, ast.Import):
@@ -190,7 +198,92 @@ def _protected_objects(tree, path):
                 raise SourceError(path, 'protected native object mutation', node.lineno)
 
 
+def _module_boundary(tree, path, *, canonical=False):
+    """Closed module initialization and definition-time forms; never evaluate them."""
+    imports = {'hashlib', 'os', 're', 'subprocess', 'sys', 'tempfile', 'json', 'shutil'}
+    from_imports = {('pathlib', 'Path'), ('contextlib', 'contextmanager')}
+    if not canonical:
+        from_imports.add(('validate_canonical', 'run_canonical'))
+    literal_names = set()
+    guard = None
+    for statement in tree.body:
+        if isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Constant) and isinstance(statement.value.value, str):
+            continue
+        if isinstance(statement, ast.Import):
+            if all(a.name in imports and a.asname is None for a in statement.names):
+                continue
+        elif isinstance(statement, ast.ImportFrom):
+            if not statement.level and all((statement.module, a.name) in from_imports and a.asname is None for a in statement.names):
+                continue
+        elif isinstance(statement, ast.FunctionDef):
+            continue  # Definition-time operands are checked below, including nested definitions.
+        elif isinstance(statement, ast.ClassDef) and canonical and statement.name == 'CanonicalAbort':
+            if (not statement.decorator_list and not statement.keywords and len(statement.bases) == 1
+                    and _name(statement.bases[0], 'SystemExit') and not _body(statement)):
+                continue
+        elif isinstance(statement, ast.Assign) and len(statement.targets) == 1 and isinstance(statement.targets[0], ast.Name):
+            name, value = statement.targets[0].id, statement.value
+            if canonical and name == 'HERE' and _same(value, 'Path(__file__).resolve().parent'):
+                continue
+            # Literal tables plus the two existing tuple/frozenset compositions.
+            candidate = value
+            if _call(candidate, 'frozenset') and len(candidate.args) == 1 and not candidate.keywords:
+                candidate = candidate.args[0]
+            def data(node):
+                if isinstance(node, ast.Constant): return True
+                if isinstance(node, (ast.Tuple, ast.List, ast.Set)): return all(data(n) for n in node.elts)
+                if isinstance(node, ast.Dict): return all(k is not None and data(k) and data(v) for k, v in zip(node.keys, node.values))
+                return isinstance(node, ast.Starred) and isinstance(node.value, ast.Name) and node.value.id in literal_names
+            if data(candidate):
+                literal_names.add(name)
+                continue
+        elif isinstance(statement, ast.If) and not canonical and _same(statement.test, '__name__ == "__main__"'):
+            if guard is not None or statement is not tree.body[-1] or statement.orelse:
+                raise SourceError(path, 'public main guard must be unique and last')
+            guard = statement
+            forms = ('sys.exit(main())',
+                     'try:\n    sys.exit(main())\nexcept OSError as exc:\n    _line(f"ERROR: {exc}", error=True)\n    sys.exit(1)')
+            if any([ast.dump(n) for n in statement.body] == [ast.dump(n) for n in ast.parse(form).body] for form in forms):
+                continue
+        raise SourceError(path, 'unsupported module initialization or public main guard', statement.lineno)
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.AsyncFunctionDef, ast.ClassDef)) and not (canonical and node in tree.body and isinstance(node, ast.ClassDef) and node.name == 'CanonicalAbort'):
+            raise SourceError(path, 'unsupported definition-time construct', node.lineno)
+        if not isinstance(node, ast.FunctionDef):
+            continue
+        args = node.args
+        parameters = [*args.posonlyargs, *args.args, *args.kwonlyargs, *([args.vararg] if args.vararg else []), *([args.kwarg] if args.kwarg else [])]
+        if any(a.annotation is not None for a in parameters):
+            raise SourceError(path, 'unsupported parameter annotation', node.lineno)
+        if any(not isinstance(n, ast.Constant) or n.value not in (None, False, True, '')
+               for n in [*args.defaults, *(n for n in args.kw_defaults if n is not None)]):
+            raise SourceError(path, 'unsupported definition-time default', node.lineno)
+        if node.returns is not None and not (canonical and
+                ((node.name == 'run_canonical' and _name(node.returns, 'int')) or
+                 (node.name == 'run_validator' and _same(node.returns, 'subprocess.CompletedProcess[bytes]')))):
+            raise SourceError(path, 'unsupported return annotation', node.lineno)
+        if node.decorator_list:
+            if not (canonical and node in tree.body and node.name == '_temporary'
+                    and len(node.decorator_list) == 1 and _name(node.decorator_list[0], 'contextmanager')):
+                raise SourceError(path, 'unsupported definition-time decorator', node.lineno)
+            bindings = [n for n in ast.walk(tree) if _bound_name(n) == 'contextmanager']
+            if len(bindings) != 1 or not isinstance(bindings[0], ast.alias):
+                raise SourceError(path, 'contextmanager decorator rebound')
+    if not canonical:
+        if guard is None:
+            raise SourceError(path, 'public main guard missing')
+        _bindings(tree, path, {'main'})
+        main = _functions(tree).get('main')
+        if main is None or ast.dump(main.args) != ast.dump(ast.parse('def main(argv=None): pass').body[0].args):
+            raise SourceError(path, 'public main requires the supported optional argv signature')
+        sys_imports = [n for n in ast.walk(tree) if _bound_name(n) == 'sys']
+        if len(sys_imports) != 1 or not isinstance(sys_imports[0], ast.alias) or not any(
+                isinstance(n, ast.Import) and sys_imports[0] in n.names and sys_imports[0].asname is None for n in tree.body):
+            raise SourceError(path, 'public main requires the fixed sys import')
+
+
 def _aggregate(tree, path):
+    _module_boundary(tree, path)
     _protected_objects(tree, path)
     _bindings(tree, path, {'AGG_VALIDATORS'})
     node = next((n for n in tree.body if isinstance(n, ast.Assign) and _name(n.targets[0], 'AGG_VALIDATORS')), None)
@@ -738,6 +831,54 @@ def _root_selector(node, proven):
             or any(_same(fallback, root) for root in roots))
 
 
+def _canonical_call_shape(call, path, sections):
+    """Argument syntax of the admitted reporting/primitive/helper vocabulary.
+
+    These bounds reject malformed calls; they neither resolve values nor credit
+    routes, and keyword values still undergo the enclosing expression check.
+    """
+    function = call.func
+    label = function.id if isinstance(function, ast.Name) else '.' + function.attr
+    if isinstance(function, ast.Attribute) and isinstance(function.value, ast.Name) and function.value.id in {'json', 're', 'shutil', 'am', 'dispatch_record'}:
+        label = function.value.id + label
+    shapes = {
+        '_line': (0, 1, ()), 'print': (0, None, ()),
+        'int': (1, 1, ()), 'bool': (1, 1, ()), 'len': (1, 1, ()),
+        'all': (1, 1, ()), 'sum': (1, 1, ()), 'sorted': (1, 1, ()),
+        'Path': (1, 1, ()), 'next': (1, 2, ()), 'enumerate': (1, 2, ()),
+        'run_validator': (1, None, ()), '_producer': (1, None, ()),
+        '_relay': (1, 1, ()), '_captured': (1, 1, ()), '_text': (1, 1, ()),
+        '_summary': (2, 2, ()), '_check': (3, 3, ()), '_temporary': (0, 1, ()),
+        '_write': (2, 2, ()), '_rewrite': (3, 3, ()), '_without_lines': (3, 3, ()),
+        '_copy_globs': (2, None, ()), '_same_bytes': (2, 2, ()), '_evals': (0, 0, ()),
+        '_locate': (1, 1, ('file',)), '_corpus_result': (3, 3, ('abort',)),
+        'CanonicalAbort': (1, 1, ()), 'OSError': (1, 1, ()),
+        '.resolve': (0, 0, ()), '.exists': (0, 0, ()), '.is_file': (0, 0, ()), '.is_dir': (0, 0, ()),
+        '.read_text': (0, 0, ('encoding',)), '.glob': (1, 1, ()),
+        '.mkdir': (0, 0, ('parents',)), '.unlink': (0, 0, ()), '.touch': (0, 0, ()),
+        '.replace': (2, 3, ()), '.splitlines': (0, 0, ('keepends',)), '.join': (1, 1, ()),
+        '.append': (1, 1, ()), '.extend': (1, 1, ()), '.pop': (1, 2, ()), '.setdefault': (1, 2, ()),
+        '.update': (0, 1, None), '.start': (0, 1, ()), '.end': (0, 1, ()), '.group': (0, 1, ()),
+        'json.loads': (1, 1, ()), 'json.dumps': (1, 1, ('indent',)),
+        're.search': (2, 3, ()), 're.sub': (3, 3, ('flags',)),
+        'shutil.copyfile': (2, 2, ()), 'shutil.copytree': (2, 2, ()),
+        'am.check': (3, 3, ('ledger_text', 'ledger_optional')), 'am.normalize_snapshot': (1, 1, ()),
+        'dispatch_record.parse_model_tag_table': (1, 1, ()),
+    }
+    if label in sections:
+        minimum, maximum, keywords = 1, 1, ()
+    elif label in shapes:
+        minimum, maximum, keywords = shapes[label]
+    else:
+        raise SourceError(path, 'unsupported canonical call shape', call.lineno)
+    names = [k.arg for k in call.keywords]
+    if (any(isinstance(a, ast.Starred) for a in call.args) or None in names
+            or len(set(names)) != len(names) or len(call.args) < minimum
+            or (maximum is not None and len(call.args) > maximum)
+            or (keywords is not None and any(name not in keywords for name in names))):
+        raise SourceError(path, 'unsupported canonical call arguments: ' + label, call.lineno)
+
+
 def _canonical_syntax(statements, path, *, entry=False, sections=()):
     """Closed syntax vocabulary, not an evaluator of canonical Python.
 
@@ -790,8 +931,7 @@ def _canonical_syntax(statements, path, *, entry=False, sections=()):
                 module = isinstance(function, ast.Attribute) and ast.unparse(function) in module_calls
                 if not (direct or method or module):
                     raise SourceError(path, 'unsupported canonical call', node.lineno)
-                if any(k.arg is None for k in node.keywords):
-                    raise SourceError(path, 'unsupported canonical call expansion', node.lineno)
+                _canonical_call_shape(node, path, sections)
             if isinstance(node, ast.Import):
                 if ast.dump(node) not in {ast.dump(ast.parse('import dispatch_record').body[0]),
                                          ast.dump(ast.parse('import annotation_manifest as am').body[0])}:
@@ -819,6 +959,8 @@ def _control_exits(node):
 def read_canonical(dispatcher_path, canonical_path):
     dispatcher = _parse(dispatcher_path)
     canonical = _parse(canonical_path)
+    _module_boundary(dispatcher, dispatcher_path)
+    _module_boundary(canonical, canonical_path, canonical=True)
     _protected_objects(dispatcher, dispatcher_path)
     _protected_objects(canonical, canonical_path)
     _native_imports(canonical, canonical_path)
@@ -861,6 +1003,9 @@ def read_canonical(dispatcher_path, canonical_path):
                     elif isinstance(value, ast.Constant): continue
                     else: raise SourceError(dispatcher_path, 'unsupported expression before canonical entry', statement.lineno)
                 elif isinstance(statement, ast.Expr) and (_call(statement.value, '_line') or isinstance(statement.value, ast.Constant)):
+                    if _call(statement.value, '_line'):
+                        _positional(statement.value, 1, dispatcher_path)
+                        _canonical_syntax([statement], dispatcher_path, entry=True)
                     continue
                 elif isinstance(statement, ast.Return):
                     if _call(statement.value, 'run_canonical'):

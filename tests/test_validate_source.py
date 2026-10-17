@@ -127,13 +127,17 @@ def canonical_pair(tmp_path, body, section_body=None):
     dispatcher = tmp_path / 'validate.py'
     dispatcher.write_text(textwrap.dedent('''
         from validate_canonical import run_canonical
-        def main(args):
+        import sys
+        def main(argv=None):
+            args = list(sys.argv[1:] if argv is None else argv)
             if args and args[0] == '--check-canonical':
                 result = run_canonical()
                 return result
             if args and args[0] == '--check-all':
                 result = run_canonical()
                 return result
+        if __name__ == '__main__':
+            sys.exit(main())
     '''), encoding='utf-8')
     canonical = tmp_path / 'validate_canonical.py'
     source = textwrap.dedent('''
@@ -245,7 +249,7 @@ def test_selector_rebind_or_wrong_section_argument_refuses(tmp_path, tail):
 
 def test_canonical_entry_early_return_refuses(tmp_path):
     pair = canonical_pair(tmp_path, "run_validator('alpha', references / 'example.md')")
-    mutate(pair[0], 'def main(args):', 'def main(args):\n    if True:\n        return 0')
+    mutate(pair[0], 'def main(argv=None):', 'def main(argv=None):\n    if True:\n        return 0')
     with pytest.raises(SourceError): read_canonical(*pair)
 
 
@@ -617,7 +621,7 @@ def test_round2_all_binding_forms_invalidate_one_hop_paths(tmp_path, write):
 @pytest.mark.parametrize('suffix', ['True', 'unexpected=True'])
 def test_round2_existence_guard_rejects_unproven_call_arguments(tmp_path, suffix):
     body = "if (references / 'example.md').is_file(" + suffix + "):\n run_validator('alpha', references / 'example.md')"
-    assert not has_example(read_canonical(*canonical_pair(tmp_path, body)))
+    with pytest.raises(SourceError): read_canonical(*canonical_pair(tmp_path, body))
 
 
 @pytest.mark.parametrize('body', [
@@ -653,4 +657,146 @@ def test_round2_route_predicate_keywords_refuse(tmp_path, expression):
     pair = canonical_pair(tmp_path, "run_validator('alpha', references / 'example.md')")
     source = pair[0].read_text(encoding='utf-8').replace('if args and', 'if ' + expression + ' and')
     pair[0].write_text(source, encoding='utf-8')
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+# Round3 boundaries: these variants are parsed only. The marker operand is never
+# imported or executed, including when it appears in a definition-time context.
+def round3_consumer(name, dispatcher, canonical):
+    if name == 'aggregate': return read_aggregate(dispatcher)
+    if name == 'dispatch': return read_dispatch(dispatcher)
+    if name == 'count': return check_aggregate_count(dispatcher)
+    return read_canonical(dispatcher, canonical)
+
+
+@pytest.mark.parametrize('consumer', ['aggregate', 'dispatch', 'count', 'canonical'])
+@pytest.mark.parametrize(('before', 'after'), [
+    ('if __name__ == "__main__":', 'sys.exit(0)\nif __name__ == "__main__":'),
+    ('if __name__ == "__main__":', 'if False:'),
+    ('sys.exit(main())', 'sys.exit(0)'),
+    ('sys.exit(main())', 'sys.exit(main(unexpected=True))'),
+    ('def main(argv=None):', 'def main(argv):'),
+    ('def main(argv=None):', 'def main(argv, extra=None):'),
+    ('def main(argv=None):', 'def main(argv: sys.exit(0)=None):'),
+    ('def main(argv=None):', 'def main(argv=sys.exit(0)):'),
+    ('def main(argv=None):', 'def main(argv=None) -> sys.exit(0):'),
+    ('def _helper(command, args):', '@sys.exit(0)\ndef _helper(command, args):'),
+    ('def _helper(command, args):', 'def _helper(command: sys.exit(0), args):'),
+    ('def _helper(command, args):', 'def _helper(command, args=sys.exit(0)):'),
+    ('def _helper(command, args):', 'def _helper(command, args) -> sys.exit(0):'),
+    ('import hashlib', 'import hashlib\nassert False'),
+    ('import hashlib', 'import hashlib\nwhile True: pass'),
+    ('import hashlib', 'import hashlib\ntry:\n    sys.exit(0)\nexcept: pass'),
+])
+def test_round3_dispatcher_initialization_and_entry_refuse(dispatcher, consumer, before, after):
+    mutate(dispatcher, before, after)
+    with pytest.raises(SourceError):
+        round3_consumer(consumer, dispatcher, SCRIPTS / 'validate_canonical.py')
+
+
+@pytest.mark.parametrize('target', ['dispatcher', 'canonical'])
+@pytest.mark.parametrize('definition', [
+    'def unused(value=MARKER): pass', 'def unused(value: MARKER): pass',
+    'def unused() -> MARKER: pass', '@MARKER\ndef unused(): pass',
+    'def unused():\n def nested(value=MARKER): pass',
+    'class Unused(MARKER): pass', 'MARKER',
+])
+def test_round3_definition_time_operands_never_execute(tmp_path, target, definition):
+    pair = canonical_pair(tmp_path, "run_validator('alpha', references / 'example.md')")
+    marker = tmp_path / 'must-not-exist'
+    source = definition.replace('MARKER', f"Path({str(marker)!r}).touch()")
+    path = pair[0 if target == 'dispatcher' else 1]
+    old = path.read_text(encoding='utf-8')
+    if target == 'dispatcher': old = old.replace("if __name__ == '__main__':", source + "\nif __name__ == '__main__':")
+    else: old += '\n' + source + '\n'
+    path.write_text(old, encoding='utf-8')
+    with pytest.raises(SourceError): read_canonical(*pair)
+    assert not marker.exists()
+
+
+@pytest.mark.parametrize(('before', 'after'), [
+    ('def run_canonical() -> int:', 'def run_canonical() -> sys.exit(0):'),
+    ('def run_validator(command, *arguments)', 'def run_validator(command=sys.exit(0), *arguments)'),
+    ('def _line(text=""):', 'def _line(text=sys.exit(0)):'),
+    ('@contextmanager', '@sys.exit(0)'),
+    ('class CanonicalAbort(SystemExit):', 'class CanonicalAbort(sys.exit(0)):'),
+    ('HERE = Path(__file__).resolve().parent', 'HERE = Path(__file__).resolve().parent\nsys.exit(0)'),
+])
+def test_round3_canonical_initialization_refuses(tmp_path, before, after):
+    canonical = tmp_path / 'validate_canonical.py'
+    canonical.write_text((SCRIPTS / 'validate_canonical.py').read_text(encoding='utf-8'), encoding='utf-8')
+    mutate(canonical, before, after)
+    with pytest.raises(SourceError): read_canonical(SCRIPTS / 'validate.py', canonical)
+
+
+@pytest.mark.parametrize('site', ['dispatcher', 'entry', 'section'])
+@pytest.mark.parametrize('expression', [
+    '_line(sys.exit(0))', '_line(print(unexpected=True))',
+    '_line(int())', '_line(bool(1, 2))', '_line(next())',
+    '_line(Path())', '_line(Path("x", unexpected=True))',
+    '_line(*["message"])', '_line(**{"text": "message"})',
+    '_line("message", unexpected=True)', '_line("one", "two")',
+    'print(unexpected=True)', 'print(**{"end": ""})',
+    'print(int(unexpected=True))', 'print(Path("x").is_file(True))',
+    'print((lambda: 0)())',
+])
+def test_round3_ignored_report_call_shape_refuses(tmp_path, site, expression):
+    if site == 'dispatcher':
+        pair = canonical_pair(tmp_path, "run_validator('alpha', references / 'example.md')")
+        mutate(pair[0], '        result = run_canonical()', '        ' + expression + '\n        result = run_canonical()')
+    elif site == 'entry':
+        pair = canonical_pair(tmp_path, expression + "\nrun_validator('alpha', references / 'example.md')")
+    else:
+        pair = canonical_pair(tmp_path, 'result = section(references)', expression + "\nrun_validator('alpha', references / 'example.md')")
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+@pytest.mark.parametrize('consumer', ['aggregate', 'dispatch', 'count', 'canonical'])
+@pytest.mark.parametrize('extra', [
+    'import builtins\nbuiltins.str = lambda value: "wrong.py"',
+    'import builtins as replacement\nreplacement.str = str',
+    'from builtins import str as render',
+    'import builtins\nnamespace = builtins',
+    'from private_shadow import *',
+    'def unused():\n from private_shadow import *',
+    'def unused():\n import builtins\n builtins.str = str',
+    'def unused():\n from builtins import str',
+])
+def test_round3_builtin_module_and_wildcards_all_consumers(dispatcher, consumer, extra):
+    mutate(dispatcher, 'if __name__ == "__main__":', extra + '\nif __name__ == "__main__":')
+    with pytest.raises(SourceError): round3_consumer(consumer, dispatcher, SCRIPTS / 'validate_canonical.py')
+
+
+@pytest.mark.parametrize('extra', [
+    'import builtins\nbuiltins.str = lambda value: "wrong.py"',
+    'from private_shadow import *',
+    'def unused():\n import builtins as replacement\n namespace = replacement',
+])
+def test_round3_canonical_builtin_module_and_wildcards(tmp_path, extra):
+    pair = canonical_pair(tmp_path, "run_validator('alpha', references / 'example.md')")
+    with pair[1].open('a', encoding='utf-8') as stream: stream.write('\n' + extra + '\n')
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+def test_round3_actual_modules_keep_legitimate_definition_time_forms():
+    assert len(read_aggregate(SCRIPTS / 'validate.py')) == 84
+    assert len(read_dispatch(SCRIPTS / 'validate.py')) == 85
+    check_aggregate_count(SCRIPTS / 'validate.py')
+    assert len(read_canonical(SCRIPTS / 'validate.py', SCRIPTS / 'validate_canonical.py')) == 77
+
+
+@pytest.mark.parametrize('body', [
+    "print('message')\nrun_validator('alpha', references / 'example.md')",
+    "print(f'checking {references}')\nrun_validator('alpha', references / 'example.md')",
+])
+def test_round3_harmless_reporting_keeps_anchor(tmp_path, body):
+    assert has_example(read_canonical(*canonical_pair(tmp_path, body)))
+
+
+@pytest.mark.parametrize('mutation', ['missing', 'noop', 'required'])
+def test_round3_hermetic_public_guard_is_required(tmp_path, mutation):
+    pair = canonical_pair(tmp_path, "run_validator('alpha', references / 'example.md')")
+    assert has_example(read_canonical(*pair))
+    if mutation == 'missing': mutate(pair[0], "if __name__ == '__main__':\n    sys.exit(main())", '')
+    elif mutation == 'noop': mutate(pair[0], 'sys.exit(main())', 'sys.exit(0)')
+    else: mutate(pair[0], 'def main(argv=None):', 'def main(argv):')
     with pytest.raises(SourceError): read_canonical(*pair)

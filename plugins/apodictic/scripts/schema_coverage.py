@@ -463,11 +463,13 @@ def run_self_test():
             "def _fixture(command, args):",
             "    script = _FIXTURE[command]",
             "    return _run_helper(script, args)",
-            "def main(args):",
+            "def main(argv=None):",
+            "    args = list(sys.argv[1:] if argv is None else argv)",
             "    command = args[0]",
             "    if command == '--check-canonical':", "        return run_canonical()",
             "    if command == '--check-all':", "        return run_canonical()",
             "    if command in _FIXTURE:", "        return _fixture(command, args)",
+            "if __name__ == '__main__':", "    sys.exit(main())",
         ])
         (scr / "validate.py").write_text(vpy + "\n", encoding="utf-8")
         canonical = "\n".join([
