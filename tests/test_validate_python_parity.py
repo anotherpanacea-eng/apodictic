@@ -1286,6 +1286,39 @@ def test_annotation_export_navigation_scanner_precedes_helper(command, args, exp
     assert (result.returncode, result.stdout, result.stderr) == (2, expected, b"")
 
 
+
+@pytest.mark.parametrize("exit_code", [0, 2, 7])
+def test_helper_text_streams_keep_lf_and_preserve_process_contract(tmp_path, exit_code):
+    """Native dispatch keeps textual CLI bytes and the real helper outcome."""
+    copied = tmp_path / "validate.py"
+    shutil.copyfile(PYTHON_CLI, copied)
+    (tmp_path / "letter_checks.py").write_text(
+        "import json, os, sys\n"
+        "from pathlib import Path\n"
+        "data = sys.stdin.buffer.read()\n"
+        "Path('effect.json').write_text(json.dumps({'args': sys.argv[1:], 'input': data.hex(), "
+        "'helper': Path(__file__).name}), encoding='utf-8')\n"
+        "print('out caf\u00e9', flush=True)\n"
+        "sys.stdout.buffer.write(b'raw\\r\\xff\\n'); sys.stdout.buffer.flush()\n"
+        "sys.stderr.write('err caf\u00e9\\n'); sys.stderr.flush()\n"
+        "sys.exit(int(os.environ['HELPER_EXIT']))\n",
+        encoding="utf-8",
+    )
+    payload = b"stdin\r\n\xff"
+    args = ["ledger-check", "sc\u00e8ne with spaces.md"]
+    (tmp_path / args[1]).write_bytes(b"scene\n")
+    result = subprocess.run(
+        [sys.executable, str(copied), *args], input=payload, cwd=tmp_path,
+        capture_output=True, timeout=30,
+        env={**os.environ, "PATH": "", "HELPER_EXIT": str(exit_code)},
+    )
+    assert result.returncode == exit_code
+    assert result.stdout == "out caf\u00e9\n".encode() + b"raw\r\xff\n"
+    assert result.stderr == "err caf\u00e9\n".encode()
+    assert json.loads((tmp_path / "effect.json").read_text(encoding="utf-8")) == {
+        "args": args, "input": payload.hex(), "helper": "letter_checks.py",
+    }
+
 def _navigation_success(stderr):
     match = re.fullmatch(
         rb"([.s]+\n-{70}\nRan (\d+) tests in )([0-9]+(?:\.[0-9]+)?)(s\n\nOK(?: \(skipped=\d+\))?\n)",
@@ -1308,7 +1341,10 @@ def test_pdf_first_selftest_runs_actual_repository_navigation_suite():
                           env=env, capture_output=True, timeout=60) if BASH else None
     native = run_python("pdf-export", "--self-test", "ignored", env=env)
     assert (shared.returncode, shared.stderr) == (0, b"")
-    assert (native.returncode, native.stdout) == (0, shared.stdout)
+    # This producer emits text through the host's native newline convention;
+    # the dispatcher promises LF regardless of that convention.
+    shared_stdout = shared.stdout.replace(b"\r\n", b"\n") if os.name == "nt" else shared.stdout
+    assert (native.returncode, native.stdout) == (0, shared_stdout)
     count, before, after = _navigation_success(native.stderr)
     assert after.startswith(b"s\n\nOK")
     if bash is not None:
@@ -1316,7 +1352,7 @@ def test_pdf_first_selftest_runs_actual_repository_navigation_suite():
         bash_count, bash_before, bash_after = _navigation_success(bash.stderr)
         assert (bash_count, bash_before, bash_after) == (count, before, after)
     pathless = run_python("pdf-export", "--self-test", env={**env, "PATH": ""})
-    assert (pathless.returncode, pathless.stdout) == (0, shared.stdout)
+    assert (pathless.returncode, pathless.stdout) == (0, shared_stdout)
     pathless_count, _, pathless_result = _navigation_success(pathless.stderr)
     assert pathless_count == count and pathless_result.startswith(b"s\n\nOK")
     skipped = re.search(rb"skipped=(\d+)", pathless_result)

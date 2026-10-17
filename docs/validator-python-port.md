@@ -229,6 +229,17 @@ When Bash is absent, differential-only cases are explicitly skipped; native
 checks still run. This is not full native Windows acceptance, which requires the
 whole Python `--check-all` suite green on `windows-latest`.
 
+## Windows helper text output
+
+The native dispatcher relays shipped helper text streams with LF line endings on
+Windows, including errors and nonzero helper results. Arguments, stdin and helper
+file effects are preserved; canonical JSON packet output is unchanged. POSIX
+hosts retain direct stream inheritance. Windows collects each helper's stdout and
+stderr before relaying them, so live streaming and cross-stream interleaving are
+not preserved and memory use includes both captured streams. This is a textual
+CLI boundary, not an arbitrary binary-output transport. Nested helpers' own output
+handling and the queued native aggregate migration remain separate.
+
 ## Divergences and known limitations
 
 - Shell/OS-generated read errors (for example carve's golden `cat`) keep exit
