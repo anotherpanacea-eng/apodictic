@@ -13,6 +13,8 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import tempfile
+from typing import NamedTuple
 
 import pytest
 
@@ -20,7 +22,6 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "plugins/apodictic/scripts"
 PYTHON_CLI = SCRIPTS / "validate.py"
-BASH_CLI = SCRIPTS / "validate.sh"
 UTILITIES = (
     "contract-hash", "contract-check", "ledger-check", "artifact-names",
     "synthesis-sections", "tone-check", "state-lines",
@@ -62,6 +63,72 @@ ARGUMENT_EVALUATORS = (
 ANNOTATION_EXPORTS = ("obsidian-export", "html-export", "docx-export", "pdf-export")
 REFERENCES = SCRIPTS.parent / "skills/core-editor/references"
 BASH = shutil.which("bash")
+REFERENCE_SETTING = "APODICTIC_BASH_REFERENCE_ROOT"
+
+
+def select_bash_root(environ, bash):
+    """An explicit oracle must be external and execute without the native CLI."""
+    if REFERENCE_SETTING not in environ:
+        return ROOT
+    value = environ[REFERENCE_SETTING]
+    if not value.strip():
+        raise pytest.UsageError(f"{REFERENCE_SETTING}: reference root is empty")
+    root = Path(value).resolve()
+    if root == ROOT.resolve():
+        raise pytest.UsageError(f"{REFERENCE_SETTING}: reference must differ from the current checkout")
+    scripts = root / "plugins/apodictic/scripts"
+    if not (scripts / "validate.sh").is_file() or not (scripts / "validate.d").is_dir():
+        raise pytest.UsageError(f"{REFERENCE_SETTING}: missing Bash dispatcher layout: {root}")
+    if (scripts / "validate.sh").resolve() == (SCRIPTS / "validate.sh").resolve():
+        raise pytest.UsageError(f"{REFERENCE_SETTING}: reference dispatcher must differ from the current checkout")
+    if bash is None:
+        raise pytest.UsageError(f"{REFERENCE_SETTING}: explicit reference requires executable Bash")
+    # A real shell utility is independent of validate.py. Probe a disposable shell
+    # copy, so neither the reference nor current checkout can be modified here.
+    try:
+        with tempfile.TemporaryDirectory(prefix="apodictic-oracle-") as directory:
+            probe = Path(directory)
+            for source in scripts.glob("*.sh"):
+                shutil.copyfile(source, probe / source.name)
+            shutil.copytree(scripts / "validate.d", probe / "validate.d")
+            (probe / "validate.py").write_text(
+                "raise SystemExit('circular Python oracle')\n", encoding="utf-8")
+            payload = probe / "input.md"
+            payload.write_bytes(b"independent shell oracle\n")
+            result = subprocess.run([bash, str(probe / "validate.sh"), "contract-hash", str(payload)],
+                                    capture_output=True, timeout=60)
+            expected = hashlib.sha256(payload.read_bytes()).hexdigest().encode() + b"\n"
+            if (result.returncode, result.stdout, result.stderr) != (0, expected, b""):
+                raise pytest.UsageError(
+                    f"{REFERENCE_SETTING}: reference is not an independent Bash dispatcher "
+                    "(contract-hash failed with the native entrypoint poisoned; possible Python shim)")
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise pytest.UsageError(f"{REFERENCE_SETTING}: cannot execute Bash reference: {exc}") from exc
+    return root
+
+
+BASH_ROOT = select_bash_root(os.environ, BASH)
+BASH_SCRIPTS = BASH_ROOT / "plugins/apodictic/scripts"
+BASH_CLI = BASH_SCRIPTS / "validate.sh"
+
+
+def assert_parity_result(native, legacy, *, command=None, native_cli=PYTHON_CLI, bash_cli=BASH_CLI):
+    stdout = legacy.stdout
+    # Only this leading usage entrypoint is intentionally spelled differently.
+    # Leave arbitrary fixture/helper output, stderr, lexical paths and bytes alone.
+    prefix = b"Usage: " + os.fsencode(bash_cli) + b" "
+    if stdout.startswith(prefix):
+        stdout = b"Usage: " + os.fsencode(Path(native_cli).with_suffix(".sh")) + b" " + stdout[len(prefix):]
+    if command == "state-lines" and re.fullmatch(rb"[ \t]*[0-9]+\n", stdout):
+        stdout = stdout.lstrip(b" \t")  # BSD/macOS wc padding, existing exception.
+    assert (native.returncode, native.stdout, native.stderr) == (legacy.returncode, stdout, legacy.stderr)
+
+
+@pytest.fixture(autouse=True)
+def preserve_oracle_sources(monkeypatch):
+    # Helpers may import companions, including in the ordinary reference checkout.
+    # Parity probes must not create bytecode alongside those source files.
+    monkeypatch.setenv("PYTHONDONTWRITEBYTECODE", "1")
 
 
 def fixture_command(path):
@@ -93,14 +160,104 @@ def parity(*args, cwd=None, env=None):
         capture_output=True, timeout=60,
     )
     native = run_python(*args, cwd=cwd, env=env)
-    legacy_stdout = legacy.stdout
-    if args[0] == "state-lines" and re.fullmatch(rb"[ \t]*[0-9]+\n", legacy_stdout):
-        # Bash counts with the host `wc -l`; BSD/macOS `wc` left-pads the number.
-        legacy_stdout = legacy_stdout.lstrip(b" \t")
-    assert (native.returncode, native.stdout, native.stderr) == (
-        legacy.returncode, legacy_stdout, legacy.stderr,
-    )
+    assert_parity_result(native, legacy, command=args[0], bash_cli=BASH_CLI)
     return native
+
+
+def test_oracle_configuration_default_and_no_bash(monkeypatch):
+    assert select_bash_root({}, None) == ROOT
+    monkeypatch.setattr(sys.modules[__name__], "BASH", None)
+    with pytest.raises(pytest.skip.Exception, match="Bash differential oracle unavailable"):
+        parity("contract-hash", "unused")
+
+
+@pytest.mark.parametrize("value, message", [
+    ("", "empty"), ("   ", "empty"), ("missing-reference", "layout"),
+    (str(ROOT), "differ"), (str(ROOT / "plugins/.."), "differ"),
+])
+def test_oracle_configuration_rejects_invalid_roots(value, message):
+    with pytest.raises(pytest.UsageError, match=message):
+        select_bash_root({REFERENCE_SETTING: value}, BASH)
+
+
+def test_oracle_configuration_rejects_wrong_layout_and_resolved_alias(tmp_path):
+    with pytest.raises(pytest.UsageError, match="layout"):
+        select_bash_root({REFERENCE_SETTING: str(tmp_path)}, BASH)
+    alias = tmp_path / "current-alias"
+    alias.symlink_to(ROOT, target_is_directory=True)
+    with pytest.raises(pytest.UsageError, match="differ"):
+        select_bash_root({REFERENCE_SETTING: str(alias)}, BASH)
+
+
+def test_oracle_configuration_rejects_current_scripts_alias(tmp_path):
+    scripts = tmp_path / 'plugins/apodictic/scripts'
+    scripts.parent.mkdir(parents=True)
+    scripts.symlink_to(SCRIPTS, target_is_directory=True)
+    with pytest.raises(pytest.UsageError, match="differ"):
+        select_bash_root({REFERENCE_SETTING: str(tmp_path)}, BASH)
+
+
+@pytest.fixture
+def disposable_reference(tmp_path):
+    root = tmp_path / "oracle"
+    shutil.copytree(BASH_SCRIPTS, root / "plugins/apodictic/scripts",
+                    ignore=shutil.ignore_patterns('__pycache__'))
+    shutil.copytree(BASH_SCRIPTS.parent / 'schemas', root / 'plugins/apodictic/schemas')
+    return root
+
+
+def test_oracle_configuration_explicit_unavailable_bash(disposable_reference):
+    env = {REFERENCE_SETTING: str(disposable_reference)}
+    with pytest.raises(pytest.UsageError, match="requires executable Bash"):
+        select_bash_root(env, None)
+    with pytest.raises(pytest.UsageError, match="cannot execute Bash reference"):
+        select_bash_root(env, str(disposable_reference / "absent-bash"))
+
+
+def test_oracle_configuration_valid_external(disposable_reference):
+    if BASH is None:
+        pytest.skip("Bash differential oracle unavailable")
+    assert select_bash_root({REFERENCE_SETTING: str(disposable_reference)}, BASH) == disposable_reference
+
+
+def test_oracle_configuration_rejects_forwarding_python_shim(disposable_reference):
+    if BASH is None:
+        pytest.skip("Bash differential oracle unavailable")
+    shim = disposable_reference / "plugins/apodictic/scripts/validate.sh"
+    shim.write_text('#!/usr/bin/env bash\nexec python3 "$(dirname "$0")/validate.py" "$@"\n', encoding='utf-8')
+    with pytest.raises(pytest.UsageError, match="independent Bash dispatcher"):
+        select_bash_root({REFERENCE_SETTING: str(disposable_reference)}, BASH)
+
+
+@pytest.mark.parametrize("channel, mutation", [
+    ("stdout", "print('external reference marker')\n"),
+    ("stderr", "import sys; print('external reference stderr', file=sys.stderr)\n"),
+    ("status", "import atexit, os, sys\natexit.register(lambda: (sys.stdout.flush(), sys.stderr.flush(), os._exit(9)))\n"),
+])
+def test_external_oracle_detects_helper_result_mutations(disposable_reference, monkeypatch, channel, mutation):
+    if BASH is None:
+        pytest.skip("Bash differential oracle unavailable")
+    selected = select_bash_root({REFERENCE_SETTING: str(disposable_reference)}, BASH)
+    scripts = selected / 'plugins/apodictic/scripts'
+    monkeypatch.setattr(sys.modules[__name__], 'BASH_CLI', scripts / 'validate.sh')
+    fixture = next(path for path in FIXTURES if '.pass.ledger-check.' in path.name)
+    clean = parity('ledger-check', fixture)
+    helper = scripts / 'letter_checks.py'
+    original = helper.read_bytes()
+    helper.write_bytes(mutation.encode() + original)
+    changed = subprocess.run([BASH, str(scripts / 'validate.sh'), 'ledger-check', str(fixture)],
+                             capture_output=True, timeout=60)
+    if channel == 'stdout':
+        assert changed.stdout.startswith(b'external reference marker\n')
+        assert (changed.returncode, changed.stderr) == (clean.returncode, clean.stderr)
+    elif channel == 'stderr':
+        assert changed.stderr == b'external reference stderr\n'
+        assert (changed.returncode, changed.stdout) == (clean.returncode, clean.stdout)
+    else:
+        assert changed.returncode == 9
+        assert (changed.stdout, changed.stderr) == (clean.stdout, clean.stderr)
+    with pytest.raises(AssertionError):
+        parity('ledger-check', fixture)
 
 
 @pytest.mark.parametrize("payload", [
@@ -265,7 +422,7 @@ def test_usage_preserves_literal_relative_invocation(command):
     assert native.stdout.startswith(b"Usage: ./plugins/apodictic/scripts/validate.sh ")
     if BASH is not None:
         legacy = subprocess.run(
-            [BASH, python_path[:-3] + ".sh", command], cwd=ROOT,
+            [BASH, python_path[:-3] + ".sh", command], cwd=BASH_ROOT,
             capture_output=True, timeout=60,
         )
         assert (native.returncode, native.stdout, native.stderr) == (
@@ -1475,28 +1632,66 @@ def test_repository_integrity_real_selftests_and_empty_path(command):
         assert late.returncode == 0 and b'  ho_' not in late.stdout
 
 
+class ScriptOrigins(NamedTuple):
+    native: Path
+    bash: Path
+
+
+def copy_script_origins(directory):
+    origins = ScriptOrigins(directory / 'current/plugins/apodictic/scripts',
+                            directory / 'reference/plugins/apodictic/scripts')
+    for source, target in ((SCRIPTS, origins.native), (BASH_SCRIPTS, origins.bash)):
+        shutil.copytree(source, target, ignore=shutil.ignore_patterns('__pycache__'))
+        shutil.copytree(source.parent / 'schemas', target.parent / 'schemas')
+    return origins
+
+
 @pytest.fixture
 def repository_bundle(tmp_path):
-    scripts = tmp_path / 'plugins/apodictic/scripts'
-    shutil.copytree(SCRIPTS, scripts)
-    shutil.copytree(SCRIPTS.parent / 'schemas', scripts.parent / 'schemas')
-    fixtures = tmp_path / 'evals/fixtures/argument-carve/precarve'
+    origins = copy_script_origins(tmp_path)
+    current = origins.native.parents[2]
+    reference = origins.bash.parents[2]
+    fixtures = current / 'evals/fixtures/argument-carve/precarve'
     shutil.copytree(ROOT / 'evals/fixtures/argument-carve/precarve', fixtures)
-    return scripts, fixtures
+    # Both implementations deliberately consume the same mutable test inputs.
+    # Helpers and schemas remain separate copies of their selected source trees.
+    if BASH is not None:
+        (reference / 'evals').symlink_to(current / 'evals', target_is_directory=True)
+        (origins.bash.parent / 'evals').symlink_to(origins.native.parent / 'evals', target_is_directory=True)
+    return origins, fixtures
 
 
-def _repository_copy_run(scripts, native, *args, env=None):
+def _repository_copy_run(origins, native, *args, env=None):
     if not native and BASH is None:
         pytest.skip('Bash differential oracle unavailable')
-    entry = [sys.executable, str(scripts / 'validate.py')] if native else [BASH, str(scripts / 'validate.sh')]
+    entry = ([sys.executable, str(origins.native / 'validate.py')] if native else
+             [BASH, str(origins.bash / 'validate.sh')])
     return subprocess.run([*entry, *map(str, args)], capture_output=True, timeout=60, env=env)
 
 
-def _repository_copy_parity(scripts, *args):
-    legacy = _repository_copy_run(scripts, False, *args)
-    native = _repository_copy_run(scripts, True, *args)
-    assert (native.returncode, native.stdout, native.stderr) == (legacy.returncode, legacy.stdout, legacy.stderr)
+def _repository_copy_parity(origins, *args):
+    legacy = _repository_copy_run(origins, False, *args)
+    native = _repository_copy_run(origins, True, *args)
+    assert_parity_result(native, legacy, command=args[0],
+                         native_cli=origins.native / 'validate.py', bash_cli=origins.bash / 'validate.sh')
     return native
+
+
+def test_copied_repository_uses_selected_reference_helpers(disposable_reference, tmp_path, monkeypatch):
+    if BASH is None:
+        pytest.skip('Bash differential oracle unavailable')
+    reference_scripts = disposable_reference / 'plugins/apodictic/scripts'
+    monkeypatch.setattr(sys.modules[__name__], 'BASH_SCRIPTS', reference_scripts)
+    fixture = next(path for path in FIXTURES if '.pass.ledger-check.' in path.name)
+    clean = copy_script_origins(tmp_path / 'clean')
+    assert _repository_copy_parity(clean, 'ledger-check', fixture).returncode == 0
+    helper = reference_scripts / 'letter_checks.py'
+    helper.write_bytes(b"print('copied external reference marker')\n" + helper.read_bytes())
+    changed = copy_script_origins(tmp_path / 'changed')
+    legacy = _repository_copy_run(changed, False, 'ledger-check', fixture)
+    assert legacy.stdout.startswith(b'copied external reference marker\n')
+    with pytest.raises(AssertionError):
+        _repository_copy_parity(changed, 'ledger-check', fixture)
 
 
 def _repository_effects(root):
@@ -1517,33 +1712,44 @@ def _repository_effects(root):
 
 @pytest.mark.parametrize('args', [(), ('--self-test', 'ignored'), ('ignored', '--self-test')])
 def test_carve_actual_fixture_read_only_and_standalone_candidates(repository_bundle, tmp_path, args):
-    scripts, fixtures = repository_bundle
+    origins, fixtures = repository_bundle
+    scripts = origins.native
     before = _repository_effects(tmp_path)
-    assert _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *args).returncode == 0
+    assert _repository_copy_parity(origins, 'argument-carve-behavior-preservation', *args).returncode == 0
     assert _repository_effects(tmp_path) == before
     second = scripts.parent / 'evals/fixtures/argument-carve/precarve'
     second.parent.mkdir(parents=True)
     shutil.copytree(fixtures, second)
     (second / 'propagation-output.txt').write_bytes(b'wrong\n')
-    assert _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *args).returncode == 0
+    assert _repository_copy_parity(origins, 'argument-carve-behavior-preservation', *args).returncode == 0
     shutil.rmtree(fixtures)
-    assert _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *args).returncode == 1
+    assert _repository_copy_parity(origins, 'argument-carve-behavior-preservation', *args).returncode == 1
     shutil.rmtree(second)
-    skipped = _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *args)
+    skipped = _repository_copy_parity(origins, 'argument-carve-behavior-preservation', *args)
     assert skipped.returncode == 0 and b'SKIP (evals/ not present' in skipped.stdout
     assert (b'Self-test: PASS\n' in skipped.stdout) == bool(args and args[0] == '--self-test')
-    assert _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', '--self-test', '--internal-links').returncode == 2
+    assert _repository_copy_parity(origins, 'argument-carve-behavior-preservation', '--self-test', '--internal-links').returncode == 2
 
 
 @pytest.mark.parametrize('selftest', [False, True])
 @pytest.mark.parametrize('mutation', ['missing', 'multiple-missing', 'directory', 'symlink'])
 def test_carve_actual_fixture_preflight_order(repository_bundle, selftest, mutation):
-    scripts, fixtures = repository_bundle
+    origins, fixtures = repository_bundle
     letter = fixtures / 'argument-editorial-letter.md'; letter.unlink()
     if mutation == 'multiple-missing': (fixtures / 'argument-findings-ledger.md').unlink()
     if mutation == 'directory': letter.mkdir()
     if mutation == 'symlink': letter.symlink_to(fixtures / 'absent')
-    result = _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *(['--self-test'] if selftest else []))
+    args = ('argument-carve-behavior-preservation', *(['--self-test'] if selftest else []))
+    result = _repository_copy_run(origins, True, *args)
+    legacy = _repository_copy_run(origins, False, *args)
+    missing_names = ['argument-editorial-letter.md']
+    if mutation == 'multiple-missing': missing_names.append('argument-findings-ledger.md')
+    for output, source in ((result, origins.native), (legacy, origins.bash)):
+        lexical = str(source) + '/../../../evals/fixtures/argument-carve/precarve/'
+        expected = (''.join(f'  fixture_present: FAIL (missing: {lexical}{name})\n' for name in missing_names)
+                    + 'Self-test: FAIL\n' if selftest else
+                    f'ERROR: argument-carve-behavior-preservation fixture missing: {lexical}{missing_names[0]}\n')
+        assert (output.returncode, output.stdout, output.stderr) == (1, expected.encode(), b'')
     assert result.returncode == 1
     if selftest:
         assert result.stdout.count(b'missing:') == (2 if mutation == 'multiple-missing' else 1)
@@ -1556,7 +1762,7 @@ def test_carve_actual_fixture_preflight_order(repository_bundle, selftest, mutat
 @pytest.mark.parametrize('selftest', [False, True])
 @pytest.mark.parametrize('mutation', ['trailing-lf', 'no-final-lf', 'nul', 'crlf', 'multiline-binary', 'both-drift'])
 def test_carve_raw_golden_bytes_and_no_writes(repository_bundle, tmp_path, selftest, mutation):
-    scripts, fixtures = repository_bundle
+    origins, fixtures = repository_bundle
     golden = fixtures / 'propagation-output.txt'; payload = golden.read_bytes()
     if mutation == 'trailing-lf': payload += b'\n\n'
     if mutation == 'no-final-lf': payload = payload.rstrip(b'\n')
@@ -1567,7 +1773,7 @@ def test_carve_raw_golden_bytes_and_no_writes(repository_bundle, tmp_path, selft
         payload = b'wrong\n'; (fixtures / 'decision-layer-output.txt').write_bytes(b'also wrong\n')
     golden.write_bytes(payload)
     before = _repository_effects(tmp_path)
-    result = _repository_copy_parity(scripts, 'argument-carve-behavior-preservation', *(['--self-test'] if selftest else []))
+    result = _repository_copy_parity(origins, 'argument-carve-behavior-preservation', *(['--self-test'] if selftest else []))
     assert result.returncode == (0 if mutation in ('trailing-lf', 'no-final-lf', 'nul') else 1)
     assert _repository_effects(tmp_path) == before
 
@@ -1577,7 +1783,8 @@ def test_carve_raw_golden_bytes_and_no_writes(repository_bundle, tmp_path, selft
                                     'first-read', 'second-read', 'drift-second-child', 'drift-second-read',
                                     'first-child-before-read', 'second-child-before-read'])
 def test_carve_real_failure_phases_no_false_pass(repository_bundle, tmp_path, selftest, phase):
-    scripts, fixtures = repository_bundle
+    origins, fixtures = repository_bundle
+    scripts = origins.native
     lexical = str(scripts) + '/../../../evals/fixtures/argument-carve/precarve/'
     letter = fixtures / 'argument-editorial-letter.md'
     propagation = fixtures / 'propagation-output.txt'; decision = fixtures / 'decision-layer-output.txt'
@@ -1589,7 +1796,7 @@ def test_carve_real_failure_phases_no_false_pass(repository_bundle, tmp_path, se
                 ('audit-signal-propagation', [lexical + letter.name, lexical + 'argument-findings-ledger.md'], propagation),
                 ('decision-layer-check', [lexical + letter.name], decision),
             ):
-                child = _repository_copy_parity(scripts, command, *args)
+                child = _repository_copy_parity(origins, command, *args)
                 assert child.returncode == 1
                 golden.write_bytes(child.stdout.rstrip(b'\n').rsplit(b'\n', 1)[-1] + b'\n')
     if phase in ('second-child', 'drift-second-child', 'second-child-before-read'): letter.write_bytes(b'\xff\xfe')
@@ -1603,9 +1810,9 @@ def test_carve_real_failure_phases_no_false_pass(repository_bundle, tmp_path, se
         with pytest.raises(PermissionError): unreadable.read_bytes()
     before = _repository_effects(tmp_path)
     args = ['argument-carve-behavior-preservation', *(['--self-test'] if selftest else [])]
-    legacy = _repository_copy_run(scripts, False, *args)
+    legacy = _repository_copy_run(origins, False, *args)
     assert _repository_effects(tmp_path) == before
-    native = _repository_copy_run(scripts, True, *args)
+    native = _repository_copy_run(origins, True, *args)
     assert _repository_effects(tmp_path) == before
     assert native.returncode == legacy.returncode == 1
     prefix = b'  fixture_present: OK (4 fixture files found)\n' if selftest else b''
@@ -1618,20 +1825,22 @@ def test_carve_real_failure_phases_no_false_pass(repository_bundle, tmp_path, se
     if unreadable is None or phase.endswith('before-read'):
         assert native.stderr == legacy.stderr == b''
     else:
-        assert legacy.stderr == ('cat: ' + lexical + unreadable.name + ': Permission denied\n').encode()
+        bash_lexical = str(origins.bash) + '/../../../evals/fixtures/argument-carve/precarve/'
+        assert legacy.stderr == ('cat: ' + bash_lexical + unreadable.name + ': Permission denied\n').encode()
         assert native.stderr == ('Error: Cannot read file: ' + lexical + unreadable.name + ': Permission denied\n').encode()
 
 
 @pytest.mark.parametrize('helper', ['registry_check.py', 'schema_coverage.py', 'meta_lint.py',
                                    'calibration_honesty.py', 'stance_calibration.py', 'override_marker.py', 'letter_checks.py'])
 def test_repository_missing_installation_never_fake_pass(repository_bundle, helper):
-    scripts, _ = repository_bundle
+    origins, _ = repository_bundle
+    scripts = origins.native
     command = {'registry_check.py':'registry-check', 'schema_coverage.py':'schema-coverage',
                'meta_lint.py':'validator-conventions', 'calibration_honesty.py':'calibration-honesty',
                'stance_calibration.py':'stance-calibration', 'override_marker.py':'validator-conventions',
                'letter_checks.py':'argument-carve-behavior-preservation'}[helper]
     (scripts / helper).unlink()
-    result = _repository_copy_run(scripts, True, command, '--self-test')
+    result = _repository_copy_run(origins, True, command, '--self-test')
     expected = 1 if helper == 'override_marker.py' else 2  # Every companion case misses, as in Bash.
     assert result.returncode == expected and b'Self-test: PASS' not in result.stdout
     if helper == 'letter_checks.py':
@@ -1641,11 +1850,11 @@ def test_repository_missing_installation_never_fake_pass(repository_bundle, help
 
 
 def test_carve_native_empty_path_executes_real_children_without_writes(repository_bundle, tmp_path):
-    scripts, _ = repository_bundle
+    origins, _ = repository_bundle
     env = {**os.environ, 'PATH': '', 'PYTHONUTF8': '1', 'PYTHONIOENCODING': 'utf-8'}
     before = _repository_effects(tmp_path)
     for args in ((), ('--self-test',)):
-        result = _repository_copy_run(scripts, True, 'argument-carve-behavior-preservation', *args, env=env)
+        result = _repository_copy_run(origins, True, 'argument-carve-behavior-preservation', *args, env=env)
         assert result.returncode == 0 and result.stderr == b''
         assert result.stdout.endswith(b'Self-test: PASS\n' if args else
             b'argument-carve-behavior-preservation: PASS (smoke: resolvers still classify the argument fixture as Argument-DE post-carve; authoritative guarantee = audit-signal-propagation --check-registry + the byte-identical \xc2\xa74e diff)\n')
@@ -1658,11 +1867,12 @@ def test_carve_native_empty_path_executes_real_children_without_writes(repositor
     ('stance_calibration.py', 'stance-calibration'),
 ])
 def test_repository_regular_helper_symlink_stays_available(repository_bundle, helper, command):
-    scripts, _ = repository_bundle
+    origins, _ = repository_bundle
+    scripts = origins.native
     target = scripts / ('target-' + helper)
     (scripts / helper).rename(target)
     (scripts / helper).symlink_to(target.name)
-    assert _repository_copy_parity(scripts, command, '--self-test').returncode == 0
+    assert _repository_copy_parity(origins, command, '--self-test').returncode == 0
 
 
 def _native_commands():
@@ -1679,17 +1889,17 @@ ECHO_STUB = (
 
 @pytest.fixture(scope="module")
 def stubbed_scripts(tmp_path_factory):
-    scripts = tmp_path_factory.mktemp("stubbed") / "plugins/apodictic/scripts"
-    shutil.copytree(SCRIPTS, scripts, ignore=shutil.ignore_patterns("__pycache__"))
-    for helper in scripts.glob("*.py"):
-        if helper.name != "validate.py":
-            helper.write_text(ECHO_STUB, encoding="utf-8")
-    return scripts
+    origins = copy_script_origins(tmp_path_factory.mktemp("stubbed"))
+    for scripts in origins:
+        for helper in scripts.glob("*.py"):
+            if helper.name != "validate.py":
+                helper.write_text(ECHO_STUB, encoding="utf-8")
+    return origins
 
 
 @pytest.mark.parametrize("command", [c for c in _native_commands() if c != "state-lines"])  # BSD wc pads
 def test_wrapper_argv_matches_bash_with_echo_stub_helpers(stubbed_scripts, tmp_path, command):
-    # Helpers are shared, so only the wrapper can diverge: compare what each wrapper passes on.
+    # Identical helper doubles in distinct source copies, so only wrappers can diverge: compare what each wrapper passes on.
     if BASH is None:
         pytest.skip("Bash differential oracle unavailable")
     from concurrent.futures import ThreadPoolExecutor
@@ -1706,16 +1916,19 @@ def test_wrapper_argv_matches_bash_with_echo_stub_helpers(stubbed_scripts, tmp_p
         entry, shape, rc = case
         result = subprocess.run([*entry, command, *map(str, shape)], capture_output=True, timeout=60,
                                 stdin=subprocess.DEVNULL, env={**os.environ, "STUB_RC": rc})
-        return result.returncode, result.stdout, result.stderr
+        return result
 
     cases = [(entry, shape, rc) for shape in shapes for rc in ("0", "3")
              if rc == "0" or shape in ((path,), ("--self-test", "extra"), (path, "--internal-links"))
-             for entry in ([BASH, str(stubbed_scripts / "validate.sh")],
-                           [sys.executable, str(stubbed_scripts / "validate.py")])]
+             for entry in ([BASH, str(stubbed_scripts.bash / "validate.sh")],
+                           [sys.executable, str(stubbed_scripts.native / "validate.py")])]
     with ThreadPoolExecutor(8) as pool:
         results = list(pool.map(run, cases))
     for index in range(0, len(cases), 2):
         legacy, native = results[index], results[index + 1]
         if command == "coaching-history" and cases[index][1] == ("delete",):
-            legacy, native = legacy[:2], native[:2]  # Documented: Bash's shell-fatal stderr is not emulated.
-        assert native == legacy, cases[index][1:]
+            assert (native.returncode, native.stdout) == (legacy.returncode, legacy.stdout)
+        else:
+            assert_parity_result(native, legacy, command=command,
+                                 native_cli=stubbed_scripts.native / "validate.py",
+                                 bash_cli=stubbed_scripts.bash / "validate.sh")

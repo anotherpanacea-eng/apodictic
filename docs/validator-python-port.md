@@ -207,16 +207,46 @@ behavior preservation.
 ## Differential acceptance
 
 `tests/test_validate_python_parity.py` compares exit codes, stdout and stderr
-bytes against the independent Bash dispatcher without output normalization, except
-that leading blanks are stripped from the Bash `state-lines` count (BSD/macOS
-`wc -l` left-pads it; native output is unpadded). It covers every migrated
-self-test, all applicable shipped validator fixtures and
-canonical reference inputs, and raw-byte utility edge cases. One argv-echo
-differential copies the scripts, replaces every helper with a stub that prints
-its arguments and stdin, and compares Bash and native results for every native
-route over empty, missing, file, directory, `--strict`, `--`, late
-`--self-test`, extra, empty-string, `--internal-links*` and delete shapes.
-Helpers are shared, so this checks everything the wrapper can change.
+bytes against the Bash dispatcher. Set `APODICTIC_BASH_REFERENCE_ROOT` to an
+ordinary pre-cutover checkout to select an external oracle:
+
+```sh
+APODICTIC_BASH_REFERENCE_ROOT=/path/to/pre-cutover-checkout \
+  python -m pytest -q tests/test_validate_python_parity.py
+```
+
+Unset preserves the current checkout's real Bash dispatcher during preparation.
+Explicit empty, missing, malformed, current-checkout and resolved-alias roots
+fail during harness setup. An explicit request also fails when Bash cannot run.
+Before use, a disposable copy of the reference's shell scripts must compute a
+real contract hash with `validate.py` poisoned. This rejects the planned Python
+forwarding shim; it does not authenticate arbitrary hostile shell programs.
+Keep the reference checkout untouched and record its ordinary commit in the
+review record. The harness neither creates nor updates reference checkouts.
+
+Every Bash invocation uses the selected root, including literal relative usage,
+repository fixture copies and argv-echo wrappers. Native dispatchers and helpers
+always come from the current checkout. Repository copies retain separate helper
+and schema origins; their carve fixture directories deliberately link to the
+same disposable inputs, so existing mutations affect both implementations.
+Echo wrappers use identical helper doubles in separate origin trees. Helper
+stdout, stderr and status mutations must each break an otherwise matching
+comparison, and a copied-reference marker proves that copy path is exercised.
+
+The only source-location translation is the exact leading `Usage: <selected
+entrypoint> ` spelling to its current native counterpart. Literal relative usage
+is tested from each checkout without translation. Carve's script-relative
+missing/read diagnostics are checked against explicit expectations for each
+origin, preserving `../` suffixes. No general root, separator, newline or
+traceback normalization is applied. The existing `state-lines` exception strips
+leading blanks from Bash's count because BSD/macOS `wc -l` pads it.
+
+The harness covers migrated self-tests, applicable shipped validator fixtures,
+canonical reference inputs and raw-byte utility cases. The argv-echo differential
+compares every native route over empty, missing, file, directory, `--strict`,
+`--`, late `--self-test`, extra, empty-string, `--internal-links*` and delete
+shapes. This preparation supplies the external oracle prerequisite only; native
+gate/aggregate/canonical comparisons and Group 14 runtime migration remain queued.
 
 ```text
 python -m pytest -q tests/test_validate_python_parity.py tests/test_contract_hash_portability.py
@@ -225,9 +255,9 @@ node scripts/assemble-changelog.mjs --check
 git diff --check
 ```
 
-When Bash is absent, differential-only cases are explicitly skipped; native
-checks still run. This is not full native Windows acceptance, which requires the
-whole Python `--check-all` suite green on `windows-latest`.
+When Bash is absent and no external root was requested, differential-only cases
+are explicitly skipped; native checks still run. This is not full native Windows
+acceptance, which requires the whole Python `--check-all` suite green on `windows-latest`.
 
 ## Windows helper text output
 
