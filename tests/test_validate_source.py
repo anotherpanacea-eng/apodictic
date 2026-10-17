@@ -314,3 +314,146 @@ def test_dead_native_import_cannot_prove_launcher(tmp_path):
     pair = canonical_pair(tmp_path, "run_validator('alpha', references / 'example.md')")
     mutate(pair[1], 'import subprocess, sys', 'if False:\n    import subprocess, sys')
     with pytest.raises(SourceError): read_canonical(*pair)
+
+# Round 1: actual ordered execution and bindings, not plausible later syntax.
+def insert_body(path, name, body):
+    source = path.read_text(encoding='utf-8')
+    function = next(n for n in ast.parse(source).body if isinstance(n, ast.FunctionDef) and n.name == name)
+    lines = source.splitlines(keepends=True)
+    lines[function.body[0].lineno - 1:function.body[0].lineno - 1] = [textwrap.indent(body + '\n', '    ')]
+    path.write_text(''.join(lines), encoding='utf-8')
+
+
+def live_canonical_pair(tmp_path):
+    for name in ('validate.py', 'validate_canonical.py'):
+        (tmp_path / name).write_bytes((SCRIPTS / name).read_bytes())
+    return tmp_path / 'validate.py', tmp_path / 'validate_canonical.py'
+
+
+@pytest.mark.parametrize('body', [
+    'if True:\n    return 0', 'if unknown:\n    return 0',
+    'return 0', 'raise RuntimeError()', 'if True:\n    raise RuntimeError()',
+    'script = "wrong.py"', 'args = []', 'del script', 'del args',
+    'script, args = "wrong.py", []', 'def script(): return "wrong.py"',
+    'from other import value as args',
+])
+def test_round1_helper_launcher_requires_ordered_unchanged_binding(dispatcher, body):
+    insert_body(dispatcher, '_run_helper', body)
+    with pytest.raises(SourceError): read_dispatch(dispatcher)
+    import meta_lint
+    assert meta_lint.check_m1(dispatcher)
+
+
+@pytest.mark.parametrize('body', [
+    'if True:\n    return subprocess.CompletedProcess([], 0, b"", b"")',
+    'return subprocess.CompletedProcess([], 0, b"", b"")',
+    'if unknown:\n    raise RuntimeError()',
+    'command = "wrong-command"', 'arguments = ()', 'del command', 'del arguments',
+    'def command(): return "wrong-command"', 'from other import value as arguments',
+])
+def test_round1_canonical_launcher_requires_ordered_unchanged_binding(tmp_path, body):
+    pair = live_canonical_pair(tmp_path)
+    insert_body(pair[1], 'run_validator', body)
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+@pytest.mark.parametrize('function', ['_self_test', '_argument_carve', '_self_test_all'])
+@pytest.mark.parametrize('body', ['return 0', 'if True:\n    return 0', 'if unknown:\n    return 0', 'raise RuntimeError()', 'if True:\n    raise RuntimeError()'])
+def test_round1_no_dead_native_suite_or_aggregate(dispatcher, function, body):
+    insert_body(dispatcher, function, body)
+    with pytest.raises(SourceError):
+        (check_aggregate_count if function == '_self_test_all' else read_dispatch)(dispatcher)
+
+
+@pytest.mark.parametrize('insertion', [
+    ('    for command in AGG_VALIDATORS:', '    return 0\n'),
+    ('    for command in AGG_VALIDATORS:', '    if True:\n        return 0\n'),
+    ('        if command == "gate-state":', '        continue\n'),
+    ('        if command == "gate-state":', '        if True:\n            break\n'),
+    ('    if failed:\n        _line(f"Aggregate self-test: FAIL', '    return 0\n'),
+])
+def test_round1_aggregate_exits_between_proof_sites_refuse(dispatcher, insertion):
+    marker, before = insertion
+    mutate(dispatcher, marker, before + marker)
+    with pytest.raises(SourceError): check_aggregate_count(dispatcher)
+
+
+@pytest.mark.parametrize('name', ['len', 'bool', 'str', 'map', 'next'])
+@pytest.mark.parametrize('binding', [
+    'def {name}(value): return value', 'async def {name}(value): return value',
+    'class {name}: pass', 'from builtins import repr as {name}',
+    'import other as {name}', 'def unused({name}): pass',
+    'try:\n    pass\nexcept Exception as {name}:\n    pass',
+    'match object():\n    case {name}: pass',
+])
+def test_round1_builtin_binding_forms_refuse(dispatcher, name, binding):
+    with dispatcher.open('a', encoding='utf-8') as handle: handle.write('\n' + binding.format(name=name) + '\n')
+    with pytest.raises(SourceError): read_dispatch(dispatcher)
+
+
+@pytest.mark.parametrize('body', ['return 0', 'if True:\n    return 0', 'if unknown:\n    return 0', 'raise RuntimeError()', 'if True:\n    raise RuntimeError()'])
+def test_round1_canonical_entry_exit_cannot_credit_later_sections(tmp_path, body):
+    pair = live_canonical_pair(tmp_path)
+    insert_body(pair[1], 'run_canonical', body)
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+@pytest.mark.parametrize('body', ['return 0', 'if True:\n    return 0', 'if unknown:\n    return 0', 'raise RuntimeError()', 'if True:\n    raise RuntimeError()'])
+def test_round1_section_exit_does_not_supply_later_anchor(tmp_path, body):
+    pair = canonical_pair(tmp_path, 'section(references)', body + "\nrun_validator('alpha', references / 'example.md')")
+    try: calls = read_canonical(*pair)
+    except SourceError: return
+    assert not has_example(calls)
+
+
+@pytest.mark.parametrize('signature', [
+    'unused', 'other, references', 'references, other', 'references=None',
+    'references, /', '*references', '**references', '*, references',
+    'references, *args', 'references, **kwargs', 'references, *, other=None',
+])
+def test_round1_section_actual_parameter_must_receive_root(tmp_path, signature):
+    pair = live_canonical_pair(tmp_path)
+    mutate(pair[1], 'def _framework(references):', 'def _framework(' + signature + '):')
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+@pytest.mark.parametrize('argument', ['references=references', '*[references]', 'references, references', '**{"references": references}'])
+def test_round1_section_call_argument_shape_refuses(tmp_path, argument):
+    pair = live_canonical_pair(tmp_path)
+    mutate(pair[1], 'result = _framework(references)', 'result = _framework(' + argument + ')')
+    with pytest.raises(SourceError): read_canonical(*pair)
+
+
+def test_round1_actual_supported_forms_remain_live():
+    routes = read_dispatch(SCRIPTS / 'validate.py')
+    assert {routes[n].self_test_kind for n in ('contract-hash','contract-check','state-lines')} == {'utility'}
+    assert routes['argument-carve-behavior-preservation'].self_test_kind == 'carve'
+    check_aggregate_count(SCRIPTS / 'validate.py')
+    calls = read_canonical(SCRIPTS / 'validate.py', SCRIPTS / 'validate_canonical.py')
+    assert len(calls) == 77
+    assert any(c.command == 'pass-header' for c in calls)
+
+
+@pytest.mark.parametrize('replacement', [
+    '    if failed:\n        return 0\n        _line(f"Aggregate self-test: FAIL',
+    '    if failed:\n        if True:\n            return 0\n        _line(f"Aggregate self-test: FAIL',
+])
+def test_round1_summary_cannot_credit_report_after_exit(dispatcher, replacement):
+    mutate(dispatcher, '    if failed:\n        _line(f"Aggregate self-test: FAIL', replacement)
+    with pytest.raises(SourceError): check_aggregate_count(dispatcher)
+
+
+def test_round1_no_decorative_total_after_side_effect(dispatcher):
+    mutate(dispatcher, 'all {total} validators:', 'all {sys.exit(0)} {total} validators:')
+    with pytest.raises(SourceError): check_aggregate_count(dispatcher)
+
+
+def test_round1_wildcard_import_cannot_supply_builtin_bindings(dispatcher):
+    with dispatcher.open('a', encoding='utf-8') as handle: handle.write('\nfrom other import *\n')
+    with pytest.raises(SourceError): read_dispatch(dispatcher)
+
+
+def test_round1_unknown_while_cannot_supply_later_canonical_calls(tmp_path):
+    pair = live_canonical_pair(tmp_path)
+    insert_body(pair[1], 'run_canonical', 'while True:\n    pass')
+    with pytest.raises(SourceError): read_canonical(*pair)

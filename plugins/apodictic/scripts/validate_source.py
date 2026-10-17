@@ -57,6 +57,54 @@ def _literal(node, path):
         raise SourceError(path, 'unsupported dynamic literal', getattr(node, 'lineno', None)) from None
 
 
+def _bound_name(node):
+    """Python 3.10 binding forms; used only to reject replacement/shadowing."""
+    if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+        return node.id
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        return node.name
+    if isinstance(node, ast.alias):
+        return node.asname or node.name.split('.')[0]
+    if isinstance(node, ast.arg):
+        return node.arg
+    if isinstance(node, (ast.ExceptHandler, ast.MatchAs, ast.MatchStar)):
+        return node.name
+    if isinstance(node, ast.MatchMapping):
+        return node.rest
+    return None
+
+
+def _body(function):
+    body = function.body
+    if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant) and isinstance(body[0].value.value, str):
+        return body[1:]
+    return body
+
+
+def _expect_body(body, source, path, label):
+    """One closed statement form, not an interpreter or a source-derived oracle."""
+    expected = ast.parse(source).body
+    if [ast.dump(n) for n in body] != [ast.dump(n) for n in expected]:
+        raise SourceError(path, label + ': unsupported ordered statement form')
+
+
+def _signature(function, names, path, *, vararg=None, helper_input=False):
+    args = function.args
+    if (args.posonlyargs or [a.arg for a in args.args] != list(names) or args.defaults
+            or args.kwarg or (args.vararg.arg if args.vararg else None) != vararg):
+        raise SourceError(path, function.name + ': unsupported parameter binding')
+    if args.kwonlyargs:
+        if not (helper_input and [a.arg for a in args.kwonlyargs] == ['input']
+                and len(args.kw_defaults) == 1 and _same(args.kw_defaults[0], 'None')):
+            raise SourceError(path, function.name + ': unsupported keyword parameters')
+    elif args.kw_defaults:
+        raise SourceError(path, function.name + ': unsupported keyword defaults')
+    for name in (*names, *((vararg,) if vararg else ())):
+        bindings = [n for n in ast.walk(function) if _bound_name(n) == name]
+        if len(bindings) != 1 or not isinstance(bindings[0], ast.arg):
+            raise SourceError(path, function.name + ': parameter rebound or shadowed: ' + name)
+
+
 def _bindings(tree, path, names):
     """Reject rebinding, item mutation and alias escape of the protected names.
 
@@ -65,16 +113,7 @@ def _bindings(tree, path, names):
     """
     parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
     for name in names:
-        definitions = []
-        for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name == name:
-                definitions.append(node)
-            elif isinstance(node, ast.Name) and node.id == name and isinstance(node.ctx, (ast.Store, ast.Del)):
-                definitions.append(node)
-            elif isinstance(node, ast.alias) and (node.asname or node.name.split('.')[0]) == name:
-                definitions.append(node)
-            elif isinstance(node, ast.arg) and node.arg == name:
-                definitions.append(node)
+        definitions = [node for node in ast.walk(tree) if _bound_name(node) == name]
         if len(definitions) != 1:
             raise SourceError(path, f'{name}: missing or rebound definition')
         definition = definitions[0]
@@ -176,6 +215,8 @@ def _route_value(node, values, path):
 def _native_imports(tree, path):
     """Protect the small stdlib launch/path vocabulary from local replacement."""
     expected = {'sys': ('sys', None), 'subprocess': ('subprocess', None), 'Path': ('Path', 'pathlib')}
+    if any(isinstance(n, ast.ImportFrom) and any(a.name == '*' for a in n.names) for n in ast.walk(tree)):
+        raise SourceError(path, 'wildcard import cannot establish native bindings')
     for name, (imported, module) in expected.items():
         aliases = []
         for node in ast.walk(tree):
@@ -187,7 +228,7 @@ def _native_imports(tree, path):
                         aliases.append((alias.name, node.module if isinstance(node, ast.ImportFrom) else None))
             if isinstance(node, ast.Name) and node.id == name and isinstance(node.ctx, (ast.Store, ast.Del)):
                 raise SourceError(path, 'native launch/path name rebound: ' + name, node.lineno)
-            if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and node.name == name:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name == name:
                 raise SourceError(path, 'native launch/path callable rebound: ' + name, node.lineno)
             if isinstance(node, ast.arg) and node.arg == name:
                 raise SourceError(path, 'native launch/path name shadowed: ' + name, node.lineno)
@@ -196,46 +237,69 @@ def _native_imports(tree, path):
         if aliases != [(imported, module)]:
             raise SourceError(path, 'native launch/path import missing or ambiguous: ' + name)
     for node in ast.walk(tree):
-        if isinstance(node, ast.Name) and node.id in ('len', 'bool', 'str', 'map', 'next') and isinstance(node.ctx, (ast.Store, ast.Del)):
+        if _bound_name(node) in ('len', 'bool', 'str', 'map', 'next', 'int'):
             raise SourceError(path, 'source predicate builtin rebound', node.lineno)
 
 
 def _launcher(function, path, canonical=False):
-    """Require the actual direct subprocess result and native argv/return binding."""
-    calls = []
-    for statement in function.body:
-        if isinstance(statement, ast.Assign) and len(statement.targets) == 1:
-            value = statement.value
-            if isinstance(value, ast.Call) and _same(value.func, 'subprocess.run'):
-                calls.append((statement.targets[0], value))
-        elif isinstance(statement, ast.Return) and isinstance(statement.value, ast.Call) and _same(statement.value.func, 'subprocess.run'):
-            calls.append((None, statement.value))
-        if isinstance(statement, (ast.Return, ast.Raise)):
-            break
-    if len(calls) != 1:
-        raise SourceError(path, f'{function.name}: no unique direct native subprocess')
-    target, call = calls[0]
-    if not call.args or not isinstance(call.args[0], ast.List):
-        raise SourceError(path, f'{function.name}: native argv must be explicit')
+    """Prove the supported setup -> launch -> relay -> result sequence."""
+    _signature(function, ('command',) if canonical else ('script', 'args'), path,
+               vararg='arguments' if canonical else None, helper_input=not canonical)
+    body = list(_body(function))
+    setup = []
+    # Only these two literal setup assignments precede the subprocess.
+    for source in ('env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")',
+                   'windows = os.name == "nt"'):
+        expected = ast.parse(source).body[0]
+        if body and ast.dump(body[0]) == ast.dump(expected):
+            setup.append(body.pop(0).targets[0].id)
+    if not body:
+        raise SourceError(path, function.name + ': native launch missing')
+    first = body.pop(0)
+    target = None
+    if isinstance(first, ast.Assign) and len(first.targets) == 1 and isinstance(first.targets[0], ast.Name):
+        target, call = first.targets[0].id, first.value
+    elif canonical and isinstance(first, ast.Return):
+        call = first.value
+    else:
+        raise SourceError(path, function.name + ': unsupported control before native launch')
+    if not isinstance(call, ast.Call) or not _same(call.func, 'subprocess.run') or len(call.args) != 1 or not isinstance(call.args[0], ast.List):
+        raise SourceError(path, function.name + ': expected one direct native subprocess')
     argv = call.args[0].elts
-    expected = 'str(Path(__file__).resolve().parent / "validate.py")' if canonical else 'str(Path(__file__).resolve().parent / script)'
-    if len(argv) < 3 or not _same(argv[0], 'sys.executable') or not _same(argv[1], expected):
-        raise SourceError(path, f'{function.name}: native interpreter/sibling binding absent')
+    sibling = 'str(Path(__file__).resolve().parent / "validate.py")' if canonical else 'str(Path(__file__).resolve().parent / script)'
+    if len(argv) < 3 or not _same(argv[0], 'sys.executable') or not _same(argv[1], sibling):
+        raise SourceError(path, function.name + ': native interpreter/sibling binding absent')
     if canonical:
-        valid = (_name(argv[2], 'command') and len(argv) == 4 and isinstance(argv[3], ast.Starred)
+        valid = (len(argv) == 4 and _name(argv[2], 'command') and isinstance(argv[3], ast.Starred)
                  and (_name(argv[3].value, 'arguments') or _same(argv[3].value, 'map(str, arguments)')))
     else:
         valid = len(argv) == 3 and isinstance(argv[2], ast.Starred) and _name(argv[2].value, 'args')
-    if not valid or any(k.arg == 'shell' and not _same(k.value, 'False') for k in call.keywords):
-        raise SourceError(path, f'{function.name}: unsupported child arguments')
-    if target is not None:
-        writes = [n for n in ast.walk(function) if _name(n, target.id) and isinstance(n.ctx, (ast.Store, ast.Del))]
-        changed = [n for n in ast.walk(function) if isinstance(n, ast.Attribute) and isinstance(n.ctx, (ast.Store, ast.Del)) and _name(n.value, target.id)]
-        if len(writes) != 1 or changed:
-            raise SourceError(path, f'{function.name}: child result rebound or modified')
-        expected_return = target.id if canonical else target.id + '.returncode'
-        if not any(isinstance(n, ast.Return) and n.value is not None and _same(n.value, expected_return) for n in function.body):
-            raise SourceError(path, f'{function.name}: child result is not returned')
+    if not valid:
+        raise SourceError(path, function.name + ': unsupported child arguments')
+    allowed = {'shell': ('False',), 'capture_output': ('True', 'False')}
+    if 'windows' in setup: allowed['capture_output'] += ('windows',)
+    allowed['env'] = ('dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")',)
+    if 'env' in setup: allowed['env'] += ('env',)
+    if not canonical and function.args.kwonlyargs: allowed['input'] = ('input',)
+    keys = [k.arg for k in call.keywords]
+    if len(keys) != len(set(keys)) or any(k.arg not in allowed or not any(_same(k.value, form) for form in allowed[k.arg]) for k in call.keywords):
+        raise SourceError(path, function.name + ': unsupported native launch options')
+    if target is None:
+        if body: raise SourceError(path, function.name + ': statements after direct subprocess return')
+        return
+    if target in setup or target in ('script', 'args', 'command', 'arguments', 'input'):
+        raise SourceError(path, function.name + ': child result overwrites launch binding')
+    if not canonical and body and isinstance(body[0], ast.If):
+        if 'windows' not in setup:
+            raise SourceError(path, function.name + ': relay lacks platform setup')
+        _expect_body(body[:1], f'''if windows:
+    for stream, output in ((sys.stdout.buffer, {target}.stdout), (sys.stderr.buffer, {target}.stderr)):
+        stream.write(output.replace(b"\\r\\n", b"\\n"))
+        stream.flush()
+''', path, 'native stream relay')
+        body.pop(0)
+    expected_return = target if canonical else target + '.returncode'
+    _expect_body(body, 'return ' + expected_return, path, 'native result return')
 
 
 def _route(function, command, tables, functions, path):
@@ -322,20 +386,117 @@ return _run_helper(suite, [])
 
 
 def _native_suite(function, path, carve=False):
+    """The two supported native suites, in execution order.
+
+    These positive forms include the carve fixture-unavailable branch and each
+    suite's real child/assertion/report paths. Matching the whole small form
+    rejects exits or replacement bindings anywhere between those proof sites.
+    No source being inspected is executed, and no arbitrary Python is modeled.
+    """
     if function is None: raise SourceError(path, 'missing native suite')
+    _signature(function, ('args',) if carve else ('command',), path)
     if carve:
-        guards = [n for n in function.body if isinstance(n, ast.Assign) and any(_name(t, 'self_test') for t in n.targets)]
-        if len(guards) != 1 or not _same(guards[0].value, 'bool(args and args[0] == "--self-test")'):
-            raise SourceError(path, 'carve first-self-test predicate absent')
-        loops = [n for n in function.body if isinstance(n, ast.For)]
-        if not any(any(isinstance(s, ast.Assign) and isinstance(s.value, ast.Call) and _same(s.value.func, 'subprocess.run') for s in n.body) for n in loops):
-            raise SourceError(path, 'carve golden subprocess loop absent')
+        expected = r"""
+scripts = _script_dir()
+directory = next((candidate for candidate in (scripts + '/../../../evals/fixtures/argument-carve/precarve', scripts + '/../evals/fixtures/argument-carve/precarve') if os.path.isdir(candidate)), None)
+self_test = bool(args and args[0] == '--self-test')
+if directory is None:
+    if self_test:
+        _line('  fixture_present: SKIP (evals/ not present — repo-only gate)')
+        _line('Self-test: PASS')
     else:
-        children = [n for n in function.body if isinstance(n, ast.FunctionDef) and n.name == 'run']
-        if len(children) != 1 or not any(isinstance(n, ast.Return) and isinstance(n.value, ast.Call) and _same(n.value.func, 'subprocess.run') for n in children[0].body):
-            raise SourceError(path, 'utility native suite child absent')
-    if not any(isinstance(n, ast.Return) and _same(n.value, 'int(failed)') for n in function.body):
-        raise SourceError(path, 'native suite failure result absent')
+        _line('argument-carve-behavior-preservation: SKIP (evals/ not present — repo-only gate)')
+    return 0
+letter, ledger, propagation, decision = (directory + '/' + name for name in ('argument-editorial-letter.md', 'argument-findings-ledger.md', 'propagation-output.txt', 'decision-layer-output.txt'))
+missing = False
+for path in (letter, ledger, propagation, decision):
+    if not os.path.isfile(path):
+        if not self_test:
+            _line(f'ERROR: argument-carve-behavior-preservation fixture missing: {path}')
+            return 1
+        _line(f'  fixture_present: FAIL (missing: {path})')
+        missing = True
+if missing:
+    _line('Self-test: FAIL')
+    return 1
+if self_test:
+    _line('  fixture_present: OK (4 fixture files found)')
+failed = False
+for command, child_args, golden, label in (('audit-signal-propagation', [letter, ledger], propagation, 'propagation_golden'), ('decision-layer-check', [letter], decision, 'decision_layer_golden')):
+    child = subprocess.run([sys.executable, str(Path(__file__).resolve()), command, *child_args], env=dict(os.environ, PYTHONUTF8='1', PYTHONIOENCODING='utf-8'), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    if child.returncode:
+        return child.returncode
+    output = child.stdout[:-1] if child.stdout.endswith(b'\n') else child.stdout
+    output = output.rsplit(b'\n', 1)[-1].replace(b'\x00', b'').rstrip(b'\n')
+    try:
+        expected = Path(golden).read_bytes().replace(b'\x00', b'').rstrip(b'\n')
+    except OSError as exc:
+        _line(f'Error: Cannot read file: {golden}: {exc.strerror}', error=True)
+        return 1
+    if output == expected:
+        if self_test:
+            _line(f'  {label}: OK')
+    else:
+        failed = True
+        if self_test:
+            _line(f'  {label}: FAIL')
+        else:
+            _line(f'ERROR: argument-carve-behavior-preservation: {command} output drifted from golden')
+        indent = '    ' if self_test else '  '
+        _line(indent + 'expected: ' + expected.decode('utf-8', errors='surrogateescape'))
+        _line(indent + 'got:      ' + output.decode('utf-8', errors='surrogateescape'))
+if self_test:
+    _line('Self-test: FAIL' if failed else 'Self-test: PASS')
+elif failed:
+    _line('argument-carve-behavior-preservation: FAIL')
+else:
+    _line('argument-carve-behavior-preservation: PASS (smoke: resolvers still classify the argument fixture as Argument-DE post-carve; authoritative guarantee = audit-signal-propagation --check-registry + the byte-identical §4e diff)')
+return int(failed)
+"""
+    else:
+        expected = r"""
+failed = False
+def check(name, condition):
+    nonlocal failed
+    _line(f"  {name}: {('OK' if condition else 'FAIL')}")
+    failed = failed or not condition
+def run(*args):
+    return subprocess.run([sys.executable, str(Path(__file__).resolve()), *args], capture_output=True)
+def rc(name, expected, *args):
+    result = run(*args)
+    if result.returncode == expected:
+        check(name, True)
+    else:
+        nonlocal failed
+        failed = True
+        _line(f'  {name}: FAIL (rc={result.returncode} want {expected})')
+with tempfile.TemporaryDirectory() as directory:
+    path = Path(directory) / 'c.md'
+    missing = str(Path(directory) / 'nope.md')
+    if command == 'contract-hash':
+        path.write_bytes(b'controlling idea\n')
+        digest = run(command, str(path)).stdout.rstrip(b'\n')
+        check('hash_is_64hex', re.fullmatch(b'[0-9a-f]{64}', digest) is not None)
+        check('deterministic', digest == run(command, str(path)).stdout.rstrip(b'\n'))
+        rc('missing_file_exit2', 2, command, missing)
+        rc('no_arg_exit2', 2, command)
+    elif command == 'contract-check':
+        path.write_bytes(b'contract body\n')
+        digest = run('contract-hash', str(path)).stdout.decode('ascii').strip()
+        rc('match_exit0', 0, command, str(path), digest)
+        rc('mismatch_exit1', 1, command, str(path), '0' * 64)
+        rc('missing_file_exit2', 2, command, missing, digest)
+        rc('missing_arg_exit2', 2, command, str(path))
+    else:
+        for count, label in ((5, 'counts_five'), (300, 'counts_300_warn_threshold'), (500, 'counts_500_forced_threshold')):
+            path.write_bytes(''.join((f'{n}\n' for n in range(1, count + 1))).encode('ascii'))
+            check(label, run(command, str(path)).stdout == f'{count}\n'.encode('ascii'))
+        rc('missing_file_exit2', 2, command, missing)
+        rc('no_arg_exit2', 2, command)
+_line('Self-test: FAIL' if failed else 'Self-test: PASS')
+return int(failed)
+"""
+    _expect_body(_body(function), expected, path, function.name)
 
 
 def read_dispatch(dispatcher_path):
@@ -418,42 +579,54 @@ def check_aggregate_count(dispatcher_path):
     _aggregate(tree, dispatcher_path)
     _bindings(tree, dispatcher_path, {'_self_test_all'})
     function = _functions(tree)['_self_test_all']
-    total = [n for n in ast.walk(function) if isinstance(n, ast.Name) and n.id == 'total' and isinstance(n.ctx, (ast.Store, ast.Del))]
-    if len(total) != 1:
-        raise SourceError(dispatcher_path, 'aggregate total missing or overwritten')
-    body = function.body
-    assignment = next((n for n in body if isinstance(n, ast.Assign) and any(_name(t, 'total') for t in n.targets)), None)
-    if assignment is None or not _same(assignment.value, 'len(AGG_VALIDATORS)'):
-        raise SourceError(dispatcher_path, 'aggregate total is not derived')
-    loop = next((n for n in body if isinstance(n, ast.For) and _name(n.iter, 'AGG_VALIDATORS')), None)
-    if loop is None or body.index(loop) < body.index(assignment):
-        raise SourceError(dispatcher_path, 'aggregate registry loop absent')
-    # The loop must actually launch the current registry item, not be decorative.
-    if not isinstance(loop.target, ast.Name): raise SourceError(dispatcher_path, 'aggregate loop target unsupported')
-    item = loop.target.id
-    launch = None
-    for statement in loop.body:
-        if isinstance(statement, ast.If) and _same(statement.test, f'{item} == "gate-state"'):
-            for child in statement.orelse:
-                if isinstance(child, ast.Assign) and isinstance(child.value, ast.Call) and _same(child.value.func, 'subprocess.run'):
-                    launch = child
-    if launch is None or len(launch.targets) != 1 or not isinstance(launch.targets[0], ast.Name):
-        raise SourceError(dispatcher_path, 'aggregate registry loop does not launch a child')
-    if not launch.value.args or not _same(launch.value.args[0], f'[sys.executable, str(Path(__file__).resolve()), {item}, "--self-test"]'):
-        raise SourceError(dispatcher_path, 'aggregate child does not use registry item')
-    child_name = launch.targets[0].id
-    condition = next((n for n in loop.body if isinstance(n, ast.If) and _same(n.test, f'{item} == "gate-state"')), None)
-    if not any(isinstance(n, ast.Assign) and any(_name(t, 'ok') for t in n.targets) and _same(n.value, child_name + '.returncode == 0') for n in condition.orelse):
-        raise SourceError(dispatcher_path, 'aggregate child status disconnected')
-    summary = next((n for n in body[body.index(loop) + 1:] if isinstance(n, ast.If) and _name(n.test, 'failed')), None)
-    if summary is None:
-        raise SourceError(dispatcher_path, 'aggregate status summary missing')
-    for branch in (summary.body, summary.orelse):
-        reports = [n.value for n in branch if isinstance(n, ast.Expr) and _call(n.value, '_line')]
-        if len(reports) != 1 or not reports[0].args or not isinstance(reports[0].args[0], ast.JoinedStr):
-            raise SourceError(dispatcher_path, 'aggregate summary is not the actual formatted report')
-        if not any(isinstance(n, ast.FormattedValue) and _name(n.value, 'total') for n in reports[0].args[0].values):
-            raise SourceError(dispatcher_path, 'aggregate summary does not use derived total')
+    _native_imports(tree, dispatcher_path)
+    _signature(function, (), dispatcher_path)
+    ordered = _body(function)
+    if len(ordered) != 9:
+        raise SourceError(dispatcher_path, 'unsupported aggregate execution order')
+    _expect_body(ordered[:4], 'total = len(AGG_VALIDATORS)\npassed = 0\nfailed = 0\ngate_ok = False', dispatcher_path, 'aggregate initialization')
+    _expect_body(ordered[6:7], '_line("")', dispatcher_path, 'aggregate report separator')
+    _expect_body(ordered[8:], 'return int(bool(failed))', dispatcher_path, 'aggregate result')
+    _expect_body(ordered[5:6], r"""
+for command in AGG_VALIDATORS:
+    if command == 'gate-state':
+        ok = gate_ok
+        detail = ' (covered by gate shared suite)' if ok else ' (gate shared suite failed)'
+    else:
+        child = subprocess.run([sys.executable, str(Path(__file__).resolve()), command, '--self-test'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=dict(os.environ, PYTHONUTF8='1', PYTHONIOENCODING='utf-8'))
+        ok = child.returncode == 0
+        detail = ''
+        if command == 'gate':
+            gate_ok = ok
+    _line(f"  {command}: {('PASS' if ok else 'FAIL')}{detail}")
+    if ok:
+        passed += 1
+    else:
+        failed += 1
+""", dispatcher_path, 'aggregate loop and status')
+    # Reports are direct calls with only literal text and the bound counters;
+    # no preceding return, hidden expression call or decorative later report.
+    def report(statement, fields):
+        if not isinstance(statement, ast.Expr) or not _call(statement.value, '_line'):
+            raise SourceError(dispatcher_path, 'aggregate report is not direct')
+        call = statement.value
+        if len(call.args) != 1 or call.keywords or not isinstance(call.args[0], ast.JoinedStr):
+            raise SourceError(dispatcher_path, 'unsupported aggregate report')
+        actual = []
+        for part in call.args[0].values:
+            if isinstance(part, ast.Constant) and isinstance(part.value, str): continue
+            if (not isinstance(part, ast.FormattedValue) or not isinstance(part.value, ast.Name)
+                    or part.conversion != -1 or part.format_spec is not None):
+                raise SourceError(dispatcher_path, 'unsupported aggregate report expression')
+            actual.append(part.value.id)
+        if actual != list(fields):
+            raise SourceError(dispatcher_path, 'aggregate report counters are disconnected')
+    report(ordered[4], ('total',))
+    summary = ordered[7]
+    if not isinstance(summary, ast.If) or not _name(summary.test, 'failed') or len(summary.body) != 1 or len(summary.orelse) != 1:
+        raise SourceError(dispatcher_path, 'aggregate summary execution order changed')
+    report(summary.body[0], ('failed', 'total'))
+    report(summary.orelse[0], ('passed', 'total'))
 
 
 def schema_literals(path):
@@ -517,6 +690,19 @@ def _root_selector(node, proven):
             or any(_same(fallback, root) for root in roots))
 
 
+def _control_exits(node):
+    """Negative evidence only: skipped control may exit this function.
+
+    A return inside an uncalled nested definition is not an enclosing exit.
+    Never use this traversal to credit calls or paths as executed.
+    """
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        return False
+    if isinstance(node, (ast.Return, ast.Raise, ast.While)):
+        return True
+    return any(_control_exits(child) for child in ast.iter_child_nodes(node))
+
+
 def read_canonical(dispatcher_path, canonical_path):
     dispatcher = _parse(dispatcher_path)
     canonical = _parse(canonical_path)
@@ -570,6 +756,7 @@ def read_canonical(dispatcher_path, canonical_path):
         entry_route(main.body)
         if len(reached) != 1:
             raise SourceError(dispatcher_path, f'{mode}: actual route must call canonical entry exactly once')
+    _signature(functions['run_canonical'], (), canonical_path)
     _launcher(functions['run_validator'], canonical_path, canonical=True)
     if any(_name(n, 'HERE') for n in ast.walk(canonical)):
         declarations = [n for n in canonical.body if isinstance(n, ast.Assign) and len(n.targets) == 1 and _name(n.targets[0], 'HERE')]
@@ -581,6 +768,7 @@ def read_canonical(dispatcher_path, canonical_path):
     def scan(statements, values, entry=False):
         for statement in statements:
             if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.For, ast.While, ast.Try, ast.With)):
+                if _control_exits(statement): return True
                 # Other canonical work cannot supply C5 anchors. Invalidate assignments
                 # because a cross-block value must not escape as an earlier path.
                 for n in ast.walk(statement):
@@ -593,7 +781,11 @@ def read_canonical(dispatcher_path, canonical_path):
                 if isinstance(testcall, ast.Compare): testcall = testcall.left
                 if isinstance(testcall, ast.Attribute): testcall = testcall.value
                 if _call(testcall, 'run_validator'): record(testcall, values)
-                if _exists_guard(statement.test, values): scan(statement.body, dict(values), entry)
+                if _exists_guard(statement.test, values):
+                    if scan(statement.body, dict(values), entry) or any(_control_exits(n) for n in statement.orelse):
+                        return True
+                elif _control_exits(statement):
+                    return True
                 for n in ast.walk(statement):
                     if isinstance(n, ast.Name) and isinstance(n.ctx, (ast.Store, ast.Del)): values.pop(n.id, None)
             if _call(call, 'run_validator'): record(call, values)
@@ -601,12 +793,10 @@ def read_canonical(dispatcher_path, canonical_path):
                 name = call.func.id
                 if name not in ('run_canonical', 'run_validator'):
                     if name in sections: raise SourceError(canonical_path, 'duplicate canonical section invocation', statement.lineno)
-                    if not call.args or not isinstance(call.args[0], ast.Name) or call.args[0].id not in roots:
+                    if len(call.args) != 1 or call.keywords or not isinstance(call.args[0], ast.Name) or call.args[0].id not in roots:
                         raise SourceError(canonical_path, 'canonical section must receive unchanged references', statement.lineno)
                     sections.add(name)
-                    for node in ast.walk(functions[name]):
-                        if isinstance(node, ast.Name) and node.id == 'references' and isinstance(node.ctx, (ast.Store, ast.Del)):
-                            raise SourceError(canonical_path, 'section references binding changed', node.lineno)
+                    _signature(functions[name], ('references',), canonical_path)
                     scan(functions[name].body, {})
             if isinstance(statement, ast.Assign):
                 for target in statement.targets:
@@ -620,7 +810,8 @@ def read_canonical(dispatcher_path, canonical_path):
                         value = _reference(statement.value, {}, allow_name=False)
                         if value is None: values.pop(target.id, None)
                         else: values[target.id] = value
-            if isinstance(statement, (ast.Return, ast.Raise)): break
+            if isinstance(statement, (ast.Return, ast.Raise)): return True
+        return False
     def record(call, values):
         if not call.args or not isinstance(call.args[0], ast.Constant) or not isinstance(call.args[0].value, str):
             return
