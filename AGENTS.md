@@ -157,7 +157,7 @@ CI verifies the generators instead of committed copies: `release-generate.mjs
 `build-antigravity.mjs --self-check` (regenerate in temp + validate). `release.sh`
 runs the same self-checks via `release-verify.mjs`.
 
-**Validators live in one place.** `validate.py`, `validate_canonical.py`, `preflight.sh`, and the Python validators live in `plugins/apodictic/scripts/`. Invoke the native dispatcher with Python 3.10+; children use that same interpreter. Plugin and root `validate.sh` are small optional POSIX compatibility launchers, with a named exit 127 if Python is missing. The old `validate.d` parts are removed. Root `scripts/` otherwise holds repository release/build tooling. Validator fixtures live in `tests/fixtures/validators/`. Keep canonical plugin files under 256 KiB and the folder at 512 files or fewer. Package generators exclude Python caches and verify native entries and actual archived payload limits; the changelog stays at the repository root.
+**Validators live in one place.** `validate.py`, `validate_canonical.py`, `preflight.sh`, and the Python validators live in `plugins/apodictic/scripts/`. Invoke the native dispatcher with Python 3.10+; children use that same interpreter. Plugin and root `validate.sh` are small optional POSIX compatibility launchers, with a named exit 127 if Python is missing. The old `validate.d` parts are removed. Root `scripts/` otherwise holds repository release/build tooling. Validator fixtures live in `tests/fixtures/validators/`. Keep canonical plugin files under 256 KiB and the folder at 512 files or fewer. Package generators exclude Python caches, verify native entries, and check the canonical source against these limits; the changelog stays at the repository root.
 
 
 ## Changelog

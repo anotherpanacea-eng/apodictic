@@ -25,8 +25,9 @@ route's helper from the module itself; C5 reads the `run_validator` calls in
 `validate_canonical.py`. A misrouted helper fails `--self-test-all`.
 
 Both package generators exclude `__pycache__` and bytecode, including submission
-archives. Native files and the compatibility shim are required; obsolete shell
-parts are forbidden. Standalone installs preserve the existing explicit skips:
+archives, and require the native files and the compatibility shim in each archive.
+They also check the canonical plugin source against the Claude plugin directory
+limits (512 files, each under 256 KiB) before building. Standalone installs preserve the existing explicit skips:
 missing eval-only export goldens can skip byte comparison, while required
 stance/E7 inputs still fail. A standalone layout is not a claim that every full
 canonical check passes without those inputs.
@@ -374,13 +375,3 @@ must use an external pre-cutover reference checkout; comparing the Bash shim to
 Python itself cannot establish parity.
 
 The M3 JSON-lines runner is CB-1(b), a later workflow outside these port groups.
-
-
-Package limit population: canonical Claude plugin source is checked before host
-removals/overrides, excluding only unshipped Python caches. Both actual Codex
-archives enforce the file-count bound over all plugin members. The per-file
-Claude source ceiling excludes only the existing declared Codex listing assets
-with exact packaging override bindings and no canonical counterpart; their actual
-archive sizes are reported separately. Two unchanged listing screenshots exceed
-256 KiB, so this is not a claim that the complete Codex ZIP meets that per-file
-ceiling. Antigravity checks every plugin member against the ceiling.
