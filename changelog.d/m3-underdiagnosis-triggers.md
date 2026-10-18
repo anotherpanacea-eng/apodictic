@@ -1,3 +1,3 @@
 ### Development runner: underdiagnosis triggers
 
-Add the ninth fixed source-development runner leaf, `underdiagnosis-triggers`, using the unchanged one-text helper and formatter. Native CLI parity controls distinguish its six trigger paths, parent/child override composition and trusted-reference behavior, including missing-map fallback and malformed-map diagnostic replacement. The leaf does not run the letter-plus-ledger softness check or editorial retries; desktop support remains disabled.
+The source-development JSONL runner accepts `underdiagnosis-triggers`, matching the native one-file validator for the same text and installed `pass-dependencies.md`. The letter-plus-ledger softness check is not run.
