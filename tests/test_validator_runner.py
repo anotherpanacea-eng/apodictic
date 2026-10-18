@@ -19,7 +19,30 @@ SCRIPT = ROOT / "plugins/apodictic/scripts/validator_runner.py"
 FIXTURES = ROOT / "tests/fixtures/validators"
 PYTHON = sys.executable
 LEAVES = ("tone-check", "synthesis-sections", "severity-floor", "decision-layer-check",
-          "author-facing-lint", "ledger-check", "ledger-consolidation")
+          "author-facing-lint", "ledger-check", "ledger-consolidation", "audit-signal-propagation")
+REFERENCE = Path("skills/core-editor/references/pass-dependencies.md")
+SIGNAL_APPENDIX = "\n## Appendix A\n### Reception Risk Audit\nhard gate at L42\n"
+SIGNAL_SHOULD = "Should-Fix: Reception Risk needs revision.\n" + SIGNAL_APPENDIX
+SIGNAL_TWO = SIGNAL_APPENDIX + "### Compression Audit\nhard gate at L71\n"
+SIGNAL_MARKER = "<!-- override:audit-propagation-reception-risk -->"
+SIGNAL_CASES = [
+    ("hard-gate-should", SIGNAL_SHOULD, 1),
+    ("hard-gate-must", SIGNAL_SHOULD.replace("Should-Fix", "Must-Fix"), 0),
+    ("shared-evidence", "Must-Fix: revise L42.\n" + SIGNAL_APPENDIX, 0),
+    ("wrong-evidence", "Must-Fix: revise L43.\n" + SIGNAL_APPENDIX, 1),
+    ("wrong-audit", "Must-Fix: Compression needs revision.\n" + SIGNAL_APPENDIX, 1),
+    ("floor-should", SIGNAL_SHOULD.replace("hard gate", "Must-Fix floor"), 1),
+    ("high-satisfied", SIGNAL_SHOULD.replace("hard gate", "HIGH signal"), 0),
+    ("high-absent", SIGNAL_APPENDIX.replace("hard gate", "HIGH signal"), 1),
+    ("live-override", SIGNAL_MARKER + SIGNAL_APPENDIX, 0),
+    ("inline-override", "`" + SIGNAL_MARKER + "`" + SIGNAL_APPENDIX, 1),
+    ("fenced-override", "```\n" + SIGNAL_MARKER + "\n```" + SIGNAL_APPENDIX, 1),
+    ("appendix-override", SIGNAL_APPENDIX + SIGNAL_MARKER, 1),
+    ("suffix-override", SIGNAL_MARKER.replace("risk", "risk-suffix") + SIGNAL_APPENDIX, 1),
+    ("one-of-two-overridden", SIGNAL_MARKER + SIGNAL_TWO, 1),
+    ("legacy-absent", "hard gate\n", 1),
+    ("legacy-satisfied", "hard gate\nMust-Fix: revise the opening.\n", 0),
+]
 SYNTHESIS = "".join("## %s\n\nbody\n\n" % h for h in (
     "Development Edit", "The Short Version", "What the Book Does Best", "What Needs Work",
     "Additional Observations", "Revision Checklist", "Protected Elements", "Author Decisions",
@@ -87,6 +110,7 @@ CASES = {
         # One text supplies no raw-ledger item count for the optional reduction check.
         "## Mechanism: recurring delay\n(confirmed by Pass 1, Pass 2)\nMust-Fix\n"
         "- Invented opening delay.\n- Invented middle delay.\n- Invented closing delay.\n"],
+    "audit-signal-propagation": [text for _, text, _ in SIGNAL_CASES],
 }
 SHARED = ["", "masterpiece", "雪 😀\r\n" + WEAK + "\rQF-7\n" + LEDGER, "x" * 262144, "\n" * 8191]
 
@@ -173,6 +197,9 @@ class RunnerTests(unittest.TestCase):
             shutil.copyfile(SCRIPT.parent / name, self.scripts / name)
         self.metadata = self.schemas / "validator-runtime-inventory.json"
         shutil.copyfile(SCRIPT.parent.parent / "schemas/validator-runtime-inventory.json", self.metadata)
+        self.reference = self.scripts.parent / REFERENCE
+        self.reference.parent.mkdir(parents=True)
+        shutil.copyfile(SCRIPT.parent.parent / REFERENCE, self.reference)
         self.script = self.scripts / "validator_runner.py"
         self.clients = []
 
@@ -244,7 +271,64 @@ class RunnerTests(unittest.TestCase):
                     result = got["result"]
                     self.assertEqual((result["exit_code"], result["stdout"].encode(), result["stderr"].encode()),
                                      (oracle.returncode, oracle.stdout, oracle.stderr))
+                    if leaf == "audit-signal-propagation":
+                        expected = {t: decision for _, t, decision in SIGNAL_CASES}
+                        if text in expected:
+                            self.assertEqual(result["exit_code"], expected[text])
                 n += 1
+        self.assertEqual(c.end(), (0, [], b""))
+
+    def test_signal_reference_context_matches_copied_native_cli(self):
+        # Exercise the real helper's fixed installed-file lookup, with both consumers
+        # in this same copy. Inline dep_text and synthetic helpers cannot prove this.
+        original = self.reference.read_text(encoding="utf-8")
+        default = ("#### Default mapping\n"
+                   "- Audit-internal Must-Fix floor -> Synthesis Must-Fix\n"
+                   "- Audit-internal hard gate -> Synthesis Must-Fix\n"
+                   "- Audit-internal HIGH / Alert -> Synthesis Must-Fix or Should-Fix\n")
+        override = default + ("| Reception Risk | hard gate | Should-Fix | context | source | "
+                              "propagate-override: hard-gate -> Should-Fix |\n")
+        contexts = [
+            ("packaged-original", original, SIGNAL_SHOULD, 1, False),
+            ("default-changed", default.replace("hard gate -> Synthesis Must-Fix",
+                                               "hard gate -> Synthesis Should-Fix"),
+             SIGNAL_SHOULD, 0, False),
+            # Removing the changed map returns built-in policy, rather than refusal.
+            ("missing-fallback", None, SIGNAL_SHOULD, 1, False),
+            ("per-audit-changed", override, SIGNAL_SHOULD, 0, False),
+            ("per-audit-unrelated", override, SIGNAL_SHOULD.replace("Reception Risk", "Compression"), 1, False),
+            ("missing-default-block", "# No mapping\n", "", 1, True),
+            ("missing-required-class", default.replace(
+                "- Audit-internal hard gate -> Synthesis Must-Fix\n", ""), "", 1, True),
+            ("malformed-default", default.replace("hard gate -> Synthesis Must-Fix",
+                                                  "hard gate -> Synthesis unknown"), "", 1, True),
+            ("malformed-override-tier", override.replace("hard-gate -> Should-Fix",
+                                                         "hard-gate -> unknown"), "", 1, True),
+            ("malformed-override-class", override.replace("hard-gate -> Should-Fix",
+                                                          "invented -> Should-Fix"), "", 1, True),
+            ("restored-original", original, SIGNAL_SHOULD.replace("Should-Fix", "Must-Fix"), 0, False),
+        ]
+        c = self.client(script=self.script, cwd=self.root)
+        source = self.root / "invented-signal.txt"
+        for label, reference, text, decision, malformed in contexts:
+            with self.subTest(context=label):
+                if reference is None:
+                    self.reference.unlink()
+                else:
+                    self.reference.write_text(reference, encoding="utf-8")
+                source.write_bytes(text.encode())
+                oracle = subprocess.run([PYTHON, "-I", "-S", "-B", str(self.scripts / "validate.py"),
+                                         "audit-signal-propagation", str(source)],
+                                        capture_output=True, cwd=self.root, timeout=8)
+                c.send(validation(label, text, "audit-signal-propagation"))
+                got = c.next()
+                self.assertEqual((got["id"], got["validator"], got["available"], got["error"]),
+                                 (label, "audit-signal-propagation", True, None))
+                result = got["result"]
+                self.assertEqual((result["exit_code"], result["stdout"].encode(), result["stderr"].encode()),
+                                 (oracle.returncode, oracle.stdout, oracle.stderr))
+                self.assertEqual(result["exit_code"], decision)
+                self.assertEqual("mapping is malformed" in result["stdout"], malformed)
         self.assertEqual(c.end(), (0, [], b""))
 
     def test_output_limit_exact_and_over(self):
