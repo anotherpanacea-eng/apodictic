@@ -19,7 +19,8 @@ SCRIPT = ROOT / "plugins/apodictic/scripts/validator_runner.py"
 FIXTURES = ROOT / "tests/fixtures/validators"
 PYTHON = sys.executable
 LEAVES = ("tone-check", "synthesis-sections", "severity-floor", "decision-layer-check",
-          "author-facing-lint", "ledger-check", "ledger-consolidation", "audit-signal-propagation")
+          "author-facing-lint", "ledger-check", "ledger-consolidation", "audit-signal-propagation",
+          "underdiagnosis-triggers")
 REFERENCE = Path("skills/core-editor/references/pass-dependencies.md")
 SIGNAL_APPENDIX = "\n## Appendix A\n### Reception Risk Audit\nhard gate at L42\n"
 SIGNAL_SHOULD = "Should-Fix: Reception Risk needs revision.\n" + SIGNAL_APPENDIX
@@ -52,6 +53,54 @@ LEDGER = "## Pass 2\n" + "".join("### %s\n" % h for h in (
     "Notable Findings", "Data Artifacts for Letter Reference", "Cross-Pass Connections",
     "Unresolved Questions", "Audit Triggers"))
 WEAK = "Weak at High"
+CONVERGENCE = "opacity opacity opacity"
+CONVERGENCE_MARKER = "<!-- override:underdiagnosis-trigger-convergence -->"
+SEVERITY_CHILD_MARKER = "<!-- override:severity-floor-weak-axis -->"
+SEVERITY_PARENT_MARKER = "<!-- override:underdiagnosis-trigger-severity-floor -->"
+PROPAGATION_PARENT_MARKER = "<!-- override:underdiagnosis-trigger-propagation -->"
+UNDERDIAGNOSIS_BODY = "Must-Fix: unrelated L99.\nShould-Fix: Reception Risk L42.\n"
+# Expected warning/error prefixes protect the six actual paths and composition,
+# independently of the native parity oracle. These are invented text controls.
+UNDERDIAGNOSIS_CASES = [
+    ("two-occurrences", "opacity opacity", 0, []),
+    ("three-occurrences", CONVERGENCE, 1, ["ERROR: Trigger #1 (convergence)"]),
+    ("convergence-body-must", CONVERGENCE + "\nMust-Fix: revise.", 0, []),
+    ("alert-should", "Should-Fix: revise pacing.\nAlert finding", 1, ["ERROR: Trigger #2 (hard-gate)"]),
+    ("alert-must", "Must-Fix: revise pacing.\nAlert finding", 0, []),
+    ("character-only", "Character pass climax", 0, []),
+    ("character-and-structure", "Character pass climax\nStructure pass climax", 1,
+     ["ERROR: Trigger #3 (final-third)"]),
+    ("one-axis", "series", 0, []),
+    ("two-axes", "series representation", 1, ["ERROR: Trigger #4 (multi-axis)"]),
+    ("severity-error", WEAK, 1, ["ERROR: Trigger #5 (severity-floor)"]),
+    ("severity-child-only", WEAK + "\n" + SEVERITY_CHILD_MARKER, 1,
+     ["ERROR: Trigger #5 (severity-floor)"]),
+    ("severity-parent-only", WEAK + "\n" + SEVERITY_PARENT_MARKER, 0,
+     ["WARN: Trigger #5 (severity-floor)"]),
+    ("severity-both", WEAK + "\n" + SEVERITY_CHILD_MARKER + "\n" + SEVERITY_PARENT_MARKER, 0,
+     ["WARN: Trigger #5 (severity-floor)"]),
+    ("severity-appendix-must", WEAK + "\n## Appendix A\nMust-Fix", 0, []),
+    ("propagation-error", UNDERDIAGNOSIS_BODY + SIGNAL_APPENDIX, 1,
+     ["ERROR: Trigger #6 (propagation)"]),
+    ("propagation-child-only", UNDERDIAGNOSIS_BODY + SIGNAL_MARKER + SIGNAL_APPENDIX, 1,
+     ["ERROR: Trigger #6 (propagation)"]),
+    ("propagation-parent-only", UNDERDIAGNOSIS_BODY + PROPAGATION_PARENT_MARKER + SIGNAL_APPENDIX, 0,
+     ["WARN: Trigger #6 (propagation)"]),
+    ("propagation-both", UNDERDIAGNOSIS_BODY + SIGNAL_MARKER + "\n" +
+     PROPAGATION_PARENT_MARKER + SIGNAL_APPENDIX, 0, ["WARN: Trigger #6 (propagation)"]),
+    ("propagation-matched-evidence", "Must-Fix: revise L42.\n" + SIGNAL_APPENDIX, 0, []),
+    ("mixed-warning-and-error", CONVERGENCE + "\nseries representation\n" + CONVERGENCE_MARKER, 1,
+     ["WARN: Trigger #1 (convergence)", "ERROR: Trigger #4 (multi-axis)"]),
+    ("live-parent", CONVERGENCE + "\n" + CONVERGENCE_MARKER, 0,
+     ["WARN: Trigger #1 (convergence)"]),
+] + [
+    (label, CONVERGENCE + "\n" + marker, 1, ["ERROR: Trigger #1 (convergence)"])
+    for label, marker in (
+        ("inline-parent", "`" + CONVERGENCE_MARKER + "`"),
+        ("fenced-parent", "~~~\n" + CONVERGENCE_MARKER + "\n~~~"),
+        ("appendix-parent", "## Appendix A\n" + CONVERGENCE_MARKER),
+        ("suffix-parent", CONVERGENCE_MARKER.replace("convergence", "convergence-suffix")))
+]
 # Invented adversarial inputs per leaf; shipped fixtures and SHARED are added to each.
 CASES = {
     "tone-check": [
@@ -111,6 +160,7 @@ CASES = {
         "## Mechanism: recurring delay\n(confirmed by Pass 1, Pass 2)\nMust-Fix\n"
         "- Invented opening delay.\n- Invented middle delay.\n- Invented closing delay.\n"],
     "audit-signal-propagation": [text for _, text, _ in SIGNAL_CASES],
+    "underdiagnosis-triggers": [text for _, text, _, _ in UNDERDIAGNOSIS_CASES],
 }
 SHARED = ["", "masterpiece", "雪 😀\r\n" + WEAK + "\rQF-7\n" + LEDGER, "x" * 262144, "\n" * 8191]
 
@@ -267,7 +317,8 @@ class RunnerTests(unittest.TestCase):
                                              str(source)], capture_output=True)
                     c.send(validation(str(n), text, leaf))
                     got = c.next()
-                    self.assertEqual((got["id"], got["validator"], got["available"]), (str(n), leaf, True))
+                    self.assertEqual((got["id"], got["validator"], got["available"], got["error"]),
+                                     (str(n), leaf, True, None))
                     result = got["result"]
                     self.assertEqual((result["exit_code"], result["stdout"].encode(), result["stderr"].encode()),
                                      (oracle.returncode, oracle.stdout, oracle.stderr))
@@ -275,7 +326,61 @@ class RunnerTests(unittest.TestCase):
                         expected = {t: decision for _, t, decision in SIGNAL_CASES}
                         if text in expected:
                             self.assertEqual(result["exit_code"], expected[text])
+                    if leaf == "underdiagnosis-triggers":
+                        expected = {t: (decision, triggers) for _, t, decision, triggers in UNDERDIAGNOSIS_CASES}
+                        if text in expected:
+                            decision, triggers = expected[text]
+                            self.assertEqual(result["exit_code"], decision)
+                            self.assertEqual([line.partition(" — ")[0] for line in result["stdout"].splitlines()
+                                              if line.startswith(("WARN: Trigger #", "ERROR: Trigger #"))], triggers)
+                            if text == CONVERGENCE + "\nseries representation\n" + CONVERGENCE_MARKER:
+                                self.assertIn("\n\nFAILED: 1 underdiagnosis trigger(s) fired. "
+                                              "Triggers: convergence multi-axis \n", result["stdout"])
                 n += 1
+        self.assertEqual(c.end(), (0, [], b""))
+
+    def test_underdiagnosis_reference_context_matches_copied_native_cli(self):
+        # The wrapper always calls the real propagation child, even for empty text.
+        # Await each response before changing the same copy's installed reference.
+        original = self.reference.read_text(encoding="utf-8")
+        changed = ("#### Default mapping\n"
+                   "- Audit-internal Must-Fix floor -> Synthesis Must-Fix\n"
+                   "- Audit-internal hard gate -> Synthesis Should-Fix\n"
+                   "- Audit-internal HIGH / Alert -> Synthesis Must-Fix or Should-Fix\n")
+        contexts = [
+            ("packaged-original", original, UNDERDIAGNOSIS_BODY + SIGNAL_APPENDIX, 1,
+             ["ERROR: Trigger #6 (propagation)"]),
+            ("default-changed", changed, UNDERDIAGNOSIS_BODY + SIGNAL_APPENDIX, 0, []),
+            ("missing-fallback", None, UNDERDIAGNOSIS_BODY + SIGNAL_APPENDIX, 1,
+             ["ERROR: Trigger #6 (propagation)"]),
+            ("malformed-empty", "# No mapping\n", "", 1, ["ERROR: Trigger #6 (propagation)"]),
+            ("malformed-parent-override", "# No mapping\n", PROPAGATION_PARENT_MARKER, 0,
+             ["WARN: Trigger #6 (propagation)"]),
+            ("restored-matched-evidence", original, "Must-Fix: revise L42.\n" + SIGNAL_APPENDIX, 0, []),
+        ]
+        c = self.client(script=self.script, cwd=self.root)
+        source = self.root / "invented-underdiagnosis.txt"
+        for label, reference, text, decision, triggers in contexts:
+            with self.subTest(context=label):
+                if reference is None:
+                    self.reference.unlink()
+                else:
+                    self.reference.write_text(reference, encoding="utf-8")
+                source.write_bytes(text.encode())
+                oracle = subprocess.run([PYTHON, "-I", "-S", "-B", str(self.scripts / "validate.py"),
+                                         "underdiagnosis-triggers", str(source)],
+                                        capture_output=True, cwd=self.root, timeout=8)
+                c.send(validation(label, text, "underdiagnosis-triggers"))
+                got = c.next()
+                self.assertEqual((got["id"], got["validator"], got["available"], got["error"]),
+                                 (label, "underdiagnosis-triggers", True, None))
+                result = got["result"]
+                self.assertEqual((result["exit_code"], result["stdout"].encode(), result["stderr"].encode()),
+                                 (oracle.returncode, oracle.stdout, oracle.stderr))
+                self.assertEqual(result["exit_code"], decision)
+                self.assertEqual([line.partition(" — ")[0] for line in result["stdout"].splitlines()
+                                  if line.startswith(("WARN: Trigger #", "ERROR: Trigger #"))], triggers)
+                self.assertNotIn("mapping is malformed", result["stdout"])
         self.assertEqual(c.end(), (0, [], b""))
 
     def test_signal_reference_context_matches_copied_native_cli(self):

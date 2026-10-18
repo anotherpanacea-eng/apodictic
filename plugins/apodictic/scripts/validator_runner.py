@@ -49,6 +49,7 @@ LEAVES = {
     "ledger-check": ("RAW_CHECKS", raw),
     "ledger-consolidation": ("CHECKS", four_tuple),
     "audit-signal-propagation": ("CHECKS", four_tuple),
+    "underdiagnosis-triggers": ("CHECKS", four_tuple),
 }
 WORKER_ERRORS = ("runner_dependency_unavailable", "worker_failed", "output_limit")
 
