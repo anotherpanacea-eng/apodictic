@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 CI = WORKFLOWS / "ci.yml"
 
-CI_SHA256 = "3f16a719fd22ba6547fe0e9ff858c6b310908c106f08316384d0e6d52adcff4d"
+CI_SHA256 = "3d833541465dcd8ae5af463f88f47a3871ec365b9bea1f30fc993b3b312a40bb"
 AUXILIARY_SHA256 = {
     "release.yml": "51fa09c164c47c8346f2cd6e8e2f21d1361f04c99a4996faf3cceddf90bed433",
     "release-readiness.yml": "18c248b2d4e94fb9473d81b3dfd04ccfc58083e39c3937e343d2d618288f3710",

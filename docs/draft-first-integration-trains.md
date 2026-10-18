@@ -71,8 +71,9 @@ The Group14 native cutover adds one `validate-windows` job on `windows-latest`
 (30-minute cap) under the same admission predicate and binding receipt. After the
 binding step it pins Python 3.12 and runs only
 `python plugins/apodictic/scripts/validate.py --check-all`, with `PATH` reduced to
-the Python install directory so the gate cannot reach Bash or `sh`. The receipt
-verifier requires both jobs.
+the Python install directory so the gate cannot reach Bash or `sh`. Branch
+protection still requires only the `validate` context; `validate-windows` is
+enforced by the train receipt verifier, which requires both jobs.
 
 Release, release-readiness, and scheduled SETEC synchronization remain separate
 workflows with their existing triggers and permissions.  Before updating its

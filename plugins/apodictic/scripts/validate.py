@@ -269,14 +269,8 @@ def _line(text, *, error=False):
     stream.flush()
 
 
-def _entrypoint():
-    # Name the entrypoint actually used: the POSIX shim exports its own path;
-    # a direct `python validate.py` launch names validate.py.
-    return os.environ.get("APODICTIC_VALIDATE_ENTRY") or sys.argv[0]
-
-
 def _usage(command, arguments):
-    _line(f"Usage: {_entrypoint()} {command} {arguments}")
+    _line(f"Usage: {sys.argv[0]} {command} {arguments}")
     return 2
 
 
@@ -467,7 +461,7 @@ def _annotation_export(command, args):
             return _run_helper(suite, [])
         return 0
     if not args:
-        return _usage(command, _ANNOTATION_EXPORTS[command].format(script=_entrypoint()))
+        return _usage(command, _ANNOTATION_EXPORTS[command].format(script=sys.argv[0]))
     return _run_helper("annotation_export.py", [command, *args])
 
 

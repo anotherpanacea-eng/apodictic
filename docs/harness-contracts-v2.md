@@ -116,14 +116,15 @@ Two adds to `apodictic_artifacts.py`, both backward-compatible:
   `non_artifact[]` and the two self schemas, appears in `bindings[]`. The core anti-drift assertion.
   ERROR, names the orphan.
 - **C3 no phantom binding.** Every `bindings[].schema` exists on disk. ERROR.
-- **C4 binding proven, not asserted.** For each binding, ≥1 named `validators[]` command is a
-  `ROUTES` entry in `validate.py` **and** the whole schema `$id` occurs in the helper script that
-  route names (not an arbitrary script). The "distrust count-shaped claims" discipline, mechanized.
-  ERROR.
+- **C4 binding named.** For each binding, ≥1 named `validators[]` command is a `ROUTES` entry in
+  `validate.py` **and** the whole schema `$id` occurs anywhere in the source of the helper script
+  that route names (not an arbitrary script; comments count). A source association, not a proof
+  that the helper validates the schema. ERROR.
 - **C5 canonical-gate reachability.** For each binding whose `canonical_gate` is a filename/dirname
-  (not `self-test-only`), the **exact token** is a path component of an argument to a
-  `run_validator('<bound validator>', …)` call in `validate_canonical.py` — written directly or
-  through one assignment earlier in the same function — **and** the named file/dir exists under
+  (not `self-test-only`), a lexical scan of `validate_canonical.py` finds the **exact token** as a
+  path component of an argument to a `run_validator('<bound validator>', …)` call — written
+  directly or through one assignment earlier in the same function; whether that call runs is not
+  checked — **and** the named file/dir exists under
   `core-editor/references/`. `self-test-only` rows (the two registry schemas, with no shipped
   canonical instance) are exempt from the file check but the bound validator must be in
   `AGG_VALIDATORS`, so *some* real check runs. ERROR.

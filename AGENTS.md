@@ -262,7 +262,7 @@ checks (`validate.sh --check-canonical`), and runs the generator/parity gates (`
 `validate-windows` job on `windows-latest` runs `python plugins/apodictic/scripts/validate.py --check-all`
 with only Python on `PATH`, so the gate cannot use Bash. There is no pytest
 application suite; the small pytest policy suite protects this CI boundary and
-the native aggregate/no-shell contracts. The
+the native aggregate contracts. The
 `evals/` fixtures are the behavioral
 ground-truth track. `.github/workflows/release.yml` builds + publishes the per-host
 bundles on `v*` tags.

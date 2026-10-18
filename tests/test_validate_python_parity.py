@@ -373,18 +373,6 @@ def test_usage_preserves_literal_relative_invocation(command):
                              bash_cli=python_path[:-3] + ".sh")
 
 
-@pytest.mark.parametrize("command", ("contract-hash", "obsidian-export"))
-def test_usage_from_posix_shim_names_the_shim(command):
-    shell = shutil.which("bash")
-    if shell is None:
-        pytest.skip("POSIX shim needs Bash")
-    shim = subprocess.run([shell, "./plugins/apodictic/scripts/validate.sh", command], cwd=ROOT,
-                          capture_output=True, timeout=60)
-    assert shim.returncode == 2
-    assert shim.stdout.startswith(b"Usage: " + os.fsencode(SCRIPTS / "validate.sh") + b" " + command.encode())
-    assert b"validate.py" not in shim.stdout
-
-
 def test_artifact_naming_literal_project_and_runlabel(tmp_path):
     (tmp_path / "Prój_Pass1_Reader_Experience_r1.md").write_bytes(b"")
     result = parity("artifact-names", tmp_path, "Prój", "r1", "ignored")

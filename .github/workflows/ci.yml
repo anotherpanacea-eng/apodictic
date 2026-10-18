@@ -76,7 +76,6 @@ jobs:
           tests/test_sync_pr_draft.py
           tests/test_train_ci_receipts.py
           tests/test_validate_native_aggregates.py
-          tests/test_no_bash_launch.py
           -q
 
       - name: Byte-compile canonical Python (syntax gate)

@@ -645,7 +645,7 @@ def run():
     if viol:
         lines.append("validator-conventions: FAIL (%d violation(s))" % len(viol))
         return 1, lines
-    lines.append("validator-conventions: PASS (dispatch+self-test + resolver hygiene + derived count "
+    lines.append("validator-conventions: PASS (resolver hygiene "
                  "+ no orphan schema + override hygiene + code-span hygiene + single-Firewall "
                  "+ severity-vocab SSoT%s)"
                  % (" — M4 degraded/skipped, see WARN" if m4_degraded else ""))

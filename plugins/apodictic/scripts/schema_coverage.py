@@ -14,14 +14,15 @@ disk reality matches the declarative `_coverage.json` binding table.
   C2 no orphan schema    every *.schema.json on disk (minus non_artifact[] and the two self
                          schemas schema_coverage/schema_binding) appears in bindings[].     ERROR
   C3 no phantom binding  every bindings[].schema exists on disk as <schema>.schema.json.    ERROR
-  C4 binding proven      >=1 named validator is a validate.py ROUTES command AND the whole schema
-                         id occurs in the primary helper script that route names (the binding
-                         is demonstrated, not merely asserted).                             ERROR
+  C4 binding named      >=1 named validator is a validate.py ROUTES command AND the whole schema
+                         id occurs anywhere in the source of the helper script that route names
+                         (comments included; a source association, not a semantic proof).  ERROR
   C5 canonical reachable for each binding whose canonical_gate is a filename/dirname (not the
-                         literal self-test-only), that exact token (as a whole path component) is
-                         PASSED TO a `run_validator('<bound-validator>', ...)` call in
-                         validate_canonical.py — directly or via one assignment in the same
-                         function before the call — AND the named file/dir exists under
+                         literal self-test-only), a lexical scan of validate_canonical.py finds
+                         that exact token (as a whole path component) in an argument of a
+                         `run_validator('<bound-validator>', ...)` call — directly or via one
+                         assignment in the same function before the call; reachability of the
+                         call is not checked — AND the named file/dir exists under
                          references/. self-test-only rows are exempt from the file check but the
                          bound command must be in AGG_VALIDATORS.                            ERROR
   W1 non_artifact integ. every non_artifact[] entry exists on disk as a *.schema.json file
@@ -248,7 +249,7 @@ def run(schemas_dir=None, scripts_dir=None, strict=False):
         if real_arm is None:
             errs.append("C4 binding unproven: %s names no real native dispatch route (%r)" % (sid, validators))
         elif not proven:
-            errs.append("C4 binding unproven: %s id literal not found in any .py bound to %r (claimed by %s)"
+            errs.append("C4 binding unproven: %s id not found in the helper source bound to %r (claimed by %s)"
                         % (sid, validators, real_arm))
 
         # C5 — canonical-gate reachability.
@@ -260,9 +261,10 @@ def run(schemas_dir=None, scripts_dir=None, strict=False):
                             % (sid, validators))
         else:
             if not _canonical_invoked(calls, validators, gate):
-                errs.append("C5 canonical gate unreached: %s's canonical_gate %r is not passed to a real "
-                            "--check-all invocation of its bound validator(s) %r (an echo/comment, or an "
-                            "arg to an unrelated validator, does not count)" % (sid, gate, validators))
+                errs.append("C5 canonical gate unreached: %s's canonical_gate %r is not a path component of "
+                            "any run_validator call to its bound validator(s) %r in validate_canonical.py "
+                            "(lexical scan; an echo/comment, or an arg to an unrelated validator, does not "
+                            "count)" % (sid, gate, validators))
             if refs is None or not (Path(refs) / gate).exists():
                 errs.append("C5 canonical file missing: %s's canonical_gate %r not found under references/"
                             % (sid, gate))

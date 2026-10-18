@@ -15,14 +15,17 @@ The immutable aggregate tuple is the inventory source. Gate-state accounts for
 the actual gate suite once; full checks still run canonical checks after aggregate
 failures. `validate.sh` remains an optional small POSIX launcher and returns 127
 when Python is missing. There is no missing-runtime degraded PASS. Usage messages
-name the entrypoint actually used: `validate.py` when Python launches it directly,
-the shim's own path when launched through `validate.sh`.
+name the `validate.py` script Python is running, including through the
+`validate.sh` shims.
 
 `validate.py` keeps one `ROUTES` table (command → handler, primary helper script)
 and `main()` dispatches through it. Importing `validate.py` has no side effects, so
 the runner inventory reads `AGG_VALIDATORS` and schema-coverage C4 reads each
 route's helper from the module itself; C5 reads the `run_validator` calls in
-`validate_canonical.py`. A misrouted helper fails `--self-test-all`.
+`validate_canonical.py`. A misrouted helper fails `--check-all`: through its
+self-test in `--self-test-all`, or, when the self-test does not reach the helper
+(for example `dispatch-record` routed to `escalation_check.py`), through the
+canonical checks in `--check-canonical`.
 
 Both package generators exclude `__pycache__` and bytecode, including submission
 archives, and require the native files and the compatibility shim in each archive.
@@ -166,7 +169,7 @@ application error on stderr. The parser-backed commands retain their helper's
 failure behavior.
 Migrated-command usage errors deliberately retained the sibling
 `validate.sh` name, including its invocation path, until Group 14 made them name
-the entrypoint actually used. General
+`validate.py`. General
 Python help identifies the partial migration. Unported commands, including
 `--self-test-all`, `--check-canonical` and `--check-all`, return 2 with an explicit
 partial-migration message. Python does not fall back to Bash.
@@ -273,7 +276,7 @@ leading blanks from Bash's count because BSD/macOS `wc -l` pads it.
 The meta-lint ordinary-file versus regular-symlink case runs each implementation's
 actual self-test before and after the change and requires exact equality within
 that implementation, successful status and nonempty self-test PASS output. Native
-M1/M3 inspect native source and obsolete shell-only M5 checks were removed, so
+meta-lint retired M1/M3 and the obsolete shell-only M5 checks, so
 native and old meta self-test rows are intentionally different. The other helper
 symlink cases retain their cross-implementation comparisons.
 
