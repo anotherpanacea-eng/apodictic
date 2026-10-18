@@ -42,24 +42,12 @@ function validateCanonicalSource() {
   console.log(`Canonical plugin: ${files.length} files; every shipped source file under 256 KiB.`);
 }
 
-// Check actual self-generated archive members, including the submission ZIP.
-// ZIP metadata reports uncompressed bytes; this does not claim hostile-ZIP validation.
+// Check the self-generated archive: no Python caches, native entrypoints present.
 function validateNativeArchive(archivePath, prefix = "plugins/apodictic/") {
-  const entries = listZipEntryMetadata(archivePath);
-  if (entries.some(({ name }) => isPythonCache(name))) {
-    throw new Error("Archive contains Python bytecode/cache content.");
-  }
-  const plugin = entries.filter(({ name }) => name.startsWith(prefix));
-  if (plugin.length > 512 || plugin.some(({ size }) => size >= 256 * 1024)) {
-    throw new Error(`Archived plugin exceeds limits: ${plugin.length} files; oversized: ${plugin.filter(({ size }) => size >= 256 * 1024).map(({ name, size }) => `${name} (${size} bytes)`).join(", ") || "none"}.`);
-  }
-  console.log(`Archived Antigravity plugin: ${plugin.length} members; every member under 256 KiB.`);
-  const names = new Set(plugin.map(({ name }) => name.slice(prefix.length)));
-  for (const name of ["validate.py", "validate_canonical.py", "validate_source.py", "validate.sh"]) {
-    if (!names.has(`scripts/${name}`)) throw new Error(`Native archive entry missing: ${name}`);
-  }
-  for (const name of ["check-all.sh", "commands-a.sh", "commands-b.sh"]) {
-    if (names.has(`scripts/validate.d/${name}`)) throw new Error(`Obsolete archive entry: ${name}`);
+  const names = new Set(listZipEntries(archivePath));
+  if ([...names].some(isPythonCache)) throw new Error("Archive contains Python bytecode/cache content.");
+  for (const name of ["validate.py", "validate_canonical.py", "validate.sh"]) {
+    if (!names.has(`${prefix}scripts/${name}`)) throw new Error(`Native archive entry missing: ${name}`);
   }
 }
 

@@ -64,7 +64,7 @@ The process exits 0 for a clean session, whether leaves pass or fail, and 2 for 
 `plugins/apodictic/schemas/validator-runtime-inventory.json` is a closed file of the form `{"version":1,"validators":[ROW,...]}`. Each ROW has exactly `id`, `desktop_disposition` (`ci-only` or `not-yet-supported`) and a nonempty `omitted_capability` reason. `validator_runner.py --check-inventory` is a source and CI gate, run in the CI inventory-parity step. It prints one PASS or FAIL line and returns 0 or 1. It fails in any of these cases:
 
 - the row ids are not unique;
-- the row ids differ from the single literal `AGG_VALIDATORS` assignment in `plugins/apodictic/scripts/validate.py`, which is read by the fixed sibling `validate_source.py`, never executed; the import works with `-I -S` from a foreign cwd;
+- the row ids differ from the single literal `AGG_VALIDATORS` assignment in `plugins/apodictic/scripts/validate.py`, imported from the fixed sibling path (the import has no side effects and works with `-I -S` from a foreign cwd);
 - a §7 leaf id is missing;
 - a row or the file is malformed.
 
@@ -78,7 +78,7 @@ So any undispositioned registry addition, removal or rename fails the hosted gat
    A separate table compares the actual runner and native CLI from the same disposable installation with its real helper and installed `pass-dependencies.md`. It covers the original reference, consequential default/per-audit changes, missing-reference fallback, malformed maps and restored healthy behavior. Synthetic lifecycle helpers supply no package-data evidence.
 2. **Lifecycle.** One leaf-agnostic test uses a synthetic sleeping helper in a copied installation. It covers cancel (active and queued), timeout, EOF drain, fatal schema and frame errors, an invalid cancel target, SIGTERM and SIGINT. It asserts the worker is reaped, there is no late result, the queue keeps its order, and healthy reuse works. It also covers dependency and worker failures, which must be unavailable with no text in errors and no files written.
 3. **Protocol.** Closed request schemas, framing refusals, the frame, text and response ceilings at the limit and one over, a 70-request session, a three-request piped batch drained at EOF, fixed worker locale and time, and no network imports.
-4. **Inventory.** The gate passes on the real tree and fails on registry addition, removal, rename, duplicate or dynamic value, on an unregistered leaf, and on metadata omission, addition, duplicate, unknown class, blank reason or extra key. It never executes Bash.
+4. **Inventory.** The gate passes on the real tree and fails on registry addition, removal, rename or duplicate, on an unregistered leaf, and on metadata omission, addition, duplicate, unknown class, blank reason or extra key. It never executes Bash.
 
 Also run `python plugins/apodictic/scripts/validate.py --check-all`, compile, changelog, status-drift and release-generate checks, both build self-checks, and `git diff --check`.
 

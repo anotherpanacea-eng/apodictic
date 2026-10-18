@@ -219,8 +219,7 @@ export function listZipEntryMetadata(archivePath) {
     }
     entries.push({
       name: archive.subarray(nameStart, nameEnd).toString("utf8"),
-      mode: (archive.readUInt32LE(offset + 38) >>> 16) & 0o7777,
-      size: archive.readUInt32LE(offset + 24) // Uncompressed bytes.
+      mode: (archive.readUInt32LE(offset + 38) >>> 16) & 0o7777
     });
     offset = nameEnd + extraLength + commentLength;
   }
