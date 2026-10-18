@@ -200,12 +200,13 @@ producers; these four public routes check on-disk exports and do not create them
 Linked PDF keeps its separate normal-run authentication and reports that reader
 behavior is unqualified.
 
-Every native route that Bash dispatched through `validate.d/commands-b.sh`
-first applied that file's `--internal-links*` refusal, and still does after the
-Group 14 cutover (`_BASH_COMMANDS_A` in `validate.py` keeps the old partition): only
-`pdf-export <run_folder> --internal-links` (exactly once, no other `--` option)
-passes; anything else exits 2 with Bash's usage message, before self-test or
-shortage handling. Routes that were in `commands-a.sh` never see the check.
+The four annotation export routes first apply the `--internal-links*` refusal:
+only `pdf-export <run_folder> --internal-links` (exactly once, no other `--`
+option) passes; anything else exits 2 with the usage message, before self-test or
+shortage handling. Under Bash every route in `commands-b.sh` applied this check
+because of how the dispatcher files were split; after the Group 14 cutover only
+the exporters do, matching the navigation spec's rule that the exporter option
+does not set other utilities' option policy.
 
 Group 13 adds `registry-check`, `schema-coverage`, `validator-conventions`,
 `calibration-honesty`, `stance-calibration` and
@@ -214,12 +215,12 @@ exact command prefixes, original ordinary tokens and distinct raw arities.
 First-position selftests forward only that flag; helper-owned late selftests
 retain wrapper arity checks.
 
-Conventions first-selftest executes all twelve actual shared override-marker CLI
-checks with their original UTF-8 bodies before the full existing meta-lint suite.
-As in Bash, any nonzero companion status is a miss; mismatches accumulate and
-prevent that suite. Late selftest runs the helper suite alone. At Group 13,
-meta-lint and schema coverage still inspected the Bash dispatcher/parts; Group 14
-moved them to the native route table and `validate_canonical.py`.
+Under Bash, the conventions first-selftest also ran twelve override-marker cases
+through `override_marker.py --has-override` to cover the Bash `_has_override`
+helper. Group 14 removed that companion and the stdin CLI it used; the same cases
+run in-process in `override_marker.py --self-test`. At Group 13, meta-lint and
+schema coverage still inspected the Bash dispatcher/parts; Group 14 moved them to
+the native route table and `validate_canonical.py`.
 
 Carve remains a repository-only summary smoke. It selects the first of the two
 existing lexical fixture directories, skips when neither exists, and preserves
@@ -238,81 +239,23 @@ behavior preservation.
 
 ## Differential acceptance
 
-`tests/test_validate_python_parity.py` compares exit codes, stdout and stderr
-bytes against the Bash dispatcher. Set `APODICTIC_BASH_REFERENCE_ROOT` to an
-ordinary pre-cutover checkout to select an external oracle:
-
-```sh
-APODICTIC_BASH_REFERENCE_ROOT=/path/to/pre-cutover-checkout \
-  python -m pytest -q tests/test_validate_python_parity.py
-```
-
-Unset disables differential-only cases; native checks still run. The current
-checkout's forwarding shim is never an independent oracle.
-Explicit empty, missing or malformed roots fail during harness setup. An explicit
-request also fails when Bash is unavailable. Keep the reference checkout untouched
-and record its ordinary commit in the review record. The harness neither creates
-nor updates reference checkouts.
-
-Every Bash invocation uses the selected root, including literal relative usage,
-repository fixture copies and argv-echo wrappers. Native dispatchers and helpers
-always come from the current checkout. Repository copies retain separate helper
-and schema origins; their carve fixture directories deliberately link to the
-same disposable inputs, so existing mutations affect both implementations.
-Echo wrappers use identical helper doubles in separate origin trees. A helper
-stdout mutation must break an otherwise matching comparison, and a
-copied-reference marker proves that copy path is exercised.
-
-The only source-location translation is in a usage message that begins `Usage:
-<selected entrypoint> `: each spelling of that entrypoint becomes its current
-native counterpart. Literal relative usage is tested from each checkout without
-translation. The `artifacts-schema` and `registry-check` self-tests print the
-schema directory each origin loaded, so each output is checked for its own
-origin's `schema_load` line and the rest is compared byte for byte. Carve's script-relative
-missing/read diagnostics are checked against explicit expectations for each
-origin, preserving `../` suffixes. No general root, separator, newline or
-traceback normalization is applied. The existing `state-lines` exception strips
-leading blanks from Bash's count because BSD/macOS `wc -l` pads it.
-
-The meta-lint ordinary-file versus regular-symlink case runs each implementation's
-actual self-test before and after the change and requires exact equality within
-that implementation, successful status and nonempty self-test PASS output. Native
-meta-lint retired M1/M3 and the obsolete shell-only M5 checks, so
-native and old meta self-test rows are intentionally different. The other helper
-symlink cases retain their cross-implementation comparisons.
-
-The two synthetic carve NUL-golden cases have a permanent diagnostic amendment.
-Both implementations remove the inserted NUL and must retain the same successful
-status, exact stdout and unchanged files. Native stderr is exactly empty. Bash
-5.1.16 emits one command-substitution warning; the harness requires the complete
-warning with the copied script path and the verified golden-read line. An isolated
-probe of the actual Bash runtime determines whether that runtime emits this exact
-warning or none; unknown probe results refuse. There is no guessed version cutoff
-or unconditional empty-or-warning allowance. Actual Bash 3.2 has not been qualified.
-
-This intentionally removes a human-visible cue that the golden contained a NUL.
-The native port neither reproduces the retired Bash warning nor introduces a new
-warning or malformed-golden rejection. Only those two synthetic cases use this
-amendment; other raw stream, status and no-write assertions remain in force. Thus
-a passing contract suite does not mean universal raw stdout/stderr equality.
-
-The harness covers migrated self-tests, applicable shipped validator fixtures,
-canonical reference inputs and raw-byte utility cases. The argv-echo differential
-compares every native route over empty, missing, file, directory, `--strict`,
-`--`, late `--self-test`, extra, empty-string, `--internal-links*` and delete
-shapes. This preparation supplies the external oracle prerequisite only; native
-gate/aggregate/canonical comparisons and Group 14 runtime migration remain queued.
+During Groups 1 to 14 a differential suite compared native exit codes, stdout and
+stderr bytes against the Bash dispatcher, optionally against an external
+pre-cutover checkout. With the Bash dispatcher deleted it could only compare
+Python with Python, so it was removed after the cutover. The behavior it guarded
+that no other gate covers stays in `tests/test_validate_native_aggregates.py`,
+which CI runs: the dispatcher keeps a helper's exit status, stdout and stderr
+bytes, argv and stdin with an empty `PATH`; a missing helper never yields a
+self-test PASS; and the carve smoke fails when a child fails or a golden drifts.
+Native Windows acceptance is the `validate-windows` job, which runs the whole
+`--check-all` gate with only Python on `PATH`.
 
 ```text
-python -m pytest -q tests/test_validate_python_parity.py tests/test_contract_hash_portability.py
+python -m pytest -q tests/test_validate_native_aggregates.py tests/test_contract_hash_portability.py
 bash scripts/validate.sh --check-all
 node scripts/assemble-changelog.mjs --check
 git diff --check
 ```
-
-When Bash is absent and no external root was requested, differential-only cases
-are explicitly skipped; native checks still run. This is not full native Windows
-acceptance, which requires the whole Python `--check-all` suite green on `windows-latest`.
 
 ## Windows helper text output
 
@@ -375,8 +318,8 @@ repo-only fixture discovery and special self-test routes. Group 14 preserves
 canonical hostile checks, export byte comparisons, derived aggregate counts and
 the shared gate/gate-state self-test disposition. It migrates the Bash-source
 introspection in `meta_lint.py` and `schema_coverage.py` while retaining schema
-binding, canonical exercise and hygiene checks. Final differential verification
-must use an external pre-cutover reference checkout; comparing the Bash shim to
-Python itself cannot establish parity.
+binding, canonical exercise and hygiene checks. Its differential verification ran
+against an external pre-cutover reference checkout, because comparing the Bash
+shim to Python itself cannot establish parity.
 
 The M3 JSON-lines runner is CB-1(b), a later workflow outside these port groups.

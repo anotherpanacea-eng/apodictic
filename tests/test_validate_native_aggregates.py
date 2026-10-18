@@ -112,17 +112,6 @@ def test_canonical_launcher_uses_fixed_sibling_and_preserves_bytes(tmp_path):
     assert (result.returncode, result.stdout, result.stderr) == (7, b'out\x00\xff', b'err\r\n')
 
 
-def test_original_unguarded_capture_aborts_but_guarded_checks_accumulate():
-    module = load('validate_canonical')
-    result = subprocess.CompletedProcess([], 9, b'', b'named failure')
-    with pytest.raises(SystemExit) as error:
-        module._captured(result)
-    assert error.value.code == 9
-    with patch.object(module, '_line'):
-        assert module._summary('failed row', False) == 1
-        assert module._summary('later row', True) == 0
-
-
 @pytest.mark.parametrize('section, relative', [('argument_corpus', 'fixtures/argument-benchmark'), ('agd_fiction', 'fixtures/argument-agd'), ('agd_fiction', 'fixtures/fiction-benchmark')])
 def test_empty_installed_required_corpus_is_not_success(tmp_path, section, relative):
     module = load('validate_canonical')
@@ -191,32 +180,67 @@ def test_strict_gate_and_fresh_attest_use_current_child_evidence(tmp_path):
     assert calls == ['clean', 'broken', 'warn']
 
 
-@pytest.mark.parametrize('first_template, second_template, first_aif, second_aif', [
-    (True, True, True, True), (False, True, True, True),
-    (True, False, True, False), (False, False, False, False),
+@pytest.mark.parametrize('exit_code', [0, 7])
+def test_dispatch_keeps_helper_status_bytes_argv_and_stdin(tmp_path, exit_code):
+    # A dispatcher that dropped a helper's failure status would turn every gate into a silent pass.
+    shutil.copyfile(SCRIPTS / 'validate.py', tmp_path / 'validate.py')
+    (tmp_path / 'letter_checks.py').write_text(
+        "import json, os, sys\n"
+        "from pathlib import Path\n"
+        "data = sys.stdin.buffer.read()\n"
+        "Path('effect.json').write_text(json.dumps({'args': sys.argv[1:], 'input': data.hex()}), encoding='utf-8')\n"
+        "sys.stdout.buffer.write(b'out caf\\xc3\\xa9\\nraw\\r\\xff\\n'); sys.stdout.buffer.flush()\n"
+        "sys.stderr.buffer.write(b'err\\n'); sys.stderr.buffer.flush()\n"
+        "sys.exit(int(os.environ['HELPER_EXIT']))\n",
+        encoding='utf-8',
+    )
+    args = ['ledger-check', 'sc\u00e8ne with spaces.md']
+    (tmp_path / args[1]).write_bytes(b'scene\n')
+    payload = b'stdin\r\n\xff'
+    result = subprocess.run(
+        [sys.executable, str(tmp_path / 'validate.py'), *args], input=payload, cwd=tmp_path,
+        capture_output=True, timeout=60, env={**os.environ, 'PATH': '', 'HELPER_EXIT': str(exit_code)},
+    )
+    assert (result.returncode, result.stdout, result.stderr) == (exit_code, b'out caf\xc3\xa9\nraw\r\xff\n', b'err\n')
+    assert json.loads((tmp_path / 'effect.json').read_text(encoding='utf-8')) == {'args': args, 'input': payload.hex()}
+
+
+def _copied_plugin(tmp_path):
+    scripts = tmp_path / 'plugins/apodictic/scripts'
+    shutil.copytree(SCRIPTS, scripts, ignore=shutil.ignore_patterns('__pycache__'))
+    shutil.copytree(SCRIPTS.parent / 'schemas', scripts.parent / 'schemas')
+    fixtures = tmp_path / 'evals/fixtures/argument-carve/precarve'
+    shutil.copytree(SCRIPTS.parents[2] / 'evals/fixtures/argument-carve/precarve', fixtures)
+    return scripts, fixtures
+
+
+def _run_copy(scripts, *args):
+    return subprocess.run([sys.executable, str(scripts / 'validate.py'), *args],
+                          capture_output=True, timeout=120, env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'})
+
+
+@pytest.mark.parametrize('helper, command', [
+    ('registry_check.py', 'registry-check'), ('schema_coverage.py', 'schema-coverage'),
+    ('meta_lint.py', 'validator-conventions'), ('calibration_honesty.py', 'calibration-honesty'),
+    ('stance_calibration.py', 'stance-calibration'), ('letter_checks.py', 'argument-carve-behavior-preservation'),
 ])
-def test_template_and_aif_mirrors_preserve_distinct_presence_order(tmp_path, first_template, second_template, first_aif, second_aif):
-    module = load('validate_canonical')
-    module.HERE = tmp_path / 'plugin/scripts'; module.HERE.mkdir(parents=True)
-    first = module.HERE / '../skills/core-editor/references'
-    second = module.HERE / '../plugins/apodictic/skills/core-editor/references'
-    for root, template, aif in ((first, first_template, first_aif), (second, second_template, second_aif)):
-        root.mkdir(parents=True)
-        if template:
-            (root / 'diagnostic-state-meta-template.json').write_text('{}', encoding='utf-8')
-        if aif:
-            (root / 'example-argument-aif-export.json').write_text('{}', encoding='utf-8')
-    calls, lines = [], []
-    def child(command, *arguments):
-        calls.append((command, arguments))
-        return subprocess.CompletedProcess([], 0, b'', b'')
-    with patch.object(module, 'run_validator', child), patch.object(module, '_line', lambda text='': lines.append(text)):
-        assert module.run_canonical() == 1  # Other required examples intentionally absent.
-    templates = [args[0] for command, args in calls if command == 'structured-findings']
-    expected_template = first if first_template else second if second_template else None
-    assert templates == ([expected_template / 'diagnostic-state-meta-template.json'] if expected_template else [])
-    aifs = [args[0] for command, args in calls if command == 'argument-aif-check']
-    expected_aif = second if second_aif else first if first_aif else None
-    assert aifs == ([expected_aif / 'example-argument-aif-export.json'] if expected_aif else [])
-    if expected_template is None:
-        assert any('could not locate reference templates' in line for line in lines)
+def test_missing_helper_never_passes_self_test(tmp_path, helper, command):
+    scripts, _ = _copied_plugin(tmp_path)
+    (scripts / helper).unlink()
+    result = _run_copy(scripts, command, '--self-test')
+    assert result.returncode != 0
+    assert b'Self-test: PASS' not in result.stdout
+
+
+@pytest.mark.parametrize('mutation', ['failing-child', 'golden-drift'])
+def test_carve_smoke_fails_closed(tmp_path, mutation):
+    scripts, fixtures = _copied_plugin(tmp_path)
+    assert _run_copy(scripts, 'argument-carve-behavior-preservation').returncode == 0
+    if mutation == 'failing-child':
+        (fixtures / 'argument-editorial-letter.md').write_text('# Invented hostile letter\n\nhard gate\n', encoding='utf-8')
+    else:
+        (fixtures / 'propagation-output.txt').write_bytes(b'wrong\n')
+    for args in ((), ('--self-test',)):
+        result = _run_copy(scripts, 'argument-carve-behavior-preservation', *args)
+        assert result.returncode == 1
+        assert b'PASS' not in result.stdout

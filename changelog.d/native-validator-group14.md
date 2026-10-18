@@ -12,3 +12,9 @@ CI keeps the Ubuntu `validate` job and adds a `validate-windows` job that runs
 Two output changes: per-command usage messages now name `validate.py`, including
 through the `validate.sh` shims, and `state-lines` prints its count without the
 left padding BSD/macOS `wc -l` added under Bash.
+
+Two Bash-era leftovers are gone. `override_marker.py` no longer has the
+`--has-override` / `--override-slugs` stdin CLI that only the Bash dispatcher
+called; its own `--self-test` covers the same cases. The `--internal-links`
+refusal now applies to the four annotation export routes only, instead of to every
+route that happened to live in `commands-b.sh`.
