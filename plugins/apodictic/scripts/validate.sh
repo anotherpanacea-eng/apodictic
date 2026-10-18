@@ -6,7 +6,7 @@ case "${BASH_SOURCE[0]}" in
   *) script_dir=. ;;
 esac
 script_dir=$(cd "$script_dir" && pwd)
-export PYTHONUTF8=1 PYTHONIOENCODING=utf-8
+export PYTHONUTF8=1 PYTHONIOENCODING=utf-8 APODICTIC_VALIDATE_ENTRY="$script_dir/validate.sh"
 if command -v python3 >/dev/null 2>&1; then
   exec python3 "$script_dir/validate.py" "$@"
 elif command -v python >/dev/null 2>&1; then

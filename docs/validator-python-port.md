@@ -14,9 +14,9 @@ The native entrypoint is `python plugins/apodictic/scripts/validate.py`. Python
 The immutable aggregate tuple is the inventory source. Gate-state accounts for
 the actual gate suite once; full checks still run canonical checks after aggregate
 failures. `validate.sh` remains an optional small POSIX launcher and returns 127
-when Python is missing. There is no missing-runtime degraded PASS. The CLI help
-names `validate.py`; retained per-command legacy usage spelling is compatibility
-output, not a Bash dependency.
+when Python is missing. There is no missing-runtime degraded PASS. Usage messages
+name the entrypoint actually used: `validate.py` when Python launches it directly,
+the shim's own path when launched through `validate.sh`.
 
 `validate.py` keeps one `ROUTES` table (command → handler, primary helper script)
 and `main()` dispatches through it. Importing `validate.py` has no side effects, so
@@ -164,8 +164,9 @@ invalid/inaccessible input path. For the three raw-byte utilities, a regular fil
 that is found but cannot be read returns 1 with empty stdout and a named
 application error on stderr. The parser-backed commands retain their helper's
 failure behavior.
-Migrated-command usage errors deliberately retain the sibling
-`validate.sh` name, including its invocation path, for compatibility. General
+Migrated-command usage errors deliberately retained the sibling
+`validate.sh` name, including its invocation path, until Group 14 made them name
+the entrypoint actually used. General
 Python help identifies the partial migration. Unported commands, including
 `--self-test-all`, `--check-canonical` and `--check-all`, return 2 with an explicit
 partial-migration message. Python does not fall back to Bash.

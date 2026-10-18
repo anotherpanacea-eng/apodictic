@@ -9,3 +9,8 @@ CI keeps the Ubuntu `validate` job and adds a `validate-windows` job that runs
 `python plugins/apodictic/scripts/validate.py --check-all` with only Python on
 `PATH`; the train receipt verifier now expects both jobs. A static test keeps
 shipped Python from launching Bash or `sh`.
+
+Two output changes: per-command usage messages from a direct
+`python validate.py <command>` launch now name `validate.py` (the `validate.sh`
+shims still print their own path), and `state-lines` prints its count without
+the left padding BSD/macOS `wc -l` added under Bash.

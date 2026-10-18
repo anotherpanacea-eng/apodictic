@@ -269,10 +269,14 @@ def _line(text, *, error=False):
     stream.flush()
 
 
+def _entrypoint():
+    # Name the entrypoint actually used: the POSIX shim exports its own path;
+    # a direct `python validate.py` launch names validate.py.
+    return os.environ.get("APODICTIC_VALIDATE_ENTRY") or sys.argv[0]
+
+
 def _usage(command, arguments):
-    # Keep migrated-command diagnostics compatible with the pre-cutover Bash CLI.
-    legacy_name = os.path.splitext(sys.argv[0])[0] + ".sh"
-    _line(f"Usage: {legacy_name} {command} {arguments}")
+    _line(f"Usage: {_entrypoint()} {command} {arguments}")
     return 2
 
 
@@ -463,8 +467,7 @@ def _annotation_export(command, args):
             return _run_helper(suite, [])
         return 0
     if not args:
-        script_name = os.path.splitext(sys.argv[0])[0] + ".sh"
-        return _usage(command, _ANNOTATION_EXPORTS[command].format(script=script_name))
+        return _usage(command, _ANNOTATION_EXPORTS[command].format(script=_entrypoint()))
     return _run_helper("annotation_export.py", [command, *args])
 
 

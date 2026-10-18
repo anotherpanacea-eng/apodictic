@@ -94,7 +94,7 @@ def assert_parity_result(native, legacy, *, command=None, native_cli=PYTHON_CLI,
     # spelled differently. Leave other fixture/helper output, stderr and bytes alone.
     entry = os.fsencode(bash_cli)
     if stdout.startswith(b"Usage: " + entry + b" "):
-        stdout = stdout.replace(entry, os.fsencode(Path(native_cli).with_suffix(".sh")))
+        stdout = stdout.replace(entry, os.fsencode(native_cli))
     if command == "state-lines" and re.fullmatch(rb"[ \t]*[0-9]+\n", stdout):
         stdout = stdout.lstrip(b" \t")  # BSD/macOS wc padding, existing exception.
     assert (native.returncode, native.stdout, native.stderr) == (legacy.returncode, stdout, legacy.stderr)
@@ -363,15 +363,26 @@ def test_usage_preserves_literal_relative_invocation(command):
         [sys.executable, python_path, command], cwd=ROOT, capture_output=True, timeout=60,
     )
     assert native.returncode == 2
-    assert native.stdout.startswith(b"Usage: ./plugins/apodictic/scripts/validate.sh ")
+    assert native.stdout.startswith(b"Usage: ./plugins/apodictic/scripts/validate.py ")
     if BASH is not None:
         legacy = subprocess.run(
             [BASH, python_path[:-3] + ".sh", command], cwd=BASH_ROOT,
             capture_output=True, timeout=60,
         )
-        assert (native.returncode, native.stdout, native.stderr) == (
-            legacy.returncode, legacy.stdout, legacy.stderr,
-        )
+        assert_parity_result(native, legacy, command=command, native_cli=python_path,
+                             bash_cli=python_path[:-3] + ".sh")
+
+
+@pytest.mark.parametrize("command", ("contract-hash", "obsidian-export"))
+def test_usage_from_posix_shim_names_the_shim(command):
+    shell = shutil.which("bash")
+    if shell is None:
+        pytest.skip("POSIX shim needs Bash")
+    shim = subprocess.run([shell, "./plugins/apodictic/scripts/validate.sh", command], cwd=ROOT,
+                          capture_output=True, timeout=60)
+    assert shim.returncode == 2
+    assert shim.stdout.startswith(b"Usage: " + os.fsencode(SCRIPTS / "validate.sh") + b" " + command.encode())
+    assert b"validate.py" not in shim.stdout
 
 
 def test_artifact_naming_literal_project_and_runlabel(tmp_path):
