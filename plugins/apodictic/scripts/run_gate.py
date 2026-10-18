@@ -174,7 +174,7 @@ def _now_iso():
 
 # ---------------------------------------------------------------- mechanical run
 
-def run_checks(phase, run_folder, manifest, strict_warnings=False, validate_sh=None):
+def run_checks(phase, run_folder, manifest, strict_warnings=False):
     """Run the manifest's mechanical checks for a phase against a run folder.
 
     Returns (status, lines, checks, resolved, digests) where status in
@@ -184,8 +184,7 @@ def run_checks(phase, run_folder, manifest, strict_warnings=False, validate_sh=N
     keys = manifest.get("artifact_keys", {})
     runlabel = _runlabel(run_folder)
     project, runlabel_val = _project_and_runlabel(run_folder, keys, runlabel)
-    # A truthy explicit shell path is the retained compatibility seam.
-    launcher = ["bash", validate_sh] if validate_sh else [sys.executable, os.path.join(HERE, "validate.py")]
+    launcher = [sys.executable, os.path.join(HERE, "validate.py")]
     er = phase_spec.get("entry_requires", {})
     lines, checks, fail, warn = [], [], 0, 0
 
@@ -627,7 +626,7 @@ def _clearing_report_lines(run_folder):
 
 # ---------------------------------------------------------------- commands
 
-def cmd_gate(phase, run_folder, manifest, strict_warnings=False, write=False, validate_sh=None):
+def cmd_gate(phase, run_folder, manifest, strict_warnings=False, write=False):
     """Run the mechanical checks and append the mechanical-outcome event."""
     phase_spec = manifest.get("phases", {}).get(phase)
     if not phase_spec:
@@ -636,7 +635,7 @@ def cmd_gate(phase, run_folder, manifest, strict_warnings=False, write=False, va
         return 2, ["gate: run_folder not found: %s" % run_folder]
 
     status, lines, checks, resolved, digests = run_checks(
-        phase, run_folder, manifest, strict_warnings, validate_sh)
+        phase, run_folder, manifest, strict_warnings)
     attested = _attested_ids(phase_spec)
 
     if status == "fail" or (status == "warn" and strict_warnings):
@@ -686,7 +685,7 @@ def cmd_gate(phase, run_folder, manifest, strict_warnings=False, write=False, va
     return 0, lines
 
 
-def cmd_attest(phase, run_folder, manifest, write=False, validate_sh=None):
+def cmd_attest(phase, run_folder, manifest, write=False):
     """Re-run the mechanical checks; only if still clean, append a CLEARING passed."""
     phase_spec = manifest.get("phases", {}).get(phase)
     if not phase_spec:
@@ -694,7 +693,7 @@ def cmd_attest(phase, run_folder, manifest, write=False, validate_sh=None):
     if not os.path.isdir(run_folder):
         return 2, ["gate --attest: run_folder not found: %s" % run_folder]
 
-    status, lines, checks, resolved, digests = run_checks(phase, run_folder, manifest, False, validate_sh)
+    status, lines, checks, resolved, digests = run_checks(phase, run_folder, manifest, False)
     contract = _attested_ids(phase_spec)  # the gate's CURRENT manifest attested IDs
 
     if status != "ok":

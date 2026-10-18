@@ -378,7 +378,5 @@ Adding `gate_events` (plus `pending_gate` / `state_version`) is additive, and th
 
 
 The current gate entrypoint is `python scripts/validate.py gate ...` (and
-`gate-state`). The engine's default child launch uses `sys.executable` and the
-native sibling dispatcher. Its explicit truthy `validate_sh` injection retains the
-legacy Bash compatibility seam for callers; default/falsy values use Python.
-Native aggregate self-tests do not request that compatibility override.
+`gate-state`). The engine launches each check through `sys.executable` and the
+native sibling dispatcher.

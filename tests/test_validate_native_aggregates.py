@@ -76,13 +76,12 @@ def test_gate_wrapper_preserves_raw_arguments_and_status(command, args, wanted):
     helper.assert_called_once_with('run_gate.py', wanted)
 
 
-@pytest.mark.parametrize('override', [None, '', 'legacy path with spaces.sh'])
 @pytest.mark.parametrize('status, stdout, stderr, strict, expected', [
     (0, 'ok', '', False, 'ok'), (0, '', 'WARN from stderr', False, 'warn'),
     (0, '', 'WARN from stderr', True, 'warn'), (2, '', 'bad usage', False, 'fail'),
     (7, 'WARN', '', False, 'fail'),
 ])
-def test_gate_native_default_and_explicit_legacy_keep_result_semantics(tmp_path, override, status, stdout, stderr, strict, expected):
+def test_gate_children_use_native_dispatcher_and_keep_result_semantics(tmp_path, status, stdout, stderr, strict, expected):
     module = load('run_gate')
     manifest = {'artifact_keys': {}, 'phases': {'phase': {'entry_requires': {'checks': [
         {'validator': 'custom-nonofficial-leaf', 'targets': ['run_folder']},
@@ -94,9 +93,9 @@ def test_gate_native_default_and_explicit_legacy_keep_result_semantics(tmp_path,
         assert kwargs['encoding'] == 'utf-8'
         return subprocess.CompletedProcess(argv, status, stdout, stderr)
     with patch.object(module.subprocess, 'run', child):
-        actual, _, checks, _, _ = module.run_checks('phase', str(tmp_path), manifest, strict, override)
+        actual, _, checks, _, _ = module.run_checks('phase', str(tmp_path), manifest, strict)
     assert actual == expected
-    prefix = ['bash', override] if override else [sys.executable, str(SCRIPTS / 'validate.py')]
+    prefix = [sys.executable, str(SCRIPTS / 'validate.py')]
     assert calls == [prefix + ['custom-nonofficial-leaf', str(tmp_path)], prefix + ['--self-test-all']]
     assert all(row['result'] == ('error' if status else 'warn' if 'WARN' in stdout + stderr else 'ok') for row in checks)
 
