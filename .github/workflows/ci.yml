@@ -80,7 +80,6 @@ jobs:
           tests/test_pr_merge_binding.py
           tests/test_sync_pr_draft.py
           tests/test_train_ci_receipts.py
-          tests/test_validate_source.py
           tests/test_validate_native_aggregates.py
           -q
 

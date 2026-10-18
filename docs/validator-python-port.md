@@ -6,7 +6,6 @@ requires an authorized actual `windows-latest` full No-Bash receipt. Earlier
 increment records below describe the migration history.
 <!-- built-when: plugins/apodictic/scripts/validate.py -->
 <!-- built-when: plugins/apodictic/scripts/validate_canonical.py -->
-<!-- built-when: plugins/apodictic/scripts/validate_source.py -->
 
 The native entrypoint is `python plugins/apodictic/scripts/validate.py`. Python
 3.10+ is required; CI pins 3.12. All public routes, including gate/gate-state and
@@ -18,13 +17,11 @@ when Python is missing. There is no missing-runtime degraded PASS. The CLI help
 names `validate.py`; retained per-command legacy usage spelling is compatibility
 output, not a Bash dependency.
 
-`validate_source.py` reads AST data without importing inspected modules. It binds
-actual command-specific helper/self-test routes, the aggregate loop/count/report,
-and ordered direct canonical calls with literal or one-hop reference paths.
-Unknown source forms, mutation, rebinding and disconnected calls block source
-proof. Schema literals are checked only in the bound primary helpers; these are
-bounded routing/reference guarantees, not proof of each schema field's semantics.
-The isolated inventory command imports this fixed sibling even under `-I -S`.
+`validate.py` keeps one `ROUTES` table (command → handler, primary helper script)
+and `main()` dispatches through it. Importing `validate.py` has no side effects, so
+the runner inventory reads `AGG_VALIDATORS` and schema-coverage C4 reads each
+route's helper from the module itself; C5 reads the `run_validator` calls in
+`validate_canonical.py`. A misrouted helper fails `--self-test-all`.
 
 Both package generators exclude `__pycache__` and bytecode, including submission
 archives. Native files and the compatibility shim are required; obsolete shell

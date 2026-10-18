@@ -14,13 +14,16 @@ disk reality matches the declarative `_coverage.json` binding table.
   C2 no orphan schema    every *.schema.json on disk (minus non_artifact[] and the two self
                          schemas schema_coverage/schema_binding) appears in bindings[].     ERROR
   C3 no phantom binding  every bindings[].schema exists on disk as <schema>.schema.json.    ERROR
-  C4 binding proven      each bound command has an actual native first-self-test route and the
-                         whole schema ID occurs as non-docstring literal data in its primary
-                         helper. This establishes source association, not semantic field proof.
-  C5 canonical reachable a bound command receives the exact references-relative artifact through
-                         a direct native canonical call or one ordered path assignment in an
-                         actually called section. Unknown control cannot supply an anchor.
-                         self-test-only requires a real aggregate route.                     ERROR
+  C4 binding proven      >=1 named validator is a validate.py ROUTES command AND the whole schema
+                         id occurs in the primary helper script that route names (the binding
+                         is demonstrated, not merely asserted).                             ERROR
+  C5 canonical reachable for each binding whose canonical_gate is a filename/dirname (not the
+                         literal self-test-only), that exact token (as a whole path component) is
+                         PASSED TO a `run_validator('<bound-validator>', ...)` call in
+                         validate_canonical.py — directly or via one assignment in the same
+                         function before the call — AND the named file/dir exists under
+                         references/. self-test-only rows are exempt from the file check but the
+                         bound command must be in AGG_VALIDATORS.                            ERROR
   W1 non_artifact integ. every non_artifact[] entry exists on disk as a *.schema.json file
                          (else the exclusion is dead).                         WARN; ERROR --strict
 
@@ -35,23 +38,20 @@ defer-marker and WARN if any enumerates a field name the schema does not declare
 construction (opt-in docs only); advisory in increment 1.
 
 Reuses apodictic_artifacts for all schema loading (no second schema reader). Stdlib only; shells
-nothing (reads files directly). Without apodictic_artifacts, retains the legacy degraded PASS
-only if native source checks succeed; this fallback does not verify schemas.
+nothing (reads files and imports the sibling validate.py route table). Degrades to an advisory
+PASS without apodictic_artifacts.
 
   schema_coverage.py schema-coverage [<schemas_dir>] [--strict] [--check-docs]
   schema_coverage.py --self-test
 
 Exit: 0 clean / WARN-only, 1 ERROR (or WARN under --strict), 2 usage.
 """
+import ast
+import importlib.util
 import json
 import os
 import re
 import sys
-try:
-    from validate_source import SourceError, read_aggregate, read_dispatch, read_canonical, schema_literals
-except ImportError as exc:
-    print("schema-coverage: source-check unavailable: " + str(exc), file=sys.stderr)
-    raise SystemExit(2)
 from pathlib import Path
 
 try:
@@ -109,9 +109,47 @@ def _load_schema_from(schemas_dir, sid):
         return None
 
 
+def _route_table(scripts_dir):
+    """(ROUTES, AGG_VALIDATORS) from scripts_dir/validate.py; importing it has no side effects."""
+    spec = importlib.util.spec_from_file_location("_schema_coverage_validate", Path(scripts_dir) / "validate.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.ROUTES, module.AGG_VALIDATORS
+
+
+def _canonical_calls(source):
+    """[(command, [path components per argument])] for each `run_validator('<cmd>', ...)` call.
+
+    An argument is read as a `name / 'part' / ...` path; a name resolves one hop, to its latest
+    assignment in the same function before the call (a later reassignment cannot satisfy C5)."""
+    calls = []
+    for func in ast.walk(ast.parse(source)):
+        if not isinstance(func, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        assigns = [(n.lineno, n.targets[0].id, n.value) for n in ast.walk(func)
+                   if isinstance(n, ast.Assign) and len(n.targets) == 1 and isinstance(n.targets[0], ast.Name)]
+
+        def parts(node, line, hop=True):
+            if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+                return parts(node.left, line, hop) + parts(node.right, line, hop)
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                return node.value.split("/")
+            if isinstance(node, ast.Name) and hop:
+                prior = [value for at, name, value in sorted(assigns, key=lambda a: a[0])
+                         if name == node.id and at < line]
+                return parts(prior[-1], line, False) if prior else []
+            return []
+
+        for call in ast.walk(func):
+            if (isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
+                    and call.func.id == "run_validator" and call.args
+                    and isinstance(call.args[0], ast.Constant) and isinstance(call.args[0].value, str)):
+                calls.append((call.args[0].value, [parts(a, call.lineno) for a in call.args[1:]]))
+    return calls
+
+
 def _canonical_invoked(calls, validators, token):
-    return any(call.command in validators and any(token in parts for parts in call.reference_paths)
-               for call in calls)
+    return any(command in validators and any(token in path for path in paths) for command, paths in calls)
 
 
 def _references_dir(scripts_dir):
@@ -133,16 +171,6 @@ def _references_dir(scripts_dir):
 def run(schemas_dir=None, scripts_dir=None, strict=False):
     """Run C1-C5 + W1 + the closed-key agreement cross-check. Returns (code, lines)."""
     if art is None:
-        # Retain the legacy artifact-import fallback only after native source
-        # validity is established; unavailable source must never become a PASS.
-        source_dir = Path(scripts_dir) if scripts_dir else _default_scripts_dir()
-        try:
-            dispatcher = source_dir / "validate.py"
-            read_dispatch(dispatcher)
-            read_aggregate(dispatcher)
-            read_canonical(dispatcher, source_dir / "validate_canonical.py")
-        except SourceError as exc:
-            return 1, ["schema-coverage: C4/C5 source-check: %s" % exc]
         return 0, ["schema-coverage: PASS (degraded — apodictic_artifacts unavailable)"]
     schemas_dir = Path(schemas_dir) if schemas_dir else _default_schemas_dir()
     scripts_dir = Path(scripts_dir) if scripts_dir else _default_scripts_dir()
@@ -199,36 +227,24 @@ def run(schemas_dir=None, scripts_dir=None, strict=False):
             errs.append("C3 phantom binding: bindings[].schema %s has no %s.schema.json on disk"
                         % (b["schema"], b["schema"]))
 
-    # Finite source guarantees inspect real native routes without importing them.
-    try:
-        dispatcher = Path(scripts_dir) / "validate.py"
-        arms = read_dispatch(dispatcher)
-        agg = read_aggregate(dispatcher)
-        ca_region = read_canonical(dispatcher, Path(scripts_dir) / "validate_canonical.py")
-    except SourceError as exc:
-        return _report(lines, errs + ["C4/C5 source-check: %s" % exc], warns, strict)
+    # C4/C5 read validate.py's route table and the run_validator calls in validate_canonical.py.
+    arms, agg = _route_table(scripts_dir)
+    calls = _canonical_calls(_read(Path(scripts_dir) / "validate_canonical.py") or "")
     refs = _references_dir(scripts_dir)
 
     for b in bindings:
         sid = b["schema"]
         validators = b.get("validators", [])
-        # C4 — a real native route binds a primary helper with the whole schema ID literal.
+        # C4 — a real route names a helper script that carries the whole schema id.
         proven = False
         real_arm = None
         for arm in validators:
             if arm in arms:
                 real_arm = arm
-                for scr in arms[arm].helper_files:
-                    try:
-                        literals = schema_literals(Path(scripts_dir) / scr)
-                    except SourceError as exc:
-                        errs.append("C4 source-check: %s" % exc)
-                        continue
-                    if any(re.search(r"(?<![0-9A-Za-z_.])" + re.escape(sid) + r"(?![0-9A-Za-z_.])", text) for text in literals):
-                        proven = True
-                        break
-            if proven:
-                break
+                txt = _read(Path(scripts_dir) / arms[arm].helper) if arms[arm].helper else None
+                if txt and re.search(r"(?<![0-9A-Za-z_.])" + re.escape(sid) + r"(?![0-9A-Za-z_.])", txt):
+                    proven = True
+                    break
         if real_arm is None:
             errs.append("C4 binding unproven: %s names no real native dispatch route (%r)" % (sid, validators))
         elif not proven:
@@ -239,11 +255,11 @@ def run(schemas_dir=None, scripts_dir=None, strict=False):
         gate = b.get("canonical_gate", "")
         if gate == _SELF_TEST_ONLY:
             # exempt from the file check, but the bound arm must run SOME real check (in AGG_VALIDATORS).
-            if not any(v in agg and v in arms and arms[v].self_test_kind for v in validators):
+            if not any(v in agg for v in validators):
                 errs.append("C5 self-test-only escape unbacked: %s's validator(s) %r are not in AGG_VALIDATORS"
                             % (sid, validators))
         else:
-            if not _canonical_invoked(ca_region, validators, gate):
+            if not _canonical_invoked(calls, validators, gate):
                 errs.append("C5 canonical gate unreached: %s's canonical_gate %r is not passed to a real "
                             "--check-all invocation of its bound validator(s) %r (an echo/comment, or an "
                             "arg to an unrelated validator, does not count)" % (sid, gate, validators))
@@ -412,13 +428,14 @@ def run_self_test():
         (sdir / (sid + ".schema.json")).write_text(json.dumps(obj), encoding="utf-8")
 
     def setup(bindings, non_artifact=None, extra_disk=None, closed_on_disk=None, ca_lines=None):
-        """Build a hermetic fixture: a schemas dir + scripts dir + validate.py + references dir.
+        """Build a hermetic fixture: a schemas dir + scripts dir (route table + canonical calls) +
+        references dir.
 
         bindings: list of dicts for _coverage.json. extra_disk: schema ids to drop on disk with NO
         binding (orphans). closed_on_disk: set of schema ids to write additionalProperties:false.
         ca_lines(bindings) -> list[str]: optional override for the --check-all body (to forge the
         echo-only / unrelated-validator C5 negatives); default emits a real bound invocation per gate
-        mirroring the production `if [ "$1" = "--check-all" ]; then ... "$0" <arm> "$CA_BASE/<gate>" ...`."""
+        mirroring production `run_validator('<arm>', references / '<gate>')`."""
         root = bed()
         sdir = root / "schemas"
         scr = root / "scripts"
@@ -452,26 +469,10 @@ def run_self_test():
             table[a] = scrname
             ids = [b["schema"] for b in bindings if a in b.get("validators", [])]
             (scr / scrname).write_text("SCHEMAS = %r\n" % ids, encoding="utf-8")
-        vpy = "\n".join([
-            "from pathlib import Path", "import sys, subprocess",
-            "from validate_canonical import run_canonical",
-            "AGG_VALIDATORS = %r" % (tuple(arms),), "_FIXTURE = %r" % table,
-            "def _run_helper(script, args):",
-            "    result = subprocess.run([sys.executable, str(Path(__file__).resolve().parent / script), *args])",
-            "    return result.returncode",
-            "def _self_test(command): pass", "def _argument_carve(args): pass",
-            "def _fixture(command, args):",
-            "    script = _FIXTURE[command]",
-            "    return _run_helper(script, args)",
-            "def main(argv=None):",
-            "    args = list(sys.argv[1:] if argv is None else argv)",
-            "    command = args[0]",
-            "    if command == '--check-canonical':", "        return run_canonical()",
-            "    if command == '--check-all':", "        return run_canonical()",
-            "    if command in _FIXTURE:", "        return _fixture(command, args)",
-            "if __name__ == '__main__':", "    sys.exit(main())",
-        ])
-        (scr / "validate.py").write_text(vpy + "\n", encoding="utf-8")
+        rows = ", ".join("%r: Route(None, %r)" % row for row in table.items())
+        (scr / "validate.py").write_text(
+            "from collections import namedtuple\nRoute = namedtuple('Route', 'handler helper')\n"
+            "AGG_VALIDATORS = %r\nROUTES = {%s}\n" % (tuple(arms), rows), encoding="utf-8")
         canonical = "\n".join([
             "from pathlib import Path", "import sys, subprocess",
             "def run_validator(command, *arguments):",
@@ -514,7 +515,7 @@ def run_self_test():
         vpath = Path(sc) / "validate.py"
         vtxt = vpath.read_text(encoding="utf-8")
         vtxt = vtxt.replace("AGG_VALIDATORS = ('alpha', 'beta')", "AGG_VALIDATORS = ('beta',)")
-        vtxt = vtxt.replace("'alpha': 'alpha.py', ", "")
+        vtxt = vtxt.replace("'alpha': Route(None, 'alpha.py'), ", "")
         vpath.write_text(vtxt, encoding="utf-8")
         code, out = run(sd, sc)
         chk("c4_no_arm", code == 1 and any("C4 binding unproven" in ln and "no real" in ln for ln in out))

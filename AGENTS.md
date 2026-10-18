@@ -157,7 +157,7 @@ CI verifies the generators instead of committed copies: `release-generate.mjs
 `build-antigravity.mjs --self-check` (regenerate in temp + validate). `release.sh`
 runs the same self-checks via `release-verify.mjs`.
 
-**Validators live in one place.** `validate.py`, `validate_canonical.py`, `validate_source.py`, `preflight.sh`, and the Python validators live in `plugins/apodictic/scripts/`. Invoke the native dispatcher with Python 3.10+; children use that same interpreter. Plugin and root `validate.sh` are small optional POSIX compatibility launchers, with a named exit 127 if Python is missing. The old `validate.d` parts are removed. Root `scripts/` otherwise holds repository release/build tooling. Validator fixtures live in `tests/fixtures/validators/`. Keep canonical plugin files under 256 KiB and the folder at 512 files or fewer. Package generators exclude Python caches and verify native entries and actual archived payload limits; the changelog stays at the repository root.
+**Validators live in one place.** `validate.py`, `validate_canonical.py`, `preflight.sh`, and the Python validators live in `plugins/apodictic/scripts/`. Invoke the native dispatcher with Python 3.10+; children use that same interpreter. Plugin and root `validate.sh` are small optional POSIX compatibility launchers, with a named exit 127 if Python is missing. The old `validate.d` parts are removed. Root `scripts/` otherwise holds repository release/build tooling. Validator fixtures live in `tests/fixtures/validators/`. Keep canonical plugin files under 256 KiB and the folder at 512 files or fewer. Package generators exclude Python caches and verify native entries and actual archived payload limits; the changelog stays at the repository root.
 
 
 ## Changelog
@@ -257,7 +257,7 @@ permissions or a queue merely to satisfy this fallback.
 `validate` job on `windows-latest`, pinned to Python 3.12, with the existing ten-minute cap. That job byte-compiles `plugins/` + `scripts/` (syntax gate),
 validates that the plugin / marketplace / release-registry manifests parse, runs
 the full native validator gate (`python plugins/apodictic/scripts/validate.py --check-all`), which runs self-tests and canonical checks in order, under the hosted Bash-absence protocol, and runs the generator/parity gates (`assemble-changelog.mjs --check`,
-`release-generate.mjs --check`, both build `--self-check`s). Focused pytest suites protect policy, source guarantees, and native behavior; the canonical gate remains the aggregate entrypoint. The
+`release-generate.mjs --check`, both build `--self-check`s). Focused pytest suites protect policy and native behavior; the canonical gate remains the aggregate entrypoint. The
 `evals/` fixtures are the behavioral
 ground-truth track. `.github/workflows/release.yml` builds + publishes the per-host
 bundles on `v*` tags.

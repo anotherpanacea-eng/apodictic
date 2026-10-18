@@ -1,23 +1,21 @@
 #!/usr/bin/env python3
 """validator-conventions — a meta-linter that validates the APODICTIC validator FLEET.
 
-`python validate.py validator-conventions` delegates here. The fleet's structural conventions — every
-self-testable validator is wired into the dispatcher, file resolvers classify on PARSED BLOCKS not
-raw substrings, the advertised count is DERIVED not hand-typed, every schema is actually consumed —
+`python validate.py validator-conventions` delegates here. The fleet's structural conventions — file
+resolvers classify on PARSED BLOCKS not raw substrings, every schema is actually consumed —
 were enforced only by manual review, and the gaps caused real latent bugs (a fleet-wide adversarial
 sweep, 2026-06-20, found a recurring resolver-substring class and others). This validator mechanizes
 those conventions so the classes cannot recur: a validator that validates the validators.
 
-  M1 dispatch+self-test  every name in validate.py's literal AGG_VALIDATORS has an actual first-
-                         self-test route to its native suite or bound sibling helper.
+  M1, M3 (retired)       dispatch/self-test wiring and the derived count were Bash-source checks.
+                         validate.py dispatches through its ROUTES table and counts with len(), and
+                         `--self-test-all` runs every AGG_VALIDATORS self-test, so a missing route fails.
   M2 resolver hygiene    no validator script classifies inputs by a raw marker scan/membership op (a
                          literal `apodictic:<type>` reached by `in`/`not in`/`.find`/`.count`/
                          `re.search`/… ) — the anti-pattern misroutes a file that merely NAMES the
                          marker in EXECUTABLE code, silently false-passing. Resolvers must classify on
                          parsed blocks (the `_has_block` / `art.parse_blocks` idiom). The signature
                          anti-pattern of the 2026-06-20 sweep.
-  M3 derived count       validate.py loops over AGG_VALIDATORS and reports a total derived from
-                         len(AGG_VALIDATORS), never a disconnected literal count.
   M4 no orphan schema    every `*.schema.json` in the resolved schema dir is referenced (its filename
                          STEM — what `art.known_schema_ids()` returns — appears as a whole id) in at
                          least one validator script — a schema nothing consumes is dead or mis-wired.
@@ -46,7 +44,7 @@ those conventions so the classes cannot recur: a validator that validates the va
                          synced-copy class (six byte-identical copies had accumulated by 2026-07-06). The
                          fleet's other, legitimately-different severity patterns are not flagged.
 
-It reads validate.py and the sibling `*.py` from its own directory and the schemas via the shared
+It reads the sibling `*.py` from its own directory and the schemas via the shared
 resolver. No artifact input. See docs/validator-conventions.md.
 
   meta_lint.py validator-conventions
@@ -60,12 +58,9 @@ import itertools
 import os
 import re
 import sys
-try:
-    from validate_source import SourceError, read_aggregate, read_dispatch, check_aggregate_count
-except ImportError as exc:
-    print("meta-lint: source-check unavailable: " + str(exc), file=sys.stderr)
-    raise SystemExit(2)
 import tokenize
+
+from validate import AGG_VALIDATORS
 
 try:
     import apodictic_artifacts as art
@@ -323,7 +318,6 @@ def _ov_py_hit(stripped):
             if _OV_PY_RE.match(stripped, s):
                 return True
     return False
-# bash: a grep over the bare `<!-- override:` prefix (any whitespace), the form #128 replaced.
 # override_marker.py legitimately DEFINES the hardened helper; meta_lint.py carries the M5 pattern
 # literals themselves. Both are exempt from M5 (they are infra, not gates honoring overrides).
 _M5_EXEMPT = {"override_marker.py", "meta_lint.py"}
@@ -387,14 +381,6 @@ _M8_PY_RE = re.compile(r"""\bre\.compile\s*\(\s*""" + _OV_PFX + _Q + r"""[^"'\n]
 _M8_EXEMPT = {"severity_vocab.py", "meta_lint.py"}
 
 
-def check_m1(dispatcher_path):
-    try:
-        read_dispatch(dispatcher_path)
-        return []
-    except SourceError as exc:
-        return ["M1 dispatch/self-test source-check: %s" % exc]
-
-
 def check_m2(py_name, py_text):
     """A validator that classifies inputs by a raw marker scan/membership op instead of parsed blocks.
 
@@ -418,14 +404,6 @@ def check_m2(py_name, py_text):
                 "false-passes; classify on parsed blocks (the _has_block / art.parse_blocks idiom)"
                 % py_name]
     return []
-
-
-def check_m3(dispatcher_path):
-    try:
-        check_aggregate_count(dispatcher_path)
-        return []
-    except SourceError as exc:
-        return ["M3 derived-count source-check: %s" % exc]
 
 
 def _schema_referenced(sid, all_py_text):
@@ -621,12 +599,6 @@ def _script_dir():
 
 def run():
     d = _script_dir()
-    dispatcher_path = os.path.join(d, "validate.py")
-    try:
-        aggregate = read_aggregate(dispatcher_path)
-    except SourceError as exc:
-        return 1, ["validator-conventions: source-check FAIL: %s" % exc]
-
     py_files = {}
     for fn in sorted(os.listdir(d)):
         if fn.endswith(".py"):
@@ -642,10 +614,8 @@ def run():
     m4_degraded = art is None or not schema_ids
 
     viol, warn = [], []
-    viol += check_m1(dispatcher_path)
     for name, text in py_files.items():
         viol += check_m2(name, text)
-    viol += check_m3(dispatcher_path)
     m4 = check_m4(schema_ids, all_py, degraded=m4_degraded)
     if m4_degraded:
         warn += m4
@@ -667,7 +637,7 @@ def run():
         viol += check_m8_py(name, text)
 
     lines = ["validator-conventions: %d validator(s), %d schema(s) checked"
-             % (len(aggregate), len(schema_ids))]
+             % (len(AGG_VALIDATORS), len(schema_ids))]
     for w in warn:
         lines.append("  WARN: %s" % w)
     for v in viol:
@@ -691,9 +661,6 @@ def run_self_test():
         print("  %s: %s" % (name, "OK" if cond else "FAIL"))
         if not cond:
             rc["v"] = 1
-
-    # Detailed nonexecuting hostile source fixtures live in test_validate_source.py.
-    chk("m1_live_native_routes", check_m1(os.path.join(_script_dir(), "validate.py")) == [])
 
     # M2
     chk("m2_substring_flagged", check_m2("bad.py", 'def resolve(p):\n    if "apodictic:finding" in t:\n        return p\n') != [])
@@ -723,9 +690,6 @@ def run_self_test():
     chk("m2_comment_marker_ok", check_m2("c.py", 'def f(t):\n    # checks "apodictic:finding" in t\n    return _has_block(t, "finding")\n') == [])
     chk("m2_docstring_marker_ok", check_m2("c.py", '"""Resolves on "apodictic:finding" in the body."""\ndef f(t):\n    return _has_block(t, "finding")\n') == [])
     chk("m2_error_message_marker_ok", check_m2("c.py", 'def f(t):\n    raise ValueError("expected an apodictic:finding block in the input")\n') == [])
-
-    # M3
-    chk("m3_live_derived_count", check_m3(os.path.join(_script_dir(), "validate.py")) == [])
 
     # M4
     chk("m4_referenced_ok", check_m4(["apodictic.finding.v1"], 'load_schema("apodictic.finding.v1")') == [])
@@ -813,11 +777,8 @@ def run_self_test():
     chk("m5_py_comment_marker_ok",
         check_m5_py("g.py", 'def f(b):\n    # honors <!-- override: foo -->\n    return has_override(b, "foo")\n') == [])
     chk("m5_py_exempt", check_m5_py("override_marker.py", '"<!-- override: foo" in body') == [])
-    # M5 bash side:
-    # the hardened helper grep (`<!--[[:space:]]*override:`) is clean — no literal single-space form.
-    # a `<!-- override:` named in a `#` comment line is not an executable grep -> not flagged.
     # Codex P2: a bare scan in the zero-whitespace `<!--override:` spelling (which the hardened parser
-    # also accepts) is a live bypass and must be flagged — Python and bash.
+    # also accepts) is a live bypass and must be flagged.
     chk("m5_py_zero_whitespace_flagged",
         check_m5_py("g.py", 'if "<!--override: foo" in body:\n    pass\n') != [])
     chk("m5_py_triple_quote_flagged",  # Codex P2: triple-quoted override literal evaded the single-quote class

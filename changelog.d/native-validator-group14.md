@@ -1,9 +1,9 @@
-### Native validator orchestration and source guarantees
+### Native validator orchestration
 
 The Python dispatcher now owns gate routes, aggregate self-tests and the full
-canonical workflow. POSIX shell entrypoints are compatibility launchers. Shared
-nonexecuting source readers bind real dispatch/self-test routes and canonical
-calls; isolated inventory remains closed on missing or unsupported source.
+canonical workflow. POSIX shell entrypoints are compatibility launchers.
+`validate.py` dispatches every command through one `ROUTES` table; the runner
+inventory and schema-coverage read that table by importing the dispatcher.
 
 Package generation excludes Python caches and checks actual archived native
 payloads. The single validate job proposes Windows qualification with explicit

@@ -151,7 +151,7 @@ class RunnerTests(unittest.TestCase):
         self.schemas = self.scripts.parent / "schemas"
         self.scripts.mkdir(parents=True)
         self.schemas.mkdir()
-        for name in ("validator_runner.py", "letter_checks.py", "override_marker.py", "validate.py", "validate_source.py"):
+        for name in ("validator_runner.py", "letter_checks.py", "override_marker.py", "validate.py"):
             shutil.copyfile(SCRIPT.parent / name, self.scripts / name)
         self.metadata = self.schemas / "validator-runtime-inventory.json"
         shutil.copyfile(SCRIPT.parent.parent / "schemas/validator-runtime-inventory.json", self.metadata)
@@ -415,8 +415,7 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(self.inventory_check(), 0)
         registry = self.scripts / "validate.py"; original = registry.read_text(encoding="utf-8")
         baseline = json.loads(self.metadata.read_text())
-        # Registry drift: an undispositioned addition, removal, rename, duplicate or dynamic value fails.
-        marker = self.root / "must-not-exist"
+        # Registry drift: an undispositioned addition, removal, rename or duplicate fails.
         declaration = next(n for n in ast.parse(original).body if isinstance(n, ast.Assign)
                            and any(isinstance(t, ast.Name) and t.id == "AGG_VALIDATORS" for t in n.targets))
         ids = ast.literal_eval(declaration.value)
@@ -427,13 +426,10 @@ class RunnerTests(unittest.TestCase):
         for changed in (replaced(repr(("invented-new", *ids))),
                         replaced(repr(tuple(v for v in ids if v != "tone-check"))),
                         replaced(repr(tuple("invented-tone" if v == "tone-check" else v for v in ids))),
-                        replaced(repr((*ids, "tone-check"))),
-                        original + '\nAGG_VALIDATORS = DYNAMIC\n',
-                        replaced("(__import__('pathlib').Path(%r).touch(),)" % str(marker))):
+                        replaced(repr((*ids, "tone-check")))):
             registry.write_text(changed, encoding="utf-8")
             self.assertNotEqual(changed, original)
             self.assertEqual(self.inventory_check(), 1)
-        self.assertFalse(marker.exists())
         # Metadata drift: closed row/file shape, exact set, known dispositions, nonempty reasons.
         registry.write_text(original, encoding="utf-8")
         for change in ("omit", "add", "duplicate", "class", "reason", "extra-row-key", "extra",
@@ -456,15 +452,14 @@ class RunnerTests(unittest.TestCase):
         self.metadata.write_text(json.dumps(baseline))
         self.assertEqual(self.inventory_check(), 0)
 
-    def test_inventory_missing_reader_or_dispatcher_fails_closed(self):
-        for name in ("validate.py", "validate_source.py"):
-            path = self.scripts / name
-            moved = path.with_suffix(".held")
-            path.rename(moved)
-            try:
-                self.assertEqual(self.inventory_check(), 1)
-            finally:
-                moved.rename(path)
+    def test_inventory_missing_dispatcher_fails_closed(self):
+        path = self.scripts / "validate.py"
+        moved = path.with_suffix(".held")
+        path.rename(moved)
+        try:
+            self.assertEqual(self.inventory_check(), 1)
+        finally:
+            moved.rename(path)
 
 
 if __name__ == "__main__":

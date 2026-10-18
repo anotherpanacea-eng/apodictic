@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 CI = WORKFLOWS / "ci.yml"
 
-CI_SHA256 = "a248475f217d033cba4628ebc9a07614709b4b8a4bd71d588fc38c620d8206e2"
+CI_SHA256 = "faa273ef64ff2518f5888a6914976b8d5aca25372c3440d8a071f8c8014c5f8f"
 AUXILIARY_SHA256 = {
     "release.yml": "51fa09c164c47c8346f2cd6e8e2f21d1361f04c99a4996faf3cceddf90bed433",
     "release-readiness.yml": "18c248b2d4e94fb9473d81b3dfd04ccfc58083e39c3937e343d2d618288f3710",
@@ -200,7 +200,7 @@ def test_current_workflow_holds_closed_policy():
         "python", "-m", "pytest", "tests/test_ci_train_policy.py",
         "tests/test_merge_train.py", "tests/test_pr_merge_binding.py",
         "tests/test_sync_pr_draft.py", "tests/test_train_ci_receipts.py",
-        "tests/test_validate_source.py", "tests/test_validate_native_aggregates.py", "-q",
+        "tests/test_validate_native_aggregates.py", "-q",
     ]
 
 

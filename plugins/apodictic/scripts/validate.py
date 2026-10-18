@@ -8,6 +8,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from typing import Callable, NamedTuple
 
 
 AGG_VALIDATORS = (
@@ -321,8 +322,6 @@ def _navigation_scan(command, args):
 
 
 def _repository_integrity(command, args):
-    if command == "argument-carve-behavior-preservation":
-        return _argument_carve(args)
     script, count, usage = _REPOSITORY_INTEGRITY[command]
     if args and args[0] == "--self-test":
         if command == "validator-conventions":
@@ -367,7 +366,7 @@ def _override_companion():
     return int(failed)
 
 
-def _argument_carve(args):
+def _argument_carve(_command, args):
     scripts = _script_dir()
     directory = next((candidate for candidate in (
         scripts + "/../../../evals/fixtures/argument-carve/precarve",
@@ -712,68 +711,7 @@ def _self_test_all():
     return int(bool(failed))
 
 
-def main(argv=None):
-    args = list(sys.argv[1:] if argv is None else argv)
-    if args and args[0] in ("--check-canonical", "--check-all"):
-        from validate_canonical import run_canonical
-    if args and args[0] == "--self-test-all":
-        return _self_test_all()
-    if args and args[0] == "--check-canonical":
-        result = run_canonical()
-        _line("check-all canonical shard: FAIL (one or more real-file checks failed)" if result else
-              "check-all canonical shard: PASS (real-file invariants)")
-        return result
-    if args and args[0] == "--check-all":
-        _line("== --self-test-all ==")
-        self_tests = _self_test_all()
-        _line("")
-        canonical = run_canonical()
-        result = int(bool(self_tests or canonical))
-        _line("check-all: FAIL (one or more checks failed; rerun individually for details)" if result else
-              "check-all: PASS (self-tests + real-file invariants)")
-        return result
-    if not args or args[0] not in COMMANDS:
-        if args:
-            _line(f"Unknown command: {args[0]}")
-        _line("Usage: validate.py <command> [args...]")
-        _line("Commands: " + ", ".join(COMMANDS))
-        _line(f"Aggregate: --self-test-all (runs --self-test on all {len(AGG_VALIDATORS)} self-testable validators)")
-        _line("Aggregate: --check-canonical (real-file invariants)")
-        _line("Aggregate: --check-all (self-tests + real-file invariants)")
-        return 2
-    command, args = args[0], args[1:]
-    if command not in _BASH_COMMANDS_A:
-        result = _navigation_scan(command, args)
-        if result:
-            return result
-    if command == "gate" or command == "gate-state":
-        return _gate(command, args)
-    if command in _REPOSITORY_INTEGRITY or command == "argument-carve-behavior-preservation":
-        return _repository_integrity(command, args)
-    if command in _ANNOTATION_EXPORTS:
-        return _annotation_export(command, args)
-    if command in _ARGUMENT_RECONSTRUCTION:
-        return _argument_reconstruction(command, args)
-    if command in _ARGUMENT_EVALUATORS:
-        return _argument_evaluator(command, args)
-    if command in _READER_MANUSCRIPT:
-        return _reader_manuscript(command, args)
-    if command in _INTAKE_VOICE:
-        return _intake_voice(command, args)
-    if command in _ARTIFACT_PLANNING:
-        return _artifact_planning(command, args)
-    if command in _PLANNING_REFUTATION:
-        return _planning_refutation(command, args)
-    if command in _RUN_INTEGRITY:
-        return _run_integrity(command, args)
-    if command in _STRUCTURED_INTEGRITY:
-        return _structured_integrity(command, args)
-    if command in _CONFIG_TIMELINES:
-        return _config_timeline(command, args)
-    if command in _LETTER_SIGNALS:
-        return _letter_signal(command, args)
-    if command in _HELPERS:
-        return _helper(command, args)
+def _utility(command, args):
     if args and args[0] == "--self-test":
         return _self_test(command)
     count = 2 if command == "contract-check" else 1
@@ -809,6 +747,73 @@ def main(argv=None):
     ):
         _line(line)
     return 1
+
+
+class Route(NamedTuple):
+    handler: Callable[[str, list], int]
+    helper: str | None  # Primary sibling helper script; None for in-process work.
+
+
+# The one command table: main() dispatches through it, and the repository checks
+# (validator_runner inventory, schema-coverage C4) read it by importing this module.
+ROUTES = {
+    "contract-hash": Route(_utility, None),
+    "contract-check": Route(_utility, None),
+    "state-lines": Route(_utility, None),
+    "gate": Route(_gate, "run_gate.py"),
+    "gate-state": Route(_gate, "run_gate.py"),
+    "argument-carve-behavior-preservation": Route(_argument_carve, None),
+    **{c: Route(_helper, row[0]) for c, row in _HELPERS.items()},
+    **{c: Route(_letter_signal, "letter_checks.py") for c in _LETTER_SIGNALS},
+    **{c: Route(_config_timeline, row[0]) for c, row in _CONFIG_TIMELINES.items()},
+    **{c: Route(_structured_integrity, row[0]) for c, row in _STRUCTURED_INTEGRITY.items()},
+    **{c: Route(_run_integrity, row[0]) for c, row in _RUN_INTEGRITY.items()},
+    **{c: Route(_planning_refutation, row[0]) for c, row in _PLANNING_REFUTATION.items()},
+    **{c: Route(_artifact_planning, script) for c, script in _ARTIFACT_PLANNING.items()},
+    **{c: Route(_intake_voice, row[0]) for c, row in _INTAKE_VOICE.items()},
+    **{c: Route(_reader_manuscript, row[0]) for c, row in _READER_MANUSCRIPT.items()},
+    **{c: Route(_argument_evaluator, row[0]) for c, row in _ARGUMENT_EVALUATORS.items()},
+    **{c: Route(_argument_reconstruction, script) for c, script in _ARGUMENT_RECONSTRUCTION.items()},
+    **{c: Route(_annotation_export, "annotation_export.py") for c in _ANNOTATION_EXPORTS},
+    **{c: Route(_repository_integrity, row[0]) for c, row in _REPOSITORY_INTEGRITY.items()},
+}
+
+
+def main(argv=None):
+    args = list(sys.argv[1:] if argv is None else argv)
+    if args and args[0] in ("--check-canonical", "--check-all"):
+        from validate_canonical import run_canonical
+    if args and args[0] == "--self-test-all":
+        return _self_test_all()
+    if args and args[0] == "--check-canonical":
+        result = run_canonical()
+        _line("check-all canonical shard: FAIL (one or more real-file checks failed)" if result else
+              "check-all canonical shard: PASS (real-file invariants)")
+        return result
+    if args and args[0] == "--check-all":
+        _line("== --self-test-all ==")
+        self_tests = _self_test_all()
+        _line("")
+        canonical = run_canonical()
+        result = int(bool(self_tests or canonical))
+        _line("check-all: FAIL (one or more checks failed; rerun individually for details)" if result else
+              "check-all: PASS (self-tests + real-file invariants)")
+        return result
+    if not args or args[0] not in ROUTES:
+        if args:
+            _line(f"Unknown command: {args[0]}")
+        _line("Usage: validate.py <command> [args...]")
+        _line("Commands: " + ", ".join(COMMANDS))
+        _line(f"Aggregate: --self-test-all (runs --self-test on all {len(AGG_VALIDATORS)} self-testable validators)")
+        _line("Aggregate: --check-canonical (real-file invariants)")
+        _line("Aggregate: --check-all (self-tests + real-file invariants)")
+        return 2
+    command, args = args[0], args[1:]
+    if command not in _BASH_COMMANDS_A:
+        result = _navigation_scan(command, args)
+        if result:
+            return result
+    return ROUTES[command].handler(command, args)
 
 
 if __name__ == "__main__":

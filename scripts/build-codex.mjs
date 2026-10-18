@@ -79,7 +79,7 @@ function validateNativeArchive(archivePath, prefix = "plugins/apodictic/") {
   }
   console.log(`Archived Codex plugin: ${plugin.length} members; non-listing members under 256 KiB.`);
   const names = new Set(plugin.map(({ name }) => name.slice(prefix.length)));
-  for (const name of ["validate.py", "validate_canonical.py", "validate_source.py", "validate.sh"]) {
+  for (const name of ["validate.py", "validate_canonical.py", "validate.sh"]) {
     if (!names.has(`scripts/${name}`)) throw new Error(`Native archive entry missing: ${name}`);
   }
   for (const name of ["check-all.sh", "commands-a.sh", "commands-b.sh"]) {
