@@ -100,6 +100,12 @@ def assert_parity_result(native, legacy, *, command=None, native_cli=PYTHON_CLI,
     assert (native.returncode, native.stdout, native.stderr) == (legacy.returncode, stdout, legacy.stderr)
 
 
+@pytest.fixture(autouse=True)
+def preserve_oracle_sources(monkeypatch):
+    # Copied script trees are compared for "no writes"; child imports must not add bytecode.
+    monkeypatch.setenv("PYTHONDONTWRITEBYTECODE", "1")
+
+
 SCHEMA_SELFTESTS = ("artifacts-schema", "registry-check")
 
 

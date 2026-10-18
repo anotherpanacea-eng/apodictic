@@ -227,10 +227,9 @@ _M2_EXEMPT = {"apodictic_artifacts.py", "meta_lint.py", "sync_setec.py", "config
 # ---- M5 override-hygiene -------------------------------------------------------------------------
 # The bare override-substring anti-pattern (2026-06-20 sweep), the override-marker sibling of M2's
 # resolver-substring class. A gate honors `<!-- override: <slug> — <rationale> -->`; testing for it by
-# a BARE-PREFIX substring (Python `"<!-- override: %s" % slug in body` / `"<!-- override: x" in body`;
-# bash `grep -F "<!-- override:`) honors a SUFFIXED slug AND a backtick'd documentation example. The
-# hardened replacement is the shared `override_marker.has_override` (Python) / the `_has_override`
-# helper (bash), which strip code spans and boundary-match. M5 flags the bare form so the class is
+# a BARE-PREFIX substring (Python `"<!-- override: %s" % slug in body` / `"<!-- override: x" in body`)
+# honors a SUFFIXED slug AND a backtick'd documentation example. The hardened replacement is the
+# shared `override_marker.has_override`, which strips code spans and boundary-matches. M5 flags the bare form so the class is
 # gated going forward. Two marker spellings matter, and they are gated by two markers:
 #   * `_OV_MARK` — the LITERAL form (`<!-- override:` one space, or `<!--override:` zero) used by the
 #     SUBSTRING/MEMBERSHIP patterns (`in` / `.find` / format-`in`). A `<!--\s*override:` REGEX literal

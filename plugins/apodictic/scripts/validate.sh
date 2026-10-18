@@ -1,8 +1,8 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # Compatibility entrypoint. Validation lives in the sibling native Python CLI.
-set -euo pipefail
-case "${BASH_SOURCE[0]}" in
-  */*) script_dir="${BASH_SOURCE[0]%/*}" ;;
+set -eu
+case "$0" in
+  */*) script_dir="${0%/*}" ;;
   *) script_dir=. ;;
 esac
 script_dir=$(cd "$script_dir" && pwd)

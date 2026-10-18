@@ -200,11 +200,12 @@ producers; these four public routes check on-disk exports and do not create them
 Linked PDF keeps its separate normal-run authentication and reports that reader
 behavior is unqualified.
 
-Every native route that Bash dispatches through `validate.d/commands-b.sh`
-first applies that file's `--internal-links*` refusal: only
+Every native route that Bash dispatched through `validate.d/commands-b.sh`
+first applied that file's `--internal-links*` refusal, and still does after the
+Group 14 cutover (`_BASH_COMMANDS_A` in `validate.py` keeps the old partition): only
 `pdf-export <run_folder> --internal-links` (exactly once, no other `--` option)
 passes; anything else exits 2 with Bash's usage message, before self-test or
-shortage handling. Routes in `commands-a.sh` never see the check, as in Bash.
+shortage handling. Routes that were in `commands-a.sh` never see the check.
 
 Group 13 adds `registry-check`, `schema-coverage`, `validator-conventions`,
 `calibration-honesty`, `stance-calibration` and
@@ -216,9 +217,9 @@ retain wrapper arity checks.
 Conventions first-selftest executes all twelve actual shared override-marker CLI
 checks with their original UTF-8 bodies before the full existing meta-lint suite.
 As in Bash, any nonzero companion status is a miss; mismatches accumulate and
-prevent that suite. Late selftest runs the helper suite alone. Both
-meta-lint and schema coverage still inspect the shipped Bash dispatcher/parts;
-routing them natively does not migrate source introspection or aggregates.
+prevent that suite. Late selftest runs the helper suite alone. At Group 13,
+meta-lint and schema coverage still inspected the Bash dispatcher/parts; Group 14
+moved them to the native route table and `validate_canonical.py`.
 
 Carve remains a repository-only summary smoke. It selects the first of the two
 existing lexical fixture directories, skips when neither exists, and preserves
@@ -357,7 +358,7 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | 3 | quality-risk-triggers, cost-floor, audit-tier-criterion, pass-header, argument-recon-prerequisite, timeline-diff, timeline-arithmetic, timeline-anchor-conflict | Built |
 | 4 | structured-findings, softness-check, deficit-lock, artifacts-schema, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary | Built |
 | 5a | escalation-check, dispatch-record, disposition-check, synthesis-coverage, specificity-floor | Built |
-| 5b | gate, gate-state; coherent live/shared-self-test nested launcher transition | Held for coordinated Group 14; official children available, custom/aggregate dispatch still incomplete |
+| 5b | gate, gate-state; coherent live/shared-self-test nested launcher transition | Built in Group 14 |
 | 6 | retcon-plan, state-card-diff, revision-arc, regression-diff, refutation-coverage, refutation-evidence, refutation-write-scope | Built |
 | Self-test stability | Specificity/refutation expected-negative diagnostic capture and four restored exact-output surfaces | Built |
 | 7 | legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, argument-spine, scene-ethics | Built |
@@ -367,7 +368,7 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | 11 | argument-reconstruction, argument-reconstruction-draft | Built |
 | 12 | obsidian-export, html-export, docx-export, pdf-export | Built |
 | 13 | registry-check, schema-coverage, validator-conventions, calibration-honesty, stance-calibration, argument-carve-behavior-preservation | Built |
-| 14 | Native aggregate/canonical workflow, complete usage routing, Bash shim cutover, references, and native Windows full-suite acceptance | Queued |
+| 14 | Native aggregate/canonical workflow, complete usage routing, Bash shim cutover, references, and native Windows full-suite acceptance | Built as a draft; hosted `validate-windows` run pending |
 
 Groups 2–13 preserve wrapper-specific optional/default arguments, strict flags,
 repo-only fixture discovery and special self-test routes. Group 14 preserves
