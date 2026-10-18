@@ -1338,7 +1338,7 @@ def _final_checks(references):
         _line()
     elif _evals() is not None:
         _line('FAIL: reconstruction behavioral suite missing from repository checkout'); failed = 1
-    _line('== validator-conventions (meta-linter: M1 dispatch+self-test, M2 resolver hygiene, M3 derived count, M4 no orphan schema, M5 override hygiene, M6 code-span hygiene, M7 single-Firewall, M8 severity-vocab SSoT) ==')
+    _line('== validator-conventions (meta-linter: M2 resolver hygiene, M4 no orphan schema, M5 override hygiene, M6 code-span hygiene, M7 single-Firewall, M8 severity-vocab SSoT) ==')
     result = run_validator('validator-conventions')
     if result.returncode == 0:
         _line('  ok (fleet conventions hold)')

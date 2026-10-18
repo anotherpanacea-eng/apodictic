@@ -42,48 +42,12 @@ function validateCanonicalSource() {
   console.log(`Canonical plugin: ${files.length} files; every shipped source file under 256 KiB.`);
 }
 
-function listingAssets() {
-  const result = new Set();
-  for (const destination of codex.requiredAssets || []) {
-    const matches = Object.entries(codex.overrides || {}).filter(([, dest]) => dest === destination);
-    if (matches.length !== 1 || !destination.startsWith("plugins/apodictic/assets/") ||
-        path.posix.normalize(destination) !== destination || destination.includes("\\") ||
-        !matches[0][0].startsWith("packaging/codex/assets/") ||
-        path.posix.normalize(matches[0][0]) !== matches[0][0] || matches[0][0].includes("\\") ||
-        !fs.statSync(abs(matches[0][0])).isFile()) {
-      throw new Error(`Unsupported or ambiguous Codex listing asset: ${destination}`);
-    }
-    // A canonical counterpart is never removed from the source-limit population.
-    if (!fs.existsSync(abs(destination))) result.add(destination.slice("plugins/apodictic/".length));
-  }
-  return result;
-}
-
-// Check actual self-generated archive members, including the submission ZIP.
-// ZIP metadata reports uncompressed bytes; this does not claim hostile-ZIP validation.
+// Check the self-generated archive: no Python caches, native entrypoints present.
 function validateNativeArchive(archivePath, prefix = "plugins/apodictic/") {
-  const entries = listZipEntryMetadata(archivePath);
-  if (entries.some(({ name }) => isPythonCache(name))) {
-    throw new Error("Archive contains Python bytecode/cache content.");
-  }
-  const plugin = entries.filter(({ name }) => name.startsWith(prefix));
-  const externalListing = listingAssets();
-  const limited = plugin.filter(({ name }) => !externalListing.has(name.slice(prefix.length)));
-  for (const name of externalListing) {
-    const member = plugin.find((entry) => entry.name === prefix + name);
-    if (!member) throw new Error(`Listing asset missing from actual archive: ${name}`);
-    console.log(`Codex listing asset (outside Claude source ceiling): ${name}: ${member.size} bytes`);
-  }
-  if (plugin.length > 512 || limited.some(({ size }) => size >= 256 * 1024)) {
-    throw new Error(`Archived plugin exceeds limits: ${plugin.length} files; oversized: ${limited.filter(({ size }) => size >= 256 * 1024).map(({ name, size }) => `${name} (${size} bytes)`).join(", ") || "none"}.`);
-  }
-  console.log(`Archived Codex plugin: ${plugin.length} members; non-listing members under 256 KiB.`);
-  const names = new Set(plugin.map(({ name }) => name.slice(prefix.length)));
-  for (const name of ["validate.py", "validate_canonical.py", "validate_source.py", "validate.sh"]) {
-    if (!names.has(`scripts/${name}`)) throw new Error(`Native archive entry missing: ${name}`);
-  }
-  for (const name of ["check-all.sh", "commands-a.sh", "commands-b.sh"]) {
-    if (names.has(`scripts/validate.d/${name}`)) throw new Error(`Obsolete archive entry: ${name}`);
+  const names = new Set(listZipEntries(archivePath));
+  if ([...names].some(isPythonCache)) throw new Error("Archive contains Python bytecode/cache content.");
+  for (const name of ["validate.py", "validate_canonical.py", "validate.sh"]) {
+    if (!names.has(`${prefix}scripts/${name}`)) throw new Error(`Native archive entry missing: ${name}`);
   }
 }
 

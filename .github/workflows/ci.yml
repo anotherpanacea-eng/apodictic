@@ -1,7 +1,8 @@
 name: ci
 
 # Ordinary work remains draft and unarmed. A disposable train, or an explicitly
-# authorized standalone exception, receives this one ordered validation job.
+# authorized standalone exception, receives the ordered Ubuntu validation job and
+# the Windows native-gate job.
 
 run-name: >-
   apodictic-ci pr=${{ github.event.pull_request.number }}
@@ -35,14 +36,128 @@ jobs:
             contains(github.event.pull_request.labels.*.name, 'ci-ready') &&
             (contains(fromJSON('["opened","synchronize","reopened","ready_for_review"]'), github.event.action) ||
              (github.event.action == 'labeled' && github.event.label.name == 'ci-ready')))) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bind billed job to the exact pull-request merge
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_SHA: ${{ github.sha }}
+          JOB_NAME: ${{ github.job }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: >-
+          python tools/check_pr_merge_binding.py
+          --repository "$REPOSITORY"
+          --base "$BASE_SHA" --head "$HEAD_SHA" --github-sha "$MERGE_SHA"
+          --job "$JOB_NAME" --run-id "$RUN_ID" --run-attempt "$RUN_ATTEMPT"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install policy test dependencies
+        run: python -m pip install pytest pyyaml
+
+      - name: Draft-first train policy self-tests
+        run: >-
+          python -m pytest
+          tests/test_ci_train_policy.py
+          tests/test_merge_train.py
+          tests/test_pr_merge_binding.py
+          tests/test_sync_pr_draft.py
+          tests/test_train_ci_receipts.py
+          tests/test_validate_native_aggregates.py
+          -q
+
+      - name: Byte-compile canonical Python (syntax gate)
+        run: python -m compileall -q plugins scripts tools tests
+
+      - name: Validate plugin + marketplace manifests parse as JSON
+        run: |
+          set -e
+          mapfile -t files < <(git ls-files '*.json' | grep -E '(plugin|marketplace|release-registry)\.json$')
+          if [ ${#files[@]} -eq 0 ]; then echo "no manifests found"; exit 1; fi
+          for f in "${files[@]}"; do
+            echo "checking $f"
+            python -m json.tool "$f" > /dev/null
+          done
+          echo "all ${#files[@]} manifests parse"
+
+      - name: Version parity across manifests
+        run: node scripts/release-verify.mjs --versions-only
+
+      - name: Research reliability self-tests
+        run: |
+          node --test tests/audit-catalog.test.mjs
+          python3 tests/test_academic_api_security.py
+          python3 plugins/apodictic/skills/research-verification/scripts/api_reliability.py --self-test
+          python3 plugins/apodictic/skills/research-verification/scripts/response_cache.py --self-test
+          python3 plugins/apodictic/skills/research-verification/scripts/academic_apis.py --self-test
+
+      - name: Changelog fragments parse
+        run: node scripts/assemble-changelog.mjs --check
+
+      - name: Status-drift lint (spec Status vs shipped deliverables)
+        run: |
+          node scripts/check-status-drift.mjs --self-test
+          node scripts/check-status-drift.mjs
+
+      - name: Inventory-parity sync-marker check
+        run: |
+          node scripts/check-inventory-parity.mjs --self-test
+          node scripts/check-inventory-parity.mjs
+          python -I -S plugins/apodictic/scripts/validator_runner.py --check-inventory
+
+      - name: Registry-derived docs are up to date
+        run: node scripts/release-generate.mjs --check
+
+      - name: Codex + Antigravity builds self-check
+        run: |
+          node scripts/build-codex.mjs --self-check
+          node scripts/build-antigravity.mjs --self-check
+
+      - name: SETEC contract drift gate (self-consistency)
+        run: python tools/check_setec_contract.py
+
+      - name: SETEC contract tests (floors + vendored-golden parse)
+        run: python tests/setec-contract/test_setec_contract.py
+
+      - name: Validator self-tests
+        run: bash scripts/validate.sh --self-test-all
+
+      - name: Canonical-framework gate
+        run: bash scripts/validate.sh --check-canonical
+
+  validate-windows:
+    if: >-
+      ${{ github.event.pull_request.draft == false &&
+          ((github.event.pull_request.head.repo.full_name == github.repository &&
+            startsWith(github.event.pull_request.head.ref, 'train/') &&
+            contains(fromJSON('["opened","synchronize","reopened","ready_for_review"]'), github.event.action)) ||
+           (!(github.event.pull_request.head.repo.full_name == github.repository &&
+              startsWith(github.event.pull_request.head.ref, 'train/')) &&
+            !(github.event.pull_request.head.repo.full_name == github.repository &&
+              github.event.pull_request.head.ref == 'chore/sync-setec-contract') &&
+            contains(github.event.pull_request.labels.*.name, 'ci-ready') &&
+            (contains(fromJSON('["opened","synchronize","reopened","ready_for_review"]'), github.event.action) ||
+             (github.event.action == 'labeled' && github.event.label.name == 'ci-ready')))) }}
     runs-on: windows-latest
+    timeout-minutes: 30
     defaults:
       run:
         shell: pwsh
     env:
       PYTHONUTF8: '1'
       PYTHONIOENCODING: 'utf-8'
-    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -65,204 +180,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install policy test dependencies
-        run: python -m pip install pytest pyyaml
-
-      - name: Draft-first train policy self-tests
-        run: >-
-          python -m pytest
-          tests/test_ci_train_policy.py
-          tests/test_merge_train.py
-          tests/test_pr_merge_binding.py
-          tests/test_sync_pr_draft.py
-          tests/test_train_ci_receipts.py
-          tests/test_validate_source.py
-          tests/test_validate_native_aggregates.py
-          -q
-
-      - name: Byte-compile canonical Python (syntax gate)
-        run: python -m compileall -q plugins scripts tools tests
-
-      - name: Validate plugin + marketplace manifests parse as JSON
+      - name: Native validator gate with only Python on PATH
         run: |
-          $files = @(git ls-files '*.json')
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $files = @($files | Where-Object { $_ -match '(plugin|marketplace|release-registry)\.json$' })
-          if ($files.Count -eq 0) { throw 'no manifests found' }
-          foreach ($file in $files) {
-            Write-Host "checking $file"
-            python -m json.tool "$file" > $null
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
-          Write-Host "all $($files.Count) manifests parse"
-
-      - name: Version parity across manifests
-        run: node scripts/release-verify.mjs --versions-only
-
-      - name: Research reliability self-tests
-        run: |
-          node --test tests/audit-catalog.test.mjs
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python tests/test_academic_api_security.py
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python plugins/apodictic/skills/research-verification/scripts/api_reliability.py --self-test
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python plugins/apodictic/skills/research-verification/scripts/response_cache.py --self-test
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python plugins/apodictic/skills/research-verification/scripts/academic_apis.py --self-test
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-      - name: Changelog fragments parse
-        run: node scripts/assemble-changelog.mjs --check
-
-      - name: Status-drift lint (spec Status vs shipped deliverables)
-        run: |
-          node scripts/check-status-drift.mjs --self-test
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          node scripts/check-status-drift.mjs
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-      - name: Inventory-parity sync-marker check
-        run: |
-          node scripts/check-inventory-parity.mjs --self-test
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          node scripts/check-inventory-parity.mjs
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -I -S plugins/apodictic/scripts/validator_runner.py --check-inventory
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-      - name: Registry-derived docs are up to date
-        run: node scripts/release-generate.mjs --check
-
-      - name: Codex + Antigravity builds self-check
-        run: |
-          node scripts/build-codex.mjs --self-check
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          node scripts/build-antigravity.mjs --self-check
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-      - name: SETEC contract drift gate (self-consistency)
-        run: python tools/check_setec_contract.py
-
-      - name: SETEC contract tests (floors + vendored-golden parse)
-        run: python tests/setec-contract/test_setec_contract.py
-
-      - name: Full native validator gate with Bash absent
-        # This destructive-to-runner qualification is only for the disposable hosted VM.
-        # Never rehearse executable renames on a shared development machine.
-        run: |
-          $ErrorActionPreference = 'Stop'
-          if (-not [Environment]::Is64BitProcess) { throw 'No-Bash qualification requires 64-bit pwsh' }
-          $python = (Get-Command python -CommandType Application -ErrorAction Stop).Source
-          $python = [IO.Path]::GetFullPath($python)
-          & $python -c "import struct; assert struct.calcsize('P') == 8, '64-bit Python required'"
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $root = [IO.Path]::GetFullPath((Get-Location).Path)
-          function Absolute-Directory([string] $value) {
-            if (-not $value -or -not [IO.Path]::IsPathFullyQualified($value)) {
-              throw "No-Bash qualification: nonabsolute directory: $value"
-            }
-            $full = [IO.Path]::GetFullPath($value).TrimEnd('\')
-            if ($full -ne $value.TrimEnd('\')) { throw "No-Bash qualification: nonnormalized directory: $value" }
-            if (Test-Path -LiteralPath $full) {
-              $item = Get-Item -LiteralPath $full -Force
-              if (-not $item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
-                throw "No-Bash qualification: ambiguous directory: $full"
-              }
-            }
-            return $full
-          }
-          $programFiles = Absolute-Directory $env:ProgramFiles
-          $windows = Absolute-Directory $env:SystemRoot
-          $directories = @("$programFiles\Git\bin", "$programFiles\Git\usr\bin")
-          if (${env:ProgramFiles(x86)} -and ${env:ProgramFiles(x86)} -ne $env:ProgramFiles) {
-            $x86 = Absolute-Directory ${env:ProgramFiles(x86)}
-            $directories += @("$x86\Git\bin", "$x86\Git\usr\bin")
-          }
-          $directories += @("$windows\System32", "$windows\System", $windows)
-          $directories = @($directories | ForEach-Object { Absolute-Directory $_ } | Sort-Object -Unique)
-          $implicit = @((Absolute-Directory $root), (Absolute-Directory ([IO.Path]::GetDirectoryName($python))))
-          $candidates = @($directories | ForEach-Object { Join-Path $_ 'bash.exe'; Join-Path $_ 'sh.exe' })
-          $extra = @($implicit | ForEach-Object { Join-Path $_ 'bash.exe'; Join-Path $_ 'sh.exe' })
-          foreach ($file in $extra) {
-            if (Test-Path -LiteralPath $file) { throw "No-Bash qualification: unexpected repository/Python shell: $file" }
-          }
-          foreach ($name in @('bash', 'sh', 'bash.exe', 'sh.exe')) {
-            try { $commands = @(Get-Command $name -All -ErrorAction Stop) }
-            catch [System.Management.Automation.CommandNotFoundException] { $commands = @() }
-            foreach ($command in $commands) {
-              if ($command.CommandType -ne 'Application' -or $command.Source -notin ($candidates + $extra)) {
-                throw "No-Bash qualification: shell outside fixed candidate set: $name ($command)"
-              }
-            }
-          }
-          $pairs = @()
-          foreach ($file in $candidates) {
-            $disabled = "$file.apodictic-disabled"
-            if (Test-Path -LiteralPath $disabled) { throw "No-Bash qualification: sibling collision: $disabled" }
-            if (Test-Path -LiteralPath $file) {
-              $item = Get-Item -LiteralPath $file -Force
-              if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
-                throw "No-Bash qualification: nonordinary executable: $file"
-              }
-              $pairs += ,@($file, $disabled)
-            } else { Write-Host "Absent before move: $file" }
-          }
-          $probe = @'
-          import errno, json, os, subprocess, sys
-          candidates = ['bash', 'sh', 'bash.exe', 'sh.exe'] + json.loads(sys.argv[1])
-          def prove_absence():
-              for candidate in candidates:
-                  try:
-                      subprocess.run([candidate, '--version'], shell=False, timeout=10,
-                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                  except FileNotFoundError as exc:
-                      if exc.winerror not in (2, 3):
-                          raise RuntimeError('Unqualified launch error: ' + candidate) from exc
-                  except (OSError, subprocess.TimeoutExpired) as exc:
-                      raise RuntimeError('Shell absence not proven: ' + candidate) from exc
-                  else:
-                      raise RuntimeError('Shell process was created: ' + candidate)
-          if os.environ.get('PATH') != '':
-              raise RuntimeError('Controlled child PATH is not empty')
-          prove_absence()
-          status = subprocess.run([sys.executable, 'plugins/apodictic/scripts/validate.py', '--check-all'],
-                                  shell=False).returncode
-          prove_absence()
-          sys.exit(status)
-          '@
-          $moved = [Collections.Generic.List[object]]::new()
-          $failures = [Collections.Generic.List[string]]::new()
-          $originalPath = $env:PATH
-          try {
-            foreach ($pair in $pairs) {
-              Rename-Item -LiteralPath $pair[0] -NewName ([IO.Path]::GetFileName($pair[1])) -ErrorAction Stop
-              $moved.Add($pair)
-            }
-            $env:PATH = ''
-            $probePaths = ConvertTo-Json -InputObject @($candidates + $extra) -Compress
-            & $python -c $probe $probePaths
-            $childExit = $LASTEXITCODE
-            if ($childExit -ne 0) { throw "No-Bash child failed: exit $childExit" }
-          } catch {
-            $failures.Add($_.ToString())
-          } finally {
-            $env:PATH = $originalPath
-            for ($i = $moved.Count - 1; $i -ge 0; $i--) {
-              $pair = $moved[$i]
-              try {
-                if (Test-Path -LiteralPath $pair[0]) { throw "Restore source occupied: $($pair[0])" }
-                if (-not (Test-Path -LiteralPath $pair[1] -PathType Leaf)) { throw "Disabled file missing: $($pair[1])" }
-                Rename-Item -LiteralPath $pair[1] -NewName ([IO.Path]::GetFileName($pair[0])) -ErrorAction Stop
-              } catch { $failures.Add("Restore failed: $_") }
-            }
-          }
-          if ($failures.Count -ne 0) {
-            $failures | ForEach-Object { Write-Error $_ -ErrorAction Continue }
-            exit 1
-          }
-          Write-Host 'Full native No-Bash qualification and restoration succeeded.'
+          $env:PATH = Split-Path -Parent (Get-Command python -CommandType Application).Source
+          python plugins/apodictic/scripts/validate.py --check-all

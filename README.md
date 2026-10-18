@@ -293,6 +293,5 @@ Validator tooling uses Python 3.10+: run
 or `python scripts/validate.py <command> ...` from an installed plugin. Children
 reuse that interpreter. The POSIX `validate.sh` launchers remain optional
 compatibility entrypoints. Missing Python or helper code cannot produce a clean
-validation result. The Group14 cutover is an unarmed draft pending combined review
-and the authorized hosted Windows full No-Bash acceptance receipt; see
-[Native validator migration](docs/validator-python-port.md).
+validation result. CI also runs the full gate on Windows with only Python on
+`PATH`; see [Native validator migration](docs/validator-python-port.md).

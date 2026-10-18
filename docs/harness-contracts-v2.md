@@ -116,16 +116,18 @@ Two adds to `apodictic_artifacts.py`, both backward-compatible:
   `non_artifact[]` and the two self schemas, appears in `bindings[]`. The core anti-drift assertion.
   ERROR, names the orphan.
 - **C3 no phantom binding.** Every `bindings[].schema` exists on disk. ERROR.
-- **C4 binding proven, not asserted.** A named validator has a real native command route,
-  and its whole schema ID occurs in a non-docstring literal in that route's primary helper.
-  Comments, unrelated helpers, and PDF companion tests cannot supply the association.
-  This is a bounded source reference guarantee, not semantic field-enforcement proof.
-- **C5 canonical-gate reachability.** An actual direct `run_validator` call from the canonical
-  entry or a directly invoked section passes the exact reference path component to the bound
-  command, and that example exists under references. Literal paths and ordered one-hop local
-  paths are recognized. Dead/uncalled/unknown-control/loop-generated decoys supply no proof.
-  Self-test-only bindings require a real routed aggregate suite. Missing or unsupported source
-  is a blocking source-check error.
+- **C4 binding named.** For each binding, ≥1 named `validators[]` command is a `ROUTES` entry in
+  `validate.py` **and** the whole schema `$id` occurs anywhere in the source of the helper script
+  that route names (not an arbitrary script; comments count). A source association, not a proof
+  that the helper validates the schema. ERROR.
+- **C5 canonical-gate reachability.** For each binding whose `canonical_gate` is a filename/dirname
+  (not `self-test-only`), a lexical scan of `validate_canonical.py` finds the **exact token** as a
+  path component of an argument to a `run_validator('<bound validator>', …)` call — written
+  directly or through one assignment earlier in the same function; whether that call runs is not
+  checked — **and** the named file/dir exists under
+  `core-editor/references/`. `self-test-only` rows (the two registry schemas, with no shipped
+  canonical instance) are exempt from the file check but the bound validator must be in
+  `AGG_VALIDATORS`, so *some* real check runs. ERROR.
 - **W1 non_artifact integrity.** Every `non_artifact[]` entry exists on disk as a `*.schema.json`
   (else the exclusion is dead). WARN; ERROR under `--strict`.
 

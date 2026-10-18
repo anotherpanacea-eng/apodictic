@@ -353,17 +353,4 @@ if __name__ == "__main__":
     import sys
     if "--self-test" in sys.argv:
         sys.exit(_self_test())
-    # Delegation entry points for the bash gates (body read from stdin) so the bash path uses THIS one
-    # robust stripper instead of a parallel awk/sed reimplementation:
-    #   --has-override <slug>     -> exit 0 if a live override for <slug> exists in stdin, else 1
-    #   --override-slugs <prefix> -> print each live <slug> following <prefix> in stdin (one per line)
-    if "--has-override" in sys.argv:
-        _i = sys.argv.index("--has-override")
-        _slug = sys.argv[_i + 1] if _i + 1 < len(sys.argv) else ""
-        sys.exit(0 if has_override(sys.stdin.read(), _slug) else 1)
-    if "--override-slugs" in sys.argv:
-        _i = sys.argv.index("--override-slugs")
-        _prefix = sys.argv[_i + 1] if _i + 1 < len(sys.argv) else ""
-        sys.stdout.write("\n".join(sorted(override_slugs(sys.stdin.read(), _prefix))))
-        sys.exit(0)
     sys.exit(0)
