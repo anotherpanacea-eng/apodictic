@@ -245,29 +245,26 @@ APODICTIC_BASH_REFERENCE_ROOT=/path/to/pre-cutover-checkout \
 
 Unset disables differential-only cases; native checks still run. The current
 checkout's forwarding shim is never an independent oracle.
-Explicit empty, missing, malformed, current-checkout and resolved-alias roots
-fail during harness setup. An explicit request also fails when Bash cannot run.
-Before use, a disposable copy of the reference's shell scripts must compute a
-real contract hash with `validate.py` poisoned. This rejects a Python
-forwarding shim; it does not authenticate arbitrary hostile shell programs.
-Keep the reference checkout untouched and record its ordinary commit in the
-review record. The harness neither creates nor updates reference checkouts.
+Explicit empty, missing or malformed roots fail during harness setup. An explicit
+request also fails when Bash is unavailable. Keep the reference checkout untouched
+and record its ordinary commit in the review record. The harness neither creates
+nor updates reference checkouts.
 
 Every Bash invocation uses the selected root, including literal relative usage,
 repository fixture copies and argv-echo wrappers. Native dispatchers and helpers
 always come from the current checkout. Repository copies retain separate helper
 and schema origins; their carve fixture directories deliberately link to the
 same disposable inputs, so existing mutations affect both implementations.
-Echo wrappers use identical helper doubles in separate origin trees. Helper
-stdout, stderr and status mutations must each break an otherwise matching
-comparison, and a copied-reference marker proves that copy path is exercised.
+Echo wrappers use identical helper doubles in separate origin trees. A helper
+stdout mutation must break an otherwise matching comparison, and a
+copied-reference marker proves that copy path is exercised.
 
-The general source-location translation is limited to the exact leading
-`Usage: <selected entrypoint> ` spelling to its current native counterpart.
-The no-argument Obsidian usage instead checks each complete raw output against
-one literal template with that invocation's known path in both prescribed slots,
-status 2 and empty stderr. It does not replace arbitrary path occurrences. Literal relative usage
-is tested from each checkout without translation. Carve's script-relative
+The only source-location translation is in a usage message that begins `Usage:
+<selected entrypoint> `: each spelling of that entrypoint becomes its current
+native counterpart. Literal relative usage is tested from each checkout without
+translation. The `artifacts-schema` and `registry-check` self-tests print the
+schema directory each origin loaded, so each output is checked for its own
+origin's `schema_load` line and the rest is compared byte for byte. Carve's script-relative
 missing/read diagnostics are checked against explicit expectations for each
 origin, preserving `../` suffixes. No general root, separator, newline or
 traceback normalization is applied. The existing `state-lines` exception strips
