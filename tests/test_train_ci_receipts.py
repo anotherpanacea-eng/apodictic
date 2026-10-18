@@ -87,7 +87,7 @@ def _evidence() -> dict:
 def test_complete_newest_run_emits_aggregate_receipt():
     receipt = validate_evidence(_evidence())
     assert receipt["run_id"] == 200
-    assert receipt["job_count"] == 1
+    assert receipt["job_count"] == 2
     assert receipt["synthetic_merge_sha"] == MERGE
 
 

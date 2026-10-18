@@ -20,7 +20,7 @@ RUN_NAME_RE = re.compile(
 )
 RECEIPT_RE = re.compile(r"pr-merge-binding: (\{[^\r\n]*\})")
 WORKFLOW_PATH = ".github/workflows/ci.yml"
-EXPECTED_JOBS = frozenset({"validate"})
+EXPECTED_JOBS = frozenset({"validate", "validate-windows"})
 
 
 class ReceiptError(ValueError):

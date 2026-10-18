@@ -55,26 +55,25 @@ The three current validation lanes are consolidated into one required
 4. validator self-tests; and
 5. canonical-framework validation.
 
-The consolidated job is exactly `windows-latest` with `timeout-minutes: 10`.
-The Group14 native cutover replaces the previous Ubuntu lane explicitly while
-retaining the single protected `validate` context, admission predicate, binding
-receipt, and every substantive check. Python 3.12 is the CI qualification pin;
-the documented runtime floor remains Python 3.10+. UTF-8 is explicit, and each
-native call in a multi-command PowerShell step checks its exit immediately.
+The present fourth aggregation runner is removed.  The consolidated job is
+exactly `ubuntu-latest` with `timeout-minutes: 10`; recent successful runs use
+roughly one minute across the three substantive lanes, so the existing per-lane
+hang cap remains ample after consolidation.  The existing protected context name
+`validate` remains unchanged, so no ruleset or branch-protection migration is
+required.  Consolidation trades a small amount of wall-clock parallelism for
+fewer runner startups, less hosted compute/queue noise, and fleet-policy
+consistency.  APODICTIC is public, so its standard GitHub-hosted jobs do not
+consume plan minutes; actual billed-minute savings accrue in the private fleet
+repos.  No test, generator, mirror check, consumer-contract check, or
+canonical-framework gate may disappear.
 
-The final full `--check-all` runs in a fresh absolute-Python child with empty PATH
-after a bounded disposable-runner Bash/sh absence protocol. Only executable
-process-creation absence qualifies; denied renames or launches, surviving shells,
-failed validation, or failed restoration refuse the receipt. All moved files are
-restored in reverse order, preserving any earlier failure. The protocol must never
-be rehearsed by renaming executables on shared development machines.
-
-This proposal keeps one runner startup and trades the hosted Ubuntu lane for
-Windows; POSIX qualification remains required locally. It makes no claim about
-unchanged pricing or runtime duration. No test, generator, consumer-contract check,
-or canonical-framework gate may disappear. The local Group14 draft is unarmed:
-an authorized actual hosted Windows full No-Bash receipt remains owed before
-final CB-1(a) acceptance.
+The Group14 native cutover adds one `validate-windows` job on `windows-latest`
+(30-minute cap) under the same admission predicate and binding receipt. After the
+binding step it pins Python 3.12 and runs only
+`python plugins/apodictic/scripts/validate.py --check-all`, with `PATH` reduced to
+the Python install directory so the gate cannot reach Bash or `sh`. Branch
+protection still requires only the `validate` context; `validate-windows` is
+enforced by the train receipt verifier, which requires both jobs.
 
 Release, release-readiness, and scheduled SETEC synchronization remain separate
 workflows with their existing triggers and permissions.  Before updating its
@@ -231,14 +230,14 @@ Make the frozen train ready once.  Any head change invalidates the clearance and
 requires returning to draft, rebuilding/reviewing as needed, and promoting the
 new exact head.
 
-The single `validate` job must complete successfully and non-skipped on the
+Each expected job (`validate`, `validate-windows`) must complete successfully and non-skipped on the
 unchanged exact base/head synthetic merge.  A live receipt verifier reads the PR,
 workflow runs/attempts, job conclusions, and job log through authenticated `gh`.
 It binds exact repository, PR number, current base ref and SHA, workflow path
 `.github/workflows/ci.yml`, `pull_request` event, head SHA, same-repository/head
 branch, and bounded activity class.  It chooses the newest run for that identity
-and that run's latest attempt, then requires exactly one completed-success,
-non-skipped `validate` job with exactly one valid receipt.  A green badge without
+and that run's latest attempt, then requires each expected job to be completed-success,
+non-skipped, with exactly one valid receipt.  A green badge without
 the in-job receipt is insufficient.  Any later failed, cancelled, or pending
 clearance occurrence on the head invalidates an earlier green.  Only a verified
 completed/skipped train-label or unrelated-label noise run may be ignored, and

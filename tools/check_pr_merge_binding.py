@@ -86,8 +86,8 @@ def verify_binding(
     base_oid = _oid(base, name="base")
     head_oid = _oid(head, name="head")
     merge_oid = _oid(github_sha, name="github-sha")
-    if job != "validate":
-        raise BindingError("job must be exactly validate")
+    if job not in ("validate", "validate-windows"):
+        raise BindingError("job must be exactly validate or validate-windows")
     _bounded_decimal(run_id, name="run-id", maximum=9_223_372_036_854_775_807)
     _bounded_decimal(run_attempt, name="run-attempt", maximum=999_999)
 
