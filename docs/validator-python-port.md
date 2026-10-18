@@ -1,9 +1,10 @@
 # Native Python validator migration
 
 **Status:** Group14 native cutover built as an unarmed draft. Local combined
-qualification and independent review are required; final CB-1(a) acceptance still
-requires an authorized actual `windows-latest` full No-Bash receipt. Earlier
-increment records below describe the migration history.
+qualification and independent review are required; final CB-1(a) acceptance
+requires a green hosted `validate-windows` CI job (the full `--check-all` gate with
+only Python on `PATH`). Earlier increment records below describe the migration
+history.
 <!-- built-when: plugins/apodictic/scripts/validate.py -->
 <!-- built-when: plugins/apodictic/scripts/validate_canonical.py -->
 

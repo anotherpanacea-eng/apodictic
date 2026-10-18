@@ -254,10 +254,15 @@ permissions or a queue merely to satisfy this fallback.
 
 `.github/workflows/ci.yml` gives unarmed drafts a skipped record. A same-repository
 `train/` PR, or an explicitly `ci-ready` standalone exception, runs one ordered
-`validate` job on `windows-latest`, pinned to Python 3.12, with the existing ten-minute cap. That job byte-compiles `plugins/` + `scripts/` (syntax gate),
+`validate` job on `ubuntu-latest`. That job byte-compiles `plugins/` + `scripts/` (syntax gate),
 validates that the plugin / marketplace / release-registry manifests parse, runs
-the full native validator gate (`python plugins/apodictic/scripts/validate.py --check-all`), which runs self-tests and canonical checks in order, under the hosted Bash-absence protocol, and runs the generator/parity gates (`assemble-changelog.mjs --check`,
-`release-generate.mjs --check`, both build `--self-check`s). Focused pytest suites protect policy and native behavior; the canonical gate remains the aggregate entrypoint. The
+the validator self-tests (`validate.sh --self-test-all`) and canonical-framework
+checks (`validate.sh --check-canonical`), and runs the generator/parity gates (`assemble-changelog.mjs --check`,
+`release-generate.mjs --check`, both build `--self-check`s). Beside it, a
+`validate-windows` job on `windows-latest` runs `python plugins/apodictic/scripts/validate.py --check-all`
+with only Python on `PATH`, so the gate cannot use Bash. There is no pytest
+application suite; the small pytest policy suite protects this CI boundary and
+the native aggregate/no-shell contracts. The
 `evals/` fixtures are the behavioral
 ground-truth track. `.github/workflows/release.yml` builds + publishes the per-host
 bundles on `v*` tags.

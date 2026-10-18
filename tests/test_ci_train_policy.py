@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 CI = WORKFLOWS / "ci.yml"
 
-CI_SHA256 = "faa273ef64ff2518f5888a6914976b8d5aca25372c3440d8a071f8c8014c5f8f"
+CI_SHA256 = "3f16a719fd22ba6547fe0e9ff858c6b310908c106f08316384d0e6d52adcff4d"
 AUXILIARY_SHA256 = {
     "release.yml": "51fa09c164c47c8346f2cd6e8e2f21d1361f04c99a4996faf3cceddf90bed433",
     "release-readiness.yml": "18c248b2d4e94fb9473d81b3dfd04ccfc58083e39c3937e343d2d618288f3710",
@@ -150,12 +150,10 @@ def test_current_workflow_holds_closed_policy():
     assert set(workflow["concurrency"]) == {"group", "cancel-in-progress"}
     assert workflow["concurrency"]["cancel-in-progress"] == "true"
 
-    assert set(workflow["jobs"]) == {"validate"}
+    assert set(workflow["jobs"]) == {"validate", "validate-windows"}
     job = workflow["jobs"]["validate"]
-    assert set(job) == {"if", "runs-on", "timeout-minutes", "steps", "defaults", "env"}
-    assert job["runs-on"] == "windows-latest"
-    assert job["defaults"] == {"run": {"shell": "pwsh"}}
-    assert job["env"] == {"PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
+    assert set(job) == {"if", "runs-on", "timeout-minutes", "steps"}
+    assert job["runs-on"] == "ubuntu-latest"
     assert job["timeout-minutes"] == 10
     assert "matrix" not in job
     assert "strategy" not in job
@@ -183,7 +181,8 @@ def test_current_workflow_holds_closed_policy():
         "Codex + Antigravity builds self-check",
         "SETEC contract drift gate (self-consistency)",
         "SETEC contract tests (floors + vendored-golden parse)",
-        "Full native validator gate with Bash absent",
+        "Validator self-tests",
+        "Canonical-framework gate",
     ]
     assert steps[0] == {"uses": "actions/checkout@v4"}
     binding = steps[1]
@@ -193,15 +192,26 @@ def test_current_workflow_holds_closed_policy():
         "RUN_ID", "RUN_ATTEMPT"
     }
     assert "tools/check_pr_merge_binding.py" in binding["run"]
-    assert "'plugins/apodictic/scripts/validate.py', '--check-all'" in steps[-1]["run"]
-    assert 'finally {' in steps[-1]["run"]
-    regression = next(step for step in steps if step.get("name") == "Draft-first train policy self-tests")
-    assert regression["run"].split() == [
-        "python", "-m", "pytest", "tests/test_ci_train_policy.py",
-        "tests/test_merge_train.py", "tests/test_pr_merge_binding.py",
-        "tests/test_sync_pr_draft.py", "tests/test_train_ci_receipts.py",
-        "tests/test_validate_native_aggregates.py", "-q",
+    assert steps[-2]["run"] == "bash scripts/validate.sh --self-test-all"
+    assert steps[-1]["run"] == "bash scripts/validate.sh --check-canonical"
+
+    # Windows runs the native gate under the same admission and binding receipt,
+    # with PATH reduced to the Python install directory so no shell is reachable.
+    windows = workflow["jobs"]["validate-windows"]
+    assert set(windows) == {"if", "runs-on", "timeout-minutes", "defaults", "env", "steps"}
+    assert windows["if"] == job["if"]
+    assert windows["runs-on"] == "windows-latest"
+    assert windows["timeout-minutes"] == 30
+    assert [_step_id(step) for step in windows["steps"]] == [
+        "actions/checkout@v4",
+        "Bind billed job to the exact pull-request merge",
+        "actions/setup-python@v5",
+        "Native validator gate with only Python on PATH",
     ]
+    assert windows["steps"][1]["env"] == binding["env"]
+    gate = windows["steps"][-1]["run"].splitlines()
+    assert gate[0].startswith("$env:PATH = Split-Path -Parent (Get-Command python")
+    assert gate[-1] == "python plugins/apodictic/scripts/validate.py --check-all"
 
 
 def test_auxiliary_workflows_are_closed_and_sync_remains_draft():
@@ -384,7 +394,7 @@ def test_workflow_inventory_includes_yaml_extension(tmp_path: Path):
         ("  pull_request:", "  pull_request_target:"),
         ("jobs:\n  validate:", "jobs:\n  hidden:\n    runs-on: ubuntu-latest\n  validate:"),
         ("actions/checkout@v4", "actions/checkout@main"),
-        ("'plugins/apodictic/scripts/validate.py', '--check-all'", "'skipped.py'"),
+        ("bash scripts/validate.sh --check-canonical", "true"),
         ("github.event.action == 'labeled'", "github.event.action != 'labeled'"),
         (SYNC_BRANCH, "chore/other"),
     ],
@@ -444,52 +454,3 @@ def test_claude_workflow_token_has_no_write_scope_but_oidc():
     )
     scopes = workflow["jobs"]["claude"]["permissions"]
     assert {name for name, value in scopes.items() if value == "write"} == {"id-token"}
-
-
-def _no_bash_probe():
-    # Exercise only the child probe with mocked process creation. The hosted
-    # executable rename/restore protocol is never executed on a developer host.
-    run = _load(CI.read_text(encoding="utf-8"))["jobs"]["validate"]["steps"][-1]["run"]
-    return run.split("$probe = @'\n", 1)[1].split("\n'@", 1)[0]
-
-
-@pytest.mark.parametrize("failure", ["returned-zero", "returned-nonzero", "permission", "timeout", "bad-image"])
-def test_no_bash_probe_requires_process_creation_absence(monkeypatch, failure):
-    import subprocess
-    import sys
-    monkeypatch.setattr(sys, "argv", ["probe", "[]"])
-    monkeypatch.setenv("PATH", "")
-    def launch(argv, **kwargs):
-        assert kwargs["shell"] is False
-        if failure == "permission": raise PermissionError("denied")
-        if failure == "timeout": raise subprocess.TimeoutExpired(argv, 10)
-        if failure == "bad-image": raise OSError("bad executable")
-        return subprocess.CompletedProcess(argv, 0 if failure == "returned-zero" else 127)
-    monkeypatch.setattr(subprocess, "run", launch)
-    with pytest.raises(RuntimeError):
-        exec(compile(_no_bash_probe(), "ci-no-bash-child", "exec"), {})
-
-
-@pytest.mark.parametrize("aggregate_status", [0, 7])
-def test_no_bash_probe_rechecks_absence_and_preserves_aggregate_status(monkeypatch, aggregate_status):
-    import subprocess
-    import sys
-    monkeypatch.setattr(sys, "argv", ["probe", '["C:/fixed/bash.exe"]'])
-    monkeypatch.setenv("PATH", "")
-    calls = []
-    def launch(argv, **kwargs):
-        calls.append(argv)
-        assert kwargs["shell"] is False
-        if '--check-all' in argv:
-            assert argv[0] == sys.executable
-            return subprocess.CompletedProcess(argv, aggregate_status)
-        error = FileNotFoundError("missing executable")
-        error.winerror = 2
-        raise error
-    monkeypatch.setattr(subprocess, "run", launch)
-    with pytest.raises(SystemExit) as result:
-        exec(compile(_no_bash_probe(), "ci-no-bash-child", "exec"), {})
-    assert result.value.code == aggregate_status
-    assert len(calls) == 11
-    assert '--check-all' in calls[5]
-    assert calls[:5] == calls[6:]
