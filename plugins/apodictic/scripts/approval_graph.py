@@ -947,11 +947,15 @@ def _lexists(path: Path) -> bool:
     return os.path.lexists(str(path))
 
 
-def _reject_linked_components(path: Path, label: str) -> None:
-    """Reject lexical links before resolve() can erase their custody boundary."""
+def _reject_linked_components(path: Path, label: str, base: Path) -> None:
+    """Reject lexical links below base before resolve() can erase their custody boundary.
+
+    Links above base (macOS /var -> /private/var, a symlinked home folder) are
+    the host's layout and are left alone.
+    """
     absolute = path if path.is_absolute() else Path.cwd() / path
-    cursor = Path(absolute.anchor)
-    for part in absolute.parts[1:]:
+    cursor = base if base.is_absolute() else Path.cwd() / base
+    for part in absolute.relative_to(cursor).parts:
         cursor = cursor / part
         if _lexists(cursor) and (cursor.is_symlink() or _is_reparse(cursor)):
             raise _err("LINK-ARTIFACT", f"linked project artifact is forbidden: {label}")
@@ -961,7 +965,7 @@ def _project_root(project: str | Path) -> Path:
     candidate = Path(project).expanduser()
     if not candidate.is_absolute():
         candidate = Path.cwd() / candidate
-    _reject_linked_components(candidate, str(project))
+    _reject_linked_components(candidate, str(project), candidate.parent)
     root = candidate.resolve(strict=False)
     if not root.exists():
         raise _err("PROJECT-MISSING", "project directory does not exist")
@@ -975,7 +979,7 @@ def _inside(root: Path, name: str, allow_missing: bool = True) -> Path:
     if relative.is_absolute() or relative.drive or any(part in {"", ".", ".."} for part in relative.parts):
         raise _err("PATH-OUTSIDE-PROJECT", f"path escapes project: {name}")
     path = root / relative
-    _reject_linked_components(path, name)
+    _reject_linked_components(path, name, root)
     try:
         resolved = path.resolve(strict=False)
     except OSError as exc:

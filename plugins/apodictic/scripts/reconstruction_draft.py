@@ -21,7 +21,7 @@ class Snapshot:
 
 
 def _read(path):
-    engine._reject_linked_components(path, str(path))
+    engine._reject_linked_components(path, str(path), path.parent)
     if not path.is_file():
         raise engine._err('ARTIFACT-MISSING', f'regular file required: {path.name}')
     raw = path.read_bytes()
@@ -225,7 +225,7 @@ def emit(project, draft_file, map_file, expected_count, expected_hash, expected_
     root = engine._project_root(project)
     inputs = [Path(draft_file).absolute(), Path(map_file).absolute()]
     for path in inputs:
-        engine._reject_linked_components(path, str(path))
+        engine._reject_linked_components(path, str(path), path.parent)
         if (root / 'Approval_Sources') in path.resolve().parents or (path.parent.resolve() == root and (path.name in {'Approval_Events.jsonl', 'Approval_Graph.md', 'Adjudication_Session.json', 'Style_Brief.md', 'Argument_State.md'} or re.fullmatch(r'(?:Reconstruction_(?:Draft|Receipt)(?:_v.*)?|Argument_State_v.*)\.md', path.name))):
             raise engine._err('ENGINE-OWNED-INPUT', 'returned input must be outside engine-owned artifacts')
     draft, passage = (_read(path) for path in inputs)

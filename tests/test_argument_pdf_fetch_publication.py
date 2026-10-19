@@ -48,7 +48,7 @@ def harness(tmp_path):
 
     def command(name, body):
         path = bin_dir / name
-        path.write_text("#!/bin/bash\n" + body + "\n", encoding="utf-8", newline="\n")
+        path.write_bytes(("#!/bin/bash\n" + body + "\n").encode("utf-8"))
         path.chmod(0o755)
 
     # An allowlisted PATH makes missing pdftotext deterministic and prevents real

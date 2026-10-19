@@ -40,7 +40,7 @@ def normal_run(root, *, findings=True):
              "Invented_Annotated_Manuscript_r.md": exporter.am.render(snapshot, obj),
              "Invented_Findings_Ledger_r.md": ledger, "Timeline.md": timeline}
     for name, text in files.items():
-        (root / name).write_text(text, encoding="utf-8", newline="")
+        (root / name).write_bytes(text.encode("utf-8"))
     return obj, snapshot, files
 
 
@@ -327,7 +327,7 @@ class NavigationRunTests(unittest.TestCase):
             with self.subTest(name=name):
                 (self.root / name).unlink()
                 self.assertNotEqual(exporter.generate_pdf(str(self.root), internal_links=True)[0], 0)
-                (self.root / name).write_text(self.files[name], encoding="utf-8", newline="")
+                (self.root / name).write_bytes(self.files[name].encode("utf-8"))
         (self.root / "Invented_Annotated_Manuscript_r.md").write_text("changed\n", encoding="utf-8")
         self.assertEqual(exporter.generate_pdf(str(self.root), internal_links=True)[0], 1)
 
