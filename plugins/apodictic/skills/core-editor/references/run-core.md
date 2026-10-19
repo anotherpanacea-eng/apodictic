@@ -543,7 +543,7 @@ Before calculating any proportions, measure word counts programmatically:
 
 **Finding-driven audit triggers:**
 - Scene-level causal gaps or arbitrary breaks at 3+ scenes → recommend **Scene Turn** audit (Bickham) if not already activated
-- Nonfiction manuscript with situation overwhelming story → recommend **Franklin Pathway** if not already activated
+- Nonfiction manuscript with situation overwhelming story → recommend **Franklin Pathway** (`references/franklin-pathway.md`) if not already activated
 - Orphan scenes ≥3, or proportional imbalance >40% in any part → recommend **Compression** audit if not already activated
 
 ### Pass 5: Character Audit
