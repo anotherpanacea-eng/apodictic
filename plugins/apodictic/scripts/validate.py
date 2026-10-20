@@ -403,6 +403,14 @@ def _annotation_export(command, args):
     return _run_helper("annotation_export.py", [command, *args])
 
 
+def _utility_file_exists(path):
+    # Windows resolves a terminal directory component on a file; Bash test -f
+    # rejects that spelling. Keep this lexical check local to utility preflight.
+    if os.name == "nt" and path.endswith(("/.", "\\.")):
+        return False
+    return os.path.isfile(path)
+
+
 def _helper(command, args):
     script, count, arguments = _HELPERS[command]
     self_test = bool(args and args[0] == "--self-test")
@@ -410,7 +418,7 @@ def _helper(command, args):
         if len(args) < count:
             return _usage(command, arguments)
         is_directory = command == "artifact-names"
-        exists = os.path.isdir(args[0]) if is_directory else os.path.isfile(args[0])
+        exists = os.path.isdir(args[0]) if is_directory else _utility_file_exists(args[0])
         if not exists:
             kind = "Directory" if is_directory else "File"
             _line(f"Error: {kind} not found: {args[0]}", error=True)
@@ -641,7 +649,7 @@ def main(argv=None):
         if command == "contract-check":
             arguments += " <expected_hash>"
         return _usage(command, arguments)
-    if not os.path.isfile(args[0]):
+    if not _utility_file_exists(args[0]):
         _line(f"Error: File not found: {args[0]}", error=True)
         return 2
     try:
