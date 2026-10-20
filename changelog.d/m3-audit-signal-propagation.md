@@ -1,3 +1,3 @@
 ### Development validator runner — audit signal propagation
 
-The source-development JSONL runner accepts `audit-signal-propagation`, preserving the native one-file validator's output and decision for equal text and trusted package-reference context. Behavioral coverage crosses the actual copied-install reference lookup, including changed maps, silent missing-reference defaults and executed malformed-map failures. This route excludes registry-check mode and argument-fragment expansion; it does not establish full editorial compliance, source validity, semantic severity adequacy or desktop support.
+The source-development JSONL runner accepts `audit-signal-propagation`, matching the native one-file validator for the same text and installed `pass-dependencies.md`. A missing reference silently falls back to built-in defaults, as in the native route.
