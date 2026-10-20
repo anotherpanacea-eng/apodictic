@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """synthesis-coverage — synthesis coverage disclosure gate (docs/synthesis-regrounding.md, M1).
 
-`validate.sh synthesis-coverage <run_folder> [--strict]` shells out here. A run that wrote a
+`validate.py synthesis-coverage <run_folder> [--strict]` delegates here. A run that wrote a
 full editorial letter (`*_Core_DE_Synthesis_*` / `*_Full_DE_Synthesis_*` — the same detection
 the annotated-manuscript offer uses) must disclose what the synthesis step could actually see
 when it wrote the letter. The design rule that keeps the disclosure honest: **the note is

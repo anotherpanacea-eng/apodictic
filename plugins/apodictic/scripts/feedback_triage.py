@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """feedback-triage — structural integrity for the Feedback Triage workflow (Workflows track).
 
-`validate.sh feedback-triage <run_folder> [--strict]` (or explicit files) shells out here.
+`validate.py feedback-triage <run_folder> [--strict]` (or explicit files) delegates here.
 A writer returning with beta-reader / critique-group / editor feedback records each item as a
 structured `apodictic.feedback_item.v1` block in a Feedback Triage artifact: the external claim,
 APODICTIC's own `assessment` of it (did our analysis confirm it?), the `triage` disposition, the
@@ -59,7 +59,7 @@ def _has_block(text, btype):
 
     Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
     in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
-    validate.sh validator-conventions (M2)."""
+    validate.py validator-conventions (M2)."""
     if art is None:
         return ("apodictic:%s" % btype) in (text or "")
     return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))

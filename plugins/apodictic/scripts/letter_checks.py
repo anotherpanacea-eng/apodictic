@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Shared parsers + checks for APODICTIC editorial-letter / ledger validators.
 
-Backs validate.sh's prose-validator arms with a real parser and token-boundary
+Backs validate.py's prose-validator arms with a real parser and token-boundary
 matching, replacing brittle shell regex (the recurring source of severity-label /
-prefix evidence-ref / calibration-line edge-case findings). validate.sh stays the
-command surface and degrades to its prior bash path when python3 is absent.
+prefix evidence-ref / calibration-line edge-case findings). validate.py stays the
+command surface and requires Python 3.10+.
 
 Ported arms (Validator Architecture Hardening, incremental):
   - severity-floor, decision-layer-check, audit-signal-propagation,

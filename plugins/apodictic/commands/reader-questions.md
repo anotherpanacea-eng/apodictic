@@ -21,7 +21,7 @@ Load `../skills/revision-coach/SKILL.md` and follow `../skills/revision-coach/re
 
 4. **Then:** field the instrument to readers → returned answers re-enter through Feedback Triage (`/triage-feedback`) as `feedback_item`s, where APODICTIC's own re-analysis (not reader vote) sets the assessment.
 
-**Gate before finalizing:** `scripts/validate.sh reader-instrument <run_folder>` (add `--strict` for CI). Resolve any ERROR (broken contract / dangling provenance) and review B4 (leading / invented content), B5 (relitigating a locked verdict), and W1 (an uncertainty left untested). See `docs/beta-reader-instrument.md`.
+**Gate before finalizing:** `python scripts/validate.py reader-instrument <run_folder>` (add `--strict` for CI). Resolve any ERROR (broken contract / dangling provenance) and review B4 (leading / invented content), B5 (relitigating a locked verdict), and W1 (an uncertainty left untested). See `docs/beta-reader-instrument.md`.
 
 **State and output locations** (per `../skills/core-editor/references/output-structure.md` §Folder Architecture):
 - Read `Diagnostic_State.md`, `SYNTHESIS.md`, and the Findings Ledger from the **project root**

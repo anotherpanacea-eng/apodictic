@@ -1,7 +1,8 @@
 name: ci
 
 # Ordinary work remains draft and unarmed. A disposable train, or an explicitly
-# authorized standalone exception, receives this one ordered validation job.
+# authorized standalone exception, receives the ordered Ubuntu validation job and
+# the Windows native-gate job.
 
 run-name: >-
   apodictic-ci pr=${{ github.event.pull_request.number }}
@@ -74,6 +75,7 @@ jobs:
           tests/test_pr_merge_binding.py
           tests/test_sync_pr_draft.py
           tests/test_train_ci_receipts.py
+          tests/test_validate_native_aggregates.py
           -q
 
       - name: Byte-compile canonical Python (syntax gate)
@@ -134,3 +136,54 @@ jobs:
 
       - name: Canonical-framework gate
         run: bash scripts/validate.sh --check-canonical
+
+  validate-windows:
+    if: >-
+      ${{ github.event.pull_request.draft == false &&
+          ((github.event.pull_request.head.repo.full_name == github.repository &&
+            startsWith(github.event.pull_request.head.ref, 'train/') &&
+            contains(fromJSON('["opened","synchronize","reopened","ready_for_review"]'), github.event.action)) ||
+           (!(github.event.pull_request.head.repo.full_name == github.repository &&
+              startsWith(github.event.pull_request.head.ref, 'train/')) &&
+            !(github.event.pull_request.head.repo.full_name == github.repository &&
+              github.event.pull_request.head.ref == 'chore/sync-setec-contract') &&
+            contains(github.event.pull_request.labels.*.name, 'ci-ready') &&
+            (contains(fromJSON('["opened","synchronize","reopened","ready_for_review"]'), github.event.action) ||
+             (github.event.action == 'labeled' && github.event.label.name == 'ci-ready')))) }}
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: 'utf-8'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bind billed job to the exact pull-request merge
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_SHA: ${{ github.sha }}
+          JOB_NAME: ${{ github.job }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: >-
+          python tools/check_pr_merge_binding.py
+          --repository "$env:REPOSITORY"
+          --base "$env:BASE_SHA" --head "$env:HEAD_SHA" --github-sha "$env:MERGE_SHA"
+          --job "$env:JOB_NAME" --run-id "$env:RUN_ID" --run-attempt "$env:RUN_ATTEMPT"
+
+      - id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Native validator gate with only Python on PATH
+        env:
+          PYTHON_EXE: ${{ steps.setup-python.outputs.python-path }}
+        run: |
+          $env:PATH = Split-Path -Parent $env:PYTHON_EXE
+          & $env:PYTHON_EXE plugins/apodictic/scripts/validate.py --check-all

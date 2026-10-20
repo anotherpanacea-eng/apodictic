@@ -4,7 +4,7 @@
 works an author collects under one author-root and surfaces movement — drift, range/growth,
 unconscious self-imitation, signature tics. It does **no new stylometry**: it consumes the existing
 single-voice machinery and adds the persistence-and-longitudinal-diagnosis layer. Spec + validator:
-`docs/author-voice-fingerprint.md`, `scripts/validate.sh author-fingerprint`. Worked example:
+`docs/author-voice-fingerprint.md`, `python scripts/validate.py author-fingerprint`. Worked example:
 `example-author-voice-profile.md`.*
 
 ---
@@ -75,7 +75,7 @@ their voice, and a fingerprint carries no Must/Should/Could severity (a fingerpr
 
 ## Validation
 
-`validate.sh author-fingerprint <author_root|files...> [--strict]` runs: **F1** schema (incl. a
+`python validate.py author-fingerprint <author_root|files...> [--strict]` runs: **F1** schema (incl. a
 non-empty, scalar-valued `metrics`), **F2** provenance (each fingerprint cites a `source` +
 `centroid_ref`), **F3** same-register comparison (a drift/range claim referencing ≥2 fingerprints
 must share a register — the domain-shift guard), **F4** descriptive-not-prescriptive (no

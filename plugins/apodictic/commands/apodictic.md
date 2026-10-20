@@ -57,9 +57,9 @@ The commands sit on six capability areas: the diagnostic engine and its passes, 
 
 - `/projects` — lists every registered project with its mode, next action, and last-touched time (from the workspace registry at `.apodictic/registry.json`).
 - `/start <project>` — resumes a specific book, state-driven, with zero intake questions.
-- Each project's place on the lifecycle rail (`cold → blocked_gate → execution → pre_writing → submission → revising → diagnosed → diagnosing`, first match wins) derives from its sidecar: `../scripts/validate.sh lifecycle-node <project-root>/Diagnostic_State.meta.json`. The model is documented in `docs/project-addressability.md`.
+- Each project's place on the lifecycle rail (`cold → blocked_gate → execution → pre_writing → submission → revising → diagnosed → diagnosing`, first match wins) derives from its sidecar: `python ../scripts/validate.py lifecycle-node <project-root>/Diagnostic_State.meta.json`. The model is documented in `docs/project-addressability.md`.
 
-If a workspace registry is found, print a short **read-only** table — project title, lifecycle node, next action — plus the matching `/start <id>` resume line. Do **not** rebuild or rewrite the registry; that is `/projects`' job. If no `.apodictic/` workspace exists (or `python3`/`validate.sh` is unavailable), skip the table and say: *"No registered projects found — `/new-project` creates one, `/start` routes you."* Never fail or block on a tool.
+If a workspace registry is found, print a short **read-only** table — project title, lifecycle node, next action — plus the matching `/start <id>` resume line. Do **not** rebuild or rewrite the registry; that is `/projects`' job. If no `.apodictic/` workspace exists (or `python3`/`validate.py` is unavailable), skip the table and say: *"No registered projects found — `/new-project` creates one, `/start` routes you."* Never fail or block on a tool.
 
 ## Visual maps & key docs (point, don't rebuild)
 

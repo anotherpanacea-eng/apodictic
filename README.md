@@ -286,3 +286,12 @@ You can use, adapt, and share this framework for non-commercial purposes, with a
 Joshua A. Miller, PhD
 
 Focused audit ownership and consumer migration: [Canonical audit skill families](docs/audit-skill-families.md).
+
+
+Validator tooling uses Python 3.10+: run
+`python plugins/apodictic/scripts/validate.py --check-all` from a repository checkout,
+or `python scripts/validate.py <command> ...` from an installed plugin. Children
+reuse that interpreter. The POSIX `validate.sh` launchers remain optional
+compatibility entrypoints. Missing Python or helper code cannot produce a clean
+validation result. CI also runs the full gate on Windows with only Python on
+`PATH`; see [Native validator migration](docs/validator-python-port.md).

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """registry-check — integrity for the project registry (Project Addressability, Increment 2).
 
-`validate.sh registry-check <registry.json | workspace_dir>` shells out here. The registry
+`validate.py registry-check <registry.json | workspace_dir>` delegates here. The registry
 (apodictic.project_registry.v1) is a recomputable index that makes APODICTIC projects
 addressable: `/start <project>` and `/projects` resolve against it. Each per-project
 Diagnostic_State.meta.json sidecar is canonical; the registry is a denormalized cache, so this

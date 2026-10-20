@@ -4,7 +4,7 @@
 advisory** — a map of where the manuscript depicts intense material, at what intensity, on- or
 off-page. Homed alongside the Reception-Risk / Consent / Erotic audits it draws on (sensitivity-
 surface work, not core manuscript analysis). Spec + validator: `docs/content-advisory.md`,
-`scripts/validate.sh content-advisory`. Worked example: `core-editor/references/example-content-advisory.md`.*
+`python scripts/validate.py content-advisory`. Worked example: `core-editor/references/example-content-advisory.md`.*
 
 ---
 
@@ -77,7 +77,7 @@ category, generated only under the opt-in marker:
 
 ## Validation
 
-`validate.sh content-advisory <run_folder|files...> [--strict]` runs: **A1** schema (incl. the
+`python validate.py content-advisory <run_folder|files...> [--strict]` runs: **A1** schema (incl. the
 `other`→non-empty-`label` conditional and non-empty loci elements), **A2** locus presence/shape,
 **A3** no editorial-severity leak (no Must/Should/Could token in the prose or a label, no
 `apodictic:finding` block), plus advisory **W1** prescriptive drift (a "should cut/soften …"

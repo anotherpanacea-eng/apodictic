@@ -3,7 +3,7 @@
 *Reference module for the APODICTIC specialized audits — an overlay on Pass 1 (Reader Dynamics). Pass
 1 maps one composite reader; this runs the *same* lens through several declared reading dispositions
 and reports the **delta**. Spec + validator: `docs/reader-persona-simulation.md`,
-`scripts/validate.sh persona-divergence`. Worked example: `core-editor/references/example-persona-divergence-map.md`
+`python scripts/validate.py persona-divergence`. Worked example: `core-editor/references/example-persona-divergence-map.md`
 (paired with `example-persona-divergence-ledger.md`).*
 
 ---
@@ -68,7 +68,7 @@ per-persona `experiences` ∈ engaged/neutral/friction/disengage + `magnitude`, 
 
 ## Validation
 
-`validate.sh persona-divergence <run_folder|files...> [--strict]` runs: **D1** schema (incl. the
+`python validate.py persona-divergence <run_folder|files...> [--strict]` runs: **D1** schema (incl. the
 nested `experiences` enum + that each key is a declared persona), **D2** grounded prediction (anchor
 resolves to a Ledger finding or a Timeline scene id), **D3** target-severity anchoring (exactly one
 target; `asserted_severity` must equal the locked severity — neither below nor above — and may be

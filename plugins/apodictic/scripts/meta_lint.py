@@ -1,36 +1,33 @@
 #!/usr/bin/env python3
 """validator-conventions — a meta-linter that validates the APODICTIC validator FLEET.
 
-`validate.sh validator-conventions` shells out here. The fleet's structural conventions — every
-self-testable validator is wired into the dispatcher, file resolvers classify on PARSED BLOCKS not
-raw substrings, the advertised count is DERIVED not hand-typed, every schema is actually consumed —
+`python validate.py validator-conventions` delegates here. The fleet's structural conventions — file
+resolvers classify on PARSED BLOCKS not raw substrings, every schema is actually consumed —
 were enforced only by manual review, and the gaps caused real latent bugs (a fleet-wide adversarial
 sweep, 2026-06-20, found a recurring resolver-substring class and others). This validator mechanizes
 those conventions so the classes cannot recur: a validator that validates the validators.
 
-  M1 dispatch+self-test  every name in validate.sh's AGG_VALIDATORS has a `<name>)` dispatcher case
-                         whose body handles `--self-test` (so `--self-test-all` can run it).
+  M1, M3 (retired)       dispatch/self-test wiring and the derived count were Bash-source checks.
+                         validate.py dispatches through its ROUTES table and counts with len(), and
+                         `--self-test-all` runs every AGG_VALIDATORS self-test, so a missing route fails.
   M2 resolver hygiene    no validator script classifies inputs by a raw marker scan/membership op (a
                          literal `apodictic:<type>` reached by `in`/`not in`/`.find`/`.count`/
                          `re.search`/… ) — the anti-pattern misroutes a file that merely NAMES the
                          marker in EXECUTABLE code, silently false-passing. Resolvers must classify on
                          parsed blocks (the `_has_block` / `art.parse_blocks` idiom). The signature
                          anti-pattern of the 2026-06-20 sweep.
-  M3 derived count       validate.sh derives the validator count from AGG_VALIDATORS (AGG_COUNT via
-                         `$#`) — never a hand-typed integer that can drift.
   M4 no orphan schema    every `*.schema.json` in the resolved schema dir is referenced (its filename
                          STEM — what `art.known_schema_ids()` returns — appears as a whole id) in at
                          least one validator script — a schema nothing consumes is dead or mis-wired.
                          Degrades to a WARN (not a clean PASS) when the resolver can't be imported or
                          resolves zero schemas.
   M5 override hygiene    no validator detects an override marker by a BARE `<!-- override: <slug>`
-                         substring scan (Python `"<!-- override: %s" % slug in body` / bash
-                         `grep -F "<!-- override:`) — that honors a SUFFIXED slug and a backtick'd
+                         substring scan (Python `"<!-- override: %s" % slug in body`) — that honors a SUFFIXED slug and a backtick'd
                          documentation example — NOR by a local COMPILED/inline regex
                          `re.compile(r"<!--\\s*override: …")` (boundary-matched, so it evaded the bare
                          form, but still skips code-span stripping). Use the shared
-                         `override_marker.has_override` / `override_targets` (Python) / the
-                         `_has_override` bash helper (boundary-matched, code-spans stripped). The
+                         `override_marker.has_override` / `override_targets` (boundary-matched,
+                         code-spans stripped). The
                          override-marker sibling of M2's resolver-substring class.
   M6 code-span hygiene   no validator builds a LOCAL code-span / fence stripper — a `re.compile`/`re.sub`
                          whose pattern carries a ``` / ~~~ fence run — instead of delegating to
@@ -47,7 +44,7 @@ those conventions so the classes cannot recur: a validator that validates the va
                          synced-copy class (six byte-identical copies had accumulated by 2026-07-06). The
                          fleet's other, legitimately-different severity patterns are not flagged.
 
-It reads validate.sh and the sibling `*.py` from its own directory and the schemas via the shared
+It reads the sibling `*.py` from its own directory and the schemas via the shared
 resolver. No artifact input. See docs/validator-conventions.md.
 
   meta_lint.py validator-conventions
@@ -62,6 +59,8 @@ import os
 import re
 import sys
 import tokenize
+
+from validate import AGG_VALIDATORS
 
 try:
     import apodictic_artifacts as art
@@ -222,19 +221,15 @@ _RE_SCAN_PAT = (r"\bre\.(?:search|match|fullmatch|findall|finditer)\s*\(\s*" + _
 _SUBSTRING_CLASSIFY_RE = re.compile("(?:%s)|(?:%s)|(?:%s)"
                                     % (_MARKER_IN_PAT, _SCAN_METHOD_PAT, _RE_SCAN_PAT))
 _HAS_BLOCK_DEF_RE = re.compile(r"^def _has_block\b", re.MULTILINE)
-_AGG_RE = re.compile(r'^AGG_VALIDATORS="([^"]*)"', re.MULTILINE)
-_CASE_RE = re.compile(r"^  ([a-z0-9][a-z0-9-]*)\)\s*$", re.MULTILINE)
-_COUNT_DERIVE_RE = re.compile(r"AGG_COUNT=\$\(set -- \$AGG_VALIDATORS;\s*echo \$#\)")
 # scripts that are not artifact validators (no resolver convention to hold)
 _M2_EXEMPT = {"apodictic_artifacts.py", "meta_lint.py", "sync_setec.py", "config_checks.py"}
 
 # ---- M5 override-hygiene -------------------------------------------------------------------------
 # The bare override-substring anti-pattern (2026-06-20 sweep), the override-marker sibling of M2's
 # resolver-substring class. A gate honors `<!-- override: <slug> — <rationale> -->`; testing for it by
-# a BARE-PREFIX substring (Python `"<!-- override: %s" % slug in body` / `"<!-- override: x" in body`;
-# bash `grep -F "<!-- override:`) honors a SUFFIXED slug AND a backtick'd documentation example. The
-# hardened replacement is the shared `override_marker.has_override` (Python) / the `_has_override`
-# helper (bash), which strip code spans and boundary-match. M5 flags the bare form so the class is
+# a BARE-PREFIX substring (Python `"<!-- override: %s" % slug in body` / `"<!-- override: x" in body`)
+# honors a SUFFIXED slug AND a backtick'd documentation example. The hardened replacement is the
+# shared `override_marker.has_override`, which strips code spans and boundary-matches. M5 flags the bare form so the class is
 # gated going forward. Two marker spellings matter, and they are gated by two markers:
 #   * `_OV_MARK` — the LITERAL form (`<!-- override:` one space, or `<!--override:` zero) used by the
 #     SUBSTRING/MEMBERSHIP patterns (`in` / `.find` / format-`in`). A `<!--\s*override:` REGEX literal
@@ -322,8 +317,6 @@ def _ov_py_hit(stripped):
             if _OV_PY_RE.match(stripped, s):
                 return True
     return False
-# bash: a grep over the bare `<!-- override:` prefix (any whitespace), the form #128 replaced.
-_OV_SH_RE = re.compile(r"""grep\b[^\n]*?['"]""" + _OV_MARK)
 # override_marker.py legitimately DEFINES the hardened helper; meta_lint.py carries the M5 pattern
 # literals themselves. Both are exempt from M5 (they are infra, not gates honoring overrides).
 _M5_EXEMPT = {"override_marker.py", "meta_lint.py"}
@@ -387,59 +380,6 @@ _M8_PY_RE = re.compile(r"""\bre\.compile\s*\(\s*""" + _OV_PFX + _Q + r"""[^"'\n]
 _M8_EXEMPT = {"severity_vocab.py", "meta_lint.py"}
 
 
-def agg_validators(sh_text):
-    m = _AGG_RE.search(sh_text or "")
-    return m.group(1).split() if m else []
-
-
-# A case terminator: a `;;` alone on its line (any leading indent, optional trailing whitespace). The
-# body runs up to the FIRST such line after the header — robust to ANY indent, where the old
-# `text.find("\n    ;;")` hard-coded EXACTLY 4 spaces and would skip a `;;` at a different indent,
-# over-capturing the body into the next case and silently weakening M1's --self-test membership check.
-_CASE_END_RE = re.compile(r"^[ \t]*;;[ \t]*$", re.MULTILINE)
-
-
-def dispatcher_cases(sh_text):
-    """{case_name: body_text} for each `^  <name>)` case (body up to its terminating `;;`).
-
-    The body ends at the first case-terminator line (`;;` alone, ANY indent) after the header — robust
-    to a future case whose `;;` indent differs from the legacy 4-space form (which the old hard-coded
-    `\\n    ;;` search would have skipped, over-capturing into the next case)."""
-    out = {}
-    text = sh_text or ""
-    for m in _CASE_RE.finditer(text):
-        name = m.group(1)
-        endm = _CASE_END_RE.search(text, m.end())
-        out[name] = text[m.end():endm.start() if endm else len(text)]
-    return out
-
-
-# A shell `#` comment to end-of-line, where `#` begins a line or follows whitespace (the common
-# comment form). Stripped from a case body before the `--self-test` membership check so a `# TODO wire
-# --self-test` comment does NOT falsely satisfy M1 (the old naive substring counted commented-out
-# text). Over-stripping a `#` that sits inside a quoted string only makes M1 STRICTER, never laxer —
-# the safe direction for a gate.
-_SH_COMMENT_RE = re.compile(r"(?m)(^|[ \t])#.*$")
-
-
-def _strip_sh_comments(body):
-    return _SH_COMMENT_RE.sub(lambda m: m.group(1), body or "")
-
-
-def check_m1(sh_text):
-    """Every AGG validator has a dispatcher case that handles --self-test (in EXECUTABLE shell, not a
-    comment)."""
-    viol = []
-    cases = dispatcher_cases(sh_text)
-    for name in agg_validators(sh_text):
-        if name not in cases:
-            viol.append("M1 dispatch: AGG validator '%s' has no dispatcher case" % name)
-        elif "--self-test" not in _strip_sh_comments(cases[name]):
-            viol.append("M1 self-test: dispatcher case '%s' does not handle --self-test "
-                        "(--self-test-all would skip or fail it)" % name)
-    return viol
-
-
 def check_m2(py_name, py_text):
     """A validator that classifies inputs by a raw marker scan/membership op instead of parsed blocks.
 
@@ -462,14 +402,6 @@ def check_m2(py_name, py_text):
                 "substring — a file that merely names the marker in prose misroutes and silently "
                 "false-passes; classify on parsed blocks (the _has_block / art.parse_blocks idiom)"
                 % py_name]
-    return []
-
-
-def check_m3(sh_text):
-    """The validator count is derived from AGG_VALIDATORS, not hand-typed."""
-    if not _COUNT_DERIVE_RE.search(sh_text or ""):
-        return ["M3 derived-count: validate.sh does not derive AGG_COUNT from AGG_VALIDATORS "
-                "(`AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)`) — a hand-typed count can drift"]
     return []
 
 
@@ -513,20 +445,6 @@ def check_m5_py(py_name, py_text):
                 "example; call override_marker.has_override (boundary-matched, code-spans stripped)"
                 % py_name]
     return []
-
-
-def check_m5_sh(sh_text):
-    """validate.sh must not `grep` the bare `<!-- override:` prefix — use the shared `_has_override`
-    bash helper (strips fenced + inline code spans, boundary-matches). Comment lines (`#`) are dropped
-    first so the helper's documentation prose is not a false positive."""
-    viol = []
-    for ln in (sh_text or "").split("\n"):
-        code = ln.split("#", 1)[0] if not ln.lstrip().startswith("#") else ""
-        if _OV_SH_RE.search(code):
-            viol.append("M5 override-hygiene: validate.sh greps the bare \"<!-- override:\" prefix "
-                        "(`%s`) — honors a suffixed slug / fenced-block decoy; pipe through the shared "
-                        "_has_override helper instead" % ln.strip())
-    return viol
 
 
 def check_m6_py(py_name, py_text):
@@ -680,18 +598,6 @@ def _script_dir():
 
 def run():
     d = _script_dir()
-    sh_path = os.path.join(d, "validate.sh")
-    sh_text = _read_text(sh_path)
-    if sh_text is None:
-        return 2, ["validator-conventions: cannot read %s" % sh_path]
-    # validate.sh sources its --check-all block and command arms from validate.d/ (split to stay under
-    # the plugin directory's per-file size limit); lint the parts as one text, in source order.
-    vd = os.path.join(d, "validate.d")
-    if os.path.isdir(vd):
-        for fn in sorted(os.listdir(vd)):
-            if fn.endswith(".sh"):
-                sh_text += _read_text(os.path.join(vd, fn)) or ""
-
     py_files = {}
     for fn in sorted(os.listdir(d)):
         if fn.endswith(".py"):
@@ -707,10 +613,8 @@ def run():
     m4_degraded = art is None or not schema_ids
 
     viol, warn = [], []
-    viol += check_m1(sh_text)
     for name, text in py_files.items():
         viol += check_m2(name, text)
-    viol += check_m3(sh_text)
     m4 = check_m4(schema_ids, all_py, degraded=m4_degraded)
     if m4_degraded:
         warn += m4
@@ -719,7 +623,6 @@ def run():
     # M5 override-hygiene (the override-substring sibling of M2's resolver-substring class).
     for name, text in py_files.items():
         viol += check_m5_py(name, text)
-    viol += check_m5_sh(sh_text)
     # M6 code-span-stripper hygiene — no validator may carry a LOCAL fence stripper; delegate to
     # override_marker.strip_code_spans (the single state-machine SSoT) so the helper can't drift unused.
     for name, text in py_files.items():
@@ -733,7 +636,7 @@ def run():
         viol += check_m8_py(name, text)
 
     lines = ["validator-conventions: %d validator(s), %d schema(s) checked"
-             % (len(agg_validators(sh_text)), len(schema_ids))]
+             % (len(AGG_VALIDATORS), len(schema_ids))]
     for w in warn:
         lines.append("  WARN: %s" % w)
     for v in viol:
@@ -741,7 +644,7 @@ def run():
     if viol:
         lines.append("validator-conventions: FAIL (%d violation(s))" % len(viol))
         return 1, lines
-    lines.append("validator-conventions: PASS (dispatch+self-test + resolver hygiene + derived count "
+    lines.append("validator-conventions: PASS (resolver hygiene "
                  "+ no orphan schema + override hygiene + code-span hygiene + single-Firewall "
                  "+ severity-vocab SSoT%s)"
                  % (" — M4 degraded/skipped, see WARN" if m4_degraded else ""))
@@ -757,32 +660,6 @@ def run_self_test():
         print("  %s: %s" % (name, "OK" if cond else "FAIL"))
         if not cond:
             rc["v"] = 1
-
-    GOOD_SH = ('AGG_VALIDATORS="alpha beta"\n'
-               'AGG_COUNT=$(set -- $AGG_VALIDATORS; echo $#)\n'
-               '  alpha)\n    python3 x --self-test\n    ;;\n'
-               '  beta)\n    if [ "${1:-}" = "--self-test" ]; then python3 y --self-test; fi\n    ;;\n')
-
-    # M1
-    chk("m1_clean", check_m1(GOOD_SH) == [])
-    chk("m1_missing_case", any("no dispatcher case" in v for v in
-        check_m1('AGG_VALIDATORS="alpha gamma"\n  alpha)\n    python3 x --self-test\n    ;;\n')))
-    chk("m1_no_selftest", any("does not handle --self-test" in v for v in
-        check_m1('AGG_VALIDATORS="alpha"\n  alpha)\n    python3 x foo\n    ;;\n')))
-    # M1 comment false-pass: a `# TODO wire --self-test` comment must NOT satisfy M1 (the case has no
-    # executable --self-test handling) — the case body is `#`-stripped before the membership check.
-    chk("m1_commented_selftest_fails", any("does not handle --self-test" in v for v in
-        check_m1('AGG_VALIDATORS="alpha"\n  alpha)\n    # TODO wire --self-test\n    python3 x run\n    ;;\n')))
-    # M1 `;;` brittleness: a case whose terminator is at a NON-4-space indent (here 2 spaces) and which
-    # LACKS --self-test must be flagged — the old hard-coded `\n    ;;` search skipped the 2-space `;;`
-    # and over-captured the following compliant case's body, masking the violation.
-    M1_TWOSPACE_SH = ('AGG_VALIDATORS="alpha beta"\n'
-                      '  alpha)\n    python3 x run\n  ;;\n'
-                      '  beta)\n    python3 y --self-test\n    ;;\n')
-    chk("m1_twospace_terminator_not_over_captured",
-        any("'alpha'" in v and "does not handle --self-test" in v for v in check_m1(M1_TWOSPACE_SH)))
-    chk("m1_twospace_compliant_case_still_clean",
-        not any("'beta'" in v for v in check_m1(M1_TWOSPACE_SH)))
 
     # M2
     chk("m2_substring_flagged", check_m2("bad.py", 'def resolve(p):\n    if "apodictic:finding" in t:\n        return p\n') != [])
@@ -812,10 +689,6 @@ def run_self_test():
     chk("m2_comment_marker_ok", check_m2("c.py", 'def f(t):\n    # checks "apodictic:finding" in t\n    return _has_block(t, "finding")\n') == [])
     chk("m2_docstring_marker_ok", check_m2("c.py", '"""Resolves on "apodictic:finding" in the body."""\ndef f(t):\n    return _has_block(t, "finding")\n') == [])
     chk("m2_error_message_marker_ok", check_m2("c.py", 'def f(t):\n    raise ValueError("expected an apodictic:finding block in the input")\n') == [])
-
-    # M3
-    chk("m3_derived_ok", check_m3(GOOD_SH) == [])
-    chk("m3_missing_fails", check_m3('AGG_VALIDATORS="a b"\necho "2 validators"\n') != [])
 
     # M4
     chk("m4_referenced_ok", check_m4(["apodictic.finding.v1"], 'load_schema("apodictic.finding.v1")') == [])
@@ -903,23 +776,10 @@ def run_self_test():
     chk("m5_py_comment_marker_ok",
         check_m5_py("g.py", 'def f(b):\n    # honors <!-- override: foo -->\n    return has_override(b, "foo")\n') == [])
     chk("m5_py_exempt", check_m5_py("override_marker.py", '"<!-- override: foo" in body') == [])
-    # M5 bash side:
-    chk("m5_sh_grep_F_flagged",
-        check_m5_sh('  case x)\n    grep -F "<!-- override: foo" "$F" && OV=1\n    ;;\n') != [])
-    chk("m5_sh_grep_oE_flagged",
-        check_m5_sh('    echo "$B" | grep -oE "<!-- override: foo-[a-z]+"\n') != [])
-    # the hardened helper grep (`<!--[[:space:]]*override:`) is clean — no literal single-space form.
-    chk("m5_sh_hardened_helper_ok",
-        check_m5_sh('    grep -E "<!--[[:space:]]*override:[[:space:]]*${S}([[:space:]]|-->)"\n') == [])
-    # a `<!-- override:` named in a `#` comment line is not an executable grep -> not flagged.
-    chk("m5_sh_comment_ok",
-        check_m5_sh('    # legacy: grep -F "<!-- override: foo" was the bare form\n') == [])
     # Codex P2: a bare scan in the zero-whitespace `<!--override:` spelling (which the hardened parser
-    # also accepts) is a live bypass and must be flagged — Python and bash.
+    # also accepts) is a live bypass and must be flagged.
     chk("m5_py_zero_whitespace_flagged",
         check_m5_py("g.py", 'if "<!--override: foo" in body:\n    pass\n') != [])
-    chk("m5_sh_zero_whitespace_flagged",
-        check_m5_sh('  case x)\n    grep -F "<!--override: foo" "$F" && OV=1\n    ;;\n') != [])
     chk("m5_py_triple_quote_flagged",  # Codex P2: triple-quoted override literal evaded the single-quote class
         check_m5_py("g.py", 'if """<!-- override: foo""" in body:\n    pass\n') != [])
     # M5 extension: the COMPILED-regex form (boundary-matched but no code-span stripping) is now gated.

@@ -19,7 +19,31 @@ SCRIPT = ROOT / "plugins/apodictic/scripts/validator_runner.py"
 FIXTURES = ROOT / "tests/fixtures/validators"
 PYTHON = sys.executable
 LEAVES = ("tone-check", "synthesis-sections", "severity-floor", "decision-layer-check",
-          "author-facing-lint", "ledger-check")
+          "author-facing-lint", "ledger-check", "ledger-consolidation", "audit-signal-propagation",
+          "underdiagnosis-triggers")
+REFERENCE = Path("skills/core-editor/references/pass-dependencies.md")
+SIGNAL_APPENDIX = "\n## Appendix A\n### Reception Risk Audit\nhard gate at L42\n"
+SIGNAL_SHOULD = "Should-Fix: Reception Risk needs revision.\n" + SIGNAL_APPENDIX
+SIGNAL_TWO = SIGNAL_APPENDIX + "### Compression Audit\nhard gate at L71\n"
+SIGNAL_MARKER = "<!-- override:audit-propagation-reception-risk -->"
+SIGNAL_CASES = [
+    ("hard-gate-should", SIGNAL_SHOULD, 1),
+    ("hard-gate-must", SIGNAL_SHOULD.replace("Should-Fix", "Must-Fix"), 0),
+    ("shared-evidence", "Must-Fix: revise L42.\n" + SIGNAL_APPENDIX, 0),
+    ("wrong-evidence", "Must-Fix: revise L43.\n" + SIGNAL_APPENDIX, 1),
+    ("wrong-audit", "Must-Fix: Compression needs revision.\n" + SIGNAL_APPENDIX, 1),
+    ("floor-should", SIGNAL_SHOULD.replace("hard gate", "Must-Fix floor"), 1),
+    ("high-satisfied", SIGNAL_SHOULD.replace("hard gate", "HIGH signal"), 0),
+    ("high-absent", SIGNAL_APPENDIX.replace("hard gate", "HIGH signal"), 1),
+    ("live-override", SIGNAL_MARKER + SIGNAL_APPENDIX, 0),
+    ("inline-override", "`" + SIGNAL_MARKER + "`" + SIGNAL_APPENDIX, 1),
+    ("fenced-override", "```\n" + SIGNAL_MARKER + "\n```" + SIGNAL_APPENDIX, 1),
+    ("appendix-override", SIGNAL_APPENDIX + SIGNAL_MARKER, 1),
+    ("suffix-override", SIGNAL_MARKER.replace("risk", "risk-suffix") + SIGNAL_APPENDIX, 1),
+    ("one-of-two-overridden", SIGNAL_MARKER + SIGNAL_TWO, 1),
+    ("legacy-absent", "hard gate\n", 1),
+    ("legacy-satisfied", "hard gate\nMust-Fix: revise the opening.\n", 0),
+]
 SYNTHESIS = "".join("## %s\n\nbody\n\n" % h for h in (
     "Development Edit", "The Short Version", "What the Book Does Best", "What Needs Work",
     "Additional Observations", "Revision Checklist", "Protected Elements", "Author Decisions",
@@ -29,6 +53,54 @@ LEDGER = "## Pass 2\n" + "".join("### %s\n" % h for h in (
     "Notable Findings", "Data Artifacts for Letter Reference", "Cross-Pass Connections",
     "Unresolved Questions", "Audit Triggers"))
 WEAK = "Weak at High"
+CONVERGENCE = "opacity opacity opacity"
+CONVERGENCE_MARKER = "<!-- override:underdiagnosis-trigger-convergence -->"
+SEVERITY_CHILD_MARKER = "<!-- override:severity-floor-weak-axis -->"
+SEVERITY_PARENT_MARKER = "<!-- override:underdiagnosis-trigger-severity-floor -->"
+PROPAGATION_PARENT_MARKER = "<!-- override:underdiagnosis-trigger-propagation -->"
+UNDERDIAGNOSIS_BODY = "Must-Fix: unrelated L99.\nShould-Fix: Reception Risk L42.\n"
+# Expected warning/error prefixes protect the six actual paths and composition,
+# independently of the native parity oracle. These are invented text controls.
+UNDERDIAGNOSIS_CASES = [
+    ("two-occurrences", "opacity opacity", 0, []),
+    ("three-occurrences", CONVERGENCE, 1, ["ERROR: Trigger #1 (convergence)"]),
+    ("convergence-body-must", CONVERGENCE + "\nMust-Fix: revise.", 0, []),
+    ("alert-should", "Should-Fix: revise pacing.\nAlert finding", 1, ["ERROR: Trigger #2 (hard-gate)"]),
+    ("alert-must", "Must-Fix: revise pacing.\nAlert finding", 0, []),
+    ("character-only", "Character pass climax", 0, []),
+    ("character-and-structure", "Character pass climax\nStructure pass climax", 1,
+     ["ERROR: Trigger #3 (final-third)"]),
+    ("one-axis", "series", 0, []),
+    ("two-axes", "series representation", 1, ["ERROR: Trigger #4 (multi-axis)"]),
+    ("severity-error", WEAK, 1, ["ERROR: Trigger #5 (severity-floor)"]),
+    ("severity-child-only", WEAK + "\n" + SEVERITY_CHILD_MARKER, 1,
+     ["ERROR: Trigger #5 (severity-floor)"]),
+    ("severity-parent-only", WEAK + "\n" + SEVERITY_PARENT_MARKER, 0,
+     ["WARN: Trigger #5 (severity-floor)"]),
+    ("severity-both", WEAK + "\n" + SEVERITY_CHILD_MARKER + "\n" + SEVERITY_PARENT_MARKER, 0,
+     ["WARN: Trigger #5 (severity-floor)"]),
+    ("severity-appendix-must", WEAK + "\n## Appendix A\nMust-Fix", 0, []),
+    ("propagation-error", UNDERDIAGNOSIS_BODY + SIGNAL_APPENDIX, 1,
+     ["ERROR: Trigger #6 (propagation)"]),
+    ("propagation-child-only", UNDERDIAGNOSIS_BODY + SIGNAL_MARKER + SIGNAL_APPENDIX, 1,
+     ["ERROR: Trigger #6 (propagation)"]),
+    ("propagation-parent-only", UNDERDIAGNOSIS_BODY + PROPAGATION_PARENT_MARKER + SIGNAL_APPENDIX, 0,
+     ["WARN: Trigger #6 (propagation)"]),
+    ("propagation-both", UNDERDIAGNOSIS_BODY + SIGNAL_MARKER + "\n" +
+     PROPAGATION_PARENT_MARKER + SIGNAL_APPENDIX, 0, ["WARN: Trigger #6 (propagation)"]),
+    ("propagation-matched-evidence", "Must-Fix: revise L42.\n" + SIGNAL_APPENDIX, 0, []),
+    ("mixed-warning-and-error", CONVERGENCE + "\nseries representation\n" + CONVERGENCE_MARKER, 1,
+     ["WARN: Trigger #1 (convergence)", "ERROR: Trigger #4 (multi-axis)"]),
+    ("live-parent", CONVERGENCE + "\n" + CONVERGENCE_MARKER, 0,
+     ["WARN: Trigger #1 (convergence)"]),
+] + [
+    (label, CONVERGENCE + "\n" + marker, 1, ["ERROR: Trigger #1 (convergence)"])
+    for label, marker in (
+        ("inline-parent", "`" + CONVERGENCE_MARKER + "`"),
+        ("fenced-parent", "~~~\n" + CONVERGENCE_MARKER + "\n~~~"),
+        ("appendix-parent", "## Appendix A\n" + CONVERGENCE_MARKER),
+        ("suffix-parent", CONVERGENCE_MARKER.replace("convergence", "convergence-suffix")))
+]
 # Invented adversarial inputs per leaf; shipped fixtures and SHARED are added to each.
 CASES = {
     "tone-check": [
@@ -69,6 +141,26 @@ CASES = {
         LEDGER, "## Pass 2\n### Audit Triggers\n### Notable Findings\n", LEDGER.rstrip("\n"),
         "## Pass 0\n", "## Pass 10\n", "## Pass 00\n", "## Pass 2\nprose ### Notable Findings\n",
         "## Pass 2\n#### **Notable Findings**\n", "## Pass ١\n", "Unrecognized text"],
+    "ledger-consolidation": [
+        # The unchanged helper recognizes convergence annotations anywhere in the text.
+        "## Mechanism: recurring delay\nMust-Fix\n"
+        "## Mechanism: repeated detour\nMust-Fix\n" + annotation
+        for annotation in ("", "(confirmed by Pass 1, Pass 2)\n")
+    ] + [
+        "## Mechanism: recurring delay\n(confirmed by Pass 1, Pass 2)\n"
+        "Must-Fix\nShould-Fix\n" + annotation for annotation in ("", "collated\n")
+    ] + [
+        # Only the marker representation changes; raw aggregation fails without it.
+        "## Pass 1 Findings\n## Pass 2 Findings\n## Pass 3 Findings\n" + marker
+        for marker in ("<!-- override:ledger-consolidation-raw-aggregate -->",
+                       "`<!-- override:ledger-consolidation-raw-aggregate -->`",
+                       "<!-- override:ledger-consolidation-raw-aggregate-suffix -->")
+    ] + [
+        # One text supplies no raw-ledger item count for the optional reduction check.
+        "## Mechanism: recurring delay\n(confirmed by Pass 1, Pass 2)\nMust-Fix\n"
+        "- Invented opening delay.\n- Invented middle delay.\n- Invented closing delay.\n"],
+    "audit-signal-propagation": [text for _, text, _ in SIGNAL_CASES],
+    "underdiagnosis-triggers": [text for _, text, _, _ in UNDERDIAGNOSIS_CASES],
 }
 SHARED = ["", "masterpiece", "雪 😀\r\n" + WEAK + "\rQF-7\n" + LEDGER, "x" * 262144, "\n" * 8191]
 
@@ -151,10 +243,13 @@ class RunnerTests(unittest.TestCase):
         self.schemas = self.scripts.parent / "schemas"
         self.scripts.mkdir(parents=True)
         self.schemas.mkdir()
-        for name in ("validator_runner.py", "letter_checks.py", "override_marker.py", "validate.sh"):
+        for name in ("validator_runner.py", "letter_checks.py", "override_marker.py", "validate.py"):
             shutil.copyfile(SCRIPT.parent / name, self.scripts / name)
         self.metadata = self.schemas / "validator-runtime-inventory.json"
         shutil.copyfile(SCRIPT.parent.parent / "schemas/validator-runtime-inventory.json", self.metadata)
+        self.reference = self.scripts.parent / REFERENCE
+        self.reference.parent.mkdir(parents=True)
+        shutil.copyfile(SCRIPT.parent.parent / REFERENCE, self.reference)
         self.script = self.scripts / "validator_runner.py"
         self.clients = []
 
@@ -177,7 +272,7 @@ class RunnerTests(unittest.TestCase):
         """Replace the copied installation's helper with a synthetic one for every leaf."""
         (self.scripts / "letter_checks.py").write_text(
             body + "\nCHECKS = dict.fromkeys(%r, check)\nRAW_CHECKS = {'ledger-check': "
-            "lambda text: (lambda r: (int(bool(r[0])), r[1] + [r[2]]))(check(text))}\n" % (LEAVES[:5],))
+            "lambda text: (lambda r: (int(bool(r[0])), r[1] + [r[2]]))(check(text))}\n" % (tuple(leaf for leaf in LEAVES if leaf != "ledger-check"),))
 
     def sleeping(self):
         self.pidfile = self.root / "synthetic-worker.pid"
@@ -203,9 +298,10 @@ class RunnerTests(unittest.TestCase):
 
     def inventory_check(self):
         return subprocess.run([PYTHON, "-I", "-S", str(self.script), "--check-inventory"],
-                              capture_output=True).returncode
+                              capture_output=True, cwd=self.root,
+                              env=dict(os.environ, PATH="", PYTHONPATH=str(self.root))).returncode
 
-    def test_every_leaf_matches_the_legacy_oracle(self):
+    def test_every_leaf_matches_the_native_cli(self):
         # Foreign cwd, empty PATH and injected PYTHONPATH/site files cannot change a leaf.
         (self.root / "letter_checks.py").write_text("raise RuntimeError('cwd injection')\n")
         (self.root / "sitecustomize.py").write_text("raise RuntimeError('site injection')\n")
@@ -217,15 +313,127 @@ class RunnerTests(unittest.TestCase):
             for text in texts + SHARED + CASES[leaf]:
                 with self.subTest(leaf=leaf, case=n):
                     source.write_bytes(text.encode())
-                    oracle = subprocess.run(["bash", str(ROOT / "scripts/validate.sh"), leaf,
+                    oracle = subprocess.run([sys.executable, str(ROOT / "plugins/apodictic/scripts/validate.py"), leaf,
                                              str(source)], capture_output=True)
                     c.send(validation(str(n), text, leaf))
                     got = c.next()
-                    self.assertEqual((got["id"], got["validator"], got["available"]), (str(n), leaf, True))
+                    self.assertEqual((got["id"], got["validator"], got["available"], got["error"]),
+                                     (str(n), leaf, True, None))
                     result = got["result"]
                     self.assertEqual((result["exit_code"], result["stdout"].encode(), result["stderr"].encode()),
                                      (oracle.returncode, oracle.stdout, oracle.stderr))
+                    if leaf == "audit-signal-propagation":
+                        expected = {t: decision for _, t, decision in SIGNAL_CASES}
+                        if text in expected:
+                            self.assertEqual(result["exit_code"], expected[text])
+                    if leaf == "underdiagnosis-triggers":
+                        expected = {t: (decision, triggers) for _, t, decision, triggers in UNDERDIAGNOSIS_CASES}
+                        if text in expected:
+                            decision, triggers = expected[text]
+                            self.assertEqual(result["exit_code"], decision)
+                            self.assertEqual([line.partition(" — ")[0] for line in result["stdout"].splitlines()
+                                              if line.startswith(("WARN: Trigger #", "ERROR: Trigger #"))], triggers)
+                            if text == CONVERGENCE + "\nseries representation\n" + CONVERGENCE_MARKER:
+                                self.assertIn("\n\nFAILED: 1 underdiagnosis trigger(s) fired. "
+                                              "Triggers: convergence multi-axis \n", result["stdout"])
                 n += 1
+        self.assertEqual(c.end(), (0, [], b""))
+
+    def test_underdiagnosis_reference_context_matches_copied_native_cli(self):
+        # The wrapper always calls the real propagation child, even for empty text.
+        # Await each response before changing the same copy's installed reference.
+        original = self.reference.read_text(encoding="utf-8")
+        changed = ("#### Default mapping\n"
+                   "- Audit-internal Must-Fix floor -> Synthesis Must-Fix\n"
+                   "- Audit-internal hard gate -> Synthesis Should-Fix\n"
+                   "- Audit-internal HIGH / Alert -> Synthesis Must-Fix or Should-Fix\n")
+        contexts = [
+            ("packaged-original", original, UNDERDIAGNOSIS_BODY + SIGNAL_APPENDIX, 1,
+             ["ERROR: Trigger #6 (propagation)"]),
+            ("default-changed", changed, UNDERDIAGNOSIS_BODY + SIGNAL_APPENDIX, 0, []),
+            ("missing-fallback", None, UNDERDIAGNOSIS_BODY + SIGNAL_APPENDIX, 1,
+             ["ERROR: Trigger #6 (propagation)"]),
+            ("malformed-empty", "# No mapping\n", "", 1, ["ERROR: Trigger #6 (propagation)"]),
+            ("malformed-parent-override", "# No mapping\n", PROPAGATION_PARENT_MARKER, 0,
+             ["WARN: Trigger #6 (propagation)"]),
+            ("restored-matched-evidence", original, "Must-Fix: revise L42.\n" + SIGNAL_APPENDIX, 0, []),
+        ]
+        c = self.client(script=self.script, cwd=self.root)
+        source = self.root / "invented-underdiagnosis.txt"
+        for label, reference, text, decision, triggers in contexts:
+            with self.subTest(context=label):
+                if reference is None:
+                    self.reference.unlink()
+                else:
+                    self.reference.write_text(reference, encoding="utf-8")
+                source.write_bytes(text.encode())
+                oracle = subprocess.run([PYTHON, "-I", "-S", "-B", str(self.scripts / "validate.py"),
+                                         "underdiagnosis-triggers", str(source)],
+                                        capture_output=True, cwd=self.root, timeout=8)
+                c.send(validation(label, text, "underdiagnosis-triggers"))
+                got = c.next()
+                self.assertEqual((got["id"], got["validator"], got["available"], got["error"]),
+                                 (label, "underdiagnosis-triggers", True, None))
+                result = got["result"]
+                self.assertEqual((result["exit_code"], result["stdout"].encode(), result["stderr"].encode()),
+                                 (oracle.returncode, oracle.stdout, oracle.stderr))
+                self.assertEqual(result["exit_code"], decision)
+                self.assertEqual([line.partition(" — ")[0] for line in result["stdout"].splitlines()
+                                  if line.startswith(("WARN: Trigger #", "ERROR: Trigger #"))], triggers)
+                self.assertNotIn("mapping is malformed", result["stdout"])
+        self.assertEqual(c.end(), (0, [], b""))
+
+    def test_signal_reference_context_matches_copied_native_cli(self):
+        # Exercise the real helper's fixed installed-file lookup, with both consumers
+        # in this same copy. Inline dep_text and synthetic helpers cannot prove this.
+        original = self.reference.read_text(encoding="utf-8")
+        default = ("#### Default mapping\n"
+                   "- Audit-internal Must-Fix floor -> Synthesis Must-Fix\n"
+                   "- Audit-internal hard gate -> Synthesis Must-Fix\n"
+                   "- Audit-internal HIGH / Alert -> Synthesis Must-Fix or Should-Fix\n")
+        override = default + ("| Reception Risk | hard gate | Should-Fix | context | source | "
+                              "propagate-override: hard-gate -> Should-Fix |\n")
+        contexts = [
+            ("packaged-original", original, SIGNAL_SHOULD, 1, False),
+            ("default-changed", default.replace("hard gate -> Synthesis Must-Fix",
+                                               "hard gate -> Synthesis Should-Fix"),
+             SIGNAL_SHOULD, 0, False),
+            # Removing the changed map returns built-in policy, rather than refusal.
+            ("missing-fallback", None, SIGNAL_SHOULD, 1, False),
+            ("per-audit-changed", override, SIGNAL_SHOULD, 0, False),
+            ("per-audit-unrelated", override, SIGNAL_SHOULD.replace("Reception Risk", "Compression"), 1, False),
+            ("missing-default-block", "# No mapping\n", "", 1, True),
+            ("missing-required-class", default.replace(
+                "- Audit-internal hard gate -> Synthesis Must-Fix\n", ""), "", 1, True),
+            ("malformed-default", default.replace("hard gate -> Synthesis Must-Fix",
+                                                  "hard gate -> Synthesis unknown"), "", 1, True),
+            ("malformed-override-tier", override.replace("hard-gate -> Should-Fix",
+                                                         "hard-gate -> unknown"), "", 1, True),
+            ("malformed-override-class", override.replace("hard-gate -> Should-Fix",
+                                                          "invented -> Should-Fix"), "", 1, True),
+            ("restored-original", original, SIGNAL_SHOULD.replace("Should-Fix", "Must-Fix"), 0, False),
+        ]
+        c = self.client(script=self.script, cwd=self.root)
+        source = self.root / "invented-signal.txt"
+        for label, reference, text, decision, malformed in contexts:
+            with self.subTest(context=label):
+                if reference is None:
+                    self.reference.unlink()
+                else:
+                    self.reference.write_text(reference, encoding="utf-8")
+                source.write_bytes(text.encode())
+                oracle = subprocess.run([PYTHON, "-I", "-S", "-B", str(self.scripts / "validate.py"),
+                                         "audit-signal-propagation", str(source)],
+                                        capture_output=True, cwd=self.root, timeout=8)
+                c.send(validation(label, text, "audit-signal-propagation"))
+                got = c.next()
+                self.assertEqual((got["id"], got["validator"], got["available"], got["error"]),
+                                 (label, "audit-signal-propagation", True, None))
+                result = got["result"]
+                self.assertEqual((result["exit_code"], result["stdout"].encode(), result["stderr"].encode()),
+                                 (oracle.returncode, oracle.stdout, oracle.stderr))
+                self.assertEqual(result["exit_code"], decision)
+                self.assertEqual("mapping is malformed" in result["stdout"], malformed)
         self.assertEqual(c.end(), (0, [], b""))
 
     def test_output_limit_exact_and_over(self):
@@ -412,22 +620,25 @@ class RunnerTests(unittest.TestCase):
 
     def test_inventory_gate_requires_one_disposition_per_registry_id(self):
         self.assertEqual(self.inventory_check(), 0)
-        registry = self.scripts / "validate.sh"; original = registry.read_text()
+        registry = self.scripts / "validate.py"; original = registry.read_text(encoding="utf-8")
         baseline = json.loads(self.metadata.read_text())
-        # Registry drift: an undispositioned addition, removal, rename, duplicate or dynamic value fails.
-        marker = self.root / "must-not-exist"
-        for changed in (original.replace('AGG_VALIDATORS="', 'AGG_VALIDATORS="invented-new ', 1),
-                        original.replace("tone-check ", "", 1),
-                        original.replace("tone-check", "invented-tone", 1),
-                        original.replace("tone-check", "tone-check tone-check", 1),
-                        original + '\nAGG_VALIDATORS="$DYNAMIC"\n',
-                        original.replace('AGG_VALIDATORS="', 'AGG_VALIDATORS="$(touch %s) ' % marker, 1)):
-            registry.write_text(changed)
+        # Registry drift: an undispositioned addition, removal, rename or duplicate fails.
+        declaration = next(n for n in ast.parse(original).body if isinstance(n, ast.Assign)
+                           and any(isinstance(t, ast.Name) and t.id == "AGG_VALIDATORS" for t in n.targets))
+        ids = ast.literal_eval(declaration.value)
+        lines = original.splitlines(keepends=True)
+        def replaced(expression):
+            return ("".join(lines[:declaration.lineno - 1]) + "AGG_VALIDATORS = " + expression + "\n"
+                    + "".join(lines[declaration.end_lineno:]))
+        for changed in (replaced(repr(("invented-new", *ids))),
+                        replaced(repr(tuple(v for v in ids if v != "tone-check"))),
+                        replaced(repr(tuple("invented-tone" if v == "tone-check" else v for v in ids))),
+                        replaced(repr((*ids, "tone-check")))):
+            registry.write_text(changed, encoding="utf-8")
             self.assertNotEqual(changed, original)
             self.assertEqual(self.inventory_check(), 1)
-        self.assertFalse(marker.exists())
         # Metadata drift: closed row/file shape, exact set, known dispositions, nonempty reasons.
-        registry.write_text(original)
+        registry.write_text(original, encoding="utf-8")
         for change in ("omit", "add", "duplicate", "class", "reason", "extra-row-key", "extra",
                        "leaf-not-registered"):
             value = copy.deepcopy(baseline)
@@ -444,9 +655,18 @@ class RunnerTests(unittest.TestCase):
                 registry.write_text(original.replace("tone-check", "invented-tone", 1))
             self.metadata.write_text(json.dumps(value))
             self.assertEqual(self.inventory_check(), 1, change)
-        registry.write_text(original)
+        registry.write_text(original, encoding="utf-8")
         self.metadata.write_text(json.dumps(baseline))
         self.assertEqual(self.inventory_check(), 0)
+
+    def test_inventory_missing_dispatcher_fails_closed(self):
+        path = self.scripts / "validate.py"
+        moved = path.with_suffix(".held")
+        path.rename(moved)
+        try:
+            self.assertEqual(self.inventory_check(), 1)
+        finally:
+            moved.rename(path)
 
 
 if __name__ == "__main__":

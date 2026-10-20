@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """dispatch-record — dispatch observability validator (Model-Capacity Exploitation M1).
 
-`validate.sh dispatch-record <run_folder> [--strict]` shells out here. A run that dispatched
+`validate.py dispatch-record <run_folder> [--strict]` delegates here. A run that dispatched
 delegated agents records WHICH model each dispatched step was issued to in the additive
 `dispatch_log` sidecar array (Diagnostic_State.meta.json) — the single join key between model
 identity and every outcome signal the framework already writes to disk. This validator is the

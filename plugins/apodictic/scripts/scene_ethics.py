@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """scene-ethics — structural integrity for the Scene-Ethics Plan (Nonfiction Pre-Draft, Increment 4).
 
-`validate.sh scene-ethics <run_folder|files>` shells out here. For narrative nonfiction / memoir that
+`validate.py scene-ethics <run_folder|files>` delegates here. For narrative nonfiction / memoir that
 depicts identifiable real people, the writer plans — before drafting — how each depiction will be
 handled ethically: consent status, the handling decision (as-is / anonymize / composite / seek
 consent / omit), and the fairness reasoning. Each is an apodictic.scene_ethics.v1 block. This is the
@@ -48,7 +48,7 @@ def _has_block(text, btype):
 
     Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
     in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
-    validate.sh validator-conventions (M2)."""
+    validate.py validator-conventions (M2)."""
     if art is None:
         return ("apodictic:%s" % btype) in (text or "")
     return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))

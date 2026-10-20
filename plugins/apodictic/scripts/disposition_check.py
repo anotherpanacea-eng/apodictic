@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """disposition-check — engine-level finding-disposition integrity (docs/finding-dispositions.md).
 
-`validate.sh disposition-check <run_folder|sidecar> [readiness_assessment] [--strict]` shells out
+`validate.py disposition-check <run_folder|sidecar> [readiness_assessment] [--strict]` shells out
 here. A finding disposition (`declined`/`deferred`) is an author decision recorded as an OVERLAY on
 the finding lifecycle — the sidecar map `execution.finding_dispositions` mirroring the pinned
 durable markers (`<!-- declined: F-… — reason -->` / `<!-- deferred: F-… until: trigger — reason
@@ -48,8 +48,8 @@ Marker homes: the project Diagnostic_State.md Coaching Log, `*_Revision_Report_*
 failure). What deliberately reads dispositions NOWHERE: softness-check, deficit-lock,
 severity-floor, structured-findings, finding-trace, regression-diff — a disposition is not an
 override marker and grants no honesty-gate relief (the laundering firewall). The `/ready` workflow
-runs `validate.sh disposition-check <sidecar> <assessment>` BEFORE delivering a verdict; a DP1
-ERROR blocks the verdict. Degrades to an advisory WARN without python3 (the bash dispatcher).
+runs `validate.py disposition-check <sidecar> <assessment>` BEFORE delivering a verdict; a DP1
+ERROR blocks the verdict. The native dispatcher requires Python 3.10+.
 
 Supersedence trust model (DP2.6, docs/disposition-supersedence-recompute.md): corroboration
 accepts any regex-matched <!-- resolved: F-id --> marker in a reachable *_Revision_Report_*.md —

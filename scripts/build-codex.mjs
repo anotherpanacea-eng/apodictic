@@ -29,6 +29,28 @@ if (!codex) {
   process.exit(1);
 }
 
+function isPythonCache(filePath) {
+  return filePath.split(/[\\/]/).includes("__pycache__") || /\.py[co]$/.test(filePath);
+}
+
+function validateCanonicalSource() {
+  const files = walkFiles(abs("plugins/apodictic")).filter((source) => !isPythonCache(source));
+  const oversized = files.filter((source) => fs.statSync(source).size >= 256 * 1024);
+  if (files.length > 512 || oversized.length) {
+    throw new Error(`Canonical plugin exceeds limits: ${files.length} files; oversized: ${oversized.join(", ") || "none"}.`);
+  }
+  console.log(`Canonical plugin: ${files.length} files; every shipped source file under 256 KiB.`);
+}
+
+// Check the self-generated archive: no Python caches, native entrypoints present.
+function validateNativeArchive(archivePath, prefix = "plugins/apodictic/") {
+  const names = new Set(listZipEntries(archivePath));
+  if ([...names].some(isPythonCache)) throw new Error("Archive contains Python bytecode/cache content.");
+  for (const name of ["validate.py", "validate_canonical.py", "validate.sh"]) {
+    if (!names.has(`${prefix}scripts/${name}`)) throw new Error(`Native archive entry missing: ${name}`);
+  }
+}
+
 function abs(relPath) {
   return path.resolve(repoRoot, relPath);
 }
@@ -442,6 +464,7 @@ function buildSubmissionArchive(tempPluginDir, archivePath) {
   }
   const forbiddenNames = new Set(["mcp.json", ".mcp.json", ".app.json", "hooks.json"]);
   const sources = walkFiles(tempPluginDir)
+    .filter((source) => !isPythonCache(source))
     .filter((file) => !path.relative(tempPluginDir, file).split(path.sep).includes(".claude-plugin"))
     .map((sourcePath) => {
       const archiveName = path.relative(tempPluginDir, sourcePath).split(path.sep).join("/");
@@ -452,6 +475,7 @@ function buildSubmissionArchive(tempPluginDir, archivePath) {
         mode: archiveExecutableSet.has(`plugins/apodictic/${archiveName}`) ? 0o755 : 0o644 };
     });
   createZipArchive(archivePath, sources);
+  validateNativeArchive(archivePath, "");
   const entries = new Set(listZipEntries(archivePath));
   for (const entry of [".codex-plugin/plugin.json", "LICENSE", "PRIVACY.md", ...referencedFiles.map((file) => file.slice(2))]) {
     if (!entries.has(entry)) throw new Error(`Missing submission archive entry: ${entry}`);
@@ -546,6 +570,7 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
   }
 
   const archiveSources = walkFiles(tempWorkspace)
+    .filter((source) => !isPythonCache(source))
     .map((sourcePath) => ({
       sourcePath,
       archiveName: path.relative(tempWorkspace, sourcePath).split(path.sep).join("/"),
@@ -562,6 +587,7 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
     .filter(({ archiveName }) => !archiveName.endsWith("/.DS_Store"))
     .filter(({ archiveName }) => !archiveName.startsWith("plugins/apodictic/.claude-plugin/"));
   createZipArchive(tempArchivePath, archiveSources);
+  validateNativeArchive(tempArchivePath);
 
   const archiveEntries = listZipEntries(tempArchivePath);
   const archiveModes = new Map(
@@ -632,6 +658,7 @@ function validateGeneratedWorkspace(tempWorkspace, tempPluginDir, wrapperMapping
 }
 
 function main() {
+  validateCanonicalSource();
   const canonicalManifestPath = abs(paths.pluginJson);
   const canonicalManifest = readJson(canonicalManifestPath);
   const canonicalVersion = canonicalManifest.version;
@@ -658,7 +685,7 @@ function main() {
     ensureDir(path.join(tempWorkspace, "plugins"));
     ensureDir(path.join(tempWorkspace, ".agents", "plugins"));
 
-    fs.cpSync(abs("plugins/apodictic"), tempPluginDir, { recursive: true });
+    fs.cpSync(abs("plugins/apodictic"), tempPluginDir, { recursive: true, filter: (source) => !isPythonCache(source) });
 
     stripSourceOnlyFiles(tempPluginDir, wrapperMappings);
     applyOverrides(tempWorkspace);

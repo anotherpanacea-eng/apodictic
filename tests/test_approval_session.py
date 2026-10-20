@@ -185,3 +185,21 @@ def test_malformed_inclusion_is_an_invalid_decision(tmp_path, inclusion):
         decide(tmp_path, nodes[0], "approve", inclusion=inclusion)
     assert error.value.code == "INVALID-DECISION"
     assert (tmp_path / "Approval_Events.jsonl").read_bytes() == before
+
+
+def test_link_above_the_project_is_host_layout_but_the_project_link_is_refused(tmp_path):
+    real = tmp_path / "real"
+    (real / "project").mkdir(parents=True)
+    cases.mint(engine, real / "project")
+    host_alias = tmp_path / "alias"
+    project_link = tmp_path / "project-link"
+    try:
+        host_alias.symlink_to(real, target_is_directory=True)
+        project_link.symlink_to(real / "project", target_is_directory=True)
+    except OSError:
+        pytest.skip("symlink creation is unavailable to this account")
+    # macOS puts tempfile under /var -> /private/var; a link above the project is not project custody.
+    assert engine.session_snapshot(host_alias / "project")["head"] == engine.session_snapshot(real / "project")["head"]
+    with pytest.raises(engine.ApprovalGraphError) as error:
+        engine.session_snapshot(project_link)
+    assert error.value.code == "LINK-ARTIFACT"

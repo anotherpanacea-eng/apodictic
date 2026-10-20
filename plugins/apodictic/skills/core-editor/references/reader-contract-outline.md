@@ -36,7 +36,7 @@ Spec + rule detail: [`docs/reader-contract-outline.md`](../../../../docs/reader-
 ```
 # (author the Contract Map block first — ids only, bound to the staged inputs)
 scripts/reader_contract_outline.py build <run_folder>       # R7-gates the Map, then projects the outline
-scripts/validate.sh reader-contract-outline <run_folder>    # gates R1–R7
+python scripts/validate.py reader-contract-outline <run_folder>    # gates R1–R7
 ```
 
 Staged discipline: author/gate/render in a scratch copy; move the Map + outline into the run folder

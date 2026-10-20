@@ -3,7 +3,7 @@
 *Reference module for the APODICTIC Core Editor. The narrative half of a developmental-edit style
 sheet: a single, locus-anchored reference of the facts the manuscript has committed to — and, as a
 side effect, a ledger of the places it has committed to two facts at once. Spec + validator:
-`docs/continuity-bible.md`, `scripts/validate.sh continuity-bible`. Worked example:
+`docs/continuity-bible.md`, `python scripts/validate.py continuity-bible`. Worked example:
 `example-continuity-bible.md` (paired with `example-timeline.md`).*
 
 ---
@@ -129,7 +129,7 @@ finding is a rejected anti-pattern (a contradiction has its own axis, not the Mu
 
 ## Validation
 
-`validate.sh continuity-bible <run_folder|files...> [--strict]` runs the integrity checks: **C1**
+`python validate.py continuity-bible <run_folder|files...> [--strict]` runs the integrity checks: **C1**
 schema, **C2** locus presence/shape, **C3** contradiction integrity, **C4** chronology
 consume-vs-rederive (advisory; ERROR under `--strict`; override
 `<!-- override: bible-rederive CF-NN — <rationale> -->`), and **W1** coverage (a Timeline POV with

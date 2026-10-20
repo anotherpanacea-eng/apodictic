@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """promise-contract — Promise-Contract Fidelity: does the pitch keep the promise the book makes?
 
-`validate.sh promise-contract <run_folder|files>` shells out here. APODICTIC's foundational move is
+`validate.py promise-contract <run_folder|files>` delegates here. APODICTIC's foundational move is
 contract inference; this module points it at the author's own marketing COPY. It diagnoses the gap
 between the persisted pitch (query / synopsis / blurb / logline) and the inferred Contract — emphasis
 distortion, reveal leak, over/under-promise, cross-document inconsistency — and never drafts the
@@ -60,7 +60,7 @@ def _has_block(text, btype):
 
     Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
     in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
-    validate.sh validator-conventions (M2)."""
+    validate.py validator-conventions (M2)."""
     if art is None:
         return ("apodictic:%s" % btype) in (text or "")
     return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))

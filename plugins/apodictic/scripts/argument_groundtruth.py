@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Mechanical-honesty validator for APODICTIC Argument Benchmark ground-truth files.
 
-Backs `validate.sh argument-groundtruth-check <groundtruth_file>` (docs/argument-benchmark-spec.md
+Backs `validate.py argument-groundtruth-check <groundtruth_file>` (docs/argument-benchmark-spec.md
 §Mechanical validator). Checks a registered `groundtruth.md` answer key against Argument Benchmark
 GT schema v0.3.0:
 
@@ -56,7 +56,7 @@ GT schema v0.3.0:
      `Base text + repair record` and a GT2 marked `N/A — positive control` (rule 6 — the
      determinism half the parser can enforce, inverse of fiction's broken-plant-record gate); a
      standalone (`n/a`) member may not carry a non-n/a `Paired-with` (rule 7). Cross-file twin
-     existence is the corpus loop's job (validate.sh orphan-twin check), not this single-file check.
+     existence is the corpus loop's job (validate.py orphan-twin check), not this single-file check.
 
 Output keeps the legacy WARN: / ERROR: / OK: / FAILED: prefixes and exit codes (0 ok, 1 fail,
 2 usage) so it slots into --self-test-all alongside the other self-testable validators.

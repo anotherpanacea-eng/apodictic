@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """intake-interview — structural integrity for the Uncertainty-Resolution Intake Interview.
 
-`validate.sh intake-interview <run_folder|files>` shells out here. APODICTIC already opens with a
+`validate.py intake-interview <run_folder|files>` delegates here. APODICTIC already opens with a
 substantial draft-then-validate intake (genre, controlling idea, reader promise, comps) and Shelf &
 Positioning captures the intended shelf. What no existing surface does is resolve a SPECIFIC
 structural ambiguity the framework detected but cannot settle from the text — "is the non-linear

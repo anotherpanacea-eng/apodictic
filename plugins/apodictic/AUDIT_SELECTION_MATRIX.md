@@ -37,7 +37,7 @@ Use this in intake order.
 9. "Characters feel generic or flat" -> **Character Architecture**
 10. "Literary prose feels decorative, not structural" -> **Literary Craft**
 11. "Series entries don't stand alone" -> **Series & Composite Novel**
-12. "Memoir/nonfiction has no narrative shape" -> **Franklin Pathway** (pre-spine viability gate)
+12. "Memoir/nonfiction has no narrative shape" -> **Franklin Pathway** (pre-spine viability gate; `skills/core-editor/references/franklin-pathway.md`)
 13. "I'm stuck / my draft isn't working" -> **Plot Architecture** or **Plot Selection & Coaching** (structural triage)
 14. "Need submission-readiness honesty" -> **Pass 11**
 

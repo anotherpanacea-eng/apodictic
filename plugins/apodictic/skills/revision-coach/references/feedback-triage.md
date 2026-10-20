@@ -1,6 +1,6 @@
 # Feedback Triage — workflow protocol
 
-*Reference file for the APODICTIC Revision Coach. Loaded by `/triage-feedback` (and `/coach` → Feedback Triage mode). For writers returning with external feedback. Spec + validator: `docs/feedback-triage.md`, `scripts/validate.sh feedback-triage`. Worked example: `../../core-editor/references/example-feedback-triage.md`.*
+*Reference file for the APODICTIC Revision Coach. Loaded by `/triage-feedback` (and `/coach` → Feedback Triage mode). For writers returning with external feedback. Spec + validator: `docs/feedback-triage.md`, `python scripts/validate.py feedback-triage`. Worked example: `../../core-editor/references/example-feedback-triage.md`.*
 
 ---
 
@@ -35,7 +35,7 @@ Fields: `schema`, `id` (`FB-<NN>`, unique), `source`, `claim`, `assessment`, `tr
 4. **Resolve conflicts.** For each contradiction, set `conflicts_with` on (at least) one side and **decide**: keep one and `decline` the other, or `monitor` both pending more information. Never leave both sides `act-now`/`act-later` — that is an unresolved conflict (W1).
 5. **Triage & sequence.** Set `triage` per item. Don't `act-now` on an item that isn't at least `partly-validated` (W2) unless you're deliberately trusting the source ahead of validation — note why in `disposition`.
 6. **Reconcile declines with the engine.** When an item is triaged `decline` **and** its `evidence_refs` cite a ledger `F-…` id, offer to record an engine **finding disposition** — `{disposition: declined, source: triage, reason: <item claim + assessment>}` — via the dual-writer path (`../../core-editor/references/state-lifecycle.md` §Finding Dispositions): the pinned `<!-- declined: F-… — <reason> -->` marker goes **in this triage artifact** (its marker home), and on a non-governed project the validated record is written to `execution.finding_dispositions` directly (governed: it folds at the next `revision_round` clear). The author decides — the offer is the mechanism, never an auto-decline. A decline with no `F-…` ref records nothing (dispositions attach to ledger findings only). Skipping this leaves the decline invisible to the coach ladder and the `/ready` caveat — W3 flags it.
-7. **Gate & hand off.** Run `scripts/validate.sh feedback-triage <run_folder>` (`--strict` for CI). Resolve ERRORs (broken contract, dangling/self conflict reference); review W1/W2/W3. Hand the **act-now** set to Session Planning (`/coach`) as the next session's targets.
+7. **Gate & hand off.** Run `python scripts/validate.py feedback-triage <run_folder>` (`--strict` for CI). Resolve ERRORs (broken contract, dangling/self conflict reference); review W1/W2/W3. Hand the **act-now** set to Session Planning (`/coach`) as the next session's targets.
 
 ## Output
 

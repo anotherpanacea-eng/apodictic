@@ -1,6 +1,6 @@
 # Manuscript-Structure Visualizations — render the diagnosis, invent nothing
 
-*Reference module for the APODICTIC Core Editor. A presentation layer that adds **no analysis**: a deterministic render of data the passes already produced. Spec + validator: `docs/manuscript-visualizations.md`, `scripts/validate.sh manuscript-viz`. Worked example: `example-structure-map-manifest.md` (paired with `example-timeline.md` + `example-findings-ledger.md`).*
+*Reference module for the APODICTIC Core Editor. A presentation layer that adds **no analysis**: a deterministic render of data the passes already produced. Spec + validator: `docs/manuscript-visualizations.md`, `python scripts/validate.py manuscript-viz`. Worked example: `example-structure-map-manifest.md` (paired with `example-timeline.md` + `example-findings-ledger.md`).*
 
 ---
 
@@ -45,9 +45,9 @@ No producer-gated chart remains. A validated `evidence_ref → scene_id` resolut
 ## Protocol
 
 1. **Build the manifest** — copy the Timeline Event-Ledger rows into `scenes[]` (verbatim) and the findings into `findings[]` (id/severity/confidence verbatim; `chapter` from the conservative `evidence_refs` parse, else `unplaced`). Add no style fields.
-2. **Gate** — `scripts/validate.sh manuscript-viz <run_folder>`. Resolve E1–E4; review W1 (an under-rendered Timeline) and W2 (scenes[] out of Timeline order). The `--check-all` gate runs the canonical example with `--require-block`, so a missing or unparseable manifest is a hard failure rather than a silent pass; add `--strict` to make the W advisories blocking too.
+2. **Gate** — `python scripts/validate.py manuscript-viz <run_folder>`. Resolve E1–E4; review W1 (an under-rendered Timeline) and W2 (scenes[] out of Timeline order). The `--check-all` gate runs the canonical example with `--require-block`, so a missing or unparseable manifest is a hard failure rather than a silent pass; add `--strict` to make the W advisories blocking too.
 3. **Render** — `scripts/viz_manifest.py render <manifest> <timeline> <ledger> -o [Project]_Structure_Map_[runlabel].html`. `render` runs the provenance gate first and **refuses** on an ERROR-level failure (`--force` to override). The HTML is offline, self-contained, and labels itself *partial* when the draft is incomplete.
 
 ## Mechanical check
 
-`scripts/validate.sh manuscript-viz <run_folder>`: E1 manifest schema + no-visual-style allowlist (a present-but-unparseable block is an E1 failure, not a no-op; `--require-block` also fails an absent block), E2 provenance closure (scene/finding/chapter), E3 Must-Fix completeness, E4 byte-equal copy fidelity, E5 no duplicate scene_id/finding id (a repeat double-draws a bar); W1 coverage + W2 scene order (advisory, ERROR `--strict`). Ownership boundary: `manuscript-viz` owns manifest↔source provenance only — it does not re-check the letter (`finding-trace`/`softness-check`) or the Timeline's arithmetic/anchors (`timeline-*`); it consumes already-validated rows. Lineage: [`docs/manuscript-visualizations.md`](../../../../../docs/manuscript-visualizations.md).
+`python scripts/validate.py manuscript-viz <run_folder>`: E1 manifest schema + no-visual-style allowlist (a present-but-unparseable block is an E1 failure, not a no-op; `--require-block` also fails an absent block), E2 provenance closure (scene/finding/chapter), E3 Must-Fix completeness, E4 byte-equal copy fidelity, E5 no duplicate scene_id/finding id (a repeat double-draws a bar); W1 coverage + W2 scene order (advisory, ERROR `--strict`). Ownership boundary: `manuscript-viz` owns manifest↔source provenance only — it does not re-check the letter (`finding-trace`/`softness-check`) or the Timeline's arithmetic/anchors (`timeline-*`); it consumes already-validated rows. Lineage: [`docs/manuscript-visualizations.md`](../../../../../docs/manuscript-visualizations.md).

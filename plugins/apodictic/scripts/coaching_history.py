@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """coaching-history — Coaching History & Pattern Recognition (Coaching Deepening).
 
-`validate.sh coaching-history <project_root> [--strict]` shells out here. Over multiple revision
+`validate.py coaching-history <project_root> [--strict]` delegates here. Over multiple revision
 cycles the coach can surface a cross-session PROCESS pattern — "you tend to defer character-agency
 work; the same finding was deferred across three consecutive sessions" — as a rolling, opt-in,
 local-only artifact of DESCRIPTIVE observations, each MECHANICALLY derived from recorded session
@@ -92,7 +92,7 @@ anywhere → the validator no-ops (exit 0/2), like content-advisory / legal-risk
 
 Reuses apodictic_artifacts (block grammar + schema engine + parse_blocks + FID_RE) and the shared
 override_marker / severity_vocab / author_fingerprint firewall regexes (single-sourced, never
-re-derived). Stdlib-only; degrades to an advisory WARN without python3. See docs/coaching-history.md.
+re-derived). Stdlib-only; requires Python 3.10+. See docs/coaching-history.md.
 
   coaching_history.py coaching-history <project_root|files...> [--strict]
   coaching_history.py delete <project_root>

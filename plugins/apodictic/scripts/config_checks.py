@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Validators for APODICTIC's non-letter artifact types (validate.sh contract/config arms).
+"""Validators for APODICTIC's non-letter artifact types (validate.py contract/config arms).
 
 These arms do not take an editorial letter or ledger — they validate different
 artifact types (contracts, directory trees, run folders, filename conventions) — so
@@ -30,9 +30,8 @@ they live here rather than in letter_checks.py:
                                  WARN (H1), block/question/pass mismatches vs §3 ERROR (H2/H3).
 
 Faithful re-implementations of the bash arms (verified by oracle-diff against the pre-port
-arm: identical exit codes). validate.sh stays the command surface; when python3 is absent the
-pass-header arm degrades to the fleet advisory-WARN convention (skip + inline-check guidance,
-rc 0), NOT a bash reimplementation. Output keeps the legacy WARN: / ERROR: / FAILED: / OK:
+arm: identical exit codes). validate.py is the command surface and requires Python 3.10+.
+Output keeps the legacy WARN: / ERROR: / FAILED: / OK:
 prefixes and exit codes (0 ok, 1 fail, 2 usage).
 
 CLI:

@@ -67,6 +67,14 @@ consume plan minutes; actual billed-minute savings accrue in the private fleet
 repos.  No test, generator, mirror check, consumer-contract check, or
 canonical-framework gate may disappear.
 
+The Group14 native cutover adds one `validate-windows` job on `windows-latest`
+(30-minute cap) under the same admission predicate and binding receipt. After the
+binding step it pins Python 3.12 and runs only
+`python plugins/apodictic/scripts/validate.py --check-all`, with `PATH` reduced to
+the Python install directory so the gate cannot reach Bash or `sh`. Branch
+protection still requires only the `validate` context; `validate-windows` is
+enforced by the train receipt verifier, which requires both jobs.
+
 Release, release-readiness, and scheduled SETEC synchronization remain separate
 workflows with their existing triggers and permissions.  Before updating its
 fixed PR branch, the sync workflow uniquely resolves any open same-repository
@@ -139,7 +147,7 @@ A PR may enter a train only when all of the following are recorded:
 - independent generic and fleet-posture reviews of that exact diff, with every
   P1/P2 repaired and re-reviewed;
 - scope-appropriate local validation plus the combined repository gate
-  `bash scripts/validate.sh --check-all` when applicable;
+  `python plugins/apodictic/scripts/validate.py --check-all` when applicable;
 - clean `git diff --check`, no unresolved review thread, no active owner
   mutation, and no uncommitted integration fix; and
 - preserved SETEC consumer boundaries, mirrored-script parity, generated-tree
@@ -222,14 +230,14 @@ Make the frozen train ready once.  Any head change invalidates the clearance and
 requires returning to draft, rebuilding/reviewing as needed, and promoting the
 new exact head.
 
-The single `validate` job must complete successfully and non-skipped on the
+Each expected job (`validate`, `validate-windows`) must complete successfully and non-skipped on the
 unchanged exact base/head synthetic merge.  A live receipt verifier reads the PR,
 workflow runs/attempts, job conclusions, and job log through authenticated `gh`.
 It binds exact repository, PR number, current base ref and SHA, workflow path
 `.github/workflows/ci.yml`, `pull_request` event, head SHA, same-repository/head
 branch, and bounded activity class.  It chooses the newest run for that identity
-and that run's latest attempt, then requires exactly one completed-success,
-non-skipped `validate` job with exactly one valid receipt.  A green badge without
+and that run's latest attempt, then requires each expected job to be completed-success,
+non-skipped, with exactly one valid receipt.  A green badge without
 the in-job receipt is insufficient.  Any later failed, cancelled, or pending
 clearance occurrence on the head invalidates an earlier green.  Only a verified
 completed/skipped train-label or unrelated-label noise run may be ignored, and
@@ -337,7 +345,7 @@ normalize comments and whitespace where those do not affect behavior.
   either reviewed into the rollout train or explicitly excluded.
 - The implementation receives independent generic and fleet-posture review at
   its final exact head.
-- Local policy/tool self-tests, `bash scripts/validate.sh --check-all`, release
+- Local policy/tool self-tests, `python plugins/apodictic/scripts/validate.py --check-all`, release
   digest, status-drift, mirror, generated-build, and `git diff --check` gates pass.
 - `AGENTS.md` and `.github/pull_request_template.md` are reconciled to the
   draft-first/one-train policy with no direct-main or constituent auto-merge

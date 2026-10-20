@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """escalation-check — Adaptive Mid-Run Mode Escalation detector (Infrastructure).
 
-`validate.sh escalation-check <run_folder> [--strict]` shells out here. After Tier 1
+`validate.py escalation-check <run_folder> [--strict]` delegates here. After Tier 1
 (Pass 0 + Pass 1), the system knows the manuscript's actual complexity, which may exceed
 the preflight estimate the execution mode was chosen from. This is a CONDITION-TRIGGERED
 gate (not "the model should notice"): every trigger is a count or a boolean read from a

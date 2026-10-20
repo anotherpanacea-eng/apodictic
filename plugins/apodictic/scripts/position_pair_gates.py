@@ -2,8 +2,8 @@
 """position-pair-register — consumer-side firewall gates for the Position-Pair Register
 (stance-consistency PR 2; SPEC setec-scratch/apo-stance-consistency/SPEC.md, contract v4+v5).
 
-`validate.sh position-pair-register <artifact.md> <envelope.json> <manuscript> [--strict]`
-(or `--self-test`) shells out here.
+`validate.py position-pair-register <artifact.md> <envelope.json> <manuscript> [--strict]`
+(or `--self-test`) delegates here.
 
 The Position-Pair Register is APODICTIC's consumer of SETEC's `position_pair_register`
 surface. That surface reads ONE nonfiction argument-shaped work and emits a register of passage
@@ -148,7 +148,7 @@ def _has_block(text, btype):
 
     Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
     in prose from being misrouted (the 2026-06-20 resolver-hardening sweep). Gated by
-    validate.sh validator-conventions (M2)."""
+    validate.py validator-conventions (M2)."""
     if art is None:
         return ("apodictic:%s" % btype) in (text or "")
     return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))

@@ -77,7 +77,7 @@ spec  →  review  →  write  →  review  →  fix  →  merge
 The spec/code reviews (steps 2, 4) earn their keep when the reviewer does more than read for plausibility. These passes have caught real bugs that reasoning-about-the-code missed, plus one doc-hygiene discipline:
 
 - **Hostile fixtures.** Construct inputs the spec and self-tests *don't* cover — wrong-shaped sidecars, colliding/lookalike filenames (a `*_Revision_Calendar_*` satisfying a `*_Revision_*` glob meant for the Report), empty/partial state, malformed-but-valid JSON, a field in a shape the spec merely documents (a bare-string `next_action`). Self-tests only test what the author already thought of; the worst bugs live in the inputs they didn't.
-- **Run the combined validation gate first.** Step one of a code review is `bash scripts/validate.sh --check-all` — the local equivalent of CI's ordered validator self-test + canonical-framework phases — not a proxy. A change applied to only one script copy (see "Platform parity") is green locally and CI-blind. (The full CI gate set is broader — also `release-generate.mjs --check`, `build-codex`/`build-antigravity --self-check`, `assemble-changelog --check`, `check-status-drift.mjs`; run them when you touch generated/paired docs.)
+- **Run the combined validation gate first.** Step one of a code review is `python plugins/apodictic/scripts/validate.py --check-all` — the local equivalent of CI's ordered validator self-test + canonical-framework phases — not a proxy. A change applied to only one script copy (see "Platform parity") is green locally and CI-blind. (The full CI gate set is broader — also `release-generate.mjs --check`, `build-codex`/`build-antigravity --self-check`, `assemble-changelog --check`, `check-status-drift.mjs`; run them when you touch generated/paired docs.)
 - **Distrust count-shaped claims.** "2× findings," "nine rows removed," "total/exhaustive," "all N covered" — re-enumerate from scratch; never accept the number.
 - **Flip the status when you build.** A build PR flips its spec doc's `**Status:**` line (and its ROADMAP entry) in the same PR — status drift recurred across #66/#70/#74. New specs declare their deliverable with a `built-when` marker (syntax in `docs/qol-status-drift-lint.md` §Marker syntax) so `scripts/check-status-drift.mjs` catches the miss mechanically. (Keep any literal `built-when` comment *example* inside `docs/**` fenced, or it parses as a real marker.)
 - **Re-sync the inventory surfaces when the registry moves.** When you change the signal-emitting audit registry (`audit-routing-table.md`) or the research modes (`commands/research.md`), re-sync the dashboards/matrix inventory and bump their `inventory-synced` marker to the new signature (`check-inventory-parity` reports it). The check enforces the *signal* (registry changed since last sync), not the surface content — bumping the marker without actually re-syncing the inventory defeats it, so do both.
@@ -157,7 +157,8 @@ CI verifies the generators instead of committed copies: `release-generate.mjs
 `build-antigravity.mjs --self-check` (regenerate in temp + validate). `release.sh`
 runs the same self-checks via `release-verify.mjs`.
 
-**Validators live in one place.** `validate.sh`, its `validate.d/*.sh` parts, `preflight.sh`, and every Python validator live only in `plugins/apodictic/scripts/`. Root `scripts/validate.sh` is a one-line shim that execs the plugin copy, so CI's `bash scripts/validate.sh ...` runs the shipped code. Root `scripts/` otherwise holds only repo tooling (release and build `*.mjs`, `release.sh`, `bump-version.sh`, `tag-release.sh`, `sync_setec.py`). Validator fixtures live in `tests/fixtures/validators/`. Keep every file in `plugins/apodictic/` under 256 KiB and the folder at 512 files or fewer: past either limit the Claude plugin directory holds each version for a manual review. That is why `validate.sh` sources `validate.d/` and the changelog lives at the repo root. (Schemas in `plugins/apodictic/schemas/` are single-sourced.)
+**Validators live in one place.** `validate.py`, `validate_canonical.py`, `preflight.sh`, and the Python validators live in `plugins/apodictic/scripts/`. Invoke the native dispatcher with Python 3.10+; children use that same interpreter. Plugin and root `validate.sh` are small optional POSIX compatibility launchers, with a named exit 127 if Python is missing. The old `validate.d` parts are removed. Root `scripts/` otherwise holds repository release/build tooling. Validator fixtures live in `tests/fixtures/validators/`. Keep canonical plugin files under 256 KiB and the folder at 512 files or fewer. Package generators exclude Python caches, verify native entries, and check the canonical source against these limits; the changelog stays at the repository root.
+
 
 ## Changelog
 
@@ -253,12 +254,15 @@ permissions or a queue merely to satisfy this fallback.
 
 `.github/workflows/ci.yml` gives unarmed drafts a skipped record. A same-repository
 `train/` PR, or an explicitly `ci-ready` standalone exception, runs one ordered
-`validate` job. That job byte-compiles `plugins/` + `scripts/` (syntax gate),
+`validate` job on `ubuntu-latest`. That job byte-compiles `plugins/` + `scripts/` (syntax gate),
 validates that the plugin / marketplace / release-registry manifests parse, runs
 the validator self-tests (`validate.sh --self-test-all`) and canonical-framework
 checks (`validate.sh --check-canonical`), and runs the generator/parity gates (`assemble-changelog.mjs --check`,
-`release-generate.mjs --check`, both build `--self-check`s). There is no pytest
-application suite; the small pytest policy suite protects this CI boundary. The
+`release-generate.mjs --check`, both build `--self-check`s). Beside it, a
+`validate-windows` job on `windows-latest` runs `python plugins/apodictic/scripts/validate.py --check-all`
+with only Python on `PATH`, so the gate cannot use Bash. There is no pytest
+application suite; the small pytest policy suite protects this CI boundary and
+the native aggregate contracts. The
 `evals/` fixtures are the behavioral
 ground-truth track. `.github/workflows/release.yml` builds + publishes the per-host
 bundles on `v*` tags.

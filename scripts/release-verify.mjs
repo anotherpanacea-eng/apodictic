@@ -56,7 +56,7 @@ function main() {
   const errors = [];
 
   // --versions-only: run ONLY the cross-manifest version-parity check (section 2),
-  // skipping the generate-check / build self-checks / validate.sh --check-all steps.
+  // skipping the generate-check / build self-checks / validate.py --check-all steps.
   // CI uses this — those heavy gates already run as their own ci.yml steps, so the
   // version-parity gate (the one thing CI was NOT checking) is added without
   // double-running them. The full `release-verify` (no flag) still runs everything.
@@ -98,16 +98,16 @@ function main() {
     }
 
     // 1.5) Aggregate real-file gate: self-tests + registry-vs-§4e + structured-findings
-    // on the shipped templates (validate.sh --check-all). Closes the gap where the
+    // on the shipped templates (validate.py --check-all). Closes the gap where the
     // standard verification path skipped real-file invariants.
     try {
       execFileSync(
-        "bash",
-        [path.join(repoRoot, "plugins/apodictic/scripts/validate.sh"), "--check-all"],
+        process.platform === "win32" ? "python" : "python3",
+        [path.join(repoRoot, "plugins/apodictic/scripts/validate.py"), "--check-all"],
         { stdio: "inherit" }
       );
     } catch {
-      errors.push("validate.sh --check-all failed (self-tests or real-file invariants). Run plugins/apodictic/scripts/validate.sh --check-all.");
+      errors.push("validate.py --check-all failed (self-tests or real-file invariants). Run plugins/apodictic/scripts/validate.py --check-all.");
     }
   }
 

@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Native validator dispatcher, CB-1(a) groups 1–4, 5a and 6–13.
-
-Early utilities, signals, configuration, timelines and structured checks run without Bash.
-Other commands and aggregates still belong to validate.sh until their groups land.
-"""
+"""Native validator dispatcher and ordered self-test/canonical aggregates (Python 3.10+)."""
 
 import hashlib
 import os
@@ -12,12 +8,96 @@ import re
 import subprocess
 import sys
 import tempfile
+from typing import Callable, NamedTuple
 
 
-COMMANDS = (
-    "contract-hash", "contract-check", "ledger-check", "artifact-names",
-    "synthesis-sections", "tone-check", "state-lines",
+AGG_VALIDATORS = (
+    'contract-hash',
+    'contract-check',
+    'ledger-check',
+    'artifact-names',
+    'synthesis-sections',
+    'tone-check',
+    'state-lines',
+    'severity-floor',
+    'audit-signal-propagation',
+    'underdiagnosis-triggers',
+    'ledger-consolidation',
+    'decision-layer-check',
+    'author-facing-lint',
+    'quality-risk-triggers',
+    'cost-floor',
+    'timeline-diff',
+    'timeline-arithmetic',
+    'timeline-anchor-conflict',
+    'audit-tier-criterion',
+    'pass-header',
+    'argument-recon-prerequisite',
+    'structured-findings',
+    'softness-check',
+    'deficit-lock',
+    'artifacts-schema',
+    'gate',
+    'gate-state',
+    'finding-trace',
+    'escalation-check',
+    'feedback-triage',
+    'editor-scaffolding',
+    'diagnostic-vocabulary',
+    'retcon-plan',
+    'state-card-diff',
+    'revision-arc',
+    'regression-diff',
+    'legal-risk',
+    'promise-contract',
+    'continuity-bible',
+    'setup-payoff',
+    'world-bible',
+    'intake-interview',
+    'author-fingerprint',
+    'content-advisory',
+    'coaching-history',
+    'style-explanation',
+    'persona-divergence',
+    'argument-spine',
+    'scene-ethics',
+    'argument-groundtruth-check',
+    'fiction-groundtruth-check',
+    'agreement-alpha',
+    'argument-crosswalk-check',
+    'argument-agd',
+    'argument-aif-check',
+    'argument-reconstruction',
+    'argument-reconstruction-draft',
+    'registry-check',
+    'schema-coverage',
+    'lifecycle-node',
+    'reader-instrument',
+    'manuscript-viz',
+    'annotated-manuscript',
+    'crosslink',
+    'reanchor',
+    'roundtrip-disposition',
+    'disposition-check',
+    'synthesis-coverage',
+    'dispatch-record',
+    'specificity-floor',
+    'refutation-coverage',
+    'refutation-evidence',
+    'refutation-write-scope',
+    'obsidian-export',
+    'html-export',
+    'docx-export',
+    'pdf-export',
+    'results-guide',
+    'position-pair-register',
+    'reader-contract-outline',
+    'calibration-honesty',
+    'stance-calibration',
+    'validator-conventions',
+    'argument-carve-behavior-preservation',
 )
+COMMANDS = (*AGG_VALIDATORS, "argument-aif-export")
 _HELPERS = {
     "ledger-check": ("letter_checks.py", 1, "<ledger_file>"),
     "artifact-names": ("config_checks.py", 3, "<output_dir> <project_name> <runlabel>"),
@@ -35,7 +115,6 @@ _LETTER_SIGNALS = {
     "ledger-consolidation": "<consolidated_ledger_file> [<raw_ledger_file>] | --self-test",
     "decision-layer-check": "<editorial_letter_file> | --self-test",
 }
-COMMANDS += tuple(_LETTER_SIGNALS)
 _CONFIG_TIMELINES = {
     "quality-risk-triggers": (
         "config_checks.py", "<contract_file> [<diagnostic_state_meta_file>] | --self-test",
@@ -58,7 +137,6 @@ _CONFIG_TIMELINES = {
     "timeline-arithmetic": ("timeline_checks.py", "<timeline_file> | --self-test"),
     "timeline-anchor-conflict": ("timeline_checks.py", "<timeline_file> | --self-test"),
 }
-COMMANDS += tuple(_CONFIG_TIMELINES)
 _STRUCTURED_INTEGRITY = {
     "structured-findings": ("structured_findings.py", 0, ""),
     "softness-check": ("honesty_check.py", 2, "<editorial_letter> <findings_ledger> | --self-test"),
@@ -73,7 +151,6 @@ _STRUCTURED_INTEGRITY = {
     ),
     "diagnostic-vocabulary": ("diagnostic_vocabulary.py", 1, "<vocab_guide|run_folder> [--strict] | --self-test"),
 }
-COMMANDS += tuple(_STRUCTURED_INTEGRITY)
 _RUN_INTEGRITY = {
     "escalation-check": ("escalation_check.py", 1, "<run_folder|files...> [--strict] | --self-test"),
     "dispatch-record": (
@@ -86,7 +163,6 @@ _RUN_INTEGRITY = {
     "synthesis-coverage": ("synthesis_coverage.py", 1, "<run_folder> [--strict] | --self-test"),
     "specificity-floor": ("specificity_floor.py", 2, "<editorial_letter> <findings_ledger> [--strict] | --self-test"),
 }
-COMMANDS += tuple(_RUN_INTEGRITY)
 _PLANNING_REFUTATION = {
     "retcon-plan": ("retcon_plan.py", 1, "<run_folder|files...> [--strict] | --self-test"),
     "state-card-diff": ("state_card_diff.py", 1, "<current> | <prior> <current> [--strict] | --self-test"),
@@ -105,7 +181,6 @@ _PLANNING_REFUTATION = {
         "refutation_check.py", 2, "<findings_ledger> <refutation_record> | --self-test",
     ),
 }
-COMMANDS += tuple(_PLANNING_REFUTATION)
 _ARTIFACT_PLANNING = {
     "legal-risk": "legal_risk.py",
     "promise-contract": "promise_contract.py",
@@ -115,7 +190,6 @@ _ARTIFACT_PLANNING = {
     "argument-spine": "argument_spine.py",
     "scene-ethics": "scene_ethics.py",
 }
-COMMANDS += tuple(_ARTIFACT_PLANNING)
 _INTAKE_VOICE = {
     "intake-interview": ("intake_interview.py", "<run_folder|files...> [--strict] | --self-test"),
     "author-fingerprint": ("author_fingerprint.py", "<author_root|files...> [--strict] | --self-test"),
@@ -127,7 +201,6 @@ _INTAKE_VOICE = {
     "style-explanation": ("style_explanation.py", "<author_root|files...> [--strict] | --self-test"),
     "persona-divergence": ("persona_divergence.py", "<run_folder|files...> [--strict] | --self-test"),
 }
-COMMANDS += tuple(_INTAKE_VOICE)
 _READER_MANUSCRIPT = {
     "lifecycle-node": ("lifecycle_node.py", 1, "lifecycle-node", "<sidecar> [run_folder] | --self-test"),
     "reader-instrument": ("reader_instrument.py", 1, "reader-instrument", "<run_folder|files...> [--strict] | --self-test"),
@@ -140,7 +213,6 @@ _READER_MANUSCRIPT = {
     "results-guide": ("results_guide.py", 1, "results-guide", "<run_folder|files...> [--strict] | --self-test"),
     "position-pair-register": ("position_pair_gates.py", 3, "position-pair-register", "<artifact.md> <envelope.json> <manuscript> [--strict] | --self-test"),
 }
-COMMANDS += tuple(_READER_MANUSCRIPT)
 _ARGUMENT_EVALUATORS = {
     "argument-groundtruth-check": (
         "argument_groundtruth.py", 1, "argument-groundtruth-check",
@@ -162,19 +234,16 @@ _ARGUMENT_EVALUATORS = {
     "argument-aif-export": ("argument_aif.py", 0, "export", ""),
     "argument-aif-check": ("argument_aif.py", 0, "check", ""),
 }
-COMMANDS += tuple(_ARGUMENT_EVALUATORS)
 _ARGUMENT_RECONSTRUCTION = {
     "argument-reconstruction-draft": "reconstruction_draft.py",
     "argument-reconstruction": "approval_graph.py",
 }
-COMMANDS += tuple(_ARGUMENT_RECONSTRUCTION)
 _ANNOTATION_EXPORTS = {
     "obsidian-export": "<run_folder> | (generate) {script} ... via annotation_export.py obsidian <run_folder>",
     "html-export": "<run_folder> | (generate) via annotation_export.py html <run_folder>",
     "docx-export": "<run_folder> | (generate) via annotation_export.py docx <run_folder>",
     "pdf-export": "<run_folder> | (generate) via annotation_export.py pdf <run_folder>",
 }
-COMMANDS += tuple(_ANNOTATION_EXPORTS)
 _REPOSITORY_INTEGRITY = {
     "registry-check": ("registry_check.py", 1, "<registry.json | workspace_dir> [--strict] | --self-test"),
     "schema-coverage": ("schema_coverage.py", 0, ""),
@@ -185,14 +254,6 @@ _REPOSITORY_INTEGRITY = {
         "<findings_ledger.md> --argument-state <Argument_State.md> | --self-test",
     ),
 }
-COMMANDS += (*_REPOSITORY_INTEGRITY, "argument-carve-behavior-preservation")
-# validate.sh resolves these arms in validate.d/commands-a.sh. Every other command reaches
-# commands-b.sh, whose preamble refuses misplaced --internal-links* arguments first.
-_BASH_COMMANDS_A = frozenset((
-    "contract-hash", "contract-check", "ledger-check", "artifact-names", "synthesis-sections",
-    "tone-check", "state-lines", *_LETTER_SIGNALS, "quality-risk-triggers", "cost-floor",
-    "timeline-diff", "timeline-arithmetic", "timeline-anchor-conflict",
-))
 
 
 def _line(text, *, error=False):
@@ -203,9 +264,7 @@ def _line(text, *, error=False):
 
 
 def _usage(command, arguments):
-    # Keep migrated-command diagnostics compatible with the sibling Bash CLI.
-    legacy_name = os.path.splitext(sys.argv[0])[0] + ".sh"
-    _line(f"Usage: {legacy_name} {command} {arguments}")
+    _line(f"Usage: {sys.argv[0]} {command} {arguments}")
     return 2
 
 
@@ -217,12 +276,22 @@ def _hash(path):
     return digest.hexdigest()
 
 
-def _run_helper(script, args, *, input=None):
+def _run_helper(script, args):
     env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
-    return subprocess.run(
+    windows = os.name == "nt"
+    result = subprocess.run(
         [sys.executable, str(Path(__file__).resolve().parent / script), *args],
-        env=env, input=input,
-    ).returncode
+        env=env, capture_output=windows,
+    )
+    if windows:
+        # Shipped helpers expose UTF-8 text (including canonical JSON), while
+        # Windows text I/O expands LF to CRLF. Keep the dispatcher's LF contract
+        # without decoding, changing lone CR bytes, or changing helper failures.
+        for stream, output in ((sys.stdout.buffer, result.stdout),
+                               (sys.stderr.buffer, result.stderr)):
+            stream.write(output.replace(b"\r\n", b"\n"))
+            stream.flush()
+    return result.returncode
 
 
 def _script_dir():
@@ -245,53 +314,15 @@ def _navigation_scan(command, args):
 
 
 def _repository_integrity(command, args):
-    if command == "argument-carve-behavior-preservation":
-        return _argument_carve(args)
     script, count, usage = _REPOSITORY_INTEGRITY[command]
     if args and args[0] == "--self-test":
-        if command == "validator-conventions":
-            result = _override_companion()
-            if result:
-                return result
         return _run_helper(script, ["--self-test"])
     if len(args) < count:
         return _usage(command, usage)
     return _run_helper(script, [command, *args])
 
 
-def _override_companion():
-    slug = "severity-floor-weak-axis"
-    marker = f"<!-- override: {slug} -->"
-    cases = (
-        ("genuine_emdash", "found", f"<!-- override: {slug} — reason -->\n"),
-        ("genuine_noreason", "found", marker + "\n"),
-        ("nospace_dash", "found", f"<!-- override: {slug}—reason -->\n"),
-        ("flex_whitespace", "found", f"<!--  override:  {slug}  -->\n"),
-        ("suffix_collision", "miss", f"<!-- override: {slug}-but-not-really — decoy -->\n"),
-        ("inline_codespan_decoy", "miss", f"Use `{marker}` here.\n"),
-        ("fenced_block_decoy", "miss", f"before\n```\n{marker}\n```\nafter\n"),
-        ("indented_fenced_decoy", "miss", f"x\n    ```\n{marker}\n    ```\ny\n"),
-        ("multi_backtick_decoy", "miss", f"``{marker}``\n"),
-        ("tilde_fence_decoy", "miss", f"before\n~~~\n{marker}\n~~~\nafter\n"),
-        ("tilde_with_backtick_line_decoy", "miss", f"~~~\n```\n{marker}\n```\n~~~\n"),
-        ("multiline_inline_decoy", "miss", f"a `open\n{marker}\nclose` b\n"),
-    )
-    failed = False
-    for label, want, body in cases:
-        # Like Bash's `if ... | _has_override`, any nonzero status (including launch failure) is a miss.
-        result = _run_helper("override_marker.py", ["--has-override", slug], input=body.encode("utf-8"))
-        got = "found" if result == 0 else "miss"
-        if got == want:
-            _line(f"  ho_{label}: OK ({got})")
-        else:
-            _line(f"  ho_{label}: FAIL (got {got} want {want})")
-            failed = True
-    if failed:
-        _line("Self-test: FAIL (_has_override bash regression)")
-    return int(failed)
-
-
-def _argument_carve(args):
+def _argument_carve(_command, args):
     scripts = _script_dir()
     directory = next((candidate for candidate in (
         scripts + "/../../../evals/fixtures/argument-carve/precarve",
@@ -388,9 +419,16 @@ def _annotation_export(command, args):
             return _run_helper(suite, [])
         return 0
     if not args:
-        script_name = os.path.splitext(sys.argv[0])[0] + ".sh"
-        return _usage(command, _ANNOTATION_EXPORTS[command].format(script=script_name))
+        return _usage(command, _ANNOTATION_EXPORTS[command].format(script=sys.argv[0]))
     return _run_helper("annotation_export.py", [command, *args])
+
+
+def _utility_file_exists(path):
+    # Windows resolves a terminal directory component on a file; Bash test -f
+    # rejects that spelling. Keep this lexical check local to utility preflight.
+    if os.name == "nt" and path.endswith(("/.", "\\.")):
+        return False
+    return os.path.isfile(path)
 
 
 def _helper(command, args):
@@ -400,7 +438,7 @@ def _helper(command, args):
         if len(args) < count:
             return _usage(command, arguments)
         is_directory = command == "artifact-names"
-        exists = os.path.isdir(args[0]) if is_directory else os.path.isfile(args[0])
+        exists = os.path.isdir(args[0]) if is_directory else _utility_file_exists(args[0])
         if not exists:
             kind = "Directory" if is_directory else "File"
             _line(f"Error: {kind} not found: {args[0]}", error=True)
@@ -583,46 +621,52 @@ def _self_test(command):
     return int(failed)
 
 
-def main(argv=None):
-    args = list(sys.argv[1:] if argv is None else argv)
-    if not args or args[0] not in COMMANDS:
-        if args:
-            _line(f"Unknown or unported command: {args[0]}")
-        _line("Usage: validate.py <command> [args...]")
-        _line("Native commands: " + ", ".join(COMMANDS))
-        _line("Partial migration: remaining commands and aggregates require validate.sh.")
-        return 2
-    command, args = args[0], args[1:]
-    if command not in _BASH_COMMANDS_A:
-        result = _navigation_scan(command, args)
-        if result:
-            return result
-    if command in _REPOSITORY_INTEGRITY or command == "argument-carve-behavior-preservation":
-        return _repository_integrity(command, args)
-    if command in _ANNOTATION_EXPORTS:
-        return _annotation_export(command, args)
-    if command in _ARGUMENT_RECONSTRUCTION:
-        return _argument_reconstruction(command, args)
-    if command in _ARGUMENT_EVALUATORS:
-        return _argument_evaluator(command, args)
-    if command in _READER_MANUSCRIPT:
-        return _reader_manuscript(command, args)
-    if command in _INTAKE_VOICE:
-        return _intake_voice(command, args)
-    if command in _ARTIFACT_PLANNING:
-        return _artifact_planning(command, args)
-    if command in _PLANNING_REFUTATION:
-        return _planning_refutation(command, args)
-    if command in _RUN_INTEGRITY:
-        return _run_integrity(command, args)
-    if command in _STRUCTURED_INTEGRITY:
-        return _structured_integrity(command, args)
-    if command in _CONFIG_TIMELINES:
-        return _config_timeline(command, args)
-    if command in _LETTER_SIGNALS:
-        return _letter_signal(command, args)
-    if command in _HELPERS:
-        return _helper(command, args)
+def _gate(command, args):
+    if args and args[0] == "--self-test":
+        return _run_helper("run_gate.py", ["--self-test"])
+    if command == "gate":
+        if len(args) < 2:
+            return _usage(command, "<phase> <run_folder> [--strict-warnings] | gate --attest <phase> <run_folder> | gate --skip/--defer <phase> <run_folder> --reason ...")
+        return _run_helper("run_gate.py", args)
+    if not args:
+        return _usage(command, "<Diagnostic_State.meta.json> [--strict]")
+    return _run_helper("run_gate.py", ["--check-state", *args])
+
+
+def _self_test_all():
+    total = len(AGG_VALIDATORS)
+    passed = 0
+    failed = 0
+    gate_ok = False
+    _line(f"Aggregate self-test dispatcher (v1.8.4) — running --self-test on all {total} validators:")
+    for command in AGG_VALIDATORS:
+        if command == "gate-state":
+            ok = gate_ok
+            detail = " (covered by gate shared suite)" if ok else " (gate shared suite failed)"
+        else:
+            child = subprocess.run(
+                [sys.executable, str(Path(__file__).resolve()), command, "--self-test"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                env=dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8"),
+            )
+            ok = child.returncode == 0
+            detail = ""
+            if command == "gate":
+                gate_ok = ok
+        _line(f"  {command}: {'PASS' if ok else 'FAIL'}{detail}")
+        if ok:
+            passed += 1
+        else:
+            failed += 1
+    _line("")
+    if failed:
+        _line(f"Aggregate self-test: FAIL ({failed}/{total} validators failed; rerun individually with --self-test for details)")
+    else:
+        _line(f"Aggregate self-test: PASS ({passed}/{total} validators)")
+    return int(bool(failed))
+
+
+def _utility(command, args):
     if args and args[0] == "--self-test":
         return _self_test(command)
     count = 2 if command == "contract-check" else 1
@@ -631,7 +675,7 @@ def main(argv=None):
         if command == "contract-check":
             arguments += " <expected_hash>"
         return _usage(command, arguments)
-    if not os.path.isfile(args[0]):
+    if not _utility_file_exists(args[0]):
         _line(f"Error: File not found: {args[0]}", error=True)
         return 2
     try:
@@ -660,5 +704,76 @@ def main(argv=None):
     return 1
 
 
+class Route(NamedTuple):
+    handler: Callable[[str, list], int]
+    helper: str | None  # Primary sibling helper script; None for in-process work.
+
+
+# The one command table: main() dispatches through it, and the repository checks
+# (validator_runner inventory, schema-coverage C4) read it by importing this module.
+ROUTES = {
+    "contract-hash": Route(_utility, None),
+    "contract-check": Route(_utility, None),
+    "state-lines": Route(_utility, None),
+    "gate": Route(_gate, "run_gate.py"),
+    "gate-state": Route(_gate, "run_gate.py"),
+    "argument-carve-behavior-preservation": Route(_argument_carve, None),
+    **{c: Route(_helper, row[0]) for c, row in _HELPERS.items()},
+    **{c: Route(_letter_signal, "letter_checks.py") for c in _LETTER_SIGNALS},
+    **{c: Route(_config_timeline, row[0]) for c, row in _CONFIG_TIMELINES.items()},
+    **{c: Route(_structured_integrity, row[0]) for c, row in _STRUCTURED_INTEGRITY.items()},
+    **{c: Route(_run_integrity, row[0]) for c, row in _RUN_INTEGRITY.items()},
+    **{c: Route(_planning_refutation, row[0]) for c, row in _PLANNING_REFUTATION.items()},
+    **{c: Route(_artifact_planning, script) for c, script in _ARTIFACT_PLANNING.items()},
+    **{c: Route(_intake_voice, row[0]) for c, row in _INTAKE_VOICE.items()},
+    **{c: Route(_reader_manuscript, row[0]) for c, row in _READER_MANUSCRIPT.items()},
+    **{c: Route(_argument_evaluator, row[0]) for c, row in _ARGUMENT_EVALUATORS.items()},
+    **{c: Route(_argument_reconstruction, script) for c, script in _ARGUMENT_RECONSTRUCTION.items()},
+    **{c: Route(_annotation_export, "annotation_export.py") for c in _ANNOTATION_EXPORTS},
+    **{c: Route(_repository_integrity, row[0]) for c, row in _REPOSITORY_INTEGRITY.items()},
+}
+
+
+def main(argv=None):
+    args = list(sys.argv[1:] if argv is None else argv)
+    if args and args[0] in ("--check-canonical", "--check-all"):
+        from validate_canonical import run_canonical
+    if args and args[0] == "--self-test-all":
+        return _self_test_all()
+    if args and args[0] == "--check-canonical":
+        result = run_canonical()
+        _line("check-all canonical shard: FAIL (one or more real-file checks failed)" if result else
+              "check-all canonical shard: PASS (real-file invariants)")
+        return result
+    if args and args[0] == "--check-all":
+        _line("== --self-test-all ==")
+        self_tests = _self_test_all()
+        _line("")
+        canonical = run_canonical()
+        result = int(bool(self_tests or canonical))
+        _line("check-all: FAIL (one or more checks failed; rerun individually for details)" if result else
+              "check-all: PASS (self-tests + real-file invariants)")
+        return result
+    if not args or args[0] not in ROUTES:
+        if args:
+            _line(f"Unknown command: {args[0]}")
+        _line("Usage: validate.py <command> [args...]")
+        _line("Commands: " + ", ".join(COMMANDS))
+        _line(f"Aggregate: --self-test-all (runs --self-test on all {len(AGG_VALIDATORS)} self-testable validators)")
+        _line("Aggregate: --check-canonical (real-file invariants)")
+        _line("Aggregate: --check-all (self-tests + real-file invariants)")
+        return 2
+    command, args = args[0], args[1:]
+    if command in _ANNOTATION_EXPORTS:
+        result = _navigation_scan(command, args)
+        if result:
+            return result
+    return ROUTES[command].handler(command, args)
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except OSError as exc:
+        _line(f"ERROR: {exc}", error=True)
+        sys.exit(1)
