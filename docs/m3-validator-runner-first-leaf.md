@@ -1,6 +1,6 @@
 # M3 validator runner: first leaf
 
-**Status:** Built as a source-development runner for six fixed leaves: tone-check, synthesis-sections, severity-floor, decision-layer-check, author-facing-lint and ledger-check. Signed desktop availability and native Windows process qualification are not established.
+**Status:** Built as a source-development runner for seven fixed leaves: tone-check, synthesis-sections, severity-floor, decision-layer-check, author-facing-lint, ledger-check and ledger-consolidation. Signed desktop availability and native Windows process qualification are not established.
 <!-- built-when: plugins/apodictic/scripts/validator_runner.py -->
 
 ## 1. Deliverable and boundary
@@ -68,7 +68,7 @@ The process exits 0 for a clean session, whether leaves pass or fail, and 2 for 
 - a §7 leaf id is missing;
 - a row or the file is malformed.
 
-So any undispositioned registry addition, removal or rename fails the hosted gate. The runtime does not read the inventory. It grants no execution authority, and desktop support stays disabled. At baseline, three ids are `ci-only` (`schema-coverage`, `validator-conventions`, `argument-carve-behavior-preservation`), and every other id, including the six leaves, is `not-yet-supported`. The JSON file is the source of truth for the per-id reasons. The gate compares sets, not counts.
+So any undispositioned registry addition, removal or rename fails the hosted gate. The runtime does not read the inventory. It grants no execution authority, and desktop support stays disabled. At baseline, three ids are `ci-only` (`schema-coverage`, `validator-conventions`, `argument-carve-behavior-preservation`), and every other id, including the seven leaves, is `not-yet-supported`. The JSON file is the source of truth for the per-id reasons. The gate compares sets, not counts.
 
 ## 6. Acceptance evidence
 
@@ -93,5 +93,8 @@ The runner admits exactly the keys of the literal `LEAVES` table in `validator_r
 | `decision-layer-check` | four-tuple | Count, heading, appendix and reference checks. Argument-DE detection searches the whole letter, including appendices and code, so a marker there can skip Checks 3–4. A separate decision must repair that helper/policy discrepancy. |
 | `author-facing-lint` | four-tuple | Advisory: errors are always empty, so exit is 0 with warnings. Warnings repeat codes, so valid text can exceed the response ceiling and return `output_limit`. |
 | `ledger-check` | `(exit_code, lines)` | Five required subsections for each recognized pass; literal Pass 0 or 10 yields `NOTE:`; no passes yields `WARNING:` and exit 1. Repeated long pass headings can exceed the response ceiling. |
+| `ledger-consolidation` | four-tuple | One-text raw-aggregation, convergence and severity-collation checks, including existing keyword and override semantics. The optional raw-ledger reduction comparison is not run. |
 
-Build history: spec PR #329 and tone-check PR #332 (Fleet 730); the synthesis-sections spec (#333, Fleet 737) and build (#335, Fleet 739); severity-floor (#336, Fleet 743); decision-layer-check (#338, Fleet 746); author-facing-lint (#341, Fleet 750); and ledger-check with the queue/EOF session fixes and the table-driven reshape (#342, Fleet 756). All six desktop dispositions remain `not-yet-supported`.
+Build history: spec PR #329 and tone-check PR #332 (Fleet 730); the synthesis-sections spec (#333, Fleet 737) and build (#335, Fleet 739); severity-floor (#336, Fleet 743); decision-layer-check (#338, Fleet 746); author-facing-lint (#341, Fleet 750); and ledger-check with the queue/EOF session fixes and the table-driven reshape (#342, Fleet 756). The ledger-consolidation extension adds the one-text route described below. All seven desktop dispositions remain `not-yet-supported`.
+
+`ledger-consolidation` calls the unchanged helper with its default `raw_text=None`, matching the canonical one-file `validate.py ledger-consolidation <file>` consumer. It preserves raw-heading counts, whole-text convergence and collation keyword searches, and overrides that may appear anywhere in the text. The v1 request provides no second raw ledger, so the optional reduction-ratio check is excluded. It also does not verify source pointers, per-entry grounding or semantic consolidation adequacy. Even empty or weakly structured text can receive the inherited “contract satisfied” message; this only reports the helper's one-text result, not verification of the full editorial consolidation contract. A finding still returns `available:true` with `exit_code:1`; an unavailable envelope has `result:null`, and session exit 0 does not certify document validity.

@@ -19,7 +19,7 @@ SCRIPT = ROOT / "plugins/apodictic/scripts/validator_runner.py"
 FIXTURES = ROOT / "tests/fixtures/validators"
 PYTHON = sys.executable
 LEAVES = ("tone-check", "synthesis-sections", "severity-floor", "decision-layer-check",
-          "author-facing-lint", "ledger-check")
+          "author-facing-lint", "ledger-check", "ledger-consolidation")
 SYNTHESIS = "".join("## %s\n\nbody\n\n" % h for h in (
     "Development Edit", "The Short Version", "What the Book Does Best", "What Needs Work",
     "Additional Observations", "Revision Checklist", "Protected Elements", "Author Decisions",
@@ -69,6 +69,24 @@ CASES = {
         LEDGER, "## Pass 2\n### Audit Triggers\n### Notable Findings\n", LEDGER.rstrip("\n"),
         "## Pass 0\n", "## Pass 10\n", "## Pass 00\n", "## Pass 2\nprose ### Notable Findings\n",
         "## Pass 2\n#### **Notable Findings**\n", "## Pass ١\n", "Unrecognized text"],
+    "ledger-consolidation": [
+        # The unchanged helper recognizes convergence annotations anywhere in the text.
+        "## Mechanism: recurring delay\nMust-Fix\n"
+        "## Mechanism: repeated detour\nMust-Fix\n" + annotation
+        for annotation in ("", "(confirmed by Pass 1, Pass 2)\n")
+    ] + [
+        "## Mechanism: recurring delay\n(confirmed by Pass 1, Pass 2)\n"
+        "Must-Fix\nShould-Fix\n" + annotation for annotation in ("", "collated\n")
+    ] + [
+        # Only the marker representation changes; raw aggregation fails without it.
+        "## Pass 1 Findings\n## Pass 2 Findings\n## Pass 3 Findings\n" + marker
+        for marker in ("<!-- override:ledger-consolidation-raw-aggregate -->",
+                       "`<!-- override:ledger-consolidation-raw-aggregate -->`",
+                       "<!-- override:ledger-consolidation-raw-aggregate-suffix -->")
+    ] + [
+        # One text supplies no raw-ledger item count for the optional reduction check.
+        "## Mechanism: recurring delay\n(confirmed by Pass 1, Pass 2)\nMust-Fix\n"
+        "- Invented opening delay.\n- Invented middle delay.\n- Invented closing delay.\n"],
 }
 SHARED = ["", "masterpiece", "雪 😀\r\n" + WEAK + "\rQF-7\n" + LEDGER, "x" * 262144, "\n" * 8191]
 
@@ -177,7 +195,7 @@ class RunnerTests(unittest.TestCase):
         """Replace the copied installation's helper with a synthetic one for every leaf."""
         (self.scripts / "letter_checks.py").write_text(
             body + "\nCHECKS = dict.fromkeys(%r, check)\nRAW_CHECKS = {'ledger-check': "
-            "lambda text: (lambda r: (int(bool(r[0])), r[1] + [r[2]]))(check(text))}\n" % (LEAVES[:5],))
+            "lambda text: (lambda r: (int(bool(r[0])), r[1] + [r[2]]))(check(text))}\n" % (tuple(leaf for leaf in LEAVES if leaf != "ledger-check"),))
 
     def sleeping(self):
         self.pidfile = self.root / "synthetic-worker.pid"

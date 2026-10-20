@@ -47,6 +47,7 @@ LEAVES = {
     "decision-layer-check": ("CHECKS", four_tuple),
     "author-facing-lint": ("CHECKS", four_tuple),
     "ledger-check": ("RAW_CHECKS", raw),
+    "ledger-consolidation": ("CHECKS", four_tuple),
 }
 WORKER_ERRORS = ("runner_dependency_unavailable", "worker_failed", "output_limit")
 
