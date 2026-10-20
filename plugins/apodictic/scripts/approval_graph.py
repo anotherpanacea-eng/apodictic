@@ -937,7 +937,7 @@ def classify_existing_novelty(state: dict, candidates: list[dict]) -> dict:
 def _is_reparse(path: Path) -> bool:
     try:
         import stat
-        attrs = getattr(path.stat(follow_symlinks=False), "st_file_attributes", 0)
+        attrs = getattr(os.lstat(path), "st_file_attributes", 0)
         return bool(attrs & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
     except OSError:
         return False
