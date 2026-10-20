@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 CI = WORKFLOWS / "ci.yml"
 
-CI_SHA256 = "3d833541465dcd8ae5af463f88f47a3871ec365b9bea1f30fc993b3b312a40bb"
+CI_SHA256 = "95b8542e33ea9ac2017557b892caa6cb7721d4babb83c79936f21d6cbe33a30b"
 AUXILIARY_SHA256 = {
     "release.yml": "51fa09c164c47c8346f2cd6e8e2f21d1361f04c99a4996faf3cceddf90bed433",
     "release-readiness.yml": "18c248b2d4e94fb9473d81b3dfd04ccfc58083e39c3937e343d2d618288f3710",
@@ -209,9 +209,15 @@ def test_current_workflow_holds_closed_policy():
         "Native validator gate with only Python on PATH",
     ]
     assert windows["steps"][1]["env"] == binding["env"]
-    gate = windows["steps"][-1]["run"].splitlines()
-    assert gate[0].startswith("$env:PATH = Split-Path -Parent (Get-Command python")
-    assert gate[-1] == "python plugins/apodictic/scripts/validate.py --check-all"
+    setup = windows["steps"][2]
+    assert setup["id"] == "setup-python"
+    gate_step = windows["steps"][-1]
+    assert gate_step["env"] == {
+        "PYTHON_EXE": "${{ steps.setup-python.outputs.python-path }}"
+    }
+    gate = gate_step["run"].splitlines()
+    assert gate[0] == "$env:PATH = Split-Path -Parent $env:PYTHON_EXE"
+    assert gate[-1] == "& $env:PYTHON_EXE plugins/apodictic/scripts/validate.py --check-all"
 
 
 def test_auxiliary_workflows_are_closed_and_sync_remains_draft():

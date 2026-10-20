@@ -176,11 +176,14 @@ jobs:
           --base "$env:BASE_SHA" --head "$env:HEAD_SHA" --github-sha "$env:MERGE_SHA"
           --job "$env:JOB_NAME" --run-id "$env:RUN_ID" --run-attempt "$env:RUN_ATTEMPT"
 
-      - uses: actions/setup-python@v5
+      - id: setup-python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Native validator gate with only Python on PATH
+        env:
+          PYTHON_EXE: ${{ steps.setup-python.outputs.python-path }}
         run: |
-          $env:PATH = Split-Path -Parent (Get-Command python -CommandType Application).Source
-          python plugins/apodictic/scripts/validate.py --check-all
+          $env:PATH = Split-Path -Parent $env:PYTHON_EXE
+          & $env:PYTHON_EXE plugins/apodictic/scripts/validate.py --check-all
