@@ -753,7 +753,7 @@ def run_cases(engine) -> list[dict[str, Any]]:
         good = receipt_path.read_text(encoding="utf-8")
         # A malformed but otherwise retained envelope must identify the map defect.
         bad_map = good.replace("Realizes: " + ids[0], "Realizes: n-000000000000", 1)
-        receipt_path.write_text(bad_map, encoding="utf-8", newline="\n")
+        receipt_path.write_bytes(bad_map.encode("utf-8"))
         malformed = validate(engine, p, "acceptance")
         assert malformed["verdict"] == "ACTION-REQUIRED"
         assert any(code in {"PASSAGE-REALIZES-INELIGIBLE", "RECEIPT-PASSAGE-MAP"} or "REALIZES" in code for code in (f["code"] for f in malformed["findings"])), malformed
