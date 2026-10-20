@@ -5,7 +5,7 @@
 
 ## 1. Deliverable and boundary
 
-This implements the owner-admitted CB-1(b) runner capability. It is a stdlib Python process that accepts closed JSON-lines requests on stdin, writes responses on stdout, and runs one of the fixed text leaves listed in §7. For the same decoded text, each leaf returns the same exit code and stdout as the canonical Python-backed `validate.sh <leaf>` route. The runner never invokes Bash or the partial `validate.py` dispatcher. This is a development runner, not a signed desktop runtime.
+This implements the owner-admitted CB-1(b) runner capability. It is a stdlib Python process that accepts closed JSON-lines requests on stdin, writes responses on stdout, and runs one of the fixed text leaves listed in §7. For the same decoded text, each leaf returns the same exit code and stdout as the canonical native `validate.py <leaf>` route. The runner never invokes Bash or the `validate.py` dispatcher. This is a development runner, not a signed desktop runtime.
 
 The owner's requirement (Fleet `BURN-DOWN-BOARD.md` §5l CB-1(b)) lists closed schemas, input and output ceilings, cancellation, no network, fixed locale and time, fail-closed unavailability, and an inventory that gives every registry entry a disposition. The done-check is that runner output matches `--check-all` and that the inventory gate fails on an undispositioned registry change. Other authority: `handoffs/CODE-MAC-APODICTIC-LOCAL-CUTOVER-2026-07-21.md` §M3. The source baseline is apodictic main `217d2f08f3fd90c09880764d6547f576e0cdd560`. Validators are single-sourced in the plugin, so there is no root Python mirror.
 
@@ -64,7 +64,7 @@ The process exits 0 for a clean session, whether leaves pass or fail, and 2 for 
 `plugins/apodictic/schemas/validator-runtime-inventory.json` is a closed file of the form `{"version":1,"validators":[ROW,...]}`. Each ROW has exactly `id`, `desktop_disposition` (`ci-only` or `not-yet-supported`) and a nonempty `omitted_capability` reason. `validator_runner.py --check-inventory` is a source and CI gate, run in the CI inventory-parity step. It prints one PASS or FAIL line and returns 0 or 1. It fails in any of these cases:
 
 - the row ids are not unique;
-- the row ids differ from the single literal `AGG_VALIDATORS` assignment in `plugins/apodictic/scripts/validate.sh`, which is read, never executed;
+- the row ids differ from the single literal `AGG_VALIDATORS` assignment in `plugins/apodictic/scripts/validate.py`, imported from the fixed sibling path (the import has no side effects and works with `-I -S` from a foreign cwd);
 - a §7 leaf id is missing;
 - a row or the file is malformed.
 
@@ -74,12 +74,12 @@ So any undispositioned registry addition, removal or rename fails the hosted gat
 
 `tests/test_validator_runner.py` runs locally and is not in CI. It covers:
 
-1. **Parity.** One table runs leaves × cases (shipped `lc.*.<leaf>.*.md` fixtures, shared empty/Unicode/mixed-line-ending/text-ceiling cases, and invented per-leaf adversaries) through one real JSONL session. The session runs from a foreign cwd with an empty `PATH` and injected `PYTHONPATH`/site files. Each result's exit code and UTF-8 stdout/stderr bytes must equal the Python-backed `validate.sh <leaf>` oracle.
+1. **Parity.** One table runs leaves × cases (shipped `lc.*.<leaf>.*.md` fixtures, shared empty/Unicode/mixed-line-ending/text-ceiling cases, and invented per-leaf adversaries) through one real JSONL session. The session runs from a foreign cwd with an empty `PATH` and injected `PYTHONPATH`/site files. Each result's exit code and UTF-8 stdout/stderr bytes must equal the native `validate.py <leaf>` oracle.
 2. **Lifecycle.** One leaf-agnostic test uses a synthetic sleeping helper in a copied installation. It covers cancel (active and queued), timeout, EOF drain, fatal schema and frame errors, an invalid cancel target, SIGTERM and SIGINT. It asserts the worker is reaped, there is no late result, the queue keeps its order, and healthy reuse works. It also covers dependency and worker failures, which must be unavailable with no text in errors and no files written.
 3. **Protocol.** Closed request schemas, framing refusals, the frame, text and response ceilings at the limit and one over, a 70-request session, a three-request piped batch drained at EOF, fixed worker locale and time, and no network imports.
-4. **Inventory.** The gate passes on the real tree and fails on registry addition, removal, rename, duplicate or dynamic value, on an unregistered leaf, and on metadata omission, addition, duplicate, unknown class, blank reason or extra key. It never executes Bash.
+4. **Inventory.** The gate passes on the real tree and fails on registry addition, removal, rename or duplicate, on an unregistered leaf, and on metadata omission, addition, duplicate, unknown class, blank reason or extra key. It never executes Bash.
 
-Also run `bash scripts/validate.sh --check-all`, compile, changelog, status-drift and release-generate checks, both build self-checks, and `git diff --check`.
+Also run `python plugins/apodictic/scripts/validate.py --check-all`, compile, changelog, status-drift and release-generate checks, both build self-checks, and `git diff --check`.
 
 ## 7. Leaves
 

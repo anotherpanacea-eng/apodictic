@@ -137,7 +137,7 @@ Every pass-detail output artifact must begin with a one-line blockquote header t
 > **Macro block:** [block name from §3 of pass-dependencies.md] · **Writer question:** [the §3 User Question for this block] · **Legacy pass id:** Pass [N]
 ```
 
-The three values are **read from `references/pass-dependencies.md §3` (Macro Block Definitions) — never authored.** §3 is the single source of truth for the 8 blocks, the pass→block map, and each block's User Question. `scripts/validate.sh pass-header` checks the header against §3 (see `references/run-core.md §What each pass subagent returns` and the canonical `references/example-pass-artifact-header.md`).
+The three values are **read from `references/pass-dependencies.md §3` (Macro Block Definitions) — never authored.** §3 is the single source of truth for the 8 blocks, the pass→block map, and each block's User Question. `python scripts/validate.py pass-header` checks the header against §3 (see `references/run-core.md §What each pass subagent returns` and the canonical `references/example-pass-artifact-header.md`).
 
 Mapping (**derived from §3 — reconcile here only by re-deriving from §3, do not hand-edit against it**):
 
@@ -244,7 +244,7 @@ Recognized instances:
 - `SYNTHESIS.md` — master revision plan at project root (already exists)
 - `Argument_State.md` — argument-shaped nonfiction state at project root (already exists; see argument-state-schema)
 - `Series_State.md` — cross-volume continuity at series root (already exists)
-- `Timeline.md` — temporal architecture for fiction with Pass 10 (live; schema in `references/pass-10.md`; three mechanical validators in `scripts/validate.sh`: `timeline-diff`, `timeline-arithmetic`, `timeline-anchor-conflict`)
+- `Timeline.md` — temporal architecture for fiction with Pass 10 (live; schema in `references/pass-10.md`; three mechanical validators in `scripts/validate.py`: `timeline-diff`, `timeline-arithmetic`, `timeline-anchor-conflict`)
 - `Plot_Spine.md` — spine-driven fiction state (future; intersects Plot Architecture skill)
 
 When adding a new project-level rolling artifact, instantiate it against this class: define its schema, pair it with a validator, specify the synthesis-layer integration. `Timeline.md` (Phase 6 Wave 1) is the first live instance added under the named pattern; `Plot_Spine.md` is the next planned instance.
@@ -343,7 +343,7 @@ Compact routing map below. Full index — templates, deprecated files, and per-f
 3. Log uncertainty explicitly — never force false clarity.
 4. Run adversarial self-check before writing editorial letter.
 5. Check every flag against stated author intent before finalizing.
-6. Run mechanical validation (plugin-bundled `scripts/validate.sh`, or inline fallback) at each checkpoint (see `references/run-core.md` §Mechanical Validation Protocol).
+6. Run mechanical validation (plugin-bundled `scripts/validate.py`, or inline fallback) at each checkpoint (see `references/run-core.md` §Mechanical Validation Protocol).
 7. Run evidence spot-check after synthesis — verify 5 claims against manuscript before delivering (see `references/run-synthesis.md` §Evidence Spot-Check).
 
 ---

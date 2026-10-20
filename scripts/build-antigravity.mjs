@@ -29,6 +29,28 @@ if (!antigravity) {
   process.exit(1);
 }
 
+function isPythonCache(filePath) {
+  return filePath.split(/[\\/]/).includes("__pycache__") || /\.py[co]$/.test(filePath);
+}
+
+function validateCanonicalSource() {
+  const files = walkFiles(abs("plugins/apodictic")).filter((source) => !isPythonCache(source));
+  const oversized = files.filter((source) => fs.statSync(source).size >= 256 * 1024);
+  if (files.length > 512 || oversized.length) {
+    throw new Error(`Canonical plugin exceeds limits: ${files.length} files; oversized: ${oversized.join(", ") || "none"}.`);
+  }
+  console.log(`Canonical plugin: ${files.length} files; every shipped source file under 256 KiB.`);
+}
+
+// Check the self-generated archive: no Python caches, native entrypoints present.
+function validateNativeArchive(archivePath, prefix = "plugins/apodictic/") {
+  const names = new Set(listZipEntries(archivePath));
+  if ([...names].some(isPythonCache)) throw new Error("Archive contains Python bytecode/cache content.");
+  for (const name of ["validate.py", "validate_canonical.py", "validate.sh"]) {
+    if (!names.has(`${prefix}scripts/${name}`)) throw new Error(`Native archive entry missing: ${name}`);
+  }
+}
+
 function abs(relPath) {
   return path.resolve(repoRoot, relPath);
 }
@@ -63,6 +85,7 @@ function removePath(targetPath) {
 
 function createArchive(workspaceRoot, archivePath) {
   const archiveSources = walkFiles(workspaceRoot)
+    .filter((source) => !isPythonCache(source))
     .map((sourcePath) => ({
       sourcePath,
       archiveName: path.relative(workspaceRoot, sourcePath).split(path.sep).join("/"),
@@ -81,6 +104,7 @@ function createArchive(workspaceRoot, archivePath) {
 }
 
 function validateArchive(archivePath) {
+  validateNativeArchive(archivePath);
   const archiveEntries = listZipEntries(archivePath);
   const archiveModes = new Map(
     listZipEntryMetadata(archivePath).map(({ name, mode }) => [name, mode])
@@ -274,6 +298,7 @@ Follow \`plugins/apodictic/skills/core-editor/references/output-structure.md\` Â
 
 
 function main() {
+  validateCanonicalSource();
   const canonicalManifestPath = abs(paths.rootPluginJson);
   const canonicalManifest = readJson(canonicalManifestPath);
   const canonicalVersion = canonicalManifest.version;
@@ -288,7 +313,7 @@ function main() {
     ensureDir(path.join(tempWorkspace, "plugins"));
     
     // Copy canonical plugin
-    fs.cpSync(abs("plugins/apodictic"), tempPluginDir, { recursive: true });
+    fs.cpSync(abs("plugins/apodictic"), tempPluginDir, { recursive: true, filter: (source) => !isPythonCache(source) });
 
     // Strip host specific files
     stripHostSpecificFiles(tempPluginDir);

@@ -16,7 +16,7 @@ The registry lives at `.apodictic/registry.json` in the **workspace root** — t
 
 2. **Rebuild-on-read (cache hygiene).** The registry is a *recomputable cache* over the per-project `Diagnostic_State.meta.json` sidecars — each sidecar is canonical, the registry is denormalized. Before listing, reconcile: scan the workspace root for `Diagnostic_State.meta.json` sidecars AND `*_Structural_Plan_*.md` artifacts (pre-writing projects carry a minimal sidecar). For each project found, refresh the denormalized `mode` / `next_action` / `last_touched` from its sidecar; add any unregistered project; flag any registered `root` that no longer resolves. Write the refreshed registry.
 
-3. **Validate.** Run `../scripts/validate.sh registry-check <workspace_root>` (or the inline equivalent). R1 (schema) and R4 (duplicate id) are errors to fix; R2 (missing sidecar) and R3 (drift) are advisory — the rebuild in step 2 should already have resolved drift toward the sidecars.
+3. **Validate.** Run `python ../scripts/validate.py registry-check <workspace_root>` (or the inline equivalent). R1 (schema) and R4 (duplicate id) are errors to fix; R2 (missing sidecar) and R3 (drift) are advisory — the rebuild in step 2 should already have resolved drift toward the sidecars.
 
 4. **List.** Present a table: **title**, **where it stands** (the lifecycle node, derived per `docs/project-addressability.md` Increment 3; until that lands, show `mode` + `next_action.key`), and **last touched**. Offer to bind one — hand off to `/start <project>`.
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """APODICTIC execution-gate engine (Runner-Governed Execution, increments 1-5).
 
-`validate.sh gate ...` shells out here. Reads the declarative gate manifest
+`validate.py gate ...` launches this native helper. Reads the declarative gate manifest
 (plugins/apodictic/schemas/execution-gates.v1.json), resolves a phase's required
 artifacts in <run_folder> by output-structure.md naming globs, runs the mechanical
-checks via `validate.sh <validator> <file>...` (capturing exit code AND stdout, so a
+checks via the sibling `validate.py` and active interpreter (capturing both streams, so a
 WARN-level blocker isn't lost), prints the attested checklist, and records the gate
 decision as an append-only event in the sidecar's execution.gate_events[] log.
 
@@ -174,7 +174,7 @@ def _now_iso():
 
 # ---------------------------------------------------------------- mechanical run
 
-def run_checks(phase, run_folder, manifest, strict_warnings=False, validate_sh=None):
+def run_checks(phase, run_folder, manifest, strict_warnings=False):
     """Run the manifest's mechanical checks for a phase against a run folder.
 
     Returns (status, lines, checks, resolved, digests) where status in
@@ -184,7 +184,7 @@ def run_checks(phase, run_folder, manifest, strict_warnings=False, validate_sh=N
     keys = manifest.get("artifact_keys", {})
     runlabel = _runlabel(run_folder)
     project, runlabel_val = _project_and_runlabel(run_folder, keys, runlabel)
-    validate_sh = validate_sh or os.path.join(HERE, "validate.sh")
+    launcher = [sys.executable, os.path.join(HERE, "validate.py")]
     er = phase_spec.get("entry_requires", {})
     lines, checks, fail, warn = [], [], 0, 0
 
@@ -219,7 +219,8 @@ def run_checks(phase, run_folder, manifest, strict_warnings=False, validate_sh=N
             fail = 1
             checks.append({"validator": v, "result": "error"})
             continue
-        proc = subprocess.run(["bash", validate_sh, v] + files, capture_output=True, text=True)
+        proc = subprocess.run(launcher + [v] + files, capture_output=True, text=True,
+                              encoding="utf-8", env=dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8"))
         out = (proc.stdout or "") + (proc.stderr or "")
         if proc.returncode != 0:
             lines.append("  check    %-22s ERROR (exit %d)" % (v, proc.returncode))
@@ -578,7 +579,7 @@ def _clearing_report_lines(run_folder):
     except ImportError:
         return lines
 
-    # M1b — reuse finding_trace's cross-artifact report (the same lines `validate.sh finding-trace`
+    # M1b — reuse finding_trace's cross-artifact report (the same lines `validate.py finding-trace`
     # prints), so the clearing output and the standalone validator never drift.
     try:
         ledger, letter, sidecar, revisions, completions, retcons = _ft.resolve_run_folder(run_folder)
@@ -625,7 +626,7 @@ def _clearing_report_lines(run_folder):
 
 # ---------------------------------------------------------------- commands
 
-def cmd_gate(phase, run_folder, manifest, strict_warnings=False, write=False, validate_sh=None):
+def cmd_gate(phase, run_folder, manifest, strict_warnings=False, write=False):
     """Run the mechanical checks and append the mechanical-outcome event."""
     phase_spec = manifest.get("phases", {}).get(phase)
     if not phase_spec:
@@ -634,7 +635,7 @@ def cmd_gate(phase, run_folder, manifest, strict_warnings=False, write=False, va
         return 2, ["gate: run_folder not found: %s" % run_folder]
 
     status, lines, checks, resolved, digests = run_checks(
-        phase, run_folder, manifest, strict_warnings, validate_sh)
+        phase, run_folder, manifest, strict_warnings)
     attested = _attested_ids(phase_spec)
 
     if status == "fail" or (status == "warn" and strict_warnings):
@@ -684,7 +685,7 @@ def cmd_gate(phase, run_folder, manifest, strict_warnings=False, write=False, va
     return 0, lines
 
 
-def cmd_attest(phase, run_folder, manifest, write=False, validate_sh=None):
+def cmd_attest(phase, run_folder, manifest, write=False):
     """Re-run the mechanical checks; only if still clean, append a CLEARING passed."""
     phase_spec = manifest.get("phases", {}).get(phase)
     if not phase_spec:
@@ -692,7 +693,7 @@ def cmd_attest(phase, run_folder, manifest, write=False, validate_sh=None):
     if not os.path.isdir(run_folder):
         return 2, ["gate --attest: run_folder not found: %s" % run_folder]
 
-    status, lines, checks, resolved, digests = run_checks(phase, run_folder, manifest, False, validate_sh)
+    status, lines, checks, resolved, digests = run_checks(phase, run_folder, manifest, False)
     contract = _attested_ids(phase_spec)  # the gate's CURRENT manifest attested IDs
 
     if status != "ok":
@@ -973,7 +974,6 @@ def run_self_test():
     os.unlink(_nu)
 
     manifest = _load_manifest()
-    vs = os.path.join(HERE, "validate.sh")
 
     valid_block = ('<!-- apodictic:finding\n{"schema":"apodictic.finding.v1","id":"F-P5-01",'
                    '"mechanism":"protagonist never chooses","severity":"Must-Fix","confidence":"HIGH",'
@@ -1002,7 +1002,7 @@ def run_self_test():
 
     # --- core gate run: run_synthesis has attested items -> mechanical-passed (not cleared)
     d = folder(ledger_ok)
-    code, _ = cmd_gate("run_synthesis", d, manifest, write=True, validate_sh=vs)
+    code, _ = cmd_gate("run_synthesis", d, manifest, write=True)
     ex = read_ex(d)
     evs = ex.get("gate_events", [])
     check("synthesis_mechanical_passed",
@@ -1012,7 +1012,7 @@ def run_self_test():
           ex.get("phase") is None and ex.get("allowed_next") == [] and ex.get("pending_gate") == "run_synthesis")
 
     # --attest re-runs checks and clears
-    code, _ = cmd_attest("run_synthesis", d, manifest, write=True, validate_sh=vs)
+    code, _ = cmd_attest("run_synthesis", d, manifest, write=True)
     ex = read_ex(d)
     last = ex["gate_events"][-1]
     check("attest_clears",
@@ -1026,16 +1026,16 @@ def run_self_test():
 
     # --- missing artifact -> blocked
     db = folder(ledger_ok, with_log=False)
-    code, _ = cmd_gate("run_synthesis", db, manifest, write=True, validate_sh=vs)
+    code, _ = cmd_gate("run_synthesis", db, manifest, write=True)
     check("missing_artifact_blocks", code == 1 and read_ex(db)["gate_events"][-1]["result"] == "blocked")
 
     # --- failing check -> blocked
     df = folder(ledger_bad)
-    code, _ = cmd_gate("run_synthesis", df, manifest, write=True, validate_sh=vs)
+    code, _ = cmd_gate("run_synthesis", df, manifest, write=True)
     check("failing_check_blocks", code == 1 and read_ex(df)["gate_events"][-1]["result"] == "blocked")
 
     # --- unknown phase -> usage error
-    check("unknown_phase_usage", cmd_gate("nope", folder(ledger_ok), manifest, validate_sh=vs)[0] == 2)
+    check("unknown_phase_usage", cmd_gate("nope", folder(ledger_ok), manifest)[0] == 2)
 
     # --- skip requires reason; records skipped + open exception
     ds = folder(ledger_ok)
@@ -1052,8 +1052,8 @@ def run_self_test():
     # — the three refutation checks stay green and the scenario's original check surface
     # (the minimal letter's own non-green checks) is what keeps the gate un-cleared.
     dw = folder(ledger_ok)
-    cmd_gate("run_synthesis", dw, manifest, write=True, validate_sh=vs)
-    cmd_attest("run_synthesis", dw, manifest, write=True, validate_sh=vs)
+    cmd_gate("run_synthesis", dw, manifest, write=True)
+    cmd_attest("run_synthesis", dw, manifest, write=True)
     with open(os.path.join(dw, "Proj_Core_DE_Synthesis_run.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write("# Edit\n## What Needs Work\nTheo's arc could perhaps be strengthened (Chapter 34).\n"
                  "## Appendix B: Severity Calibration\nTheo arc: Severity held at Must-Fix.\n")
@@ -1071,7 +1071,7 @@ def run_self_test():
                  '"snapshot_sha256":"%s"}\n-->\n\n<!-- apodictic:refutation_budget\n'
                  '{"schema":"apodictic.refutation_budget.v1","cap":15,"eligible":1,"processed":1,"bound":false}\n-->\n'
                  % hashlib.sha256(snap_text.encode("utf-8")).hexdigest())
-    code, _ = cmd_gate("run_spot_check", dw, manifest, write=True, validate_sh=vs)
+    code, _ = cmd_gate("run_spot_check", dw, manifest, write=True)
     exw = read_ex(dw)
     check("warn_pending_is_spot_check",
           exw.get("phase") == "run_synthesis" and exw.get("pending_gate") == "run_spot_check"
@@ -1082,7 +1082,7 @@ def run_self_test():
     # minimal fixture; asserting the whole gate clears would need a full canonical letter — the
     # docs/revision-round-gate.md:7 route). We assert the finding-trace CHECK's own result.
     def _ftrace_result(rf):
-        _s, _l, cks, _r, _d = run_checks("run_spot_check", rf, manifest, validate_sh=vs)
+        _s, _l, cks, _r, _d = run_checks("run_spot_check", rf, manifest)
         for c in cks:
             if c.get("validator") == "finding-trace":
                 return c.get("result")
@@ -1169,7 +1169,7 @@ def run_self_test():
     # plant a deferred pull-interface marker so T4-watch counts 1
     with open(os.path.join(dclr, "Proj_Coverage_Note_run.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write("# Coverage\n<!-- deferred: orchestrator-pull-interface (Runner-Governed Execution Increment 4) -->\n")
-    ccode, clines = cmd_gate("ft_only", dclr, ft_only_manifest, write=True, validate_sh=vs)
+    ccode, clines = cmd_gate("ft_only", dclr, ft_only_manifest, write=True)
     check("m1b_clearing_carries_trace",
           ccode == 0 and any("finding-ID trace" in ln for ln in clines)
           and any("F-P5-01" in ln and "sev=" in ln for ln in clines))
@@ -1183,7 +1183,7 @@ def run_self_test():
                               "checks": [{"validator": "finding-trace", "targets": ["run_folder"]}],
                               "attested": [{"id": "a1", "text": "confirm"}]}, "allowed_next": []}}}
     dmp = _spot_folder(_synth_cleared_ex, _letter_clean)
-    mcode, mlines = cmd_gate("ft_att", dmp, ft_attest_manifest, write=True, validate_sh=vs)
+    mcode, mlines = cmd_gate("ft_att", dmp, ft_attest_manifest, write=True)
     check("m1b_mechanical_passed_no_trace",
           mcode == 0 and read_ex(dmp)["gate_events"][-1]["result"] == "mechanical-passed"
           and not any("finding-ID trace" in ln for ln in mlines)
@@ -1195,10 +1195,10 @@ def run_self_test():
     # block, not a crash, not a false clear). Modeled with the ft_att manifest as "new": record a
     # mechanical-passed with the clean letter, then swap in a phantom letter and --attest.
     dmu = _spot_folder(_synth_cleared_ex, _letter_clean)
-    cmd_gate("ft_att", dmu, ft_attest_manifest, write=True, validate_sh=vs)  # mechanical-passed (clean)
+    cmd_gate("ft_att", dmu, ft_attest_manifest, write=True)  # mechanical-passed (clean)
     with open(os.path.join(dmu, "Proj_Core_DE_Synthesis_run.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write(_letter_phantom)  # phantom planted before the attest re-check
-    ucode, _ = cmd_attest("ft_att", dmu, ft_attest_manifest, write=True, validate_sh=vs)
+    ucode, _ = cmd_attest("ft_att", dmu, ft_attest_manifest, write=True)
     check("m1a_mid_upgrade_attest_blocks",
           ucode == 1 and read_ex(dmu)["gate_events"][-1]["result"] == "blocked")
 
@@ -1237,7 +1237,7 @@ def run_self_test():
                                                "phase": "run_synthesis", "allowed_next": ["run_spot_check"]}}
     dl = folder(ledger_ok, sidecar=legacy)
     # trigger upgrade by recording a real event (re-run synthesis)
-    cmd_gate("run_synthesis", dl, manifest, write=True, validate_sh=vs)
+    cmd_gate("run_synthesis", dl, manifest, write=True)
     exl = read_ex(dl)
     seeds = [e for e in exl["gate_events"] if e.get("migrated")]
     check("migration_seeds_manifest_order",
@@ -1377,10 +1377,10 @@ def run_self_test():
     with open(os.path.join(drev, "Proj_Revision_Report_run.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write("# Revision Report\n- Flags resolved: F-P5-01\n<!-- resolved: F-P5-01 -->\n"
                  "- Flags still present: F-P5-02\n")
-    code, _ = cmd_gate("revision_round", drev, manifest, write=True, validate_sh=vs)
+    code, _ = cmd_gate("revision_round", drev, manifest, write=True)
     check("rev_mechanical_passed",
           code == 0 and read_ex(drev)["gate_events"][-1]["result"] == "mechanical-passed")
-    code, _ = cmd_attest("revision_round", drev, manifest, write=True, validate_sh=vs)
+    code, _ = cmd_attest("revision_round", drev, manifest, write=True)
     exr = read_ex(drev)
     check("rev_clears", code == 0 and exr["gate_events"][-1]["result"] == "passed")
     # (a) ONLY the resolved subset advances to revised; still-present finding stays delivered
@@ -1407,8 +1407,8 @@ def run_self_test():
     drev0 = folder(ledger2, sidecar=prior)
     with open(os.path.join(drev0, "Proj_Revision_Report_run.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write("# Revision Report\n- Flags still present: F-P5-01, F-P5-02\n")  # no resolved markers
-    cmd_gate("revision_round", drev0, manifest, write=True, validate_sh=vs)
-    cmd_attest("revision_round", drev0, manifest, write=True, validate_sh=vs)
+    cmd_gate("revision_round", drev0, manifest, write=True)
+    cmd_attest("revision_round", drev0, manifest, write=True)
     check("rev_zero_resolved_noop",
           read_ex(drev0).get("finding_states", {}) == {"F-P5-01": "delivered", "F-P5-02": "delivered"})
 
@@ -1417,8 +1417,8 @@ def run_self_test():
     with open(os.path.join(drevp, "Proj_Revision_Report_run.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write("# Revision Report\n- Flags resolved: F-P5-01, F-ZZ-99\n"
                  "<!-- resolved: F-P5-01 -->\n<!-- resolved: F-ZZ-99 -->\n")
-    cmd_gate("revision_round", drevp, manifest, write=True, validate_sh=vs)
-    cmd_attest("revision_round", drevp, manifest, write=True, validate_sh=vs)
+    cmd_gate("revision_round", drevp, manifest, write=True)
+    cmd_attest("revision_round", drevp, manifest, write=True)
     fsp = read_ex(drevp).get("finding_states", {})
     check("rev_phantom_id_filtered", fsp.get("F-P5-01") == "revised" and "F-ZZ-99" not in fsp)
 
@@ -1427,7 +1427,7 @@ def run_self_test():
     drevc = folder(ledger2, sidecar=prior)
     with open(os.path.join(drevc, "Proj_Revision_Calendar_run.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write("# Revision Calendar\n<!-- resolved: F-P5-01 -->\n")
-    code, _ = cmd_gate("revision_round", drevc, manifest, write=True, validate_sh=vs)
+    code, _ = cmd_gate("revision_round", drevc, manifest, write=True)
     check("rev_calendar_not_report_blocks",
           code == 1 and read_ex(drevc)["gate_events"][-1]["result"] == "blocked")
 
@@ -1440,8 +1440,8 @@ def run_self_test():
         fh.write("# Revision Report\n- Flags resolved: F-P5-01\n<!-- resolved: F-P5-01 -->\n"
                  "- Flags set aside: F-P5-02\n"
                  "<!-- declined: F-P5-02 — abstraction is the register, a deliberate pass -->\n")
-    cmd_gate("revision_round", ddis, manifest, write=True, validate_sh=vs)
-    code, _ = cmd_attest("revision_round", ddis, manifest, write=True, validate_sh=vs)
+    cmd_gate("revision_round", ddis, manifest, write=True)
+    code, _ = cmd_attest("revision_round", ddis, manifest, write=True)
     exd = read_ex(ddis)
     recd = exd.get("finding_dispositions", {}).get("F-P5-02", {})
     check("dispo_full_record_folds",
@@ -1461,13 +1461,13 @@ def run_self_test():
     rep_lw = os.path.join(dlw, "Proj_Revision_Report_run.md")
     with open(rep_lw, "w", encoding="utf-8", newline="") as fh:
         fh.write("# Revision Report\n<!-- deferred: F-P5-02 until: 2026-09 — waiting on the POV decision -->\n")
-    cmd_gate("revision_round", dlw, manifest, write=True, validate_sh=vs)
-    cmd_attest("revision_round", dlw, manifest, write=True, validate_sh=vs)
+    cmd_gate("revision_round", dlw, manifest, write=True)
+    cmd_attest("revision_round", dlw, manifest, write=True)
     first = read_ex(dlw).get("finding_dispositions", {}).get("F-P5-02", {})
     with open(rep_lw, "w", encoding="utf-8", newline="") as fh:
         fh.write("# Revision Report\n<!-- declined: F-P5-02 — POV decided; the stakes stay as-is -->\n")
-    cmd_gate("revision_round", dlw, manifest, write=True, validate_sh=vs)
-    cmd_attest("revision_round", dlw, manifest, write=True, validate_sh=vs)
+    cmd_gate("revision_round", dlw, manifest, write=True)
+    cmd_attest("revision_round", dlw, manifest, write=True)
     exlw = read_ex(dlw)
     second = exlw.get("finding_dispositions", {}).get("F-P5-02", {})
     check("dispo_last_write_wins",
@@ -1480,8 +1480,8 @@ def run_self_test():
     # disposition record is RETAINED (history; read-time precedence), pointer still == fold.
     with open(rep_lw, "w", encoding="utf-8", newline="") as fh:
         fh.write("# Revision Report\n- Flags resolved: F-P5-02\n<!-- resolved: F-P5-02 -->\n")
-    cmd_gate("revision_round", dlw, manifest, write=True, validate_sh=vs)
-    cmd_attest("revision_round", dlw, manifest, write=True, validate_sh=vs)
+    cmd_gate("revision_round", dlw, manifest, write=True)
+    cmd_attest("revision_round", dlw, manifest, write=True)
     exsup = read_ex(dlw)
     check("dispo_superseded_record_retained",
           exsup.get("finding_states", {}).get("F-P5-02") == "revised"
@@ -1537,8 +1537,8 @@ def run_self_test():
         fh.write("# Feedback Triage\n<!-- declined: F-P5-02 — reader claim refuted by Pass 5 -->\n")
     with open(os.path.join(dtg, "Proj_Revision_Report_run.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write("# Revision Report\n- Flags resolved: F-P5-01\n<!-- resolved: F-P5-01 -->\n")
-    cmd_gate("revision_round", dtg, manifest, write=True, validate_sh=vs)
-    cmd_attest("revision_round", dtg, manifest, write=True, validate_sh=vs)
+    cmd_gate("revision_round", dtg, manifest, write=True)
+    cmd_attest("revision_round", dtg, manifest, write=True)
     rect = read_ex(dtg).get("finding_dispositions", {}).get("F-P5-02", {})
     check("dispo_triage_marker_source",
           rect.get("source") == "triage" and rect.get("artifact") == "Proj_Feedback_Triage_run.md")
@@ -1552,8 +1552,8 @@ def run_self_test():
     with open(os.path.join(dwg, "Proj_Revision_Report_run.md"), "w", encoding="utf-8", newline="") as fh:
         fh.write("# Revision Report\n<!-- declined: F-ZZ-99 — off ledger -->\n"
                  "<!-- declined: F-P5-02 — still only locked -->\n")
-    cmd_gate("revision_round", dwg, manifest, write=True, validate_sh=vs)
-    cmd_attest("revision_round", dwg, manifest, write=True, validate_sh=vs)
+    cmd_gate("revision_round", dwg, manifest, write=True)
+    cmd_attest("revision_round", dwg, manifest, write=True)
     check("dispo_write_guards_filter",
           read_ex(dwg).get("finding_dispositions", {}) == {})
 

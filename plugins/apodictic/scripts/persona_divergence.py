@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """persona-divergence — structural integrity for Reader-Persona Simulation.
 
-`validate.sh persona-divergence <run_folder|files>` shells out here. Pass 1 maps the experience of
+`validate.py persona-divergence <run_folder|files>` delegates here. Pass 1 maps the experience of
 ONE composite reader; a manuscript meets an audience with different tolerances. Persona simulation
 runs the reader-experience lens through several declared reading DISPOSITIONS and surfaces where the
 predicted experience DIVERGES — divergence is the diagnostic signal, as contract-mismatch is. This

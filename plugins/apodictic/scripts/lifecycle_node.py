@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """lifecycle-node — derive a project's lifecycle node from its sidecar (Project Addressability, Increment 3).
 
-`validate.sh lifecycle-node <sidecar> [run_folder]` shells out here. State-driven dispatch needs one
+`validate.py lifecycle-node <sidecar> [run_folder]` delegates here. State-driven dispatch needs one
 authoritative, *tested* answer to "where is this project?" so `/start`, `/projects`, and the Increment-4
 loop dispatcher don't each re-derive it in prose. This computes the node by a single precedence
 (FIRST MATCH WINS) over the existing Diagnostic_State.meta.json sidecar — no new stored state:

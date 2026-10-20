@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """diagnostic-vocabulary — Diagnostic Vocabulary Mode teaching-aid contract (Operators).
 
-`validate.sh diagnostic-vocabulary <vocab_guide|run_folder> [--strict]` shells out here.
+`validate.py diagnostic-vocabulary <vocab_guide|run_folder> [--strict]` delegates here.
 Diagnostic Vocabulary Mode (`operator:facilitator`) produces a Vocabulary Guide for a
 writing-group facilitator: a Glossary of the structural concepts the diagnosis used —
 defined in plain language and GROUNDED in this manuscript — plus Discussion Prompts that

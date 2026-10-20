@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """crosslink — letter <-> margin bidirectional cross-links (Annotated-Manuscript Increment 3).
 
-`validate.sh crosslink <run_folder> [--strict]` shells out here. Increments 1-2 made the margin->letter
+`validate.py crosslink <run_folder> [--strict]` delegates here. Increments 1-2 made the margin->letter
 direction real (each margin comment ends "(See letter §F-...)"). This adds letter->margin: a crosslink
 render injects a CriticMarkup back-link span immediately after each editorial-letter `<!-- finding: F-... -->`
 marker whose finding has a manifest annotation, pointing at that finding's manuscript anchor:
@@ -62,7 +62,7 @@ def _has_block(text, btype):
 
     Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
     in prose from being misrouted (the 2026-06-20 resolver-hardening sweep). Gated by
-    validate.sh validator-conventions (M2)."""
+    validate.py validator-conventions (M2)."""
     if art is None:
         return ("apodictic:%s" % btype) in (text or "")
     return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))

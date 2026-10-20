@@ -151,7 +151,7 @@ class RunnerTests(unittest.TestCase):
         self.schemas = self.scripts.parent / "schemas"
         self.scripts.mkdir(parents=True)
         self.schemas.mkdir()
-        for name in ("validator_runner.py", "letter_checks.py", "override_marker.py", "validate.sh"):
+        for name in ("validator_runner.py", "letter_checks.py", "override_marker.py", "validate.py"):
             shutil.copyfile(SCRIPT.parent / name, self.scripts / name)
         self.metadata = self.schemas / "validator-runtime-inventory.json"
         shutil.copyfile(SCRIPT.parent.parent / "schemas/validator-runtime-inventory.json", self.metadata)
@@ -203,9 +203,10 @@ class RunnerTests(unittest.TestCase):
 
     def inventory_check(self):
         return subprocess.run([PYTHON, "-I", "-S", str(self.script), "--check-inventory"],
-                              capture_output=True).returncode
+                              capture_output=True, cwd=self.root,
+                              env=dict(os.environ, PATH="", PYTHONPATH=str(self.root))).returncode
 
-    def test_every_leaf_matches_the_legacy_oracle(self):
+    def test_every_leaf_matches_the_native_cli(self):
         # Foreign cwd, empty PATH and injected PYTHONPATH/site files cannot change a leaf.
         (self.root / "letter_checks.py").write_text("raise RuntimeError('cwd injection')\n")
         (self.root / "sitecustomize.py").write_text("raise RuntimeError('site injection')\n")
@@ -217,7 +218,7 @@ class RunnerTests(unittest.TestCase):
             for text in texts + SHARED + CASES[leaf]:
                 with self.subTest(leaf=leaf, case=n):
                     source.write_bytes(text.encode())
-                    oracle = subprocess.run(["bash", str(ROOT / "scripts/validate.sh"), leaf,
+                    oracle = subprocess.run([sys.executable, str(ROOT / "plugins/apodictic/scripts/validate.py"), leaf,
                                              str(source)], capture_output=True)
                     c.send(validation(str(n), text, leaf))
                     got = c.next()
@@ -412,22 +413,25 @@ class RunnerTests(unittest.TestCase):
 
     def test_inventory_gate_requires_one_disposition_per_registry_id(self):
         self.assertEqual(self.inventory_check(), 0)
-        registry = self.scripts / "validate.sh"; original = registry.read_text()
+        registry = self.scripts / "validate.py"; original = registry.read_text(encoding="utf-8")
         baseline = json.loads(self.metadata.read_text())
-        # Registry drift: an undispositioned addition, removal, rename, duplicate or dynamic value fails.
-        marker = self.root / "must-not-exist"
-        for changed in (original.replace('AGG_VALIDATORS="', 'AGG_VALIDATORS="invented-new ', 1),
-                        original.replace("tone-check ", "", 1),
-                        original.replace("tone-check", "invented-tone", 1),
-                        original.replace("tone-check", "tone-check tone-check", 1),
-                        original + '\nAGG_VALIDATORS="$DYNAMIC"\n',
-                        original.replace('AGG_VALIDATORS="', 'AGG_VALIDATORS="$(touch %s) ' % marker, 1)):
-            registry.write_text(changed)
+        # Registry drift: an undispositioned addition, removal, rename or duplicate fails.
+        declaration = next(n for n in ast.parse(original).body if isinstance(n, ast.Assign)
+                           and any(isinstance(t, ast.Name) and t.id == "AGG_VALIDATORS" for t in n.targets))
+        ids = ast.literal_eval(declaration.value)
+        lines = original.splitlines(keepends=True)
+        def replaced(expression):
+            return ("".join(lines[:declaration.lineno - 1]) + "AGG_VALIDATORS = " + expression + "\n"
+                    + "".join(lines[declaration.end_lineno:]))
+        for changed in (replaced(repr(("invented-new", *ids))),
+                        replaced(repr(tuple(v for v in ids if v != "tone-check"))),
+                        replaced(repr(tuple("invented-tone" if v == "tone-check" else v for v in ids))),
+                        replaced(repr((*ids, "tone-check")))):
+            registry.write_text(changed, encoding="utf-8")
             self.assertNotEqual(changed, original)
             self.assertEqual(self.inventory_check(), 1)
-        self.assertFalse(marker.exists())
         # Metadata drift: closed row/file shape, exact set, known dispositions, nonempty reasons.
-        registry.write_text(original)
+        registry.write_text(original, encoding="utf-8")
         for change in ("omit", "add", "duplicate", "class", "reason", "extra-row-key", "extra",
                        "leaf-not-registered"):
             value = copy.deepcopy(baseline)
@@ -444,9 +448,18 @@ class RunnerTests(unittest.TestCase):
                 registry.write_text(original.replace("tone-check", "invented-tone", 1))
             self.metadata.write_text(json.dumps(value))
             self.assertEqual(self.inventory_check(), 1, change)
-        registry.write_text(original)
+        registry.write_text(original, encoding="utf-8")
         self.metadata.write_text(json.dumps(baseline))
         self.assertEqual(self.inventory_check(), 0)
+
+    def test_inventory_missing_dispatcher_fails_closed(self):
+        path = self.scripts / "validate.py"
+        moved = path.with_suffix(".held")
+        path.rename(moved)
+        try:
+            self.assertEqual(self.inventory_check(), 1)
+        finally:
+            moved.rename(path)
 
 
 if __name__ == "__main__":

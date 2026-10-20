@@ -1,9 +1,39 @@
 # Native Python validator migration
 
-**Status:** Groups 1–4, 5a and 6–13 built; self-test output stabilized. The gate pair
-and Group 14 remain queued. The Bash dispatcher remains the
-full validator entrypoint during this migration.
+**Status:** Group14 native cutover built as an unarmed draft. Local combined
+qualification and independent review are required; final CB-1(a) acceptance
+requires a green hosted `validate-windows` CI job (the full `--check-all` gate with
+only Python on `PATH`). Earlier increment records below describe the migration
+history.
 <!-- built-when: plugins/apodictic/scripts/validate.py -->
+<!-- built-when: plugins/apodictic/scripts/validate_canonical.py -->
+
+The native entrypoint is `python plugins/apodictic/scripts/validate.py`. Python
+3.10+ is required; CI pins 3.12. All public routes, including gate/gate-state and
+`--self-test-all`, `--check-canonical`, and `--check-all`, use the active interpreter.
+The immutable aggregate tuple is the inventory source. Gate-state accounts for
+the actual gate suite once; full checks still run canonical checks after aggregate
+failures. `validate.sh` remains an optional small POSIX launcher and returns 127
+when Python is missing. There is no missing-runtime degraded PASS. Usage messages
+name the `validate.py` script Python is running, including through the
+`validate.sh` shims.
+
+`validate.py` keeps one `ROUTES` table (command → handler, primary helper script)
+and `main()` dispatches through it. Importing `validate.py` has no side effects, so
+the runner inventory reads `AGG_VALIDATORS` and schema-coverage C4 reads each
+route's helper from the module itself; C5 reads the `run_validator` calls in
+`validate_canonical.py`. A misrouted helper fails `--check-all`: through its
+self-test in `--self-test-all`, or, when the self-test does not reach the helper
+(for example `dispatch-record` routed to `escalation_check.py`), through the
+canonical checks in `--check-canonical`.
+
+Both package generators exclude `__pycache__` and bytecode, including submission
+archives, and require the native files and the compatibility shim in each archive.
+They also check the canonical plugin source against the Claude plugin directory
+limits (512 files, each under 256 KiB) before building. Standalone installs preserve the existing explicit skips:
+missing eval-only export goldens can skip byte comparison, while required
+stance/E7 inputs still fail. A standalone layout is not a claim that every full
+canonical check passes without those inputs.
 
 Fleet board CB-1(a) ports the validator dispatcher command group by command group.
 Group 1 implements seven early utilities:
@@ -137,8 +167,9 @@ invalid/inaccessible input path. For the three raw-byte utilities, a regular fil
 that is found but cannot be read returns 1 with empty stdout and a named
 application error on stderr. The parser-backed commands retain their helper's
 failure behavior.
-Migrated-command usage errors deliberately retain the sibling
-`validate.sh` name, including its invocation path, for compatibility. General
+Migrated-command usage errors deliberately retained the sibling
+`validate.sh` name, including its invocation path, until Group 14 made them name
+`validate.py`. General
 Python help identifies the partial migration. Unported commands, including
 `--self-test-all`, `--check-canonical` and `--check-all`, return 2 with an explicit
 partial-migration message. Python does not fall back to Bash.
@@ -169,11 +200,13 @@ producers; these four public routes check on-disk exports and do not create them
 Linked PDF keeps its separate normal-run authentication and reports that reader
 behavior is unqualified.
 
-Every native route that Bash dispatches through `validate.d/commands-b.sh`
-first applies that file's `--internal-links*` refusal: only
-`pdf-export <run_folder> --internal-links` (exactly once, no other `--` option)
-passes; anything else exits 2 with Bash's usage message, before self-test or
-shortage handling. Routes in `commands-a.sh` never see the check, as in Bash.
+The four annotation export routes first apply the `--internal-links*` refusal:
+only `pdf-export <run_folder> --internal-links` (exactly once, no other `--`
+option) passes; anything else exits 2 with the usage message, before self-test or
+shortage handling. Under Bash every route in `commands-b.sh` applied this check
+because of how the dispatcher files were split; after the Group 14 cutover only
+the exporters do, matching the navigation spec's rule that the exporter option
+does not set other utilities' option policy.
 
 Group 13 adds `registry-check`, `schema-coverage`, `validator-conventions`,
 `calibration-honesty`, `stance-calibration` and
@@ -182,12 +215,12 @@ exact command prefixes, original ordinary tokens and distinct raw arities.
 First-position selftests forward only that flag; helper-owned late selftests
 retain wrapper arity checks.
 
-Conventions first-selftest executes all twelve actual shared override-marker CLI
-checks with their original UTF-8 bodies before the full existing meta-lint suite.
-As in Bash, any nonzero companion status is a miss; mismatches accumulate and
-prevent that suite. Late selftest runs the helper suite alone. Both
-meta-lint and schema coverage still inspect the shipped Bash dispatcher/parts;
-routing them natively does not migrate source introspection or aggregates.
+Under Bash, the conventions first-selftest also ran twelve override-marker cases
+through `override_marker.py --has-override` to cover the Bash `_has_override`
+helper. Group 14 removed that companion and the stdin CLI it used; the same cases
+run in-process in `override_marker.py --self-test`. At Group 13, meta-lint and
+schema coverage still inspected the Bash dispatcher/parts; Group 14 moved them to
+the native route table and `validate_canonical.py`.
 
 Carve remains a repository-only summary smoke. It selects the first of the two
 existing lexical fixture directories, skips when neither exists, and preserves
@@ -206,28 +239,23 @@ behavior preservation.
 
 ## Differential acceptance
 
-`tests/test_validate_python_parity.py` compares exit codes, stdout and stderr
-bytes against the independent Bash dispatcher without output normalization, except
-that leading blanks are stripped from the Bash `state-lines` count (BSD/macOS
-`wc -l` left-pads it; native output is unpadded). It covers every migrated
-self-test, all applicable shipped validator fixtures and
-canonical reference inputs, and raw-byte utility edge cases. One argv-echo
-differential copies the scripts, replaces every helper with a stub that prints
-its arguments and stdin, and compares Bash and native results for every native
-route over empty, missing, file, directory, `--strict`, `--`, late
-`--self-test`, extra, empty-string, `--internal-links*` and delete shapes.
-Helpers are shared, so this checks everything the wrapper can change.
+During Groups 1 to 14 a differential suite compared native exit codes, stdout and
+stderr bytes against the Bash dispatcher, optionally against an external
+pre-cutover checkout. With the Bash dispatcher deleted it could only compare
+Python with Python, so it was removed after the cutover. The behavior it guarded
+that no other gate covers stays in `tests/test_validate_native_aggregates.py`,
+which CI runs: the dispatcher keeps a helper's exit status, stdout and stderr
+bytes, argv and stdin with an empty `PATH`; a missing helper never yields a
+self-test PASS; and the carve smoke fails when a child fails or a golden drifts.
+Native Windows acceptance is the `validate-windows` job, which runs the whole
+`--check-all` gate with only Python on `PATH`.
 
 ```text
-python -m pytest -q tests/test_validate_python_parity.py tests/test_contract_hash_portability.py
+python -m pytest -q tests/test_validate_native_aggregates.py tests/test_contract_hash_portability.py
 bash scripts/validate.sh --check-all
 node scripts/assemble-changelog.mjs --check
 git diff --check
 ```
-
-When Bash is absent, differential-only cases are explicitly skipped; native
-checks still run. This is not full native Windows acceptance, which requires the
-whole Python `--check-all` suite green on `windows-latest`.
 
 ## Windows helper text output
 
@@ -273,7 +301,7 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | 3 | quality-risk-triggers, cost-floor, audit-tier-criterion, pass-header, argument-recon-prerequisite, timeline-diff, timeline-arithmetic, timeline-anchor-conflict | Built |
 | 4 | structured-findings, softness-check, deficit-lock, artifacts-schema, finding-trace, feedback-triage, editor-scaffolding, diagnostic-vocabulary | Built |
 | 5a | escalation-check, dispatch-record, disposition-check, synthesis-coverage, specificity-floor | Built |
-| 5b | gate, gate-state; coherent live/shared-self-test nested launcher transition | Held for coordinated Group 14; official children available, custom/aggregate dispatch still incomplete |
+| 5b | gate, gate-state; coherent live/shared-self-test nested launcher transition | Built in Group 14 |
 | 6 | retcon-plan, state-card-diff, revision-arc, regression-diff, refutation-coverage, refutation-evidence, refutation-write-scope | Built |
 | Self-test stability | Specificity/refutation expected-negative diagnostic capture and four restored exact-output surfaces | Built |
 | 7 | legal-risk, promise-contract, continuity-bible, setup-payoff, world-bible, argument-spine, scene-ethics | Built |
@@ -283,15 +311,15 @@ baseline there are 84 aggregate validators and 73 validator fixture files;
 | 11 | argument-reconstruction, argument-reconstruction-draft | Built |
 | 12 | obsidian-export, html-export, docx-export, pdf-export | Built |
 | 13 | registry-check, schema-coverage, validator-conventions, calibration-honesty, stance-calibration, argument-carve-behavior-preservation | Built |
-| 14 | Native aggregate/canonical workflow, complete usage routing, Bash shim cutover, references, and native Windows full-suite acceptance | Queued |
+| 14 | Native aggregate/canonical workflow, complete usage routing, Bash shim cutover, references, and native Windows full-suite acceptance | Built as a draft; hosted `validate-windows` run pending |
 
 Groups 2–13 preserve wrapper-specific optional/default arguments, strict flags,
 repo-only fixture discovery and special self-test routes. Group 14 preserves
 canonical hostile checks, export byte comparisons, derived aggregate counts and
 the shared gate/gate-state self-test disposition. It migrates the Bash-source
 introspection in `meta_lint.py` and `schema_coverage.py` while retaining schema
-binding, canonical exercise and hygiene checks. Final differential verification
-must use an external pre-cutover reference checkout; comparing the Bash shim to
-Python itself cannot establish parity.
+binding, canonical exercise and hygiene checks. Its differential verification ran
+against an external pre-cutover reference checkout, because comparing the Bash
+shim to Python itself cannot establish parity.
 
 The M3 JSON-lines runner is CB-1(b), a later workflow outside these port groups.

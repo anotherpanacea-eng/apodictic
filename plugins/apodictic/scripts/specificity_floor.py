@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """specificity-floor — pre-letter re-grounding fidelity gate (docs/synthesis-regrounding.md, M2).
 
-`validate.sh specificity-floor <editorial_letter> <findings_ledger> [--strict]` shells out here.
+`validate.py specificity-floor <editorial_letter> <findings_ledger> [--strict]` delegates here.
 The Pre-Letter Re-Grounding step (run-synthesis.md §Processing Protocol, after the step-9b
 Synthesis Coverage Manifest, before the Step 10 pre-output gate) re-reads the consolidated
 Findings Ledger verbatim from disk and re-reads bounded manuscript spans for synthesis-bound
@@ -47,7 +47,7 @@ change (those are Step 5 / Step 6b property, enforced elsewhere).
 NOT this validator's job (single-ownership, spec §M2.3): the reverse-direction
 letter-ID-must-exist-in-ledger check is `finding-trace` E1's — the sole owner. specificity-floor
 implements NO reverse ID check; two enforcers with subtly different ID grammars is the drift risk
-single ownership exists to prevent. The smuggled-finding gate is `validate.sh finding-trace`.
+single ownership exists to prevent. The smuggled-finding gate is `validate.py finding-trace`.
 
 Firewall (spec §M2.3): re-grounding is read-only on the ledger. This validator reads severity to
 select synthesis-bound findings and Must-Fix windows; it NEVER emits, compares, or rewrites a

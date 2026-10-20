@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Krippendorff's alpha inter-rater reliability CLI (pure stdlib).
 
-Backs `validate.sh agreement-alpha <ratings.csv> [--metric nominal|ordinal]`. This is the
+Backs `validate.py agreement-alpha <ratings.csv> [--metric nominal|ordinal]`. This is the
 mechanical half of the Argument (and, by reference, Fiction) Benchmark's agreement-as-license
 promotion workflow: a provisional ground-truth anchor is promoted to a gate-licensed status only
 when a >=3-editor panel's measured agreement clears a pre-registered threshold (the psychometric

@@ -96,11 +96,9 @@ def check_inventory():
                            .read_text(encoding="utf-8"))
         rows = value["validators"]
         ids = [row["id"] for row in rows]
-        assignments = re.findall(r"^\s*(?:export\s+)?AGG_VALIDATORS\b.*$",
-                                 (HERE / "validate.sh").read_text(encoding="utf-8"), re.M)
-        literal = len(assignments) == 1 and re.fullmatch(
-            r"AGG_VALIDATORS=([\"'])([^\"'$`\\\n]*)\1\s*", assignments[0])
-        registry = literal[2].split() if literal else []
+        # -I -S omits the script directory; import the sibling dispatcher's table.
+        sys.path.insert(0, str(HERE))
+        from validate import AGG_VALIDATORS as registry
         ok = (set(value) == {"version", "validators"} and value["version"] == 1
               and registry and len(set(registry)) == len(registry)
               and len(set(ids)) == len(ids) and set(ids) == set(registry)
@@ -109,7 +107,8 @@ def check_inventory():
                       and row["desktop_disposition"] in ("ci-only", "not-yet-supported")
                       and isinstance(row["omitted_capability"], str)
                       and row["omitted_capability"].strip() for row in rows))
-    except (OSError, ValueError, TypeError, KeyError):
+    except (OSError, ValueError, TypeError, KeyError, ImportError) as exc:
+        print("Inventory error: %s" % exc)
         ok = False
     if not ok:
         print("FAIL: Validator runtime inventory unavailable or inconsistent.")

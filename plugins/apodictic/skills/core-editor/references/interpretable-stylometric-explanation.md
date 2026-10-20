@@ -5,7 +5,7 @@ Author Voice Fingerprint (#9): it attaches a natural-language gloss to a handful
 **measured** features, each bound by provenance to the exact SETEC `voice_profile` feature it describes.
 It does **no new stylometry** and offers **no advice** — it names a measured feature, it never
 prescribes a voice change and never fabricates a style claim. Spec + validator:
-`docs/interpretable-stylometric-explanation.md`, `scripts/validate.sh style-explanation`. Worked
+`docs/interpretable-stylometric-explanation.md`, `python scripts/validate.py style-explanation`. Worked
 example: `example-author-style-explanation.md`.*
 
 ---

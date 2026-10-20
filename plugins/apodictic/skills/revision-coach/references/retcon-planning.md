@@ -80,7 +80,7 @@ The State Card isn't only a section of the Retcon Plan — it's also a standalon
 -->
 ```
 
-Tracked elements (promises / tensions / contradictions) carry a stable, **kind-agnostic `SE-NN` id**, so the same element is followed across rounds even when it changes kind — that identity is what lets the diff catch a promise that has quietly become a forbidden contradiction. Bump `round` each revision. Diff with `scripts/validate.sh state-card-diff <prior_card> <current_card>`.
+Tracked elements (promises / tensions / contradictions) carry a stable, **kind-agnostic `SE-NN` id**, so the same element is followed across rounds even when it changes kind — that identity is what lets the diff catch a promise that has quietly become a forbidden contradiction. Bump `round` each revision. Diff with `python scripts/validate.py state-card-diff <prior_card> <current_card>`.
 
 ---
 
@@ -100,8 +100,8 @@ You may retcon for **meaning** freely (recontextualize what the reader has seen)
 
 ## Mechanical check
 
-`scripts/validate.sh retcon-plan <run_folder>`: R1 schema, R2 unique ids, **R3 no evidential retcon of locked canon** (the signature gate; override `<!-- override: retcon-evidential RX-NN — … -->`), R4 target referential integrity; W1 blast-radius accounting on locked/costly items, W2 firewall drift (invented prose where a class belongs; override `retcon-firewall RX-NN`). Door-B Selection (F1): R5 reading schema + 1–5 score rubric, R6 unique reading ids, R7 reading-target referential integrity; **W3 coincidence-note over-fitting guard** (the signature F1 check), W4 top-1–3 shortlist. W1–W4 advisory, ERROR under `--strict`.
+`python scripts/validate.py retcon-plan <run_folder>`: R1 schema, R2 unique ids, **R3 no evidential retcon of locked canon** (the signature gate; override `<!-- override: retcon-evidential RX-NN — … -->`), R4 target referential integrity; W1 blast-radius accounting on locked/costly items, W2 firewall drift (invented prose where a class belongs; override `retcon-firewall RX-NN`). Door-B Selection (F1): R5 reading schema + 1–5 score rubric, R6 unique reading ids, R7 reading-target referential integrity; **W3 coincidence-note over-fitting guard** (the signature F1 check), W4 top-1–3 shortlist. W1–W4 advisory, ERROR under `--strict`.
 
-The rolling State Card (F2) has its own validator: `scripts/validate.sh state-card-diff <prior> <current>` — S1 schema + `SE-NN` id-prefix, S2 unique ids, S3 round order, **S4 promise→contradiction** (the signature cross-round coherence-break check; override `<!-- override: state-card-transition SE-NN — … -->`), W1 dropped promise, W2 controlling-idea shift, W3 same-round edit.
+The rolling State Card (F2) has its own validator: `python scripts/validate.py state-card-diff <prior> <current>` — S1 schema + `SE-NN` id-prefix, S2 unique ids, S3 round order, **S4 promise→contradiction** (the signature cross-round coherence-break check; override `<!-- override: state-card-transition SE-NN — … -->`), W1 dropped promise, W2 controlling-idea shift, W3 same-round edit.
 
-Pass-8 source provenance (F3): a `retcon_item`'s optional `source` finding-ref is resolved against the Findings Ledger by `scripts/validate.sh finding-trace <run_folder>` — **E6** flags a `source` that isn't in the ledger. Ownership boundary + lineage: [`docs/retcon-planning.md`](../../../docs/retcon-planning.md).
+Pass-8 source provenance (F3): a `retcon_item`'s optional `source` finding-ref is resolved against the Findings Ledger by `python scripts/validate.py finding-trace <run_folder>` — **E6** flags a `source` that isn't in the ledger. Ownership boundary + lineage: [`docs/retcon-planning.md`](../../../docs/retcon-planning.md).

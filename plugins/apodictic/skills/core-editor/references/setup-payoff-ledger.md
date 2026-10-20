@@ -3,7 +3,7 @@
 *Reference module for the APODICTIC Core Editor. The referential-completeness half of a
 developmental-edit style sheet: a locus-anchored record of the manuscript's Foreshadow → Trigger →
 Payoff triples and a mechanical check that every foreshadow resolves. Spec + validator:
-`docs/setup-payoff-ledger.md`, `scripts/validate.sh setup-payoff`. Worked example:
+`docs/setup-payoff-ledger.md`, `python scripts/validate.py setup-payoff`. Worked example:
 `example-setup-payoff-ledger.md`. Anchor paper: arXiv:2601.07033 (CFPG).*
 
 ---
@@ -86,7 +86,7 @@ the letter to cite. **No other validator consumes the register** — whether an 
 
 ## The validator
 
-`scripts/validate.sh setup-payoff <run_folder|files...> [--strict]` runs SP1 schema, SP2 referential
+`python scripts/validate.py setup-payoff <run_folder|files...> [--strict]` runs SP1 schema, SP2 referential
 integrity (a phantom `payoff_ref` FAILs), SP3 open rationale, SP4 derived-state agreement, and X1
 firewall. It takes a run folder (globs `*_Setup_Payoff_Ledger_*.md`) or explicit files. The worked
 example `example-setup-payoff-ledger.md` is wired into `--check-all`.

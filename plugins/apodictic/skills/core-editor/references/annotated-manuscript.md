@@ -24,9 +24,9 @@ Spec + rule detail: [`docs/annotated-manuscript.md`](../../../../docs/annotated-
 
 ```
 scripts/annotation_manifest.py build <run_folder>     # resolves anchors + projects comments + renders
-scripts/validate.sh annotated-manuscript <run_folder> # gates A1–A6 + W1
+python scripts/validate.py annotated-manuscript <run_folder> # gates A1–A6 + W1
 scripts/crosslink.py render <run_folder>              # back-links the letter to the margins
-scripts/validate.sh crosslink <run_folder>            # gates X1–X4 (+ W1)
+python scripts/validate.py crosslink <run_folder>            # gates X1–X4 (+ W1)
 ```
 
 `build` reads the snapshot, the Findings Ledger, and (optionally) `Timeline.md`, resolves each finding's
@@ -89,7 +89,7 @@ newline, a `{>>`/`<<}` sigil, or a `|` is **not** inline-CriticMarkup-safe — `
 - **W1** (advisory) a locatable Should/Could parked at `document`, or a Timeline line-range that overruns
   the snapshot; override `<!-- override: annotation-coverage F-… -->`.
 
-The **crosslink** validator (`scripts/validate.sh crosslink`) gates the back-linked letter: **X1** every
+The **crosslink** validator (`python scripts/validate.py crosslink`) gates the back-linked letter: **X1** every
 `<!-- finding: F-… -->` marker resolves to a manifest anchor, **X2** reverse consistency, **X3** every
 CriticMarkup span in the letter is a back-link (no un-manifested spans), **X4** no letter mutation.
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """continuity-bible — structural integrity for the Auto-Derived Continuity Bible.
 
-`validate.sh continuity-bible <run_folder|files>` shells out here. The Continuity Bible is the
+`validate.py continuity-bible <run_folder|files>` delegates here. The Continuity Bible is the
 narrative half of a developmental-edit style sheet: a single, locus-anchored reference of the
 canonical facts the manuscript commits to — identity/physical facts (ages, spellings, aliases),
 named objects, place details — plus consolidated chronology, and (as a side effect) a ledger of
@@ -61,7 +61,7 @@ def _has_block(text, btype):
 
     Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
     in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
-    validate.sh validator-conventions (M2)."""
+    validate.py validator-conventions (M2)."""
     if art is None:
         return ("apodictic:%s" % btype) in (text or "")
     return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))
@@ -616,7 +616,7 @@ def run_self_test():
 
     # Shared contradiction_state helper self-test — this module carries the State-axis truth table,
     # the plain-markdown State-column parse (header decoy, `Statement`/`Restated` guard, tuple-vs-string
-    # derived_for), and the X1 severity regex, but is invoked by NOTHING in CI on its own (no validate.sh
+    # derived_for), and the X1 severity regex, but is invoked by NOTHING in CI on its own (no validate.py
     # command, not an AGG_VALIDATORS entry — it is a shared helper like override_marker / apodictic_
     # artifacts). Wire it here so `continuity-bible --self-test` (which runs in --self-test-all) also
     # exercises the helper's own cases. Both bibles import cstate; homing this in continuity-bible keeps

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """reader-contract-outline — the book, scene by scene, mapped against the promise it makes its reader.
 
-`validate.sh reader-contract-outline <run_folder|files...> [--strict]` shells out here. A finalized
+`validate.py reader-contract-outline <run_folder|files...> [--strict]` delegates here. A finalized
 third-party developmental edit hands back three things: the editorial letter, the marked-up manuscript
 (Annotated Manuscript), and — this deliverable — a reverse outline that lays the book out scene by
 scene and maps it against the reader contract it implicitly makes. Like the Annotated Manuscript, this

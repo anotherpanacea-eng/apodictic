@@ -182,7 +182,7 @@ The coach operates in several modes (Loop Dispatch above can select among them).
 1. Capture each note as an `apodictic.feedback_item.v1` block (`source`, `claim`; `assessment: pending`, `triage: monitor`)
 2. **Validate** each claim by routing to a targeted Core Editor pass — never re-diagnose in the coach; a confirmed claim becomes a candidate ledger finding
 3. Resolve every `conflicts_with` pair (never leave both sides actionable); set `triage`
-4. Gate with `scripts/validate.sh feedback-triage <run_folder>` (`--strict` for CI), then hand the act-now set to Session Planning
+4. Gate with `python scripts/validate.py feedback-triage <run_folder>` (`--strict` for CI), then hand the act-now set to Session Planning
 
 **Output:** `[Project]_Feedback_Triage_[runlabel].md`
 
@@ -198,7 +198,7 @@ The coach operates in several modes (Loop Dispatch above can select among them).
 3. Capture each commitment as an `apodictic.retcon_item.v1` block — tag its `mutability` (locked/costly/free, the commitment budget) and `retcon_type` (dramatic/evidential, the fair-play axis); when seeded from a Pass 8 (Reveal Economy) finding, record it in the item's `source` field (F3 — provenance checked by `finding-trace` E6)
 4. **Fair-play gate:** never plan an *evidential* retcon of *locked* canon (changing a clue the reader has reasoned from); name each costly/locked item's `blast_radius`
 5. **Firewall:** plan the intervention *class*, never the prose — the author writes the tissue
-6. Gate with `scripts/validate.sh retcon-plan <run_folder>` (`--strict` for CI), then sequence the arc
+6. Gate with `python scripts/validate.py retcon-plan <run_folder>` (`--strict` for CI), then sequence the arc
 
 **Output:** `[Project]_Retcon_Plan_[runlabel].md` (+ the rolling `[Project]_State_Card_[runlabel].md`)
 
@@ -212,7 +212,7 @@ The coach operates in several modes (Loop Dispatch above can select among them).
 1. **Harvest uncertainties** — scan the Ledger for `LOW`/`UNCERTAIN` findings, Unresolved Questions, and tradeoffs (**not** the editorial letter's Control Questions — those are author-facing)
 2. Draft one `apodictic.reader_question.v1` block per uncertainty: `source_kind` + provenance (`targets` a finding id, or `source_note` for a UQ), a **non-leading, content-neutral** `question`, and an `expected_signal`
 3. **Severity honesty:** never test a *locked* verdict (Must-Fix/Should-Fix at HIGH/MEDIUM) — that softens by survey; testing *how* to fix is an explicit `how-to-fix` override
-4. Gate with `scripts/validate.sh reader-instrument <run_folder>` (`--strict` for CI); returned answers re-enter through Feedback Triage (mode 5), where APODICTIC's own re-analysis — not reader vote — sets the assessment
+4. Gate with `python scripts/validate.py reader-instrument <run_folder>` (`--strict` for CI); returned answers re-enter through Feedback Triage (mode 5), where APODICTIC's own re-analysis — not reader vote — sets the assessment
 
 **Output:** `[Project]_Beta_Reader_Instrument_[runlabel].md`
 
@@ -227,7 +227,7 @@ The coach operates in several modes (Loop Dispatch above can select among them).
 2. **Assign phases** by leverage + root-cause position into an **ordered** `apodictic.revision_arc.v1` block: **Phase 1** the Must-Fix structural *root causes* (recorded in `root_cause_findings`); **Phase 2** their downstream consequences; **Phase 3** polish (Could-Fix / line-level). Phase count is free (2–4+), not a fixed 3-enum.
 3. **Render** each phase with a **sequencing** rationale (never an execution prescription — the Firewall, advisory W1) + an `adaptation_note`. The arc is a **stateless re-plan**: regenerated each run from the current `finding_states`, overwriting the prior arc — no round/version field (like Loop Dispatch).
 4. **Honest posture (the Retcon pattern):** the coach reasons the dependency from `severity` + the root-cause prose (read, not gated); the validator gates the PLAN's **provenance + self-consistency + firewall ONLY** — **not** a true causal graph. The coach's dependency reasoning is **trusted**, not gated.
-5. Gate with `scripts/validate.sh revision-arc <run_folder>` (`--strict` for CI), then hand each phase off to per-session **Loop Dispatch / Session Planning**. The arc is the calendar; it does not re-run dispatch, and it **generalizes** Retcon Planning's single-decision arc to the full Ledger.
+5. Gate with `python scripts/validate.py revision-arc <run_folder>` (`--strict` for CI), then hand each phase off to per-session **Loop Dispatch / Session Planning**. The arc is the calendar; it does not re-run dispatch, and it **generalizes** Retcon Planning's single-decision arc to the full Ledger.
 
 **Output:** `[Project]_Revision_Arc_[runlabel].md`
 
@@ -235,7 +235,7 @@ The coach operates in several modes (Loop Dispatch above can select among them).
 
 ### 9. Coaching History & Pattern Recognition
 
-**When:** A returning writer, several revision cycles in, where a **cross-session** process pattern is worth surfacing — the same finding deferred across an unbroken run of sessions, or a revision-arc phase left open across consecutive sessions. This is APODICTIC's ONE ethically-sensitive surface (a claim about the writer's *process*, not their manuscript). Full spec: `docs/coaching-history.md`; gated by `scripts/validate.sh coaching-history <project_root>` over the `apodictic.coaching_observation.v1` blocks.
+**When:** A returning writer, several revision cycles in, where a **cross-session** process pattern is worth surfacing — the same finding deferred across an unbroken run of sessions, or a revision-arc phase left open across consecutive sessions. This is APODICTIC's ONE ethically-sensitive surface (a claim about the writer's *process*, not their manuscript). Full spec: `docs/coaching-history.md`; gated by `python scripts/validate.py coaching-history <project_root>` over the `apodictic.coaching_observation.v1` blocks.
 
 **Opt-in gate (check BEFORE deriving anything).** Read the `Diagnostic_State.md` consent marker first:
 - **No marker** → do not derive, do not mention it unbidden. Cross-session behavioral observation is sensitive; it is produced only on the writer's explicit opt-in (`<!-- coaching-history: opted-in -->`, which the writer places / you place at their request).
@@ -254,7 +254,7 @@ Caveat phrasing: say plainly the streak is from *your own running session notes*
 
 **Present as tentative noticing, not a scoreboard (the transference-health rule).** The count is the coach's *private evidence*; what reaches the writer is the coach's *noticing*, in the coach's voice — never a bare tally the writer confronts alone. Be **confident about the pattern** ("I noticed you set the ending aside the last three sessions" — the count is real, state it as real attention, do not hedge the seeing into mush) and **tentative about its meaning** (hand the interpretation to the writer as an open question — "does that land, or is the middle still asking for attention first?" — never assert a trait or verdict: not "you defer endings," not "you're an ending-avoider," not "deferral-recurrence: ×3"). The observation is a **prompt for reflection, not a diagnosis of the person**. The ledger must SERVE the coaching relationship (the coach's continuity of attention), never BECOME it (a scoreboard the writer performs to). The validator mechanically floors this (no severity token, no finding block, no trait-verdict form, no bare-scoreboard rendering, an invitation present — H4/H7), but the full "confident about the seeing, open about the meaning" voice is **your** obligation here.
 
-**The record is the writer's (Fable condition b — H6).** Whenever the Coaching History is discussed, surface the deletion command to the writer: `scripts/validate.sh coaching-history delete <project_root>` (or `coaching_history.py delete <project_root>`) removes every artifact (root + `runs/*`), drops the sidecar seq, and flips consent to the tombstone. The tool holds no copy; deleting it is complete by construction, and the validator recomputes the deletion rather than trusting the marker.
+**The record is the writer's (Fable condition b — H6).** Whenever the Coaching History is discussed, surface the deletion command to the writer: `python scripts/validate.py coaching-history delete <project_root>` (or `coaching_history.py delete <project_root>`) removes every artifact (root + `runs/*`), drops the sidecar seq, and flips consent to the tombstone. The tool holds no copy; deleting it is complete by construction, and the validator recomputes the deletion rather than trusting the marker.
 
 **Output:** `[Project]_Coaching_History_[runlabel].md` (updated each opted-in session, rolling).
 

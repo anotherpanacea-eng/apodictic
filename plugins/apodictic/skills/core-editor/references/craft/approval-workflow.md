@@ -113,7 +113,7 @@ The author may stop at any decision boundary. Report the current head,
 progress and next record; disk state is sufficient to resume. Never mark
 cache status OPEN or CLOSED yourself. `CLOSED` means every record has left
 PENDING, not that the project is ready to draft or accepted. Run the existing
-`validate.sh argument-reconstruction PROJECT --stage draft-ready` to report
+`python validate.py argument-reconstruction PROJECT --stage draft-ready` to report
 mechanical readiness separately (for example, REQUIRED-BUT-WITHHELD can still
 block it). Packet generation, drafting, semantic acceptance and `/ready`
 receipt integration remain later increments. Do not claim an acceptance PASS.

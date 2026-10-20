@@ -1,6 +1,6 @@
 # Beta-Reader Instrument — workflow protocol
 
-*Reference file for the APODICTIC Revision Coach. Loaded by `/reader-questions` (and `/coach` → Beta-Reader Instrument mode). The **upstream** complement to Feedback Triage: it generates the questions, then [Feedback Triage](feedback-triage.md) ingests the answers. Spec + validator: `docs/beta-reader-instrument.md`, `scripts/validate.sh reader-instrument`. Worked example: `../../core-editor/references/example-beta-reader-instrument.md` (paired with `example-uncertainty-ledger.md`).*
+*Reference file for the APODICTIC Revision Coach. Loaded by `/reader-questions` (and `/coach` → Beta-Reader Instrument mode). The **upstream** complement to Feedback Triage: it generates the questions, then [Feedback Triage](feedback-triage.md) ingests the answers. Spec + validator: `docs/beta-reader-instrument.md`, `python scripts/validate.py reader-instrument`. Worked example: `../../core-editor/references/example-beta-reader-instrument.md` (paired with `example-uncertainty-ledger.md`).*
 
 ---
 
@@ -47,7 +47,7 @@ Each question is one `apodictic.reader_question.v1` block (HTML-comment envelope
 
 1. **Harvest uncertainties.** Scan the Ledger for `LOW`/`UNCERTAIN` findings, the Unresolved Questions, and `risk_if_fixed` tradeoffs. (Not the Control Questions — see above.)
 2. **Draft questions.** One `reader_question` per uncertainty, content-neutral and non-leading, with an `expected_signal`. Skip (or `how-to-fix`-override) locked targets. Flag any Unresolved Question that is really a proxy for a locked finding — the `B5` gate is a finding-confidence check and cannot see a UQ that hides one.
-3. **Gate.** `scripts/validate.sh reader-instrument <run_folder>` (`--strict` for CI). Resolve ERRORs (broken contract / dangling provenance); review B4 (leading / invented content), B5 (relitigating a locked verdict), W1 (an uncertainty left untested).
+3. **Gate.** `python scripts/validate.py reader-instrument <run_folder>` (`--strict` for CI). Resolve ERRORs (broken contract / dangling provenance); review B4 (leading / invented content), B5 (relitigating a locked verdict), W1 (an uncertainty left untested).
 4. **Field & collect.** The writer circulates the instrument.
 5. **Hand off to triage.** Returned answers enter [Feedback Triage](feedback-triage.md) as `feedback_item`s; each item's `evidence_refs` cite the `RQ-…` and the original `F-…` by prose convention. Crucially, `assessment` is set by **APODICTIC's own targeted re-analysis, not by reader vote** — a locked verdict stays locked regardless of the answers; the instrument only gathers evidence for the next triage.
 

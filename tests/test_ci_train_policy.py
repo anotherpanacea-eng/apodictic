@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 CI = WORKFLOWS / "ci.yml"
 
-CI_SHA256 = "9aa67f5db86acfeef847d56033abc82b2e91b5072a3628213440f8b37293be85"
+CI_SHA256 = "3d833541465dcd8ae5af463f88f47a3871ec365b9bea1f30fc993b3b312a40bb"
 AUXILIARY_SHA256 = {
     "release.yml": "51fa09c164c47c8346f2cd6e8e2f21d1361f04c99a4996faf3cceddf90bed433",
     "release-readiness.yml": "18c248b2d4e94fb9473d81b3dfd04ccfc58083e39c3937e343d2d618288f3710",
@@ -150,7 +150,7 @@ def test_current_workflow_holds_closed_policy():
     assert set(workflow["concurrency"]) == {"group", "cancel-in-progress"}
     assert workflow["concurrency"]["cancel-in-progress"] == "true"
 
-    assert set(workflow["jobs"]) == {"validate"}
+    assert set(workflow["jobs"]) == {"validate", "validate-windows"}
     job = workflow["jobs"]["validate"]
     assert set(job) == {"if", "runs-on", "timeout-minutes", "steps"}
     assert job["runs-on"] == "ubuntu-latest"
@@ -194,6 +194,24 @@ def test_current_workflow_holds_closed_policy():
     assert "tools/check_pr_merge_binding.py" in binding["run"]
     assert steps[-2]["run"] == "bash scripts/validate.sh --self-test-all"
     assert steps[-1]["run"] == "bash scripts/validate.sh --check-canonical"
+
+    # Windows runs the native gate under the same admission and binding receipt,
+    # with PATH reduced to the Python install directory so no shell is reachable.
+    windows = workflow["jobs"]["validate-windows"]
+    assert set(windows) == {"if", "runs-on", "timeout-minutes", "defaults", "env", "steps"}
+    assert windows["if"] == job["if"]
+    assert windows["runs-on"] == "windows-latest"
+    assert windows["timeout-minutes"] == 30
+    assert [_step_id(step) for step in windows["steps"]] == [
+        "actions/checkout@v4",
+        "Bind billed job to the exact pull-request merge",
+        "actions/setup-python@v5",
+        "Native validator gate with only Python on PATH",
+    ]
+    assert windows["steps"][1]["env"] == binding["env"]
+    gate = windows["steps"][-1]["run"].splitlines()
+    assert gate[0].startswith("$env:PATH = Split-Path -Parent (Get-Command python")
+    assert gate[-1] == "python plugins/apodictic/scripts/validate.py --check-all"
 
 
 def test_auxiliary_workflows_are_closed_and_sync_remains_draft():

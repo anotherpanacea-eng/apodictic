@@ -38,7 +38,7 @@ attempt plus exactly one `apodictic.refutation_budget.v1` block. Three arms enfo
       anchor (docs/annotated-manuscript.md §A6 divergence, stated in the spec). A fabricated
       quote (count 0) is an ERROR — you cannot claim an attempt without touching real text.
       Quote > 25 words -> WARN (quote-budget hygiene, counter_evidence_quotes only; WARNs are
-      advisory, exit 0, per the standing validate.sh convention). Each alternative_explanations
+      advisory, exit 0, per the standing validate.py convention). Each alternative_explanations
       entry must carry a quote mark, a Ch./p. locator, or a contract-artifact reference ->
       WARN if none (the §6.4 grounding floor; deeper grounding is prompt-side, audited by the
       rubber-stamp eval fixture). Snapshot handling splits by what the flow requires:

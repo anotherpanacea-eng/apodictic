@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Mechanical-honesty validator for APODICTIC Fiction Benchmark ground-truth files.
 
-Backs `validate.sh fiction-groundtruth-check <groundtruth_file>`
+Backs `validate.py fiction-groundtruth-check <groundtruth_file>`
 (docs/fiction-benchmark-spec.md §Mechanical validator). The fiction sibling of
 scripts/argument_groundtruth.py: a **mechanical-honesty layer over the answer
 keys — never a semantic judge** of the engine or the fixtures.
@@ -102,7 +102,7 @@ _ARTIFACT_RE = re.compile(r"\b(CF|SP|PO)-([0-9]+)\b")
 # Leading verdict token of an FGT7 "Expected classification" value, skipping markdown emphasis.
 _FGT7_VERDICT_RE = re.compile(r"[\s*`]*([A-Z][A-Z-]*)")
 # A well-shaped locus token: a coarse chapter/scene/§/¶/line/page reference (C2 locus-shape wording,
-# validate.sh continuity-bible) — a precondition, NOT a firewall proof.
+# validate.py continuity-bible) — a precondition, NOT a firewall proof.
 _LOCUS_SHAPE_RE = re.compile(
     r"(?:\bchapter\b|\bscene\b|\bch\.?\s*\d|\bsc\.?\s*\d|§|¶|\bpara(?:graph)?\b|"
     r"\bline\b|\bpage\b|\bp\.?\s*\d|\bstave\b)", re.IGNORECASE)

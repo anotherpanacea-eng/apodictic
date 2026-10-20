@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """world-bible — structural integrity + contradiction detection for a standalone Worldbuilding Bible.
 
-`validate.sh world-bible <run_folder|files>` shells out here. A worldbuilding bible is the SFF
+`validate.py world-bible <run_folder|files>` delegates here. A worldbuilding bible is the SFF
 author's OWN pre-draft reference document — the rules of the magic/tech, the cost of using it, the
 geography, the order of events, the factions. Before a single chapter exists, that bible can already
 contradict itself. This tool checks a BIBLE (not a manuscript) for that class of self-contradiction —

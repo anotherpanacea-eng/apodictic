@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """reader-instrument — structural integrity for the Beta-Reader Instrument (Workflows track).
 
-`validate.sh reader-instrument <run_folder> [--strict]` (or explicit files) shells out here.
+`validate.py reader-instrument <run_folder> [--strict]` (or explicit files) delegates here.
 The upstream complement to feedback-triage: it turns the diagnosis's own OPEN UNCERTAINTIES into a
 targeted reader questionnaire, so the feedback that comes back is worth triaging. Each question is a
 structured `apodictic.reader_question.v1` block in a Beta-Reader Instrument artifact, sourced from a
@@ -58,7 +58,7 @@ def _has_block(text, btype):
 
     Classifying on parsed blocks — not a raw substring — keeps a file that merely *names* the marker
     in prose from being misrouted/skipped (the 2026-06-20 resolver-hardening sweep). Gated by
-    validate.sh validator-conventions (M2)."""
+    validate.py validator-conventions (M2)."""
     if art is None:
         return ("apodictic:%s" % btype) in (text or "")
     return any(bt == btype for bt, _o, _e in art.parse_blocks(text or ""))

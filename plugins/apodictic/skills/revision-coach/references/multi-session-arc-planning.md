@@ -140,7 +140,7 @@ re-diagnose; Phase 2 may change** (settling a root cause can retire or reshape i
    `adaptation_note` (the re-diagnosis triggers).
 4. **Firewall pass** — every rationale SEQUENCES; none prescribes the aesthetic material that
    resolves a finding. (Plan the phasing; the author writes the tissue.)
-5. **Gate** with `scripts/validate.sh revision-arc <run_folder>` (`--strict` for CI), then hand each
+5. **Gate** with `python scripts/validate.py revision-arc <run_folder>` (`--strict` for CI), then hand each
    phase off to per-session **Loop Dispatch / Session Planning**.
 
 ---
@@ -160,7 +160,7 @@ re-diagnose; Phase 2 may change** (settling a root cause can retire or reshape i
 
 ## Mechanical check
 
-`scripts/validate.sh revision-arc <run_folder>` (globs `*_Revision_Arc_*.md` + the paired
+`python scripts/validate.py revision-arc <run_folder>` (globs `*_Revision_Arc_*.md` + the paired
 `*_Findings_Ledger_*.md`): **A1** invalid arc (schema + nested phase shape — no empty phases, the
 `finding_ref` pattern, `root_cause_findings` ⊆ the phase's `findings`); **A2** provenance closure
 (every `finding_ref` resolves to a real Ledger finding); **A3 self-consistency ONLY** (each finding in
