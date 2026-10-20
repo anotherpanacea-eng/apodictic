@@ -219,10 +219,20 @@ def _hash(path):
 
 def _run_helper(script, args, *, input=None):
     env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
-    return subprocess.run(
+    windows = os.name == "nt"
+    result = subprocess.run(
         [sys.executable, str(Path(__file__).resolve().parent / script), *args],
-        env=env, input=input,
-    ).returncode
+        env=env, input=input, capture_output=windows,
+    )
+    if windows:
+        # Shipped helpers expose UTF-8 text (including canonical JSON), while
+        # Windows text I/O expands LF to CRLF. Keep the dispatcher's LF contract
+        # without decoding, changing lone CR bytes, or changing helper failures.
+        for stream, output in ((sys.stdout.buffer, result.stdout),
+                               (sys.stderr.buffer, result.stderr)):
+            stream.write(output.replace(b"\r\n", b"\n"))
+            stream.flush()
+    return result.returncode
 
 
 def _script_dir():
