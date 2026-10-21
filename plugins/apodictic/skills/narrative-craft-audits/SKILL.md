@@ -4,7 +4,7 @@ description: >
   Focused manuscript audits of stakes, decisions, scene turns, character, emotion, interiority, literary craft, compression, and series structure.
   Use when the user requests one of these focused audits. For the complete
   audit catalog or an unclear request, use specialized-audits.
-version: 2.14.0
+version: 2.15.0
 ---
 
 # Narrative Craft

@@ -7,7 +7,7 @@ description: >
   focused-audit request whose family is not yet clear. Named tasks belong to
   narrative-craft-audits, genre-reader-audits, argument-audits,
   research-verification, or prose-measurements.
-version: 2.14.0
+version: 2.15.0
 ---
 
 # Focused Audit Catalog
