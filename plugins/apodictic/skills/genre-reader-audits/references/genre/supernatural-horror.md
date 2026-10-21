@@ -221,6 +221,11 @@ The supernatural past is vivid, but the present-tense hunger of the haunting is 
 - *Detect:* The manuscript can explain who the ghost was or what happened historically, yet current manifestations lack urgent desire, pattern, or agency. The ghost has become an archive problem rather than a lived threat.
 - *Default severity:* Should-Fix.
 
+**HP-5: Spectator Protagonist**
+The haunting happens *around* the protagonist rather than *to* them.
+- *Detect:* In the Aftermath Chain, the protagonist's rows show witnessing but no Delayed Cost, while secondary characters or the environment absorb the supernatural contact. The protagonist is a journalist in their own haunting. Do not fire in kaidan/J-horror modes, where a passive protagonist facing inevitability is the design.
+- *Default severity:* Should-Fix. Must-Fix if the protagonist stays insulated through the climax.
+
 ### RL Flags (Rule Pressure and Ritual Cost)
 
 **RL-1: Premature Taxonomy**
@@ -453,11 +458,13 @@ Before calling systemic failure, confirm:
 6. You did not impose a default modern-skeptical worldview on manuscripts rooted in live supernatural belief systems. Western supernatural horror assumes a secular baseline that the supernatural violates; Japanese, Latin American, and West African/diaspora traditions operate from fundamentally different assumptions about where the supernatural begins.
 7. You did not mistake the gendering of a supernatural threat for craft failure. Possession, haunting, and cursing operate through bodily/spiritual invasion that is frequently gendered. The question is whether the gendering taps genuine anxieties about autonomy and origin or merely reproduces stereotype.
 8. You assessed the reading *experience* of supernatural wrongness, not the plot *events* of supernatural content.
+9. You did not fire WO-3 (Reported Haunting) on matter-of-fact or tonally flat narration of the supernatural in immediate-violation modes (Latin American supernatural realism, Morrison-style household ghosts, diasporic belief worlds). There, composure is the operative belief world, not narrative distance. Fire only if wrongness is also absent (Wrongness Test).
 
 ### Special caution zones
 
 - **Quiet ghost stories** — often low on overt manifestation, high on eerie propagation
 - **Possession with unreliable testimony** — POV instability may be functional
+- **Possession** — Inconsistent host behavior is expected and is not a characterization failure. Test: is the inconsistency *noticed* within the story's world (by other characters, or by the host's own residual awareness)? If it is noticed, it is functional. If nobody registers it, treat it as possible HP-3 or authorial drift.
 - **Religious horror** — explicit cosmology is not automatically overexplanation
 - **Diasporic / ancestral spiritual horror** — belief systems may be protective, warning-bearing, or morally mixed; spirits that are simultaneously protective and dangerous are normative, not paradoxical
 - **Cosmic-supernatural hybrids** — explanation thresholds differ from ordinary hauntings

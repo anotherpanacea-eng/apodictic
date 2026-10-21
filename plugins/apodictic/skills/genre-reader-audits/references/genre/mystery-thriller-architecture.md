@@ -384,6 +384,7 @@ Before calling systemic failure, confirm:
 4. You didn't demand explicit clock from modes (cozy, literary, inverted) where urgency operates differently.
 5. You didn't mistake a deliberately loose puzzle (noir, literary) for a broken one. Check thematic purpose.
 6. You assessed the reader's inference *capacity* at key points, not just the factual fairness of the ending.
+7. You didn't fire RH-1 (Noise Cannon) or The Bulletin Board on a conspiracy or political thriller just because many threads are live at midpoint. Flag only if the threads fail to narrow over time; deliberate complexity that converges is the mode's design.
 
 ### Special Caution Zones
 

@@ -11,7 +11,7 @@ version: 2.14.0
 
 Load `../core-editor/references/focused-audit-contract.md` for the shared execution, output, and severity contract.
 Select the requested protocol below and read it in full. Load its named
-companions and level-setting references when called for; do not load every
+companions when called for; do not load every
 protocol in this family. Preserve all flags, gates, register/genre calibrations,
 prerequisites and claim limits in the selected protocol. This skill diagnoses;
 it does not rewrite manuscript prose.

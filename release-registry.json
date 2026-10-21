@@ -582,16 +582,14 @@
     {
       "name": "Argument Red Team",
       "files": [
-        "craft/argument-red-team.md",
-        "craft/argument-red-team-level-setting.md"
+        "craft/argument-red-team.md"
       ],
       "description": "Hostile-reader simulation"
     },
     {
       "name": "Argument Persuasion",
       "files": [
-        "craft/argument-persuasion.md",
-        "craft/argument-persuasion-level-setting.md"
+        "craft/argument-persuasion.md"
       ],
       "description": "Audience matrix & framing"
     },
@@ -686,8 +684,7 @@
           "name": "Stakes System",
           "summary": "pressure architecture, escalation geometry, consequence engine",
           "files": [
-            "craft/stakes-system.md",
-            "craft/stakes-system-level-setting.md"
+            "craft/stakes-system.md"
           ]
         },
         {
@@ -695,8 +692,7 @@
           "name": "Decision Pressure",
           "summary": "choice plausibility, option visibility, tradeoff reality",
           "files": [
-            "craft/decision-pressure.md",
-            "craft/decision-pressure-level-setting.md"
+            "craft/decision-pressure.md"
           ]
         },
         {
@@ -766,8 +762,7 @@
           "name": "Female Interiority",
           "summary": "agency, desire, independence",
           "files": [
-            "craft/female-interiority.md",
-            "craft/female-interiority-level-setting.md"
+            "craft/female-interiority.md"
           ]
         },
         {
@@ -775,8 +770,7 @@
           "name": "Literary Craft",
           "summary": "load-bearing vs. ornamental prose, defamiliarization, hybrid calibrations",
           "files": [
-            "craft/literary-craft.md",
-            "craft/literary-craft-level-setting.md"
+            "craft/literary-craft.md"
           ]
         },
         {
@@ -816,8 +810,7 @@
           "name": "Force Architecture",
           "summary": "force delivery, consequence/escalation tracking, inert force diagnosis",
           "files": [
-            "craft/force-architecture.md",
-            "craft/force-architecture-level-setting.md"
+            "craft/force-architecture.md"
           ]
         },
         {
@@ -833,8 +826,7 @@
           "name": "Compression",
           "summary": "expendable material, cut list, word-savings map",
           "files": [
-            "craft/compression-audit.md",
-            "craft/compression-audit-level-setting.md"
+            "craft/compression-audit.md"
           ]
         },
         {
@@ -842,8 +834,7 @@
           "name": "Reception Risk",
           "summary": "reception exposure, extractability, sensitivity-review handoff",
           "files": [
-            "craft/reception-risk.md",
-            "craft/reception-risk-level-setting.md"
+            "craft/reception-risk.md"
           ]
         },
         {
@@ -851,8 +842,7 @@
           "name": "Cross-Volume Series Continuity",
           "summary": "consequence propagation, state tracking, thread inventory, hope calibration across volumes",
           "files": [
-            "craft/series-continuity.md",
-            "craft/series-continuity-level-setting.md"
+            "craft/series-continuity.md"
           ]
         },
         {
@@ -930,8 +920,7 @@
           "name": "SFF Worldbuilding Integration",
           "summary": "five-dimension framework, load-bearing analysis",
           "files": [
-            "genre/sff-worldbuilding.md",
-            "genre/sff-worldbuilding-level-setting.md"
+            "genre/sff-worldbuilding.md"
           ]
         },
         {
@@ -939,8 +928,7 @@
           "name": "Horror Craft Integration",
           "summary": "dread architecture, consequence embodiment, subgenre calibrations",
           "files": [
-            "genre/horror-craft.md",
-            "genre/horror-craft-level-setting.md"
+            "genre/horror-craft.md"
           ]
         },
         {
@@ -948,8 +936,7 @@
           "name": "Supernatural Horror",
           "summary": "belief threshold, wrongness tracking, supernatural pressure architecture, 8 subgenre calibrations",
           "files": [
-            "genre/supernatural-horror.md",
-            "genre/supernatural-horror-level-setting.md"
+            "genre/supernatural-horror.md"
           ]
         },
         {
@@ -957,8 +944,7 @@
           "name": "Grimdark / Dark Fantasy",
           "summary": "moral argument, violence economy, power anatomy, compromise pressure, consequence persistence, hope calibration",
           "files": [
-            "genre/grimdark.md",
-            "genre/grimdark-level-setting.md"
+            "genre/grimdark.md"
           ]
         },
         {
@@ -966,8 +952,7 @@
           "name": "Mystery/Thriller Architecture",
           "summary": "information pressure, clue economy, fair play",
           "files": [
-            "genre/mystery-thriller-architecture.md",
-            "genre/mystery-thriller-architecture-level-setting.md"
+            "genre/mystery-thriller-architecture.md"
           ]
         }
       ]
@@ -981,8 +966,7 @@
           "name": "Cozy Tag",
           "summary": "safety envelope, belonging engine, recovery rhythm",
           "files": [
-            "tag/cozy-tag.md",
-            "tag/cozy-tag-level-setting.md"
+            "tag/cozy-tag.md"
           ]
         },
         {
@@ -1051,38 +1035,28 @@
     "specialized-audits/references/content-advisory.md": "genre-reader-audits/references/content-advisory.md",
     "specialized-audits/references/craft/adversarial-evidence-review.md": "argument-audits/references/craft/adversarial-evidence-review.md",
     "specialized-audits/references/craft/ai-prose-calibration-distributional.md": "prose-measurements/references/craft/ai-prose-calibration-distributional.md",
-    "specialized-audits/references/craft/ai-prose-calibration-level-setting.md": "prose-measurements/references/craft/ai-prose-calibration-level-setting.md",
     "specialized-audits/references/craft/ai-prose-calibration.md": "prose-measurements/references/craft/ai-prose-calibration.md",
     "specialized-audits/references/craft/argument-agd-audit.md": "argument-audits/references/craft/argument-agd-audit.md",
     "specialized-audits/references/craft/argument-decision-audit.md": "prose-measurements/references/craft/argument-decision-audit.md",
     "specialized-audits/references/craft/argument-evidence.md": "argument-audits/references/craft/argument-evidence.md",
-    "specialized-audits/references/craft/argument-persuasion-level-setting.md": "argument-audits/references/craft/argument-persuasion-level-setting.md",
     "specialized-audits/references/craft/argument-persuasion.md": "argument-audits/references/craft/argument-persuasion.md",
-    "specialized-audits/references/craft/argument-red-team-level-setting.md": "argument-audits/references/craft/argument-red-team-level-setting.md",
     "specialized-audits/references/craft/argument-red-team.md": "argument-audits/references/craft/argument-red-team.md",
     "specialized-audits/references/craft/banister.md": "narrative-craft-audits/references/craft/banister.md",
     "specialized-audits/references/craft/character-architecture.md": "narrative-craft-audits/references/craft/character-architecture.md",
-    "specialized-audits/references/craft/compression-audit-level-setting.md": "narrative-craft-audits/references/craft/compression-audit-level-setting.md",
     "specialized-audits/references/craft/compression-audit.md": "narrative-craft-audits/references/craft/compression-audit.md",
-    "specialized-audits/references/craft/decision-pressure-level-setting.md": "narrative-craft-audits/references/craft/decision-pressure-level-setting.md",
     "specialized-audits/references/craft/decision-pressure.md": "narrative-craft-audits/references/craft/decision-pressure.md",
-    "specialized-audits/references/craft/dialectical-clarity-level-setting.md": "argument-audits/references/craft/dialectical-clarity-level-setting.md",
     "specialized-audits/references/craft/dialectical-clarity.md": "argument-audits/references/craft/dialectical-clarity.md",
     "specialized-audits/references/craft/emotional-craft.md": "narrative-craft-audits/references/craft/emotional-craft.md",
-    "specialized-audits/references/craft/female-interiority-level-setting.md": "narrative-craft-audits/references/craft/female-interiority-level-setting.md",
     "specialized-audits/references/craft/female-interiority.md": "narrative-craft-audits/references/craft/female-interiority.md",
-    "specialized-audits/references/craft/force-architecture-level-setting.md": "narrative-craft-audits/references/craft/force-architecture-level-setting.md",
     "specialized-audits/references/craft/force-architecture.md": "narrative-craft-audits/references/craft/force-architecture.md",
     "specialized-audits/references/craft/idiolect-preservation.md": "prose-measurements/references/craft/idiolect-preservation.md",
     "specialized-audits/references/craft/interiority-preservation.md": "narrative-craft-audits/references/craft/interiority-preservation.md",
-    "specialized-audits/references/craft/literary-craft-level-setting.md": "narrative-craft-audits/references/craft/literary-craft-level-setting.md",
     "specialized-audits/references/craft/literary-craft.md": "narrative-craft-audits/references/craft/literary-craft.md",
     "specialized-audits/references/craft/narrative-decision-audit.md": "prose-measurements/references/craft/narrative-decision-audit.md",
     "specialized-audits/references/craft/persona-divergence.md": "genre-reader-audits/references/craft/persona-divergence.md",
     "specialized-audits/references/craft/position-pair-register.md": "prose-measurements/references/craft/position-pair-register.md",
     "specialized-audits/references/craft/pov-voice-profile.md": "prose-measurements/references/craft/pov-voice-profile.md",
     "specialized-audits/references/craft/punctuation-cadence.md": "prose-measurements/references/craft/punctuation-cadence.md",
-    "specialized-audits/references/craft/reception-risk-level-setting.md": "genre-reader-audits/references/craft/reception-risk-level-setting.md",
     "specialized-audits/references/craft/reception-risk.md": "genre-reader-audits/references/craft/reception-risk.md",
     "specialized-audits/references/craft/research-citation-verifier.md": "research-verification/references/craft/research-citation-verifier.md",
     "specialized-audits/references/craft/research-comp-validation.md": "research-verification/references/craft/research-comp-validation.md",
@@ -1093,32 +1067,24 @@
     "specialized-audits/references/craft/rhetorical-stance-triage.md": "argument-audits/references/craft/rhetorical-stance-triage.md",
     "specialized-audits/references/craft/scene-turn.md": "narrative-craft-audits/references/craft/scene-turn.md",
     "specialized-audits/references/craft/series-composite-novel.md": "narrative-craft-audits/references/craft/series-composite-novel.md",
-    "specialized-audits/references/craft/series-continuity-level-setting.md": "narrative-craft-audits/references/craft/series-continuity-level-setting.md",
     "specialized-audits/references/craft/series-continuity.md": "narrative-craft-audits/references/craft/series-continuity.md",
     "specialized-audits/references/craft/shelf-positioning.md": "genre-reader-audits/references/craft/shelf-positioning.md",
     "specialized-audits/references/craft/short-fiction.md": "narrative-craft-audits/references/craft/short-fiction.md",
-    "specialized-audits/references/craft/stakes-system-level-setting.md": "narrative-craft-audits/references/craft/stakes-system-level-setting.md",
     "specialized-audits/references/craft/stakes-system.md": "narrative-craft-audits/references/craft/stakes-system.md",
     "specialized-audits/references/example-position-pair-register/Example_Position_Pair_Register_run.md": "prose-measurements/references/example-position-pair-register/Example_Position_Pair_Register_run.md",
     "specialized-audits/references/example-position-pair-register/envelope.json": "prose-measurements/references/example-position-pair-register/envelope.json",
     "specialized-audits/references/example-position-pair-register/manuscript.txt": "prose-measurements/references/example-position-pair-register/manuscript.txt",
     "specialized-audits/references/genre/comedy-satire.md": "genre-reader-audits/references/genre/comedy-satire.md",
     "specialized-audits/references/genre/fan-fiction-conversion.md": "genre-reader-audits/references/genre/fan-fiction-conversion.md",
-    "specialized-audits/references/genre/grimdark-level-setting.md": "genre-reader-audits/references/genre/grimdark-level-setting.md",
     "specialized-audits/references/genre/grimdark.md": "genre-reader-audits/references/genre/grimdark.md",
     "specialized-audits/references/genre/historical-fiction.md": "genre-reader-audits/references/genre/historical-fiction.md",
-    "specialized-audits/references/genre/horror-craft-level-setting.md": "genre-reader-audits/references/genre/horror-craft-level-setting.md",
     "specialized-audits/references/genre/horror-craft.md": "genre-reader-audits/references/genre/horror-craft.md",
     "specialized-audits/references/genre/memoir-creative-nonfiction.md": "genre-reader-audits/references/genre/memoir-creative-nonfiction.md",
-    "specialized-audits/references/genre/mystery-thriller-architecture-level-setting.md": "genre-reader-audits/references/genre/mystery-thriller-architecture-level-setting.md",
     "specialized-audits/references/genre/mystery-thriller-architecture.md": "genre-reader-audits/references/genre/mystery-thriller-architecture.md",
     "specialized-audits/references/genre/narrative-nonfiction.md": "genre-reader-audits/references/genre/narrative-nonfiction.md",
-    "specialized-audits/references/genre/sff-worldbuilding-level-setting.md": "genre-reader-audits/references/genre/sff-worldbuilding-level-setting.md",
     "specialized-audits/references/genre/sff-worldbuilding.md": "genre-reader-audits/references/genre/sff-worldbuilding.md",
-    "specialized-audits/references/genre/supernatural-horror-level-setting.md": "genre-reader-audits/references/genre/supernatural-horror-level-setting.md",
     "specialized-audits/references/genre/supernatural-horror.md": "genre-reader-audits/references/genre/supernatural-horror.md",
     "specialized-audits/references/tag/consent-complexity.md": "genre-reader-audits/references/tag/consent-complexity.md",
-    "specialized-audits/references/tag/cozy-tag-level-setting.md": "genre-reader-audits/references/tag/cozy-tag-level-setting.md",
     "specialized-audits/references/tag/cozy-tag.md": "genre-reader-audits/references/tag/cozy-tag.md",
     "specialized-audits/references/tag/erotic-content.md": "genre-reader-audits/references/tag/erotic-content.md",
     "specialized-audits/references/tag/philosophical-tag.md": "genre-reader-audits/references/tag/philosophical-tag.md",

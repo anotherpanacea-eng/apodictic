@@ -415,6 +415,8 @@ The coach reads the Red Team Memo to sequence repair. Typical order: fix Fatal v
 4. Always rank vulnerabilities rather than listing them flatly.
 5. Always classify vulnerabilities through the Distinguish Framework before finalizing severity.
 6. If the argument is strong, say so. A memo that finds nothing Fatal is a legitimate finding.
+7. Before finalizing severity, re-test for inflation if more than half the vulnerabilities are Fatal or none is Cosmetic; if a Major or Fatal sits on a subclaim that passes every Dialectical Clarity check; or if a Fatal traces back through a code chain to a Cosmetic origin so that removing the first code removes the rest. Validate each cascade link on its own before ranking it.
+8. Re-run Step 1 with a stronger adversary if every vulnerability is Manageable or Cosmetic and no CX question is rated "author would struggle", or if the countercase is weaker than the author's own framing. Drop or rewrite any objection that would apply unchanged to a manuscript on another topic, or that cites no specific claim, warrant or evidence unit from the State. This checks adversary strength; it does not license inflation (rule 6).
 
 ---
 

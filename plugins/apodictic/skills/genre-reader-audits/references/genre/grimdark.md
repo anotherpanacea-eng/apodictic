@@ -474,6 +474,7 @@ Before calling systemic failure, confirm:
 6. You did not impose heroic-fantasy expectations on a manuscript designed to resist them.
 7. You did not misread mythic register as novelistic failure. Archetypal, emotionally distant characterization may be deliberate formal choice (Smith Spark, Bakker).
 8. You did not penalize non-Western dark fantasy for failing Western grimdark conventions. Darkness that maps onto real histories of colonialism carries documentary weight that fundamentally alters the evaluation of "gratuitousness."
+9. You did not fire IB-2 or call moral complexity absent where the narrowing to one moral perspective is a sustained formal choice, such as a single overwhelming intelligence that absorbs the other positions (Bakker's Kellhus chapters). Narrowing that is sustained and does work is not convergence.
 
 ### Special caution zones
 

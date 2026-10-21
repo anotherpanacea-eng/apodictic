@@ -12,7 +12,7 @@ This is a **tag audit** — it evaluates an experience-layer promise, not a stru
 
 The philosophical tag can sit on any parent genre: philosophical horror, philosophical historical fiction, philosophical SF, philosophical thriller, philosophical literary fiction. The parent genre's structural obligations remain; the tag adds a layer of intellectual inquiry that shapes how the reader experiences those structures.
 
-For the tag audit family architecture, see the Cozy Tag audit (`references/tag/cozy-tag.md`), which established the structural pattern: experience model with named axes, named diagnostic flags, intensity spectrum, cross-genre calibration, anchor + interacting lenses method, and an inline **Level-Setting Notes** section grounding the axes in external evidence. (Cozy additionally has a standalone companion brief at `references/tag/cozy-tag-level-setting.md` because its external evidence base is unusually deep — that's the exception, not the standard.)
+For the tag audit family architecture, see the Cozy Tag audit (`references/tag/cozy-tag.md`), which established the structural pattern: experience model with named axes, named diagnostic flags, intensity spectrum, cross-genre calibration, anchor + interacting lenses method, and an inline **Level-Setting Notes** section grounding the axes in external evidence. (Cozy additionally has a standalone research brief at `docs/cozy-tag-level-setting.md`, not loaded at runtime, because its external evidence base is unusually deep — that's the exception, not the standard.)
 
 ---
 

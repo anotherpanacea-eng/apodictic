@@ -36,7 +36,7 @@ Diagnose whether a manuscript credibly delivers a "cozy" reader experience. This
 
 ## Level-Setting Notes
 
-This audit's diagnostic axes are grounded in external evidence documented in the companion brief `references/tag/cozy-tag-level-setting.md`. Key findings:
+This audit's diagnostic axes are grounded in external evidence documented in the companion brief [`docs/cozy-tag-level-setting.md`](../../../../../../docs/cozy-tag-level-setting.md) (not loaded at runtime). Key findings:
 
 - **Taxonomy:** Both BISAC (`FIC155000`) and Thema (`FFJ`, `FMJ`, `FLJ`, `FRDJ`) now codify cozy as a cross-genre classification, validating the tag audit architecture.
 - **Recovery psychology:** Experimental research supports recovery architecture (pressure + decompression + restored orientation) as the mechanism behind cozy's reader value — not low conflict per se (Rieger et al., 2014; Rieger & Bente, 2018).
