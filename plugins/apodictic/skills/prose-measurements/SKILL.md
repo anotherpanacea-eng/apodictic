@@ -4,7 +4,7 @@ description: >
   AI-prose calibration, narrative/argument decision signals, idiolect preservation, punctuation cadence, POV voice profiles, and experimental position-pair measurements. Optional SETEC execution is required for mechanical measurements.
   Use when the user requests one of these focused audits. For the complete
   audit catalog or an unclear request, use specialized-audits.
-version: 2.14.0
+version: 2.15.0
 ---
 
 # Prose and Structural Measurements

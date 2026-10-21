@@ -5,6 +5,64 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.15.0 - 2026-10-21
+
+### Synthesis — Correction and Attribution
+
+A refuted finding is now withdrawn by default: it stays traceable under **Withdrawn on counter-evidence** (via the existing ID-scoped softness-downgrade override) and leaves the root causes and revision plan. Its locked severity still counts in the triage tally and verdict caps (Deficit Lock). Root cause analysis asks for up to five supported causes, and zero is valid. The Female Interiority audit and the writer's-block taxonomy no longer infer the author's beliefs or feelings from the text. Public copy now says "never rewrites unless you ask" (reconciling `/reconstruct`) and lists "prose-pattern and voice calibration" in place of "AI-prose detection". From the 2026-10-16 Codex framework review.
+
+### Development validator runner — audit signal propagation
+
+The source-development JSONL runner accepts `audit-signal-propagation`, matching the native one-file validator for the same text and installed `pass-dependencies.md`. A missing reference silently falls back to built-in defaults, as in the native route.
+
+### Development validator runner — ledger consolidation
+
+The source-development JSONL runner accepts `ledger-consolidation`, matching the native one-file validator's output and exit code. The optional raw-ledger reduction comparison is not run.
+
+### Development runner: underdiagnosis triggers
+
+The source-development JSONL runner accepts `underdiagnosis-triggers`, matching the native one-file validator for the same text and installed `pass-dependencies.md`. The letter-plus-ledger softness check is not run.
+
+### Fixes — macOS local checks
+
+`/adjudicate` and `/reconstruct` no longer refuse a project whose path passes through a host-level symlink (macOS `/var` → `/private/var`, a symlinked home folder). Links inside the project, and a project folder that is itself a link, are still refused. Three test files no longer use `write_text(newline=...)`, and the link check no longer uses `Path.stat(follow_symlinks=...)`. Both need Python 3.10, so the suite now runs on macOS system Python 3.9.
+
+### Native validator utility file paths
+
+On Windows, early validator utilities now reject regular-file arguments ending
+in `/.` or `\.` with the existing file-not-found diagnostic and status 2,
+matching Bash preflight. Directory arguments and ordinary file inputs retain
+their existing handling.
+
+### Native validator orchestration
+
+The Python dispatcher now owns gate routes, aggregate self-tests and the full
+canonical workflow. POSIX shell entrypoints are compatibility launchers.
+`validate.py` dispatches every command through one `ROUTES` table; the runner
+inventory and schema-coverage read that table by importing the dispatcher.
+
+CI keeps the Ubuntu `validate` job and adds a `validate-windows` job that runs
+`python plugins/apodictic/scripts/validate.py --check-all` with only Python on
+`PATH`; the train receipt verifier now expects both jobs.
+
+Two output changes: per-command usage messages now name `validate.py`, including
+through the `validate.sh` shims, and `state-lines` prints its count without the
+left padding BSD/macOS `wc -l` added under Bash.
+
+Two Bash-era leftovers are gone. `override_marker.py` no longer has the
+`--has-override` / `--override-slugs` stdin CLI that only the Bash dispatcher
+called; its own `--self-test` covers the same cases. The `--internal-links`
+refusal now applies to the four annotation export routes only, instead of to every
+route that happened to live in `commands-b.sh`.
+
+### Native Windows validator text output
+
+Preserve LF line endings when the native validator relays helper stdout and stderr on Windows. Helper status, arguments, stdin and file effects remain intact; direct POSIX execution is unchanged.
+
+### Maintenance — Reference orphans
+
+The Franklin Pathway, which several audits route to by name, now has its path in `run-core.md` and the Audit Selection Matrix. Two reference files that nothing pointed to since v0.4.15 left the plugin: `genre-calibration-inline.md` (removed) and the genre-module authoring template (moved to `docs/genre-module-template.md`).
+
 ## v2.14.0 - 2026-10-14
 
 ### Optional PDF proofing navigation specification
