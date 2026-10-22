@@ -1,3 +1,3 @@
 ### Test maintenance
 
-Removed documentation-phrase checks and seven workflow-text mutation cases that only proved a changed workflow has a different hash. The workflow hash bindings, admission rules, receipt checks, and security boundaries remain covered.
+Removed CI policy tests that pinned text rather than behavior: the AGENTS.md phrase checks, the sha256 digests of four workflow files and the mutation cases built on them, the exact workflow-file and step-name inventories, and the admission and concurrency tables that exercised a test-local model of the workflow condition rather than the workflow itself. The retained checks read the parsed workflows: pull-request-only trigger, read-only permissions, job timeouts and no matrix, the merge-binding step, the real validation gate, the Windows PATH reduction, the draft-only sync updater, and the `@claude` workflow's safety boundaries.

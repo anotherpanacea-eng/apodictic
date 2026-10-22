@@ -1,36 +1,15 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 from pathlib import Path
 
-import pytest
 import yaml
-
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 CI = WORKFLOWS / "ci.yml"
 
-CI_SHA256 = "95b8542e33ea9ac2017557b892caa6cb7721d4babb83c79936f21d6cbe33a30b"
-AUXILIARY_SHA256 = {
-    "release.yml": "51fa09c164c47c8346f2cd6e8e2f21d1361f04c99a4996faf3cceddf90bed433",
-    "release-readiness.yml": "18c248b2d4e94fb9473d81b3dfd04ccfc58083e39c3937e343d2d618288f3710",
-    "sync-setec.yml": "e5f5f7347ef64699fb39f578e9528eca73a6e988cd37c711b422cd9b0c8b0e85",
-}
-EVENTS = [
-    "opened",
-    "synchronize",
-    "reopened",
-    "ready_for_review",
-    "converted_to_draft",
-    "labeled",
-    "unlabeled",
-    "closed",
-]
-ARMABLE_ACTIONS = {"opened", "synchronize", "reopened", "ready_for_review"}
-SYNC_BRANCH = "chore/sync-setec-contract"
 ACTION_V7_SHA = "22a9089034f40e5a961c8808d113e2c98fb63676"
 ACTION_CONTRACT = ROOT / "tests" / "fixtures" / "create-pull-request-v7-action-contract.json"
 
@@ -51,189 +30,45 @@ def _load(text: str) -> dict:
     return value
 
 
-def _normalized_digest(text: str) -> str:
-    normalized = "\n".join(
-        line.rstrip()
-        for line in text.replace("\r\n", "\n").split("\n")
-        if line.strip() and not line.lstrip().startswith("#")
-    )
-    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+def _step(steps: list[dict], name: str) -> dict:
+    return next(step for step in steps if step.get("name") == name)
 
 
-def _workflow_names(directory: Path) -> set[str]:
-    return {
-        path.name
-        for pattern in ("*.yml", "*.yaml")
-        for path in directory.glob(pattern)
-    }
-
-
-def _current_train(*, same_repo: bool, branch: str) -> bool:
-    return same_repo and branch.casefold().startswith("train/")
-
-
-def _armed(
-    *,
-    draft: bool,
-    same_repo: bool,
-    branch: str,
-    action: str,
-    labels: set[str] = frozenset(),
-    event_label: str | None = None,
-) -> bool:
-    if draft:
-        return False
-    train = _current_train(same_repo=same_repo, branch=branch)
-    if train:
-        return action in ARMABLE_ACTIONS
-    if same_repo and branch.casefold() == SYNC_BRANCH:
-        return False
-    return (
-        any(label.casefold() == "ci-ready" for label in labels)
-        and (
-            action in ARMABLE_ACTIONS
-            or (
-                action == "labeled"
-                and isinstance(event_label, str)
-                and event_label.casefold() == "ci-ready"
-            )
-        )
-    )
-
-
-def _canonical_group(
-    *,
-    pr: int,
-    same_repo: bool,
-    branch: str,
-    action: str,
-    event_label: str | None,
-    run_id: int,
-) -> str:
-    train = _current_train(same_repo=same_repo, branch=branch)
-    canonical = action not in {"labeled", "unlabeled"} or (
-        isinstance(event_label, str) and event_label.casefold() == "ci-ready" and not train
-    )
-    suffix = "clearance" if canonical else str(run_id)
-    return f"apodictic-ci-{pr}-{suffix}"
-
-
-def _step_id(step: dict) -> str:
-    return step.get("name") or step.get("uses") or ""
-
-
-def test_current_workflow_holds_closed_policy():
-    assert _workflow_names(WORKFLOWS) == {
-        "ci.yml",
-        "claude.yml",
-        "release.yml",
-        "release-readiness.yml",
-        "sync-setec.yml",
-    }
-    text = CI.read_text(encoding="utf-8")
-    assert _normalized_digest(text) == CI_SHA256
-    workflow = _load(text)
-
-    assert set(workflow) == {
-        "name", "run-name", "on", "permissions", "concurrency", "jobs"
-    }
-    assert workflow["name"] == "ci"
-    assert workflow["on"] == {"pull_request": {"types": EVENTS}}
+def test_ci_stays_bounded_and_runs_the_real_gate():
+    workflow = _load(CI.read_text(encoding="utf-8"))
+    assert list(workflow["on"]) == ["pull_request"]
     assert workflow["permissions"] == {"contents": "read"}
-    assert set(workflow["concurrency"]) == {"group", "cancel-in-progress"}
     assert workflow["concurrency"]["cancel-in-progress"] == "true"
 
-    assert set(workflow["jobs"]) == {"validate", "validate-windows"}
     job = workflow["jobs"]["validate"]
-    assert set(job) == {"if", "runs-on", "timeout-minutes", "steps"}
-    assert job["runs-on"] == "ubuntu-latest"
     assert job["timeout-minutes"] == 10
-    assert "matrix" not in job
-    assert "strategy" not in job
-    assert "services" not in job
-    assert "container" not in job
-    assert "uses" not in job
-    assert "continue-on-error" not in job
-
+    for key in ("matrix", "strategy", "services", "container", "uses", "continue-on-error"):
+        assert key not in job
     steps = job["steps"]
-    assert [_step_id(step) for step in steps] == [
-        "actions/checkout@v4",
-        "Bind billed job to the exact pull-request merge",
-        "actions/setup-python@v5",
-        "actions/setup-node@v4",
-        "Install policy test dependencies",
-        "Draft-first train policy self-tests",
-        "Byte-compile canonical Python (syntax gate)",
-        "Validate plugin + marketplace manifests parse as JSON",
-        "Version parity across manifests",
-        "Research reliability self-tests",
-        "Changelog fragments parse",
-        "Status-drift lint (spec Status vs shipped deliverables)",
-        "Inventory-parity sync-marker check",
-        "Registry-derived docs are up to date",
-        "Codex + Antigravity builds self-check",
-        "SETEC contract drift gate (self-consistency)",
-        "SETEC contract tests (floors + vendored-golden parse)",
-        "Validator self-tests",
-        "Canonical-framework gate",
-    ]
-    assert steps[0] == {"uses": "actions/checkout@v4"}
-    binding = steps[1]
-    assert set(binding) == {"name", "env", "run"}
-    assert set(binding["env"]) == {
-        "BASE_SHA", "HEAD_SHA", "MERGE_SHA", "JOB_NAME", "REPOSITORY",
-        "RUN_ID", "RUN_ATTEMPT"
-    }
+    binding = _step(steps, "Bind billed job to the exact pull-request merge")
     assert "tools/check_pr_merge_binding.py" in binding["run"]
-    assert steps[-2]["run"] == "bash scripts/validate.sh --self-test-all"
-    assert steps[-1]["run"] == "bash scripts/validate.sh --check-canonical"
+    runs = [step.get("run") for step in steps]
+    assert "bash scripts/validate.sh --self-test-all" in runs
+    assert "bash scripts/validate.sh --check-canonical" in runs
 
     # Windows runs the native gate under the same admission and binding receipt,
     # with PATH reduced to the Python install directory so no shell is reachable.
     windows = workflow["jobs"]["validate-windows"]
-    assert set(windows) == {"if", "runs-on", "timeout-minutes", "defaults", "env", "steps"}
     assert windows["if"] == job["if"]
-    assert windows["runs-on"] == "windows-latest"
     assert windows["timeout-minutes"] == 30
-    assert [_step_id(step) for step in windows["steps"]] == [
-        "actions/checkout@v4",
-        "Bind billed job to the exact pull-request merge",
-        "actions/setup-python@v5",
-        "Native validator gate with only Python on PATH",
-    ]
-    assert windows["steps"][1]["env"] == binding["env"]
-    setup = windows["steps"][2]
-    assert setup["id"] == "setup-python"
-    gate_step = windows["steps"][-1]
-    assert gate_step["env"] == {
-        "PYTHON_EXE": "${{ steps.setup-python.outputs.python-path }}"
-    }
-    gate = gate_step["run"].splitlines()
+    assert _step(windows["steps"], binding["name"])["env"] == binding["env"]
+    gate = windows["steps"][-1]["run"].splitlines()
     assert gate[0] == "$env:PATH = Split-Path -Parent $env:PYTHON_EXE"
     assert gate[-1] == "& $env:PYTHON_EXE plugins/apodictic/scripts/validate.py --check-all"
 
 
-def test_auxiliary_workflows_are_closed_and_sync_remains_draft():
-    for name, digest in AUXILIARY_SHA256.items():
-        text = (WORKFLOWS / name).read_text(encoding="utf-8")
-        assert _normalized_digest(text) == digest
-
-    release = _load((WORKFLOWS / "release.yml").read_text(encoding="utf-8"))
-    readiness = _load(
-        (WORKFLOWS / "release-readiness.yml").read_text(encoding="utf-8")
-    )
-    assert release["on"] == {"push": {"tags": ["v*"]}}
-    assert set(release["jobs"]) == {"publish"}
-    assert set(readiness["jobs"]) == {"readiness"}
-
+def test_sync_pr_stays_draft_around_the_updater():
     sync = _load((WORKFLOWS / "sync-setec.yml").read_text(encoding="utf-8"))
-    assert set(sync) == {"name", "on", "permissions", "env", "jobs"}
-    assert sync["permissions"] == {"contents": "write", "pull-requests": "write"}
     steps = sync["jobs"]["sync"]["steps"]
-    ids = [_step_id(step) for step in steps]
-    before = ids.index("Disarm any existing sync PR before branch update")
-    updater = ids.index("Open or update draft bump PR")
-    after = ids.index("Enforce draft state after updater, including no-op updates")
+    names = [step.get("name") for step in steps]
+    before = names.index("Disarm any existing sync PR before branch update")
+    updater = names.index("Open or update draft bump PR")
+    after = names.index("Enforce draft state after updater, including no-op updates")
     assert before < updater < after
     action = steps[updater]
     assert action["uses"] == (
@@ -259,131 +94,6 @@ def test_auxiliary_workflows_are_closed_and_sync_remains_draft():
             "always_true_behavior": "on create and update",
         },
     }
-
-
-@pytest.mark.parametrize(
-    "case",
-    [
-        dict(draft=True, same_repo=True, branch="train/week", action="opened"),
-        dict(draft=False, same_repo=True, branch="feature/x", action="opened"),
-        dict(
-            draft=False,
-            same_repo=True,
-            branch=SYNC_BRANCH,
-            action="opened",
-            labels={"ci-ready"},
-        ),
-        dict(
-            draft=False,
-            same_repo=True,
-            branch="CHORE/SYNC-SETEC-CONTRACT",
-            action="opened",
-            labels={"CI-READY"},
-        ),
-        dict(
-            draft=False,
-            same_repo=True,
-            branch="train/week",
-            action="labeled",
-            labels={"ci-ready"},
-            event_label="ci-ready",
-        ),
-        dict(
-            draft=False,
-            same_repo=False,
-            branch="train/week",
-            action="opened",
-        ),
-        dict(
-            draft=False,
-            same_repo=False,
-            branch="feature/x",
-            action="labeled",
-            labels={"ci-ready"},
-            event_label="unrelated",
-        ),
-        dict(
-            draft=False,
-            same_repo=True,
-            branch="feature/x",
-            action="unlabeled",
-            labels=set(),
-            event_label="ci-ready",
-        ),
-        dict(
-            draft=False,
-            same_repo=True,
-            branch="feature/x",
-            action="closed",
-            labels={"ci-ready"},
-        ),
-    ],
-)
-def test_unauthorized_states_are_unarmed(case):
-    assert not _armed(**case)
-
-
-@pytest.mark.parametrize(
-    "case",
-    [
-        dict(draft=False, same_repo=True, branch="train/week", action="opened"),
-        dict(draft=False, same_repo=True, branch="TRAIN/week", action="opened"),
-        dict(
-            draft=False,
-            same_repo=False,
-            branch="feature/x",
-            action="opened",
-            labels={"ci-ready"},
-        ),
-        dict(
-            draft=False,
-            same_repo=True,
-            branch="feature/x",
-            action="labeled",
-            labels={"ci-ready"},
-            event_label="ci-ready",
-        ),
-        dict(
-            draft=False,
-            same_repo=True,
-            branch="feature/x",
-            action="labeled",
-            labels={"CI-READY"},
-            event_label="CI-READY",
-        ),
-    ],
-)
-def test_exact_authorizations_arm(case):
-    assert _armed(**case)
-
-
-def test_concurrency_state_table_is_closed():
-    common = dict(pr=17, same_repo=True, branch="feature/x", run_id=901)
-    for action in ARMABLE_ACTIONS | {"converted_to_draft", "closed"}:
-        assert _canonical_group(
-            **common, action=action, event_label=None
-        ) == "apodictic-ci-17-clearance"
-    for action in ("labeled", "unlabeled"):
-        assert _canonical_group(
-            **common, action=action, event_label="ci-ready"
-        ) == "apodictic-ci-17-clearance"
-        assert _canonical_group(
-            **common, action=action, event_label="other"
-        ) == "apodictic-ci-17-901"
-    assert _canonical_group(
-        pr=17,
-        same_repo=True,
-        branch="train/week",
-        action="labeled",
-        event_label="ci-ready",
-        run_id=901,
-    ) == "apodictic-ci-17-901"
-
-
-def test_workflow_inventory_includes_yaml_extension(tmp_path: Path):
-    (tmp_path / "ci.yml").write_text("name: ci\n", encoding="utf-8")
-    (tmp_path / "hidden.yaml").write_text("name: hidden\n", encoding="utf-8")
-    assert _workflow_names(tmp_path) == {"ci.yml", "hidden.yaml"}
 
 
 # The @claude workflow hands a write-capable App token and the Claude OAuth
