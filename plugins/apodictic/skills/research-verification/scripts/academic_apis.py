@@ -148,17 +148,110 @@ def _fetch_json_network(url: str, headers: dict | None = None, timeout: int = 15
     return {"_error": str(last_error), "_url": url}
 
 
-def _check_url(url: str, timeout: int = 10) -> dict:
-    """Check whether a URL is live. Returns status info."""
-    req = urllib.request.Request(url, method="HEAD",
-                                headers={"User-Agent": "APODICTIC/1.0"})
+def _valid_probe_url(url) -> bool:
+    """Narrow syntax/credential gate, not a destination or DNS policy."""
+    if not isinstance(url, str) or not url or any(ord(c) < 32 or ord(c) == 127 or c.isspace() for c in url):
+        return False
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return {"url": url, "status": resp.status, "live": True}
-    except urllib.error.HTTPError as e:
-        return {"url": url, "status": e.code, "live": False}
-    except Exception as e:
-        return {"url": url, "status": None, "live": False, "error": str(e)}
+        parts = urllib.parse.urlsplit(url)
+        return (parts.scheme.lower() in {"http", "https"} and bool(parts.hostname)
+                and parts.username is None and parts.password is None
+                and (parts.port is None or parts.port > 0))
+    except ValueError:
+        return False
+
+
+class _ProbeRedirectError(Exception):
+    def __init__(self, code: str):
+        self.code = code
+
+
+class _ProbeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Preserve the probe method and reject unsafe syntax before each redirect."""
+
+    def __init__(self, original: str):
+        self.seen = {original}
+        self.hops = 0
+        self.final_url = original
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not isinstance(newurl, str) or any(ord(c) < 32 or ord(c) == 127 for c in newurl):
+            raise _ProbeRedirectError("invalid-redirect")
+        target = urllib.parse.urljoin(req.full_url, newurl)
+        if not _valid_probe_url(target):
+            raise _ProbeRedirectError("invalid-redirect")
+        if target in self.seen:
+            raise _ProbeRedirectError("redirect-loop")
+        if self.hops >= 5:
+            raise _ProbeRedirectError("redirect-limit")
+        self.hops += 1
+        self.seen.add(target)
+        self.final_url = target
+        return urllib.request.Request(target, method=req.get_method(),
+                                      headers={"User-Agent": "APODICTIC/1.0"})
+
+    def http_error_302(self, req, fp, code, msg, headers):
+        # urllib's default handler drains fp.read() before following a redirect.
+        # Even a liveness check must never consume source/redirect body bytes.
+        location = headers.get("Location") or headers.get("URI")
+        try:
+            if not location:
+                raise _ProbeRedirectError("redirect-missing-location")
+            next_req = self.redirect_request(req, fp, code, msg, headers, location)
+        finally:
+            fp.close()
+        return self.parent.open(next_req, timeout=req.timeout)
+
+    http_error_301 = http_error_303 = http_error_307 = http_error_308 = http_error_302
+
+
+def _probe_url_leg(url: str, method: str, timeout: int) -> dict:
+    redirect = _ProbeRedirectHandler(url)
+    try:
+        opener = urllib.request.build_opener(redirect)
+        req = urllib.request.Request(url, method=method,
+                                     headers={"User-Agent": "APODICTIC/1.0"})
+        with opener.open(req, timeout=timeout) as response:
+            return {"method": method, "status": response.status,
+                    "final_url": response.geturl(), "redirects": redirect.hops}
+    except urllib.error.HTTPError as exc:
+        try:
+            return {"method": method, "status": exc.code,
+                    "final_url": redirect.final_url, "redirects": redirect.hops}
+        finally:
+            exc.close()
+    except _ProbeRedirectError as exc:
+        return {"method": method, "status": None, "final_url": redirect.final_url,
+                "redirects": redirect.hops, "error_code": exc.code}
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+        return {"method": method, "status": None, "final_url": redirect.final_url,
+                "redirects": redirect.hops, "error_code": "transport-error"}
+
+
+def _check_url(url: str, timeout: int = 10) -> dict:
+    """Bounded URL liveness only: HEAD, then GET after HEAD 403/405."""
+    if not _valid_probe_url(url):
+        return {"url": url, "status": None, "live": False, "check_status": "not-checked",
+                "method": None, "attempts": [], "final_url": None,
+                "wayback_allowed": False, "_error": "invalid-url"}
+    attempts = [_probe_url_leg(url, "HEAD", timeout)]
+    if attempts[0]["status"] in {403, 405} and "error_code" not in attempts[0]:
+        attempts.append(_probe_url_leg(url, "GET", timeout))
+    terminal = attempts[-1]
+    status = terminal["status"]
+    if isinstance(status, int) and 200 <= status < 300:
+        check_status = "live"
+    elif status in {404, 410}:
+        check_status = "not-found"
+    else:
+        check_status = "not-checked"
+    result = {"url": url, "status": status, "live": check_status == "live",
+              "check_status": check_status, "method": terminal["method"],
+              "attempts": attempts, "final_url": terminal["final_url"],
+              "wayback_allowed": True}
+    if check_status == "not-checked":
+        result["_error"] = terminal.get("error_code", "http-incomplete")
+    return result
 
 # ---------------------------------------------------------------------------
 # Individual API resolvers
@@ -236,10 +329,37 @@ def search_pubmed(query: str, retmax: int = 5, ledger=None) -> dict:
 
 
 def check_wayback(url: str, ledger=None) -> dict:
-    """Check Wayback Machine for archived version."""
+    """Check availability; validate shape before ledger records the call."""
     encoded = urllib.parse.quote(url, safe="")
-    return _fetch_json(f"https://archive.org/wayback/available?url={encoded}",
-                       provider="wayback", ledger=ledger) or {}
+    endpoint = f"https://archive.org/wayback/available?url={encoded}"
+    if ledger is not None and not ledger.allow_call("wayback"):
+        return {"_skipped": True, "_provider": "wayback", "_url": endpoint}
+    response = _fetch_json_network(endpoint)
+    if not _unanswered(response) and _wayback_snapshot(response)[0] == "invalid":
+        response = {"_error": "invalid-wayback-response"}
+    if ledger is not None:
+        ledger.record("wayback", response)
+    return response
+
+
+def _wayback_snapshot(response) -> tuple[str, str | None]:
+    """Return (available|absent|invalid, snapshot URL) for availability JSON."""
+    if not isinstance(response, dict) or "archived_snapshots" not in response:
+        return "invalid", None
+    snapshots = response["archived_snapshots"]
+    if not isinstance(snapshots, dict):
+        return "invalid", None
+    if not snapshots:
+        return "absent", None
+    closest = snapshots.get("closest")
+    if not isinstance(closest, dict) or type(closest.get("available")) is not bool:
+        return "invalid", None
+    snapshot_url = closest.get("url")
+    if snapshot_url is not None and not _valid_probe_url(snapshot_url):
+        return "invalid", None
+    if closest["available"]:
+        return ("available", snapshot_url) if snapshot_url is not None else ("invalid", None)
+    return "absent", None
 
 
 def _crossref_message(response, doi: str) -> dict | None:
@@ -322,6 +442,23 @@ def _unanswered(resp) -> bool:
     either skipped before the call (degraded) or errored after retries. Both
     mean the tier is NOT-CHECKED for this citation, never NOT-FOUND."""
     return _is_skipped(resp) or _is_error(resp)
+
+
+class _ResolutionLedger(ReliabilityLedger):
+    """Keep the existing index ledger honest about URL-origin incompletes."""
+
+    unresolved_not_checked = 0
+
+    def snapshot(self) -> dict:
+        result = super().snapshot()
+        if self.unresolved_not_checked and result["coverage"]["clean"]:
+            result["coverage"]["note"] = (
+                "Index providers not degraded; "
+                f"{self.unresolved_not_checked} citation(s) NOT-CHECKED on an "
+                "incomplete resolution path. Clean index coverage does not "
+                "establish URL or archive completeness."
+            )
+        return result
 
 
 def resolve_citation(citation: dict, cache: ResponseCache, provenance: ProvenanceStore,
@@ -560,46 +697,53 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         # index providers and is never disk-cached — a 404 today may be live
         # tomorrow). It remains run-local exactly as before.
         url_status = _check_url(url)
-        if url_status.get("live"):
+        result["url_check"] = url_status
+        prov_ref = provenance.store(ref_id, "url-check", url_status)
+        result["provenance_refs"].append(prov_ref)
+        if url_status["check_status"] == "not-checked":
+            not_checked.append("url-check")
+        if url_status["check_status"] == "live":
             result["resolved"] = True
             result["confidence"] = "full-text verified"
             result["source_tier"] = "direct-url"
             result["metadata"] = {"url": url}
-            prov_ref = provenance.store(ref_id, "url-check", url_status)
-            result["provenance_refs"].append(prov_ref)
             result["resolution_status"] = "resolved"
             result["degraded_providers"] = ledger.degraded_providers() if ledger else []
             return result
-        else:
+        elif url_status["wayback_allowed"]:
             # Try Wayback
             cache_key = f"wayback:{url}"
             wb_result = cache.get(cache_key, ttl_seconds=_wb_ttl)
+            if wb_result is not None and _wayback_snapshot(wb_result)[0] == "invalid":
+                wb_result = None  # A legacy malformed cache entry is no negative fact.
             if wb_result is None:
                 wb_result = check_wayback(url, ledger=ledger)
                 if _unanswered(wb_result):
                     not_checked.append("wayback")  # skip OR error → NOT-CHECKED; don't cache
+                elif _wayback_snapshot(wb_result)[0] == "invalid":
+                    wb_result = {"_error": "invalid-wayback-response"}
+                    not_checked.append("wayback")
                 else:
                     cache.set(cache_key, wb_result, ttl=_wb_ttl)
                 time.sleep(RATE_LIMIT_DELAY)
+            # A skip is not a network retrieval, but recording its sentinel
+            # still explains why this resolution path was incomplete.
+            provenance_ref = provenance.store(ref_id, "wayback", wb_result)
+            result["provenance_refs"].append(provenance_ref)
+            availability, snapshot_url = _wayback_snapshot(wb_result)
+            if availability == "invalid" and "wayback" not in not_checked:
+                not_checked.append("wayback")
+            if availability == "available":
+                result["resolved"] = True
+                result["confidence"] = "full-text verified"  # #368 is separate.
+                result["source_tier"] = "wayback"
+                result["metadata"] = {"url": url, "wayback_url": snapshot_url}
+                result["resolution_status"] = "resolved"
+                result["degraded_providers"] = ledger.degraded_providers() if ledger else []
+                return result
 
-            if wb_result and not _unanswered(wb_result):
-                snapshots = wb_result.get("archived_snapshots", {})
-                closest = snapshots.get("closest", {})
-                if closest.get("available"):
-                    result["resolved"] = True
-                    result["confidence"] = "full-text verified"
-                    result["source_tier"] = "wayback"
-                    result["metadata"] = {"url": url, "wayback_url": closest.get("url", "")}
-                    prov_ref = provenance.store(ref_id, "wayback", wb_result)
-                    result["provenance_refs"].append(prov_ref)
-                    result["resolution_status"] = "resolved"
-                    result["degraded_providers"] = ledger.degraded_providers() if ledger else []
-                    return result
-
-    # Unresolved. Classify honesty: a tier cut short by a degraded provider makes
-    # this NOT-CHECKED (we couldn't look), not NOT-FOUND (we looked, nothing
-    # there). The Firewall is one-directional: resolution_status is never set to
-    # "resolved" on an unresolved result.
+    # Unresolved. An incomplete provider or direct URL check is NOT-CHECKED,
+    # not evidence of source absence.
     if not_checked:
         result["resolution_status"] = "not-checked"
     else:
@@ -636,7 +780,7 @@ def resolve_batch(citations: list[dict], output_path: str | None = None,
     block."""
     cache = ResponseCache(_default_cache_dir())
     provenance = ProvenanceStore()
-    ledger = ReliabilityLedger() if reliability_enabled() else None
+    ledger = _ResolutionLedger() if reliability_enabled() else None
     results = []
 
     for i, citation in enumerate(citations):
@@ -657,6 +801,8 @@ def resolve_batch(citations: list[dict], output_path: str | None = None,
         "not_checked": sum(1 for r in results if r.get("resolution_status") == "not-checked"),
         "not_found": sum(1 for r in results if r.get("resolution_status") == "not-found"),
     }
+    if ledger is not None:
+        ledger.unresolved_not_checked = summary["not_checked"]
 
     output = {
         "summary": summary,
@@ -670,7 +816,16 @@ def resolve_batch(citations: list[dict], output_path: str | None = None,
     # sub-block is ATTACHED only when the caller opted in, so the default
     # (strict=False) reliability block stays byte-identical to today (AC-13).
     snapshot = ledger.snapshot() if ledger is not None else None
-    decision = strict_halt_decision(snapshot, summary["not_checked"], strict=strict)
+    # The public count includes URL-only incomplete checks. The existing strict
+    # gate is narrower: an unresolved citation must have been blocked by an
+    # actually degraded index provider, not merely share its batch.
+    degraded = set(snapshot["coverage"]["degraded_providers"]) if snapshot else set()
+    causal_not_checked = sum(
+        1 for result in results
+        if result["resolution_status"] == "not-checked"
+        and degraded.intersection(result.get("not_checked_providers", []))
+    )
+    decision = strict_halt_decision(snapshot, causal_not_checked, strict=strict)
     if ledger is not None:
         if strict:
             snapshot["strict"] = decision
