@@ -223,7 +223,7 @@ The supernatural past is vivid, but the present-tense hunger of the haunting is 
 
 **HP-5: Spectator Protagonist**
 The haunting happens *around* the protagonist rather than *to* them.
-- *Detect:* In the Aftermath Chain, the protagonist's rows show witnessing but no Delayed Cost, while secondary characters or the environment absorb the supernatural contact. The protagonist is a journalist in their own haunting. Do not fire in kaidan/J-horror modes, where a passive protagonist facing inevitability is the design.
+- *Detect:* In the Aftermath Chain, the protagonist's rows show witnessing but no Delayed Cost, while secondary characters or the environment absorb the supernatural contact. The protagonist is a journalist in their own haunting. In kaidan/J-horror modes a passive protagonist facing inevitability is the design, so lack of resistance alone does not fire it; it still fires when the protagonist bears no personal cost or threat.
 - *Default severity:* Should-Fix. Must-Fix if the protagonist stays insulated through the climax.
 
 ### RL Flags (Rule Pressure and Ritual Cost)
