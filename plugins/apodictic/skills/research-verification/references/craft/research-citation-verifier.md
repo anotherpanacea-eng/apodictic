@@ -583,7 +583,7 @@ Resolved: {N}/{N}
   Metadata-only: {N}
   Unretrievable: {N}
     Not-found (looked, absent): {N}
-    Not-checked (provider degraded — coverage gap): {N}
+    Not-checked (incomplete index or URL/archive check): {N}
 Source coverage: CLEAN  |  DEGRADED — {provider} ({circuit open / budget exhausted / error rate > 50%})
   An UNRETRIEVABLE citation with an incomplete index or URL/archive check is
   NOT-CHECKED, not NOT-FOUND. The not-checked count above includes both kinds

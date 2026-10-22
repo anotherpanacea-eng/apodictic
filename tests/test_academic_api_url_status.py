@@ -1,6 +1,7 @@
 """Offline URL completeness checks with urllib's real error/redirect stack."""
 
 import io
+import http.client
 import json
 import os
 import socket
@@ -157,6 +158,36 @@ class UrlStatusTests(unittest.TestCase):
                                      ("GET", url, TimeoutError("synthetic"), None)])
         self.assertEqual(result["check_status"], "not-checked")
 
+    def test_malformed_http_status_and_header_are_incomplete(self):
+        class FakeSocket:
+            def __init__(self, raw):
+                self.raw = raw
+
+            def makefile(self, *args, **kwargs):
+                return io.BytesIO(self.raw)
+
+            def sendall(self, data):
+                pass
+
+            def close(self):
+                pass
+
+        original = urllib.request.build_opener
+        for raw in (b"BROKEN status\r\n\r\n",
+                    b"HTTP/9.0 200 OK\r\n\r\n",
+                    b"HTTP/1.1 200 OK\r\nX: " + b"x" * 70000 + b"\r\n\r\n"):
+            with self.subTest(raw=raw[:20]):
+                with patch.object(http.client.HTTPConnection, "connect",
+                                  lambda conn: setattr(conn, "sock", FakeSocket(raw))):
+                    with patch.object(urllib.request, "build_opener",
+                                      lambda *handlers: original(*handlers,
+                                          urllib.request.ProxyHandler({}))):
+                        with patch.object(socket.socket, "connect",
+                                          side_effect=AssertionError("live socket")):
+                            result = api._check_url("http://example.org/item")
+                self.assertEqual(result["check_status"], "not-checked")
+                self.assertEqual(result["_error"], "transport-error")
+
     def test_invalid_input_never_probed_or_archived(self):
         for url in ("file:///etc/passwd", "https://user:pass@example.org/",
                     "https://example.org/\x00item", "https://example.org:bad/item"):
@@ -203,7 +234,13 @@ class UrlStatusTests(unittest.TestCase):
                    {"archived_snapshots": {"closest": {}}},
                    {"archived_snapshots": {"closest": {"available": 1}}},
                    {"archived_snapshots": {"closest": {"available": True}}},
-                   {"archived_snapshots": {"closest": {"available": True, "url": "file:///x"}}})
+                   {"archived_snapshots": {"closest": {"available": True, "url": "file:///x"}}},
+                   {"archived_snapshots": {"closest": {"available": False, "url": None}}},
+                   {"_error": "synthetic", "archived_snapshots": {}},
+                   {"_error": "synthetic", "archived_snapshots": {"closest": {"available": True,
+                    "url": "https://web.archive.org/web/20200101/https://example.org/item"}}},
+                   {"_skipped": True, "archived_snapshots": {"closest": {"available": True,
+                    "url": "https://web.archive.org/web/20200101/https://example.org/item"}}})
         for payload in valid + invalid:
             with self.subTest(payload=payload):
                 led = ReliabilityLedger()
@@ -215,7 +252,7 @@ class UrlStatusTests(unittest.TestCase):
                     self.assertNotIn("_error", answer)
                     self.assertEqual(counts["ok"], 1)
                 else:
-                    self.assertEqual(answer["_error"], "invalid-wayback-response")
+                    self.assertIn("_error", answer)
                     self.assertEqual(counts["errors"], 1)
 
     def test_malformed_cached_wayback_is_retried_not_accepted(self):
@@ -229,6 +266,24 @@ class UrlStatusTests(unittest.TestCase):
         network.assert_called_once()
         self.assertEqual(result["resolution_status"], "not-found")
         self.assertEqual(self.cache.get(key), valid)
+
+    def test_cached_error_markers_cannot_become_negative_or_snapshot(self):
+        missing = {"status": 404, "live": False, "check_status": "not-found",
+                   "wayback_allowed": True}
+        snapshot = {"archived_snapshots": {"closest": {"available": True,
+            "url": "https://web.archive.org/web/20200101/https://example.org/item"}}}
+        for marker in ("_error", "_skipped"):
+            for payload in ({"archived_snapshots": {}}, snapshot):
+                url = f"https://example.org/{marker}/{bool(payload['archived_snapshots'])}"
+                with self.subTest(url=url):
+                    self.cache.set(f"wayback:{url}",
+                                   {marker: True if marker == "_skipped" else "synthetic",
+                                    **payload})
+                    direct = {"url": url, **missing}
+                    result, network = self.resolve(url, direct, {"_error": "synthetic-retry"})
+                    network.assert_called_once()
+                    self.assertEqual(result["resolution_status"], "not-checked")
+                    self.assertIn("wayback", result["not_checked_providers"])
 
     def test_valid_cached_wayback_skips_provider_charge(self):
         for suffix, response, expected in (

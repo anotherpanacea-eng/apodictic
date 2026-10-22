@@ -16,6 +16,7 @@ Usage:
 """
 
 import argparse
+import http.client
 import json
 import os
 import sys
@@ -223,7 +224,8 @@ def _probe_url_leg(url: str, method: str, timeout: int) -> dict:
     except _ProbeRedirectError as exc:
         return {"method": method, "status": None, "final_url": redirect.final_url,
                 "redirects": redirect.hops, "error_code": exc.code}
-    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError,
+            http.client.HTTPException):
         return {"method": method, "status": None, "final_url": redirect.final_url,
                 "redirects": redirect.hops, "error_code": "transport-error"}
 
@@ -335,7 +337,8 @@ def check_wayback(url: str, ledger=None) -> dict:
     if ledger is not None and not ledger.allow_call("wayback"):
         return {"_skipped": True, "_provider": "wayback", "_url": endpoint}
     response = _fetch_json_network(endpoint)
-    if not _unanswered(response) and _wayback_snapshot(response)[0] == "invalid":
+    if (isinstance(response, dict) and "_skipped" in response) or (
+            not _is_error(response) and _wayback_snapshot(response)[0] == "invalid"):
         response = {"_error": "invalid-wayback-response"}
     if ledger is not None:
         ledger.record("wayback", response)
@@ -344,7 +347,8 @@ def check_wayback(url: str, ledger=None) -> dict:
 
 def _wayback_snapshot(response) -> tuple[str, str | None]:
     """Return (available|absent|invalid, snapshot URL) for availability JSON."""
-    if not isinstance(response, dict) or "archived_snapshots" not in response:
+    if (not isinstance(response, dict) or "_error" in response or "_skipped" in response
+            or "archived_snapshots" not in response):
         return "invalid", None
     snapshots = response["archived_snapshots"]
     if not isinstance(snapshots, dict):
@@ -354,11 +358,12 @@ def _wayback_snapshot(response) -> tuple[str, str | None]:
     closest = snapshots.get("closest")
     if not isinstance(closest, dict) or type(closest.get("available")) is not bool:
         return "invalid", None
+    has_url = "url" in closest
     snapshot_url = closest.get("url")
-    if snapshot_url is not None and not _valid_probe_url(snapshot_url):
+    if has_url and not _valid_probe_url(snapshot_url):
         return "invalid", None
     if closest["available"]:
-        return ("available", snapshot_url) if snapshot_url is not None else ("invalid", None)
+        return ("available", snapshot_url) if has_url else ("invalid", None)
     return "absent", None
 
 
