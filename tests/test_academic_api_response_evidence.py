@@ -1,6 +1,7 @@
 """Offline public-contract regressions for opt-in parsed response evidence."""
 
 import copy
+import contextlib
 import io
 import json
 import math
@@ -511,6 +512,115 @@ class ResponseEvidenceTests(unittest.TestCase):
                                   response_evidence_path=str(evidence))
         self.assertEqual(json.loads(evidence.read_text()),
                          {"schema": "apodictic.response-evidence.v1", "events": []})
+
+    def test_batch_cli_explicit_evidence_and_default_output(self):
+        source = Path(self.tmp.name) / "citations.json"
+        source.write_text(json.dumps([{"ref_id": "r", "title": TITLE}]))
+        evidence = Path(self.tmp.name) / "responses.json"
+        result = Path(self.tmp.name) / "resolved.json"
+        calls = []
+        with patch.object(sys, "argv", ["academic_apis.py", "batch", "--input", str(source),
+                                        "--output", str(result), "--response-evidence",
+                                        str(evidence)]), \
+             patch.object(api, "_default_cache_dir",
+                          return_value=str(Path(self.tmp.name) / "enabled-cache")), \
+             patch.object(api, "_fetch_json_network", side_effect=fake_network(EMPTY, calls)), \
+             patch.object(api.time, "sleep"), \
+             contextlib.redirect_stdout(io.StringIO()), \
+             contextlib.redirect_stderr(io.StringIO()):
+            api.main()
+        document = json.loads(evidence.read_text())
+        self.assertEqual(document["schema"], "apodictic.response-evidence.v1")
+        self.assertEqual(len(document["events"]), 4)
+        self.assertEqual(document["events"][0]["payload"], EMPTY["crossref.org/works?"])
+        self.assertEqual(document["events"][0]["payload_sha256"],
+                         json_value_sha256(document["events"][0]["payload"]))
+        self.assertEqual(json.loads(result.read_text())["summary"]["not_found"], 1)
+        self.assertEqual(len(calls), 4)
+        evidence_bytes = evidence.read_bytes()
+
+        default_result = Path(self.tmp.name) / "default.json"
+        with patch.object(sys, "argv", ["academic_apis.py", "batch", "--input", str(source),
+                                        "--output", str(default_result)]), \
+             patch.object(api, "_default_cache_dir",
+                          return_value=str(Path(self.tmp.name) / "default-cache")), \
+             patch.object(api, "_fetch_json_network", side_effect=fake_network(EMPTY, [])), \
+             patch.object(api.time, "sleep"), \
+             contextlib.redirect_stdout(io.StringIO()), \
+             contextlib.redirect_stderr(io.StringIO()):
+            api.main()
+        self.assertEqual(json.loads(default_result.read_text())["summary"],
+                         json.loads(result.read_text())["summary"])
+        self.assertNotIn("response_evidence", json.loads(default_result.read_text()))
+        self.assertEqual(evidence.read_bytes(), evidence_bytes)
+
+    def test_batch_cli_refuses_input_alias_before_provider_work(self):
+        source = Path(self.tmp.name) / "citations.json"
+        original = json.dumps([{"ref_id": "r", "title": TITLE}]).encode()
+        source.write_bytes(original)
+        alias = Path(self.tmp.name) / "same-input.json"
+        os.link(source, alias)
+        stderr = io.StringIO()
+        with patch.object(sys, "argv", ["academic_apis.py", "batch", "--input", str(source),
+                                        "--response-evidence", str(alias)]), \
+             patch.object(api, "_default_cache_dir",
+                          side_effect=AssertionError("provider setup before alias refusal")), \
+             contextlib.redirect_stderr(stderr):
+            with self.assertRaises(SystemExit) as exit_status:
+                api.main()
+        self.assertEqual(exit_status.exception.code, 2)
+        self.assertIn("must not alias --input", stderr.getvalue())
+        self.assertEqual(source.read_bytes(), original)
+
+        output = Path(self.tmp.name) / "existing-result.json"
+        output.write_text("old result")
+        with patch.object(sys, "argv", ["academic_apis.py", "batch", "--input", str(source),
+                                        "--output", str(output), "--response-evidence",
+                                        str(output)]), \
+             patch.object(api, "_default_cache_dir",
+                          side_effect=AssertionError("provider setup before output alias refusal")):
+            with self.assertRaisesRegex(ValueError, "aliases another output"):
+                api.main()
+        self.assertEqual(output.read_text(), "old result")
+
+    def test_batch_cli_export_failure_and_strict_halt_order(self):
+        source = Path(self.tmp.name) / "citations.json"
+        source.write_text("[]")
+        evidence = Path(self.tmp.name) / "evidence.json"
+        result = Path(self.tmp.name) / "result.json"
+        evidence.write_text("old evidence")
+        result.write_text("old result")
+        with patch.object(sys, "argv", ["academic_apis.py", "batch", "--input", str(source),
+                                        "--output", str(result), "--response-evidence",
+                                        str(evidence)]), \
+             patch.object(api, "_default_cache_dir",
+                          return_value=str(Path(self.tmp.name) / "cache")), \
+             patch("provenance.os.replace", side_effect=OSError("export refused")), \
+             contextlib.redirect_stdout(io.StringIO()), \
+             contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaisesRegex(OSError, "export refused"):
+                api.main()
+        self.assertEqual((evidence.read_text(), result.read_text()),
+                         ("old evidence", "old result"))
+
+        source.write_text(json.dumps([{"ref_id": "r", "doi": DOI}]))
+        ledger = api._ResolutionLedger(budget=ProviderBudget({"crossref": 0}))
+        with patch.object(sys, "argv", ["academic_apis.py", "batch", "--input", str(source),
+                                        "--output", str(result), "--strict",
+                                        "--response-evidence", str(evidence)]), \
+             patch.object(api, "reliability_enabled", return_value=True), \
+             patch.object(api, "_ResolutionLedger", return_value=ledger), \
+             patch.object(api, "_default_cache_dir",
+                          return_value=str(Path(self.tmp.name) / "strict-cache")), \
+             patch.object(api, "_fetch_json_network",
+                          side_effect=AssertionError("budget skip must not fetch")), \
+             contextlib.redirect_stdout(io.StringIO()), \
+             contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit) as exit_status:
+                api.main()
+        self.assertEqual(exit_status.exception.code, api.STRICT_HALT_EXIT_CODE)
+        self.assertEqual(json.loads(evidence.read_text())["events"][0]["kind"], "skip")
+        self.assertTrue(json.loads(result.read_text())["reliability"]["strict"]["halt"])
 
 
 if __name__ == "__main__":

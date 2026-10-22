@@ -1603,6 +1603,8 @@ def main():
     batch.add_argument("--sidecar-dir", default=None,
                        help="Directory to write the Citation_Reliability.json reliability "
                             "sidecar into (OQ-3; opt-in, additive, off by default).")
+    batch.add_argument("--response-evidence", metavar="PATH", default=None,
+                       help="Explicit file for parsed response evidence (opt-in).")
 
     # check-url
     curl = sub.add_parser("check-url", help="Check if a URL is live")
@@ -1631,8 +1633,12 @@ def main():
 
     elif args.command == "batch":
         citations = json.loads(Path(args.input).read_text())
+        if (args.response_evidence is not None
+                and _evidence_destination_aliases(args.response_evidence, args.input)):
+            batch.error("--response-evidence must not alias --input")
         output = resolve_batch(citations, args.output,
-                               strict=args.strict, sidecar_dir=args.sidecar_dir)
+                               strict=args.strict, sidecar_dir=args.sidecar_dir,
+                               response_evidence_path=args.response_evidence)
         # OQ-1 exit contract: a strict high-stakes run that ended DEGRADED with a
         # NOT-CHECKED citation exits non-zero so the caller HALTS. A non-strict
         # run, a clean run, or a genuine all-healthy not-found exits 0 as before.
