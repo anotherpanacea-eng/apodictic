@@ -250,7 +250,8 @@ def _crossref_message(response, doi: str) -> dict | None:
     if not isinstance(message, dict) or not message:
         return None
     identity = message.get("DOI")
-    if not isinstance(identity, str) or identity.strip().casefold() != doi.strip().casefold():
+    if (not isinstance(identity, str) or not identity.strip() or not doi.strip()
+            or identity.strip().casefold() != doi.strip().casefold()):
         return None
     return message
 

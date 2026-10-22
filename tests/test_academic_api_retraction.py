@@ -103,6 +103,20 @@ class RetractionDirectionTests(unittest.TestCase):
                 self.assertNotIn("retracted", result)
                 self.assertEqual(provenance.verify("synthetic"), [])
 
+    def test_blank_requested_and_response_doi_are_not_identity(self):
+        response = {"message": {"DOI": " \t ", "title": ["Synthetic work"]}}
+        for doi in (" ", "10.1234/synthetic"):
+            with self.subTest(doi=doi):
+                status = self.standalone(doi, response)
+                self.assertIsNone(status["retracted"])
+                self.assertIsNone(status["corrected"])
+                self.assertIn("error", status)
+                result, provenance, calls = self.pipeline(doi, response)
+                self.assertEqual(calls, 1)
+                self.assertIs(result["resolved"], False)
+                self.assertEqual(result["resolution_status"], "not-checked")
+                self.assertEqual(provenance.verify("synthetic"), [])
+
     def test_malformed_relation_and_cache_hit_do_not_fetch_again(self):
         doi = "10.1234/synthetic"
         response = {"message": {"DOI": doi, "title": ["Synthetic work"],
