@@ -141,39 +141,47 @@ def _fetch_json_network(url: str, headers: dict | None = None, timeout: int = 15
                      category, status)
         return value
 
+    terminal = None
     for attempt in range(_HTTP_MAX_RETRIES + 1):
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 raw = resp.read()
-                try:
-                    parsed = json.loads(raw.decode("utf-8"))
-                except UnicodeDecodeError as e:
-                    return observed({"_error": str(e), "_url": url},
-                                    kind="failure", category="utf8-decode-failure")
-                except (ValueError, RecursionError) as e:
-                    # Includes the interpreter's integer-digit limit, whose
-                    # json.loads error is a plain ValueError.
-                    return observed({"_error": str(e), "_url": url},
-                                    kind="failure", category="json-parse-failure")
-                return observed(parsed)
         except urllib.error.HTTPError as e:
             last_error = e
             if e.code in _RETRYABLE_STATUS and attempt < _HTTP_MAX_RETRIES:
                 time.sleep(_retry_after_delay(e, delay))
                 delay *= 2
                 continue
-            return observed({"_error": str(e), "_url": url, "_status": e.code},
-                            kind="failure", category="http-error", status=e.code)
+            terminal = ({"_error": str(e), "_url": url, "_status": e.code},
+                        "failure", "http-error", e.code)
         except (urllib.error.URLError, TimeoutError) as e:
             last_error = e
             if attempt < _HTTP_MAX_RETRIES:
                 time.sleep(delay)
                 delay *= 2
                 continue
-            return observed({"_error": str(e), "_url": url},
-                            kind="failure", category="transport-error")
-    return observed({"_error": str(last_error), "_url": url},
-                    kind="failure", category="transport-error")
+            terminal = ({"_error": str(e), "_url": url}, "failure", "transport-error", None)
+        else:
+            try:
+                parsed = json.loads(raw.decode("utf-8"))
+            except UnicodeDecodeError as e:
+                terminal = ({"_error": str(e), "_url": url},
+                            "failure", "utf8-decode-failure", None)
+            except (ValueError, RecursionError) as e:
+                # Includes the interpreter's integer-digit limit, whose
+                # json.loads error is a plain ValueError.
+                terminal = ({"_error": str(e), "_url": url},
+                            "failure", "json-parse-failure", None)
+            else:
+                terminal = (parsed, "parsed", None, None)
+        break
+    if terminal is None:
+        terminal = ({"_error": str(last_error), "_url": url},
+                    "failure", "transport-error", None)
+    value, kind, category, status = terminal
+    # Evidence collection is outside retry and parse handlers. Its exceptions
+    # cannot manufacture another request or be relabeled as network failures.
+    return observed(value, kind=kind, category=category, status=status)
 
 
 def _valid_probe_url(url) -> bool:
@@ -768,17 +776,21 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         observations = []
 
         def observe(kind, value, observed_at, category, status):
-            if kind == "parsed":
-                index = provenance._observe_parsed(ref_id, source, value,
-                                                   origin="fresh", observed_at=observed_at)
-            else:
-                index = provenance._record_response(
-                    ref_id, source,
-                    kind="skip" if kind == "skip" else "request_failure",
-                    outcome=("skipped" if kind == "skip" else
-                             "invalid" if category in ("json-parse-failure", "utf8-decode-failure")
-                             else "failed"),
-                    origin="local", category=category, status=status)
+            try:
+                if kind == "parsed":
+                    index = provenance._observe_parsed(ref_id, source, value,
+                                                       origin="fresh", observed_at=observed_at)
+                else:
+                    index = provenance._record_response(
+                        ref_id, source,
+                        kind="skip" if kind == "skip" else "request_failure",
+                        outcome=("skipped" if kind == "skip" else
+                                 "invalid" if category in ("json-parse-failure", "utf8-decode-failure")
+                                 else "failed"),
+                        origin="local", category=category, status=status)
+            except Exception:
+                provenance._evidence_incomplete = True
+                raise
             observations.append(index)
 
         value = function(*args, **kwargs, _observe=observe)

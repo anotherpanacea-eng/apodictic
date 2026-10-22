@@ -380,6 +380,53 @@ class ResponseEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "incomplete"):
             store.save_response_evidence(str(Path(self.tmp.name) / "partial.json"))
 
+    def test_observer_errors_do_not_retry_as_transport_failures(self):
+        class Body:
+            def __init__(self, raw):
+                self.raw = raw
+                self.reads = 0
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+            def read(self):
+                self.reads += 1
+                return self.raw
+
+        for error in (TimeoutError("collector failed"),
+                      urllib.error.URLError("collector failed")):
+            with self.subTest(error=type(error).__name__):
+                body = Body(b'{"message":{"DOI":"10.1234/synthetic"}}')
+                store = ProvenanceStore(record_responses=True)
+                ledger = ReliabilityLedger()
+                with patch.object(api.urllib.request, "urlopen", return_value=body) as opened, \
+                     patch.object(api, "_HTTP_MAX_RETRIES", 1), \
+                     patch("provenance.json_value_sha256", side_effect=error), \
+                     patch.object(api.time, "sleep"):
+                    with self.assertRaises(type(error)):
+                        api.resolve_citation({"ref_id": "r", "doi": DOI},
+                                             ResponseCache(), store, ledger)
+                self.assertEqual((opened.call_count, body.reads), (1, 1))
+                self.assertEqual(ledger.snapshot()["providers"].get("crossref", {}).get("calls", 0), 0)
+                self.assertEqual(ledger.budget.spent()["crossref"], 1)
+                with self.assertRaisesRegex(RuntimeError, "incomplete"):
+                    store.response_evidence()
+
+        body = Body(b"not JSON")
+        store = ProvenanceStore(record_responses=True)
+        with patch.object(api.urllib.request, "urlopen", return_value=body) as opened, \
+             patch.object(api, "_HTTP_MAX_RETRIES", 1), \
+             patch("provenance._utc_now", side_effect=TimeoutError("receipt failed")), \
+             patch.object(api.time, "sleep"):
+            with self.assertRaises(TimeoutError):
+                api.resolve_citation({"ref_id": "r", "doi": DOI}, ResponseCache(), store)
+        self.assertEqual((opened.call_count, body.reads), (1, 1))
+        with self.assertRaisesRegex(RuntimeError, "incomplete"):
+            store.response_evidence()
+
     def test_cache_origin_hash_failure_closes_prior_evidence(self):
         cache = ResponseCache()
         store = ProvenanceStore(record_responses=True)
