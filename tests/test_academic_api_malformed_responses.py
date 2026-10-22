@@ -108,6 +108,37 @@ class MalformedResponseTests(unittest.TestCase):
                 self.assertEqual(result["metadata"]["year"], "")
                 self.assertEqual(len(self.provenance.verify("s")), 1)
 
+    def test_citation_count_preserves_explicit_null_fresh_and_cached(self):
+        for endpoint, envelope, field, source in (
+            ("semanticscholar.org/graph/v1/paper/search?", "data", "citationCount",
+             "semantic-scholar"),
+            ("openalex.org/works?", "results", "cited_by_count", "openalex"),
+        ):
+            for label, included, value, expected in (
+                ("missing", False, None, 0),
+                ("null", True, None, None),
+                ("zero", True, 0, 0),
+                ("positive", True, 17, 17),
+            ):
+                for with_ledger in (False, True):
+                    with self.subTest(source=source, count=label, ledger=with_ledger):
+                        self.cache = ResponseCache()
+                        self.provenance = ProvenanceStore()
+                        item = {"title": TITLE}
+                        if included:
+                            item[field] = value
+                        response = {envelope: [item]}
+                        ledger = ReliabilityLedger() if with_ledger else None
+                        for cached in (False, True):
+                            result, calls = self.resolve({"ref_id": "s", "title": TITLE},
+                                                         {endpoint: response}, ledger)
+                            self.assertEqual(result["source_tier"], source)
+                            self.assertEqual(result["metadata"]["citation_count"], expected)
+                            self.assertEqual(sum(endpoint in url for url in calls),
+                                             0 if cached else 1)
+                            self.assertEqual(len(self.provenance.verify("s")),
+                                             2 if cached else 1)
+
     def test_valid_later_tier_and_core_first_usable_hit(self):
         self.cache = ResponseCache()
         s2 = {"data": [{"title": TITLE, "externalIds": {}, "abstract": None}]}

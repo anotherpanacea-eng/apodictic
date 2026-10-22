@@ -473,7 +473,7 @@ def _optional_year(value):
 
 def _optional_count(value):
     if value is None:
-        return 0
+        return None
     if type(value) is not int or value < 0:
         raise ValueError("invalid provider count")
     return value
@@ -559,7 +559,8 @@ def _s2_projection(paper: dict) -> dict:
     item["year"] = _optional_year(item.get("year"))
     for field in ("venue", "abstract", "paperId"):
         item[field] = _optional_text(item.get(field))
-    item["citationCount"] = _optional_count(item.get("citationCount"))
+    if "citationCount" in item:
+        item["citationCount"] = _optional_count(item["citationCount"])
     return item
 
 
@@ -592,7 +593,8 @@ def _openalex_projection(work: dict) -> dict:
     item["doi"] = _optional_text(item.get("doi"))
     item["id"] = _optional_text(item.get("id"))
     item["publication_year"] = _optional_year(item.get("publication_year"))
-    item["cited_by_count"] = _optional_count(item.get("cited_by_count"))
+    if "cited_by_count" in item:
+        item["cited_by_count"] = _optional_count(item["cited_by_count"])
     return item
 
 
