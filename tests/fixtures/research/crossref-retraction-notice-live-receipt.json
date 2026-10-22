@@ -1,0 +1,38 @@
+{
+  "source_url": "https://api.crossref.org/works/10.1016%2FS0140-6736%2810%2960175-4",
+  "retrieved_at": "2026-10-22T17:35:47.022655+00:00",
+  "http_status": 200,
+  "response_headers": {
+    "Date": "Thu, 22 Oct 2026 17:35:46 GMT",
+    "Content-Type": "application/json",
+    "ETag": null,
+    "Last-Modified": null
+  },
+  "sha256": "3b2621047e79be3734f19ab82af8cc457e6cc41c021fecb36c20e3ed935d796e",
+  "byte_count": 3144,
+  "doi": "10.1016/s0140-6736(10)60175-4",
+  "title": [
+    "Retraction\u2014Ileal-lymphoid-nodular hyperplasia, non-specific colitis, and pervasive developmental disorder in children"
+  ],
+  "update-to": [
+    {
+      "DOI": "10.1016/s0140-6736(97)11096-0",
+      "type": "retraction",
+      "label": "Retraction",
+      "source": "retraction-watch",
+      "updated": {
+        "date-parts": [
+          [
+            2010,
+            2,
+            6
+          ]
+        ],
+        "date-time": "2010-02-06T00:00:00Z",
+        "timestamp": 1265414400000
+      },
+      "record-id": "4036"
+    }
+  ],
+  "updated-by": null
+}
