@@ -262,7 +262,7 @@ def _check_url(url: str, timeout: int = 10) -> dict:
 def resolve_crossref_doi(doi: str, ledger=None) -> dict:
     """Resolve a DOI via CrossRef."""
     url = f"https://api.crossref.org/works/{urllib.parse.quote(doi, safe='')}"
-    return _fetch_json(url, provider="crossref", ledger=ledger) or {}
+    return _fetch_json(url, provider="crossref", ledger=ledger)
 
 
 def search_crossref(title: str, author: str = "", rows: int = 5, ledger=None) -> dict:
@@ -271,7 +271,7 @@ def search_crossref(title: str, author: str = "", rows: int = 5, ledger=None) ->
     if author:
         params["query.author"] = author
     qs = urllib.parse.urlencode(params)
-    return _fetch_json(f"https://api.crossref.org/works?{qs}", provider="crossref", ledger=ledger) or {}
+    return _fetch_json(f"https://api.crossref.org/works?{qs}", provider="crossref", ledger=ledger)
 
 
 def search_semantic_scholar(query: str, limit: int = 5, ledger=None) -> dict:
@@ -283,7 +283,7 @@ def search_semantic_scholar(query: str, limit: int = 5, ledger=None) -> dict:
     }
     qs = urllib.parse.urlencode(params)
     return _fetch_json(f"https://api.semanticscholar.org/graph/v1/paper/search?{qs}",
-                       provider="semantic-scholar", ledger=ledger) or {}
+                       provider="semantic-scholar", ledger=ledger)
 
 
 def get_s2_citations(paper_id: str, direction: str = "citations", limit: int = 20, ledger=None) -> dict:
@@ -306,20 +306,20 @@ def search_openalex(query: str, author: str = "", per_page: int = 5, ledger=None
     if author:
         params["filter"] = f"author.search:{author}"
     qs = urllib.parse.urlencode(params)
-    return _fetch_json(f"https://api.openalex.org/works?{qs}", provider="openalex", ledger=ledger) or {}
+    return _fetch_json(f"https://api.openalex.org/works?{qs}", provider="openalex", ledger=ledger)
 
 
 def search_core(query: str, limit: int = 5, ledger=None) -> dict:
     """Search CORE (431M papers)."""
     params = {"q": query, "limit": str(limit)}
     qs = urllib.parse.urlencode(params)
-    return _fetch_json(f"https://api.core.ac.uk/v3/search/works?{qs}", provider="core", ledger=ledger) or {}
+    return _fetch_json(f"https://api.core.ac.uk/v3/search/works?{qs}", provider="core", ledger=ledger)
 
 
 def check_unpaywall(doi: str, ledger=None) -> dict:
     """Check Unpaywall for OA access."""
     url = f"https://api.unpaywall.org/v2/{urllib.parse.quote(doi, safe='')}?email={OPENALEX_MAILTO}"
-    return _fetch_json(url, provider="unpaywall", ledger=ledger) or {}
+    return _fetch_json(url, provider="unpaywall", ledger=ledger)
 
 
 def search_pubmed(query: str, retmax: int = 5, ledger=None) -> dict:
@@ -455,6 +455,228 @@ def _unanswered(resp) -> bool:
     return _is_skipped(resp) or _is_error(resp)
 
 
+def _optional_text(value) -> str:
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        raise ValueError("invalid provider text")
+    return value
+
+
+def _optional_year(value):
+    if value is None:
+        return ""
+    if type(value) not in (str, int):
+        raise ValueError("invalid provider year")
+    return value
+
+
+def _optional_count(value):
+    if value is None:
+        return 0
+    if type(value) is not int or value < 0:
+        raise ValueError("invalid provider count")
+    return value
+
+
+def _crossref_date(value):
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise ValueError("invalid Crossref date")
+    parts = value.get("date-parts")
+    if parts is None:
+        return {}
+    if not isinstance(parts, list) or (parts and (
+            not isinstance(parts[0], list) or (parts[0] and
+            type(parts[0][0]) not in (str, int)))):
+        raise ValueError("invalid Crossref date parts")
+    return value
+
+
+def _crossref_projection(message: dict, *, doi_path: bool = False) -> dict:
+    item = dict(message)
+    title = item.get("title")
+    if isinstance(title, list):
+        if title and not isinstance(title[0], str):
+            raise ValueError("invalid Crossref title")
+    elif title is None:
+        item["title"] = []
+    elif not isinstance(title, str):
+        raise ValueError("invalid Crossref title")
+    authors = item.get("author")
+    if authors is None:
+        item["author"] = []
+    elif not isinstance(authors, list):
+        raise ValueError("invalid Crossref authors")
+    else:
+        item["author"] = []
+        for author in authors:
+            if not isinstance(author, dict):
+                raise ValueError("invalid Crossref author")
+            copied = dict(author)
+            for field in ("family", "given"):
+                copied[field] = _optional_text(copied.get(field))
+            item["author"].append(copied)
+    for field in (("published-print", "published-online") if doi_path else
+                  ("published-print", "published-online", "created")):
+        item[field] = _crossref_date(item.get(field))
+    container = item.get("container-title")
+    if isinstance(container, list):
+        if container and not isinstance(container[0], str):
+            raise ValueError("invalid Crossref venue")
+    elif container is None:
+        item["container-title"] = []
+    elif not isinstance(container, str):
+        raise ValueError("invalid Crossref venue")
+    item["DOI"] = _optional_text(item.get("DOI"))
+    if not doi_path:
+        item["abstract"] = _optional_text(item.get("abstract"))
+    return item
+
+
+def _s2_projection(paper: dict) -> dict:
+    item = dict(paper)
+    item["title"] = _optional_text(item.get("title"))
+    authors = item.get("authors")
+    if authors is None:
+        item["authors"] = []
+    elif not isinstance(authors, list):
+        raise ValueError("invalid S2 authors")
+    else:
+        item["authors"] = []
+        for author in authors:
+            if not isinstance(author, dict):
+                raise ValueError("invalid S2 author")
+            item["authors"].append({**author, "name": _optional_text(author.get("name"))})
+    ids = item.get("externalIds")
+    if ids is None:
+        item["externalIds"] = {}
+    elif not isinstance(ids, dict):
+        raise ValueError("invalid S2 external IDs")
+    else:
+        item["externalIds"] = {**ids, "DOI": _optional_text(ids.get("DOI"))}
+    item["year"] = _optional_year(item.get("year"))
+    for field in ("venue", "abstract", "paperId"):
+        item[field] = _optional_text(item.get(field))
+    item["citationCount"] = _optional_count(item.get("citationCount"))
+    return item
+
+
+def _openalex_projection(work: dict) -> dict:
+    item = dict(work)
+    item["title"] = _optional_text(item.get("title"))
+    authorships = item.get("authorships")
+    if authorships is None:
+        item["authorships"] = []
+    elif not isinstance(authorships, list):
+        raise ValueError("invalid OpenAlex authorships")
+    else:
+        item["authorships"] = []
+        for authorship in authorships:
+            if not isinstance(authorship, dict):
+                raise ValueError("invalid OpenAlex authorship")
+            author = authorship.get("author")
+            if author is not None and not isinstance(author, dict):
+                raise ValueError("invalid OpenAlex author")
+            item["authorships"].append({**authorship, "author": {
+                **(author or {}), "display_name": _optional_text((author or {}).get("display_name"))}})
+    location = item.get("primary_location")
+    if location is not None and not isinstance(location, dict):
+        raise ValueError("invalid OpenAlex location")
+    source = (location or {}).get("source")
+    if source is not None and not isinstance(source, dict):
+        raise ValueError("invalid OpenAlex source")
+    item["primary_location"] = {**(location or {}), "source": {
+        **(source or {}), "display_name": _optional_text((source or {}).get("display_name"))}}
+    item["doi"] = _optional_text(item.get("doi"))
+    item["id"] = _optional_text(item.get("id"))
+    item["publication_year"] = _optional_year(item.get("publication_year"))
+    item["cited_by_count"] = _optional_count(item.get("cited_by_count"))
+    return item
+
+
+def _core_projection(hit: dict) -> dict:
+    item = dict(hit)
+    item["title"] = _optional_text(item.get("title"))
+    authors = item.get("authors")
+    if authors is None:
+        item["authors"] = []
+    elif not isinstance(authors, list):
+        raise ValueError("invalid CORE authors")
+    else:
+        item["authors"] = []
+        for author in authors:
+            if not isinstance(author, dict):
+                raise ValueError("invalid CORE author")
+            item["authors"].append({**author, "name": _optional_text(author.get("name"))})
+    item["abstract"] = _optional_text(item.get("abstract"))
+    item["yearPublished"] = _optional_year(item.get("yearPublished"))
+    return item
+
+
+def _search_view(response, provider: str) -> tuple[list[dict], bool]:
+    """Return a matching view and whether the original answer was incomplete."""
+    if _unanswered(response) or not isinstance(response, dict):
+        return [], True
+    if provider == "crossref":
+        message = response.get("message")
+        if not isinstance(message, dict):
+            return [], True
+        rows = message.get("items")
+        project = _crossref_projection
+    else:
+        rows = response.get("data" if provider == "semantic-scholar" else "results")
+        project = {"semantic-scholar": _s2_projection, "openalex": _openalex_projection,
+                   "core": _core_projection}[provider]
+    if not isinstance(rows, list):
+        return [], True
+    usable = []
+    incomplete = False
+    for row in rows:
+        if not isinstance(row, dict):
+            incomplete = True
+            continue
+        try:
+            projected = project(row)
+        except ValueError:
+            incomplete = True
+            continue
+        if provider == "core" and not projected["title"].strip():
+            incomplete = True
+            continue
+        usable.append(projected)
+    return usable, incomplete
+
+
+def _valid_unpaywall(response) -> bool:
+    if _unanswered(response) or not isinstance(response, dict):
+        return False
+    location = response.get("best_oa_location")
+    if location is None:
+        return True
+    if not isinstance(location, dict):
+        return False
+    return location.get("url_for_pdf") is None or isinstance(location.get("url_for_pdf"), str)
+
+
+def _crossref_doi_metadata(message: dict, doi: str) -> dict:
+    def first(value):
+        return value[0] if isinstance(value, list) and value else value if isinstance(value, str) else ""
+
+    def year(field):
+        parts = message[field].get("date-parts", [])
+        return parts[0][0] if parts and parts[0] else ""
+
+    return {
+        "title": first(message["title"]),
+        "authors": [a["family"] + ", " + a["given"] for a in message["author"]],
+        "year": str(year("published-print") or year("published-online") or ""),
+        "venue": first(message["container-title"]),
+        "doi": message.get("DOI", doi),
+    }
+
+
 class _ResolutionLedger(ReliabilityLedger):
     """Keep the existing index ledger honest about URL-origin incompletes."""
 
@@ -516,7 +738,12 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         cr_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
         if cr_result is None:
             cr_result = resolve_crossref_doi(doi, ledger=ledger)
-            if _unanswered(cr_result) or _crossref_message(cr_result, doi) is None:
+            msg = _crossref_message(cr_result, doi)
+            try:
+                projected = _crossref_projection(msg, doi_path=True) if msg is not None else None
+            except ValueError:
+                projected = None
+            if projected is None:
                 # Skipped, failed, or invalid DOI metadata is NOT-CHECKED for
                 # this citation. Do not cache a non-answer as a source fact.
                 not_checked.append("crossref")
@@ -525,9 +752,13 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
             time.sleep(RATE_LIMIT_DELAY)
 
         msg = _crossref_message(cr_result, doi)
-        if msg is None and "crossref" not in not_checked:
+        try:
+            projected = _crossref_projection(msg, doi_path=True) if msg is not None else None
+        except ValueError:
+            projected = None
+        if projected is None and "crossref" not in not_checked:
             not_checked.append("crossref")
-        if msg is not None:
+        if projected is not None:
             prov_ref = provenance.store(ref_id, "crossref", cr_result)
             result["provenance_refs"].append(prov_ref)
             # Derive health from this same response, including cache hits.
@@ -544,14 +775,7 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
             result["resolved"] = True
             result["confidence"] = "metadata-only verified"
             result["source_tier"] = "crossref-doi"
-            result["metadata"] = {
-                "title": msg.get("title", [""])[0] if isinstance(msg.get("title"), list) else msg.get("title", ""),
-                "authors": [a.get("family", "") + ", " + a.get("given", "") for a in msg.get("author", [])],
-                "year": str(msg.get("published-print", {}).get("date-parts", [[""]])[0][0]
-                         or msg.get("published-online", {}).get("date-parts", [[""]])[0][0] or ""),
-                "venue": msg.get("container-title", [""])[0] if isinstance(msg.get("container-title"), list) else msg.get("container-title", ""),
-                "doi": msg.get("DOI", doi)
-            }
+            result["metadata"] = _crossref_doi_metadata(projected, doi)
 
             # Check Unpaywall for OA PDF. Unpaywall is an OA-enrichment of an
             # ALREADY-resolved citation, not a resolution provider, so a
@@ -561,11 +785,11 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
             up_result = cache.get(up_key, ttl_seconds=_meta_ttl)
             if up_result is None:
                 up_result = check_unpaywall(doi, ledger=ledger)
-                if not _unanswered(up_result):
+                if _valid_unpaywall(up_result):
                     cache.set(up_key, up_result, ttl=_meta_ttl)
                 time.sleep(RATE_LIMIT_DELAY)
 
-            if up_result and not _unanswered(up_result):
+            if up_result and _valid_unpaywall(up_result):
                 prov_ref = provenance.store(ref_id, "unpaywall", up_result)
                 result["provenance_refs"].append(prov_ref)
                 best_oa = up_result.get("best_oa_location", {})
@@ -583,14 +807,16 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         cr_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
         if cr_result is None:
             cr_result = search_crossref(title, author, ledger=ledger)
-            if _unanswered(cr_result):
-                not_checked.append("crossref")  # skip OR error → NOT-CHECKED; don't cache
-            else:
+            items, incomplete = _search_view(cr_result, "crossref")
+            if not incomplete:
                 cache.set(cache_key, cr_result, ttl=_meta_ttl)
             time.sleep(RATE_LIMIT_DELAY)
+        else:
+            items, incomplete = _search_view(cr_result, "crossref")
+        if incomplete:
+            not_checked.append("crossref")
 
-        if cr_result and not _unanswered(cr_result):
-            items = cr_result.get("message", {}).get("items", [])
+        if items:
             from fuzzy_match import best_match
             match = best_match(title, author, year, items, source="crossref")
             if match:
@@ -607,10 +833,10 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                     up_result = cache.get(up_key, ttl_seconds=_meta_ttl)
                     if up_result is None:
                         up_result = check_unpaywall(found_doi, ledger=ledger)
-                        if not _unanswered(up_result):
+                        if _valid_unpaywall(up_result):
                             cache.set(up_key, up_result, ttl=_meta_ttl)
                         time.sleep(RATE_LIMIT_DELAY)
-                    if up_result and not _unanswered(up_result):
+                    if up_result and _valid_unpaywall(up_result):
                         prov_ref = provenance.store(ref_id, "unpaywall", up_result)
                         result["provenance_refs"].append(prov_ref)
                         best_oa = up_result.get("best_oa_location", {})
@@ -625,14 +851,16 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         s2_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
         if s2_result is None:
             s2_result = search_semantic_scholar(f"{title} {author}".strip(), ledger=ledger)
-            if _unanswered(s2_result):
-                not_checked.append("semantic-scholar")  # skip OR error → NOT-CHECKED; don't cache
-            else:
+            papers, incomplete = _search_view(s2_result, "semantic-scholar")
+            if not incomplete:
                 cache.set(cache_key, s2_result, ttl=_meta_ttl)
             time.sleep(RATE_LIMIT_DELAY)
+        else:
+            papers, incomplete = _search_view(s2_result, "semantic-scholar")
+        if incomplete:
+            not_checked.append("semantic-scholar")
 
-        if s2_result and not _unanswered(s2_result):
-            papers = s2_result.get("data", [])
+        if papers:
             from fuzzy_match import best_match
             match = best_match(title, author, year, papers, source="s2")
             if match:
@@ -651,14 +879,16 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         oa_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
         if oa_result is None:
             oa_result = search_openalex(title, author, ledger=ledger)
-            if _unanswered(oa_result):
-                not_checked.append("openalex")  # skip OR error → NOT-CHECKED; don't cache
-            else:
+            works, incomplete = _search_view(oa_result, "openalex")
+            if not incomplete:
                 cache.set(cache_key, oa_result, ttl=_meta_ttl)
             time.sleep(RATE_LIMIT_DELAY)
+        else:
+            works, incomplete = _search_view(oa_result, "openalex")
+        if incomplete:
+            not_checked.append("openalex")
 
-        if oa_result and not _unanswered(oa_result):
-            works = oa_result.get("results", [])
+        if works:
             from fuzzy_match import best_match
             match = best_match(title, author, year, works, source="openalex")
             if match:
@@ -677,28 +907,29 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         core_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
         if core_result is None:
             core_result = search_core(title, ledger=ledger)
-            if _unanswered(core_result):
-                not_checked.append("core")  # skip OR error → NOT-CHECKED; don't cache
-            else:
+            hits, incomplete = _search_view(core_result, "core")
+            if not incomplete:
                 cache.set(cache_key, core_result, ttl=_meta_ttl)
             time.sleep(RATE_LIMIT_DELAY)
+        else:
+            hits, incomplete = _search_view(core_result, "core")
+        if incomplete:
+            not_checked.append("core")
 
-        if core_result and not _unanswered(core_result):
-            hits = core_result.get("results", [])
-            if hits:
-                prov_ref = provenance.store(ref_id, "core", core_result)
-                result["provenance_refs"].append(prov_ref)
-                result["resolved"] = True
-                result["confidence"] = "abstract-only verified" if hits[0].get("abstract") else "metadata-only verified"
-                result["source_tier"] = "core"
-                result["metadata"] = {
-                    "title": hits[0].get("title", ""),
-                    "authors": [a.get("name", "") for a in hits[0].get("authors", [])],
-                    "year": str(hits[0].get("yearPublished", "")),
-                }
-                result["resolution_status"] = "resolved"
-                result["degraded_providers"] = ledger.degraded_providers() if ledger else []
-                return result
+        if hits:
+            prov_ref = provenance.store(ref_id, "core", core_result)
+            result["provenance_refs"].append(prov_ref)
+            result["resolved"] = True
+            result["confidence"] = "abstract-only verified" if hits[0].get("abstract") else "metadata-only verified"
+            result["source_tier"] = "core"
+            result["metadata"] = {
+                "title": hits[0].get("title", ""),
+                "authors": [a.get("name", "") for a in hits[0].get("authors", [])],
+                "year": str(hits[0].get("yearPublished", "")),
+            }
+            result["resolution_status"] = "resolved"
+            result["degraded_providers"] = ledger.degraded_providers() if ledger else []
+            return result
 
     # --- Tier 4: URL check + Wayback ---
     if url:
@@ -891,7 +1122,14 @@ def run_self_test() -> int:
             for frag, resp in routes.items():
                 if frag in url:
                     return resp
-            return {}  # default: empty (a clean 0-match, NOT an error)
+            # A checked negative has each provider's actual empty-search envelope.
+            if "crossref.org/works?" in url:
+                return {"message": {"items": []}}
+            if "semanticscholar.org/graph/v1/paper/search?" in url:
+                return {"data": []}
+            if "openalex.org/works?" in url or "core.ac.uk/v3/search/works?" in url:
+                return {"results": []}
+            return {}  # no OA data or an unvisited helper
         return fake
 
     global _fetch_json_network
@@ -920,7 +1158,7 @@ def run_self_test() -> int:
         # --- AC-7 case B: genuinely 0-matches every HEALTHY provider → not-found
         with tempfile.TemporaryDirectory() as d:
             os.environ["APODICTIC_CACHE_DIR"] = d
-            _fetch_json_network = make_network({})  # everything returns {} (clean empty)
+            _fetch_json_network = make_network({})  # valid provider empty-search envelopes
             led = ReliabilityLedger()
             cache = ResponseCache(d)
             prov = ProvenanceStore()
