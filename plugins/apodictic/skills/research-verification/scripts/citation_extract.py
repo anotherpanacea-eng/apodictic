@@ -342,7 +342,12 @@ def _brackets(text, lines, base_mask, paragraph_starts, paragraph_by_line, footn
             opener = pos
             cursor = pos + 1
             bad = False
-            while cursor < line_end and text[cursor] != "]":
+            while cursor < line_end:
+                if base_mask[cursor]:
+                    cursor += 1
+                    continue
+                if text[cursor] == "]":
+                    break
                 if text[cursor] in "[\\()":
                     bad = True
                     break
@@ -361,6 +366,9 @@ def _brackets(text, lines, base_mask, paragraph_starts, paragraph_by_line, footn
                 depth = 1
                 bad = False
                 while cursor < line_end:
+                    if base_mask[cursor]:
+                        cursor += 1
+                        continue
                     ch = text[cursor]
                     if ch in "\\[]":
                         bad = True
@@ -399,7 +407,12 @@ def _brackets(text, lines, base_mask, paragraph_starts, paragraph_by_line, footn
                 second_start = first_end
                 cursor = second_start + 1
                 bad = False
-                while cursor < line_end and text[cursor] != "]":
+                while cursor < line_end:
+                    if base_mask[cursor]:
+                        cursor += 1
+                        continue
+                    if text[cursor] == "]":
+                        break
                     if text[cursor] in "[\\()":
                         bad = True
                         break
@@ -448,14 +461,12 @@ def _quotes(text, lines, base_mask, bracket_mask):
             found = False
             while cursor < end:
                 candidate = text[cursor]
-                if (base_mask[cursor] or bracket_mask[cursor]
-                        or _escaped(text, cursor)):
+                if base_mask[cursor] or bracket_mask[cursor]:
                     cursor += 1
                     continue
-                if candidate == closer:
-                    found = True
-                    break
-                if candidate in ('"', "\u201c", "\u201d"):
+                if candidate in ('"', "\u201c", "\u201d") and not _escaped(text, cursor):
+                    if candidate == closer:
+                        found = True
                     break
                 cursor += 1
             if found:

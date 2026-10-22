@@ -138,9 +138,15 @@ A one-line `[LABEL](URL)` admits a nonempty, at most 200-character label
 without square/round brackets, backslash, backtick, LF, or leading/trailing
 spaces/tabs. Its destination is one whole admitted URL, with no title or
 padding. A DOI URL with balanced suffix parentheses is allowed. A bracket
-range consumes atomically from its first `[`: nested, escaped, or unclosed
-first/second bracket bodies, or an invalid/unclosed/nested destination,
-consume the rest of that line opaquely. A valid closed but unsupported link,
+range consumes atomically from its first `[`. Code-masked delimiters do
+not close its bracket bodies or destination. A nested, escaped, or unclosed
+first/second bracket body consumes the rest of that line opaquely. In a
+destination, a backslash, square bracket, parenthesis nesting beyond three
+including the outer pair, or no matching outer `)` also consumes the line
+tail. A balanced, structurally closed destination within that depth is
+consumed only through its outer `)` even when its whole URL is invalid
+(for example `[x](bad)` or `[x](bad(inner))`), so a later bare locator
+on the line can still be recognized. A closed but unsupported link,
 an image `![...](...)`, an escaped link, or a reference-style
 `[LABEL][ID]` likewise yields no citation or interior fallback. Two adjacent
 exact footnotes `[^a][^b]` remain two occurrences. The scanner advances

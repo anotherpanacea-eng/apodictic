@@ -239,6 +239,16 @@ class CitationExtractionTests(unittest.TestCase):
         self.assertEqual(len(api.extract_citations(
             "\\\\10.1234/a")["citations"]), 1)
 
+    def test_code_masked_bracket_closer_cannot_expose_destination(self):
+        later = "https://example.org/b"
+        for earlier in ("[x `]`](https://example.org/a)",
+                        "[x `foo`](https://example.org/a)",
+                        "[x](https://example.org/`)`)"):
+            with self.subTest(earlier=earlier):
+                text = earlier + " " + later
+                self.assertEqual([row["raw_citation_text"] for row in
+                                  api.extract_citations(text)["citations"]], [later])
+
     def test_doi_parentheses_and_whole_locator_rules(self):
         doi = "10.1016/s0140-6736(97)11096-0"
         for text, kind in (
@@ -302,6 +312,15 @@ class CitationExtractionTests(unittest.TestCase):
         row = api.extract_citations(text)["citations"][0]
         self.assertEqual(row["quote_span"], {"start": 1, "end": 2})
         self.assertEqual(row["attachment_method"], "none")
+
+    def test_long_escape_run_inside_quote_is_bounded(self):
+        slashes = "\\" * 20_000
+        url = "https://example.org/a"
+        text = '"' + slashes + '" ' + url
+        rows = api.extract_citations(text)["citations"]
+        self.assertEqual([row["raw_citation_text"] for row in rows], [url])
+        self.assertEqual(rows[0]["quote_span"],
+                         {"start": 1, "end": 1 + len(slashes)})
 
     def test_external_character_to_byte_boundaries(self):
         cases = (
