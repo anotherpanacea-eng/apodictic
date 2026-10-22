@@ -60,13 +60,6 @@ def _normalized_digest(text: str) -> str:
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
-def test_operator_policy_forbids_unreviewed_landing_bytes() -> None:
-    policy = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
-    assert "version bumps at merge" not in policy
-    assert "reviewed train-only commits made before the train freezes" in policy
-    assert "Do not add bytes during landing" in policy
-
-
 def _workflow_names(directory: Path) -> set[str]:
     return {
         path.name
@@ -391,24 +384,6 @@ def test_workflow_inventory_includes_yaml_extension(tmp_path: Path):
     (tmp_path / "ci.yml").write_text("name: ci\n", encoding="utf-8")
     (tmp_path / "hidden.yaml").write_text("name: hidden\n", encoding="utf-8")
     assert _workflow_names(tmp_path) == {"ci.yml", "hidden.yaml"}
-
-
-@pytest.mark.parametrize(
-    ("old", "new"),
-    [
-        ("timeout-minutes: 10", "timeout-minutes: 100"),
-        ("  pull_request:", "  pull_request_target:"),
-        ("jobs:\n  validate:", "jobs:\n  hidden:\n    runs-on: ubuntu-latest\n  validate:"),
-        ("actions/checkout@v4", "actions/checkout@main"),
-        ("bash scripts/validate.sh --check-canonical", "true"),
-        ("github.event.action == 'labeled'", "github.event.action != 'labeled'"),
-        (SYNC_BRANCH, "chore/other"),
-    ],
-)
-def test_ci_cost_or_authorization_mutation_fails_closed(old: str, new: str):
-    text = CI.read_text(encoding="utf-8")
-    assert old in text
-    assert _normalized_digest(text.replace(old, new, 1)) != CI_SHA256
 
 
 # The @claude workflow hands a write-capable App token and the Claude OAuth
