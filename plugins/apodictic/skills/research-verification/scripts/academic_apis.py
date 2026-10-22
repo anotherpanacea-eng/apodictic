@@ -231,13 +231,13 @@ def _probe_url_leg(url: str, method: str, timeout: int) -> dict:
 
 
 def _check_url(url: str, timeout: int = 10) -> dict:
-    """Bounded URL liveness only: HEAD, then GET after HEAD 403/405."""
+    """Bounded URL liveness only: HEAD, then GET after HEAD 403/405/501."""
     if not _valid_probe_url(url):
         return {"url": url, "status": None, "live": False, "check_status": "not-checked",
                 "method": None, "attempts": [], "final_url": None,
                 "wayback_allowed": False, "_error": "invalid-url"}
     attempts = [_probe_url_leg(url, "HEAD", timeout)]
-    if attempts[0]["status"] in {403, 405} and "error_code" not in attempts[0]:
+    if attempts[0]["status"] in {403, 405, 501} and "error_code" not in attempts[0]:
         attempts.append(_probe_url_leg(url, "GET", timeout))
     terminal = attempts[-1]
     status = terminal["status"]
@@ -382,26 +382,32 @@ def _crossref_message(response, doi: str) -> dict | None:
 
 
 def _crossref_update_health(message: dict) -> dict:
-    """`updated-by` concerns this work; `update-to` concerns a notice's target."""
+    """Incoming notices and same-DOI in-situ updates concern this work."""
     incoming = message.get("updated-by")
     outgoing = message.get("update-to")
     incoming = [] if incoming is None else incoming
     outgoing = [] if outgoing is None else outgoing
     uncertain = not isinstance(incoming, list)
     kinds = set()
-    if isinstance(incoming, list):
-        for relation in incoming:
-            if (not isinstance(relation, dict)
-                    or not isinstance(relation.get("type"), str)
-                    or not relation["type"].strip()
-                    or not isinstance(relation.get("DOI"), str)
-                    or not relation["DOI"].strip()):
-                uncertain = True
-                continue
-            kind = relation["type"].strip().casefold()
-            if kind not in ("retraction", "correction", "erratum"):
-                uncertain = True
-            kinds.add(kind)
+    relations = list(incoming) if isinstance(incoming, list) else []
+    own_doi = message.get("DOI")
+    if isinstance(own_doi, str) and own_doi.strip() and isinstance(outgoing, list):
+        relations.extend(relation for relation in outgoing
+                         if isinstance(relation, dict)
+                         and isinstance(relation.get("DOI"), str)
+                         and relation["DOI"].strip().casefold() == own_doi.strip().casefold())
+    for relation in relations:
+        if (not isinstance(relation, dict)
+                or not isinstance(relation.get("type"), str)
+                or not relation["type"].strip()
+                or not isinstance(relation.get("DOI"), str)
+                or not relation["DOI"].strip()):
+            uncertain = True
+            continue
+        kind = relation["type"].strip().casefold()
+        if kind not in ("retraction", "correction", "erratum"):
+            uncertain = True
+        kinds.add(kind)
     return {
         "retracted": True if "retraction" in kinds else None if uncertain else False,
         "corrected": True if kinds.intersection(("correction", "erratum")) else None if uncertain else False,

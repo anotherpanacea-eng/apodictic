@@ -155,7 +155,7 @@ additive and never altering a pre-existing value, so the legacy result/summary
 keys are unchanged.
 
 Direct URL liveness remains run-local and uncached. Its `url_check` result
-records a bounded HEAD check and, only after HEAD 403/405, one bounded GET
+records a bounded HEAD check and, only after HEAD 403/405/501, one bounded GET
 liveness fallback; neither reads or verifies source text. `not_checked_providers`
 may include `url-check` even when index `coverage` is CLEAN. Wayback's valid
 empty `archived_snapshots` and explicit `closest.available:false` are negative;

@@ -597,21 +597,27 @@ Flags fired: {list CV codes}
 {Ordered by severity. Only items hitting hard gates.}
 
 ## Flagged Citations
+The rows below are synthetic examples, not findings about real publications.
+"Pending content review" records an unfinished check, not a content-fit verdict.
 | Ref ID | Location | Claim | Citation | Type | Source Type | Confidence | Fit Verdict | Currency | Flags | Severity | Repair Note |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | §2, ¶3 | "23% of YRA cases..." | CJCC 2022 Report | statistic | institutional | metadata-only | pending content review | current | — | — | Locator evidence alone cannot support the statistic |
-| 2 | §4, ¶1 | "Schiraldi argues..." | Schiraldi 2021 | paraphrase | primary | metadata-only | pending content review | current | — | — | Read source content before judging the paraphrase |
+| 1 | §2, ¶3 | "23% of cases..." | Example Agency Report | statistic | institutional | metadata-only | pending content review | current | — | — | Locator evidence alone cannot support the statistic |
+| 2 | §4, ¶1 | "The study proves a 40% reduction..." | Example Study | paraphrase | primary | full-text | PARTIAL / OVERCLAIMED | current | CV5, CV6 | Should-Fix | Preserve the source's uncertainty, measure and population |
 | ... | | | | | | | | | | | |
 
 ## Citation Detail (per flagged citation)
-For each citation with flags, an incomplete check, or a pending content verdict, include:
+For each citation with flags, an incomplete check, or a non-SUPPORTED or pending content verdict, include:
 
 ```
-### Ref 2: Schiraldi 2021
-Manuscript makes a paraphrase claim; its fit remains pending a source-content read.
-Resolution: Crossref DOI match → Unpaywall OA PDF locator → metadata-only verified
-Access limit: The PDF link was recorded, but source content was not read; no paraphrase or support verdict follows from these API responses.
-Provenance: stored metadata responses #2-CR, #2-UP; add separate source-content evidence before a content verdict
+### Ref 2: Example Study (synthetic worked Phase 2 example)
+Manuscript says: "The study proves community programs reduce recidivism by 40%."
+Source says: "Our findings suggest these programs may reduce rearrest by 12–18% in the studied districts."
+Gap: Certainty inflation (suggest → prove), numeric inflation (12–18% → 40%), a changed outcome measure, and scope lift (studied districts → general).
+Fit verdict: PARTIAL / OVERCLAIMED
+Flags: CV5 (Paraphrase Inflation), CV6 (Scope Lift)
+Resolution: Crossref DOI match → Unpaywall OA PDF locator (Phase 1: metadata-only verified) → separate recorded Phase 2 source-content read → full-text verified
+Provenance: stored metadata responses #2-CR, #2-UP; separate source-content evidence #2-FT records the passage and its location used for this comparison.
+Access limit: Without #2-FT, this remains pending content review, like Ref 1; a locator alone earns neither full-text confidence nor a support verdict. The resolver does not perform the separate content read.
 ```
 
 ## Repair Queue

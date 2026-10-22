@@ -104,10 +104,11 @@ class UrlStatusTests(unittest.TestCase):
         result, t = self.probe(url, [("HEAD", url, 200, None)])
         self.assertEqual(result["check_status"], "live")
         self.assertEqual([r.get_method() for r in t.requests], ["HEAD"])
-        result, t = self.probe(url, [("HEAD", url, 405, None),
-                                     ("GET", url, 200, None)])
-        self.assertEqual(result["check_status"], "live")
-        self.assertEqual([r.get_method() for r in t.requests], ["HEAD", "GET"])
+        for head_status in (405, 501):
+            result, t = self.probe(url, [("HEAD", url, head_status, None),
+                                         ("GET", url, 200, None)])
+            self.assertEqual(result["check_status"], "live")
+            self.assertEqual([r.get_method() for r in t.requests], ["HEAD", "GET"])
         for status in (403, 405):
             result, _ = self.probe(url, [("HEAD", url, status, None),
                                          ("GET", url, status, None)])
@@ -116,6 +117,16 @@ class UrlStatusTests(unittest.TestCase):
         result, _ = self.probe(url, [("HEAD", url, 403, None),
                                      ("GET", url, 410, None)])
         self.assertEqual(result["check_status"], "not-found")
+
+    def test_unimplemented_head_uses_get_terminal_outcome(self):
+        url = "https://example.org/item"
+        for terminal, expected in ((404, "not-found"),
+                                   (TimeoutError("synthetic timeout"), "not-checked")):
+            with self.subTest(terminal=terminal):
+                result, t = self.probe(url, [("HEAD", url, 501, None),
+                                             ("GET", url, terminal, None)])
+                self.assertEqual(result["check_status"], expected)
+                self.assertEqual([r.get_method() for r in t.requests], ["HEAD", "GET"])
 
     def test_redirects_preserve_method_and_bound_hops(self):
         start = "https://one.example/item"
